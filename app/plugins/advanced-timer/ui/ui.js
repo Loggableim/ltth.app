@@ -57,10 +57,10 @@ function setupNav() {
 }
 
 function showTab(name, triggerEl) {
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    const sidebarBtn = document.querySelector('.nav-btn[data-tab="' + name + '"]');
+    document.querySelectorAll('.at-nav-btn').forEach(b => b.classList.remove('active'));
+    const sidebarBtn = document.querySelector('.at-nav-btn[data-tab="' + name + '"]');
     if (sidebarBtn) sidebarBtn.classList.add('active');
-    document.querySelectorAll('.tab-content').forEach(t => { t.style.display = 'none'; });
+    document.querySelectorAll('.at-tab-content').forEach(t => { t.style.display = 'none'; });
     const target = document.getElementById('tab-' + name);
     if (target) target.style.display = 'block';
     if (name === 'profiles') loadProfiles();
@@ -75,7 +75,7 @@ function setupSocketListeners() {
         const el = document.getElementById('td-' + data.id);
         if (el) {
             el.textContent = formatTime(data.currentValue);
-            el.className = 'timer-display' + (data.state === 'running' ? ' running' : '');
+            el.className = 'at-timer-display' + (data.state === 'running' ? ' running' : '');
         }
     });
     ['started','paused','stopped','reset','completed','time-added','time-removed'].forEach(ev => {
@@ -106,17 +106,18 @@ async function refreshTimer(id) {
             const oldCard = document.getElementById('tc-' + id);
             const sectionStates = {};
             if (oldCard) {
-                oldCard.querySelectorAll('.section-toggle').forEach(btn => {
+                oldCard.querySelectorAll('.at-section-toggle').forEach(btn => {
                     const sec = btn.getAttribute('data-sec');
                     const body = oldCard.querySelector('[data-sec-body="' + sec + '"]');
                     sectionStates[sec] = body ? body.classList.contains('open') : false;
                 });
             }
             renderSingleTimer(data.timer);
+            renderDashboardStats();
             // Restore section states
             const newCard = document.getElementById('tc-' + id);
             if (newCard && Object.keys(sectionStates).length > 0) {
-                newCard.querySelectorAll('.section-toggle').forEach(btn => {
+                newCard.querySelectorAll('.at-section-toggle').forEach(btn => {
                     const sec = btn.getAttribute('data-sec');
                     const wasOpen = sectionStates[sec];
                     if (wasOpen !== undefined) {
@@ -136,11 +137,12 @@ async function refreshTimer(id) {
 
 function renderTimers() {
     const container = document.getElementById('timers-container');
+    renderDashboardStats();
     if (timers.length === 0) {
         container.innerHTML =
-            '<div class="empty-state">' +
-            '<div class="empty-state-icon">⏱️</div>' +
-            '<div class="empty-state-text">No timers yet</div>' +
+            '<div class="at-empty-state">' +
+            '<div class="at-empty-state-icon">Timer</div>' +
+            '<div class="at-empty-state-text">No timers yet</div>' +
             '<button class="btn btn-primary" data-tab="create">Create Your First Timer</button>' +
             '</div>';
         container.querySelector('[data-tab]')?.addEventListener('click', e => showTab('create', e.currentTarget));
@@ -150,11 +152,29 @@ function renderTimers() {
     timers.forEach(t => container.appendChild(buildTimerCard(t)));
 }
 
+function renderDashboardStats() {
+    const total = timers.length;
+    const running = timers.filter(t => t.state === 'running').length;
+    const paused = timers.filter(t => t.state === 'paused').length;
+    const stopped = timers.filter(t => t.state === 'stopped').length;
+
+    const setValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = String(value);
+    };
+
+    setValue('at-stat-total', total);
+    setValue('at-stat-running', running);
+    setValue('at-stat-paused', paused);
+    setValue('at-stat-stopped', stopped);
+}
+
 function renderSingleTimer(timer) {
     const existing = document.getElementById('tc-' + timer.id);
     const card = buildTimerCard(timer);
     if (existing) existing.replaceWith(card);
     else document.getElementById('timers-container').appendChild(card);
+    renderDashboardStats();
 }
 
 // ---------------------------------------------------------------------------
@@ -163,21 +183,21 @@ function renderSingleTimer(timer) {
 
 function buildTimerCard(t) {
     const card = document.createElement('div');
-    card.className = 'timer-card';
+    card.className = 'at-timer-card';
     card.id = 'tc-' + t.id;
     const overlayUrl = window.location.origin + '/advanced-timer/overlay?timer=' + t.id;
 
     card.innerHTML =
         // Header
-        '<div class="timer-card-header">' +
+        '<div class="at-timer-card-header">' +
           '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-            '<span class="timer-title">' + escapeHtml(t.name) + '</span>' +
-            '<span class="timer-mode-badge">' + getModeLabel(t.mode) + '</span>' +
+            '<span class="at-timer-title">' + escapeHtml(t.name) + '</span>' +
+            '<span class="at-timer-mode-badge">' + getModeLabel(t.mode) + '</span>' +
           '</div>' +
-          '<span class="timer-state-badge state-' + t.state + '">' + getStateLabel(t.state) + '</span>' +
+          '<span class="at-timer-state-badge at-state-' + t.state + '">' + getStateLabel(t.state) + '</span>' +
         '</div>' +
         // Display
-        '<div class="timer-display' + (t.state === 'running' ? ' running' : '') + '" id="td-' + t.id + '">' +
+        '<div class="at-timer-display' + (t.state === 'running' ? ' running' : '') + '" id="td-' + t.id + '">' +
           formatTime(t.current_value) +
         '</div>' +
         // Controls
@@ -188,25 +208,25 @@ function buildTimerCard(t) {
           '<button class="btn btn-secondary btn-xs" data-at="add" data-s="30">+30s</button>' +
           '<button class="btn btn-secondary btn-xs" data-at="add" data-s="60">+1m</button>' +
           '<button class="btn btn-secondary btn-xs" data-at="add" data-s="300">+5m</button>' +
-          '<button class="btn btn-secondary btn-xs" data-at="remove" data-s="10">−10s</button>' +
-          '<button class="btn btn-secondary btn-xs" data-at="remove" data-s="30">−30s</button>' +
+          '<button class="btn btn-secondary btn-xs" data-at="remove" data-s="10">-10s</button>' +
+          '<button class="btn btn-secondary btn-xs" data-at="remove" data-s="30">-30s</button>' +
         '</div>' +
         // Overlay URL
-        '<div class="overlay-row">' +
+        '<div class="at-overlay-row">' +
           '<span style="font-size:0.78rem;color:var(--color-text-secondary);flex-shrink:0;">Overlay:</span>' +
-          '<span class="overlay-url-text">' + overlayUrl + '</span>' +
-          '<button class="btn btn-xs btn-secondary copy-url-btn" title="Copy URL">📋</button>' +
+          '<span class="at-overlay-url-text">' + overlayUrl + '</span>' +
+          '<button class="btn btn-xs btn-secondary copy-url-btn" title="Copy URL">Copy</button>' +
         '</div>' +
         // Settings section
-        '<button class="section-toggle" data-sec="settings">⚙️ Settings <span class="chevron">▼</span></button>' +
-        '<div class="section-body" data-sec-body="settings">' +
-          '<div class="settings-grid">' +
-            '<div class="field-group"><label class="field-label">Timer Name</label>' +
-              '<input class="field-input" type="text" data-field="name" value="' + escapeHtml(t.name) + '"></div>' +
-            '<div class="field-group"><label class="field-label">Initial Duration (seconds)</label>' +
-              '<input class="field-input" type="number" min="0" data-field="initial_duration" value="' + (t.initial_duration || 0) + '"></div>' +
-            '<div class="field-group"><label class="field-label">Action on Expiry</label>' +
-              '<select class="field-input" data-field="expiry_action">' +
+        '<button class="at-section-toggle" data-sec="settings">Settings <span class="chevron">▼</span></button>' +
+        '<div class="at-section-body" data-sec-body="settings">' +
+          '<div class="at-settings-grid">' +
+            '<div class="at-field-group"><label class="at-field-label">Timer Name</label>' +
+              '<input class="at-field-input" type="text" data-field="name" value="' + escapeHtml(t.name) + '"></div>' +
+            '<div class="at-field-group"><label class="at-field-label">Initial Duration (seconds)</label>' +
+              '<input class="at-field-input" type="number" min="0" data-field="initial_duration" value="' + (t.initial_duration || 0) + '"></div>' +
+            '<div class="at-field-group"><label class="at-field-label">Action on Expiry</label>' +
+              '<select class="at-field-input" data-field="expiry_action">' +
                 '<option value="none"' + ((t.expiry_action||'none')==='none'?' selected':'') + '>None</option>' +
                 '<option value="restart"' + (t.expiry_action==='restart'?' selected':'') + '>Restart</option>' +
                 '<option value="alert"' + (t.expiry_action==='alert'?' selected':'') + '>Show Alert</option>' +
@@ -218,158 +238,158 @@ function buildTimerCard(t) {
           '<div style="margin-top:10px;"><button class="btn btn-sm btn-primary save-settings-btn">Save Settings</button></div>' +
         '</div>' +
         // Interactions section
-        '<button class="section-toggle open" data-sec="interactions">⚡ Interactions <span class="chevron" style="transform:rotate(180deg);">▼</span></button>' +
-        '<div class="section-body open" data-sec-body="interactions">' +
+        '<button class="at-section-toggle open" data-sec="interactions">Interactions <span class="chevron" style="transform:rotate(180deg);">▼</span></button>' +
+        '<div class="at-section-body open" data-sec-body="interactions">' +
           '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">Positive = add time, negative = reduce. Supports decimals (e.g. 0.05).</p>' +
-          '<div class="interactions-grid">' +
-            interactionRow('per_coin',      '🪙 Per Coin',         t.per_coin) +
-            interactionRow('per_subscribe', '🌟 Per Subscribe',    t.per_subscribe) +
-            interactionRow('per_follow',    '⭐ Per Follow',       t.per_follow) +
-            interactionRow('per_share',     '🔄 Per Share',        t.per_share) +
-            interactionRow('per_like',      '👍 Per Like',         t.per_like) +
-            interactionRow('per_chat',      '💬 Per Chat Message', t.per_chat) +
+          '<div class="at-interactions-grid">' +
+            interactionRow('per_coin',      'Per Coin',         t.per_coin) +
+            interactionRow('per_subscribe', 'Per Subscribe',    t.per_subscribe) +
+            interactionRow('per_follow',    'Per Follow',       t.per_follow) +
+            interactionRow('per_share',     'Per Share',        t.per_share) +
+            interactionRow('per_like',      'Per Like',         t.per_like) +
+            interactionRow('per_chat',      'Per Chat Message', t.per_chat) +
           '</div>' +
-          '<a class="adv-events-link" data-adv-timer="' + t.id + '">🔧 Advanced Event Rules (gift-name filters, commands…)</a>' +
-          '<span class="save-indicator" id="si-' + t.id + '">✓ Saved</span>' +
+          '<a class="at-adv-events-link" data-adv-timer="' + t.id + '">Advanced Event Rules (gift-name filters, commands...)</a>' +
+          '<span class="at-save-indicator" id="si-' + t.id + '">Saved</span>' +
         '</div>' +
         // Multiplier section
-        '<button class="section-toggle open" data-sec="multiplier">✖️ Multiplier <span class="chevron" style="transform:rotate(180deg);">▼</span></button>' +
-        '<div class="section-body open" data-sec-body="multiplier">' +
-          '<div class="multiplier-row">' +
-            '<label class="toggle-switch"><input type="checkbox" class="multiplier-toggle"' + (t.multiplier_enabled ? ' checked' : '') + '><span class="toggle-slider"></span></label>' +
-            '<span style="font-size:0.85rem;">×</span>' +
-            '<input class="interaction-input multiplier-value-input" type="number" min="0.01" step="0.01" value="' + (t.multiplier || 1) + '" style="width:70px;">' +
-            '<span class="interaction-unit">multiplier</span>' +
-            '<span style="font-size:0.78rem;color:var(--color-text-secondary);">(all interaction values × this factor)</span>' +
+        '<button class="at-section-toggle open" data-sec="multiplier">Multiplier <span class="chevron" style="transform:rotate(180deg);">▼</span></button>' +
+        '<div class="at-section-body open" data-sec-body="multiplier">' +
+          '<div class="at-multiplier-row">' +
+            '<label class="at-toggle-switch"><input type="checkbox" class="multiplier-toggle"' + (t.multiplier_enabled ? ' checked' : '') + '><span class="at-toggle-slider"></span></label>' +
+            '<span style="font-size:0.85rem;">x</span>' +
+            '<input class="at-interaction-input multiplier-value-input" type="number" min="0.01" step="0.01" value="' + (t.multiplier || 1) + '" style="width:70px;">' +
+            '<span class="at-interaction-unit">multiplier</span>' +
+            '<span style="font-size:0.78rem;color:var(--color-text-secondary);">(all interaction values x this factor)</span>' +
           '</div>' +
         '</div>' +
         // Keyboard Shortcuts section
-        '<button class="section-toggle" data-sec="shortcuts">⌨️ Keyboard Shortcuts <span class="chevron">▼</span></button>' +
-        '<div class="section-body" data-sec-body="shortcuts">' +
-          '<div class="shortcuts-grid">' +
-            '<div class="shortcut-row"><span class="shortcut-label">Start / Pause</span><input class="shortcut-input" type="text" data-sc="shortcut_start_pause" value="' + escapeHtml(t.shortcut_start_pause||'') + '" placeholder="e.g. ALT+P"></div>' +
-            '<div class="shortcut-row"><span class="shortcut-label">Increase</span><input class="shortcut-input" type="text" data-sc="shortcut_increase" value="' + escapeHtml(t.shortcut_increase||'') + '" placeholder="e.g. ALT+S"></div>' +
-            '<div class="shortcut-row"><span class="shortcut-label">Reduce</span><input class="shortcut-input" type="text" data-sc="shortcut_decrease" value="' + escapeHtml(t.shortcut_decrease||'') + '" placeholder="e.g. ALT+A"></div>' +
-            '<div class="shortcut-row"><span class="shortcut-label">Step (seconds)</span><input class="shortcut-input" type="number" min="1" data-sc="shortcut_step" value="' + (t.shortcut_step||60) + '" style="width:70px;"></div>' +
+        '<button class="at-section-toggle" data-sec="shortcuts">Keyboard Shortcuts <span class="chevron">▼</span></button>' +
+        '<div class="at-section-body" data-sec-body="shortcuts">' +
+          '<div class="at-shortcuts-grid">' +
+            '<div class="at-shortcut-row"><span class="at-shortcut-label">Start / Pause</span><input class="shortcut-input" type="text" data-sc="shortcut_start_pause" value="' + escapeHtml(t.shortcut_start_pause||'') + '" placeholder="e.g. ALT+P"></div>' +
+            '<div class="at-shortcut-row"><span class="at-shortcut-label">Increase</span><input class="shortcut-input" type="text" data-sc="shortcut_increase" value="' + escapeHtml(t.shortcut_increase||'') + '" placeholder="e.g. ALT+S"></div>' +
+            '<div class="at-shortcut-row"><span class="at-shortcut-label">Reduce</span><input class="shortcut-input" type="text" data-sc="shortcut_decrease" value="' + escapeHtml(t.shortcut_decrease||'') + '" placeholder="e.g. ALT+A"></div>' +
+            '<div class="at-shortcut-row"><span class="at-shortcut-label">Step (seconds)</span><input class="shortcut-input" type="number" min="1" data-sc="shortcut_step" value="' + (t.shortcut_step||60) + '" style="width:70px;"></div>' +
           '</div>' +
           '<div style="margin-top:10px;"><button class="btn btn-sm btn-primary save-shortcuts-btn">Save Shortcuts</button></div>' +
         '</div>' +
         // Activity log section
-        '<button class="section-toggle" data-sec="log">📋 Activity Log <span class="chevron">▼</span></button>' +
-        '<div class="section-body" data-sec-body="log">' +
-          '<div class="log-entries" id="log-' + t.id + '"><p style="color:var(--color-text-secondary);font-size:0.82rem;">Click the section header to load.</p></div>' +
+        '<button class="at-section-toggle" data-sec="log">Activity Log <span class="chevron">▼</span></button>' +
+        '<div class="at-section-body" data-sec-body="log">' +
+          '<div class="at-log-entries" id="log-' + t.id + '"><p style="color:var(--color-text-secondary);font-size:0.82rem;">Click the section header to load.</p></div>' +
           '<div style="margin-top:8px;display:flex;gap:8px;">' +
-            '<button class="btn btn-sm btn-secondary reload-log-btn">🔄 Refresh</button>' +
-            '<a href="/api/advanced-timer/timers/' + t.id + '/export-logs" target="_blank" class="btn btn-sm btn-secondary">📥 Export</a>' +
+            '<button class="btn btn-sm btn-secondary reload-log-btn">Refresh</button>' +
+            '<a href="/api/advanced-timer/timers/' + t.id + '/export-logs" target="_blank" class="btn btn-sm btn-secondary">Export</a>' +
           '</div>' +
         '</div>' +
         // Gift Overrides section
-        '<button class="section-toggle" data-sec="gift-overrides">🎁 Gift Overrides <span class="chevron">▼</span></button>' +
-        '<div class="section-body" data-sec-body="gift-overrides">' +
-          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">Override per_coin for specific gifts. When set, the flat per_coin value is NOT applied for this gift — only the override counts.</p>' +
+        '<button class="at-section-toggle" data-sec="gift-overrides">Gift Overrides <span class="chevron">▼</span></button>' +
+        '<div class="at-section-body" data-sec-body="gift-overrides">' +
+          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">Override per_coin for specific gifts. When set, the flat per_coin value is NOT applied for this gift - only the override counts.</p>' +
           '<div class="gift-override-list" id="gol-' + t.id + '"><p style="color:var(--color-text-secondary);font-size:0.82rem;">Click to load.</p></div>' +
           '<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;">' +
-            '<select class="field-input" id="go-gift-select-' + t.id + '" style="flex:1;min-width:140px;"><option value="">— Select Gift —</option></select>' +
-            '<input type="number" class="field-input" id="go-seconds-' + t.id + '" placeholder="Seconds" value="30" min="0" step="0.01" style="width:90px;">' +
-            '<button class="btn btn-sm btn-primary" id="go-add-btn-' + t.id + '">➕ Add</button>' +
+            '<select class="at-field-input" id="go-gift-select-' + t.id + '" style="flex:1;min-width:140px;"><option value="">Select Gift</option></select>' +
+            '<input type="number" class="at-field-input" id="go-seconds-' + t.id + '" placeholder="Seconds" value="30" min="0" step="0.01" style="width:90px;">' +
+            '<button class="btn btn-sm btn-primary" id="go-add-btn-' + t.id + '">Add</button>' +
           '</div>' +
         '</div>' +
         // Rotator section
-        '<button class="section-toggle" data-sec="rotator">🎡 Rotator (Delta Slider) <span class="chevron">▼</span></button>' +
-        '<div class="section-body" data-sec-body="rotator">' +
+        '<button class="at-section-toggle" data-sec="rotator">Rotator (Delta Slider) <span class="chevron">▼</span></button>' +
+        '<div class="at-section-body" data-sec-body="rotator">' +
           '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">Shows the most recent time-delta around the timer (top/bottom/left/right). Custom gifts display the gift GIF from the catalog.</p>' +
-          '<div class="rotator-grid" id="rotator-form-' + t.id + '">' +
-            '<label class="rotator-row"><span>Enable Rotator</span>' +
-              '<label class="toggle-switch"><input type="checkbox" data-rot="enabled" checked><span class="toggle-slider"></span></label></label>' +
-            '<label class="rotator-row"><span>Position</span>' +
-              '<select class="field-input" data-rot="position" style="width:140px;">' +
+          '<div class="at-rotator-grid" id="rotator-form-' + t.id + '">' +
+            '<label class="at-rotator-row"><span>Enable Rotator</span>' +
+              '<label class="at-toggle-switch"><input type="checkbox" data-rot="enabled" checked><span class="at-toggle-slider"></span></label></label>' +
+            '<label class="at-rotator-row"><span>Position</span>' +
+              '<select class="at-field-input" data-rot="position" style="width:140px;">' +
                 '<option value="top">Top</option>' +
                 '<option value="bottom">Bottom</option>' +
                 '<option value="left">Left</option>' +
                 '<option value="right">Right</option>' +
               '</select></label>' +
-            '<label class="rotator-row"><span>Slots</span>' +
-              '<input class="field-input" type="number" data-rot="slot_count" min="1" max="8" value="1" style="width:80px;"></label>' +
-            '<label class="rotator-row"><span>Rotation (ms)</span>' +
-              '<input class="field-input" type="number" data-rot="rotation_interval_ms" min="800" max="30000" value="4500" style="width:90px;"></label>' +
-            '<label class="rotator-row"><span>Min seconds to show</span>' +
-              '<input class="field-input" type="number" data-rot="min_seconds_to_show" min="0" step="0.1" value="0" style="width:80px;"></label>' +
-            '<label class="rotator-row"><span>Show gift image</span>' +
-              '<label class="toggle-switch"><input type="checkbox" data-rot="show_gift_images" checked><span class="toggle-slider"></span></label></label>' +
-            '<label class="rotator-row"><span>Show gift name</span>' +
-              '<label class="toggle-switch"><input type="checkbox" data-rot="show_gift_names" checked><span class="toggle-slider"></span></label></label>' +
-            '<label class="rotator-row"><span>Show time delta</span>' +
-              '<label class="toggle-switch"><input type="checkbox" data-rot="show_time_delta" checked><span class="toggle-slider"></span></label></label>' +
-            '<label class="rotator-row"><span>Show source emoji</span>' +
-              '<label class="toggle-switch"><input type="checkbox" data-rot="show_source_emoji" checked><span class="toggle-slider"></span></label></label>' +
-            '<label class="rotator-row"><span>Font scale</span>' +
-              '<input class="field-input" type="number" data-rot="font_scale" min="0.5" max="2.0" step="0.05" value="1.0" style="width:80px;"></label>' +
-            '<label class="rotator-row"><span>Fade alpha</span>' +
-              '<input class="field-input" type="number" data-rot="fade_alpha" min="0.3" max="1.0" step="0.05" value="0.92" style="width:80px;"></label>' +
+            '<label class="at-rotator-row"><span>Slots</span>' +
+              '<input class="at-field-input" type="number" data-rot="slot_count" min="1" max="8" value="1" style="width:80px;"></label>' +
+            '<label class="at-rotator-row"><span>Rotation (ms)</span>' +
+              '<input class="at-field-input" type="number" data-rot="rotation_interval_ms" min="800" max="30000" value="4500" style="width:90px;"></label>' +
+            '<label class="at-rotator-row"><span>Min seconds to show</span>' +
+              '<input class="at-field-input" type="number" data-rot="min_seconds_to_show" min="0" step="0.1" value="0" style="width:80px;"></label>' +
+            '<label class="at-rotator-row"><span>Show gift image</span>' +
+              '<label class="at-toggle-switch"><input type="checkbox" data-rot="show_gift_images" checked><span class="at-toggle-slider"></span></label></label>' +
+            '<label class="at-rotator-row"><span>Show gift name</span>' +
+              '<label class="at-toggle-switch"><input type="checkbox" data-rot="show_gift_names" checked><span class="at-toggle-slider"></span></label></label>' +
+            '<label class="at-rotator-row"><span>Show time delta</span>' +
+              '<label class="at-toggle-switch"><input type="checkbox" data-rot="show_time_delta" checked><span class="at-toggle-slider"></span></label></label>' +
+            '<label class="at-rotator-row"><span>Show source emoji</span>' +
+              '<label class="at-toggle-switch"><input type="checkbox" data-rot="show_source_emoji" checked><span class="at-toggle-slider"></span></label></label>' +
+            '<label class="at-rotator-row"><span>Font scale</span>' +
+              '<input class="at-field-input" type="number" data-rot="font_scale" min="0.5" max="2.0" step="0.05" value="1.0" style="width:80px;"></label>' +
+            '<label class="at-rotator-row"><span>Fade alpha</span>' +
+              '<input class="at-field-input" type="number" data-rot="fade_alpha" min="0.3" max="1.0" step="0.05" value="0.92" style="width:80px;"></label>' +
           '</div>' +
           '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin:10px 0 4px;">Sources shown:</p>' +
           '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;" id="rotator-sources-' + t.id + '">' +
-            '<label class="source-chip"><input type="checkbox" data-rot-src="like" checked> 👍 Like</label>' +
-            '<label class="source-chip"><input type="checkbox" data-rot-src="coin" checked> 🪙 Coin/Gift</label>' +
-            '<label class="source-chip"><input type="checkbox" data-rot-src="override" checked> 🎯 Custom Gift</label>' +
-            '<label class="source-chip"><input type="checkbox" data-rot-src="follow" checked> ⭐ Follow</label>' +
-            '<label class="source-chip"><input type="checkbox" data-rot-src="subscribe" checked> 🌟 Sub (Superfan)</label>' +
-            '<label class="source-chip"><input type="checkbox" data-rot-src="share" checked> 🔄 Share</label>' +
-            '<label class="source-chip"><input type="checkbox" data-rot-src="chat" checked> 💬 Chat</label>' +
-            '<label class="source-chip"><input type="checkbox" data-rot-src="manual" checked> ✋ Manual</label>' +
-            '<label class="source-chip"><input type="checkbox" data-rot-src="flow" checked> 🔗 Flow</label>' +
-            '<label class="source-chip"><input type="checkbox" data-rot-src="rule" checked> 🧠 Rule</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="like" checked> Like</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="coin" checked> Coin/Gift</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="override" checked> Custom Gift</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="follow" checked> Follow</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="subscribe" checked> Sub (Superfan)</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="share" checked> Share</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="chat" checked> Chat</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="manual" checked> Manual</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="flow" checked> Flow</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="rule" checked> Rule</label>' +
           '</div>' +
           '<div style="margin-top:10px;display:flex;gap:8px;align-items:center;">' +
-            '<button class="btn btn-sm btn-primary save-rotator-btn" data-timer-id="' + t.id + '">💾 Save Rotator</button>' +
-            '<span class="save-indicator" id="rot-si-' + t.id + '">✓ Saved</span>' +
+            '<button class="btn btn-sm btn-primary save-rotator-btn" data-timer-id="' + t.id + '">Save Rotator</button>' +
+            '<span class="at-save-indicator" id="rot-si-' + t.id + '">Saved</span>' +
           '</div>' +
         '</div>' +
         // Threshold Effects section
-        '<button class="section-toggle" data-sec="threshold">🔥 Big-Delta Effects <span class="chevron">▼</span></button>' +
-        '<div class="section-body" data-sec-body="threshold">' +
+        '<button class="at-section-toggle" data-sec="threshold">Big-Delta Effects <span class="chevron">▼</span></button>' +
+        '<div class="at-section-body" data-sec-body="threshold">' +
           '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">When a single time-delta exceeds the threshold, the timer is wrapped in a frame/animation. Use a built-in style, upload your own, or both.</p>' +
-          '<div class="rotator-grid" id="threshold-form-' + t.id + '">' +
-            '<label class="rotator-row"><span>Enable Effects</span>' +
-              '<label class="toggle-switch"><input type="checkbox" data-thr="enabled" checked><span class="toggle-slider"></span></label></label>' +
-            '<label class="rotator-row"><span>Threshold (seconds)</span>' +
-              '<input class="field-input" type="number" data-thr="threshold_seconds" min="0.1" step="1" value="60" style="width:90px;"></label>' +
-            '<label class="rotator-row"><span>Direction</span>' +
-              '<select class="field-input" data-thr="direction" style="width:120px;">' +
+          '<div class="at-rotator-grid" id="threshold-form-' + t.id + '">' +
+            '<label class="at-rotator-row"><span>Enable Effects</span>' +
+              '<label class="at-toggle-switch"><input type="checkbox" data-thr="enabled" checked><span class="at-toggle-slider"></span></label></label>' +
+            '<label class="at-rotator-row"><span>Threshold (seconds)</span>' +
+              '<input class="at-field-input" type="number" data-thr="threshold_seconds" min="0.1" step="1" value="60" style="width:90px;"></label>' +
+            '<label class="at-rotator-row"><span>Direction</span>' +
+              '<select class="at-field-input" data-thr="direction" style="width:120px;">' +
                 '<option value="both">Both (+/-)</option>' +
                 '<option value="positive">Positive only</option>' +
                 '<option value="negative">Negative only</option>' +
               '</select></label>' +
-            '<label class="rotator-row"><span>Effect duration (ms)</span>' +
-              '<input class="field-input" type="number" data-thr="duration_ms" min="200" max="10000" step="100" value="1500" style="width:90px;"></label>' +
-            '<label class="rotator-row"><span>Built-in animation</span>' +
-              '<select class="field-input" data-thr="builtin_animation" style="width:160px;">' +
-                '<option value="flame">🔥 Flame</option>' +
-                '<option value="lightning">⚡ Lightning</option>' +
-                '<option value="sparks">✨ Sparks</option>' +
-                '<option value="pulse-glow">💚 Pulse Glow</option>' +
-                '<option value="rainbow-shake">🌈 Rainbow Shake</option>' +
-                '<option value="gold-flux">🥇 Gold Flux</option>' +
+            '<label class="at-rotator-row"><span>Effect duration (ms)</span>' +
+              '<input class="at-field-input" type="number" data-thr="duration_ms" min="200" max="10000" step="100" value="1500" style="width:90px;"></label>' +
+            '<label class="at-rotator-row"><span>Built-in animation</span>' +
+              '<select class="at-field-input" data-thr="builtin_animation" style="width:160px;">' +
+                '<option value="flame">Flame</option>' +
+                '<option value="lightning">Lightning</option>' +
+                '<option value="sparks">Sparks</option>' +
+                '<option value="pulse-glow">Pulse Glow</option>' +
+                '<option value="rainbow-shake">Rainbow Shake</option>' +
+                '<option value="gold-flux">Gold Flux</option>' +
               '</select></label>' +
-            '<label class="rotator-row"><span>Intensity (0.5..2.0)</span>' +
-              '<input class="field-input" type="number" data-thr="intensity" min="0.5" max="2.0" step="0.05" value="1.0" style="width:80px;"></label>' +
+            '<label class="at-rotator-row"><span>Intensity (0.5..2.0)</span>' +
+              '<input class="at-field-input" type="number" data-thr="intensity" min="0.5" max="2.0" step="0.05" value="1.0" style="width:80px;"></label>' +
           '</div>' +
-          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin:12px 0 4px;">Custom frame slots (upload up to 6 PNG/WebP/GIF/SVG — shown round-robin):</p>' +
-          '<div id="threshold-frames-' + t.id + '" class="frame-slot-grid"></div>' +
+          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin:12px 0 4px;">Custom frame slots (upload up to 6 PNG/WebP/GIF/SVG - shown round-robin):</p>' +
+          '<div id="threshold-frames-' + t.id + '" class="at-frame-slot-grid"></div>' +
           '<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
-            '<button class="btn btn-sm btn-primary save-threshold-btn" data-timer-id="' + t.id + '">💾 Save Settings</button>' +
-            '<span class="save-indicator" id="thr-si-' + t.id + '">✓ Saved</span>' +
+            '<button class="btn btn-sm btn-primary save-threshold-btn" data-timer-id="' + t.id + '">Save Settings</button>' +
+            '<span class="at-save-indicator" id="thr-si-' + t.id + '">Saved</span>' +
           '</div>' +
         '</div>' +
         // Delete
         '<div style="margin-top:12px;border-top:1px solid var(--color-border);padding-top:12px;display:flex;justify-content:flex-end;">' +
-          '<button class="btn btn-sm btn-danger delete-timer-btn">🗑️ Delete Timer</button>' +
+          '<button class="btn btn-sm btn-danger delete-timer-btn">Delete Timer</button>' +
         '</div>';
 
     const tid = t.id;
 
     // Section toggles
-    card.querySelectorAll('.section-toggle').forEach(btn => {
+    card.querySelectorAll('.at-section-toggle').forEach(btn => {
         btn.addEventListener('click', () => {
             const sec = btn.getAttribute('data-sec');
             const body = card.querySelector('[data-sec-body="' + sec + '"]');
@@ -408,9 +428,9 @@ function buildTimerCard(t) {
     // Settings save
     card.querySelector('.save-settings-btn')?.addEventListener('click', () => saveSettings(card, tid));
 
-    // Interaction inputs – auto-save debounced 500ms
+    // Interaction inputs - auto-save debounced 500ms
     const debounceMap = new Map();
-    card.querySelectorAll('.interaction-input[data-int]').forEach(inp => {
+    card.querySelectorAll('.at-interaction-input[data-int]').forEach(inp => {
         inp.addEventListener('input', () => {
             clearTimeout(debounceMap.get(inp));
             debounceMap.set(inp, setTimeout(() => saveInteractions(card, tid), 500));
@@ -479,25 +499,123 @@ function buildTimerCard(t) {
     // Delete
     card.querySelector('.delete-timer-btn')?.addEventListener('click', () => deleteTimer(tid));
 
+    normalizeTimerCardLabels(card);
+
     return card;
 }
 
+function normalizeTimerCardLabels(card) {
+    if (!card) return;
+
+    const setText = (selector, text) => {
+        const el = card.querySelector(selector);
+        if (el) el.textContent = text;
+    };
+
+    const sectionLabels = {
+        settings: 'Settings',
+        interactions: 'Interactions',
+        multiplier: 'Multiplier',
+        shortcuts: 'Keyboard Shortcuts',
+        log: 'Activity Log',
+        'gift-overrides': 'Gift Overrides',
+        rotator: 'Rotator (Delta Slider)',
+        threshold: 'Big-Delta Effects'
+    };
+
+    card.querySelectorAll('.at-section-toggle').forEach(btn => {
+        const sec = btn.getAttribute('data-sec');
+        if (sectionLabels[sec]) {
+            btn.innerHTML = sectionLabels[sec] + ' <span class="chevron">v</span>';
+        }
+    });
+
+    setText('.copy-url-btn', 'Copy');
+    setText('.reload-log-btn', 'Refresh');
+    setText('.save-rotator-btn', 'Save Rotator');
+    setText('.save-threshold-btn', 'Save Settings');
+    setText('.delete-timer-btn', 'Delete Timer');
+    setText('.at-adv-events-link', 'Advanced Event Rules (gift-name filters, commands...)');
+
+    const ctrlLabels = { start: 'Start', pause: 'Pause', stop: 'Stop', reset: 'Reset' };
+    card.querySelectorAll('[data-ctrl]').forEach(btn => {
+        const ctrl = btn.getAttribute('data-ctrl');
+        if (ctrlLabels[ctrl]) btn.textContent = ctrlLabels[ctrl];
+    });
+
+    const interactionLabels = {
+        per_coin: 'Per Coin',
+        per_subscribe: 'Per Subscribe',
+        per_follow: 'Per Follow',
+        per_share: 'Per Share',
+        per_like: 'Per Like',
+        per_chat: 'Per Chat Message'
+    };
+    card.querySelectorAll('.at-interaction-row').forEach(row => {
+        const input = row.querySelector('.at-interaction-input');
+        const label = row.querySelector('.at-interaction-label');
+        const key = input?.getAttribute('data-int');
+        if (label && interactionLabels[key]) label.textContent = interactionLabels[key];
+    });
+
+    const rotatorLabels = {
+        like: 'Like',
+        coin: 'Coin/Gift',
+        override: 'Custom Gift',
+        follow: 'Follow',
+        subscribe: 'Sub (Superfan)',
+        share: 'Share',
+        chat: 'Chat',
+        manual: 'Manual',
+        flow: 'Flow',
+        rule: 'Rule'
+    };
+    card.querySelectorAll('.at-source-chip').forEach(chip => {
+        const input = chip.querySelector('input[data-rot-src]');
+        const src = input?.getAttribute('data-rot-src');
+        if (!input || !rotatorLabels[src]) return;
+        const checked = input.checked;
+        chip.innerHTML = '';
+        const nextInput = document.createElement('input');
+        nextInput.type = 'checkbox';
+        nextInput.setAttribute('data-rot-src', src);
+        nextInput.checked = checked;
+        chip.appendChild(nextInput);
+        chip.appendChild(document.createTextNode(' ' + rotatorLabels[src]));
+    });
+
+    const effectSelect = card.querySelector('[data-thr="effect"]');
+    if (effectSelect) {
+        const effectLabels = {
+            flame: 'Flame',
+            lightning: 'Lightning',
+            sparks: 'Sparks',
+            'pulse-glow': 'Pulse Glow',
+            'rainbow-shake': 'Rainbow Shake',
+            'gold-flux': 'Gold Flux'
+        };
+        Array.from(effectSelect.options).forEach(opt => {
+            if (effectLabels[opt.value]) opt.textContent = effectLabels[opt.value];
+        });
+    }
+}
+
 function interactionRow(field, label, value) {
-    return '<div class="interaction-row">' +
-        '<span class="interaction-label">' + label + '</span>' +
-        '<div class="interaction-input-wrap">' +
-            '<input class="interaction-input" type="number" step="0.01" data-int="' + field + '" value="' + (value || 0) + '">' +
-            '<span class="interaction-unit">s</span>' +
+    return '<div class="at-interaction-row">' +
+        '<span class="at-interaction-label">' + label + '</span>' +
+        '<div class="at-interaction-input-wrap">' +
+            '<input class="at-interaction-input" type="number" step="0.01" data-int="' + field + '" value="' + (value || 0) + '">' +
+            '<span class="at-interaction-unit">s</span>' +
         '</div>' +
     '</div>';
 }
 
 function timerControlButtons(t) {
     let html = '';
-    if (t.state !== 'running') html += '<button class="btn btn-success btn-sm" data-ctrl="start">▶ Start</button>';
-    if (t.state === 'running') html += '<button class="btn btn-warning btn-sm" data-ctrl="pause">⏸ Pause</button>';
-    if (t.state === 'running' || t.state === 'paused') html += '<button class="btn btn-danger btn-sm" data-ctrl="stop">⏹ Stop</button>';
-    html += '<button class="btn btn-secondary btn-sm" data-ctrl="reset">🔄 Reset</button>';
+    if (t.state !== 'running') html += '<button class="btn btn-success btn-sm" data-ctrl="start">Start</button>';
+    if (t.state === 'running') html += '<button class="btn btn-warning btn-sm" data-ctrl="pause">Pause</button>';
+    if (t.state === 'running' || t.state === 'paused') html += '<button class="btn btn-danger btn-sm" data-ctrl="stop">Stop</button>';
+    html += '<button class="btn btn-secondary btn-sm" data-ctrl="reset">Reset</button>';
     return html;
 }
 
@@ -548,7 +666,7 @@ async function saveSettings(card, id) {
 
 async function saveInteractions(card, id) {
     const payload = {};
-    card.querySelectorAll('.interaction-input[data-int]').forEach(inp => {
+    card.querySelectorAll('.at-interaction-input[data-int]').forEach(inp => {
         payload[inp.getAttribute('data-int')] = parseFloat(inp.value) || 0;
     });
     try {
@@ -599,11 +717,11 @@ async function loadLog(id) {
         container.innerHTML = data.logs.map(l => {
             const sign = l.value_change > 0 ? 'positive' : (l.value_change < 0 ? 'negative' : '');
             const cs = l.value_change ? (l.value_change > 0 ? '+' : '') + l.value_change.toFixed(2) + 's' : '';
-            return '<div class="log-entry">' +
-                '<span>' + escapeHtml(l.event_type) + (l.user_name ? ' · ' + escapeHtml(l.user_name) : '') +
+            return '<div class="at-log-entry">' +
+                '<span>' + escapeHtml(l.event_type) + (l.user_name ? ' ? ' + escapeHtml(l.user_name) : '') +
                 (l.description ? '<br><small style="color:var(--color-text-secondary)">' + escapeHtml(l.description) + '</small>' : '') + '</span>' +
-                (cs ? '<span class="log-change ' + sign + '">' + cs + '</span>' : '') +
-                '<span class="log-time">' + new Date(l.timestamp * 1000).toLocaleTimeString() + '</span>' +
+                (cs ? '<span class="at-log-change ' + sign + '">' + cs + '</span>' : '') +
+                '<span class="at-log-time">' + new Date(l.timestamp * 1000).toLocaleTimeString() + '</span>' +
             '</div>';
         }).join('');
     } catch (e) { console.error('loadLog', e); }
@@ -630,7 +748,7 @@ function createAdvEventsModal() {
     modal.style.cssText = 'display:none;position:fixed;inset:0;background:var(--color-modal-backdrop,rgba(0,0,0,.5));z-index:2000;align-items:center;justify-content:center;';
     modal.innerHTML =
         '<div style="background:var(--color-modal-bg,var(--color-bg-card));border:1px solid var(--color-border);border-radius:16px;padding:28px;max-width:560px;width:92%;max-height:88vh;overflow-y:auto;">' +
-          '<div style="font-size:1.2rem;font-weight:700;margin-bottom:16px;">🔧 Advanced Event Rules</div>' +
+          '<div style="font-size:1.2rem;font-weight:700;margin-bottom:16px;">Advanced Event Rules</div>' +
           '<p style="font-size:0.82rem;color:var(--color-text-secondary);margin-bottom:14px;">These rules add on top of the flat per-* values. Use for gift-name filters, minCoins, chat commands.</p>' +
           '<div id="adv-events-list"></div>' +
           '<div style="display:flex;gap:10px;margin-top:14px;">' +
@@ -662,15 +780,15 @@ function renderAdvEvents(events) {
     container.innerHTML = events.map(ev => {
         const cStr = formatConditions(ev.event_type, ev.conditions);
         return '<div style="border:1px solid var(--color-border);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.84rem;" data-event-id="' + ev.id + '">' +
-            '<div style="font-weight:600;">' + getEventLabel(ev.event_type) + ' → ' + getActionLabel(ev.action_type) + ' ' + ev.action_value + 's</div>' +
+            '<div style="font-weight:600;">' + getEventLabel(ev.event_type) + ' -> ' + getActionLabel(ev.action_type) + ' ' + ev.action_value + 's</div>' +
             (cStr ? '<div style="color:var(--color-text-secondary);margin-top:2px;">' + cStr + '</div>' : '') +
             '<div style="margin-top:8px;display:flex;gap:6px;">' +
-              '<button class="btn btn-xs btn-secondary adv-edit-btn">✏️ Edit</button>' +
-              '<button class="btn btn-xs btn-danger adv-del-btn">🗑️</button>' +
+              '<button class="btn btn-xs btn-secondary adv-edit-btn">Edit</button>' +
+              '<button class="btn btn-xs btn-danger adv-del-btn">Delete</button>' +
             '</div></div>';
     }).join('');
 
-    // Use event delegation — attach listener once per container using WeakSet
+    // Use event delegation - attach listener once per container using WeakSet
     if (!_advEventsBoundContainers.has(container)) {
         _advEventsBoundContainers.add(container);
         container.addEventListener('click', function advEventHandler(e) {
@@ -688,7 +806,7 @@ function renderAdvEvents(events) {
 }
 
 function getEventLabel(t) {
-    return { gift:'🎁 Gift', like:'👍 Like', follow:'⭐ Follow', share:'🔄 Share', subscribe:'🌟 Subscribe', chat:'💬 Chat' }[t] || t;
+    return { gift:'Gift', like:'Like', follow:'Follow', share:'Share', subscribe:'Subscribe', chat:'Chat' }[t] || t;
 }
 function getActionLabel(t) {
     return { add_time:'Add', remove_time:'Remove', set_value:'Set to' }[t] || t;
@@ -720,17 +838,17 @@ function showEventEditor(eventId) {
     editor.style.cssText = 'display:flex;position:fixed;inset:0;background:var(--color-modal-backdrop,rgba(0,0,0,.5));z-index:3000;align-items:center;justify-content:center;';
     editor.innerHTML =
         '<div style="background:var(--color-modal-bg,var(--color-bg-card));border:1px solid var(--color-border);border-radius:14px;padding:24px;max-width:480px;width:92%;max-height:88vh;overflow-y:auto;">' +
-          '<div style="font-size:1.1rem;font-weight:700;margin-bottom:14px;">' + (eventId ? '✏️ Edit' : '➕ Add') + ' Event Rule</div>' +
-          '<div class="form-group"><label class="form-label">Event Type</label>' +
-            '<select class="form-control" id="ee-type">' +
+          '<div style="font-size:1.1rem;font-weight:700;margin-bottom:14px;">' + (eventId ? 'Edit' : 'Add') + ' Event Rule</div>' +
+          '<div class="at-form-group"><label class="at-form-label">Event Type</label>' +
+            '<select class="at-form-control" id="ee-type">' +
               ['gift','like','follow','share','subscribe','chat'].map(v => '<option value="' + v + '">' + getEventLabel(v) + '</option>').join('') +
             '</select></div>' +
-          '<div class="form-group"><label class="form-label">Action</label>' +
-            '<select class="form-control" id="ee-action">' +
+          '<div class="at-form-group"><label class="at-form-label">Action</label>' +
+            '<select class="at-form-control" id="ee-action">' +
               '<option value="add_time">Add Time</option><option value="remove_time">Remove Time</option><option value="set_value">Set Value</option>' +
             '</select></div>' +
-          '<div class="form-group"><label class="form-label">Value (seconds)</label>' +
-            '<input type="number" class="form-control" id="ee-value" value="10" min="0" step="0.01"></div>' +
+          '<div class="at-form-group"><label class="at-form-label">Value (seconds)</label>' +
+            '<input type="number" class="at-form-control" id="ee-value" value="10" min="0" step="0.01"></div>' +
           '<div id="ee-conditions"></div>' +
           '<div style="display:flex;gap:10px;margin-top:16px;">' +
             '<button class="btn btn-sm btn-primary" id="ee-save">Save</button>' +
@@ -744,13 +862,13 @@ function showEventEditor(eventId) {
         const tp = typeSelect.value;
         const c = editor.querySelector('#ee-conditions');
         if (tp === 'gift') {
-            c.innerHTML = '<div class="form-group"><label class="form-label">Gift Name (blank = any)</label><input class="form-control" id="ee-gift-name" placeholder="e.g. Rose"></div>' +
-                '<div class="form-group"><label class="form-label">Min Coins (0 = no min)</label><input type="number" class="form-control" id="ee-min-coins" value="0" min="0"></div>';
+            c.innerHTML = '<div class="at-form-group"><label class="at-form-label">Gift Name (blank = any)</label><input class="at-form-control" id="ee-gift-name" placeholder="e.g. Rose"></div>' +
+                '<div class="at-form-group"><label class="at-form-label">Min Coins (0 = no min)</label><input type="number" class="at-form-control" id="ee-min-coins" value="0" min="0"></div>';
         } else if (tp === 'like') {
-            c.innerHTML = '<div class="form-group"><label class="form-label">Min Likes per Event</label><input type="number" class="form-control" id="ee-min-likes" value="0" min="0"></div>';
+            c.innerHTML = '<div class="at-form-group"><label class="at-form-label">Min Likes per Event</label><input type="number" class="at-form-control" id="ee-min-likes" value="0" min="0"></div>';
         } else if (tp === 'chat') {
-            c.innerHTML = '<div class="form-group"><label class="form-label">Command prefix (e.g. !time)</label><input class="form-control" id="ee-command" placeholder="!time"></div>' +
-                '<div class="form-group"><label class="form-label">Keyword (contains)</label><input class="form-control" id="ee-keyword" placeholder="add time"></div>';
+            c.innerHTML = '<div class="at-form-group"><label class="at-form-label">Command prefix (e.g. !time)</label><input class="at-form-control" id="ee-command" placeholder="!time"></div>' +
+                '<div class="at-form-group"><label class="at-form-label">Keyword (contains)</label><input class="at-form-control" id="ee-keyword" placeholder="add time"></div>';
         } else { c.innerHTML = ''; }
     };
     typeSelect.addEventListener('change', renderCond);
@@ -835,17 +953,17 @@ function renderProfiles(profiles) {
     if (!container) return;
     container.innerHTML = profiles.length
         ? profiles.map(p =>
-            '<div class="profile-card" data-profile-id="' + escapeHtml(p.id) + '">' +
-              '<div><div class="profile-name">' + escapeHtml(p.name) + '</div>' +
-              '<div class="profile-meta">' + new Date(p.created_at * 1000).toLocaleDateString() + '</div></div>' +
+            '<div class="at-profile-card" data-profile-id="' + escapeHtml(p.id) + '">' +
+              '<div><div class="at-profile-name">' + escapeHtml(p.name) + '</div>' +
+              '<div class="at-profile-meta">' + new Date(p.created_at * 1000).toLocaleDateString() + '</div></div>' +
               '<div style="display:flex;gap:8px;">' +
                 '<button class="btn btn-xs btn-primary profile-apply-btn">Apply</button>' +
-                '<button class="btn btn-xs btn-danger profile-del-btn">🗑️</button>' +
+                '<button class="btn btn-xs btn-danger profile-del-btn">Delete</button>' +
               '</div>' +
             '</div>').join('')
         : '<p style="color:var(--color-text-secondary);">No saved profiles. Click "Save Current Setup" to save your timers.</p>';
 
-    // Event delegation — safe, no inline onclick
+    // Event delegation - safe, no inline onclick
     container.querySelectorAll('[data-profile-id]').forEach(card => {
         const pid = card.getAttribute('data-profile-id');
         card.querySelector('.profile-apply-btn')?.addEventListener('click', () => applyProfile(pid));
@@ -936,8 +1054,8 @@ async function loadGiftOverrides(timerId) {
         }
         container.innerHTML = data.overrides.map(o =>
             '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--color-border);font-size:0.84rem;">' +
-                '<span><strong>' + escapeHtml(o.gift_name) + '</strong> → ' + (o.seconds > 0 ? '+' : '') + o.seconds + 's</span>' +
-                '<button class="btn btn-xs btn-danger go-del-btn" data-go-id="' + o.id + '" data-timer="' + timerId + '">🗑️</button>' +
+                '<span><strong>' + escapeHtml(o.gift_name) + '</strong> -> ' + (o.seconds > 0 ? '+' : '') + o.seconds + 's</span>' +
+                '<button class="btn btn-xs btn-danger go-del-btn" data-go-id="' + o.id + '" data-timer="' + timerId + '">Delete</button>' +
             '</div>'
         ).join('');
         // Attach delete handlers
@@ -956,7 +1074,7 @@ function populateGiftSelect(timerId) {
     for (const gift of giftCatalog) {
         const opt = document.createElement('option');
         opt.value = gift.id;
-        opt.textContent = gift.name + ' (' + gift.diamond_count + '💎)';
+        opt.textContent = gift.name + ' (' + gift.diamond_count + ' diamonds)';
         select.appendChild(opt);
     }
 }
@@ -1110,17 +1228,17 @@ function renderFrameSlots(timerId, frames) {
     for (let slot = 1; slot <= 6; slot++) {
         const f = frameMap.get(slot);
         html.push(
-            '<div class="frame-slot-card">' +
-                '<div class="frame-slot-header">Slot ' + slot + '</div>' +
+            '<div class="at-frame-slot-card">' +
+                '<div class="at-frame-slot-header">Slot ' + slot + '</div>' +
                 (f
-                    ? '<div class="frame-slot-preview"><img src="' + escapeHtml(f.url) + '" alt="frame"></div>' +
-                      '<div class="frame-slot-name">' + escapeHtml(f.label || f.filename || 'frame') + '</div>' +
-                      '<button class="btn btn-xs btn-danger delete-frame-btn" data-frame-slot="' + slot + '">🗑️ Remove</button>'
-                    : '<div class="frame-slot-empty">No frame</div>') +
-                '<form class="frame-slot-upload" enctype="multipart/form-data">' +
+                    ? '<div class="at-frame-slot-preview"><img src="' + escapeHtml(f.url) + '" alt="frame"></div>' +
+                      '<div class="at-frame-slot-name">' + escapeHtml(f.label || f.filename || 'frame') + '</div>' +
+                      '<button class="btn btn-xs btn-danger delete-frame-btn" data-frame-slot="' + slot + '">Delete Remove</button>'
+                    : '<div class="at-frame-slot-empty">No frame</div>') +
+                '<form class="at-frame-slot-upload" enctype="multipart/form-data">' +
                   '<input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" data-frame-slot="' + slot + '">' +
                   '<input type="text" placeholder="Label (optional)" data-frame-label="' + slot + '" style="margin-top:4px;">' +
-                  '<button type="button" class="btn btn-xs btn-primary upload-frame-btn" data-frame-slot="' + slot + '" style="margin-top:4px;">📤 Upload</button>' +
+                  '<button type="button" class="btn btn-xs btn-primary upload-frame-btn" data-frame-slot="' + slot + '" style="margin-top:4px;">Upload</button>' +
                 '</form>' +
             '</div>'
         );
@@ -1171,7 +1289,7 @@ async function uploadFrame(timerId, slot, container) {
         const data = await res.json();
         if (data.success) {
             // Reload the threshold section
-            const card = container.closest('.timer-card');
+            const card = container.closest('.at-timer-card');
             if (card) loadThresholdSettings(timerId, card);
         } else {
             alert(data.error || 'Upload failed');
@@ -1189,7 +1307,7 @@ async function deleteFrame(timerId, slot) {
         if (data.success) {
             const container = document.getElementById('threshold-frames-' + timerId);
             if (container) {
-                const card = container.closest('.timer-card');
+                const card = container.closest('.at-timer-card');
                 if (card) loadThresholdSettings(timerId, card);
             }
         } else {
@@ -1197,3 +1315,6 @@ async function deleteFrame(timerId, slot) {
         }
     } catch (e) { console.error('deleteFrame', e); }
 }
+
+
+
