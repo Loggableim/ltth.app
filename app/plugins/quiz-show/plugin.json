@@ -4,6 +4,8 @@
   "version": "1.1.0",
   "description": "Interactive quiz show plugin for TikTok livestreams with chat integration, category voting, duel mode, achievements, seasons, jokers, and leaderboard",
   "author": "TikTool Helper",
+  "icon": "/plugins/quiz-show/assets/quiz-show-icon.png",
+  "logo": "/plugins/quiz-show/assets/quiz-show-logo-wide.png",
   "entry": "main.js",
   "enabled": true,
   "type": "module",

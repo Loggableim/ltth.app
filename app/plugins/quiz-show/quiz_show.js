@@ -292,7 +292,7 @@
         const info = document.getElementById('questionInfo').value.trim() || null;
 
         if (!question || answers.some(a => !a)) {
-            alert('Bitte alle Felder ausfüllen');
+            alert('Bitte alle Felder ausfÃ¼llen');
             return;
         }
 
@@ -307,14 +307,14 @@
 
             if (data.success) {
                 clearQuestionForm();
-                showMessage('Frage hinzugefügt', 'success');
+                showMessage('Frage hinzugefÃ¼gt', 'success');
                 loadCategories(); // Refresh categories
             } else {
                 showMessage('Fehler: ' + data.error, 'error');
             }
         } catch (error) {
             console.error('Error adding question:', error);
-            showMessage('Fehler beim Hinzufügen', 'error');
+            showMessage('Fehler beim HinzufÃ¼gen', 'error');
         }
     }
 
@@ -334,7 +334,7 @@
         const info = document.getElementById('questionInfo').value.trim() || null;
 
         if (!question || answers.some(a => !a)) {
-            alert('Bitte alle Felder ausfüllen');
+            alert('Bitte alle Felder ausfÃ¼llen');
             return;
         }
 
@@ -386,7 +386,7 @@
     }
 
     async function deleteQuestion(questionId) {
-        if (!confirm('Frage wirklich löschen?')) return;
+        if (!confirm('Frage wirklich lÃ¶schen?')) return;
 
         try {
             const response = await fetch(`/api/quiz-show/questions/${questionId}`, {
@@ -396,13 +396,13 @@
             const data = await response.json();
 
             if (data.success) {
-                showMessage('Frage gelöscht', 'success');
+                showMessage('Frage gelÃ¶scht', 'success');
             } else {
                 showMessage('Fehler: ' + data.error, 'error');
             }
         } catch (error) {
             console.error('Error deleting question:', error);
-            showMessage('Fehler beim Löschen', 'error');
+            showMessage('Fehler beim LÃ¶schen', 'error');
         }
     }
 
@@ -454,7 +454,7 @@
             }
         } catch (error) {
             console.error('Error uploading questions:', error);
-            alert('Ungültiges JSON Format');
+            alert('UngÃ¼ltiges JSON Format');
         }
     }
 
@@ -599,7 +599,7 @@
     async function triggerSlotMachine() {
         try {
             socket.emit('quiz-show:trigger-slot-machine');
-            showMessage('Slot Machine gestartet - Prüfen Sie das Overlay!', 'success', 'saveMessage');
+            showMessage('Slot Machine gestartet - PrÃ¼fen Sie das Overlay!', 'success', 'saveMessage');
         } catch (error) {
             console.error('Error triggering slot machine:', error);
             showMessage('Fehler beim Starten der Slot Machine', 'error', 'saveMessage');
@@ -654,18 +654,18 @@
             if (data.success) {
                 document.getElementById('importModal').classList.add('hidden');
                 document.getElementById('importLeaderboardJson').value = '';
-                showMessage(`${data.entries} Einträge importiert`, 'success');
+                showMessage(`${data.entries} EintrÃ¤ge importiert`, 'success');
             } else {
                 showMessage('Fehler: ' + data.error, 'error');
             }
         } catch (error) {
             console.error('Error importing leaderboard:', error);
-            alert('Ungültiges JSON Format');
+            alert('UngÃ¼ltiges JSON Format');
         }
     }
 
     async function resetLeaderboard() {
-        if (!confirm('Leaderboard wirklich zurücksetzen? Alle Punkte gehen verloren!')) {
+        if (!confirm('Leaderboard wirklich zurÃ¼cksetzen? Alle Punkte gehen verloren!')) {
             return;
         }
 
@@ -677,13 +677,13 @@
             const data = await response.json();
 
             if (data.success) {
-                showMessage('Leaderboard zurückgesetzt', 'success');
+                showMessage('Leaderboard zurÃ¼ckgesetzt', 'success');
             } else {
                 showMessage('Fehler: ' + data.error, 'error');
             }
         } catch (error) {
             console.error('Error resetting leaderboard:', error);
-            showMessage('Fehler beim Zurücksetzen', 'error');
+            showMessage('Fehler beim ZurÃ¼cksetzen', 'error');
         }
     }
 
@@ -693,7 +693,7 @@
 
         // Update UI
         if (state.isRunning) {
-            document.getElementById('quizStatus').textContent = 'Läuft';
+            document.getElementById('quizStatus').textContent = 'LÃ¤uft';
             document.getElementById('quizStatus').className = 'status-badge status-running';
 
             document.getElementById('startQuizBtn').disabled = true;
@@ -753,6 +753,7 @@
     function handleLeaderboardUpdate(leaderboard) {
         currentState.leaderboard = leaderboard;
         updateLeaderboardTable();
+        updateDashboardLeaderboardPreview();
     }
 
     function handleQuestionsUpdate(questions) {
@@ -787,6 +788,7 @@
         updateSettingsForm();
         updateQuestionsList();
         updateLeaderboardTable();
+        updateDashboardLeaderboardPreview();
         updateStatistics();
     }
 
@@ -975,7 +977,7 @@
                 </div>
                 <div class="question-actions">
                     <button class="btn-icon btn-edit-question" data-question-id="${q.id}" title="Bearbeiten"></button>
-                    <button class="btn-icon btn-delete-question" data-question-id="${q.id}" title="Löschen"></button>
+                    <button class="btn-icon btn-delete-question" data-question-id="${q.id}" title="LÃ¶schen"></button>
                 </div>
             </div>
         `).join('');
@@ -986,7 +988,7 @@
         const tbody = document.getElementById('leaderboardBody');
 
         if (leaderboard.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="no-data">Keine Einträge</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" class="no-data">Keine EintrÃ¤ge</td></tr>';
             return;
         }
 
@@ -999,6 +1001,39 @@
                 <td class="points">${entry.points}</td>
             </tr>
         `).join('');
+    }
+
+    function updateDashboardLeaderboardPreview() {
+        const preview = document.getElementById('dashboardLeaderboardPreview');
+        if (!preview) return;
+
+        const leaderboard = Array.isArray(currentState.leaderboard) ? currentState.leaderboard : [];
+        const seasonBadge = document.querySelector('.dashboard-mini-leaderboard__badge');
+        const seasonSelect = document.getElementById('seasonSelect');
+
+        if (seasonBadge) {
+            const selectedOption = seasonSelect && seasonSelect.selectedIndex >= 0
+                ? seasonSelect.options[seasonSelect.selectedIndex]
+                : null;
+            seasonBadge.textContent = selectedOption ? selectedOption.textContent.trim() : 'Season';
+        }
+
+        if (leaderboard.length === 0) {
+            preview.innerHTML = '<p class="no-data">Keine EintrÃ¤ge</p>';
+            return;
+        }
+
+        preview.innerHTML = leaderboard.slice(0, 3).map((entry, index) => {
+            const points = Number.isFinite(Number(entry.points)) ? Number(entry.points) : 0;
+
+            return `
+                <div class="dashboard-mini-leaderboard__item ${index === 0 ? 'is-leader' : ''}">
+                    <span class="dashboard-mini-leaderboard__rank">${index + 1}</span>
+                    <span class="dashboard-mini-leaderboard__name">${escapeHtml(entry.username || 'Unbekannt')}</span>
+                    <span class="dashboard-mini-leaderboard__points">${points.toLocaleString('de-DE')}</span>
+                </div>
+            `;
+        }).join('');
     }
 
     function updateStatistics() {
@@ -1301,7 +1336,7 @@
     }
 
     async function resetHUDConfig() {
-        if (!confirm('Möchten Sie die HUD-Konfiguration wirklich auf Standard zurücksetzen? Alle Positionen und Einstellungen gehen verloren.')) {
+        if (!confirm('MÃ¶chten Sie die HUD-Konfiguration wirklich auf Standard zurÃ¼cksetzen? Alle Positionen und Einstellungen gehen verloren.')) {
             return;
         }
 
@@ -1315,10 +1350,10 @@
             if (data.success) {
                 hudConfig = data.config;
                 applyHUDConfigToForm();
-                showMessage('HUD-Konfiguration auf Standard zurückgesetzt!', 'success', 'hudSaveMessage');
+                showMessage('HUD-Konfiguration auf Standard zurÃ¼ckgesetzt!', 'success', 'hudSaveMessage');
                 refreshPreview();
             } else {
-                showMessage('Fehler beim Zurücksetzen: ' + data.error, 'error', 'hudSaveMessage');
+                showMessage('Fehler beim ZurÃ¼cksetzen: ' + data.error, 'error', 'hudSaveMessage');
             }
         } catch (error) {
             showMessage('Netzwerkfehler: ' + error.message, 'error', 'hudSaveMessage');
@@ -1473,7 +1508,7 @@
             });
             refreshPreview();
         } catch (e) {
-            // Silent — user sees error on explicit save
+            // Silent â€” user sees error on explicit save
         }
     }
 
@@ -1709,6 +1744,8 @@
                 if (currentSeason !== 'active') {
                     seasonSelect.value = currentSeason;
                 }
+
+                updateDashboardLeaderboardPreview();
             }
         } catch (error) {
             console.error('Error loading seasons:', error);
@@ -1861,6 +1898,7 @@
             if (data.success) {
                 currentState.leaderboard = data.leaderboard;
                 updateLeaderboardTable();
+                updateDashboardLeaderboardPreview();
             }
         } catch (error) {
             console.error('Error loading season leaderboard:', error);
@@ -1898,17 +1936,17 @@
 
     async function saveOpenAIConfig() {
         // Deprecated - OpenAI config is now in main settings
-        alert('OpenAI-Konfiguration wird jetzt im Haupteinstellungspanel verwaltet. Bitte speichern Sie Ihren API-Schlüssel dort.');
+        alert('OpenAI-Konfiguration wird jetzt im Haupteinstellungspanel verwaltet. Bitte speichern Sie Ihren API-SchlÃ¼ssel dort.');
     }
 
     async function testOpenAIKey() {
         // Deprecated - OpenAI config is now in main settings
-        alert('OpenAI-Konfiguration wird jetzt im Haupteinstellungspanel verwaltet. Bitte speichern Sie Ihren API-Schlüssel dort.');
+        alert('OpenAI-Konfiguration wird jetzt im Haupteinstellungspanel verwaltet. Bitte speichern Sie Ihren API-SchlÃ¼ssel dort.');
     }
 
     async function testOpenAIKeyFromSettings() {
         // Deprecated - OpenAI config is now in main settings  
-        alert('OpenAI-Konfiguration wird jetzt im Haupteinstellungspanel verwaltet. Bitte speichern Sie Ihren API-Schlüssel dort.');
+        alert('OpenAI-Konfiguration wird jetzt im Haupteinstellungspanel verwaltet. Bitte speichern Sie Ihren API-SchlÃ¼ssel dort.');
     }
 
     async function generateQuestionPackage() {
@@ -2035,8 +2073,8 @@
                     <button class="btn-view btn-view-package" data-package-id="${pkg.id}" title="Fragen anzeigen">
                          Anzeigen
                     </button>
-                    <button class="btn-delete btn-delete-package" data-package-id="${pkg.id}" title="Paket löschen">
-                         Löschen
+                    <button class="btn-delete btn-delete-package" data-package-id="${pkg.id}" title="Paket lÃ¶schen">
+                         LÃ¶schen
                     </button>
                 </div>
             </div>
@@ -2061,7 +2099,7 @@
     }
 
     async function deletePackage(packageId) {
-        if (!confirm('Dieses Paket und alle seine Fragen wirklich löschen?')) {
+        if (!confirm('Dieses Paket und alle seine Fragen wirklich lÃ¶schen?')) {
             return;
         }
 
@@ -2073,14 +2111,14 @@
             const data = await response.json();
 
             if (data.success) {
-                showMessage('Paket erfolgreich gelöscht', 'success');
+                showMessage('Paket erfolgreich gelÃ¶scht', 'success');
                 await loadPackages();
             } else {
                 showMessage('Fehler: ' + data.error, 'error');
             }
         } catch (error) {
             console.error('Error deleting package:', error);
-            showMessage('Fehler beim Löschen', 'error');
+            showMessage('Fehler beim LÃ¶schen', 'error');
         }
     }
 
@@ -2184,7 +2222,7 @@
                         : `<button class="btn-icon btn-activate-layout" data-layout-id="${layout.id}" title="Aktivieren"></button>`
                     }
                     <button class="btn-icon btn-edit-layout" data-layout-id="${layout.id}" title="Bearbeiten"></button>
-                    <button class="btn-icon btn-delete-layout" data-layout-id="${layout.id}" title="Löschen"></button>
+                    <button class="btn-icon btn-delete-layout" data-layout-id="${layout.id}" title="LÃ¶schen"></button>
                 </div>
             </div>
         `;
@@ -2313,7 +2351,7 @@
     }
 
     async function deleteLayout(layoutId) {
-        if (!confirm('Layout wirklich löschen?')) return;
+        if (!confirm('Layout wirklich lÃ¶schen?')) return;
         
         try {
             const response = await fetch(`/api/quiz-show/layouts/${layoutId}`, {
@@ -2323,7 +2361,7 @@
             const data = await response.json();
             
             if (data.success) {
-                showMessage('Layout gelöscht', 'success', 'layoutSaveMessage');
+                showMessage('Layout gelÃ¶scht', 'success', 'layoutSaveMessage');
                 await loadLayouts();
                 if (currentLayout && currentLayout.id === layoutId) {
                     currentLayout = null;
@@ -2339,7 +2377,7 @@
             }
         } catch (error) {
             console.error('Error deleting layout:', error);
-            showMessage('Fehler beim Löschen', 'error', 'layoutSaveMessage');
+            showMessage('Fehler beim LÃ¶schen', 'error', 'layoutSaveMessage');
         }
     }
 
@@ -2824,7 +2862,7 @@
         const selector = document.getElementById('giftSelector');
         if (!selector) return;
 
-        selector.innerHTML = '<option value="">-- Geschenk wählen --</option>' +
+        selector.innerHTML = '<option value="">-- Geschenk wÃ¤hlen --</option>' +
             giftCatalog.map(gift => {
                 const giftId = parseInt(gift.id, 10);
                 const diamondCount = parseInt(gift.diamond_count, 10) || 0;
@@ -2854,7 +2892,7 @@
         const selector = document.getElementById('quizStartGiftSelector');
         if (!selector) return;
 
-        selector.innerHTML = '<option value="">-- Geschenk wählen --</option>' +
+        selector.innerHTML = '<option value="">-- Geschenk wÃ¤hlen --</option>' +
             giftCatalog.map(gift => {
                 const giftId = parseInt(gift.id, 10);
                 const diamondCount = parseInt(gift.diamond_count, 10) || 0;
@@ -2918,7 +2956,7 @@
                 <td><span class="status-badge ${mapping.enabled ? 'status-connected' : 'status-error'}">${mapping.enabled ? 'Aktiv' : 'Inaktiv'}</span></td>
                 <td>
                     <button class="btn-icon btn-edit-gift-joker" data-gift-id="${mapping.gift_id}" title="Bearbeiten"></button>
-                    <button class="btn-icon btn-delete-gift-joker" data-gift-id="${mapping.gift_id}" title="Löschen"></button>
+                    <button class="btn-icon btn-delete-gift-joker" data-gift-id="${mapping.gift_id}" title="LÃ¶schen"></button>
                 </td>
             </tr>
         `).join('');
@@ -2969,7 +3007,7 @@
         const enabled = document.getElementById('giftJokerEnabled').checked;
 
         if (!giftId || !giftName || isNaN(giftId)) {
-            showMessage('Bitte alle Felder korrekt ausfüllen', 'error', 'giftJokerSaveMessage');
+            showMessage('Bitte alle Felder korrekt ausfÃ¼llen', 'error', 'giftJokerSaveMessage');
             return;
         }
 
@@ -2997,7 +3035,7 @@
     }
 
     async function deleteGiftJoker(giftId) {
-        if (!confirm('Zuordnung wirklich löschen?')) return;
+        if (!confirm('Zuordnung wirklich lÃ¶schen?')) return;
 
         try {
             const response = await fetch(`/api/quiz-show/gift-jokers/${giftId}`, {
@@ -3007,14 +3045,14 @@
             const data = await response.json();
 
             if (data.success) {
-                showMessage('Zuordnung gelöscht', 'success');
+                showMessage('Zuordnung gelÃ¶scht', 'success');
                 await loadGiftJokers();
             } else {
                 showMessage('Fehler: ' + data.error, 'error');
             }
         } catch (error) {
             console.error('Error deleting gift-joker:', error);
-            showMessage('Fehler beim Löschen', 'error');
+            showMessage('Fehler beim LÃ¶schen', 'error');
         }
     }
 
@@ -3088,7 +3126,7 @@
         const giftName = document.getElementById('quizStartGiftName').value.trim();
 
         if (enabled && (!giftId || !giftName || isNaN(giftId))) {
-            showMessage('Bitte wählen Sie ein Geschenk aus oder geben Sie ID und Name ein', 'error', 'quizStartGiftSaveMessage');
+            showMessage('Bitte wÃ¤hlen Sie ein Geschenk aus oder geben Sie ID und Name ein', 'error', 'quizStartGiftSaveMessage');
             return;
         }
 
@@ -3476,7 +3514,7 @@
                 // Disable button
                 if (batchGenerateBtn) {
                     batchGenerateBtn.disabled = true;
-                    batchGenerateBtn.textContent = ' Generierung läuft...';
+                    batchGenerateBtn.textContent = ' Generierung lÃ¤uft...';
                 }
                 
                 // Show progress
@@ -3485,7 +3523,7 @@
                 }
                 if (batchProgressLog) {
                     batchProgressLog.innerHTML = '';
-                    batchProgressLog.innerHTML += `<div style="color: #10b981;">[${new Date().toLocaleTimeString()}] Batch-Generierung gestartet für ${categories.length} Kategorien...</div>`;
+                    batchProgressLog.innerHTML += `<div style="color: #10b981;">[${new Date().toLocaleTimeString()}] Batch-Generierung gestartet fÃ¼r ${categories.length} Kategorien...</div>`;
                 }
                 
                 batchGenerationActive = true;
@@ -3499,7 +3537,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showMessage(`Batch-Generierung gestartet für ${data.totalCategories} Kategorien`, 'success', 'batchGenerateMessage');
+                    showMessage(`Batch-Generierung gestartet fÃ¼r ${data.totalCategories} Kategorien`, 'success', 'batchGenerateMessage');
                 } else {
                     showMessage('Fehler: ' + data.error, 'error', 'batchGenerateMessage');
                     if (batchGenerateBtn) {

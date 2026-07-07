@@ -12,12 +12,14 @@
     <script>
         (function () {
             const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const BRAND_ICON = '/plugins/quiz-show/assets/quiz-show-icon.png';
+            const BRAND_LOGO = '/plugins/quiz-show/assets/quiz-show-logo-wide.png';
             const LOGO_BY_THEME = {
-                day: '/ltthicon.png',
-                night: '/ltthicon.png',
-                contrast: '/ltthicon.png',
-                'vision-impaired': '/ltthicon.png',
-                cid: '/ltthicon.png'
+                day: BRAND_ICON,
+                night: BRAND_ICON,
+                contrast: BRAND_ICON,
+                'vision-impaired': BRAND_ICON,
+                cid: BRAND_ICON
             };
 
             function readTheme() {
@@ -42,8 +44,12 @@
                 const theme = readTheme();
                 document.documentElement.setAttribute('data-theme', theme);
                 document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
-                const logo = document.querySelector('[data-brand-logo]');
-                if (logo) logo.src = LOGO_BY_THEME[theme] || LOGO_BY_THEME.night;
+                document.querySelectorAll('[data-brand-logo]').forEach((logo) => {
+                    logo.src = LOGO_BY_THEME[theme] || LOGO_BY_THEME.night;
+                });
+                document.querySelectorAll('[data-brand-wide-logo]').forEach((logo) => {
+                    logo.src = BRAND_LOGO;
+                });
             }
 
             syncTheme();
@@ -59,7 +65,11 @@
     <div class="container">
         <div class="header">
             <div class="header-brand">
-                <img class="quiz-header-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
+                <img class="quiz-header-logo" data-brand-logo src="/plugins/quiz-show/assets/quiz-show-icon.png" alt="Quiz Show">
+                <div class="header-brand-copy">
+                    <span class="header-brand-kicker">LTTH</span>
+                    <span class="header-brand-title">Quiz Show</span>
+                </div>
             </div>
             <div class="header-status">
                 <div id="connectionStatus" class="status-badge status-connected">Verbunden</div>
@@ -100,6 +110,16 @@
 
         <!-- Dashboard Tab -->
         <div id="dashboard" class="tab-content active">
+            <section class="dashboard-hero">
+                <div class="dashboard-hero-copy">
+                    <div class="dashboard-hero-kicker">LTTH Quiz Show</div>
+                    <h1>Quiz Show Control Center</h1>
+                    <p>Interaktive Quizrunden, KI-Fragenpakete, Gift-Joker und Live-Leaderboard fuer deinen Stream.</p>
+                </div>
+                <div class="dashboard-hero-badge">
+                    <img class="dashboard-hero-logo" data-brand-wide-logo src="/plugins/quiz-show/assets/quiz-show-logo-wide.png" alt="Quiz Show Logo">
+                </div>
+            </section>
             <div class="dashboard-grid">
                 <!-- Current Question Panel -->
                 <div class="panel">
@@ -179,13 +199,22 @@
                                 <div class="stat-value" id="successRate">0%</div>
                             </div>
                         </div>
+                        <div class="dashboard-mini-leaderboard">
+                            <div class="dashboard-mini-leaderboard__header">
+                                <h3>Leaderboard</h3>
+                                <span class="dashboard-mini-leaderboard__badge">Season</span>
+                            </div>
+                            <div id="dashboardLeaderboardPreview" class="dashboard-mini-leaderboard__list">
+                                <p class="no-data">Keine Eintr&auml;ge</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Joker Events Panel -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2>Joker Aktivitäten</h2>
+                        <h2>Joker Feed</h2>
                     </div>
                     <div class="panel-body">
                         <div id="jokerEvents" class="joker-events">
