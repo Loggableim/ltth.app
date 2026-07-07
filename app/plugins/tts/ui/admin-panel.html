@@ -10,11 +10,11 @@
     <script>(function () {
             const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
             const logoByTheme = {
-                day: '/ltthicon.png',
-                night: '/ltthicon.png',
-                contrast: '/ltthicon.png',
-                'vision-impaired': '/ltthicon.png',
-                cid: '/ltthicon.png'
+                day: '/ltthttslogo.png',
+                night: '/ltthttslogo.png',
+                contrast: '/ltthttslogo.png',
+                'vision-impaired': '/ltthttslogo.png',
+                cid: '/ltthttslogo.png'
             };
             let isApplyingTheme = false;
 
@@ -47,13 +47,12 @@
                         root.setAttribute('data-theme', theme);
                     }
                     root.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
-                    const logo = document.querySelector('.tts-logo');
-                    if (logo) {
+                    document.querySelectorAll('[data-brand-logo]').forEach((logo) => {
                         const nextSrc = logoByTheme[theme] || logoByTheme.night;
                         if (logo.getAttribute('src') !== nextSrc) {
                             logo.setAttribute('src', nextSrc);
                         }
-                    }
+                    });
                 } finally {
                     isApplyingTheme = false;
                 }
@@ -455,30 +454,908 @@
             -webkit-text-fill-color: #030603;
         }
     </style>
+    <style>
+        body.tts-admin-shell {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--tts-bg);
+            color: var(--tts-text);
+            overflow-x: hidden;
+        }
+
+        .tts-admin-shell {
+            --tts-bg: radial-gradient(circle at top left, #0f172a 0, #070b14 42%, #050814 100%);
+            --tts-bg-panel: rgba(7, 12, 24, 0.9);
+            --tts-panel: rgba(10, 15, 28, 0.9);
+            --tts-panel-strong: rgba(7, 10, 20, 0.96);
+            --tts-border: rgba(148, 163, 184, 0.18);
+            --tts-border-strong: rgba(96, 165, 250, 0.55);
+            --tts-text: #eef2ff;
+            --tts-muted: #94a3b8;
+            --tts-accent: #5eead4;
+            --tts-accent-2: #8b5cf6;
+            --tts-success: #34d399;
+            --tts-warning: #fbbf24;
+            --tts-danger: #fb7185;
+            --tts-shadow: 0 28px 80px rgba(0, 0, 0, 0.45);
+            --tts-card-shadow: 0 16px 42px rgba(0, 0, 0, 0.32);
+            --tts-radius: 22px;
+        }
+
+        html[data-theme="day"] .tts-admin-shell {
+            --tts-bg: radial-gradient(circle at top left, #eef6ff 0, #e8f0ff 35%, #dde8f9 100%);
+            --tts-bg-panel: rgba(255, 255, 255, 0.92);
+            --tts-panel: rgba(255, 255, 255, 0.96);
+            --tts-panel-strong: rgba(247, 250, 255, 0.98);
+            --tts-border: rgba(76, 110, 168, 0.16);
+            --tts-border-strong: rgba(37, 99, 235, 0.42);
+            --tts-text: #0f172a;
+            --tts-muted: #52657f;
+            --tts-accent: #2563eb;
+            --tts-accent-2: #7c3aed;
+            --tts-success: #059669;
+            --tts-warning: #b45309;
+            --tts-danger: #dc2626;
+            --tts-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+            --tts-card-shadow: 0 14px 34px rgba(15, 23, 42, 0.10);
+        }
+
+        html[data-theme="night"] .tts-admin-shell {
+            --tts-bg: radial-gradient(circle at top left, #111827 0, #060816 42%, #04050b 100%);
+            --tts-bg-panel: rgba(8, 12, 20, 0.9);
+            --tts-panel: rgba(9, 13, 24, 0.92);
+            --tts-panel-strong: rgba(4, 8, 16, 0.96);
+            --tts-border: rgba(148, 163, 184, 0.16);
+            --tts-border-strong: rgba(96, 165, 250, 0.55);
+            --tts-text: #eff6ff;
+            --tts-muted: #94a3b8;
+            --tts-accent: #34d399;
+            --tts-accent-2: #8b5cf6;
+        }
+
+        html[data-theme="cid"] .tts-admin-shell {
+            --tts-bg: radial-gradient(circle at top left, #08210e 0, #030603 42%, #010201 100%);
+            --tts-bg-panel: rgba(6, 17, 6, 0.95);
+            --tts-panel: rgba(7, 17, 7, 0.92);
+            --tts-panel-strong: rgba(4, 10, 4, 0.98);
+            --tts-border: rgba(74, 222, 128, 0.28);
+            --tts-border-strong: #4ade80;
+            --tts-text: #f4fff4;
+            --tts-muted: #c8e8d1;
+            --tts-accent: #4ade80;
+            --tts-accent-2: #22c55e;
+            --tts-success: #4ade80;
+            --tts-warning: #bef264;
+            --tts-danger: #f87171;
+            --tts-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+            --tts-card-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+        }
+
+        html[data-theme="contrast"] .tts-admin-shell,
+        html[data-theme="vision-impaired"] .tts-admin-shell {
+            --tts-bg: #000;
+            --tts-bg-panel: #000;
+            --tts-panel: #000;
+            --tts-panel-strong: #050505;
+            --tts-border: #facc15;
+            --tts-border-strong: #ffffff;
+            --tts-text: #ffffff;
+            --tts-muted: #fff7cc;
+            --tts-accent: #facc15;
+            --tts-accent-2: #facc15;
+            --tts-success: #facc15;
+            --tts-warning: #facc15;
+            --tts-danger: #ffffff;
+            --tts-shadow: none;
+            --tts-card-shadow: none;
+        }
+
+        .tts-layout {
+            display: grid;
+            grid-template-columns: 300px minmax(0, 1fr);
+            min-height: 100vh;
+        }
+
+        .tts-sidebar {
+            position: sticky;
+            top: 0;
+            align-self: start;
+            height: 100vh;
+            padding: 22px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            background: rgba(2, 6, 23, 0.45);
+            border-right: 1px solid var(--tts-border);
+            backdrop-filter: blur(18px);
+        }
+
+        html[data-theme="day"] .tts-sidebar {
+            background: rgba(255, 255, 255, 0.75);
+        }
+
+        html[data-theme="contrast"] .tts-sidebar,
+        html[data-theme="vision-impaired"] .tts-sidebar,
+        html[data-theme="cid"] .tts-sidebar {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .tts-sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--tts-border);
+        }
+
+        .tts-sidebar-brand img {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+            flex: 0 0 auto;
+            border-radius: 14px;
+        }
+
+        .tts-sidebar-copy {
+            min-width: 0;
+            display: grid;
+            gap: 2px;
+        }
+
+        .tts-sidebar-kicker {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--tts-muted);
+        }
+
+        .tts-sidebar-title {
+            font-size: 1.02rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            color: var(--tts-text);
+        }
+
+        .tts-sidebar-subtitle {
+            font-size: 0.82rem;
+            color: var(--tts-muted);
+        }
+
+        .tts-sidebar-group {
+            display: grid;
+            gap: 8px;
+        }
+
+        .tts-sidebar-group-title {
+            padding: 0 6px;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--tts-muted);
+        }
+
+        .tts-nav-button {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--tts-muted);
+            font-size: 0.92rem;
+            font-weight: 700;
+            text-align: left;
+            transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .tts-nav-button:hover {
+            background: rgba(148, 163, 184, 0.08);
+            border-color: var(--tts-border);
+            color: var(--tts-text);
+            transform: translateX(2px);
+        }
+
+        .tts-nav-button.active {
+            background: linear-gradient(135deg, rgba(94, 234, 212, 0.16), rgba(139, 92, 246, 0.16));
+            border-color: var(--tts-border-strong);
+            color: var(--tts-text);
+            box-shadow: var(--tts-card-shadow);
+        }
+
+        .tts-nav-label {
+            white-space: nowrap;
+        }
+
+        .tts-sidebar-footer {
+            margin-top: auto;
+            padding-top: 16px;
+            border-top: 1px solid var(--tts-border);
+            display: grid;
+            gap: 10px;
+        }
+
+        .tts-status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: fit-content;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--tts-border);
+            background: rgba(148, 163, 184, 0.08);
+            color: var(--tts-text);
+            font-size: 0.82rem;
+            font-weight: 800;
+        }
+
+        .tts-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: var(--tts-success);
+            box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.14);
+        }
+
+        .tts-main {
+            min-width: 0;
+        }
+
+        .tts-main-inner {
+            padding: 24px;
+        }
+
+        .tts-hero {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 22px;
+            padding: 20px 24px 18px;
+            margin-bottom: 14px;
+            border: 1px solid var(--tts-border);
+            border-radius: 28px;
+            background: linear-gradient(180deg, var(--tts-bg-panel), var(--tts-panel));
+            box-shadow: var(--tts-shadow);
+        }
+
+        .tts-hero-brand {
+            min-width: 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+        }
+
+        .tts-hero-logo {
+            width: min(410px, 42vw);
+            max-height: 118px;
+            object-fit: contain;
+            display: block;
+            margin-top: -4px;
+            filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.26));
+        }
+
+        .tts-hero-copy {
+            display: grid;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .tts-hero-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: fit-content;
+            padding: 7px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--tts-border);
+            background: rgba(148, 163, 184, 0.08);
+            color: var(--tts-text);
+            font-size: 0.8rem;
+            font-weight: 800;
+        }
+
+        .tts-hero-subtitle {
+            margin: 0;
+            max-width: 74ch;
+            color: var(--tts-muted);
+            font-size: 1rem;
+            line-height: 1.55;
+        }
+
+        .tts-hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 0;
+        }
+
+        .tts-hero-cta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .tts-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--tts-border);
+            background: rgba(148, 163, 184, 0.08);
+            color: var(--tts-text);
+            font-size: 0.82rem;
+            font-weight: 800;
+        }
+
+        .tts-tab-launch-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            width: fit-content;
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: 1px solid var(--tts-border-strong);
+            background: linear-gradient(135deg, rgba(94, 234, 212, 0.14), rgba(139, 92, 246, 0.14));
+            color: var(--tts-text);
+            font-size: 0.85rem;
+            font-weight: 900;
+            letter-spacing: 0.01em;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+        }
+
+        .tts-tab-launch-btn[hidden] {
+            display: none !important;
+        }
+
+        .tts-tab-launch-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--tts-card-shadow);
+            border-color: var(--tts-border-strong);
+        }
+
+        .tts-tab-launch-btn.is-close {
+            border-color: rgba(251, 113, 133, 0.55);
+            background: linear-gradient(135deg, rgba(251, 113, 133, 0.18), rgba(251, 191, 36, 0.12));
+        }
+
+        .tts-tab-launch-mark {
+            display: inline-grid;
+            place-items: center;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: inherit;
+            font-size: 0.95rem;
+            line-height: 1;
+            flex: 0 0 auto;
+        }
+
+        .tts-tab-launch-btn.is-close .tts-tab-launch-mark {
+            background: rgba(251, 113, 133, 0.18);
+        }
+
+        .tts-hero-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .tts-save-btn {
+            min-width: 240px;
+            padding: 16px 20px !important;
+            border: none !important;
+            border-radius: 18px !important;
+            background: linear-gradient(135deg, var(--tts-success), var(--tts-accent-2)) !important;
+            color: #fff !important;
+            box-shadow: 0 18px 36px rgba(59, 130, 246, 0.24);
+            font-weight: 900 !important;
+        }
+
+        .tts-save-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .tts-inline-status {
+            font-size: 0.82rem;
+            color: var(--tts-muted);
+            text-align: right;
+        }
+
+        .tts-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .tts-config-stack {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 24px;
+        }
+
+        .tts-config-stack > div {
+            min-width: 0;
+            width: 100%;
+        }
+
+        .tts-summary-card {
+            min-height: 90px;
+            padding: 16px 18px;
+            display: grid;
+            gap: 8px;
+            border: 1px solid var(--tts-border);
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(148, 163, 184, 0.08), rgba(148, 163, 184, 0.03));
+            box-shadow: var(--tts-card-shadow);
+        }
+
+        .tts-summary-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: var(--tts-muted);
+        }
+
+        .tts-summary-value {
+            font-size: 1.35rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            color: var(--tts-text);
+        }
+
+        .tts-summary-detail {
+            font-size: 0.82rem;
+            color: var(--tts-muted);
+        }
+
+        .tts-tabbar {
+            position: sticky;
+            top: 12px;
+            z-index: 10;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid var(--tts-border);
+            border-radius: 20px;
+            background: rgba(4, 8, 16, 0.45);
+            backdrop-filter: blur(18px);
+            box-shadow: var(--tts-card-shadow);
+        }
+
+        html[data-theme="day"] .tts-tabbar {
+            background: rgba(255, 255, 255, 0.68);
+        }
+
+        html[data-theme="contrast"] .tts-tabbar,
+        html[data-theme="vision-impaired"] .tts-tabbar,
+        html[data-theme="cid"] .tts-tabbar {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .tts-tabbar .tab-button {
+            border: 1px solid transparent !important;
+            border-radius: 14px !important;
+            background: transparent !important;
+            color: var(--tts-muted) !important;
+            -webkit-text-fill-color: var(--tts-muted) !important;
+            padding: 11px 14px !important;
+            font-weight: 800 !important;
+            transition: all 0.18s ease;
+        }
+
+        .tts-tabbar .tab-button:hover {
+            color: var(--tts-text) !important;
+            border-color: var(--tts-border) !important;
+            background: rgba(148, 163, 184, 0.08) !important;
+        }
+
+        .tts-tabbar .tab-button.active {
+            color: var(--tts-text) !important;
+            -webkit-text-fill-color: var(--tts-text) !important;
+            border-color: var(--tts-border-strong) !important;
+            background: linear-gradient(135deg, rgba(94, 234, 212, 0.26), rgba(139, 92, 246, 0.28)) !important;
+            box-shadow: 0 12px 26px rgba(59, 130, 246, 0.12);
+        }
+
+        .tts-main .bg-gray-800,
+        .tts-main .bg-gray-700,
+        .tts-main .bg-gray-900,
+        .tts-main .bg-gray-700\/50,
+        .tts-main .bg-gray-850 {
+            background: var(--tts-panel) !important;
+            color: var(--tts-text) !important;
+            border-color: var(--tts-border) !important;
+            border-radius: 22px !important;
+            box-shadow: var(--tts-card-shadow) !important;
+            backdrop-filter: blur(18px);
+        }
+
+        .tts-main .bg-gray-900 {
+            background: var(--tts-panel-strong) !important;
+        }
+
+        .tts-main .border-gray-700,
+        .tts-main .border-gray-600 {
+            border-color: var(--tts-border) !important;
+        }
+
+        .tts-main h1,
+        .tts-main h2,
+        .tts-main h3,
+        .tts-main h4,
+        .tts-main .card-title {
+            color: var(--tts-text) !important;
+        }
+
+        .tts-main p,
+        .tts-main label,
+        .tts-main .text-gray-300,
+        .tts-main .text-gray-400,
+        .tts-main .text-gray-500,
+        .tts-main .text-gray-600 {
+            color: var(--tts-muted) !important;
+            opacity: 1 !important;
+        }
+
+        .tts-main input,
+        .tts-main select,
+        .tts-main textarea {
+            background: rgba(15, 23, 42, 0.72) !important;
+            color: var(--tts-text) !important;
+            border: 1px solid var(--tts-border) !important;
+            border-radius: 14px !important;
+        }
+
+        html[data-theme="day"] .tts-main input,
+        html[data-theme="day"] .tts-main select,
+        html[data-theme="day"] .tts-main textarea {
+            background: rgba(255, 255, 255, 0.92) !important;
+        }
+
+        .tts-main input:focus,
+        .tts-main select:focus,
+        .tts-main textarea:focus {
+            outline: none;
+            border-color: var(--tts-accent) !important;
+            box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.16) !important;
+        }
+
+        .tts-main button {
+            border-radius: 14px;
+        }
+
+        .tts-main .tab-content.hidden {
+            display: none !important;
+        }
+
+        .tts-main .tab-content:not(.hidden) {
+            display: block;
+        }
+
+        .tts-config-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
+            gap: 16px;
+        }
+
+        .tts-subgrid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .tts-mini-item {
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid var(--tts-border);
+            background: rgba(148, 163, 184, 0.06);
+        }
+
+        .tts-mini-item strong {
+            color: var(--tts-text);
+        }
+
+        .tts-empty-state {
+            padding: 18px;
+            text-align: center;
+            border: 1px dashed var(--tts-border);
+            border-radius: 16px;
+            background: rgba(148, 163, 184, 0.05);
+            color: var(--tts-muted);
+        }
+
+        .tts-overview-stack {
+            display: grid;
+            gap: 12px;
+        }
+
+        .tts-overview-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .tts-section-gap {
+            margin-bottom: 18px;
+        }
+
+        .tts-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tts-small-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--tts-border);
+            background: rgba(148, 163, 184, 0.08);
+            color: var(--tts-text);
+            font-size: 0.76rem;
+            font-weight: 800;
+        }
+
+        .tts-main .tts-card-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+        }
+
+        .tts-main .tts-card-subtitle {
+            margin: 6px 0 0;
+            color: var(--tts-muted);
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        .tts-main .tts-inline-info {
+            font-size: 0.82rem;
+            color: var(--tts-muted);
+        }
+
+        .tts-main .tts-divider {
+            border-color: var(--tts-border);
+        }
+
+        .tts-main .tts-ghost-button {
+            background: rgba(148, 163, 184, 0.08) !important;
+            border: 1px solid var(--tts-border) !important;
+            color: var(--tts-text) !important;
+        }
+
+        .tts-main .tts-primary-button {
+            background: linear-gradient(135deg, var(--tts-accent), var(--tts-accent-2)) !important;
+            color: #fff !important;
+            border: none !important;
+            font-weight: 800 !important;
+        }
+
+        .tts-main .tts-danger-button {
+            background: rgba(248, 113, 113, 0.16) !important;
+            color: #fecaca !important;
+            border: 1px solid rgba(248, 113, 113, 0.28) !important;
+        }
+
+        .tts-main .tts-warning-button {
+            background: rgba(251, 191, 36, 0.16) !important;
+            color: #fde68a !important;
+            border: 1px solid rgba(251, 191, 36, 0.28) !important;
+        }
+
+        @media (max-width: 1400px) {
+            .tts-summary-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .tts-config-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 1180px) {
+            .tts-layout {
+                grid-template-columns: 88px minmax(0, 1fr);
+            }
+
+            .tts-sidebar {
+                padding-inline: 12px;
+            }
+
+            .tts-sidebar-copy,
+            .tts-sidebar-group-title,
+            .tts-sidebar-subtitle,
+            .tts-nav-label {
+                display: none;
+            }
+
+            .tts-sidebar-brand {
+                justify-content: center;
+            }
+
+            .tts-nav-button {
+                justify-content: center;
+                padding-inline: 0;
+            }
+
+            .tts-summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 900px) {
+            .tts-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .tts-sidebar {
+                position: static;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--tts-border);
+            }
+
+            .tts-main-inner {
+                padding: 18px;
+            }
+
+            .tts-summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tts-hero {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .tts-hero-actions {
+                align-items: flex-start;
+            }
+
+            .tts-tabbar {
+                position: static;
+            }
+
+            .tts-subgrid {
+                grid-template-columns: 1fr;
+            }
+
+            .tts-config-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
-<body style="background-color: var(--color-bg-primary); color: var(--color-text-primary);">
+<body class="tts-admin-shell">
     <!-- Debug Info (will be hidden once JS loads) -->
     <div id="debug-info" class="fixed top-0 left-0 right-0 bg-yellow-600 text-black p-2 text-center z-50">Loading TTS Admin Panel... If this message persists, check browser console (F12)
     </div>
 
-    <div class="container mx-auto w-full max-w-none p-6">
-        <!-- Header -->
-        <div class="mb-8 flex justify-between items-start">
-            <div>
-                <img class="tts-logo" data-brand-logo src="/ltthicon.png" alt="LTTH" style="display:block;width:min(220px,48vw);height:auto;object-fit:contain;margin-bottom:14px;">
-                <div id="init-status" class="text-sm text-gray-500 mt-2" data-i18n="tts.admin_panel.initializing">Initializing...</div>
+    <div class="tts-layout">
+        <aside class="tts-sidebar" aria-label="TTS navigation">
+            <div class="tts-sidebar-brand">
+                <img src="/ltthttsicon.png" alt="LTTH TTS" data-brand-icon>
+                <div class="tts-sidebar-copy">
+                    <div class="tts-sidebar-kicker">LTTH Suite</div>
+                    <div class="tts-sidebar-title">Text-to-Speech System</div>
+                    <div class="tts-sidebar-subtitle">Desktop-first control surface for the TTS plugin.</div>
+                </div>
             </div>
-            <div>
-                <button id="saveConfigBtnTop" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition shadow-lg">Save Configuration
+
+            <div class="tts-sidebar-group">
+                <div class="tts-sidebar-group-title">Core Funktionen</div>
+                <button class="tab-button tts-nav-button active" data-tab="config" id="sidebar-tab-config" type="button">
+                    <span class="tts-nav-label">Konfiguration</span>
+                </button>
+                <button class="tab-button tts-nav-button" data-tab="users" id="sidebar-tab-users" type="button">
+                    <span class="tts-nav-label">User Management</span>
+                </button>
+                <button class="tab-button tts-nav-button" data-tab="voice-clones" id="sidebar-tab-voice-clones" type="button">
+                    <span class="tts-nav-label">Voice Clones</span>
+                </button>
+                <button class="tab-button tts-nav-button" data-tab="event-triggers" id="sidebar-tab-event-triggers" type="button">
+                    <span class="tts-nav-label">Event Triggers</span>
+                </button>
+                <button class="tab-button tts-nav-button" data-tab="queue" id="sidebar-tab-queue" type="button">
+                    <span class="tts-nav-label">Queue & Playback</span>
                 </button>
             </div>
-        </div>
+
+            <div class="tts-sidebar-group">
+                <div class="tts-sidebar-group-title">Analyse & Debug</div>
+                <button class="tab-button tts-nav-button" data-tab="stats" id="sidebar-tab-stats" type="button">
+                    <span class="tts-nav-label">Statistiken</span>
+                </button>
+                <button class="tab-button tts-nav-button" data-tab="debug" id="sidebar-tab-debug" type="button">
+                    <span class="tts-nav-label">Debug Logs</span>
+                </button>
+            </div>
+
+            <div class="tts-sidebar-footer">
+                <div class="tts-status-chip"><span class="tts-status-dot"></span><span>Bereit</span></div>
+            </div>
+        </aside>
+
+        <main class="tts-main">
+            <div class="container mx-auto w-full max-w-none p-6 tts-main-inner">
+        <!-- Header -->
+        <section class="tts-hero">
+            <div class="tts-hero-brand">
+                <img class="tts-hero-logo tts-logo" data-brand-logo src="/ltthttslogo.png" alt="LTTH TTS">
+                <div class="tts-hero-copy">
+                    <div class="tts-hero-kicker">LTTH Suite</div>
+                    <p class="tts-hero-subtitle">High-density, wide-screen admin surface for the TTS plugin with engine control, queue visibility, user permissions and live debug feedback.</p>
+                    <div class="tts-hero-meta">
+                        <span class="tts-pill">Desktop optimized</span>
+                        <span class="tts-pill">Theme aware</span>
+                        <span class="tts-pill">All features preserved</span>
+                        <span id="init-status" class="tts-pill" data-i18n="tts.admin_panel.initializing">Initializing...</span>
+                    </div>
+                    <div class="tts-hero-cta-row">
+                        <a id="tts-tab-open-link" class="tts-tab-launch-btn" href="/plugins/tts/ui/admin-panel.html?source=dashboard" target="_blank" rel="noopener noreferrer" aria-label="Open in New Tab">
+                            <span class="tts-tab-launch-mark" aria-hidden="true">↗</span>
+                            <span class="tts-tab-launch-text">Open in New Tab</span>
+                        </a>
+                        <button id="tts-tab-close-btn" class="tts-tab-launch-btn is-close" type="button" aria-label="Close Tab" hidden>
+                            <span class="tts-tab-launch-mark" aria-hidden="true">×</span>
+                            <span class="tts-tab-launch-text">Close Tab</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="tts-hero-actions">
+                <button id="saveConfigBtnTop" class="tts-save-btn">Konfiguration speichern</button>
+                <div class="tts-inline-status">Theme-aware and responsive across day, night, cid, vision and contrast modes.</div>
+            </div>
+        </section>
+
+        <section class="tts-summary-grid" aria-label="TTS overview">
+            <div class="tts-summary-card">
+                <div class="tts-summary-label">Aktive Voices</div>
+                <div id="overviewActiveVoices" class="tts-summary-value">0</div>
+                <div class="tts-summary-detail" id="overviewActiveVoicesDetail">Loading voices...</div>
+            </div>
+            <div class="tts-summary-card">
+                <div class="tts-summary-label">Fallback Engines</div>
+                <div id="overviewFallbackEngines" class="tts-summary-value">0</div>
+                <div class="tts-summary-detail">Engines enabled as failover options</div>
+            </div>
+            <div class="tts-summary-card">
+                <div class="tts-summary-label">Queue Länge</div>
+                <div id="overviewQueueLength" class="tts-summary-value">0</div>
+                <div class="tts-summary-detail">Current live queue length</div>
+            </div>
+            <div class="tts-summary-card">
+                <div class="tts-summary-label">Audio Output</div>
+                <div id="overviewAudioOutput" class="tts-summary-value">Unknown</div>
+                <div class="tts-summary-detail">Current output and ducking mode</div>
+            </div>
+            <div class="tts-summary-card">
+                <div class="tts-summary-label">Modus</div>
+                <div id="overviewMode" class="tts-summary-value">Balanced</div>
+                <div class="tts-summary-detail">Performance mode and safety status</div>
+            </div>
+        </section>
 
         <!-- Tabs -->
-        <div class="mb-6 border-b border-gray-700">
+        <div class="tts-tabbar mb-6 border-b border-gray-700">
             <nav class="flex space-x-4">
                 <button data-tab="config" id="tab-config" class="tab-button px-4 py-2 font-medium border-b-2 border-blue-500 text-blue-400" data-i18n="tts.admin_panel.tabs.config">Configuration</button>
                 <button data-tab="users" id="tab-users" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.users">User Management</button>
+                <button data-tab="voice-clones" id="tab-voice-clones" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300">Voice Clones</button>
                 <button data-tab="event-triggers" id="tab-event-triggers" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.event_triggers">Event Triggers</button>
                 <button data-tab="queue" id="tab-queue" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.queue">Queue & Playback</button>
                 <button data-tab="stats" id="tab-stats" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.stats">Statistics</button>
@@ -488,7 +1365,7 @@
 
         <!-- Configuration Tab -->
         <div id="content-config" class="tab-content">
-            <div class="grid grid-cols-1 2xl:grid-cols-2 gap-6">
+            <div class="tts-config-stack">
                 <!-- Engine Settings -->
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
                     <h2 class="text-2xl font-bold mb-4">Engine Settings</h2>
@@ -609,7 +1486,6 @@
                     </div>
                 </div>
 
-                    <h2 class="text-2xl font-bold mb-4">Audio Settings</h2>
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
                     <h2 class="text-2xl font-bold mb-4">Audio Settings</h2>
 
@@ -636,7 +1512,6 @@
                     </div>
                 </div>
 
-                    <h2 class="text-2xl font-bold mb-4">Permission Settings</h2>
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
                     <h2 class="text-2xl font-bold mb-4">Permission Settings</h2>
 
@@ -683,7 +1558,6 @@
                     </div>
                 </div>
 
-                    <h2 class="text-2xl font-bold mb-4">Language Detection</h2>
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
                     <h2 class="text-2xl font-bold mb-4">Language Detection</h2>
 
@@ -709,7 +1583,6 @@
                                 <option value="th">ไทย (Thai)</option>
                                 <option value="id">Bahasa Indonesia (Indonesian)</option>
                             </select>
-                    <h2 class="text-2xl font-bold mb-4">Language Detection</h2>
                         </div>
 
                         <div>
@@ -726,7 +1599,6 @@
                     </div>
                 </div>
 
-                    <h2 class="text-2xl font-bold mb-4">Fish.audio Custom Voices</h2>
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
                     <h2 class="text-2xl font-bold mb-4">Fish.audio Custom Voices</h2>
                     <p class="text-gray-400 text-sm mb-4">Add your own Fish.audio custom voice models by reference ID</p>
@@ -790,7 +1662,6 @@
                     </div>
                 </div>
 
-                    <h2 class="text-2xl font-bold mb-4">Rate Limiting & Queue</h2>
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
                     <h2 class="text-2xl font-bold mb-4">Rate Limiting & Queue</h2>
 
@@ -817,7 +1688,6 @@
                     </div>
                 </div>
 
-                    <h2 class="text-2xl font-bold mb-4">Profanity Filter</h2>
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
                     <h2 class="text-2xl font-bold mb-4">Profanity Filter</h2>
 
@@ -833,7 +1703,7 @@
                     </div>
                 </div>
 
-                <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6 shadow-xl lg:col-span-2">
+                <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6 shadow-xl">
                     <h2 class="text-2xl font-bold mb-4">API Keys</h2>
                     <div class="flex items-start gap-4">
                         <div class="flex-shrink-0 mt-1">
@@ -848,15 +1718,121 @@
                                 <li>2. Fill in the keys for the engines you want to enable</li>
                                 <li>3. Save the configuration</li>
                             </ol>
+                            <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 pt-4">
+                                <div id="google-api-key-section" class="rounded-xl border border-gray-600 bg-gray-700/50 p-4" style="display:none;">
+                                    <div class="text-sm font-semibold text-blue-300 mb-2">Google Cloud TTS</div>
+                                    <p class="text-xs text-gray-400">Configured globally in Settings. This card keeps the engine context visible when Google is selected.</p>
+                                </div>
+                                <div id="speechify-api-key-section" class="rounded-xl border border-gray-600 bg-gray-700/50 p-4" style="display:none;">
+                                    <div class="text-sm font-semibold text-purple-300 mb-2">Speechify TTS</div>
+                                    <p class="text-xs text-gray-400">Speechify access is managed globally. It becomes relevant for voice cloning and premium voices.</p>
+                                </div>
+                                <div class="rounded-xl border border-gray-600 bg-gray-700/50 p-4">
+                                    <div class="flex items-center justify-between gap-3 mb-3">
+                                        <div>
+                                            <div class="text-sm font-semibold text-green-300">TikTok Session ID</div>
+                                            <p class="text-xs text-gray-400">Legacy fallback only, preserved for backwards compatibility.</p>
+                                        </div>
+                                        <button id="toggle-tiktok-session" type="button" class="h-9 w-9 rounded-full border border-gray-600 bg-gray-800 text-gray-300 hover:text-white">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <input id="tiktokSessionId" type="password" placeholder="Enter SessionID..." class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                                    <p class="text-xs text-gray-400 mt-2">Used only by legacy TikTok session setups. Leave it empty if you do not rely on the old SessionID flow.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
             </div>
 
-            <div class="mt-6">
+        <div class="mt-6">
                 <button id="saveConfigBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition">Save Configuration
                 </button>
+            </div>
+        </div>
+
+        <!-- Voice Clones Tab -->
+        <div id="content-voice-clones" class="tab-content hidden">
+            <div class="grid grid-cols-1 2xl:grid-cols-2 gap-6">
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <div class="flex items-start justify-between gap-4 mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold">Voice Clone Studio</h2>
+                            <p class="text-gray-400 text-sm mt-1">Upload a clean sample, confirm permission and create a reusable Speechify voice clone.</p>
+                        </div>
+                        <div id="speechify-not-configured-warning" class="hidden max-w-sm rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+                            <div class="font-semibold mb-1">Speechify not configured</div>
+                            <p>Voice cloning requires a Speechify API key. Configure it in the global Settings panel first.</p>
+                        </div>
+                    </div>
+
+                    <form id="voiceCloneForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" for="voiceCloneAudio">Audio Sample</label>
+                            <input type="file" id="voiceCloneAudio" accept="audio/*" class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-sm">
+                            <p class="text-xs text-gray-400 mt-2">Max 5 MB. Clean speech with minimal background noise produces the best clone.</p>
+                        </div>
+
+                        <div id="audioPreview" class="hidden rounded-xl border border-gray-600 bg-gray-700/50 p-4">
+                            <audio id="audioPlayer" controls class="w-full"></audio>
+                            <div class="mt-3 flex flex-wrap gap-3 text-xs text-gray-400">
+                                <span id="audioFileName" class="font-medium text-gray-200">No file selected</span>
+                                <span id="audioFileSize"></span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2" for="voiceCloneName">Voice Name</label>
+                                <input type="text" id="voiceCloneName" placeholder="e.g. Stream Voice" class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2" for="voiceCloneLanguage">Language</label>
+                                <select id="voiceCloneLanguage" class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                                    <option value="de">Deutsch</option>
+                                    <option value="en">English</option>
+                                    <option value="es">Español</option>
+                                    <option value="fr">Français</option>
+                                    <option value="it">Italiano</option>
+                                    <option value="pt">Português</option>
+                                    <option value="nl">Nederlands</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <label class="flex items-start gap-3 rounded-xl border border-gray-600 bg-gray-700/50 p-4">
+                            <input type="checkbox" id="voiceCloneConsent" class="mt-1 h-4 w-4 rounded border-gray-500 bg-gray-800 text-blue-500 focus:ring-blue-500">
+                            <span class="text-sm text-gray-300">I confirm that I own this voice sample or have explicit permission to clone and use it.</span>
+                        </label>
+
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button id="createVoiceCloneBtn" type="submit" class="tts-primary-button rounded-xl px-5 py-3 text-sm font-semibold shadow-lg shadow-emerald-500/20 transition hover:scale-[1.01]">
+                                Create Voice Clone
+                            </button>
+                            <div id="voiceCloneProgress" class="hidden text-sm text-gray-400">Processing voice clone...</div>
+                        </div>
+
+                        <div id="voiceCloneResult" class="hidden"></div>
+                    </form>
+                </div>
+
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <div class="mb-4 flex items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-2xl font-bold">Existing Voice Clones</h2>
+                            <p class="text-gray-400 text-sm mt-1">Test, reuse or delete cloned voices from this list.</p>
+                        </div>
+                        <button id="refreshVoiceClonesBtn" type="button" class="tts-ghost-button rounded-lg px-4 py-2 text-sm transition hover:bg-gray-600">
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div id="voiceClonesList" class="space-y-3">
+                        <div class="text-center text-gray-400 py-10">Loading voice clones...</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1380,7 +2356,6 @@
 
         <!-- User Management Tab -->
         <div id="content-users" class="tab-content hidden">
-                <h2 class="text-2xl font-bold mb-4">Manual Voice Assignment</h2>
             <div class="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
                 <h2 class="text-2xl font-bold mb-4">Manual Voice Assignment</h2>
                 <p class="text-gray-400 text-sm mb-4">Assign a voice to a user directly by entering their username</p>
@@ -1416,7 +2391,8 @@
                     </div>
 
                     <div class="flex items-end">
-                <h2 class="text-2xl font-bold">Assign Voice</h2>
+                        <button id="manualVoiceAssignBtn" type="button" class="w-full rounded-lg bg-green-600 px-4 py-3 font-bold text-white transition hover:bg-green-700">
+                            Assign Voice
                         </button>
                     </div>
                 </div>
@@ -1612,6 +2588,8 @@
                 </div>
             </div>
         </div>
+            </div>
+        </main>
     </div>
 
     <!-- Voice Assignment Modal -->
@@ -1698,36 +2676,37 @@
     <script src="/js/i18n-client.js"></script>
     <script src="/js/theme-manager.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script>Initialize i18n before loading TTS admin
-        (async () =>if (typeof I18nClient !== 'undefined') {
-                window.i18n = new I18nClient();
-                await window.i18n.init();
-                
-                // Apply translations to elements with data-i18n attributes
-                const applyTranslations = () =>document.querySelectorAll('[data-i18n]').forEach(el =>const key = el.getAttribute('data-i18n');
-                        const translation = window.i18n.t(key);
-                        if (translation !== key) {
-                            // For input placeholders
-                            if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
-                                el.setAttribute('placeholder', translation);
-                            } else {
-                                // For text content - preserve emojis at the start
-                                const emojiMatch = el.textContent.match(/^([\u{1F300}-\u{1F9FF}]+\s*)/u);
-                                el.textContent = emojiMatch ? emojiMatch[1] + translation : translation;
-                            }
-                        }
-                    });
-                };
-                
-                // Apply translations initially
-                applyTranslations();
-                
-                // Re-apply when language changes
-                window.i18n.onLanguageChange(() =>applyTranslations();
-                });
-                
-            console.log('TTS Admin Panel: i18n initialized');
+    <script>
+        (async () => {
+            if (typeof I18nClient === 'undefined') {
+                return;
             }
+
+            window.i18n = new I18nClient();
+            await window.i18n.init();
+
+            const applyTranslations = () => {
+                document.querySelectorAll('[data-i18n]').forEach((el) => {
+                    const key = el.getAttribute('data-i18n');
+                    const translation = window.i18n.t(key);
+
+                    if (translation !== key) {
+                        if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+                            el.setAttribute('placeholder', translation);
+                        } else {
+                            const emojiMatch = el.textContent.match(/^([\u{1F300}-\u{1F9FF}]+\s*)/u);
+                            el.textContent = emojiMatch ? emojiMatch[1] + translation : translation;
+                        }
+                    }
+                });
+            };
+
+            applyTranslations();
+            window.i18n.onLanguageChange(() => {
+                applyTranslations();
+            });
+
+            console.log('TTS Admin Panel: i18n initialized');
         })();
     </script>
     <script src="/plugins/tts/ui/tts-admin-production.js"></script>

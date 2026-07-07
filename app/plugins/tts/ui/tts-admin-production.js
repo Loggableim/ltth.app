@@ -30,6 +30,7 @@ let debugLogs = [];
 let debugFilter = 'all';
 let debugEnabled = true;
 let autoScrollLogs = true;
+let latestQueueLength = 0;
 
 // Connection state management
 let isPageUnloading = false;
@@ -170,6 +171,20 @@ async function postJSON(url, body) {
     });
 }
 
+function setupTabLaunchButton() {
+    const openLink = document.getElementById('tts-tab-open-link');
+    const closeBtn = document.getElementById('tts-tab-close-btn');
+    if (!openLink || !closeBtn) return;
+
+    const isCloseMode = new URLSearchParams(window.location.search).get('source') === 'dashboard';
+    openLink.hidden = isCloseMode;
+    closeBtn.hidden = !isCloseMode;
+
+    closeBtn.addEventListener('click', () => {
+        window.close();
+    });
+}
+
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
@@ -255,6 +270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Setup event listeners
         setupEventListeners();
+        setupTabLaunchButton();
 
         // Start polling only after all initial loading is complete
         startQueuePolling();
@@ -351,8 +367,19 @@ function switchTab(tabName) {
 
     // Reset all tab buttons
     document.querySelectorAll('.tab-button').forEach(el => {
-        el.classList.remove('border-blue-500', 'text-blue-400');
-        el.classList.add('border-transparent', 'text-gray-400');
+        const isSelected = el.dataset.tab === tabName;
+        el.classList.toggle('active', isSelected);
+        el.setAttribute('aria-current', isSelected ? 'page' : 'false');
+
+        if (el.id && el.id.startsWith('tab-')) {
+            if (isSelected) {
+                el.classList.remove('border-transparent', 'text-gray-400', 'hover:text-gray-300');
+                el.classList.add('border-blue-500', 'text-blue-400');
+            } else {
+                el.classList.remove('border-blue-500', 'text-blue-400');
+                el.classList.add('border-transparent', 'text-gray-400', 'hover:text-gray-300');
+            }
+        }
     });
 
     // Show selected tab
@@ -383,6 +410,69 @@ function switchTab(tabName) {
     if (tabName === 'event-triggers') {
         loadEventTTSConfig().catch(err => console.error('Failed to load Event Triggers config:', err));
     }
+
+    updateOverviewMetrics();
+}
+
+function getEnabledFallbackEngineCount(config = currentConfig) {
+    const entries = [
+        config.enableTikTokFallback !== false,
+        config.enableGoogleFallback !== false,
+        config.enableSpeechifyFallback === true,
+        config.enableElevenlabsFallback === true,
+        config.enableOpenAIFallback === true,
+        config.enableFishAudioFallback === true,
+        config.enableSiliconFlowFallback === true
+    ];
+
+    return entries.filter(Boolean).length;
+}
+
+function getConfiguredVoiceCount() {
+    const customVoiceCount = Object.keys(currentConfig.customFishVoices || {}).length;
+    const defaultEngineVoices = voices[currentConfig.defaultEngine] || {};
+    const hasDefaultEngineVoices = Object.keys(defaultEngineVoices).length > 0;
+
+    return customVoiceCount + (hasDefaultEngineVoices ? 1 : 0);
+}
+
+function formatModeLabel(mode) {
+    if (!mode) return 'Balanced';
+    return String(mode)
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function getAudioOutputLabel() {
+    const volume = Number.isFinite(Number(currentConfig.volume)) ? Number(currentConfig.volume) : 80;
+    const duckVolume = Number.isFinite(Number(currentConfig.duckVolume)) ? Number(currentConfig.duckVolume) : 0.3;
+    if (currentConfig.duckOtherAudio) {
+        return `Ducking ${Math.round(duckVolume * 100)}%`;
+    }
+    return `Direct ${volume}%`;
+}
+
+function updateOverviewMetrics() {
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = value;
+        }
+    };
+
+    const voiceCount = getConfiguredVoiceCount();
+    const customVoiceCount = Object.keys(currentConfig.customFishVoices || {}).length;
+    const fallbackCount = getEnabledFallbackEngineCount();
+    const queueLength = Number.isFinite(latestQueueLength) ? latestQueueLength : 0;
+
+    setText('overviewActiveVoices', voiceCount);
+    setText('overviewActiveVoicesDetail', customVoiceCount > 0
+        ? `${customVoiceCount} custom voice${customVoiceCount === 1 ? '' : 's'} + default engine`
+        : 'Default engine ready');
+    setText('overviewFallbackEngines', fallbackCount);
+    setText('overviewQueueLength', queueLength);
+    setText('overviewAudioOutput', getAudioOutputLabel());
+    setText('overviewMode', formatModeLabel(currentConfig.performanceMode || 'balanced'));
 }
 
 // ============================================================================
@@ -414,6 +504,15 @@ async function loadConfig() {
         const emotionContainer = document.getElementById('defaultEmotionContainer');
         if (emotionContainer) {
             emotionContainer.style.display = (selectedEngine === 'speechify') ? 'block' : 'none';
+        }
+
+        const googleKeySection = document.getElementById('google-api-key-section');
+        const speechifyKeySection = document.getElementById('speechify-api-key-section');
+        if (googleKeySection) {
+            googleKeySection.style.display = (selectedEngine === 'google') ? 'block' : 'none';
+        }
+        if (speechifyKeySection) {
+            speechifyKeySection.style.display = (selectedEngine === 'speechify') ? 'block' : 'none';
         }
 
     } catch (error) {
@@ -509,6 +608,8 @@ function populateConfig(config) {
 
     // Render Fish.audio custom voices list
     renderFishCustomVoices();
+
+    updateOverviewMetrics();
 }
 
 async function saveConfig() {
@@ -802,6 +903,7 @@ async function loadVoices() {
         populateManualVoiceSelect(); // Also populate manual assignment dropdown
         populateEventTTSVoiceSelect(); // Populate Event TTS voice dropdown
         renderModalVoiceList(); // Refresh voice assignment modal if open
+        updateOverviewMetrics();
 
     } catch (error) {
         console.error('Failed to load voices:', error);
@@ -1647,7 +1749,11 @@ async function loadQueue() {
             throw new Error(data.error || 'Failed to load queue');
         }
 
+        latestQueueLength = Array.isArray(data.queue?.nextItems)
+            ? data.queue.nextItems.length
+            : Number(data.queue?.currentQueueSize || data.queue?.queueLength || 0);
         renderQueue(data.queue);
+        updateOverviewMetrics();
 
     } catch (error) {
         // Don't log errors if page is unloading or request was aborted
@@ -1693,6 +1799,10 @@ function renderQueue(queue) {
             nowPlaying.innerHTML = '<div class="text-gray-400">No audio playing</div>';
         }
     }
+
+    latestQueueLength = Array.isArray(queue?.nextItems)
+        ? queue.nextItems.length
+        : Number(queue?.currentQueueSize || queue?.queueLength || 0);
 }
 
 async function clearQueue() {
@@ -1815,11 +1925,16 @@ async function loadStats() {
 
         if (queueRes.success && queueRes.stats) {
             renderQueueStats(queueRes.stats);
+            if (Number.isFinite(Number(queueRes.stats.currentQueueSize))) {
+                latestQueueLength = Number(queueRes.stats.currentQueueSize);
+            }
         }
 
         if (permRes.success && permRes.stats) {
             renderPermissionStats(permRes.stats);
         }
+
+        updateOverviewMetrics();
 
     } catch (error) {
         // Don't log errors if page is unloading or request was aborted
@@ -2001,6 +2116,11 @@ function setupEventListeners() {
                 assignManualVoice();
             }
         });
+    }
+
+    const manualVoiceAssignBtn = document.getElementById('manualVoiceAssignBtn');
+    if (manualVoiceAssignBtn) {
+        manualVoiceAssignBtn.addEventListener('click', assignManualVoice);
     }
 
     // Fish.audio custom voices button
@@ -2958,6 +3078,7 @@ async function loadPluginStatus() {
                 engines: data.status.engines,
                 defaultEngine: data.status.config?.defaultEngine
             });
+            updateOverviewMetrics();
         }
     } catch (error) {
         console.error('Failed to load plugin status:', error);
