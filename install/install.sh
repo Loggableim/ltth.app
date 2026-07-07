@@ -4,7 +4,7 @@
 #  PupCid's Little TikTool Helper - https://ltth.app
 #
 #  Verwendung:
-#    curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.sh | bash
+#    curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
 #
 #  Optionale Flags (ueber Umgebungsvariablen):
 #    LTTH_VERSION      - zu installierende Version (Default: latest)
@@ -12,7 +12,7 @@
 #    LTTH_PORT         - HTTP-Port fuer das Dashboard (Default: 3000)
 #    LTTH_NO_BROWSER   - Browser nach Start nicht automatisch oeffnen
 #    LTTH_QUIET        - Reduzierte Ausgabe
-#    LTTH_REPO_BRANCH  - Git-Branch fuer die Installation (Default: ltth.app)
+#    LTTH_REPO_BRANCH  - Git-Branch fuer die Installation (Default: main)
 # ==============================================================================
 
 set -euo pipefail
@@ -25,7 +25,7 @@ LTTH_INSTALL_MODE="pinned"
 if [ "$LTTH_VERSION" = "latest" ]; then
     LTTH_INSTALL_MODE="latest"
 fi
-LTTH_REPO_BRANCH="${LTTH_REPO_BRANCH:-ltth.app}"
+LTTH_REPO_BRANCH="${LTTH_REPO_BRANCH:-main}"
 LTTH_BRANCH_REFSPEC="+refs/heads/${LTTH_REPO_BRANCH}:refs/remotes/origin/${LTTH_REPO_BRANCH}"
 LTTH_DIR="${LTTH_DIR:-$HOME/.local/share/ltth}"
 LTTH_PORT="${LTTH_PORT:-3000}"

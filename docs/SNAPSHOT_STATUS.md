@@ -1,10 +1,10 @@
 # Snapshot Status
 
-Last reviewed: 2026-07-05
+Last reviewed: 2026-07-07
 
 ## Scope
 
-This workspace is a full Git checkout of the canonical `Loggableim/ltth.app` repository (branch `ltth.app`). It contains the backend app, frontend assets, plugins, user documentation, launcher sources, compiled launcher binaries, a plugin store, a one-line installer system, shared website layout, and historical documentation.
+This workspace is a full Git checkout of the canonical `Loggableim/ltth.app` repository. It contains the backend app, frontend assets, plugins, user documentation, launcher sources, compiled launcher binaries, a plugin store, a one-line installer system, shared website layout, and historical documentation.
 
 It does not contain the old Electron main-process source folder.
 
@@ -14,17 +14,18 @@ Canonical project identity:
 - GitHub repository: `Loggableim/ltth.app`
 - Repository URL: `https://github.com/Loggableim/ltth.app`
 - Website: `https://ltth.app`
+- Release/install branch on GitHub: `main`
 
 Do not confuse this snapshot with older LTTH repositories or stale archive references. `REPOSITORY_IDENTITY.md` is the canonical identity marker.
 
 ## Git State
 
 - This workspace **is** a Git checkout (`.git/` present).
-- Active local branch: `ltth.app`.
+- Active local branch: `codex/main-deploy`.
 - Remote `origin/main` is the default branch on GitHub.
 - 90+ `origin/copilot/*` remote branches exist from Copilot-generated feature work.
 - 3 local `codex/*` feature branches exist.
-- `git status` is clean (no uncommitted changes at last review).
+- `git status` may include unrelated temporary artifacts from local browser/image work; ignore them when reviewing release changes.
 - Use `git log`, `git branch`, `git diff`, etc. normally.
 
 ## Current Source Of Truth
@@ -50,7 +51,7 @@ Do not confuse this snapshot with older LTTH repositories or stale archive refer
 - Runtime state: `runtime/`
 - Repository identity: `REPOSITORY_IDENTITY.md`
 - Developer onboarding: `AGENTS.md` and `infos/llm_start_here.md`
-- Version: `1.3.9` (see `version.json` and `app/package.json`)
+- Version: `1.3.21` (see `version.json` and `app/package.json`)
 
 ## Dependency State
 
@@ -73,9 +74,9 @@ npm install
 
 The root package has no dependency tree on purpose. It only forwards commands into `app/` and builds Go launchers.
 
-## Plugin Store (v1.3.9)
+## Plugin Store
 
-The plugin store is the major new feature of v1.3.9:
+The plugin store was introduced in v1.3.9 and remains part of the current snapshot:
 
 - **Registry:** `plugin-store.json` (root) — 36 plugin entries with multilingual descriptions (en/de/es/fr), SHA-256 checksums, package URLs, pricing, and badges.
 - **Packages:** `plugin-store/packages/` — 36 pre-packaged `.zip` files, one per plugin.
@@ -96,6 +97,7 @@ Cross-platform one-line installer system:
 - **Legacy shims:** Root `install.js`, `install.sh`, `install.ps1` — thin wrappers that curl-pipe to `install/` versions.
 - **Documentation:** `install/README.md` — full reference with environment variables (`LTTH_VERSION`, `LTTH_DIR`, `LTTH_PORT`, `LTTH_NO_BROWSER`, `LTTH_QUIET`, `LTTH_REPO_OWNER`, `LTTH_REPO_NAME`).
 - **Integration:** `version.json` contains `oneLineInstaller` commands for Windows/macOS/Linux/Universal.
+- **Default release branch:** `main` (override with `LTTH_REPO_BRANCH` only for legacy/custom installs).
 
 ## Shared Website Layout
 

@@ -18,12 +18,12 @@ If older repo names appear in archive files, generated reports, comments, or pat
 This workspace is a full Git checkout:
 
 - `.git/` is present. Use `git log`, `git branch`, `git diff`, etc. normally.
-- Active local branch: `ltth.app`. Remote default: `origin/main`.
+- Active local branch: `codex/main-deploy`. Remote default: `origin/main`.
 - Dependencies are installed in `app/`; root `node_modules/` remains intentionally absent.
 - `app/` is the maintained runtime.
 - The old Electron main-process folder is not present.
 - Root `package.json` is a convenience wrapper, not the backend dependency manifest.
-- Current version: `1.3.9` (see `version.json` and `app/package.json`).
+- Current version: `1.3.21` (see `version.json` and `app/package.json`).
 
 Before making changes, read:
 
@@ -134,7 +134,7 @@ naked/             ← reduced repo clone from 2026-04-30 (ignored by .gitignore
 
 ## Plugin Store Architecture
 
-The plugin store (v1.3.9) adds:
+The plugin store, introduced in v1.3.9, adds:
 
 - `GET /api/plugin-store` — list official + opt-in community store plugins.
 - `GET /api/plugin-store/sources` — list configured store sources.

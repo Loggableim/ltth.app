@@ -31,8 +31,11 @@ Hinweis fuer Windows: Der PowerShell-Installer bevorzugt unterstuetzte Node.js-L
 | `LTTH_PORT` | `3000` | HTTP-Port fürs Dashboard |
 | `LTTH_NO_BROWSER` | `0` | Browser nach Start nicht öffnen (`1` = aus) |
 | `LTTH_QUIET` | `0` | Reduzierte Ausgabe (`1` = still) |
+| `LTTH_REPO_BRANCH` | `main` | Git-Branch für Repository-Checkout und Versionsermittlung |
 | `LTTH_REPO_OWNER` | `Loggableim` | GitHub-Owner |
 | `LTTH_REPO_NAME` | `ltth.app` | GitHub-Repo-Name |
+
+Der Installer liest `version.json` standardmäßig aus `main`. Für Legacy- oder Experiment-Branches kannst du `LTTH_REPO_BRANCH` explizit überschreiben.
 
 ### Beispiele
 

@@ -12,7 +12,7 @@ This repository contains both the LTTH runtime application and the official ltth
 
 ## Current project shape
 
-- This is not a legacy Git checkout: no `.git` folder is included in this snapshot.
+- This is a full Git checkout; use `git log`, `git status`, and `git diff` normally.
 - If older repo names appear in archived docs or generated reports, ignore them for current work. The active repo identity is documented in [REPOSITORY_IDENTITY.md](REPOSITORY_IDENTITY.md).
 - The root `package.json` is a convenience wrapper that delegates common commands into `app/`.
 - The old Electron main-process folder is intentionally not present in this snapshot.
@@ -83,10 +83,12 @@ npm run lint
 
 ## Status
 
-- Version shown in package manifests: `1.3.9`
+- Version shown in package manifests: `1.3.21`
 - Current changelog: [CHANGELOG.md](CHANGELOG.md)
 - Active app changelog: [app/CHANGELOG.md](app/CHANGELOG.md)
 - License: [LICENSE](LICENSE)
+
+The published one-line installers use the `main/install/install.*` endpoints and the installer defaults to `main` unless `LTTH_REPO_BRANCH` is set explicitly.
 
 ## Deployment
 

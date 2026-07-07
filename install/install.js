@@ -4,7 +4,7 @@
  *  PupCid's Little TikTool Helper - https://ltth.app
  *
  *  Verwendung:
- *    curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.js | node
+ *    curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.js | node
  *
  *  Optionale Umgebungsvariablen:
  *    LTTH_VERSION      - zu installierende Version (Default: latest)
@@ -12,7 +12,7 @@
  *    LTTH_PORT         - HTTP-Port (Default: 3000)
  *    LTTH_NO_BROWSER   - Browser nicht oeffnen
  *    LTTH_QUIET        - Reduzierte Ausgabe
- *    LTTH_REPO_BRANCH  - Git-Branch fuer die Installation (Default: ltth.app)
+ *    LTTH_REPO_BRANCH  - Git-Branch fuer die Installation (Default: main)
  * ============================================================================== */
 
 'use strict';
@@ -26,7 +26,7 @@ const os = require('os');
 const cfg = {
     repoOwner: process.env.LTTH_REPO_OWNER || 'Loggableim',
     repoName: process.env.LTTH_REPO_NAME || 'ltth.app',
-    branch: process.env.LTTH_REPO_BRANCH || 'ltth.app',
+    branch: process.env.LTTH_REPO_BRANCH || 'main',
     version: process.env.LTTH_VERSION || 'latest',
     dir: process.env.LTTH_DIR || defaultInstallDir(),
     port: process.env.LTTH_PORT || '3000',

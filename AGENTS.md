@@ -5,11 +5,12 @@ This file is the first stop for future agents working on this LTTH snapshot.
 ## Snapshot Facts
 
 - Canonical project identity: `ltth.app`, GitHub `Loggableim/ltth.app`, website `https://ltth.app`. Read `REPOSITORY_IDENTITY.md` before using repository names or GitHub links.
-- This workspace is a full Git checkout of `Loggableim/ltth.app` (branch `ltth.app`). Use `git log`, `git status`, `git diff`, etc. normally.
+- This workspace is a full Git checkout of `Loggableim/ltth.app`. Use `git log`, `git status`, `git diff`, etc. normally.
 - The maintained runtime is `app/`.
 - Root `package.json` is only a convenience wrapper for `app/` commands and Go launcher builds.
 - The historical Electron main-process folder is missing in this snapshot. Do not reintroduce Electron build assumptions unless the Electron files are restored or rebuilt intentionally.
 - `docs_archive/` is historical reference only. Prefer `README.md`, `DOCUMENTATION_INDEX.md`, `infos/`, and `docs/SNAPSHOT_STATUS.md`.
+- The published one-line installer uses `main/install/install.*`; `LTTH_REPO_BRANCH` exists only for explicit overrides.
 
 ## Before Editing
 

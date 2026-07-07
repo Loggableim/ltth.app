@@ -3,7 +3,7 @@
 #  PupCid's Little TikTool Helper -- https://ltth.app
 #
 #  Verwendung (PowerShell):
-#    iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.ps1 | iex
+#    iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex
 #
 #  Optionale Umgebungsvariablen:
 #    $env:LTTH_VERSION     - zu installierende Version (Default: latest)
@@ -13,7 +13,7 @@
 #    $env:LTTH_NO_LAUNCHER - Launcher nach Installation nicht starten
 #    $env:LTTH_QUIET       - Reduzierte Ausgabe
 #    $env:LTTH_NO_PAUSE    - Bei Fehler nicht auf Enter warten
-#    $env:LTTH_REPO_BRANCH - Git-Branch fuer die Installation (Default: ltth.app)
+#    $env:LTTH_REPO_BRANCH - Git-Branch fuer die Installation (Default: main)
 # ==============================================================================
 
 $ErrorActionPreference = 'Stop'
@@ -21,7 +21,7 @@ $ErrorActionPreference = 'Stop'
 # ---------- Konfiguration ----------
 $LTTHRepoOwner = if ($env:LTTH_REPO_OWNER) { $env:LTTH_REPO_OWNER } else { 'Loggableim' }
 $LTTHRepoName  = if ($env:LTTH_REPO_NAME)  { $env:LTTH_REPO_NAME  } else { 'ltth.app' }
-$LTTHRepoBranch = if ($env:LTTH_REPO_BRANCH) { $env:LTTH_REPO_BRANCH } else { 'ltth.app' }
+$LTTHRepoBranch = if ($env:LTTH_REPO_BRANCH) { $env:LTTH_REPO_BRANCH } else { 'main' }
 $LTTHBranchRefSpec = "+refs/heads/$LTTHRepoBranch:refs/remotes/origin/$LTTHRepoBranch"
 $LTTHVersion   = if ($env:LTTH_VERSION) { $env:LTTH_VERSION } else { 'latest' }
 $script:LTTHInstallMode = if ($LTTHVersion -eq 'latest') { 'latest' } else { 'pinned' }
