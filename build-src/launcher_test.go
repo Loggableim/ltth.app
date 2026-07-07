@@ -223,7 +223,7 @@ func TestVersionReadWrite(t *testing.T) {
 	os.MkdirAll(runtimeDir, 0755)
 	defer os.RemoveAll(runtimeDir) // Clean up
 	
-	testVersion := "v1.3.21"
+	testVersion := "v1.3.20"
 	
 	// Write version
 	err = writeLocalVersion(testVersion)

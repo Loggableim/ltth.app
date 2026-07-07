@@ -11,7 +11,7 @@
       "0409": {
         "identity": {
           "name": "TikTok Stream Tool Launcher",
-          "version": "1.3.21.0"
+          "version": "1.3.20.0"
         },
         "description": "PupCid's Little TikTool Helper - Launcher",
         "minimum-os": "win7",
@@ -35,22 +35,22 @@
     "#1": {
       "0000": {
         "fixed": {
-          "file_version": "1.3.21.0",
-          "product_version": "1.3.21.0"
+          "file_version": "1.3.20.0",
+          "product_version": "1.3.20.0"
         },
         "info": {
           "0409": {
             "Comments": "TikTok Stream Tool Launcher",
             "CompanyName": "",
             "FileDescription": "PupCid's Little TikTool Helper - Launcher",
-            "FileVersion": "1.3.21.0",
+            "FileVersion": "1.3.20.0",
             "InternalName": "launcher",
             "LegalCopyright": "",
             "LegalTrademarks": "",
             "OriginalFilename": "launcher.exe",
             "PrivateBuild": "",
             "ProductName": "PupCid's Little TikTool Helper",
-            "ProductVersion": "1.3.21.0",
+            "ProductVersion": "1.3.20.0",
             "SpecialBuild": ""
           }
         }

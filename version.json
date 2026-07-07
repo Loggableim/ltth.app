@@ -1,9 +1,9 @@
 {
-  "version": "1.3.21",
+  "version": "1.3.20",
   "releaseDate": "2026-07-07",
   "status": "stable",
-  "downloadVersion": "1.3.21",
-  "downloadNote": "Default plugins now auto-enable the core set, subscriber-only plugins are gated by Clerk access, and the remaining catalog is marked beta.",
+  "downloadVersion": "1.3.20",
+  "downloadNote": "Fireworks settings now use the centered logo hero and the overlay flow is trimmed for cleaner browser-source use.",
   "downloadUrl": "https://github.com/Loggableim/ltth.app/archive/refs/heads/ltth.app.zip",
   "oneLineInstaller": {
     "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.ps1 | iex",
@@ -24,14 +24,6 @@
     "linux-arm64"
   ],
   "changelog": {
-    "1.3.21": {
-      "date": "2026-07-07",
-      "changes": [
-        "IMPROVED: Default plugin set now preinstalls and auto-enables the 10 core LTTH plugins",
-        "IMPROVED: Subscriber-only plugins are gated behind Clerk subscription access and surfaced with explicit store badges",
-        "IMPROVED: Remaining official plugins are marked beta to make the catalog tiers clear"
-      ]
-    },
     "1.3.20": {
       "date": "2026-07-07",
       "changes": [
