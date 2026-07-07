@@ -21,6 +21,7 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 Auf Windows legt der Installer zusaetzlich Desktop- und Startmenue-Verknuepfungen an.
 
 Der Windows-One-Liner fordert bei der ersten Ausfuehrung Admin-Freigabe an und installiert fehlende Abhaengigkeiten automatisch nach. Wenn `winget` fehlt, nutzt er die offiziellen Installer von Git for Windows und Node.js als Fallback.
+Waehren langer Schritte zeigt der Windows-Installer jetzt einen rotierenden Status-Indikator und Download-Fortschritt an, damit er nicht wie eingefroren wirkt.
 
 Der Bash-One-Liner installiert fehlendes Git automatisch nach und zieht Node.js auf eine aktuelle LTS-Version nach; auf macOS wird Homebrew bei Bedarf automatisch eingerichtet.
 

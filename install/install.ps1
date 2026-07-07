@@ -59,6 +59,133 @@ function Warn($msg) { Write-InstallerLine -Line "[!] $msg" -Color Yellow -Always
 function Err($msg)  { Write-InstallerLine -Line "[X] $msg" -Color Red -Always $true }
 function Fail($msg) { throw $msg }
 
+function Wait-ProcessWithSpinner {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Diagnostics.Process]$Process,
+        [Parameter(Mandatory = $true)]
+        [string]$Activity,
+        [string]$Detail = ''
+    )
+
+    if ($LTTHQuiet -eq '1' -or -not [Environment]::UserInteractive) {
+        $Process.WaitForExit()
+        return
+    }
+
+    $frames = @('|', '/', '-', '\')
+    $index = 0
+    $lineWidth = 0
+
+    try {
+        while (-not $Process.HasExited) {
+            $Process.Refresh()
+            $frame = $frames[$index % $frames.Count]
+            $message = if ([string]::IsNullOrWhiteSpace($Detail)) { $Activity } else { "${Activity}: $Detail" }
+            $line = "[$frame] $message"
+            if ($line.Length -lt $lineWidth) {
+                $line = $line + (' ' * ($lineWidth - $line.Length))
+            } else {
+                $lineWidth = $line.Length
+            }
+
+            Write-Host -NoNewline ("`r$line")
+            Start-Sleep -Milliseconds 120
+            $index++
+        }
+    } finally {
+        if ($LTTHQuiet -ne '1' -and [Environment]::UserInteractive) {
+            Write-Host -NoNewline ("`r" + (' ' * 160) + "`r")
+            Write-Host ""
+        }
+    }
+}
+
+function Invoke-DownloadFileWithProgress {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Uri,
+        [Parameter(Mandatory = $true)]
+        [string]$OutFile,
+        [Parameter(Mandatory = $true)]
+        [string]$Activity
+    )
+
+    $handler = New-Object System.Net.Http.HttpClientHandler
+    $handler.AllowAutoRedirect = $true
+    $client = New-Object System.Net.Http.HttpClient($handler)
+    $client.Timeout = [TimeSpan]::FromMinutes(20)
+    $client.DefaultRequestHeaders.UserAgent.ParseAdd('ltth-installer')
+
+    $response = $null
+    $input = $null
+    $output = $null
+    try {
+        $response = $client.GetAsync($Uri, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).GetAwaiter().GetResult()
+        if (-not $response.IsSuccessStatusCode) {
+            throw "HTTP $([int]$response.StatusCode) fuer $Uri"
+        }
+
+        $contentLength = $response.Content.Headers.ContentLength
+        $input = $response.Content.ReadAsStreamAsync().GetAwaiter().GetResult()
+        $output = [System.IO.File]::Open($OutFile, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+        $buffer = New-Object byte[] 65536
+        $totalBytes = [int64]0
+        $frames = @('|', '/', '-', '\')
+        $index = 0
+        $lineWidth = 0
+
+        while (($read = $input.Read($buffer, 0, $buffer.Length)) -gt 0) {
+            $output.Write($buffer, 0, $read)
+            $totalBytes += $read
+
+            if ($LTTHQuiet -eq '1' -or -not [Environment]::UserInteractive) {
+                continue
+            }
+
+            $frame = $frames[$index % $frames.Count]
+            $index++
+            $receivedMb = [math]::Round($totalBytes / 1MB, 1)
+            if ($contentLength -and $contentLength -gt 0) {
+                $totalMb = [math]::Round($contentLength / 1MB, 1)
+                $percent = [math]::Min(100, [math]::Round(($totalBytes / $contentLength) * 100, 0))
+                $line = "[$frame] ${Activity}: $percent% ($receivedMb MB / $totalMb MB)"
+            } else {
+                $line = "[$frame] ${Activity}: $receivedMb MB"
+            }
+
+            if ($line.Length -lt $lineWidth) {
+                $line = $line + (' ' * ($lineWidth - $line.Length))
+            } else {
+                $lineWidth = $line.Length
+            }
+
+            Write-Host -NoNewline ("`r$line")
+            Start-Sleep -Milliseconds 30
+        }
+    } finally {
+        if ($null -ne $output) {
+            $output.Dispose()
+        }
+        if ($null -ne $input) {
+            $input.Dispose()
+        }
+        if ($null -ne $response) {
+            $response.Dispose()
+        }
+        if ($null -ne $client) {
+            $client.Dispose()
+        }
+        if ($null -ne $handler) {
+            $handler.Dispose()
+        }
+        if ($LTTHQuiet -ne '1' -and [Environment]::UserInteractive) {
+            Write-Host -NoNewline ("`r" + (' ' * 160) + "`r")
+            Write-Host ""
+        }
+    }
+}
+
 function Test-Administrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($identity)
@@ -346,8 +473,9 @@ function Install-GitViaWinget {
                 '--accept-source-agreements'
             ) `
             -WindowStyle Hidden `
-            -PassThru `
-            -Wait
+            -PassThru
+
+        Wait-ProcessWithSpinner -Process $process -Activity 'Git via winget wird installiert'
 
         if ($process.ExitCode -ne 0) {
             throw "winget install Git.Git fehlgeschlagen (ExitCode $($process.ExitCode))."
@@ -398,12 +526,13 @@ function Install-GitFromOfficialSource {
     )
 
     try {
-        Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath -TimeoutSec 120 -ErrorAction Stop
+        Invoke-DownloadFileWithProgress -Uri $downloadUrl -OutFile $installerPath -Activity 'Git-Installer wird heruntergeladen'
         $process = Start-Process -FilePath $installerPath `
             -ArgumentList $arguments `
             -WindowStyle Hidden `
-            -PassThru `
-            -Wait
+            -PassThru
+
+        Wait-ProcessWithSpinner -Process $process -Activity 'Git-Installer wird ausgeführt'
 
         if ($process.ExitCode -ne 0) {
             throw "Git-Installer fehlgeschlagen (ExitCode $($process.ExitCode))."
@@ -491,8 +620,8 @@ function Invoke-Git {
                               -RedirectStandardOutput $stdoutLog `
                               -RedirectStandardError $stderrLog `
                               -NoNewWindow `
-                              -PassThru `
-                              -Wait
+                              -PassThru
+        Wait-ProcessWithSpinner -Process $proc -Activity ("git " + ($Arguments -join ' ')) -Detail $WorkingDirectory
     } catch {
         throw "Git konnte nicht gestartet werden: $($_.Exception.Message)"
     }
@@ -589,8 +718,9 @@ function Install-NodeViaWinget {
                 '--accept-source-agreements'
             ) `
             -WindowStyle Hidden `
-            -PassThru `
-            -Wait
+            -PassThru
+
+        Wait-ProcessWithSpinner -Process $process -Activity 'Node.js via winget wird installiert'
 
         if ($process.ExitCode -ne 0) {
             throw "winget install OpenJS.NodeJS.LTS fehlgeschlagen (ExitCode $($process.ExitCode))."
@@ -620,12 +750,13 @@ function Install-NodeFromOfficialSource {
     $msiPath = Join-Path ([System.IO.Path]::GetTempPath()) ("node-installer-" + [guid]::NewGuid().ToString('N') + ".msi")
 
     try {
-        Invoke-WebRequest -Uri $downloadUrl -OutFile $msiPath -TimeoutSec 120 -ErrorAction Stop
+        Invoke-DownloadFileWithProgress -Uri $downloadUrl -OutFile $msiPath -Activity 'Node.js-Installer wird heruntergeladen'
         $process = Start-Process -FilePath 'msiexec.exe' `
             -ArgumentList @('/i', $msiPath, '/qn', '/norestart') `
             -WindowStyle Hidden `
-            -PassThru `
-            -Wait
+            -PassThru
+
+        Wait-ProcessWithSpinner -Process $process -Activity 'Node.js MSI wird installiert'
 
         if ($process.ExitCode -ne 0) {
             throw "Node.js MSI-Installer fehlgeschlagen (ExitCode $($process.ExitCode))."
@@ -701,7 +832,7 @@ function Repair-LauncherFile {
         Warn "Falscher downloads/launcher.exe im Root erkannt; repariere launcher.exe..."
         $tmpLauncher = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-launcher-" + [guid]::NewGuid().ToString('N') + ".exe")
         try {
-            Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/launcher.exe" -OutFile $tmpLauncher -TimeoutSec 60
+            Invoke-DownloadFileWithProgress -Uri "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/launcher.exe" -OutFile $tmpLauncher -Activity 'Launcher.exe wird repariert'
             Move-Item -LiteralPath $tmpLauncher -Destination $launcherPath -Force
         } finally {
             Remove-Item -LiteralPath $tmpLauncher -Force -ErrorAction SilentlyContinue
@@ -802,15 +933,19 @@ function Install-Deps {
         $stdoutLog = "$npmLogBase.out.log"
         $stderrLog = "$npmLogBase.err.log"
 
-        $previousErrorActionPreference = $ErrorActionPreference
         try {
-            $ErrorActionPreference = 'Continue'
-            & $npmExecutable @npmArgs 1>$stdoutLog 2>$stderrLog
-            $npmExitCode = $LASTEXITCODE
+            $process = Start-Process -FilePath $npmExecutable `
+                -ArgumentList $npmArgs `
+                -WorkingDirectory $appDir `
+                -RedirectStandardOutput $stdoutLog `
+                -RedirectStandardError $stderrLog `
+                -WindowStyle Hidden `
+                -PassThru
+
+            Wait-ProcessWithSpinner -Process $process -Activity 'npm install wird ausgeführt'
+            $npmExitCode = $process.ExitCode
         } catch {
             Fail "npm konnte nicht gestartet werden: $($_.Exception.Message)"
-        } finally {
-            $ErrorActionPreference = $previousErrorActionPreference
         }
 
         if ($npmExitCode -ne 0) {
@@ -836,6 +971,7 @@ function Install-Launcher {
     $launcherPath = Join-Path $LTTHDir 'launcher.exe'
     $downloadLauncherPath = Join-Path $LTTHDir 'downloads\launcher.exe'
     $launcherUrl = "https://github.com/Loggableim/ltth.app/raw/$LTTHRepoBranch/launcher.exe"
+    $tmpLauncher = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-launcher-" + [guid]::NewGuid().ToString('N') + ".exe")
 
     try {
         $launcherMatchesDownloads = $false
@@ -845,7 +981,8 @@ function Install-Launcher {
 
         if ((-not (Test-Path $launcherPath)) -or $launcherMatchesDownloads) {
             Log "Lade LTTH Windows Launcher herunter..."
-            Invoke-WebRequest -UseBasicParsing -Uri $launcherUrl -OutFile $launcherPath -TimeoutSec 60
+            Invoke-DownloadFileWithProgress -Uri $launcherUrl -OutFile $tmpLauncher -Activity 'LTTH Launcher wird heruntergeladen'
+            Move-Item -LiteralPath $tmpLauncher -Destination $launcherPath -Force
         }
 
         if (-not (Test-Path $launcherPath)) {
@@ -863,6 +1000,8 @@ function Install-Launcher {
         Warn "Launcher konnte nicht eingerichtet werden: $($_.Exception.Message)"
         Warn "Verwende direkten Node-Start als Fallback."
         return $null
+    } finally {
+        Remove-Item -LiteralPath $tmpLauncher -Force -ErrorAction SilentlyContinue
     }
 }
 
