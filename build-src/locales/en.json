@@ -1,8 +1,14 @@
 {
   "home": {
+    "meta": {
+      "canonical": "https://ltth.app/?lang=en",
+      "title": "PupCid's Little TikTool Helper - Professional TikTok LIVE Streaming Solution",
+      "description": "The professional streaming solution for TikTok LIVE streamers. Real-time events, Text-to-Speech with 580+ voices across 7 engines, alerts, soundboard with 100,000+ MyInstants sounds, goals, flows, plugin system and OBS integration. Free and open source."
+    },
     "hero": {
       "subtitle": "PupCid's Little TikTool Helper is the ultimate tool for TikTok LIVE streamers. Process real-time events, use Text-to-Speech with 75+ voices, create customizable alerts, play sounds automatically and automate your stream with powerful flows. Modular plugin system, OBS integration, VRChat OSC support and much more. All completely local, free and open source.",
-      "featuresCta": "Explore Features",
+      "featuresCta": "View All Apps",
+      "featuresHref": "/features-en.html",
       "stat1": {
         "value": "100%",
         "label": "Free & Open Source"
@@ -90,7 +96,8 @@
         "cta": "View plugins →",
         "title": "🎵 Music Bot"
       },
-      "cta": "View All Features"
+      "cta": "View All Apps",
+      "href": "/features-en.html"
     },
     "plugins": {
       "title": "Extensible Plugin System",
@@ -269,6 +276,7 @@
   "nav": {
     "home": "Home",
     "features": "Features",
+    "featuresHref": "/features-en.html",
     "mega": {
       "ai": "🧠 AI &amp; Intelligence",
       "animazingpal": "AnimazingPal",
@@ -297,7 +305,8 @@
       "overview": "📊 Overview",
       "dashboard": "Dashboard",
       "security": "Security",
-      "allFeatures": "View All Features →"
+      "allFeatures": "View All Apps →",
+      "allFeaturesHref": "/features-en.html"
     },
     "plugins": "Plugins",
     "docs": "Docs",
@@ -318,6 +327,7 @@
     "description": "PupCid's Little TikTool Helper - The professional TikTok LIVE streaming solution.",
     "product": "Product",
     "features": "Features",
+    "featuresHref": "/features-en.html",
     "plugins": "Plugins",
     "changelog": "Changelog",
     "roadmap": "Roadmap",

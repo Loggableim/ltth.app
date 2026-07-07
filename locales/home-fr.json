@@ -2,7 +2,8 @@
   "home": {
     "hero": {
       "subtitle": "PupCid's Little TikTool Helper est l'outil ultime pour les streamers TikTok LIVE. Traitez les événements en temps réel, utilisez la synthèse vocale avec plus de 75 voix, créez des alertes personnalisables, jouez des sons automatiquement et automatisez votre stream avec des flux puissants. Système de plugins modulaire, intégration OBS, support VRChat OSC et bien plus encore. Entièrement local, gratuit et open source.",
-      "featuresCta": "Explorer les Fonctionnalités",
+      "featuresCta": "Voir toutes les apps",
+      "featuresHref": "/features-fr.html",
       "stat1": {
         "value": "100%",
         "label": "Gratuit & Open Source"
@@ -85,7 +86,8 @@
         "desc": "Recherche YouTube via yt-dlp (pas de Python nécessaire), Spotify/SoundCloud oEmbed, vote-skip, 3 designs d'overlay OBS et requêtes réservées aux superfans.",
         "cta": "Voir les plugins →"
       },
-      "cta": "Voir Toutes les Fonctionnalités"
+      "cta": "Voir toutes les apps",
+      "href": "/features-fr.html"
     },
     "plugins": {
       "title": "Système de Plugins Extensible",

@@ -379,7 +379,7 @@
         }
         async loadSearchIndex() {
             const pages = [
-                { title: 'Features', url: '/features.html', excerpt: 'Discover all features' },
+                { title: 'Features', url: '/features/', excerpt: 'Discover all features' },
                 { title: 'Plugins', url: '/plugins.html', excerpt: 'Explore available plugins' },
                 { title: 'Docs', url: '/docs.html', excerpt: 'Complete documentation' },
                 { title: 'Download', url: '/download.html', excerpt: 'Download ltth.app' },

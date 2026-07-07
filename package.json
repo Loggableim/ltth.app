@@ -9,6 +9,7 @@
     "dev": "cd app && npm run dev",
     "build": "cd app && npm run build",
     "build:css": "cd app && npm run build:css",
+    "build:features": "node scripts/build-features-hub.js",
     "test": "cd app && npm test",
     "test:coverage": "cd app && npm run test:coverage",
     "lint": "cd app && npm run lint",

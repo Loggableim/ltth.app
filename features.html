@@ -5,8 +5,15 @@
     <link rel="canonical" href="https://ltth.app/features/">
     <title>Redirecting...</title>
     <script>
-        var lang = new URLSearchParams(window.location.search).get('lang');
-        window.location.replace('/features/' + (lang ? '?lang=' + lang : ''));
+        (function() {
+            var lang = new URLSearchParams(window.location.search).get('lang');
+            var targets = {
+                en: '/features-en.html',
+                es: '/features-es.html',
+                fr: '/features-fr.html'
+            };
+            window.location.replace(targets[lang] || '/features/');
+        })();
     </script>
 </head>
 <body>

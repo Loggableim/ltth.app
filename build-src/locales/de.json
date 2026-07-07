@@ -1,8 +1,14 @@
 {
   "home": {
+    "meta": {
+      "canonical": "https://ltth.app/",
+      "title": "PupCid's Little TikTool Helper - Professionelle TikTok LIVE Streaming-Lösung",
+      "description": "Die professionelle Streaming-Lösung für TikTok LIVE Streamer. Echtzeit-Events, Text-to-Speech mit 580+ Stimmen über 7 Engines, Alerts, Soundboard mit 100.000+ MyInstants Sounds, Goals, Flows, Plugin-System und OBS-Integration. Kostenlos und Open Source."
+    },
     "hero": {
       "subtitle": "PupCid's Little TikTool Helper ist das ultimative Tool für TikTok LIVE Streamer. \n                    Verarbeite Echtzeit-Events, nutze Text-to-Speech mit 75+ Stimmen, erstelle anpassbare Alerts, \n                    spiele Sounds automatisch ab und automatisiere deinen Stream mit leistungsstarken Flows. \n                    Modulares Plugin-System, OBS-Integration, VRChat OSC-Support und vieles mehr.\n                    Alles komplett lokal, kostenlos und Open Source.",
-      "featuresCta": "Features Entdecken",
+      "featuresCta": "Alle Apps ansehen",
+      "featuresHref": "/features/",
       "stat1": {
         "value": "100%",
         "label": "Kostenlos & Open Source"
@@ -90,7 +96,8 @@
         "cta": "Plugins anzeigen →",
         "title": "🎵 Music Bot"
       },
-      "cta": "Alle Features Ansehen"
+      "cta": "Alle Apps ansehen",
+      "href": "/features/"
     },
     "plugins": {
       "title": "Erweiterbares Plugin-System",
@@ -269,6 +276,7 @@
   "nav": {
     "home": "Home",
     "features": "Features",
+    "featuresHref": "/features/",
     "mega": {
       "ai": "🧠 KI &amp; Intelligenz",
       "animazingpal": "AnimazingPal",
@@ -297,7 +305,8 @@
       "overview": "📊 Übersicht",
       "dashboard": "Dashboard",
       "security": "Security",
-      "allFeatures": "Alle Features ansehen →"
+      "allFeatures": "Alle Apps ansehen →",
+      "allFeaturesHref": "/features/"
     },
     "plugins": "Plugins",
     "docs": "Docs",
@@ -318,6 +327,7 @@
     "description": "PupCid's Little TikTool Helper - Die professionelle TikTok LIVE Streaming-Lösung.",
     "product": "Produkt",
     "features": "Features",
+    "featuresHref": "/features/",
     "plugins": "Plugins",
     "changelog": "Changelog",
     "roadmap": "Roadmap",

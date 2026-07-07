@@ -1,8 +1,14 @@
 {
   "home": {
+    "meta": {
+      "canonical": "https://ltth.app/?lang=fr",
+      "title": "PupCid's Little TikTool Helper - Solution de streaming professionnelle pour TikTok LIVE",
+      "description": "La solution de streaming professionnelle pour les streamers TikTok LIVE. Événements en temps réel, Text-to-Speech avec plus de 580 voix réparties sur 7 moteurs, alertes, soundboard avec plus de 100 000 sons MyInstants, objectifs, flux, système de plugins et intégration OBS. Gratuit et open source."
+    },
     "hero": {
       "subtitle": "PupCid's Little TikTool Helper est l'outil ultime pour les streamers TikTok LIVE. Traitez les événements en temps réel, utilisez la synthèse vocale avec plus de 75 voix, créez des alertes personnalisables, jouez des sons automatiquement et automatisez votre stream avec des flux puissants. Système de plugins modulaire, intégration OBS, support VRChat OSC et bien plus encore. Entièrement local, gratuit et open source.",
-      "featuresCta": "Explorer les Fonctionnalités",
+      "featuresCta": "Voir toutes les apps",
+      "featuresHref": "/features-fr.html",
       "stat1": {
         "value": "100%",
         "label": "Gratuit & Open Source"
@@ -90,7 +96,8 @@
         "cta": "Voir les plugins →",
         "title": "🎵 Bot Musical"
       },
-      "cta": "Voir Toutes les Fonctionnalités"
+      "cta": "Voir toutes les apps",
+      "href": "/features-fr.html"
     },
     "plugins": {
       "title": "Système de Plugins Extensible",
@@ -269,6 +276,7 @@
   "nav": {
     "home": "Accueil",
     "features": "Fonctionnalités",
+    "featuresHref": "/features-fr.html",
     "mega": {
       "ai": "🧠 IA &amp; Intelligence",
       "animazingpal": "AnimazingPal",
@@ -297,7 +305,8 @@
       "overview": "📊 Aperçu",
       "dashboard": "Tableau de Bord",
       "security": "Sécurité",
-      "allFeatures": "Voir Toutes les Fonctionnalités →"
+      "allFeatures": "Voir toutes les apps →",
+      "allFeaturesHref": "/features-fr.html"
     },
     "plugins": "Plugins",
     "docs": "Docs",
@@ -318,6 +327,7 @@
     "description": "PupCid's Little TikTool Helper - La solution professionnelle de streaming TikTok LIVE.",
     "product": "Produit",
     "features": "Fonctionnalités",
+    "featuresHref": "/features-fr.html",
     "plugins": "Plugins",
     "changelog": "Journal des Modifications",
     "roadmap": "Feuille de Route",

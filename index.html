@@ -11,7 +11,7 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="PupCid's Little TikTool Helper - Professionelle TikTok LIVE Streaming-Lösung">
     <meta property="og:description" content="Echtzeit-Events, Text-to-Speech mit 580+ Stimmen über 7 Engines, anpassbare Alerts, Soundboard mit 100.000+ MyInstants Sounds, Plugin-System, OBS-Integration und Event-Automation für TikTok LIVE Streamer. KI-gestütztes VTuber-System. Kostenlos, Open Source und komplett lokal.">
-    <meta property="og:url" content="https://ltth.app">
+    <meta property="og:url" data-i18n="home.meta.canonical" data-i18n-attr="content" content="https://ltth.app/">
     <meta property="og:image" content="https://ltth.app/assets/og-image.png">
     
     <!-- Twitter Card -->
@@ -22,6 +22,22 @@
     
     <title>PupCid's Little TikTool Helper - Professionelle TikTok LIVE Streaming-Lösung</title>
     
+    <script>
+        document.head.setAttribute('data-i18n-title', 'home.meta.title');
+        [
+            ['meta[name="description"]', 'home.meta.description'],
+            ['meta[property="og:title"]', 'home.meta.title'],
+            ['meta[property="og:description"]', 'home.meta.description'],
+            ['meta[name="twitter:title"]', 'home.meta.title'],
+            ['meta[name="twitter:description"]', 'home.meta.description']
+        ].forEach(([selector, key]) => {
+            const el = document.querySelector(selector);
+            if (!el) return;
+            el.setAttribute('data-i18n', key);
+            el.setAttribute('data-i18n-attr', 'content');
+        });
+    </script>
+
     <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
@@ -35,7 +51,7 @@
     <link rel="alternate" hreflang="fr" href="https://ltth.app/index-fr.html">
     <link rel="alternate" hreflang="es" href="https://ltth.app/index-es.html">
     <link rel="alternate" hreflang="x-default" href="https://ltth.app/">
-    <link rel="canonical" href="https://ltth.app/">
+    <link rel="canonical" data-i18n-href="home.meta.canonical" href="https://ltth.app/">
     
     <!-- Styles -->
     <link rel="stylesheet" href="/css/main.css">
@@ -100,8 +116,8 @@
                         </svg>
                         Jetzt Herunterladen
                     </a>
-                    <a href="/features/" class="btn btn-secondary btn-large" data-i18n="home.hero.featuresCta">
-                        Features Entdecken
+                    <a href="/features/" class="btn btn-secondary btn-large" data-i18n="home.hero.featuresCta" data-i18n-href="home.hero.featuresHref">
+                        Alle Apps ansehen
                     </a>
                 </div>
                 <div class="hero-stats">
@@ -425,8 +441,8 @@
             </div>
             
             <div class="section-cta">
-                <a href="/features/" class="btn btn-primary" data-i18n="home.features.cta">
-                    Alle Features Ansehen
+                <a href="/features/" class="btn btn-primary" data-i18n="home.features.cta" data-i18n-href="home.features.href">
+                    Alle Apps ansehen
                 </a>
             </div>
         </div>
