@@ -522,6 +522,6 @@ For issues, feature requests, or questions:
 
 ---
 
-**Version**: 2.0.0
+**Version**: 2.0.1
 **Last Updated**: 2025-01-12
 **Author**: Pup Cid

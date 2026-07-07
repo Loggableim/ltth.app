@@ -634,7 +634,19 @@ body {
     margin-left: -0.08rem;
 }
 
+.sidebar-item[data-view="tts"] .sidebar-plugin-icon-tts {
+    width: 28px;
+    height: 28px;
+    margin-left: -0.06rem;
+}
+
 .sidebar-item[data-view="quiz-show"] .sidebar-plugin-icon {
+    width: 28px;
+    height: 28px;
+    margin-left: -0.04rem;
+}
+
+.sidebar-item[data-view="game-engine"] .sidebar-plugin-icon {
     width: 28px;
     height: 28px;
     margin-left: -0.04rem;
@@ -664,6 +676,11 @@ body {
     object-fit: contain;
     display: block;
     transition: transform 0.16s ease, opacity 0.16s ease, filter 0.16s ease;
+}
+
+.sidebar-quick-icon[data-action="tts"] .sidebar-quick-plugin-icon-tts {
+    width: 22px;
+    height: 22px;
 }
 
 .sidebar-quick-icon:hover svg {
