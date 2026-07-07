@@ -69,7 +69,7 @@ All 4 main locale files now have **complete, professional translations** with id
 | gift-milestone | ✅ | ✅ | ✅ | ✅ |
 | goals | ✅ | ✅ | ✅ | ✅ |
 | hybridshock | ✅ | ✅ | ✅ | ✅ |
-| lastevent-spotlight | ✅ | ✅ | ✅ | ✅ |
+| spotlight | ✅ | ✅ | ✅ | ✅ |
 | leaderboard | ✅ | ✅ | ✅ | ✅ |
 | minecraft-connect | ✅ | ✅ | ✅ | ✅ |
 | multicam | ✅ | ✅ | ✅ | ✅ |

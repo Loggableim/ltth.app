@@ -15,8 +15,8 @@
       "description": {
         "en": "Professional multi-timer system with event triggers, automation, viewer interaction, and customizable overlays. Perfect for subathons, challenges, stream schedules, and goals.",
         "de": "Professionelles Multi-Timer-System mit Event-Triggern, Automatisierung, Zuschauer-Interaktion und anpassbaren Overlays. Perfekt fÃ¼r Subathons, Challenges, Stream-ZeitplÃ¤ne und Ziele.",
-        "es": "Sistema profesional de mÃºltiples temporizadores con activadores de eventos, automatizaciÃ³n, interacciÃ³n con espectadores y overlays personalizables. Perfecto para subathons, desafÃ­os, horarios de transmisiÃ³n y objetivos.",
-        "fr": "SystÃ¨me professionnel de minuteries multiples avec dÃ©clencheurs d'Ã©vÃ©nements, automatisation, interaction avec les spectateurs et overlays personnalisables. Parfait pour les subathons, dÃ©fis, plannings de stream et objectifs."
+        "es": "Visual FX Frame es un overlay de efectos WebGL seguro para broadcast con 4 modos visuales basados en rol, vista previa en tiempo real, reacciones por capas a eventos de TikTok LIVE, creador de reglas para cat????logo de regalos, sistema de presets, integraci????n con flows y Kawase bloom. Compatible con resoluciones de hasta 4K con colores, intensidad, velocidad y posicionamiento de marco totalmente configurables. Fondo transparente para una integraci????n perfecta con OBS.",
+        "fr": "Visual FX Frame est un overlay d'effets WebGL s????r pour le broadcast avec 4 modes visuels bas????s sur des r????les, aper????u en temps r????el, r????actions TikTok LIVE en couches, constructeur de r????gles de catalogue de cadeaux, syst????me de pr????r????glages, int????gration flow et Kawase bloom. Compatible jusqu'???? 4K avec couleurs, intensit????, vitesse et positionnement de cadre enti????rement configurables. Fond transparent pour une int????gration OBS fluide."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -245,7 +245,7 @@
       "logo": "/plugins/fireworks/assets/fireworks-logo.png",
       "badges": [],
       "packageUrl": "https://ltth.app/plugin-store/packages/fireworks-2.0.0.zip",
-      "sha256": "24cae3dc9cb1d040e3c425cf1d37b1257e7f6961f1c38bc30abce72ae24e67fa",
+      "sha256": "080d32054c46c1ca3693a0e62198b8ea55c5fb2000636580548727e74885e327",
       "pricing": {
         "type": "free",
         "amount": 0,
@@ -258,21 +258,23 @@
     {
       "id": "flame-overlay",
       "name": {
-        "en": "TikTok Visual Effects Overlay"
+        "en": "Visual FX Frame"
       },
       "description": {
-        "en": "Advanced WebGL effects overlay featuring 4 stunning visual modes with real-time preview and frame positioning. Now with interactive TikTok LIVE trigger system: effects react to gifts, follows, likes, shares, subscribes and chat color commands. Named config preset system, flow integration, and high-performance Kawase bloom. Includes Enhanced Flames, Particle Burst, Energy Waves, and Electric Lightning. Supports resolutions up to 4K with fully customizable colors, intensity, speed, and precise frame positioning. Transparent background for seamless OBS integration.",
-        "de": "Fortgeschrittenes WebGL-Effekt-Overlay mit 4 beeindruckenden visuellen Modi, Echtzeit-Vorschau und Rahmen-Positionierung. Jetzt mit interaktivem TikTok LIVE Trigger-System: Effekte reagieren auf Gifts, Follows, Likes, Shares, Subscribes und Chat-Farbbefehle. Benanntes Preset-System, Flow-Integration und leistungsstarker Kawase Bloom. EnthÃ¤lt verbesserte Flammen, Partikel-Burst, Energie-Wellen und elektrische Blitze. UnterstÃ¼tzt AuflÃ¶sungen bis 4K mit vollstÃ¤ndig anpassbaren Farben, IntensitÃ¤t, Geschwindigkeit und prÃ¤ziser Rahmenpositionierung. Transparenter Hintergrund fÃ¼r nahtlose OBS-Integration.",
-        "es": "Overlay de efectos WebGL avanzado con 4 modos visuales impresionantes, vista previa en tiempo real y posicionamiento de marco. Ahora con sistema de disparadores interactivos para TikTok LIVE: los efectos reaccionan a regalos, follows, likes, compartidos, suscripciones y comandos de color en chat. Incluye Llamas Mejoradas, ExplosiÃ³n de PartÃ­culas, Ondas de EnergÃ­a y RelÃ¡mpagos ElÃ©ctricos.",
-        "fr": "Overlay d'effets WebGL avancÃ© avec 4 modes visuels Ã©poustouflants, aperÃ§u en temps rÃ©el et positionnement de cadre. DÃ©sormais avec systÃ¨me de dÃ©clencheurs interactifs pour TikTok LIVE : les effets rÃ©agissent aux cadeaux, follows, likes, partages, abonnements et commandes de couleur en chat. Comprend des Flammes AmÃ©liorÃ©es, une Rafale de Particules, des Ondes d'Ã‰nergie et des Ã‰clairs Ã‰lectriques."
+        "en": "Visual FX Frame is a broadcast-safe WebGL effects overlay with 4 role-based visual modes, real-time preview, layered TikTok LIVE trigger reactions, a gift catalog rule builder, preset system, flow integration, and Kawase bloom. Supports up to 4K resolution with fully configurable colors, intensity, speed, and precise frame positioning. Transparent background for seamless OBS integration.",
+        "de": "Visual FX Frame ist ein broadcast-sicheres WebGL-Effekt-Overlay mit 4 rollenbasierten visuellen Modi, Echtzeit-Vorschau, gestuften TikTok-LIVE-Trigger-Reaktionen, Geschenkekatalog-Regelbuilder, Preset-System, Flow-Integration und Kawase Bloom. Unterstuetzt Aufloesungen bis 4K mit vollstaendig anpassbaren Farben, Intensitaet, Geschwindigkeit und praeziser Rahmenpositionierung. Transparenter Hintergrund fuer nahtlose OBS-Integration.",
+        "es": "Visual FX Frame es un overlay de efectos WebGL seguro para broadcast con 4 modos visuales basados en rol, vista previa en tiempo real, reacciones por capas a eventos de TikTok LIVE, creador de reglas para catalogo de regalos, sistema de presets, integracion con flows y Kawase bloom. Compatible con resoluciones de hasta 4K con colores, intensidad, velocidad y posicionamiento de marco totalmente configurables. Fondo transparente para una integracion perfecta con OBS.",
+        "fr": "Visual FX Frame est un overlay d'effets WebGL sur pour le broadcast avec 4 modes visuels bases sur des roles, apercu en temps reel, reactions TikTok LIVE en couches, constructeur de regles de catalogue de cadeaux, systeme de pre-reglages, integration flow et Kawase bloom. Compatible jusqu'a 4K avec couleurs, intensite, vitesse et positionnement de cadre entierement configurables. Fond transparent pour une integration OBS fluide."
       },
       "version": "3.0.0",
       "author": "Pup Cid",
+      "icon": "/plugins/flame-overlay/assets/branding/visual-fx-frame-icon.png",
+      "logo": "/plugins/flame-overlay/assets/branding/visual-fx-frame-logo.png",
       "category": "plugin",
       "channel": "open-beta",
       "badges": [],
       "packageUrl": "https://ltth.app/plugin-store/packages/flame-overlay-3.0.0.zip",
-      "sha256": "433dc7aaf4342e5f4edc5d94ae96dbf2c07a3964e7a4d2dc2a4cb2d588dc1426",
+      "sha256": "925e1a353bbe840d24f273fe6e2bb7e9e1135bedda3a801eee85bd00f6f715b7",
       "pricing": {
         "type": "free",
         "amount": 0,
@@ -425,33 +427,35 @@
       ]
     },
     {
-      "id": "lastevent-spotlight",
+      "id": "spotlight",
       "name": {
-        "en": "LastEvent Spotlight"
+        "en": "Spotlight"
       },
       "description": {
-        "en": "Live overlays showing the last active user for each event type (follower, like, chatter, share, gifter, subscriber). Perfect for recognizing recent viewer interactions.",
-        "de": "Live-Overlays, die den zuletzt aktiven Benutzer fÃ¼r jeden Event-Typ anzeigen (Follower, Like, Chatter, Share, Gifter, Subscriber). Perfekt zum Erkennen aktueller Zuschauer-Interaktionen.",
-        "es": "Overlays en vivo que muestran el Ãºltimo usuario activo para cada tipo de evento (seguidor, like, chatter, compartir, donante, suscriptor). Perfecto para reconocer interacciones recientes de espectadores.",
-        "fr": "Overlays en direct affichant le dernier utilisateur actif pour chaque type d'Ã©vÃ©nement (abonnÃ©, like, chatter, partage, donateur, souscripteur). Parfait pour reconnaÃ®tre les interactions rÃ©centes des spectateurs."
+        "en": "Modern live overlays for recent viewers and event activity across OBS, LIVE Studio, and streaming dashboards.",
+        "de": "Moderne Live-Overlays für aktuelle Zuschauer und Event-Aktivität in OBS, LIVE Studio und Streaming-Dashboards.",
+        "es": "Overlays en vivo modernos para espectadores recientes y actividad de eventos en OBS, LIVE Studio y paneles de streaming.",
+        "fr": "Overlays en direct modernes pour les spectateurs récents et l'activité d'événements dans OBS, LIVE Studio et les tableaux de bord de stream."
       },
-      "version": "1.0.0",
+      "version": "1.1.5",
       "author": "Plugin System",
       "category": "plugin",
       "channel": "open-beta",
       "badges": [
         "preinstalled"
       ],
-      "packageUrl": "https://ltth.app/plugin-store/packages/lastevent-spotlight-1.0.0.zip",
-      "sha256": "4eff60f1ae0c9ad7714c774ecff2d914361c993957b6a23542ed896476643557",
+      "packageUrl": "https://ltth.app/plugin-store/packages/spotlight-1.1.5.zip",
+      "sha256": "c429a8afced0d120882f6d5edfa95a31a802fbaea3d73543a822d53b825f828f",
       "pricing": {
         "type": "free",
         "amount": 0,
         "currency": "EUR"
       },
       "screenshots": [
-        "/screenshots/features/lastevent-spotlight.png"
-      ]
+        "/screenshots/features/spotlight.png"
+      ],
+      "icon": "/plugins/spotlight/assets/spotlight-icon.png",
+      "logo": "/plugins/spotlight/assets/spotlight-logo-v1.1.4.png"
     },
     {
       "id": "milestone-leaderboard",
@@ -915,7 +919,7 @@
     {
       "id": "viewer-leaderboard",
       "name": {
-        "en": "Viewer XP & Leaderboard"
+        "en": "Viewer XP"
       },
       "description": {
         "en": "Comprehensive Viewer XP System with integrated Gifter Leaderboard. All XP tracking, leveling, badges, and gifter rankings in one plugin. v2.1.0 adds rate limiting, anti-spam, full event logging, and opt-out system.",

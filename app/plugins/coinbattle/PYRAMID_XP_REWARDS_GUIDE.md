@@ -212,7 +212,7 @@ Eve: 6000 × 7% = 420 XP (5th)
 ## Integration with Viewer XP System
 
 ### Automatic Features
-When viewer-xp plugin is enabled, winners receive:
+When viewer-leaderboard plugin is enabled, winners receive:
 - ✅ **XP Points** added to their profile
 - ✅ **Level-ups** if XP threshold is reached
 - ✅ **Badges & Titles** from XP system
@@ -389,7 +389,7 @@ Planned features:
 
 For issues or questions:
 1. Check server logs for error messages
-2. Verify viewer-xp plugin is running
+2. Verify viewer-leaderboard plugin is running
 3. Test with simple configuration first
 4. Report bugs with reproduction steps
 

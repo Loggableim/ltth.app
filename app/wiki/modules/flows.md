@@ -265,7 +265,7 @@ Mehrere Bedingungen werden mit **AND** verknüpft (alle müssen erfüllt sein):
 | `overlay:clear` | Overlay leeren |
 | `emojirain:trigger` | Emoji-Rain-Effekt auslösen |
 | `goal:update` | Goal-Fortschritt aktualisieren |
-| `spotlight:set` | LastEvent Spotlight setzen |
+| `spotlight:set` | Spotlight setzen |
 | `variable:set` | Flow-Variable setzen |
 | `variable:increment` | Flow-Variable erhöhen |
 | `plugin:trigger` | Plugin-Aktion auslösen |

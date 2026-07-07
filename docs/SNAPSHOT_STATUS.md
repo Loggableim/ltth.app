@@ -84,7 +84,7 @@ The plugin store is the major new feature of v1.3.9:
 - **Frontend:** `app/public/js/plugin-manager.js` (1590 lines) — `PluginManager` class with `store` and `installed` tabs, category filters, dev-status filters, badges, and one-click install flow.
 - **Tests:** `plugin-store.test.js`, `plugin-store-registry.test.js`, `plugin-store-routes.test.js`.
 - **Design docs:** `docs/superpowers/plans/2026-07-04-plugin-store*.md` + `docs/superpowers/specs/2026-07-04-plugin-store-appstore-ui-design.md`.
-- **Preinstalled plugins** (enabled by default in store): `chatango`, `goals`, `lastevent-spotlight`, `soundboard`, `toptier`, `tts`, `webgpu-emoji-rain`.
+- **Preinstalled plugins** (enabled by default in store): `chatango`, `goals`, `spotlight`, `soundboard`, `toptier`, `tts`, `webgpu-emoji-rain`.
 
 Community plugin repositories are supported behind explicit user opt-in (`POST /api/plugin-store/community/enable`).
 
@@ -190,7 +190,7 @@ The workspace currently contains 36 plugin manifests in `app/plugins/`:
 - gift-milestone
 - goals
 - interactive-story (v1.0.0, enabled by default)
-- lastevent-spotlight
+- spotlight
 - milestone-leaderboard
 - minecraft-connect
 - multicam

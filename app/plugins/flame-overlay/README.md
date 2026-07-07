@@ -1,4 +1,4 @@
-# TikTok Visual Effects Overlay Plugin
+# Visual FX Frame Plugin
 
 WebGL-basiertes Overlay fuer TikTok Livestreams und OBS Browser Sources. Das Plugin rendert transparente GPU-Effekte als Rahmen oder Kante und kann direkt auf TikTok LIVE Events reagieren.
 Der aktive Renderer wird ueber `renderer/index.html`, `renderer/effects-engine.js` und `renderer/post-processor.js` geladen; die alte standalone Datei `renderer/flame.js` ist kein Teil des aktiven Plugins mehr.

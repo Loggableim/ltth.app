@@ -126,7 +126,7 @@ Neu hier? Starte mit diesen Seiten:
 - TTS v2.0
 - Live Goals
 - Leaderboard
-- LastEvent Spotlight
+- Spotlight
 - Soundboard
 
 **Mittel (Konfiguration erforderlich):**

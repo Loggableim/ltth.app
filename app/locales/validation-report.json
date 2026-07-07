@@ -13,6 +13,7 @@
     "navigation.overlays",
     "navigation.effects",
     "navigation.viewer_xp",
+    "navigation.minecraft_connect",
     "navigation.plugin_manager",
     "talking_heads_ui.title",
     "talking_heads_ui.subtitle",
@@ -119,7 +120,6 @@
     "dashboard.quick_action.plugin_disabled",
     "dashboard.quick_action.enable_plugin_hint",
     "dashboard.extract_session_manual",
-    "dashboard.plugin_notice.dismiss",
     "tabs.events",
     "tabs.overlays",
     "tabs.flows",
@@ -579,6 +579,7 @@
     "effects.intensity",
     "effects.duration",
     "effects.trigger_on",
+    "wiki.close_tab",
     "wiki.no_results",
     "wiki.search",
     "multicam.title",
@@ -676,7 +677,10 @@
     "fireworks.overlay",
     "fireworks.copy_overlay_url",
     "fireworks.open_in_new_tab",
+    "fireworks.close_tab",
+    "fireworks.overlay_popup_blocked",
     "fireworks.test_firework",
+    "fireworks.subtitle",
     "fireworks.tab_settings",
     "fireworks.tab_presets",
     "fireworks.tab_benchmark",
@@ -729,11 +733,11 @@
     "fireworks.benchmark.alternative"
   ],
   "stats": {
-    "totalEnKeys": 854,
-    "totalDeKeys": 854,
-    "usedKeys": 131,
+    "totalEnKeys": 860,
+    "totalDeKeys": 861,
+    "usedKeys": 133,
     "missingEnKeys": 0,
     "missingDeKeys": 0,
-    "unusedKeys": 723
+    "unusedKeys": 727
   }
 }

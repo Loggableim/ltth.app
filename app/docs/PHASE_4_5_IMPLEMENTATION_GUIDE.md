@@ -61,7 +61,7 @@ Add multilingual descriptions to all 30 plugin.json files and update related doc
 13. gift-milestone
 14. goals
 15. hybridshock
-16. lastevent-spotlight
+16. spotlight
 17. leaderboard
 18. minecraft-connect
 19. multicam
