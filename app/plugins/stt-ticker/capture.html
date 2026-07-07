@@ -369,13 +369,388 @@
       -webkit-text-fill-color: #f8fafc;
     }
 
+    /* ===== STT Ticker Capture Rework ===== */
+    body {
+      padding: 16px;
+      background:
+        radial-gradient(circle at 10% 8%, rgba(59, 130, 246, 0.12), transparent 18%),
+        radial-gradient(circle at 90% 12%, rgba(74, 222, 128, 0.12), transparent 16%),
+        var(--app-background, linear-gradient(180deg, #0f172a 0%, #111827 100%));
+      color: var(--color-text-primary, #eef3ff);
+      font-family: "Segoe UI Variable", "Bahnschrift", "Segoe UI", sans-serif;
+    }
+
+    .container.capture-shell {
+      width: min(2400px, calc(100vw - 32px));
+      max-width: none;
+      margin: 0 auto;
+      padding: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .capture-hero {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      padding: 24px 26px;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 12% 0%, rgba(74, 222, 128, 0.08), transparent 24%),
+        radial-gradient(circle at 90% 0%, rgba(59, 130, 246, 0.12), transparent 18%),
+        var(--color-bg-card, #1e293b);
+      border: 1px solid var(--color-border, #334155);
+      box-shadow: var(--shadow-lg, 0 18px 38px -18px rgba(0, 0, 0, 0.72));
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .capture-brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
+    .capture-brand__icon {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+      flex-shrink: 0;
+      filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.32));
+    }
+
+    .capture-brand__copy {
+      min-width: 0;
+      max-width: 72ch;
+    }
+
+    .capture-brand__copy h1 {
+      margin: 4px 0 8px;
+      font-size: clamp(2rem, 2.8vw, 3.15rem);
+      line-height: 1.04;
+      color: var(--color-text-primary, #f8fafc);
+    }
+
+    .capture-brand__copy p {
+      margin: 0;
+      color: var(--color-text-secondary, #cbd5e1);
+      line-height: 1.55;
+      font-size: 0.98rem;
+    }
+
+    .capture-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .capture-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.56rem 0.78rem;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.14);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      color: var(--color-text-primary, #f8fafc);
+      font-size: 0.82rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .capture-chip .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--brand-primary, #12a116);
+      box-shadow: var(--glow-brand, 0 0 20px rgba(18, 161, 22, 0.3));
+    }
+
+    .capture-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .capture-main,
+    .capture-rail {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .capture-panel {
+      padding: 20px;
+      border-radius: 24px;
+      background: var(--color-bg-card, #1e293b);
+      border: 1px solid var(--color-border, #334155);
+      box-shadow: var(--shadow-md, 0 8px 20px -10px rgba(0, 0, 0, 0.52));
+    }
+
+    .capture-panel__eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      color: var(--color-text-secondary, #cbd5e1);
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .capture-panel--preview {
+      padding-bottom: 18px;
+    }
+
+    .capture-panel--log .log-box {
+      max-height: 260px;
+      min-height: 220px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .status {
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+
+    .status.idle {
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--color-text-secondary, #cbd5e1);
+    }
+
+    .status.listening {
+      background: rgba(74, 222, 128, 0.14);
+      color: #86efac;
+    }
+
+    .status.silence {
+      background: rgba(251, 191, 36, 0.12);
+      color: #fde68a;
+    }
+
+    .status.error {
+      background: rgba(239, 68, 68, 0.14);
+      color: #fecaca;
+    }
+
+    .stats {
+      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .stat {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--color-border, #334155);
+      border-radius: 16px;
+      padding: 12px 10px;
+      box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+    }
+
+    .stat.savings .stat-value {
+      color: #facc15;
+    }
+
+    .controls {
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .controls .btn {
+      min-width: 140px;
+      border-radius: 14px;
+    }
+
+    .meter-wrap {
+      margin-top: -4px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    .meter {
+      border-radius: inherit;
+      background: linear-gradient(90deg, #4ade80 0%, #60a5fa 55%, #f59e0b 100%);
+    }
+
+    .preview-section {
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+
+    .preview-section h3 {
+      color: var(--color-text-primary, #f8fafc);
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+
+    #preview-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .preview-line {
+      margin-bottom: 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .settings-section {
+      margin-top: 0;
+      padding: 18px;
+      border-radius: 24px;
+      background: var(--color-bg-card, #1e293b);
+      border: 1px solid var(--color-border, #334155);
+    }
+
+    .settings-section h3 {
+      margin-bottom: 12px;
+      color: var(--color-text-primary, #f8fafc);
+    }
+
+    .settings-row label {
+      color: var(--color-text-secondary, #cbd5e1);
+    }
+
+    .settings-row select,
+    .settings-row input {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.12);
+      color: var(--color-text-primary, #f8fafc);
+    }
+
+    .log-box {
+      max-height: 220px;
+      min-height: 220px;
+      border-radius: 18px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .info-box {
+      margin-top: 0;
+      padding: 16px 18px;
+      border-radius: 20px;
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.18);
+    }
+
+    html[data-theme="day"] .capture-hero,
+    html[data-theme="day"] .capture-panel,
+    html[data-theme="day"] .settings-section,
+    html[data-theme="day"] .log-box,
+    html[data-theme="day"] .info-box {
+      background: rgba(255, 255, 255, 0.94);
+      color: #10203a;
+      border-color: #cbd5e1;
+    }
+
+    html[data-theme="day"] .capture-brand__copy p,
+    html[data-theme="day"] .capture-brand__subtitle,
+    html[data-theme="day"] .help-text,
+    html[data-theme="day"] .stat-label,
+    html[data-theme="day"] .meter-row,
+    html[data-theme="day"] .meter-row span {
+      color: #475569;
+    }
+
+    html[data-theme="contrast"] .capture-hero,
+    html[data-theme="contrast"] .capture-panel,
+    html[data-theme="contrast"] .settings-section,
+    html[data-theme="contrast"] .log-box,
+    html[data-theme="contrast"] .info-box,
+    html[data-theme="vision-impaired"] .capture-hero,
+    html[data-theme="vision-impaired"] .capture-panel,
+    html[data-theme="vision-impaired"] .settings-section,
+    html[data-theme="vision-impaired"] .log-box,
+    html[data-theme="vision-impaired"] .info-box {
+      background: #000 !important;
+      color: #fff !important;
+      border: 2px solid #facc15 !important;
+      box-shadow: none !important;
+    }
+
+    html[data-theme="contrast"] .capture-chip,
+    html[data-theme="vision-impaired"] .capture-chip {
+      background: #000 !important;
+      color: #fff !important;
+      border: 2px solid #facc15 !important;
+    }
+
+    html[data-theme="vision-impaired"] body {
+      font-size: 1.1rem;
+      line-height: 1.7;
+    }
+
+    html[data-theme="vision-impaired"] .capture-brand__copy h1 {
+      letter-spacing: 0.03em;
+    }
+
+    html[data-theme="vision-impaired"] .btn,
+    html[data-theme="contrast"] .btn {
+      min-height: 48px;
+      border-width: 3px;
+    }
+
+    @media (max-width: 1700px) {
+      .container.capture-shell {
+        grid-template-columns: minmax(0, 1fr) 390px;
+      }
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        padding: 12px;
+      }
+
+      .container.capture-shell {
+        width: min(100vw - 24px, 2400px);
+        grid-template-columns: 1fr;
+      }
+
+      .capture-hero {
+        flex-direction: column;
+      }
+
+      .capture-actions {
+        justify-content: flex-start;
+      }
+    }
+
 </style>
 </head>
 <body>
-  <h1>STT Ticker - Audio Capture</h1>
-  <p class="subtitle">Client-seitige Stille-Erkennung + Multi-Language Output</p>
+  <div class="container capture-shell">
+    <header class="capture-hero">
+      <div class="capture-brand">
+        <img class="capture-brand__icon" src="/ltthttsicon.png" alt="STT Ticker Icon">
+        <div class="capture-brand__copy">
+          <h1>STT Ticker Capture</h1>
+          <p>Client-seitige Stille-Erkennung, Multi-Language Output und OBS Overlay-Helfer. Optimiert für breite Displays und alle Themes.</p>
+        </div>
+      </div>
+      <div class="capture-actions">
+        <span class="capture-chip"><span class="dot"></span> Live capture</span>
+      </div>
+    </header>
 
-  <div class="container">
+    <main class="capture-main">
     <div id="status" class="status idle">
       <span class="indicator"></span>
       <span id="status-text">Bereit zum Start</span>
@@ -405,14 +780,31 @@
       </div>
     </div>
 
+    <section class="capture-panel capture-panel--mic">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;">
+        <div>
+          <div class="capture-panel__eyebrow">Input source</div>
+          <h3 style="margin:0;">Mikrofon auswählen</h3>
+        </div>
+        <button id="btn-refresh-devices" class="btn btn-secondary btn-sm" style="flex:0 0 auto;min-width:160px;">Freigeben & aktualisieren</button>
+      </div>
+      <div class="settings-row">
+        <label for="audio-device-select">Quell-Mikrofon</label>
+        <select id="audio-device-select" style="flex:1;"></select>
+      </div>
+      <p class="help-text" style="margin-top:8px;">Die Auswahl wird gespeichert und beim Start der Aufnahme verwendet. Nach der ersten Freigabe erscheinen die Gerätenamen.</p>
+    </section>
+
     <div class="controls">
       <button id="btn-start" class="btn btn-primary">Capture starten</button>
       <button id="btn-stop" class="btn btn-danger" disabled>Stop</button>
     </div>
 
-    <!-- OBS Overlay URL -->
-    <div class="settings-section" style="margin-bottom:12px;padding:10px 14px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+    </main>
+    <aside class="capture-rail">
+
+    <section class="capture-panel capture-panel--overlay">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <span style="font-size:14px;">OBS</span>
         <strong style="color:#64B5F6;font-size:13px;">OBS Overlay URL</strong>
       </div>
@@ -420,17 +812,15 @@
         <input type="text" id="ml-overlay-url" readonly style="flex:1;font-family:monospace;font-size:12px;padding:6px 8px;cursor:text;" value="">
         <button id="btn-copy-overlay-url" class="btn btn-small btn-primary" style="flex:0;">Kopieren</button>
       </div>
-      <p class="help-text" style="margin-top:4px;">Als Browser Source in OBS einfügen</p>
-    </div>
+      <p class="help-text" style="margin-top:8px;">Als Browser Source in OBS einfügen</p>
+    </section>
 
-    <!-- Multi-Language Live Preview -->
-    <div class="preview-section" id="preview-section">
+    <section class="capture-panel capture-panel--preview" id="preview-section">
       <h3>Live-Output <span id="preview-lang-count" style="font-size:11px;color:#888;"></span></h3>
       <div id="preview-lines"></div>
-    </div>
+    </section>
 
-    <!-- Multi-Language Settings -->
-    <div class="settings-section" id="settings-section">
+    <section class="capture-panel" id="settings-section">
       <h3 id="settings-toggle">Multi-Language Einstellungen</h3>
       <div id="settings-body">
         <div class="settings-row">
@@ -469,21 +859,26 @@
           <span id="ml-status" style="font-size:12px;color:#4CAF50;margin-left:8px;"></span>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div id="log" class="log-box">
-      <div style="color:#888">Bereit. Klicke "Capture starten"...</div>
-    </div>
+    <section class="capture-panel capture-panel--log">
+      <div id="log" class="log-box">
+        <div style="color:#888">Bereit. Klicke "Capture starten"...</div>
+      </div>
+    </section>
 
-    <div class="info-box">
-      <strong>Multi-Language Output:</strong><br>
-      1. Wähle <strong>Default-Sprache</strong> (was gesprochen wird)<br>
-      2. Füge <strong>Zielsprachen</strong> hinzu (je eine Zeile im Output)<br>
-      3. Wähle <strong>Übersetzungs-Modell</strong> (wird automatisch geladen wenn API-Key vorhanden)<br>
-      4. Starte Capture - jede Zeile zeigt eine Sprache<br>
-      <br>
-      <strong class="accent-yellow">Übersetzung via Ollama Cloud</strong> - muss in den Admin-Settings aktiviert sein.
-    </div>
+    <section class="capture-panel capture-panel--info">
+      <div class="info-box">
+        <strong>Multi-Language Output:</strong><br>
+        1. Wähle <strong>Default-Sprache</strong> (was gesprochen wird)<br>
+        2. Füge <strong>Zielsprachen</strong> hinzu (je eine Zeile im Output)<br>
+        3. Wähle <strong>Übersetzungs-Modell</strong> (wird automatisch geladen wenn API-Key vorhanden)<br>
+        4. Starte Capture - jede Zeile zeigt eine Sprache<br>
+        <br>
+        <strong class="accent-yellow">Übersetzung via Ollama Cloud</strong> - muss in den Admin-Settings aktiviert sein.
+      </div>
+    </section>
+    </aside>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -602,6 +997,10 @@
     const mlAsrModelEl = document.getElementById('ml-asr-model');
     const mlShowDefaultEl = document.getElementById('ml-show-default');
     const mlOverlayUrlEl = document.getElementById('ml-overlay-url');
+    const audioDeviceSelectEl = document.getElementById('audio-device-select');
+    const btnRefreshDevices = document.getElementById('btn-refresh-devices');
+    const AUDIO_DEVICE_STORAGE_KEY = 'stt-ticker-capture-audio-device-id';
+    let selectedAudioDeviceId = localStorage.getItem(AUDIO_DEVICE_STORAGE_KEY) || '';
 
     populateLanguageSelect(mlDefaultLangEl, 'de');
     populateLanguageSelect(mlAddLangEl, '', true);
@@ -613,6 +1012,42 @@
       if (data.multi && data.multi.lines) {
         renderPreview(data.multi.lines);
       }
+    });
+
+    if (btnRefreshDevices) {
+      btnRefreshDevices.addEventListener('click', async function() {
+        try {
+          btnRefreshDevices.disabled = true;
+          await refreshAudioDevices();
+        } catch (error) {
+          log('Audio-Geräte konnten nicht geladen werden: ' + error.message, 'warn');
+        } finally {
+          btnRefreshDevices.disabled = false;
+        }
+      });
+    }
+    if (audioDeviceSelectEl) {
+      audioDeviceSelectEl.addEventListener('change', async function() {
+        persistSelectedAudioDevice(this.value);
+        log('Mikrofon gewählt: ' + getSelectedAudioDeviceLabel());
+        if (isCapturing) {
+          log('Capture wird mit dem neuen Mikrofon neu gestartet', 'warn');
+          stopCapture();
+          await startCapture();
+        }
+      });
+    }
+
+    if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+      navigator.mediaDevices.addEventListener('devicechange', function() {
+        loadAudioDevices(selectedAudioDeviceId).catch(function(error) {
+          log('Audio-Geräte konnten nicht aktualisiert werden: ' + error.message, 'warn');
+        });
+      });
+    }
+
+    loadAudioDevices(selectedAudioDeviceId).catch(function(error) {
+      log('Audio-Geräte konnten nicht geladen werden: ' + error.message, 'warn');
     });
 
     function log(msg, type) {
@@ -697,6 +1132,124 @@
         });
       }
       renderPreview(lines);
+    }
+
+    function persistSelectedAudioDevice(deviceId) {
+      selectedAudioDeviceId = deviceId || '';
+      try {
+        localStorage.setItem(AUDIO_DEVICE_STORAGE_KEY, selectedAudioDeviceId);
+      } catch (error) {}
+    }
+
+    function getSelectedAudioDeviceLabel() {
+      if (!audioDeviceSelectEl) return 'Systemstandard';
+      const option = audioDeviceSelectEl.selectedOptions && audioDeviceSelectEl.selectedOptions[0];
+      return option ? (option.textContent || 'Systemstandard') : 'Systemstandard';
+    }
+
+    async function refreshAudioDevices() {
+      log('Mikrofonzugriff anfragen...');
+      await unlockAudioDevices();
+      await loadAudioDevices(audioDeviceSelectEl ? audioDeviceSelectEl.value : selectedAudioDeviceId);
+      log('Audio-Geräte freigegeben und aktualisiert');
+    }
+    async function unlockAudioDevices() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('getUserMedia wird von diesem Browser nicht unterstützt');
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true
+        }
+      });
+      try {
+        return stream;
+      } finally {
+        stream.getTracks().forEach(function(track) { track.stop(); });
+      }
+    }
+    async function loadAudioDevices(preferredDeviceId) {
+      if (!audioDeviceSelectEl) {
+        return;
+      }
+      const targetDeviceId = typeof preferredDeviceId === 'string' ? preferredDeviceId : selectedAudioDeviceId;
+      audioDeviceSelectEl.innerHTML = '';
+
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = 'Systemstandard-Mikrofon';
+      audioDeviceSelectEl.appendChild(defaultOption);
+
+      let audioInputs = [];
+      if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          audioInputs = devices.filter(function(device) {
+            return device.kind === 'audioinput' &&
+              device.deviceId !== 'default' &&
+              device.deviceId !== 'communications';
+          });
+        } catch (error) {
+          audioInputs = [];
+        }
+      }
+
+      if (audioInputs.length === 0) {
+        const infoOption = document.createElement('option');
+        infoOption.value = '__none__';
+        infoOption.textContent = 'Keine weiteren Eingabegeräte gefunden';
+        infoOption.disabled = true;
+        audioDeviceSelectEl.appendChild(infoOption);
+        audioDeviceSelectEl.disabled = false;
+        if (targetDeviceId) {
+          persistSelectedAudioDevice('');
+        }
+        return;
+      }
+
+      audioDeviceSelectEl.disabled = false;
+      audioInputs.forEach(function(device, index) {
+        const option = document.createElement('option');
+        option.value = device.deviceId;
+        option.textContent = device.label || ('Mikrofon ' + (index + 1));
+        if (device.deviceId === targetDeviceId) option.selected = true;
+        audioDeviceSelectEl.appendChild(option);
+      });
+      if (targetDeviceId && audioInputs.some(function(device) { return device.deviceId === targetDeviceId; })) {
+        audioDeviceSelectEl.value = targetDeviceId;
+      } else if (audioInputs.length > 0) {
+        audioDeviceSelectEl.value = '';
+        persistSelectedAudioDevice('');
+      }
+    }
+
+    async function openSelectedAudioStream() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('getUserMedia wird von diesem Browser nicht unterstützt');
+      }
+      const commonAudio = {
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true
+      };
+      const deviceId = audioDeviceSelectEl && audioDeviceSelectEl.value ? audioDeviceSelectEl.value : selectedAudioDeviceId;
+      const withDevice = deviceId ? { ...commonAudio, deviceId: { exact: deviceId } } : commonAudio;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: withDevice });
+        persistSelectedAudioDevice(deviceId);
+        await loadAudioDevices(deviceId);
+        return stream;
+      } catch (error) {
+        if (deviceId) {
+          log('Ausgewähltes Mikrofon nicht verfügbar, nutze das Standardgerät.', 'warn');
+          persistSelectedAudioDevice('');
+          await loadAudioDevices('');
+          return navigator.mediaDevices.getUserMedia({ audio: commonAudio });
+        }
+        throw error;
+      }
     }
 
     async function loadModels(apiKey) {
@@ -886,10 +1439,8 @@
       log('Frage Mikrofon-Erlaubnis an...');
       btnStart.disabled = true;
       try {
-        audioStream = await navigator.mediaDevices.getUserMedia({
-          audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }
-        });
-        log('Mikrofon-Erlaubnis erteilt');
+        audioStream = await openSelectedAudioStream();
+        log('Mikrofon-Erlaubnis erteilt: ' + getSelectedAudioDeviceLabel());
         audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
         if (audioContext.state === 'suspended') await audioContext.resume();
         audioSource = audioContext.createMediaStreamSource(audioStream);

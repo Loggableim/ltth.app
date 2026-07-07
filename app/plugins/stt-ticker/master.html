@@ -77,8 +77,11 @@
       margin: 0;
       width: 100%;
       height: 100%;
-      font-family: Arial, Helvetica, sans-serif;
-      background: linear-gradient(180deg, #0b0e1a 0%, #11162a 100%);
+      font-family: "Segoe UI Variable", "Bahnschrift", "Segoe UI", Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at 10% 6%, rgba(59, 130, 246, 0.14), transparent 22%),
+        radial-gradient(circle at 90% 10%, rgba(74, 222, 128, 0.12), transparent 18%),
+        linear-gradient(180deg, #0b0e1a 0%, #11162a 100%);
       color: var(--text);
       overflow: hidden;
     }
@@ -90,12 +93,12 @@
 
     html[data-theme="day"] .topbar {
       background: rgba(248, 251, 255, 0.96);
-      border-bottom-color: #93c5fd;
+      border-color: #cbd5e1;
     }
 
     html[data-theme="day"] .tabs {
-      background: #dbe6ff;
-      border-bottom-color: #bfd0f7;
+      background: rgba(219, 230, 255, 0.86);
+      border-color: #bfd0f7;
     }
 
     html[data-theme="day"] .frame-wrap {
@@ -122,7 +125,7 @@
     html[data-theme="contrast"] .topbar,
     html[data-theme="vision-impaired"] .topbar {
       background: #000;
-      border-bottom: 2px solid #facc15;
+      border: 2px solid #facc15;
       box-shadow: none;
     }
 
@@ -134,7 +137,7 @@
     html[data-theme="contrast"] .tabs,
     html[data-theme="vision-impaired"] .tabs {
       background: #000;
-      border-bottom: 2px solid #facc15;
+      border: 2px solid #facc15;
     }
 
     html[data-theme="contrast"] .tab-btn,
@@ -243,36 +246,52 @@
 
     .topbar {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 72px;
-      background: rgba(26, 31, 50, 0.95);
-      border-bottom: 1px solid var(--line);
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      min-height: 86px;
+      background: linear-gradient(135deg, rgba(13, 18, 34, 0.94), rgba(20, 27, 48, 0.92));
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px;
+      gap: 16px;
+      padding: 14px 18px;
       z-index: 10;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 4px 10px var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 14px;
+      min-width: 0;
+      flex: 1 1 auto;
     }
 
-    .brand h1 {
-      font-size: 18px;
-      margin: 0;
-      color: #8effa1;
+    .brand-logo {
+      display: block;
+      width: min(100%, 260px);
+      max-height: 68px;
+      object-fit: contain;
+      filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.34));
+      flex-shrink: 0;
+    }
+
+    .brand-copy {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
     .sub {
       color: var(--text-dim);
-      font-size: 11px;
+      font-size: 12px;
+      letter-spacing: 0.01em;
     }
 
     .actions {
@@ -285,12 +304,14 @@
       appearance: none;
       border: 0;
       cursor: pointer;
-      border-radius: 7px;
-      padding: 8px 12px;
-      font-size: 12px;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 12.5px;
       font-weight: 700;
-      background: #3a425f;
+      background: rgba(58, 66, 95, 0.96);
       color: var(--text);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
     }
 
     .btn:hover {
@@ -324,22 +345,29 @@
     }
 
     .tabs {
-      margin-top: 72px;
-      background: var(--panel);
+      position: sticky;
+      top: 118px;
+      z-index: 9;
+      margin: 0 16px;
+      padding: 12px 12px 0;
+      background: rgba(17, 22, 42, 0.76);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 20px 20px 0 0;
       border-bottom: 1px solid var(--line);
       display: flex;
       gap: 4px;
-      padding: 10px 10px 0;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
     }
 
     .tab-btn {
       border: 0;
-      border-radius: 8px 8px 0 0;
-      background: var(--panel-soft);
+      border-radius: 12px 12px 0 0;
+      background: rgba(38, 43, 66, 0.96);
       color: var(--text);
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 700;
-      padding: 8px 12px;
+      padding: 10px 14px;
       cursor: pointer;
       position: relative;
       top: 1px;
@@ -354,9 +382,9 @@
       position: fixed;
       left: 0;
       right: 0;
-      top: 112px;
+      top: 166px;
       bottom: 0;
-      padding: 12px 16px;
+      padding: 0 16px 16px;
       background: var(--bg);
     }
 
@@ -364,9 +392,10 @@
       width: 100%;
       height: 100%;
       border: 1px solid #2d3551;
-      border-radius: 10px;
+      border-radius: 22px;
       overflow: hidden;
       background: #171d33;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
       display: none;
     }
 
@@ -458,8 +487,10 @@
 <body>
   <div class="topbar">
     <div class="brand">
-      <h1>STT Ticker</h1>
-      <span class="sub">Master Workspace (Admin + Audio Capture)</span>
+      <img class="brand-logo" src="/ltthttslogo.png" alt="STT Ticker">
+      <div class="brand-copy">
+        <span class="sub">Master Workspace (Admin + Audio Capture)</span>
+      </div>
     </div>
     <div class="actions">
       <a class="btn" href="/overlay/stt-ticker?design=dual-language&amp;position=bottom-center&amp;maxLines=2&amp;fontSize=36px" target="_blank">Open Overlay</a>
