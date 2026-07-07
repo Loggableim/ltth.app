@@ -1,10 +1,10 @@
 {
-  "version": "1.3.19",
+  "version": "1.3.20",
   "releaseDate": "2026-07-07",
   "status": "stable",
-  "downloadVersion": "1.3.19",
-  "downloadNote": "Live Goals gets a modern widescreen rework with theme-safe layouts, streamlined controls, and cleaner Live Goals branding inside the app.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.19",
+  "downloadVersion": "1.3.20",
+  "downloadNote": "Fireworks trims obsolete top branding and removes the in-plugin open-tab control while keeping the widescreen settings surface intact.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.20",
   "oneLineInstaller": {
     "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex",
     "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
@@ -19,6 +19,14 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.20": {
+      "date": "2026-07-07",
+      "changes": [
+        "IMPROVED: Fireworks settings header now drops the obsolete top-left branding block and keeps the centered logo-focused hero",
+        "IMPROVED: Fireworks no longer shows an in-plugin Open in New Tab control; the overlay card now focuses on copying the OBS URL",
+        "FIXED: Fireworks overlay preview-state code and banner were removed, keeping the overlay lean for browser-source use"
+      ]
+    },
     "1.3.19": {
       "date": "2026-07-07",
       "changes": [

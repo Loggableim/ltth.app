@@ -28,16 +28,6 @@
             height: 100%;
         }
 
-        html.preview-mode,
-        html.preview-mode body {
-            background-color: #050b14;
-            background-image:
-                radial-gradient(circle at 20% 16%, rgba(34, 197, 94, 0.18), transparent 28%),
-                radial-gradient(circle at 80% 12%, rgba(56, 189, 248, 0.15), transparent 22%),
-                radial-gradient(circle at 50% 102%, rgba(250, 204, 21, 0.12), transparent 30%),
-                linear-gradient(135deg, #050b14 0%, #09111b 52%, #0d1727 100%);
-        }
-
         #fireworks-container {
             position: fixed;
             top: 0;
@@ -112,43 +102,6 @@
         .overlay-bg-transparent {
             background: transparent !important;
             background-color: transparent !important;
-        }
-
-        .preview-banner {
-            position: fixed;
-            top: 18px;
-            left: 18px;
-            z-index: 120;
-            display: none;
-            flex-direction: column;
-            gap: 4px;
-            max-width: min(92vw, 420px);
-            padding: 12px 16px;
-            border-radius: 16px;
-            background: rgba(8, 15, 25, 0.78);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(74, 222, 128, 0.28);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-            color: #d9ffe4;
-            pointer-events: none;
-        }
-
-        html.preview-mode .preview-banner {
-            display: flex;
-        }
-
-        .preview-banner__label {
-            font-size: 12px;
-            font-weight: 800;
-            letter-spacing: 0.14em;
-            text-transform: uppercase;
-            color: #7ef0a8;
-        }
-
-        .preview-banner__text {
-            font-size: 14px;
-            line-height: 1.45;
-            color: #edfdf2;
         }
 
         /* Gift info popup */
@@ -810,11 +763,6 @@
         <div>Renderer: <span id="renderer-type">-</span></div>
     </div>
 
-    <div class="preview-banner" aria-hidden="true">
-        <div class="preview-banner__label">Preview Mode</div>
-        <div class="preview-banner__text">Transparent OBS overlay preview. Trigger a test firework in settings to see the animation.</div>
-    </div>
-
     <!-- Follower Thank You Animation -->
     <div id="follower-animation" class="follower-animation">
         <div class="follower-content">
@@ -829,15 +777,6 @@
     </div>
 
     <script>
-        const OVERLAY_PREVIEW_STATE_KEY = 'fireworks-overlay-preview-state';
-        const OVERLAY_PREVIEW_WINDOW_NAME = 'fireworks-overlay-preview';
-        const OVERLAY_PREVIEW_MODE = new URLSearchParams(window.location.search).get('preview') === '1';
-        let overlayPreviewHeartbeat = null;
-
-        if (OVERLAY_PREVIEW_MODE) {
-            document.documentElement.classList.add('preview-mode');
-        }
-
         window.FIREWORKS_USE_WORKER = Boolean(
             typeof OffscreenCanvas !== 'undefined' &&
             HTMLCanvasElement.prototype.transferControlToOffscreen &&
@@ -852,42 +791,6 @@
             document.getElementById('fireworks-canvas')?.style.setProperty('background-color', color, 'important');
         }
 
-        function publishOverlayPreviewState(open) {
-            try {
-                if (open) {
-                    localStorage.setItem(OVERLAY_PREVIEW_STATE_KEY, JSON.stringify({
-                        open: true,
-                        updatedAt: Date.now()
-                    }));
-                } else {
-                    localStorage.removeItem(OVERLAY_PREVIEW_STATE_KEY);
-                }
-            } catch (error) {}
-        }
-
-        function startOverlayPreviewHeartbeat() {
-            window.name = OVERLAY_PREVIEW_WINDOW_NAME;
-            publishOverlayPreviewState(true);
-
-            if (overlayPreviewHeartbeat) return;
-
-            overlayPreviewHeartbeat = window.setInterval(() => {
-                publishOverlayPreviewState(true);
-            }, 2000);
-        }
-
-        function stopOverlayPreviewHeartbeat() {
-            if (overlayPreviewHeartbeat) {
-                clearInterval(overlayPreviewHeartbeat);
-                overlayPreviewHeartbeat = null;
-            }
-
-            publishOverlayPreviewState(false);
-        }
-
-        startOverlayPreviewHeartbeat();
-        window.addEventListener('beforeunload', stopOverlayPreviewHeartbeat);
-        window.addEventListener('pagehide', stopOverlayPreviewHeartbeat);
     </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/plugins/fireworks/gpu/particle-system-soa.js"></script>

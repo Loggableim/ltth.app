@@ -673,13 +673,6 @@
     <div class="w-full max-w-none mx-0">
         <!-- Header -->
         <header class="fireworks-hero card mb-6">
-            <div class="fireworks-brand">
-                <img class="fireworks-brand-icon" src="/plugins/fireworks/assets/fireworks-icon.png" alt="" aria-hidden="true">
-                <div class="fireworks-brand-copy">
-                    <p class="fireworks-brand-title" data-i18n="fireworks.fireworks_superplugin">Fireworks Superplugin</p>
-                    <p class="fireworks-subtitle" data-i18n="fireworks.subtitle">GPU-Accelerated Fireworks Effects</p>
-                </div>
-            </div>
             <div class="fireworks-logo-wrap" aria-label="Fireworks">
                 <img class="top-logo" data-brand-logo src="/plugins/fireworks/assets/fireworks-logo.png" alt="Fireworks">
             </div>
@@ -699,9 +692,6 @@
                     </button>
                     <button id="save-btn" class="btn-success px-6 py-3 rounded-lg font-bold" data-i18n="fireworks.save_settings">
                         Save Settings
-                    </button>
-                    <button id="open-overlay-hero" class="btn-primary px-6 py-3 rounded-lg font-bold">
-                        <span id="open-overlay-hero-label" data-overlay-label data-i18n="fireworks.open_in_new_tab">Open in New Tab</span>
                     </button>
                 </div>
             </div>
@@ -1495,15 +1485,12 @@
                     <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.overlay">OBS Overlay</h2>
                     
                     <p class="text-sm text-gray-400 mb-4" data-i18n="fireworks.use_this_url_in_obs">
-                        Use this URL in OBS as a Browser Source. Preview is available directly in OBS.
+                        Use this URL in OBS as a Browser Source.
                     </p>
                     
-                    <div class="flex gap-2">
-                        <button id="copy-overlay-url" class="flex-1 bg-white/10 hover:bg-white/20 py-2 rounded-lg transition" data-i18n="fireworks.copy_overlay_url">
+                    <div class="flex">
+                        <button id="copy-overlay-url" class="w-full bg-white/10 hover:bg-white/20 py-2 rounded-lg transition" data-i18n="fireworks.copy_overlay_url">
                             &#x1F4CB; Copy Overlay URL
-                        </button>
-                        <button id="open-overlay" class="flex-1 bg-white/10 hover:bg-white/20 py-2 rounded-lg transition">
-                            <span id="open-overlay-label" data-overlay-label data-i18n="fireworks.open_in_new_tab">&#x2197; Open in New Tab</span>
                         </button>
                     </div>
                 </div>
@@ -1776,39 +1763,13 @@ html[data-theme="night"] .card {
         backdrop-filter: blur(18px);
     }
 
-    body.fireworks-page .fireworks-brand {
-        display: flex;
-        align-items: center;
-        gap: 18px;
-        min-width: 0;
-    }
-
-    body.fireworks-page .fireworks-brand-icon {
-        width: 88px;
-        height: 88px;
-        object-fit: contain;
-        flex-shrink: 0;
-        filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.45));
-    }
-
-    body.fireworks-page .fireworks-brand-copy {
-        min-width: 0;
-    }
-
-    body.fireworks-page .fireworks-brand-title {
-        color: rgba(236, 253, 245, 0.96);
-        font-size: 1.08rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        line-height: 1.1;
-    }
-
     body.fireworks-page .fireworks-logo-wrap {
         display: flex;
         justify-content: center;
         align-items: center;
         min-width: 0;
+        grid-column: 2;
+        justify-self: center;
     }
 
     body.fireworks-page .top-logo {
@@ -1820,19 +1781,13 @@ html[data-theme="night"] .card {
         filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.35));
     }
 
-    body.fireworks-page .fireworks-subtitle {
-        margin-top: 8px;
-        color: rgba(236, 253, 245, 0.75);
-        font-size: 0.98rem;
-        line-height: 1.35;
-    }
-
     body.fireworks-page .fireworks-hero-meta {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
         gap: 14px;
         min-width: 0;
+        grid-column: 3;
     }
 
     body.fireworks-page .fireworks-status-row {
@@ -2068,16 +2023,6 @@ html[data-theme="night"] .card {
             padding: 16px 12px;
         }
 
-        body.fireworks-page .fireworks-brand {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        body.fireworks-page .fireworks-brand-icon {
-            width: 72px;
-            height: 72px;
-        }
-
         body.fireworks-page .top-logo {
             width: min(360px, 74vw) !important;
         }
@@ -2122,7 +2067,6 @@ html[data-theme="night"] .card {
         border-color: rgba(239, 68, 68, 0.22);
     }
 
-    html[data-theme="day"] body.fireworks-page .fireworks-subtitle,
     html[data-theme="day"] body.fireworks-page .text-gray-400,
     html[data-theme="day"] body.fireworks-page .text-gray-300,
     html[data-theme="day"] body.fireworks-page .text-gray-200 {
