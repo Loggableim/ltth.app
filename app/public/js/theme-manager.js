@@ -260,16 +260,12 @@ class ThemeManager {
     updateSidebarLogo(theme) {
         const wideLogo = document.querySelector('.sidebar-logo-wide');
         const miniIcon = document.getElementById('sidebar-mini-icon');
-        const topbarLogo = document.querySelector('.topbar-logo-image');
 
         if (wideLogo) {
-            wideLogo.src = '/ltthwebsitelogo.png';
+            wideLogo.src = '/logo-wide.png';
         }
         if (miniIcon) {
             miniIcon.src = '/ltthicon.png';
-        }
-        if (topbarLogo) {
-            topbarLogo.src = '/ltthicon.png';
         }
     }
 
