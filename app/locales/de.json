@@ -823,6 +823,7 @@
   "wiki": {
     "title": "Wiki & Dokumentation",
     "open_new_tab": "In neuem Tab öffnen",
+    "close_tab": "Tab schließen",
     "search_placeholder": "Dokumentation durchsuchen...",
     "loading": "Dokumentation wird geladen...",
     "no_results": "Keine Ergebnisse gefunden",

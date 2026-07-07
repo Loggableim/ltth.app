@@ -263,6 +263,7 @@
   "wiki": {
     "title": "Wiki y Documentación",
     "open_new_tab": "Abrir en Nueva Pestaña",
+    "close_tab": "Cerrar pestaña",
     "search_placeholder": "Buscar documentación...",
     "loading": "Cargando documentación...",
     "no_results": "No se encontraron resultados",

@@ -822,6 +822,7 @@
   "wiki": {
     "title": "Wiki & Documentation",
     "open_new_tab": "Open in New Tab",
+    "close_tab": "Close Tab",
     "search_placeholder": "Search documentation...",
     "loading": "Loading documentation...",
     "no_results": "No results found",

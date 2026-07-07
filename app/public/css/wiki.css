@@ -137,6 +137,46 @@
     padding: 0.5rem 0;
 }
 
+.wiki-sidebar-actions {
+    margin-top: auto;
+    padding: 1rem;
+    border-top: 1px solid var(--color-border);
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0), rgba(17, 24, 39, 0.18));
+}
+
+.wiki-sidebar-action-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.8rem 0.95rem;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.wiki-sidebar-action-btn:hover {
+    background: color-mix(in srgb, var(--color-bg-tertiary) 82%, var(--color-accent-primary) 18%);
+    border-color: color-mix(in srgb, var(--color-border) 35%, var(--color-accent-primary) 65%);
+    transform: translateY(-1px);
+}
+
+.wiki-sidebar-action-btn i {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.wiki-sidebar-action-label {
+    line-height: 1.25;
+}
+
 .wiki-nav-section {
     margin-bottom: 0.5rem;
 }

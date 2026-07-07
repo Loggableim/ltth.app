@@ -17,22 +17,7 @@
             const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
             const SIDEBAR_WIDE_LOGO = '/logo-wide.png';
             const SIDEBAR_ICON_LOGO = '/ltthicon.png';
-            const GOALS_TOPBAR_LOGO = '/logo-wide.png';
-
-            function isGoalsView() {
-                try {
-                    if (window.NavigationManager?.getCurrentView?.() === 'goals') return true;
-                } catch (error) {}
-
-                const activeGoalsView = document.querySelector('#view-goals.active');
-                if (activeGoalsView) return true;
-
-                try {
-                    return localStorage.getItem('active-view') === 'goals';
-                } catch (error) {}
-
-                return false;
-            }
+            const TOPBAR_ICON_LOGO = '/ltthicon.png';
 
             function readTheme() {
                 try {
@@ -68,8 +53,7 @@
                     if (mini.getAttribute('src') !== SIDEBAR_ICON_LOGO) mini.setAttribute('src', SIDEBAR_ICON_LOGO);
                 }
                 if (topbar) {
-                    const targetSrc = isGoalsView() ? GOALS_TOPBAR_LOGO : SIDEBAR_WIDE_LOGO;
-                    if (topbar.getAttribute('src') !== targetSrc) topbar.setAttribute('src', targetSrc);
+                    if (topbar.getAttribute('src') !== TOPBAR_ICON_LOGO) topbar.setAttribute('src', TOPBAR_ICON_LOGO);
                 }
             }
 
@@ -2615,7 +2599,7 @@
                 <div class="topbar-drag-region"></div>
                 <div class="topbar-left">
                     <div class="topbar-brand" aria-label="Pup Cid's Little TikTool Helper">
-                        <img src="/logo-wide.png" alt="LTTH" class="topbar-logo-image">
+                        <img src="/ltthicon.png" alt="LTTH icon" class="topbar-logo-image">
                     </div>
                 </div>
                 <div class="topbar-right">
@@ -3795,16 +3779,6 @@
                 <!-- View: ClarityHUD -->
                 <div id="view-clarityhud" class="content-view" data-plugin="clarityhud">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="layout"></i>
-                                ClarityHUD
-                            </h2>
-                            <a href="/clarityhud/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/clarityhud/ui" title="ClarityHUD Configuration"></iframe>
                         </div>

@@ -23,6 +23,8 @@
     const SEARCH_DEBOUNCE_MS = 300;
     const CACHE_MAX_SIZE = 50; // Limit cache size to prevent memory issues
     const SUPPORTED_LANGUAGES = ['en', 'de', 'es', 'fr']; // Supported languages
+    const WIKI_ACTION_OPEN_KEY = 'wiki.open_new_tab';
+    const WIKI_ACTION_CLOSE_KEY = 'wiki.close_tab';
 
     // ========== INITIALIZATION ==========
     document.addEventListener('DOMContentLoaded', async () => {
@@ -78,6 +80,9 @@
             // Build navigation
             buildNavigation();
 
+            // Configure the shared wiki tab action button
+            setupWikiTabActionButton();
+
             // Set up search (consolidated event listener)
             setupSearch();
 
@@ -92,6 +97,86 @@
         } catch (error) {
             log.error('Initialization failed', { error: error.message, stack: error.stack });
             showError('Failed to load wiki. Please try again later.');
+        }
+    }
+
+    function isWikiOpenedInNewTab() {
+        try {
+            return !!window.opener && window.opener !== window;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function getWikiTabActionKey() {
+        return isWikiOpenedInNewTab() ? WIKI_ACTION_CLOSE_KEY : WIKI_ACTION_OPEN_KEY;
+    }
+
+    function getWikiTabActionLabel(key) {
+        if (window.i18n && window.i18n.initialized && typeof window.i18n.t === 'function') {
+            const translated = window.i18n.t(key);
+            if (translated && translated !== key) {
+                return translated;
+            }
+        }
+        return key === WIKI_ACTION_CLOSE_KEY ? 'Close Tab' : 'Open in New Tab';
+    }
+
+    function setupWikiTabActionButton() {
+        const button = document.getElementById('wiki-open-new-tab');
+        if (!button) return;
+
+        if (button.dataset.wikiActionBound === 'true') {
+            updateWikiTabActionButton();
+            return;
+        }
+
+        button.dataset.wikiActionBound = 'true';
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+
+            if (isWikiOpenedInNewTab()) {
+                window.close();
+                return;
+            }
+
+            let wikiUrl = '/wiki.html';
+            if (window.WikiSystem && typeof window.WikiSystem.getCurrentPage === 'function') {
+                const currentPage = window.WikiSystem.getCurrentPage();
+                if (currentPage && currentPage !== 'home') {
+                    wikiUrl += `#wiki:${currentPage}`;
+                }
+            }
+
+            window.open(wikiUrl, '_blank');
+        });
+
+        updateWikiTabActionButton();
+    }
+
+    function updateWikiTabActionButton() {
+        const button = document.getElementById('wiki-open-new-tab');
+        if (!button) return;
+
+        const key = getWikiTabActionKey();
+        const label = getWikiTabActionLabel(key);
+        const icon = button.querySelector('i');
+        const labelNode = button.querySelector('.wiki-sidebar-action-label');
+
+        button.setAttribute('data-i18n-title', key);
+        button.title = label;
+
+        if (labelNode) {
+            labelNode.setAttribute('data-i18n', key);
+            labelNode.textContent = label;
+        }
+
+        if (icon) {
+            icon.setAttribute('data-lucide', key === WIKI_ACTION_CLOSE_KEY ? 'x' : 'external-link');
+        }
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
         }
     }
 
@@ -119,6 +204,7 @@
             localStorage.setItem('wiki-language', lang);
             // Reload current page with new language
             loadPage(currentPage);
+            updateWikiTabActionButton();
         }
     }
 

@@ -1,26 +1,7 @@
 /**
  * Dashboard Initialization
- * Handles wiki open-in-new-tab and language switcher initialization
+ * Handles language switcher initialization
  */
-
-// Handle "Open in New Tab" button for wiki
-document.addEventListener('DOMContentLoaded', () => {
-    const openWikiNewTabBtn = document.getElementById('wiki-open-new-tab');
-    if (openWikiNewTabBtn) {
-        openWikiNewTabBtn.addEventListener('click', () => {
-            // Get current wiki page if available
-            let wikiUrl = '/wiki.html';
-            if (window.WikiSystem && typeof window.WikiSystem.getCurrentPage === 'function') {
-                const currentPage = window.WikiSystem.getCurrentPage();
-                if (currentPage && currentPage !== 'home') {
-                    wikiUrl += `#wiki:${currentPage}`;
-                }
-            }
-            // Open in new window/tab
-            window.open(wikiUrl, '_blank', 'noopener,noreferrer');
-        });
-    }
-});
 
 // Language Switcher Initialization
 (async function initLanguageSwitchers() {
