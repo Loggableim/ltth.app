@@ -34,6 +34,7 @@ $LTTHQuiet     = if ($env:LTTH_QUIET)       { $env:LTTH_QUIET       } else { '0'
 $LTTHNoPause   = if ($env:LTTH_NO_PAUSE)    { $env:LTTH_NO_PAUSE    } else { '0' }
 $script:LTTHNodePath = $null
 $script:LTTHInstallerLog = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-installer-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + ".log")
+$script:LTTHSystemNetHttpReady = $false
 
 # ---------- Hilfsfunktionen ----------
 function Write-InstallerLine {
@@ -59,7 +60,29 @@ function Warn($msg) { Write-InstallerLine -Line "[!] $msg" -Color Yellow -Always
 function Err($msg)  { Write-InstallerLine -Line "[X] $msg" -Color Red -Always $true }
 function Fail($msg) { throw $msg }
 
+# Windows PowerShell 5.1 laedt System.Net.Http nicht immer von selbst.
+function Ensure-SystemNetHttp {
+    if ($script:LTTHSystemNetHttpReady) {
+        return $true
+    }
+
+    try {
+        if (-not ([Type]::GetType('System.Net.Http.HttpClientHandler, System.Net.Http', $false))) {
+            Add-Type -AssemblyName System.Net.Http -ErrorAction Stop
+        }
+
+        $script:LTTHSystemNetHttpReady = $true
+        return $true
+    } catch {
+        return $false
+    }
+}
+
 function Get-InstallerBannerText {
+    if (-not (Ensure-SystemNetHttp)) {
+        return $null
+    }
+
     if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
         $localBanner = Join-Path $PSScriptRoot 'banner.txt'
         if (Test-Path -LiteralPath $localBanner) {
@@ -158,6 +181,23 @@ function Invoke-DownloadFileWithProgress {
         [string]$Activity
     )
 
+    if (-not (Ensure-SystemNetHttp)) {
+        Log "$Activity - verwende Fallback-Download ohne HttpClient..."
+        $fallbackParams = @{
+            Uri = $Uri
+            OutFile = $OutFile
+            TimeoutSec = 120
+            ErrorAction = 'Stop'
+        }
+        if ($PSVersionTable.PSVersion.Major -lt 6) {
+            $fallbackParams.UseBasicParsing = $true
+        }
+        Invoke-WebRequest @fallbackParams
+        return
+    }
+
+    $handler = $null
+    $client = $null
     $handler = New-Object System.Net.Http.HttpClientHandler
     $handler.AllowAutoRedirect = $true
     $client = New-Object System.Net.Http.HttpClient($handler)
