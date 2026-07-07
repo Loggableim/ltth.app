@@ -4,6 +4,8 @@
   "version": "1.3.0",
   "description": "Interactive game engine for TikTok LIVE streams with viewer participation via chat commands, live activity, and gifts. Includes Connect4, Chess, Plinko, Glücksrad (Wheel of Fortune), Slot Machine, and Live Arena!",
   "author": "Pup Cid",
+  "icon": "/plugins/game-engine/assets/branding/ltth-game-engine-icon.png?v=20260707-2",
+  "logo": "/plugins/game-engine/assets/branding/ltth-game-engine-logo.png?v=20260707-2",
   "entry": "main.js",
   "enabled": true,
   "type": "overlay",
