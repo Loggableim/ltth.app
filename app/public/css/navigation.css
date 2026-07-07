@@ -652,6 +652,12 @@ body {
     margin-left: -0.04rem;
 }
 
+.sidebar-item[data-view="plugins"] .sidebar-plugin-icon-appstore {
+    width: 28px;
+    height: 28px;
+    margin-left: -0.04rem;
+}
+
 .view-plugin-icon {
     width: 28px;
     height: 28px;

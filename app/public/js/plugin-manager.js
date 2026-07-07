@@ -1258,7 +1258,7 @@ class PluginManager {
 
     renderStoreBadge(label, icon) {
         return `
-            <span style="display: inline-flex; align-items: center; gap: 5px; padding: 0.4rem 0.65rem; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-bg-secondary); color: var(--color-text-muted); font-size: 0.78rem; white-space: nowrap;">
+            <span class="plugin-store-badge">
                 <i data-lucide="${icon}" style="width: 13px; height: 13px;"></i>
                 ${this.escapeHtml(label)}
             </span>
@@ -1270,27 +1270,27 @@ class PluginManager {
         const rawBadges = Array.isArray(plugin.badges) ? plugin.badges : [];
 
         badges.push(plugin.official
-            ? '<span style="padding: 3px 8px; border-radius: 999px; background: rgba(59, 130, 246, 0.14); color: #60a5fa; font-size: 0.7rem;">Official</span>'
-            : '<span style="padding: 3px 8px; border-radius: 999px; background: rgba(251, 191, 36, 0.14); color: #fbbf24; font-size: 0.7rem;">External</span>');
+            ? '<span class="plugin-store-chip plugin-store-chip--official">Official</span>'
+            : '<span class="plugin-store-chip plugin-store-chip--external">External</span>');
 
         if (plugin.channel === 'open-beta' || rawBadges.includes('open-beta')) {
-            badges.push('<span style="padding: 3px 8px; border-radius: 999px; background: rgba(251, 191, 36, 0.14); color: #fbbf24; font-size: 0.7rem;">Open Beta</span>');
+            badges.push('<span class="plugin-store-chip plugin-store-chip--warning">Open Beta</span>');
         }
 
         if (plugin.access?.type === 'closed-beta' || rawBadges.includes('closed-beta')) {
-            badges.push('<span style="padding: 3px 8px; border-radius: 999px; background: rgba(244, 114, 182, 0.14); color: #f472b6; font-size: 0.7rem;">Closed Beta</span>');
+            badges.push('<span class="plugin-store-chip plugin-store-chip--danger">Closed Beta</span>');
         }
 
         if (plugin.sha256) {
-            badges.push('<span style="padding: 3px 8px; border-radius: 999px; background: rgba(16, 185, 129, 0.14); color: #34d399; font-size: 0.7rem;">SHA-256</span>');
+            badges.push('<span class="plugin-store-chip plugin-store-chip--success">SHA-256</span>');
         }
 
         if (plugin.minLtthVersion) {
-            badges.push(`<span style="padding: 3px 8px; border-radius: 999px; background: rgba(148, 163, 184, 0.14); color: #cbd5e1; font-size: 0.7rem;">LTTH ${this.escapeHtml(plugin.minLtthVersion)}+</span>`);
+            badges.push(`<span class="plugin-store-chip plugin-store-chip--muted">LTTH ${this.escapeHtml(plugin.minLtthVersion)}+</span>`);
         }
 
         if (plugin.installed) {
-            badges.push(`<span style="padding: 3px 8px; border-radius: 999px; background: rgba(34, 197, 94, 0.14); color: #22c55e; font-size: 0.7rem;">${plugin.updateAvailable ? 'Update' : 'Installed'}</span>`);
+            badges.push(`<span class="plugin-store-chip plugin-store-chip--installed">${plugin.updateAvailable ? 'Update' : 'Installed'}</span>`);
         }
 
         return badges.join('');
@@ -1317,16 +1317,49 @@ class PluginManager {
         return `--store-icon-bg: ${accent.background}; --store-icon-border: ${accent.border}; --store-icon-color: ${accent.color};`;
     }
 
-    getStorePluginMedia(plugin, compact = false) {
+    getStorePluginBrandMedia(plugin) {
+        const logo = typeof plugin.logo === 'string' ? plugin.logo.trim() : '';
+        const icon = typeof plugin.icon === 'string' ? plugin.icon.trim() : '';
         const thumbnail = Array.isArray(plugin.screenshots) && plugin.screenshots.length > 0
             ? plugin.screenshots[0]
             : '';
-        const accentStyle = this.getStorePluginAccentStyle(plugin);
+
+        if (logo) {
+            return {
+                src: logo,
+                alt: `${plugin.name || plugin.id} logo`,
+                kind: 'logo'
+            };
+        }
+
+        if (icon) {
+            return {
+                src: icon,
+                alt: `${plugin.name || plugin.id} icon`,
+                kind: 'icon'
+            };
+        }
 
         if (thumbnail) {
+            return {
+                src: thumbnail,
+                alt: '',
+                kind: 'screenshot'
+            };
+        }
+
+        return null;
+    }
+
+    getStorePluginMedia(plugin, compact = false) {
+        const media = this.getStorePluginBrandMedia(plugin);
+        const accentStyle = this.getStorePluginAccentStyle(plugin);
+
+        if (media) {
+            const mediaClass = media.kind === 'screenshot' ? '' : 'is-brand';
             return `
-                <div class="plugin-store-card__media ${compact ? 'is-compact' : ''}">
-                    <img src="${this.escapeHtml(thumbnail)}" alt="" loading="lazy" />
+                <div class="plugin-store-card__media ${compact ? 'is-compact' : ''} ${mediaClass}">
+                    <img src="${this.escapeHtml(media.src)}" alt="${this.escapeHtml(media.alt)}" loading="lazy" />
                     <span class="plugin-store-card__media-chip">${this.escapeHtml(plugin.official ? 'Official' : 'External')}</span>
                 </div>
             `;
@@ -1335,7 +1368,7 @@ class PluginManager {
         return `
             <div class="plugin-store-card__media ${compact ? 'is-compact' : ''}">
                 <div class="plugin-store-card__avatar" style="${accentStyle}" role="img" aria-label="LTTH app icon">
-                    <span class="plugin-store-card__avatar-icon" aria-hidden="true"></span>
+                    <span class="plugin-store-card__avatar-icon" data-icon-src="/ltthicon.png" aria-hidden="true"></span>
                 </div>
                 <span class="plugin-store-card__media-chip">${this.escapeHtml(plugin.official ? 'Official' : 'External')}</span>
             </div>
@@ -1397,7 +1430,7 @@ class PluginManager {
                     <i data-lucide="shield-check" style="width: 15px; height: 15px;"></i>
                     <span>Quality signals</span>
                 </div>
-                <div style="display: flex; gap: 0.45rem; flex-wrap: wrap;">
+                <div class="plugin-store-badge-list">
                     ${signals.map(signal => this.renderStoreBadge(signal, 'badge-check')).join('')}
                 </div>
             </section>
@@ -1423,7 +1456,7 @@ class PluginManager {
                     <i data-lucide="list-checks" style="width: 15px; height: 15px;"></i>
                     <span>Setup requirements</span>
                 </div>
-                <div style="display: grid; gap: 0.45rem;">
+                <div class="plugin-store-drawer__stack">
                     ${items.map(item => `<p class="plugin-store-drawer__notes">- ${this.escapeHtml(item)}</p>`).join('')}
                 </div>
             </section>
@@ -1446,7 +1479,7 @@ class PluginManager {
                     <i data-lucide="file-text" style="width: 15px; height: 15px;"></i>
                     <span>Update notes</span>
                 </div>
-                <div style="display: grid; gap: 0.45rem;">
+                <div class="plugin-store-drawer__stack">
                     ${notes.map(note => `<p class="plugin-store-drawer__notes">${this.escapeHtml(note)}</p>`).join('')}
                     ${plugin.minLtthVersion ? `<p class="plugin-store-drawer__notes">Requires LTTH v${this.escapeHtml(plugin.minLtthVersion)} or newer.</p>` : ''}
                 </div>
@@ -1482,16 +1515,16 @@ class PluginManager {
                     <i data-lucide="message-square" style="width: 15px; height: 15px;"></i>
                     <span>Review / Feedback</span>
                 </div>
-                <div style="display: grid; gap: 0.65rem;">
-                    <select data-store-feedback-rating style="padding: 0.65rem; border-radius: 10px; border: 1px solid var(--color-border); background: var(--color-bg-card); color: var(--color-text-primary);">
+                <div class="plugin-store-feedback-form">
+                    <select data-store-feedback-rating class="plugin-store-feedback-form__control">
                         <option value="5">5 - Works well</option>
                         <option value="4">4 - Good with small issues</option>
                         <option value="3">3 - Needs polish</option>
                         <option value="2">2 - Hard to use</option>
                         <option value="1">1 - Broken for me</option>
                     </select>
-                    <textarea data-store-feedback-message rows="3" placeholder="Short feedback for ${this.escapeHtml(plugin.name || plugin.id)}" style="resize: vertical; padding: 0.75rem; border-radius: 10px; border: 1px solid var(--color-border); background: var(--color-bg-card); color: var(--color-text-primary);"></textarea>
-                    <button type="button" data-store-feedback-submit class="btn btn-ghost">
+                    <textarea data-store-feedback-message class="plugin-store-feedback-form__control plugin-store-feedback-form__textarea" rows="3" placeholder="Short feedback for ${this.escapeHtml(plugin.name || plugin.id)}"></textarea>
+                    <button type="button" data-store-feedback-submit class="btn btn-ghost plugin-store-feedback-form__submit">
                         <i data-lucide="send" style="width: 15px; height: 15px;"></i>
                         Send feedback
                     </button>
@@ -1529,6 +1562,7 @@ class PluginManager {
         const screenshots = Array.isArray(plugin.screenshots) ? plugin.screenshots : [];
         const primaryScreenshot = screenshots.length > 0 ? screenshots[0] : '';
         const extraScreenshots = screenshots.slice(1, 4);
+        const brandMedia = this.getStorePluginBrandMedia(plugin);
         const versionSummary = this.getStorePluginVersionSummary(plugin);
         const trustSummary = this.getStorePluginTrustSummary(plugin);
         const compatibilitySummary = this.getStorePluginCompatibilitySummary(plugin);
@@ -1544,10 +1578,12 @@ class PluginManager {
             <aside role="dialog" aria-modal="true" aria-label="${this.escapeHtml(plugin.name || plugin.id)} details" class="plugin-store-drawer__panel">
                 <div class="plugin-store-drawer__header">
                     <div class="plugin-store-drawer__hero">
-                        <div class="plugin-store-drawer__media">
-                            ${primaryScreenshot
-                                ? `<img src="${this.escapeHtml(primaryScreenshot)}" alt="" loading="lazy" />`
-                                : `<div class="plugin-store-drawer__avatar" style="${accentStyle}" role="img" aria-label="Plugin icon"><span class="plugin-store-drawer__avatar-icon" aria-hidden="true"></span></div>`}
+                        <div class="plugin-store-drawer__media ${brandMedia && brandMedia.kind !== 'screenshot' ? 'is-brand' : ''}">
+                            ${brandMedia
+                                ? `<img src="${this.escapeHtml(brandMedia.src)}" alt="${this.escapeHtml(brandMedia.alt)}" loading="lazy" />`
+                                : primaryScreenshot
+                                    ? `<img src="${this.escapeHtml(primaryScreenshot)}" alt="" loading="lazy" />`
+                                    : `<div class="plugin-store-drawer__avatar" style="${accentStyle}" role="img" aria-label="Plugin icon"><span class="plugin-store-drawer__avatar-icon" data-icon-src="/ltthicon.png" aria-hidden="true"></span></div>`}
                         </div>
                         <div class="plugin-store-drawer__title">
                             <h3>${this.escapeHtml(plugin.name || plugin.id)}</h3>
@@ -1626,9 +1662,9 @@ class PluginManager {
 
     renderStoreDetailField(label, value) {
         return `
-            <div style="border: 1px solid var(--color-border); border-radius: 8px; padding: 0.7rem; background: var(--color-bg-card); min-width: 0;">
-                <div style="color: var(--color-text-muted); font-size: 0.72rem; text-transform: uppercase; margin-bottom: 0.25rem;">${this.escapeHtml(label)}</div>
-                <div style="color: var(--color-text-primary); font-size: 0.88rem; overflow-wrap: anywhere;">${this.escapeHtml(value)}</div>
+            <div class="plugin-store-detail-field">
+                <div class="plugin-store-detail-field__label">${this.escapeHtml(label)}</div>
+                <div class="plugin-store-detail-field__value">${this.escapeHtml(value)}</div>
             </div>
         `;
     }
