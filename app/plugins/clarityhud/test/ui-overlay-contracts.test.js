@@ -39,6 +39,22 @@ describe('ClarityHUD UI and overlay contracts', () => {
     expect(mainJs).toContain('/api/clarityhud/multi/status');
   });
 
+  test('keeps the ClarityHUD dashboard view focused on the iframe content', () => {
+    const dashboardHtml = fs.readFileSync(
+      path.join(__dirname, '..', '..', '..', 'public', 'dashboard.html'),
+      'utf8'
+    );
+    const clarityHudBlock = dashboardHtml.match(
+      /<!-- View: ClarityHUD -->[\s\S]*?<!-- View: Advanced Timer -->/
+    );
+    const clarityHudBlockHtml = clarityHudBlock && clarityHudBlock[0];
+
+    expect(clarityHudBlockHtml).toBeTruthy();
+    expect(clarityHudBlockHtml).toContain('data-src="/clarityhud/ui"');
+    expect(clarityHudBlockHtml).not.toContain('view-header');
+    expect(clarityHudBlockHtml).not.toContain('Open in New Tab');
+  });
+
   test('uses debug-gated overlay logging helpers instead of unconditional chat and multi logs', () => {
     const chatJs = read('overlays/chat.js');
     const multiJs = read('overlays/multi.js');
