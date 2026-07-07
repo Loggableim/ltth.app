@@ -11,6 +11,7 @@ This file is the first stop for future agents working on this LTTH snapshot.
 - The historical Electron main-process folder is missing in this snapshot. Do not reintroduce Electron build assumptions unless the Electron files are restored or rebuilt intentionally.
 - `docs_archive/` is historical reference only. Prefer `README.md`, `DOCUMENTATION_INDEX.md`, `infos/`, and `docs/SNAPSHOT_STATUS.md`.
 - The published one-line installer uses `main/install/install.*`; `LTTH_REPO_BRANCH` exists only for explicit overrides.
+- On Windows, the PowerShell installer self-elevates on first run and auto-installs missing Git/Node prerequisites before cloning the repo.
 
 ## Before Editing
 

@@ -98,6 +98,7 @@ Cross-platform one-line installer system:
 - **Documentation:** `install/README.md` — full reference with environment variables (`LTTH_VERSION`, `LTTH_DIR`, `LTTH_PORT`, `LTTH_NO_BROWSER`, `LTTH_QUIET`, `LTTH_REPO_OWNER`, `LTTH_REPO_NAME`).
 - **Integration:** `version.json` contains `oneLineInstaller` commands for Windows/macOS/Linux/Universal.
 - **Default release branch:** `main` (override with `LTTH_REPO_BRANCH` only for legacy/custom installs).
+- **Windows bootstrap:** the PowerShell installer requests admin elevation on first run and auto-installs missing Git and Node dependencies before cloning the repo.
 
 ## Shared Website Layout
 

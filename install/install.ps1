@@ -59,6 +59,78 @@ function Warn($msg) { Write-InstallerLine -Line "[!] $msg" -Color Yellow -Always
 function Err($msg)  { Write-InstallerLine -Line "[X] $msg" -Color Red -Always $true }
 function Fail($msg) { throw $msg }
 
+function Test-Administrator {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Get-CurrentPowerShellExecutable {
+    $processPath = (Get-Process -Id $PID -ErrorAction SilentlyContinue).Path
+    if (-not [string]::IsNullOrWhiteSpace($processPath) -and (Test-Path -LiteralPath $processPath)) {
+        return $processPath
+    }
+
+    $pwshCommand = Get-Command pwsh -ErrorAction SilentlyContinue
+    if ($pwshCommand -and -not [string]::IsNullOrWhiteSpace($pwshCommand.Source)) {
+        return $pwshCommand.Source
+    }
+
+    $powershellCommand = Get-Command powershell -ErrorAction SilentlyContinue
+    if ($powershellCommand -and -not [string]::IsNullOrWhiteSpace($powershellCommand.Source)) {
+        return $powershellCommand.Source
+    }
+
+    return 'powershell.exe'
+}
+
+function Restart-InstallerAsAdministrator {
+    $installerCommand = "iwr -useb https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/main/install/install.ps1 | iex"
+    $encodedCommand = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($installerCommand))
+    $psExe = Get-CurrentPowerShellExecutable
+
+    Log "Fordere Admin-Freigabe an..."
+    try {
+        Start-Process -FilePath $psExe `
+            -Verb RunAs `
+            -ArgumentList @(
+                '-NoProfile',
+                '-ExecutionPolicy',
+                'Bypass',
+                '-EncodedCommand',
+                $encodedCommand
+            ) `
+            -WindowStyle Hidden `
+            | Out-Null
+    } catch {
+        Fail "Admin-Freigabe abgebrochen oder Elevation fehlgeschlagen: $($_.Exception.Message)"
+    }
+}
+
+function Ensure-Administrator {
+    if (Test-Administrator) {
+        return $true
+    }
+
+    Restart-InstallerAsAdministrator
+    return $false
+}
+
+function Refresh-ProcessPath {
+    $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
+    $userPath = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+    $pathParts = @()
+
+    if (-not [string]::IsNullOrWhiteSpace($machinePath)) {
+        $pathParts += $machinePath
+    }
+    if (-not [string]::IsNullOrWhiteSpace($userPath)) {
+        $pathParts += $userPath
+    }
+
+    $env:Path = ($pathParts -join ';')
+}
+
 function Test-SupportedNodeMajor {
     param(
         [Parameter(Mandatory = $true)]
@@ -149,6 +221,211 @@ function Set-PreferredNodeEnvironment {
     $nodeDir = Split-Path -Parent $NodeInfo.Path
     if (-not [string]::IsNullOrWhiteSpace($nodeDir)) {
         $env:Path = "$nodeDir;$env:Path"
+    }
+}
+
+function Get-NodeInstallerInfo {
+    param(
+        [string[]]$SupportedMajors = @('24', '22', '20', '18')
+    )
+
+    try {
+        $index = Invoke-RestMethod -Uri 'https://nodejs.org/dist/index.json' -TimeoutSec 30 -ErrorAction Stop
+        foreach ($entry in $index) {
+            if (-not $entry.lts) {
+                continue
+            }
+
+            $version = [string]$entry.version
+            if ([string]::IsNullOrWhiteSpace($version)) {
+                continue
+            }
+
+            $major = $version -replace '^v(\d+)\..*', '$1'
+            if ($SupportedMajors -contains $major) {
+                return [pscustomobject]@{
+                    Version = $version.TrimStart('v')
+                    Major = $major
+                }
+            }
+        }
+    } catch {
+        throw "Konnte Node.js Release-Index nicht lesen: $($_.Exception.Message)"
+    }
+
+    throw "Keine unterstuetzte Node.js-LTS-Version gefunden."
+}
+
+function Get-PreferredGitInfo {
+    $candidates = New-Object System.Collections.Generic.List[string]
+
+    $gitCommand = Get-Command git -ErrorAction SilentlyContinue
+    if ($gitCommand) {
+        foreach ($candidate in @($gitCommand.Source, $gitCommand.Path, $gitCommand.Definition)) {
+            if (-not [string]::IsNullOrWhiteSpace($candidate) -and $candidate -match 'git(\.exe)?$') {
+                $candidates.Add($candidate)
+            }
+        }
+    }
+
+    foreach ($basePath in @($env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:LOCALAPPDATA)) {
+        if (-not [string]::IsNullOrWhiteSpace($basePath)) {
+            foreach ($relativePath in @(
+                'Git\cmd\git.exe',
+                'Git\bin\git.exe',
+                'Git\usr\bin\git.exe',
+                'Programs\Git\cmd\git.exe',
+                'Programs\Git\bin\git.exe'
+            )) {
+                $candidates.Add((Join-Path $basePath $relativePath))
+            }
+        }
+    }
+
+    $seen = @{}
+    foreach ($candidate in $candidates) {
+        try {
+            $normalized = [System.IO.Path]::GetFullPath($candidate)
+        } catch {
+            $normalized = $candidate
+        }
+
+        if ($seen.ContainsKey($normalized)) {
+            continue
+        }
+        $seen[$normalized] = $true
+
+        try {
+            if (-not (Test-Path -LiteralPath $normalized)) {
+                continue
+            }
+            $versionText = & $normalized --version
+            if ([string]::IsNullOrWhiteSpace($versionText)) {
+                continue
+            }
+
+            return [pscustomobject]@{
+                Path = $normalized
+                Version = $versionText
+            }
+        } catch {
+            continue
+        }
+    }
+
+    return $null
+}
+
+function Set-PreferredGitEnvironment {
+    param(
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$GitInfo
+    )
+
+    $gitDir = Split-Path -Parent $GitInfo.Path
+    if (-not [string]::IsNullOrWhiteSpace($gitDir)) {
+        $env:Path = "$gitDir;$env:Path"
+    }
+}
+
+function Install-GitViaWinget {
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        return $false
+    }
+
+    Log "Installiere Git via winget..."
+    try {
+        $process = Start-Process -FilePath 'winget' `
+            -ArgumentList @(
+                'install',
+                '--id', 'Git.Git',
+                '-e',
+                '--source', 'winget',
+                '--silent',
+                '--accept-package-agreements',
+                '--accept-source-agreements'
+            ) `
+            -WindowStyle Hidden `
+            -PassThru `
+            -Wait
+
+        if ($process.ExitCode -ne 0) {
+            throw "winget install Git.Git fehlgeschlagen (ExitCode $($process.ExitCode))."
+        }
+    } catch {
+        Warn "winget-Git-Installation fehlgeschlagen: $($_.Exception.Message)"
+        return $false
+    }
+
+    Refresh-ProcessPath
+    return [bool](Get-PreferredGitInfo)
+}
+
+function Get-GitInstallerDownloadUrl {
+    $installPage = Invoke-WebRequest -Uri 'https://git-scm.com/install/windows' -TimeoutSec 30 -ErrorAction Stop
+    $html = if ($null -ne $installPage.Content) { [string]$installPage.Content } else { [string]$installPage }
+    $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
+
+    if ($architecture -eq 'arm64') {
+        $pattern = 'https://github\.com/git-for-windows/git/releases/download/[^"]+/Git-[^"]+-arm64\.exe'
+    } else {
+        $pattern = 'https://github\.com/git-for-windows/git/releases/download/[^"]+/Git-[^"]+-64-bit\.exe'
+    }
+
+    $match = [regex]::Match($html, $pattern)
+    if (-not $match.Success) {
+        throw "Konnte den offiziellen Git-for-Windows-Downloadlink nicht ermitteln."
+    }
+
+    return $match.Value
+}
+
+function Install-GitFromOfficialSource {
+    Log "Installiere Git ueber die offizielle Git-for-Windows-Quelle..."
+
+    $downloadUrl = Get-GitInstallerDownloadUrl
+    $installerPath = Join-Path ([System.IO.Path]::GetTempPath()) ("git-installer-" + [guid]::NewGuid().ToString('N') + ".exe")
+    $installDir = Join-Path $env:LOCALAPPDATA 'Programs\Git'
+    $arguments = @(
+        '/VERYSILENT',
+        '/NORESTART',
+        '/NOCANCEL',
+        '/SP-',
+        '/CLOSEAPPLICATIONS',
+        '/RESTARTAPPLICATIONS',
+        '/COMPONENTS=icons,ext\reg\shellhere,assoc,assoc_sh',
+        "/DIR=$installDir"
+    )
+
+    try {
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath -TimeoutSec 120 -ErrorAction Stop
+        $process = Start-Process -FilePath $installerPath `
+            -ArgumentList $arguments `
+            -WindowStyle Hidden `
+            -PassThru `
+            -Wait
+
+        if ($process.ExitCode -ne 0) {
+            throw "Git-Installer fehlgeschlagen (ExitCode $($process.ExitCode))."
+        }
+    } finally {
+        Remove-Item -LiteralPath $installerPath -Force -ErrorAction SilentlyContinue
+    }
+
+    Refresh-ProcessPath
+    return [bool](Get-PreferredGitInfo)
+}
+
+function Install-GitAutomatically {
+    if (Install-GitViaWinget) {
+        return $true
+    }
+
+    try {
+        return Install-GitFromOfficialSource
+    } catch {
+        Warn "Offizielle Git-for-Windows-Installation fehlgeschlagen: $($_.Exception.Message)"
+        return $false
     }
 }
 
@@ -270,15 +547,110 @@ function Resolve-Version {
 
 # ---------- Git pruefen ----------
 function Ensure-Git {
-    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-        Err "Git ist nicht installiert."
-        Err "Bitte installiere Git: https://git-scm.com/download/win"
-        Err "Oder verwende den LTTH Windows Launcher: https://ltth.app/downloads/launcher.exe"
-        Fail "Git ist nicht installiert."
+    $gitInfo = Get-PreferredGitInfo
+    if ($gitInfo) {
+        Set-PreferredGitEnvironment -GitInfo $gitInfo
+        Ok "Git $($gitInfo.Version) gefunden"
+        return
     }
+
+    Log "Git fehlt - installiere es automatisch..."
+    if (Install-GitAutomatically) {
+        $gitInfo = Get-PreferredGitInfo
+        if ($gitInfo) {
+            Set-PreferredGitEnvironment -GitInfo $gitInfo
+            Ok "Git $($gitInfo.Version) gefunden"
+            return
+        }
+    }
+
+    Err "Git konnte nicht automatisch installiert werden."
+    Err "Installationslog: $script:LTTHInstallerLog"
+    Err "Bei Bedarf kannst du Git manuell installieren: https://git-scm.com/download/win"
+    Fail "Git konnte nicht bereitgestellt werden."
 }
 
 # ---------- Node.js pruefen / installieren ----------
+function Install-NodeViaWinget {
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        return $false
+    }
+
+    Log "Installiere Node.js LTS via winget..."
+    try {
+        $process = Start-Process -FilePath 'winget' `
+            -ArgumentList @(
+                'install',
+                '--id', 'OpenJS.NodeJS.LTS',
+                '-e',
+                '--source', 'winget',
+                '--silent',
+                '--accept-package-agreements',
+                '--accept-source-agreements'
+            ) `
+            -WindowStyle Hidden `
+            -PassThru `
+            -Wait
+
+        if ($process.ExitCode -ne 0) {
+            throw "winget install OpenJS.NodeJS.LTS fehlgeschlagen (ExitCode $($process.ExitCode))."
+        }
+    } catch {
+        Warn "winget-Node-Installation fehlgeschlagen: $($_.Exception.Message)"
+        return $false
+    }
+
+    Refresh-ProcessPath
+    return [bool](Get-PreferredNodeInfo)
+}
+
+function Install-NodeFromOfficialSource {
+    Log "Installiere Node.js LTS ueber die offizielle Node.js-Quelle..."
+
+    $nodeInfo = Get-NodeInstallerInfo
+    $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
+    if ($architecture -eq 'arm64') {
+        $archLabel = 'arm64'
+    } else {
+        $archLabel = 'x64'
+    }
+
+    $version = $nodeInfo.Version
+    $downloadUrl = "https://nodejs.org/dist/v$version/node-v$version-$archLabel.msi"
+    $msiPath = Join-Path ([System.IO.Path]::GetTempPath()) ("node-installer-" + [guid]::NewGuid().ToString('N') + ".msi")
+
+    try {
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $msiPath -TimeoutSec 120 -ErrorAction Stop
+        $process = Start-Process -FilePath 'msiexec.exe' `
+            -ArgumentList @('/i', $msiPath, '/qn', '/norestart') `
+            -WindowStyle Hidden `
+            -PassThru `
+            -Wait
+
+        if ($process.ExitCode -ne 0) {
+            throw "Node.js MSI-Installer fehlgeschlagen (ExitCode $($process.ExitCode))."
+        }
+    } finally {
+        Remove-Item -LiteralPath $msiPath -Force -ErrorAction SilentlyContinue
+    }
+
+    Refresh-ProcessPath
+    return [bool](Get-PreferredNodeInfo)
+}
+
+function Install-NodeAutomatically {
+    if (Install-NodeViaWinget) {
+        return $true
+    }
+
+    try {
+        return Install-NodeFromOfficialSource
+    } catch {
+        Warn "Offizielle Node.js-Installation fehlgeschlagen: $($_.Exception.Message)"
+        return $false
+    }
+}
+
 function Ensure-Node {
     $nodeInfo = Get-PreferredNodeInfo
     if ($nodeInfo) {
@@ -293,29 +665,20 @@ function Ensure-Node {
         Warn "Node.js $installedVersion ist zwar installiert, aber LTTH braucht ein LTS-Build (18/20/22/24)."
     }
 
-    Log "Installiere Node.js LTS via winget..."
-    if (Get-Command winget -ErrorAction SilentlyContinue) {
-        winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
-        $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
-        $userPath = [System.Environment]::GetEnvironmentVariable('Path', 'User')
-        $pathParts = @()
-        if (-not [string]::IsNullOrWhiteSpace($machinePath)) {
-            $pathParts += $machinePath
-        }
-        if (-not [string]::IsNullOrWhiteSpace($userPath)) {
-            $pathParts += $userPath
-        }
-        $env:Path = ($pathParts -join ';')
-
+    Log "Node.js fehlt - installiere es automatisch..."
+    if (Install-NodeAutomatically) {
         $nodeInfo = Get-PreferredNodeInfo
-        if (-not $nodeInfo) {
-            Fail "Node.js konnte nicht automatisch auf ein LTS-Build aktualisiert werden. Bitte Node.js 18/20/22/24 LTS manuell installieren: https://nodejs.org/"
+        if ($nodeInfo) {
+            Set-PreferredNodeEnvironment -NodeInfo $nodeInfo
+            Ok "Node.js $($nodeInfo.Version) gefunden"
+            return
         }
-        Set-PreferredNodeEnvironment -NodeInfo $nodeInfo
-        Ok "Node.js $($nodeInfo.Version) gefunden"
-    } else {
-        Fail "winget fehlt. Bitte installiere Node.js manuell: https://nodejs.org/"
     }
+
+    Err "Node.js konnte nicht automatisch installiert werden."
+    Err "Installationslog: $script:LTTHInstallerLog"
+    Err "Bei Bedarf kannst du Node.js manuell installieren: https://nodejs.org/"
+    Fail "Node.js konnte nicht bereitgestellt werden."
 }
 
 # ---------- Launcher-Reparatur vor Git-Checkout ----------
@@ -708,6 +1071,10 @@ function Main {
 
     Log "Installationsverzeichnis: $LTTHDir"
     Log "Port:                     $LTTHPort"
+
+    if (-not (Ensure-Administrator)) {
+        return
+    }
 
     Ensure-Git
     Ensure-Node
