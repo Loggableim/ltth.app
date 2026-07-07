@@ -99,7 +99,7 @@ func TestLauncherHTMLTemplateParsesWithDiagnosticsData(t *testing.T) {
 		"AppName":            "LTTH",
 		"TagLine":            "Open-Source TikTok LIVE Tool",
 		"Locale":             "de",
-		"Version":            "v1.3.3",
+		"Version":            "v1.3.21",
 		"HasProfiles":        true,
 		"Profiles":           []ProfileInfo{{Username: "pupcid", Modified: time.Now()}},
 		"ProfileLabel":       "Benutzerprofil",
@@ -712,15 +712,15 @@ func TestPluginFailureLinesAreClassifiedByPluginID(t *testing.T) {
 func TestSelectReleaseForUpdateChannel(t *testing.T) {
 	releases := []GitHubRelease{
 		{TagName: "v1.4.0-beta.2", Prerelease: true, ZipballURL: "https://example.invalid/beta.zip"},
-		{TagName: "v1.3.3", Prerelease: false, ZipballURL: "https://example.invalid/stable.zip"},
+		{TagName: "v1.3.21", Prerelease: false, ZipballURL: "https://example.invalid/stable.zip"},
 	}
 
 	stable, err := selectReleaseForChannel(releases, updateChannelStable)
 	if err != nil {
 		t.Fatalf("stable release selection failed: %v", err)
 	}
-	if stable.TagName != "v1.3.3" {
-		t.Fatalf("expected stable release v1.3.3, got %s", stable.TagName)
+	if stable.TagName != "v1.3.21" {
+		t.Fatalf("expected stable release v1.3.21, got %s", stable.TagName)
 	}
 
 	beta, err := selectReleaseForChannel(releases, updateChannelBeta)

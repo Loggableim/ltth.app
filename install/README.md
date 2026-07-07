@@ -26,7 +26,7 @@ Hinweis fuer Windows: Der PowerShell-Installer bevorzugt unterstuetzte Node.js-L
 
 | Variable | Default | Bedeutung |
 |---|---|---|
-| `LTTH_VERSION` | `latest` | Zu installierende Version (z.B. `v1.3.7`) |
+| `LTTH_VERSION` | `latest` | Zu installierende Version (z.B. `v1.3.21`) |
 | `LTTH_DIR` | `~/.local/share/ltth` / `%LOCALAPPDATA%\LTTH` | Installationsverzeichnis |
 | `LTTH_PORT` | `3000` | HTTP-Port fürs Dashboard |
 | `LTTH_NO_BROWSER` | `0` | Browser nach Start nicht öffnen (`1` = aus) |
