@@ -1074,7 +1074,9 @@
    */
   async function loadTranslations() {
     try {
-      const response = await fetch(`/plugins/coinbattle/locales/${currentLanguage}.json`);
+      const response = await fetch(`/plugins/coinbattle/locales/${currentLanguage}.json`, {
+        cache: 'no-store'
+      });
       translations = await response.json();
       applyTranslations();
     } catch (error) {

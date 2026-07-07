@@ -3,7 +3,7 @@
   "releaseDate": "2026-07-07",
   "status": "stable",
   "downloadVersion": "1.3.20",
-  "downloadNote": "Fireworks trims obsolete top branding and removes the in-plugin open-tab control while keeping the widescreen settings surface intact.",
+  "downloadNote": "Fireworks trims obsolete top branding, removes the dashboard open-tab header, and keeps the widescreen settings surface intact.",
   "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.20",
   "oneLineInstaller": {
     "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex",
@@ -23,7 +23,7 @@
       "date": "2026-07-07",
       "changes": [
         "IMPROVED: Fireworks settings header now drops the obsolete top-left branding block and keeps the centered logo-focused hero",
-        "IMPROVED: Fireworks no longer shows an in-plugin Open in New Tab control; the overlay card now focuses on copying the OBS URL",
+        "IMPROVED: Fireworks no longer shows the extra dashboard Fireworks header or in-plugin Open in New Tab control; the UI now focuses on the centered logo and OBS URL copy flow",
         "FIXED: Fireworks overlay preview-state code and banner were removed, keeping the overlay lean for browser-source use"
       ]
     },

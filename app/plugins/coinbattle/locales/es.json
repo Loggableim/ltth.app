@@ -4,13 +4,13 @@
     "description": "Live battle game where viewers compete by sending TikTok gifts to collect coins"
   },
   "ui": {
-    "title": "CoinBattle Configuration",
-    "subtitle": "Manage live battles and leaderboards",
+    "title": "Configuración de CoinBattle",
+    "subtitle": "Gestiona batallas en vivo y tablas de clasificación",
     "tabs": {
       "control": "Control",
       "settings": "Configuración",
-      "history": "History",
-      "leaderboard": "Leaderboard"
+      "history": "Historial",
+      "leaderboard": "Clasificación"
     },
     "actions": {
       "openTab": "Abrir en nueva pestaña",
@@ -91,33 +91,33 @@
     "compact": "Compact"
   },
   "leaderboard": {
-    "title": "Leaderboard",
-    "session": "Session",
-    "lifetime": "Lifetime",
-    "rank": "Rank",
-    "player": "Player",
-    "coins": "Coins",
-    "gifts": "Gifts",
-    "team": "Team",
-    "badges": "Badges",
-    "weekly": "Wöchentlich",
-    "season": "Saison",
-    "manageUsers": "Benutzer verwalten",
-    "deleteUser": "Benutzer löschen",
-    "deleteUserConfirm": "Möchten Sie diesen Benutzer wirklich aus allen Ranglisten löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-    "userDeleted": "Benutzer erfolgreich gelöscht",
-    "noData": "Keine Daten verfügbar"
+    "title": "Clasificación",
+    "session": "Sesión",
+    "lifetime": "De por vida",
+    "rank": "Puesto",
+    "player": "Jugador",
+    "coins": "Monedas",
+    "gifts": "Regalos",
+    "team": "Equipo",
+    "badges": "Insignias",
+    "weekly": "Semanal",
+    "season": "Temporada",
+    "manageUsers": "Gestionar usuarios",
+    "deleteUser": "Eliminar usuario",
+    "deleteUserConfirm": "¿Seguro que quieres eliminar a este usuario de todas las tablas de clasificación? Esta acción no se puede deshacer.",
+    "userDeleted": "Usuario eliminado correctamente",
+    "noData": "No hay datos disponibles"
   },
   "history": {
-    "title": "Match History",
-    "matchId": "Match ID",
-    "date": "Date",
+    "title": "Historial de partidas",
+    "matchId": "ID de partida",
+    "date": "Fecha",
     "duration": "Duración",
-    "mode": "Mode",
-    "winner": "Winner",
-    "totalCoins": "Total Coins",
-    "participants": "Participants",
-    "export": "Export"
+    "mode": "Modo",
+    "winner": "Ganador",
+    "totalCoins": "Monedas totales",
+    "participants": "Participantes",
+    "export": "Exportar"
   },
   "badges": {
     "top_donator": "Top Donator",
@@ -182,15 +182,15 @@
     }
   },
   "season": {
-    "title": "Saison-Konfiguration",
-    "name": "Saison-Name",
-    "startDate": "Startdatum",
-    "endDate": "Enddatum",
-    "active": "Aktive Saison",
-    "noActiveSeason": "Keine aktive Saison konfiguriert",
-    "createUpdate": "Saison erstellen/aktualisieren",
-    "description": "Konfigurieren Sie den Datumsbereich für die Saison-Rangliste. Es kann nur eine Saison gleichzeitig aktiv sein.",
-    "saved": "Saison erfolgreich gespeichert",
-    "period": "Zeitraum"
+    "title": "Configuración de temporada",
+    "name": "Nombre de la temporada",
+    "startDate": "Fecha de inicio",
+    "endDate": "Fecha de fin",
+    "active": "Temporada activa",
+    "noActiveSeason": "No hay ninguna temporada activa configurada",
+    "createUpdate": "Crear/actualizar temporada",
+    "description": "Configura el rango de fechas para la tabla de clasificación de la temporada. Solo puede haber una temporada activa a la vez.",
+    "saved": "Temporada guardada correctamente",
+    "period": "Período"
   }
 }

@@ -4,13 +4,13 @@
     "description": "Live battle game where viewers compete by sending TikTok gifts to collect coins"
   },
   "ui": {
-    "title": "CoinBattle Configuration",
-    "subtitle": "Manage live battles and leaderboards",
+    "title": "Configuration CoinBattle",
+    "subtitle": "Gérez les combats en direct et les classements",
     "tabs": {
-      "control": "Control",
+      "control": "Contrôle",
       "settings": "Paramètres",
-      "history": "History",
-      "leaderboard": "Leaderboard"
+      "history": "Historique",
+      "leaderboard": "Classement"
     },
     "actions": {
       "openTab": "Ouvrir dans un nouvel onglet",
@@ -91,33 +91,33 @@
     "compact": "Compact"
   },
   "leaderboard": {
-    "title": "Leaderboard",
+    "title": "Classement",
     "session": "Session",
-    "lifetime": "Lifetime",
-    "rank": "Rank",
-    "player": "Player",
-    "coins": "Coins",
-    "gifts": "Gifts",
-    "team": "Team",
+    "lifetime": "À vie",
+    "rank": "Rang",
+    "player": "Joueur",
+    "coins": "Pièces",
+    "gifts": "Cadeaux",
+    "team": "Équipe",
     "badges": "Badges",
-    "weekly": "Wöchentlich",
+    "weekly": "Hebdomadaire",
     "season": "Saison",
-    "manageUsers": "Benutzer verwalten",
-    "deleteUser": "Benutzer löschen",
-    "deleteUserConfirm": "Möchten Sie diesen Benutzer wirklich aus allen Ranglisten löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-    "userDeleted": "Benutzer erfolgreich gelöscht",
-    "noData": "Keine Daten verfügbar"
+    "manageUsers": "Gérer les utilisateurs",
+    "deleteUser": "Supprimer l'utilisateur",
+    "deleteUserConfirm": "Voulez-vous vraiment supprimer cet utilisateur de tous les classements ? Cette action est irréversible.",
+    "userDeleted": "Utilisateur supprimé avec succès",
+    "noData": "Aucune donnée disponible"
   },
   "history": {
-    "title": "Match History",
-    "matchId": "Match ID",
+    "title": "Historique des matchs",
+    "matchId": "ID du match",
     "date": "Date",
     "duration": "Durée",
     "mode": "Mode",
-    "winner": "Winner",
-    "totalCoins": "Total Coins",
+    "winner": "Vainqueur",
+    "totalCoins": "Pièces totales",
     "participants": "Participants",
-    "export": "Export"
+    "export": "Exporter"
   },
   "badges": {
     "top_donator": "Top Donator",
@@ -182,15 +182,15 @@
     }
   },
   "season": {
-    "title": "Saison-Konfiguration",
-    "name": "Saison-Name",
-    "startDate": "Startdatum",
-    "endDate": "Enddatum",
-    "active": "Aktive Saison",
-    "noActiveSeason": "Keine aktive Saison konfiguriert",
-    "createUpdate": "Saison erstellen/aktualisieren",
-    "description": "Konfigurieren Sie den Datumsbereich für die Saison-Rangliste. Es kann nur eine Saison gleichzeitig aktiv sein.",
-    "saved": "Saison erfolgreich gespeichert",
-    "period": "Zeitraum"
+    "title": "Configuration de saison",
+    "name": "Nom de la saison",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "active": "Saison active",
+    "noActiveSeason": "Aucune saison active configurée",
+    "createUpdate": "Créer/mettre à jour la saison",
+    "description": "Configurez la plage de dates pour le classement de la saison. Une seule saison peut être active à la fois.",
+    "saved": "Saison enregistrée avec succès",
+    "period": "Période"
   }
 }

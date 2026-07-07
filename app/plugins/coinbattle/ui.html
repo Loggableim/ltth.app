@@ -937,7 +937,7 @@
             </div>
 
             <div class="card">
-                <div class="card-title">Current Match Leaderboard</div>
+                <div class="card-title" data-i18n="leaderboard.title">Current Match Leaderboard</div>
                 <div id="current-leaderboard">
                     <p class="loading">No active match</p>
                 </div>
@@ -1312,8 +1312,8 @@
         <div id="leaderboard-tab" class="tab-content">
             <!-- Season Management Card -->
             <div class="card">
-                <div class="card-title">Season Configuration</div>
-                <div class="alert alert-info" style="margin-bottom: 16px;">
+                <div class="card-title" data-i18n="season.title">Season Configuration</div>
+                <div class="alert alert-info" style="margin-bottom: 16px;" data-i18n="season.description">
                     Configure season leaderboard date range. Only one season can be active at a time.
                 </div>
                 
@@ -1323,31 +1323,31 @@
 
                 <div class="grid grid-2">
                     <div class="form-group">
-                        <label class="form-label">Season Name</label>
+                        <label class="form-label" data-i18n="season.name">Season Name</label>
                         <input type="text" class="form-input" id="season-name" placeholder="e.g., Winter 2024">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Start Date</label>
+                        <label class="form-label" data-i18n="season.startDate">Start Date</label>
                         <input type="date" class="form-input" id="season-start-date">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">End Date</label>
+                        <label class="form-label" data-i18n="season.endDate">End Date</label>
                         <input type="date" class="form-input" id="season-end-date">
                     </div>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-success" id="btn-save-season">Create/Update Season</button>
+                    <button class="btn btn-success" id="btn-save-season" data-i18n="season.createUpdate">Create/Update Season</button>
                 </div>
             </div>
 
             <!-- Leaderboard Type Selector -->
             <div class="card">
-                <div class="card-title">Leaderboards</div>
+                <div class="card-title" data-i18n="leaderboard.title">Leaderboards</div>
                 <div class="tabs" style="border-bottom: none; margin-bottom: 16px;">
-                    <button class="tab active" data-leaderboard="lifetime">Lifetime</button>
-                    <button class="tab" data-leaderboard="weekly">Weekly</button>
-                    <button class="tab" data-leaderboard="season">Season</button>
-                    <button class="tab" data-leaderboard="manage">Manage Users</button>
+                    <button class="tab active" data-leaderboard="lifetime" data-i18n="leaderboard.lifetime">Lifetime</button>
+                    <button class="tab" data-leaderboard="weekly" data-i18n="leaderboard.weekly">Weekly</button>
+                    <button class="tab" data-leaderboard="season" data-i18n="leaderboard.season">Season</button>
+                    <button class="tab" data-leaderboard="manage" data-i18n="leaderboard.manageUsers">Manage Users</button>
                 </div>
 
                 <div id="lifetime-leaderboard-view" class="leaderboard-view">
@@ -1388,7 +1388,7 @@
         <!-- History Tab -->
         <div id="history-tab" class="tab-content">
             <div class="card">
-                <div class="card-title">Match History</div>
+                <div class="card-title" data-i18n="history.title">Match History</div>
                 <div id="match-history">
                     <p class="loading">Loading...</p>
                 </div>
