@@ -33,7 +33,7 @@
         'viewer-leaderboard': '#0ea5e9',
         'viewer-profiles': '#14b8a6',
         'gift-milestone': '#f43f5e',
-        toptier: '#d97706',
+        toptier: '#4ade80',
         vdoninja: '#7c3aed',
         multicam: '#06b6d4',
         'osc-bridge': '#22c55e',

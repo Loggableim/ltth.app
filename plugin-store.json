@@ -843,8 +843,10 @@
       "badges": [
         "preinstalled"
       ],
+      "icon": "/plugins/toptier/assets/toptier-icon.png",
+      "logo": "/plugins/toptier/assets/toptier-logo.png",
       "packageUrl": "https://ltth.app/plugin-store/packages/toptier-2.0.0.zip",
-      "sha256": "32e9f2fd1c22ba379ea7340afe84784a295cdeb59d7e21938dd8e6106c385082",
+      "sha256": "8f5d2e46e6e29e6c4c54f18d8ae01a725e4861239659f170218736bf438d2376",
       "pricing": {
         "type": "free",
         "amount": 0,

@@ -16,7 +16,7 @@
         (function () {
             const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
             const SIDEBAR_WIDE_LOGO = '/logo-wide.png';
-            const SIDEBAR_ICON_LOGO = '/ltthicon.png';
+            const SIDEBAR_ICON_LOGO = '/ltthicon-cutout.png?v=2';
             const TOPBAR_ICON_LOGO = '/ltthicon.png';
 
             function readTheme() {
@@ -1873,118 +1873,6 @@
             }
         }
 
-        /* Plugin Notice Styles */
-        .plugin-notice {
-            background: linear-gradient(135deg, var(--color-active-bg) 0%, var(--color-active-bg) 100%);
-            border: 1px solid var(--color-active-border);
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            animation: slideInDown 0.4s ease-out;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-
-        .plugin-notice-content {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-
-        .plugin-notice-icon {
-            flex-shrink: 0;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--color-active-bg);
-            border-radius: 8px;
-            color: var(--color-accent-primary);
-        }
-
-        .plugin-notice-icon i {
-            width: 24px;
-            height: 24px;
-        }
-
-        .plugin-notice-text {
-            flex: 1;
-        }
-
-        .plugin-notice-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--color-accent-primary);
-            margin: 0 0 0.5rem 0;
-        }
-
-        .plugin-notice-message {
-            font-size: 0.875rem;
-            color: var(--color-text-secondary);
-            line-height: 1.5;
-            margin: 0;
-        }
-
-        .plugin-notice-dismiss {
-            flex-shrink: 0;
-            background: var(--color-bg-hover);
-            border: none;
-            border-radius: 6px;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: var(--color-text-secondary);
-        }
-
-        .plugin-notice-dismiss:hover {
-            background: var(--color-bg-tertiary);
-            color: var(--color-text-primary);
-            transform: scale(1.1);
-        }
-
-        .plugin-notice-dismiss i {
-            width: 18px;
-            height: 18px;
-        }
-
-        @keyframes slideInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .plugin-notice {
-                padding: 0.875rem;
-            }
-
-            .plugin-notice-content {
-                gap: 0.75rem;
-            }
-
-            .plugin-notice-icon {
-                width: 36px;
-                height: 36px;
-            }
-
-            .plugin-notice-title {
-                font-size: 0.9rem;
-            }
-
-            .plugin-notice-message {
-                font-size: 0.8125rem;
-            }
-        }
-
         /* Shoutbox / Community Chat Section - Theme-Aware */
         .shoutbox-section {
             margin-bottom: 2rem;
@@ -2329,7 +2217,7 @@
             <div class="sidebar-header">
                 <div class="sidebar-logo">
                     <img src="/logo-wide.png" alt="LTTH logo" class="sidebar-logo-wide">
-                    <img id="sidebar-mini-icon" src="/ltthicon.png" alt="LTTH icon" class="sidebar-logo-mini">
+                    <img id="sidebar-mini-icon" src="/ltthicon-cutout.png?v=2" alt="LTTH icon" class="sidebar-logo-mini">
                 </div>
                 <button id="sidebar-toggle" class="sidebar-toggle-btn">
                     <i data-lucide="panel-left"></i>
@@ -2485,9 +2373,9 @@
                             <img src="/plugins/game-engine/assets/branding/ltth-game-engine-icon.png?v=20260707-2" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-game-engine" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.game_engine">Game Engine</span>
                         </a>
-                        <a href="#" class="sidebar-item" data-view="viewer-leaderboard" data-plugin="viewer-leaderboard" data-tooltip="Viewer XP &amp; Leaderboard">
+                        <a href="#" class="sidebar-item" data-view="viewer-leaderboard" data-plugin="viewer-leaderboard" data-tooltip="Viewer XP">
                             <i data-lucide="trophy"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.viewer_leaderboard">Viewer XP & Leaderboard</span>
+                            <span class="sidebar-item-text" data-i18n="navigation.viewer_leaderboard">Viewer XP</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="viewer-profiles" data-plugin="viewer-profiles" data-tooltip="Viewer Profiles">
                             <i data-lucide="users"></i>
@@ -2502,7 +2390,7 @@
                             <span class="sidebar-item-text">Developer Guides</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="toptier" data-plugin="toptier" data-tooltip="Top Tier Leaderboard">
-                            <i data-lucide="trophy"></i>
+                            <img src="/plugins/toptier/assets/toptier-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-toptier" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.toptier">Top Tier</span>
                         </a>
                     </div>
@@ -2649,27 +2537,6 @@
 
                 <!-- View: Dashboard -->
                 <div id="view-dashboard" class="content-view active">
-
-                    <!-- Plugin Notice - Dismissible Info -->
-                    <div id="plugin-notice" class="plugin-notice" style="display: none;">
-                        <div class="plugin-notice-content">
-                            <div class="plugin-notice-icon">
-                                <i data-lucide="info"></i>
-                            </div>
-                            <div class="plugin-notice-text">
-                                <h3 class="plugin-notice-title" data-i18n="dashboard.plugin_notice.title">Plugin Notice</h3>
-                                <p class="plugin-notice-message">
-                                    <span data-i18n="dashboard.plugin_notice.message">All enabled plugins should work without bugs. You are welcome to test inactive plugins, but please expect bugs.</span>
-                                    <br>
-                                    <span data-i18n="dashboard.plugin_notice.report_issues">Found a bug or have a feature request?</span>
-                                        <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener noreferrer" style="color: var(--color-accent-primary); text-decoration: underline; font-weight: 600;" data-i18n="dashboard.plugin_notice.report_link">Report it on GitHub</a>
-                                </p>
-                            </div>
-                            <button id="dismiss-plugin-notice" class="plugin-notice-dismiss" aria-label="Dismiss notice">
-                                <i data-lucide="x"></i>
-                            </button>
-                        </div>
-                    </div>
 
                     <div class="dashboard-cockpit-grid">
                         <div class="dashboard-primary-column">
@@ -3409,16 +3276,6 @@
                 <!-- View: Top Tier Leaderboard -->
                 <div id="view-toptier" class="content-view" data-plugin="toptier">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="trophy"></i>
-                                Top Tier Leaderboard
-                            </h2>
-                            <a href="/plugins/toptier/ui.html" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/plugins/toptier/ui.html" title="Top Tier Leaderboard Admin"></iframe>
                         </div>
@@ -3520,13 +3377,13 @@
                     </section>
                 </div>
 
-                <!-- View: Viewer XP & Leaderboard -->
+                <!-- View: Viewer XP -->
                 <div id="view-viewer-leaderboard" class="content-view" data-plugin="viewer-leaderboard">
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
                                 <i data-lucide="trophy"></i>
-                                Viewer XP & Leaderboard
+                                Viewer XP
                             </h2>
                             <a href="/viewer-xp/admin" target="_blank" class="btn btn-sm btn-ghost">
                                 <i data-lucide="external-link"></i>
@@ -3534,7 +3391,7 @@
                             </a>
                         </div>
                         <div class="iframe-container">
-                            <iframe data-src="/viewer-xp/admin" title="Viewer XP & Leaderboard Admin Panel"></iframe>
+                            <iframe data-src="/viewer-xp/admin" title="Viewer XP Admin Panel"></iframe>
                         </div>
                     </section>
                 </div>
@@ -5172,3 +5029,4 @@
     <script src="/js/flow-wizard.js"></script>
 </body>
 </html>
+
