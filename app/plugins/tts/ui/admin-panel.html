@@ -722,17 +722,18 @@
 
         .tts-hero-brand {
             min-width: 0;
-            display: flex;
-            align-items: flex-start;
-            gap: 18px;
+            display: grid;
+            gap: 12px;
+            justify-items: start;
+            align-content: start;
         }
 
         .tts-hero-logo {
-            width: min(410px, 42vw);
-            max-height: 118px;
+            width: min(440px, 100%);
+            max-height: 108px;
             object-fit: contain;
             display: block;
-            margin-top: -4px;
+            margin-top: -2px;
             filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.26));
         }
 
@@ -740,6 +741,7 @@
             display: grid;
             gap: 6px;
             min-width: 0;
+            max-width: 72ch;
         }
 
         .tts-hero-kicker {
@@ -758,7 +760,6 @@
 
         .tts-hero-subtitle {
             margin: 0;
-            max-width: 74ch;
             color: var(--tts-muted);
             font-size: 1rem;
             line-height: 1.55;
@@ -846,6 +847,7 @@
             align-items: flex-end;
             gap: 10px;
             flex-shrink: 0;
+            padding-top: 4px;
         }
 
         .tts-save-btn {
