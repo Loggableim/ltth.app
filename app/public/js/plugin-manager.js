@@ -813,7 +813,7 @@ class PluginManager {
             
             container.innerHTML = `
                 <div class="text-center text-gray-400 py-12">
-                    <i data-lucide="package-x" style="width: 64px; height: 64px; margin: 0 auto 1rem; color: #60a5fa;"></i>
+                    <i data-lucide="package-x" style="width: 64px; height: 64px; margin: 0 auto 1rem; color: var(--color-accent-primary);"></i>
                     <p class="text-lg">${message}</p>
                     ${!this.searchQuery && this.currentFilter === 'all' ? '<p class="text-sm mt-2">Lade ein Plugin hoch, um zu beginnen.</p>' : ''}
                 </div>
@@ -1305,11 +1305,11 @@ class PluginManager {
 
     getStorePluginAccent(plugin) {
         const category = this.getStorePluginCategoryLabel(plugin).toLowerCase();
-        if (category.includes('audio')) return { background: 'rgba(52, 211, 153, 0.14)', border: 'rgba(52, 211, 153, 0.34)', color: '#34d399' };
-        if (category.includes('game')) return { background: 'rgba(244, 114, 182, 0.14)', border: 'rgba(244, 114, 182, 0.34)', color: '#f472b6' };
-        if (category.includes('integration')) return { background: 'rgba(96, 165, 250, 0.14)', border: 'rgba(96, 165, 250, 0.34)', color: '#60a5fa' };
-        if (category.includes('overlay')) return { background: 'rgba(251, 191, 36, 0.14)', border: 'rgba(251, 191, 36, 0.34)', color: '#fbbf24' };
-        return { background: 'rgba(203, 213, 225, 0.14)', border: 'rgba(203, 213, 225, 0.34)', color: '#cbd5e1' };
+        if (category.includes('audio')) return { background: 'color-mix(in srgb, var(--color-accent-success) 14%, transparent)', border: 'color-mix(in srgb, var(--color-accent-success) 34%, transparent)', color: 'var(--color-accent-success)' };
+        if (category.includes('game')) return { background: 'color-mix(in srgb, var(--color-accent-secondary) 14%, transparent)', border: 'color-mix(in srgb, var(--color-accent-secondary) 34%, transparent)', color: 'var(--color-accent-secondary)' };
+        if (category.includes('integration')) return { background: 'color-mix(in srgb, var(--color-accent-primary) 14%, transparent)', border: 'color-mix(in srgb, var(--color-accent-primary) 34%, transparent)', color: 'var(--color-accent-primary)' };
+        if (category.includes('overlay')) return { background: 'color-mix(in srgb, var(--color-accent-warning) 14%, transparent)', border: 'color-mix(in srgb, var(--color-accent-warning) 34%, transparent)', color: 'var(--color-accent-warning)' };
+        return { background: 'color-mix(in srgb, var(--color-text-muted) 14%, transparent)', border: 'color-mix(in srgb, var(--color-text-muted) 34%, transparent)', color: 'var(--color-text-muted)' };
     }
 
     getStorePluginAccentStyle(plugin) {
@@ -1671,7 +1671,7 @@ class PluginManager {
 
     renderInstalledHeader() {
         return `
-            <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; flex-wrap: wrap; margin-bottom: 1rem; padding: 1rem; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 12px;">
+            <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; flex-wrap: wrap; margin-bottom: 1rem; padding: 1rem 1.05rem; background: var(--store-panel-bg, var(--color-bg-card)); border: 1px solid var(--store-panel-border, var(--color-border)); border-radius: 18px; box-shadow: var(--store-panel-shadow, var(--shadow-sm));">
                 <div>
                     <div style="display: flex; align-items: center; gap: 10px; color: var(--color-text-primary); font-weight: 800; font-size: 1.15rem; margin-bottom: 4px;">
                         <i data-lucide="hard-drive" style="width: 20px; height: 20px; color: var(--color-accent-primary);"></i>
@@ -1783,8 +1783,8 @@ class PluginManager {
      */
     renderPluginCompact(plugin) {
         const statusBadge = plugin.enabled
-            ? '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; font-size: 0.7rem; font-weight: 600;"><i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Active</span>'
-            : '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: rgba(107, 114, 128, 0.3); border: 1px solid rgba(107, 114, 128, 0.5); border-radius: 12px; font-size: 0.7rem; font-weight: 600;"><i data-lucide="pause-circle" style="width: 12px; height: 12px;"></i> Inactive</span>';
+            ? '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: linear-gradient(135deg, color-mix(in srgb, var(--color-accent-success) 88%, transparent) 0%, color-mix(in srgb, var(--color-accent-success) 68%, var(--color-bg-secondary)) 100%); border: 1px solid color-mix(in srgb, var(--color-accent-success) 34%, transparent); border-radius: 12px; font-size: 0.7rem; font-weight: 600; color: var(--color-text-primary);"><i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Active</span>'
+            : '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: color-mix(in srgb, var(--color-bg-secondary) 82%, var(--color-border) 18%); border: 1px solid var(--color-border); border-radius: 12px; font-size: 0.7rem; font-weight: 600; color: var(--color-text-muted);"><i data-lucide="pause-circle" style="width: 12px; height: 12px;"></i> Inactive</span>';
 
         const devStatusBadge = this.getDevStatusBadge(plugin.devStatus);
         
@@ -1793,17 +1793,17 @@ class PluginManager {
 
         const actionButtons = plugin.enabled
             ? `
-                <button id="reload-${plugin.id}" class="plugin-compact-btn" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white;">
+                <button id="reload-${plugin.id}" class="plugin-compact-btn" style="background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 18%, transparent) 0%, color-mix(in srgb, var(--brand-primary) 12%, var(--color-bg-secondary)) 100%); border: 1px solid color-mix(in srgb, var(--brand-primary) 34%, var(--color-border)); color: var(--brand-primary);">
                     <i data-lucide="refresh-cw" style="width: 12px; height: 12px;"></i>
                     Reload
                 </button>
-                <button id="disable-${plugin.id}" class="plugin-compact-btn" style="background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.3); color: #fbbf24;">
+                <button id="disable-${plugin.id}" class="plugin-compact-btn" style="background: color-mix(in srgb, var(--color-accent-warning) 16%, transparent); border: 1px solid color-mix(in srgb, var(--color-accent-warning) 28%, transparent); color: var(--color-accent-warning);">
                     <i data-lucide="pause" style="width: 12px; height: 12px;"></i>
                     Disable
                 </button>
             `
             : `
-                <button id="enable-${plugin.id}" class="plugin-compact-btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+                <button id="enable-${plugin.id}" class="plugin-compact-btn" style="background: linear-gradient(135deg, color-mix(in srgb, var(--color-accent-success) 88%, transparent) 0%, color-mix(in srgb, var(--color-accent-success) 68%, var(--color-bg-secondary)) 100%); border: 1px solid color-mix(in srgb, var(--color-accent-success) 34%, transparent); color: var(--color-text-primary);">
                     <i data-lucide="play" style="width: 12px; height: 12px;"></i>
                     Enable
                 </button>
@@ -1812,24 +1812,24 @@ class PluginManager {
         return `
             <tr style="background: ${rowBackground};">
                 <td>
-                    <div style="font-weight: 600; color: white; margin-bottom: 2px;">${this.escapeHtml(plugin.name)}</div>
-                    <div style="font-size: 0.75rem; color: #9ca3af; font-family: monospace;">${this.escapeHtml(plugin.id)}</div>
+                    <div style="font-weight: 600; color: var(--color-text-primary); margin-bottom: 2px;">${this.escapeHtml(plugin.name)}</div>
+                    <div style="font-size: 0.75rem; color: var(--color-text-muted); font-family: monospace;">${this.escapeHtml(plugin.id)}</div>
                 </td>
                 <td>
-                    <span style="padding: 2px 8px; background: rgba(0, 0, 0, 0.3); border-radius: 4px; font-size: 0.7rem; color: #9ca3af; font-family: monospace;">v${this.escapeHtml(plugin.version)}</span>
+                    <span style="padding: 2px 8px; background: color-mix(in srgb, var(--color-bg-primary) 72%, transparent); border: 1px solid var(--color-border); border-radius: 4px; font-size: 0.7rem; color: var(--color-text-muted); font-family: monospace;">v${this.escapeHtml(plugin.version)}</span>
                 </td>
                 <td>${statusBadge}</td>
-                <td>${devStatusBadge || '<span style="color: #6b7280; font-size: 0.75rem;">-</span>'}</td>
+                <td>${devStatusBadge || '<span style="color: var(--color-text-muted); font-size: 0.75rem;">-</span>'}</td>
                 <td>
-                    ${plugin.type ? `<span style="font-size: 0.75rem; color: #9ca3af;">${this.getTypeIcon(plugin.type)} ${this.escapeHtml(plugin.type)}</span>` : '<span style="color: #6b7280;">-</span>'}
+                    ${plugin.type ? `<span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: color-mix(in srgb, var(--color-accent-primary) 16%, transparent); border: 1px solid color-mix(in srgb, var(--color-accent-primary) 32%, transparent); border-radius: 999px; font-size: 0.75rem; color: var(--color-accent-primary);">${this.getTypeIcon(plugin.type)} ${this.escapeHtml(plugin.type)}</span>` : '<span style="color: var(--color-text-muted);">-</span>'}
                 </td>
                 <td>
-                    <span style="font-size: 0.75rem; color: #9ca3af;">${this.escapeHtml(plugin.author || 'Unknown')}</span>
+                    <span style="font-size: 0.75rem; color: var(--color-text-muted);">${this.escapeHtml(plugin.author || 'Unknown')}</span>
                 </td>
                 <td>
                     <div class="plugin-compact-actions">
                         ${actionButtons}
-                        <button id="delete-${plugin.id}" class="plugin-compact-btn" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171;">
+                        <button id="delete-${plugin.id}" class="plugin-compact-btn" style="background: color-mix(in srgb, var(--color-accent-danger) 16%, transparent); border: 1px solid color-mix(in srgb, var(--color-accent-danger) 28%, transparent); color: var(--color-accent-danger);">
                             <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
                             Delete
                         </button>
@@ -1844,8 +1844,8 @@ class PluginManager {
      */
     renderPlugin(plugin) {
         const statusBadge = plugin.enabled
-            ? '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 20px; font-size: 0.75rem; font-weight: 600;"><i data-lucide="check-circle" style="width: 14px; height: 14px;"></i> Aktiv</span>'
-            : '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; background: rgba(107, 114, 128, 0.3); border: 1px solid rgba(107, 114, 128, 0.5); border-radius: 20px; font-size: 0.75rem; font-weight: 600;"><i data-lucide="pause-circle" style="width: 14px; height: 14px;"></i> Inaktiv</span>';
+            ? '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; background: linear-gradient(135deg, color-mix(in srgb, var(--color-accent-success) 88%, transparent) 0%, color-mix(in srgb, var(--color-accent-success) 68%, var(--color-bg-secondary)) 100%); border: 1px solid color-mix(in srgb, var(--color-accent-success) 34%, transparent); border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: var(--color-text-primary);"><i data-lucide="check-circle" style="width: 14px; height: 14px;"></i> Aktiv</span>'
+            : '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; background: color-mix(in srgb, var(--color-bg-secondary) 82%, var(--color-border) 18%); border: 1px solid var(--color-border); border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: var(--color-text-muted);"><i data-lucide="pause-circle" style="width: 14px; height: 14px;"></i> Inaktiv</span>';
 
         const devStatusBadge = this.getDevStatusBadge(plugin.devStatus);
 
@@ -1854,29 +1854,29 @@ class PluginManager {
 
         const typeIcon = this.getTypeIcon(plugin.type);
         const typeBadge = plugin.type 
-            ? `<span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; font-size: 0.7rem; color: #60a5fa;">${typeIcon} ${this.escapeHtml(plugin.type)}</span>` 
+            ? `<span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: color-mix(in srgb, var(--color-accent-primary) 16%, transparent); border: 1px solid color-mix(in srgb, var(--color-accent-primary) 32%, transparent); border-radius: 999px; font-size: 0.7rem; color: var(--color-accent-primary);">${typeIcon} ${this.escapeHtml(plugin.type)}</span>` 
             : '';
 
         const actionButtons = plugin.enabled
             ? `
-                <button id="reload-${plugin.id}" class="plugin-action-btn" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white;">
+                <button id="reload-${plugin.id}" class="plugin-action-btn" style="background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 18%, transparent) 0%, color-mix(in srgb, var(--brand-primary) 12%, var(--color-bg-secondary)) 100%); border: 1px solid color-mix(in srgb, var(--brand-primary) 34%, var(--color-border)); color: var(--brand-primary);">
                     <i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i>
                     <span>Reload</span>
                 </button>
-                <button id="disable-${plugin.id}" class="plugin-action-btn" style="background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.3); color: #fbbf24;">
+                <button id="disable-${plugin.id}" class="plugin-action-btn" style="background: color-mix(in srgb, var(--color-accent-warning) 16%, transparent); border: 1px solid color-mix(in srgb, var(--color-accent-warning) 28%, transparent); color: var(--color-accent-warning);">
                     <i data-lucide="pause" style="width: 16px; height: 16px;"></i>
                     <span>${window.i18n ? window.i18n.t('plugins.disable') : 'Disable'}</span>
                 </button>
             `
             : `
-                <button id="enable-${plugin.id}" class="plugin-action-btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+                <button id="enable-${plugin.id}" class="plugin-action-btn" style="background: linear-gradient(135deg, color-mix(in srgb, var(--color-accent-success) 88%, transparent) 0%, color-mix(in srgb, var(--color-accent-success) 68%, var(--color-bg-secondary)) 100%); border: 1px solid color-mix(in srgb, var(--color-accent-success) 34%, transparent); color: var(--color-text-primary);">
                     <i data-lucide="play" style="width: 16px; height: 16px;"></i>
                     <span>${window.i18n ? window.i18n.t('plugins.enable') : 'Enable'}</span>
                 </button>
             `;
 
         const loadedTime = plugin.loadedAt 
-            ? `<div style="display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: #6b7280; margin-top: 8px;">
+            ? `<div style="display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: var(--color-text-muted); margin-top: 8px;">
                 <i data-lucide="clock" style="width: 12px; height: 12px;"></i>
                 Loaded: ${new Date(plugin.loadedAt).toLocaleString('de-DE', { 
                     day: '2-digit', 
@@ -1889,16 +1889,16 @@ class PluginManager {
             : '';
 
         return `
-            <div class="plugin-card" style="background: ${devStatusBackground}; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 1.5rem; transition: all 0.3s ease; position: relative; overflow: hidden;">
+            <div class="plugin-card" style="background: ${devStatusBackground}; border: 1px solid var(--store-panel-border, var(--color-border)); border-radius: 18px; padding: 1.5rem; transition: all 0.3s ease; position: relative; overflow: hidden; box-shadow: var(--store-panel-shadow, var(--shadow-sm)); color: var(--color-text-primary);">
                 <span class="plugin-status-dot ${plugin.enabled ? 'status-active' : 'status-inactive'}"></span>
                 <!-- Subtle gradient overlay -->
-                <div style="position: absolute; top: 0; right: 0; width: 200px; height: 200px; background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
+                <div style="position: absolute; top: 0; right: 0; width: 200px; height: 200px; background: radial-gradient(circle at top right, color-mix(in srgb, var(--brand-primary) 12%, transparent) 0%, transparent 70%); pointer-events: none;"></div>
                 
                 <div style="position: relative; display: flex; gap: 1.5rem;">
                     <!-- Plugin Icon -->
                     <div style="flex-shrink: 0;">
-                        <div style="width: 64px; height: 64px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%); border: 2px solid rgba(59, 130, 246, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="package" style="width: 32px; height: 32px; color: #60a5fa;"></i>
+                        <div style="width: 64px; height: 64px; background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 18%, transparent) 0%, color-mix(in srgb, var(--color-accent-secondary) 14%, transparent) 100%); border: 1px solid color-mix(in srgb, var(--brand-primary) 34%, var(--color-border)); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="package" style="width: 32px; height: 32px; color: var(--brand-primary);"></i>
                         </div>
                     </div>
 
@@ -1907,14 +1907,14 @@ class PluginManager {
                         <div style="display: flex; align-items: start; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem;">
                             <div style="flex: 1;">
                                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
-                                    <h3 style="font-size: 1.25rem; font-weight: 700; color: white; margin: 0;">${this.escapeHtml(plugin.name)}</h3>
+                                    <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--color-text-primary); margin: 0;">${this.escapeHtml(plugin.name)}</h3>
                                     ${statusBadge}
-                                    <span style="padding: 4px 10px; background: rgba(0, 0, 0, 0.3); border-radius: 6px; font-size: 0.75rem; color: #9ca3af; font-family: monospace;">v${this.escapeHtml(plugin.version)}</span>
+                                    <span style="padding: 4px 10px; background: color-mix(in srgb, var(--color-bg-primary) 72%, transparent); border: 1px solid var(--color-border); border-radius: 999px; font-size: 0.75rem; color: var(--color-text-muted); font-family: monospace;">v${this.escapeHtml(plugin.version)}</span>
                                     ${devStatusBadge}
                                 </div>
-                                <p style="font-size: 0.9rem; color: #d1d5db; margin: 0 0 12px 0; line-height: 1.5;">${this.escapeHtml(plugin.description || (window.i18n ? window.i18n.t('plugins.no_description') : 'No description available'))}</p>
+                                <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin: 0 0 12px 0; line-height: 1.5;">${this.escapeHtml(plugin.description || (window.i18n ? window.i18n.t('plugins.no_description') : 'No description available'))}</p>
                                 
-                                <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; color: #9ca3af;">
+                                <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; color: var(--color-text-muted);">
                                     <div style="display: flex; align-items: center; gap: 6px;">
                                         <i data-lucide="hash" style="width: 14px; height: 14px;"></i>
                                         <span style="font-family: monospace;">${this.escapeHtml(plugin.id)}</span>
@@ -1931,7 +1931,7 @@ class PluginManager {
                             <!-- Action Buttons -->
                             <div style="display: flex; flex-direction: column; gap: 8px; min-width: 140px;">
                                 ${actionButtons}
-                                <button id="delete-${plugin.id}" class="plugin-action-btn" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171;">
+                                <button id="delete-${plugin.id}" class="plugin-action-btn" style="background: color-mix(in srgb, var(--color-accent-danger) 16%, transparent); border: 1px solid color-mix(in srgb, var(--color-accent-danger) 28%, transparent); color: var(--color-accent-danger);">
                                     <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
                                     <span>${window.i18n ? window.i18n.t('plugins.delete') : 'Delete'}</span>
                                 </button>
@@ -1994,16 +1994,16 @@ class PluginManager {
      * Get background color based on development status
      */
     getDevStatusBackground(devStatus) {
-        const baseGradient = 'linear-gradient(135deg, rgba(31, 41, 55, 0.6) 0%, rgba(17, 24, 39, 0.8) 100%)';
+        const baseGradient = 'linear-gradient(180deg, color-mix(in srgb, var(--color-bg-card) 92%, var(--brand-primary) 8%) 0%, color-mix(in srgb, var(--color-bg-card) 98%, var(--color-bg-primary) 2%) 100%)';
         
         const tints = {
-            'working-beta': 'rgba(34, 197, 94, 0.05)',
-            'development-beta': 'rgba(251, 191, 36, 0.05)',
-            'early-version': 'rgba(239, 68, 68, 0.05)'
+            'working-beta': 'rgba(34, 197, 94, 0.06)',
+            'development-beta': 'rgba(251, 191, 36, 0.06)',
+            'early-version': 'rgba(239, 68, 68, 0.06)'
         };
 
         const tint = tints[devStatus];
-        return tint ? `${baseGradient}, ${tint}` : baseGradient;
+        return tint ? `${baseGradient}, linear-gradient(180deg, ${tint}, ${tint})` : baseGradient;
     }
 
     /**
@@ -2011,9 +2011,9 @@ class PluginManager {
      */
     getDevStatusRowBackground(devStatus) {
         const backgrounds = {
-            'working-beta': 'rgba(34, 197, 94, 0.08)',
-            'development-beta': 'rgba(251, 191, 36, 0.08)',
-            'early-version': 'rgba(239, 68, 68, 0.08)'
+            'working-beta': 'color-mix(in srgb, var(--brand-primary) 8%, transparent)',
+            'development-beta': 'color-mix(in srgb, var(--color-accent-warning) 8%, transparent)',
+            'early-version': 'color-mix(in srgb, var(--color-accent-danger) 8%, transparent)'
         };
 
         return backgrounds[devStatus] || 'transparent';
