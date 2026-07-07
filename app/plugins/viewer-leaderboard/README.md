@@ -1,10 +1,10 @@
 # Viewer XP & Leaderboard Plugin
 
-Das **umfassende Viewer XP System** mit integrierter **Echtzeit-Gifter-Bestenliste** - alles in einem konsolidierten Plugin.
+Das **umfassende Viewer XP System** mit integrierter **Echtzeit-Gifter-Bestenliste** und den **Viewer Profiles Analytics** - alles in einem konsolidierten Plugin.
 
 ## 🎯 Überblick
 
-Dieses Plugin vereint die komplette Viewer-Engagement-Funktionalität in einem einzigen, selbständigen Plugin. Die vorherige Aufteilung in separate Plugins (`viewer-xp` standalone) wurde aufgehoben für eine einfachere Verwaltung.
+Dieses Plugin vereint die komplette Viewer-Engagement-Funktionalität in einem einzigen, selbständigen Plugin. Die vorherige Aufteilung in separate Plugins (`viewer-xp` standalone und `viewer-profiles`) wurde aufgehoben für eine einfachere Verwaltung.
 
 ### **Viewer XP System** (mit integrierter Gifter-Bestenliste)
 - Umfassendes Gamification-System mit XP, Levels und Badges
@@ -14,6 +14,7 @@ Dieses Plugin vereint die komplette Viewer-Engagement-Funktionalität in einem e
 - IFTTT-Integration für automatisierte Events
 - Multiple Overlays: XP Bar, Leaderboard, Level-Up-Animationen, User Profile
 - **Integrierte Gifter-Bestenliste**: Session und All-Time Tracking von Top-Giftern mit 5 Theme-Designs
+- **Viewer Profiles Analytics**: VIP-Verwaltung, Geburtstags-Tracking, Heatmaps, Sessions, Interaktionen und detaillierte Profilansichten
 
 ## ✨ Vorteile
 
@@ -28,8 +29,9 @@ Dieses Plugin vereint die komplette Viewer-Engagement-Funktionalität in einem e
 
 1. Das Plugin wird automatisch erkannt, wenn es im `plugins/viewer-leaderboard/` Verzeichnis liegt
 2. Aktivierung über das Dashboard oder durch Setzen von `"enabled": true` in `plugin.json`
-3. **Wichtig**: Das Standalone-Plugin `viewer-xp` ist veraltet und sollte deaktiviert bleiben
-4. **Hinweis**: Das Standalone-Plugin `leaderboard` ist ebenfalls obsolet
+3. **Wichtig**: Das Standalone-Plugin `viewer-xp` ist entfernt und wird nicht mehr geladen
+4. **Wichtig**: Das Standalone-Plugin `viewer-profiles` ist ebenfalls veraltet und wird von `viewer-leaderboard` ersetzt
+5. **Hinweis**: Das Standalone-Plugin `leaderboard` ist ebenfalls obsolet
 
 ## 🚀 Verwendung
 
@@ -37,10 +39,11 @@ Dieses Plugin vereint die komplette Viewer-Engagement-Funktionalität in einem e
 
 Im Admin-Dashboard:
 1. Navigiere zu "Plugins"
-2. Stelle sicher, dass `viewer-xp` deaktiviert ist (veraltet)
-3. **Das Standalone-Plugin `leaderboard` ist ebenfalls veraltet**
-4. Aktiviere `viewer-leaderboard`
-5. Das Plugin ist sofort einsatzbereit mit allen Features
+2. Stelle sicher, dass nur `viewer-leaderboard` aktiv ist
+3. Entferne alte `viewer-xp`-Reste aus alten Checkouts
+4. **Das Standalone-Plugin `leaderboard` ist ebenfalls veraltet**
+5. Aktiviere `viewer-leaderboard`
+6. Das Plugin ist sofort einsatzbereit mit allen Features
 
 ### Zugriff auf Features
 
@@ -301,14 +304,14 @@ GET  /api/plugins/leaderboard/test-data
 
 ### Plugin lädt nicht
 
-1. Prüfe, ob `viewer-xp` standalone deaktiviert ist
+1. Prüfe, ob `viewer-leaderboard` aktiviert ist
 2. Checke Server-Logs für Fehler-Meldungen
 3. Verifiziere, dass alle Dateien vorhanden sind
 4. Starte den Server neu
 
 ### Doppelte Events
 
-- Deaktiviere das Standalone-Plugin `viewer-xp` vollständig
+- Entferne das alte `viewer-xp`-Verzeichnis vollständig
 - Starte den Server neu, um alle Event-Handler zu clearen
 
 ### Datenbank-Fehler
@@ -363,4 +366,4 @@ Das Standalone **Gifter Leaderboard** Plugin (v1.1.0) wurde in das Viewer XP Sys
 **Status**: Development Beta  
 **Last Updated**: 2026-01-06  
 **Major Upgrade**: v2.1.0 adds rate limiting, anti-spam, full event logging, opt-out system, and live event ticker overlay  
-**Breaking Change**: Standalone `leaderboard` plugin ist veraltet - Funktionalität wurde in `viewer-xp` integriert
+**Breaking Change**: Standalone `leaderboard` plugin ist veraltet - Funktionalität wurde in `viewer-leaderboard` integriert

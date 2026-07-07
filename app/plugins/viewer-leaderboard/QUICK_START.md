@@ -2,7 +2,7 @@
 
 ## Installation
 
-Das Plugin ist automatisch verfügbar. Es wird beim Server-Start geladen, wenn es im `plugins/viewer-xp/` Verzeichnis liegt und in der `plugin.json` aktiviert ist (`"enabled": true`).
+Das Plugin ist automatisch verfügbar. Es wird beim Server-Start geladen, wenn es im `plugins/viewer-leaderboard/` Verzeichnis liegt und in der `plugin.json` aktiviert ist (`"enabled": true`).
 
 ## Schnellstart
 
@@ -193,6 +193,6 @@ Bei Fragen oder Problemen:
 
 ---
 
-**Version**: 1.0.0  
-**Plugin-ID**: viewer-xp  
-**Dokumentation**: `/plugins/viewer-xp/README.md`
+**Version**: 1.0.0
+**Plugin-ID**: viewer-leaderboard
+**Dokumentation**: `/plugins/viewer-leaderboard/README.md`

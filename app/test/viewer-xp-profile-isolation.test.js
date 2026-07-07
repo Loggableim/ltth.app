@@ -100,7 +100,7 @@ describe('Viewer XP System - Profile Isolation', () => {
             }
         };
 
-        // Load viewer-xp plugin for both profiles
+        // Load viewer-leaderboard plugin for both profiles
         const ViewerXPPlugin = require('../plugins/viewer-leaderboard/viewer-xp-impl');
         viewerXPPlugin1 = new ViewerXPPlugin(mockAPI1);
         viewerXPPlugin2 = new ViewerXPPlugin(mockAPI2);
@@ -252,8 +252,8 @@ describe('Viewer XP System - Profile Isolation', () => {
         expect(fs.existsSync(dbPath2)).toBe(true);
 
         // Verify files are NOT in the application directory
-        expect(dbPath1).not.toContain(path.join(__dirname, '..', 'plugins', 'viewer-xp'));
-        expect(dbPath2).not.toContain(path.join(__dirname, '..', 'plugins', 'viewer-xp'));
+        expect(dbPath1).not.toContain(path.join(__dirname, '..', 'plugins', 'viewer-leaderboard'));
+        expect(dbPath2).not.toContain(path.join(__dirname, '..', 'plugins', 'viewer-leaderboard'));
     });
 
     test('should handle multiple viewers per profile with independent XP tracking', async () => {

@@ -1,7 +1,7 @@
 /**
  * Viewer XP - IFTTT Integration Test
  * 
- * Tests that the viewer-xp plugin correctly integrates with the IFTTT engine
+ * Tests that the viewer-leaderboard plugin correctly integrates with the IFTTT engine
  * and emits events for automation flows.
  */
 
@@ -137,7 +137,7 @@ describe('Viewer XP - IFTTT Integration', () => {
 
   beforeAll(() => {
     // Load the plugin
-    const pluginPath = path.join(__dirname, '../plugins/viewer-xp/main.js');
+    const pluginPath = path.join(__dirname, '../plugins/viewer-leaderboard/main.js');
     ViewerXPPlugin = require(pluginPath);
   });
 

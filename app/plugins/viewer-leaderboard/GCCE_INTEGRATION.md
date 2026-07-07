@@ -139,7 +139,7 @@ Um das GCCE-HUD zu nutzen:
 
 ### Implementierung
 
-Die GCCE-Integration ist in `/app/plugins/viewer-xp/main.js` implementiert:
+Die GCCE-Integration ist in `/app/plugins/viewer-leaderboard/main.js` implementiert:
 
 - **registerGCCECommands()**: Registriert alle Chat-Befehle bei GCCE
 - **handleXPCommand()**: Verarbeitet `/xp` Befehl

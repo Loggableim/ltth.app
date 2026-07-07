@@ -1,5 +1,5 @@
 const Database = require('better-sqlite3');
-const ViewerProfilesDatabase = require('../plugins/viewer-profiles/backend/database');
+const ViewerProfilesDatabase = require('../plugins/viewer-leaderboard/backend/analytics-database');
 const ViewerMemoryAdapter = require('../plugins/animazingpal/brain/viewer-memory-adapter');
 
 function createViewerDb() {

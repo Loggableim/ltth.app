@@ -1,7 +1,7 @@
 /**
  * Viewer XP - GCCE Integration Test
  * 
- * Tests that the viewer-xp plugin correctly integrates with GCCE
+ * Tests that the viewer-leaderboard plugin correctly integrates with GCCE
  * and registers chat commands for XP system functionality.
  */
 

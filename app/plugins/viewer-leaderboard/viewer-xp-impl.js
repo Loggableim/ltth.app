@@ -12,6 +12,7 @@
 
 const EventEmitter = require('events');
 const ViewerXPDatabase = require('./backend/database');
+const { createViewerProfilesIntegration } = require('./backend/viewer-profiles-bridge');
 const path = require('path');
 const fs = require('fs');
 
@@ -26,6 +27,8 @@ class ViewerXPPlugin extends EventEmitter {
     
     // Initialize database
     this.db = new ViewerXPDatabase(api);
+    this.embeddedViewerProfiles = null;
+    this.analyticsDb = null;
     
     // Cooldown tracking (in-memory)
     this.cooldowns = new Map(); // username -> { actionType -> lastTimestamp }
@@ -78,6 +81,22 @@ class ViewerXPPlugin extends EventEmitter {
           levelUpData.rewards
         );
       });
+
+      // Embed the viewer-profiles feature set into the consolidated plugin.
+      try {
+        this.embeddedViewerProfiles = createViewerProfilesIntegration(this.api);
+        await this.embeddedViewerProfiles.init();
+        this.analyticsDb = this.embeddedViewerProfiles.db;
+      } catch (error) {
+        try {
+          await this.embeddedViewerProfiles?.destroy?.();
+        } catch (cleanupError) {
+          this.api.log(`Embedded Viewer Profiles cleanup failed: ${cleanupError.message}`, 'warn');
+        }
+        this.embeddedViewerProfiles = null;
+        this.analyticsDb = null;
+        throw new Error(`Embedded Viewer Profiles initialization failed: ${error.message}`);
+      }
 
       // Register API routes
       this.registerRoutes();
@@ -3455,6 +3474,16 @@ class ViewerXPPlugin extends EventEmitter {
     if (this.watchTimeInterval) {
       clearInterval(this.watchTimeInterval);
       this.watchTimeInterval = null;
+    }
+
+    if (this.embeddedViewerProfiles) {
+      try {
+        await this.embeddedViewerProfiles.destroy();
+      } catch (error) {
+        this.api.log(`Error destroying embedded Viewer Profiles: ${error.message}`, 'warn');
+      }
+      this.embeddedViewerProfiles = null;
+      this.analyticsDb = null;
     }
 
     if (this.retentionCleanupTimer) {

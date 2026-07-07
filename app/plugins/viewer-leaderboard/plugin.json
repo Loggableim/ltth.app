@@ -2,10 +2,10 @@
   "id": "viewer-leaderboard",
   "name": "Viewer XP & Leaderboard",
   "version": "2.1.0",
-  "description": "Comprehensive Viewer XP System with integrated Gifter Leaderboard. All XP tracking, leveling, badges, daily bonuses, rate limiting, anti-spam, event logging, and gifter rankings in one unified plugin.",
+  "description": "Unified Viewer XP, Gifter Leaderboard, and Viewer Profiles analytics plugin. Handles XP tracking, leveling, badges, daily bonuses, rate limiting, anti-spam, event logging, profile management, VIP/birthday tracking, heatmaps, and gifter rankings in one bundle.",
   "author": "Pup Cid",
   "entry": "main.js",
-  "enabled": false,
+  "enabled": true,
   "type": "overlay",
   "devStatus": "development-beta",
   "permissions": [
@@ -15,9 +15,9 @@
     "database"
   ],
   "descriptions": {
-    "en": "Comprehensive Viewer XP System with integrated Gifter Leaderboard. All XP tracking, leveling, badges, and gifter rankings in one plugin. v2.1.0 adds rate limiting, anti-spam, full event logging, and opt-out system.",
-    "de": "Umfassendes Zuschauer-XP-System mit integrierter Gifter-Bestenliste. Alle XP-Tracking-, Leveling-, Badge- und Gifter-Ranking-Funktionen in einem Plugin. v2.1.0 fügt Rate Limiting, Anti-Spam, vollständiges Event-Logging und Opt-Out hinzu.",
-    "es": "Sistema integral de XP de espectadores con tabla de clasificación de donantes integrada. Todas las funciones de seguimiento de XP, nivelación, insignias y clasificación de donantes en un solo plugin.",
-    "fr": "Système complet d'XP des spectateurs avec classement des donateurs intégré. Toutes les fonctionnalités de suivi XP, de mise à niveau, de badges et de classement des donateurs dans un seul plugin."
+    "en": "Unified Viewer XP, Viewer Profiles analytics, and Gifter Leaderboard plugin. Includes XP tracking, leveling, badges, profile management, VIP and birthday tracking, heatmaps, event logging, opt-out support, and gifter rankings in one bundle.",
+    "de": "Vereint Zuschauer-XP, Viewer-Profile-Analyse und Gifter-Bestenliste. EnthÃ¤lt XP-Tracking, Leveling, Badges, Profilverwaltung, VIP- und Geburtstags-Tracking, Heatmaps, Event-Logging, Opt-Out und Gifter-Rankings in einem Paket.",
+    "es": "Plugin unificado de XP de espectadores, anÃ¡lisis de perfiles y tabla de clasificaciÃ³n de donantes. Incluye seguimiento de XP, nivelaciÃ³n, insignias, gestiÃ³n de perfiles, VIP, cumpleaÃ±os, mapas de calor, registros de eventos, opt-out y rankings de donantes.",
+    "fr": "Plugin unifiÃ© pour l'XP des spectateurs, l'analyse des profils et le classement des donateurs. Inclut le suivi XP, la progression, les badges, la gestion de profil, les VIP, les anniversaires, les cartes thermiques, le journal d'Ã©vÃ©nements, l'opt-out et les classements des donateurs."
   }
 }

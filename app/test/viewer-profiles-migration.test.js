@@ -1,5 +1,5 @@
 const Database = require('better-sqlite3');
-const ViewerProfilesDatabase = require('../plugins/viewer-profiles/backend/database');
+const ViewerProfilesDatabase = require('../plugins/viewer-leaderboard/backend/analytics-database');
 
 function createApi(db) {
   return {
