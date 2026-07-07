@@ -63,8 +63,8 @@
         "desc": "Múltiples bases de datos para diferentes configuraciones de streaming. Cambio de perfil, función de copia de seguridad y configuraciones separadas para diferentes formatos de stream."
       },
       "card10": {
-        "title": "100% Local y Seguro",
-        "desc": "Todos los datos permanecen en tu ordenador. Sin conexión a la nube, sin datos de inicio de sesión requeridos, sin recopilación de datos. Código abierto y completamente transparente."
+        "title": "Local por dise?o",
+        "desc": "El n?cleo se ejecuta localmente en tu ordenador. La tienda de apps requiere inicio de sesi?n, pero la app local sigue separada. C?digo abierto y transparente."
       },
       "card11": {
         "title": "Sistema de Plugins",
@@ -142,7 +142,7 @@
       },
       "feature3": {
         "title": "Documentación Completa",
-        "desc": "Wiki con arquitectura, documentación de plugins, referencia API, FAQ y solución de problemas."
+        "desc": "Documentaci?n con arquitectura, documentaci?n de plugins, referencia de API, FAQ y troubleshooting."
       },
       "feature4": {
         "title": "Arquitectura Moderna",
@@ -185,7 +185,7 @@
       "title": "Comienza en 3 Pasos",
       "step1": {
         "title": "1 Descarga e Instalación",
-        "desc": "Descarga el LTTH Cloud Launcher e instala la herramienta en tu PC con Windows. Todo se configura automáticamente."
+        "desc": "Descarga el Windows Launcher de LTTH e instala la herramienta en tu PC con Windows. Todo se configura autom?ticamente."
       },
       "step2": {
         "title": "2 Conectar a TikTok",

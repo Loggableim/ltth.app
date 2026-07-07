@@ -70,8 +70,8 @@
         "desc": "Plusieurs bases de données pour différentes configurations de streaming. Changement de profil, fonction de sauvegarde et configurations séparées pour différents formats de stream."
       },
       "card10": {
-        "title": "100% Local et Sécurisé",
-        "desc": "Toutes les données restent sur votre ordinateur. Pas de connexion cloud, pas de données de connexion requises, pas de collecte de données. Open source et entièrement transparent."
+        "title": "Local par conception",
+        "desc": "Le c?ur fonctionne localement sur votre ordinateur. La boutique d'apps n?cessite une connexion, mais l'application locale reste s?par?e. Open source et transparente."
       },
       "card11": {
         "title": "Système de Plugins",
@@ -153,7 +153,7 @@
       },
       "feature3": {
         "title": "Documentation Complète",
-        "desc": "Wiki avec architecture, documentation des plugins, référence API, FAQ et dépannage."
+        "desc": "Documentation avec architecture, docs des plugins, r?f?rence API, FAQ et d?pannage."
       },
       "feature4": {
         "title": "Architecture Moderne",
@@ -196,7 +196,7 @@
       "title": "Démarrez en 3 Étapes",
       "step1": {
         "title": "1 Téléchargement et Installation",
-        "desc": "Téléchargez le LTTH Cloud Launcher et installez l'outil sur votre PC Windows. Tout est configuré automatiquement."
+        "desc": "T?l?chargez le Windows Launcher de LTTH et installez l'outil sur votre PC Windows. Tout se configure automatiquement."
       },
       "step2": {
         "title": "2 Connecter à TikTok",
@@ -951,7 +951,7 @@
     "h1": {
       "24": "Bienvenue sur PupCid's Little TikTool Helper",
       "30": "Installation et Configuration",
-      "38": "Lanceur Cloud",
+      "38": "Windows Launcher",
       "46": "Démarrage Rapide",
       "53": "Configuration",
       "62": "Connexion TikTok LIVE",
@@ -965,15 +965,64 @@
       "164": "Intégration VRChat OSC",
       "175": "API Plugin",
       "182": "Dépannage"
+    },
+    "a": {
+      "5": "Windows Launcher",
+      "151": "documentation du d?p?t",
+      "187": "documentation FAQ et d?pannage"
+    },
+    "h2": {
+      "33": "Installation avec Windows Launcher (recommand?e)"
+    },
+    "p": {
+      "34": "Le Windows Launcher est la m?thode d'installation la plus simple et recommand?e pour Windows :",
+      "39": "Le Windows Launcher LTTH est la m?thode d'installation recommand?e pour Windows.",
+      "150": "Vous trouverez plus de d?tails dans la documentation du d?p?t.",
+      "186": "Consultez la documentation FAQ et d?pannage ou ouvrez un issue GitHub."
     }
   },
   "faq": {
     "hero": {
-      "description": "Trouvez des réponses aux questions fréquentes sur ltth.app",
-      "title": "FAQ - Questions Fréquemment Posées"
+      "description": "Trouvez des r?ponses aux questions fr?quentes sur ltth.app",
+      "title": "Questions fr?quentes"
     },
     "span": {
-      "3": "FAQ"
+      "3": "Questions"
+    },
+    "a": {
+      "1": "Aller au contenu principal",
+      "21": "Page de t?l?chargement",
+      "25": "Windows Launcher",
+      "26": "Page de t?l?chargement",
+      "33": "GitHub"
+    },
+    "h2": {
+      "5": "?? Premiers pas",
+      "38": "?? Technique"
+    },
+    "h3": {
+      "6": "PupCid's Little TikTool Helper est-il gratuit ?",
+      "9": "?? Qu'est-ce que le Windows Launcher ?",
+      "15": "LTTH est-il disponible pour macOS ou Linux ?",
+      "18": "Quels syst?mes d'exploitation sont pris en charge ?",
+      "22": "Comment installer l'outil ?",
+      "27": "Dois-je saisir des identifiants de connexion ?",
+      "30": "Que signifie \"version b?ta\" ? L'outil est-il stable ?",
+      "34": "Comment puis-je contribuer ? la communaut? ?",
+      "39": "L'outil fonctionne-t-il avec OBS ?",
+      "43": "Ai-je besoin de Node.js ?",
+      "46": "Mes donn?es sont-elles envoy?es dans le cloud ?"
+    },
+    "p": {
+      "11": "Le Windows Launcher est une petite application Windows qui t?l?charge, installe et maintient LTTH ? jour automatiquement. Il propose des mises ? jour automatiques, le retour aux versions pr?c?dentes et une gestion de version int?gr?e. Toutes les donn?es sont stock?es dans %LOCALAPPDATA%\\LTTH\\.",
+      "14": "Le Windows Launcher est une nouvelle application qui n'est pas encore sign?e. C'est normal pour les projets open source. Cliquez sur \"Plus d'informations\" ? \"Ex?cuter quand m?me\". Le fichier est s?r et le code source est disponible sur GitHub.",
+      "17": "Le Windows Launcher est actuellement disponible uniquement pour Windows. La prise en charge de macOS et Linux pour le launcher est pr?vue. LTTH lui-m?me fonctionne sur toutes les plateformes, mais l'installation automatique via le launcher n'est pour l'instant disponible que sous Windows.",
+      "20": "Le Windows Launcher prend en charge Windows 10 et Windows 11. L'installation automatique via le launcher est la m?thode recommand?e pour les utilisateurs Windows. Consultez la page de t?l?chargement pour plus de d?tails.",
+      "24": "Recommand? : t?l?chargez le Windows Launcher et ex?cutez-le. Le launcher installe LTTH automatiquement et le maintient ? jour. Vous trouverez plus de d?tails sur la page de t?l?chargement.",
+      "29": "Pour l'application locale, non ; pour la boutique d'apps, oui. Pour l'utilisation locale, seul votre nom d'utilisateur TikTok (sans @) est n?cessaire. La boutique d'apps n?cessite une connexion/un compte. L'outil ne lit que des donn?es LIVE publiques.",
+      "32": "Oui, l'outil est pr?t pour la production et fonctionne parfaitement ! \"B?ta\" signifie que de nouvelles fonctionnalit?s sont en cours de d?veloppement et que nous recueillons des retours. Toutes les fonctions principales (TTS, alertes, soundboard, plugins, int?gration OBS) fonctionnent de mani?re fiable. Des bugs occasionnels peuvent survenir - signalez-les simplement sur GitHub et nous les corrigerons rapidement !",
+      "45": "Le launcher inclut tous les composants requis. Vous n'avez ? vous soucier de rien.",
+      "48": "L'application locale traite vos donn?es sur votre ordinateur. La boutique d'apps n?cessite une connexion, mais l'utilisation locale reste s?par?e. Une synchronisation cloud optionnelle pour les configurations est pr?vue (opt-in avec contr?le total)."
     }
   },
   "features": {

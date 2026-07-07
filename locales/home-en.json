@@ -63,8 +63,8 @@
         "desc": "Multiple databases for different streaming setups. Profile switching, backup function and separate configurations for different stream formats."
       },
       "card10": {
-        "title": "100% Local & Secure",
-        "desc": "All data stays on your computer. No cloud connection, no login data required, no data collection. Open source and fully transparent."
+        "title": "Local by design",
+        "desc": "The core runs locally on your computer. The app store requires a login, but the local app stays separate. Open source and transparent."
       },
       "card11": {
         "title": "Plugin System",
@@ -142,7 +142,7 @@
       },
       "feature3": {
         "title": "Comprehensive Documentation",
-        "desc": "Wiki with architecture, plugin docs, API reference, FAQ & troubleshooting."
+        "desc": "Documentation with architecture, plugin docs, API reference, FAQ & troubleshooting."
       },
       "feature4": {
         "title": "Modern Architecture",
@@ -185,7 +185,7 @@
       "title": "Get Started in 3 Steps",
       "step1": {
         "title": "1 Download & Installation",
-        "desc": "Download the LTTH Cloud Launcher and install the tool on your Windows PC. Everything is set up automatically."
+        "desc": "Download the LTTH Windows Launcher and install the tool on your Windows PC. Everything is set up automatically."
       },
       "step2": {
         "title": "2 Connect to TikTok",

@@ -344,15 +344,15 @@ function renderHero(lang, page, itemCount, screenshotCount) {
         <div class="catalog-stats" aria-label="${escapeAttr(page.itemListName)}">
           <div class="catalog-stat">
             <strong>${itemCount}</strong>
-            <span>${escapeHtml(page.resultsLabel)}</span>
+            <span>${escapeHtml(page.heroAppsLabel)}</span>
           </div>
           <div class="catalog-stat">
-            <strong>${screenshotCount}</strong>
-            <span>${escapeHtml(page.screenshotsLabel)}</span>
+            <strong>1-5</strong>
+            <span>${escapeHtml(page.heroScreenshotsLabel)}</span>
           </div>
           <div class="catalog-stat">
             <strong>DE/EN/ES/FR</strong>
-            <span>${escapeHtml(page.tocLabel)}</span>
+            <span>${escapeHtml(page.heroLanguagesLabel)}</span>
           </div>
         </div>
         <div class="catalog-actions">
@@ -365,9 +365,9 @@ function renderHero(lang, page, itemCount, screenshotCount) {
         <h2>${escapeHtml(page.itemListName)}</h2>
         <p>${escapeHtml(page.itemListDescription)}</p>
         <ul class="catalog-hero__notes">
-          <li>${itemCount} ${escapeHtml(page.resultsLabel)}</li>
-          <li>${screenshotCount} ${escapeHtml(page.screenshotsLabel)}</li>
-          <li>DE / EN / ES / FR</li>
+          <li>${itemCount} ${escapeHtml(page.heroAppsLabel)}</li>
+          <li>${escapeHtml(page.heroScreenshotsLabel)}</li>
+          <li>${escapeHtml(page.heroLanguagesLabel)}: DE / EN / ES / FR</li>
         </ul>
       </div>
     </div>

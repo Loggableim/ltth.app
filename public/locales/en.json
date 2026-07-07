@@ -70,8 +70,8 @@
         "desc": "Multiple databases for different streaming setups. Profile switching, backup function and separate configurations for different stream formats."
       },
       "card10": {
-        "title": "100% Local & Secure",
-        "desc": "All data stays on your computer. No cloud connection, no login data required, no data collection. Open source and fully transparent."
+        "title": "Local by design",
+        "desc": "The core runs locally on your computer. The app store requires a login, but the local app stays separate. Open source and transparent."
       },
       "card11": {
         "title": "Plugin System",
@@ -153,7 +153,7 @@
       },
       "feature3": {
         "title": "Comprehensive Documentation",
-        "desc": "Wiki with architecture, plugin docs, API reference, FAQ & troubleshooting."
+        "desc": "Documentation with architecture, plugin docs, API reference, FAQ & troubleshooting."
       },
       "feature4": {
         "title": "Modern Architecture",
@@ -196,7 +196,7 @@
       "title": "Get Started in 3 Steps",
       "step1": {
         "title": "1 Download & Installation",
-        "desc": "Download the LTTH Cloud Launcher and install the tool on your Windows PC. Everything is set up automatically."
+        "desc": "Download the LTTH Windows Launcher and install the tool on your Windows PC. Everything is set up automatically."
       },
       "step2": {
         "title": "2 Connect to TikTok",
@@ -951,7 +951,7 @@
     "h1": {
       "24": "Welcome to PupCid's Little TikTool Helper",
       "30": "Installation & Setup",
-      "38": "Cloud Launcher",
+      "38": "Windows Launcher",
       "46": "Quick Start",
       "53": "Configuration",
       "62": "TikTok LIVE Connection",
@@ -965,15 +965,64 @@
       "164": "VRChat OSC Integration",
       "175": "Plugin API",
       "182": "Troubleshooting"
+    },
+    "a": {
+      "5": "Windows Launcher",
+      "151": "repository documentation",
+      "187": "FAQ & troubleshooting documentation"
+    },
+    "h2": {
+      "33": "Installation with Windows Launcher (recommended)"
+    },
+    "p": {
+      "34": "The Windows Launcher is the easiest and recommended installation method for Windows:",
+      "39": "The LTTH Windows Launcher is the recommended installation method for Windows.",
+      "150": "More details are available in the repository documentation.",
+      "186": "Visit the FAQ & troubleshooting documentation or open a GitHub issue."
     }
   },
   "faq": {
     "hero": {
       "description": "Find answers to common questions about ltth.app",
-      "title": "FAQ - Frequently Asked Questions"
+      "title": "Frequently Asked Questions"
     },
     "span": {
-      "3": "FAQ"
+      "3": "Questions"
+    },
+    "a": {
+      "1": "Skip to main content",
+      "21": "Download page",
+      "25": "Windows Launcher",
+      "26": "Download page",
+      "33": "GitHub"
+    },
+    "h2": {
+      "5": "?? Getting Started",
+      "38": "?? Technical"
+    },
+    "h3": {
+      "6": "Is PupCid's Little TikTool Helper free?",
+      "9": "?? What is the Windows Launcher?",
+      "15": "Is LTTH available for macOS or Linux?",
+      "18": "Which operating systems are supported?",
+      "22": "How do I install the tool?",
+      "27": "Do I need to enter login data?",
+      "30": "What does \"beta version\" mean? Is the tool stable?",
+      "34": "How can I contribute to the community?",
+      "39": "Does the tool work with OBS?",
+      "43": "Do I need Node.js?",
+      "46": "Are my data uploaded to the cloud?"
+    },
+    "p": {
+      "11": "The Windows Launcher is a small Windows app that automatically downloads, installs, and keeps LTTH up to date. It offers automatic updates, rollback to previous versions, and built-in version management. All data is stored in %LOCALAPPDATA%\\LTTH\\.",
+      "14": "The Windows Launcher is a new app that is not code-signed yet. That's normal for open-source projects. Click \"More info\" ? \"Run anyway\". The file is safe and the source code is available on GitHub.",
+      "17": "The Windows Launcher is currently only available for Windows. macOS and Linux support for the launcher is planned. LTTH itself runs on all platforms, but automatic installation via the launcher is currently Windows only.",
+      "20": "The Windows Launcher supports Windows 10 and Windows 11. Automatic installation via the launcher is the recommended method for Windows users. See the download page for details.",
+      "24": "Recommended: download the Windows Launcher and run it. The launcher installs LTTH automatically and keeps it up to date. See the download page for more details.",
+      "29": "For the local app, no; for the app store, yes. You only need your TikTok username (without @) for local use. The app store requires a login/account. The tool only reads publicly available LIVE stream data.",
+      "32": "Yes, the tool is production-ready and fully functional! \"Beta\" means new features are actively being developed and we are gathering feedback. All core features (TTS, alerts, soundboard, plugins, OBS integration) work reliably. Occasional bugs can happen - just report them on GitHub and we'll fix them quickly!",
+      "45": "The launcher includes all required components. You do not need to worry about anything.",
+      "48": "The local app processes your data on your computer. The app store requires a login, but local use stays separate. Optional cloud sync for configs is planned (opt-in with full control)."
     }
   },
   "features": {

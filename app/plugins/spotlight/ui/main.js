@@ -11,6 +11,7 @@ const overlayTypes = [
 ];
 
 let currentType = null;
+let currentPreviewType = null;
 let allSettings = {};
 
 // Initialize UI
@@ -52,9 +53,6 @@ function renderOverlayCards() {
           <button class="btn btn-secondary btn-sm" data-action="preview" data-type="${type.id}">
             Preview
           </button>
-          <button class="btn btn-success btn-sm" data-action="test" data-type="${type.id}">
-            Test
-          </button>
           <button class="btn btn-ghost btn-sm" data-action="settings" data-type="${type.id}">
             Settings
           </button>
@@ -95,9 +93,6 @@ function setupButtonEventListeners() {
       case 'preview':
         openPreview(type);
         break;
-      case 'test':
-        testOverlay(type);
-        break;
       case 'settings':
         openSettings(type);
         break;
@@ -131,6 +126,7 @@ function copyURL(type) {
 
 // Open preview
 function openPreview(type) {
+  currentPreviewType = type;
   const typeName = overlayTypes.find(t => t.id === type)?.name || type;
   document.getElementById('preview-title-type').textContent = typeName;
 
@@ -144,6 +140,7 @@ function openPreview(type) {
 function closePreviewModal() {
   document.getElementById('preview-modal').classList.remove('active');
   document.getElementById('preview-frame').src = '';
+  currentPreviewType = null;
 }
 
 // Test overlay
@@ -612,6 +609,11 @@ document.getElementById('close-settings-modal').addEventListener('click', closeS
 document.getElementById('cancel-settings-btn').addEventListener('click', closeSettingsModal);
 document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
 document.getElementById('close-preview-modal').addEventListener('click', closePreviewModal);
+document.getElementById('preview-test-btn').addEventListener('click', () => {
+  if (currentPreviewType) {
+    testOverlay(currentPreviewType);
+  }
+});
 document.getElementById('close-preview-btn').addEventListener('click', closePreviewModal);
 
 // Initialize on page load

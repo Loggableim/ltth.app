@@ -156,7 +156,7 @@ function Ensure-Git {
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
         Err "Git ist nicht installiert."
         Err "Bitte installiere Git: https://git-scm.com/download/win"
-        Err "Oder verwende den LTTH Cloud Launcher: https://ltth.app/downloads/launcher.exe"
+        Err "Oder verwende den LTTH Windows Launcher: https://ltth.app/downloads/launcher.exe"
         Fail "Git ist nicht installiert."
     }
 }
@@ -357,7 +357,7 @@ function Install-Launcher {
         }
 
         if ((-not (Test-Path $launcherPath)) -or $launcherMatchesDownloads) {
-            Log "Lade LTTH Cloud Launcher herunter..."
+            Log "Lade LTTH Windows Launcher herunter..."
             Invoke-WebRequest -UseBasicParsing -Uri $launcherUrl -OutFile $launcherPath -TimeoutSec 60
         }
 
@@ -379,10 +379,93 @@ function Install-Launcher {
     }
 }
 
+function Get-ShortcutIconPath {
+    foreach ($candidate in @(
+        (Join-Path $LTTHDir 'build-src\icon.ico'),
+        (Join-Path $LTTHDir 'icon.ico'),
+        (Join-Path $LTTHDir 'app\public\favicon.ico')
+    )) {
+        if (Test-Path -LiteralPath $candidate) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
+function Get-ShortcutConfig {
+    param(
+        [string]$LauncherPath
+    )
+
+    $description = "PupCid's Little TikTool Helper"
+    $iconPath = Get-ShortcutIconPath
+
+    if (-not [string]::IsNullOrWhiteSpace($LauncherPath) -and (Test-Path -LiteralPath $LauncherPath)) {
+        return [pscustomobject]@{
+            TargetPath = $LauncherPath
+            Arguments = ''
+            WorkingDirectory = $LTTHDir
+            IconLocation = if ($iconPath) { $iconPath } else { $LauncherPath }
+            Description = $description
+        }
+    }
+
+    $nodeCommand = Get-Command node -ErrorAction SilentlyContinue
+    if (-not $nodeCommand) {
+        return $null
+    }
+
+    $nodePath = $nodeCommand.Path
+    if ([string]::IsNullOrWhiteSpace($nodePath)) {
+        $nodePath = $nodeCommand.Source
+    }
+    if ([string]::IsNullOrWhiteSpace($nodePath)) {
+        $nodePath = $nodeCommand.Definition
+    }
+    if ([string]::IsNullOrWhiteSpace($nodePath)) {
+        return $null
+    }
+
+    return [pscustomobject]@{
+        TargetPath = $nodePath
+        Arguments = 'launch.js'
+        WorkingDirectory = (Join-Path $LTTHDir 'app')
+        IconLocation = if ($iconPath) { $iconPath } else { $nodePath }
+        Description = $description
+    }
+}
+
+function Create-WindowsShortcut {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ShortcutPath,
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$ShortcutConfig
+    )
+
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $ShortcutPath) | Out-Null
+
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($ShortcutPath)
+    $shortcut.TargetPath = $ShortcutConfig.TargetPath
+    $shortcut.WorkingDirectory = $ShortcutConfig.WorkingDirectory
+    if (-not [string]::IsNullOrWhiteSpace($ShortcutConfig.Arguments)) {
+        $shortcut.Arguments = $ShortcutConfig.Arguments
+    }
+    if (-not [string]::IsNullOrWhiteSpace($ShortcutConfig.IconLocation)) {
+        $shortcut.IconLocation = $ShortcutConfig.IconLocation
+    }
+    $shortcut.Description = $ShortcutConfig.Description
+    $shortcut.Save()
+
+    return $ShortcutPath
+}
+
 function Create-DesktopShortcut {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$LauncherPath
+        [pscustomobject]$ShortcutConfig
     )
 
     try {
@@ -390,21 +473,43 @@ function Create-DesktopShortcut {
         if ([string]::IsNullOrWhiteSpace($desktopPath)) {
             $desktopPath = Join-Path $env:USERPROFILE 'Desktop'
         }
-        New-Item -ItemType Directory -Force -Path $desktopPath | Out-Null
+        if ([string]::IsNullOrWhiteSpace($desktopPath)) {
+            throw "Desktop path could not be resolved."
+        }
 
         $shortcutPath = Join-Path $desktopPath 'LTTH.lnk'
-        $shell = New-Object -ComObject WScript.Shell
-        $shortcut = $shell.CreateShortcut($shortcutPath)
-        $shortcut.TargetPath = $LauncherPath
-        $shortcut.WorkingDirectory = $LTTHDir
-        $shortcut.IconLocation = $LauncherPath
-        $shortcut.Description = "PupCid's Little TikTool Helper"
-        $shortcut.Save()
+        $createdPath = Create-WindowsShortcut -ShortcutPath $shortcutPath -ShortcutConfig $ShortcutConfig
 
-        Ok "Desktop-Verknuepfung erstellt: $shortcutPath"
-        return $shortcutPath
+        Ok "Desktop-Verknuepfung erstellt: $createdPath"
+        return $createdPath
     } catch {
         Warn "Desktop-Verknuepfung konnte nicht erstellt werden: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+function Create-StartMenuShortcut {
+    param(
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$ShortcutConfig
+    )
+
+    try {
+        $startMenuPath = [Environment]::GetFolderPath('Programs')
+        if ([string]::IsNullOrWhiteSpace($startMenuPath)) {
+            $startMenuPath = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
+        }
+        if ([string]::IsNullOrWhiteSpace($startMenuPath)) {
+            throw "Start menu path could not be resolved."
+        }
+
+        $shortcutPath = Join-Path $startMenuPath 'LTTH.lnk'
+        $createdPath = Create-WindowsShortcut -ShortcutPath $shortcutPath -ShortcutConfig $ShortcutConfig
+
+        Ok "Startmenueeintrag erstellt: $createdPath"
+        return $createdPath
+    } catch {
+        Warn "Startmenueeintrag konnte nicht erstellt werden: $($_.Exception.Message)"
         return $null
     }
 }
@@ -421,7 +526,7 @@ function Start-Launcher {
     }
 
     try {
-        Log "Starte LTTH Cloud Launcher..."
+        Log "Starte LTTH Windows Launcher..."
         $p = Start-Process -FilePath $LauncherPath `
                            -WorkingDirectory $LTTHDir `
                            -WindowStyle Normal `
@@ -489,11 +594,17 @@ function Main {
     Download-Source
     Install-Deps
     $launcherPath = Install-Launcher
-    $shortcutPath = $null
+    $shortcutConfig = Get-ShortcutConfig -LauncherPath $launcherPath
+    $desktopShortcutPath = $null
+    $startMenuShortcutPath = $null
     $launcherStarted = $false
 
+    if ($shortcutConfig) {
+        $desktopShortcutPath = Create-DesktopShortcut -ShortcutConfig $shortcutConfig
+        $startMenuShortcutPath = Create-StartMenuShortcut -ShortcutConfig $shortcutConfig
+    }
+
     if ($launcherPath) {
-        $shortcutPath = Create-DesktopShortcut -LauncherPath $launcherPath
         $launcherStarted = Start-Launcher -LauncherPath $launcherPath
     }
 
@@ -508,9 +619,14 @@ function Main {
     if ($launcherPath) {
         Write-Host "  Launcher:   $launcherPath"
     }
-    if ($shortcutPath) {
-        Write-Host "  Desktop:    $shortcutPath"
-        Write-Host "  Starten:    Doppelklick auf die Desktop-Verknuepfung 'LTTH'"
+    if ($desktopShortcutPath) {
+        Write-Host "  Desktop:    $desktopShortcutPath"
+    }
+    if ($startMenuShortcutPath) {
+        Write-Host "  Startmenue: $startMenuShortcutPath"
+    }
+    if ($desktopShortcutPath -or $startMenuShortcutPath) {
+        Write-Host "  Starten:    Doppelklick auf die Desktop-Verknuepfung 'LTTH' oder den Startmenueeintrag"
     }
     Write-Host "  App-Ordner: $LTTHDir"
     Write-Host "  Dashboard:  http://localhost:$LTTHPort/dashboard.html"

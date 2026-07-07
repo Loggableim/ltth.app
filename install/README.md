@@ -18,6 +18,8 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 3. **Bauen** — `npm install` richtet alle 36 Plugins und Module ein.
 4. **Starten** — Das Dashboard öffnet sich unter `http://localhost:3000/dashboard.html`.
 
+Auf Windows legt der Installer zusaetzlich Desktop- und Startmenue-Verknuepfungen an.
+
 ## Umgebungsvariablen
 
 | Variable | Default | Bedeutung |
@@ -34,7 +36,7 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 
 ```bash
 # Andere Version installieren
-LTTH_VERSION=v1.3.5 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
+LTTH_VERSION=v1.3.20 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
 
 # Anderes Verzeichnis
 LTTH_DIR=/opt/ltth curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash

@@ -142,7 +142,7 @@ Das **Multi-HUD Rotation** Overlay ist eine besondere Funktion, die mehrere Even
 
 ### 5. Testen
 
-Klicken Sie auf **"Test"**, um ein Test-Event zu senden und das Overlay zu testen.
+Öffnen Sie die **"Preview"** und klicken Sie dort auf **"Test"**, um ein Test-Event zu senden und das Overlay zu testen.
 
 ### 6. Vorschau
 
