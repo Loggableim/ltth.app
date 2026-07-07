@@ -23,7 +23,7 @@ The tool repository contains:
 
 The download link on the website points to:
 ```
-https://github.com/Loggableim/ltth.app/archive/refs/heads/main.zip
+https://github.com/Loggableim/ltth.app/archive/refs/heads/ltth.app.zip
 ```
 
 This ensures users always get the latest version of the tool.
@@ -76,7 +76,7 @@ This ensures users always get the latest version of the tool.
 - **Bug Reports**: https://github.com/Loggableim/ltth.app/issues
 - **Feature Requests**: https://github.com/Loggableim/ltth.app/issues
 - **Discord Community**: https://discord.gg/qazznedY8g
-- **Tool Download**: https://github.com/Loggableim/ltth.app/archive/refs/heads/main.zip
+- **Tool Download**: https://github.com/Loggableim/ltth.app/archive/refs/heads/ltth.app.zip
 
 ### Repository Information
 

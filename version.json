@@ -4,17 +4,17 @@
   "status": "stable",
   "downloadVersion": "1.3.21",
   "downloadNote": "Default plugins now auto-enable the core set, subscriber-only plugins are gated by Clerk access, and the remaining catalog is marked beta.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.21",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/archive/refs/heads/ltth.app.zip",
   "oneLineInstaller": {
-    "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex",
-    "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
-    "linux": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
-    "universal": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.js | node"
+    "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.ps1 | iex",
+    "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.sh | bash",
+    "linux": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.sh | bash",
+    "universal": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.js | node"
   },
   "oneLineUninstaller": {
-    "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.ps1 | iex",
-    "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.sh | bash",
-    "linux": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.sh | bash"
+    "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/uninstall.ps1 | iex",
+    "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/uninstall.sh | bash",
+    "linux": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/uninstall.sh | bash"
   },
   "supportedPlatforms": [
     "windows-amd64",

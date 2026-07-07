@@ -102,7 +102,7 @@ WebView2 nutzt den bereits installierten Edge-Browser, daher keine zusätzliche 
 
 Der Launcher verwendet einen **Cloud-Update-Mechanismus**, der immer die neueste Version vom Repository holt:
 
-1. **Version prüfen**: Launcher lädt `version.json` von `https://raw.githubusercontent.com/Loggableim/ltth.app/main/version.json`
+1. **Version prüfen**: Launcher lädt `version.json` von `https://ltth.app/version.json`
 2. **Vergleich**: Aktuelle Version wird mit installierter Version verglichen
 3. **Download**: Bei Update wird immer `ltth_latest.zip` von `https://ltth.app/app/ltth_latest.zip` geladen
 4. **Backup**: Bestehende Konfiguration wird automatisch gesichert

@@ -6,15 +6,15 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 
 | Betriebssystem | Befehl |
 |---|---|
-| 🪟 Windows (PowerShell) | `iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 \| iex` |
-| 🍎 macOS (Terminal)     | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh \| bash` |
-| 🐧 Linux (Bash)         | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh \| bash` |
-| 🌐 Beliebiges OS (Node) | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.js \| node` |
+| 🪟 Windows (PowerShell) | `iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.ps1 \| iex` |
+| 🍎 macOS (Terminal)     | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.sh \| bash` |
+| 🐧 Linux (Bash)         | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.sh \| bash` |
+| 🌐 Beliebiges OS (Node) | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.js \| node` |
 
 ## Was passiert?
 
 1. **Prüfen** — Git und Node.js (18/20/22/24 LTS) werden erkannt. Fehlende Tools werden via Homebrew/winget/NodeSource/apt automatisch installiert.
-2. **Laden** — Das Repository wird von GitHub nach `~/.local/share/ltth` (Linux/macOS) bzw. `%LOCALAPPDATA%\LTTH` (Windows) geklont oder aktualisiert.
+2. **Laden** — Der Installer zieht den aktuellen `ltth.app`-Branch von GitHub nach `~/.local/share/ltth` (Linux/macOS) bzw. `%LOCALAPPDATA%\LTTH` (Windows).
 3. **Bauen** — `npm install` richtet alle 36 Plugins und Module ein.
 4. **Starten** — Das Dashboard öffnet sich unter `http://localhost:3000/dashboard.html`.
 
@@ -26,28 +26,26 @@ Hinweis fuer Windows: Der PowerShell-Installer bevorzugt unterstuetzte Node.js-L
 
 | Variable | Default | Bedeutung |
 |---|---|---|
-| `LTTH_VERSION` | `latest` | Zu installierende Version (z.B. `v1.3.7`) |
+| `LTTH_VERSION` | `latest` | Zu installierende Version; standardmäßig der aktuelle Stand des `ltth.app`-Branches |
 | `LTTH_DIR` | `~/.local/share/ltth` / `%LOCALAPPDATA%\LTTH` | Installationsverzeichnis |
 | `LTTH_PORT` | `3000` | HTTP-Port fürs Dashboard |
 | `LTTH_NO_BROWSER` | `0` | Browser nach Start nicht öffnen (`1` = aus) |
 | `LTTH_QUIET` | `0` | Reduzierte Ausgabe (`1` = still) |
 | `LTTH_REPO_OWNER` | `Loggableim` | GitHub-Owner |
 | `LTTH_REPO_NAME` | `ltth.app` | GitHub-Repo-Name |
+| `LTTH_REPO_BRANCH` | `ltth.app` | Git-Branch, aus dem der Installer den neuesten Stand zieht |
 
 ### Beispiele
 
 ```bash
-# Andere Version installieren
-LTTH_VERSION=v1.3.21 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
-
 # Anderes Verzeichnis
-LTTH_DIR=/opt/ltth curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
+LTTH_DIR=/opt/ltth curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.sh | bash
 
 # Anderer Port
-LTTH_PORT=8080 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
+LTTH_PORT=8080 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.sh | bash
 
 # PowerShell (Windows)
-$env:LTTH_PORT=8080; iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex
+$env:LTTH_PORT=8080; iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.ps1 | iex
 ```
 
 ## Updates
@@ -68,10 +66,10 @@ npm install
 
 ```bash
 # Windows (PowerShell)
-iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/uninstall.ps1 | iex
 
 # Linux/macOS
-curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/uninstall.sh | bash
 ```
 
 Der Uninstaller fragt vor dem Loeschen der lokalen Daten und Configs nach. Standard ist, nur die LTTH-Installation zu entfernen und die Benutzerkonfiguration zu behalten.
