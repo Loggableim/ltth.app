@@ -5,7 +5,7 @@
   "description": "Wähle zwischen Eulerstream und TikFinity als TikTok-Datenquelle.",
   "author": "PupCid",
   "entry": "main.js",
-  "enabled": true,
+  "enabled": false,
   "category": "system",
   "hasUI": true
 }

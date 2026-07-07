@@ -163,7 +163,7 @@ class MemoryDatabase {
   }
 
   _ensureStreamerScopeColumns() {
-    for (const table of ['animazingpal_memories', 'animazingpal_user_profiles', 'animazingpal_conversations']) {
+    for (const table of ['animazingpal_memories', 'animazingpal_user_profiles', 'animazingpal_conversations', 'animazingpal_memory_archive']) {
       const columns = this.db.prepare(`PRAGMA table_info(${table})`).all().map(column => column.name);
       if (!columns.includes('streamer_id')) {
         this.db.exec(`ALTER TABLE ${table} ADD COLUMN streamer_id TEXT NOT NULL DEFAULT 'default'`);
@@ -980,8 +980,9 @@ Sprechstil: Schlagfertig, verspielt, sarkastisch und warmherzig`,
     const avgImportance = this.db.prepare(`
       SELECT AVG(importance) as avg FROM animazingpal_memories WHERE streamer_id = ?
     `).get(streamerId);
-    
-    const topUsers = this.getTopSupporters(5);
+
+    const userProfileColumns = this.db.prepare(`PRAGMA table_info(animazingpal_user_profiles)`).all().map(column => column.name);
+    const topUsers = userProfileColumns.includes('total_diamonds') ? this.getTopSupporters(5) : [];
     
     return {
       streamerId,

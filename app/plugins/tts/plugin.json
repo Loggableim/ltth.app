@@ -1,10 +1,11 @@
 {
   "id": "tts",
   "name": "Text-to-Speech System",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Enterprise-grade TTS plugin with multi-engine support, permission system, language detection, caching, and queue management",
   "author": "Pup Cid",
   "entry": "main.js",
+  "logo": "/ltthttslogo.png",
   "enabled": true,
   "type": "core",
   "devStatus": "working-beta",

@@ -1,7 +1,7 @@
 {
   "fireworks": {
     "title": "Fireworks Superplugin Settings",
-    "subtitle": "GPU-Accelerated Fireworks Effects",
+    "subtitle": "Efectos de fuegos artificiales acelerados por GPU",
     "toaster_mode": {
       "title": "🍞 Toaster Mode (Low-End PCs)",
       "description": "Uses Canvas 2D rendering instead of WebGL for maximum compatibility",
@@ -25,6 +25,10 @@
     "min_target_fps": "FPS objetivo mínimo",
     "frame_skip_info": "Frame Skip se activa cuando los FPS caen por debajo de este valor",
     "enable_frame_skip": "Activar Frame Skip",
+    "copy_overlay_url": "📋 Copiar URL del Overlay",
+    "open_in_new_tab": "🔗 Abrir en Nueva Pestaña",
+    "close_tab": "🔒 Cerrar pestaña",
+    "overlay_popup_blocked": "No se pudo abrir la ventana del overlay. Por favor, permite las ventanas emergentes.",
     "tab_settings": "Settings",
     "tab_presets": "Presets",
     "tab_benchmark": "Benchmark",

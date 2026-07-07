@@ -1,5 +1,5 @@
 /**
- * Test: Flame Overlay Plugin Structure and Configuration
+ * Test: Visual FX Frame Plugin Structure and Configuration
  * 
  * Validates plugin metadata, file structure, and basic functionality
  */
@@ -34,7 +34,7 @@ function extractFunctionBody(content, functionName) {
     throw new Error(`Could not extract function body for ${functionName}`);
 }
 
-describe('Flame Overlay Plugin', () => {
+describe('Visual FX Frame Plugin', () => {
     const pluginDir = path.join(__dirname, '..', 'plugins', 'flame-overlay');
     
     test('plugin directory exists', () => {
@@ -49,7 +49,7 @@ describe('Flame Overlay Plugin', () => {
         
         // Validate required fields
         expect(pluginJson.id).toBe('flame-overlay');
-        expect(pluginJson.name).toBe('TikTok Visual Effects Overlay');
+        expect(pluginJson.name).toBe('Visual FX Frame');
         expect(pluginJson.version).toBe('3.0.0');
         expect(pluginJson.entry).toBe('main.js');
         expect(pluginJson.author).toBe('Pup Cid');

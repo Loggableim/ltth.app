@@ -1,4 +1,4 @@
-﻿// Quiz Show Plugin - Client Side JavaScript
+// Quiz Show Plugin - Client Side JavaScript
 (function() {
     'use strict';
 
@@ -24,10 +24,10 @@
         initializeEventListeners();
         initializeSocketListeners();
         initializeCategoryFilterDropdown();
-        loadInitialState();
-        loadTTSVoices(); // Load available TTS voices
+        setTimeout(loadInitialState, 500);
+        setTimeout(loadTTSVoices, 500); // Load available TTS voices
         initializeExpansionControls();
-        loadExpansionControls();
+        setTimeout(loadExpansionControls, 500);
     });
 
     // Tab Navigation
@@ -753,6 +753,7 @@
     function handleLeaderboardUpdate(leaderboard) {
         currentState.leaderboard = leaderboard;
         updateLeaderboardTable();
+        updateDashboardLeaderboardPreview();
     }
 
     function handleQuestionsUpdate(questions) {
@@ -787,6 +788,7 @@
         updateSettingsForm();
         updateQuestionsList();
         updateLeaderboardTable();
+        updateDashboardLeaderboardPreview();
         updateStatistics();
     }
 
@@ -929,14 +931,14 @@
             const data = await response.json();
 
             if (data.success) {
-                resultDiv.textContent = '✓ Verbindung erfolgreich! Das Modell ist erreichbar.';
+                resultDiv.textContent = '? Verbindung erfolgreich! Das Modell ist erreichbar.';
                 resultDiv.className = 'message success-message';
             } else {
-                resultDiv.textContent = '✗ Verbindung fehlgeschlagen: ' + (data.error || 'Unbekannter Fehler');
+                resultDiv.textContent = '? Verbindung fehlgeschlagen: ' + (data.error || 'Unbekannter Fehler');
                 resultDiv.className = 'message error-message';
             }
         } catch (error) {
-            resultDiv.textContent = '✗ Netzwerkfehler: ' + error.message;
+            resultDiv.textContent = '? Netzwerkfehler: ' + error.message;
             resultDiv.className = 'message error-message';
         }
         resultDiv.classList.remove('hidden');
@@ -999,6 +1001,39 @@
                 <td class="points">${entry.points}</td>
             </tr>
         `).join('');
+    }
+
+    function updateDashboardLeaderboardPreview() {
+        const preview = document.getElementById('dashboardLeaderboardPreview');
+        if (!preview) return;
+
+        const leaderboard = Array.isArray(currentState.leaderboard) ? currentState.leaderboard : [];
+        const seasonBadge = document.querySelector('.dashboard-mini-leaderboard__badge');
+        const seasonSelect = document.getElementById('seasonSelect');
+
+        if (seasonBadge) {
+            const selectedOption = seasonSelect && seasonSelect.selectedIndex >= 0
+                ? seasonSelect.options[seasonSelect.selectedIndex]
+                : null;
+            seasonBadge.textContent = selectedOption ? selectedOption.textContent.trim() : 'Season';
+        }
+
+        if (leaderboard.length === 0) {
+            preview.innerHTML = '<p class="no-data">Keine Einträge</p>';
+            return;
+        }
+
+        preview.innerHTML = leaderboard.slice(0, 3).map((entry, index) => {
+            const points = Number.isFinite(Number(entry.points)) ? Number(entry.points) : 0;
+
+            return `
+                <div class="dashboard-mini-leaderboard__item ${index === 0 ? 'is-leader' : ''}">
+                    <span class="dashboard-mini-leaderboard__rank">${index + 1}</span>
+                    <span class="dashboard-mini-leaderboard__name">${escapeHtml(entry.username || 'Unbekannt')}</span>
+                    <span class="dashboard-mini-leaderboard__points">${points.toLocaleString('de-DE')}</span>
+                </div>
+            `;
+        }).join('');
     }
 
     function updateStatistics() {
@@ -1202,7 +1237,7 @@
 
     function applyHUDConfigToForm() {
         // Theme & Style
-        document.getElementById('hudTheme').value = hudConfig.theme || 'dark';
+        document.getElementById('hudTheme').value = normalizeThemeMode(hudConfig.theme || 'night');
         document.getElementById('answersLayout').value = hudConfig.answersLayout || 'grid';
         document.getElementById('animationSpeed').value = hudConfig.animationSpeed || 1;
         document.getElementById('animationSpeedValue').textContent = (hudConfig.animationSpeed || 1).toFixed(1);
@@ -1247,7 +1282,7 @@
         const streamHeight = hudConfig.streamHeight || 1080;
 
         return {
-            theme: document.getElementById('hudTheme').value,
+            theme: normalizeThemeMode(document.getElementById('hudTheme').value),
             questionAnimation: document.getElementById('questionAnimation').value,
             correctAnimation: document.getElementById('correctAnimation').value,
             wrongAnimation: document.getElementById('wrongAnimation').value,
@@ -1328,6 +1363,44 @@
     function refreshPreview() {
         const iframe = document.getElementById('overlayPreview');
         iframe.src = iframe.src;
+        syncPreviewScale();
+    }
+
+    let previewResizeObserver = null;
+
+    function getPreviewResolution() {
+        const width = hudConfig.streamWidth || 1920;
+        const height = hudConfig.streamHeight || 1080;
+        return `${width}x${height}`;
+    }
+
+    function syncPreviewScale() {
+        const wrapper = document.getElementById('previewWrapper');
+        if (!wrapper) return;
+        updatePreviewScale(getPreviewResolution());
+    }
+
+    function initPreviewResizeObserver() {
+        const wrapper = document.getElementById('previewWrapper');
+        if (!wrapper) return;
+
+        syncPreviewScale();
+        window.addEventListener('resize', syncPreviewScale);
+
+        if (typeof ResizeObserver === 'function') {
+            if (previewResizeObserver) {
+                previewResizeObserver.disconnect();
+            }
+            previewResizeObserver = new ResizeObserver(() => {
+                syncPreviewScale();
+            });
+            previewResizeObserver.observe(wrapper);
+        }
+
+        const iframe = document.getElementById('overlayPreview');
+        if (iframe) {
+            iframe.addEventListener('load', syncPreviewScale);
+        }
     }
 
     function updatePreviewScale(resolution) {
@@ -1374,6 +1447,8 @@
     if (document.getElementById('refreshPreviewBtn')) {
         document.getElementById('refreshPreviewBtn').addEventListener('click', refreshPreview);
     }
+
+    initPreviewResizeObserver();
 
     // Range sliders
     if (document.getElementById('animationSpeed')) {
@@ -1669,6 +1744,8 @@
                 if (currentSeason !== 'active') {
                     seasonSelect.value = currentSeason;
                 }
+
+                updateDashboardLeaderboardPreview();
             }
         } catch (error) {
             console.error('Error loading seasons:', error);
@@ -1798,7 +1875,7 @@
             if (data.success) {
                 showMessage(`Neue Saison "${seasonName}" erstellt`, 'success');
                 loadSeasons();
-                loadInitialState(); // Reload leaderboard
+                setTimeout(loadInitialState, 500); // Reload leaderboard
             } else {
                 showMessage('Fehler: ' + data.error, 'error');
             }
@@ -1821,6 +1898,7 @@
             if (data.success) {
                 currentState.leaderboard = data.leaderboard;
                 updateLeaderboardTable();
+                updateDashboardLeaderboardPreview();
             }
         } catch (error) {
             console.error('Error loading season leaderboard:', error);
@@ -1920,7 +1998,7 @@
             btn.disabled = false;
 
             if (data.success) {
-                showMessage(`✓ Paket "${data.package.name}" mit ${data.package.question_count} Fragen erfolgreich generiert!`, 'success', 'generateMessage');
+                showMessage(`? Paket "${data.package.name}" mit ${data.package.question_count} Fragen erfolgreich generiert!`, 'success', 'generateMessage');
                 
                 // Clear form
                 document.getElementById('packageCategory').value = '';
@@ -2099,11 +2177,11 @@
                 layouts = data.layouts;
             }
             
-            // Load active layout info
-            const activeResponse = await fetch('/api/quiz-show/layouts/active');
-            const activeData = await activeResponse.json();
-            if (activeData.success && activeData.customLayoutEnabled && activeData.layout) {
-                activeLayoutId = activeData.layout.id;
+                        // Load active layout info from config to avoid depending on the legacy active-layout route.
+            const configResponse = await fetch('/api/quiz-show/state');
+            const configData = await configResponse.json();
+            if (configData && configData.success && configData.config?.customLayoutEnabled && configData.config?.activeLayoutId) {
+                activeLayoutId = configData.config.activeLayoutId;
             } else {
                 activeLayoutId = null;
             }
@@ -3502,9 +3580,9 @@
             if (data.status === 'processing') {
                 logLine = `<div style="color: #3b82f6;">[${timestamp}] Verarbeite ${data.current}/${data.total}: ${data.category}...</div>`;
             } else if (data.status === 'success') {
-                logLine = `<div style="color: #10b981;">[${timestamp}] ✓ ${data.category} - ${data.questionCount} Fragen generiert</div>`;
+                logLine = `<div style="color: #10b981;">[${timestamp}] ? ${data.category} - ${data.questionCount} Fragen generiert</div>`;
             } else if (data.status === 'failed') {
-                logLine = `<div style="color: #ef4444;">[${timestamp}] ✗ ${data.category} - Fehler: ${data.error}</div>`;
+                logLine = `<div style="color: #ef4444;">[${timestamp}] ? ${data.category} - Fehler: ${data.error}</div>`;
             }
             
             batchProgressLog.innerHTML += logLine;
@@ -3564,6 +3642,16 @@
         if (element) element.checked = !!value;
     }
 
+    function normalizeThemeMode(theme) {
+        const value = String(theme || '').toLowerCase();
+        if (value === 'day' || value === 'light') return 'day';
+        if (value === 'night' || value === 'dark') return 'night';
+        if (value === 'contrast' || value === 'neon' || value === 'gold' || value === 'retro' || value === 'casino') return 'contrast';
+        if (value === 'highcontrast' || value === 'high-contrast' || value === 'vision-impaired') return 'vision-impaired';
+        if (value === 'minimal') return 'night';
+        return 'night';
+    }
+
     function initializeExpansionControls() {
         const bind = (id, event, handler) => {
             const element = document.getElementById(id);
@@ -3604,7 +3692,7 @@
         setExpansionChecked('categoryVotingEnabled', config.categoryVotingEnabled);
         setExpansionChecked('categoryVoteBeforeQuestion', config.categoryVoteBeforeQuestion);
         setExpansionValue('categoryVoteDuration', config.categoryVoteDuration ?? 20);
-        setExpansionValue('hudThemePreset', config.hudThemePreset || 'neon');
+        setExpansionValue('hudThemePreset', normalizeThemeMode(config.hudThemePreset || config.themePreset || 'night'));
         setExpansionChecked('reducedMotion', config.reducedMotion);
         setExpansionChecked('highContrast', config.highContrast);
         setExpansionValue('avatarPerformanceMode', config.avatarPerformanceMode || 'balanced');
@@ -3823,7 +3911,7 @@
     async function saveVisualExpansion() {
         try {
             await saveConfigPatch({
-                hudThemePreset: expansionValue('hudThemePreset', 'neon'),
+                hudThemePreset: normalizeThemeMode(expansionValue('hudThemePreset', 'night')),
                 reducedMotion: expansionChecked('reducedMotion'),
                 highContrast: expansionChecked('highContrast'),
                 avatarPerformanceMode: expansionValue('avatarPerformanceMode', 'balanced'),
@@ -3833,7 +3921,7 @@
             const hudData = await hudResponse.json();
             const nextHud = {
                 ...(hudData.config || {}),
-                themePreset: expansionValue('hudThemePreset', 'neon'),
+                themePreset: normalizeThemeMode(expansionValue('hudThemePreset', 'night')),
                 reducedMotion: expansionChecked('reducedMotion'),
                 highContrast: expansionChecked('highContrast')
             };
@@ -4022,5 +4110,9 @@
     }
 
 })();
+
+
+
+
 
 

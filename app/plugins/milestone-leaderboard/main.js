@@ -1,16 +1,16 @@
-const GiftMilestonePlugin = require('../gift-milestone/main');
-// Note: The standalone 'leaderboard' plugin does not exist.
-// Use 'viewer-leaderboard' plugin instead for gifter leaderboard functionality.
-// This mega plugin combines gift-milestone with viewer-leaderboard's gifter leaderboard.
-const ViewerLeaderboardPlugin = require('../viewer-leaderboard/main');
+const path = require('path');
+const fs = require('fs');
+const GiftMilestonePlugin = require('./vendor/gift-milestone/main');
+const ViewerLeaderboardPlugin = require('./vendor/viewer-leaderboard/main');
 
-class MilestoneLeaderboardPlugin {
+class ViewerXPPlugin {
   constructor(api) {
     this.api = api;
     this.giftMilestone = null;
     this.viewerLeaderboard = null;
     this.giftMilestoneInitialized = false;
     this.viewerLeaderboardInitialized = false;
+    this.originalGetPlugin = null;
   }
 
   shouldSkipNestedPlugin(pluginId) {
@@ -20,8 +20,61 @@ class MilestoneLeaderboardPlugin {
     return Boolean(isLoaded && isEnabled);
   }
 
+  installPluginLookupShim() {
+    if (this.originalGetPlugin || typeof this.api.getPlugin !== 'function') {
+      return;
+    }
+
+    this.originalGetPlugin = this.api.getPlugin.bind(this.api);
+    this.api.getPlugin = (pluginId) => {
+      if (pluginId === 'gift-milestone') {
+        return this.giftMilestone || this.originalGetPlugin(pluginId);
+      }
+
+      if (pluginId === 'viewer-leaderboard' || pluginId === 'viewer-xp') {
+        return this.viewerLeaderboard || this.originalGetPlugin(pluginId);
+      }
+
+      return this.originalGetPlugin(pluginId);
+    };
+  }
+
+  restorePluginLookupShim() {
+    if (this.originalGetPlugin) {
+      this.api.getPlugin = this.originalGetPlugin;
+      this.originalGetPlugin = null;
+    }
+  }
+
+  registerLegacyStaticAlias(urlPrefix, pluginDir) {
+    const normalizedRoot = path.resolve(pluginDir);
+    const routePath = urlPrefix.endsWith('/') ? `${urlPrefix}*` : `${urlPrefix}/*`;
+
+    this.api.registerRoute('get', routePath, (req, res) => {
+      const relativePath = String(req.params[0] || '').replace(/\\/g, '/');
+      if (!relativePath) {
+        return res.status(404).json({ success: false, error: 'File not found' });
+      }
+
+      const filePath = path.resolve(normalizedRoot, relativePath);
+      const isInsideRoot = filePath === normalizedRoot || filePath.startsWith(`${normalizedRoot}${path.sep}`);
+
+      if (!isInsideRoot) {
+        return res.status(400).json({ success: false, error: 'Invalid file path' });
+      }
+
+      if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+        return res.status(404).json({ success: false, error: 'File not found' });
+      }
+
+      return res.sendFile(filePath);
+    });
+  }
+
   async init() {
-    this.api.log('Initializing Milestone Leaderboard mega plugin...', 'info');
+    this.api.log('Initializing Viewer XP plugin...', 'info');
+    this.installPluginLookupShim();
+
     const hasStandaloneGiftMilestone = this.shouldSkipNestedPlugin('gift-milestone');
     const hasStandaloneViewerLeaderboard = this.shouldSkipNestedPlugin('viewer-leaderboard');
 
@@ -35,6 +88,7 @@ class MilestoneLeaderboardPlugin {
       } catch (error) {
         this.api.log(`Failed to initialize nested gift milestone plugin: ${error.message}`, 'error');
         this.giftMilestone = null;
+        this.restorePluginLookupShim();
         throw error;
       }
     }
@@ -58,20 +112,23 @@ class MilestoneLeaderboardPlugin {
           this.giftMilestone = null;
         }
         this.viewerLeaderboard = null;
+        this.restorePluginLookupShim();
         throw error;
       }
     }
 
-    this.api.log('✅ Milestone Leaderboard plugin ready', 'info');
+    this.registerLegacyStaticAlias('/plugins/gift-milestone', path.join(__dirname, 'vendor', 'gift-milestone'));
+    this.registerLegacyStaticAlias('/plugins/viewer-leaderboard', path.join(__dirname, 'vendor', 'viewer-leaderboard'));
+
+    this.api.log('Viewer XP plugin ready', 'info');
   }
 
   async destroy() {
-    // Destroy in reverse init order when nested instances were started
     if (this.viewerLeaderboardInitialized && this.viewerLeaderboard?.destroy) {
       try {
         await this.viewerLeaderboard.destroy();
       } catch (error) {
-        this.api.log(`Failed to destroy nested viewer-leaderboard plugin in Milestone Leaderboard: ${error.message}`, 'error');
+        this.api.log(`Failed to destroy nested viewer-leaderboard plugin in Viewer XP: ${error.message}`, 'error');
       }
     }
 
@@ -79,11 +136,12 @@ class MilestoneLeaderboardPlugin {
       try {
         await this.giftMilestone.destroy();
       } catch (error) {
-        this.api.log(`Failed to destroy nested gift milestone plugin in Milestone Leaderboard: ${error.message}`, 'error');
+        this.api.log(`Failed to destroy nested gift milestone plugin in Viewer XP: ${error.message}`, 'error');
       }
     }
 
-    this.api.log('Milestone Leaderboard plugin destroyed', 'info');
+    this.restorePluginLookupShim();
+    this.api.log('Viewer XP plugin destroyed', 'info');
     this.giftMilestoneInitialized = false;
     this.viewerLeaderboardInitialized = false;
     this.giftMilestone = null;
@@ -91,4 +149,4 @@ class MilestoneLeaderboardPlugin {
   }
 }
 
-module.exports = MilestoneLeaderboardPlugin;
+module.exports = ViewerXPPlugin;

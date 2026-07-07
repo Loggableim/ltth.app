@@ -1,4 +1,4 @@
-# Screenshot Documentation – ltth.app
+﻿# Screenshot Documentation â€“ ltth.app
 
 This directory contains screenshots and screenshot infrastructure for the ltth.app feature pages.
 
@@ -8,35 +8,35 @@ This directory contains screenshots and screenshot infrastructure for the ltth.a
 
 ```
 screenshots/
-├── README_SCREENSHOTS.md          # This file
-├── mocks/                         # Standalone HTML mock UIs (self-contained, no dependencies)
-│   ├── tts.html
-│   ├── soundboard.html
-│   ├── alerts.html
-│   ├── goals.html
-│   ├── flow-engine.html
-│   ├── dashboard.html
-│   ├── overlays.html
-│   ├── multicam.html
-│   ├── osc-bridge.html
-│   ├── animazingpal.html
-│   ├── vdoninja.html
-│   ├── viewer-xp.html
-│   ├── security.html
-│   ├── plugin-system.html
-│   ├── slot-machine.html
-│   ├── game-engine.html
-│   ├── emoji-rain.html
-│   ├── auto-updater.html
-│   ├── chat-commands.html
-│   └── tikfinity-api.html
-├── features/                      # Captured feature screenshots (generated via Puppeteer)
-│   ├── .gitkeep                   # Keeps the directory tracked by git
-│   ├── tts.png                    # ✅ Generated from mock
-│   ├── soundboard.png             # ✅ Generated from mock
-│   └── ...                        # 20 total — see status table below
-├── 01_homepage_hero.png           # Website-level screenshots
-└── ...
+â”œâ”€â”€ README_SCREENSHOTS.md          # This file
+â”œâ”€â”€ mocks/                         # Standalone HTML mock UIs (self-contained, no dependencies)
+â”‚   â”œâ”€â”€ tts.html
+â”‚   â”œâ”€â”€ soundboard.html
+â”‚   â”œâ”€â”€ alerts.html
+â”‚   â”œâ”€â”€ goals.html
+â”‚   â”œâ”€â”€ flow-engine.html
+â”‚   â”œâ”€â”€ dashboard.html
+â”‚   â”œâ”€â”€ overlays.html
+â”‚   â”œâ”€â”€ multicam.html
+â”‚   â”œâ”€â”€ osc-bridge.html
+â”‚   â”œâ”€â”€ animazingpal.html
+â”‚   â”œâ”€â”€ vdoninja.html
+â”‚   â”œâ”€â”€ viewer-xp.html
+â”‚   â”œâ”€â”€ security.html
+â”‚   â”œâ”€â”€ plugin-system.html
+â”‚   â”œâ”€â”€ slot-machine.html
+â”‚   â”œâ”€â”€ game-engine.html
+â”‚   â”œâ”€â”€ emoji-rain.html
+â”‚   â”œâ”€â”€ auto-updater.html
+â”‚   â”œâ”€â”€ chat-commands.html
+â”‚   â””â”€â”€ tikfinity-api.html
+â”œâ”€â”€ features/                      # Captured feature screenshots (generated via Puppeteer)
+â”‚   â”œâ”€â”€ .gitkeep                   # Keeps the directory tracked by git
+â”‚   â”œâ”€â”€ tts.png                    # âœ… Generated from mock
+â”‚   â”œâ”€â”€ soundboard.png             # âœ… Generated from mock
+â”‚   â””â”€â”€ ...                        # current audit captures â€” see status table below
+â”œâ”€â”€ 01_homepage_hero.png           # Website-level screenshots
+â””â”€â”€ ...
 ```
 
 ---
@@ -76,7 +76,7 @@ node scripts/capture-screenshots.js
 
 This will:
 - Open each mock HTML file from `screenshots/mocks/`
-- Render it at **1280×800** viewport
+- Render it at **1280Ã—800** viewport
 - Save the result to `screenshots/features/<name>.png`
 
 To capture the live website pages that are intended for CI scheduling:
@@ -96,7 +96,7 @@ SCREENSHOT_VIEWPORT_HEIGHT=800
 
 ### 3. Verify Output
 
-After capture, all feature screenshots in `FEATURE_PAGES` (currently 18 files) are
+After capture, all feature screenshots in `FEATURE_PAGES` (the current capture set) are
 in `screenshots/features/` (EN) and `screenshots/de/features/` (DE).
 The feature pages in `features/*.html` reference these via `<img src="/screenshots/features/<name>.png">`.
 
@@ -106,49 +106,70 @@ The feature pages in `features/*.html` reference these via `<img src="/screensho
 
 | Feature Page | Screenshot Source | Status |
 |---|---|---|
-| `features/tts.html` | `/assets/screenshots/tts-admin.png` | ✅ Real screenshot |
-| `features/soundboard.html` | `/assets/screenshots/soundboard.png` | ✅ Generated from mock |
-| `features/goals.html` | `/assets/screenshots/goals-overlay.png` | ✅ Real screenshot |
-| `features/flow-engine.html` | `/assets/screenshots/flows-editor.png` | ✅ Real screenshot |
-| `features/dashboard.html` | `/assets/screenshots/dashboard-main.png` | ✅ Real screenshot |
-| `features/overlays.html` | `/assets/screenshots/overlay-preview.png` | ✅ Generated from mock |
-| `features/plugin-system.html` | `/assets/screenshots/plugins.png` | ✅ Generated from mock |
+| `features/tts.html` | `/screenshots/features/tts.png` | ✅ Real screenshot |
+| `features/soundboard.html` | `/screenshots/features/soundboard.png` | ✅ Real screenshot |
+| `features/goals.html` | `/screenshots/features/goals-overlay.png` | ✅ Real screenshot |
+| `features/flow-engine.html` | `/screenshots/features/flows-editor.png` | ✅ Real screenshot |
+| `features/dashboard.html` | `/screenshots/features/dashboard.png` | ✅ Real screenshot |
+| `features/overlays.html` | `/screenshots/features/webgpu-emoji-rain-dashboard.png` | ✅ Real screenshot |
+| `features/plugin-system.html` | `/screenshots/features/plugins.png` | ✅ Real screenshot |
+| `features/api-bridge.html` | `/screenshots/features/api-bridge-admin.png` | ✅ Real screenshot |
+| `features/plugin-advanced-timer.html` | `/screenshots/features/advanced-timer.png` | ✅ Real screenshot |
+| `features/plugin-clarity-hud.html` | `/screenshots/features/clarityhud.png` | ✅ Real screenshot |
+| `features/plugin-config-import.html` | `/screenshots/features/config-import.png` | ✅ Real screenshot |
+| `features/plugin-chatango.html` | `/screenshots/features/plugin-chatango-dashboard.png` | ✅ Real screenshot |
+| `features/plugin-gift-milestone.html` | `/screenshots/features/gift-milestone.png` | ✅ Real screenshot |
+| `features/plugin-lastevent-spotlight.html` | `/screenshots/features/lastevent.png` | ✅ Real screenshot |
+| `features/plugin-gcce.html` | `/screenshots/features/gcce.png` | ✅ Real screenshot |
+| `features/plugin-gcce-hud.html` | `/screenshots/features/gcce-hud.png` | ✅ Real screenshot |
+| `features/plugin-music-bot.html` | `/screenshots/features/music-bot.png` | ✅ Real screenshot |
+| `features/plugin-quiz-show.html` | `/screenshots/features/quiz-show.png` | ✅ Real screenshot |
+| `features/plugin-thermal-printer.html` | `/screenshots/features/thermal-printer.png` | ✅ Real screenshot |
+| `features/plugin-vulkan-rockets.html` | `/screenshots/features/fireworks.png` | ✅ Real screenshot |
+| `features/plugin-leaderboard.html` | `/screenshots/features/viewer-profiles-night.png`, `/screenshots/features/viewer-profiles-contrast.png`, `/screenshots/features/viewer-profiles-vision-impaired.png` | ✅ Accessibility audit screenshots |
+| `features/stt-ticker.html` | `/screenshots/features/stt-ticker-night.png`, `/screenshots/features/stt-ticker-vision-impaired.png`, `/screenshots/features/stt-ticker-overlay-url.png`, `/screenshots/features/stt-ticker-capture-obs-url.png` | ✅ Accessibility and OBS parameter screenshots |
+| `features/flame-overlay.html` | `/screenshots/features/flame-overlay-night.png`, `/screenshots/features/flame-overlay-vision-impaired.png` | ✅ Accessibility audit screenshots |
+| `features/talking-heads.html` | `/screenshots/features/talking-heads.png` | ✅ Real screenshot |
+| `features/toptier.html` | `/screenshots/features/toptier.png` | ✅ Real screenshot |
+| `features/viewer-xp.html` | `/screenshots/features/viewer-xp.png` | ✅ Real screenshot |
 | `features/alerts.html` | `/screenshots/features/alerts.png` | ✅ Generated from mock |
 | `features/animazingpal.html` | `/screenshots/features/animazingpal.png` | ✅ Generated from mock |
 | `features/auto-updater.html` | `/screenshots/features/auto-updater.png` | ✅ Generated from mock |
 | `features/chat-commands.html` | `/screenshots/features/chat-commands.png` | ✅ Generated from mock |
 | `features/emoji-rain.html` | `/screenshots/features/emoji-rain.png` | ✅ Generated from mock |
-| `features/game-engine.html` | `/screenshots/features/game-engine.png` | ✅ Generated from mock |
+| `features/game-engine.html` | `/screenshots/features/game-engine.png` | ✅ Real screenshot |
 | `features/multicam.html` | `/screenshots/features/multicam.png` | ✅ Generated from mock |
 | `features/osc-bridge.html` | `/screenshots/features/osc-bridge.png` | ✅ Generated from mock |
 | `features/security.html` | `/screenshots/features/security.png` | ✅ Generated from mock |
 | `features/slot-machine.html` | `/screenshots/features/slot-machine.png` | ✅ Generated from mock |
 | `features/tikfinity-api.html` | `/screenshots/features/tikfinity-api.png` | ✅ Generated from mock |
-| `features/vdoninja.html` | `/screenshots/features/vdoninja.png` | ✅ Generated from mock |
-| `features/viewer-xp.html` | `/screenshots/features/viewer-xp.png` | ✅ Generated from mock |
+| `features/vdoninja.html` | `/screenshots/features/vdoninja.png` | ✅ Real screenshot |
+| `features/sidekick.html` | `/screenshots/features/sidekick-dashboard.png` | ✅ Real screenshot |
 
 ---
+
+The older website and plugin-store screenshot references were also normalized to `/screenshots/features/` so the same image set now powers the feature pages, `index.html`, `plugins.html`, `changelog.html`, and `plugin-store.json`.
 
 ## Replacing Mock Screenshots with Real Ones
 
 Once the app is running and you have captured real screenshots:
 
-1. Take a 1280×800 (or larger) screenshot of the actual feature UI
+1. Take a 1280Ã—800 (or larger) screenshot of the actual feature UI
 2. Save it as `screenshots/features/<name>.png` (overwriting the mock)
 3. Commit the new screenshot
 
 The feature pages use `onerror="this.style.display='none'"` so missing images
-are hidden gracefully – no broken image elements.
+are hidden gracefully â€“ no broken image elements.
 
 ---
 
 ## Mock Design Notes
 
 Each mock in `screenshots/mocks/` is:
-- **Completely self-contained** – no external CSS/JS dependencies
-- **Dark themed** – matches ltth.app's design (`#0e0f10` bg, `#12a116` primary green)
-- **Fixed 1280×800** – matches the viewport used by the capture script
-- **Realistic UI** – shows plausible feature data to give visitors a genuine feel
+- **Completely self-contained** â€“ no external CSS/JS dependencies
+- **Dark themed** â€“ matches ltth.app's design (`#0e0f10` bg, `#12a116` primary green)
+- **Fixed 1280Ã—800** â€“ matches the viewport used by the capture script
+- **Realistic UI** â€“ shows plausible feature data to give visitors a genuine feel
 
 ---
 
@@ -157,3 +178,6 @@ Each mock in `screenshots/mocks/` is:
 The root-level `screenshots/*.png` files (e.g. `01_homepage_hero.png`) are
 website-level screenshots of the marketing pages. They are separate from the
 feature-page screenshots documented above.
+
+
+

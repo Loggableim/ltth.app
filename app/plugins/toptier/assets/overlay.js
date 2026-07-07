@@ -29,6 +29,15 @@
       .replace(/>/g, '&gt;');
   }
 
+  function normalizeTheme(theme) {
+    var value = String(theme || '').toLowerCase();
+    if (value === 'day' || value === 'light') return 'day';
+    if (value === 'night' || value === 'dark' || value === 'minimal') return 'night';
+    if (value === 'contrast' || value === 'neon') return 'contrast';
+    if (value === 'vision-impaired') return 'vision-impaired';
+    return 'night';
+  }
+
   // ==============================
   // Number formatting — 1.2K, 3.4M, etc.
   // ==============================
@@ -46,7 +55,7 @@
   var params = new URLSearchParams(window.location.search);
   var paramBoard = params.get('board') || 'likes';
   var paramVariant = params.get('variant') || 'animated-race';
-  var paramTheme = params.get('theme') || 'dark';
+  var paramTheme = normalizeTheme(params.get('theme') || 'night');
   var paramOrientation = params.get('orientation') || 'landscape';
   var paramSize = params.get('size') || 'M';
   var paramCount = parseInt(params.get('count'), 10) || 5;

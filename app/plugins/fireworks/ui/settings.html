@@ -6,6 +6,68 @@
     <title>Fireworks Superplugin - Settings</title>
     <link href="/css/tailwind.output.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function() {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const logoByTheme = {
+                day: '/plugins/fireworks/assets/fireworks-logo.png',
+                night: '/plugins/fireworks/assets/fireworks-logo.png',
+                contrast: '/plugins/fireworks/assets/fireworks-logo.png',
+                'vision-impaired': '/plugins/fireworks/assets/fireworks-logo.png',
+                cid: '/plugins/fireworks/assets/fireworks-logo.png'
+            };
+            function readTheme() {
+                try {
+                    const selfTheme = document.documentElement?.getAttribute('data-theme');
+                    if (validThemes.has(selfTheme)) return selfTheme;
+                } catch (error) {}
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
+            }
+            function syncTheme() {
+                const theme = readTheme();
+                if (document.documentElement.getAttribute('data-theme') !== theme) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                }
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                const logo = document.querySelector('.top-logo');
+                if (logo) {
+                    const nextSrc = logoByTheme[theme] || logoByTheme.night;
+                    if (logo.getAttribute('src') !== nextSrc) {
+                        logo.setAttribute('src', nextSrc);
+                    }
+                }
+            }
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
+            try {
+                new MutationObserver(syncTheme).observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['data-theme']
+                });
+            } catch (error) {}
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         body {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -22,6 +84,13 @@
             color: #ffd700;
             border-bottom: 2px solid rgba(255, 215, 0, 0.3);
             padding-bottom: 0.5rem;
+        }
+
+        .top-logo {
+            width: min(112px, 22vw);
+            height: auto;
+            object-fit: contain;
+            max-width: 100%;
         }
         
         .toggle-switch {
@@ -158,8 +227,17 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            padding: 16px 24px;
-            border-radius: 8px;
+            padding: 14px 18px;
+            border-radius: 14px;
+            max-width: min(260px, calc(100vw - 32px));
+            width: fit-content;
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            text-align: left;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+            box-sizing: border-box;
             color: white;
             font-weight: 500;
             transform: translateY(100px);
@@ -213,6 +291,27 @@
             border-bottom-color: #ffd700;
             background: rgba(255, 215, 0, 0.05);
         }
+
+        html[data-theme="day"] .tab-button {
+            background: #fff !important;
+            color: #334155 !important;
+            border: 1px solid #94a3b8 !important;
+            border-bottom-width: 3px !important;
+            border-radius: 8px 8px 0 0;
+        }
+
+        html[data-theme="day"] .tab-button.active {
+            background: #0f8712 !important;
+            color: #fff !important;
+            border-color: #0f8712 !important;
+        }
+
+        html[data-theme="contrast"] .tab-button.active,
+        html[data-theme="vision-impaired"] .tab-button.active {
+            background: #facc15 !important;
+            color: #000 !important;
+            border-color: #facc15 !important;
+        }
         
         .tab-content {
             display: none;
@@ -221,34 +320,397 @@
         .tab-content.active {
             display: block;
         }
+
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="day"] .text-gray-400,
+        html[data-theme="day"] .text-gray-300,
+        html[data-theme="day"] .text-gray-200,
+        html[data-theme="day"] .preset-card .text-gray-300,
+        html[data-theme="day"] .preset-card .text-gray-400 {
+            color: #334155 !important;
+            -webkit-text-fill-color: #334155 !important;
+        }
+
+        html[data-theme="day"] .text-purple-400 {
+            color: #6d28d9 !important;
+            -webkit-text-fill-color: #6d28d9 !important;
+        }
+
+        html[data-theme="day"] .text-blue-400 {
+            color: #1d4ed8 !important;
+            -webkit-text-fill-color: #1d4ed8 !important;
+        }
+
+        html[data-theme="day"] .text-green-400 {
+            color: #047857 !important;
+            -webkit-text-fill-color: #047857 !important;
+        }
+
+        html[data-theme="day"] .text-yellow-400 {
+            color: #a16207 !important;
+            -webkit-text-fill-color: #a16207 !important;
+        }
+
+        html[data-theme="day"] .text-orange-400 {
+            color: #c2410c !important;
+            -webkit-text-fill-color: #c2410c !important;
+        }
+
+        html[data-theme="day"] .text-red-400 {
+            color: #b91c1c !important;
+            -webkit-text-fill-color: #b91c1c !important;
+        }
+
+        html[data-theme="day"] .preset-card {
+            background: rgba(255, 255, 255, 0.82) !important;
+            border-color: rgba(100, 116, 139, 0.34) !important;
+        }
+
+        html[data-theme="day"] .preset-card .text-xs {
+            color: #10203a !important;
+            -webkit-text-fill-color: #10203a !important;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .card,
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="contrast"] .tab-button,
+        html[data-theme="vision-impaired"] .tab-button {
+            background: #000;
+            color: #fff;
+            border-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] h1,
+        html[data-theme="vision-impaired"] .section-title {
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            font-size: 20px;
+            line-height: 1.75;
+        }
+
+        html[data-theme="vision-impaired"] .card {
+            background: #000;
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .preset-card {
+            padding: 22px;
+        }
+
+        html[data-theme="vision-impaired"] .tabs {
+            border-bottom-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .tab-button {
+            color: #fff;
+            font-size: 18px;
+            padding: 14px 26px;
+        }
+
+        html[data-theme="vision-impaired"] .tab-button:hover {
+            background: rgba(250, 204, 21, 0.12);
+            color: #fff;
+        }
+
+        html[data-theme="vision-impaired"] .tab-button.active {
+            color: #000;
+            background: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .shape-preview {
+            width: 72px;
+            height: 72px;
+            font-size: 38px;
+            background: #000;
+            border: 3px solid #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .gift-item {
+            padding: 16px;
+            gap: 16px;
+            background: #000;
+            border: 2px solid #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .gift-item img {
+            width: 48px;
+            height: 48px;
+        }
+
+        html[data-theme="vision-impaired"] .color-swatch {
+            width: 40px;
+            height: 40px;
+            border-width: 3px;
+        }
+
+        html[data-theme="vision-impaired"] p,
+        html[data-theme="vision-impaired"] li,
+        html[data-theme="vision-impaired"] label,
+        html[data-theme="vision-impaired"] .text-gray-400,
+        html[data-theme="vision-impaired"] .text-gray-300,
+        html[data-theme="vision-impaired"] .text-gray-200 {
+            color: #fff !important;
+            line-height: 1.7;
+        }
+
+        html[data-theme="vision-impaired"] .preset-card,
+        html[data-theme="vision-impaired"] .preset-card:hover {
+            border-width: 3px;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .preset-card h3,
+        html[data-theme="vision-impaired"] .preset-card .text-xs {
+            color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .preset-card h3 {
+            font-size: 1.25rem;
+        }
+
+        html[data-theme="vision-impaired"] .preset-card .text-xs {
+            font-size: 0.98rem;
+        }
+
+        html[data-theme="vision-impaired"] .bg-blue-900\/20,
+        html[data-theme="vision-impaired"] .bg-green-900\/20,
+        html[data-theme="vision-impaired"] .bg-yellow-900\/20 {
+            background: #050505 !important;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-success,
+        html[data-theme="vision-impaired"] .btn-danger {
+            border: 3px solid #facc15;
+            font-size: 1.1rem !important;
+            min-height: 52px;
+        }
+
+        html[data-theme="vision-impaired"] .top-logo {
+            width: min(124px, 24vw) !important;
+        }
+
+        html[data-theme="cid"] .top-logo {
+            width: min(120px, 22vw) !important;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 16px 12px;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 16px;
+            }
+
+            header > div:last-child {
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+            #test-btn,
+            #save-btn {
+                flex: 1 1 180px;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .tab-button {
+                flex: 1 1 140px;
+                padding: 10px 14px;
+                font-size: 15px;
+            }
+
+            .grid,
+            .grid.grid-cols-1,
+            .grid.grid-cols-2,
+            .grid.grid-cols-3 {
+                grid-template-columns: 1fr !important;
+            }
+
+            .flex.gap-2 {
+                flex-wrap: wrap;
+            }
+
+            .flex.gap-2 > button,
+            .flex.gap-2 > a {
+                flex: 1 1 180px;
+            }
+
+            html[data-theme="vision-impaired"] body {
+                font-size: 19px;
+            }
+
+            html[data-theme="vision-impaired"] .tab-button {
+                font-size: 18px;
+            }
+
+            html[data-theme="vision-impaired"] .top-logo {
+                width: min(600px, 92vw) !important;
+            }
+        }
+    
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
+        html[data-theme="contrast"] button[class*="bg-yellow-500"],
+        html[data-theme="contrast"] button[class*="bg-orange-500"],
+        html[data-theme="vision-impaired"] button[class*="bg-yellow-500"],
+        html[data-theme="vision-impaired"] button[class*="bg-orange-500"] {
+            background: #facc15 !important;
+            color: #000 !important;
+            border: 2px solid #facc15 !important;
+        }
     </style>
 </head>
-<body class="text-white p-6">
-    <div class="max-w-6xl mx-auto">
+<body class="fireworks-page text-white p-6">
+    <div class="w-full max-w-none mx-0">
         <!-- Header -->
-        <header class="flex items-center justify-between mb-8">
-            <div class="flex items-center gap-4">
-                <span class="text-5xl">🎆</span>
-                <div>
-                    <h1 class="text-3xl font-bold" data-i18n="fireworks.fireworks_superplugin">Fireworks Superplugin</h1>
-                    <p class="text-gray-400" data-i18n="fireworks.gpu_accelerated_fireworks_for_tiktok_live">GPU-accelerated fireworks for TikTok LIVE</p>
-                </div>
+        <header class="fireworks-hero card mb-6">
+            <div class="fireworks-logo-wrap" aria-label="Fireworks">
+                <img class="top-logo" data-brand-logo src="/plugins/fireworks/assets/fireworks-logo.png" alt="Fireworks">
             </div>
-            <div class="flex items-center gap-4">
-                <button id="test-btn" class="btn-primary px-6 py-3 rounded-lg font-bold" data-i18n="fireworks.test_firework">
-                    🧪 Test Firework
-                </button>
-                <button id="save-btn" class="btn-success px-6 py-3 rounded-lg font-bold" data-i18n="fireworks.save_settings">
-                    💾 Save Settings
-                </button>
+            <div class="fireworks-hero-meta">
+                <div class="fireworks-hero-stack">
+                    <div class="fireworks-status-row">
+                        <span id="overview-enabled-state" class="status-chip status-chip--success">Enabled</span>
+                        <span id="overview-theme-state" class="status-chip">Theme: Night</span>
+                        <span id="overview-resolution-state" class="status-chip">1080p · Landscape</span>
+                        <span id="overview-performance-state" class="status-chip">60 FPS · 1,000 particles</span>
+                        <span id="overview-safety-state" class="status-chip">Queue off · Adaptive on</span>
+                    </div>
+                </div>
+                <div class="fireworks-hero-actions">
+                    <button id="test-btn" class="btn-primary px-6 py-3 rounded-lg font-bold">
+                        Test Firework
+                    </button>
+                    <button id="save-btn" class="btn-success px-6 py-3 rounded-lg font-bold" data-i18n="fireworks.save_settings">
+                        Save Settings
+                    </button>
+                </div>
             </div>
         </header>
 
         <!-- Tabs Navigation -->
         <div class="tabs">
-            <button class="tab-button" data-tab="settings">⚙️ <span data-i18n="fireworks.tab_settings">Einstellungen</span></button>
-            <button class="tab-button active" data-tab="presets">🎨 <span data-i18n="fireworks.tab_presets">Voreinstellungen</span></button>
-            <button class="tab-button" data-tab="benchmark">📊 <span data-i18n="fireworks.tab_benchmark">Benchmark</span></button>
+            <button class="tab-button" data-tab="settings"><span data-i18n="fireworks.tab_settings">Settings</span></button>
+            <button class="tab-button active" data-tab="presets"><span data-i18n="fireworks.tab_presets">Presets</span></button>
+            <button class="tab-button" data-tab="benchmark"><span data-i18n="fireworks.tab_benchmark">Benchmark</span></button>
         </div>
 
         <!-- Tab 1: Settings -->
@@ -269,7 +731,7 @@
             <div class="space-y-6">
                 <!-- Trigger Settings -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.gift_triggers">🎁 Gift Triggers</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.gift_triggers">&#x1F381; Gift Triggers</h2>
                     
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -282,15 +744,15 @@
                             <input type="number" id="min-coins" class="w-full bg-black/30 rounded-lg px-4 py-2" value="1" min="1">
                         </div>
                         
-                        <button id="test-gift-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="fireworks.test_gift_firework">
-                            🎁 Test Gift Firework
+                        <button id="test-gift-btn" class="w-full btn-primary py-3 rounded-lg font-bold">
+                            &#x1F381; Test Gift Firework
                         </button>
                     </div>
                 </div>
 
                 <!-- Combo System -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.combo_system">🔥 Combo System</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.combo_system">&#x1F525; Combo System</h2>
                     
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -319,14 +781,14 @@
                         </div>
                         
                         <button id="test-combo-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="fireworks.test_combo_effect">
-                            🔥 Test Combo Effect
+                            &#x1F525; Test Combo Effect
                         </button>
                     </div>
                 </div>
 
                 <!-- Escalation System -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.escalation_tiers">📈 Escalation Tiers</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.escalation_tiers">&#x2B06;&#xFE0F; Escalation Tiers</h2>
                     
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -391,7 +853,7 @@
 
                 <!-- Audio Settings -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.audio">🔊 Audio</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.audio">&#x1F50A; Audio</h2>
                     
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -416,7 +878,7 @@
             <div class="space-y-6">
                 <!-- Shape Selection -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.explosion_shapes">✨ Explosion Shapes</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.explosion_shapes">&#x1F386; Explosion Shapes</h2>
                     
                     <div class="space-y-4">
                         <div class="flex items-center justify-between mb-2">
@@ -429,23 +891,23 @@
                         </p>
                         
                         <div class="flex flex-wrap gap-4 mb-4">
-                            <div class="shape-preview active-shape" data-shape="burst" title="Burst">💥</div>
-                            <div class="shape-preview" data-shape="heart" title="Heart">❤️</div>
-                            <div class="shape-preview" data-shape="star" title="Star">⭐</div>
-                            <div class="shape-preview" data-shape="ring" title="Ring">⭕</div>
-                            <div class="shape-preview" data-shape="spiral" title="Spiral">🌀</div>
-                            <div class="shape-preview" data-shape="paws" title="Paws">🐾</div>
+                            <div class="shape-preview active-shape" data-shape="burst" title="Burst">&#x1F386;</div>
+                            <div class="shape-preview" data-shape="heart" title="Heart">&#x2764;&#xFE0F;</div>
+                            <div class="shape-preview" data-shape="star" title="Star">&#x2B50;</div>
+                            <div class="shape-preview" data-shape="ring" title="Ring">&#x25EF;</div>
+                            <div class="shape-preview" data-shape="spiral" title="Spiral">&#x1F300;</div>
+                            <div class="shape-preview" data-shape="paws" title="Paws">&#x1F43E;</div>
                         </div>
                         
                         <div>
                             <label class="block mb-2 text-sm" data-i18n="fireworks.default_shape_when_random_disabled">Default Shape (when random disabled)</label>
                             <select id="default-shape" class="w-full bg-black/30 rounded-lg px-4 py-2">
-                                <option value="burst">💥 Burst</option>
-                                <option value="heart">❤️ Heart</option>
-                                <option value="star">⭐ Star</option>
-                                <option value="ring">⭕ Ring</option>
-                                <option value="spiral">🌀 Spiral</option>
-                                <option value="paws">🐾 Paws</option>
+                                <option value="burst">&#x1F386; Burst</option>
+                                <option value="heart">&#x2764;&#xFE0F; Heart</option>
+                                <option value="star">&#x2B50; Star</option>
+                                <option value="ring">&#x25EF; Ring</option>
+                                <option value="spiral">&#x1F300; Spiral</option>
+                                <option value="paws">&#x1F43E; Paws</option>
                             </select>
                         </div>
                         
@@ -454,25 +916,25 @@
                         
                         <div class="grid grid-cols-2 gap-2 mt-2">
                             <button id="test-shape-burst-btn" class="btn-primary py-2 rounded-lg font-bold text-sm" data-i18n="fireworks.test_burst">
-                                💥 Test Burst
+                                &#x1F386; Test Burst
                             </button>
                             <button id="test-shape-heart-btn" class="btn-primary py-2 rounded-lg font-bold text-sm" data-i18n="fireworks.test_heart">
-                                ❤️ Test Heart
+                                &#x2764;&#xFE0F; Test Heart
                             </button>
                             <button id="test-shape-star-btn" class="btn-primary py-2 rounded-lg font-bold text-sm" data-i18n="fireworks.test_star">
-                                ⭐ Test Star
+                                &#x2B50; Test Star
                             </button>
                             <button id="test-shape-ring-btn" class="btn-primary py-2 rounded-lg font-bold text-sm" data-i18n="fireworks.test_ring">
-                                ⭕ Test Ring
+                                &#x25EF; Test Ring
                             </button>
                             <button id="test-shape-spiral-btn" class="btn-primary py-2 rounded-lg font-bold text-sm" data-i18n="fireworks.test_spiral">
-                                🌀 Test Spiral
+                                &#x1F300; Test Spiral
                             </button>
                             <button id="test-shape-paws-btn" class="btn-primary py-2 rounded-lg font-bold text-sm" data-i18n="fireworks.test_paws">
-                                🐾 Test Paws
+                                &#x1F43E; Test Paws
                             </button>
                             <button id="test-shape-random-btn" class="btn-primary py-2 rounded-lg font-bold text-sm" data-i18n="fireworks.test_random">
-                                🎲 Test Random
+                                &#x1F3B2; Test Random
                             </button>
                         </div>
                     </div>
@@ -480,7 +942,7 @@
 
                 <!-- Color Settings -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.colors">🎨 Colors</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.colors">&#x1F308; Colors</h2>
                     
                     <div class="space-y-4">
                         <div>
@@ -510,7 +972,7 @@
 
                 <!-- Visual Effects -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.visual_effects">🌟 Visual Effects</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.visual_effects">&#x2728; Visual Effects</h2>
                     
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -546,7 +1008,7 @@
 
                 <!-- Toaster Mode (Low-End PC Optimization) -->
                 <div class="card rounded-xl p-6 border-2 border-orange-500/30">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.toaster_mode.title">🍞 Toaster Mode (Low-End PCs)</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.toaster_mode.title">Toaster Mode (Low-End PCs)</h2>
                     
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -561,18 +1023,18 @@
                         </p>
                         
                         <div class="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
-                            <strong class="text-orange-400" data-i18n="fireworks.toaster_mode.changes_title">🔧 What changes:</strong>
+                            <strong class="text-orange-400" data-i18n="fireworks.toaster_mode.changes_title">What changes:</strong>
                             <div class="mt-2 space-y-1 text-sm">
-                                <div>• <span class="text-gray-300" data-i18n="fireworks.toaster_mode.renderer">Renderer: WebGL → Canvas 2D</span></div>
-                                <div>• <span class="text-gray-300" data-i18n="fireworks.toaster_mode.gpu">GPU Acceleration: Disabled</span></div>
-                                <div>• <span class="text-gray-300" data-i18n="fireworks.toaster_mode.compatibility">Compatibility: Maximum</span></div>
-                                <div>• <span class="text-gray-300" data-i18n="fireworks.toaster_mode.performance">Performance: Reduced but stable</span></div>
-                                <div>• <span class="text-gray-300" data-i18n="fireworks.toaster_mode.effects">Visual Effects: All maintained</span></div>
+                                <div>- <span class="text-gray-300" data-i18n="fireworks.toaster_mode.renderer">Renderer: WebGL ? Canvas 2D</span></div>
+                                <div>- <span class="text-gray-300" data-i18n="fireworks.toaster_mode.gpu">GPU Acceleration: Disabled</span></div>
+                                <div>- <span class="text-gray-300" data-i18n="fireworks.toaster_mode.compatibility">Compatibility: Maximum</span></div>
+                                <div>- <span class="text-gray-300" data-i18n="fireworks.toaster_mode.performance">Performance: Reduced but stable</span></div>
+                                <div>- <span class="text-gray-300" data-i18n="fireworks.toaster_mode.effects">Visual Effects: All maintained</span></div>
                             </div>
                         </div>
                         
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                            <strong class="text-blue-400">💡 <span data-i18n="fireworks.toaster_mode.tip_title">Tip:</span></strong>
+                            <strong class="text-blue-400">Tip:</strong>
                             <p class="text-sm text-gray-300 mt-1" data-i18n="fireworks.toaster_mode.tip">
                                 Use Toaster Mode if your PC slows down during fireworks or if you experience rendering issues in OBS.
                             </p>
@@ -582,7 +1044,7 @@
 
                 <!-- Performance & Resolution Settings -->
                 <div class="card rounded-xl p-6 border-2 border-blue-500/30">
-                    <h2 class="section-title text-xl font-bold mb-4">⚡ Performance & Resolution</h2>
+                    <h2 class="section-title text-xl font-bold mb-4">Performance & Resolution</h2>
                     
                     <div class="space-y-4">
                         <div>
@@ -629,9 +1091,9 @@
                         <div class="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-4">
                             <strong class="text-emerald-400">OBS-safe Dynamic Resolution:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300" id="internal-resolution-info">
-                                <div>• OBS Source: <span id="obs-source-resolution">1920x1080</span></div>
-                                <div>• Internal range: <span id="internal-resolution-range">3840x2160 -> 960x540</span></div>
-                                <div>• Scaling changes only the canvas bitmap, not the OBS Browser Source size.</div>
+                                <div>- OBS Source: <span id="obs-source-resolution">1920x1080</span></div>
+                                <div>- Internal range: <span id="internal-resolution-range">3840x2160 -> 960x540</span></div>
+                                <div>- Scaling changes only the canvas bitmap, not the OBS Browser Source size.</div>
                             </div>
                         </div>
                         
@@ -647,11 +1109,11 @@
                         </div>
                         
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                            <strong class="text-blue-400">💡 Resolution Info:</strong>
+                            <strong class="text-blue-400">Tip:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300" id="resolution-info">
-                                <div>• Current: <span id="current-resolution">1920x1080</span></div>
-                                <div>• Orientation: <span id="current-orientation">Landscape</span></div>
-                                <div>• Performance Impact: <span id="performance-impact">High</span></div>
+                                <div>- Current: <span id="current-resolution">1920x1080</span></div>
+                                <div>- Orientation: <span id="current-orientation">Landscape</span></div>
+                                <div>- Performance Impact: <span id="performance-impact">High</span></div>
                             </div>
                         </div>
                         
@@ -695,12 +1157,12 @@
                         </div>
                         
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                            <strong class="text-blue-400">💡 Combo Performance:</strong>
+                            <strong class="text-blue-400">Tip:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300">
-                                <div>• Combo 5+: Rockets skipped, instant explosions</div>
-                                <div>• Combo 8+: Instant bursts, no rocket animation</div>
-                                <div>• Combo 10+: 50% fewer particles</div>
-                                <div>• Auto-throttling prevents system overload</div>
+                                <div>- Combo 5+: Rockets skipped, instant explosions</div>
+                                <div>- Combo 8+: Instant bursts, no rocket animation</div>
+                                <div>- Combo 10+: 50% fewer particles</div>
+                                <div>- Auto-throttling prevents system overload</div>
                             </div>
                         </div>
                     </div>
@@ -708,7 +1170,7 @@
 
                 <!-- Queue System (Lag Prevention) -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4">⏱️ Queue System (Lag Prevention)</h2>
+                    <h2 class="section-title text-xl font-bold mb-4">&#x23F3; Queue System (Lag Prevention)</h2>
                     
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -735,12 +1197,12 @@
                         </div>
                         
                         <div class="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
-                            <strong class="text-yellow-400">⚠️ Note:</strong>
+                            <strong class="text-yellow-400">&#x2139; Note:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300">
-                                <div>• When rate limit is reached, additional fireworks are skipped (not queued for later)</div>
-                                <div>• Recommended: 5-10 rockets/sec for balanced performance</div>
-                                <div>• Lower settings help prevent stuttering during extreme gift spam</div>
-                                <div>• Disable this feature if you prefer to see every firework regardless of performance</div>
+                                <div>- When rate limit is reached, additional fireworks are skipped (not queued for later)</div>
+                                <div>- Recommended: 5-10 rockets/sec for balanced performance</div>
+                                <div>- Lower settings help prevent stuttering during extreme gift spam</div>
+                                <div>- Disable this feature if you prefer to see every firework regardless of performance</div>
                             </div>
                         </div>
                     </div>
@@ -748,12 +1210,12 @@
 
                 <!-- Performance Limits (NEW) -->
                 <div class="card rounded-xl p-6 border-2 border-red-500/30">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.performance_limits">⚡ Performance Limits</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.performance_limits">&#x26A1; Performance Limits</h2>
                     
                     <div class="space-y-4">
                         <div class="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-3 mb-4">
                             <p class="text-sm text-yellow-200" data-i18n="fireworks.performance_info">
-                                Diese Einstellungen schützen vor Freezes bei vielen gleichzeitigen Events. Niedrigere Werte = mehr Stabilität.
+                                Diese Einstellungen sch-tzen vor Freezes bei vielen gleichzeitigen Events. Niedrigere Werte = mehr Stabilit-t.
                             </p>
                         </div>
                         
@@ -803,7 +1265,7 @@
                                 <span>50</span>
                             </div>
                             <p class="text-xs text-gray-500 mt-1" data-i18n="fireworks.frame_skip_info">
-                                Frame Skip wird aktiviert wenn FPS unter diesen Wert fällt
+                                Frame Skip wird aktiviert wenn FPS unter diesen Wert f-llt
                             </p>
                         </div>
                         
@@ -816,7 +1278,7 @@
 
                 <!-- User Avatar Integration -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.user_avatar_integration">👤 User Avatar Integration</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.user_avatar_integration">&#x1F464; User Avatar Integration</h2>
                     
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -841,15 +1303,15 @@
                             </p>
                         </div>
                         
-                        <button id="test-avatar-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="fireworks.test_avatar_firework">
-                            👤 Test Avatar Firework
+                        <button id="test-avatar-btn" class="w-full btn-primary py-3 rounded-lg font-bold">
+                            &#x1F464; Test Avatar Firework
                         </button>
                     </div>
                 </div>
 
                 <!-- Gift Animation Text Position -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4">💬 Gift Animation Text</h2>
+                    <h2 class="section-title text-xl font-bold mb-4">&#x1F4AC; Gift Animation Text</h2>
                     
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -875,12 +1337,12 @@
                         </div>
                         
                         <div class="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-                            <strong class="text-green-400">💡 Preview:</strong>
+                            <strong class="text-green-400">&#x1F50D; Preview:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300">
-                                <div>• <strong>Top:</strong> Text appears at top-center of screen</div>
-                                <div>• <strong>Middle:</strong> Text appears in center of screen</div>
-                                <div>• <strong>Bottom:</strong> Text appears at firework launch position</div>
-                                <div>• <strong>None:</strong> No text is shown</div>
+                                <div>- <strong>Top:</strong> Text appears at top-center of screen</div>
+                                <div>- <strong>Middle:</strong> Text appears in center of screen</div>
+                                <div>- <strong>Bottom:</strong> Text appears at firework launch position</div>
+                                <div>- <strong>None:</strong> No text is shown</div>
                             </div>
                         </div>
                     </div>
@@ -888,7 +1350,7 @@
 
                 <!-- Goal Finale -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.goal_finale">🎯 Goal Finale</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.goal_finale">&#x1F389; Goal Finale</h2>
                     
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -907,14 +1369,14 @@
                         </div>
                         
                         <button id="test-finale-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="fireworks.test_finale">
-                            🎇 Test Finale
+                            &#x1F389; Test Finale
                         </button>
                     </div>
                 </div>
 
                 <!-- Follower Fireworks -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4">👤 Follower Feuerwerk</h2>
+                    <h2 class="section-title text-xl font-bold mb-4">&#x1F465; Follower Feuerwerk</h2>
                     
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -1022,25 +1484,22 @@
                         </div>
                         
                         <button id="test-follower-btn" class="w-full btn-success py-3 rounded-lg font-bold">
-                            🎆 Test Follower Fireworks
+                            &#x1F465; Test Follower Fireworks
                         </button>
                     </div>
                 </div>
 
                 <!-- OBS Overlay URL -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.overlay">📺 OBS Overlay</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.overlay">OBS Overlay</h2>
                     
                     <p class="text-sm text-gray-400 mb-4" data-i18n="fireworks.use_this_url_in_obs">
-                        Use this URL in OBS as a Browser Source. Preview is available directly in OBS.
+                        Use this URL in OBS as a Browser Source.
                     </p>
                     
-                    <div class="flex gap-2">
-                        <button id="copy-overlay-url" class="flex-1 bg-white/10 hover:bg-white/20 py-2 rounded-lg transition" data-i18n="fireworks.copy_overlay_url">
-                            📋 Copy Overlay URL
-                        </button>
-                        <button id="open-overlay" class="flex-1 bg-white/10 hover:bg-white/20 py-2 rounded-lg transition" data-i18n="fireworks.open_in_new_tab">
-                            🔗 Open in New Tab
+                    <div class="flex">
+                        <button id="copy-overlay-url" class="w-full bg-white/10 hover:bg-white/20 py-2 rounded-lg transition" data-i18n="fireworks.copy_overlay_url">
+                            &#x1F4CB; Copy Overlay URL
                         </button>
                     </div>
                 </div>
@@ -1052,24 +1511,24 @@
         <!-- Tab 2: Presets -->
         <div id="presets" class="tab-content active">
             <div class="card rounded-xl p-6 mb-6">
-                <h2 class="section-title text-2xl font-bold mb-4">🎨 <span data-i18n="fireworks.presets.title">Voreinstellungen</span></h2>
+                <h2 class="section-title text-2xl font-bold mb-4"><span data-i18n="fireworks.presets.title">Presets</span></h2>
                 <p class="text-gray-400 mb-6" data-i18n="fireworks.presets.description">
-                    Wählen Sie eine Voreinstellung basierend auf Ihrer System-Performance. Nutzen Sie den Benchmark, um die optimale Einstellung zu finden.
+                    Choose a preset based on your system performance. Use the benchmark to find the optimal settings.
                 </p>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <!-- Ultra Preset -->
                     <div class="card rounded-xl p-6 border-2 border-purple-500/30 hover:border-purple-500/60 transition cursor-pointer preset-card" data-preset="ultra">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xl font-bold text-purple-400">🚀 Ultra</h3>
-                            <span class="text-xs bg-purple-500/20 px-2 py-1 rounded">4K Ready</span>
+                            <h3 class="text-xl font-bold text-purple-400">Ultra</h3>
+                            <span class="text-xs bg-purple-500/20 px-2 py-1 rounded">4K</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div>• Resolution: 4K (3840x2160)</div>
-                            <div>• Max Particles: 3000</div>
-                            <div>• Target FPS: 60</div>
-                            <div>• Effects: All Enabled</div>
-                            <div>• GPU: WebGL</div>
+                            <div>Resolution: 4K (3840x2160)</div>
+                            <div>Max Particles: 3000</div>
+                            <div>Target FPS: 60</div>
+                            <div>Effects: All Enabled</div>
+                            <div>GPU: WebGL</div>
                         </div>
                         <button class="w-full mt-4 bg-purple-500 hover:bg-purple-600 py-2 rounded-lg font-bold transition" data-i18n="fireworks.presets.apply">
                             Anwenden
@@ -1079,15 +1538,15 @@
                     <!-- High Preset -->
                     <div class="card rounded-xl p-6 border-2 border-blue-500/30 hover:border-blue-500/60 transition cursor-pointer preset-card" data-preset="high">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xl font-bold text-blue-400">⚡ High</h3>
+                            <h3 class="text-xl font-bold text-blue-400">High</h3>
                             <span class="text-xs bg-blue-500/20 px-2 py-1 rounded">1440p</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div>• Resolution: 1440p (2560x1440)</div>
-                            <div>• Max Particles: 2000</div>
-                            <div>• Target FPS: 60</div>
-                            <div>• Effects: All Enabled</div>
-                            <div>• GPU: WebGL</div>
+                            <div>- Resolution: 1440p (2560x1440)</div>
+                            <div>- Max Particles: 2000</div>
+                            <div>- Target FPS: 60</div>
+                            <div>- Effects: All Enabled</div>
+                            <div>- GPU: WebGL</div>
                         </div>
                         <button class="w-full mt-4 bg-blue-500 hover:bg-blue-600 py-2 rounded-lg font-bold transition" data-i18n="fireworks.presets.apply">
                             Anwenden
@@ -1097,15 +1556,15 @@
                     <!-- Medium Preset (Default) -->
                     <div class="card rounded-xl p-6 border-2 border-green-500/30 hover:border-green-500/60 transition cursor-pointer preset-card" data-preset="medium">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xl font-bold text-green-400">✨ Medium</h3>
+                            <h3 class="text-xl font-bold text-green-400">Medium</h3>
                             <span class="text-xs bg-green-500/20 px-2 py-1 rounded">Empfohlen</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div>• Resolution: 1080p (1920x1080)</div>
-                            <div>• Max Particles: 1500</div>
-                            <div>• Target FPS: 60</div>
-                            <div>• Effects: All Enabled</div>
-                            <div>• GPU: WebGL</div>
+                            <div>- Resolution: 1080p (1920x1080)</div>
+                            <div>- Max Particles: 1500</div>
+                            <div>- Target FPS: 60</div>
+                            <div>- Effects: All Enabled</div>
+                            <div>- GPU: WebGL</div>
                         </div>
                         <button class="w-full mt-4 bg-green-500 hover:bg-green-600 py-2 rounded-lg font-bold transition" data-i18n="fireworks.presets.apply">
                             Anwenden
@@ -1115,15 +1574,15 @@
                     <!-- Low Preset -->
                     <div class="card rounded-xl p-6 border-2 border-yellow-500/30 hover:border-yellow-500/60 transition cursor-pointer preset-card" data-preset="low">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xl font-bold text-yellow-400">💫 Low</h3>
+                            <h3 class="text-xl font-bold text-yellow-400">Low</h3>
                             <span class="text-xs bg-yellow-500/20 px-2 py-1 rounded">720p</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div>• Resolution: 720p (1280x720)</div>
-                            <div>• Max Particles: 1000</div>
-                            <div>• Target FPS: 48</div>
-                            <div>• Effects: Reduced</div>
-                            <div>• GPU: WebGL</div>
+                            <div>- Resolution: 720p (1280x720)</div>
+                            <div>- Max Particles: 1000</div>
+                            <div>- Target FPS: 48</div>
+                            <div>- Effects: Reduced</div>
+                            <div>- GPU: WebGL</div>
                         </div>
                         <button class="w-full mt-4 bg-yellow-500 hover:bg-yellow-600 py-2 rounded-lg font-bold transition" data-i18n="fireworks.presets.apply">
                             Anwenden
@@ -1133,15 +1592,15 @@
                     <!-- Toaster Preset -->
                     <div class="card rounded-xl p-6 border-2 border-orange-500/30 hover:border-orange-500/60 transition cursor-pointer preset-card" data-preset="toaster">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xl font-bold text-orange-400">🍞 Toaster</h3>
+                            <h3 class="text-xl font-bold text-orange-400">Toaster</h3>
                             <span class="text-xs bg-orange-500/20 px-2 py-1 rounded">540p</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div>• Resolution: 540p (960x540)</div>
-                            <div>• Max Particles: 500</div>
-                            <div>• Target FPS: 30</div>
-                            <div>• Effects: Minimal</div>
-                            <div>• GPU: Canvas 2D</div>
+                            <div>- Resolution: 540p (960x540)</div>
+                            <div>- Max Particles: 500</div>
+                            <div>- Target FPS: 30</div>
+                            <div>- Effects: Minimal</div>
+                            <div>- GPU: Canvas 2D</div>
                         </div>
                         <button class="w-full mt-4 bg-orange-500 hover:bg-orange-600 py-2 rounded-lg font-bold transition" data-i18n="fireworks.presets.apply">
                             Anwenden
@@ -1151,15 +1610,15 @@
                     <!-- Potato Preset -->
                     <div class="card rounded-xl p-6 border-2 border-red-500/30 hover:border-red-500/60 transition cursor-pointer preset-card" data-preset="potato">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xl font-bold text-red-400">🥔 Potato</h3>
+                            <h3 class="text-xl font-bold text-red-400">Potato</h3>
                             <span class="text-xs bg-red-500/20 px-2 py-1 rounded">360p</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div>• Resolution: 360p (640x360)</div>
-                            <div>• Max Particles: 300</div>
-                            <div>• Target FPS: 24</div>
-                            <div>• Effects: Minimal</div>
-                            <div>• GPU: Canvas 2D</div>
+                            <div>- Resolution: 360p (640x360)</div>
+                            <div>- Max Particles: 300</div>
+                            <div>- Target FPS: 24</div>
+                            <div>- Effects: Minimal</div>
+                            <div>- GPU: Canvas 2D</div>
                         </div>
                         <button class="w-full mt-4 bg-red-500 hover:bg-red-600 py-2 rounded-lg font-bold transition" data-i18n="fireworks.presets.apply">
                             Anwenden
@@ -1169,9 +1628,9 @@
 
                 <div class="mt-6 card rounded-xl p-4 bg-blue-900/20 border border-blue-500/30">
                     <p class="text-sm text-blue-300">
-                        💡 <strong data-i18n="fireworks.presets.tip">Tipp:</strong>
+                        <strong data-i18n="fireworks.presets.tip">Tip:</strong>
                         <span data-i18n="fireworks.presets.tip_text">
-                            Nutzen Sie den Benchmark-Tab, um automatisch die besten 2 Voreinstellungen für Ihr System zu ermitteln.
+                            Nutzen Sie den Benchmark-Tab, um automatisch die besten 2 Voreinstellungen f-r Ihr System zu ermitteln.
                         </span>
                     </p>
                 </div>
@@ -1182,19 +1641,19 @@
         <!-- Tab 3: Benchmark -->
         <div id="benchmark" class="tab-content">
             <div class="card rounded-xl p-6 mb-6">
-                <h2 class="section-title text-2xl font-bold mb-4">📊 <span data-i18n="fireworks.benchmark.title">Performance Benchmark</span></h2>
+                <h2 class="section-title text-2xl font-bold mb-4">&#x1F4CA; <span data-i18n="fireworks.benchmark.title">Performance Benchmark</span></h2>
                 <p class="text-gray-400 mb-6" data-i18n="fireworks.benchmark.description">
-                    Führen Sie einen automatischen Performance-Test durch, um die optimalen Einstellungen für Ihr System zu finden.
+                    F-hren Sie einen automatischen Performance-Test durch, um die optimalen Einstellungen f-r Ihr System zu finden.
                 </p>
 
                 <!-- Benchmark Controls -->
                 <div class="mb-6">
                     <div class="flex gap-4">
                         <button id="start-benchmark" class="flex-1 btn-primary py-4 rounded-lg font-bold text-lg">
-                            🚀 <span data-i18n="fireworks.benchmark.start">Benchmark Starten</span>
+                            &#x1F4CA; <span data-i18n="fireworks.benchmark.start">Benchmark Starten</span>
                         </button>
                         <button id="stop-benchmark" class="px-6 btn-danger py-4 rounded-lg font-bold" style="display: none;">
-                            ⏹️ <span data-i18n="fireworks.benchmark.stop">Stoppen</span>
+                            &#x23F9; <span data-i18n="fireworks.benchmark.stop">Stoppen</span>
                         </button>
                     </div>
                 </div>
@@ -1203,9 +1662,9 @@
                 <div id="benchmark-progress" class="mb-6" style="display: none;">
                     <div class="card rounded-xl p-4 bg-blue-900/20 border border-blue-500/30">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="animate-spin text-2xl">⚙️</div>
+                            <div class="animate-spin text-2xl">&#x23F3;</div>
                             <div>
-                                <div class="font-bold" data-i18n="fireworks.benchmark.running">Benchmark läuft...</div>
+                                <div class="font-bold" data-i18n="fireworks.benchmark.running">Benchmark l-uft...</div>
                                 <div class="text-sm text-gray-400">
                                     <span data-i18n="fireworks.benchmark.current_test">Aktueller Test:</span>
                                     <span id="current-test-name">-</span>
@@ -1223,7 +1682,7 @@
 
                 <!-- Benchmark Results -->
                 <div id="benchmark-results" style="display: none;">
-                    <h3 class="text-xl font-bold mb-4">📈 <span data-i18n="fireworks.benchmark.results">Benchmark-Ergebnisse</span></h3>
+                    <h3 class="text-xl font-bold mb-4">&#x1F4CA; <span data-i18n="fireworks.benchmark.results">Benchmark-Ergebnisse</span></h3>
                     
                     <div class="grid grid-cols-1 gap-4 mb-6">
                         <!-- Results will be populated here -->
@@ -1231,7 +1690,7 @@
 
                     <!-- Recommendations -->
                     <div class="card rounded-xl p-6 bg-green-900/20 border-2 border-green-500/30">
-                        <h3 class="text-xl font-bold text-green-400 mb-4">✅ <span data-i18n="fireworks.benchmark.recommendations">Empfehlungen</span></h3>
+                        <h3 class="text-xl font-bold text-green-400 mb-4">&#x1F3AF; <span data-i18n="fireworks.benchmark.recommendations">Empfehlungen</span></h3>
                         <div id="benchmark-recommendations">
                             <!-- Recommendations will be populated here -->
                         </div>
@@ -1241,10 +1700,10 @@
                 <!-- Info Box -->
                 <div class="card rounded-xl p-4 bg-yellow-900/20 border border-yellow-500/30">
                     <p class="text-sm text-yellow-300">
-                        ⚠️ <strong data-i18n="fireworks.benchmark.info">Hinweis:</strong>
+                        &#x2139; <strong data-i18n="fireworks.benchmark.info">Hinweis:</strong>
                         <span data-i18n="fireworks.benchmark.info_text">
-                            Der Benchmark öffnet das OBS-Overlay-Fenster und führt verschiedene Szenarien durch. 
-                            Dies dauert etwa 1-2 Minuten. Schließen Sie das Fenster nicht während des Tests.
+                            Der Benchmark -ffnet das OBS-Overlay-Fenster und f-hrt verschiedene Szenarien durch. 
+                            Dies dauert etwa 1-2 Minuten. Schlie-en Sie das Fenster nicht w-hrend des Tests.
                         </span>
                     </p>
                 </div>
@@ -1260,5 +1719,483 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/i18n-client.js"></script>
     <script src="/plugins/fireworks/ui/settings.js"></script>
+
+<style id="final-fireworks-night-card-contrast">
+html[data-theme="night"] .card {
+  background: #111827 !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+</style>
+<style id="fireworks-modern-shell">
+    body.fireworks-page {
+        min-height: 100vh;
+        background:
+            radial-gradient(circle at top left, rgba(34, 197, 94, 0.18), transparent 28%),
+            radial-gradient(circle at 85% 8%, rgba(16, 185, 129, 0.16), transparent 24%),
+            radial-gradient(circle at 50% 110%, rgba(250, 204, 21, 0.08), transparent 28%),
+            linear-gradient(180deg, #061008 0%, #07120b 42%, #040705 100%);
+        color: #effaf2;
+    }
+
+    body.fireworks-page::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background:
+            linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        background-size: 56px 56px;
+        mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent 90%);
+        opacity: 0.28;
+    }
+
+    body.fireworks-page > .w-full.max-w-none.mx-0 {
+        position: relative;
+        z-index: 1;
+    }
+
+    body.fireworks-page .fireworks-hero {
+        display: grid;
+        grid-template-columns: minmax(250px, 0.95fr) minmax(320px, 1fr) minmax(360px, 1.15fr);
+        grid-template-areas: "actions meta logo";
+        gap: 24px;
+        align-items: center;
+        min-height: 198px;
+        padding: 30px 28px;
+        border-radius: 28px;
+        background: linear-gradient(180deg, rgba(4, 10, 6, 0.98), rgba(2, 6, 3, 0.94)) !important;
+        border: 1px solid rgba(74, 222, 128, 0.2) !important;
+        box-shadow: none !important;
+        backdrop-filter: blur(18px);
+    }
+
+    body.fireworks-page .fireworks-logo-wrap {
+        display: flex;
+        grid-area: logo;
+        justify-content: flex-end;
+        align-items: center;
+        min-width: 0;
+        justify-self: end;
+    }
+
+    body.fireworks-page .top-logo {
+        width: min(400px, 100%) !important;
+        max-width: 100%;
+        height: auto;
+        display: block;
+        object-fit: contain;
+        filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.42));
+    }
+
+    body.fireworks-page .fireworks-hero-stack {
+        display: flex;
+        flex-direction: column;
+        grid-area: meta;
+        gap: 14px;
+        width: min(100%, 560px);
+        align-items: center;
+        justify-self: center;
+    }
+
+    body.fireworks-page .fireworks-hero-meta {
+        display: contents;
+    }
+
+    body.fireworks-page .fireworks-status-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
+        width: 100%;
+    }
+
+    body.fireworks-page .status-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 10px 16px;
+        border-radius: 999px;
+        border: 1px solid rgba(74, 222, 128, 0.22);
+        background: rgba(4, 10, 6, 0.9);
+        color: rgba(240, 248, 244, 0.94);
+        font-size: 0.9rem;
+        font-weight: 650;
+        letter-spacing: 0.01em;
+        box-shadow: none;
+    }
+
+    body.fireworks-page .status-chip--success {
+        border-color: rgba(34, 197, 94, 0.34);
+        background: rgba(34, 197, 94, 0.18);
+        color: #c8f7d0;
+    }
+
+    body.fireworks-page .status-chip--danger {
+        border-color: rgba(248, 113, 113, 0.34);
+        background: rgba(248, 113, 113, 0.14);
+        color: #fecaca;
+    }
+
+    body.fireworks-page .fireworks-hero-actions {
+        grid-area: actions;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        justify-content: flex-start;
+        justify-self: start;
+    }
+
+    body.fireworks-page .fireworks-hero-actions .btn-primary,
+    body.fireworks-page .fireworks-hero-actions .btn-success {
+        min-height: 52px;
+        padding-inline: 18px;
+        border-radius: 16px;
+    }
+
+    body.fireworks-page .tabs {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(74, 222, 128, 0.18);
+        border-radius: 24px;
+        background: rgba(3, 8, 4, 0.82);
+        backdrop-filter: blur(14px);
+        box-shadow: none;
+    }
+
+    body.fireworks-page .tab-button {
+        min-height: 48px;
+        padding: 0 20px;
+        border-radius: 14px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: rgba(228, 235, 230, 0.72);
+        font-size: 0.95rem;
+        font-weight: 650;
+        letter-spacing: 0.01em;
+    }
+
+    body.fireworks-page .tab-button:hover {
+        background: rgba(255, 255, 255, 0.04);
+        color: #f3faf4;
+    }
+
+    body.fireworks-page .tab-button.active {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.26), rgba(16, 185, 129, 0.16));
+        color: #effff1;
+        border-color: rgba(74, 222, 128, 0.32);
+    }
+
+    body.fireworks-page .card {
+        background: linear-gradient(180deg, rgba(4, 9, 6, 0.95), rgba(3, 7, 4, 0.9)) !important;
+        border: 1px solid rgba(74, 222, 128, 0.14) !important;
+        border-radius: 24px !important;
+        box-shadow: none !important;
+        backdrop-filter: blur(16px);
+    }
+
+    body.fireworks-page .section-title {
+        color: #8ef0a8 !important;
+        border-bottom-color: rgba(74, 222, 128, 0.28) !important;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-size: 0.84rem !important;
+    }
+
+    body.fireworks-page .toggle-switch {
+        background: rgba(2, 8, 4, 0.95);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    body.fireworks-page .toggle-switch.active {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        box-shadow:
+            0 0 0 3px rgba(34, 197, 94, 0.12),
+            0 10px 20px rgba(34, 197, 94, 0.22);
+    }
+
+    body.fireworks-page .btn-primary {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        box-shadow: 0 14px 30px rgba(22, 163, 74, 0.24);
+    }
+
+    body.fireworks-page .btn-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        box-shadow: 0 14px 30px rgba(5, 150, 105, 0.24);
+    }
+
+    body.fireworks-page .btn-danger {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        box-shadow: 0 14px 30px rgba(217, 119, 6, 0.22);
+    }
+
+    body.fireworks-page input[type="number"],
+    body.fireworks-page select {
+        background: rgba(2, 8, 4, 0.82) !important;
+        border: 1px solid rgba(148, 163, 184, 0.16) !important;
+        color: #f8fafc !important;
+        border-radius: 14px !important;
+    }
+
+    body.fireworks-page input[type="range"] {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 999px;
+    }
+
+    body.fireworks-page input[type="range"]::-webkit-slider-thumb {
+        background: #22c55e;
+        box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.18);
+    }
+
+    body.fireworks-page .shape-preview {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(16, 24, 19, 0.96), rgba(8, 12, 9, 0.96));
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    body.fireworks-page .shape-preview.active-shape,
+    body.fireworks-page .shape-preview.selected {
+        border-color: rgba(250, 204, 21, 0.72);
+        box-shadow:
+            0 0 0 1px rgba(250, 204, 21, 0.28),
+            0 0 28px rgba(250, 204, 21, 0.18);
+    }
+
+    body.fireworks-page .color-swatch {
+        width: 34px;
+        height: 34px;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
+    }
+
+    body.fireworks-page .preset-card {
+        min-height: 100%;
+    }
+
+    body.fireworks-page .preset-card button {
+        min-height: 42px;
+        border-radius: 14px;
+    }
+
+    body.fireworks-page #settings > .grid {
+        align-items: start;
+    }
+
+    body.fireworks-page #settings > .grid > div:last-child {
+        position: sticky;
+        top: 20px;
+        align-self: start;
+    }
+
+    body.fireworks-page .toast {
+        bottom: 24px;
+        right: 24px;
+        max-width: min(280px, calc(100vw - 40px));
+        width: fit-content;
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        text-align: left;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+        box-sizing: border-box;
+        border-radius: 16px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+        padding: 14px 18px;
+    }
+
+    @media (max-width: 1180px) {
+        body.fireworks-page .fireworks-hero {
+            grid-template-columns: 1fr;
+            grid-template-areas:
+                "logo"
+                "meta"
+                "actions";
+            justify-items: stretch;
+        }
+
+        body.fireworks-page .fireworks-logo-wrap {
+            justify-content: center;
+            justify-self: center;
+        }
+
+        body.fireworks-page .fireworks-hero-meta {
+            align-items: center;
+            justify-self: stretch;
+        }
+
+        body.fireworks-page .fireworks-hero-actions {
+            justify-content: flex-start;
+            justify-self: stretch;
+        }
+
+        body.fireworks-page .tabs {
+            flex-wrap: wrap;
+        }
+
+        body.fireworks-page #settings > .grid {
+            grid-template-columns: 1fr !important;
+        }
+
+        body.fireworks-page #settings > .grid > div:last-child {
+            position: static;
+        }
+    }
+
+    @media (max-width: 900px) {
+        body.fireworks-page {
+            padding: 16px 12px;
+        }
+
+        body.fireworks-page .top-logo {
+            width: min(340px, 78vw) !important;
+        }
+
+        body.fireworks-page .tab-button {
+            flex: 1 1 140px;
+        }
+
+        body.fireworks-page .fireworks-hero-actions {
+            justify-content: flex-start;
+        }
+    }
+
+    html[data-theme="day"] body.fireworks-page {
+        background: linear-gradient(180deg, #f5fbf8 0%, #eef7f1 100%);
+        color: #12311f;
+    }
+
+    html[data-theme="day"] body.fireworks-page .fireworks-hero,
+    html[data-theme="day"] body.fireworks-page .tabs,
+    html[data-theme="day"] body.fireworks-page .card {
+        background: rgba(255, 255, 255, 0.92) !important;
+        border-color: rgba(15, 118, 110, 0.14) !important;
+        box-shadow: 0 20px 48px rgba(15, 23, 42, 0.08) !important;
+    }
+
+    html[data-theme="day"] body.fireworks-page .status-chip {
+        background: rgba(255, 255, 255, 0.95);
+        color: #1f2937;
+        border-color: rgba(15, 118, 110, 0.16);
+    }
+
+    html[data-theme="day"] body.fireworks-page .status-chip--success {
+        background: rgba(16, 185, 129, 0.14);
+        color: #047857;
+        border-color: rgba(16, 185, 129, 0.22);
+    }
+
+    html[data-theme="day"] body.fireworks-page .status-chip--danger {
+        background: rgba(239, 68, 68, 0.12);
+        color: #b91c1c;
+        border-color: rgba(239, 68, 68, 0.22);
+    }
+
+    html[data-theme="day"] body.fireworks-page .text-gray-400,
+    html[data-theme="day"] body.fireworks-page .text-gray-300,
+    html[data-theme="day"] body.fireworks-page .text-gray-200 {
+        color: #334155 !important;
+        -webkit-text-fill-color: #334155 !important;
+    }
+
+    html[data-theme="contrast"] body.fireworks-page,
+    html[data-theme="vision-impaired"] body.fireworks-page {
+        background: #000;
+        color: #fff;
+    }
+
+    html[data-theme="contrast"] body.fireworks-page .fireworks-hero,
+    html[data-theme="contrast"] body.fireworks-page .tabs,
+    html[data-theme="contrast"] body.fireworks-page .card,
+    html[data-theme="vision-impaired"] body.fireworks-page .fireworks-hero,
+    html[data-theme="vision-impaired"] body.fireworks-page .tabs,
+    html[data-theme="vision-impaired"] body.fireworks-page .card {
+        background: #000 !important;
+        color: #fff !important;
+        border-color: #facc15 !important;
+        box-shadow: none !important;
+    }
+
+    html[data-theme="contrast"] body.fireworks-page .status-chip,
+    html[data-theme="vision-impaired"] body.fireworks-page .status-chip {
+        background: #000;
+        color: #fff;
+        border-color: #facc15;
+    }
+
+    html[data-theme="contrast"] body.fireworks-page .status-chip--success,
+    html[data-theme="vision-impaired"] body.fireworks-page .status-chip--success {
+        background: #facc15;
+        color: #000;
+    }
+
+    html[data-theme="contrast"] body.fireworks-page .status-chip--danger,
+    html[data-theme="vision-impaired"] body.fireworks-page .status-chip--danger {
+        background: #7f1d1d;
+        color: #fff;
+        border-color: #facc15;
+    }
+
+    html[data-theme="vision-impaired"] body.fireworks-page {
+        font-size: 19px;
+        line-height: 1.72;
+    }
+
+    html[data-theme="vision-impaired"] body.fireworks-page .section-title {
+        color: #facc15 !important;
+    }
+
+    html[data-theme="vision-impaired"] body.fireworks-page .toggle-switch,
+    html[data-theme="vision-impaired"] body.fireworks-page .btn-primary,
+    html[data-theme="vision-impaired"] body.fireworks-page .btn-success,
+    html[data-theme="vision-impaired"] body.fireworks-page .btn-danger {
+        border-width: 3px;
+    }
+
+    html[data-theme="cid"] body.fireworks-page {
+        background:
+            radial-gradient(circle at 18% 0%, rgba(74, 222, 128, 0.08), transparent 28%),
+            radial-gradient(circle at 82% 18%, rgba(16, 185, 129, 0.06), transparent 24%),
+            linear-gradient(180deg, #020403 0%, #041008 52%, #020302 100%);
+        color: #f4fff4;
+    }
+
+    html[data-theme="cid"] body.fireworks-page .fireworks-hero,
+    html[data-theme="cid"] body.fireworks-page .tabs,
+    html[data-theme="cid"] body.fireworks-page .card {
+        background: #071107 !important;
+        color: #f4fff4 !important;
+        border-color: #1e5b2a !important;
+        box-shadow: none !important;
+    }
+
+    html[data-theme="cid"] body.fireworks-page .status-chip {
+        background: #041104;
+        color: #f4fff4;
+        border-color: #1e5b2a;
+    }
+
+    html[data-theme="cid"] body.fireworks-page .status-chip--success,
+    html[data-theme="cid"] body.fireworks-page .btn-primary,
+    html[data-theme="cid"] body.fireworks-page .btn-success {
+        background: linear-gradient(135deg, #4ade80, #22c55e) !important;
+        color: #030603 !important;
+        border-color: #4ade80 !important;
+        -webkit-text-fill-color: #030603;
+    }
+</style>
 </body>
 </html>
+
+
+

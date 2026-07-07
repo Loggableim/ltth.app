@@ -246,6 +246,7 @@ class DatabaseManager {
                 last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        this.ensureGiftCatalogSchema();
 
         // Weather Control: Gift-to-Weather Mappings
         this.db.exec(`
@@ -883,6 +884,13 @@ class DatabaseManager {
             throw error;
         }
 
+        try {
+            this.ensureGiftCatalogSchema();
+        } catch (error) {
+            console.error('Migration error for gift_catalog:', error);
+            throw error;
+        }
+
         // Migration: Add streamer_id to user_statistics for scoped user profiles
         try {
             this.migrateUserStatisticsSchema();
@@ -1378,43 +1386,151 @@ class DatabaseManager {
     }
 
     // ========== GIFT CATALOG ==========
-    getGiftCatalog() {
+    normalizeLocaleCode(value) {
+        if (typeof value !== 'string') {
+            return null;
+        }
+
+        const normalized = value.trim().toLowerCase();
+        return normalized ? normalized : null;
+    }
+
+    _parseLocalizedGiftNames(rawJson) {
+        const value = safeJsonParse(rawJson, null);
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return {};
+        }
+        return value;
+    }
+
+    _getGiftCatalogRowName(row, locale) {
+        if (!row || typeof row !== 'object') {
+            return null;
+        }
+
+        const normalizedLocale = this.normalizeLocaleCode(locale);
+        if (!normalizedLocale) {
+            return row.name || null;
+        }
+
+        const localeMap = this._parseLocalizedGiftNames(row.names_by_locale);
+        const byLocale = localeMap[normalizedLocale];
+        if (typeof byLocale === 'string' && byLocale.trim()) {
+            return byLocale.trim();
+        }
+
+        const localeFallback = normalizedLocale.split('-')[0];
+        const byFallback = localeMap[localeFallback];
+        if (typeof byFallback === 'string' && byFallback.trim()) {
+            return byFallback.trim();
+        }
+
+        return row.name || null;
+    }
+
+    ensureGiftCatalogSchema() {
+        const columns = this.getTableColumns('gift_catalog');
+        this.addColumnIfMissing('gift_catalog', columns, 'names_by_locale', 'TEXT');
+    }
+
+    getGiftCatalog(locale = null) {
         const stmt = this.db.prepare('SELECT * FROM gift_catalog ORDER BY diamond_count DESC');
-        return stmt.all();
+        const rows = stmt.all();
+        if (!locale) {
+            return rows;
+        }
+
+        return rows.map(row => ({
+            ...row,
+            name: this._getGiftCatalogRowName(row, locale)
+        }));
     }
 
-    getGift(id) {
+    getGift(id, locale = null) {
         const stmt = this.db.prepare('SELECT * FROM gift_catalog WHERE id = ?');
-        return stmt.get(id);
+        const row = stmt.get(id);
+        if (!row) return null;
+        if (!locale) return row;
+
+        return {
+            ...row,
+            name: this._getGiftCatalogRowName(row, locale)
+        };
     }
 
-    updateGiftCatalog(gifts) {
+    updateGiftCatalog(gifts, locale = null) {
         if (!Array.isArray(gifts) || gifts.length === 0) {
             return 0;
         }
 
-        const stmt = this.db.prepare(`
-            INSERT OR REPLACE INTO gift_catalog (id, name, image_url, diamond_count, last_updated)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+        const normalizedLocale = this.normalizeLocaleCode(locale);
+        const isLocaleSpecific = normalizedLocale !== null;
+        const upsertStmt = this.db.prepare(`
+            INSERT INTO gift_catalog (id, name, image_url, diamond_count, last_updated, names_by_locale)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, COALESCE((SELECT names_by_locale FROM gift_catalog WHERE id = ?), NULL))
+            ON CONFLICT(id) DO UPDATE SET
+                name = CASE WHEN ? IS NULL THEN excluded.name ELSE gift_catalog.name END,
+                image_url = excluded.image_url,
+                diamond_count = excluded.diamond_count,
+                last_updated = CURRENT_TIMESTAMP,
+                names_by_locale = COALESCE(excluded.names_by_locale, gift_catalog.names_by_locale)
         `);
+        const localeStmt = this.db.prepare('SELECT names_by_locale FROM gift_catalog WHERE id = ?');
+        const setLocaleStmt = this.db.prepare('UPDATE gift_catalog SET names_by_locale = ? WHERE id = ?');
+
+        const normalizeGiftValue = (gift) => {
+            if (!gift || typeof gift !== 'object') return null;
+
+            const id = Number(gift.id ?? gift.giftId ?? gift.gift_id);
+            const name = gift.name ?? gift.giftName ?? gift.gift_name;
+            if (!Number.isFinite(id) || id <= 0 || !name) {
+                return null;
+            }
+
+            const diamondCount = Number(gift.diamond_count ?? gift.diamondCount ?? gift.diamonds ?? 0);
+            return {
+                id,
+                name: String(name),
+                imageUrl: gift.image_url || gift.imageUrl || gift.giftPictureUrl || gift.image?.url_list?.[0] || null,
+                diamondCount: Number.isFinite(diamondCount) ? diamondCount : 0
+            };
+        };
+
+        const updateLocaleName = (id, name) => {
+            if (!normalizedLocale) {
+                return;
+            }
+
+            const existing = localeStmt.get(id);
+            const namesByLocale = this._parseLocalizedGiftNames(existing ? existing.names_by_locale : null);
+            if (namesByLocale[normalizedLocale] === name) {
+                return;
+            }
+
+            namesByLocale[normalizedLocale] = name;
+            setLocaleStmt.run(JSON.stringify(namesByLocale), id);
+        };
 
         const transaction = this.db.transaction((giftsArray) => {
             let savedCount = 0;
 
             for (const gift of giftsArray) {
-                if (!gift || typeof gift !== 'object') continue;
+                const normalizedGift = normalizeGiftValue(gift);
+                if (!normalizedGift) continue;
 
-                const id = Number(gift.id ?? gift.giftId ?? gift.gift_id);
-                const name = gift.name ?? gift.giftName ?? gift.gift_name;
-                if (!Number.isFinite(id) || id <= 0 || !name) continue;
-
-                const diamondCount = Number(gift.diamond_count ?? gift.diamondCount ?? gift.diamonds ?? 0);
-                stmt.run(
-                    id,
-                    String(name),
-                    gift.image_url || gift.imageUrl || gift.giftPictureUrl || null,
-                    Number.isFinite(diamondCount) ? diamondCount : 0
+                upsertStmt.run(
+                    normalizedGift.id,
+                    normalizedGift.name,
+                    normalizedGift.imageUrl,
+                    normalizedGift.diamondCount,
+                    normalizedGift.id,
+                    isLocaleSpecific ? normalizedLocale : null
                 );
+
+                if (normalizedLocale) {
+                    updateLocaleName(normalizedGift.id, normalizedGift.name);
+                }
+
                 savedCount++;
             }
 

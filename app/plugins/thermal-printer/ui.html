@@ -7,6 +7,70 @@
     <title>Thermal Printer - Configuration</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script src="/socket.io/socket.io.js"></script>
+    <script>
+        (function () {
+            const themes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const fallback = 'night';
+
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (themes.has(parentTheme)) {
+                            return parentTheme;
+                        }
+                    }
+                } catch (error) {}
+
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (themes.has(value)) {
+                            return value;
+                        }
+                    }
+                } catch (error) {}
+
+                return fallback;
+            }
+
+            function applyTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+                const logo = document.querySelector('[data-brand-logo]');
+                if (logo) {
+                    logo.src = '/ltthicon.png';
+                }
+            }
+
+            function syncTheme() {
+                applyTheme(readTheme());
+            }
+
+            syncTheme();
+            window.addEventListener('storage', (event) => {
+                if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+                    syncTheme();
+                }
+            });
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    syncTheme();
+                }
+            });
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    const observer = new MutationObserver(syncTheme);
+                    observer.observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         * {
             margin: 0;
@@ -23,8 +87,10 @@
         }
 
         .container {
-            max-width: 900px;
+            width: 100%;
+            max-width: 2200px;
             margin: 0 auto;
+            padding: 0 12px;
         }
 
         .header {
@@ -45,6 +111,20 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 0.5rem;
+        }
+
+        .brand-logo {
+            display: block;
+            width: min(260px, 54vw);
+            height: auto;
+            object-fit: contain;
         }
 
         .card {
@@ -120,12 +200,13 @@
 
         .badge-warning {
             background: var(--color-accent-warning);
-            color: white;
+            color: #111827;
         }
 
         .badge-danger {
-            background: var(--color-accent-danger);
+            background: #b91c1c;
             color: white;
+            -webkit-text-fill-color: #fff;
         }
 
         .badge-secondary {
@@ -149,10 +230,10 @@
         .form-select {
             width: 100%;
             padding: 0.625rem 0.875rem;
-            background: var(--color-input-bg);
-            border: 1px solid var(--color-input-border);
+            background: var(--color-input-bg) !important;
+            border: 1px solid var(--color-input-border) !important;
             border-radius: 8px;
-            color: var(--color-input-text);
+            color: var(--color-input-text) !important;
             font-size: 0.875rem;
             transition: all 0.2s;
         }
@@ -216,8 +297,8 @@
         }
 
         .btn-primary {
-            background: var(--color-accent-primary);
-            color: white;
+            background: var(--brand-primary-hover, var(--color-accent-primary));
+            color: #fff;
         }
 
         .btn-primary:hover {
@@ -227,8 +308,8 @@
         }
 
         .btn-success {
-            background: var(--color-accent-success);
-            color: white;
+            background: #047857;
+            color: #fff;
         }
 
         .btn-success:hover {
@@ -238,8 +319,85 @@
         }
 
         .btn-secondary {
-            background: var(--color-btn-secondary-bg);
-            color: var(--color-btn-secondary-text);
+            background: var(--color-btn-secondary-bg) !important;
+            color: var(--color-btn-secondary-text) !important;
+            border: 1px solid var(--color-border);
+        }
+
+        html[data-theme="contrast"] .btn,
+        html[data-theme="vision-impaired"] .btn {
+            border: 2px solid #facc15;
+            font-weight: 800;
+        }
+
+        html[data-theme="vision-impaired"] .brand-logo {
+            width: min(300px, 60vw);
+        }
+
+        html[data-theme="cid"] .brand-logo {
+            width: min(380px, 74vw);
+        }
+
+        html[data-theme="vision-impaired"] body {
+            font-size: 18px;
+            line-height: 1.55;
+        }
+
+        html[data-theme="vision-impaired"] .form-control,
+        html[data-theme="vision-impaired"] .form-select,
+        html[data-theme="vision-impaired"] .btn {
+            min-height: 46px;
+            font-size: 1rem;
+        }
+
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .header,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .status-badge,
+        html[data-theme="cid"] .stats-box {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] .card-header,
+        html[data-theme="cid"] .section-divider {
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .stats-value,
+        html[data-theme="cid"] .header h1 {
+            color: #4ade80;
+        }
+
+        html[data-theme="cid"] .form-control,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .btn-secondary {
+            background: #061006 !important;
+            color: #f4fff4 !important;
+            border-color: #1e5b2a !important;
+        }
+
+        html[data-theme="cid"] .badge-success {
+            background: #4ade80;
+            color: #030603;
+        }
+
+        html[data-theme="cid"] .badge-warning {
+            background: #facc15;
+            color: #030603;
+        }
+
+        html[data-theme="cid"] .badge-danger {
+            background: #b91c1c;
+            color: #f4fff4;
         }
 
         .btn-secondary:hover {
@@ -288,7 +446,9 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1><span class="icon-printer"></span>Thermal Printer Configuration</h1>
+            <div class="brand-header">
+                <img class="brand-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
+            </div>
             <a href="/" class="btn btn-secondary">
                 <span class="icon-back"></span>Back to Dashboard
             </a>
@@ -691,3 +851,4 @@
     </script>
 </body>
 </html>
+

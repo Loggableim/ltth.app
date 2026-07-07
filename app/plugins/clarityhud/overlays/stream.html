@@ -7,6 +7,49 @@
   <title>ClarityHUD - Stream Overlay</title>
   <link href="/fonts/open-sans.css" rel="stylesheet">
   <link href="/fonts/opendyslexic.css" rel="stylesheet">
+  <script>
+    (function () {
+      const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (validThemes.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (validThemes.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+      }
+
+      syncTheme();
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     * {
       margin: 0;
@@ -34,7 +77,7 @@
       --color-like: #e91e63;
     }
 
-    body {
+    html, body {
       font-family: 'Open Sans', sans-serif;
       overflow: hidden;
       width: 100vw;
@@ -51,6 +94,11 @@
     body.reduce-motion * {
       animation: none !important;
       transition: none !important;
+    }
+
+    html {
+      background: transparent;
+      color-scheme: dark;
     }
 
     /* Type accent bindings */
@@ -92,7 +140,7 @@
       flex-direction: column;
       align-items: center;
       gap: 10px;
-      min-width: 320px;
+      min-width: 360px;
     }
 
     #slot-top-right {
@@ -126,7 +174,7 @@
       flex-direction: column-reverse;
       align-items: center;
       gap: 10px;
-      min-width: 320px;
+      min-width: 360px;
     }
 
     #slot-bottom-right {
@@ -171,8 +219,9 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      min-width: 280px;
-      max-width: 360px;
+      min-width: 0;
+      width: min(92vw, 640px);
+      max-width: none;
       padding: 10px 14px;
       background: var(--card-bg);
       border-left: 4px solid var(--accent);
@@ -261,8 +310,9 @@
       box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6),
                   0 0 32px color-mix(in srgb, var(--accent) 20%, transparent);
       text-align: center;
-      min-width: 300px;
-      max-width: 480px;
+      min-width: 0;
+      width: min(92vw, 760px);
+      max-width: none;
       will-change: opacity, transform;
     }
 
@@ -607,7 +657,90 @@
       from { transform: translateX(0); }
       to   { transform: translateX(-50%); }
     }
-  </style>
+
+    html[data-theme="cid"] html,
+    html[data-theme="cid"] body {
+      background: transparent;
+      color: #f4fff4;
+      color-scheme: dark;
+    }
+
+    html[data-theme="cid"] #slot-top-center,
+    html[data-theme="cid"] #slot-bottom-center,
+    html[data-theme="vision-impaired"] #slot-top-center,
+    html[data-theme="vision-impaired"] #slot-bottom-center {
+      min-width: min(92vw, 760px);
+      max-width: none;
+    }
+
+    html[data-theme="cid"] .alert-card,
+    html[data-theme="cid"] .highlight-card {
+      background: rgba(7, 17, 7, 0.92);
+      border-color: #1e5b2a;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+      max-width: none;
+      width: min(92vw, 760px);
+    }
+
+    html[data-theme="vision-impaired"] .alert-card,
+    html[data-theme="vision-impaired"] .highlight-card {
+      background: rgba(0, 0, 0, 0.96);
+      border-color: #facc15;
+      box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.18), 0 8px 32px rgba(0, 0, 0, 0.65);
+      max-width: none;
+      width: min(92vw, 760px);
+    }
+
+    html[data-theme="cid"] .alert-username,
+    html[data-theme="cid"] .highlight-username {
+      color: #4ade80;
+      text-shadow: 0 0 14px rgba(74, 222, 128, 0.35), 0 2px 8px rgba(0, 0, 0, 0.85);
+    }
+
+    html[data-theme="vision-impaired"] .alert-username,
+    html[data-theme="vision-impaired"] .highlight-username {
+      color: #fde047;
+      text-shadow: 0 0 12px rgba(250, 204, 21, 0.35), 0 2px 8px rgba(0, 0, 0, 0.95);
+    }
+
+    html[data-theme="cid"] .highlight-action,
+    html[data-theme="cid"] .alert-meta,
+    html[data-theme="cid"] .alert-detail,
+    html[data-theme="cid"] .highlight-detail,
+    html[data-theme="vision-impaired"] .highlight-action,
+    html[data-theme="vision-impaired"] .alert-meta,
+    html[data-theme="vision-impaired"] .alert-detail,
+    html[data-theme="vision-impaired"] .highlight-detail {
+      color: #d1e7d1;
+    }
+
+    html[data-theme="cid"] .alert-timestamp,
+    html[data-theme="cid"] .chat-timestamp,
+    html[data-theme="vision-impaired"] .alert-timestamp,
+    html[data-theme="vision-impaired"] .chat-timestamp {
+      color: #b9d7bd;
+    }
+
+    html[data-theme="vision-impaired"] .highlight-action,
+    html[data-theme="vision-impaired"] .alert-meta,
+    html[data-theme="vision-impaired"] .alert-detail,
+    html[data-theme="vision-impaired"] .highlight-detail,
+    html[data-theme="vision-impaired"] .alert-timestamp,
+    html[data-theme="vision-impaired"] .chat-timestamp {
+      color: #fff7cc;
+    }
+
+    html[data-theme="cid"] .alert-icon,
+    html[data-theme="cid"] .highlight-icon {
+      filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.45));
+    }
+
+    html[data-theme="vision-impaired"] .alert-icon,
+    html[data-theme="vision-impaired"] .highlight-icon {
+      filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.45));
+    }
+
+    </style>
 </head>
 <body>
   <div id="stream-overlay">

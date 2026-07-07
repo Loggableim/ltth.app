@@ -4,6 +4,56 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>STT Ticker - Master</title>
+  <link rel="stylesheet" href="/css/themes.css">
+  <script>
+    (function () {
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (VALID_THEMES.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (VALID_THEMES.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+      }
+
+      syncTheme();
+      window.addEventListener('storage', (event) => {
+        if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+          syncTheme();
+        }
+      });
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     :root {
       --bg: #0f1220;
@@ -27,44 +77,221 @@
       margin: 0;
       width: 100%;
       height: 100%;
-      font-family: Arial, Helvetica, sans-serif;
-      background: linear-gradient(180deg, #0b0e1a 0%, #11162a 100%);
+      font-family: "Segoe UI Variable", "Bahnschrift", "Segoe UI", Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at 10% 6%, rgba(59, 130, 246, 0.14), transparent 22%),
+        radial-gradient(circle at 90% 10%, rgba(74, 222, 128, 0.12), transparent 18%),
+        linear-gradient(180deg, #0b0e1a 0%, #11162a 100%);
       color: var(--text);
       overflow: hidden;
     }
 
+    html[data-theme="day"] body {
+      background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+      color: #10203a;
+    }
+
+    html[data-theme="day"] .topbar {
+      background: rgba(248, 251, 255, 0.96);
+      border-color: #cbd5e1;
+    }
+
+    html[data-theme="day"] .tabs {
+      background: rgba(219, 230, 255, 0.86);
+      border-color: #bfd0f7;
+    }
+
+    html[data-theme="day"] .frame-wrap {
+      background: #eef4ff;
+    }
+
+    html[data-theme="day"] .frame-shell {
+      background: #ffffff;
+      border-color: #bfd0f7;
+    }
+
+    html[data-theme="day"] .capture-panel {
+      background: linear-gradient(180deg, #ffffff, #f1f6ff);
+      color: #10203a;
+      border-color: #93c5fd;
+    }
+
+    html[data-theme="contrast"] body,
+    html[data-theme="vision-impaired"] body {
+      background: #000;
+      color: #fff;
+    }
+
+    html[data-theme="contrast"] .topbar,
+    html[data-theme="vision-impaired"] .topbar {
+      background: #000;
+      border: 2px solid #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="contrast"] .brand h1,
+    html[data-theme="vision-impaired"] .brand h1 {
+      color: #facc15;
+    }
+
+    html[data-theme="contrast"] .tabs,
+    html[data-theme="vision-impaired"] .tabs {
+      background: #000;
+      border: 2px solid #facc15;
+    }
+
+    html[data-theme="contrast"] .tab-btn,
+    html[data-theme="vision-impaired"] .tab-btn {
+      background: #111;
+      color: #fff;
+      border: 2px solid #facc15;
+    }
+
+    html[data-theme="contrast"] .tab-btn.active,
+    html[data-theme="vision-impaired"] .tab-btn.active {
+      background: #facc15;
+      color: #000;
+    }
+
+    html[data-theme="contrast"] .frame-wrap,
+    html[data-theme="vision-impaired"] .frame-wrap {
+      background: #000;
+    }
+
+    html[data-theme="contrast"] .frame-shell,
+    html[data-theme="vision-impaired"] .frame-shell {
+      background: #050505;
+      border: 3px solid #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="contrast"] .capture-panel,
+    html[data-theme="vision-impaired"] .capture-panel {
+      background: #050505;
+      border-color: #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="contrast"] .capture-panel h2,
+    html[data-theme="vision-impaired"] .capture-panel h2 {
+      color: #facc15;
+    }
+
+    html[data-theme="contrast"] .capture-panel p,
+    html[data-theme="vision-impaired"] .capture-panel p,
+    html[data-theme="contrast"] .sub,
+    html[data-theme="vision-impaired"] .sub,
+    html[data-theme="contrast"] .hint,
+    html[data-theme="vision-impaired"] .hint {
+      color: #fff7cc;
+    }
+
+    html[data-theme="vision-impaired"] body {
+      font-size: 1.12rem;
+      line-height: 1.72;
+    }
+
+    html[data-theme="vision-impaired"] .topbar {
+      height: auto;
+      min-height: 92px;
+      padding: 18px 20px;
+    }
+
+    html[data-theme="vision-impaired"] .brand h1 {
+      font-size: 28px;
+      letter-spacing: 0.02em;
+    }
+
+    html[data-theme="vision-impaired"] .btn {
+      font-size: 15px;
+      padding: 12px 16px;
+    }
+
+    html[data-theme="vision-impaired"] .tabs {
+      padding-top: 12px;
+    }
+
+    html[data-theme="vision-impaired"] .tab-btn {
+      font-size: 15px;
+      padding: 12px 16px;
+    }
+
+    html[data-theme="vision-impaired"] .capture-panel {
+      gap: 22px;
+      padding: 36px 40px;
+    }
+
+    html[data-theme="vision-impaired"] .capture-panel h2 {
+      font-size: clamp(2.2rem, 3.4vw, 3.6rem);
+    }
+
+    html[data-theme="cid"] .frame-wrap {
+      padding: 16px;
+    }
+
+    html[data-theme="cid"] .capture-panel {
+      background: #071107;
+      color: #f4fff4;
+      border-color: #1e5b2a;
+    }
+
+    html[data-theme="cid"] .capture-panel p {
+      max-width: none;
+      color: #d1e7d1;
+    }
+
+    html[data-theme="cid"] .frame-shell {
+      border-color: #1e5b2a;
+    }
+
     .topbar {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 72px;
-      background: rgba(26, 31, 50, 0.95);
-      border-bottom: 1px solid var(--line);
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      min-height: 86px;
+      background: linear-gradient(135deg, rgba(13, 18, 34, 0.94), rgba(20, 27, 48, 0.92));
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px;
+      gap: 16px;
+      padding: 14px 18px;
       z-index: 10;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 4px 10px var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 14px;
+      min-width: 0;
+      flex: 1 1 auto;
     }
 
-    .brand h1 {
-      font-size: 18px;
-      margin: 0;
-      color: #8effa1;
+    .brand-logo {
+      display: block;
+      width: min(100%, 260px);
+      max-height: 68px;
+      object-fit: contain;
+      filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.34));
+      flex-shrink: 0;
+    }
+
+    .brand-copy {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
     .sub {
       color: var(--text-dim);
-      font-size: 11px;
+      font-size: 12px;
+      letter-spacing: 0.01em;
     }
 
     .actions {
@@ -77,12 +304,14 @@
       appearance: none;
       border: 0;
       cursor: pointer;
-      border-radius: 7px;
-      padding: 8px 12px;
-      font-size: 12px;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 12.5px;
       font-weight: 700;
-      background: #3a425f;
+      background: rgba(58, 66, 95, 0.96);
       color: var(--text);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
     }
 
     .btn:hover {
@@ -103,23 +332,42 @@
       color: #fff;
     }
 
+    html[data-theme="contrast"] .btn.accent,
+    html[data-theme="vision-impaired"] .btn.accent {
+      background: #facc15;
+      color: #000;
+    }
+
+    html[data-theme="contrast"] .btn.warn,
+    html[data-theme="vision-impaired"] .btn.warn {
+      background: #7f1d1d;
+      color: #fff;
+    }
+
     .tabs {
-      margin-top: 72px;
-      background: var(--panel);
+      position: sticky;
+      top: 118px;
+      z-index: 9;
+      margin: 0 16px;
+      padding: 12px 12px 0;
+      background: rgba(17, 22, 42, 0.76);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 20px 20px 0 0;
       border-bottom: 1px solid var(--line);
       display: flex;
       gap: 4px;
-      padding: 10px 10px 0;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
     }
 
     .tab-btn {
       border: 0;
-      border-radius: 8px 8px 0 0;
-      background: var(--panel-soft);
+      border-radius: 12px 12px 0 0;
+      background: rgba(38, 43, 66, 0.96);
       color: var(--text);
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 700;
-      padding: 8px 12px;
+      padding: 10px 14px;
       cursor: pointer;
       position: relative;
       top: 1px;
@@ -134,9 +382,9 @@
       position: fixed;
       left: 0;
       right: 0;
-      top: 112px;
+      top: 166px;
       bottom: 0;
-      padding: 10px;
+      padding: 0 16px 16px;
       background: var(--bg);
     }
 
@@ -144,9 +392,10 @@
       width: 100%;
       height: 100%;
       border: 1px solid #2d3551;
-      border-radius: 10px;
+      border-radius: 22px;
       overflow: hidden;
       background: #171d33;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
       display: none;
     }
 
@@ -161,18 +410,87 @@
       background: transparent;
     }
 
+    .capture-panel {
+      height: 100%;
+      min-height: 100%;
+      border-radius: 22px;
+      border: 2px solid rgba(251, 191, 36, 0.8);
+      background: linear-gradient(180deg, rgba(7, 10, 18, 0.98), rgba(12, 16, 28, 0.98));
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 14px;
+      padding: 28px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+    }
+
+    .capture-panel__eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .capture-panel h2 {
+      margin: 0;
+      color: #facc15;
+      font-size: clamp(1.8rem, 2.4vw, 2.8rem);
+      line-height: 1.08;
+    }
+
+    .capture-panel p {
+      margin: 0;
+      max-width: none;
+      width: 100%;
+      font-size: 1.02rem;
+      line-height: 1.7;
+      color: var(--text-main);
+      opacity: 0.92;
+    }
+
+    .capture-panel__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
     .hint {
       color: var(--text-dim);
       font-size: 11px;
       margin-left: 6px;
     }
-  </style>
+    /* stt master day night button contrast */
+    html[data-theme="day"] .btn.accent,
+    html[data-theme="night"] .btn.accent {
+      background: #047857;
+      color: #fff;
+      -webkit-text-fill-color: #fff;
+      border: 2px solid #86efac;
+    }
+
+    html[data-theme="day"] .btn.warn,
+    html[data-theme="night"] .btn.warn {
+      background: #b91c1c;
+      color: #fff;
+      -webkit-text-fill-color: #fff;
+      border: 2px solid #fecaca;
+    }
+
+</style>
 </head>
 <body>
   <div class="topbar">
     <div class="brand">
-      <h1>STT Ticker</h1>
-      <span class="sub">Master Workspace (Admin + Audio Capture)</span>
+      <img class="brand-logo" src="/sttlogo.png" alt="STT Ticker">
+      <div class="brand-copy">
+        <span class="sub">Master Workspace (Admin + Audio Capture)</span>
+      </div>
     </div>
     <div class="actions">
       <a class="btn" href="/overlay/stt-ticker?design=dual-language&amp;position=bottom-center&amp;maxLines=2&amp;fontSize=36px" target="_blank">Open Overlay</a>
@@ -194,7 +512,18 @@
       <iframe src="/stt-ticker/ui" title="STT Ticker Admin"></iframe>
     </div>
     <div class="frame-shell" data-view="capture">
-      <iframe src="/stt-ticker/capture" title="STT Ticker Capture"></iframe>
+      <div class="capture-panel">
+        <div class="capture-panel__eyebrow">Audio Capture</div>
+        <h2>Capture läuft in einem eigenen Fenster</h2>
+        <p>
+          Die Capture-Ansicht ist für verlässlichen Mikrofonzugriff als Standalone-Tab gebaut.
+          Öffne sie direkt, dann bleibt die Audio-Freigabe stabil und die Oberfläche rendert sauber.
+        </p>
+        <div class="capture-panel__actions">
+          <a class="btn accent" href="/stt-ticker/capture" target="_blank">Capture öffnen</a>
+          <a class="btn" href="/stt-ticker/ui" target="_blank">Admin öffnen</a>
+        </div>
+      </div>
     </div>
   </div>
 

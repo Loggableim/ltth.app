@@ -5,6 +5,7 @@
   "description": "Complete Live Goals system with Coin, Likes, Follower, and Custom goal types. Real-time tracking with Event API and customizable overlays.",
   "author": "Pup Cid",
   "entry": "main.js",
+  "logo": "/plugins/goals/assets/live-goals-logo.png",
   "enabled": true,
   "devStatus": "working-beta",
   "permissions": [

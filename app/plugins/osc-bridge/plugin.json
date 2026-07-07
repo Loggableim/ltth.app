@@ -4,8 +4,10 @@
   "version": "1.0.0",
   "description": "Production-ready OSC bridge for VRChat. Connects TikTok events, IFTTT actions, GCCE commands, and VRChat avatar parameters through validated OSC messages.",
   "author": "Pup Cid",
+  "icon": "/osc-bridge-icon.png",
+  "logo": "/osc-bridge-logo.png",
   "entry": "main.js",
-  "enabled": true,
+  "enabled": false,
   "devStatus": "stable",
   "settings": {
     "enabled": false,

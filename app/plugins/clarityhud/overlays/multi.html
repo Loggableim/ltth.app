@@ -6,6 +6,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ClarityHUD - Multi-Stream Overlay</title>
   <link href="/fonts/exo-2.css" rel="stylesheet">
+  <script>
+    (function () {
+      const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (validThemes.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (validThemes.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+      }
+
+      syncTheme();
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     /* CSS Custom Properties for Dynamic Configuration */
     :root {
@@ -35,7 +78,7 @@
       box-sizing: border-box;
     }
 
-    body {
+    html, body {
       font-family: var(--multi-font-family);
       overflow: hidden;
       width: 100vw;
@@ -50,6 +93,11 @@
       display: flex;
       gap: 12px;
       opacity: var(--multi-opacity);
+    }
+
+    html {
+      background: transparent;
+      color-scheme: dark;
     }
 
     /* Layout modes */
@@ -275,6 +323,81 @@
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
     }
 
+    html[data-theme="cid"] html,
+    html[data-theme="cid"] body {
+      background: transparent;
+      color: #f4fff4;
+      color-scheme: dark;
+    }
+
+    html[data-theme="cid"] #multi-container {
+      padding: 14px 16px;
+    }
+
+    html[data-theme="cid"] .chat-message {
+      background: rgba(7, 17, 7, 0.92);
+      color: #f4fff4;
+      max-width: none;
+      width: 100%;
+      border: 1px solid #1e5b2a;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    html[data-theme="vision-impaired"] #multi-container {
+      padding: 14px 16px;
+    }
+
+    html[data-theme="vision-impaired"] .chat-message {
+      background: rgba(0, 0, 0, 0.96);
+      color: #fff7cc;
+      max-width: none;
+      width: 100%;
+      border: 1px solid #facc15;
+      box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.18), 0 6px 24px rgba(0, 0, 0, 0.55);
+    }
+
+    html[data-theme="cid"] .chat-message.style-bg {
+      background: rgba(7, 17, 7, 0.98);
+      color: #f4fff4;
+    }
+
+    html[data-theme="vision-impaired"] .chat-message.style-bg {
+      background: rgba(0, 0, 0, 0.98);
+      color: #fff7cc;
+    }
+
+    html[data-theme="cid"] .chat-username {
+      color: #4ade80;
+      text-shadow: 0 0 12px rgba(74, 222, 128, 0.3), 0 2px 8px rgba(0, 0, 0, 0.85);
+    }
+
+    html[data-theme="vision-impaired"] .chat-username {
+      color: #fde047;
+      text-shadow: 0 0 12px rgba(250, 204, 21, 0.4), 0 2px 8px rgba(0, 0, 0, 0.95);
+    }
+
+    html[data-theme="cid"] .chat-text,
+    html[data-theme="cid"] .chat-timestamp,
+    html[data-theme="cid"] .source-badge {
+      color: #d1e7d1;
+    }
+
+    html[data-theme="vision-impaired"] .chat-text,
+    html[data-theme="vision-impaired"] .chat-timestamp,
+    html[data-theme="vision-impaired"] .source-badge {
+      color: #fff7cc;
+    }
+
+    html[data-theme="cid"] .chat-message.style-badge .source-badge {
+      background: #4ade80;
+      color: #030603;
+    }
+
+    html[data-theme="vision-impaired"] .chat-message.style-badge .source-badge {
+      background: #facc15;
+      color: #030603;
+    }
+
     /* Debug Console */
     #debug-console {
       position: fixed;
@@ -294,7 +417,7 @@
     #debug-status { margin-bottom: 5px; }
     #debug-socket { margin-bottom: 5px; }
     #debug-events { margin-bottom: 5px; }
-  </style>
+    </style>
 </head>
 <body>
   <!-- Debug Console -->

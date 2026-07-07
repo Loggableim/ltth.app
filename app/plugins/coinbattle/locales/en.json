@@ -117,13 +117,13 @@
     "gifts": "Gifts",
     "team": "Team",
     "badges": "Badges",
-    "weekly": "Wöchentlich",
-    "season": "Saison",
-    "manageUsers": "Benutzer verwalten",
-    "deleteUser": "Benutzer löschen",
-    "deleteUserConfirm": "Möchten Sie diesen Benutzer wirklich aus allen Ranglisten löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-    "userDeleted": "Benutzer erfolgreich gelöscht",
-    "noData": "Keine Daten verfügbar"
+    "weekly": "Weekly",
+    "season": "Season",
+    "manageUsers": "Manage Users",
+    "deleteUser": "Delete User",
+    "deleteUserConfirm": "Are you sure you want to delete this user from all leaderboards? This cannot be undone.",
+    "userDeleted": "User deleted successfully",
+    "noData": "No data available"
   },
   "history": {
     "title": "Match History",
@@ -178,15 +178,15 @@
     "close": "Close"
   },
   "season": {
-    "title": "Saison-Konfiguration",
-    "name": "Saison-Name",
-    "startDate": "Startdatum",
-    "endDate": "Enddatum",
-    "active": "Aktive Saison",
-    "noActiveSeason": "Keine aktive Saison konfiguriert",
-    "createUpdate": "Saison erstellen/aktualisieren",
-    "description": "Konfigurieren Sie den Datumsbereich für die Saison-Rangliste. Es kann nur eine Saison gleichzeitig aktiv sein.",
-    "saved": "Saison erfolgreich gespeichert",
-    "period": "Zeitraum"
+    "title": "Season Configuration",
+    "name": "Season Name",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "active": "Active Season",
+    "noActiveSeason": "No active season configured",
+    "createUpdate": "Create/Update Season",
+    "description": "Configure the date range for the season leaderboard. Only one season can be active at a time.",
+    "saved": "Season saved successfully",
+    "period": "Period"
   }
 }

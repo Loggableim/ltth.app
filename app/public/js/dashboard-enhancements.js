@@ -560,7 +560,7 @@
             'soundboard': 'Soundboard',
             'flows': 'Automation Flows',
             'osc-bridge': 'OSC-Bridge',
-            'openshock-emergency-stop': 'OpenShock Emergency Stop'
+            'openshock-emergency-stop': 'HybridShock Emergency Stop'
         };
 
         const name = actionNames[action] || action;

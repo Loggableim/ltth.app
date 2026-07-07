@@ -5,6 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Datenquellen-Manager</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        /* Datenquellen theme bridge */
+        (() => {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const STORAGE_KEYS = ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'];
+            function readTheme() {
+                try {
+                    const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
+                    if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                } catch (_) {}
+                for (const key of STORAGE_KEYS) {
+                    const stored = localStorage.getItem(key);
+                    if (VALID_THEMES.has(stored)) return stored;
+                }
+                return 'night';
+            }
+            function applyTheme(theme) {
+                const active = VALID_THEMES.has(theme) ? theme : 'night';
+                document.documentElement.setAttribute('data-theme', active);
+                document.documentElement.style.colorScheme = (active === 'day' || active === 'contrast' || active === 'vision-impaired') ? 'light' : 'dark';
+            }
+            applyTheme(readTheme());
+            window.addEventListener('message', (event) => {
+                const theme = event.data?.theme || event.data?.payload?.theme;
+                if (VALID_THEMES.has(theme)) applyTheme(theme);
+            });
+        })();
+    </script>
     <style>
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
@@ -15,8 +43,9 @@
         }
 
         .container {
-            max-width: 720px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: none;
+            margin: 0;
         }
 
         .card {
@@ -53,15 +82,15 @@
         }
 
         .status-badge.eulerstream {
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: #1d4ed8;
+            color: #ffffff;
+            border: 1px solid #93c5fd;
         }
 
         .status-badge.tikfinity {
-            background: rgba(168, 85, 247, 0.15);
-            color: #c084fc;
-            border: 1px solid rgba(168, 85, 247, 0.3);
+            background: #6d28d9;
+            color: #ffffff;
+            border: 1px solid #c4b5fd;
         }
 
         .source-grid {
@@ -242,6 +271,77 @@
 
         .tikfinity-settings.visible {
             display: block;
+        }
+
+        /* data-source contrast-safe final overrides */
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000 !important;
+            color: #fff !important;
+            font-size: 18px;
+        }
+
+        html[data-theme="contrast"] .card,
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="contrast"] .source-card,
+        html[data-theme="vision-impaired"] .source-card,
+        html[data-theme="contrast"] .config-section,
+        html[data-theme="vision-impaired"] .config-section {
+            background: #000 !important;
+            color: #fff !important;
+            border: 3px solid #fff !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="contrast"] input,
+        html[data-theme="vision-impaired"] input,
+        html[data-theme="contrast"] select,
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="contrast"] textarea,
+        html[data-theme="vision-impaired"] textarea {
+            background: #000 !important;
+            color: #fff !important;
+            -webkit-text-fill-color: #fff !important;
+            border: 3px solid #ffd400 !important;
+            min-height: 44px;
+        }
+
+        html[data-theme="cid"] body {
+            background: #030603 !important;
+            color: #f4fff4 !important;
+            font-size: 18px;
+        }
+
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .source-card,
+        html[data-theme="cid"] .config-section {
+            background: #071107 !important;
+            color: #f4fff4 !important;
+            border: 3px solid #1e5b2a !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .toast.success {
+            background: #4ade80 !important;
+            color: #030603 !important;
+        }
+
+        html[data-theme="cid"] .toast.error,
+        html[data-theme="cid"] .warning-box {
+            background: #050505 !important;
+            color: #f4fff4 !important;
+            border-color: #facc15 !important;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea {
+            background: #061006 !important;
+            color: #f4fff4 !important;
+            -webkit-text-fill-color: #f4fff4 !important;
+            border: 3px solid #1e5b2a !important;
+            min-height: 44px;
         }
     </style>
 </head>

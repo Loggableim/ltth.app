@@ -1,4 +1,4 @@
-/*
+﻿/*
  * OpenShock Overlay - Modern Tech-Glow CSS
  * Professional streaming overlay with advanced visual effects
  */
@@ -581,7 +581,7 @@ body {
     border-radius: var(--radius-md);
     padding: var(--spacing-md);
     z-index: 2000;
-    max-width: 500px;
+    max-width: min(92vw, 760px);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     box-shadow: var(--glow-red), 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -936,7 +936,7 @@ body {
 /* ==================== Responsive Design ==================== */
 @media (max-width: 768px) {
     .overlay-container {
-        width: 90vw;
+        width: calc(100vw - 20px);
         bottom: 10px;
         right: 10px;
     }
@@ -971,13 +971,13 @@ body {
     }
 
     .safety-warning {
-        max-width: 90vw;
+        max-width: calc(100vw - 20px);
         font-size: 0.85rem;
     }
 
     .event-queue {
-        width: 90vw;
-        right: 5vw;
+        width: calc(100vw - 20px);
+        right: 10px;
     }
 
     .orb {
@@ -1047,4 +1047,69 @@ body {
 @media (prefers-color-scheme: light) {
     /* Optional: You can add light mode overrides if needed */
     /* This overlay is designed for dark/transparent backgrounds */
+}
+html[data-theme="cid"] body {
+    background: transparent;
+    color: #f4fff4;
+}
+
+html[data-theme="cid"] .overlay-container {
+    width: min(94vw, 1080px);
+}
+
+html[data-theme="cid"] .event-card,
+html[data-theme="cid"] .pattern-preview,
+html[data-theme="cid"] .safety-warning,
+html[data-theme="cid"] .stats-corner,
+html[data-theme="cid"] .connection-status {
+    background: rgba(7, 17, 7, 0.94);
+    border-color: #1e5b2a;
+    color: #f4fff4;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+html[data-theme="cid"] .event-type,
+html[data-theme="cid"] .stat-value,
+html[data-theme="cid"] .intensity-value,
+html[data-theme="cid"] .duration-value {
+    color: #4ade80;
+    text-shadow: 0 0 12px rgba(74, 222, 128, 0.35);
+}
+
+html[data-theme="vision-impaired"] body {
+    background: transparent;
+    color: #fff7cc;
+}
+
+html[data-theme="vision-impaired"] .overlay-container {
+    width: min(96vw, 1400px);
+}
+
+html[data-theme="vision-impaired"] .event-card,
+html[data-theme="vision-impaired"] .pattern-preview,
+html[data-theme="vision-impaired"] .safety-warning,
+html[data-theme="vision-impaired"] .stats-corner,
+html[data-theme="vision-impaired"] .connection-status {
+    background: rgba(0, 0, 0, 0.97);
+    border-color: #facc15;
+    color: #fff7cc;
+    box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.18), 0 10px 30px rgba(0, 0, 0, 0.65);
+}
+
+html[data-theme="vision-impaired"] .event-type,
+html[data-theme="vision-impaired"] .stat-value,
+html[data-theme="vision-impaired"] .intensity-value,
+html[data-theme="vision-impaired"] .duration-value {
+    color: #facc15;
+    text-shadow: none;
+}
+
+html[data-theme="vision-impaired"] .event-device,
+html[data-theme="vision-impaired"] .event-device-name,
+html[data-theme="vision-impaired"] .stat-label,
+html[data-theme="vision-impaired"] .safety-warning-message,
+html[data-theme="vision-impaired"] .queue-item,
+html[data-theme="vision-impaired"] .queue-item-type,
+html[data-theme="vision-impaired"] .queue-item-intensity {
+    color: #fff7cc;
 }

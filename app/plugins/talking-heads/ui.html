@@ -172,8 +172,9 @@
         }
         
         .badge-success {
-            background: rgba(34, 197, 94, 0.1);
-            color: var(--color-accent-success);
+            background: #047857;
+            color: #fff;
+            -webkit-text-fill-color: #fff;
         }
         
         .badge-warning {
@@ -182,8 +183,9 @@
         }
         
         .badge-info {
-            background: rgba(59, 130, 246, 0.1);
-            color: var(--color-accent-primary);
+            background: #1d4ed8;
+            color: #fff;
+            -webkit-text-fill-color: #fff;
         }
         
         .style-grid {
@@ -444,6 +446,238 @@
             background: var(--color-accent-primary);
             color: white;
         }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+            font-size: 1.08rem;
+            line-height: 1.7;
+        }
+
+        html[data-theme="vision-impaired"] .container {
+            max-width: 82rem;
+            padding-left: 24px;
+            padding-right: 24px;
+        }
+
+        html[data-theme="vision-impaired"] h1 {
+            color: #facc15;
+            font-size: clamp(2.3rem, 4vw, 3.6rem);
+            line-height: 1.1;
+        }
+
+        html[data-theme="vision-impaired"] .text-sm,
+        html[data-theme="vision-impaired"] .text-xs,
+        html[data-theme="vision-impaired"] .form-help,
+        html[data-theme="vision-impaired"] .style-desc,
+        html[data-theme="vision-impaired"] .stat-label,
+        html[data-theme="vision-impaired"] .alert {
+            color: #fff7cc !important;
+            font-size: 1rem;
+            line-height: 1.65;
+        }
+
+        html[data-theme="vision-impaired"] .config-section,
+        html[data-theme="vision-impaired"] .stat-card,
+        html[data-theme="vision-impaired"] .style-card,
+        html[data-theme="vision-impaired"] .animation-item,
+        html[data-theme="vision-impaired"] .alert,
+        html[data-theme="vision-impaired"] .alert-info,
+        html[data-theme="vision-impaired"] .alert-warning {
+            background: #000;
+            color: #fff;
+            border: 4px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .section-title {
+            color: #facc15;
+            font-size: 1.35rem;
+            line-height: 1.35;
+        }
+
+        html[data-theme="vision-impaired"] .form-label {
+            color: #fff7cc;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        html[data-theme="vision-impaired"] .form-input,
+        html[data-theme="vision-impaired"] .form-select,
+        html[data-theme="vision-impaired"] input,
+        html[data-theme="vision-impaired"] select {
+            background: #000;
+            color: #fff;
+            border: 4px solid #facc15;
+            font-size: 1.05rem;
+            min-height: 50px;
+        }
+
+        html[data-theme="vision-impaired"] .btn {
+            border-width: 4px;
+            font-size: 1.03rem;
+            min-height: 48px;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary {
+            background: #facc15;
+            color: #000;
+            border-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .btn-secondary {
+            background: #000;
+            color: #fff;
+            border-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .btn-danger {
+            background: #7f1d1d;
+            color: #fff;
+            border-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .toggle-label,
+        html[data-theme="vision-impaired"] .status-badge,
+        html[data-theme="vision-impaired"] .stat-value,
+        html[data-theme="vision-impaired"] .style-name {
+            color: #fff7cc;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        html[data-theme="vision-impaired"] .toggle-slider {
+            width: 52px;
+            height: 30px;
+            background: #222;
+            border: 3px solid #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .toggle-slider::before {
+            width: 22px;
+            height: 22px;
+            background: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .toggle-switch input:checked + .toggle-slider {
+            background: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .toggle-switch input:checked + .toggle-slider::before {
+            background: #000;
+        }
+
+        html[data-theme="vision-impaired"] .style-grid,
+        html[data-theme="vision-impaired"] .stats-grid {
+            gap: 18px;
+        }
+
+        html[data-theme="vision-impaired"] .style-card {
+            min-height: 96px;
+        }
+
+        html[data-theme="vision-impaired"] .style-card.selected {
+            background: #111;
+            box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.35);
+        }
+
+        html[data-theme="vision-impaired"] .animation-item strong,
+        html[data-theme="vision-impaired"] .stat-value {
+            color: #facc15;
+            font-size: 1.1rem;
+        }
+
+        html[data-theme="vision-impaired"] .alert-info {
+            background: rgba(250, 204, 21, 0.12);
+        }
+
+        html[data-theme="vision-impaired"] .alert-warning {
+            background: rgba(127, 29, 29, 0.2);
+        }
+
+        html[data-theme="vision-impaired"] .status-badge.badge-info,
+        html[data-theme="vision-impaired"] .status-badge.badge-warning,
+        html[data-theme="vision-impaired"] .status-badge.badge-success {
+            background: #000;
+            border: 2px solid #facc15;
+            color: #fff7cc;
+        }
+
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .animation-item strong,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .style-name {
+            color: #4ade80;
+        }
+
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .style-card,
+        html[data-theme="cid"] .animation-item,
+        html[data-theme="cid"] .alert,
+        html[data-theme="cid"] .alert-info,
+        html[data-theme="cid"] .alert-warning {
+            background: #071107;
+            color: #f4fff4;
+            border: 1px solid #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] .text-sm,
+        html[data-theme="cid"] .text-xs,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] .style-desc,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .alert {
+            color: #d1e7d1 !important;
+        }
+
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+        }
+
+        html[data-theme="cid"] .btn-secondary,
+        html[data-theme="cid"] .btn-danger {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .toggle-slider,
+        html[data-theme="cid"] .status-badge.badge-info,
+        html[data-theme="cid"] .status-badge.badge-warning,
+        html[data-theme="cid"] .status-badge.badge-success {
+            background: #061006;
+            border-color: #1e5b2a;
+            color: #d1e7d1;
+        }
+
+        html[data-theme="cid"] .toggle-switch input:checked + .toggle-slider {
+            background: #4ade80;
+        }
+
+        html[data-theme="cid"] .toggle-switch input:checked + .toggle-slider::before {
+            background: #030603;
+        }
     </style>
 </head>
 <body>
@@ -498,18 +732,18 @@
                 </div>
             </div>
             
-            <div id="apiKeyWarning" class="alert alert-warning" style="display: none;" data-i18n-html="true" data-i18n="talking_heads_ui.alerts.api_key_warning">
-                <strong>⚠️ Kein API-Schlüssel konfiguriert!</strong><br>
-                Bitte konfigurieren Sie den passenden Schlüssel für die gewählte Engine:<br>
-                - <strong>OpenAI</strong>: Dashboard → Einstellungen → OpenAI API Configuration<br>
-                - <strong>SiliconFlow</strong>: Dashboard → Einstellungen → TTS API Keys → SiliconFlow API Key<br>
-                <small>Der API-Schlüssel wird zentral verwaltet und mit anderen Plugins geteilt.</small>
+            <div id="apiKeyWarning" class="alert alert-warning" style="display: none;">
+                <strong>Warning: No API key configured!</strong><br>
+                Configure the correct key for the selected engine:<br>
+                - <strong>OpenAI</strong>: Dashboard &gt; Settings &gt; OpenAI API Configuration<br>
+                - <strong>SiliconFlow</strong>: Dashboard &gt; Settings &gt; TTS API Keys &gt; SiliconFlow API Key<br>
+                <small>The API key is managed centrally and shared with other plugins.</small>
             </div>
             
-            <div class="alert alert-info" data-i18n-html="true" data-i18n="talking_heads_ui.alerts.image_generation_info">
-                <strong>ℹ️ Bildgenerierung</strong><br>
-                Das Plugin unterstützt <strong>OpenAI (DALL-E 3)</strong> und <strong>SiliconFlow (FLUX.1)</strong>. 
-                Hinterlegen Sie den passenden API-Key in den globalen Settings und wählen Sie hier die gewünschte Engine.
+            <div class="alert alert-info">
+                <strong>Info: Image generation</strong><br>
+                The plugin supports <strong>OpenAI (DALL-E 3)</strong> and <strong>SiliconFlow (FLUX.1)</strong>.
+                Store the API key in the global settings and select your preferred engine here.
             </div>
         </div>
 

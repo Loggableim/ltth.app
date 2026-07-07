@@ -3,7 +3,7 @@ const path = require('path');
 const vm = require('vm');
 const { JSDOM } = require('jsdom');
 
-const overlayScriptPath = path.join(__dirname, '../plugins/lastevent-spotlight/overlays/multihud.js');
+const overlayScriptPath = path.join(__dirname, '../plugins/spotlight/overlays/multihud.js');
 
 function flushPromises() {
   return new Promise(resolve => setImmediate(resolve));

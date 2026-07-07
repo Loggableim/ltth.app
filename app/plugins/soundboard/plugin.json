@@ -5,6 +5,7 @@
   "description": "Gift-specific sounds, audio queue management, and MyInstants integration for TikTok events",
   "author": "Pup Cid",
   "entry": "main.js",
+  "logo": "/soundboard-logo.png",
   "enabled": true,
   "type": "module",
   "devStatus": "working-beta",

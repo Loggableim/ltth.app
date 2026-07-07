@@ -1,8 +1,8 @@
-# 🔥 TikTok Flame Overlay Plugin - Installationsanleitung
+# Visual FX Frame Plugin - Installationsanleitung
 
 ## Übersicht
 
-Das **TikTok Flame Overlay Plugin** ist ein vollständig konfigurierbares WebGL-basiertes Flammen-Overlay für TikTok Livestreams. Es nutzt Hardware-beschleunigte Shader-Effekte für realistische, animierte Flammen mit transparentem Hintergrund - perfekt für OBS Browser Sources.
+Das **Visual FX Frame Plugin** ist ein vollständig konfigurierbares WebGL-basiertes Overlay für TikTok Livestreams. Es nutzt Hardware-beschleunigte Shader-Effekte fuer realistische, animierte Effekte mit transparentem Hintergrund - perfekt fuer OBS Browser Sources.
 
 ## ✨ Hauptfeatures
 
@@ -19,7 +19,7 @@ Das **TikTok Flame Overlay Plugin** ist ein vollständig konfigurierbares WebGL-
 
 1. Starte **LTTH.app** (PupCid's Little TikTool Helper)
 2. Navigiere zum **Plugin-Manager**
-3. Finde "TikTok Flame Overlay" in der Plugin-Liste
+3. Finde "Visual FX Frame" in der Plugin-Liste
 4. Klicke auf **Aktivieren**
 
 ### Schritt 2: Plugin-Einstellungen öffnen
@@ -184,7 +184,7 @@ Szenenaufbau (von unten nach oben):
 1. Hintergrund (Bild/Video/Color)
 2. Webcam (720×1280 oder größer)
 3. Chat/Overlays
-4. Flame Overlay (720×1280)
+4. Visual FX Frame (720×1280)
 ```
 
 **Setup 2: Landscape mit Side Flames**
@@ -193,7 +193,7 @@ Szenenaufbau:
 1. Hintergrund
 2. Webcam (mittig)
 3. Side Panels (optional)
-4. Flame Overlay (Seiten-Modus, 1920×1080)
+4. Visual FX Frame (Seiten-Modus, 1920×1080)
 ```
 
 ### Performance-Tipps für OBS
@@ -301,7 +301,7 @@ Tipp: Manuell die Farbe alle paar Minuten wechseln:
 **Lösung 1: Plugin-Status prüfen**
 ```
 1. LTTH öffnen
-2. Plugin-Manager → "TikTok Flame Overlay"
+2. Plugin-Manager → "Visual FX Frame"
 3. Status: Muss "Aktiviert" sein
 ```
 
@@ -540,7 +540,7 @@ Bei Problemen oder Fragen:
 
 ## 📜 Lizenz & Credits
 
-**Plugin:** TikTok Flame Overlay  
+**Plugin:** Visual FX Frame  
 **Version:** 1.0.0  
 **Author:** Pup Cid  
 **Lizenz:** CC-BY-NC-4.0  

@@ -685,7 +685,7 @@ class PyramidMode {
   }
 
   /**
-   * Award XP to winners via viewer-xp plugin integration
+   * Award XP to winners via viewer-leaderboard plugin integration
    */
   async awardXPToWinners(rewards) {
     if (!rewards || rewards.length === 0) {
@@ -696,7 +696,7 @@ class PyramidMode {
     const errors = [];
 
     try {
-      // Emit XP awards event for viewer-xp plugin to process
+      // Emit XP awards event for viewer-leaderboard plugin to process
       const payload = {
         rewards: rewards,
         source: 'pyramid-mode',

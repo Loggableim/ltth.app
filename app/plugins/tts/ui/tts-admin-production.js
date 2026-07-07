@@ -22,12 +22,15 @@ let currentFilter = 'all';
 let voices = {};
 let queuePollInterval = null;
 let statsPollInterval = null;
+let userSearchDebounce = null;
+let currentUserResultsTotal = 0;
 
 // Debug logs state
 let debugLogs = [];
 let debugFilter = 'all';
 let debugEnabled = true;
 let autoScrollLogs = true;
+let latestQueueLength = 0;
 
 // Connection state management
 let isPageUnloading = false;
@@ -168,6 +171,20 @@ async function postJSON(url, body) {
     });
 }
 
+function setupTabLaunchButton() {
+    const openLink = document.getElementById('tts-tab-open-link');
+    const closeBtn = document.getElementById('tts-tab-close-btn');
+    if (!openLink || !closeBtn) return;
+
+    const isCloseMode = new URLSearchParams(window.location.search).get('source') === 'dashboard';
+    openLink.hidden = isCloseMode;
+    closeBtn.hidden = !isCloseMode;
+
+    closeBtn.addEventListener('click', () => {
+        window.close();
+    });
+}
+
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
@@ -205,18 +222,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (statusEl) statusEl.textContent = 'Loading voices...';
         await loadVoices();
         console.log('✓ Voices loaded');
-
-        // Load users (non-critical)
-        if (statusEl) statusEl.textContent = 'Loading users...';
-        try {
-            await loadUsers();
-            console.log('✓ Users loaded');
-        } catch (error) {
-            if (!isPageUnloading && error.name !== 'AbortError') {
-                console.error('✗ Users load failed:', error);
-                showNotification('Failed to load users (non-critical)', 'warning');
-            }
-        }
 
         // Load statistics (non-critical)
         if (statusEl) statusEl.textContent = 'Loading statistics...';
@@ -265,6 +270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Setup event listeners
         setupEventListeners();
+        setupTabLaunchButton();
 
         // Start polling only after all initial loading is complete
         startQueuePolling();
@@ -361,8 +367,19 @@ function switchTab(tabName) {
 
     // Reset all tab buttons
     document.querySelectorAll('.tab-button').forEach(el => {
-        el.classList.remove('border-blue-500', 'text-blue-400');
-        el.classList.add('border-transparent', 'text-gray-400');
+        const isSelected = el.dataset.tab === tabName;
+        el.classList.toggle('active', isSelected);
+        el.setAttribute('aria-current', isSelected ? 'page' : 'false');
+
+        if (el.id && el.id.startsWith('tab-')) {
+            if (isSelected) {
+                el.classList.remove('border-transparent', 'text-gray-400', 'hover:text-gray-300');
+                el.classList.add('border-blue-500', 'text-blue-400');
+            } else {
+                el.classList.remove('border-blue-500', 'text-blue-400');
+                el.classList.add('border-transparent', 'text-gray-400', 'hover:text-gray-300');
+            }
+        }
     });
 
     // Show selected tab
@@ -381,6 +398,7 @@ function switchTab(tabName) {
     // Refresh recent users when switching to users tab
     if (tabName === 'users') {
         loadRecentUsers().catch(err => console.error('Failed to refresh recent users:', err));
+        loadUsers(currentFilter === 'all' ? null : currentFilter).catch(err => console.error('Failed to load users:', err));
     }
 
     // Load voice clones when switching to voice-clones tab
@@ -392,6 +410,69 @@ function switchTab(tabName) {
     if (tabName === 'event-triggers') {
         loadEventTTSConfig().catch(err => console.error('Failed to load Event Triggers config:', err));
     }
+
+    updateOverviewMetrics();
+}
+
+function getEnabledFallbackEngineCount(config = currentConfig) {
+    const entries = [
+        config.enableTikTokFallback !== false,
+        config.enableGoogleFallback !== false,
+        config.enableSpeechifyFallback === true,
+        config.enableElevenlabsFallback === true,
+        config.enableOpenAIFallback === true,
+        config.enableFishAudioFallback === true,
+        config.enableSiliconFlowFallback === true
+    ];
+
+    return entries.filter(Boolean).length;
+}
+
+function getConfiguredVoiceCount() {
+    const customVoiceCount = Object.keys(currentConfig.customFishVoices || {}).length;
+    const defaultEngineVoices = voices[currentConfig.defaultEngine] || {};
+    const hasDefaultEngineVoices = Object.keys(defaultEngineVoices).length > 0;
+
+    return customVoiceCount + (hasDefaultEngineVoices ? 1 : 0);
+}
+
+function formatModeLabel(mode) {
+    if (!mode) return 'Balanced';
+    return String(mode)
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function getAudioOutputLabel() {
+    const volume = Number.isFinite(Number(currentConfig.volume)) ? Number(currentConfig.volume) : 80;
+    const duckVolume = Number.isFinite(Number(currentConfig.duckVolume)) ? Number(currentConfig.duckVolume) : 0.3;
+    if (currentConfig.duckOtherAudio) {
+        return `Ducking ${Math.round(duckVolume * 100)}%`;
+    }
+    return `Direct ${volume}%`;
+}
+
+function updateOverviewMetrics() {
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = value;
+        }
+    };
+
+    const voiceCount = getConfiguredVoiceCount();
+    const customVoiceCount = Object.keys(currentConfig.customFishVoices || {}).length;
+    const fallbackCount = getEnabledFallbackEngineCount();
+    const queueLength = Number.isFinite(latestQueueLength) ? latestQueueLength : 0;
+
+    setText('overviewActiveVoices', voiceCount);
+    setText('overviewActiveVoicesDetail', customVoiceCount > 0
+        ? `${customVoiceCount} custom voice${customVoiceCount === 1 ? '' : 's'} + default engine`
+        : 'Default engine ready');
+    setText('overviewFallbackEngines', fallbackCount);
+    setText('overviewQueueLength', queueLength);
+    setText('overviewAudioOutput', getAudioOutputLabel());
+    setText('overviewMode', formatModeLabel(currentConfig.performanceMode || 'balanced'));
 }
 
 // ============================================================================
@@ -423,6 +504,15 @@ async function loadConfig() {
         const emotionContainer = document.getElementById('defaultEmotionContainer');
         if (emotionContainer) {
             emotionContainer.style.display = (selectedEngine === 'speechify') ? 'block' : 'none';
+        }
+
+        const googleKeySection = document.getElementById('google-api-key-section');
+        const speechifyKeySection = document.getElementById('speechify-api-key-section');
+        if (googleKeySection) {
+            googleKeySection.style.display = (selectedEngine === 'google') ? 'block' : 'none';
+        }
+        if (speechifyKeySection) {
+            speechifyKeySection.style.display = (selectedEngine === 'speechify') ? 'block' : 'none';
         }
 
     } catch (error) {
@@ -518,6 +608,8 @@ function populateConfig(config) {
 
     // Render Fish.audio custom voices list
     renderFishCustomVoices();
+
+    updateOverviewMetrics();
 }
 
 async function saveConfig() {
@@ -811,6 +903,7 @@ async function loadVoices() {
         populateManualVoiceSelect(); // Also populate manual assignment dropdown
         populateEventTTSVoiceSelect(); // Populate Event TTS voice dropdown
         renderModalVoiceList(); // Refresh voice assignment modal if open
+        updateOverviewMetrics();
 
     } catch (error) {
         console.error('Failed to load voices:', error);
@@ -1019,15 +1112,32 @@ async function assignManualVoice() {
 
 async function loadUsers(filter = null) {
     try {
-        const filterParam = filter && filter !== 'all' ? `?filter=${filter}` : '';
-        const data = await fetchJSON(`/api/tts/users${filterParam}`);
+        const searchInput = document.getElementById('userSearchInput');
+        const limitInput = document.getElementById('userResultsLimit');
+        const search = searchInput ? searchInput.value.trim() : '';
+        const limit = Math.max(1, Math.min(250, parseInt(limitInput?.value || '50', 10) || 50));
+        const params = new URLSearchParams();
+
+        if (filter && filter !== 'all') {
+            params.set('filter', filter);
+        }
+
+        if (search) {
+            params.set('search', search);
+        }
+
+        params.set('limit', String(limit));
+
+        const data = await fetchJSON(`/api/tts/users?${params.toString()}`);
 
         if (!data.success) {
             throw new Error(data.error || 'Failed to load users');
         }
 
         currentUsers = data.users || [];
+        currentUserResultsTotal = Number.isFinite(data.total) ? data.total : currentUsers.length;
         renderUsers();
+        updateUserResultsInfo();
 
     } catch (error) {
         console.error('Failed to load users:', error);
@@ -1087,6 +1197,27 @@ function filterUsers(filter) {
     });
 }
 
+function updateUserResultsInfo() {
+    const info = document.getElementById('userResultsInfo');
+    if (!info) return;
+
+    const shown = currentUsers.length;
+    const total = Number.isFinite(currentUserResultsTotal) ? currentUserResultsTotal : shown;
+    const search = document.getElementById('userSearchInput')?.value.trim() || '';
+    const limit = Math.max(1, Math.min(250, parseInt(document.getElementById('userResultsLimit')?.value || '50', 10) || 50));
+
+    if (shown === 0) {
+        info.textContent = search
+            ? `No users found for "${search}".`
+            : 'No users found.';
+        return;
+    }
+
+    const searchSuffix = search ? ` for "${search}"` : '';
+    const limitSuffix = total > shown ? ` (limit ${limit})` : '';
+    info.textContent = `Showing ${shown} of ${total} users${searchSuffix}${limitSuffix}`;
+}
+
 function renderUsers() {
     const list = document.getElementById('userList');
     if (!list) return;
@@ -1109,7 +1240,7 @@ function renderUsers() {
     list.innerHTML = filtered.map(user => {
         const allowButton = !user.allow_tts
             ? `<button class="user-action-btn bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm" data-action="allow" data-user-id="${user.user_id}" data-username="${user.username}">Allow</button>`
-            : `<button class="user-action-btn bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm" data-action="deny" data-user-id="${user.user_id}" data-username="${user.username}">Revoke</button>`;
+            : `<button class="user-action-btn tts-btn-warning bg-yellow-600 hover:bg-yellow-700 text-black px-3 py-1 rounded text-sm" data-action="deny" data-user-id="${user.user_id}" data-username="${user.username}">Revoke</button>`;
 
         const blacklistButton = !user.is_blacklisted
             ? `<button class="user-action-btn bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm" data-action="blacklist" data-user-id="${user.user_id}" data-username="${user.username}">Blacklist</button>`
@@ -1182,6 +1313,8 @@ function renderUsers() {
     list.querySelectorAll('.user-gain-reset').forEach(btn => {
         btn.addEventListener('click', handleUserGainReset);
     });
+
+    updateUserResultsInfo();
 }
 
 async function handleUserAction(event) {
@@ -1616,7 +1749,11 @@ async function loadQueue() {
             throw new Error(data.error || 'Failed to load queue');
         }
 
+        latestQueueLength = Array.isArray(data.queue?.nextItems)
+            ? data.queue.nextItems.length
+            : Number(data.queue?.currentQueueSize || data.queue?.queueLength || 0);
         renderQueue(data.queue);
+        updateOverviewMetrics();
 
     } catch (error) {
         // Don't log errors if page is unloading or request was aborted
@@ -1662,6 +1799,10 @@ function renderQueue(queue) {
             nowPlaying.innerHTML = '<div class="text-gray-400">No audio playing</div>';
         }
     }
+
+    latestQueueLength = Array.isArray(queue?.nextItems)
+        ? queue.nextItems.length
+        : Number(queue?.currentQueueSize || queue?.queueLength || 0);
 }
 
 async function clearQueue() {
@@ -1784,11 +1925,16 @@ async function loadStats() {
 
         if (queueRes.success && queueRes.stats) {
             renderQueueStats(queueRes.stats);
+            if (Number.isFinite(Number(queueRes.stats.currentQueueSize))) {
+                latestQueueLength = Number(queueRes.stats.currentQueueSize);
+            }
         }
 
         if (permRes.success && permRes.stats) {
             renderPermissionStats(permRes.stats);
         }
+
+        updateOverviewMetrics();
 
     } catch (error) {
         // Don't log errors if page is unloading or request was aborted
@@ -1928,6 +2074,39 @@ function setupEventListeners() {
         assignManualVoiceBtn.addEventListener('click', assignManualVoice);
     }
 
+    const refreshUsersBtn = document.getElementById('refreshUsersBtn');
+    if (refreshUsersBtn) {
+        refreshUsersBtn.addEventListener('click', () => {
+            loadUsers(currentFilter === 'all' ? null : currentFilter).catch(err => {
+                console.error('Manual user refresh failed:', err);
+            });
+        });
+    }
+
+    const userSearchInput = document.getElementById('userSearchInput');
+    if (userSearchInput) {
+        userSearchInput.addEventListener('input', () => {
+            if (userSearchDebounce) {
+                clearTimeout(userSearchDebounce);
+            }
+
+            userSearchDebounce = setTimeout(() => {
+                loadUsers(currentFilter === 'all' ? null : currentFilter).catch(err => {
+                    console.error('User search failed:', err);
+                });
+            }, 250);
+        });
+    }
+
+    const userResultsLimit = document.getElementById('userResultsLimit');
+    if (userResultsLimit) {
+        userResultsLimit.addEventListener('change', () => {
+            loadUsers(currentFilter === 'all' ? null : currentFilter).catch(err => {
+                console.error('User limit refresh failed:', err);
+            });
+        });
+    }
+
     // Allow Enter key in username field to trigger assignment
     const manualUsernameInput = document.getElementById('manualUsername');
     if (manualUsernameInput) {
@@ -1937,6 +2116,11 @@ function setupEventListeners() {
                 assignManualVoice();
             }
         });
+    }
+
+    const manualVoiceAssignBtn = document.getElementById('manualVoiceAssignBtn');
+    if (manualVoiceAssignBtn) {
+        manualVoiceAssignBtn.addEventListener('click', assignManualVoice);
     }
 
     // Fish.audio custom voices button
@@ -2857,12 +3041,12 @@ function showNotification(message, type = 'info') {
     const colors = {
         success: 'bg-green-600',
         error: 'bg-red-600',
-        warning: 'bg-yellow-600',
+        warning: 'tts-toast-warning bg-yellow-300 text-black border border-yellow-900',
         info: 'bg-blue-600'
     };
 
     const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-xl z-50 fade-in`;
+    notification.className = `fixed top-4 right-4 ${colors[type]} px-6 py-3 rounded-lg shadow-xl z-50 fade-in`;
     notification.textContent = message;
 
     document.body.appendChild(notification);
@@ -2894,6 +3078,7 @@ async function loadPluginStatus() {
                 engines: data.status.engines,
                 defaultEngine: data.status.config?.defaultEngine
             });
+            updateOverviewMetrics();
         }
     } catch (error) {
         console.error('Failed to load plugin status:', error);
@@ -2983,16 +3168,16 @@ function formatDebugLog(log) {
     const categoryColors = {
         'INIT': 'text-blue-400',
         'TIKTOK_EVENT': 'text-purple-400',
-        'SPEAK_START': 'text-green-400',
-        'SPEAK_STEP1': 'text-yellow-300',
-        'SPEAK_STEP2': 'text-yellow-300',
-        'SPEAK_STEP3': 'text-yellow-300',
-        'SPEAK_STEP4': 'text-yellow-300',
-        'SPEAK_STEP5': 'text-yellow-300',
-        'SPEAK_STEP6': 'text-yellow-300',
-        'SPEAK_SUCCESS': 'text-green-500',
-        'SPEAK_DENIED': 'text-red-400',
-        'SPEAK_ERROR': 'text-red-600',
+        'SPEAK_START': 'tts-debug-success',
+        'SPEAK_STEP1': 'tts-debug-step',
+        'SPEAK_STEP2': 'tts-debug-step',
+        'SPEAK_STEP3': 'tts-debug-step',
+        'SPEAK_STEP4': 'tts-debug-step',
+        'SPEAK_STEP5': 'tts-debug-step',
+        'SPEAK_STEP6': 'tts-debug-step',
+        'SPEAK_SUCCESS': 'tts-debug-success',
+        'SPEAK_DENIED': 'tts-debug-error',
+        'SPEAK_ERROR': 'tts-debug-error',
         'PLAYBACK': 'text-cyan-400'
     };
 
@@ -3105,13 +3290,13 @@ function updateDebugModeUI() {
 
     if (statusEl) {
         statusEl.textContent = debugEnabled ? 'Enabled' : 'Disabled';
-        statusEl.className = debugEnabled ? 'ml-2 font-bold text-green-500' : 'ml-2 font-bold text-red-500';
+        statusEl.className = debugEnabled ? 'ml-2 font-bold tts-debug-success' : 'ml-2 font-bold tts-debug-error';
     }
 
     if (liveUpdateStatus) {
         if (debugEnabled && socket) {
             liveUpdateStatus.textContent = 'Active';
-            liveUpdateStatus.className = 'ml-2 font-bold text-green-500 pulse';
+            liveUpdateStatus.className = 'ml-2 font-bold tts-debug-success pulse';
         } else {
             liveUpdateStatus.textContent = 'Inactive';
             liveUpdateStatus.className = 'ml-2 font-bold text-gray-500';

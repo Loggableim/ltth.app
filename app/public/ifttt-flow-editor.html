@@ -15,6 +15,49 @@
     ">
     <title>IFTTT Flow Editor - TikTool Helper</title>
     <link rel="stylesheet" href="/css/tailwind.output.css">
+    <script>
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+            }
+
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         body {
             background: #0f172a;
@@ -467,7 +510,8 @@
             border: 1px solid #475569;
             border-radius: 8px;
             padding: 16px 20px;
-            max-width: 400px;
+            width: min(92vw, 760px);
+            max-width: none;
             font-size: 13px;
             line-height: 1.6;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -525,6 +569,71 @@
 
         .help-toggle.panel-visible {
             bottom: calc(100% - 400px);
+        }
+
+        html[data-theme="day"] body {
+            background: #f8fafc;
+            color: #10203a;
+        }
+
+        html[data-theme="day"] .sidebar,
+        html[data-theme="day"] .properties,
+        html[data-theme="day"] .help-panel {
+            background: #ffffff;
+            color: #10203a;
+            border-color: #cbd5e1;
+        }
+
+        html[data-theme="day"] .canvas {
+            background: #f8fafc;
+            background-image:
+                linear-gradient(#dbe4f0 1px, transparent 1px),
+                linear-gradient(90deg, #dbe4f0 1px, transparent 1px);
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff7cc;
+        }
+
+        html[data-theme="contrast"] .sidebar,
+        html[data-theme="contrast"] .properties,
+        html[data-theme="contrast"] .help-panel,
+        html[data-theme="vision-impaired"] .sidebar,
+        html[data-theme="vision-impaired"] .properties,
+        html[data-theme="vision-impaired"] .help-panel {
+            background: #000;
+            color: #fff7cc;
+            border-color: #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .help-panel {
+            width: min(92vw, 760px);
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .properties,
+        html[data-theme="cid"] .help-panel {
+            background: rgba(7, 17, 7, 0.96);
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] .canvas {
+            background: #030603;
+            background-image:
+                linear-gradient(rgba(74, 222, 128, 0.12) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(74, 222, 128, 0.12) 1px, transparent 1px);
         }
     </style>
 </head>

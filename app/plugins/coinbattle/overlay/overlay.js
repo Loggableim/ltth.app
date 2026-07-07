@@ -26,7 +26,7 @@
 
   // Configuration
   let config = {
-    theme: 'dark',
+    theme: 'night',
     skin: 'gold',
     layout: 'fullscreen',
     showAvatars: true,
@@ -68,6 +68,14 @@
   let multiplierInterval = null;
   let pyramidWinnerTimeout = null; // Track timeout for cleanup
 
+  const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+  const LEGACY_THEME_MAP = {
+    dark: 'night',
+    light: 'day',
+    neon: 'contrast',
+    minimal: 'night'
+  };
+
   // Avatar cache (including generated avatars)
   const avatarCache = new Map();
   const generatedAvatarCache = new Map();
@@ -88,15 +96,7 @@
         if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
           const newTheme = document.documentElement.getAttribute('data-theme');
           if (newTheme) {
-            const dashboardThemeMap = {
-              'aurora': 'dark',
-              'aurora-2': 'dark',
-              'night': 'dark',
-              'day': 'light',
-              'contrast': 'dark',
-              'vision-impaired': 'dark'
-            };
-            config.theme = dashboardThemeMap[newTheme] || 'dark';
+            config.theme = normalizeTheme(newTheme);
             applyTheme();
           }
         }
@@ -111,15 +111,7 @@
     try {
       window.addEventListener('storage', (e) => {
         if (e.key === 'dashboard-theme' && e.newValue) {
-          const dashboardThemeMap = {
-            'aurora': 'dark',
-            'aurora-2': 'dark',
-            'night': 'dark',
-            'day': 'light',
-            'contrast': 'dark',
-            'vision-impaired': 'dark'
-          };
-          config.theme = dashboardThemeMap[e.newValue] || 'dark';
+          config.theme = normalizeTheme(e.newValue);
           applyTheme();
         }
       });
@@ -134,7 +126,8 @@
   function loadConfig() {
     const params = new URLSearchParams(window.location.search);
     
-    config.theme = params.get('theme') || null;
+    const themeParam = params.get('theme');
+    config.theme = themeParam ? normalizeTheme(themeParam) : null;
     config.skin = params.get('skin') || 'gold';
     config.layout = params.get('layout') || 'fullscreen';
     config.showAvatars = params.get('showAvatars') !== 'false';
@@ -148,20 +141,11 @@
 
     // If no theme was specified via URL, try to sync with the dashboard theme
     if (!config.theme) {
-      // Map dashboard themes to coinbattle overlay themes
-      const dashboardThemeMap = {
-        'aurora': 'dark',
-        'aurora-2': 'dark',
-        'night': 'dark',
-        'day': 'light',
-        'contrast': 'dark',
-        'vision-impaired': 'dark'
-      };
       // Try localStorage first (works in dashboard iframe context)
       try {
         const stored = localStorage.getItem('dashboard-theme');
         if (stored) {
-          config.theme = dashboardThemeMap[stored] || 'dark';
+          config.theme = normalizeTheme(stored);
         }
       } catch (e) {
         // localStorage not available
@@ -170,14 +154,21 @@
       if (!config.theme) {
         const htmlTheme = document.documentElement.getAttribute('data-theme');
         if (htmlTheme) {
-          config.theme = dashboardThemeMap[htmlTheme] || 'dark';
+          config.theme = normalizeTheme(htmlTheme);
         }
       }
       // Ultimate fallback
       if (!config.theme) {
-        config.theme = 'dark';
+        config.theme = 'night';
       }
     }
+  }
+
+  function normalizeTheme(theme) {
+    if (VALID_THEMES.has(theme)) {
+      return theme;
+    }
+    return LEGACY_THEME_MAP[theme] || 'night';
   }
 
   function clampOverlayDimension(value, defaultValue, min, max) {
@@ -574,7 +565,7 @@
    */
   function handleConfigUpdate(newConfig) {
     // Update config state
-    config.theme = newConfig.theme || config.theme;
+    config.theme = normalizeTheme(newConfig.theme || config.theme);
     config.skin = newConfig.skin || config.skin;
     config.layout = newConfig.layout || config.layout;
     config.showAvatars = newConfig.showAvatars !== undefined ? newConfig.showAvatars : config.showAvatars;
@@ -1900,3 +1891,4 @@
   }
 
 })();
+

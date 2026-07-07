@@ -1,4 +1,4 @@
-const LastEventSpotlightPlugin = require('../plugins/lastevent-spotlight/main');
+const LastEventSpotlightPlugin = require('../plugins/spotlight/main');
 
 function createMockApi(initialConfig = {}, overrides = {}) {
   const routes = new Map();
@@ -39,7 +39,7 @@ function createMockResponse() {
   };
 }
 
-describe('LastEvent Spotlight plugin test events', () => {
+describe('Spotlight plugin test events', () => {
   test('single-overlay test events also update Multi-HUD rotation data', async () => {
     const api = createMockApi();
     const plugin = new LastEventSpotlightPlugin(api);

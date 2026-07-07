@@ -1,7 +1,7 @@
 {
   "fireworks": {
     "title": "Fireworks Superplugin Settings",
-    "subtitle": "GPU-Accelerated Fireworks Effects",
+    "subtitle": "GPU-Accelerated Fireworks for TikTok LIVE",
     "tab_settings": "Settings",
     "tab_presets": "Presets",
     "tab_benchmark": "Benchmark",
@@ -28,6 +28,10 @@
     "min_target_fps": "Minimum Target FPS",
     "frame_skip_info": "Frame Skip activates when FPS drops below this value",
     "enable_frame_skip": "Enable Frame Skip",
+    "copy_overlay_url": "Copy Overlay URL",
+    "open_in_new_tab": "Open in New Tab",
+    "close_tab": "Close Tab",
+    "overlay_popup_blocked": "Could not open overlay window. Please allow pop-ups.",
     "presets": {
       "title": "Presets",
       "description": "Choose a preset based on your system's performance. Use the Benchmark to find the optimal settings.",

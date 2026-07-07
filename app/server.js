@@ -45,6 +45,7 @@ const socketIO = require('socket.io');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const crypto = require('crypto');
 
 // Browser opening guard - prevents duplicate browser opens
 let browserOpened = false;
@@ -118,7 +119,49 @@ const PresetManager = require('./modules/preset-manager');
 const BackupManager = require('./modules/backup-manager');
 const CloudSyncEngine = require('./modules/cloud-sync');
 const { createAdminAuth } = require('./modules/admin-auth');
+const {
+    createClerkFrontendProxy,
+    createClerkMiddleware,
+    createRequireStoreAuth
+} = require('./modules/clerk-store-auth');
 const { getAnimationFilePath } = require('./modules/animation-files');
+
+function decodeClerkFrontendDomain(publishableKey) {
+    try {
+        let encoded = String(publishableKey || '').split('_')[2] || '';
+        encoded = encoded.replace(/-/g, '+').replace(/_/g, '/');
+        while (encoded.length % 4) encoded += '=';
+        return Buffer.from(encoded, 'base64').toString('utf8').replace(/\$$/, '');
+    } catch (error) {
+        return '';
+    }
+}
+
+function normalizeCspOrigin(value) {
+    const trimmed = String(value || '').trim().replace(/\/+$/, '');
+    if (!trimmed) return '';
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
+function buildClerkCspSources(env = process.env) {
+    const publishableKey = env.CLERK_PUBLISHABLE_KEY ||
+        env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+        env.VITE_CLERK_PUBLISHABLE_KEY;
+    const frontendDomain = decodeClerkFrontendDomain(publishableKey);
+    const sources = new Set([
+        normalizeCspOrigin(env.CLERK_FRONTEND_API_URL || env.CLERK_FRONTEND_API || frontendDomain),
+        'https://*.clerk.accounts.dev',
+        'https://*.clerk.com'
+    ]);
+
+    if (frontendDomain.startsWith('clerk.')) {
+        sources.add(normalizeCspOrigin(`accounts.${frontendDomain.slice('clerk.'.length)}`));
+    }
+
+    return Array.from(sources).filter(Boolean).join(' ');
+}
+
+const CLERK_CSP_SOURCES = buildClerkCspSources();
 
 // ========== EXPRESS APP ==========
 const app = express();
@@ -130,6 +173,14 @@ const server = http.createServer(app);
 if (process.env.TRUST_PROXY === 'true' || process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
+
+// Clerk's frontend API proxy must run before body parsing so auth flows can
+// forward request bodies without reserializing them.
+app.use(createClerkFrontendProxy({ logger }));
+
+// Clerk must be registered before other Express middleware so request auth state
+// is available to protected routes.
+app.use(createClerkMiddleware({ logger }));
 
 // ========== SOCKET.IO CONFIGURATION ==========
 // Configure Socket.IO with proper CORS and transport settings for OBS BrowserSource compatibility
@@ -255,14 +306,14 @@ app.use((req, res, next) => {
             `'sha256-8ma2zXygpXCcq3kiJv4rS0k32SKVcMSL3R+NJdxoVjo=' 'sha256-/tlEW4dBeTXnKAtOeyarIXN7OLveaWQ4JyoQJIEpsHQ=' 'sha256-xu3YClpWdm0JUcsxMW/B0+Lk3vovecXUA4vWkTi/mgA=' ` +
             `'sha256-JIPGJRCq83TqVvN3m7kkxylwHWo0b79G40zWfnZbrQw=' 'sha256-AdSuaVgmlfGgsCXjbD31dRAR3hljDmdiX0yJiFmG55A=' ` +
             `'sha256-K5uNRn2aLxLeK0fjnkWTYWN1J4Vdf92BTAKxjxfz/nQ=' 'sha256-3ymA831yuAiigbGNakMhiy5HDRlr4NxqwATjV/Nn01I=' ` +  // Additional inline event handlers
-            `https://st.chatango.com; ` +  // Socket.IO hash + admin-panel hash + viewer-xp inline handlers + Chatango eval
-            `script-src-elem 'self' 'unsafe-inline' https://st.chatango.com https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://www.youtube.com; ` +  // Allow Chatango inline script elements with JSON config + GSAP from cdnjs + TailwindCSS + YouTube IFrame API
+            `${CLERK_CSP_SOURCES} https://st.chatango.com; ` +  // Socket.IO hash + admin-panel hash + viewer-xp inline handlers + Chatango eval
+            `script-src-elem 'self' 'unsafe-inline' ${CLERK_CSP_SOURCES} https://st.chatango.com https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://www.youtube.com; ` +  // Allow Clerk auth, Chatango inline script elements with JSON config + GSAP from cdnjs + TailwindCSS + YouTube IFrame API
             `style-src 'self' 'unsafe-inline'; ` +
             `img-src 'self' data: blob: https:; ` +
             `font-src 'self' data:; ` +
-            `connect-src 'self' ws: wss: wss://ws.eulerstream.com https://www.eulerstream.com http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://myinstants-api.vercel.app https://www.myinstants.com wss://*.chatango.com https://*.chatango.com; ` +
+            `connect-src 'self' ${CLERK_CSP_SOURCES} ws: wss: wss://ws.eulerstream.com https://www.eulerstream.com http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://myinstants-api.vercel.app https://www.myinstants.com wss://*.chatango.com https://*.chatango.com; ` +
             `media-src 'self' blob: data: https:; ` +
-            `frame-src 'self' https://*.chatango.com https://vdo.ninja https://*.vdo.ninja https://www.youtube.com https://www.youtube-nocookie.com; ` +
+            `frame-src 'self' ${CLERK_CSP_SOURCES} https://*.chatango.com https://vdo.ninja https://*.vdo.ninja https://www.youtube.com https://www.youtube-nocookie.com; ` +
             `object-src 'none'; ` +
             `base-uri 'self'; ` +
             `form-action 'self'; ` +
@@ -556,7 +607,10 @@ if (process.env.DISABLE_SWAGGER !== 'true') {
 }
 
 // ========== PLUGIN ROUTES ==========
-setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger, io, pluginLimiter);
+setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger, io, pluginLimiter, {
+    storeAuth: createRequireStoreAuth({ logger }),
+    closedStore: true
+});
 
 // ========== DEBUG ROUTES ==========
 setupDebugRoutes(app, debugLogger, logger);
@@ -1067,6 +1121,44 @@ function scheduleServerRestartAfterResponse(res, reason) {
     });
 }
 
+function scheduleServerShutdownAfterResponse(res, reason) {
+    res.on('finish', () => {
+        logger.info(`Launcher requested graceful server shutdown (${reason})`);
+        gracefulShutdown('LAUNCHER_SHUTDOWN');
+    });
+}
+
+function normalizeRemoteAddress(address) {
+    return String(address || '').replace(/^::ffff:/, '');
+}
+
+function isLocalLauncherRequest(req) {
+    const candidates = [
+        req.ip,
+        req.socket && req.socket.remoteAddress,
+        req.connection && req.connection.remoteAddress
+    ].map(normalizeRemoteAddress);
+
+    return candidates.some(address => (
+        address === '127.0.0.1' ||
+        address === '::1' ||
+        address === 'localhost'
+    ));
+}
+
+function launcherTokenMatches(req) {
+    const expected = process.env.LTTH_LAUNCHER_TOKEN;
+    const actual = req.get('x-ltth-launcher-token');
+    if (!expected || !actual) {
+        return false;
+    }
+
+    const expectedBuffer = Buffer.from(expected, 'utf8');
+    const actualBuffer = Buffer.from(actual, 'utf8');
+    return expectedBuffer.length === actualBuffer.length &&
+        crypto.timingSafeEqual(expectedBuffer, actualBuffer);
+}
+
 // Haupt-Seite
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
@@ -1301,6 +1393,24 @@ app.get('/api/health', (req, res) => {
         port: PORT,
         uptime: process.uptime(),
         timestamp: new Date().toISOString()
+    });
+});
+
+app.post('/api/launcher/shutdown', (req, res) => {
+    if (!isLocalLauncherRequest(req)) {
+        return res.status(403).json({ success: false, error: 'Launcher shutdown is only available from localhost' });
+    }
+
+    if (!launcherTokenMatches(req)) {
+        return res.status(401).json({ success: false, error: 'Invalid launcher token' });
+    }
+
+    scheduleServerShutdownAfterResponse(res, 'launcher graceful shutdown');
+    res.json({
+        success: true,
+        status: 'shutdown_scheduled',
+        pid: process.pid,
+        port: PORT
     });
 });
 
@@ -2524,7 +2634,8 @@ app.post('/api/alerts/test', apiLimiter, (req, res) => {
 
 app.get('/api/gift-catalog', apiLimiter, (req, res) => {
     try {
-        const catalog = db.getGiftCatalog();
+        const locale = req.query.locale || req.locale || db.getSetting('language') || 'en';
+        const catalog = db.getGiftCatalog(locale);
         const lastUpdate = db.getCatalogLastUpdate();
         res.json({ success: true, catalog, lastUpdate, count: catalog.length });
     } catch (error) {
@@ -2535,7 +2646,8 @@ app.get('/api/gift-catalog', apiLimiter, (req, res) => {
 
 app.post('/api/gift-catalog/update', apiLimiter, async (req, res) => {
     try {
-        const result = await tiktok.updateGiftCatalog();
+        const locale = req.query.locale || req.body?.locale || req.locale || db.getSetting('language') || 'en';
+        const result = await tiktok.updateGiftCatalog({ localeCode: locale });
         logger.info('🎁 Gift catalog updated');
         res.json({ success: true, ...result });
     } catch (error) {

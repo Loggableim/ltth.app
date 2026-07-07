@@ -92,7 +92,7 @@ This glossary ensures consistent terminology across:
 | GCCE HUD Overlay | GCCE HUD Overlay | GCCE HUD Overlay | GCCE HUD Overlay |
 | Gift Milestone | Geschenk-Meilenstein | Hito de Regalo | Jalon de Cadeau |
 | HybridShock | HybridShock | HybridShock | HybridShock |
-| LastEvent Spotlight | LastEvent Spotlight | LastEvent Spotlight | LastEvent Spotlight |
+| Spotlight | Spotlight | Spotlight | Spotlight |
 | Minecraft Connect | Minecraft Connect | Minecraft Connect | Minecraft Connect |
 | Multi-Cam | Multi-Cam | Multi-Cámara | Multi-Caméra |
 | Multi-Guest | Multi-Gast | Multi-Invitado | Multi-Invité |

@@ -4,6 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GCCE HUD Overlay</title>
+    <script>
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+            }
+
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         * {
             margin: 0;
@@ -41,7 +84,8 @@
         .hud-text {
             padding: 16px 32px;
             border-radius: 12px;
-            max-width: 800px;
+            width: min(92vw, 1000px);
+            max-width: none;
             word-wrap: break-word;
             text-align: center;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
@@ -49,8 +93,9 @@
         }
 
         .hud-image {
-            max-width: 400px;
-            max-height: 400px;
+            width: min(92vw, 600px);
+            max-width: none;
+            max-height: 600px;
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             overflow: hidden;
@@ -64,8 +109,9 @@
         }
 
         .hud-media {
-            max-width: 480px;
-            max-height: 480px;
+            width: min(92vw, 760px);
+            max-width: none;
+            max-height: 760px;
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             overflow: hidden;
@@ -131,6 +177,29 @@
             right: 20px;
         }
 
+        html[data-theme="vision-impaired"] .hud-text,
+        html[data-theme="vision-impaired"] .hud-image,
+        html[data-theme="vision-impaired"] .hud-media {
+            background: #000;
+            color: #fff7cc;
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .hud-text {
+            font-size: 1.08rem;
+            line-height: 1.7;
+        }
+
+        html[data-theme="cid"] .hud-text,
+        html[data-theme="cid"] .hud-image,
+        html[data-theme="cid"] .hud-media {
+            background: rgba(7, 17, 7, 0.94);
+            color: #f4fff4;
+            border: 2px solid rgba(74, 222, 128, 0.35);
+            box-shadow: none;
+        }
+
         /* Stacking for multiple elements */
         .stacked {
             margin-top: 10px;
@@ -183,7 +252,7 @@
             position: fixed;
             left: 20px;
             bottom: 20px;
-            max-width: 420px;
+            max-width: 560px;
             pointer-events: none;
             z-index: 9998;
         }
@@ -292,7 +361,9 @@
         }
 
         .template-wide {
-            min-width: 500px;
+            min-width: 0;
+            width: min(92vw, 760px);
+            max-width: none;
             grid-template-columns: 64px 1fr;
             padding: 18px 24px;
         }

@@ -51,7 +51,7 @@ describe('Viewer XP System - Event Processing', () => {
             }
         };
 
-        // Load viewer-xp plugin
+        // Load viewer-leaderboard plugin
         const ViewerXPPlugin = require('../plugins/viewer-leaderboard/viewer-xp-impl');
         viewerXPPlugin = new ViewerXPPlugin(mockAPI);
         await viewerXPPlugin.init();

@@ -713,7 +713,7 @@ http://localhost:3000/clarityhud/overlay
 
 ---
 
-### 21. LastEvent Spotlight
+### 21. Spotlight
 **Status:** 🟢 Alpha
 **Version:** 1.0.0
 **Autor:** Pup Cid
@@ -737,18 +737,18 @@ Live-Overlays, die den letzten aktiven Benutzer für jeden Event-Typ anzeigen (F
 
 **Overlay-URLs:**
 ```
-Follower: http://localhost:3000/overlay/lastevent/follower
-Like: http://localhost:3000/overlay/lastevent/like
-Chatter: http://localhost:3000/overlay/lastevent/chatter
-Share: http://localhost:3000/overlay/lastevent/share
-Gifter: http://localhost:3000/overlay/lastevent/gifter
-Subscriber: http://localhost:3000/overlay/lastevent/subscriber
-Top Gift: http://localhost:3000/overlay/lastevent/topgift
-Gift Streak: http://localhost:3000/overlay/lastevent/giftstreak
-Multi-HUD: http://localhost:3000/overlay/lastevent/multihud
+Follower: http://localhost:3000/overlay/spotlight/follower
+Like: http://localhost:3000/overlay/spotlight/like
+Chatter: http://localhost:3000/overlay/spotlight/chatter
+Share: http://localhost:3000/overlay/spotlight/share
+Gifter: http://localhost:3000/overlay/spotlight/gifter
+Subscriber: http://localhost:3000/overlay/spotlight/subscriber
+Top Gift: http://localhost:3000/overlay/spotlight/topgift
+Gift Streak: http://localhost:3000/overlay/spotlight/giftstreak
+Multi-HUD: http://localhost:3000/overlay/spotlight/multihud
 ```
 
-**Konfiguration:** Plugin UI unter `http://localhost:3000/lastevent-spotlight/ui`
+**Konfiguration:** Plugin UI unter `http://localhost:3000/spotlight/ui`
 
 **Bekannte Einschränkungen:**
 - Keine bekannten Einschränkungen

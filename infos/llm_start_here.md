@@ -23,7 +23,7 @@ This workspace is a full Git checkout:
 - `app/` is the maintained runtime.
 - The old Electron main-process folder is not present.
 - Root `package.json` is a convenience wrapper, not the backend dependency manifest.
-- Current version: `1.3.21` (see `version.json` and `app/package.json`).
+- Current version: `1.3.22` (see `version.json` and `app/package.json`).
 
 Before making changes, read:
 

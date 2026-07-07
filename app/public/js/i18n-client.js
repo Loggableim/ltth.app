@@ -186,6 +186,21 @@ class I18nClient {
     }
 
     /**
+     * Capture a stable fallback value for a DOM element the first time it is translated.
+     * This preserves the original HTML content when a translation key is missing.
+     */
+    getStableFallback(element, fallbackAttribute, valueGetter) {
+        if (element.hasAttribute(fallbackAttribute)) {
+            return element.getAttribute(fallbackAttribute);
+        }
+
+        const fallback = valueGetter();
+        const normalizedFallback = fallback == null ? '' : String(fallback);
+        element.setAttribute(fallbackAttribute, normalizedFallback);
+        return normalizedFallback;
+    }
+
+    /**
      * Change the current locale
      */
     async setLocale(locale) {
@@ -286,23 +301,38 @@ class I18nClient {
             }
             
             const translation = this.t(key, paramsObj);
+            const fallback = this.getStableFallback(element, 'data-i18n-fallback', () => {
+                if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                    if (element.hasAttribute('placeholder')) {
+                        return element.getAttribute('placeholder');
+                    }
+                    return element.value;
+                }
+
+                return element.textContent;
+            });
+            const resolvedTranslation = translation === key ? fallback : translation;
             
             // Update text content or placeholder based on element type
             if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
                 if (element.hasAttribute('placeholder')) {
-                    element.placeholder = translation;
+                    element.placeholder = resolvedTranslation;
                 } else {
-                    element.value = translation;
+                    element.value = resolvedTranslation;
                 }
             } else {
-                element.textContent = translation;
+                element.textContent = resolvedTranslation;
             }
         });
 
         // Update elements with data-i18n-title attribute (for tooltips)
         document.querySelectorAll('[data-i18n-title]').forEach(element => {
             const key = element.getAttribute('data-i18n-title');
-            element.title = this.t(key);
+            const translation = this.t(key);
+            const fallback = this.getStableFallback(element, 'data-i18n-title-fallback', () => {
+                return element.getAttribute('title') || '';
+            });
+            element.title = translation === key ? fallback : translation;
         });
 
         // Update elements with data-i18n-html attribute (for HTML content)
@@ -319,7 +349,11 @@ class I18nClient {
                 }
             }
             
-            element.innerHTML = this.t(key, paramsObj);
+            const translation = this.t(key, paramsObj);
+            const fallback = this.getStableFallback(element, 'data-i18n-html-fallback', () => {
+                return element.innerHTML;
+            });
+            element.innerHTML = translation === key ? fallback : translation;
         });
     }
 

@@ -1,0 +1,69 @@
+<h2>Soundboard: Welche Grundstruktur soll die Usability tragen?</h2>
+<p class="subtitle">Alle vorhandenen Features bleiben erhalten. Die Frage ist nur, wie wir sie besser erreichbar und weniger scroll-lastig organisieren.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a-tabs" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A: Top Tabs + Sticky Save</div>
+        <div class="mockup-body">
+          <div class="mock-nav">Setup | Events | Gifts | Search | Tools</div>
+          <div class="placeholder" style="height:34px;margin-top:10px;">Compact OBS + Playback summary</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;">
+            <div class="placeholder">Follow</div>
+            <div class="placeholder">Gift fallback</div>
+            <div class="placeholder">Like</div>
+          </div>
+          <button class="mock-button" style="margin-top:10px;">Save Settings</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Tabbed Control Panel</h3>
+      <p>Einfachster Umbau: Collapsibles werden zu Tabs, Save bleibt sichtbar, jeder Tab hat nur eine Aufgabe.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b-workspace" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B: Workspace mit linker Navigation</div>
+        <div class="mockup-body" style="display:flex;gap:10px;">
+          <div class="mock-sidebar" style="width:28%;">Overview<br>Event Sounds<br>Gift Mapping<br>Library<br>Diagnostics</div>
+          <div class="mock-content" style="flex:1;">
+            <div class="placeholder" style="height:34px;">Current task header</div>
+            <div class="placeholder" style="height:70px;margin-top:10px;">Dense editable table/cards</div>
+            <div class="placeholder" style="height:42px;margin-top:10px;">Context panel</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. Soundboard Workspace</h3>
+      <p>Beste Desktop-Nutzung auf 2560x1440: links Navigation, rechts Arbeitsbereich, Tabellen/Suche nebeneinander.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c-wizard" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C: Guided Setup + Advanced Area</div>
+        <div class="mockup-body">
+          <div class="mock-nav">1 OBS -> 2 Events -> 3 Gifts -> 4 Test</div>
+          <div class="placeholder" style="height:58px;margin-top:10px;">Step instructions</div>
+          <div class="placeholder" style="height:58px;margin-top:10px;">Current step form</div>
+          <button class="mock-button" style="margin-top:10px;">Next</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Setup Wizard</h3>
+      <p>Sehr gut für Erstnutzer, aber langsamer für Power-User. Beste Ergänzung, nicht beste Hauptoberfläche.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Meine Empfehlung</h3>
+  <p><strong>B als Hauptstruktur</strong>, optional mit einem kleinen Setup-Checklist-Block oben. Das nutzt breite Monitore sinnvoll, reduziert Scrollen massiv und kürzt keine Features.</p>
+</div>

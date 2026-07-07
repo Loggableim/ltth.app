@@ -390,10 +390,6 @@ Section "!LTTH Core Application" SEC_CORE
   File /nonfatal "${BUILD_DIR}\locales\*.json"
   SetOutPath "$INSTDIR"
   
-  ; Install ltthgit.exe (optional cloud launcher)
-  IfFileExists "${BUILD_DIR}\ltthgit.exe" 0 +2
-    File "${BUILD_DIR}\ltthgit.exe"
-  
   Banner::destroy
   
   ; Install app directory
@@ -573,7 +569,6 @@ keep_data:
   
   ; Remove files and directories
   Delete "$INSTDIR\launcher.exe"
-  Delete "$INSTDIR\ltthgit.exe"
   Delete "$INSTDIR\icon.ico"
   Delete "$INSTDIR\Uninstall.exe"
   Delete "$INSTDIR\install.log"

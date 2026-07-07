@@ -6,6 +6,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="chatango.title">Chatango Settings</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function () {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const logoByTheme = {
+                day: '/ltthicon.png',
+                night: '/ltthicon.png',
+                contrast: '/ltthicon.png',
+                'vision-impaired': '/ltthicon.png',
+                cid: '/ltthicon.png'
+            };
+            const fileLogoByTheme = {
+                day: '../../public/ltthicon.png',
+                night: '../../public/ltthicon.png',
+                contrast: '../../public/ltthicon.png',
+                'vision-impaired': '../../public/ltthicon.png',
+                cid: '../../public/ltthicon.png'
+            };
+
+            function readTheme() {
+                try {
+                    const current = document.documentElement?.getAttribute('data-theme');
+                    if (validThemes.has(current)) return current;
+                } catch (error) {}
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme !== theme) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                }
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                const logo = document.querySelector('[data-brand-logo]');
+                if (logo) {
+                    const nextSrc = location.protocol === 'file:'
+                        ? new URL(fileLogoByTheme[theme] || fileLogoByTheme.night, location.href).href
+                        : (logoByTheme[theme] || logoByTheme.night);
+                    if (logo.getAttribute('src') !== nextSrc) {
+                        logo.setAttribute('src', nextSrc);
+                    }
+                }
+            }
+
+            syncTheme();
+            document.addEventListener('DOMContentLoaded', syncTheme);
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+
+            // Only watch the parent theme. Watching our own data-theme caused
+            // syncTheme() to retrigger itself after each update and could lock up the iframe.
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
@@ -16,8 +91,9 @@
         }
 
         .container {
-            max-width: 900px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: none;
+            margin: 0;
         }
 
         .card {
@@ -37,10 +113,48 @@
             border-bottom: 1px solid var(--color-border);
         }
 
+        .page-brand {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .page-brand-logo {
+            width: min(280px, 48vw);
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        html[data-theme="vision-impaired"] .page-brand-logo {
+            width: min(340px, 56vw);
+        }
+
+        html[data-theme="cid"] .page-brand-logo {
+            width: min(260px, 44vw);
+        }
+
         .card-title {
             font-size: 1.5em;
             font-weight: 600;
             margin: 0;
+        }
+
+        .brand-card {
+            background: var(--color-bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--color-border);
+        }
+
+        .brand-card p {
+            margin-top: 12px;
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            max-width: 72ch;
         }
 
         .status-indicator {
@@ -248,10 +362,16 @@
 </head>
 <body>
     <div class="container">
+        <div class="brand-card">
+            <div class="page-brand">
+            </div>
+            <p>Chatango settings stay aligned with the active LTTH theme so the panel blends with the rest of the app across day, night, contrast, vision-impaired, and Cid modes.</p>
+        </div>
+
         <!-- Status Card -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">💬 Chatango Integration</h2>
+                <h2 class="card-title">ðŸ’¬ Chatango Integration</h2>
                 <div class="status-indicator" id="status-indicator">
                     <span class="status-dot"></span>
                     <span id="status-text">Active</span>
@@ -400,11 +520,11 @@
 
             <h4 class="section-title">Dashboard Embed</h4>
             <div class="code-block" id="dashboard-embed-code">Loading...</div>
-            <button class="btn btn-secondary copy-btn" id="copy-dashboard-btn">📋 Copy Code</button>
+            <button class="btn btn-secondary copy-btn" id="copy-dashboard-btn">ðŸ“‹ Copy Code</button>
 
             <h4 class="section-title">Widget Embed</h4>
             <div class="code-block" id="widget-embed-code">Loading...</div>
-            <button class="btn btn-secondary copy-btn" id="copy-widget-btn">📋 Copy Code</button>
+            <button class="btn btn-secondary copy-btn" id="copy-widget-btn">ðŸ“‹ Copy Code</button>
         </div>
 
         <!-- Preview Card -->
@@ -619,7 +739,7 @@
             wrapper.style.color = 'var(--color-text-muted)';
 
             const warning = document.createElement('p');
-            warning.textContent = '⚠️ Live preview requires the Chatango embed script to load.';
+            warning.textContent = 'âš ï¸ Live preview requires the Chatango embed script to load.';
             wrapper.appendChild(warning);
 
             const instructions = document.createElement('p');

@@ -44,7 +44,6 @@ ltth.app/
 │   │       ├── npm
 │   │       └── node_modules/
 │   ├── launcher.exe                    ← Launcher (should exist)
-│   ├── ltthgit.exe                     ← Cloud launcher (should exist)
 │   └── icon.ico                        ← App icon (should exist)
 └── app/                                ← Application files (should exist)
     └── server.js                       ← Main server file

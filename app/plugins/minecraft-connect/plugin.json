@@ -49,7 +49,7 @@
     {
       "id": "dashboard-ui",
       "name": "Dashboard UI",
-      "description": "TikOps-style configuration interface for Commands, Chat, Gift bars, and Setup"
+      "description": "LTTH configuration interface for Commands, Chat, Gift bars, and Setup"
     },
     {
       "id": "overlay",

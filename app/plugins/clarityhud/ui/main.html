@@ -9,6 +9,56 @@
   <meta http-equiv="Expires" content="0">
   <title>ClarityHUD Dashboard</title>
   <link rel="stylesheet" href="/css/themes.css">
+    <script>
+    (function () {
+      const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+      const clarityHudLogo = '/plugins/clarityhud/assets/clarity-hud-logo.png';
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (validThemes.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (validThemes.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+        const logo = document.querySelector('[data-brand-logo]');
+        if (logo) {
+          if (logo.getAttribute('src') !== clarityHudLogo) {
+            logo.setAttribute('src', clarityHudLogo);
+          }
+        }
+      }
+
+      syncTheme();
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     * {
       box-sizing: border-box;
@@ -24,33 +74,105 @@
       overflow-y: auto;
     }
 
+    html[data-theme="day"] body {
+      background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+      color: #10203a;
+    }
+
+    html[data-theme="night"] body {
+      background: linear-gradient(135deg, #0b1020 0%, #111827 100%);
+      color: #e5e7eb;
+    }
+
+    html[data-theme="contrast"] body,
+    html[data-theme="vision-impaired"] body {
+      background: #000;
+      color: #fff;
+    }
+
+    html[data-theme="cid"] body {
+      background: linear-gradient(180deg, #030603 0%, #071107 100%);
+      color: #f4fff4;
+    }
+
     .container {
-      max-width: 1600px;
+      width: 100%;
+      max-width: 2200px;
       margin: 0 auto;
+      padding: 0 12px;
       min-height: calc(100vh - 40px);
     }
 
     .header {
-      text-align: center;
+      display: grid;
+      grid-template-columns: minmax(360px, 0.85fr) minmax(520px, 1.15fr);
+      align-items: center;
+      gap: 28px;
       color: var(--color-text-primary);
       margin-bottom: 40px;
     }
 
+    .header-copy {
+      min-width: 0;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      min-width: 0;
+      padding-top: 8px;
+    }
+
+    .header-brand-logo {
+      width: min(320px, 100%);
+      height: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    html[data-theme="vision-impaired"] .header-brand-logo {
+      width: min(320px, 100%);
+    }
+
+    html[data-theme="cid"] .header-brand-logo {
+      width: min(320px, 100%);
+    }
+
+    @media (min-width: 1200px) {
+      .header-brand-logo,
+      html[data-theme="vision-impaired"] .header-brand-logo,
+      html[data-theme="cid"] .header-brand-logo {
+        width: min(420px, 100%);
+      }
+    }
+
+    @media (min-width: 1800px) {
+      .header-brand-logo,
+      html[data-theme="vision-impaired"] .header-brand-logo,
+      html[data-theme="cid"] .header-brand-logo {
+        width: min(480px, 100%);
+      }
+    }
+
     .header h1 {
-      font-size: 42px;
+      font-size: 38px;
       font-weight: 700;
       margin-bottom: 10px;
       text-shadow: var(--shadow-sm);
+      text-align: left;
     }
 
     .header p {
       font-size: 18px;
       opacity: 0.9;
+      max-width: 60ch;
     }
     
     .profile-toolbar {
       display: flex;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 12px;
       flex-wrap: wrap;
       margin-top: 18px;
@@ -58,8 +180,8 @@
 
     .hud-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(700px, 1fr));
-      gap: 30px;
+      grid-template-columns: repeat(auto-fit, minmax(min(560px, 100%), 1fr));
+      gap: 24px;
       margin-bottom: 40px;
       width: 100%;
     }
@@ -143,6 +265,221 @@
       height: 400px;
       border: none;
       display: block;
+      background: #0b1220;
+    }
+
+    html[data-theme="vision-impaired"] .preview-container {
+      border-color: #facc15;
+      box-shadow: none;
+      border-width: 3px;
+    }
+
+    html[data-theme="vision-impaired"] .container {
+      max-width: none;
+      width: 100%;
+      padding: 0;
+    }
+
+    html[data-theme="cid"] .container {
+      max-width: none;
+      width: 100%;
+      padding: 0;
+    }
+
+    html[data-theme="vision-impaired"] .hud-section {
+      background: #050505;
+      border: 3px solid #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="cid"] .hud-section {
+      background: #071107;
+      border: 2px solid #1e5b2a;
+      box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.08), 0 18px 48px rgba(0, 0, 0, 0.26);
+    }
+
+    html[data-theme="vision-impaired"] .hud-header {
+      background: #000;
+      color: #facc15;
+      border-bottom: 3px solid #facc15;
+    }
+
+    html[data-theme="cid"] .hud-header {
+      background: linear-gradient(135deg, rgba(7, 17, 7, 0.96) 0%, rgba(11, 26, 11, 0.96) 100%);
+      color: #d1e7d1;
+      border-bottom: 1px solid rgba(74, 222, 128, 0.2);
+    }
+
+    html[data-theme="vision-impaired"] .hud-header h2 {
+      color: #facc15;
+      text-shadow: none;
+      font-size: 34px;
+      font-weight: 800;
+    }
+
+    html[data-theme="cid"] .hud-header h2 {
+      color: #4ade80;
+      text-shadow: none;
+      font-size: 30px;
+      font-weight: 800;
+    }
+
+    html[data-theme="vision-impaired"] .hud-header p {
+      color: #fff;
+      opacity: 1;
+      font-size: 16px;
+    }
+
+    html[data-theme="cid"] .hud-header p {
+      color: #c4f5cf;
+      opacity: 0.95;
+      font-size: 15px;
+    }
+
+    html[data-theme="vision-impaired"] .preview-frame {
+      background: #000;
+    }
+
+    html[data-theme="cid"] .preview-frame {
+      background: #050805;
+    }
+
+    html[data-theme="cid"] .preview-container {
+      border-color: #1e5b2a;
+      box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.08);
+    }
+
+    html[data-theme="vision-impaired"] .hud-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    html[data-theme="cid"] .hud-grid {
+      grid-template-columns: repeat(auto-fit, minmax(min(700px, 100%), 1fr));
+      gap: 22px;
+    }
+
+    html[data-theme="vision-impaired"] .preview-container::before {
+      background: #facc15;
+      color: #000;
+      text-shadow: none;
+      animation: none;
+    }
+
+    html[data-theme="cid"] .preview-container::before {
+      background: rgba(74, 222, 128, 0.15);
+      color: #4ade80;
+      text-shadow: none;
+      border: 1px solid rgba(74, 222, 128, 0.35);
+      animation: none;
+    }
+
+    html[data-theme="vision-impaired"] .btn-primary,
+    html[data-theme="vision-impaired"] .btn-success,
+    html[data-theme="vision-impaired"] .btn-info,
+    html[data-theme="vision-impaired"] .btn-warning {
+      color: #000;
+      border: 3px solid #facc15;
+      min-height: 48px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    html[data-theme="vision-impaired"] .btn-secondary {
+      color: #fff;
+      border: 3px solid #facc15;
+      min-height: 48px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    html[data-theme="vision-impaired"] .btn-info,
+    html[data-theme="vision-impaired"] .btn-primary {
+      background: #facc15;
+    }
+
+    html[data-theme="cid"] .btn-primary,
+    html[data-theme="cid"] .btn-success,
+    html[data-theme="cid"] .btn-info {
+      background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+      color: #030603;
+      border: 1px solid #4ade80;
+      box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.12);
+    }
+
+    html[data-theme="cid"] .btn-secondary {
+      background: #061006;
+      color: #f4fff4;
+      border: 1px solid #1e5b2a;
+    }
+
+    html[data-theme="vision-impaired"] .btn-success {
+      background: #22c55e;
+    }
+
+    html[data-theme="vision-impaired"] .btn-warning {
+      background: #f59e0b;
+    }
+
+    html[data-theme="vision-impaired"] .modal-content,
+    html[data-theme="vision-impaired"] .url-section,
+    html[data-theme="vision-impaired"] .status-list,
+    html[data-theme="vision-impaired"] .tabs,
+    html[data-theme="vision-impaired"] .tab.active,
+    html[data-theme="vision-impaired"] .stream-config,
+    html[data-theme="vision-impaired"] .preset-btn {
+      background: #050505;
+      border-color: #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] .modal-header {
+      background: #000;
+      color: #facc15;
+      border-bottom: 3px solid #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .modal-footer {
+      background: #050505;
+      border-top: 2px solid #facc15;
+    }
+
+    html[data-theme="cid"] .modal-content,
+    html[data-theme="cid"] .url-section,
+    html[data-theme="cid"] .status-list,
+    html[data-theme="cid"] .tabs,
+    html[data-theme="cid"] .tab.active,
+    html[data-theme="cid"] .stream-config,
+    html[data-theme="cid"] .preset-btn {
+      background: #050805;
+      border-color: #1e5b2a;
+      box-shadow: none;
+    }
+
+    html[data-theme="cid"] .modal-header {
+      background: linear-gradient(135deg, rgba(7, 17, 7, 0.98) 0%, rgba(11, 26, 11, 0.98) 100%);
+      color: #d1e7d1;
+      border-bottom: 1px solid rgba(74, 222, 128, 0.2);
+    }
+
+    html[data-theme="cid"] .modal-footer {
+      background: #061006;
+      border-top: 1px solid #1e5b2a;
+    }
+
+    html[data-theme="vision-impaired"] .url-section,
+    html[data-theme="vision-impaired"] .status-list,
+    html[data-theme="vision-impaired"] .tabs,
+    html[data-theme="vision-impaired"] .stream-config {
+      border-width: 3px;
+      box-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] .preset-btn {
+      border-width: 3px;
+      min-height: 48px;
+      font-size: 15px;
+      font-weight: 700;
     }
 
     .url-section {
@@ -162,13 +499,15 @@
     }
 
     .url-display {
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: 10px;
     }
 
     .url-text {
       flex: 1;
+      min-width: 0;
       font-family: 'Monaco', 'Menlo', monospace;
       font-size: 13px;
       padding: 12px 16px;
@@ -183,6 +522,60 @@
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
+    }
+
+    .url-display .btn {
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 900px) {
+      .header {
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+
+      .header-brand {
+        order: -1;
+        justify-content: flex-start;
+      }
+
+      .header-brand-logo {
+        width: min(100%, 620px);
+      }
+
+      .profile-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .profile-toolbar .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .url-display {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .url-text {
+        width: 100%;
+      }
+
+      .url-display .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .button-group .btn {
+        width: 100%;
+        justify-content: center;
+      }
     }
 
     .btn {
@@ -273,8 +666,8 @@
     .modal-content {
       background: var(--color-bg-card);
       border-radius: 16px;
-      max-width: 1000px;
-      width: 100%;
+      max-width: 1600px;
+      width: min(96vw, 1600px);
       max-height: 90vh;
       display: flex;
       flex-direction: column;
@@ -710,19 +1103,24 @@
       background: var(--source-bg, var(--color-accent-primary));
       color: var(--source-text, var(--color-text-primary));
     }
-  </style>
+    </style>
 </head>
 <body>
-  <div class="container">
+    <div class="container">
     <div class="header">
-      <h1>ClarityHUD Dashboard <span id="plugin-version" style="font-size: 12px; opacity: 0.6;">v1.1.0</span></h1>
-      <p>Ultra-minimalistic, VR-optimized, and accessible HUD overlays for TikTok Live</p>
-      <div class="profile-toolbar">
-        <button class="btn btn-info" data-action="export-profile">Export Profile</button>
-        <button class="btn btn-info" data-action="import-profile">Import Profile</button>
-        <button class="btn btn-primary" data-action="open-setup-wizard">Setup Wizard</button>
-        <button class="btn btn-secondary" data-action="save-custom-preset">Save Preset</button>
-        <input type="file" id="profile-import-input" accept="application/json,.json" hidden>
+      <div class="header-copy">
+        <h1>ClarityHUD Dashboard <span id="plugin-version" style="font-size: 12px; opacity: 0.6;">v1.1.0</span></h1>
+        <p>Ultra-minimalistic, VR-optimized, and accessible HUD overlays for TikTok Live</p>
+        <div class="profile-toolbar">
+          <button class="btn btn-info" data-action="export-profile">Export Profile</button>
+          <button class="btn btn-info" data-action="import-profile">Import Profile</button>
+          <button class="btn btn-primary" data-action="open-setup-wizard">Setup Wizard</button>
+          <button class="btn btn-secondary" data-action="save-custom-preset">Save Preset</button>
+          <input type="file" id="profile-import-input" accept="application/json,.json" hidden>
+        </div>
+      </div>
+      <div class="header-brand">
+        <img class="header-brand-logo" data-brand-logo src="/plugins/clarityhud/assets/clarity-hud-logo.png" alt="ClarityHUD">
       </div>
     </div>
 
@@ -898,3 +1296,4 @@
   <script src="/plugins/clarityhud/ui/main.js"></script>
 </body>
 </html>
+

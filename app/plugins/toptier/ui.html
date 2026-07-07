@@ -3,291 +3,2156 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Top Tier – Admin</title>
+  <title>Top Tier - Admin</title>
   <link rel="stylesheet" href="/css/themes.css">
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/lucide.min.js"></script>
+  <script>
+    (function () {
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+      const BRAND_LOGO_BY_THEME = {
+        day: '/plugins/toptier/assets/toptier-logo.png',
+        night: '/plugins/toptier/assets/toptier-logo.png',
+        contrast: '/plugins/toptier/assets/toptier-logo.png',
+        'vision-impaired': '/plugins/toptier/assets/toptier-logo.png',
+        cid: '/plugins/toptier/assets/toptier-logo.png'
+      };
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (VALID_THEMES.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (VALID_THEMES.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+      }
+
+      function syncBrandLogo(theme) {
+        const el = document.querySelector('[data-brand-logo]');
+        if (!el) return;
+        const resolvedTheme = VALID_THEMES.has(theme) ? theme : 'night';
+        el.src = BRAND_LOGO_BY_THEME[resolvedTheme] || BRAND_LOGO_BY_THEME.night;
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        applyTheme(theme);
+        syncBrandLogo(theme);
+      }
+
+      syncTheme();
+
+      window.addEventListener('storage', (event) => {
+        if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+          syncTheme();
+        }
+      });
+
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+
+      try {
+        if (window.parent && window.parent !== window) {
+          const observer = new MutationObserver(syncTheme);
+          observer.observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --tt-shell-max: 1760px;
+      --tt-radius-xl: 26px;
+      --tt-radius-lg: 20px;
+      --tt-radius-md: 16px;
+      --tt-radius-sm: 12px;
+      --tt-gap: 16px;
+      --tt-gap-lg: 22px;
+      --tt-text: var(--color-text-primary, #e5f5ea);
+      --tt-muted: var(--color-text-muted, #86a392);
+      --tt-border: rgba(74, 222, 128, 0.18);
+      --tt-border-strong: rgba(74, 222, 128, 0.28);
+      --tt-card: rgba(6, 12, 8, 0.84);
+      --tt-card-strong: rgba(8, 15, 10, 0.94);
+      --tt-card-soft: rgba(9, 18, 11, 0.72);
+      --tt-surface: rgba(10, 18, 12, 0.9);
+      --tt-surface-soft: rgba(7, 13, 8, 0.76);
+      --tt-surface-strong: rgba(5, 10, 6, 0.98);
+      --tt-accent: #4ade80;
+      --tt-accent-weak: rgba(74, 222, 128, 0.15);
+      --tt-accent-border: rgba(74, 222, 128, 0.35);
+      --tt-success: #4ade80;
+      --tt-warning: #fbbf24;
+      --tt-danger: #fb7185;
+      --tt-gold: #fbbf24;
+      --tt-purple: #a855f7;
+      --tt-shadow: 0 18px 52px rgba(0, 0, 0, 0.26);
+      --tt-shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.18);
+      --tt-input: rgba(3, 8, 4, 0.94);
+      --tt-input-border: rgba(74, 222, 128, 0.18);
+      --tt-input-placeholder: rgba(209, 231, 209, 0.5);
+      --tt-button-dark: rgba(8, 15, 10, 0.88);
+      --tt-button-danger: rgba(127, 29, 29, 0.24);
+      --tt-button-danger-border: rgba(248, 113, 113, 0.32);
+      --tt-button-primary: linear-gradient(135deg, rgba(74, 222, 128, 0.92), rgba(34, 197, 94, 0.88));
+      --tt-button-secondary: rgba(8, 15, 10, 0.86);
+      --tt-button-secondary-border: rgba(74, 222, 128, 0.18);
+      --tt-table-row: rgba(6, 12, 8, 0.72);
+      --tt-hero-glow: rgba(74, 222, 128, 0.18);
+      --tt-hero-glow-2: rgba(168, 85, 247, 0.12);
+      --tt-hero-glow-3: rgba(251, 191, 36, 0.1);
+    }
+
+    html,
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--color-bg-primary, #0f172a);
-      color: var(--color-text-primary, #e2e8f0);
-      min-height: 100vh;
+      min-height: 100%;
     }
-    .tt-app { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
-    h1 { font-size: 1.6em; margin-bottom: 4px; }
-    h1 span { font-size: 0.6em; opacity: 0.5; font-weight: 400; }
-    h2 { font-size: 1.15em; margin: 24px 0 10px; border-bottom: 1px solid var(--color-border, #334155); padding-bottom: 6px; }
-    h3 { font-size: 0.95em; margin: 14px 0 6px; opacity: 0.85; }
 
-    /* Tabs */
-    .tt-tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
-    .tt-tab {
-      padding: 8px 16px; border-radius: 6px 6px 0 0; cursor: pointer;
-      background: var(--color-bg-secondary, #1e293b); border: 1px solid var(--color-border, #334155);
-      border-bottom: none; font-size: 0.85em; font-weight: 600; color: var(--color-text-secondary, #94a3b8);
-      transition: background 0.15s;
+    * {
+      box-sizing: border-box;
     }
-    .tt-tab:hover { background: var(--color-bg-tertiary, #334155); }
-    .tt-tab.active { background: var(--color-bg-primary, #0f172a); color: var(--color-text-primary, #e2e8f0); border-bottom: 2px solid var(--color-accent, #f59e0b); }
-    .tt-panel { display: none; background: var(--color-bg-primary, #0f172a); border: 1px solid var(--color-border, #334155); border-radius: 0 6px 6px 6px; padding: 16px; }
-    .tt-panel.active { display: block; }
 
-    /* Form elements */
-    label { display: block; font-size: 0.85em; font-weight: 500; margin-bottom: 4px; color: var(--color-text-secondary, #94a3b8); }
-    input[type="text"], input[type="number"], input[type="color"], select, textarea {
-      width: 100%; padding: 7px 10px; border-radius: 5px; border: 1px solid var(--color-border, #334155);
-      background: var(--color-bg-secondary, #1e293b); color: var(--color-text-primary, #e2e8f0);
-      font-size: 0.9em; margin-bottom: 10px;
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--tt-text);
+      background:
+        radial-gradient(circle at 15% 0%, var(--tt-hero-glow), transparent 24%),
+        radial-gradient(circle at 82% 2%, var(--tt-hero-glow-2), transparent 22%),
+        radial-gradient(circle at 50% 100%, var(--tt-hero-glow-3), transparent 28%),
+        var(--app-background, linear-gradient(180deg, #030603 0%, #050905 45%, #030603 100%));
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
     }
-    input[type="color"] { height: 36px; padding: 2px 4px; cursor: pointer; }
-    textarea { min-height: 60px; resize: vertical; font-family: monospace; font-size: 0.82em; }
-    input[type="range"] { width: 100%; margin-bottom: 10px; }
-    select { cursor: pointer; }
 
-    /* Toggle switch */
-    .tt-toggle { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-    .tt-toggle input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--color-accent, #f59e0b); }
-
-    /* Grid rows */
-    .tt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .tt-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
-
-    /* Buttons */
-    .tt-btn {
-      padding: 8px 18px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.85em; font-weight: 600;
-      transition: background 0.15s, transform 0.1s;
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 25%),
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.03), transparent 55%);
+      opacity: 0.85;
+      z-index: 0;
     }
-    .tt-btn:active { transform: scale(0.97); }
-    .tt-btn-primary { background: var(--color-accent, #f59e0b); color: #000; }
-    .tt-btn-primary:hover { background: #d97706; }
-    .tt-btn-danger { background: #dc2626; color: #fff; }
-    .tt-btn-danger:hover { background: #b91c1c; }
-    .tt-btn-secondary { background: var(--color-bg-secondary, #1e293b); color: var(--color-text-primary, #e2e8f0); border: 1px solid var(--color-border, #334155); }
-    .tt-btn-secondary:hover { background: var(--color-bg-tertiary, #334155); }
-    .tt-btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 
-    /* Tables */
-    table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
-    th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--color-border, #334155); font-weight: 600; opacity: 0.7; font-size: 0.85em; text-transform: uppercase; }
-    td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); }
-    tr:hover td { background: rgba(255,255,255,0.02); }
-
-    /* OBS URL box */
-    .tt-url-box {
-      display: flex; align-items: center; gap: 6px; padding: 6px 10px; margin-bottom: 6px;
-      background: var(--color-bg-secondary, #1e293b); border: 1px solid var(--color-border, #334155);
-      border-radius: 5px; font-family: monospace; font-size: 0.8em; word-break: break-all;
+    .tt-shell {
+      position: relative;
+      z-index: 1;
+      width: min(var(--tt-shell-max), calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 18px 0 28px;
     }
-    .tt-url-box .tt-copy-btn { flex-shrink: 0; padding: 4px 10px; font-size: 0.8em; }
 
-    /* Variant radio grid */
-    .tt-variant-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
-    .tt-variant-option {
-      padding: 10px; border-radius: 6px; border: 2px solid var(--color-border, #334155);
-      cursor: pointer; text-align: center; transition: border-color 0.15s;
+    .tt-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(370px, 0.9fr);
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 18px;
     }
-    .tt-variant-option:hover { border-color: var(--color-text-secondary, #94a3b8); }
-    .tt-variant-option.selected { border-color: var(--color-accent, #f59e0b); background: rgba(245,158,11,0.08); }
-    .tt-variant-option .tt-var-name { font-weight: 600; font-size: 0.9em; }
-    .tt-variant-option .tt-var-desc { font-size: 0.75em; opacity: 0.6; margin-top: 2px; }
 
-    /* Status / Toast */
-    .tt-toast {
-      position: fixed; bottom: 20px; right: 20px; padding: 10px 20px; border-radius: 6px;
-      background: #22c55e; color: #000; font-weight: 600; font-size: 0.85em;
-      opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999;
+    .tt-hero-panel,
+    .tt-card {
+      background: linear-gradient(180deg, var(--tt-card), var(--tt-card-soft));
+      border: 1px solid var(--tt-border);
+      border-radius: var(--tt-radius-xl);
+      box-shadow: var(--tt-shadow);
+      backdrop-filter: blur(18px) saturate(1.25);
+      -webkit-backdrop-filter: blur(18px) saturate(1.25);
     }
-    .tt-toast.show { opacity: 1; }
 
-    /* Avatar in table */
-    .tt-tbl-avatar { width: 24px; height: 24px; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+    .tt-hero-panel {
+      padding: 22px 24px 20px;
+      overflow: hidden;
+      position: relative;
+    }
 
-    /* Info box */
+    .tt-hero-panel::after,
+    .tt-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent 35%),
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.04), transparent 26%);
+      opacity: 0.7;
+    }
+
+    .tt-brand-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tt-brand-logo {
+      width: min(392px, 100%);
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.28));
+    }
+
+    .tt-brand-copywrap {
+      display: grid;
+      gap: 6px;
+      min-width: 220px;
+    }
+
+    .tt-brand-copy {
+      margin: 0;
+      font-size: 0.98rem;
+      line-height: 1.5;
+      color: var(--tt-muted);
+      max-width: 74ch;
+    }
+
+    .tt-brand-note {
+      margin: 0;
+      font-size: 0.86rem;
+      color: color-mix(in srgb, var(--tt-muted) 86%, var(--tt-success));
+    }
+
+    .tt-header-note {
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tt-save-button {
+      appearance: none;
+      border: 1px solid rgba(74, 222, 128, 0.35);
+      background: var(--tt-button-primary);
+      color: #041006;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font: inherit;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 14px 24px rgba(34, 197, 94, 0.18);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+    }
+
+    .tt-save-button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.02);
+      box-shadow: 0 16px 30px rgba(34, 197, 94, 0.24);
+    }
+
+    .tt-save-button:active {
+      transform: translateY(0);
+    }
+
+    .tt-save-meta {
+      font-size: 0.82rem;
+      color: var(--tt-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tt-save-meta strong {
+      color: var(--tt-text);
+      font-weight: 700;
+    }
+
+    .tt-status-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tt-status-chip {
+      background: linear-gradient(180deg, var(--tt-card), rgba(4, 10, 6, 0.86));
+      border: 1px solid var(--tt-border);
+      border-radius: 18px;
+      padding: 16px 16px 15px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 76px;
+      box-shadow: var(--tt-shadow-soft);
+    }
+
+    .tt-status-chip[data-status='connected'] {
+      border-color: rgba(74, 222, 128, 0.32);
+      box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.04), var(--tt-shadow-soft);
+    }
+
+    .tt-status-chip[data-status='warning'] {
+      border-color: rgba(251, 191, 36, 0.3);
+    }
+
+    .tt-status-chip__dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: var(--tt-border);
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.02);
+      flex-shrink: 0;
+    }
+
+    .tt-status-chip[data-status='connected'] .tt-status-chip__dot {
+      background: var(--tt-success);
+      box-shadow: 0 0 0 6px rgba(74, 222, 128, 0.12), 0 0 20px rgba(74, 222, 128, 0.28);
+    }
+
+    .tt-status-chip[data-status='disconnected'] .tt-status-chip__dot {
+      background: var(--tt-danger);
+      box-shadow: 0 0 0 6px rgba(251, 113, 133, 0.12);
+    }
+
+    .tt-status-chip__content {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .tt-status-chip__label {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--tt-muted);
+    }
+
+    .tt-status-chip__value {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: var(--tt-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tt-status-chip__subvalue {
+      font-size: 0.79rem;
+      color: var(--tt-muted);
+    }
+
+    .tt-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .tt-stat-card {
+      position: relative;
+      overflow: hidden;
+      padding: 18px 18px 16px;
+      min-height: 120px;
+      border-radius: var(--tt-radius-lg);
+      background: linear-gradient(180deg, rgba(9, 16, 10, 0.9), rgba(5, 11, 7, 0.86));
+      border: 1px solid var(--tt-border);
+      box-shadow: var(--tt-shadow-soft);
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .tt-stat-card__icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--tt-accent);
+      flex-shrink: 0;
+    }
+
+    .tt-stat-card__body {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .tt-stat-card__label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+      color: var(--tt-muted);
+    }
+
+    .tt-stat-card__value {
+      font-size: clamp(1.8rem, 2.2vw, 2.55rem);
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tt-stat-card__hint {
+      font-size: 0.82rem;
+      color: var(--tt-muted);
+    }
+
+    .tt-stat-card--gold .tt-stat-card__icon {
+      color: var(--tt-gold);
+    }
+
+    .tt-stat-card--purple .tt-stat-card__icon {
+      color: var(--tt-purple);
+    }
+
+    .tt-stat-card--accent .tt-stat-card__icon {
+      color: var(--tt-success);
+    }
+
+    .tt-tabs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 18px 0 14px;
+    }
+
+    .tt-tab-btn {
+      appearance: none;
+      border: 1px solid var(--tt-border);
+      background: rgba(7, 13, 8, 0.82);
+      color: var(--tt-muted);
+      border-radius: 14px;
+      padding: 10px 14px;
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .tt-tab-btn:hover {
+      transform: translateY(-1px);
+      color: var(--tt-text);
+      border-color: var(--tt-border-strong);
+    }
+
+    .tt-tab-btn.is-active {
+      color: #051208;
+      background: linear-gradient(135deg, rgba(74, 222, 128, 0.98), rgba(34, 197, 94, 0.88));
+      border-color: rgba(74, 222, 128, 0.42);
+      box-shadow: 0 14px 24px rgba(34, 197, 94, 0.18);
+    }
+
+    .tt-panels {
+      display: grid;
+      gap: 16px;
+    }
+
+    .tt-panel {
+      display: none;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .tt-panel.is-active {
+      display: grid;
+    }
+
+    .tt-live-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(330px, 0.88fr);
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .tt-panel-stack {
+      display: grid;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .tt-card {
+      position: relative;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .tt-card__head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 18px 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tt-card__titlewrap {
+      min-width: 0;
+    }
+
+    .tt-card__title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.03rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--tt-text);
+    }
+
+    .tt-card__title i {
+      color: var(--tt-success);
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .tt-card__subtitle {
+      margin-top: 5px;
+      font-size: 0.8rem;
+      line-height: 1.45;
+      color: var(--tt-muted);
+    }
+
+    .tt-card__body {
+      padding: 0 18px 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tt-live-main {
+      display: grid;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .tt-live-side {
+      display: grid;
+      gap: 16px;
+      min-width: 0;
+      align-content: start;
+    }
+
+    .tt-podium-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(240px, 1.28fr) minmax(0, 1fr);
+      gap: 10px;
+      padding: 0 18px 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tt-podium-seat {
+      position: relative;
+      min-height: 154px;
+      border-radius: 18px;
+      border: 1px solid rgba(74, 222, 128, 0.18);
+      background:
+        linear-gradient(180deg, rgba(12, 24, 15, 0.98), rgba(7, 14, 9, 0.92)),
+        radial-gradient(circle at 50% 0%, rgba(74, 222, 128, 0.16), transparent 62%);
+      padding: 14px 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .tt-podium-seat::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent 28%);
+      pointer-events: none;
+    }
+
+    .tt-podium-seat.is-second {
+      align-self: end;
+      min-height: 128px;
+    }
+
+    .tt-podium-seat.is-first {
+      min-height: 174px;
+      border-color: rgba(251, 191, 36, 0.55);
+      background:
+        linear-gradient(180deg, rgba(39, 28, 10, 0.98), rgba(10, 8, 4, 0.95)),
+        radial-gradient(circle at 50% 0%, rgba(251, 191, 36, 0.2), transparent 60%);
+      box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.14), 0 20px 38px rgba(0, 0, 0, 0.22);
+      transform: translateY(-4px);
+    }
+
+    .tt-podium-seat.is-third {
+      align-self: end;
+      min-height: 128px;
+      border-color: rgba(251, 146, 60, 0.34);
+    }
+
+    .tt-podium-seat__crown {
+      position: absolute;
+      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 42px;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(251, 191, 36, 0.18), rgba(251, 191, 36, 0.02));
+      color: var(--tt-gold);
+      border: 1px solid rgba(251, 191, 36, 0.24);
+      box-shadow: 0 14px 24px rgba(251, 191, 36, 0.16);
+    }
+
+    .tt-podium-seat__rank {
+      font-size: clamp(2.4rem, 3.2vw, 4rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .tt-podium-seat.is-first .tt-podium-seat__rank {
+      color: var(--tt-gold);
+    }
+
+    .tt-podium-seat__user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .tt-podium-seat__avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 999px;
+      object-fit: cover;
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      background: #0b110c;
+      flex-shrink: 0;
+    }
+
+    .tt-podium-seat.is-first .tt-podium-seat__avatar {
+      border-color: rgba(251, 191, 36, 0.5);
+      box-shadow: 0 0 18px rgba(251, 191, 36, 0.2);
+    }
+
+    .tt-podium-seat__name {
+      min-width: 0;
+      font-size: 0.98rem;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tt-podium-seat__tag {
+      margin-left: 8px;
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(139, 92, 246, 0.22);
+      color: #ddd6fe;
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .tt-podium-seat__score {
+      font-size: 1.2rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--tt-text);
+    }
+
+    .tt-podium-seat.is-first .tt-podium-seat__score {
+      color: var(--tt-gold);
+    }
+
+    .tt-board-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .tt-board-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 10px;
+    }
+
+    .tt-board-table thead th {
+      text-align: left;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 800;
+      color: var(--tt-muted);
+      padding: 0 12px 2px;
+    }
+
+    .tt-board-table thead th:last-child,
+    .tt-board-table tbody td:last-child {
+      text-align: right;
+    }
+
+    .tt-board-table tbody tr {
+      background: var(--tt-table-row);
+      border: 1px solid rgba(74, 222, 128, 0.12);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+    }
+
+    .tt-board-table tbody tr td {
+      padding: 11px 12px;
+      vertical-align: middle;
+      border-top: 1px solid transparent;
+      border-bottom: 1px solid transparent;
+    }
+
+    .tt-board-table tbody tr td:first-child {
+      border-top-left-radius: 16px;
+      border-bottom-left-radius: 16px;
+    }
+
+    .tt-board-table tbody tr td:last-child {
+      border-top-right-radius: 16px;
+      border-bottom-right-radius: 16px;
+    }
+
+    .tt-board-row.is-top-one td {
+      border-color: rgba(251, 191, 36, 0.24);
+    }
+
+    .tt-board-row.is-top-two td {
+      border-color: rgba(203, 213, 225, 0.16);
+    }
+
+    .tt-board-row.is-top-three td {
+      border-color: rgba(251, 146, 60, 0.18);
+    }
+
+    .tt-rank-badge {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.92rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--tt-text);
+      flex-shrink: 0;
+    }
+
+    .tt-rank-badge.is-gold {
+      color: var(--tt-gold);
+      background: rgba(251, 191, 36, 0.1);
+    }
+
+    .tt-rank-badge.is-silver {
+      color: #d1d5db;
+      background: rgba(203, 213, 225, 0.1);
+    }
+
+    .tt-rank-badge.is-bronze {
+      color: #fb923c;
+      background: rgba(251, 146, 60, 0.1);
+    }
+
+    .tt-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .tt-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      object-fit: cover;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #0c100d;
+      flex-shrink: 0;
+    }
+
+    .tt-user__name {
+      min-width: 0;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tt-user__tag {
+      margin-left: 8px;
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(139, 92, 246, 0.2);
+      color: #ddd6fe;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .tt-score-cell,
+    .tt-change-cell {
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .tt-change-cell.is-up {
+      color: var(--tt-success);
+    }
+
+    .tt-change-cell.is-down {
+      color: var(--tt-danger);
+    }
+
+    .tt-card-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      margin-top: 12px;
+      text-decoration: none;
+      color: var(--tt-success);
+      border: 1px solid rgba(74, 222, 128, 0.22);
+      background: rgba(74, 222, 128, 0.06);
+      border-radius: 14px;
+      padding: 11px 14px;
+      font-size: 0.86rem;
+      font-weight: 800;
+    }
+
+    .tt-url-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .tt-url-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--tt-border);
+      background: var(--tt-table-row);
+    }
+
+    .tt-url-row__label {
+      min-width: 130px;
+      font-weight: 700;
+      color: var(--tt-text);
+    }
+
+    .tt-url-row__code {
+      flex: 1;
+      min-width: 0;
+      font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      color: var(--tt-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tt-copy-button {
+      appearance: none;
+      border: 1px solid var(--tt-button-secondary-border);
+      background: var(--tt-button-secondary);
+      color: var(--tt-text);
+      border-radius: 12px;
+      padding: 9px 12px;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+    }
+
+    .tt-copy-button:hover {
+      transform: translateY(-1px);
+      border-color: var(--tt-accent-border);
+    }
+
+    .tt-feed {
+      display: grid;
+      gap: 10px;
+      max-height: 380px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .tt-feed-item {
+      display: grid;
+      grid-template-columns: 82px 22px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 11px 12px;
+      border-radius: 16px;
+      border: 1px solid var(--tt-border);
+      background: var(--tt-table-row);
+    }
+
+    .tt-feed-time {
+      font-size: 0.8rem;
+      color: var(--tt-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tt-feed-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--tt-success);
+      flex-shrink: 0;
+    }
+
+    .tt-feed-text {
+      min-width: 0;
+      font-size: 0.9rem;
+      color: var(--tt-text);
+      line-height: 1.4;
+    }
+
+    .tt-feed-value {
+      font-size: 0.86rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .tt-feed-value.is-up {
+      color: var(--tt-success);
+    }
+
+    .tt-feed-value.is-gold {
+      color: var(--tt-gold);
+    }
+
+    .tt-feed-value.is-purple {
+      color: var(--tt-purple);
+    }
+
+    .tt-feed-empty {
+      padding: 20px 12px;
+      color: var(--tt-muted);
+      text-align: center;
+      border: 1px dashed var(--tt-border);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.02);
+      font-size: 0.88rem;
+    }
+
+    .tt-controls-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .tt-action-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .tt-action-button {
+      appearance: none;
+      border-radius: 14px;
+      border: 1px solid var(--tt-button-secondary-border);
+      background: var(--tt-button-secondary);
+      color: var(--tt-text);
+      padding: 12px 14px;
+      font: inherit;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+    }
+
+    .tt-action-button:hover {
+      transform: translateY(-1px);
+      border-color: var(--tt-accent-border);
+    }
+
+    .tt-action-button.is-primary {
+      color: #041006;
+      border-color: rgba(74, 222, 128, 0.42);
+      background: var(--tt-button-primary);
+    }
+
+    .tt-action-button.is-danger {
+      color: #fecaca;
+      border-color: var(--tt-button-danger-border);
+      background: var(--tt-button-danger);
+    }
+
+    .tt-toggle-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .tt-toggle-card {
+      border-radius: 14px;
+      border: 1px solid var(--tt-border);
+      background: var(--tt-table-row);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .tt-toggle-card label {
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--tt-text);
+    }
+
+    .tt-toggle-card input[type='checkbox'] {
+      width: 42px;
+      height: 24px;
+      accent-color: var(--tt-success);
+      flex-shrink: 0;
+    }
+
+    .tt-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .tt-form-control {
+      min-width: 0;
+    }
+
+    .tt-form-control label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+      color: var(--tt-muted);
+      font-weight: 700;
+    }
+
+    .tt-form-control input,
+    .tt-form-control select,
+    .tt-form-control textarea {
+      width: 100%;
+      border: 1px solid var(--tt-input-border);
+      border-radius: 12px;
+      background: var(--tt-input);
+      color: var(--tt-text);
+      padding: 10px 12px;
+      font: inherit;
+      outline: none;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    .tt-form-control input:focus,
+    .tt-form-control select:focus,
+    .tt-form-control textarea:focus {
+      border-color: rgba(74, 222, 128, 0.4);
+      box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.12);
+    }
+
+    .tt-form-control textarea {
+      min-height: 110px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+      line-height: 1.5;
+    }
+
+    .tt-form-control input[type='range'] {
+      padding: 0;
+      accent-color: var(--tt-success);
+    }
+
+    .tt-inline-note {
+      font-size: 0.82rem;
+      color: var(--tt-muted);
+      line-height: 1.45;
+    }
+
     .tt-info-box {
-      padding: 10px 14px; border-radius: 6px; background: var(--color-bg-secondary, #1e293b);
-      border: 1px solid var(--color-border, #334155); font-size: 0.82em; margin-bottom: 12px; opacity: 0.8;
+      border-radius: 16px;
+      padding: 14px 16px;
+      border: 1px solid rgba(74, 222, 128, 0.18);
+      background: rgba(74, 222, 128, 0.06);
+      color: var(--tt-text);
+      line-height: 1.55;
+      font-size: 0.9rem;
+    }
+
+    .tt-variant-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+    }
+
+    .tt-variant-option {
+      border: 1px solid var(--tt-border);
+      background: var(--tt-table-row);
+      border-radius: 16px;
+      padding: 12px 12px 11px;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+      min-height: 92px;
+      display: grid;
+      align-content: start;
+      gap: 5px;
+    }
+
+    .tt-variant-option:hover {
+      transform: translateY(-1px);
+      border-color: var(--tt-border-strong);
+    }
+
+    .tt-variant-option.selected {
+      border-color: rgba(74, 222, 128, 0.44);
+      background: rgba(74, 222, 128, 0.08);
+      box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.12);
+    }
+
+    .tt-variant-option__name {
+      font-weight: 800;
+      font-size: 0.92rem;
+      color: var(--tt-text);
+    }
+
+    .tt-variant-option__desc {
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: var(--tt-muted);
+    }
+
+    .tt-obs-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .tt-url-card {
+      border-radius: 18px;
+      border: 1px solid var(--tt-border);
+      background: var(--tt-table-row);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .tt-url-card__head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .tt-url-card__title {
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: var(--tt-text);
+    }
+
+    .tt-url-card__desc {
+      margin-top: 4px;
+      font-size: 0.8rem;
+      line-height: 1.45;
+      color: var(--tt-muted);
+    }
+
+    .tt-url-card__badge {
+      padding: 5px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(74, 222, 128, 0.2);
+      background: rgba(74, 222, 128, 0.06);
+      color: var(--tt-success);
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .tt-url-card__list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .tt-url-chip {
+      display: grid;
+      grid-template-columns: minmax(110px, 140px) minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(74, 222, 128, 0.14);
+      background: rgba(5, 10, 6, 0.82);
+    }
+
+    .tt-url-chip__label {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--tt-text);
+      letter-spacing: 0.03em;
+    }
+
+    .tt-url-chip__url {
+      min-width: 0;
+      font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 0.76rem;
+      color: var(--tt-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tt-url-chip__button {
+      appearance: none;
+      border: 1px solid var(--tt-button-secondary-border);
+      background: var(--tt-button-secondary);
+      color: var(--tt-text);
+      border-radius: 12px;
+      padding: 8px 11px;
+      font: inherit;
+      font-weight: 800;
+      font-size: 0.8rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .tt-live-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 0 18px 10px;
+      color: var(--tt-muted);
+      font-size: 0.82rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tt-live-topline strong {
+      color: var(--tt-text);
+    }
+
+    .tt-live-empty {
+      padding: 20px;
+      border: 1px dashed var(--tt-border);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--tt-muted);
+      text-align: center;
+      font-size: 0.88rem;
+    }
+
+    .tt-toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1000;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(74, 222, 128, 0.2);
+      background: rgba(5, 10, 6, 0.94);
+      color: var(--tt-text);
+      box-shadow: var(--tt-shadow);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .tt-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    html[data-theme='day'] {
+      --tt-text: #0f172a;
+      --tt-muted: #475569;
+      --tt-border: rgba(15, 23, 42, 0.08);
+      --tt-border-strong: rgba(15, 23, 42, 0.16);
+      --tt-card: rgba(255, 255, 255, 0.9);
+      --tt-card-strong: rgba(255, 255, 255, 0.98);
+      --tt-card-soft: rgba(255, 255, 255, 0.84);
+      --tt-surface: rgba(255, 255, 255, 0.96);
+      --tt-surface-soft: rgba(248, 250, 252, 0.96);
+      --tt-surface-strong: rgba(255, 255, 255, 1);
+      --tt-input: rgba(255, 255, 255, 0.98);
+      --tt-input-border: rgba(15, 23, 42, 0.12);
+      --tt-button-dark: rgba(255, 255, 255, 0.92);
+      --tt-button-secondary: rgba(255, 255, 255, 0.96);
+      --tt-button-secondary-border: rgba(15, 23, 42, 0.12);
+      --tt-table-row: rgba(248, 250, 252, 0.96);
+      --tt-hero-glow: rgba(34, 197, 94, 0.12);
+      --tt-hero-glow-2: rgba(37, 99, 235, 0.08);
+      --tt-hero-glow-3: rgba(251, 191, 36, 0.08);
+      color-scheme: light;
+    }
+
+    html[data-theme='contrast'] {
+      --tt-text: #ffffff;
+      --tt-muted: #e5e5e5;
+      --tt-border: rgba(255, 255, 255, 0.22);
+      --tt-border-strong: rgba(255, 255, 255, 0.36);
+      --tt-card: rgba(0, 0, 0, 0.96);
+      --tt-card-strong: rgba(0, 0, 0, 1);
+      --tt-card-soft: rgba(0, 0, 0, 0.9);
+      --tt-surface: #000;
+      --tt-surface-soft: #080808;
+      --tt-surface-strong: #000;
+      --tt-input: #000;
+      --tt-input-border: rgba(255, 255, 255, 0.3);
+      --tt-button-dark: #000;
+      --tt-button-secondary: #000;
+      --tt-button-secondary-border: rgba(255, 255, 255, 0.3);
+      --tt-table-row: rgba(255, 255, 255, 0.04);
+      --tt-accent: #facc15;
+      --tt-success: #34d399;
+      --tt-warning: #fbbf24;
+      --tt-danger: #f87171;
+      --tt-gold: #facc15;
+      --tt-purple: #a78bfa;
+      --tt-hero-glow: rgba(250, 204, 21, 0.12);
+      --tt-hero-glow-2: rgba(96, 165, 250, 0.08);
+      --tt-hero-glow-3: rgba(255, 255, 255, 0.06);
+      color-scheme: dark;
+    }
+
+    html[data-theme='vision-impaired'] {
+      --tt-text: #ffffff;
+      --tt-muted: #f5f5f5;
+      --tt-border: rgba(250, 204, 21, 0.38);
+      --tt-border-strong: rgba(250, 204, 21, 0.56);
+      --tt-card: rgba(0, 0, 0, 0.98);
+      --tt-card-strong: rgba(0, 0, 0, 1);
+      --tt-card-soft: rgba(0, 0, 0, 0.92);
+      --tt-surface: #000;
+      --tt-surface-soft: #090909;
+      --tt-surface-strong: #000;
+      --tt-input: #000;
+      --tt-input-border: rgba(250, 204, 21, 0.42);
+      --tt-button-dark: #000;
+      --tt-button-secondary: #000;
+      --tt-button-secondary-border: rgba(250, 204, 21, 0.44);
+      --tt-table-row: rgba(255, 255, 255, 0.04);
+      --tt-accent: #facc15;
+      --tt-success: #4ade80;
+      --tt-warning: #facc15;
+      --tt-danger: #f87171;
+      --tt-gold: #facc15;
+      --tt-purple: #c084fc;
+      --tt-hero-glow: rgba(250, 204, 21, 0.12);
+      --tt-hero-glow-2: rgba(74, 222, 128, 0.08);
+      --tt-hero-glow-3: rgba(255, 255, 255, 0.06);
+      color-scheme: dark;
+      font-size: 16px;
+    }
+
+    html[data-theme='cid'] {
+      --tt-text: #f4fff4;
+      --tt-muted: #a4c1a4;
+      --tt-border: rgba(74, 222, 128, 0.22);
+      --tt-border-strong: rgba(74, 222, 128, 0.38);
+      --tt-card: rgba(7, 17, 7, 0.96);
+      --tt-card-strong: rgba(3, 6, 3, 1);
+      --tt-card-soft: rgba(7, 17, 7, 0.9);
+      --tt-surface: #030603;
+      --tt-surface-soft: #071107;
+      --tt-surface-strong: #061006;
+      --tt-input: #061006;
+      --tt-input-border: rgba(74, 222, 128, 0.24);
+      --tt-button-dark: #061006;
+      --tt-button-secondary: #061006;
+      --tt-button-secondary-border: rgba(74, 222, 128, 0.18);
+      --tt-table-row: rgba(7, 17, 7, 0.92);
+      --tt-accent: #4ade80;
+      --tt-success: #4ade80;
+      --tt-warning: #eab308;
+      --tt-danger: #fb7185;
+      --tt-gold: #facc15;
+      --tt-purple: #a855f7;
+      --tt-hero-glow: rgba(74, 222, 128, 0.14);
+      --tt-hero-glow-2: rgba(251, 191, 36, 0.08);
+      --tt-hero-glow-3: rgba(168, 85, 247, 0.08);
+      color-scheme: dark;
+    }
+
+    html[data-theme='vision-impaired'] .tt-shell,
+    html[data-theme='contrast'] .tt-shell {
+      width: min(var(--tt-shell-max), calc(100vw - 24px));
+      padding-top: 14px;
+    }
+
+    html[data-theme='vision-impaired'] .tt-stat-card,
+    html[data-theme='contrast'] .tt-stat-card {
+      border-width: 2px;
+    }
+
+    html[data-theme='vision-impaired'] .tt-card,
+    html[data-theme='contrast'] .tt-card,
+    html[data-theme='vision-impaired'] .tt-hero-panel,
+    html[data-theme='contrast'] .tt-hero-panel {
+      border-width: 2px;
+    }
+
+    html[data-theme='vision-impaired'] .tt-feed,
+    html[data-theme='contrast'] .tt-feed {
+      max-height: 420px;
+    }
+
+    html[data-theme='day'] .tt-podium-seat.is-first {
+      background:
+        linear-gradient(180deg, rgba(255, 248, 220, 0.92), rgba(255, 255, 255, 0.92)),
+        radial-gradient(circle at 50% 0%, rgba(34, 197, 94, 0.08), transparent 60%);
+      border-color: rgba(15, 23, 42, 0.1);
+    }
+
+    html[data-theme='day'] .tt-podium-seat {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.94)),
+        radial-gradient(circle at 50% 0%, rgba(74, 222, 128, 0.06), transparent 60%);
+    }
+
+    html[data-theme='day'] .tt-podium-seat__rank,
+    html[data-theme='day'] .tt-podium-seat__name,
+    html[data-theme='day'] .tt-podium-seat__score {
+      color: #0f172a;
+    }
+
+    html[data-theme='day'] .tt-podium-seat.is-first .tt-podium-seat__rank,
+    html[data-theme='day'] .tt-podium-seat.is-first .tt-podium-seat__score {
+      color: #d97706;
+    }
+
+    html[data-theme='day'] .tt-url-chip {
+      background: rgba(248, 250, 252, 0.98);
+    }
+
+    html[data-theme='day'] .tt-board-table tbody tr,
+    html[data-theme='day'] .tt-feed-item,
+    html[data-theme='day'] .tt-url-row,
+    html[data-theme='day'] .tt-toggle-card,
+    html[data-theme='day'] .tt-variant-option {
+      background: rgba(255, 255, 255, 0.98);
+    }
+
+    html[data-theme='day'] .tt-save-button {
+      color: #031006;
+    }
+
+    html[data-theme='day'] .tt-copy-button,
+    html[data-theme='day'] .tt-action-button:not(.is-primary):not(.is-danger) {
+      color: #0f172a;
+    }
+
+    .tt-hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1440px) {
+      .tt-hero {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .tt-status-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 1200px) {
+      .tt-live-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .tt-board-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tt-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+      .tt-status-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .tt-podium-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .tt-hero-panel,
+      .tt-card {
+        border-radius: 20px;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .tt-shell {
+        width: min(var(--tt-shell-max), calc(100vw - 18px));
+        padding-top: 10px;
+      }
+
+      .tt-status-grid,
+      .tt-stat-grid,
+      .tt-form-grid,
+      .tt-toggle-grid,
+      .tt-action-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tt-url-chip {
+        grid-template-columns: 1fr;
+      }
+
+      .tt-url-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .tt-url-row__label {
+        min-width: 0;
+      }
     }
   </style>
 </head>
 <body>
-<div class="tt-app">
-  <h1>🏆 Top Tier <span>v2.0.0</span></h1>
-  <p style="font-size:0.85em;opacity:0.6;margin-bottom:16px;">Live-Leaderboard f&uuml;r TikTok LIVE Likes &amp; Geschenke &mdash; Session-basiert, Coins = Punkte</p>
-
-  <!-- Tabs -->
-  <div class="tt-tabs">
-    <div class="tt-tab active" data-tab="live">📊 Live Boards</div>
-    <div class="tt-tab" data-tab="obs">🎬 OBS URLs</div>
-    <div class="tt-tab" data-tab="likes-cfg">❤️ Likes</div>
-    <div class="tt-tab" data-tab="gifts-cfg">🎁 Gifts</div>
-    <div class="tt-tab" data-tab="decay-cfg">📉 Decay</div>
-    <div class="tt-tab" data-tab="overlay-cfg">🎨 Overlay</div>
-    <div class="tt-tab" data-tab="sound-chat">🔊 Sound &amp; Chat</div>
-    <div class="tt-tab" data-tab="controls">⚙️ Controls</div>
-  </div>
-
-  <!-- ==================== LIVE BOARDS ==================== -->
-  <div class="tt-panel active" id="panel-live">
-    <h2>Live Leaderboards</h2>
-    <div class="tt-info-box">Session-basiert: Boards werden nur bei einem neuen Stream zur&uuml;ckgesetzt. Kurzzeitige Reconnects behalten die Daten.</div>
-    <div class="tt-row">
-      <div>
-        <h3>❤️ Likes Board</h3>
-        <table><thead><tr><th>#</th><th>User</th><th>Score</th></tr></thead><tbody id="likes-tbody"></tbody></table>
+<main class="tt-shell">
+  <header class="tt-hero">
+    <section class="tt-hero-panel">
+      <div class="tt-brand-row">
+        <img class="tt-brand-logo" data-brand-logo src="/plugins/toptier/assets/toptier-logo.png" alt="Top Tier">
+        <div class="tt-brand-copywrap">
+          <p class="tt-brand-copy">Live-Leaderboard f&uuml;r TikTok LIVE Likes &amp; Geschenke</p>
+          <p class="tt-brand-note">Session-basiert, Coins = Punkte</p>
+        </div>
       </div>
-      <div>
-        <h3>🎁 Gifts Board</h3>
-        <table><thead><tr><th>#</th><th>User</th><th>Coins</th></tr></thead><tbody id="gifts-tbody"></tbody></table>
+      <p class="tt-brand-copy" style="margin-top: 14px; position: relative; z-index: 1;">
+        Modernes Control-Panel f&uuml;r Live-Boards, Decay, Overlay-Varianten, Sound &amp; Chat sowie schnelle Session-Steuerung.
+      </p>
+      <div class="tt-header-note">
+        <span class="tt-inline-note">Optimiert f&uuml;r breite Monitore, High-Contrast- und Cid-Theme, mit stabilen Karten, klaren Tabellen und schnellen Copy-Aktionen.</span>
       </div>
-    </div>
-    <p style="font-size:0.75em;opacity:0.4;margin-top:8px;">Aktualisiert sich automatisch via Socket.IO</p>
-  </div>
+    </section>
 
-  <!-- ==================== OBS URLS ==================== -->
-  <div class="tt-panel" id="panel-obs">
-    <h2>OBS Overlay URLs</h2>
-    <p style="font-size:0.82em;opacity:0.6;margin-bottom:12px;">Kopiere eine URL und f&uuml;ge sie als Browser-Quelle in OBS ein. W&auml;hle Hochformat (Portrait) f&uuml;r vertikale Streams oder Querformat (Landscape) f&uuml;r normale Streams.</p>
-    <div class="tt-row" style="margin-bottom:14px;">
-      <div>
-        <label for="obs-orientation">Ausrichtung</label>
-        <select id="obs-orientation"><option value="landscape" selected>Querformat (Landscape)</option><option value="portrait">Hochformat (Portrait)</option></select>
+    <section class="tt-card" style="padding: 16px 16px 14px; position: relative;">
+      <div class="tt-status-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+        <div class="tt-status-chip" id="status-connection" data-status="disconnected">
+          <span class="tt-status-chip__dot"></span>
+          <div class="tt-status-chip__content">
+            <div class="tt-status-chip__label">Connected</div>
+            <div class="tt-status-chip__value">API offline</div>
+            <div class="tt-status-chip__subvalue">Waiting for socket</div>
+          </div>
+        </div>
+        <div class="tt-status-chip" id="status-session">
+          <span class="tt-status-chip__dot"></span>
+          <div class="tt-status-chip__content">
+            <div class="tt-status-chip__label">Session Active</div>
+            <div class="tt-status-chip__value" id="status-session-value">--:--:--</div>
+            <div class="tt-status-chip__subvalue" id="status-session-subvalue">Start unknown</div>
+          </div>
+        </div>
+        <div class="tt-status-chip" id="status-refresh" data-status="warning">
+          <span class="tt-status-chip__dot"></span>
+          <div class="tt-status-chip__content">
+            <div class="tt-status-chip__label">Auto Refresh</div>
+            <div class="tt-status-chip__value">3 Sek.</div>
+            <div class="tt-status-chip__subvalue">Socket fallback sync</div>
+          </div>
+        </div>
+        <div class="tt-status-chip" id="status-overlay">
+          <span class="tt-status-chip__dot"></span>
+          <div class="tt-status-chip__content">
+            <div class="tt-status-chip__label">Overlay Ready</div>
+            <div class="tt-status-chip__value">1920x1080</div>
+            <div class="tt-status-chip__subvalue">Landscape + portrait</div>
+          </div>
+        </div>
       </div>
-      <div>
-        <label for="obs-theme">Theme</label>
-        <select id="obs-theme"><option value="dark" selected>Dark</option><option value="neon">Neon</option><option value="light">Light</option><option value="minimal">Minimal</option></select>
+      <div class="tt-header-note">
+        <button class="tt-save-button" id="save-config" type="button">
+          <i data-lucide="save" style="width: 16px; height: 16px;"></i>
+          Konfiguration speichern
+        </button>
+        <div class="tt-save-meta">
+          <span>Zuletzt gespeichert:</span>
+          <strong id="save-timestamp">&mdash;</strong>
+        </div>
       </div>
-    </div>
-    <div id="obs-urls-container"></div>
-  </div>
+    </section>
+  </header>
 
-  <!-- ==================== LIKES CONFIG ==================== -->
-  <div class="tt-panel" id="panel-likes-cfg">
-    <h2>❤️ Likes Board Konfiguration</h2>
-    <div class="tt-toggle"><input type="checkbox" id="likes-enabled"><label for="likes-enabled">Board aktiviert</label></div>
-    <label for="likes-count">Anzahl angezeigte Eintr&auml;ge</label>
-    <input type="number" id="likes-count" min="1" max="50" value="5">
-    <label for="likes-multiplier">Score-Multiplikator</label>
-    <input type="number" id="likes-multiplier" min="0.1" max="100" step="0.1" value="1.0">
-  </div>
-
-  <!-- ==================== GIFTS CONFIG ==================== -->
-  <div class="tt-panel" id="panel-gifts-cfg">
-    <h2>🎁 Gifts Board Konfiguration</h2>
-    <div class="tt-toggle"><input type="checkbox" id="gifts-enabled"><label for="gifts-enabled">Board aktiviert</label></div>
-    <label for="gifts-count">Anzahl angezeigte Eintr&auml;ge</label>
-    <input type="number" id="gifts-count" min="1" max="50" value="5">
-    <div class="tt-info-box" style="margin-top:12px;">
-      <strong>Coins = Punkte:</strong> 1 Rose = 1 Coin = 1 Punkt &middot; 1 Galaxy = 1000 Coins = 1000 Punkte.<br>
-      Die Geschenk-Werte direkt von TikTok &uuml;bernommen, keine Multiplikatoren.
-    </div>
-  </div>
-
-  <!-- ==================== DECAY CONFIG ==================== -->
-  <div class="tt-panel" id="panel-decay-cfg">
-    <h2>📉 Decay Konfiguration</h2>
-    <div class="tt-toggle"><input type="checkbox" id="decay-enabled"><label for="decay-enabled">Decay aktiviert</label></div>
-    <label for="decay-type">Decay-Typ</label>
-    <select id="decay-type">
-      <option value="none">Kein Decay</option>
-      <option value="linear">Linear (fester Betrag)</option>
-      <option value="percentage">Prozentual</option>
-      <option value="idle">Idle (nur bei Inaktivit&auml;t)</option>
-      <option value="step">Step (bei &auml;hnlichem Score)</option>
-    </select>
-    <label for="decay-interval">Intervall: <span id="decay-interval-val">10s</span></label>
-    <input type="range" id="decay-interval" min="1000" max="60000" step="1000" value="10000">
-    <div class="tt-row">
-      <div><label for="decay-amount">Decay-Betrag (linear/idle/step)</label><input type="number" id="decay-amount" min="1" max="1000" value="5"></div>
-      <div><label for="decay-percent">Decay-Prozent</label><input type="number" id="decay-percent" min="1" max="100" value="10"></div>
-    </div>
-    <div class="tt-row">
-      <div><label for="decay-floor">Score-Minimum (Floor)</label><input type="number" id="decay-floor" min="0" max="10000" value="0"></div>
-      <div><label for="decay-idle-threshold">Idle-Schwelle (ms)</label><input type="number" id="decay-idle-threshold" min="1000" max="300000" step="1000" value="30000"></div>
-    </div>
-    <div class="tt-row">
-      <div><label for="decay-step-threshold">Step-Schwelle</label><input type="number" id="decay-step-threshold" min="1" max="1000" value="50"></div>
-      <div><div class="tt-toggle"><input type="checkbox" id="decay-connected-only"><label for="decay-connected-only">Nur bei Verbindung</label></div></div>
-    </div>
-  </div>
-
-  <!-- ==================== OVERLAY CONFIG ==================== -->
-  <div class="tt-panel" id="panel-overlay-cfg">
-    <h2>🎨 Overlay Konfiguration</h2>
-    <h3>Variante</h3>
-    <div class="tt-variant-grid" id="variant-grid"></div>
-    <div class="tt-row" style="margin-top:14px;">
-      <div>
-        <label for="ov-theme">Theme</label>
-        <select id="ov-theme"><option value="dark">Dark</option><option value="neon">Neon</option><option value="light">Light</option><option value="minimal">Minimal</option></select>
+  <section class="tt-stat-grid" aria-label="Live summary cards">
+    <article class="tt-stat-card tt-stat-card--accent">
+      <div class="tt-stat-card__icon"><i data-lucide="users" style="width: 22px; height: 22px;"></i></div>
+      <div class="tt-stat-card__body">
+        <div class="tt-stat-card__label">Tracked Viewers</div>
+        <div class="tt-stat-card__value" id="stat-tracked">0</div>
+        <div class="tt-stat-card__hint" id="stat-tracked-hint">Visible rows</div>
       </div>
-      <div>
-        <label for="ov-orientation">Ausrichtung</label>
-        <select id="ov-orientation"><option value="landscape" selected>Querformat (Landscape)</option><option value="portrait">Hochformat (Portrait)</option></select>
+    </article>
+    <article class="tt-stat-card">
+      <div class="tt-stat-card__icon"><i data-lucide="heart" style="width: 22px; height: 22px;"></i></div>
+      <div class="tt-stat-card__body">
+        <div class="tt-stat-card__label">Likes Points</div>
+        <div class="tt-stat-card__value" id="stat-likes">0</div>
+        <div class="tt-stat-card__hint" id="stat-likes-hint">Top rank: --</div>
       </div>
-    </div>
-    <div class="tt-row">
-      <div>
-        <label for="ov-size">Gr&ouml;&szlig;e</label>
-        <select id="ov-size"><option value="S">S (Klein)</option><option value="M" selected>M (Normal)</option><option value="L">L (Gro&szlig;)</option></select>
+    </article>
+    <article class="tt-stat-card tt-stat-card--gold">
+      <div class="tt-stat-card__icon"><i data-lucide="coins" style="width: 22px; height: 22px;"></i></div>
+      <div class="tt-stat-card__body">
+        <div class="tt-stat-card__label">Gift Coins</div>
+        <div class="tt-stat-card__value" id="stat-gifts">0</div>
+        <div class="tt-stat-card__hint" id="stat-gifts-hint">Top rank: --</div>
       </div>
-      <div><label for="ov-count">Angezeigte Eintr&auml;ge</label><input type="number" id="ov-count" min="1" max="20" value="5"></div>
-    </div>
-    <div class="tt-row">
-      <div><label for="ov-rotation">Rotation-Intervall (ms)</label><input type="number" id="ov-rotation" min="2000" max="60000" step="1000" value="8000"></div>
-      <div>
-        <div class="tt-toggle"><input type="checkbox" id="ov-avatars" checked><label for="ov-avatars">Avatare anzeigen</label></div>
-        <div class="tt-toggle"><input type="checkbox" id="ov-bars" checked><label for="ov-bars">Score-Balken anzeigen</label></div>
+    </article>
+    <article class="tt-stat-card tt-stat-card--purple">
+      <div class="tt-stat-card__icon"><i data-lucide="timer" style="width: 22px; height: 22px;"></i></div>
+      <div class="tt-stat-card__body">
+        <div class="tt-stat-card__label">Active Session</div>
+        <div class="tt-stat-card__value" id="stat-session">00:00:00</div>
+        <div class="tt-stat-card__hint" id="stat-session-hint">Start unknown</div>
       </div>
-    </div>
-    <div class="tt-row">
-      <div>
-        <label for="ov-accent">Akzentfarbe</label>
-        <input type="color" id="ov-accent" value="#f59e0b">
-      </div>
-      <div>
-        <label for="ov-opacity">Hintergrund-Transparenz: <span id="ov-opacity-val">0.85</span></label>
-        <input type="range" id="ov-opacity" min="0" max="1" step="0.05" value="0.85">
-      </div>
-    </div>
-    <label for="ov-css">Custom CSS</label>
-    <textarea id="ov-css" placeholder="/* Eigenes CSS hier einf&uuml;gen */"></textarea>
-  </div>
+    </article>
+  </section>
 
-  <!-- ==================== SOUND & CHAT ==================== -->
-  <div class="tt-panel" id="panel-sound-chat">
-    <h2>🔊 Sound &amp; Chat</h2>
-    <h3>Sound-Benachrichtigungen</h3>
-    <div class="tt-toggle"><input type="checkbox" id="snd-leader"><label for="snd-leader">Sound bei neuem Leader</label></div>
-    <div class="tt-toggle"><input type="checkbox" id="snd-rank"><label for="snd-rank">Sound bei Rang-Wechsel</label></div>
-    <h3>Chat-Befehle</h3>
-    <div class="tt-toggle"><input type="checkbox" id="chat-rank-enabled"><label for="chat-rank-enabled">!rank Befehl aktiviert</label></div>
-    <label for="chat-keyword">Befehl-Keyword</label>
-    <input type="text" id="chat-keyword" value="!rank">
-  </div>
+  <nav class="tt-tabs" aria-label="Top Tier sections">
+    <button type="button" class="tt-tab-btn is-active" data-tab="live">Live Boards</button>
+    <button type="button" class="tt-tab-btn" data-tab="obs">OBS URLs</button>
+    <button type="button" class="tt-tab-btn" data-tab="likes-cfg">Likes</button>
+    <button type="button" class="tt-tab-btn" data-tab="gifts-cfg">Gifts</button>
+    <button type="button" class="tt-tab-btn" data-tab="decay-cfg">Decay</button>
+    <button type="button" class="tt-tab-btn" data-tab="overlay-cfg">Overlay</button>
+    <button type="button" class="tt-tab-btn" data-tab="sound-chat">Sound &amp; Chat</button>
+    <button type="button" class="tt-tab-btn" data-tab="controls">Controls</button>
+  </nav>
 
-  <!-- ==================== CONTROLS ==================== -->
-  <div class="tt-panel" id="panel-controls">
-    <h2>⚙️ Steuerung</h2>
-    <h3>Board zur&uuml;cksetzen</h3>
-    <div class="tt-btn-group">
-      <button class="tt-btn tt-btn-danger" id="reset-likes">Reset Likes</button>
-      <button class="tt-btn tt-btn-danger" id="reset-gifts">Reset Gifts</button>
-      <button class="tt-btn tt-btn-danger" id="reset-all">Reset Alle</button>
-    </div>
-    <h3 style="margin-top:18px;">Session</h3>
-    <div class="tt-btn-group">
-      <button class="tt-btn tt-btn-secondary" id="new-session">Neue Session starten</button>
-    </div>
-    <p style="font-size:0.8em;opacity:0.5;margin-top:6px;">Aktuelle Session: <span id="current-session-id">–</span></p>
-    <p style="font-size:0.8em;opacity:0.5;margin-top:4px;">Stream: <span id="current-stream-username">–</span></p>
-  </div>
+  <div class="tt-panels">
+    <section id="panel-live" class="tt-panel is-active">
+      <div class="tt-live-layout">
+        <div class="tt-live-main">
+          <article class="tt-card">
+            <div class="tt-card__head">
+              <div class="tt-card__titlewrap">
+                <div class="tt-card__title"><i data-lucide="crown"></i> Top 3 Podium</div>
+                <div class="tt-card__subtitle">Live front-runners from the Likes board</div>
+              </div>
+              <div class="tt-inline-note" id="podium-note">Live board synced via socket</div>
+            </div>
+            <div class="tt-live-topline">
+              <span><strong>Board:</strong> Likes</span>
+              <span><strong>View:</strong> Podium + dual tables</span>
+            </div>
+            <div class="tt-podium-strip" id="likes-podium">
+              <div class="tt-live-empty">Keine Eintr&auml;ge</div>
+            </div>
+          </article>
 
-  <!-- SAVE -->
-  <div style="margin-top:20px;text-align:right;">
-    <button class="tt-btn tt-btn-primary" id="save-config">💾 Konfiguration speichern</button>
+          <div class="tt-board-grid">
+            <article class="tt-card">
+              <div class="tt-card__head">
+                <div class="tt-card__titlewrap">
+                  <div class="tt-card__title"><i data-lucide="heart"></i> Likes Leaderboard</div>
+                  <div class="tt-card__subtitle">Top Zuschauer nach Likes Punkten</div>
+                </div>
+              </div>
+              <div class="tt-card__body">
+                <table class="tt-board-table">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>User</th>
+                      <th>Likes Points</th>
+                      <th>Change</th>
+                    </tr>
+                  </thead>
+                  <tbody id="likes-tbody"></tbody>
+                </table>
+                <a href="#" class="tt-card-link" data-live-jump="obs">Alle anzeigen</a>
+              </div>
+            </article>
+
+            <article class="tt-card">
+              <div class="tt-card__head">
+                <div class="tt-card__titlewrap">
+                  <div class="tt-card__title"><i data-lucide="gift"></i> Gifts Leaderboard</div>
+                  <div class="tt-card__subtitle">Top Zuschauer nach Geschenk Coins</div>
+                </div>
+              </div>
+              <div class="tt-card__body">
+                <table class="tt-board-table">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>User</th>
+                      <th>Gift Coins</th>
+                      <th>Change</th>
+                    </tr>
+                  </thead>
+                  <tbody id="gifts-tbody"></tbody>
+                </table>
+                <a href="#" class="tt-card-link" data-live-jump="controls">Alle anzeigen</a>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <aside class="tt-live-side">
+          <article class="tt-card">
+            <div class="tt-card__head">
+              <div class="tt-card__titlewrap">
+                <div class="tt-card__title"><i data-lucide="link"></i> Overlay URLs</div>
+                <div class="tt-card__subtitle">Three ready-to-copy links for the current setup</div>
+              </div>
+            </div>
+            <div class="tt-card__body">
+              <div class="tt-url-grid" id="live-url-grid">
+                <div class="tt-live-empty">Lade URLs...</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="tt-card">
+            <div class="tt-card__head">
+              <div class="tt-card__titlewrap">
+                <div class="tt-card__title"><i data-lucide="activity"></i> Live Event Feed</div>
+                <div class="tt-card__subtitle">Realtime changes, session events and decay ticks</div>
+              </div>
+            </div>
+            <div class="tt-card__body">
+              <div class="tt-feed" id="live-feed">
+                <div class="tt-feed-empty">No live events yet</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="tt-card">
+            <div class="tt-card__head">
+              <div class="tt-card__titlewrap">
+                <div class="tt-card__title"><i data-lucide="settings-2"></i> Controls</div>
+                <div class="tt-card__subtitle">Quick actions, safety toggles and overlay checks</div>
+              </div>
+            </div>
+            <div class="tt-card__body">
+              <div class="tt-controls-grid">
+                <div class="tt-action-grid">
+                  <button type="button" class="tt-action-button is-danger" id="reset-likes">
+                    <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i>
+                    Reset Likes
+                  </button>
+                  <button type="button" class="tt-action-button is-danger" id="reset-gifts">
+                    <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i>
+                    Reset Gifts
+                  </button>
+                  <button type="button" class="tt-action-button is-danger" id="reset-all">
+                    <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+                    Reset All
+                  </button>
+                  <button type="button" class="tt-action-button is-primary" id="new-session">
+                    <i data-lucide="play" style="width: 16px; height: 16px;"></i>
+                    New Session
+                  </button>
+                </div>
+
+                <div class="tt-toggle-grid">
+                  <div class="tt-toggle-card">
+                    <label for="decay-enabled">Decay System</label>
+                    <input type="checkbox" id="decay-enabled">
+                  </div>
+                  <div class="tt-toggle-card">
+                    <label for="snd-leader">Sound Alert</label>
+                    <input type="checkbox" id="snd-leader">
+                  </div>
+                </div>
+
+                <div class="tt-form-grid">
+                  <div class="tt-form-control">
+                    <label for="ov-theme">Overlay Theme</label>
+                    <select id="ov-theme">
+                      <option value="night">Night</option>
+                      <option value="day">Day</option>
+                      <option value="contrast">High Contrast</option>
+                      <option value="vision-impaired">Vision Impaired</option>
+                      <option value="cid">Cid</option>
+                    </select>
+                  </div>
+                  <div class="tt-form-control">
+                    <label for="ov-orientation">Orientation</label>
+                    <select id="ov-orientation">
+                      <option value="landscape" selected>Landscape</option>
+                      <option value="portrait">Portrait</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button type="button" class="tt-action-button" id="test-overlay">
+                  <i data-lucide="monitor" style="width: 16px; height: 16px;"></i>
+                  Test Overlay
+                </button>
+              </div>
+            </div>
+          </article>
+        </aside>
+      </div>
+    </section>
+
+    <section id="panel-obs" class="tt-panel">
+      <article class="tt-card">
+        <div class="tt-card__head">
+          <div class="tt-card__titlewrap">
+            <div class="tt-card__title"><i data-lucide="external-link"></i> OBS URLs</div>
+            <div class="tt-card__subtitle">Copy the exact overlay link for each variant and board combination.</div>
+          </div>
+        </div>
+        <div class="tt-card__body">
+          <div class="tt-form-grid" style="margin-bottom: 14px;">
+            <div class="tt-form-control">
+              <label for="obs-orientation">Orientation</label>
+              <select id="obs-orientation">
+                <option value="landscape">Landscape</option>
+                <option value="portrait">Portrait</option>
+              </select>
+            </div>
+            <div class="tt-form-control">
+              <label for="obs-theme">Theme</label>
+              <select id="obs-theme">
+                <option value="night">Night</option>
+                <option value="day">Day</option>
+                <option value="contrast">High Contrast</option>
+                <option value="vision-impaired">Vision Impaired</option>
+                <option value="cid">Cid</option>
+              </select>
+            </div>
+          </div>
+          <p class="tt-inline-note" style="margin-bottom: 14px;">The generator below keeps all 8 overlay variants and all board modes available, but presents them in compact cards instead of a long URL list.</p>
+          <div class="tt-obs-grid" id="obs-urls-container"></div>
+        </div>
+      </article>
+    </section>
+
+    <section id="panel-likes-cfg" class="tt-panel">
+      <article class="tt-card">
+        <div class="tt-card__head">
+          <div class="tt-card__titlewrap">
+            <div class="tt-card__title"><i data-lucide="heart"></i> Likes Configuration</div>
+            <div class="tt-card__subtitle">Enable, tune display count, and adjust the likes multiplier.</div>
+          </div>
+        </div>
+        <div class="tt-card__body">
+          <div class="tt-toggle-grid" style="margin-bottom: 14px;">
+            <div class="tt-toggle-card">
+              <label for="likes-enabled">Board enabled</label>
+              <input type="checkbox" id="likes-enabled">
+            </div>
+            <div class="tt-toggle-card">
+              <label for="likes-multiplier">Multiplier active</label>
+              <input type="checkbox" id="likes-multiplier-enabled" disabled checked>
+            </div>
+          </div>
+          <div class="tt-form-grid">
+            <div class="tt-form-control">
+              <label for="likes-count">Entries shown</label>
+              <input type="number" id="likes-count" min="1" max="50" value="5">
+            </div>
+            <div class="tt-form-control">
+              <label for="likes-multiplier">Score multiplier</label>
+              <input type="number" id="likes-multiplier" min="0.1" max="100" step="0.1" value="1.0">
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section id="panel-gifts-cfg" class="tt-panel">
+      <article class="tt-card">
+        <div class="tt-card__head">
+          <div class="tt-card__titlewrap">
+            <div class="tt-card__title"><i data-lucide="gift"></i> Gifts Configuration</div>
+            <div class="tt-card__subtitle">Coins equal points. The TikTok coin value is used directly.</div>
+          </div>
+        </div>
+        <div class="tt-card__body">
+          <div class="tt-toggle-grid" style="margin-bottom: 14px;">
+            <div class="tt-toggle-card">
+              <label for="gifts-enabled">Board enabled</label>
+              <input type="checkbox" id="gifts-enabled">
+            </div>
+            <div class="tt-toggle-card">
+              <label for="gifts-count">Entries shown</label>
+              <input type="checkbox" id="gifts-count-enabled" disabled checked>
+            </div>
+          </div>
+          <div class="tt-form-grid">
+            <div class="tt-form-control">
+              <label for="gifts-count">Entries shown</label>
+              <input type="number" id="gifts-count" min="1" max="50" value="5">
+            </div>
+            <div class="tt-info-box">
+              <strong>Coins = Punkte:</strong> 1 Rose = 1 Coin = 1 Punkt &middot; 1 Galaxy = 1000 Coins = 1000 Punkte.<br>
+              Die Geschenk-Werte kommen direkt von TikTok, keine Multiplikatoren.
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section id="panel-decay-cfg" class="tt-panel">
+      <article class="tt-card">
+        <div class="tt-card__head">
+          <div class="tt-card__titlewrap">
+            <div class="tt-card__title"><i data-lucide="timer-reset"></i> Decay Configuration</div>
+            <div class="tt-card__subtitle">Choose how score decay behaves over time and under inactivity.</div>
+          </div>
+        </div>
+        <div class="tt-card__body">
+          <div class="tt-toggle-grid" style="margin-bottom: 14px;">
+            <div class="tt-toggle-card">
+              <label for="decay-enabled-main">Decay enabled</label>
+              <input type="checkbox" id="decay-enabled-main">
+            </div>
+            <div class="tt-toggle-card">
+              <label for="decay-connected-only">Only when connected</label>
+              <input type="checkbox" id="decay-connected-only">
+            </div>
+          </div>
+          <div class="tt-form-grid">
+            <div class="tt-form-control">
+              <label for="decay-type">Decay type</label>
+              <select id="decay-type">
+                <option value="none">No decay</option>
+                <option value="linear">Linear</option>
+                <option value="percentage">Percentage</option>
+                <option value="idle">Idle</option>
+                <option value="step">Step</option>
+              </select>
+            </div>
+            <div class="tt-form-control">
+              <label for="decay-interval">Interval <span id="decay-interval-val">10s</span></label>
+              <input type="range" id="decay-interval" min="1000" max="60000" step="1000" value="10000">
+            </div>
+            <div class="tt-form-control">
+              <label for="decay-amount">Decay amount</label>
+              <input type="number" id="decay-amount" min="1" max="1000" value="5">
+            </div>
+            <div class="tt-form-control">
+              <label for="decay-percent">Decay percent</label>
+              <input type="number" id="decay-percent" min="1" max="100" value="10">
+            </div>
+            <div class="tt-form-control">
+              <label for="decay-floor">Score floor</label>
+              <input type="number" id="decay-floor" min="0" max="10000" value="0">
+            </div>
+            <div class="tt-form-control">
+              <label for="decay-idle-threshold">Idle threshold (ms)</label>
+              <input type="number" id="decay-idle-threshold" min="1000" max="300000" step="1000" value="30000">
+            </div>
+            <div class="tt-form-control">
+              <label for="decay-step-threshold">Step threshold</label>
+              <input type="number" id="decay-step-threshold" min="1" max="1000" value="50">
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section id="panel-overlay-cfg" class="tt-panel">
+      <article class="tt-card">
+        <div class="tt-card__head">
+          <div class="tt-card__titlewrap">
+            <div class="tt-card__title"><i data-lucide="monitor"></i> Overlay Configuration</div>
+            <div class="tt-card__subtitle">Select the rendering variant and tune the overlay presentation.</div>
+          </div>
+        </div>
+        <div class="tt-card__body">
+          <div class="tt-variant-grid" id="variant-grid" style="margin-bottom: 16px;"></div>
+          <div class="tt-form-grid">
+            <div class="tt-form-control">
+              <label for="ov-size">Size</label>
+              <select id="ov-size">
+                <option value="S">S (Small)</option>
+                <option value="M" selected>M (Normal)</option>
+                <option value="L">L (Large)</option>
+              </select>
+            </div>
+            <div class="tt-form-control">
+              <label for="ov-count">Entries shown</label>
+              <input type="number" id="ov-count" min="1" max="20" value="5">
+            </div>
+            <div class="tt-form-control">
+              <label for="ov-rotation">Rotation interval (ms)</label>
+              <input type="number" id="ov-rotation" min="2000" max="60000" step="1000" value="8000">
+            </div>
+            <div class="tt-form-control">
+              <label for="ov-accent">Accent color</label>
+              <input type="color" id="ov-accent" value="#f59e0b">
+            </div>
+            <div class="tt-form-control">
+              <label for="ov-opacity">Background opacity <span id="ov-opacity-val">0.85</span></label>
+              <input type="range" id="ov-opacity" min="0" max="1" step="0.05" value="0.85">
+            </div>
+            <div class="tt-toggle-grid">
+              <div class="tt-toggle-card">
+                <label for="ov-avatars">Show avatars</label>
+                <input type="checkbox" id="ov-avatars" checked>
+              </div>
+              <div class="tt-toggle-card">
+                <label for="ov-bars">Show score bars</label>
+                <input type="checkbox" id="ov-bars" checked>
+              </div>
+            </div>
+          </div>
+          <div class="tt-form-control" style="margin-top: 12px;">
+            <label for="ov-css">Custom CSS</label>
+            <textarea id="ov-css" placeholder="/* Custom overlay CSS here */"></textarea>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section id="panel-sound-chat" class="tt-panel">
+      <article class="tt-card">
+        <div class="tt-card__head">
+          <div class="tt-card__titlewrap">
+            <div class="tt-card__title"><i data-lucide="message-circle"></i> Sound &amp; Chat</div>
+            <div class="tt-card__subtitle">Audio notifications and the rank command live here.</div>
+          </div>
+        </div>
+        <div class="tt-card__body">
+          <div class="tt-toggle-grid" style="margin-bottom: 14px;">
+            <div class="tt-toggle-card">
+              <label for="snd-leader-panel">Sound on new leader</label>
+              <input type="checkbox" id="snd-leader-panel">
+            </div>
+            <div class="tt-toggle-card">
+              <label for="snd-rank">Sound on rank change</label>
+              <input type="checkbox" id="snd-rank">
+            </div>
+            <div class="tt-toggle-card">
+              <label for="chat-rank-enabled">!rank command</label>
+              <input type="checkbox" id="chat-rank-enabled">
+            </div>
+          </div>
+          <div class="tt-form-grid">
+            <div class="tt-form-control">
+              <label for="chat-keyword">Command keyword</label>
+              <input type="text" id="chat-keyword" value="!rank">
+            </div>
+            <div class="tt-info-box">
+              <strong>Hinweis:</strong> The command listens to the live chat stream and replies with the viewer's current rank and score.
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section id="panel-controls" class="tt-panel">
+      <article class="tt-card">
+        <div class="tt-card__head">
+          <div class="tt-card__titlewrap">
+            <div class="tt-card__title"><i data-lucide="settings"></i> Controls</div>
+            <div class="tt-card__subtitle">Session state, stream identity and the reset actions are grouped here.</div>
+          </div>
+        </div>
+        <div class="tt-card__body">
+          <div class="tt-action-grid" style="margin-bottom: 16px;">
+            <button type="button" class="tt-action-button is-danger" id="reset-likes-panel">
+              <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i>
+              Reset Likes
+            </button>
+            <button type="button" class="tt-action-button is-danger" id="reset-gifts-panel">
+              <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i>
+              Reset Gifts
+            </button>
+            <button type="button" class="tt-action-button is-danger" id="reset-all-panel">
+              <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+              Reset All
+            </button>
+            <button type="button" class="tt-action-button is-primary" id="new-session-panel">
+              <i data-lucide="play" style="width: 16px; height: 16px;"></i>
+              Start New Session
+            </button>
+          </div>
+
+          <div class="tt-form-grid">
+            <div class="tt-form-control">
+              <label for="current-session-id">Current session</label>
+              <input type="text" id="current-session-id" readonly value="-">
+            </div>
+            <div class="tt-form-control">
+              <label for="current-stream-username">Stream username</label>
+              <input type="text" id="current-stream-username" readonly value="-">
+            </div>
+            <div class="tt-form-control">
+              <label for="current-stream-key">Stream key</label>
+              <input type="text" id="current-stream-key" readonly value="-">
+            </div>
+            <div class="tt-info-box">
+              <strong>State:</strong> The session panel mirrors the current live stream identity and resets cleanly when a new stream starts.
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
   </div>
-</div>
+</main>
 
 <div class="tt-toast" id="toast"></div>
 
@@ -295,39 +2160,11 @@
 (function () {
   'use strict';
 
-  // Security helpers
-  function escHtml(str) {
-    if (typeof str !== 'string') str = String(str == null ? '' : str);
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-  }
-  function escAttr(str) {
-    return escHtml(str);
-  }
-
-  var API_BASE = '/api/plugins/toptier';
-  var socket = io();
-  var currentConfig = null;
-
-  // ==============================
-  // Tabs
-  // ==============================
-  var tabs = document.querySelectorAll('.tt-tabs > .tt-tab[data-tab]');
-  for (var i = 0; i < tabs.length; i++) {
-    tabs[i].addEventListener('click', function () {
-      var panels = document.querySelectorAll('.tt-panel');
-      var allTabs = document.querySelectorAll('.tt-tabs > .tt-tab[data-tab]');
-      for (var j = 0; j < allTabs.length; j++) allTabs[j].classList.remove('active');
-      for (var k = 0; k < panels.length; k++) panels[k].classList.remove('active');
-      this.classList.add('active');
-      var panel = document.getElementById('panel-' + this.getAttribute('data-tab'));
-      if (panel) panel.classList.add('active');
-    });
-  }
-
-  // ==============================
-  // Variant grid
-  // ==============================
-  var VARIANTS = [
+  const API_BASE = '';
+  const REFRESH_INTERVAL_MS = 3000;
+  const SESSION_STORAGE_PREFIX = 'toptier-session-start:';
+  const TAB_IDS = ['live', 'obs', 'likes-cfg', 'gifts-cfg', 'decay-cfg', 'overlay-cfg', 'sound-chat', 'controls'];
+  const VARIANTS = [
     { id: 'classic-list', name: 'Classic List', desc: 'Statische sortierte Liste' },
     { id: 'animated-race', name: 'Animated Race', desc: 'FLIP-Technik, Kronen-Glow' },
     { id: 'spotlight', name: 'Spotlight', desc: 'Rotiert durch Top N' },
@@ -337,142 +2174,605 @@
     { id: 'scoreboard', name: 'Scoreboard', desc: 'ESports-Tabelle mit Delta' },
     { id: 'combined', name: 'Combined', desc: 'Likes + Gifts in einem View' }
   ];
+  const QUICK_URLS = [
+    { label: 'Likes Leaderboard', board: 'likes', variant: 'animated-race' },
+    { label: 'Gifts Leaderboard', board: 'gifts', variant: 'animated-race' },
+    { label: 'Top 3 Podium', board: 'likes', variant: 'podium' }
+  ];
 
-  function buildVariantGrid(selected) {
-    var grid = document.getElementById('variant-grid');
-    if (!grid) return;
-    grid.innerHTML = '';
-    for (var i = 0; i < VARIANTS.length; i++) {
-      var v = VARIANTS[i];
-      var div = document.createElement('div');
-      div.className = 'tt-variant-option' + (v.id === selected ? ' selected' : '');
-      div.setAttribute('data-variant', v.id);
-      div.innerHTML = '<div class="tt-var-name">' + escHtml(v.name) + '</div><div class="tt-var-desc">' + escHtml(v.desc) + '</div>';
-      div.addEventListener('click', function () {
-        var all = document.querySelectorAll('.tt-variant-option');
-        for (var j = 0; j < all.length; j++) all[j].classList.remove('selected');
-        this.classList.add('selected');
-      });
-      grid.appendChild(div);
+  const state = {
+    likes: [],
+    gifts: [],
+    currentConfig: null,
+    currentSession: null,
+    socketConnected: false,
+    refreshTimer: null,
+    sessionClockTimer: null,
+    sessionStartedAt: null,
+    feed: [],
+    lastSaveLabel: '-',
+    previousScores: { likes: new Map(), gifts: new Map() },
+    previousRanks: { likes: new Map(), gifts: new Map() },
+    activeTab: 'live'
+  };
+
+  const socket = io();
+
+  function escHtml(str) {
+    if (typeof str !== 'string') str = String(str == null ? '' : str);
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  function escAttr(str) {
+    return escHtml(str);
+  }
+
+  function normalizeOverlayTheme(theme) {
+    const value = String(theme || '').toLowerCase();
+    if (value === 'day' || value === 'light') return 'day';
+    if (value === 'night' || value === 'dark' || value === 'minimal') return 'night';
+    if (value === 'contrast' || value === 'neon') return 'contrast';
+    if (value === 'vision-impaired') return 'vision-impaired';
+    if (value === 'cid') return 'cid';
+    return 'night';
+  }
+
+  function formatCompactNumber(value) {
+    const n = Number(value || 0);
+    if (!Number.isFinite(n)) return '0';
+    if (n >= 1000000) return `${(n / 1000000).toFixed(2).replace(/\.?0+$/, '')}M`;
+    if (n >= 1000) return `${(n / 1000).toFixed(2).replace(/\.?0+$/, '')}K`;
+    return String(Math.round(n));
+  }
+
+  function formatDuration(ms) {
+    const total = Math.max(0, Math.floor((ms || 0) / 1000));
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const seconds = total % 60;
+    return [hours, minutes, seconds].map(part => String(part).padStart(2, '0')).join(':');
+  }
+
+  function formatClock(date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  function getSessionStorageKey(sessionId) {
+    return sessionId ? `${SESSION_STORAGE_PREFIX}${sessionId}` : null;
+  }
+
+  function renderIcons() {
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
     }
   }
 
-  // ==============================
-  // OBS URLs
-  // ==============================
-  function buildObsUrls() {
-    var container = document.getElementById('obs-urls-container');
-    if (!container) return;
-    var base = window.location.protocol + '//' + window.location.host + '/plugins/toptier/overlay.html';
-    var orientation = document.getElementById('obs-orientation').value || 'landscape';
-    var theme = document.getElementById('obs-theme').value || 'dark';
-    var boards = ['likes', 'gifts', 'both', 'combined'];
-    var html = '';
-    for (var b = 0; b < boards.length; b++) {
-      for (var v = 0; v < VARIANTS.length; v++) {
-        var url = base + '?board=' + boards[b] + '&variant=' + VARIANTS[v].id + '&orientation=' + orientation + '&theme=' + theme;
-        html += '<div class="tt-url-box"><span>' + escHtml(VARIANTS[v].name) + ' (' + escHtml(boards[b]) + '): </span><code style="flex:1;word-break:break-all">' + escHtml(url) + '</code>';
-        html += '<button class="tt-btn tt-btn-secondary tt-copy-btn" data-url="' + escAttr(url) + '">Kopieren</button></div>';
-      }
-    }
-    container.innerHTML = html;
-
-    var btns = container.querySelectorAll('.tt-copy-btn');
-    for (var i = 0; i < btns.length; i++) {
-      btns[i].addEventListener('click', function () {
-        var url = this.getAttribute('data-url');
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(url).then(function () { showToast('URL kopiert!'); });
-        } else {
-          showToast('Kopieren nicht m\u00F6glich');
-        }
-      });
-    }
+  function setToast(message) {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(setToast._timer);
+    setToast._timer = setTimeout(() => toast.classList.remove('show'), 2400);
   }
 
-  // Rebuild OBS URLs when orientation/theme changes
-  document.getElementById('obs-orientation').addEventListener('change', buildObsUrls);
-  document.getElementById('obs-theme').addEventListener('change', buildObsUrls);
+  function setActiveTab(tabId) {
+    if (!TAB_IDS.includes(tabId)) tabId = 'live';
+    state.activeTab = tabId;
+    try {
+      localStorage.setItem('toptier-active-tab', tabId);
+    } catch (error) {}
 
-  // ==============================
-  // Load config
-  // ==============================
-  function loadConfig() {
-    fetch(API_BASE + '/config').then(function (r) { return r.json(); }).then(function (data) {
-      if (!data.success) return;
-      currentConfig = data.config;
-      applyConfigToUI(data.config);
+    document.querySelectorAll('.tt-tab-btn').forEach(btn => {
+      btn.classList.toggle('is-active', btn.getAttribute('data-tab') === tabId);
+    });
+
+    document.querySelectorAll('.tt-panel').forEach(panel => {
+      panel.classList.toggle('is-active', panel.id === `panel-${tabId}`);
     });
   }
 
+  function updateConnectionChip(connected) {
+    const chip = document.getElementById('status-connection');
+    if (!chip) return;
+    const value = chip.querySelector('.tt-status-chip__value');
+    const subvalue = chip.querySelector('.tt-status-chip__subvalue');
+    chip.dataset.status = connected ? 'connected' : 'disconnected';
+    if (value) value.textContent = connected ? 'API online' : 'API offline';
+    if (subvalue) subvalue.textContent = connected ? 'Socket live' : 'Waiting for socket';
+  }
+
+  function updateSessionChip() {
+    const chip = document.getElementById('status-session');
+    const value = document.getElementById('status-session-value');
+    const subvalue = document.getElementById('status-session-subvalue');
+    const durationText = document.getElementById('stat-session');
+    const durationHint = document.getElementById('stat-session-hint');
+    const hasActiveSession = !!(state.currentSession && state.currentSession.sessionId && state.sessionStartedAt);
+    const elapsed = hasActiveSession ? formatDuration(Date.now() - state.sessionStartedAt) : '--:--:--';
+    const stream = hasActiveSession ? state.currentSession?.streamUsername || '-' : '-';
+    const sessionId = hasActiveSession ? state.currentSession?.sessionId || '-' : '-';
+
+    if (chip) chip.dataset.status = hasActiveSession ? 'connected' : (state.socketConnected ? 'warning' : 'disconnected');
+    if (value) value.textContent = elapsed;
+    if (subvalue) subvalue.textContent = hasActiveSession ? (stream !== '-' ? `@${stream}` : `Session ${sessionId.slice(0, 8)}`) : 'No active stream';
+    if (durationText) durationText.textContent = elapsed;
+    if (durationHint) durationHint.textContent = hasActiveSession ? `Start ${formatClock(new Date(state.sessionStartedAt || Date.now()))}` : 'Waiting for live stream';
+  }
+
+  function clearSessionState() {
+    state.currentSession = null;
+    state.sessionStartedAt = null;
+
+    const sessionIdEl = document.getElementById('current-session-id');
+    const streamEl = document.getElementById('current-stream-username');
+    const keyEl = document.getElementById('current-stream-key');
+    if (sessionIdEl) sessionIdEl.value = '-';
+    if (streamEl) streamEl.value = '-';
+    if (keyEl) keyEl.value = '-';
+
+    updateSessionChip();
+  }
+
+  function updateStatusOverview() {
+    const refreshValue = document.querySelector('#status-refresh .tt-status-chip__value');
+    const refreshSubvalue = document.querySelector('#status-refresh .tt-status-chip__subvalue');
+    const overlayValue = document.querySelector('#status-overlay .tt-status-chip__value');
+    const overlaySubvalue = document.querySelector('#status-overlay .tt-status-chip__subvalue');
+
+    if (refreshValue) refreshValue.textContent = `${Math.round(REFRESH_INTERVAL_MS / 1000)} Sek.`;
+    if (refreshSubvalue) refreshSubvalue.textContent = state.socketConnected ? 'Socket fallback sync' : 'Auto reconnect pending';
+    if (overlayValue) overlayValue.textContent = '1920x1080';
+    if (overlaySubvalue) overlaySubvalue.textContent = 'Landscape + portrait';
+  }
+
+  function updateSaveStamp(label) {
+    state.lastSaveLabel = label || formatClock(new Date());
+    const el = document.getElementById('save-timestamp');
+    if (el) el.textContent = state.lastSaveLabel;
+  }
+
+  function ensureSessionStart(sessionId, forceFresh = false) {
+    if (!sessionId) return;
+    const storageKey = getSessionStorageKey(sessionId);
+    if (!storageKey) return;
+    if (forceFresh) {
+      state.sessionStartedAt = Date.now();
+      try {
+        localStorage.setItem(storageKey, String(state.sessionStartedAt));
+      } catch (error) {}
+      return;
+    }
+
+    let stored = null;
+    try {
+      stored = localStorage.getItem(storageKey);
+    } catch (error) {}
+
+    if (stored && !Number.isNaN(Number(stored))) {
+      state.sessionStartedAt = Number(stored);
+      return;
+    }
+
+    state.sessionStartedAt = Date.now();
+    try {
+      localStorage.setItem(storageKey, String(state.sessionStartedAt));
+    } catch (error) {}
+  }
+
+  function syncSession(data, forceFresh = false) {
+    if (!data) return;
+    if (data.active === false || !data.sessionId) {
+      clearSessionState();
+      return;
+    }
+    const sessionId = data.sessionId || null;
+    const streamUsername = data.streamUsername || null;
+    const streamKey = data.streamKey || null;
+    const changed = !state.currentSession || state.currentSession.sessionId !== sessionId;
+
+    state.currentSession = { sessionId, streamUsername, streamKey };
+    if (changed) ensureSessionStart(sessionId, forceFresh);
+    if (sessionId && !state.sessionStartedAt) ensureSessionStart(sessionId, forceFresh);
+
+    const sessionIdEl = document.getElementById('current-session-id');
+    const streamEl = document.getElementById('current-stream-username');
+    const keyEl = document.getElementById('current-stream-key');
+    if (sessionIdEl) sessionIdEl.value = sessionId || '-';
+    if (streamEl) streamEl.value = streamUsername || '-';
+    if (keyEl) keyEl.value = streamKey || '-';
+
+    const sessionChip = document.querySelector('#status-session .tt-status-chip__value');
+    const sessionChipSub = document.querySelector('#status-session .tt-status-chip__subvalue');
+    if (sessionChip) sessionChip.textContent = formatDuration(Date.now() - (state.sessionStartedAt || Date.now()));
+    if (sessionChipSub) sessionChipSub.textContent = streamUsername ? `@${streamUsername}` : `Session ${sessionId.slice(0, 8)}`;
+
+    updateSessionChip();
+  }
+
+  function computeBoardDeltas(boardType, entries) {
+    const previousScores = state.previousScores[boardType];
+    const previousRanks = state.previousRanks[boardType];
+    const rows = [];
+
+    for (const entry of entries || []) {
+      const username = entry.username || '';
+      const previousScore = previousScores.get(username);
+      const previousRank = previousRanks.get(username);
+      const delta = previousScore == null ? 0 : Number(entry.score || 0) - Number(previousScore || 0);
+      rows.push({
+        ...entry,
+        delta,
+        previousRank
+      });
+      previousScores.set(username, Number(entry.score || 0));
+      previousRanks.set(username, Number(entry.rank || 0));
+    }
+
+    return rows;
+  }
+
+  function renderBoardTable(boardType, entries, tbodyId, scoreLabel) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+
+    const rows = computeBoardDeltas(boardType, entries);
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="4"><div class="tt-live-empty">Keine Eintr&auml;ge</div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map((entry) => {
+      const rank = Number(entry.rank || 0);
+      const rankClass = rank === 1 ? 'is-gold' : rank === 2 ? 'is-silver' : rank === 3 ? 'is-bronze' : '';
+      const rowClass = rank === 1 ? 'is-top-one' : rank === 2 ? 'is-top-two' : rank === 3 ? 'is-top-three' : '';
+      const avatarSrc = entry.profile_picture_url || '/plugins/toptier/assets/avatar-placeholder.svg';
+      const delta = Number(entry.delta || 0);
+      const deltaClass = delta > 0 ? 'is-up' : delta < 0 ? 'is-down' : '';
+      const deltaLabel = delta > 0 ? `+${formatCompactNumber(delta)}` : delta < 0 ? `-${formatCompactNumber(Math.abs(delta))}` : '–';
+      const tag = entry.nickname && entry.username && entry.nickname !== entry.username ? `<span class="tt-user__tag">LIVE</span>` : '';
+      return `
+        <tr class="tt-board-row ${rowClass}">
+          <td><span class="tt-rank-badge ${rankClass}">${rank || '—'}</span></td>
+          <td>
+            <div class="tt-user">
+              <img class="tt-avatar" src="${escAttr(avatarSrc)}" alt="" loading="lazy" data-fallback>
+              <div class="tt-user__name">${escHtml(entry.nickname || entry.username || '-')}</div>
+              ${tag}
+            </div>
+          </td>
+          <td class="tt-score-cell">${escHtml(formatCompactNumber(entry.score || 0))}</td>
+          <td class="tt-change-cell ${deltaClass}">${escHtml(deltaLabel)}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderPodium(entries) {
+    const container = document.getElementById('likes-podium');
+    if (!container) return;
+
+    const top3 = (entries || []).slice(0, 3);
+    if (!top3.length) {
+      container.innerHTML = '<div class="tt-live-empty">Keine Eintr&auml;ge</div>';
+      return;
+    }
+
+    const seatOrder = [1, 0, 2];
+    const seatClassMap = ['is-second', 'is-first', 'is-third'];
+    container.innerHTML = seatOrder.map((index, position) => {
+      const entry = top3[index];
+      if (!entry) {
+        return `<div class="tt-podium-seat ${seatClassMap[position]}"><div class="tt-live-empty">No entry</div></div>`;
+      }
+      const avatarSrc = entry.profile_picture_url || '/plugins/toptier/assets/avatar-placeholder.svg';
+      const rankClass = position === 1 ? 'is-first' : position === 0 ? 'is-second' : 'is-third';
+      return `
+        <article class="tt-podium-seat ${rankClass}">
+          ${position === 1 ? '<div class="tt-podium-seat__crown"><i data-lucide="crown" style="width: 20px; height: 20px;"></i></div>' : ''}
+          <div class="tt-podium-seat__rank">${rankClass === 'is-first' ? '1' : rankClass === 'is-second' ? '2' : '3'}</div>
+          <div class="tt-podium-seat__user">
+            <img class="tt-podium-seat__avatar" src="${escAttr(avatarSrc)}" alt="" loading="lazy" data-fallback>
+            <div class="tt-podium-seat__name">${escHtml(entry.nickname || entry.username || '-')}<span class="tt-podium-seat__tag">Lv.${escHtml(String(entry.level || entry.rank || 1))}</span></div>
+          </div>
+          <div class="tt-podium-seat__score">${escHtml(formatCompactNumber(entry.score || 0))}</div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function renderQuickUrls() {
+    const container = document.getElementById('live-url-grid');
+    if (!container) return;
+    const base = `${window.location.protocol}//${window.location.host}/plugins/toptier/overlay.html`;
+    const orientation = document.getElementById('ov-orientation')?.value || 'landscape';
+    const theme = normalizeOverlayTheme(document.getElementById('ov-theme')?.value || 'night');
+
+    container.innerHTML = QUICK_URLS.map(item => {
+      const url = `${base}?board=${encodeURIComponent(item.board)}&variant=${encodeURIComponent(item.variant)}&orientation=${encodeURIComponent(orientation)}&theme=${encodeURIComponent(theme)}`;
+      return `
+        <div class="tt-url-row">
+          <div class="tt-url-row__label">${escHtml(item.label)}</div>
+          <div class="tt-url-row__code">${escHtml(url)}</div>
+          <button type="button" class="tt-url-chip__button tt-url-chip__button--copy" data-url="${escAttr(url)}">Copy</button>
+        </div>
+      `;
+    }).join('');
+
+    container.querySelectorAll('[data-url]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const url = button.getAttribute('data-url') || '';
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(url);
+            setToast('URL kopiert!');
+          } else {
+            setToast('Kopieren nicht m&ouml;glich');
+          }
+        } catch (error) {
+          setToast('Kopieren fehlgeschlagen');
+        }
+      });
+    });
+  }
+
+  function renderFeed() {
+    const container = document.getElementById('live-feed');
+    if (!container) return;
+
+    if (!state.feed.length) {
+      container.innerHTML = '<div class="tt-feed-empty">No live events yet</div>';
+      return;
+    }
+
+    container.innerHTML = state.feed.map(item => `
+      <div class="tt-feed-item">
+        <div class="tt-feed-time">${escHtml(item.time)}</div>
+        <i data-lucide="${escAttr(item.icon)}" class="tt-feed-icon"></i>
+        <div class="tt-feed-text">${escHtml(item.text)}</div>
+        <div class="tt-feed-value ${escAttr(item.valueClass || '')}">${escHtml(item.value || '')}</div>
+      </div>
+    `).join('');
+    renderIcons();
+  }
+
+  function pushFeedEvent(entry) {
+    const item = {
+      time: formatClock(new Date()),
+      icon: entry.icon || 'activity',
+      text: entry.text || '',
+      value: entry.value || '',
+      valueClass: entry.valueClass || ''
+    };
+    state.feed.unshift(item);
+    state.feed = state.feed.slice(0, 7);
+    renderFeed();
+  }
+
+  function updateStats() {
+    const uniqueUsers = new Set([
+      ...state.likes.map(item => item.username || item.nickname || ''),
+      ...state.gifts.map(item => item.username || item.nickname || '')
+    ]);
+    const likesSum = state.likes.reduce((total, item) => total + Number(item.score || 0), 0);
+    const giftsSum = state.gifts.reduce((total, item) => total + Number(item.score || 0), 0);
+    const topLike = state.likes[0];
+    const topGift = state.gifts[0];
+
+    const tracked = document.getElementById('stat-tracked');
+    const trackedHint = document.getElementById('stat-tracked-hint');
+    const likes = document.getElementById('stat-likes');
+    const likesHint = document.getElementById('stat-likes-hint');
+    const gifts = document.getElementById('stat-gifts');
+    const giftsHint = document.getElementById('stat-gifts-hint');
+
+    if (tracked) tracked.textContent = String(uniqueUsers.size || 0);
+    if (trackedHint) trackedHint.textContent = `Likes ${state.likes.length} + Gifts ${state.gifts.length}`;
+    if (likes) likes.textContent = formatCompactNumber(likesSum);
+    if (likesHint) likesHint.textContent = topLike ? `Top rank: ${topLike.nickname || topLike.username || '-'}` : 'Top rank: --';
+    if (gifts) gifts.textContent = formatCompactNumber(giftsSum);
+    if (giftsHint) giftsHint.textContent = topGift ? `Top rank: ${topGift.nickname || topGift.username || '-'}` : 'Top rank: --';
+  }
+
+  function refreshLiveView() {
+    renderQuickUrls();
+    renderFeed();
+    updateStats();
+    renderIcons();
+  }
+
+  function renderVariantGrid(selected) {
+    const grid = document.getElementById('variant-grid');
+    if (!grid) return;
+
+    grid.innerHTML = VARIANTS.map(v => `
+      <div class="tt-variant-option ${v.id === selected ? 'selected' : ''}" data-variant="${escAttr(v.id)}" role="button" tabindex="0">
+        <div class="tt-variant-option__name">${escHtml(v.name)}</div>
+        <div class="tt-variant-option__desc">${escHtml(v.desc)}</div>
+      </div>
+    `).join('');
+
+    grid.querySelectorAll('.tt-variant-option').forEach(option => {
+      const activate = () => {
+        grid.querySelectorAll('.tt-variant-option').forEach(item => item.classList.remove('selected'));
+        option.classList.add('selected');
+      };
+      option.addEventListener('click', activate);
+      option.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          activate();
+        }
+      });
+    });
+  }
+
+  function buildObsUrls() {
+    const container = document.getElementById('obs-urls-container');
+    if (!container) return;
+
+    const base = `${window.location.protocol}//${window.location.host}/plugins/toptier/overlay.html`;
+    const orientation = document.getElementById('obs-orientation')?.value || 'landscape';
+    const theme = normalizeOverlayTheme(document.getElementById('obs-theme')?.value || 'night');
+    const boards = ['likes', 'gifts', 'both', 'combined'];
+
+    container.innerHTML = VARIANTS.map(variant => {
+      const urls = boards.map(board => {
+        const url = `${base}?board=${encodeURIComponent(board)}&variant=${encodeURIComponent(variant.id)}&orientation=${encodeURIComponent(orientation)}&theme=${encodeURIComponent(theme)}`;
+        const label = board === 'both' ? 'Both' : board === 'combined' ? 'Combined' : board === 'likes' ? 'Likes' : 'Gifts';
+        return `
+          <div class="tt-url-chip">
+            <div class="tt-url-chip__label">${escHtml(label)}</div>
+            <div class="tt-url-chip__url">${escHtml(url)}</div>
+            <button type="button" class="tt-url-chip__button" data-copy-url="${escAttr(url)}">Copy</button>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <article class="tt-url-card">
+          <div class="tt-url-card__head">
+            <div>
+              <div class="tt-url-card__title">${escHtml(variant.name)}</div>
+              <div class="tt-url-card__desc">${escHtml(variant.desc)}</div>
+            </div>
+            <div class="tt-url-card__badge">4 URLs</div>
+          </div>
+          <div class="tt-url-card__list">
+            ${urls}
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    container.querySelectorAll('[data-copy-url]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const url = button.getAttribute('data-copy-url') || '';
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(url);
+            setToast('URL kopiert!');
+          } else {
+            setToast('Kopieren nicht m&ouml;glich');
+          }
+        } catch (error) {
+          setToast('Kopieren fehlgeschlagen');
+        }
+      });
+    });
+  }
+
+  function loadConfig() {
+    fetch(API_BASE + '/config')
+      .then(response => response.json())
+      .then(data => {
+        if (!data.success) return;
+        state.currentConfig = data.config;
+        applyConfigToUI(data.config);
+        updateSaveStamp(state.lastSaveLabel || '-');
+      })
+      .catch(error => {
+        console.error('Failed to load config', error);
+      });
+  }
+
+  function loadSession() {
+    fetch(API_BASE + '/session/current')
+      .then(response => response.json())
+      .then(data => {
+        if (!data.success) return;
+        syncSession(data, false);
+        updateSessionChip();
+      })
+      .catch(error => {
+        console.error('Failed to load session', error);
+      });
+  }
+
+  function fetchBoards() {
+    if (!socket.connected) return;
+    socket.emit('toptier:get-board', { board: 'likes' });
+    socket.emit('toptier:get-board', { board: 'gifts' });
+    socket.emit('toptier:get-config');
+  }
+
+  function startRefreshLoop() {
+    stopRefreshLoop();
+    state.refreshTimer = setInterval(fetchBoards, REFRESH_INTERVAL_MS);
+    if (state.refreshTimer && typeof state.refreshTimer.unref === 'function') {
+      state.refreshTimer.unref();
+    }
+  }
+
+  function stopRefreshLoop() {
+    if (state.refreshTimer) {
+      clearInterval(state.refreshTimer);
+      state.refreshTimer = null;
+    }
+  }
+
+  function startSessionClock() {
+    if (state.sessionClockTimer) return;
+    state.sessionClockTimer = setInterval(() => {
+      updateSessionChip();
+    }, 1000);
+    if (state.sessionClockTimer && typeof state.sessionClockTimer.unref === 'function') {
+      state.sessionClockTimer.unref();
+    }
+  }
+
   function applyConfigToUI(cfg) {
-    // Likes
     document.getElementById('likes-enabled').checked = cfg.likesBoard ? cfg.likesBoard.enabled !== false : true;
     document.getElementById('likes-count').value = (cfg.likesBoard && cfg.likesBoard.displayCount) || 5;
     document.getElementById('likes-multiplier').value = (cfg.likesBoard && cfg.likesBoard.scoreMultiplier) || 1.0;
 
-    // Gifts
     document.getElementById('gifts-enabled').checked = cfg.giftsBoard ? cfg.giftsBoard.enabled !== false : true;
     document.getElementById('gifts-count').value = (cfg.giftsBoard && cfg.giftsBoard.displayCount) || 5;
 
-    // Decay
-    var d = cfg.decay || {};
-    document.getElementById('decay-enabled').checked = d.enabled !== false;
-    document.getElementById('decay-type').value = d.type || 'linear';
-    document.getElementById('decay-interval').value = d.intervalMs || 10000;
-    document.getElementById('decay-interval-val').textContent = ((d.intervalMs || 10000) / 1000) + 's';
-    document.getElementById('decay-amount').value = d.decayAmount || 5;
-    document.getElementById('decay-percent').value = d.decayPercent || 10;
-    document.getElementById('decay-floor').value = d.scoreFloor || 0;
-    document.getElementById('decay-idle-threshold').value = d.idleThresholdMs || 30000;
-    document.getElementById('decay-step-threshold').value = d.stepThreshold || 50;
-    document.getElementById('decay-connected-only').checked = d.decayOnlyWhenConnected !== false;
+    const decay = cfg.decay || {};
+    document.getElementById('decay-enabled-main').checked = decay.enabled !== false;
+    document.getElementById('decay-enabled').checked = decay.enabled !== false;
+    document.getElementById('decay-type').value = decay.type || 'linear';
+    document.getElementById('decay-interval').value = decay.intervalMs || 10000;
+    document.getElementById('decay-interval-val').textContent = `${Math.round((decay.intervalMs || 10000) / 1000)}s`;
+    document.getElementById('decay-amount').value = decay.decayAmount || 5;
+    document.getElementById('decay-percent').value = decay.decayPercent || 10;
+    document.getElementById('decay-floor').value = decay.scoreFloor || 0;
+    document.getElementById('decay-idle-threshold').value = decay.idleThresholdMs || 30000;
+    document.getElementById('decay-step-threshold').value = decay.stepThreshold || 50;
+    document.getElementById('decay-connected-only').checked = decay.decayOnlyWhenConnected !== false;
 
-    // Overlay
-    var ov = cfg.overlay || {};
-    buildVariantGrid(ov.variant || 'animated-race');
-    document.getElementById('ov-theme').value = ov.theme || 'dark';
-    document.getElementById('ov-orientation').value = ov.orientation || 'landscape';
-    document.getElementById('ov-size').value = ov.size || 'M';
-    document.getElementById('ov-count').value = ov.displayCount || 5;
-    document.getElementById('ov-rotation').value = ov.rotationIntervalMs || 8000;
-    document.getElementById('ov-avatars').checked = ov.showAvatars !== false;
-    document.getElementById('ov-bars').checked = ov.showScoreBars !== false;
-    document.getElementById('ov-accent').value = ov.accentColor || '#f59e0b';
-    document.getElementById('ov-opacity').value = ov.bgOpacity != null ? ov.bgOpacity : 0.85;
-    document.getElementById('ov-opacity-val').textContent = ov.bgOpacity != null ? ov.bgOpacity : 0.85;
-    document.getElementById('ov-css').value = ov.customCSS || '';
+    const overlay = cfg.overlay || {};
+    renderVariantGrid(overlay.variant || 'animated-race');
+    document.getElementById('ov-theme').value = normalizeOverlayTheme(overlay.theme || 'night');
+    document.getElementById('ov-orientation').value = overlay.orientation || 'landscape';
+    document.getElementById('ov-size').value = overlay.size || 'M';
+    document.getElementById('ov-count').value = overlay.displayCount || 5;
+    document.getElementById('ov-rotation').value = overlay.rotationIntervalMs || 8000;
+    document.getElementById('ov-avatars').checked = overlay.showAvatars !== false;
+    document.getElementById('ov-bars').checked = overlay.showScoreBars !== false;
+    document.getElementById('ov-accent').value = overlay.accentColor || '#f59e0b';
+    document.getElementById('ov-opacity').value = overlay.bgOpacity != null ? overlay.bgOpacity : 0.85;
+    document.getElementById('ov-opacity-val').textContent = overlay.bgOpacity != null ? overlay.bgOpacity : 0.85;
+    document.getElementById('ov-css').value = overlay.customCSS || '';
 
-    // Sound & Chat
-    var snd = cfg.sound || {};
-    document.getElementById('snd-leader').checked = !!snd.playOnNewLeader;
-    document.getElementById('snd-rank').checked = !!snd.playOnRankChange;
-    var chat = cfg.chat || {};
+    const sound = cfg.sound || {};
+    document.getElementById('snd-leader-panel').checked = !!sound.playOnNewLeader;
+    document.getElementById('snd-leader').checked = !!sound.playOnNewLeader;
+    document.getElementById('snd-rank').checked = !!sound.playOnRankChange;
+
+    const chat = cfg.chat || {};
     document.getElementById('chat-rank-enabled').checked = chat.rankCommandEnabled !== false;
     document.getElementById('chat-keyword').value = chat.rankCommandKeyword || '!rank';
 
     buildObsUrls();
+    refreshLiveView();
   }
 
-  // ==============================
-  // Save config
-  // ==============================
-  document.getElementById('save-config').addEventListener('click', function () {
-    var cfg = buildConfigFromUI();
-    fetch(API_BASE + '/config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cfg)
-    }).then(function (r) { return r.json(); }).then(function (data) {
-      if (data.success) showToast('Konfiguration gespeichert!');
-      else showToast('Fehler: ' + (data.error || 'Unbekannt'));
-    });
-  });
-
   function buildConfigFromUI() {
-    // Selected variant
-    var selVar = document.querySelector('.tt-variant-option.selected');
-    var variant = selVar ? selVar.getAttribute('data-variant') : 'animated-race';
+    const selectedVariant = document.querySelector('.tt-variant-option.selected');
+    const variant = selectedVariant ? selectedVariant.getAttribute('data-variant') : 'animated-race';
 
     return {
       likesBoard: {
@@ -485,7 +2785,7 @@
         displayCount: parseInt(document.getElementById('gifts-count').value, 10) || 5
       },
       decay: {
-        enabled: document.getElementById('decay-enabled').checked,
+        enabled: document.getElementById('decay-enabled-main').checked,
         type: document.getElementById('decay-type').value,
         intervalMs: parseInt(document.getElementById('decay-interval').value, 10) || 10000,
         decayAmount: parseInt(document.getElementById('decay-amount').value, 10) || 5,
@@ -496,7 +2796,7 @@
         decayOnlyWhenConnected: document.getElementById('decay-connected-only').checked
       },
       overlay: {
-        variant: variant,
+        variant,
         theme: document.getElementById('ov-theme').value,
         orientation: document.getElementById('ov-orientation').value,
         size: document.getElementById('ov-size').value,
@@ -511,7 +2811,7 @@
         position: 'top-right'
       },
       sound: {
-        playOnNewLeader: document.getElementById('snd-leader').checked,
+        playOnNewLeader: document.getElementById('snd-leader-panel').checked,
         playOnRankChange: document.getElementById('snd-rank').checked
       },
       chat: {
@@ -521,98 +2821,287 @@
     };
   }
 
-  // ==============================
-  // Decay interval display
-  // ==============================
-  document.getElementById('decay-interval').addEventListener('input', function () {
-    document.getElementById('decay-interval-val').textContent = (parseInt(this.value, 10) / 1000) + 's';
-  });
-  document.getElementById('ov-opacity').addEventListener('input', function () {
-    document.getElementById('ov-opacity-val').textContent = this.value;
-  });
-
-  // ==============================
-  // Live board updates
-  // ==============================
-  function renderLiveBoard(tbodyId, entries) {
-    var tbody = document.getElementById(tbodyId);
-    if (!tbody) return;
-    if (!entries || !entries.length) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;opacity:0.4">Keine Eintr\u00E4ge</td></tr>';
-      return;
-    }
-    var html = '';
-    for (var i = 0; i < entries.length; i++) {
-      var e = entries[i];
-      var avatarSrc = e.profile_picture_url || '/plugins/toptier/assets/avatar-placeholder.svg';
-      html += '<tr><td>' + escHtml(String(e.rank)) + '</td>';
-      html += '<td><img class="tt-tbl-avatar" src="' + escAttr(avatarSrc) + '" alt="">' + escHtml(e.nickname || e.username) + '</td>';
-      html += '<td>' + escHtml(String(e.score)) + '</td></tr>';
-    }
-    tbody.innerHTML = html;
+  function saveConfig() {
+    const config = buildConfigFromUI();
+    fetch(API_BASE + '/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          updateSaveStamp(formatClock(new Date()));
+          setToast('Konfiguration gespeichert!');
+          pushFeedEvent({ icon: 'save', text: 'Configuration saved', value: 'OK', valueClass: 'is-up' });
+        } else {
+          setToast('Fehler: ' + (data.error || 'Unbekannt'));
+        }
+      })
+      .catch(error => {
+        console.error('Failed to save config', error);
+        setToast('Speichern fehlgeschlagen');
+      });
   }
 
-  socket.on('toptier:update', function (data) {
-    if (!data) return;
-    if (data.board === 'likes') renderLiveBoard('likes-tbody', data.entries);
-    if (data.board === 'gifts') renderLiveBoard('gifts-tbody', data.entries);
-  });
+  function sendReset(boardType) {
+    const url = `${API_BASE}/reset/${boardType}`;
+    return fetch(url, { method: 'POST' });
+  }
 
-  socket.on('connect', function () {
-    socket.emit('toptier:get-board', { board: 'likes' });
-    socket.emit('toptier:get-board', { board: 'gifts' });
-  });
+  function confirmAndReset(boardType) {
+    const message = boardType === 'all'
+      ? 'Alle Boards wirklich zuruecksetzen?'
+      : `${boardType === 'likes' ? 'Likes' : 'Gifts'}-Board wirklich zuruecksetzen?`;
+    if (!confirm(message)) return;
+    sendReset(boardType)
+      .then(() => {
+        setToast(boardType === 'all' ? 'Alle Boards zurueckgesetzt' : `${boardType === 'likes' ? 'Likes' : 'Gifts'} zurueckgesetzt`);
+        pushFeedEvent({
+          icon: 'rotate-ccw',
+          text: boardType === 'all' ? 'All boards reset' : `${boardType === 'likes' ? 'Likes' : 'Gifts'} board reset`,
+          value: 'RESET',
+          valueClass: 'is-purple'
+        });
+      })
+      .catch(error => {
+        console.error('Reset failed', error);
+        setToast('Reset fehlgeschlagen');
+      });
+  }
 
-  // ==============================
-  // Controls
-  // ==============================
-  document.getElementById('reset-likes').addEventListener('click', function () {
-    if (!confirm('Likes-Board wirklich zur\u00FCcksetzen?')) return;
-    fetch(API_BASE + '/reset/likes', { method: 'POST' }).then(function () { showToast('Likes zur\u00FCckgesetzt'); });
-  });
-  document.getElementById('reset-gifts').addEventListener('click', function () {
-    if (!confirm('Gifts-Board wirklich zur\u00FCcksetzen?')) return;
-    fetch(API_BASE + '/reset/gifts', { method: 'POST' }).then(function () { showToast('Gifts zur\u00FCckgesetzt'); });
-  });
-  document.getElementById('reset-all').addEventListener('click', function () {
-    if (!confirm('Alle Boards wirklich zur\u00FCcksetzen?')) return;
-    fetch(API_BASE + '/reset/all', { method: 'POST' }).then(function () { showToast('Alle Boards zur\u00FCckgesetzt'); });
-  });
-  document.getElementById('new-session').addEventListener('click', function () {
+  function startNewSession() {
     if (!confirm('Neue Session starten? Aktuelle Session wird abgeschlossen.')) return;
-    fetch(API_BASE + '/session/new', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (data) {
-      if (data.success) {
-        document.getElementById('current-session-id').textContent = data.sessionId || '–';
-        showToast('Neue Session gestartet');
+    fetch(API_BASE + '/session/new', { method: 'POST' })
+      .then(response => response.json())
+      .then(data => {
+        if (!data.success) {
+          setToast('Neue Session fehlgeschlagen');
+          return;
+        }
+        syncSession({
+          sessionId: data.sessionId,
+          streamUsername: data.streamUsername || null,
+          streamKey: data.streamKey || null
+        }, true);
+        setToast('Neue Session gestartet');
+        pushFeedEvent({ icon: 'play', text: 'New session started', value: data.sessionId ? data.sessionId.slice(0, 8) : 'NEW', valueClass: 'is-up' });
+        fetchBoards();
+      })
+      .catch(error => {
+        console.error('New session failed', error);
+        setToast('Neue Session fehlgeschlagen');
+      });
+  }
+
+  function handleBoardUpdate(boardType, entries) {
+    const snapshot = Array.isArray(entries) ? entries.slice(0, 10) : [];
+    if (boardType === 'likes') {
+      state.likes = snapshot;
+      renderBoardTable('likes', state.likes, 'likes-tbody', 'Likes Points');
+      renderPodium(state.likes);
+      if (state.likes[0]) {
+        pushFeedEvent({
+          icon: 'heart',
+          text: `Likes board synced: ${state.likes[0].nickname || state.likes[0].username || '-'}`,
+          value: formatCompactNumber(state.likes[0].score || 0),
+          valueClass: 'is-up'
+        });
       }
+    }
+
+    if (boardType === 'gifts') {
+      state.gifts = snapshot;
+      renderBoardTable('gifts', state.gifts, 'gifts-tbody', 'Gift Coins');
+      if (state.gifts[0]) {
+        pushFeedEvent({
+          icon: 'gift',
+          text: `Gifts board synced: ${state.gifts[0].nickname || state.gifts[0].username || '-'}`,
+          value: formatCompactNumber(state.gifts[0].score || 0),
+          valueClass: 'is-gold'
+        });
+      }
+    }
+
+    updateStats();
+    updateSessionChip();
+    refreshLiveView();
+  }
+
+  function addSessionEventFeed(type) {
+    if (type === 'start' && state.currentSession) {
+      pushFeedEvent({
+        icon: 'sparkles',
+        text: `Session started: ${state.currentSession.streamUsername ? '@' + state.currentSession.streamUsername : state.currentSession.sessionId.slice(0, 8)}`,
+        value: state.currentSession.sessionId ? state.currentSession.sessionId.slice(0, 8) : 'SESSION',
+        valueClass: 'is-up'
+      });
+    }
+
+    if (type === 'end') {
+      pushFeedEvent({
+        icon: 'log-out',
+        text: 'Session ended',
+        value: 'END',
+        valueClass: 'is-down'
+      });
+    }
+  }
+
+  function bindUiEvents() {
+    document.querySelectorAll('.tt-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => setActiveTab(btn.getAttribute('data-tab')));
+    });
+
+    document.querySelectorAll('[data-live-jump]').forEach(link => {
+      link.addEventListener('click', event => {
+        event.preventDefault();
+        setActiveTab(link.getAttribute('data-live-jump') || 'live');
+      });
+    });
+
+    document.getElementById('save-config').addEventListener('click', saveConfig);
+
+    document.getElementById('reset-likes').addEventListener('click', () => confirmAndReset('likes'));
+    document.getElementById('reset-gifts').addEventListener('click', () => confirmAndReset('gifts'));
+    document.getElementById('reset-all').addEventListener('click', () => confirmAndReset('all'));
+    document.getElementById('reset-likes-panel').addEventListener('click', () => confirmAndReset('likes'));
+    document.getElementById('reset-gifts-panel').addEventListener('click', () => confirmAndReset('gifts'));
+    document.getElementById('reset-all-panel').addEventListener('click', () => confirmAndReset('all'));
+    document.getElementById('new-session').addEventListener('click', startNewSession);
+    document.getElementById('new-session-panel').addEventListener('click', startNewSession);
+    document.getElementById('test-overlay').addEventListener('click', () => {
+      setToast('Overlay test requested');
+      pushFeedEvent({ icon: 'monitor', text: 'Overlay test requested', value: 'TEST', valueClass: 'is-purple' });
+    });
+
+    document.getElementById('obs-orientation').addEventListener('change', buildObsUrls);
+    document.getElementById('obs-theme').addEventListener('change', buildObsUrls);
+
+    document.getElementById('ov-orientation').addEventListener('change', () => {
+      buildObsUrls();
+      renderQuickUrls();
+    });
+    document.getElementById('ov-theme').addEventListener('change', () => {
+      buildObsUrls();
+      renderQuickUrls();
+    });
+
+    document.getElementById('decay-interval').addEventListener('input', function () {
+      document.getElementById('decay-interval-val').textContent = `${Math.round(parseInt(this.value, 10) / 1000)}s`;
+    });
+
+    document.getElementById('ov-opacity').addEventListener('input', function () {
+      document.getElementById('ov-opacity-val').textContent = this.value;
+    });
+
+    document.getElementById('chat-keyword').addEventListener('change', () => {
+      if (document.getElementById('chat-keyword').value.trim() === '') {
+        document.getElementById('chat-keyword').value = '!rank';
+      }
+    });
+  }
+
+  socket.on('connect', () => {
+    state.socketConnected = true;
+    updateConnectionChip(true);
+    updateStatusOverview();
+    startRefreshLoop();
+    fetchBoards();
+    loadSession();
+    renderIcons();
+    pushFeedEvent({ icon: 'wifi', text: 'Socket connected', value: 'LIVE', valueClass: 'is-up' });
+  });
+
+  socket.on('disconnect', () => {
+    state.socketConnected = false;
+    updateConnectionChip(false);
+    updateStatusOverview();
+    stopRefreshLoop();
+    pushFeedEvent({ icon: 'wifi-off', text: 'Socket disconnected', value: 'OFF', valueClass: 'is-down' });
+  });
+
+  socket.on('toptier:update', data => {
+    if (!data || !data.board) return;
+    handleBoardUpdate(data.board, data.entries || []);
+  });
+
+  socket.on('toptier:config', config => {
+    if (!config) return;
+    state.currentConfig = config;
+    applyConfigToUI(config);
+    pushFeedEvent({ icon: 'settings-2', text: 'Config synced from server', value: 'CFG', valueClass: 'is-purple' });
+  });
+
+  socket.on('toptier:config-saved', data => {
+    if (!data || !data.success) return;
+    updateSaveStamp(formatClock(new Date()));
+    setToast('Konfiguration gespeichert!');
+  });
+
+  socket.on('toptier:session-start', data => {
+    syncSession(data || {}, true);
+    addSessionEventFeed('start');
+    updateStatusOverview();
+  });
+
+  socket.on('toptier:session-end', data => {
+    clearSessionState();
+    addSessionEventFeed('end');
+  });
+
+  socket.on('toptier:rank-change', data => {
+    if (!data) return;
+    pushFeedEvent({
+      icon: 'arrow-up-right',
+      text: `${data.nickname || data.username || 'User'} moved from #${data.oldRank} to #${data.newRank}`,
+      value: formatCompactNumber(data.score || 0),
+      valueClass: data.newRank < data.oldRank ? 'is-up' : 'is-down'
     });
   });
 
-  // Load session info
-  function loadSession() {
-    fetch(API_BASE + '/session/current').then(function (r) { return r.json(); }).then(function (data) {
-      if (data.success) {
-        document.getElementById('current-session-id').textContent = data.sessionId || '–';
-        document.getElementById('current-stream-username').textContent = data.streamUsername || '–';
-      }
+  socket.on('toptier:new-leader', data => {
+    if (!data) return;
+    pushFeedEvent({
+      icon: 'crown',
+      text: `${data.nickname || data.username || 'User'} is the new leader`,
+      value: formatCompactNumber(data.score || 0),
+      valueClass: 'is-gold'
     });
+  });
+
+  socket.on('toptier:decay', data => {
+    if (!data || !Array.isArray(data.affectedUsers) || !data.affectedUsers.length) return;
+    pushFeedEvent({
+      icon: 'timer-reset',
+      text: `Decay tick affected ${data.affectedUsers.length} users`,
+      value: `-${data.affectedUsers.length}`,
+      valueClass: 'is-down'
+    });
+  });
+
+  function init() {
+    bindUiEvents();
+    updateConnectionChip(false);
+    updateStatusOverview();
+    updateSaveStamp('-');
+
+    let initialTab = 'live';
+    try {
+      initialTab = localStorage.getItem('toptier-active-tab') || 'live';
+    } catch (error) {}
+    setActiveTab(initialTab);
+
+    loadConfig();
+    loadSession();
+    buildObsUrls();
+    renderVariantGrid('animated-race');
+    refreshLiveView();
+    startSessionClock();
+    renderIcons();
   }
 
-  // ==============================
-  // Toast
-  // ==============================
-  function showToast(msg) {
-    var el = document.getElementById('toast');
-    el.textContent = msg;
-    el.classList.add('show');
-    setTimeout(function () { el.classList.remove('show'); }, 2500);
-  }
-
-  // ==============================
-  // Init
-  // ==============================
-  loadConfig();
-  loadSession();
+  init();
 })();
 </script>
 </body>

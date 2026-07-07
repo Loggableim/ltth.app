@@ -6,569 +6,683 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced Timer - Multi-Timer System</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function() {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const logoByTheme = {
+                day: '/advanced-timer/assets/advanced-timer-logo.png',
+                night: '/advanced-timer/assets/advanced-timer-logo.png',
+                contrast: '/advanced-timer/assets/advanced-timer-logo.png',
+                'vision-impaired': '/advanced-timer/assets/advanced-timer-logo.png',
+                cid: '/advanced-timer/assets/advanced-timer-logo.png'
+            };
+
+            function readTheme() {
+                try {
+                    const selfTheme = document.documentElement?.getAttribute('data-theme');
+                    if (validThemes.has(selfTheme)) return selfTheme;
+                } catch (error) {}
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme !== theme) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                }
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                document.querySelectorAll('[data-brand-logo]').forEach((logo) => {
+                    const nextSrc = logoByTheme[theme] || logoByTheme.night;
+                    if (logo.getAttribute('src') !== nextSrc) {
+                        logo.setAttribute('src', nextSrc);
+                    }
+                });
+            }
+
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
+
+            try {
+                new MutationObserver(syncTheme).observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['data-theme']
+                });
+            } catch (error) {}
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/i18n-client.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --at-bg: linear-gradient(180deg, #eef3fb 0%, #e4ebf6 100%);
+            --at-panel: rgba(255,255,255,0.84);
+            --at-card: rgba(255,255,255,0.94);
+            --at-surface: rgba(244,247,252,0.94);
+            --at-surface-strong: rgba(255,255,255,0.96);
+            --at-border: rgba(16,24,40,0.10);
+            --at-border-strong: rgba(16,24,40,0.16);
+            --at-text: #101828;
+            --at-muted: #5b6475;
+            --at-primary: #0f8712;
+            --at-primary-strong: #0c6d0e;
+            --at-success: #0f9d58;
+            --at-warning: #c97b00;
+            --at-danger: #cc2d3b;
+            --at-shadow: 0 16px 40px rgba(15, 23, 42, 0.10);
+            --at-shadow-soft: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
 
+        * { box-sizing: border-box; }
+        html, body { min-height: 100%; }
         body {
+            margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--color-bg-primary);
-            color: var(--color-text-primary);
-            height: 100vh;
+            background: var(--at-bg);
+            color: var(--at-text);
             overflow: hidden;
         }
+        button, input, select, textarea { font: inherit; }
 
-        .app-container { display: flex; height: 100vh; }
-        .sidebar { 
-            width: 240px; 
-            background: var(--color-bg-secondary); 
-            border-right: 1px solid var(--color-border); 
-            padding: 24px 16px; 
-            overflow-y: auto; 
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: min(320px, 26vw);
+            min-width: 270px;
+            padding: 22px;
+            border-right: 1px solid var(--at-border);
+            background: var(--at-panel);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            overflow: auto;
             flex-shrink: 0;
         }
-        .main-content { flex: 1; padding: 24px 28px; overflow-y: auto; }
 
-        .logo { 
-            font-size: 1.3rem; 
-            font-weight: 700; 
-            background: var(--gradient-primary); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            margin-bottom: 20px; 
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 18px;
+            margin-bottom: 16px;
+            border-radius: 22px;
+            border: 1px solid var(--at-border);
+            background: var(--at-surface-strong);
+            box-shadow: var(--at-shadow-soft);
         }
-
-        .nav-btn {
+        .at-sidebar-brand-icon { width: 72px; height: 72px; object-fit: contain; display: block; flex: 0 0 auto; }
+        .at-sidebar-brand-title { font-size: 1.2rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; }
+        .at-sidebar-brand-subtitle { margin-top: 4px; font-size: 0.84rem; color: var(--at-muted); line-height: 1.45; }
+        .at-sidebar-note {
+            margin-bottom: 18px;
+            padding: 14px 15px;
+            border-radius: 18px;
+            border: 1px solid var(--at-border);
+            background: var(--at-surface);
+            color: var(--at-muted);
+            font-size: 0.92rem;
+            line-height: 1.55;
+        }
+        .at-sidebar-nav { display: flex; flex-direction: column; gap: 8px; }
+        .at-nav-btn {
             width: 100%;
-            padding: 10px 14px;
+            padding: 12px 14px;
+            border: 1px solid transparent;
+            border-radius: 14px;
             background: transparent;
-            border: none;
-            border-radius: 8px;
-            color: var(--color-text-primary);
+            color: var(--at-text);
             text-align: left;
             cursor: pointer;
-            margin-bottom: 6px;
-            transition: all 0.2s;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-        .nav-btn:hover { background: var(--color-active-bg); }
-        .nav-btn.active { background: var(--color-accent-primary); color: white; }
-
-        .btn { 
-            padding: 8px 16px; 
-            border-radius: 8px; 
-            border: none; 
-            font-weight: 600; 
-            cursor: pointer; 
-            transition: all 0.2s; 
-            font-size: 0.9rem;
-        }
-        .btn-primary { background: var(--color-accent-primary); color: white; }
-        .btn-primary:hover { filter: brightness(1.1); }
-        .btn-success { background: var(--color-accent-success); color: white; }
-        .btn-warning { background: var(--color-accent-warning); color: white; }
-        .btn-danger { background: var(--color-accent-danger); color: white; }
-        .btn-secondary { 
-            background: var(--color-btn-secondary-bg); 
-            color: var(--color-btn-secondary-text); 
-        }
-        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
-        .btn-xs { padding: 3px 8px; font-size: 0.75rem; }
-
-        /* ── Timer Card ───────────────────────────────────────────── */
-        .timer-card { 
-            background: var(--color-bg-card); 
-            border-radius: 14px; 
-            padding: 20px; 
-            margin-bottom: 20px; 
-            border: 1px solid var(--color-border); 
-        }
-        .timer-card-header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 12px;
-        }
-        .timer-title { font-size: 1.15rem; font-weight: 700; }
-        .timer-mode-badge { 
-            padding: 3px 10px; 
-            border-radius: 10px; 
-            font-size: 0.72rem; 
-            font-weight: 600; 
-            background: var(--color-active-bg);
-            color: var(--color-accent-primary);
-            text-transform: uppercase;
-        }
-
-        .timer-display {
-            text-align: center;
-            font-size: 2.8rem;
             font-weight: 700;
-            font-variant-numeric: tabular-nums;
-            margin: 12px 0;
-            color: var(--color-accent-primary);
+            transition: background 0.18s ease, transform 0.18s ease, border-color 0.18s ease, color 0.18s ease;
         }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
-        .timer-display.running { animation: pulse 2s ease-in-out infinite; }
+        .at-nav-btn:hover { background: rgba(15, 135, 18, 0.08); border-color: rgba(15, 135, 18, 0.10); transform: translateX(1px); }
+        .at-nav-btn.active { background: var(--at-primary); color: #fff; border-color: var(--at-primary); box-shadow: 0 10px 22px rgba(15, 135, 18, 0.24); }
 
-        .timer-state-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        .state-running { background: var(--color-accent-success); color: white; }
-        .state-paused { background: var(--color-accent-warning); color: white; }
-        .state-stopped { background: var(--color-bg-tertiary); color: var(--color-text-secondary); }
-        .state-completed { background: var(--color-accent-primary); color: white; }
+        .at-main-content { flex: 1; padding: 24px 28px 36px; overflow: auto; min-width: 0; }
+        .at-tab-content { display: none; max-width: none; }
+        .at-tab-content.active { display: block; }
 
-        .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
-
-        /* ── Overlay URL inline ───────────────────────────────────── */
-        .overlay-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 12px 0;
-            flex-wrap: wrap;
-        }
-        .overlay-url-text {
-            flex: 1;
-            background: var(--color-bg-tertiary);
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 0.78rem;
-            word-break: break-all;
-            min-width: 0;
-        }
-
-        /* ── Collapsible sections ────────────────────────────────── */
-        .section-toggle {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: transparent;
-            border: none;
-            border-top: 1px solid var(--color-border);
-            padding: 10px 0;
-            cursor: pointer;
-            color: var(--color-text-primary);
-            font-weight: 600;
-            font-size: 0.85rem;
-            margin-top: 4px;
-        }
-        .section-toggle:hover { color: var(--color-accent-primary); }
-        .section-toggle .chevron { transition: transform 0.2s; font-size: 0.75rem; }
-        .section-toggle.open .chevron { transform: rotate(180deg); }
-        .section-body { display: none; padding: 12px 0 4px 0; }
-        .section-body.open { display: block; }
-
-        /* ── Interactions grid ─────────────────────────────── */
-        .interactions-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        @media (max-width: 900px) { .interactions-grid { grid-template-columns: 1fr; } }
-
-        .interaction-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-        }
-        .interaction-label {
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
-            flex: 1;
-            white-space: nowrap;
-        }
-        .interaction-input-wrap {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .interaction-input {
-            width: 80px;
-            padding: 5px 8px;
-            border-radius: 6px;
-            border: 1px solid var(--color-border);
-            background: var(--color-bg-primary);
-            color: var(--color-text-primary);
-            font-size: 0.85rem;
-            text-align: right;
-        }
-        .interaction-input:focus { outline: none; border-color: var(--color-accent-primary); }
-        .interaction-unit { font-size: 0.75rem; color: var(--color-text-secondary); }
-        .save-indicator { 
-            font-size: 0.7rem; 
-            color: var(--color-accent-success); 
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .save-indicator.show { opacity: 1; }
-
-        /* ── Multiplier ───────────────────────────────────────────── */
-        .multiplier-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .toggle-switch {
+        .at-tab-hero {
             position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 22px;
-        }
-        .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            inset: 0;
-            background: var(--color-bg-tertiary);
-            border-radius: 22px;
-            transition: 0.3s;
-        }
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            width: 16px; height: 16px;
-            left: 3px; bottom: 3px;
-            background: white;
-            border-radius: 50%;
-            transition: 0.3s;
-        }
-        input:checked + .toggle-slider { background: var(--color-accent-primary); }
-        input:checked + .toggle-slider:before { transform: translateX(18px); }
-
-        /* ── Shortcuts ────────────────────────────────────────────── */
-        .shortcuts-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        .shortcut-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .shortcut-label { font-size: 0.82rem; color: var(--color-text-secondary); flex: 1; }
-        .shortcut-input {
-            width: 110px;
-            padding: 5px 8px;
-            border-radius: 6px;
-            border: 1px solid var(--color-border);
-            background: var(--color-bg-primary);
-            color: var(--color-text-primary);
-            font-size: 0.82rem;
-        }
-        .shortcut-input:focus { outline: none; border-color: var(--color-accent-primary); }
-
-        /* ── Activity Log ─────────────────────────────────────────── */
-        .log-entry {
-            padding: 8px 0;
-            border-bottom: 1px solid var(--color-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            font-size: 0.82rem;
-        }
-        .log-entry:last-child { border-bottom: none; }
-        .log-time { color: var(--color-text-secondary); font-size: 0.75rem; flex-shrink: 0; margin-left: 8px; }
-        .log-change { font-weight: 600; flex-shrink: 0; margin-left: 8px; }
-        .log-change.positive { color: var(--color-accent-success); }
-        .log-change.negative { color: var(--color-accent-danger); }
-
-        /* ── Settings section ────────────────────────────────────── */
-        .settings-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-        @media (max-width: 700px) { .settings-grid { grid-template-columns: 1fr; } }
-
-        .field-group {
             display: flex;
             flex-direction: column;
-            gap: 4px;
-        }
-        .field-label { font-size: 0.8rem; color: var(--color-text-secondary); }
-        .field-input {
-            padding: 7px 10px;
-            border-radius: 7px;
-            border: 1px solid var(--color-border);
-            background: var(--color-bg-primary);
-            color: var(--color-text-primary);
-            font-size: 0.85rem;
-        }
-        .field-input:focus { outline: none; border-color: var(--color-accent-primary); }
-
-        /* ── Form (Create) ───────────────────────────────────────── */
-        .form-group { margin-bottom: 18px; }
-        .form-label { display: block; font-weight: 600; margin-bottom: 6px; }
-        .form-control { 
-            width: 100%; padding: 9px 12px; border-radius: 8px; 
-            border: 1px solid var(--color-border); 
-            background: var(--color-bg-primary); color: var(--color-text-primary); 
-        }
-        .form-control:focus { outline: none; border-color: var(--color-accent-primary); }
-        .form-row { display: flex; gap: 14px; }
-        .form-row .form-group { flex: 1; }
-
-        .info-box {
-            background: var(--color-active-bg);
-            border-left: 4px solid var(--color-accent-primary);
-            padding: 14px;
-            border-radius: 8px;
-            margin: 14px 0;
-            font-size: 0.9rem;
-        }
-        .info-box-title { font-weight: 700; margin-bottom: 6px; }
-
-        .empty-state {
-            text-align: center; padding: 60px 20px; color: var(--color-text-secondary);
-        }
-        .empty-state-icon { font-size: 3.5rem; margin-bottom: 14px; opacity: 0.3; }
-        .empty-state-text { font-size: 1rem; margin-bottom: 20px; }
-
-        /* ── Profiles ────────────────────────────────────────────── */
-        .profile-card {
-            background: var(--color-bg-card);
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 12px;
-            border: 1px solid var(--color-border);
-            display: flex;
             align-items: center;
-            justify-content: space-between;
-        }
-        .profile-name { font-weight: 600; }
-        .profile-meta { font-size: 0.8rem; color: var(--color-text-secondary); margin-top: 2px; }
-
-        .adv-events-link {
-            font-size: 0.78rem;
-            color: var(--color-accent-primary);
-            text-decoration: none;
-            cursor: pointer;
-            margin-top: 6px;
-            display: inline-block;
-        }
-        .adv-events-link:hover { text-decoration: underline; }
-
-        /* ── Rotator + Threshold Settings (new sections) ── */
-        .rotator-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        @media (max-width: 700px) { .rotator-grid { grid-template-columns: 1fr; } }
-        .rotator-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            padding: 6px 8px;
-            background: var(--color-bg-tertiary);
-            border-radius: 6px;
-            font-size: 0.85rem;
-        }
-        .rotator-row > span:first-child {
-            color: var(--color-text-secondary);
-            font-weight: 500;
-            flex: 1;
-        }
-        .rotator-row input[type="number"],
-        .rotator-row select {
-            max-width: 160px;
-        }
-        .source-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
-            border-radius: 14px;
-            background: var(--color-active-bg);
-            font-size: 0.78rem;
-            cursor: pointer;
-            user-select: none;
-        }
-        .source-chip input { margin: 0; cursor: pointer; }
-        .frame-slot-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 12px;
-            margin-top: 4px;
+            padding: 16px 24px 20px;
+            margin-bottom: 18px;
+            border-radius: 28px;
+            border: 1px solid var(--at-border);
+            background: var(--at-surface-strong);
+            box-shadow: var(--at-shadow);
         }
-        .frame-slot-card {
-            background: var(--color-bg-tertiary);
-            border: 1px solid var(--color-border);
-            border-radius: 8px;
-            padding: 10px;
+        .at-tab-hero.compact { padding: 16px 20px 18px; }
+        .at-tab-hero-copy {
+            width: min(100%, 900px);
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            align-items: center;
+            text-align: center;
         }
-        .frame-slot-header {
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: var(--color-text-secondary);
-            text-transform: uppercase;
-        }
-        .frame-slot-preview {
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            background: rgba(0,0,0,0.4);
-            border-radius: 4px;
+        .at-page-brand {
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            width: 100%;
+            min-height: 0;
+            margin-bottom: 4px;
         }
-        .frame-slot-preview img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        .frame-slot-name {
-            font-size: 0.78rem;
-            color: var(--color-text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .frame-slot-empty {
-            color: var(--color-text-secondary);
-            font-size: 0.8rem;
-            text-align: center;
-            padding: 14px 0;
-            font-style: italic;
-        }
-        .frame-slot-upload {
+        .at-page-brand-logo { width: min(520px, 100%); max-height: 128px; object-fit: contain; display: block; }
+        .at-page-title { margin: 0 0 6px; font-size: clamp(1.7rem, 2.1vw, 2.5rem); line-height: 1.08; letter-spacing: -0.04em; }
+        .at-page-subtitle { margin: 0; max-width: 72ch; color: var(--at-muted); line-height: 1.58; font-size: 0.98rem; }
+        .at-tab-hero-actions {
+            position: absolute;
+            top: 22px;
+            right: 24px;
             display: flex;
-            flex-direction: column;
-            gap: 4px;
-            margin-top: auto;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            align-items: center;
+            z-index: 1;
         }
-        .frame-slot-upload input[type="file"] {
-            font-size: 0.75rem;
-            color: var(--color-text-secondary);
+
+        .at-dashboard-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+        .at-stat-card {
+            padding: 16px 18px;
+            border-radius: 20px;
+            border: 1px solid var(--at-border);
+            background: var(--at-surface-strong);
+            box-shadow: var(--at-shadow-soft);
         }
-        .frame-slot-upload input[type="text"] {
-            padding: 5px 8px;
-            border-radius: 5px;
-            border: 1px solid var(--color-border);
-            background: var(--color-bg-primary);
-            color: var(--color-text-primary);
-            font-size: 0.82rem;
+        .at-stat-label { display: block; margin-bottom: 10px; color: var(--at-muted); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 800; }
+        .at-stat-card strong { display: block; font-size: 1.9rem; line-height: 1; letter-spacing: -0.04em; }
+
+        .at-timers-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 18px; align-items: start; }
+        .at-timer-card {
+            padding: 20px;
+            border-radius: 24px;
+            border: 1px solid var(--at-border);
+            background: var(--at-card);
+            box-shadow: var(--at-shadow-soft);
+        }
+        .at-timer-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+        .at-timer-title { font-size: 1.18rem; font-weight: 800; letter-spacing: -0.03em; }
+        .at-timer-mode-badge,
+        .at-timer-state-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 999px; padding: 5px 10px;
+            font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap;
+        }
+        .at-timer-mode-badge { background: rgba(15, 135, 18, 0.10); color: var(--at-primary-strong); }
+        .at-timer-state-badge { background: rgba(15, 24, 40, 0.08); color: var(--at-muted); }
+        .at-state-running { background: rgba(15, 157, 88, 0.14); color: var(--at-success); }
+        .at-state-paused { background: rgba(201, 123, 0, 0.14); color: var(--at-warning); }
+        .at-state-stopped { background: rgba(15, 24, 40, 0.08); color: var(--at-muted); }
+        .at-state-completed { background: rgba(204, 45, 59, 0.14); color: var(--at-danger); }
+
+        .at-timer-display {
+            margin: 14px 0 10px;
+            text-align: center;
+            font-size: clamp(2.25rem, 3vw, 3.35rem);
+            line-height: 1;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.04em;
+            color: var(--at-primary);
+        }
+        @keyframes pulse { 0%,100%{opacity:1;transform:translateY(0);} 50%{opacity:.68;transform:translateY(-1px);} }
+        .at-timer-display.running { animation: pulse 2s ease-in-out infinite; }
+
+        .timer-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 12px; }
+        .at-overlay-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+        .at-overlay-url-text {
+            flex: 1; min-width: 0; padding: 10px 12px; border-radius: 14px;
+            border: 1px solid var(--at-border); background: var(--at-surface);
+            font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+            font-size: 0.84rem; line-height: 1.45; word-break: break-all;
+        }
+        .at-section-toggle {
+            width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            margin-top: 14px; padding: 12px 0; border: 0; border-top: 1px solid var(--at-border);
+            background: transparent; color: var(--at-text); font-weight: 800; cursor: pointer;
+        }
+        .at-section-toggle .chevron { transition: transform 0.18s ease; font-size: 0.75rem; }
+        .at-section-toggle.open .chevron { transform: rotate(180deg); }
+        .at-section-body { display: none; padding: 12px 0 4px; }
+        .at-section-body.open { display: block; }
+
+        .at-settings-grid,
+        .at-interactions-grid,
+        .at-shortcuts-grid,
+        .at-rotator-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .at-field-group, .at-shortcut-row, .at-rotator-row { display: flex; flex-direction: column; gap: 6px; }
+        .at-field-label, .at-shortcut-label { font-size: 0.8rem; color: var(--at-muted); font-weight: 700; }
+        .at-field-input, .at-form-control, .shortcut-input, .at-interaction-input {
+            width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--at-border);
+            background: var(--at-surface); color: var(--at-text);
+        }
+        .at-field-input:focus, .at-form-control:focus, .shortcut-input:focus, .at-interaction-input:focus {
+            outline: none; border-color: rgba(15, 135, 18, 0.45); box-shadow: 0 0 0 3px rgba(15, 135, 18, 0.10);
+        }
+
+        .at-form-group { margin-bottom: 18px; }
+        .at-form-label { display: block; margin-bottom: 8px; font-weight: 800; }
+        .at-form-row { display: flex; gap: 14px; }
+        .at-form-row .at-form-group { flex: 1; }
+
+        .btn {
+            padding: 10px 14px; border-radius: 12px; border: 1px solid transparent; font-weight: 800; cursor: pointer;
+            transition: transform 0.18s ease, filter 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+            line-height: 1.1;
+        }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary { background: var(--at-primary); color: #fff; }
+        .btn-primary:hover { filter: brightness(1.06); }
+        .btn-secondary { background: rgba(15, 24, 40, 0.05); color: var(--at-text); border-color: var(--at-border); }
+        .btn-success { background: var(--at-success); color: #fff; }
+        .btn-warning { background: var(--at-warning); color: #1a1400; }
+        .btn-danger { background: var(--at-danger); color: #fff; }
+        .btn-sm { padding: 8px 11px; font-size: 0.82rem; }
+        .btn-xs { padding: 6px 9px; font-size: 0.76rem; }
+
+        .at-toggle-switch { position: relative; display: inline-block; width: 46px; height: 26px; flex: 0 0 auto; }
+        .at-toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .at-toggle-slider { position: absolute; inset: 0; cursor: pointer; border-radius: 999px; background: rgba(15, 24, 40, 0.16); transition: 0.2s ease; }
+        .at-toggle-slider:before {
+            content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; border-radius: 50%;
+            background: #fff; box-shadow: 0 4px 10px rgba(15, 23, 42, 0.24); transition: 0.2s ease;
+        }
+        input:checked + .at-toggle-slider { background: var(--at-primary); }
+        input:checked + .at-toggle-slider:before { transform: translateX(20px); }
+
+        .at-interaction-row, .at-shortcut-row, .at-rotator-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px;
+            border-radius: 14px; border: 1px solid var(--at-border); background: var(--at-surface);
+        }
+        .at-interaction-label { flex: 1; color: var(--at-muted); font-size: 0.84rem; font-weight: 700; white-space: nowrap; }
+        .at-interaction-input-wrap { display: flex; align-items: center; gap: 6px; }
+        .at-interaction-input { width: 92px; text-align: right; }
+        .at-interaction-unit { font-size: 0.75rem; color: var(--at-muted); font-weight: 700; }
+        .at-save-indicator { display: inline-block; margin-left: 10px; font-size: 0.72rem; font-weight: 800; color: var(--at-success); opacity: 0; transition: opacity 0.2s ease; }
+        .at-save-indicator.show { opacity: 1; }
+        .at-multiplier-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .at-source-chip {
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px;
+            border: 1px solid var(--at-border); background: var(--at-surface); font-size: 0.8rem; font-weight: 700; user-select: none;
+        }
+        .at-source-chip input { margin: 0; }
+
+        .at-log-entries { display: flex; flex-direction: column; gap: 0; max-height: 280px; overflow: auto; padding-right: 2px; }
+        .at-log-entry { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--at-border); font-size: 0.82rem; }
+        .at-log-entry:last-child { border-bottom: 0; }
+        .at-log-time { flex-shrink: 0; color: var(--at-muted); font-size: 0.75rem; }
+        .at-log-change { font-weight: 800; flex-shrink: 0; }
+        .at-log-change.positive { color: var(--at-success); }
+        .at-log-change.negative { color: var(--at-danger); }
+
+        .at-info-box {
+            padding: 16px 18px; margin: 14px 0; border-radius: 18px; border: 1px solid var(--at-border); background: var(--at-surface);
+        }
+        .at-info-box-title { margin-bottom: 8px; font-weight: 800; }
+
+        .at-empty-state { padding: 72px 22px; text-align: center; border-radius: 26px; border: 1px dashed var(--at-border-strong); background: var(--at-surface-strong); color: var(--at-muted); }
+        .at-empty-state-icon { margin-bottom: 12px; font-size: 3rem; opacity: 0.35; }
+        .at-empty-state-text { margin-bottom: 18px; font-size: 1rem; font-weight: 700; color: var(--at-text); }
+
+        .at-profile-card {
+            display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 12px; padding: 16px 18px;
+            border-radius: 18px; border: 1px solid var(--at-border); background: var(--at-surface-strong); box-shadow: var(--at-shadow-soft);
+        }
+        .at-profile-name { font-size: 1rem; font-weight: 800; }
+        .at-profile-meta { margin-top: 3px; color: var(--at-muted); font-size: 0.8rem; }
+        .at-adv-events-link { display: inline-flex; margin-top: 8px; color: var(--at-primary-strong); text-decoration: none; font-size: 0.78rem; font-weight: 800; cursor: pointer; }
+        .at-adv-events-link:hover { text-decoration: underline; }
+
+        .at-frame-slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 6px; }
+        .at-frame-slot-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 16px; border: 1px solid var(--at-border); background: var(--at-surface); }
+        .at-frame-slot-header { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 800; color: var(--at-muted); }
+        .at-frame-slot-preview { display: flex; align-items: center; justify-content: center; min-height: 140px; border-radius: 12px; background: var(--at-surface-strong); overflow: hidden; }
+        .at-frame-slot-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .at-frame-slot-name { font-size: 0.82rem; color: var(--at-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .at-frame-slot-empty { min-height: 140px; display: flex; align-items: center; justify-content: center; border-radius: 12px; color: var(--at-muted); background: var(--at-surface-strong); font-style: italic; }
+        .at-frame-slot-upload { display: flex; flex-direction: column; gap: 6px; }
+        .at-frame-slot-upload input[type="file"] { font-size: 0.75rem; color: var(--at-muted); }
+        .at-frame-slot-upload input[type="text"] { padding: 9px 10px; border-radius: 10px; border: 1px solid var(--at-border); background: var(--at-surface); color: var(--at-text); }
+
+        html[data-theme="day"] body {
+            --at-bg: linear-gradient(180deg, #eef3fb 0%, #e4ebf6 100%);
+            --at-panel: rgba(255,255,255,0.86);
+            --at-card: rgba(255,255,255,0.95);
+            --at-surface: rgba(243,247,252,0.95);
+            --at-surface-strong: rgba(255,255,255,0.96);
+            --at-text: #0f172a;
+            --at-muted: #607084;
+        }
+        html[data-theme="night"] body {
+            --at-bg: linear-gradient(180deg, #0b1020 0%, #101826 100%);
+            --at-panel: rgba(10,16,32,0.76);
+            --at-card: rgba(12,18,34,0.92);
+            --at-surface: rgba(15,23,42,0.72);
+            --at-surface-strong: rgba(15,23,42,0.92);
+            --at-border: rgba(148,163,184,0.16);
+            --at-border-strong: rgba(148,163,184,0.24);
+            --at-text: #e5e7eb;
+            --at-muted: #a7b3c6;
+        }
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            --at-bg: #000000;
+            --at-panel: #000000;
+            --at-card: #000000;
+            --at-surface: #000000;
+            --at-surface-strong: #000000;
+            --at-border: #facc15;
+            --at-border-strong: #facc15;
+            --at-text: #ffffff;
+            --at-muted: #fff7cc;
+            --at-primary: #facc15;
+            --at-primary-strong: #facc15;
+            --at-success: #facc15;
+            --at-warning: #facc15;
+            --at-danger: #facc15;
+            --at-shadow: none;
+            --at-shadow-soft: none;
+        }
+        html[data-theme="cid"] body {
+            --at-bg: linear-gradient(180deg, #030603 0%, #071107 100%);
+            --at-panel: rgba(7,17,7,0.94);
+            --at-card: rgba(8,20,8,0.96);
+            --at-surface: rgba(7,16,7,0.96);
+            --at-surface-strong: rgba(8,20,8,0.96);
+            --at-border: rgba(74,222,128,0.20);
+            --at-border-strong: rgba(74,222,128,0.30);
+            --at-text: #f4fff4;
+            --at-muted: #c7e3c7;
+            --at-primary: #4ade80;
+            --at-primary-strong: #4ade80;
+            --at-success: #4ade80;
+            --at-warning: #a3e635;
+            --at-danger: #86efac;
+            --at-shadow: none;
+            --at-shadow-soft: none;
+        }
+        html[data-theme="vision-impaired"] .sidebar-brand,
+        html[data-theme="vision-impaired"] .at-sidebar-note,
+        html[data-theme="vision-impaired"] .at-tab-hero,
+        html[data-theme="vision-impaired"] .at-stat-card,
+        html[data-theme="vision-impaired"] .at-timer-card,
+        html[data-theme="vision-impaired"] .at-info-box,
+        html[data-theme="vision-impaired"] .at-profile-card,
+        html[data-theme="vision-impaired"] .at-frame-slot-card,
+        html[data-theme="contrast"] .sidebar-brand,
+        html[data-theme="contrast"] .at-sidebar-note,
+        html[data-theme="contrast"] .at-tab-hero,
+        html[data-theme="contrast"] .at-stat-card,
+        html[data-theme="contrast"] .at-timer-card,
+        html[data-theme="contrast"] .at-info-box,
+        html[data-theme="contrast"] .at-profile-card,
+        html[data-theme="contrast"] .at-frame-slot-card { border-width: 2px; }
+        html[data-theme="vision-impaired"] .btn,
+        html[data-theme="contrast"] .btn { border-width: 2px; }
+        html[data-theme="vision-impaired"] .at-nav-btn { padding: 13px 15px; border-width: 2px; }
+        html[data-theme="vision-impaired"] .at-page-title,
+        html[data-theme="vision-impaired"] .at-timer-title,
+        html[data-theme="vision-impaired"] .at-timer-display,
+        html[data-theme="vision-impaired"] .at-stat-card strong { letter-spacing: 0; }
+        html[data-theme="vision-impaired"] .at-overlay-url-text { font-size: 0.94rem; line-height: 1.55; }
+        html[data-theme="vision-impaired"] .at-page-brand-logo { width: min(420px, 100%); }
+
+        @media (max-width: 1320px) { .at-dashboard-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 1100px) { .at-timers-grid { grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); } }
+        @media (max-width: 900px) {
+            body { overflow: auto; }
+            .app-container { flex-direction: column; }
+            .sidebar { width: 100%; min-width: 0; border-right: 0; border-bottom: 1px solid var(--at-border); }
+            .at-main-content { padding: 18px; }
+            .at-tab-hero { display: flex; flex-direction: column; gap: 14px; }
+            .at-tab-hero-copy { width: 100%; }
+            .at-tab-hero-actions {
+                position: static;
+                width: 100%;
+                justify-content: flex-start;
+                padding-top: 0;
+            }
+            .at-dashboard-stats, .at-settings-grid, .at-interactions-grid, .at-shortcuts-grid, .at-rotator-grid, .at-form-row, .at-timers-grid { grid-template-columns: 1fr; }
+            .at-profile-card, .at-timer-card-header, .at-overlay-row, .at-interaction-row, .at-shortcut-row, .at-rotator-row, .at-form-row { flex-wrap: wrap; }
+        }
+        @media (max-width: 640px) {
+            .sidebar { padding: 16px; }
+            .sidebar-brand { padding: 14px; }
+            .at-sidebar-brand-icon { width: 58px; height: 58px; }
+            .at-main-content { padding: 14px; }
+            .at-timer-card { padding: 16px; }
+            .at-page-brand-logo { max-height: 84px; }
+            .at-tab-hero { padding: 18px; border-radius: 22px; }
+        }
+
+        /* Keep the plugin out of the global shell sidebar collapse behavior. */
+        body.advanced-timer-ui {
+            overflow: hidden;
+        }
+        body.advanced-timer-ui .app-container {
+            display: flex !important;
+            flex-direction: row-reverse !important;
+            min-height: 100vh !important;
+            width: 100% !important;
+        }
+        body.advanced-timer-ui .sidebar {
+            position: relative !important;
+            left: auto !important;
+            top: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            transform: none !important;
+            width: min(320px, 26vw) !important;
+            min-width: 270px !important;
+            z-index: auto !important;
+            flex-shrink: 0 !important;
+            display: block !important;
+            border-right: 0 !important;
+            border-left: 1px solid var(--at-border) !important;
+        }
+        body.advanced-timer-ui .at-main-content {
+            margin-left: 0 !important;
+            width: auto !important;
+            flex: 1 1 auto !important;
+        }
+        body.advanced-timer-ui .sidebar.mobile-open,
+        body.advanced-timer-ui .sidebar.sidebar-collapsed {
+            transform: none !important;
+        }
+        @media (max-width: 1024px) {
+            body.advanced-timer-ui {
+                overflow: auto;
+            }
+            body.advanced-timer-ui .app-container {
+                flex-direction: column !important;
+            }
+            body.advanced-timer-ui .sidebar {
+                position: relative !important;
+                transform: none !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                z-index: auto !important;
+                border-right: 0 !important;
+                border-left: 0 !important;
+                border-bottom: 1px solid var(--at-border) !important;
+            }
+            body.advanced-timer-ui .at-main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
         }
     </style>
 </head>
-<body>
+<body class="advanced-timer-ui">
 <div class="app-container">
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="logo">⏱️ Advanced Timer</div>
-        <button class="nav-btn active" data-tab="timers">📊 Timers</button>
-        <button class="nav-btn" data-tab="create">➕ Create Timer</button>
-        <button class="nav-btn" data-tab="profiles">💾 Profiles</button>
-        <button class="nav-btn" data-tab="help">❓ Help</button>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main-content">
-
-        <!-- ── Timers Tab ─────────────────────────────── -->
-        <div id="tab-timers" class="tab-content active">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <h1>Active Timers</h1>
-                <button class="btn btn-primary" data-tab="create">➕ New Timer</button>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img class="at-sidebar-brand-icon" src="/advanced-timer/assets/advanced-timer-icon.png" alt="Advanced Timer">
+            <div>
+                <div class="at-sidebar-brand-title">Advanced Timer</div>
+                <div class="at-sidebar-brand-subtitle">Multi-timer control center</div>
             </div>
-            <div id="timers-container"></div>
+        </div>
+        <div class="at-sidebar-note">Wide-screen ready. Timers, rules, rotators, profiles stay available.</div>
+        <nav class="at-sidebar-nav" aria-label="Advanced Timer sections">
+            <button class="at-nav-btn active" data-tab="timers">Timers</button>
+            <button class="at-nav-btn" data-tab="create">Create Timer</button>
+            <button class="at-nav-btn" data-tab="profiles">Profiles</button>
+            <button class="at-nav-btn" data-tab="help">Help</button>
+        </nav>
+    </aside>
+
+    <main class="at-main-content">
+        <div id="tab-timers" class="at-tab-content active">
+            <section class="at-tab-hero">
+                <div class="at-tab-hero-copy">
+                    <div class="at-page-brand">
+                        <img class="at-page-brand-logo" data-brand-logo src="/advanced-timer/assets/advanced-timer-logo.png" alt="Advanced Timer">
+                    </div>
+                    <h1 class="at-page-title">Timers at a glance</h1>
+                    <p class="at-page-subtitle">Control every active timer, inspect states, copy overlay URLs and jump into advanced event rules without losing the full feature set.</p>
+                </div>
+                <div class="at-tab-hero-actions">
+                    <button class="btn btn-secondary" data-tab="profiles">Profiles</button>
+                    <button class="btn btn-primary" data-tab="create">New Timer</button>
+                </div>
+            </section>
+            <section class="at-dashboard-stats" aria-label="Timer summary">
+                <div class="at-stat-card"><span class="at-stat-label">Total</span><strong id="at-stat-total">0</strong></div>
+                <div class="at-stat-card"><span class="at-stat-label">Running</span><strong id="at-stat-running">0</strong></div>
+                <div class="at-stat-card"><span class="at-stat-label">Paused</span><strong id="at-stat-paused">0</strong></div>
+                <div class="at-stat-card"><span class="at-stat-label">Stopped</span><strong id="at-stat-stopped">0</strong></div>
+            </section>
+            <div id="timers-container" class="at-timers-grid"></div>
         </div>
 
-        <!-- ── Create Timer Tab ───────────────────────── -->
-        <div id="tab-create" class="tab-content" style="display:none;">
-            <h1 style="margin-bottom:20px;">Create New Timer</h1>
-            <form id="timer-form">
-                <div class="form-group">
-                    <label class="form-label">Timer Name</label>
-                    <input type="text" class="form-control" id="timer-name" placeholder="My Timer" required>
+        <div id="tab-create" class="at-tab-content" style="display:none;">
+            <section class="at-tab-hero compact">
+                <div class="at-tab-hero-copy">
+                    <div class="at-page-brand">
+                        <img class="at-page-brand-logo" data-brand-logo src="/advanced-timer/assets/advanced-timer-logo.png" alt="Advanced Timer">
+                    </div>
+                    <h1 class="at-page-title">Create timer</h1>
+                    <p class="at-page-subtitle">Choose the mode, configure the baseline duration and keep direct interactions ready for stream-side tuning.</p>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Timer Mode</label>
-                    <select class="form-control" id="timer-mode" required>
-                        <option value="countdown">Countdown – count down from a time</option>
-                        <option value="countup">Count Up – count up to a target</option>
-                        <option value="stopwatch">Stopwatch – count up indefinitely</option>
-                        <option value="loop">Loop – repeat countdown continuously</option>
-                        <option value="interval">Interval – repeat up to target</option>
+            </section>
+            <form id="timer-form">
+                <div class="at-form-group">
+                    <label class="at-form-label">Timer Name</label>
+                    <input type="text" class="at-form-control" id="timer-name" placeholder="My Timer" required>
+                </div>
+                <div class="at-form-group">
+                    <label class="at-form-label">Timer Mode</label>
+                    <select class="at-form-control" id="timer-mode" required>
+                        <option value="countdown">Countdown - count down from a time</option>
+                        <option value="countup">Count Up - count up to a target</option>
+                        <option value="stopwatch">Stopwatch - count up indefinitely</option>
+                        <option value="loop">Loop - repeat countdown continuously</option>
+                        <option value="interval">Interval - repeat up to target</option>
                     </select>
                 </div>
-                <div class="form-row">
-                    <div class="form-group" id="initial-duration-group">
-                        <label class="form-label">Initial Duration (seconds)</label>
-                        <input type="number" class="form-control" id="initial-duration" min="1" value="300">
+                <div class="at-form-row">
+                    <div class="at-form-group" id="initial-duration-group">
+                        <label class="at-form-label">Initial Duration (seconds)</label>
+                        <input type="number" class="at-form-control" id="initial-duration" min="1" value="300">
                     </div>
-                    <div class="form-group" id="target-value-group" style="display:none;">
-                        <label class="form-label">Target Value (seconds)</label>
-                        <input type="number" class="form-control" id="target-value" min="0" value="300">
+                    <div class="at-form-group" id="target-value-group" style="display:none;">
+                        <label class="at-form-label">Target Value (seconds)</label>
+                        <input type="number" class="at-form-control" id="target-value" min="0" value="300">
                     </div>
                 </div>
-                <div class="info-box">
-                    <div class="info-box-title">💡 Quick Setup</div>
-                    <p>After creating the timer you can set Per Coin, Per Like, Per Follow etc. directly on the timer card — no separate event rules needed for basic interactions.</p>
+                <div class="at-info-box">
+                    <div class="at-info-box-title">Quick Setup</div>
+                    <p>After creating the timer you can set Per Coin, Per Like, Per Follow etc. directly on the timer card - no separate event rules needed for basic interactions.</p>
                 </div>
-                <div style="display:flex;gap:10px;margin-top:20px;">
+                <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
                     <button type="submit" class="btn btn-primary">Create Timer</button>
                     <button type="button" class="btn btn-secondary" data-tab="timers">Cancel</button>
                 </div>
             </form>
         </div>
 
-        <!-- ── Profiles Tab ───────────────────────────── -->
-        <div id="tab-profiles" class="tab-content" style="display:none;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <h1>Timer Profiles</h1>
-                <button class="btn btn-primary" id="save-profile-btn">💾 Save Current Setup</button>
-            </div>
+        <div id="tab-profiles" class="at-tab-content" style="display:none;">
+            <section class="at-tab-hero compact">
+                <div class="at-tab-hero-copy">
+                    <div class="at-page-brand">
+                        <img class="at-page-brand-logo" data-brand-logo src="/advanced-timer/assets/advanced-timer-logo.png" alt="Advanced Timer">
+                    </div>
+                    <h1 class="at-page-title">Profiles</h1>
+                    <p class="at-page-subtitle">Save, reapply and move between timer setups without rebuilding your structure.</p>
+                </div>
+                <div class="at-tab-hero-actions">
+                    <button class="btn btn-primary" id="save-profile-btn">Save Current Setup</button>
+                </div>
+            </section>
             <div id="profiles-container"></div>
         </div>
 
-        <!-- ── Help Tab ───────────────────────────────── -->
-        <div id="tab-help" class="tab-content" style="display:none;">
-            <h1 style="margin-bottom:20px;">Help & Documentation</h1>
-            <div class="info-box">
-                <div class="info-box-title">🎯 Timer Modes</div>
-                <p><strong>Countdown:</strong> Counts down to zero – great for subathon timers</p>
+        <div id="tab-help" class="at-tab-content" style="display:none;">
+            <section class="at-tab-hero compact">
+                <div class="at-tab-hero-copy">
+                    <div class="at-page-brand">
+                        <img class="at-page-brand-logo" data-brand-logo src="/advanced-timer/assets/advanced-timer-logo.png" alt="Advanced Timer">
+                    </div>
+                    <h1 class="at-page-title">Help and setup</h1>
+                    <p class="at-page-subtitle">Quick reference for modes, direct interactions, multiplier behavior and OBS overlay usage.</p>
+                </div>
+            </section>
+            <div class="at-info-box">
+                <div class="at-info-box-title">Timer Modes</div>
+                <p><strong>Countdown:</strong> Counts down to zero - great for subathon timers</p>
                 <p><strong>Count Up:</strong> Counts up to a target value</p>
                 <p><strong>Stopwatch:</strong> Counts up indefinitely</p>
                 <p><strong>Loop:</strong> Continuously repeats countdown</p>
                 <p><strong>Interval:</strong> Counts up to target, then resets and repeats</p>
             </div>
-            <div class="info-box" style="margin-top:14px;">
-                <div class="info-box-title">⚡ Direct Interactions</div>
+            <div class="at-info-box" style="margin-top:14px;">
+                <div class="at-info-box-title">Direct Interactions</div>
                 <p>Set <em>Per Coin, Per Follow, Per Share, Per Subscribe, Per Like, Per Chat Message</em> directly on each timer card. Use positive values to add time, negative to reduce.</p>
-                <p style="margin-top:6px;">Enable the <strong>x Multiplier</strong> to multiply all interaction values by a factor (e.g. ×10 for events).</p>
+                <p style="margin-top:6px;">Enable the <strong>x Multiplier</strong> to multiply all interaction values by a factor (for example, x10 for events).</p>
             </div>
-            <div class="info-box" style="margin-top:14px;">
-                <div class="info-box-title">🔗 Advanced Event Rules</div>
-                <p>Need gift-name filters or chat-command matching? Use the <em>Advanced Event Rules</em> link on each timer card to configure per-gift / per-command rules.</p>
+            <div class="at-info-box" style="margin-top:14px;">
+                <div class="at-info-box-title">Advanced Event Rules</div>
+                <p>Need gift-name filters or chat-command matching? Use the <em>Advanced Event Rules</em> link on each timer card to configure per-gift and per-command rules.</p>
             </div>
-            <div class="info-box" style="margin-top:14px;">
-                <div class="info-box-title">📊 OBS Overlay</div>
+            <div class="at-info-box" style="margin-top:14px;">
+                <div class="at-info-box-title">OBS Overlay</div>
                 <p>Each timer card shows its overlay URL. Add it as a Browser Source in OBS.</p>
             </div>
         </div>
-
-    </div><!-- /main-content -->
-</div><!-- /app-container -->
-
+    </main>
+</div>
 <script src="/advanced-timer/ui.js"></script>
 </body>
 </html>
+

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LTTH App Store Admin</title>
+  <style>
+    :root {
+      --bg: #10151f;
+      --panel: #171f2e;
+      --panel-2: #202a3c;
+      --text: #edf2ff;
+      --muted: #93a4bd;
+      --accent: #38bdf8;
+      --danger: #fb7185;
+      --ok: #34d399;
+      --border: rgba(148, 163, 184, 0.24);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 34rem), var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px;
+    }
+    main { max-width: 1120px; margin: 0 auto; }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 5vw, 48px); letter-spacing: -0.04em; }
+    p { color: var(--muted); line-height: 1.6; }
+    .toolbar, .card {
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.24);
+    }
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      padding: 14px;
+      margin: 28px 0;
+      flex-wrap: wrap;
+    }
+    input {
+      flex: 1 1 280px;
+      min-height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.72);
+      color: var(--text);
+      padding: 0 14px;
+      outline: none;
+    }
+    button {
+      border: 0;
+      border-radius: 14px;
+      min-height: 44px;
+      padding: 0 16px;
+      background: var(--accent);
+      color: #06111c;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    button.danger {
+      background: var(--danger);
+      color: #21060b;
+    }
+    .status { min-height: 22px; margin-bottom: 18px; color: var(--muted); }
+    .grid { display: grid; gap: 16px; }
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .card { padding: 18px; }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .metric {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(15, 23, 42, 0.45);
+    }
+    .metric strong { display: block; font-size: 24px; }
+    .metric span { color: var(--muted); font-size: 12px; }
+    .feedback-list { display: grid; gap: 10px; margin-top: 14px; }
+    .feedback-item {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(15, 23, 42, 0.45);
+    }
+    .feedback-item strong { display: block; margin-bottom: 4px; }
+    .user-head { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .email { font-size: 18px; font-weight: 800; }
+    .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .pill {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .pill.ok { color: var(--ok); border-color: rgba(52, 211, 153, 0.45); }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    label.check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(15, 23, 42, 0.45);
+    }
+    label.check input { flex: 0 0 auto; min-height: 0; width: auto; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>LTTH App Store Admin</h1>
+    <p>Manage beta licenses and closed-beta plugin access for Clerk users.</p>
+
+    <section class="toolbar">
+      <input id="search" type="search" placeholder="Search by email or username" value="loggableim@gmail.com">
+      <button id="searchBtn" type="button">Search users</button>
+      <button id="meBtn" class="secondary" type="button">Check admin session</button>
+    </section>
+
+    <div id="status" class="status"></div>
+
+    <section class="admin-grid">
+      <article class="card">
+        <div class="user-head">
+          <div>
+            <h2>Store Health</h2>
+            <p>Local App Store telemetry and install health.</p>
+          </div>
+          <button id="refreshHealthBtn" class="secondary" type="button">Refresh</button>
+        </div>
+        <div id="healthMetrics" class="metric-grid"></div>
+      </article>
+      <article class="card">
+        <div class="user-head">
+          <div>
+            <h2>Latest Feedback</h2>
+            <p>Recent reviews submitted through the App Store drawer.</p>
+          </div>
+          <button id="refreshFeedbackBtn" class="secondary" type="button">Refresh</button>
+        </div>
+        <div id="feedbackList" class="feedback-list"></div>
+      </article>
+    </section>
+
+    <section id="users" class="grid"></section>
+  </main>
+
+  <script src="/js/clerk-store-auth.js"></script>
+  <script>
+    const CLOSED_BETA_PLUGINS = [
+      'animazingpal',
+      'interactive-story',
+      'openshock',
+      'sidekick',
+      'streamalchemy'
+    ];
+    const statusEl = document.getElementById('status');
+    const usersEl = document.getElementById('users');
+    const searchEl = document.getElementById('search');
+    const healthMetricsEl = document.getElementById('healthMetrics');
+    const feedbackListEl = document.getElementById('feedbackList');
+
+    function setStatus(message) {
+      statusEl.textContent = message || '';
+    }
+
+    async function apiFetch(path, options = {}) {
+      if (window.StoreAuth && typeof window.StoreAuth.requireAuth === 'function') {
+        await window.StoreAuth.requireAuth();
+      }
+      const token = window.StoreAuth && typeof window.StoreAuth.getToken === 'function'
+        ? await window.StoreAuth.getToken()
+        : '';
+      const response = await fetch(path, {
+        ...options,
+        headers: {
+          'content-type': 'application/json',
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+          ...(options.headers || {})
+        }
+      });
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || data.code || 'Request failed');
+      }
+      return data;
+    }
+
+    function renderUsers(users) {
+      usersEl.innerHTML = users.map(user => {
+        const groups = new Set(user.access.groups || []);
+        const plugins = new Set(user.access.closedBetaPlugins || []);
+        const license = user.license && user.license.active ? 'Active beta license' : 'No active license';
+        return `
+          <article class="card" data-user-id="${user.id}">
+            <div class="user-head">
+              <div>
+                <div class="email">${escapeHtml(user.email || user.id)}</div>
+                <p>${escapeHtml(user.username || [user.firstName, user.lastName].filter(Boolean).join(' ') || 'No profile name')}</p>
+              </div>
+              <div class="pill-row">
+                <span class="pill ${user.license && user.license.active ? 'ok' : ''}">${license}</span>
+                ${(user.access.groups || []).map(group => `<span class="pill">${escapeHtml(group)}</span>`).join('')}
+              </div>
+            </div>
+            <div class="checks">
+              <label class="check"><input type="checkbox" data-group="admin" ${groups.has('admin') ? 'checked' : ''}> Admin</label>
+              <label class="check"><input type="checkbox" data-group="closed-beta" ${groups.has('closed-beta') ? 'checked' : ''}> All closed beta</label>
+              ${CLOSED_BETA_PLUGINS.map(id => `
+                <label class="check"><input type="checkbox" data-plugin="${id}" ${plugins.has(id) ? 'checked' : ''}> ${escapeHtml(id)}</label>
+              `).join('')}
+            </div>
+            <div class="actions">
+              <button type="button" data-action="save-access">Save access</button>
+              <button type="button" class="secondary" data-action="claim-license">Claim beta license</button>
+              <button type="button" class="danger" data-action="revoke-license">Revoke license</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function renderHealth(summary) {
+      const plugins = summary.plugins || {};
+      const installFailures = Object.values(plugins).reduce((sum, item) => sum + Number(item.installFailureCount || 0), 0);
+      const rollbackCount = Object.values(plugins).reduce((sum, item) => sum + Number(item.rollbackCount || 0), 0);
+      healthMetricsEl.innerHTML = [
+        ['Feedback', summary.feedbackCount || 0],
+        ['Telemetry', summary.telemetryCount || 0],
+        ['Install failures', installFailures],
+        ['Rollbacks', rollbackCount]
+      ].map(([label, value]) => `
+        <div class="metric">
+          <strong>${escapeHtml(value)}</strong>
+          <span>${escapeHtml(label)}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderFeedback(feedback) {
+      feedbackListEl.innerHTML = feedback.length > 0
+        ? feedback.map(item => `
+          <div class="feedback-item">
+            <strong>${escapeHtml(item.pluginId || 'unknown')} · ${escapeHtml(item.rating || 'n/a')}/5</strong>
+            <span>${escapeHtml(item.message || item.kind || 'No message')}</span>
+          </div>
+        `).join('')
+        : '<p>No App Store feedback yet.</p>';
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    async function searchUsers() {
+      const query = encodeURIComponent(searchEl.value.trim());
+      setStatus('Loading users...');
+      const data = await apiFetch(`/api/store-admin/users?q=${query}`);
+      renderUsers(data.users || []);
+      setStatus(`${data.users.length} user(s) loaded.`);
+    }
+
+    async function loadHealth() {
+      const data = await apiFetch('/api/store-admin/health');
+      renderHealth(data.summary || {});
+    }
+
+    async function loadFeedback() {
+      const data = await apiFetch('/api/store-admin/feedback?limit=25');
+      renderFeedback(data.feedback || []);
+    }
+
+    async function saveAccess(card) {
+      const userId = card.getAttribute('data-user-id');
+      const groups = Array.from(card.querySelectorAll('[data-group]:checked')).map(input => input.getAttribute('data-group'));
+      const closedBetaPlugins = Array.from(card.querySelectorAll('[data-plugin]:checked')).map(input => input.getAttribute('data-plugin'));
+      await apiFetch(`/api/store-admin/users/${encodeURIComponent(userId)}/access`, {
+        method: 'POST',
+        body: JSON.stringify({ groups, closedBetaPlugins })
+      });
+      setStatus('Access saved.');
+      await searchUsers();
+    }
+
+    async function updateLicense(card, action) {
+      const userId = card.getAttribute('data-user-id');
+      await apiFetch(`/api/store-admin/users/${encodeURIComponent(userId)}/license`, {
+        method: 'POST',
+        body: JSON.stringify({ action })
+      });
+      setStatus(action === 'revoke' ? 'License revoked.' : 'License claimed.');
+      await searchUsers();
+    }
+
+    document.getElementById('searchBtn').addEventListener('click', () => {
+      searchUsers().catch(error => setStatus(error.message));
+    });
+
+    document.getElementById('meBtn').addEventListener('click', async () => {
+      try {
+        const data = await apiFetch('/api/store-admin/me');
+        setStatus(`Admin session OK: ${data.account.userId}`);
+      } catch (error) {
+        setStatus(error.message);
+      }
+    });
+
+    document.getElementById('refreshHealthBtn').addEventListener('click', () => {
+      loadHealth().catch(error => setStatus(error.message));
+    });
+
+    document.getElementById('refreshFeedbackBtn').addEventListener('click', () => {
+      loadFeedback().catch(error => setStatus(error.message));
+    });
+
+    usersEl.addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+      const card = button.closest('[data-user-id]');
+      const action = button.getAttribute('data-action');
+      const task = action === 'save-access'
+        ? saveAccess(card)
+        : updateLicense(card, action === 'revoke-license' ? 'revoke' : 'claim');
+      task.catch(error => setStatus(error.message));
+    });
+
+    Promise.all([
+      searchUsers(),
+      loadHealth(),
+      loadFeedback()
+    ]).catch(error => setStatus(error.message));
+  </script>
+</body>
+</html>

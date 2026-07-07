@@ -5,6 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StreamAlchemy Relaunch</title>
   <link rel="stylesheet" href="/css/themes.css">
+  <script>
+    (function () {
+      const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (validThemes.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (validThemes.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+      }
+
+      syncTheme();
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -50,6 +93,20 @@
       background: rgba(148, 163, 184, 0.12);
       border-color: var(--color-border, rgba(148, 163, 184, 0.25));
     }
+    html[data-theme="day"] .nav button.active,
+    html[data-theme="night"] .nav button.active {
+      background: #1d4ed8;
+      color: #fff;
+      -webkit-text-fill-color: #fff;
+      border-color: #93c5fd;
+    }
+    html[data-theme="contrast"] .nav button.active,
+    html[data-theme="vision-impaired"] .nav button.active {
+      background: #facc15;
+      color: #000;
+      -webkit-text-fill-color: #000;
+      border-color: #facc15;
+    }
     main { min-width: 0; padding: 28px; }
     .topline {
       display: flex;
@@ -60,7 +117,7 @@
     }
     .topline h2 { margin: 0; font-size: 1.45rem; line-height: 1.25; }
     .topline p {
-      max-width: 760px;
+      max-width: 1700px;
       margin: 7px 0 0;
       color: var(--color-text-secondary, #a7b0c0);
       font-size: 0.92rem;
@@ -268,6 +325,235 @@
       gap: 12px;
       align-items: flex-start;
     }
+
+    html[data-theme="day"] body {
+      background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+      color: #10203a;
+    }
+
+    html[data-theme="day"] .sidebar,
+    html[data-theme="day"] .metric,
+    html[data-theme="day"] .panel,
+    html[data-theme="day"] .item,
+    html[data-theme="day"] .recipe,
+    html[data-theme="day"] .job,
+    html[data-theme="day"] .preset-card,
+    html[data-theme="day"] .button,
+    html[data-theme="day"] input,
+    html[data-theme="day"] select {
+      background: #fff;
+      color: #10203a;
+    }
+
+    html[data-theme="day"] .nav button {
+      color: #4b5563;
+    }
+
+    html[data-theme="day"] .nav button:hover,
+    html[data-theme="day"] .nav button.active {
+      color: #10203a;
+      background: rgba(37, 99, 235, 0.08);
+    }
+
+    html[data-theme="night"] body {
+      background: linear-gradient(135deg, #0b1020 0%, #111827 100%);
+      color: #f8fafc;
+    }
+
+    html[data-theme="contrast"] body,
+    html[data-theme="vision-impaired"] body {
+      background: #000;
+      color: #fff;
+    }
+
+    html[data-theme="contrast"] .sidebar,
+    html[data-theme="contrast"] .metric,
+    html[data-theme="contrast"] .panel,
+    html[data-theme="contrast"] .item,
+    html[data-theme="contrast"] .recipe,
+    html[data-theme="contrast"] .job,
+    html[data-theme="contrast"] .preset-card,
+    html[data-theme="contrast"] .button,
+    html[data-theme="contrast"] input,
+    html[data-theme="contrast"] select,
+    html[data-theme="vision-impaired"] .sidebar,
+    html[data-theme="vision-impaired"] .metric,
+    html[data-theme="vision-impaired"] .panel,
+    html[data-theme="vision-impaired"] .item,
+    html[data-theme="vision-impaired"] .recipe,
+    html[data-theme="vision-impaired"] .job,
+    html[data-theme="vision-impaired"] .preset-card,
+    html[data-theme="vision-impaired"] .button,
+    html[data-theme="vision-impaired"] input,
+    html[data-theme="vision-impaired"] select {
+      background: #000;
+      color: #fff;
+      border-color: #facc15;
+    }
+
+    html[data-theme="contrast"] .nav button,
+    html[data-theme="vision-impaired"] .nav button {
+      color: #fff;
+      border-color: #facc15;
+    }
+
+    html[data-theme="contrast"] .nav button:hover,
+    html[data-theme="contrast"] .nav button.active,
+    html[data-theme="vision-impaired"] .nav button:hover,
+    html[data-theme="vision-impaired"] .nav button.active {
+      background: #facc15;
+      color: #000;
+    }
+
+    html[data-theme="vision-impaired"] body {
+      font-size: 18px;
+      letter-spacing: 0.01em;
+    }
+
+    html[data-theme="vision-impaired"] .shell {
+      grid-template-columns: 288px minmax(0, 1fr);
+    }
+
+    html[data-theme="vision-impaired"] .topline {
+      gap: 22px;
+    }
+
+    html[data-theme="vision-impaired"] .topline h2 {
+      font-size: 2rem;
+    }
+
+    html[data-theme="vision-impaired"] .topline p {
+      max-width: none;
+      font-size: 1.05rem;
+      color: #fff;
+    }
+
+    html[data-theme="vision-impaired"] .metric strong {
+      font-size: 2rem;
+    }
+
+    html[data-theme="vision-impaired"] .panel h3,
+    html[data-theme="vision-impaired"] .name,
+    html[data-theme="vision-impaired"] .brand h1 {
+      color: #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .button,
+    html[data-theme="vision-impaired"] .notice,
+    html[data-theme="vision-impaired"] .metric,
+    html[data-theme="vision-impaired"] .panel,
+    html[data-theme="vision-impaired"] .item,
+    html[data-theme="vision-impaired"] .recipe,
+    html[data-theme="vision-impaired"] .job,
+    html[data-theme="vision-impaired"] .preset-card,
+    html[data-theme="vision-impaired"] input,
+    html[data-theme="vision-impaired"] select {
+      box-shadow: none;
+      border-width: 3px;
+    }
+
+    html[data-theme="vision-impaired"] .notice.error {
+      background: #2a0000;
+      color: #fff7cc;
+      border-color: #f87171;
+    }
+
+    html[data-theme="vision-impaired"] .status.ready,
+    html[data-theme="vision-impaired"] .status.succeeded,
+    html[data-theme="vision-impaired"] .status.installed,
+    html[data-theme="vision-impaired"] .status.recommended {
+      background: rgba(34, 197, 94, 0.25);
+      color: #bbf7d0;
+    }
+
+    html[data-theme="vision-impaired"] .status.failed,
+    html[data-theme="vision-impaired"] .status.unreachable,
+    html[data-theme="vision-impaired"] .status.missing_api_key,
+    html[data-theme="vision-impaired"] .status.missing,
+    html[data-theme="vision-impaired"] .status.not_recommended {
+      background: rgba(239, 68, 68, 0.35);
+      color: #fecaca;
+    }
+
+    html[data-theme="cid"] body {
+      background: #030603;
+      color: #f4fff4;
+    }
+
+    html[data-theme="cid"] .sidebar,
+    html[data-theme="cid"] .metric,
+    html[data-theme="cid"] .panel,
+    html[data-theme="cid"] .item,
+    html[data-theme="cid"] .recipe,
+    html[data-theme="cid"] .job,
+    html[data-theme="cid"] .preset-card,
+    html[data-theme="cid"] .button,
+    html[data-theme="cid"] input,
+    html[data-theme="cid"] select {
+      background: rgba(7, 17, 7, 0.96);
+      color: #f4fff4;
+      border-color: #1e5b2a;
+    }
+
+    html[data-theme="cid"] .nav button:hover,
+    html[data-theme="cid"] .nav button.active {
+      background: #0f2b14;
+      color: #4ade80;
+    }
+
+    html[data-theme="cid"] .notice.error {
+      background: rgba(66, 10, 10, 0.92);
+      color: #fff7cc;
+      border-color: #f87171;
+    }
+
+    html[data-theme="vision-impaired"] .muted,
+    html[data-theme="vision-impaired"] .model-help,
+    html[data-theme="vision-impaired"] .manual-steps,
+    html[data-theme="vision-impaired"] .notice {
+      color: #fff;
+    }
+
+    html[data-theme="vision-impaired"] .notice {
+      background: #050505;
+    }
+
+    html[data-theme="vision-impaired"] .status {
+      background: #111;
+      color: #facc15;
+      border: 1px solid #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .item-frame {
+      background: #050505;
+      border-width: 3px;
+    }
+
+    html[data-theme="vision-impaired"] .button.primary {
+      color: #000;
+      background: #facc15;
+      border-color: #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .button {
+      min-height: 44px;
+      font-weight: 800;
+    }
+
+    html[data-theme="vision-impaired"] .preset-card .header {
+      align-items: center;
+    }
+
+    html[data-theme="vision-impaired"] .preset-card .name {
+      font-size: 1.1rem;
+    }
+
+    html[data-theme="vision-impaired"] .empty {
+      background: #050505;
+      color: #fff;
+      border-color: #facc15;
+    }
+
     .empty {
       padding: 18px;
       border: 1px dashed var(--color-border, rgba(148, 163, 184, 0.25));
@@ -294,7 +580,148 @@
       .item-frame { width: 58px; height: 58px; padding: 4px; }
       .item-frame img { width: 48px; height: 48px; }
     }
-  </style>
+  
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .shell {
+            display: grid !important;
+            grid-template-columns: 292px minmax(0, 1fr) !important;
+        }
+
+        html[data-theme="cid"] .sidebar {
+            width: 292px !important;
+            min-width: 292px !important;
+            max-width: 292px !important;
+            padding: 28px 20px !important;
+        }
+
+        html[data-theme="cid"] .brand h1 {
+            font-size: 1.2rem;
+            letter-spacing: 0.01em;
+        }
+
+        html[data-theme="cid"] .brand p {
+            color: #b9d7bd;
+            font-size: 0.9rem;
+        }
+
+        html[data-theme="cid"] .nav {
+            gap: 10px;
+        }
+
+        html[data-theme="cid"] .nav button {
+            min-height: 46px;
+            padding: 11px 14px;
+            border-radius: 10px;
+            font-size: 1rem;
+            letter-spacing: 0.01em;
+        }
+
+        html[data-theme="vision-impaired"] .topline p {
+            max-width: 100%;
+            color: #fff7cc;
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        html[data-theme="vision-impaired"] .nav button,
+        html[data-theme="vision-impaired"] .button {
+            min-height: 46px;
+            border-width: 2px;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
+    </style>
 </head>
 <body>
   <div class="shell">

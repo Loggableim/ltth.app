@@ -1,10 +1,68 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sidekick - Admin Panel</title>
   <link rel="stylesheet" href="/css/themes.css">
+  <script>
+    (function () {
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+      const LOGO_BY_THEME = {
+        day: '/ltthicon.png',
+        night: '/ltthicon.png',
+        contrast: '/ltthicon.png',
+        'vision-impaired': '/ltthicon.png',
+        cid: '/ltthicon.png'
+      };
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (VALID_THEMES.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (VALID_THEMES.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+        const logo = document.querySelector('[data-brand-logo]');
+        if (logo) logo.src = LOGO_BY_THEME[theme] || LOGO_BY_THEME.night;
+      }
+
+      syncTheme();
+      window.addEventListener('storage', (event) => {
+        if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+          syncTheme();
+        }
+      });
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     * {
       margin: 0;
@@ -14,18 +72,35 @@
 
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #1a1a2e;
-      color: #eee;
+      background: var(--color-bg-primary);
+      color: var(--color-text-primary);
       padding: 20px;
     }
 
     .container {
-      max-width: 1400px;
+      width: 100%;
+      max-width: 2200px;
       margin: 0 auto;
+      padding: 0 12px;
+    }
+
+    .brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .brand-logo {
+      display: block;
+      width: min(260px, 54vw);
+      height: auto;
+      object-fit: contain;
     }
 
     h1 {
-      color: #4CAF50;
+      color: var(--color-accent-primary);
       margin-bottom: 10px;
       display: flex;
       align-items: center;
@@ -33,15 +108,15 @@
     }
 
     h2 {
-      color: #64B5F6;
+      color: var(--color-text-primary);
       margin-top: 20px;
       margin-bottom: 15px;
-      border-bottom: 2px solid #64B5F6;
+      border-bottom: 2px solid var(--color-border);
       padding-bottom: 5px;
     }
 
     h3 {
-      color: #FFC107;
+      color: var(--color-accent-warning);
       margin-top: 15px;
       margin-bottom: 10px;
     }
@@ -50,15 +125,15 @@
       display: flex;
       gap: 10px;
       margin-bottom: 20px;
-      border-bottom: 2px solid #333;
+      border-bottom: 2px solid var(--color-border);
       flex-wrap: wrap;
     }
 
     .tab {
       padding: 12px 24px;
-      background: #2a2a3e;
+      background: var(--color-bg-secondary);
       border: none;
-      color: #eee;
+      color: var(--color-text-primary);
       cursor: pointer;
       font-size: 16px;
       border-radius: 8px 8px 0 0;
@@ -66,11 +141,11 @@
     }
 
     .tab:hover {
-      background: #3a3a4e;
+      background: var(--color-bg-hover);
     }
 
     .tab.active {
-      background: #4CAF50;
+      background: var(--color-accent-success);
       color: white;
     }
 
@@ -83,7 +158,7 @@
     }
 
     .card {
-      background: #2a2a3e;
+      background: var(--color-bg-secondary);
       padding: 20px;
       border-radius: 10px;
       margin-bottom: 20px;
@@ -97,7 +172,7 @@
     }
 
     .stat-card {
-      background: #3a3a4e;
+      background: var(--color-bg-hover);
       padding: 20px;
       border-radius: 10px;
       text-align: center;
@@ -106,11 +181,11 @@
     .stat-value {
       font-size: 36px;
       font-weight: bold;
-      color: #4CAF50;
+      color: var(--color-accent-primary);
     }
 
     .stat-label {
-      color: #aaa;
+      color: var(--color-text-secondary);
       font-size: 14px;
       margin-top: 5px;
     }
@@ -122,7 +197,7 @@
     label {
       display: block;
       margin-bottom: 5px;
-      color: #aaa;
+      color: var(--color-text-secondary);
       font-size: 14px;
     }
 
@@ -132,10 +207,10 @@
     textarea {
       width: 100%;
       padding: 10px;
-      border: 1px solid #444;
+      border: 1px solid var(--color-border);
       border-radius: 5px;
-      background: #1a1a2e;
-      color: #eee;
+      background: var(--color-bg-primary);
+      color: var(--color-text-primary);
       font-size: 14px;
     }
 
@@ -155,39 +230,39 @@
     }
 
     .btn-primary {
-      background: #4CAF50;
+      background: var(--color-accent-success);
       color: white;
     }
 
     .btn-primary:hover {
-      background: #45a049;
+      filter: brightness(1.08);
     }
 
     .btn-secondary {
-      background: #666;
+      background: var(--color-bg-hover);
       color: white;
     }
 
     .btn-secondary:hover {
-      background: #555;
+      filter: brightness(1.08);
     }
 
     .btn-danger {
-      background: #f44336;
+      background: var(--color-accent-danger);
       color: white;
     }
 
     .btn-danger:hover {
-      background: #d32f2f;
+      filter: brightness(1.08);
     }
 
     .btn-warning {
-      background: #ff9800;
-      color: white;
+      background: var(--color-accent-warning);
+      color: #111827;
     }
 
     .btn-warning:hover {
-      background: #f57c00;
+      filter: brightness(1.08);
     }
 
     .status-indicator {
@@ -199,21 +274,21 @@
     }
 
     .status-connected {
-      background: #4CAF50;
+      background: var(--color-accent-success);
     }
 
     .status-disconnected {
-      background: #f44336;
+      background: var(--color-accent-danger);
     }
 
     .status-muted {
-      background: #ff9800;
+      background: var(--color-accent-warning);
     }
 
     .event-log {
       max-height: 300px;
       overflow-y: auto;
-      background: #1a1a2e;
+      background: var(--color-bg-primary);
       padding: 10px;
       border-radius: 5px;
       font-family: monospace;
@@ -260,7 +335,7 @@
     }
 
     .user-item:hover {
-      background: #3a3a4e;
+      background: var(--color-bg-hover);
     }
 
     .user-nickname {
@@ -269,12 +344,12 @@
 
     .user-stats {
       font-size: 12px;
-      color: #aaa;
+      color: var(--color-text-secondary);
     }
 
     .progress-bar {
       height: 8px;
-      background: #333;
+      background: var(--color-bg-hover);
       border-radius: 4px;
       overflow: hidden;
       margin-top: 5px;
@@ -282,7 +357,7 @@
 
     .progress-fill {
       height: 100%;
-      background: #4CAF50;
+      background: var(--color-accent-success);
       transition: width 0.3s;
     }
 
@@ -300,13 +375,21 @@
       font-weight: bold;
     }
 
-    .badge-success { background: #4CAF50; }
-    .badge-warning { background: #ff9800; }
-    .badge-danger { background: #f44336; }
+    .badge-success {
+      background: #047857;
+      color: #fff;
+      -webkit-text-fill-color: #fff;
+    }
+    .badge-warning {
+      background: var(--color-accent-warning);
+      color: #111827;
+      -webkit-text-fill-color: #111827;
+    }
+    .badge-danger { background: var(--color-accent-danger); }
 
     .chart-container {
       height: 200px;
-      background: #1a1a2e;
+      background: var(--color-bg-primary);
       border-radius: 5px;
       padding: 10px;
       position: relative;
@@ -321,7 +404,7 @@
     }
 
     .help-text {
-      color: #aaa;
+      color: var(--color-text-secondary);
       font-size: 13px;
       line-height: 1.4;
     }
@@ -344,12 +427,12 @@
     }
 
     .asr-muted {
-      color: #aaa;
+      color: var(--color-text-secondary);
     }
 
     .asr-meter {
       height: 8px;
-      background: #1a1a2e;
+      background: var(--color-bg-primary);
       border-radius: 4px;
       overflow: hidden;
       min-width: 160px;
@@ -358,7 +441,7 @@
     .asr-meter-fill {
       height: 100%;
       width: 0%;
-      background: #4CAF50;
+      background: var(--color-accent-success);
       transition: width 0.1s linear;
     }
 
@@ -375,15 +458,184 @@
         border-radius: 5px;
       }
     }
-  </style>
+
+    html[data-theme="vision-impaired"] body {
+      font-size: 1.08rem;
+      line-height: 1.7;
+    }
+
+    html[data-theme="vision-impaired"] .card,
+    html[data-theme="vision-impaired"] .stat-card,
+    html[data-theme="vision-impaired"] .event-log {
+      background: #000;
+      border: 3px solid #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] .tab {
+      border: 3px solid #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .tab.active,
+    html[data-theme="vision-impaired"] .btn-primary,
+    html[data-theme="vision-impaired"] .status-connected {
+      background: #facc15;
+      color: #000;
+    }
+
+    html[data-theme="vision-impaired"] .btn-secondary,
+    html[data-theme="vision-impaired"] .btn-warning,
+    html[data-theme="vision-impaired"] .btn-danger {
+      color: #000;
+      border: 3px solid #facc15;
+    }
+
+    html[data-theme="vision-impaired"] h1,
+    html[data-theme="vision-impaired"] h2,
+    html[data-theme="vision-impaired"] h3,
+    html[data-theme="vision-impaired"] .stat-value {
+      color: #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .brand-logo {
+      width: min(320px, 60vw);
+    }
+  
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
+    
+    /* Accessibility contrast pass: explicit readable controls in contrast modes */
+    html[data-theme="contrast"] .tab.active,
+    html[data-theme="contrast"] .btn-primary,
+    html[data-theme="contrast"] .btn-success,
+    html[data-theme="contrast"] .btn-warning,
+    html[data-theme="vision-impaired"] .tab.active,
+    html[data-theme="vision-impaired"] .btn-primary,
+    html[data-theme="vision-impaired"] .btn-success,
+    html[data-theme="vision-impaired"] .btn-warning {
+      background: #facc15 !important;
+      color: #000 !important;
+      border: 3px solid #facc15 !important;
+      -webkit-text-fill-color: #000 !important;
+      box-shadow: none !important;
+    }
+
+    html[data-theme="contrast"] .btn-secondary,
+    html[data-theme="contrast"] .tab,
+    html[data-theme="vision-impaired"] .btn-secondary,
+    html[data-theme="vision-impaired"] .tab {
+      background: #000 !important;
+      color: #fff7cc !important;
+      border: 3px solid #facc15 !important;
+      -webkit-text-fill-color: #fff7cc !important;
+    }
+
+    html[data-theme="contrast"] .btn-danger,
+    html[data-theme="vision-impaired"] .btn-danger {
+      background: #7f1d1d !important;
+      color: #fff !important;
+      border: 3px solid #facc15 !important;
+      -webkit-text-fill-color: #fff !important;
+    }</style>
 </head>
 <body>
   <div class="container">
-    <h1>
-      🤖 Sidekick
+    <div class="brand-header">
+      <img class="brand-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
       <span id="status-badge" class="badge badge-success">Active</span>
-    </h1>
-    <p style="color: #aaa; margin-bottom: 20px;">Intelligenter Stream-Assistent mit AnimazingPal + Fish.audio Delegation</p>
+    </div>
+    <p style="color: var(--color-text-secondary); margin-bottom: 20px;">Intelligenter Stream-Assistent mit AnimazingPal + Fish.audio Delegation</p>
 
     <div class="tabs">
       <button class="tab active" data-tab="status">Status</button>
@@ -554,7 +806,7 @@
     <div id="tab-settings" class="tab-content">
       <div class="card">
         <h3>Sprachausgabe</h3>
-        <p style="color: #aaa; margin-bottom: 15px;">AnimazingPal + Fish.audio. Stimme, Persönlichkeit, Viewer-Profile, Audio-Routing und Avatar-Lipsync werden zentral in AnimazingPal konfiguriert.</p>
+        <p style="color: var(--color-text-secondary); margin-bottom: 15px;">AnimazingPal + Fish.audio. Stimme, Persönlichkeit, Viewer-Profile, Audio-Routing und Avatar-Lipsync werden zentral in AnimazingPal konfiguriert.</p>
         <div class="form-group">
           <label for="output-username">Name der Assistenz</label>
           <input type="text" id="output-username" value="Sidekick" maxlength="64">
@@ -641,7 +893,7 @@
 
       <div class="card">
         <h3>Host-Entscheidungslogik</h3>
-        <p style="color: #aaa; margin-bottom: 15px;">Legt fest, wie der Host entscheidet, ob eine transkribierte Host-Aussage beantwortet wird.</p>
+        <p style="color: var(--color-text-secondary); margin-bottom: 15px;">Legt fest, wie der Host entscheidet, ob eine transkribierte Host-Aussage beantwortet wird.</p>
         <div class="grid">
           <div class="form-group">
             <label for="host-reply-probability">Host Antwort-Wahrscheinlichkeit (0-1)</label>
@@ -1932,3 +2184,4 @@
   </script>
 </body>
 </html>
+

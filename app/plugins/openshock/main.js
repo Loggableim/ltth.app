@@ -117,7 +117,7 @@ class OpenShockPlugin {
      */
     async init() {
         try {
-            this.api.log('OpenShock Plugin initializing...', 'info');
+            this.api.log('Hybrid Shock Plugin initializing...', 'info');
 
             // 1. Datenbank initialisieren
             this._initializeDatabase();
@@ -159,7 +159,7 @@ class OpenShockPlugin {
             this.isRunning = true;
             this.stats.startTime = Date.now();
 
-            this.api.log('OpenShock Plugin initialized successfully', 'info');
+            this.api.log('Hybrid Shock Plugin initialized successfully', 'info');
 
             // Initial status broadcast
             this._broadcastStatus();
@@ -167,7 +167,7 @@ class OpenShockPlugin {
             return true;
 
         } catch (error) {
-            this.api.log(`Failed to initialize OpenShock Plugin: ${error.message}`, 'error');
+            this.api.log(`Failed to initialize Hybrid Shock Plugin: ${error.message}`, 'error');
             console.error(error);
             throw error;
         }
@@ -356,7 +356,7 @@ class OpenShockPlugin {
         // ZappieHell tables
         ZappieHellManager.initializeTables(db, this.api);
 
-        this.api.log('OpenShock database tables initialized', 'info');
+        this.api.log('Hybrid Shock database tables initialized', 'info');
     }
 
     /**
@@ -599,12 +599,9 @@ class OpenShockPlugin {
 
         // Queue Event-Handler
         this.queueManager.on('item-processed', (item, success) => {
+            this._recordCommandOutcome(success);
             this._broadcastQueueUpdate();
-            if (success) {
-                this.stats.successfulCommands++;
-            } else {
-                this.stats.failedCommands++;
-            }
+            this._broadcastStatsUpdate();
         });
 
         this.queueManager.on('queue-changed', () => {
@@ -615,7 +612,7 @@ class OpenShockPlugin {
         // This is critical: without this, the queue may never start processing!
         this.queueManager.resumeProcessing();
 
-        this.api.log('OpenShock helpers initialized', 'info');
+        this.api.log('Hybrid Shock helpers initialized', 'info');
 
         // Load mappings and patterns from database
         this._loadMappingsFromDatabase();
@@ -868,16 +865,20 @@ class OpenShockPlugin {
                     success: true
                 });
 
-                this.stats.totalCommands++;
-                this.stats.successfulCommands++;
-                this.stats.lastCommandTime = Date.now();
+                this._recordCommandOutcome(true);
 
                 this._broadcastCommandSent({
-                    device: device.name,
+                    deviceId: device.id,
+                    deviceName: device.name,
                     type,
                     intensity: safetyCheck.adjustedIntensity || intensity,
-                    duration: safetyCheck.adjustedDuration || duration
+                    duration: safetyCheck.adjustedDuration || duration,
+                    username: 'Manual Test',
+                    userId: 'test-user',
+                    source: 'manual-test'
                 });
+
+                this._broadcastStatsUpdate();
 
                 res.json({
                     success: true,
@@ -1691,23 +1692,9 @@ class OpenShockPlugin {
         // Get Statistics
         this.api.registerRoute('get', '/api/openshock/stats', (req, res) => {
             try {
-                const uptime = this.stats.startTime ? Date.now() - this.stats.startTime : 0;
-                const queueStatus = this.queueManager.getQueueStatus();
-
                 res.json({
                     success: true,
-                    stats: {
-                        ...this.stats,
-                        uptime,
-                        queueSize: queueStatus.queueSize,
-                        queuePending: queueStatus.pending,
-                        queueProcessing: queueStatus.processing,
-                        activePatternExecutions: this.patternExecutor.getActiveExecutions().length,
-                        patternExecutorStats: this.patternExecutor.getStats(),
-                        devicesCount: this.devices.length,
-                        mappingsCount: this.mappingEngine.getAllMappings().length,
-                        patternsCount: this.patternEngine.getAllPatterns().length
-                    }
+                    stats: this._buildStatsSnapshot()
                 });
 
             } catch (error) {
@@ -1727,7 +1714,7 @@ class OpenShockPlugin {
                 res.json({
                     success: true,
                     message: 'Statistics reset successfully',
-                    stats: this.stats
+                    stats: this._buildStatsSnapshot()
                 });
             } catch (error) {
                 res.status(500).json({
@@ -1743,7 +1730,7 @@ class OpenShockPlugin {
                 if (!this.openShockClient) {
                     return res.status(500).json({
                         success: false,
-                        error: 'OpenShock client not initialized'
+                        error: 'Hybrid Shock client not initialized'
                     });
                 }
 
@@ -2065,7 +2052,7 @@ class OpenShockPlugin {
             }
         });
 
-        this.api.log('OpenShock routes registered', 'info');
+        this.api.log('Hybrid Shock routes registered', 'info');
     }
 
     /**
@@ -2143,7 +2130,7 @@ class OpenShockPlugin {
             });
         });
 
-        this.api.log('OpenShock Socket.IO events registered', 'info');
+        this.api.log('Hybrid Shock Socket.IO events registered', 'info');
     }
 
     /**
@@ -2190,7 +2177,7 @@ class OpenShockPlugin {
             await this.handleTikTokEvent('goal_complete', data);
         });
 
-        this.api.log('OpenShock TikTok event handlers registered', 'info');
+        this.api.log('Hybrid Shock TikTok event handlers registered', 'info');
     }
 
     /**
@@ -2245,7 +2232,7 @@ class OpenShockPlugin {
             });
         });
 
-        this.api.log('OpenShock legacy flow actions registered (delegate to executeAction)', 'info');
+        this.api.log('Hybrid Shock legacy flow actions registered (delegate to executeAction)', 'info');
     }
 
     /**
@@ -2588,16 +2575,15 @@ class OpenShockPlugin {
             });
 
             // Stats
-            this.stats.totalCommands++;
-            this.stats.lastCommandTime = Date.now();
-
             // Broadcast
             this._broadcastCommandSent({
-                device: item.deviceName,
+                deviceId: item.deviceId,
+                deviceName: item.deviceName,
                 type: item.commandType,
                 intensity: safetyCheck.adjustedIntensity || item.intensity,
                 duration: safetyCheck.adjustedDuration || item.duration,
-                user: item.username,
+                username: item.username,
+                userId: item.userId,
                 source: item.source
             });
 
@@ -2679,7 +2665,7 @@ class OpenShockPlugin {
             this.api.log(`Failed to load config from database: ${error.message}`, 'warn');
         }
 
-        this.api.log('OpenShock data loaded', 'info');
+        this.api.log('Hybrid Shock data loaded', 'info');
     }
 
     /**
@@ -2696,7 +2682,7 @@ class OpenShockPlugin {
             this.api.log(`Failed to save config to database: ${error.message}`, 'error');
         }
 
-        this.api.log('OpenShock data saved', 'info');
+        this.api.log('Hybrid Shock data saved', 'info');
     }
 
     /**
@@ -2976,11 +2962,130 @@ class OpenShockPlugin {
     }
 
     /**
+     * Count a finished command exactly once, regardless of outcome.
+     */
+    _recordCommandOutcome(success) {
+        this.stats.totalCommands = (this.stats.totalCommands || 0) + 1;
+
+        if (success) {
+            this.stats.successfulCommands = (this.stats.successfulCommands || 0) + 1;
+        } else {
+            this.stats.failedCommands = (this.stats.failedCommands || 0) + 1;
+        }
+
+        this.stats.lastCommandTime = Date.now();
+    }
+
+    /**
+     * Build the canonical command-sent payload used by the UI and overlay.
+     */
+    _buildCommandSentPayload(data = {}) {
+        const command = data.command || {};
+        const type = command.type || data.type || 'shock';
+        const intensity = command.intensity ?? data.intensity ?? 0;
+        const duration = command.duration ?? data.duration ?? 1000;
+        const deviceId = data.deviceId || command.deviceId || '';
+        const deviceName = data.deviceName || data.device || command.deviceName || deviceId || '';
+        const username = data.username || data.user || command.username || '';
+        const userId = data.userId || command.userId || '';
+        const source = data.source || 'manual';
+
+        return {
+            command: {
+                type,
+                intensity,
+                duration,
+                pattern: command.pattern ?? data.pattern ?? null
+            },
+            deviceId,
+            deviceName,
+            device: deviceName,
+            username,
+            userId,
+            user: username,
+            source,
+            type,
+            intensity,
+            duration,
+            timestamp: data.timestamp || Date.now()
+        };
+    }
+
+    /**
+     * Build the canonical queue snapshot used by socket listeners.
+     */
+    _buildQueueUpdatePayload() {
+        const queueStatus = this.queueManager ? this.queueManager.getQueueStatus() : {};
+        const queueItems = this.queueManager && typeof this.queueManager.getQueueItems === 'function'
+            ? this.queueManager.getQueueItems()
+            : [];
+        const queueLength = queueStatus.queueSize ?? queueStatus.length ?? queueStatus.pending ?? queueItems.length ?? 0;
+
+        return {
+            ...queueStatus,
+            queueLength,
+            queueSize: queueStatus.queueSize ?? queueLength,
+            pending: queueStatus.pending ?? queueLength,
+            processing: queueStatus.processing ?? 0,
+            queueItems,
+            currentItem: this.queueManager ? this.queueManager.currentlyProcessingItem : null
+        };
+    }
+
+    /**
+     * Build the canonical stats snapshot used by HTTP routes and socket broadcasts.
+     */
+    _buildStatsSnapshot() {
+        const uptime = this.stats.startTime ? Date.now() - this.stats.startTime : 0;
+        const queueStatus = this.queueManager && typeof this.queueManager.getQueueStatus === 'function'
+            ? this.queueManager.getQueueStatus()
+            : { queueSize: 0, pending: 0, processing: 0 };
+        const successfulCommands = Number(this.stats.successfulCommands || 0);
+        const failedCommands = Number(this.stats.failedCommands || 0);
+        const recordedTotal = Number(this.stats.totalCommands || 0);
+        const totalCommands = Math.max(recordedTotal, successfulCommands + failedCommands);
+        const successRate = totalCommands > 0 ? Math.round((successfulCommands / totalCommands) * 100) : 0;
+        const activePatternExecutions = this.patternExecutor && typeof this.patternExecutor.getActiveExecutions === 'function'
+            ? this.patternExecutor.getActiveExecutions().length
+            : 0;
+        const patternExecutorStats = this.patternExecutor && typeof this.patternExecutor.getStats === 'function'
+            ? this.patternExecutor.getStats()
+            : {};
+        const mappingsCount = this.mappingEngine && typeof this.mappingEngine.getAllMappings === 'function'
+            ? this.mappingEngine.getAllMappings().length
+            : 0;
+        const patternsCount = this.patternEngine && typeof this.patternEngine.getAllPatterns === 'function'
+            ? this.patternEngine.getAllPatterns().length
+            : 0;
+
+        return {
+            ...this.stats,
+            totalCommands,
+            successfulCommands,
+            failedCommands,
+            successRate,
+            uptime,
+            sessionDuration: uptime,
+            queueSize: queueStatus.queueSize ?? 0,
+            queueLength: queueStatus.queueSize ?? queueStatus.length ?? queueStatus.pending ?? 0,
+            queuePending: queueStatus.pending ?? 0,
+            queueProcessing: queueStatus.processing ?? 0,
+            activePatternExecutions,
+            patternExecutorStats,
+            devicesCount: this.devices.length,
+            mappingsCount,
+            patternsCount
+        };
+    }
+
+    /**
      * Device-Update broadcasten
      */
     _broadcastDeviceUpdate() {
         this.api.emit('openshock:device-update', {
-            devices: this.devices
+            devices: this.devices,
+            deviceCount: this.devices.length,
+            updatedAt: Date.now()
         });
     }
 
@@ -2988,7 +3093,7 @@ class OpenShockPlugin {
      * Command-Sent broadcasten
      */
     _broadcastCommandSent(data) {
-        this.api.emit('openshock:command-sent', data);
+        this.api.emit('openshock:command-sent', this._buildCommandSentPayload(data));
     }
 
     /**
@@ -3005,14 +3110,10 @@ class OpenShockPlugin {
         this._queueUpdateDebounceTimer = setTimeout(() => {
             this._queueUpdateDebounceTimer = null;
             
-            const status = this.queueManager.getQueueStatus();
-            const queueItems = this.queueManager.getQueueItems();
-            
-            this.api.emit('openshock:queue:update', {
-                ...status,
-                queueItems: queueItems,
-                currentItem: this.queueManager.currentlyProcessingItem
-            });
+            const payload = this._buildQueueUpdatePayload();
+
+            this.api.emit('openshock:queue-update', payload);
+            this.api.emit('openshock:queue:update', payload);
         }, this._queueUpdateDebounceDelay);
     }
 
@@ -3029,15 +3130,7 @@ class OpenShockPlugin {
      * Stats-Update broadcasten
      */
     _broadcastStatsUpdate() {
-        const uptime = this.stats.startTime ? Date.now() - this.stats.startTime : 0;
-        const queueStatus = this.queueManager ? this.queueManager.getQueueStatus() : {};
-
-        this.api.emit('openshock:stats-update', {
-            ...this.stats,
-            uptime,
-            queueSize: queueStatus.queueSize || 0,
-            activePatternExecutions: this.patternExecutor ? this.patternExecutor.getActiveExecutions().length : 0
-        });
+        this.api.emit('openshock:stats-update', this._buildStatsSnapshot());
     }
 
     /**
@@ -3075,7 +3168,7 @@ class OpenShockPlugin {
      */
     async destroy() {
         try {
-            this.api.log('OpenShock Plugin shutting down...', 'info');
+            this.api.log('Hybrid Shock Plugin shutting down...', 'info');
 
             // Clear debounce timer
             if (this._queueUpdateDebounceTimer) {
@@ -3118,7 +3211,7 @@ class OpenShockPlugin {
 
             this.isRunning = false;
 
-            this.api.log('OpenShock Plugin shut down successfully', 'info');
+            this.api.log('Hybrid Shock Plugin shut down successfully', 'info');
 
         } catch (error) {
             this.api.log(`Error during shutdown: ${error.message}`, 'error');

@@ -120,7 +120,7 @@ osslsigncode sign -pkcs12 MeinZertifikat.pfx -pass "Passwort" \
 
 | Zweck | URL |
 |-------|-----|
-| Version-Info | `https://raw.githubusercontent.com/Loggableim/ltth.app/main/version.json` |
+| Version-Info | `https://ltth.app/version.json` |
 | Download | `https://ltth.app/app/ltth_latest.zip` |
 
 ---

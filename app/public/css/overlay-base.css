@@ -63,7 +63,8 @@ body {
     font-size: 11px;
     display: none;
     pointer-events: none;
-    max-width: 400px;
+    width: min(92vw, 560px);
+    max-width: none;
     z-index: 10001;
 }
 
@@ -81,4 +82,33 @@ body {
     margin: 4px 0;
     padding: 2px 0;
     border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+}
+
+html[data-theme="vision-impaired"] .overlay-debug-panel {
+    background: #000;
+    color: #fff7cc;
+    border: 3px solid #facc15;
+    box-shadow: none;
+    width: min(92vw, 640px);
+    font-size: 12px;
+}
+
+html[data-theme="vision-impaired"] .overlay-debug-title {
+    color: #facc15;
+}
+
+html[data-theme="vision-impaired"] .overlay-debug-entry {
+    border-bottom-color: rgba(250, 204, 21, 0.28);
+}
+
+html[data-theme="cid"] .overlay-debug-panel {
+    background: rgba(7, 17, 7, 0.94);
+    color: #f4fff4;
+    border: 2px solid rgba(74, 222, 128, 0.35);
+    box-shadow: none;
+    width: min(92vw, 600px);
+}
+
+html[data-theme="cid"] .overlay-debug-title {
+    color: #4ade80;
 }

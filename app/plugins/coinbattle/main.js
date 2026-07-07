@@ -305,17 +305,17 @@ class CoinBattlePlugin {
   }
 
   /**
-   * Award Pyramid XP through viewer-xp when available.
+   * Award Pyramid XP through viewer-leaderboard when available.
    */
   awardPyramidXP(data) {
     try {
       const { rewards } = data;
       if (!rewards || rewards.length === 0) return;
 
-      const viewerXPPlugin = this.api.getPluginInstance && this.api.getPluginInstance('viewer-xp');
-      if (viewerXPPlugin && viewerXPPlugin.db) {
+      const viewerLeaderboardPlugin = this.api.getPluginInstance && this.api.getPluginInstance('viewer-leaderboard');
+      if (viewerLeaderboardPlugin && viewerLeaderboardPlugin.db) {
         for (const reward of rewards) {
-          viewerXPPlugin.db.addXP(
+          viewerLeaderboardPlugin.db.addXP(
             reward.username,
             reward.xp,
             'pyramid_win',
@@ -330,7 +330,7 @@ class CoinBattlePlugin {
 
         this.api.log(`🎮 Awarded XP to ${rewards.length} pyramid winners`, 'info');
       } else {
-        this.api.log('Viewer XP plugin not available for pyramid rewards', 'warn');
+        this.api.log('Viewer Leaderboard plugin not available for pyramid rewards', 'warn');
       }
     } catch (error) {
       this.api.log(`Error awarding pyramid XP: ${error.message}`, 'error');
@@ -338,17 +338,17 @@ class CoinBattlePlugin {
   }
 
   /**
-   * Award match XP through viewer-xp when available.
+   * Award match XP through viewer-leaderboard when available.
    */
   awardMatchXP(data) {
     try {
       const { winnersWithXP } = data;
       if (!winnersWithXP || winnersWithXP.length === 0) return;
 
-      const viewerXPPlugin = this.api.getPluginInstance && this.api.getPluginInstance('viewer-xp');
-      if (viewerXPPlugin && viewerXPPlugin.db) {
+      const viewerLeaderboardPlugin = this.api.getPluginInstance && this.api.getPluginInstance('viewer-leaderboard');
+      if (viewerLeaderboardPlugin && viewerLeaderboardPlugin.db) {
         for (const winner of winnersWithXP) {
-          viewerXPPlugin.db.addXP(
+          viewerLeaderboardPlugin.db.addXP(
             winner.uniqueId || winner.nickname,
             winner.xp,
             winner.reason,
@@ -363,7 +363,7 @@ class CoinBattlePlugin {
 
         this.api.log(`🏆 Awarded XP to ${winnersWithXP.length} match winners`, 'info');
       } else {
-        this.api.log('Viewer XP plugin not available for match rewards', 'warn');
+        this.api.log('Viewer Leaderboard plugin not available for match rewards', 'warn');
       }
     } catch (error) {
       this.api.log(`Error awarding match XP: ${error.message}`, 'error');
@@ -1362,7 +1362,7 @@ class CoinBattlePlugin {
     });
 
     if (this.enableLegacySocketLoopbackHandlers) {
-    // Server-side event: Pyramid XP awards - integrate with viewer-xp plugin
+    // Server-side event: Pyramid XP awards - integrate with viewer-leaderboard plugin
     // Note: Uses this.io.on() instead of registerSocket() because this event
     // is emitted server-side by pyramid-mode.js, not from client sockets
     this.io.on('pyramid:xp-awards', async (data) => {
@@ -1370,13 +1370,13 @@ class CoinBattlePlugin {
         const { rewards } = data;
         if (!rewards || rewards.length === 0) return;
 
-        // Check if viewer-xp plugin is enabled
-        const viewerXPPlugin = this.api.getPluginInstance && this.api.getPluginInstance('viewer-xp');
+        // Check if viewer-leaderboard plugin is enabled
+        const viewerLeaderboardPlugin = this.api.getPluginInstance && this.api.getPluginInstance('viewer-leaderboard');
         
-        if (viewerXPPlugin && viewerXPPlugin.db) {
-          // Award XP through viewer-xp plugin
+        if (viewerLeaderboardPlugin && viewerLeaderboardPlugin.db) {
+          // Award XP through viewer-leaderboard plugin
           for (const reward of rewards) {
-            viewerXPPlugin.db.addXP(
+            viewerLeaderboardPlugin.db.addXP(
               reward.username,
               reward.xp,
               'pyramid_win',
@@ -1391,26 +1391,26 @@ class CoinBattlePlugin {
           
           this.api.log(`🎮 Awarded XP to ${rewards.length} pyramid winners`, 'info');
         } else {
-          this.api.log('⚠️ Viewer XP plugin not available for pyramid rewards', 'warn');
+          this.api.log('⚠️ Viewer Leaderboard plugin not available for pyramid rewards', 'warn');
         }
       } catch (error) {
         this.api.log(`Error awarding pyramid XP: ${error.message}`, 'error');
       }
     });
 
-    // Regular match XP awards - integrate with viewer-xp plugin
+    // Regular match XP awards - integrate with viewer-leaderboard plugin
     this.io.on('coinbattle:match-ended', async (data) => {
       try {
         const { winnersWithXP } = data;
         if (!winnersWithXP || winnersWithXP.length === 0) return;
 
-        // Check if viewer-xp plugin is enabled
-        const viewerXPPlugin = this.api.getPluginInstance && this.api.getPluginInstance('viewer-xp');
+        // Check if viewer-leaderboard plugin is enabled
+        const viewerLeaderboardPlugin = this.api.getPluginInstance && this.api.getPluginInstance('viewer-leaderboard');
         
-        if (viewerXPPlugin && viewerXPPlugin.db) {
-          // Award XP through viewer-xp plugin
+        if (viewerLeaderboardPlugin && viewerLeaderboardPlugin.db) {
+          // Award XP through viewer-leaderboard plugin
           for (const winner of winnersWithXP) {
-            viewerXPPlugin.db.addXP(
+            viewerLeaderboardPlugin.db.addXP(
               winner.uniqueId || winner.nickname,
               winner.xp,
               winner.reason,
@@ -1425,7 +1425,7 @@ class CoinBattlePlugin {
           
           this.api.log(`🏆 Awarded XP to ${winnersWithXP.length} match winners`, 'info');
         } else {
-          this.api.log('⚠️ Viewer XP plugin not available for match rewards', 'warn');
+          this.api.log('⚠️ Viewer Leaderboard plugin not available for match rewards', 'warn');
         }
       } catch (error) {
         this.api.log(`Error awarding match XP: ${error.message}`, 'error');

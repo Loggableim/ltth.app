@@ -1,4 +1,4 @@
-# WebGPU Emoji Rain Plugin - Enhanced Edition
+# Emoji Rain Plugin - Enhanced Edition
 
 GPU-beschleunigter Emoji-Partikel-Effekt für LTTH mit WebGPU instanziertem Rendering, vollständig integriert mit der Global Chat Command Engine (GCCE).
 
@@ -408,8 +408,8 @@ Set `merge: true` to merge with existing mappings, `false` to replace all.
 ## ⚡ Flow Actions
 
 ### 1. `webgpu_emoji_rain_trigger`
-**Name**: Trigger WebGPU Emoji Rain  
-**Kategorie**: effects  
+**Name**: Trigger Emoji Rain
+**Kategorie**: effects
 **Icon**: 🌧️
 
 **Parameter**:
@@ -420,16 +420,16 @@ Set `merge: true` to merge with existing mappings, `false` to replace all.
 - `burst` (boolean): Burst-Modus aktivieren
 
 ### 2. `webgpu_emoji_rain_preset`
-**Name**: Trigger WebGPU Emoji Rain Preset  
-**Kategorie**: effects  
+**Name**: Trigger Emoji Rain Preset
+**Kategorie**: effects
 **Icon**: 📋
 
 **Parameter**:
 - `presetId` (text): ID des Presets (z.B. "gentle-rain")
 
 ### 3. `webgpu_emoji_rain_burst`
-**Name**: WebGPU Emoji Rain Burst  
-**Kategorie**: effects  
+**Name**: Emoji Rain Burst
+**Kategorie**: effects
 **Icon**: 💥
 
 **Parameter**:
@@ -437,8 +437,8 @@ Set `merge: true` to merge with existing mappings, `false` to replace all.
 - `count` (number, 5-100): Anzahl der Emojis
 
 ### 4. `webgpu_emoji_rain_clear`
-**Name**: Clear WebGPU Emoji Rain  
-**Kategorie**: effects  
+**Name**: Clear Emoji Rain
+**Kategorie**: effects
 **Icon**: 🧹
 
 **Parameter**: keine
@@ -695,7 +695,7 @@ Zusätzlich in user_configs (manuell editierbar):
 ## 🐛 Troubleshooting
 
 ### Plugin startet nicht
-- Prüfe Log-Datei: `[WebGPU Emoji Rain]` Tags
+- Prüfe Log-Datei: `[Emoji Rain]` Tags
 - Stelle sicher, dass Port 3000 erreichbar ist
 - Prüfe, ob GCCE-Plugin geladen ist
 

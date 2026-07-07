@@ -438,30 +438,62 @@ class PermissionManager {
         return this._getUserPermission(userId);
     }
 
+    _buildUserQuery(filter = null, search = '') {
+        const clauses = [];
+        const params = [];
+        const normalizedSearch = String(search || '').trim().toLowerCase();
+
+        if (filter === 'whitelisted') {
+            clauses.push('allow_tts = 1');
+        } else if (filter === 'blacklisted') {
+            clauses.push('is_blacklisted = 1');
+        } else if (filter === 'voice_assigned') {
+            clauses.push('assigned_voice_id IS NOT NULL');
+        }
+
+        if (normalizedSearch) {
+            clauses.push('(LOWER(username) LIKE ? OR LOWER(user_id) LIKE ?)');
+            const like = `%${normalizedSearch}%`;
+            params.push(like, like);
+        }
+
+        return {
+            whereSql: clauses.length ? ` WHERE ${clauses.join(' AND ')}` : '',
+            params
+        };
+    }
+
     /**
      * Get all users with TTS permissions
      */
-    getAllUsers(filter = null) {
+    getAllUsers(filter = null, options = {}) {
         try {
-            let query = 'SELECT * FROM tts_user_permissions';
-            const params = [];
-
-            if (filter === 'whitelisted') {
-                query += ' WHERE allow_tts = 1';
-            } else if (filter === 'blacklisted') {
-                query += ' WHERE is_blacklisted = 1';
-            } else if (filter === 'voice_assigned') {
-                query += ' WHERE assigned_voice_id IS NOT NULL';
-            }
-
-            query += ' ORDER BY username ASC';
-
+            const limit = Math.max(1, Math.min(250, parseInt(options.limit, 10) || 100));
+            const offset = Math.max(0, parseInt(options.offset, 10) || 0);
+            const { whereSql, params } = this._buildUserQuery(filter, options.search);
+            const query = `SELECT * FROM tts_user_permissions${whereSql} ORDER BY username COLLATE NOCASE ASC LIMIT ? OFFSET ?`;
+            params.push(limit, offset);
             const stmt = this.db.db.prepare(query);
             return stmt.all(...params);
 
         } catch (error) {
             this.logger.error(`Failed to get users: ${error.message}`);
             return [];
+        }
+    }
+
+    /**
+     * Count users with optional filter/search.
+     */
+    getUserCount(filter = null, search = '') {
+        try {
+            const { whereSql, params } = this._buildUserQuery(filter, search);
+            const stmt = this.db.db.prepare(`SELECT COUNT(*) AS count FROM tts_user_permissions${whereSql}`);
+            const row = stmt.get(...params);
+            return Number(row?.count || 0);
+        } catch (error) {
+            this.logger.error(`Failed to count users: ${error.message}`);
+            return 0;
         }
     }
 

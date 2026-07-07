@@ -2017,8 +2017,12 @@ class TTSPlugin {
         // User management routes
         this.api.registerRoute('GET', '/api/tts/users', (req, res) => {
             const filter = req.query.filter || null;
-            const users = this.permissionManager.getAllUsers(filter);
-            res.json({ success: true, users });
+            const search = typeof req.query.search === 'string' ? req.query.search : '';
+            const limit = Math.max(1, Math.min(250, parseInt(req.query.limit, 10) || 50));
+            const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
+            const users = this.permissionManager.getAllUsers(filter, { search, limit, offset });
+            const total = this.permissionManager.getUserCount(filter, search);
+            res.json({ success: true, users, total, limit, offset, search, filter });
         });
 
         this.api.registerRoute('POST', '/api/tts/users/:userId/allow', (req, res) => {

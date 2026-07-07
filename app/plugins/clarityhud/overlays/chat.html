@@ -30,7 +30,7 @@
       box-sizing: border-box;
     }
 
-    body {
+    html, body {
       font-family: var(--chat-font-family);
       overflow: hidden;
       width: 100vw;
@@ -149,6 +149,11 @@
       padding: 20px 28px;
     }
 
+    html {
+      background: transparent;
+      color-scheme: dark;
+    }
+
     /* Accessibility: Reduce Motion */
     body.reduce-motion .chat-message {
       transition: opacity 100ms ease-out;
@@ -188,7 +193,7 @@
     #debug-status { margin-bottom: 5px; }
     #debug-socket { margin-bottom: 5px; }
     #debug-events { margin-bottom: 5px; }
-  </style>
+    </style>
 </head>
 <body>
   <!-- Debug Console -->

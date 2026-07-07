@@ -7,6 +7,49 @@
     <title>VDO.Ninja Multi-Guest Manager</title>
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/css/tailwind.output.css">
+    <script>
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+            function readTheme() {
+                try {
+                    const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
+                    if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                } catch (error) {}
+
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+            }
+
+            document.addEventListener('DOMContentLoaded', syncTheme);
+            window.addEventListener('load', syncTheme);
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * {
@@ -24,8 +67,8 @@
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            max-width: none;
+            margin: 0;
         }
 
         .header {
@@ -143,6 +186,13 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+        html[data-theme="day"] .form-input {
+            background: #fff !important;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            border-color: #64748b !important;
+        }
+
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -177,6 +227,13 @@
             background: var(--color-bg-tertiary);
             color: var(--color-text-primary);
             border: 1px solid var(--color-border);
+        }
+
+        html[data-theme="day"] .btn-secondary {
+            background: #e2e8f0 !important;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            border-color: #64748b !important;
         }
 
         .btn-secondary:hover {
@@ -238,10 +295,10 @@
             background: var(--color-bg-primary);
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
-            max-width: 400px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            max-width: 100%;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            white-space: normal;
         }
 
         .copy-btn {
@@ -478,6 +535,346 @@
             color: var(--color-text-secondary);
         }
 
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="day"] .header,
+        html[data-theme="day"] .card,
+        html[data-theme="day"] .guest-card,
+        html[data-theme="day"] .layout-btn,
+        html[data-theme="day"] .director-iframe-container,
+        html[data-theme="day"] .room-info {
+            background: #fff;
+            color: #10203a;
+            border-color: #bfd0f7;
+        }
+
+        html[data-theme="night"] .header,
+        html[data-theme="night"] .card,
+        html[data-theme="night"] .guest-card,
+        html[data-theme="night"] .layout-btn,
+        html[data-theme="night"] .director-iframe-container,
+        html[data-theme="night"] .room-info {
+            background: #11172a;
+            color: #e5e7eb;
+            border-color: #2b3552;
+        }
+
+        html[data-theme="day"] .card-header,
+        html[data-theme="day"] .director-iframe-header {
+            background: #eef4ff;
+            border-bottom-color: #bfd0f7;
+        }
+
+        html[data-theme="night"] .card-header,
+        html[data-theme="night"] .director-iframe-header {
+            background: #0f172a;
+            border-bottom-color: #2b3552;
+        }
+
+        html[data-theme="day"] .form-input,
+        html[data-theme="day"] select,
+        html[data-theme="day"] .copy-btn,
+        html[data-theme="day"] .control-btn {
+            background: #fff;
+            color: #10203a;
+            border-color: #c7d2fe;
+        }
+
+        html[data-theme="night"] .form-input,
+        html[data-theme="night"] select,
+        html[data-theme="night"] .copy-btn,
+        html[data-theme="night"] .control-btn {
+            background: #0f172a;
+            color: #e5e7eb;
+            border-color: #334155;
+        }
+
+        html[data-theme="day"] .btn-primary,
+        html[data-theme="day"] .btn-success,
+        html[data-theme="day"] .control-btn.active,
+        html[data-theme="day"] .guest-slot {
+            background: #667eea;
+            color: #fff;
+            border-color: #667eea;
+        }
+
+        html[data-theme="night"] .btn-primary,
+        html[data-theme="night"] .btn-success,
+        html[data-theme="night"] .control-btn.active,
+        html[data-theme="night"] .guest-slot {
+            background: #7c8cff;
+            color: #fff;
+            border-color: #7c8cff;
+        }
+
+        html[data-theme="contrast"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .header,
+        html[data-theme="contrast"] .card,
+        html[data-theme="contrast"] .guest-card,
+        html[data-theme="contrast"] .layout-btn,
+        html[data-theme="contrast"] .director-iframe-container,
+        html[data-theme="contrast"] .room-info {
+            background: #050505;
+            color: #fff;
+            border-color: #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="contrast"] .card-header,
+        html[data-theme="contrast"] .director-iframe-header {
+            background: #000;
+            border-bottom-color: #facc15;
+        }
+
+        html[data-theme="contrast"] .header-title h1,
+        html[data-theme="vision-impaired"] .header-title h1 {
+            color: #facc15;
+            background: none;
+            -webkit-text-fill-color: #facc15;
+        }
+
+        html[data-theme="cid"] .header-title h1 {
+            color: var(--color-accent-primary);
+            background: none;
+            -webkit-text-fill-color: var(--color-accent-primary);
+        }
+
+        html[data-theme="cid"] body {
+            background: #030603 !important;
+            color: #f4fff4 !important;
+        }
+
+        html[data-theme="cid"] .header,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .guest-card,
+        html[data-theme="cid"] .layout-btn,
+        html[data-theme="cid"] .director-iframe-container,
+        html[data-theme="cid"] .room-info {
+            background: #071107 !important;
+            color: #f4fff4 !important;
+            border-color: #1e5b2a !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="cid"] .card-header,
+        html[data-theme="cid"] .director-iframe-header {
+            background: #050d05 !important;
+            border-bottom-color: #1e5b2a !important;
+        }
+
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .text-secondary,
+        html[data-theme="cid"] .room-info-label,
+        html[data-theme="cid"] .empty-state,
+        html[data-theme="cid"] .empty-state p,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .director-iframe-header h4 {
+            color: #d1e7d1 !important;
+        }
+
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] .copy-btn,
+        html[data-theme="cid"] .control-btn,
+        html[data-theme="cid"] .btn {
+            background: #061006 !important;
+            color: #f4fff4 !important;
+            border-color: #1e5b2a !important;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .control-btn.active,
+        html[data-theme="cid"] .guest-slot,
+        html[data-theme="cid"] .status-active {
+            background: #4ade80 !important;
+            color: #030603 !important;
+            border-color: #4ade80 !important;
+            -webkit-text-fill-color: #030603 !important;
+        }
+
+        html[data-theme="cid"] .status-inactive {
+            background: #050505 !important;
+            color: #f4fff4 !important;
+            border: 2px solid #1e5b2a !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="cid"] .layout-preview,
+        html[data-theme="cid"] .alert,
+        html[data-theme="cid"] .room-info-value,
+        html[data-theme="cid"] .status-indicator {
+            background: #050d05 !important;
+            color: #f4fff4 !important;
+            border-color: #1e5b2a !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="cid"] .layout-btn {
+            padding: 1.25rem;
+            background: #071107 !important;
+        }
+
+        html[data-theme="cid"] .guest-card {
+            padding: 1.25rem;
+        }
+
+        html[data-theme="contrast"] .form-input,
+        html[data-theme="contrast"] select,
+        html[data-theme="contrast"] .copy-btn,
+        html[data-theme="contrast"] .control-btn,
+        html[data-theme="contrast"] .btn {
+            background: #000;
+            color: #fff7cc;
+            border-color: #facc15;
+        }
+
+        html[data-theme="contrast"] .subtitle,
+        html[data-theme="contrast"] .text-secondary,
+        html[data-theme="contrast"] .room-info-label,
+        html[data-theme="contrast"] .empty-state,
+        html[data-theme="contrast"] .empty-state p,
+        html[data-theme="contrast"] .form-label,
+        html[data-theme="contrast"] .director-iframe-header h4,
+        html[data-theme="contrast"] .text-muted {
+            color: #f8e7a1 !important;
+            font-size: 1rem;
+        }
+
+        html[data-theme="contrast"] .btn-primary,
+        html[data-theme="contrast"] .btn-success,
+        html[data-theme="contrast"] .control-btn.active,
+        html[data-theme="contrast"] .guest-slot,
+        html[data-theme="contrast"] .status-active {
+            background: #facc15;
+            color: #000;
+            border-color: #facc15;
+        }
+
+        html[data-theme="contrast"] .status-inactive {
+            background: #000;
+            color: #fff7cc;
+            border: 2px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000 !important;
+            color: #fff !important;
+            font-size: 1.12rem;
+            line-height: 1.75;
+        }
+
+        html[data-theme="vision-impaired"] .container {
+            max-width: none;
+        }
+
+        html[data-theme="vision-impaired"] .header,
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .guest-card,
+        html[data-theme="vision-impaired"] .layout-btn,
+        html[data-theme="vision-impaired"] .director-iframe-container,
+        html[data-theme="vision-impaired"] .room-info {
+            background: #000 !important;
+            color: #fff !important;
+            border-color: #facc15 !important;
+            box-shadow: none !important;
+            border-width: 3px;
+        }
+
+        html[data-theme="vision-impaired"] .card-header,
+        html[data-theme="vision-impaired"] .director-iframe-header {
+            background: #000 !important;
+            border-bottom-color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] h1,
+        html[data-theme="vision-impaired"] h2,
+        html[data-theme="vision-impaired"] h3,
+        html[data-theme="vision-impaired"] h4,
+        html[data-theme="vision-impaired"] .guest-name,
+        html[data-theme="vision-impaired"] .card-header h3 {
+            color: #fff7cc !important;
+            text-shadow: none !important;
+            font-weight: 800;
+        }
+
+        html[data-theme="vision-impaired"] .subtitle,
+        html[data-theme="vision-impaired"] .text-secondary,
+        html[data-theme="vision-impaired"] .room-info-label,
+        html[data-theme="vision-impaired"] .empty-state,
+        html[data-theme="vision-impaired"] .empty-state p,
+        html[data-theme="vision-impaired"] .form-label,
+        html[data-theme="vision-impaired"] .text-muted {
+            color: #f8e7a1 !important;
+            font-size: 1rem;
+        }
+
+        html[data-theme="vision-impaired"] .form-input,
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="vision-impaired"] .copy-btn,
+        html[data-theme="vision-impaired"] .control-btn,
+        html[data-theme="vision-impaired"] .btn {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border-color: #facc15 !important;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-success,
+        html[data-theme="vision-impaired"] .control-btn.active,
+        html[data-theme="vision-impaired"] .guest-slot,
+        html[data-theme="vision-impaired"] .status-active {
+            background: #facc15 !important;
+            color: #000 !important;
+            border-color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .status-inactive {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 2px solid #facc15 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="vision-impaired"] .layout-btn {
+            padding: 1.25rem;
+        }
+
+        html[data-theme="vision-impaired"] .guest-card {
+            padding: 1.25rem;
+        }
+
+        html[data-theme="vision-impaired"] .layout-preview,
+        html[data-theme="vision-impaired"] .alert,
+        html[data-theme="vision-impaired"] .room-info-value {
+            background: #000 !important;
+            color: #fff !important;
+            border-color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .room-info-value {
+            font-size: 0.95rem;
+        }
+        html[data-theme="vision-impaired"] .status-indicator {
+            box-shadow: none !important;
+        }
+
         .director-iframe-content {
             width: 100%;
             height: 600px;
@@ -501,6 +898,49 @@
             .director-iframe-content {
                 height: 400px;
             }
+        }
+        html[data-theme="day"] .form-input,
+        html[data-theme="day"] select {
+            background: #fff !important;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            border-color: #94a3b8 !important;
+            opacity: 1 !important;
+        }
+
+        html[data-theme="day"] .btn-secondary {
+            background: #e2e8f0 !important;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            border: 1px solid #94a3b8 !important;
+            opacity: 1 !important;
+        }
+
+        html[data-theme="contrast"] .btn-primary,
+        html[data-theme="contrast"] .btn-success,
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-success {
+            background: #facc15 !important;
+            color: #000 !important;
+            -webkit-text-fill-color: #000 !important;
+            border-color: #facc15 !important;
+            opacity: 1 !important;
+        }
+
+        html[data-theme="day"] #roomNameInput,
+        html[data-theme="day"] #maxGuestsInput,
+        html[data-theme="day"] #muteAllBtn,
+        html[data-theme="day"] #unmuteAllBtn {
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            opacity: 1 !important;
+        }
+
+        html[data-theme="contrast"] #createRoomBtn,
+        html[data-theme="vision-impaired"] #createRoomBtn {
+            color: #000 !important;
+            -webkit-text-fill-color: #000 !important;
+            opacity: 1 !important;
         }
     </style>
 </head>

@@ -1,5 +1,7 @@
 'use strict';
 
+const path = require('path');
+
 const TopTierDB = require('./backend/db');
 const SessionManager = require('./backend/session-manager');
 const ScoreEngine = require('./backend/score-engine');
@@ -20,6 +22,7 @@ class TopTierPlugin {
     this.sessionManager = null;
     this.scoreEngine = null;
     this.decayScheduler = null;
+    this.streamMonitor = null;
   }
 
   /**
@@ -58,6 +61,7 @@ class TopTierPlugin {
       this._registerRoutes();
       this._registerSocketEvents();
       this._registerTikTokEvents();
+      this._startStreamMonitor();
 
       this.api.log('[TopTier] Plugin initialized successfully', 'info');
     } catch (err) {
@@ -71,6 +75,7 @@ class TopTierPlugin {
    */
   async destroy() {
     try {
+      this._stopStreamMonitor();
       if (this.decayScheduler) this.decayScheduler.stop();
       if (this.sessionManager) this.sessionManager.endSession();
       this.api.log('[TopTier] Plugin destroyed', 'info');
@@ -84,6 +89,10 @@ class TopTierPlugin {
    * @private
    */
   _registerRoutes() {
+    this.api.registerRoute('GET', '/toptier/ui', (req, res) => {
+      res.sendFile(path.join(__dirname, 'ui.html'));
+    });
+
     // GET /api/plugins/toptier/board/:boardType
     this.api.registerRoute('GET', '/board/:boardType', (req, res) => {
       try {
@@ -91,9 +100,13 @@ class TopTierPlugin {
         if (!['likes', 'gifts'].includes(boardType)) return res.status(400).json({ success: false, error: 'Invalid board type' });
         const config = this.api.getConfig('toptier_config') || {};
         const limit = (boardType === 'likes' ? (config.likesBoard && config.likesBoard.displayCount) : (config.giftsBoard && config.giftsBoard.displayCount)) || 10;
-        const sessionId = this.sessionManager.getCurrentSessionId();
+        const liveSession = this.sessionManager.getLiveSessionState();
+        if (!liveSession.active) {
+          return res.json({ success: true, board: [], sessionId: null, active: false });
+        }
+        const sessionId = liveSession.sessionId;
         const board = this.dbHandler.getBoard(boardType, sessionId, limit);
-        res.json({ success: true, board, sessionId });
+        res.json({ success: true, board, sessionId, active: true });
       } catch (err) {
         this.api.log(`[TopTier] GET /board error: ${err.message}`, 'error');
         res.status(500).json({ success: false, error: err.message });
@@ -104,7 +117,11 @@ class TopTierPlugin {
     this.api.registerRoute('POST', '/reset/:boardType', (req, res) => {
       try {
         const { boardType } = req.params;
-        const sessionId = this.sessionManager.getCurrentSessionId();
+        const liveSession = this.sessionManager.getLiveSessionState();
+        if (!liveSession.active) {
+          return res.json({ success: true, active: false, sessionId: null });
+        }
+        const sessionId = liveSession.sessionId;
         if (boardType === 'all') {
           this.dbHandler.resetBoard('likes', sessionId);
           this.dbHandler.resetBoard('gifts', sessionId);
@@ -115,7 +132,7 @@ class TopTierPlugin {
           this.dbHandler.resetBoard(boardType, sessionId);
           this.api.emit('toptier:update', { board: boardType, entries: [], sessionId });
         }
-        res.json({ success: true });
+        res.json({ success: true, active: true, sessionId });
       } catch (err) {
         res.status(500).json({ success: false, error: err.message });
       }
@@ -151,6 +168,8 @@ class TopTierPlugin {
       try {
         this.sessionManager.endSession();
         const sessionId = this.sessionManager.startNewSession();
+        this.scoreEngine.reset();
+        this._emitEmptyBoards(sessionId);
         res.json({ success: true, sessionId });
       } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -160,7 +179,11 @@ class TopTierPlugin {
     // GET /api/plugins/toptier/session/current
     this.api.registerRoute('GET', '/session/current', (req, res) => {
       try {
-        res.json({ success: true, sessionId: this.sessionManager.getCurrentSessionId(), streamUsername: this.sessionManager.getCurrentStreamUsername() });
+        const liveSession = this.sessionManager.getLiveSessionState();
+        res.json({
+          success: true,
+          ...liveSession
+        });
       } catch (err) {
         res.status(500).json({ success: false, error: err.message });
       }
@@ -171,9 +194,13 @@ class TopTierPlugin {
       try {
         const { boardType } = req.params;
         if (!['likes', 'gifts'].includes(boardType)) return res.status(400).json({ success: false, error: 'Invalid board type' });
-        const sessionId = this.sessionManager.getCurrentSessionId();
+        const liveSession = this.sessionManager.getLiveSessionState();
+        if (!liveSession.active) {
+          return res.json({ success: true, active: false, log: [] });
+        }
+        const sessionId = liveSession.sessionId;
         const log = this.dbHandler.getDecayLog(boardType, sessionId, 50);
-        res.json({ success: true, log });
+        res.json({ success: true, active: true, log });
       } catch (err) {
         res.status(500).json({ success: false, error: err.message });
       }
@@ -207,9 +234,14 @@ class TopTierPlugin {
         if (!['likes', 'gifts'].includes(boardType)) return;
         const config = this.api.getConfig('toptier_config') || {};
         const limit = (boardType === 'likes' ? (config.likesBoard && config.likesBoard.displayCount) : (config.giftsBoard && config.giftsBoard.displayCount)) || 10;
-        const sessionId = this.sessionManager.getCurrentSessionId();
+        const liveSession = this.sessionManager.getLiveSessionState();
+        if (!liveSession.active) {
+          socket.emit('toptier:update', { board: boardType, entries: [], sessionId: null, active: false });
+          return;
+        }
+        const sessionId = liveSession.sessionId;
         const board = this.dbHandler.getBoard(boardType, sessionId, limit);
-        socket.emit('toptier:update', { board: boardType, entries: board, sessionId });
+        socket.emit('toptier:update', { board: boardType, entries: board, sessionId, active: true });
       } catch (err) {
         this.api.log(`[TopTier] Socket get-board error: ${err.message}`, 'error');
       }
@@ -240,7 +272,7 @@ class TopTierPlugin {
 
   /**
    * Register TikTok LIVE event handlers.
-   * Reconnect logic: only reset session when a different streamer connects.
+   * Stream identity changes rotate the session; short reconnects keep it.
    * @private
    */
   _registerTikTokEvents() {
@@ -260,15 +292,18 @@ class TopTierPlugin {
       this.decayScheduler.setConnected(true);
       const streamUsername = (data && data.username) || null;
       const config = this.api.getConfig('toptier_config') || {};
-      const isNewStream = this.sessionManager.handleConnect(streamUsername);
+      const streamKey = this._getCurrentStreamKey();
+      const isNewStream = this.sessionManager.handleConnect(streamUsername, streamKey);
+
+      if (!isNewStream && streamKey && !this.sessionManager.getCurrentStreamKey()) {
+        this.sessionManager.setCurrentStreamKey(streamKey);
+      }
 
       if (isNewStream) {
         // New stream — reset score engine state, restart decay scheduler
         this.scoreEngine.reset();
-        if (config.decay && config.decay.enabled) {
-          this.decayScheduler.stop();
-          this.decayScheduler.start(config);
-        }
+        this._restartDecayScheduler(config);
+        this._emitEmptyBoards();
       }
     });
 
@@ -281,8 +316,102 @@ class TopTierPlugin {
       // End session on disconnect so a new stream always starts with a fresh leaderboard.
       // Temporary reconnects within the same stream will get a new session — this is the
       // expected behavior: every stream start = clean slate.
-      this.sessionManager.endSession();
     });
+  }
+
+  /**
+   * Start a lightweight monitor that watches the active TikTok stream identity.
+   * This catches stream restarts with the same username even when the adapter
+   * stays connected and does not emit a fresh connected event.
+   * @private
+   */
+  _startStreamMonitor() {
+    this._stopStreamMonitor();
+    this.streamMonitor = setInterval(() => {
+      this._syncSessionWithLiveStream();
+    }, 5000);
+    if (typeof this.streamMonitor.unref === 'function') {
+      this.streamMonitor.unref();
+    }
+  }
+
+  /**
+   * Stop the stream monitor timer.
+   * @private
+   */
+  _stopStreamMonitor() {
+    if (this.streamMonitor) {
+      clearInterval(this.streamMonitor);
+      this.streamMonitor = null;
+    }
+  }
+
+  /**
+   * Return a stable identity key for the current live stream when the adapter
+   * can provide one.
+   * @returns {string|null}
+   * @private
+   */
+  _getCurrentStreamKey() {
+    if (!this.api.tiktok || typeof this.api.tiktok.getCurrentStreamKey !== 'function') {
+      return null;
+    }
+    return this.api.tiktok.getCurrentStreamKey();
+  }
+
+  /**
+   * Keep the current session aligned with the live stream identity.
+   * If the adapter discovers a new stream while staying connected, rotate the
+   * leaderboard session so old stream data does not leak into the new one.
+   * @private
+   */
+  _syncSessionWithLiveStream() {
+    if (!this.sessionManager || !this.sessionManager.hasCurrentSession()) return;
+    if (!this.api.tiktok || (typeof this.api.tiktok.isActive === 'function' && !this.api.tiktok.isActive())) return;
+
+    const streamUsername = this.api.tiktok.currentUsername || this.sessionManager.getCurrentStreamUsername() || null;
+    const streamKey = this._getCurrentStreamKey();
+    const currentKey = this.sessionManager.getCurrentStreamKey();
+
+    if (streamKey && currentKey && streamKey !== currentKey) {
+      const config = this.api.getConfig('toptier_config') || {};
+      this.api.log(`[TopTier] Live stream identity changed (${currentKey} -> ${streamKey}); starting fresh session`, 'info');
+      this.sessionManager.endSession();
+      const sessionId = this.sessionManager.startNewSession(streamUsername, streamKey);
+      this.scoreEngine.reset();
+      this._emitEmptyBoards(sessionId);
+      this._restartDecayScheduler(config);
+      return;
+    }
+
+    if (streamKey && !currentKey) {
+      this.sessionManager.setCurrentStreamKey(streamKey);
+    }
+  }
+
+  /**
+   * Restart the decay scheduler when the config enables it.
+   * @param {object} config
+   * @private
+   */
+  _restartDecayScheduler(config) {
+    if (!this.decayScheduler) return;
+    this.decayScheduler.stop();
+    if (config.decay && config.decay.enabled) {
+      this.decayScheduler.start(config);
+    }
+  }
+
+  /**
+   * Broadcast empty board payloads so connected overlays clear stale data
+   * immediately after a session reset.
+   * @param {string} [sessionId]
+   * @private
+   */
+  _emitEmptyBoards(sessionId) {
+    const sid = sessionId || this.sessionManager.getCurrentSessionId();
+    this.api.emit('toptier:update', { board: 'likes', entries: [], sessionId: sid });
+    this.api.emit('toptier:update', { board: 'gifts', entries: [], sessionId: sid });
   }
 
   /**

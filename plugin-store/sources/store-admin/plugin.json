@@ -1,0 +1,20 @@
+{
+  "id": "store-admin",
+  "name": "LTTH App Store Admin",
+  "version": "1.0.0",
+  "description": "Admin-only user and beta access management for the LTTH App Store.",
+  "author": "ltth.app Team",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "utility",
+  "devStatus": "working-beta",
+  "permissions": [
+    "routes"
+  ],
+  "descriptions": {
+    "en": "Admin-only user and beta access management for the LTTH App Store.",
+    "de": "Admin-only Nutzer- und Beta-Freigabenverwaltung fuer den LTTH App Store.",
+    "es": "Gestion de usuarios y accesos beta solo para administradores del LTTH App Store.",
+    "fr": "Gestion des utilisateurs et des acces beta reservee aux administrateurs du LTTH App Store."
+  }
+}

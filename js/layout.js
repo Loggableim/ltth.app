@@ -5,20 +5,52 @@
     const SUPPORTED_LANGS = ['de', 'en', 'es', 'fr'];
     const DEFAULT_LANG = 'de';
     const INJECTED_ATTR = 'data-ltth-injected';
+    const FEATURE_LANG_PATHS = {
+        '/features/': 'de',
+        '/features': 'de',
+        '/features/index.html': 'de',
+        '/features-en.html': 'en',
+        '/features-es.html': 'es',
+        '/features-fr.html': 'fr',
+    };
+    const FEATURE_LANG_TARGETS = {
+        de: '/features/',
+        en: '/features-en.html',
+        es: '/features-es.html',
+        fr: '/features-fr.html',
+    };
+
+    function persistLanguage(lang) {
+        try {
+            localStorage.setItem('ltth_lang', lang);
+        } catch (e) {
+            console.debug('layout.js: localStorage unavailable while persisting language', e);
+        }
+    }
     
     function detectLanguage() {
-        // 1. localStorage
+        const path = window.location.pathname;
+        if (FEATURE_LANG_PATHS[path]) {
+            const lang = FEATURE_LANG_PATHS[path];
+            persistLanguage(lang);
+            return lang;
+        }
+
+        // 1. URL param
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlLang = urlParams.get('lang');
+        if (urlLang && SUPPORTED_LANGS.includes(urlLang)) {
+            persistLanguage(urlLang);
+            return urlLang;
+        }
+        
+        // 2. localStorage
         try {
             const stored = localStorage.getItem('ltth_lang');
             if (stored && SUPPORTED_LANGS.includes(stored)) return stored;
         } catch (e) {
             console.debug('layout.js: localStorage unavailable, continuing with URL/navigator language detection', e);
         }
-        
-        // 2. URL param
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlLang = urlParams.get('lang');
-        if (urlLang && SUPPORTED_LANGS.includes(urlLang)) return urlLang;
         
         // 3. navigator language
         const navLang = (navigator.language || navigator.userLanguage || '').slice(0, 2).toLowerCase();
@@ -28,7 +60,22 @@
     }
     
     function switchLanguage(lang) {
-        localStorage.setItem('ltth_lang', lang);
+        persistLanguage(lang);
+
+        const path = window.location.pathname;
+        if (
+            path === '/features/' ||
+            path === '/features' ||
+            path === '/features/index.html' ||
+            path === '/features.html' ||
+            path === '/features-en.html' ||
+            path === '/features-es.html' ||
+            path === '/features-fr.html'
+        ) {
+            window.location.href = FEATURE_LANG_TARGETS[lang] || '/features/';
+            return;
+        }
+
         const url = new URL(window.location.href);
         url.searchParams.set('lang', lang);
         window.location.href = url.toString();
@@ -85,6 +132,8 @@
             const page = link.getAttribute('data-page');
             link.classList.remove('active');
             if (page === 'home' && (path === '/' || path === '/index.html')) {
+                link.classList.add('active');
+            } else if (page === 'features' && path.startsWith('/features')) {
                 link.classList.add('active');
             } else if (page) {
                 const pageBase = page.replace('.html', '');

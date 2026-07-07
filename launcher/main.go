@@ -37,7 +37,7 @@ const (
 	AppVersion    = "1.0.2"
 	GitHubOwner   = "Loggableim"
 	GitHubRepo    = "ltth.app"
-	VersionURL    = "https://raw.githubusercontent.com/Loggableim/ltth.app/main/version.json"
+	VersionURL    = "https://ltth.app/version.json"
 	AppZIPBaseURL = "https://ltth.app/app/"
 	WindowWidth   = 800
 	WindowHeight  = 600
@@ -56,10 +56,10 @@ type LauncherConfig struct {
 
 // VersionInfo from remote version.json
 type VersionInfo struct {
-	Version     string                       `json:"version"`
-	ReleaseDate string                       `json:"releaseDate"`
-	Status      string                       `json:"status"`
-	Changelog   map[string]ChangelogEntry    `json:"changelog"`
+	Version     string                    `json:"version"`
+	ReleaseDate string                    `json:"releaseDate"`
+	Status      string                    `json:"status"`
+	Changelog   map[string]ChangelogEntry `json:"changelog"`
 }
 
 // ChangelogEntry for a specific version
@@ -158,7 +158,7 @@ func getConfigFilePath() string {
 // loadConfig loads or creates the configuration
 func loadConfig() {
 	configPath = getConfigFilePath()
-	
+
 	// Ensure config directory exists
 	os.MkdirAll(filepath.Dir(configPath), 0755)
 
@@ -202,12 +202,12 @@ func bindFunctions(w webview2.WebView) {
 	// Get configuration
 	w.Bind("getConfig", func() string {
 		data, _ := json.Marshal(map[string]interface{}{
-			"installPath":  config.InstallPath,
-			"configPath":   config.ConfigPath,
-			"autoUpdate":   config.AutoUpdate,
-			"language":     config.Language,
-			"isFirstRun":   config.IsFirstRun,
-			"lastVersion":  config.LastVersion,
+			"installPath": config.InstallPath,
+			"configPath":  config.ConfigPath,
+			"autoUpdate":  config.AutoUpdate,
+			"language":    config.Language,
+			"isFirstRun":  config.IsFirstRun,
+			"lastVersion": config.LastVersion,
 		})
 		return string(data)
 	})
@@ -251,7 +251,7 @@ func bindFunctions(w webview2.WebView) {
 			homeDir, _ := os.UserHomeDir()
 			localAppData = homeDir
 		}
-		
+
 		data, _ := json.Marshal(map[string]string{
 			"installPath": filepath.Join(localAppData, "LTTH", "versions"),
 			"configPath":  filepath.Join(localAppData, "LTTH", "config"),
@@ -284,7 +284,7 @@ func bindFunctions(w webview2.WebView) {
 	// Check for updates
 	w.Bind("checkUpdates", func() string {
 		log.Println("Checking for updates...")
-		
+
 		resp, err := http.Get(VersionURL)
 		if err != nil {
 			log.Printf("Update check failed: %v", err)
@@ -300,7 +300,7 @@ func bindFunctions(w webview2.WebView) {
 		currentVersion := config.LastVersion
 		latestVersion := versionInfo.Version
 		updateAvailable := currentVersion != "" && compareVersions(latestVersion, currentVersion) > 0
-		
+
 		if currentVersion == "" {
 			updateAvailable = true
 		}
@@ -329,7 +329,7 @@ func bindFunctions(w webview2.WebView) {
 	// Get full changelog (for splash screen)
 	w.Bind("getFullChangelog", func() string {
 		log.Println("Fetching full changelog...")
-		
+
 		resp, err := http.Get(VersionURL)
 		if err != nil {
 			log.Printf("Changelog fetch failed: %v", err)
@@ -358,7 +358,7 @@ func bindFunctions(w webview2.WebView) {
 	// Install update
 	w.Bind("installUpdate", func(version string) string {
 		log.Printf("Installing version %s...", version)
-		
+
 		if config.InstallPath == "" || config.ConfigPath == "" {
 			return `{"success": false, "error": "Paths not configured"}`
 		}
@@ -429,7 +429,7 @@ func bindFunctions(w webview2.WebView) {
 		}
 
 		appDir := filepath.Join(config.InstallPath, config.LastVersion)
-		
+
 		// Validate that appDir is within installPath (prevent path traversal)
 		cleanAppDir := filepath.Clean(appDir)
 		cleanInstallPath := filepath.Clean(config.InstallPath)
@@ -437,7 +437,7 @@ func bindFunctions(w webview2.WebView) {
 		if err != nil || strings.HasPrefix(relPath, "..") {
 			return `{"success": false, "error": "Invalid installation path"}`
 		}
-		
+
 		// Look for index.html to open in browser
 		indexPath := filepath.Join(cleanAppDir, "index.html")
 		if info, err := os.Stat(indexPath); err == nil && !info.IsDir() {
@@ -583,7 +583,7 @@ func extractZip(src, dest string) error {
 		if strings.HasPrefix(cleanName, "..") {
 			return fmt.Errorf("invalid file path in archive: %s", f.Name)
 		}
-		
+
 		fpath := filepath.Join(cleanDest, cleanName)
 
 		// Security check for zip slip vulnerability using filepath.Rel
@@ -676,8 +676,6 @@ func calculateSHA256(filepath string) (string, error) {
 
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
-
-
 
 // Embedded HTML UI
 var htmlUI = `<!DOCTYPE html>

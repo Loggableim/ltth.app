@@ -34,7 +34,7 @@ class MinecraftConnectPlugin {
         // Configuration
         this.config = {
             ui: {
-                theme: 'aurora-2'
+                theme: 'night'
             },
             websocket: {
                 port: 25560,
@@ -125,9 +125,6 @@ class MinecraftConnectPlugin {
 
             // Start WebSocket server
             this.wsServer.start();
-
-            this.isRunning = true;
-            this.stats.startTime = Date.now();
 
             this.api.log('Minecraft Connect plugin initialized successfully');
             return true;
@@ -235,7 +232,26 @@ class MinecraftConnectPlugin {
      */
     setupWebSocketHandlers() {
         this.wsServer.on('server:started', (data) => {
+            this.isRunning = true;
+            this.connectionStatus = 'Waiting';
+            this.stats.startTime = Date.now();
             this.api.log(`WebSocket server started on ${data.host}:${data.port}`);
+            this.broadcastStatus();
+        });
+
+        this.wsServer.on('server:error', (error) => {
+            this.isRunning = false;
+            this.connectionStatus = 'Disconnected';
+            this.stats.startTime = null;
+            this.availableActions = [];
+            this.stats.errors = (this.stats.errors || 0) + 1;
+            const port = error?.port || this.config.websocket?.port || 25560;
+            if (error?.code === 'EADDRINUSE') {
+                this.api.log(`WebSocket server port ${port} is already in use`, 'warn');
+            } else {
+                this.api.log(`WebSocket server error: ${error.message}`, 'error');
+            }
+            this.broadcastActions();
             this.broadcastStatus();
         });
 

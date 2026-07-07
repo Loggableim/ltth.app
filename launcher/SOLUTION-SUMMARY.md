@@ -150,7 +150,7 @@ launcher/
 Der Launcher ist jetzt voll integriert mit dem Repository:
 
 1. **version.json** → Version-Informationen
-   - URL: `https://raw.githubusercontent.com/Loggableim/ltth.app/main/version.json`
+   - URL: `https://ltth.app/version.json`
    
 2. **ltth_latest.zip** → Immer neueste Version
    - URL: `https://ltth.app/app/ltth_latest.zip`

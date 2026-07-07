@@ -445,7 +445,7 @@
     body[data-arena-overlay-design="high-contrast"] #hud {
       left: 18px;
       top: 18px;
-      width: min(420px, calc(100vw - 36px));
+      width: min(560px, calc(100vw - 36px));
       padding: 12px 14px;
       transform: none;
       display: block;
@@ -917,7 +917,7 @@
         display: none;
       }
     }
-  </style>
+    </style>
 </head>
 <body data-arena-overlay-design="framed-field" data-arena-overlay-position="top-center" data-arena-overlay-density="full" data-arena-overlay-accent="cyan" data-arena-overlay-backdrop="solid" data-arena-rotator-style="card" data-arena-hud-placement="below-field" data-arena-field-layout="separated" data-arena-text-scale="very-large" data-arena-info-placement="in-hud" data-arena-overlay-show-title="true" data-arena-overlay-show-count="true" data-arena-overlay-show-leaderboard="true" data-field-frame-design="minimal">
   <canvas id="arena-canvas"></canvas>
@@ -3434,6 +3434,17 @@
         color: weaponColor(data.weapon?.type),
         startedAt: Date.now(),
         duration: 520
+      });
+    });
+    socket.on('arena:stream-surge', data => {
+      if (!data) return;
+      pushEffect({
+        x: Number(data.x) || 0,
+        y: Number(data.y) || 0,
+        radius: Math.max(14, Number(data.radius) || 18),
+        color: data.kind === 'gift' ? 'rgba(250, 204, 21, 0.96)' : 'rgba(34, 197, 94, 0.96)',
+        startedAt: Date.now(),
+        duration: Math.max(260, Number(data.durationMs) || (data.kind === 'gift' ? 760 : 520))
       });
     });
     socket.on('arena:food-eaten', data => {

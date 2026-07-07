@@ -12,7 +12,7 @@
     const SIDEBAR_ICON_ACCENTS = {
         dashboard: '#f59e0b',
         clarityhud: '#38bdf8',
-        'lastevent-spotlight': '#a855f7',
+        'spotlight': '#f59e0b',
         events: '#22c55e',
         flows: '#06b6d4',
         goals: '#ef4444',
@@ -25,21 +25,21 @@
         'stt-capture': '#0ea5e9',
         'webgpu-emoji-rain': '#f59e0b',
         fireworks: '#fb7185',
-        'flame-overlay': '#f97316',
+        'flame-overlay': '#7c3aed',
         'quiz-show': '#10b981',
         'interactive-story': '#8b5cf6',
         coinbattle: '#eab308',
         'game-engine': '#6366f1',
+        'milestone-leaderboard': '#0ea5e9',
         'viewer-leaderboard': '#0ea5e9',
         'viewer-profiles': '#14b8a6',
         'gift-milestone': '#f43f5e',
-        toptier: '#d97706',
+        toptier: '#4ade80',
         vdoninja: '#7c3aed',
         multicam: '#06b6d4',
         'osc-bridge': '#22c55e',
         openshock: '#ef4444',
         'weather-control': '#38bdf8',
-        'minecraft-connect': '#16a34a',
         streamalchemy: '#ec4899',
         gcce: '#f59e0b',
         'gcce-hud': '#8b5cf6',
@@ -79,6 +79,7 @@
                     }
                     // Re-update the status with new language
                     updateConnectionStatus(currentStatus);
+                    normalizeViewerXpSidebarEntry();
                 }
             });
         }
@@ -135,6 +136,90 @@
     }
 
     // ========== IFRAME LAZY LOADING ==========
+    function normalizeEmbeddedIframeLayout(iframe) {
+        if (!iframe) return;
+
+        try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+            if (!iframeDoc || !iframeDoc.documentElement) return;
+            if (iframeDoc.documentElement.dataset.ltthEmbedNormalized === '1') return;
+
+            const styleId = 'ltth-dashboard-embed-style';
+            let style = iframeDoc.getElementById(styleId);
+
+            if (!style) {
+                style = iframeDoc.createElement('style');
+                style.id = styleId;
+                style.textContent = `
+                    html,
+                    body {
+                        width: 100% !important;
+                        min-width: 0 !important;
+                        max-width: none !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        overflow-x: hidden !important;
+                        box-sizing: border-box !important;
+                    }
+
+                    body {
+                        display: block !important;
+                        padding: clamp(0.75rem, 1vw, 1.25rem) !important;
+                    }
+
+                    body > *,
+                    main,
+                    #app,
+                    #root,
+                    .app,
+                    .page,
+                    .page-container,
+                    .page-shell,
+                    .page-layout,
+                    .dashboard,
+                    .dashboard-shell,
+                    .dashboard-page,
+                    .plugin-page,
+                    .plugin-container,
+                    .plugin-shell,
+                    .settings-page,
+                    .settings-container,
+                    .content,
+                    .content-wrapper,
+                    .container,
+                    .wrapper,
+                    section,
+                    article,
+                    header,
+                    footer,
+                    nav,
+                    form,
+                    aside,
+                    [class*="container"],
+                    [class*="wrapper"],
+                    [class*="shell"],
+                    [class*="layout"],
+                    [class*="page"],
+                    [class*="panel"] {
+                        width: 100% !important;
+                        min-width: 0 !important;
+                        max-width: none !important;
+                        margin-left: 0 !important;
+                        margin-right: 0 !important;
+                        padding-left: clamp(0.75rem, 1vw, 1.25rem) !important;
+                        padding-right: clamp(0.75rem, 1vw, 1.25rem) !important;
+                        box-sizing: border-box !important;
+                    }
+                `;
+                (iframeDoc.head || iframeDoc.documentElement).appendChild(style);
+            }
+
+            iframeDoc.documentElement.dataset.ltthEmbedNormalized = '1';
+        } catch (error) {
+            // Ignore sandboxed or cross-origin frames.
+        }
+    }
+
     /**
      * Load iframes within a view that have data-src attribute (lazy loading)
      * or reload iframes that have src but might be showing 404
@@ -158,6 +243,7 @@
                     if (container) {
                         iframe.addEventListener('load', () => {
                             container.classList.add('loaded');
+                            normalizeEmbeddedIframeLayout(iframe);
                         }, { once: true });
                     }
                     
@@ -178,6 +264,8 @@
             } catch (e) {
                 // Cross-origin frame, can't check - that's okay, it probably loaded successfully
             }
+
+            normalizeEmbeddedIframeLayout(iframe);
         });
     }
     
@@ -210,6 +298,7 @@
                     // Re-add load listener
                     iframe.addEventListener('load', () => {
                         container.classList.add('loaded');
+                        normalizeEmbeddedIframeLayout(iframe);
                     }, { once: true });
                 }
                 
@@ -255,6 +344,7 @@
 
         // Initialize collapsible categories
         initializeCategoryToggles();
+        normalizeViewerXpSidebarEntry();
 
         // Mobile: Close sidebar when clicking outside
         document.addEventListener('click', (e) => {
@@ -330,6 +420,42 @@
         }
         const hue = hashString(normalized) % 360;
         return `hsl(${hue} 78% 58%)`;
+    }
+
+    function normalizeViewerXpSidebarEntry() {
+        const viewerXpItems = document.querySelectorAll(
+            '.sidebar-item[data-view="milestone-leaderboard"], .sidebar-item[data-view="viewer-leaderboard"]'
+        );
+        viewerXpItems.forEach(item => {
+            item.setAttribute('data-tooltip', 'Viewer XP');
+            item.setAttribute('title', 'Viewer XP');
+
+            const label = item.querySelector('.sidebar-item-text');
+            if (label) {
+                label.textContent = 'Viewer XP';
+                label.setAttribute('data-i18n', 'navigation.viewer_leaderboard');
+            }
+
+            const icon = item.querySelector('.sidebar-plugin-icon, [data-lucide]');
+            if (!icon) {
+                return;
+            }
+
+            if (icon.tagName === 'I') {
+                const replacement = document.createElement('img');
+                replacement.src = '/plugins/milestone-leaderboard/assets/viewer-xp-icon.png?v=20260707-5';
+                replacement.alt = '';
+                replacement.className = 'sidebar-plugin-icon sidebar-plugin-icon-viewer-xp';
+                replacement.setAttribute('aria-hidden', 'true');
+                icon.replaceWith(replacement);
+                return;
+            }
+
+            icon.setAttribute('src', '/plugins/milestone-leaderboard/assets/viewer-xp-icon.png?v=20260707-5');
+            icon.setAttribute('alt', '');
+            icon.setAttribute('aria-hidden', 'true');
+            icon.classList.add('sidebar-plugin-icon-viewer-xp');
+        });
     }
 
     function applySidebarIconAccents() {
@@ -419,7 +545,7 @@
         if (savedView) {
             // Check if view exists and is visible
             const viewElement = document.getElementById(`view-${savedView}`);
-            if (viewElement && viewElement.style.display !== 'none') {
+            if (isViewVisible(viewElement)) {
                 switchView(savedView);
             } else {
                 switchView('dashboard');
@@ -427,10 +553,27 @@
         }
     }
 
+    function isViewVisible(viewElement) {
+        if (!viewElement) {
+            return false;
+        }
+
+        const pluginState = viewElement.dataset?.pluginState;
+        if (pluginState === 'disabled' || pluginState === 'missing') {
+            return false;
+        }
+
+        if (viewElement.id === 'view-events' && document.documentElement.dataset.liveEventLog === 'disabled') {
+            return false;
+        }
+
+        return true;
+    }
+
     function switchView(viewName) {
-        // Check if the requested view exists and is not hidden (disabled plugin)
+        // Check if the requested view exists and is not explicitly disabled.
         const requestedView = document.getElementById(`view-${viewName}`);
-        if (!requestedView || requestedView.style.display === 'none') {
+        if (!isViewVisible(requestedView)) {
             console.warn(`Cannot switch to view "${viewName}" - view is hidden or does not exist.`);
             // Redirect to dashboard if view is hidden or doesn't exist
             // Prevent infinite recursion by checking we're not already trying to switch to dashboard
@@ -471,6 +614,12 @@
         // Save current view
         currentView = viewName;
         localStorage.setItem('active-view', viewName);
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('ltth:view-changed', {
+                detail: { view: viewName }
+            }));
+        }
 
         // Re-initialize Lucide icons
         if (typeof lucide !== 'undefined') {
@@ -546,17 +695,17 @@
             { icon: 'activity', label: 'Events', view: 'events' },
             { icon: 'git-branch', label: 'Flows', view: 'flows' },
             { icon: 'target', label: 'Goals', view: 'goals', plugin: 'goals' },
-            { icon: 'eye', label: 'LastEvent', view: 'lastevent-spotlight', plugin: 'lastevent-spotlight' },
+            { icon: 'eye', label: 'Spotlight', view: 'spotlight', plugin: 'spotlight' },
             { icon: 'mic', label: 'TTS', view: 'tts', plugin: 'tts' },
             { icon: 'music', label: 'Soundboard', view: 'soundboard', plugin: 'soundboard' },
-            { icon: 'zap', label: 'WebGPU Emoji Rain', view: 'webgpu-emoji-rain', plugin: 'webgpu-emoji-rain' },
+            { icon: 'zap', label: 'Emoji Rain', view: 'webgpu-emoji-rain', plugin: 'webgpu-emoji-rain' },
             { icon: 'users', label: 'Multi-Guest', view: 'multi-guest', plugin: 'vdoninja' },
             { icon: 'gift', label: 'Gift Milestone', view: 'gift-milestone', plugin: 'gift-milestone' },
             { icon: 'video', label: 'Multi-Cam', view: 'multicam', plugin: 'multicam' },
             { icon: 'gamepad-2', label: 'OSC-Bridge', view: 'osc-bridge', plugin: 'osc-bridge' },
-            { icon: 'zap', label: 'OpenShock', view: 'openshock', plugin: 'openshock' },
+            { icon: 'zap', label: 'HybridShock', view: 'openshock', plugin: 'openshock' },
             { icon: 'help-circle', label: 'Quiz Show', view: 'quiz-show', plugin: 'quiz-show' },
-            { icon: 'trophy', label: 'XP & Leaderboard', view: 'viewer-leaderboard', plugin: 'viewer-leaderboard' },
+            { icon: 'trophy', label: 'Viewer XP', view: 'milestone-leaderboard', plugin: 'milestone-leaderboard' },
             { icon: 'flask-conical', label: 'Stream Alchemy', view: 'streamalchemy', plugin: 'streamalchemy' },
             { icon: 'terminal', label: 'Chat Commands', view: 'gcce', plugin: 'gcce' },
             { icon: 'printer', label: 'Thermal Printer', view: 'thermal-printer', plugin: 'thermal-printer' },
@@ -688,8 +837,8 @@
 
             console.log('✅ [Navigation] Active plugins loaded:', Array.from(activePlugins));
 
-            // Keep plugin shells visible when a manifest exists so operators can still
-            // access disabled-plugin flows and conflict messaging.
+            // Hide inactive sidebar entries, but keep non-sidebar plugin shells available
+            // for fallback views and conflict messaging.
             // Exclude quick action buttons - they are handled separately in dashboard-enhancements.js
             const pluginElements = document.querySelectorAll('[data-plugin]:not(.quick-action-btn)');
             pluginElements.forEach(element => {
@@ -697,12 +846,41 @@
                 const pluginInfo = availablePlugins.get(requiredPlugin);
                 const isInstalled = Boolean(pluginInfo);
                 const isEnabled = activePlugins.has(requiredPlugin);
+                const isSidebarItem = element.classList.contains('sidebar-item');
+
+                if (isSidebarItem && !isEnabled) {
+                    element.style.display = 'none';
+                    element.dataset.pluginState = isInstalled ? 'disabled' : 'missing';
+                    element.classList.remove('plugin-disabled');
+                    element.classList.remove('plugin-missing');
+                    element.removeAttribute('aria-disabled');
+                    element.setAttribute('aria-hidden', 'true');
+                    console.log(`Hiding sidebar entry for inactive plugin: ${requiredPlugin}`);
+                    return;
+                }
+
+                element.removeAttribute('aria-hidden');
 
                 if (!isInstalled) {
-                    element.style.display = 'none';
-                    element.dataset.pluginState = 'missing';
-                    element.classList.add('plugin-missing');
-                    element.classList.remove('plugin-disabled');
+                    const hasDedicatedView = document.getElementById(`view-${requiredPlugin}`)
+                        || document.querySelector(`.content-view[data-plugin="${requiredPlugin}"]`);
+
+                    if (!hasDedicatedView) {
+                        element.style.display = 'none';
+                        element.dataset.pluginState = 'missing';
+                        element.classList.add('plugin-missing');
+                        element.classList.remove('plugin-disabled');
+                        return;
+                    }
+
+                    element.style.removeProperty('display');
+                    element.dataset.pluginState = 'missing-active-view';
+                    element.classList.add('plugin-disabled');
+                    element.classList.remove('plugin-missing');
+                    if (element.classList.contains('sidebar-item')) {
+                        element.setAttribute('aria-disabled', 'true');
+                    }
+                    console.log(`Showing fallback sidebar entry for view-backed plugin: ${requiredPlugin}`);
                     return;
                 }
 
@@ -723,6 +901,7 @@
                 lucide.createIcons();
             }
             applySidebarIconAccents();
+            normalizeViewerXpSidebarEntry();
 
         } catch (error) {
             // Retry on network errors
@@ -915,7 +1094,7 @@
             goodbye.innerHTML = `
                 <div class="shutdown-goodbye-content">
                     <div class="shutdown-goodbye-logo">
-                        <img src="/ltthmini_nightmode.png" alt="LTTH" class="shutdown-goodbye-img">
+                        <img src="/ltthicon.png" alt="LTTH" class="shutdown-goodbye-img">
                     </div>
                     <h1 class="shutdown-goodbye-title">Auf Wiedersehen! 👋</h1>
                     <p class="shutdown-goodbye-subtitle">Der Server wird heruntergefahren...</p>

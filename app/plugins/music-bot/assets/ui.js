@@ -13,6 +13,7 @@
 
   function setActiveTab(target) {
     if (!target) return;
+    const contentTarget = target === 'queue' ? 'player' : target;
     document.querySelectorAll('.tab').forEach((t) => {
       const isActive = t.getAttribute('data-tab') === target;
       t.classList.toggle('active', isActive);
@@ -20,10 +21,13 @@
       if (isActive) t.setAttribute('tabindex', '0');
     });
     document.querySelectorAll('.tab-content').forEach((c) => {
-      const isActive = c.getAttribute('data-tab-content') === target;
+      const isActive = c.getAttribute('data-tab-content') === contentTarget;
       c.classList.toggle('active', isActive);
       c.setAttribute('aria-hidden', isActive ? 'false' : 'true');
     });
+    if (target === 'queue') {
+      document.getElementById('queue-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }
 
   // ── Tab switching ──
@@ -36,7 +40,7 @@
     const isActive = tab.classList.contains('active');
     tab.setAttribute('role', 'tab');
     tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    tab.setAttribute('aria-controls', `tab-content-${target}`);
+    tab.setAttribute('aria-controls', `tab-content-${target === 'queue' ? 'player' : target}`);
     tab.setAttribute('tabindex', isActive ? '0' : '-1');
     tab.addEventListener('click', () => {
       setActiveTab(target);
@@ -67,6 +71,9 @@
   const nowPlayingEl = document.getElementById('now-playing');
   const queueListEl = document.getElementById('queue-list');
   const queueLengthEl = document.getElementById('queue-length');
+  const heroQueueCount = document.getElementById('hero-queue-count');
+  const heroMpvStatus = document.getElementById('hero-mpv-status');
+  const heroAutodjStatus = document.getElementById('hero-autodj-status');
   const historyListEl = document.getElementById('history-list');
   const requestFeedback = document.getElementById('request-feedback');
   const searchInput = document.getElementById('search-input');
@@ -115,6 +122,13 @@
   const payToSkipEnabled = document.getElementById('pay-to-skip-enabled');
   const payToSkipGifts = document.getElementById('pay-to-skip-gifts');
   const giftCatalogList = document.getElementById('gift-catalog-list');
+  const giftCatalogSearch = document.getElementById('gift-catalog-search');
+  const giftCatalogRefresh = document.getElementById('gift-catalog-refresh');
+  const giftCatalogStatus = document.getElementById('gift-catalog-status');
+  const giftCatalogCount = document.getElementById('gift-catalog-count');
+  const giftCatalogApplyPayToPlay = document.getElementById('gift-catalog-apply-pay-to-play');
+  const giftCatalogApplyPayToSkip = document.getElementById('gift-catalog-apply-pay-to-skip');
+  const giftCatalogApplySkipImmunity = document.getElementById('gift-catalog-apply-skip-immunity');
   const likeGateEnabled = document.getElementById('like-gate-enabled');
   const minLikesPerUser = document.getElementById('min-likes-per-user');
   const overlayDesign = document.getElementById('overlay-design');
@@ -148,8 +162,19 @@
   let progressDuration = 0;
   let draggedQueueIndex = null;
   let giftCatalogTargetField = null;
+  let giftCatalogEntries = [];
+  let giftCatalogFilter = '';
+  let giftCatalogSelectedValues = new Set();
+  let giftCatalogMeta = {
+    locales: [],
+    region: null,
+    lastUpdate: null,
+    count: 0
+  };
   let currentSetupIssues = [];
   let currentOnboarding = { completed: false, completedAt: null };
+  let mpvInstallPollTimer = null;
+  let mpvInstallPollAttempts = 0;
 
   // Client-side YouTube ID extraction (no server call needed for direct links)
   function extractYouTubeId(url) {
@@ -245,6 +270,10 @@
   function renderSetupIssues(issues = []) {
     if (!setupIssuesBanner || !setupIssuesList) return;
     const list = Array.isArray(issues) ? issues : [];
+    if (heroMpvStatus) {
+      const mpvIssue = list.find((issue) => String(issue?.title || '').toLowerCase().includes('mpv'));
+      heroMpvStatus.textContent = mpvIssue ? 'Nicht installiert' : 'Bereit';
+    }
     if (!list.length) {
       setupIssuesBanner.style.display = 'none';
       setupIssuesList.innerHTML = '';
@@ -259,16 +288,122 @@
         const instructionsHtml = instructions.length
           ? `<ul>${instructions.map((instr) => `<li><code>${escapeHtml(instr)}</code></li>`).join('')}</ul>`
           : '';
+        const installStatus = issue?.installStatus;
+        const installStatusHtml = installStatus?.message
+          ? `<p class="setup-install-status ${escapeHtml(installStatus.state || 'info')}">${escapeHtml(installStatus.message)}${installStatus.command ? ` <code>${escapeHtml(installStatus.command)}</code>` : ''}</p>`
+          : '';
+        const installButtonHtml = issue?.oneClickInstall && issue?.installAction === 'mpv'
+          ? `<div class="setup-issue-actions">
+              <button class="btn primary small" type="button" data-setup-action="install-mpv" ${installStatus?.state === 'installing' ? 'disabled' : ''}>
+                ${escapeHtml(issue.installButtonLabel || 'Installieren')}
+              </button>
+            </div>`
+          : '';
         return `
           <div class="setup-issue ${issue?.severity === 'error' ? 'error' : 'warning'}">
             <strong>${icon} ${escapeHtml(issue?.title || 'Setup-Hinweis')}</strong><br>
             <span style="font-size:0.9em;">${escapeHtml(issue?.description || '')}</span>
+            ${installButtonHtml}
+            ${installStatusHtml}
             ${instructionsHtml}
           </div>
         `;
       })
       .join('');
   }
+
+  function getMpvStatusFromPayload(payload = {}) {
+    if (payload.mpvInstallStatus) return payload.mpvInstallStatus;
+    const mpvIssue = Array.isArray(payload.issues)
+      ? payload.issues.find((issue) => issue?.installAction === 'mpv' || String(issue?.title || '').toLowerCase().includes('mpv'))
+      : null;
+    return mpvIssue?.installStatus || null;
+  }
+
+  function applySetupStatus(payload = {}) {
+    currentSetupIssues = Array.isArray(payload?.issues) ? payload.issues : [];
+    renderSetupIssues(currentSetupIssues);
+    renderOnboarding(currentOnboarding, currentSetupIssues);
+    return getMpvStatusFromPayload(payload);
+  }
+
+  function stopMpvInstallPolling() {
+    if (mpvInstallPollTimer) {
+      clearInterval(mpvInstallPollTimer);
+      mpvInstallPollTimer = null;
+    }
+    mpvInstallPollAttempts = 0;
+  }
+
+  async function pollMpvInstallStatus() {
+    mpvInstallPollAttempts += 1;
+    const setupStatus = await get('/setup-status');
+    const installStatus = applySetupStatus(setupStatus);
+
+    if (setupStatus?.mpvAvailable || installStatus?.state === 'installed') {
+      stopMpvInstallPolling();
+      showToast('success', 'MPV Installation', 'mpv wurde gefunden und ist bereit.');
+      return;
+    }
+
+    if (installStatus?.state === 'failed' || installStatus?.state === 'unavailable') {
+      stopMpvInstallPolling();
+      showToast('error', 'MPV Installation', installStatus.message || 'Installation fehlgeschlagen.');
+      return;
+    }
+
+    if (mpvInstallPollAttempts >= 130) {
+      stopMpvInstallPolling();
+      showToast('warn', 'MPV Installation', 'Die Installation laeuft ungewoehnlich lange. Pruefe den Paketmanager oder setze den mpv Pfad manuell.');
+    }
+  }
+
+  function startMpvInstallPolling() {
+    stopMpvInstallPolling();
+    mpvInstallPollTimer = setInterval(() => {
+      pollMpvInstallStatus().catch((error) => {
+        stopMpvInstallPolling();
+        showToast('error', 'MPV Installation', error?.message || 'Status konnte nicht geprueft werden.');
+      });
+    }, 3000);
+    pollMpvInstallStatus().catch(() => {});
+  }
+
+  async function installMpvFromSetup(button) {
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Installiere...';
+    }
+
+    const result = await post('/install/mpv');
+    const status = result?.installStatus || {};
+    if (Array.isArray(result?.issues)) {
+      applySetupStatus(result);
+    }
+
+    if (result?.mpvAvailable || status.state === 'installed') {
+      showToast('success', 'MPV Installation', status.message || 'mpv ist bereit.');
+      return;
+    }
+
+    if (status.state === 'installing' || result?.pending) {
+      showToast('info', 'MPV Installation', status.message || 'Installation wurde gestartet. Status wird automatisch geprueft.');
+      startMpvInstallPolling();
+      return;
+    }
+
+    showToast('error', 'MPV Installation', result?.error || status.message || 'Installation konnte nicht gestartet werden.');
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'MPV installieren';
+    }
+  }
+
+  setupIssuesList?.addEventListener('click', (event) => {
+    const actionButton = event.target.closest('[data-setup-action="install-mpv"]');
+    if (!actionButton) return;
+    installMpvFromSetup(actionButton);
+  });
 
   async function completeOnboarding() {
     if (!onboardingComplete) return;
@@ -423,13 +558,29 @@
   });
 
   giftCatalogList?.addEventListener('change', () => {
-    const selected = Array.from(giftCatalogList.selectedOptions || []).map((option) => option.value);
-    if (!selected.length) return;
-    const target = giftCatalogTargetField || payToPlayGifts;
-    if (!target) return;
-    const existing = parseList(target.value);
-    const merged = Array.from(new Set([...existing, ...selected]));
-    target.value = merged.join(', ');
+    const visibleOptions = Array.from(giftCatalogList.options || []).filter((option) => option.value);
+    visibleOptions.forEach((option) => {
+      if (option.selected) {
+        giftCatalogSelectedValues.add(option.value);
+      } else {
+        giftCatalogSelectedValues.delete(option.value);
+      }
+    });
+
+    const selected = collectGiftCatalogSelection();
+    if (!selected.length) {
+      renderGiftCatalogList();
+      return;
+    }
+
+    const target = giftCatalogTargetField;
+    if (target) {
+      const existing = parseList(target.value);
+      const merged = Array.from(new Set([...existing, ...selected]));
+      target.value = merged.join(', ');
+    }
+
+    renderGiftCatalogList();
   });
 
   payToPlayGifts?.addEventListener('focus', () => {
@@ -438,12 +589,63 @@
   payToSkipGifts?.addEventListener('focus', () => {
     giftCatalogTargetField = payToSkipGifts;
   });
+  skipImmunityGifts?.addEventListener('focus', () => {
+    giftCatalogTargetField = skipImmunityGifts;
+  });
+
+  const clearGiftTarget = (target) => {
+    if (giftCatalogTargetField === target) {
+      giftCatalogTargetField = null;
+    }
+  };
 
   payToPlayGifts?.addEventListener('blur', async () => {
     await post('/config', { monetization: { payToPlayGiftCatalog: parseList(payToPlayGifts.value) } });
+    clearGiftTarget(payToPlayGifts);
   });
   payToSkipGifts?.addEventListener('blur', async () => {
     await post('/config', { monetization: { payToSkipGiftCatalog: parseList(payToSkipGifts.value) } });
+    clearGiftTarget(payToSkipGifts);
+  });
+  skipImmunityGifts?.addEventListener('blur', async () => {
+    await post('/config', { giftIntegration: { skipImmunityGifts: parseList(skipImmunityGifts.value) } });
+    clearGiftTarget(skipImmunityGifts);
+  });
+
+  giftCatalogSearch?.addEventListener('input', () => {
+    giftCatalogFilter = giftCatalogSearch.value || '';
+    renderGiftCatalogList();
+  });
+
+  giftCatalogRefresh?.addEventListener('click', () => {
+    refreshGiftCatalog();
+  });
+
+  giftCatalogApplyPayToPlay?.addEventListener('click', async () => {
+    giftCatalogSelectedValues = new Set(collectGiftCatalogSelection());
+    await applyGiftCatalogSelection(
+      payToPlayGifts,
+      { monetization: { payToPlayGiftCatalog: parseList(payToPlayGifts.value) } },
+      'Pay-to-Play'
+    );
+  });
+
+  giftCatalogApplyPayToSkip?.addEventListener('click', async () => {
+    giftCatalogSelectedValues = new Set(collectGiftCatalogSelection());
+    await applyGiftCatalogSelection(
+      payToSkipGifts,
+      { monetization: { payToSkipGiftCatalog: parseList(payToSkipGifts.value) } },
+      'Pay-to-Skip'
+    );
+  });
+
+  giftCatalogApplySkipImmunity?.addEventListener('click', async () => {
+    giftCatalogSelectedValues = new Set(collectGiftCatalogSelection());
+    await applyGiftCatalogSelection(
+      skipImmunityGifts,
+      { giftIntegration: { skipImmunityGifts: parseList(skipImmunityGifts.value) } },
+      'Skip-Immunity'
+    );
   });
 
   function buildOverlayUrl() {
@@ -670,9 +872,10 @@
     showToast(payload?.type || 'info', payload?.title || 'Music Bot', payload?.message || '');
   });
   socket.on('music-bot:setup-status', (payload) => {
-    currentSetupIssues = Array.isArray(payload?.issues) ? payload.issues : [];
-    renderSetupIssues(currentSetupIssues);
-    renderOnboarding(currentOnboarding, currentSetupIssues);
+    const installStatus = applySetupStatus(payload);
+    if (payload?.mpvAvailable || ['installed', 'failed', 'unavailable'].includes(installStatus?.state)) {
+      stopMpvInstallPolling();
+    }
   });
   socket.on('music-bot:onboarding-updated', (payload) => {
     renderOnboarding(payload || { completed: true }, currentSetupIssues);
@@ -830,9 +1033,7 @@
 
     const setupStatus = await get('/setup-status');
     if (setupStatus?.issues) {
-      currentSetupIssues = setupStatus.issues;
-      renderSetupIssues(currentSetupIssues);
-      renderOnboarding(configData?.config?.onboarding || {}, currentSetupIssues);
+      applySetupStatus(setupStatus);
     }
 
     await refreshAutoDjStatus();
@@ -916,9 +1117,16 @@
 
   function renderQueue(queue = [], length = 0) {
     queueLengthEl.textContent = length ?? queue.length;
+    if (heroQueueCount) heroQueueCount.textContent = length ?? queue.length;
     if (!queue || queue.length === 0) {
       queueListEl.classList.add('empty');
-      queueListEl.innerHTML = '<p>Keine Songs in der Queue.</p>';
+      queueListEl.innerHTML = `
+        <div class="queue-empty-state">
+          <img src="/plugins/music-bot/assets/soundbot.png" alt="" aria-hidden="true">
+          <strong>Die Warteschlange ist leer</strong>
+          <p>Sei der/die Erste und fordere einen Song an.</p>
+        </div>
+      `;
       return;
     }
     queueListEl.classList.remove('empty');
@@ -1119,6 +1327,7 @@
     autoDjMaxConsecutive.value = status.maxConsecutiveAutoDJ || 1;
     autoDjAnnounce.checked = Boolean(status.announceAutoDJ);
     autoDjStatus.textContent = status.enabled ? 'Aktiv' : 'Deaktiviert';
+    if (heroAutodjStatus) heroAutodjStatus.textContent = status.enabled ? 'Ein' : 'Aus';
   }
 
   function parseList(value = '', keepNewLinesOnly = false) {
@@ -1127,6 +1336,187 @@
       .split(splitter)
       .map((item) => item.trim())
       .filter(Boolean);
+  }
+
+  function normalizeGiftCatalogEntry(gift = {}) {
+    const name = String(gift.name || gift.giftName || gift.gift_name || '').trim();
+    if (!name) return null;
+
+    return {
+      name,
+      diamond_count: Number(gift.diamond_count || gift.diamondCount || gift.diamond) || 0
+    };
+  }
+
+  function extractGiftCatalogFromResponse(payload = {}) {
+    const collected = [];
+    const seen = new Set();
+
+    const addEntries = (entries) => {
+      if (!Array.isArray(entries)) return;
+      entries.forEach((gift) => {
+        const normalized = normalizeGiftCatalogEntry(gift);
+        if (!normalized || seen.has(normalized.name)) return;
+        seen.add(normalized.name);
+        collected.push(normalized);
+      });
+    };
+
+    addEntries(payload.catalog);
+
+    if (payload.catalogsByLocale && typeof payload.catalogsByLocale === 'object') {
+      Object.values(payload.catalogsByLocale).forEach(addEntries);
+    }
+
+    if (!collected.length) {
+      addEntries(payload?.data?.catalog);
+    }
+
+    if (!collected.length && Array.isArray(payload)) {
+      addEntries(payload);
+    }
+
+    return collected;
+  }
+
+  function getGiftCatalogMeta(payload = {}, catalog = []) {
+    const locales = Array.isArray(payload.locales) ? payload.locales.filter(Boolean) : [];
+    const lastUpdate = payload.lastUpdate || null;
+    const region = payload.region || null;
+    const count = Number(payload.count ?? payload.countByLocale ?? catalog.length) || catalog.length;
+
+    return {
+      locales,
+      lastUpdate,
+      region,
+      count
+    };
+  }
+
+  function formatGiftCatalogStatus() {
+    const uniqueCount = giftCatalogEntries.length;
+    const apiCount = giftCatalogMeta.count || uniqueCount;
+    const visible = giftCatalogFilter
+      ? giftCatalogEntries.filter((gift) => gift.name.toLowerCase().includes(giftCatalogFilter.toLowerCase())).length
+      : uniqueCount;
+    const localeText = giftCatalogMeta.locales.length ? `Locales: ${giftCatalogMeta.locales.join(', ')}` : 'Locales: default';
+    const regionText = giftCatalogMeta.region ? `Region: ${giftCatalogMeta.region}` : null;
+    const updatedText = giftCatalogMeta.lastUpdate
+      ? `Aktualisiert: ${new Date(giftCatalogMeta.lastUpdate).toLocaleString()}`
+      : null;
+    const countText = apiCount !== uniqueCount
+      ? `${uniqueCount} Gifts geladen (${apiCount} API-Einträge)`
+      : `${uniqueCount} Gifts geladen`;
+
+    return [
+      `${visible}/${uniqueCount} Gifts sichtbar`,
+      countText,
+      localeText,
+      regionText,
+      updatedText
+    ].filter(Boolean).join(' · ');
+  }
+
+  function renderGiftCatalogList() {
+    if (!giftCatalogList) return;
+
+    const filter = giftCatalogFilter.trim().toLowerCase();
+    const visibleCatalog = filter
+      ? giftCatalogEntries.filter((gift) => gift.name.toLowerCase().includes(filter))
+      : giftCatalogEntries;
+
+    giftCatalogList.innerHTML = visibleCatalog.length
+      ? visibleCatalog
+        .map((gift) => `<option value="${escapeHtml(gift.name)}">${escapeHtml(gift.name)} (${gift.diamond_count}💎)</option>`)
+        .join('')
+      : '<option value="" disabled>Keine Gifts gefunden</option>';
+
+    Array.from(giftCatalogList.options).forEach((option) => {
+      option.selected = giftCatalogSelectedValues.has(option.value);
+    });
+
+    if (giftCatalogCount) {
+      giftCatalogCount.textContent = `${giftCatalogEntries.length} Gifts`;
+    }
+
+    if (giftCatalogStatus) {
+      giftCatalogStatus.textContent = formatGiftCatalogStatus();
+    }
+  }
+
+  function collectGiftCatalogSelection() {
+    return Array.from(giftCatalogSelectedValues);
+  }
+
+  async function applyGiftCatalogSelection(targetField, configBody, label) {
+    if (!targetField) return;
+
+    const selected = collectGiftCatalogSelection();
+    if (!selected.length) {
+      if (giftCatalogStatus) {
+        giftCatalogStatus.textContent = 'Bitte zuerst Gifts auswählen.';
+      }
+      return;
+    }
+
+    const existing = parseList(targetField.value);
+    targetField.value = Array.from(new Set([...existing, ...selected])).join(', ');
+
+    const response = await post('/config', configBody);
+    if (response?.success === false) {
+      if (giftCatalogStatus) {
+        giftCatalogStatus.textContent = `${label} konnte nicht gespeichert werden.`;
+      }
+      return;
+    }
+
+    if (giftCatalogStatus) {
+      giftCatalogStatus.textContent = `${selected.length} Gifts in ${label} übernommen.`;
+    }
+    if (typeof showToast === 'function') {
+      showToast('success', 'Geschenkekatalog', `${label} aktualisiert.`);
+    }
+  }
+
+  async function refreshGiftCatalog() {
+    if (!giftCatalogList) return;
+    try {
+      if (giftCatalogStatus) {
+        giftCatalogStatus.textContent = 'Geschenkekatalog wird geladen...';
+      }
+
+      const res = await fetch('/api/gift-catalog');
+      const data = await res.json();
+      const previousSelection = new Set(giftCatalogSelectedValues);
+
+      giftCatalogEntries = extractGiftCatalogFromResponse(data);
+      giftCatalogMeta = getGiftCatalogMeta(data, giftCatalogEntries);
+      giftCatalogSelectedValues = new Set(
+        giftCatalogEntries
+          .filter((gift) => previousSelection.has(gift.name))
+          .map((gift) => gift.name)
+      );
+
+      renderGiftCatalogList();
+    } catch (_) {
+      giftCatalogEntries = [];
+      giftCatalogMeta = {
+        locales: [],
+        region: null,
+        lastUpdate: null,
+        count: 0
+      };
+      giftCatalogSelectedValues = new Set();
+      if (giftCatalogList) {
+        giftCatalogList.innerHTML = '';
+      }
+      if (giftCatalogStatus) {
+        giftCatalogStatus.textContent = 'Geschenkekatalog konnte nicht geladen werden.';
+      }
+      if (giftCatalogCount) {
+        giftCatalogCount.textContent = '0 Gifts';
+      }
+    }
   }
 
   function clampSongDuration(value) {
@@ -1145,12 +1535,15 @@
     }
   }
 
-  async function refreshGiftCatalog() {
+  async function refreshGiftCatalogLegacyUnused() {
     if (!giftCatalogList) return;
     try {
-      const res = await fetch('/api/gift-catalog');
+      const res = await fetch('/api/gift-catalog-manager/catalog');
       const data = await res.json();
-      const gifts = Array.isArray(data?.catalog) ? data.catalog : [];
+      const gifts = extractGiftCatalogFromResponse(data).map((gift) => ({
+        name: getGiftName(gift),
+        diamond_count: Number(gift.diamond_count || gift.diamondCount || gift.diamond) || 0
+      }));
       giftCatalogList.innerHTML = gifts
         .slice(0, 200)
         .map((gift) => `<option value="${escapeHtml(gift.name)}">${escapeHtml(gift.name)} (${Number(gift.diamond_count) || 0}💎)</option>`)

@@ -3,8 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok Visual Effects Overlay - Einstellungen</title>
+    <title>Visual FX Frame - Einstellungen</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function() {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const logoByTheme = {
+                day: '/plugins/flame-overlay/assets/branding/visual-fx-frame-logo.png',
+                night: '/plugins/flame-overlay/assets/branding/visual-fx-frame-logo.png',
+                contrast: '/plugins/flame-overlay/assets/branding/visual-fx-frame-logo.png',
+                'vision-impaired': '/plugins/flame-overlay/assets/branding/visual-fx-frame-logo.png',
+                cid: '/plugins/flame-overlay/assets/branding/visual-fx-frame-logo.png'
+            };
+            const fileLogoByTheme = {
+                day: '../assets/branding/visual-fx-frame-logo.png',
+                night: '../assets/branding/visual-fx-frame-logo.png',
+                contrast: '../assets/branding/visual-fx-frame-logo.png',
+                'vision-impaired': '../assets/branding/visual-fx-frame-logo.png',
+                cid: '../assets/branding/visual-fx-frame-logo.png'
+            };
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
+            }
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                const logo = document.querySelector('[data-brand-logo]');
+                if (logo) {
+                    const nextSrc = location.protocol === 'file:'
+                        ? new URL(fileLogoByTheme[theme] || fileLogoByTheme.night, location.href).href
+                        : (logoByTheme[theme] || logoByTheme.night);
+                    if (logo.getAttribute('src') !== nextSrc) {
+                        logo.setAttribute('src', nextSrc);
+                    }
+                }
+            }
+            syncTheme();
+            document.addEventListener('DOMContentLoaded', syncTheme);
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         * {
             box-sizing: border-box;
@@ -20,12 +80,36 @@
         }
         
         .container {
-            max-width: 900px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: none;
+            margin: 0;
+        }
+
+        .page-brand {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .page-brand-logo {
+            width: min(420px, 100%);
+            max-height: 116px;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        html[data-theme="vision-impaired"] .page-brand-logo {
+            width: min(120px, 24vw);
+        }
+
+        html[data-theme="cid"] .page-brand-logo {
+            width: min(108px, 20vw);
         }
         
         h1 {
-            color: #ff6600;
+            color: #8b5cf6;
             margin-bottom: 10px;
             font-size: 28px;
         }
@@ -176,6 +260,192 @@
         
         .btn-secondary:hover {
             background: #666;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+            font-size: 1.22rem;
+            line-height: 1.82;
+        }
+
+        html[data-theme="vision-impaired"] .container,
+        html[data-theme="vision-impaired"] .control-room-shell {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="vision-impaired"] h1,
+        html[data-theme="vision-impaired"] .section-title,
+        html[data-theme="vision-impaired"] .info-box h3 {
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] h1 {
+            font-size: clamp(2.6rem, 4vw, 4.2rem);
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+        }
+
+        html[data-theme="vision-impaired"] .subtitle {
+            font-size: 1.14rem;
+            line-height: 1.88;
+            color: #fff7cc;
+            max-width: none;
+            width: 100%;
+        }
+
+        html[data-theme="vision-impaired"] .frame-position-controls h3,
+        html[data-theme="vision-impaired"] .frame-position-controls p,
+        html[data-theme="vision-impaired"] #presetList p,
+        html[data-theme="vision-impaired"] #triggerStatusBox span,
+        html[data-theme="vision-impaired"] #triggerLogContainer p {
+            font-size: 1.16rem !important;
+            line-height: 1.78 !important;
+        }
+
+        html[data-theme="vision-impaired"] .section,
+        html[data-theme="vision-impaired"] .preview-container,
+        html[data-theme="vision-impaired"] .frame-position-controls,
+        html[data-theme="vision-impaired"] .info-box {
+            background: #000;
+            border: 3px solid #facc15;
+            box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.12);
+        }
+
+        html[data-theme="vision-impaired"] .trigger-workspace {
+            --trigger-bg: #000;
+            --trigger-bg-soft: rgba(250, 204, 21, 0.08);
+            --trigger-border: rgba(250, 204, 21, 0.55);
+            --trigger-border-strong: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card,
+        html[data-theme="vision-impaired"] .gift-catalog-panel {
+            background: #000;
+            border-color: rgba(250, 204, 21, 0.5);
+            box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.12);
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card-hero {
+            background:
+                radial-gradient(circle at top right, rgba(250, 204, 21, 0.18), transparent 32%),
+                linear-gradient(180deg, #000, #050505);
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card-header {
+            border-bottom-color: rgba(250, 204, 21, 0.3);
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card-meta {
+            background: rgba(250, 204, 21, 0.08);
+            border-color: rgba(250, 204, 21, 0.3);
+            color: #fff1bf;
+        }
+
+        html[data-theme="vision-impaired"] .control-room-hero,
+        html[data-theme="vision-impaired"] .broadcast-stack {
+            grid-template-columns: 1fr;
+        }
+
+        html[data-theme="vision-impaired"] .preview-container,
+        html[data-theme="vision-impaired"] .frame-position-controls {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="vision-impaired"] label,
+        html[data-theme="vision-impaired"] .subtitle,
+        html[data-theme="vision-impaired"] .info-box p,
+        html[data-theme="vision-impaired"] .slider-value,
+        html[data-theme="vision-impaired"] .frame-position-input label,
+        html[data-theme="vision-impaired"] small {
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] label,
+        html[data-theme="vision-impaired"] .frame-position-input label {
+            font-size: 1.08rem;
+            line-height: 1.66;
+        }
+
+        html[data-theme="vision-impaired"] .section-title {
+            font-size: 1.82rem;
+            line-height: 1.18;
+            letter-spacing: 0.01em;
+        }
+
+        html[data-theme="vision-impaired"] .info-box p,
+        html[data-theme="vision-impaired"] .trigger-card p,
+        html[data-theme="vision-impaired"] .trigger-card small,
+        html[data-theme="vision-impaired"] .gift-catalog-toolbar small,
+        html[data-theme="vision-impaired"] .frame-position-input small,
+        html[data-theme="vision-impaired"] .trigger-status-box p {
+            font-size: 1.08rem;
+            line-height: 1.72;
+        }
+
+        html[data-theme="vision-impaired"] .slider-value {
+            font-size: 1.08rem;
+            min-width: 80px;
+        }
+
+        html[data-theme="vision-impaired"] .btn,
+        html[data-theme="vision-impaired"] .preview-controls button {
+            background: #000;
+            color: #fff;
+            border: 2px solid #facc15;
+            font-size: 1.12rem;
+            min-height: 50px;
+        }
+
+        html[data-theme="vision-impaired"] .btn:hover,
+        html[data-theme="vision-impaired"] .preview-controls button:hover {
+            background: #111;
+        }
+
+        html[data-theme="vision-impaired"] .preview-controls button.active {
+            background: #facc15;
+            color: #000;
+        }
+
+        html[data-theme="vision-impaired"] .preset-btn,
+        html[data-theme="vision-impaired"] .preview-mode-btn {
+            font-size: 1.08rem;
+            min-height: 48px;
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card h3,
+        html[data-theme="vision-impaired"] .info-box h3 {
+            font-size: 1.58rem;
+            line-height: 1.18;
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card-kicker,
+        html[data-theme="vision-impaired"] .trigger-card-meta {
+            font-size: 1.08rem;
+            letter-spacing: 0.02em;
+        }
+
+        html[data-theme="vision-impaired"] input[type="text"],
+        html[data-theme="vision-impaired"] input[type="number"],
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="vision-impaired"] input[type="color"],
+        html[data-theme="vision-impaired"] input[type="range"] {
+            background: #000;
+            color: #fff;
+            border-color: #facc15;
+            min-height: 52px;
+            font-size: 1.16rem;
+        }
+
+        html[data-theme="vision-impaired"] .checkbox-group {
+            background: #050505 !important;
+            border-color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .checkbox-group label {
+            font-size: 1.12rem !important;
         }
         
         .info-box {
@@ -799,19 +1069,20 @@
         body {
             min-height: 100vh;
             background:
-                radial-gradient(circle at top, rgba(255, 122, 26, 0.14), transparent 30%),
-                radial-gradient(circle at 80% 8%, rgba(255, 180, 90, 0.08), transparent 22%),
+                radial-gradient(circle at top, rgba(124, 58, 237, 0.18), transparent 30%),
+                radial-gradient(circle at 80% 8%, rgba(34, 211, 238, 0.12), transparent 22%),
                 linear-gradient(180deg, #090b0f 0%, #11151c 44%, #08090c 100%);
         }
 
         .control-room-shell {
-            max-width: 1280px;
+            max-width: none;
+            width: 100%;
         }
 
         .control-room-hero {
             display: grid;
-            grid-template-columns: minmax(300px, 1fr) minmax(420px, 1.15fr);
-            gap: 16px;
+            grid-template-columns: minmax(360px, 1fr) minmax(560px, 1.1fr);
+            gap: 18px;
             align-items: stretch;
             margin-bottom: 18px;
         }
@@ -828,7 +1099,7 @@
 
         .control-room-panel {
             border-radius: 18px;
-            padding: 22px;
+            padding: 24px;
         }
 
         .hero-copy {
@@ -854,7 +1125,7 @@
 
         .control-room-title {
             color: #fff5ea;
-            font-size: clamp(28px, 4vw, 42px);
+            font-size: clamp(30px, 4.2vw, 46px);
             line-height: 1.02;
             margin-bottom: 0;
         }
@@ -864,7 +1135,14 @@
             font-size: 14px;
             line-height: 1.7;
             margin-bottom: 0;
-            max-width: 58ch;
+            max-width: none;
+            width: 100%;
+        }
+
+        html[data-theme="cid"] .control-room-subtitle {
+            max-width: none;
+            width: 100%;
+            color: #d1e7d1;
         }
 
         .hero-highlights {
@@ -986,13 +1264,13 @@
         .preview-container {
             border-radius: 16px;
             overflow: hidden;
-            width: min(100%, 760px);
-            max-width: 760px;
+            width: 100%;
+            max-width: none;
         }
 
         .frame-position-controls {
-            width: min(100%, 760px);
-            max-width: 760px;
+            width: 100%;
+            max-width: none;
         }
 
         .preview-wrapper {
@@ -1080,18 +1358,190 @@
                 position: static;
             }
         }
+
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: #111827;
+            color: #e5e7eb;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .section,
+        html[data-theme="vision-impaired"] .section,
+        html[data-theme="contrast"] .hero-card,
+        html[data-theme="vision-impaired"] .hero-card {
+            background: #000;
+            color: #fff;
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] h1,
+        html[data-theme="vision-impaired"] .section-title,
+        html[data-theme="vision-impaired"] .hero-title {
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .subtitle,
+        html[data-theme="vision-impaired"] .control-room-subtitle,
+        html[data-theme="vision-impaired"] .hero-hint,
+        html[data-theme="vision-impaired"] .broadcast-card p,
+        html[data-theme="vision-impaired"] .card p,
+        html[data-theme="vision-impaired"] .trigger-card-meta,
+        html[data-theme="vision-impaired"] .trigger-card-kicker,
+        html[data-theme="vision-impaired"] .hero-chip {
+            font-size: 1.16rem;
+            line-height: 1.72;
+        }
+
+        html[data-theme="vision-impaired"] .control-room-subtitle {
+            max-width: none;
+            width: 100%;
+        }
+
+        html[data-theme="vision-impaired"] input,
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="vision-impaired"] .btn,
+        html[data-theme="vision-impaired"] .action-btn {
+            border-width: 3px;
+            font-size: 1.12rem;
+        }
+
+        html[data-theme="vision-impaired"] .control-room-hero {
+            gap: 22px;
+        }
+
+        html[data-theme="vision-impaired"] .hero-kicker {
+            font-size: 12px;
+        }
+
+        html[data-theme="vision-impaired"] .control-room-title {
+            font-size: clamp(34px, 4.8vw, 54px);
+        }
+
+        html[data-theme="vision-impaired"] .hero-hint {
+            font-size: 1.14rem;
+        }
+    
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
     </style>
 </head>
 <body>
     <div class="container control-room-shell">
-        <h1>TikTok Visual Effects Overlay</h1>
-        <p class="subtitle">Broadcast-safe WebGL overlay mit klarer Layer-Hierarchie, gezielten Trigger-Akzenten und Live-Preview fuer TikTok und OBS.</p>
+        <div class="page-brand">
+            <div class="page-brand-copy">
+                <h1>Visual FX Frame</h1>
+                <p class="subtitle">Broadcast-safe WebGL-Frame-System mit klarer Layer-Hierarchie, Live-Vorschau und direkten Trigger-Reaktionen fuer TikTok LIVE und OBS.</p>
+            </div>
+            <img class="page-brand-logo" data-brand-logo src="/plugins/flame-overlay/assets/branding/visual-fx-frame-logo.png" alt="Visual FX Frame">
+        </div>
         
         <div class="control-room-hero">
             <div class="control-room-panel hero-copy">
                 <div>
-                    <div class="hero-kicker">Broadcast Effects System</div>
-                    <h1 class="control-room-title">Flame Overlay Control Room</h1>
+                    <div class="hero-kicker">Visual FX Studio</div>
+                    <h2 class="control-room-title">Visual FX Frame Control Room</h2>
                     <p class="control-room-subtitle">Die Ausgabe ist auf Lesbarkeit getrimmt: ein ruhiger Base Layer, kurze Accent-Reaktionen und seltene Impact-Momente fuer grosse TikTok-Events.</p>
                 </div>
                 <div class="hero-highlights">
@@ -1162,7 +1612,7 @@
             <div class="form-group">
                 <label for="effectType">Wähle die Rolle des Overlays:</label>
                 <select id="effectType">
-                    <option value="flames">Flames - Base Layer</option>
+                    <option value="flames">Core Glow - Base Layer</option>
                     <option value="particles">Particle Burst - Accent</option>
                     <option value="energy">Energy Waves - Rhythm</option>
                     <option value="lightning">Lightning - Impact</option>
@@ -1190,7 +1640,7 @@
             
             <div class="preview-container" id="previewContainer" style="display: none;">
                 <div class="preview-wrapper" id="previewWrapper">
-                    <iframe id="previewIframe" class="preview-iframe" src="about:blank" title="Flame overlay preview"></iframe>
+                    <iframe id="previewIframe" class="preview-iframe" src="about:blank" title="Visual FX Frame preview"></iframe>
                 </div>
             </div>
             
@@ -1301,12 +1751,12 @@
             </div>
         </div>
         
-        <!-- Flame Appearance -->
+        <!-- Visual Appearance -->
         <div class="section tab-pane" data-tab="look">
-            <h2 class="section-title">🎨 Flammen Aussehen</h2>
+            <h2 class="section-title">🎨 Visual Appearance</h2>
             
             <div class="form-group">
-                <label for="flameColor">Flammenfarbe:</label>
+                <label for="flameColor">Akzentfarbe:</label>
                 <input type="color" id="flameColor" value="#ff6600">
             </div>
             
@@ -1321,17 +1771,17 @@
             </div>
         </div>
         
-        <!-- Flame Animation -->
+        <!-- Motion -->
         <div class="section tab-pane" data-tab="motion">
             <h2 class="section-title">⚡ Animation</h2>
             
             <div class="form-group">
-                <label for="flameSpeed">Flammen Geschwindigkeit: <span class="slider-value" id="flameSpeedValue">0.5</span></label>
+                <label for="flameSpeed">Animation Geschwindigkeit: <span class="slider-value" id="flameSpeedValue">0.5</span></label>
                 <input type="range" id="flameSpeed" min="0.1" max="2.0" value="0.5" step="0.1">
             </div>
             
             <div class="form-group">
-                <label for="flameIntensity">Flammen Intensität (Turbulenz): <span class="slider-value" id="flameIntensityValue">1.3</span></label>
+                <label for="flameIntensity">Motion Intensität (Turbulenz): <span class="slider-value" id="flameIntensityValue">1.3</span></label>
                 <input type="range" id="flameIntensity" min="0.5" max="3.0" value="1.3" step="0.1">
             </div>
             
@@ -1355,7 +1805,7 @@
             <div class="form-group">
                 <div class="checkbox-group">
                     <input type="checkbox" id="enableAdditiveBlend" checked>
-                    <label for="enableAdditiveBlend">Additive Blending (hellere Flammen)</label>
+                    <label for="enableAdditiveBlend">Additive Blending (stärkere Highlights)</label>
                 </div>
             </div>
             
@@ -1415,7 +1865,7 @@
             <div class="form-group">
                 <label for="edgeFeather">Kanten-Weichzeichnung: <span class="slider-value" id="edgeFeatherValue">0.30</span></label>
                 <input type="range" id="edgeFeather" min="0" max="1" value="0.3" step="0.05">
-                <small style="color: #888;">Steuert wie weich die Flammen an den Kanten auslaufen</small>
+                <small style="color: #888;">Steuert wie weich die Effekte an den Kanten auslaufen</small>
             </div>
             
             <div class="form-group">
@@ -1451,7 +1901,7 @@
                     <input type="checkbox" id="pulseEnabled">
                     <label for="pulseEnabled">Puls-Effekt aktivieren</label>
                 </div>
-                <small style="color: #888;">Flammen pulsieren rhythmisch</small>
+                <small style="color: #888;">Die Animation pulsiert rhythmisch</small>
             </div>
             
             <div class="form-group">
@@ -1505,7 +1955,7 @@
                     <input type="checkbox" id="layersEnabled" checked>
                     <label for="layersEnabled">Mehrere Ebenen aktivieren</label>
                 </div>
-                <small style="color: #888;">Erzeugt Tiefe durch mehrere Flammen-Schichten</small>
+                <small style="color: #888;">Erzeugt Tiefe durch mehrere Schichten</small>
             </div>
             
             <div class="form-group">
@@ -2313,7 +2763,7 @@
             const name = getGiftName(gift);
             const id = getGiftId(gift);
             const coins = getGiftCoins(gift);
-            const condition = id ? `giftId == "${String(id).replace(/"/g, '\\"')}"` : `giftName == "${name.replace(/"/g, '\\"')}"`;
+            const condition = id ? `giftId == "${String(id).replace(/"/g, '"')}"` : `giftName == "${name.replace(/"/g, '"')}"`;
             const action = coins >= 500 ? 'dramatic' : (coins >= 100 ? 'intensity-boost' : 'flash');
             appendTriggerRule({
                 id: `gift-${id || name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
@@ -3019,7 +3469,7 @@
             const resolution = getSelectedResolution();
             window.open(
                 '/flame-overlay/overlay',
-                'FlameOverlay',
+                'VisualFXFrame',
                 `width=${resolution.width},height=${resolution.height}`
             );
         }
@@ -3066,7 +3516,7 @@
             const names = Object.keys(presets);
             
             if (names.length === 0) {
-                container.innerHTML = '<p style="color: #888; font-size: 13px;">Noch keine Presets gespeichert.</p>';
+                container.innerHTML = '<p style="color: #f3f4f6; font-size: 14px; line-height: 1.5;">Noch keine Presets gespeichert.</p>';
                 return;
             }
             
@@ -3078,7 +3528,7 @@
                     <div style="display: flex; align-items: center; justify-content: space-between; background: #333; padding: 10px 15px; border-radius: 4px; margin-bottom: 8px;">
                         <div>
                             <strong style="color: #ff9933;">${escapedName}</strong>
-                            <span style="color: #666; font-size: 12px; margin-left: 10px;">Gespeichert am ${escapeHtml(date)}</span>
+                            <span style="color: #e5e7eb; font-size: 14px; line-height: 1.45; margin-left: 10px;">Gespeichert am ${escapeHtml(date)}</span>
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <button class="btn preset-load-btn" data-preset-name="${escapedName}" style="padding: 6px 12px; font-size: 12px;">📂 Laden</button>
@@ -3172,5 +3622,553 @@
         activateTab('look');
         loadConfig();
     </script>
+
+<style id="final-flame-preset-contrast">
+html[data-theme="day"] .visual-preset-btn,
+html[data-theme="night"] .visual-preset-btn {
+  background: #111827 !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  border: 2px solid #f6d6a8 !important;
+}
+html[data-theme="contrast"] .visual-preset-btn,
+html[data-theme="vision-impaired"] .visual-preset-btn {
+  background: #000000 !important;
+  color: #ffd400 !important;
+  -webkit-text-fill-color: #ffd400 !important;
+  border: 3px solid #ffd400 !important;
+  min-height: 48px;
+}
+</style>
+<style id="final-flame-section-button-contrast">
+html[data-theme="day"] .section,
+html[data-theme="day"] .tab-pane {
+  background: #ffffff !important;
+  color: #10203a !important;
+  -webkit-text-fill-color: #10203a !important;
+  border: 2px solid #cbd5e1 !important;
+}
+
+html[data-theme="day"] .btn,
+html[data-theme="night"] .btn,
+html[data-theme="contrast"] .btn,
+html[data-theme="vision-impaired"] .btn {
+  background: #b45309 !important;
+  color: #fff4e7 !important;
+  -webkit-text-fill-color: #fff4e7 !important;
+  border: 2px solid #facc15 !important;
+}
+
+html[data-theme="vision-impaired"] .btn {
+  min-height: 48px;
+  font-size: 1.05rem;
+}
+</style>
+<style id="final-flame-day-controls-contrast">
+html[data-theme="day"] button,
+html[data-theme="day"] input,
+html[data-theme="day"] select,
+html[data-theme="day"] textarea {
+  background: #ffffff !important;
+  color: #10203a !important;
+  -webkit-text-fill-color: #10203a !important;
+  border: 2px solid #64748b !important;
+}
+
+html[data-theme="day"] .btn,
+html[data-theme="night"] .btn,
+html[data-theme="contrast"] .btn,
+html[data-theme="vision-impaired"] .btn,
+html[data-theme="day"] #savePresetBtn,
+html[data-theme="night"] #savePresetBtn,
+html[data-theme="contrast"] #savePresetBtn,
+html[data-theme="vision-impaired"] #savePresetBtn,
+html[data-theme="day"] #saveConfigBtn,
+html[data-theme="night"] #saveConfigBtn,
+html[data-theme="contrast"] #saveConfigBtn,
+html[data-theme="vision-impaired"] #saveConfigBtn {
+  background: #92400e !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 2px solid #facc15 !important;
+}
+</style>
+<style id="final-flame-day-secondary-buttons">
+html[data-theme="day"] button:not(#savePresetBtn):not(#saveConfigBtn),
+html[data-theme="day"] .btn:not(#savePresetBtn):not(#saveConfigBtn) {
+  background: #e2e8f0 !important;
+  color: #10203a !important;
+  -webkit-text-fill-color: #10203a !important;
+  border: 2px solid #64748b !important;
+}
+</style>
+<style id="visual-fx-frame-branding-overrides">
+:root {
+  --vfx-accent: #8b5cf6;
+  --vfx-accent-2: #22d3ee;
+  --vfx-text: #e5eefc;
+  --vfx-muted: #aab6d6;
+  --vfx-border: rgba(148, 163, 184, 0.24);
+  --vfx-surface: rgba(10, 14, 24, 0.9);
+  --vfx-surface-strong: rgba(7, 10, 18, 0.96);
+  --vfx-shadow: 0 18px 50px rgba(4, 8, 20, 0.35);
+}
+
+body {
+  font-family: "Segoe UI Variable Text", "Segoe UI", "Aptos", Tahoma, sans-serif !important;
+  background:
+    radial-gradient(circle at top left, rgba(139, 92, 246, 0.22), transparent 28%),
+    radial-gradient(circle at top right, rgba(34, 211, 238, 0.16), transparent 22%),
+    linear-gradient(180deg, #090d18 0%, #0e1422 44%, #080b11 100%) !important;
+  color: var(--vfx-text) !important;
+}
+
+.container.control-room-shell {
+  max-width: 1760px;
+  margin: 0 auto;
+  padding-bottom: 28px;
+}
+
+.page-brand {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 24px;
+  align-items: center;
+  padding: 20px 22px;
+  margin-bottom: 20px;
+}
+
+.page-brand-logo {
+  width: min(320px, 100%);
+  max-height: 100px;
+  justify-self: end;
+  filter: drop-shadow(0 18px 30px rgba(16, 9, 48, 0.35));
+}
+
+h1 {
+  color: #f8faff !important;
+  font-size: clamp(2rem, 2vw + 1rem, 3rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.page-brand-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.page-brand-copy .subtitle {
+  margin-bottom: 0;
+}
+
+.page-brand-copy h1 {
+  margin: 0;
+  font-size: clamp(2.3rem, 2.4vw + 1rem, 3.6rem);
+}
+
+@media (max-width: 1280px) {
+  .page-brand {
+    grid-template-columns: 1fr;
+  }
+
+  .page-brand-logo {
+    width: min(320px, 100%);
+    justify-self: start;
+  }
+}
+
+.subtitle {
+  max-width: 88ch;
+  line-height: 1.55;
+  color: var(--vfx-muted) !important;
+}
+
+.control-room-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(360px, 0.9fr);
+  gap: 18px;
+  align-items: stretch;
+  margin-top: 2px;
+  margin-bottom: 18px;
+}
+
+.control-room-panel,
+.page-brand,
+.broadcast-card,
+.section,
+.info-box,
+.trigger-card,
+.preview-container,
+.preview-wrapper,
+.frame-position-controls {
+  border: 1px solid var(--vfx-border) !important;
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--vfx-surface), var(--vfx-surface-strong)) !important;
+  box-shadow: var(--vfx-shadow);
+  backdrop-filter: blur(16px);
+}
+
+.control-room-panel {
+  padding: 18px;
+}
+
+.hero-copy {
+  padding: 18px;
+}
+
+.hero-kicker,
+.card-tag,
+.trigger-card-kicker,
+.trigger-card-meta {
+  color: #7dd3fc;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.control-room-title {
+  color: #ffffff !important;
+  font-size: clamp(2rem, 3vw, 3.4rem);
+  line-height: 1.05;
+  margin: 8px 0 10px;
+}
+
+.control-room-subtitle,
+.hero-hint,
+.broadcast-card p,
+.info-box p,
+.trigger-card p,
+.trigger-card small,
+.gift-catalog-toolbar small,
+.frame-position-input small,
+.trigger-status-box p,
+small {
+  color: var(--vfx-muted) !important;
+}
+
+label {
+  color: #dbeafe !important;
+}
+
+.hero-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.hero-chip,
+.metric,
+.tab-btn,
+.visual-preset-btn,
+.preview-controls button,
+.btn,
+.btn-secondary,
+.btn-add-rule,
+.btn-save-triggers,
+.btn-test {
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.hero-chip,
+.metric {
+  background: rgba(15, 23, 42, 0.72) !important;
+  color: #eef2ff !important;
+}
+
+.tab-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 0 16px;
+}
+
+.tab-btn {
+  background: rgba(15, 23, 42, 0.68) !important;
+  color: #dbeafe !important;
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(34, 211, 238, 0.92)) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 16px 36px rgba(91, 33, 182, 0.36);
+}
+
+.section-title {
+  color: #f5f3ff !important;
+  border-bottom: 2px solid rgba(34, 211, 238, 0.35) !important;
+}
+
+.visual-preset-btn {
+  background: linear-gradient(180deg, rgba(23, 32, 53, 0.95), rgba(12, 18, 31, 0.95)) !important;
+  color: #eef2ff !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+}
+
+.visual-preset-btn.active,
+.visual-preset-btn:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(34, 211, 238, 0.95)) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="search"],
+select,
+input[type="color"],
+input[type="range"] {
+  background: rgba(9, 13, 23, 0.92) !important;
+  color: #f8fbff !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+select:focus {
+  border-color: rgba(34, 211, 238, 0.9) !important;
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+
+input[type="range"]::-webkit-slider-thumb,
+input[type="range"]::-moz-range-thumb {
+  background: linear-gradient(135deg, #8b5cf6, #22d3ee) !important;
+}
+
+.btn,
+.preview-controls button,
+.btn-add-rule,
+.btn-save-triggers,
+.btn-test {
+  background: linear-gradient(135deg, #8b5cf6, #22d3ee) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+}
+
+.btn-secondary,
+.preview-controls button:not(.active) {
+  background: rgba(15, 23, 42, 0.82) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #eef2ff !important;
+}
+
+.broadcast-card {
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(14, 18, 30, 0.88), rgba(10, 13, 22, 0.94)) !important;
+}
+
+.broadcast-card h3,
+.trigger-card h3,
+.info-box h3 {
+  color: #ffffff !important;
+}
+
+.preview-wrapper {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.14), transparent 25%),
+    radial-gradient(circle at 80% 80%, rgba(34, 211, 238, 0.14), transparent 25%),
+    linear-gradient(180deg, rgba(15, 20, 32, 0.96), rgba(8, 10, 16, 0.98)) !important;
+}
+
+.preview-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.preview-controls button {
+  min-height: 44px;
+}
+
+#presetList > div,
+.gift-catalog-panel,
+.trigger-table-shell,
+.trigger-status-box {
+  background: rgba(8, 12, 20, 0.8) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+#presetList > div {
+  border-radius: 16px !important;
+}
+
+#presetList strong {
+  color: #a78bfa !important;
+}
+
+#presetList span,
+#presetList p {
+  color: #dbeafe !important;
+}
+
+#framePositionControls h3,
+#bloomEnabled + label,
+#status {
+  color: #f8fafc !important;
+}
+
+#framePositionControls p,
+#giftCatalogStatus,
+.gift-catalog-empty {
+  color: #aab6d6 !important;
+}
+
+html[data-theme="day"] body {
+  background: linear-gradient(180deg, #eef3ff 0%, #f8fbff 100%) !important;
+  color: #10203a !important;
+}
+
+html[data-theme="day"] .section,
+html[data-theme="day"] .info-box,
+html[data-theme="day"] .broadcast-card,
+html[data-theme="day"] .page-brand,
+html[data-theme="day"] .control-room-panel,
+html[data-theme="day"] .control-room-hero,
+html[data-theme="day"] .trigger-card,
+html[data-theme="day"] .preview-container,
+html[data-theme="day"] .preview-wrapper,
+html[data-theme="day"] .frame-position-controls {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #10203a !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+}
+
+html[data-theme="day"] h1,
+html[data-theme="day"] .control-room-title,
+html[data-theme="day"] .section-title {
+  color: #0f172a !important;
+}
+
+html[data-theme="day"] .subtitle,
+html[data-theme="day"] .control-room-subtitle,
+html[data-theme="day"] .hero-hint,
+html[data-theme="day"] .broadcast-card p,
+html[data-theme="day"] .info-box p,
+html[data-theme="day"] .trigger-card p,
+html[data-theme="day"] .trigger-card small,
+html[data-theme="day"] small {
+  color: #475569 !important;
+}
+
+html[data-theme="day"] label,
+html[data-theme="day"] .frame-position-input label,
+html[data-theme="day"] .checkbox-group label {
+  color: #1f2937 !important;
+}
+
+html[data-theme="day"] .tab-btn,
+html[data-theme="day"] .visual-preset-btn,
+html[data-theme="day"] .hero-chip,
+html[data-theme="day"] .metric {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="contrast"] body,
+html[data-theme="vision-impaired"] body {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="contrast"] .section,
+html[data-theme="contrast"] .info-box,
+html[data-theme="contrast"] .broadcast-card,
+html[data-theme="contrast"] .page-brand,
+html[data-theme="contrast"] .control-room-panel,
+html[data-theme="contrast"] .control-room-hero,
+html[data-theme="contrast"] .trigger-card,
+html[data-theme="contrast"] .preview-container,
+html[data-theme="contrast"] .preview-wrapper,
+html[data-theme="contrast"] .frame-position-controls,
+html[data-theme="vision-impaired"] .section,
+html[data-theme="vision-impaired"] .info-box,
+html[data-theme="vision-impaired"] .broadcast-card,
+html[data-theme="vision-impaired"] .page-brand,
+html[data-theme="vision-impaired"] .control-room-panel,
+html[data-theme="vision-impaired"] .control-room-hero,
+html[data-theme="vision-impaired"] .trigger-card,
+html[data-theme="vision-impaired"] .preview-container,
+html[data-theme="vision-impaired"] .preview-wrapper,
+html[data-theme="vision-impaired"] .frame-position-controls {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffd400 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="contrast"] .section-title,
+html[data-theme="vision-impaired"] .section-title,
+html[data-theme="contrast"] .control-room-title,
+html[data-theme="vision-impaired"] .control-room-title,
+html[data-theme="contrast"] h1,
+html[data-theme="vision-impaired"] h1 {
+  color: #ffd400 !important;
+}
+
+html[data-theme="contrast"] .subtitle,
+html[data-theme="contrast"] .control-room-subtitle,
+html[data-theme="contrast"] .hero-hint,
+html[data-theme="vision-impaired"] .subtitle,
+html[data-theme="vision-impaired"] .control-room-subtitle,
+html[data-theme="vision-impaired"] .hero-hint,
+html[data-theme="contrast"] .broadcast-card p,
+html[data-theme="vision-impaired"] .broadcast-card p,
+html[data-theme="contrast"] .trigger-card p,
+html[data-theme="vision-impaired"] .trigger-card p,
+html[data-theme="contrast"] .trigger-card small,
+html[data-theme="vision-impaired"] .trigger-card small,
+html[data-theme="contrast"] small,
+html[data-theme="vision-impaired"] small {
+  color: #ffffff !important;
+}
+
+html[data-theme="contrast"] label,
+html[data-theme="vision-impaired"] label,
+html[data-theme="cid"] label {
+  color: #ffffff !important;
+}
+
+html[data-theme="cid"] body {
+  background:
+    radial-gradient(circle at top, rgba(139, 92, 246, 0.22), transparent 30%),
+    radial-gradient(circle at 85% 12%, rgba(34, 211, 238, 0.12), transparent 24%),
+    linear-gradient(180deg, #090b11 0%, #11151d 48%, #06070b 100%) !important;
+}
+
+html[data-theme="cid"] .section,
+html[data-theme="cid"] .info-box,
+html[data-theme="cid"] .broadcast-card,
+html[data-theme="cid"] .page-brand,
+html[data-theme="cid"] .control-room-panel,
+html[data-theme="cid"] .control-room-hero,
+html[data-theme="cid"] .trigger-card,
+html[data-theme="cid"] .preview-container,
+html[data-theme="cid"] .preview-wrapper,
+html[data-theme="cid"] .frame-position-controls {
+  background: rgba(9, 13, 22, 0.92) !important;
+  color: #eef2ff !important;
+  border-color: rgba(139, 92, 246, 0.28) !important;
+}
+
+html[data-theme="cid"] .tab-btn.active,
+html[data-theme="cid"] .visual-preset-btn.active {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.96), rgba(34, 211, 238, 0.96)) !important;
+}
+
+html[data-theme="vision-impaired"] .page-brand-logo,
+html[data-theme="cid"] .page-brand-logo {
+  max-height: 120px;
+}
+</style>
 </body>
 </html>

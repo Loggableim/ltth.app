@@ -90,6 +90,28 @@ class TimerAPI {
             }
         });
 
+        // Serve static branding assets for the redesigned admin UI
+        this.api.registerRoute('get', '/advanced-timer/assets/:filename', (req, res) => {
+            try {
+                const filename = req.params.filename || '';
+                const assetsDir = path.join(this.api.getPluginDir(), 'assets');
+                const safeName = path.basename(filename);
+                if (!safeName || safeName !== filename) {
+                    return res.status(400).send('Invalid filename');
+                }
+
+                const assetPath = path.join(assetsDir, safeName);
+                if (!fs.existsSync(assetPath)) {
+                    return res.status(404).send('Not found');
+                }
+
+                res.sendFile(assetPath);
+            } catch (error) {
+                this.api.log(`Error serving Advanced Timer asset: ${error.message}`, 'error');
+                res.status(500).send('Error loading asset');
+            }
+        });
+
         // Get all timers
         this.api.registerRoute('get', '/api/advanced-timer/timers', (req, res) => {
             try {

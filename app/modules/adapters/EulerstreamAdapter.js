@@ -1,4 +1,4 @@
-const { WebcastEventEmitter, createWebSocketUrl, ClientCloseCode, deserializeWebSocketMessage, SchemaVersion } = require('@eulerstream/euler-websocket-sdk');
+﻿const { WebcastEventEmitter, createWebSocketUrl, ClientCloseCode, deserializeWebSocketMessage, SchemaVersion } = require('@eulerstream/euler-websocket-sdk');
 const EventEmitter = require('events');
 const WebSocket = require('ws');
 const BaseAdapter = require('./BaseAdapter');
@@ -6,7 +6,7 @@ const axios = require('axios');
 
 // Public fallback API key for users who don't have their own
 // SECURITY: Prefer overriding via environment variables (EULER_FALLBACK_API_KEY). The backup key (EULER_BACKUP_API_KEY) is handled separately for warnings.
-// NOTE: This fallback key is rate-limited and intended only as a temporary helper—users should configure their own API key for production.
+// NOTE: This fallback key is rate-limited and intended only as a temporary helperâ€”users should configure their own API key for production.
 const PUBLIC_FALLBACK_API_KEY = 'euler_M2NiZDI1MDBhZTE2YWJjYzM3NDg4OTAwZTFkNDE2MzQ1N2QyZGQ2ZDk3MWYxNWMyMjM5N2Ix';
 const FALLBACK_API_KEY = process.env.EULER_FALLBACK_API_KEY || PUBLIC_FALLBACK_API_KEY;
 
@@ -191,7 +191,16 @@ class EulerstreamAdapter extends BaseAdapter {
         return this.db.updateGiftCatalog(sessionCatalog);
     }
 
-    _getGiftListParams() {
+    _normalizeLocaleCode(value) {
+        if (typeof value !== 'string') {
+            return null;
+        }
+
+        const trimmed = value.trim().toLowerCase();
+        return trimmed ? trimmed : null;
+    }
+
+    _getGiftListParams(options = {}) {
         const params = {
             ...this.webcastApiConfig.params,
             aid: '1233',
@@ -200,6 +209,32 @@ class EulerstreamAdapter extends BaseAdapter {
 
         if (this.roomId) {
             params.room_id = this.roomId;
+        }
+
+        const rawAppLanguage = options.app_language || options.appLanguage;
+        const rawBrowserLanguage = options.browser_language || options.browserLanguage;
+        const rawWebcastLanguage = options.webcast_language || options.webcastLanguage;
+        const rawPriorityRegion = options.priority_region || options.region;
+        const rawTzName = options.tz_name || options.tzName || options.timeZone;
+
+        if (typeof rawAppLanguage === 'string' && rawAppLanguage.trim()) {
+            params.app_language = rawAppLanguage.trim();
+        }
+
+        if (typeof rawBrowserLanguage === 'string' && rawBrowserLanguage.trim()) {
+            params.browser_language = rawBrowserLanguage.trim();
+        }
+
+        if (typeof rawWebcastLanguage === 'string' && rawWebcastLanguage.trim()) {
+            params.webcast_language = rawWebcastLanguage.trim();
+        }
+
+        if (typeof rawPriorityRegion === 'string') {
+            params.priority_region = rawPriorityRegion.trim();
+        }
+
+        if (typeof rawTzName === 'string' && rawTzName.trim()) {
+            params.tz_name = rawTzName.trim();
         }
 
         return params;
@@ -301,7 +336,7 @@ class EulerstreamAdapter extends BaseAdapter {
             this.sessionGifts.clear();
             // Clear deduplication cache when switching to a different streamer
             this.processedEvents.clear();
-            this.logger.info(`🔄 Switching from @${previousUsername} to @${username} - clearing old stream start time, stats, and event cache`);
+            this.logger.info(`ðŸ”„ Switching from @${previousUsername} to @${username} - clearing old stream start time, stats, and event cache`);
         }
 
         try {
@@ -320,8 +355,8 @@ class EulerstreamAdapter extends BaseAdapter {
                 if (FALLBACK_API_KEY) {
                     apiKey = FALLBACK_API_KEY;
                     usingFallback = true;
-                    this.logger.warn('⚠️  No personal API key configured - using fallback key');
-                    this.logger.warn('⚠️  This is a temporary solution. Please get your own free API key at https://www.eulerstream.com');
+                    this.logger.warn('âš ï¸  No personal API key configured - using fallback key');
+                    this.logger.warn('âš ï¸  This is a temporary solution. Please get your own free API key at https://www.eulerstream.com');
                     
                     // Emit event to show warning overlay to user
                     if (this.io) {
@@ -335,14 +370,14 @@ class EulerstreamAdapter extends BaseAdapter {
                         '1. In the Dashboard Settings UI, or\n' +
                         '2. Via EULER_API_KEY environment variable.\n' +
                         'Get your free API key at https://www.eulerstream.com';
-                    this.logger.error('❌ ' + errorMsg);
+                    this.logger.error('âŒ ' + errorMsg);
                     throw new Error(errorMsg);
                 }
             }
 
             if (usingFallback) {
-                this.logger.warn('⚠️  No personal API key configured - using fallback key');
-                this.logger.warn('⚠️  This is a temporary solution. Please get your own free API key at https://www.eulerstream.com');
+                this.logger.warn('âš ï¸  No personal API key configured - using fallback key');
+                this.logger.warn('âš ï¸  This is a temporary solution. Please get your own free API key at https://www.eulerstream.com');
 
                 if (this.io) {
                     this.io.emit('fallback-key-warning', {
@@ -355,13 +390,13 @@ class EulerstreamAdapter extends BaseAdapter {
             // Validate key format
             if (typeof apiKey !== 'string' || apiKey.trim().length < 32) {
                 const errorMsg = 'Invalid key format. The key should be at least 32 characters long.';
-                this.logger.error('❌ ' + errorMsg);
+                this.logger.error('âŒ ' + errorMsg);
                 throw new Error(errorMsg);
             }
 
-            this.logger.info(`🔄 Verbinde mit TikTok LIVE: @${username}...`);
-            this.logger.info(`⚙️  Connection Mode: Eulerstream WebSocket API`);
-            this.logger.info(`🔑 Authentication Key configured (${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)})`);
+            this.logger.info(`ðŸ”„ Verbinde mit TikTok LIVE: @${username}...`);
+            this.logger.info(`âš™ï¸  Connection Mode: Eulerstream WebSocket API`);
+            this.logger.info(`ðŸ”‘ Authentication Key configured (${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)})`);
             
             // Log key type for debugging
             if (apiKey.startsWith('euler_')) {
@@ -376,8 +411,8 @@ class EulerstreamAdapter extends BaseAdapter {
             // Check if user is using the Euler backup key
             // Show non-dismissible warning and delay connection by 10 seconds
             if (!usingFallback && EULER_BACKUP_KEY && apiKey === EULER_BACKUP_KEY) {
-                this.logger.warn('⚠️  EULER BACKUP KEY DETECTED - Connection will be delayed by 10 seconds');
-                this.logger.warn('⚠️  Please get your own free API key at https://www.eulerstream.com');
+                this.logger.warn('âš ï¸  EULER BACKUP KEY DETECTED - Connection will be delayed by 10 seconds');
+                this.logger.warn('âš ï¸  Please get your own free API key at https://www.eulerstream.com');
                 
                 // Emit event to show blocking warning overlay to user
                 if (this.io) {
@@ -388,9 +423,9 @@ class EulerstreamAdapter extends BaseAdapter {
                 }
                 
                 // Wait 10 seconds before proceeding with connection
-                this.logger.info('⏳ Waiting 10 seconds before establishing connection...');
+                this.logger.info('â³ Waiting 10 seconds before establishing connection...');
                 await new Promise(resolve => setTimeout(resolve, 10000));
-                this.logger.info('✅ Delay complete, proceeding with connection');
+                this.logger.info('âœ… Delay complete, proceeding with connection');
             }
 
             // Create WebSocket URL using Eulerstream SDK
@@ -404,7 +439,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 // }
             });
 
-            this.logger.info(`🔧 Connecting to Eulerstream WebSocket...`);
+            this.logger.info(`ðŸ”§ Connecting to Eulerstream WebSocket...`);
 
             // Create WebSocket connection
             this.ws = new WebSocket(wsUrl);
@@ -446,7 +481,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 clearTimeout(this._selfHealTimer);
                 this._selfHealTimer = null;
             }
-            this.logger.info('✅ Auto-reconnect counter reset (successful connection)');
+            this.logger.info('âœ… Auto-reconnect counter reset (successful connection)');
 
             // Initialize stream start time
             // Note: _persistedStreamStart is always cleared on disconnect (see disconnect method)
@@ -455,12 +490,12 @@ class EulerstreamAdapter extends BaseAdapter {
             // Wait for roomInfo or first event to get actual stream start time
             this.streamStartTime = null;
             this._streamTimeDetectionMethod = 'Waiting for stream data...';
-            this.logger.info(`⏳ Waiting for roomInfo or first event to determine stream start time`);
+            this.logger.info(`â³ Waiting for roomInfo or first event to determine stream start time`);
 
             // Reset stats to ensure we start fresh for this connection
             // The actual values will be populated from roomInfo/API or accumulated from events
             // This prevents old database values from persisting across different stream sessions
-            this.logger.info('🔄 Resetting stats to prepare for fresh stream data');
+            this.logger.info('ðŸ”„ Resetting stats to prepare for fresh stream data');
             this.stats = {
                 viewers: 0,
                 likes: 0,
@@ -486,7 +521,7 @@ class EulerstreamAdapter extends BaseAdapter {
             }
             this.statsPersistenceInterval = setInterval(() => {
                 this.db.saveStreamStats(this.stats);
-                this.logger.debug('💾 Stream stats persisted to database');
+                this.logger.debug('ðŸ’¾ Stream stats persisted to database');
             }, this.statsPersistenceIntervalMs);
 
             // Broadcast stream time info (only if we have a valid time)
@@ -512,7 +547,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     newUsername: username,
                     timestamp: new Date().toISOString()
                 });
-                this.logger.info(`🔄 Stream changed from @${previousUsername} to @${username}`);
+                this.logger.info(`ðŸ”„ Stream changed from @${previousUsername} to @${username}`);
             }
             
             // Emit connected event for IFTTT engine
@@ -524,7 +559,7 @@ class EulerstreamAdapter extends BaseAdapter {
             // Save last connected username
             this.db.setSetting('last_connected_username', username);
 
-            this.logger.info(`✅ Connected to TikTok LIVE: @${username} via Eulerstream`);
+            this.logger.info(`âœ… Connected to TikTok LIVE: @${username} via Eulerstream`);
             
             // Fetch room info and update gift catalog from TikTok API
             setTimeout(async () => {
@@ -537,7 +572,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 // Update gift catalog after connection
                 try {
                     const catalogResult = await this.updateGiftCatalog();
-                    this.logger.info(`🎁 ${catalogResult.message}`);
+                    this.logger.info(`ðŸŽ ${catalogResult.message}`);
                 } catch (error) {
                     this.logger.warn(`Could not update gift catalog: ${this._formatHttpError(error)}`);
                 }
@@ -552,10 +587,10 @@ class EulerstreamAdapter extends BaseAdapter {
             // Analyze and format error
             const errorInfo = this._analyzeError(error);
 
-            this.logger.error(`❌ Connection error:`, errorInfo.message);
+            this.logger.error(`âŒ Connection error:`, errorInfo.message);
             
             if (errorInfo.suggestion) {
-                this.logger.info(`💡 Suggestion:`, errorInfo.suggestion);
+                this.logger.info(`ðŸ’¡ Suggestion:`, errorInfo.suggestion);
             }
 
             // Log failure
@@ -609,7 +644,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
         // WebSocket connection events
         this.ws.on('open', () => {
-            this.logger.info('🟢 Eulerstream WebSocket connected');
+            this.logger.info('ðŸŸ¢ Eulerstream WebSocket connected');
             this._startHeartbeat();
         });
 
@@ -617,7 +652,7 @@ class EulerstreamAdapter extends BaseAdapter {
             this._stopHeartbeat();
             const reasonText = Buffer.isBuffer(reason) ? reason.toString('utf-8') : (reason || '');
             const savedUsername = this.currentUsername;
-            this.logger.info(`🔴 Eulerstream WebSocket disconnected: ${code} - ${ClientCloseCode[code] || reasonText}`);
+            this.logger.info(`ðŸ”´ Eulerstream WebSocket disconnected: ${code} - ${ClientCloseCode[code] || reasonText}`);
 
             this.isConnected = false;
 
@@ -631,10 +666,10 @@ class EulerstreamAdapter extends BaseAdapter {
                 });
             };
 
-            // 4401 – Invalid API Key → no reconnect, manual fix required
+            // 4401 â€“ Invalid API Key â†’ no reconnect, manual fix required
             if (code === 4401) {
-                this.logger.error('❌ Authentication Error: The provided Eulerstream API key is invalid.');
-                this.logger.error('💡 Please check your API key configuration:');
+                this.logger.error('âŒ Authentication Error: The provided Eulerstream API key is invalid.');
+                this.logger.error('ðŸ’¡ Please check your API key configuration:');
                 this.logger.error('   1. Verify the API key in Dashboard Settings (tiktok_euler_api_key)');
                 this.logger.error('   2. Or check environment variable EULER_API_KEY');
                 this.logger.error('   3. Get a valid key from: https://www.eulerstream.com');
@@ -649,10 +684,10 @@ class EulerstreamAdapter extends BaseAdapter {
                 return;
             }
 
-            // 4400 – Invalid Options → no reconnect, manual fix required
+            // 4400 â€“ Invalid Options â†’ no reconnect, manual fix required
             if (code === 4400) {
-                this.logger.error('❌ Invalid Options: The connection parameters are incorrect.');
-                this.logger.error('💡 Please check the username and API key are correct.');
+                this.logger.error('âŒ Invalid Options: The connection parameters are incorrect.');
+                this.logger.error('ðŸ’¡ Please check the username and API key are correct.');
                 this.broadcastStatus('auth_error', {
                     code,
                     message: 'Invalid connection options - manual reconnect required'
@@ -661,66 +696,66 @@ class EulerstreamAdapter extends BaseAdapter {
                 return;
             }
 
-            // 4005 – Stream ended normally → no reconnect, broadcast stream_ended
+            // 4005 â€“ Stream ended normally â†’ no reconnect, broadcast stream_ended
             if (code === 4005) {
-                this.logger.info('🏁 Stream ended (STREAM_END). Waiting for next stream...');
+                this.logger.info('ðŸ Stream ended (STREAM_END). Waiting for next stream...');
                 this.broadcastStatus('stream_ended');
                 emitDisconnect('Stream ended');
                 return;
             }
 
-            // 4404 – Not live → soft retry with long delay, dedicated not-live retry budget
+            // 4404 â€“ Not live â†’ soft retry with long delay, dedicated not-live retry budget
             if (code === 4404) {
-                this.logger.warn('⚠️  User Not Live: The requested TikTok user is not currently streaming.');
+                this.logger.warn('âš ï¸  User Not Live: The requested TikTok user is not currently streaming.');
                 this.broadcastStatus('not_live');
                 emitDisconnect('User not live');
 
                 if (savedUsername && this.notLiveReconnectCount < this.maxNotLiveReconnects) {
                     this.notLiveReconnectCount++;
                     const notLiveDelay = 30000;
-                    this.logger.info(`⏳ Not-live retry ${this.notLiveReconnectCount}/${this.maxNotLiveReconnects} in ${notLiveDelay / 1000}s (stream may be starting soon)...`);
+                    this.logger.info(`â³ Not-live retry ${this.notLiveReconnectCount}/${this.maxNotLiveReconnects} in ${notLiveDelay / 1000}s (stream may be starting soon)...`);
                     this._scheduleReconnectTimer('_notLiveReconnectTimer', notLiveDelay, () => {
                         this.connect(savedUsername).catch(err => {
                             this.logger.error(`Not-live retry ${this.notLiveReconnectCount}/${this.maxNotLiveReconnects} failed:`, err.message);
                         });
                     });
                 } else {
-                    this.logger.warn(`⚠️ Max retry attempts (${this.maxNotLiveReconnects}) reached or no username set. Manual reconnect required.`);
+                    this.logger.warn(`âš ï¸ Max retry attempts (${this.maxNotLiveReconnects}) reached or no username set. Manual reconnect required.`);
                     this.broadcastStatus('max_reconnects_reached', {
                         maxReconnects: this.maxNotLiveReconnects,
-                        message: 'User nicht live – bitte manuell neu verbinden'
+                        message: 'User nicht live â€“ bitte manuell neu verbinden'
                     });
                     this._scheduleSelfHealReconnect(savedUsername);
                 }
                 return;
             }
 
-            // 4429 – Too many connections → wait 30s then retry (dedicated rate-limit retry budget)
+            // 4429 â€“ Too many connections â†’ wait 30s then retry (dedicated rate-limit retry budget)
             if (code === 4429) {
-                this.logger.warn('⚠️  Too many connections. Waiting 30s before retry...');
+                this.logger.warn('âš ï¸  Too many connections. Waiting 30s before retry...');
                 this.broadcastStatus('disconnected');
                 emitDisconnect('Too many connections');
 
                 if (savedUsername && this.rateLimitReconnectCount < this.maxRateLimitReconnects) {
                     this.rateLimitReconnectCount++;
-                    this.logger.info(`⏳ 4429 retry ${this.rateLimitReconnectCount}/${this.maxRateLimitReconnects} in 30s...`);
+                    this.logger.info(`â³ 4429 retry ${this.rateLimitReconnectCount}/${this.maxRateLimitReconnects} in 30s...`);
                     this._scheduleReconnectTimer('_rateLimitReconnectTimer', 30000, () => {
                         this.connect(savedUsername).catch(err => {
                             this.logger.error(`4429 retry ${this.rateLimitReconnectCount}/${this.maxRateLimitReconnects} failed:`, err.message);
                         });
                     });
                 } else {
-                    this.logger.warn(`⚠️ Max retry attempts (${this.maxRateLimitReconnects}) reached or no username set. Manual reconnect required.`);
+                    this.logger.warn(`âš ï¸ Max retry attempts (${this.maxRateLimitReconnects}) reached or no username set. Manual reconnect required.`);
                     this.broadcastStatus('max_reconnects_reached', {
                         maxReconnects: this.maxRateLimitReconnects,
-                        message: 'Zu viele Verbindungen – bitte manuell neu verbinden'
+                        message: 'Zu viele Verbindungen â€“ bitte manuell neu verbinden'
                     });
                     this._scheduleSelfHealReconnect(savedUsername);
                 }
                 return;
             }
 
-            // All other codes (1000, 1011, 4500, unknown) → standard auto-reconnect with exponential backoff
+            // All other codes (1000, 1011, 4500, unknown) â†’ standard auto-reconnect with exponential backoff
             this.broadcastStatus('disconnected');
             emitDisconnect();
 
@@ -736,14 +771,14 @@ class EulerstreamAdapter extends BaseAdapter {
                     maxRetries: this.maxAutoReconnects,
                     username: this.currentUsername
                 });
-                this.logger.info(`🔄 Attempting auto-reconnect ${this.autoReconnectCount}/${this.maxAutoReconnects} in ${delay / 1000}s...`);
+                this.logger.info(`ðŸ”„ Attempting auto-reconnect ${this.autoReconnectCount}/${this.maxAutoReconnects} in ${delay / 1000}s...`);
                 this._scheduleReconnectTimer('_autoReconnectTimer', delay, () => {
                     this.connect(this.currentUsername).catch(err => {
                         this.logger.error(`Auto-reconnect ${this.autoReconnectCount}/${this.maxAutoReconnects} failed:`, err.message);
                     });
                 });
             } else if (this.autoReconnectCount >= this.maxAutoReconnects) {
-                this.logger.warn(`⚠️ Max auto-reconnect attempts (${this.maxAutoReconnects}) reached. Manual reconnect required.`);
+                this.logger.warn(`âš ï¸ Max auto-reconnect attempts (${this.maxAutoReconnects}) reached. Manual reconnect required.`);
                 this.broadcastStatus('max_reconnects_reached', {
                     maxReconnects: this.maxAutoReconnects,
                     message: 'Bitte manuell neu verbinden'
@@ -753,7 +788,7 @@ class EulerstreamAdapter extends BaseAdapter {
         });
 
         this.ws.on('error', (err) => {
-            this.logger.error('❌ WebSocket error:', err);
+            this.logger.error('âŒ WebSocket error:', err);
             
             // Emit error event for IFTTT engine
             this.emit('error', {
@@ -771,7 +806,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     this._missedPongs = 0;
                 }
 
-                this.logger.debug?.(`📨 Received WebSocket message: ${typeof data}, length: ${data ? data.length : 0}`);
+                this.logger.debug?.(`ðŸ“¨ Received WebSocket message: ${typeof data}, length: ${data ? data.length : 0}`);
                 
                 // First, try to parse as JSON (EulerStream default format)
                 let parsedData;
@@ -804,15 +839,15 @@ class EulerstreamAdapter extends BaseAdapter {
                 const messages = this._extractEulerstreamMessages(parsedData);
                 if (messages.length > 0) {
                     parsedData.messages = messages;
-                    this.logger.debug?.(`🎉 Processing ${parsedData.messages.length} messages from WebSocket`);
+                    this.logger.debug?.(`ðŸŽ‰ Processing ${parsedData.messages.length} messages from WebSocket`);
                     for (const message of messages) {
                         if (message.type && message.data) {
                             this._captureRoomIdFromPayload(message.data, message.type);
 
                             // Special handling for roomInfo event to extract stream start time
                             if (message.type === 'roomInfo') {
-                                this.logger.info('📋 Received roomInfo event - extracting stream start time and stats');
-                                this.logger.info(`📋 roomInfo keys: ${JSON.stringify(Object.keys(message.data || {}))}`);
+                                this.logger.info('ðŸ“‹ Received roomInfo event - extracting stream start time and stats');
+                                this.logger.info(`ðŸ“‹ roomInfo keys: ${JSON.stringify(Object.keys(message.data || {}))}`);
                                 
                                 // Extract stream start time
                                 const extractedTime = this._extractStreamStartTime(message.data);
@@ -823,7 +858,7 @@ class EulerstreamAdapter extends BaseAdapter {
                                     this._persistedStreamStart = extractedTime;
                                     this._streamTimeDetectionMethod = 'roomInfo (from TikTok)';
                                     
-                                    this.logger.info(`✅ Stream start time set from roomInfo: ${new Date(this.streamStartTime).toISOString()}`);
+                                    this.logger.info(`âœ… Stream start time set from roomInfo: ${new Date(this.streamStartTime).toISOString()}`);
                                     
                                     // Broadcast updated stream time info
                                     this.io.emit('tiktok:streamTimeInfo', {
@@ -851,18 +886,18 @@ class EulerstreamAdapter extends BaseAdapter {
                             const eventType = this._mapEulerStreamEventType(message.type);
                             
                             if (eventType) {
-                                this.logger.debug?.(`✅ Emitting event: ${eventType} (from ${message.type})`);
+                                this.logger.debug?.(`âœ… Emitting event: ${eventType} (from ${message.type})`);
                                 // Emit the parsed event to our event emitter
                                 this.eventEmitter.emit(eventType, message.data);
                             } else {
-                                this.logger.warn(`⚠️ Unknown event type: ${message.type} - skipping`);
+                                this.logger.warn(`âš ï¸ Unknown event type: ${message.type} - skipping`);
                             }
                         } else {
                             this.logger.warn(`Message missing type or data: ${JSON.stringify(message).substring(0, 100)}`);
                         }
                     }
                 } else {
-                    this.logger.warn(`⚠️ Parsed data does not contain messages array. Keys: ${JSON.stringify(Object.keys(parsedData || {}))}`);
+                    this.logger.warn(`âš ï¸ Parsed data does not contain messages array. Keys: ${JSON.stringify(Object.keys(parsedData || {}))}`);
                     this.logger.warn(`Data preview: ${JSON.stringify(parsedData).substring(0, 200)}`);
                 }
             } catch (error) {
@@ -957,14 +992,14 @@ class EulerstreamAdapter extends BaseAdapter {
                 if (timestamp > minTime && timestamp <= now) {
                     if (!this._earliestEventTime || timestamp < this._earliestEventTime) {
                         this._earliestEventTime = timestamp;
-                        this.logger.info(`🕐 Updated earliest event time: ${new Date(timestamp).toISOString()}`);
+                        this.logger.info(`ðŸ• Updated earliest event time: ${new Date(timestamp).toISOString()}`);
                         
                         // If we don't have a stream start time yet, use earliest event
                         if (!this.streamStartTime) {
                             this.streamStartTime = this._earliestEventTime;
                             this._persistedStreamStart = this.streamStartTime;
                             this._streamTimeDetectionMethod = 'First Event Timestamp';
-                            this.logger.info(`📅 Set stream start time from earliest event: ${new Date(this.streamStartTime).toISOString()}`);
+                            this.logger.info(`ðŸ“… Set stream start time from earliest event: ${new Date(this.streamStartTime).toISOString()}`);
                             
                             // Broadcast updated stream time info
                             this.io.emit('tiktok:streamTimeInfo', {
@@ -1062,7 +1097,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 }
 
                 if (this._giftDedupeMap.has(dedupeKey)) {
-                    this.logger.info(`🔕 [GIFT DEDUP] Connector-level duplicate blocked: ${dedupeKey}`);
+                    this.logger.info(`ðŸ”• [GIFT DEDUP] Connector-level duplicate blocked: ${dedupeKey}`);
                     return;
                 }
                 this._giftDedupeMap.set(dedupeKey, nowMs);
@@ -1094,7 +1129,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     // Save to database immediately
                     try {
                         this.db.updateGiftCatalog([normalizedGift]);
-                        this.logger.info(`✅ [GIFT CATALOG] Added gift to catalog: ${normalizedGift.name} (ID: ${normalizedGift.id})`);
+                        this.logger.info(`âœ… [GIFT CATALOG] Added gift to catalog: ${normalizedGift.name} (ID: ${normalizedGift.id})`);
                         
                         // Emit event to notify frontend of new gift in catalog
                         this.io.emit('gift-catalog:updated', {
@@ -1132,7 +1167,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 coins = diamondCount * repeatCount;
             }
 
-            this.logger.info(`🎁 [GIFT] ${giftData.giftName}: diamondCount=${diamondCount}, repeatCount=${repeatCount}, coins=${coins}, giftType=${giftData.giftType}, repeatEnd=${giftData.repeatEnd}`);
+            this.logger.info(`ðŸŽ [GIFT] ${giftData.giftName}: diamondCount=${diamondCount}, repeatCount=${repeatCount}, coins=${coins}, giftType=${giftData.giftType}, repeatEnd=${giftData.repeatEnd}`);
             
             // Log raw gift data for debugging duplicate detection
             this.logger.debug(`[GIFT RAW] createTime: ${data.createTime}, timestamp: ${data.timestamp}, giftName: ${giftData.giftName}, repeatCount: ${repeatCount}`);
@@ -1180,7 +1215,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     timestamp: data.createTime || data.timestamp || new Date().toISOString()
                 };
 
-                this.logger.info(`✅ [GIFT COUNTED] Total coins now: ${this.stats.totalCoins}`);
+                this.logger.info(`âœ… [GIFT COUNTED] Total coins now: ${this.stats.totalCoins}`);
 
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('gift', eventData)) {
@@ -1188,7 +1223,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 }
                 this.broadcastStats();
             } else {
-                this.logger.info(`⏳ [STREAK RUNNING] ${giftData.giftName || 'Unknown Gift'} x${repeatCount} (${coins} coins, not counted yet)`);
+                this.logger.info(`â³ [STREAK RUNNING] ${giftData.giftName || 'Unknown Gift'} x${repeatCount} (${coins} coins, not counted yet)`);
             }
         });
 
@@ -1241,7 +1276,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     timestamp: new Date().toISOString()
                 };
 
-                this.logger.info(`👤 [FOLLOW] New follower: ${eventData.username || eventData.nickname}`);
+                this.logger.info(`ðŸ‘¤ [FOLLOW] New follower: ${eventData.username || eventData.nickname}`);
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('follow', eventData)) {
                     this.db.logEvent('follow', eventData.username, eventData);
@@ -1263,7 +1298,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     timestamp: new Date().toISOString()
                 };
 
-                this.logger.info(`📢 [SHARE] User shared stream: ${eventData.username || eventData.nickname}`);
+                this.logger.info(`ðŸ“¢ [SHARE] User shared stream: ${eventData.username || eventData.nickname}`);
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('share', eventData)) {
                     this.db.logEvent('share', eventData.username, eventData);
@@ -1323,12 +1358,12 @@ class EulerstreamAdapter extends BaseAdapter {
 
             const likeCount = data.likeCount || data.count || data.like_count || 1;
 
-            this.logger.debug?.(`💗 [LIKE EVENT] likeCount=${likeCount}, totalLikes=${totalLikes}`);
+            this.logger.debug?.(`ðŸ’— [LIKE EVENT] likeCount=${likeCount}, totalLikes=${totalLikes}`);
 
             // If totalLikes found, use it directly (Eulerstream API provides actual total like count)
             if (totalLikes !== null) {
                 this.stats.likes = totalLikes;
-                this.logger.debug?.(`💗 [LIKE EVENT] Set totalLikes: ${this.stats.likes}`);
+                this.logger.debug?.(`ðŸ’— [LIKE EVENT] Set totalLikes: ${this.stats.likes}`);
             } else {
                 // Fallback: increment based on likeCount (individual event count, not in tens)
                 // Note: likeCount represents individual likes in this event (typically 1), not cumulative
@@ -1408,7 +1443,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 timestamp: new Date().toISOString()
             };
 
-            this.logger.debug?.(`👋 User joined: ${userData.username || userData.nickname}`);
+            this.logger.debug?.(`ðŸ‘‹ User joined: ${userData.username || userData.nickname}`);
             
             // Only log to database if event was not a duplicate
             if (this.handleEvent('join', eventData)) {
@@ -1437,7 +1472,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 timestamp: new Date().toISOString()
             };
 
-            this.logger.info(`🎭 Sticker sent: ${emoteData.emoteName || emoteData.emoteId} by ${userData.username || userData.nickname}`);
+            this.logger.info(`ðŸŽ­ Sticker sent: ${emoteData.emoteName || emoteData.emoteId} by ${userData.username || userData.nickname}`);
             
             // Only log to database if event was not a duplicate
             if (this.handleEvent('emote', eventData)) {
@@ -1589,7 +1624,7 @@ class EulerstreamAdapter extends BaseAdapter {
         };
 
         if (!extractedData.username && !extractedData.nickname) {
-            this.logger.warn('⚠️ No user data found in event. Event structure:', {
+            this.logger.warn('âš ï¸ No user data found in event. Event structure:', {
                 hasUser: !!data.user,
                 hasUniqueId: !!data.uniqueId,
                 hasUsername: !!data.username,
@@ -1686,17 +1721,17 @@ class EulerstreamAdapter extends BaseAdapter {
         // Extract giftType using nullish coalescing (??) to preserve 0 as a valid value.
         // Using || would skip 0 (non-streakable) and incorrectly fall through to the next candidate.
         // Field precedence (first defined value wins):
-        //   gift.giftType         – Eulerstream v1: nested in data.giftDetails.giftType (gift = giftDetails)
-        //   gift.gift_type        – snake_case nested variant
-        //   gift.type             – short alias used in older Eulerstream payloads
-        //   data.giftType         – top-level field from Eulerstream v2+ and TikTok-Live-Connector
-        //   data.gift_type        – snake_case top-level variant
-        //   data.gift?.type       – direct reference when data.gift is the payload root
+        //   gift.giftType         â€“ Eulerstream v1: nested in data.giftDetails.giftType (gift = giftDetails)
+        //   gift.gift_type        â€“ snake_case nested variant
+        //   gift.type             â€“ short alias used in older Eulerstream payloads
+        //   data.giftType         â€“ top-level field from Eulerstream v2+ and TikTok-Live-Connector
+        //   data.gift_type        â€“ snake_case top-level variant
+        //   data.gift?.type       â€“ direct reference when data.gift is the payload root
         const giftType = gift.giftType ?? gift.gift_type ?? gift.type ?? data.giftType ?? data.gift_type ?? data.gift?.type ?? 0;
 
         // Determine if streak/combo has ended.
         // If the repeatEnd field is absent AND giftType === 1 (streakable), default to false
-        // (the streak is still running — this is a mid-animation Popup event).
+        // (the streak is still running â€” this is a mid-animation Popup event).
         // If the repeatEnd field is absent AND giftType !== 1 (non-streakable / unknown),
         // default to true (treat it as a completed single-send gift).
         const hasRepeatEnd = data.repeatEnd !== undefined || data.repeat_end !== undefined;
@@ -1717,7 +1752,7 @@ class EulerstreamAdapter extends BaseAdapter {
         };
 
         if (!extractedData.giftName && !extractedData.giftId) {
-            this.logger.warn('⚠️ No gift data found in event. Event structure:', {
+            this.logger.warn('âš ï¸ No gift data found in event. Event structure:', {
                 hasGiftDetails: !!data.giftDetails,
                 hasGift: !!data.gift,
                 hasGiftInfo: !!data.giftInfo,
@@ -1764,7 +1799,7 @@ class EulerstreamAdapter extends BaseAdapter {
         };
 
         if (!extractedData.emoteName && !extractedData.emoteId) {
-            this.logger.warn('⚠️ No emote data found in event. Event structure:', {
+            this.logger.warn('âš ï¸ No emote data found in event. Event structure:', {
                 hasEmote: !!data.emote,
                 hasEmoteInfo: !!data.emoteInfo,
                 hasEmoteName: !!(data.emoteName || data.name),
@@ -1838,7 +1873,7 @@ class EulerstreamAdapter extends BaseAdapter {
             if (!isNaN(duration) && duration > 0) {
                 timestamp = Date.now() - (duration * 1000);
                 detectionMethod = 'duration (calculated)';
-                this.logger.info(`📊 Calculated stream start from duration: ${duration}s ago`);
+                this.logger.info(`ðŸ“Š Calculated stream start from duration: ${duration}s ago`);
             }
         }
         
@@ -1853,12 +1888,12 @@ class EulerstreamAdapter extends BaseAdapter {
 
         // If no timestamp found, try earliest event time or fallback to now
         if (timestamp === null || timestamp === undefined) {
-            this.logger.warn(`⚠️ No stream start time found in roomInfo. Available keys: ${JSON.stringify(Object.keys(roomInfo))}`);
+            this.logger.warn(`âš ï¸ No stream start time found in roomInfo. Available keys: ${JSON.stringify(Object.keys(roomInfo))}`);
             if (this._earliestEventTime) {
-                this.logger.info(`📅 Using earliest event time as fallback: ${new Date(this._earliestEventTime).toISOString()}`);
+                this.logger.info(`ðŸ“… Using earliest event time as fallback: ${new Date(this._earliestEventTime).toISOString()}`);
                 return this._earliestEventTime;
             }
-            this.logger.warn(`⚠️ No earliest event time available. Using current time as fallback.`);
+            this.logger.warn(`âš ï¸ No earliest event time available. Using current time as fallback.`);
             return Date.now();
         }
 
@@ -1869,7 +1904,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
         // Validate timestamp is a number
         if (isNaN(timestamp) || timestamp <= 0) {
-            this.logger.warn(`⚠️ Invalid timestamp value: ${timestamp} (from ${detectionMethod})`);
+            this.logger.warn(`âš ï¸ Invalid timestamp value: ${timestamp} (from ${detectionMethod})`);
             if (this._earliestEventTime) {
                 return this._earliestEventTime;
             }
@@ -1888,14 +1923,14 @@ class EulerstreamAdapter extends BaseAdapter {
         const minTime = new Date('2020-01-01').getTime();
         
         if (timestamp > now || timestamp < minTime) {
-            this.logger.warn(`⚠️ Invalid timestamp detected: ${timestamp} (${new Date(timestamp).toISOString()}) from ${detectionMethod}. Using fallback.`);
+            this.logger.warn(`âš ï¸ Invalid timestamp detected: ${timestamp} (${new Date(timestamp).toISOString()}) from ${detectionMethod}. Using fallback.`);
             if (this._earliestEventTime) {
                 return this._earliestEventTime;
             }
             return Date.now();
         }
 
-        this.logger.info(`✅ Extracted stream start time from ${detectionMethod}: ${new Date(timestamp).toISOString()}`);
+        this.logger.info(`âœ… Extracted stream start time from ${detectionMethod}: ${new Date(timestamp).toISOString()}`);
         return timestamp;
     }
 
@@ -1916,7 +1951,7 @@ class EulerstreamAdapter extends BaseAdapter {
             const value = roomInfo[field] || roomInfo.room?.[field] || roomInfo.stats?.[field];
             if (typeof value === 'number' && value >= 0) {
                 this.stats.viewers = value;
-                this.logger.info(`📊 Extracted viewer count from roomInfo.${field}: ${value}`);
+                this.logger.info(`ðŸ“Š Extracted viewer count from roomInfo.${field}: ${value}`);
                 statsUpdated = true;
                 break;
             }
@@ -1929,7 +1964,7 @@ class EulerstreamAdapter extends BaseAdapter {
             if (typeof value === 'number' && value >= 0) {
                 // Use actual like count directly (Eulerstream API provides actual total)
                 this.stats.likes = value;
-                this.logger.info(`📊 Extracted like count from roomInfo.${field}: ${value}`);
+                this.logger.info(`ðŸ“Š Extracted like count from roomInfo.${field}: ${value}`);
                 statsUpdated = true;
                 break;
             }
@@ -1941,7 +1976,7 @@ class EulerstreamAdapter extends BaseAdapter {
             const value = roomInfo[field] || roomInfo.owner?.[field] || roomInfo.room?.owner?.[field] || roomInfo.stats?.[field];
             if (typeof value === 'number' && value >= 0) {
                 this.stats.followers = value;
-                this.logger.info(`📊 Extracted follower count from roomInfo.${field}: ${value}`);
+                this.logger.info(`ðŸ“Š Extracted follower count from roomInfo.${field}: ${value}`);
                 statsUpdated = true;
                 break;
             }
@@ -1953,7 +1988,7 @@ class EulerstreamAdapter extends BaseAdapter {
             const value = roomInfo[field] || roomInfo.room?.[field] || roomInfo.stats?.[field];
             if (typeof value === 'number' && value >= 0) {
                 this.stats.totalCoins = value;
-                this.logger.info(`📊 Extracted coin count from roomInfo.${field}: ${value}`);
+                this.logger.info(`ðŸ“Š Extracted coin count from roomInfo.${field}: ${value}`);
                 statsUpdated = true;
                 break;
             }
@@ -1965,7 +2000,7 @@ class EulerstreamAdapter extends BaseAdapter {
             const value = roomInfo[field] || roomInfo.room?.[field] || roomInfo.stats?.[field];
             if (typeof value === 'number' && value >= 0) {
                 this.stats.gifts = value;
-                this.logger.info(`📊 Extracted gift count from roomInfo.${field}: ${value}`);
+                this.logger.info(`ðŸ“Š Extracted gift count from roomInfo.${field}: ${value}`);
                 statsUpdated = true;
                 break;
             }
@@ -1973,12 +2008,12 @@ class EulerstreamAdapter extends BaseAdapter {
 
         // Log roomInfo structure for debugging if no stats were found
         if (!statsUpdated) {
-            this.logger.info(`📊 No initial stats found in roomInfo. Available top-level keys: ${JSON.stringify(Object.keys(roomInfo))}`);
+            this.logger.info(`ðŸ“Š No initial stats found in roomInfo. Available top-level keys: ${JSON.stringify(Object.keys(roomInfo))}`);
             if (roomInfo.room) {
-                this.logger.info(`📊 Available room keys: ${JSON.stringify(Object.keys(roomInfo.room))}`);
+                this.logger.info(`ðŸ“Š Available room keys: ${JSON.stringify(Object.keys(roomInfo.room))}`);
             }
             if (roomInfo.stats) {
-                this.logger.info(`📊 Available stats keys: ${JSON.stringify(Object.keys(roomInfo.stats))}`);
+                this.logger.info(`ðŸ“Š Available stats keys: ${JSON.stringify(Object.keys(roomInfo.stats))}`);
             }
         } else {
             // Broadcast updated stats
@@ -1998,7 +2033,7 @@ class EulerstreamAdapter extends BaseAdapter {
             errorMessage.includes('blocked by TikTok')) {
             return {
                 type: 'BLOCKED_BY_TIKTOK',
-                message: 'Möglicherweise von TikTok blockiert. SIGI_STATE konnte nicht extrahiert werden.',
+                message: 'MÃ¶glicherweise von TikTok blockiert. SIGI_STATE konnte nicht extrahiert werden.',
                 suggestion: 'NICHT SOFORT ERNEUT VERSUCHEN - Warte mindestens 30-60 Minuten bevor du es erneut versuchst.',
                 retryable: false
             };
@@ -2009,8 +2044,8 @@ class EulerstreamAdapter extends BaseAdapter {
             (errorMessage.includes('Sign Error') || errorMessage.includes('API Key is invalid'))) {
             return {
                 type: 'SIGN_API_INVALID_KEY',
-                message: 'Sign API Fehler 401 - Der API-Schlüssel ist ungültig',
-                suggestion: 'Prüfe deinen Eulerstream API-Schlüssel auf https://www.eulerstream.com',
+                message: 'Sign API Fehler 401 - Der API-SchlÃ¼ssel ist ungÃ¼ltig',
+                suggestion: 'PrÃ¼fe deinen Eulerstream API-SchlÃ¼ssel auf https://www.eulerstream.com',
                 retryable: false
             };
         }
@@ -2019,7 +2054,7 @@ class EulerstreamAdapter extends BaseAdapter {
         if (errorMessage.includes('504')) {
             return {
                 type: 'SIGN_API_GATEWAY_TIMEOUT',
-                message: '504 Gateway Timeout - Eulerstream Sign API ist überlastet oder nicht erreichbar',
+                message: '504 Gateway Timeout - Eulerstream Sign API ist Ã¼berlastet oder nicht erreichbar',
                 suggestion: 'Warte 2-5 Minuten und versuche es dann erneut',
                 retryable: true
             };
@@ -2040,7 +2075,7 @@ class EulerstreamAdapter extends BaseAdapter {
             return {
                 type: 'ROOM_NOT_FOUND',
                 message: 'Raum-ID konnte nicht abgerufen werden - Benutzer existiert nicht oder ist nicht live',
-                suggestion: 'Prüfe ob der Benutzername korrekt ist und der Benutzer gerade live ist',
+                suggestion: 'PrÃ¼fe ob der Benutzername korrekt ist und der Benutzer gerade live ist',
                 retryable: false
             };
         }
@@ -2068,7 +2103,7 @@ class EulerstreamAdapter extends BaseAdapter {
             return {
                 type: 'CONNECTION_TIMEOUT',
                 message: 'Verbindungs-Timeout - Server hat nicht rechtzeitig geantwortet',
-                suggestion: 'Prüfe deine Internetverbindung. Falls das Problem weiterhin besteht, könnte der Eulerstream-Server langsam oder nicht erreichbar sein',
+                suggestion: 'PrÃ¼fe deine Internetverbindung. Falls das Problem weiterhin besteht, kÃ¶nnte der Eulerstream-Server langsam oder nicht erreichbar sein',
                 retryable: true
             };
         }
@@ -2181,7 +2216,7 @@ class EulerstreamAdapter extends BaseAdapter {
         const healDelay = 5 * 60 * 1000;
         this._selfHealTimer = setTimeout(() => {
             this._selfHealTimer = null;
-            this.logger.info('🔄 Self-heal: resetting reconnect counter after max-reached, retrying...');
+            this.logger.info('ðŸ”„ Self-heal: resetting reconnect counter after max-reached, retrying...');
             this.autoReconnectCount = 0;
             this.notLiveReconnectCount = 0;
             this.rateLimitReconnectCount = 0;
@@ -2203,7 +2238,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this._onPong = () => {
             this.isAlive = true;
             this._missedPongs = 0;
-            this.logger.debug('💓 WebSocket Pong received');
+            this.logger.debug('ðŸ’“ WebSocket Pong received');
         };
         this.ws.on('pong', this._onPong);
 
@@ -2216,7 +2251,7 @@ class EulerstreamAdapter extends BaseAdapter {
             if (this.isAlive === false) {
                 this._missedPongs = (this._missedPongs || 0) + 1;
                 if (this._missedPongs < 2) {
-                    this.logger.warn(`⚠️ No pong received (miss ${this._missedPongs}/2) - keeping connection alive for now`);
+                    this.logger.warn(`âš ï¸ No pong received (miss ${this._missedPongs}/2) - keeping connection alive for now`);
                     this.isAlive = false;
                     try {
                         this.ws.ping();
@@ -2225,7 +2260,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     }
                     return;
                 }
-                this.logger.warn('⚠️ WebSocket heartbeat timeout (2 consecutive misses) - forcing reconnect...');
+                this.logger.warn('âš ï¸ WebSocket heartbeat timeout (2 consecutive misses) - forcing reconnect...');
                 this._stopHeartbeat();
 
                 // Save username before nulling out state
@@ -2233,7 +2268,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
                 // Remove ALL listeners BEFORE terminate() so the 'close' event does NOT
                 // trigger the auto-reconnect handler in _setupWebSocketHandlers().
-                // Without this, terminate() → close(1006) → reconnect-loop (~60s rhythm).
+                // Without this, terminate() â†’ close(1006) â†’ reconnect-loop (~60s rhythm).
                 if (this.ws) {
                     this.ws.removeAllListeners();
                     this.ws.terminate();
@@ -2254,17 +2289,17 @@ class EulerstreamAdapter extends BaseAdapter {
                 if (savedUsername && this.autoReconnectCount < this.maxAutoReconnects) {
                     this.autoReconnectCount++;
                     const delay = Math.min(5000 * this.autoReconnectCount, 30000);
-                    this.logger.info(`🔄 Heartbeat reconnect ${this.autoReconnectCount}/${this.maxAutoReconnects} in ${delay / 1000}s...`);
+                    this.logger.info(`ðŸ”„ Heartbeat reconnect ${this.autoReconnectCount}/${this.maxAutoReconnects} in ${delay / 1000}s...`);
                     this._scheduleReconnectTimer('_heartbeatReconnectTimer', delay, () => {
                         this.connect(savedUsername).catch(err => {
                             this.logger.error(`Heartbeat reconnect ${this.autoReconnectCount}/${this.maxAutoReconnects} failed:`, err.message);
                         });
                     });
                 } else {
-                    this.logger.warn(`⚠️ Max auto-reconnect attempts (${this.maxAutoReconnects}) reached after heartbeat timeout. Manual reconnect required.`);
+                    this.logger.warn(`âš ï¸ Max auto-reconnect attempts (${this.maxAutoReconnects}) reached after heartbeat timeout. Manual reconnect required.`);
                     this.broadcastStatus('max_reconnects_reached', {
                         maxReconnects: this.maxAutoReconnects,
-                        message: 'Heartbeat-Timeout – bitte manuell neu verbinden'
+                        message: 'Heartbeat-Timeout â€“ bitte manuell neu verbinden'
                     });
                     this._scheduleSelfHealReconnect(savedUsername);
                 }
@@ -2275,7 +2310,7 @@ class EulerstreamAdapter extends BaseAdapter {
             this.isAlive = false;
             try {
                 this.ws.ping();
-                this.logger.debug('↗️ WebSocket Ping sent');
+                this.logger.debug('â†—ï¸ WebSocket Ping sent');
             } catch (err) {
                 this.logger.error('Error sending WebSocket ping:', err.message);
             }
@@ -2336,7 +2371,7 @@ class EulerstreamAdapter extends BaseAdapter {
         // Save final stats before resetting in-memory stats
         // This preserves stats in database even when in-memory is reset
         this.db.saveStreamStats(this.stats);
-        this.logger.info('💾 Final stream stats saved to database');
+        this.logger.info('ðŸ’¾ Final stream stats saved to database');
         
         // BUGFIX: Always clear stream start time on disconnect
         // This ensures each new stream starts with its actual stream start time,
@@ -2346,7 +2381,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this.streamStartTime = null;
         this._persistedStreamStart = null;
         this._earliestEventTime = null;
-        this.logger.info('🔄 Cleared stream start time - will detect fresh on next connection');
+        this.logger.info('ðŸ”„ Cleared stream start time - will detect fresh on next connection');
 
         // DON'T clear event deduplication cache on disconnect if we have a previousUsername
         // This prevents duplicate gift displays when reconnecting to the same stream
@@ -2355,9 +2390,9 @@ class EulerstreamAdapter extends BaseAdapter {
         if (!previousUsername) {
             this.processedEvents.clear();
             this._giftDedupeMap.clear();
-            this.logger.info('🧹 Event deduplication cache cleared (no previous username)');
+            this.logger.info('ðŸ§¹ Event deduplication cache cleared (no previous username)');
         } else {
-            this.logger.info('💾 Event deduplication cache preserved for potential reconnection to @' + previousUsername);
+            this.logger.info('ðŸ’¾ Event deduplication cache preserved for potential reconnection to @' + previousUsername);
         }
 
         // Reset in-memory stats to zero (but database keeps the saved values)
@@ -2372,7 +2407,7 @@ class EulerstreamAdapter extends BaseAdapter {
         };
         this.broadcastStats();
         this.broadcastStatus('disconnected');
-        this.logger.info('⚫ Disconnected from TikTok LIVE');
+        this.logger.info('âš« Disconnected from TikTok LIVE');
     }
 
     /**
@@ -2407,7 +2442,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 // but allow legitimate streak updates.
                 // Prefer createTime from TikTok for more reliable deduplication.
                 // TikTok sends duplicate events (popup + chat) with identical createTime.
-                // IMPORTANT: Never fall back to new Date().toISOString() here – that value
+                // IMPORTANT: Never fall back to new Date().toISOString() here â€“ that value
                 // is always unique and would defeat deduplication entirely.
                 {
                     const rawTime = data.createTime;
@@ -2478,7 +2513,7 @@ class EulerstreamAdapter extends BaseAdapter {
         }
         
         if (this.processedEvents.has(eventHash)) {
-            this.logger.info(`🔄 [DUPLICATE BLOCKED] ${eventType} event already processed: ${eventHash}`);
+            this.logger.info(`ðŸ”„ [DUPLICATE BLOCKED] ${eventType} event already processed: ${eventHash}`);
             return true;
         }
         
@@ -2495,7 +2530,7 @@ class EulerstreamAdapter extends BaseAdapter {
     handleEvent(eventType, data) {
         // Check for duplicate events
         if (this._isDuplicateEvent(eventType, data)) {
-            this.logger.info(`⚠️  Duplicate ${eventType} event ignored`);
+            this.logger.info(`âš ï¸  Duplicate ${eventType} event ignored`);
             return false; // Return false to indicate event was not processed
         }
 
@@ -2566,7 +2601,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
     clearDeduplicationCache() {
         this.processedEvents.clear();
-        this.logger.info('🧹 Event deduplication cache manually cleared');
+        this.logger.info('ðŸ§¹ Event deduplication cache manually cleared');
     }
 
     /**
@@ -2580,7 +2615,7 @@ class EulerstreamAdapter extends BaseAdapter {
         }
         
         try {
-            this.logger.info(`📡 Fetching room ID for @${targetUsername}...`);
+            this.logger.info(`ðŸ“¡ Fetching room ID for @${targetUsername}...`);
             
             const response = await axios.get(`https://www.tiktok.com/@${targetUsername}/live`, {
                 timeout: 10000,
@@ -2597,7 +2632,7 @@ class EulerstreamAdapter extends BaseAdapter {
             const roomIdMatch = html.match(/"roomId":"(\d+)"/);
             if (roomIdMatch && roomIdMatch[1]) {
                 this.roomId = roomIdMatch[1];
-                this.logger.info(`✅ Found room ID: ${this.roomId}`);
+                this.logger.info(`âœ… Found room ID: ${this.roomId}`);
                 return this.roomId;
             }
             
@@ -2605,11 +2640,11 @@ class EulerstreamAdapter extends BaseAdapter {
             const altMatch = html.match(/room_id=(\d+)/);
             if (altMatch && altMatch[1]) {
                 this.roomId = altMatch[1];
-                this.logger.info(`✅ Found room ID: ${this.roomId}`);
+                this.logger.info(`âœ… Found room ID: ${this.roomId}`);
                 return this.roomId;
             }
             
-            this.logger.warn('⚠️  Could not extract room ID from page - user may not be live');
+            this.logger.warn('âš ï¸  Could not extract room ID from page - user may not be live');
             return null;
             
         } catch (error) {
@@ -2624,7 +2659,7 @@ class EulerstreamAdapter extends BaseAdapter {
      */
     async fetchRoomInfo() {
         if (!this.roomId) {
-            this.logger.warn('⚠️  Room ID not available, attempting to fetch...');
+            this.logger.warn('âš ï¸  Room ID not available, attempting to fetch...');
             await this.fetchRoomId();
             if (!this.roomId) {
                 return null;
@@ -2632,7 +2667,7 @@ class EulerstreamAdapter extends BaseAdapter {
         }
         
         try {
-            this.logger.info('📋 Fetching room info from TikTok Webcast API...');
+            this.logger.info('ðŸ“‹ Fetching room info from TikTok Webcast API...');
             
             const params = new URLSearchParams(this._getGiftListParams());
             
@@ -2650,7 +2685,7 @@ class EulerstreamAdapter extends BaseAdapter {
             if (response.data && response.data.data) {
                 const roomData = response.data.data;
                 this._captureRoomIdFromPayload(roomData, 'room/info API');
-                this.logger.info('✅ Room info fetched successfully');
+                this.logger.info('âœ… Room info fetched successfully');
                 
                 // Extract and set stream start time
                 if (roomData.create_time || roomData.start_time) {
@@ -2661,7 +2696,7 @@ class EulerstreamAdapter extends BaseAdapter {
                         this._persistedStreamStart = timestamp;
                         this._streamTimeDetectionMethod = 'TikTok Webcast API (room/info)';
                         
-                        this.logger.info(`✅ Stream start time from API: ${new Date(this.streamStartTime).toISOString()}`);
+                        this.logger.info(`âœ… Stream start time from API: ${new Date(this.streamStartTime).toISOString()}`);
                         
                         // Broadcast updated stream time info
                         if (this.io) {
@@ -2695,25 +2730,40 @@ class EulerstreamAdapter extends BaseAdapter {
     }
 
     async updateGiftCatalog(options = {}) {
+        const requestedOptions = {
+            app_language: options.app_language || options.appLanguage,
+            browser_language: options.browser_language || options.browserLanguage,
+            webcast_language: options.webcast_language || options.webcastLanguage,
+            priority_region: options.priority_region || options.region,
+            tz_name: options.tz_name || options.tzName || options.timeZone,
+            fetchRoomId: options.fetchRoomId
+        };
+        const localeCode = this._normalizeLocaleCode(options.locale_code || options.localeCode);
+
         // Fetch gift catalog from TikTok's Webcast API.
         this._mergeSessionGiftsIntoCatalog();
-        
+
         // Try to get room ID if we don't have it. Gift list can still be fetched without it.
-        if (!this.roomId && this.currentUsername) {
+        if (!this.roomId && requestedOptions.fetchRoomId !== false && this.currentUsername) {
             try {
                 await this.fetchRoomId(this.currentUsername);
             } catch (error) {
                 this.logger.warn(`Could not fetch room ID before gift catalog refresh: ${this._formatHttpError(error)}`);
             }
         }
-        
+
+        const resolvedRequestParams = this._getGiftListParams(requestedOptions);
+        const serializedRequestParams = new URLSearchParams(resolvedRequestParams);
+        const requestMeta = {
+            endpoint: `${this.webcastApiConfig.baseUrl}/gift/list/`,
+            params: { ...resolvedRequestParams }
+        };
+
         try {
-            this.logger.info('🎁 Fetching gift catalog from TikTok Webcast API...');
-            
-            const params = new URLSearchParams(this._getGiftListParams());
-            
-            const url = `${this.webcastApiConfig.baseUrl}/gift/list/?${params}`;
-            
+            this.logger.info('ðŸŽ Fetching gift catalog from TikTok Webcast API...');
+
+            const url = `${requestMeta.endpoint}?${serializedRequestParams}`;
+
             const response = await axios.get(url, {
                 timeout: 10000,
                 headers: {
@@ -2722,12 +2772,14 @@ class EulerstreamAdapter extends BaseAdapter {
                     'Origin': 'https://www.tiktok.com'
                 }
             });
-            
+
             if (response.data && response.data.data && Array.isArray(response.data.data.gifts)) {
                 const giftsToSave = this._normalizeGiftCatalogEntries(response.data.data.gifts);
 
                 if (giftsToSave.length > 0) {
-                    const savedCount = this.db.updateGiftCatalog(giftsToSave);
+                    const savedCount = localeCode !== null
+                        ? this.db.updateGiftCatalog(giftsToSave, localeCode)
+                        : this.db.updateGiftCatalog(giftsToSave);
 
                     this.logger.info(`✅ Gift catalog updated with ${savedCount} gifts from TikTok API`);
 
@@ -2735,6 +2787,7 @@ class EulerstreamAdapter extends BaseAdapter {
                         success: true,
                         message: `Gift catalog updated with ${savedCount} gifts from TikTok Webcast API`,
                         count: savedCount,
+                        request: requestMeta,
                         catalog: this.db.getGiftCatalog()
                     };
                 }
@@ -2744,27 +2797,29 @@ class EulerstreamAdapter extends BaseAdapter {
 
             const catalog = this.db.getGiftCatalog();
             return {
-                success: catalog.length > 0,
-                message: catalog.length > 0
-                    ? `Using existing catalog with ${catalog.length} gifts`
-                    : 'No gifts available. Gifts will be added automatically from stream.',
-                count: catalog.length,
-                catalog: catalog
-            };
-            
+                    success: catalog.length > 0,
+                    message: catalog.length > 0
+                        ? `Using existing catalog with ${catalog.length} gifts`
+                        : 'No gifts available. Gifts will be added automatically from stream.',
+                    count: catalog.length,
+                    request: requestMeta,
+                    catalog: catalog
+                };
+
         } catch (error) {
             const errorMessage = this._formatHttpError(error);
             this.logger.error(`Error fetching gift catalog from TikTok API: ${errorMessage}`);
-            
+
             // Fallback to current catalog
             this._mergeSessionGiftsIntoCatalog();
             const catalog = this.db.getGiftCatalog();
             return {
                 success: catalog.length > 0,
-                message: catalog.length > 0 
+                message: catalog.length > 0
                     ? `API fetch failed. Using existing catalog with ${catalog.length} gifts`
                     : `API fetch failed: ${errorMessage}. Gifts will be added automatically from stream.`,
                 count: catalog.length,
+                request: requestMeta,
                 catalog: catalog
             };
         }
@@ -2990,3 +3045,4 @@ class EulerstreamAdapter extends BaseAdapter {
 EulerstreamAdapter.PING_INTERVAL_MS = 30000;
 
 module.exports = EulerstreamAdapter;
+

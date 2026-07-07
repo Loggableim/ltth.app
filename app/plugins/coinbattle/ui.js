@@ -20,7 +20,92 @@
   };
 
   let translations = {};
-  let currentLanguage = 'en';
+  const SUPPORTED_LANGUAGES = new Set(['en', 'de', 'es', 'fr']);
+  let currentLanguage = resolveCurrentLanguage();
+
+  const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+  const LEGACY_THEME_MAP = {
+    dark: 'night',
+    light: 'day',
+    neon: 'contrast',
+    minimal: 'night'
+  };
+
+  function normalizeTheme(value) {
+    if (VALID_THEMES.has(value)) {
+      return value;
+    }
+    return LEGACY_THEME_MAP[value] || 'night';
+  }
+
+  function normalizeLanguage(value) {
+    if (!value) return null;
+    const normalized = String(value).toLowerCase();
+    return SUPPORTED_LANGUAGES.has(normalized) ? normalized : null;
+  }
+
+  function readAppLanguage() {
+    try {
+      if (window.parent && window.parent !== window) {
+        const parentLocale = window.parent.i18n?.getLocale?.();
+        const normalizedParentLocale = normalizeLanguage(parentLocale);
+        if (normalizedParentLocale) {
+          return normalizedParentLocale;
+        }
+
+        const parentLang = window.parent.document?.documentElement?.getAttribute('lang');
+        const normalizedParentLang = normalizeLanguage(parentLang);
+        if (normalizedParentLang) {
+          return normalizedParentLang;
+        }
+      }
+    } catch (error) {}
+
+    try {
+      const storedLocale = localStorage.getItem('app_locale');
+      const normalizedStoredLocale = normalizeLanguage(storedLocale);
+      if (normalizedStoredLocale) {
+        return normalizedStoredLocale;
+      }
+    } catch (error) {}
+
+    return null;
+  }
+
+  function resolveCurrentLanguage(fallback = 'en') {
+    return readAppLanguage() || normalizeLanguage(fallback) || 'en';
+  }
+
+  function getTranslationValue(key) {
+    return key.split('.').reduce((value, part) => {
+      if (!value || typeof value !== 'object') return undefined;
+      return value[part];
+    }, translations);
+  }
+
+  function applyTranslations() {
+    document.documentElement.lang = currentLanguage;
+
+    document.querySelectorAll('[data-i18n]').forEach((element) => {
+      const key = element.getAttribute('data-i18n');
+      const value = getTranslationValue(key);
+      if (typeof value === 'string') {
+        element.textContent = value;
+      }
+    });
+
+    document.querySelectorAll('[data-i18n-title]').forEach((element) => {
+      const key = element.getAttribute('data-i18n-title');
+      const value = getTranslationValue(key);
+      if (typeof value === 'string') {
+        element.setAttribute('title', value);
+      }
+    });
+
+    const title = getTranslationValue('ui.title') || 'CoinBattle';
+    document.title = `${title} - Admin Panel`;
+
+  }
 
   const overlayResolutionPresets = {
     '1280x720': { width: 1280, height: 720 },
@@ -100,6 +185,7 @@
     initLeaderboardTabs(); // Initialize leaderboard sub-tabs
     loadSeasonInfo(); // Load season info
     initUsersManagement(); // Initialize users management event delegation
+    bindLocaleSync();
   });
 
   /**
@@ -205,12 +291,6 @@
       btnSaveSeason.addEventListener('click', saveSeason);
     }
 
-    // Language selector
-    document.getElementById('languageSelector').addEventListener('change', (e) => {
-      currentLanguage = e.target.value;
-      loadTranslations();
-    });
-    
     // Post-match duration sliders
     document.getElementById('setting-postmatch-lb-duration').addEventListener('input', (e) => {
       document.getElementById('lb-duration-value').textContent = e.target.value;
@@ -219,6 +299,39 @@
     document.getElementById('setting-postmatch-credits-duration').addEventListener('input', (e) => {
       document.getElementById('credits-duration-value').textContent = e.target.value;
     });
+  }
+
+  function bindLocaleSync() {
+    const syncLocale = async () => {
+      const nextLanguage = resolveCurrentLanguage(currentLanguage);
+      if (nextLanguage !== currentLanguage) {
+        currentLanguage = nextLanguage;
+        await loadTranslations();
+      } else {
+        applyTranslations();
+      }
+    };
+
+    window.addEventListener('focus', syncLocale);
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'app_locale') {
+        syncLocale();
+      }
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        syncLocale();
+      }
+    });
+
+    try {
+      if (window.parent && window.parent !== window) {
+        new MutationObserver(syncLocale).observe(window.parent.document.documentElement, {
+          attributes: true,
+          attributeFilter: ['lang']
+        });
+      }
+    } catch (error) {}
   }
 
   /**
@@ -485,7 +598,21 @@
 
       if (result.success) {
         const config = result.data;
-        currentState.config = config;
+        const appLanguage = readAppLanguage();
+        const configLanguage = normalizeLanguage(config.language);
+        const nextLanguage = appLanguage || configLanguage || currentLanguage;
+
+        if (nextLanguage !== currentLanguage) {
+          currentLanguage = nextLanguage;
+          await loadTranslations();
+        } else {
+          applyTranslations();
+        }
+
+        currentState.config = {
+          ...config,
+          theme: normalizeTheme(config.theme)
+        };
 
         // Populate form fields
         document.getElementById('match-mode').value = config.mode || 'solo';
@@ -497,7 +624,7 @@
         document.getElementById('setting-extension-threshold').value = config.extensionThreshold || 15;
         document.getElementById('setting-extension-duration').value = config.extensionDuration || 60;
         document.getElementById('setting-team-assignment').value = config.teamAssignment || 'random';
-        document.getElementById('setting-theme').value = config.theme || 'dark';
+        document.getElementById('setting-theme').value = normalizeTheme(config.theme);
         document.getElementById('setting-skin').value = config.skin || 'gold';
         document.getElementById('setting-layout').value = config.layout || 'fullscreen';
         document.getElementById('setting-fontsize').value = config.fontSize || 16;
@@ -548,7 +675,7 @@
       extensionThreshold: parseInt(document.getElementById('setting-extension-threshold').value),
       extensionDuration: parseInt(document.getElementById('setting-extension-duration').value),
       teamAssignment: document.getElementById('setting-team-assignment').value,
-      theme: document.getElementById('setting-theme').value,
+      theme: normalizeTheme(document.getElementById('setting-theme').value),
       skin: document.getElementById('setting-skin').value,
       layout: document.getElementById('setting-layout').value,
       fontSize: parseInt(document.getElementById('setting-fontsize').value),
@@ -606,7 +733,7 @@
   function updateOverlayURL() {
     const { width, height } = getOverlayDimensions();
     const params = new URLSearchParams({
-      theme: document.getElementById('setting-theme')?.value || 'dark',
+      theme: normalizeTheme(document.getElementById('setting-theme')?.value || 'night'),
       skin: document.getElementById('setting-skin')?.value || 'gold',
       layout: document.getElementById('setting-layout')?.value || 'fullscreen',
       showAvatars: String(document.getElementById('setting-show-avatars')?.checked !== false),
@@ -907,11 +1034,14 @@
    */
   async function loadTranslations() {
     try {
-      const response = await fetch(`/plugins/coinbattle/locales/${currentLanguage}.json`);
+      const response = await fetch(`/plugins/coinbattle/locales/${currentLanguage}.json`, {
+        cache: 'no-store'
+      });
       translations = await response.json();
-      // Could apply translations here
+      applyTranslations();
     } catch (error) {
       console.error('Error loading translations:', error);
+      applyTranslations();
     }
   }
 

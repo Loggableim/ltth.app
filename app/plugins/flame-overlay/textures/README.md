@@ -1,6 +1,6 @@
-# Texture Assets for Flame Overlay
+# Texture Assets for Visual FX Frame
 
-This directory contains texture assets used by the WebGL flame overlay renderer.
+This directory contains texture assets used by the WebGL Visual FX Frame renderer.
 
 ## Existing Textures
 

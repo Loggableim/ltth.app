@@ -6,6 +6,133 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>STT Ticker</title>
+  <script>
+    (function () {
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+      const VALID_DESIGNS = new Set([
+        'dual-language',
+        'classic',
+        'modern',
+        'minimal',
+        'neon',
+        'glass',
+        'compact',
+        'cinematic',
+        'scrolling',
+        'fliessend',
+        'starwars',
+        'ticker3',
+        'karaoke'
+      ]);
+      const VALID_POSITIONS = new Set([
+        'bottom-center',
+        'bottom-left',
+        'bottom-right',
+        'top-center',
+        'top-left',
+        'top-right',
+        'middle-center'
+      ]);
+      const DEFAULT_OVERLAY_CONFIG = {
+        design: 'dual-language',
+        position: 'bottom-center',
+        maxLines: 2,
+        fontSize: '36px'
+      };
+
+      function normalizeTheme(value) {
+        const theme = String(value || '').toLowerCase();
+        if (theme === 'day' || theme === 'light') return 'day';
+        if (theme === 'night' || theme === 'dark' || theme === 'minimal') return 'night';
+        if (theme === 'contrast' || theme === 'neon') return 'contrast';
+        if (theme === 'vision-impaired' || theme === 'highcontrast' || theme === 'high-contrast') return 'vision-impaired';
+        return 'night';
+      }
+
+      function normalizeDesign(value) {
+        const design = String(value || '').toLowerCase().trim();
+        return VALID_DESIGNS.has(design) ? design : DEFAULT_OVERLAY_CONFIG.design;
+      }
+
+      function normalizePosition(value) {
+        const position = String(value || '').toLowerCase().trim();
+        return VALID_POSITIONS.has(position) ? position : DEFAULT_OVERLAY_CONFIG.position;
+      }
+
+      function normalizeMaxLines(value) {
+        const parsed = Number.parseInt(String(value || '').trim(), 10);
+        if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_OVERLAY_CONFIG.maxLines;
+        return Math.min(parsed, 10);
+      }
+
+      function normalizeFontSize(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return DEFAULT_OVERLAY_CONFIG.fontSize;
+        if (/^\d+(\.\d+)?$/.test(raw)) return `${raw}px`;
+        if (/^\d+(\.\d+)?(px|rem|em|vw|vh|%)$/.test(raw)) return raw;
+        const parsed = Number.parseFloat(raw);
+        if (Number.isFinite(parsed) && parsed > 0) return `${parsed}px`;
+        return DEFAULT_OVERLAY_CONFIG.fontSize;
+      }
+
+      function readOverlayConfig() {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          return {
+            design: normalizeDesign(params.get('design')),
+            position: normalizePosition(params.get('position')),
+            maxLines: normalizeMaxLines(params.get('maxLines')),
+            fontSize: normalizeFontSize(params.get('fontSize'))
+          };
+        } catch (error) {
+          return { ...DEFAULT_OVERLAY_CONFIG };
+        }
+      }
+
+      window.__sttTickerOverlayConfig = readOverlayConfig();
+
+      function readTheme() {
+        try {
+          const param = new URLSearchParams(window.location.search).get('theme');
+          if (VALID_THEMES.has(normalizeTheme(param))) return normalizeTheme(param);
+        } catch (error) {}
+
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (VALID_THEMES.has(normalizeTheme(parentTheme))) return normalizeTheme(parentTheme);
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (VALID_THEMES.has(normalizeTheme(value))) return normalizeTheme(value);
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+      }
+
+      syncTheme();
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
@@ -15,17 +142,27 @@
       font-family: 'Segoe UI', Tahoma, sans-serif;
       color: #FFFFFF;
     }
+    body {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0 24px 32px;
+    }
     /* Container für beide Modi */
     #lines {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 60px;
+      position: relative;
+      width: calc(100vw - 48px);
+      max-width: none;
       text-align: center;
       font-size: 72px;
       font-weight: 700;
       line-height: 1.1;
-      padding: 20px;
+      padding: 24px 28px;
+      border-radius: 26px;
+      background: rgba(0, 0, 0, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
     .line {
       display: block;
@@ -37,16 +174,21 @@
     .line.muted { opacity: 0.25; }
 
     /* Multi-Language Modus: jede Zeile hat eigenes Label + Farbe */
-    #multi-lines {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 60px;
+    #multi-lines,
+    #dual-lines {
+      position: relative;
+      width: calc(100vw - 48px);
+      max-width: none;
       text-align: center;
       font-size: 48px;
       font-weight: 600;
       line-height: 1.2;
-      padding: 20px;
+      padding: 22px 28px;
+      border-radius: 26px;
+      background: rgba(0, 0, 0, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       display: none;
     }
     .multi-line {
@@ -58,7 +200,7 @@
       padding: 4px 0;
     }
     .multi-line .lang-label {
-      font-size: 18px;
+      font-size: 0.42em;
       font-weight: 700;
       text-transform: uppercase;
       opacity: 0.7;
@@ -69,10 +211,28 @@
     .multi-line .lang-text {
       flex: 1;
       text-align: left;
-      max-width: 80%;
+      max-width: none;
+      width: 100%;
       text-shadow: 0 2px 8px rgba(0,0,0,0.8);
     }
-  </style>
+
+    html[data-theme="vision-impaired"] .multi-line {
+      gap: 20px;
+    }
+
+    html[data-theme="vision-impaired"] .multi-line .lang-label {
+      min-width: 72px;
+      font-size: 0.5em;
+      letter-spacing: 0.08em;
+    }
+
+    html[data-theme="vision-impaired"] .multi-line .lang-text {
+      font-size: 1.08em;
+      max-width: none;
+      width: 100%;
+      letter-spacing: 0.03em;
+    }
+    </style>
 </head>
 <body>
   <!-- Classic 3-Zeilen Ring-Puffer (für dual-language / classic Modus) -->
@@ -81,6 +241,9 @@
     <div class="line dim"   id="line-1"></div>
     <div class="line"       id="line-0"></div>
   </div>
+
+  <!-- Dual-Language Modus -->
+  <div id="dual-lines"></div>
 
   <!-- Multi-Language N-Zeilen Modus -->
   <div id="multi-lines"></div>
@@ -95,11 +258,238 @@
     const line1 = document.getElementById('line-1');
     const line2 = document.getElementById('line-2');
     const linesContainer = document.getElementById('lines');
+    const dualContainer = document.getElementById('dual-lines');
     const multiContainer = document.getElementById('multi-lines');
+    const overlayConfig = window.__sttTickerOverlayConfig || {
+      design: 'dual-language',
+      position: 'bottom-center',
+      maxLines: 2,
+      fontSize: '36px'
+    };
+    const textNodesSelector = '.line, .lang-label, .lang-text';
 
     const ring = ['', '', ''];
     let ringFilled = 0;
     let lastSeenSegId = null;
+    function getThemeStyles(theme) {
+      const isDay = theme === 'day';
+      const isHighContrast = theme === 'contrast' || theme === 'vision-impaired';
+      const isVisionImpaired = theme === 'vision-impaired';
+      return {
+        background: isDay ? 'rgba(255, 255, 255, 0.88)' : isVisionImpaired ? 'rgba(0, 0, 0, 0.99)' : isHighContrast ? 'rgba(0, 0, 0, 0.97)' : 'rgba(0, 0, 0, 0.72)',
+        borderColor: isVisionImpaired ? '#facc15' : theme === 'contrast' ? '#facc15' : 'rgba(255, 255, 255, 0.08)',
+        color: isDay ? '#0f172a' : isVisionImpaired ? '#fffdf0' : isHighContrast ? '#fff7cc' : '#ffffff',
+        textShadow: isDay ? '0 1px 2px rgba(255,255,255,0.45)' : isVisionImpaired ? '0 0 14px rgba(0,0,0,0.98)' : '0 2px 8px rgba(0,0,0,0.8)',
+        boxShadow: isVisionImpaired ? '0 0 0 7px rgba(250, 204, 21, 0.3), 0 0 40px rgba(250, 204, 21, 0.2)' : 'none',
+        fontWeight: isVisionImpaired ? '900' : '700',
+        letterSpacing: isVisionImpaired ? '0.06em' : '0.01em',
+        lineHeight: isVisionImpaired ? '1.1' : '1.2'
+      };
+    }
+
+    function getDesignStyles(design) {
+      switch (design) {
+        case 'minimal':
+          return {
+            width: 'auto',
+            maxWidth: 'calc(100vw - 24px)',
+            padding: '0',
+            borderRadius: '0',
+            background: 'transparent',
+            borderColor: 'transparent',
+            backdropFilter: 'none',
+            WebkitBackdropFilter: 'none',
+            boxShadow: 'none',
+            textAlign: 'left'
+          };
+        case 'compact':
+          return {
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
+            padding: '14px 18px',
+            borderRadius: '18px',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            boxShadow: '0 10px 26px rgba(0,0,0,0.2)'
+          };
+        case 'modern':
+          return {
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
+            padding: '20px 30px',
+            borderRadius: '28px',
+            backdropFilter: 'blur(18px) saturate(115%)',
+            WebkitBackdropFilter: 'blur(18px) saturate(115%)',
+            boxShadow: '0 18px 56px rgba(0,0,0,0.24)'
+          };
+        case 'glass':
+          return {
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
+            padding: '22px 30px',
+            borderRadius: '28px',
+            background: 'rgba(10, 18, 32, 0.52)',
+            borderColor: 'rgba(255, 255, 255, 0.16)',
+            backdropFilter: 'blur(20px) saturate(120%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(120%)',
+            boxShadow: '0 18px 60px rgba(0,0,0,0.28)'
+          };
+        case 'neon':
+          return {
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
+            padding: '24px 28px',
+            borderRadius: '26px',
+            background: 'rgba(0, 0, 0, 0.82)',
+            borderColor: '#facc15',
+            boxShadow: '0 0 0 4px rgba(250, 204, 21, 0.12), 0 0 32px rgba(250, 204, 21, 0.22)'
+          };
+        case 'cinematic':
+          return {
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
+            padding: '18px 34px',
+            borderRadius: '16px',
+            textAlign: 'left',
+            letterSpacing: '0.04em',
+            lineHeight: '1.12'
+          };
+        case 'scrolling':
+        case 'fliessend':
+          return {
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
+            padding: '18px 26px',
+            borderRadius: '18px',
+            textAlign: 'left',
+            lineHeight: '1.12'
+          };
+        case 'starwars':
+          return {
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
+            padding: '22px 32px 30px',
+            borderRadius: '12px',
+            textAlign: 'left',
+            background: 'rgba(0, 0, 0, 0.92)',
+            borderColor: 'rgba(250, 204, 21, 0.45)',
+            boxShadow: '0 16px 50px rgba(0,0,0,0.3)',
+            color: '#facc15',
+            textShadow: '0 0 12px rgba(0,0,0,0.85)',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase'
+          };
+        case 'ticker3':
+          return {
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
+            padding: '20px 28px',
+            borderRadius: '24px',
+            lineHeight: '1.15'
+          };
+        case 'karaoke':
+          return {
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
+            padding: '24px 28px',
+            borderRadius: '26px',
+            boxShadow: '0 14px 40px rgba(0,0,0,0.2)'
+          };
+        case 'dual-language':
+        case 'classic':
+        default:
+          return {
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
+            padding: '24px 28px',
+            borderRadius: '26px'
+          };
+      }
+    }
+
+    function getPositionStyles(position) {
+      switch (position) {
+        case 'bottom-left':
+          return { alignItems: 'flex-end', justifyContent: 'flex-start', padding: '0 24px 32px' };
+        case 'bottom-right':
+          return { alignItems: 'flex-end', justifyContent: 'flex-end', padding: '0 24px 32px' };
+        case 'top-center':
+          return { alignItems: 'flex-start', justifyContent: 'center', padding: '32px 24px 0' };
+        case 'top-left':
+          return { alignItems: 'flex-start', justifyContent: 'flex-start', padding: '32px 24px 0' };
+        case 'top-right':
+          return { alignItems: 'flex-start', justifyContent: 'flex-end', padding: '32px 24px 0' };
+        case 'middle-center':
+          return { alignItems: 'center', justifyContent: 'center', padding: '24px' };
+        case 'bottom-center':
+        default:
+          return { alignItems: 'flex-end', justifyContent: 'center', padding: '0 24px 32px' };
+      }
+    }
+
+    function setActiveMode(mode) {
+      if (linesContainer) linesContainer.style.display = mode === 'classic' ? 'block' : 'none';
+      if (dualContainer) dualContainer.style.display = mode === 'dual' ? 'block' : 'none';
+      if (multiContainer) multiContainer.style.display = mode === 'multi' ? 'block' : 'none';
+    }
+
+    function updateClassicVisibility() {
+      const visibleCount = Math.min(3, overlayConfig.maxLines || 2);
+      [line0, line1, line2].forEach((line, index) => {
+        if (!line) return;
+        line.style.display = index < visibleCount ? 'block' : 'none';
+      });
+    }
+
+    function applyOverlayStyles() {
+      const theme = document.documentElement.getAttribute('data-theme') || 'night';
+      const themeStyles = getThemeStyles(theme);
+      const designStyles = getDesignStyles(overlayConfig.design);
+      const positionStyles = getPositionStyles(overlayConfig.position);
+      const panels = [linesContainer, dualContainer, multiContainer].filter(Boolean);
+
+      document.body.dataset.design = overlayConfig.design;
+      document.body.dataset.position = overlayConfig.position;
+      document.body.style.alignItems = positionStyles.alignItems;
+      document.body.style.justifyContent = positionStyles.justifyContent;
+      document.body.style.padding = positionStyles.padding;
+      document.documentElement.style.setProperty('--overlay-font-size', overlayConfig.fontSize);
+
+      for (const panel of panels) {
+        panel.style.width = designStyles.width || 'calc(100vw - 48px)';
+        panel.style.maxWidth = designStyles.maxWidth || 'none';
+        panel.style.padding = designStyles.padding || '24px 28px';
+        panel.style.borderRadius = designStyles.borderRadius || '26px';
+        panel.style.background = designStyles.background || themeStyles.background;
+        panel.style.border = `1px solid ${designStyles.borderColor || themeStyles.borderColor}`;
+        panel.style.backdropFilter = designStyles.backdropFilter || 'blur(12px)';
+        panel.style.webkitBackdropFilter = designStyles.WebkitBackdropFilter || designStyles.backdropFilter || 'blur(12px)';
+        panel.style.boxShadow = designStyles.boxShadow || themeStyles.boxShadow;
+        panel.style.color = designStyles.color || themeStyles.color;
+        panel.style.fontWeight = designStyles.fontWeight || themeStyles.fontWeight;
+        panel.style.letterSpacing = designStyles.letterSpacing || themeStyles.letterSpacing;
+        panel.style.lineHeight = designStyles.lineHeight || themeStyles.lineHeight;
+        panel.style.textAlign = designStyles.textAlign || 'center';
+        panel.style.fontSize = overlayConfig.fontSize;
+        panel.style.textTransform = designStyles.textTransform || 'none';
+      }
+
+      document.querySelectorAll(textNodesSelector).forEach((el) => {
+        if (designStyles.color) {
+          el.style.color = designStyles.color;
+        } else if (!el.style.color) {
+          el.style.color = themeStyles.color;
+        }
+        el.style.textShadow = designStyles.textShadow || themeStyles.textShadow;
+        el.style.fontWeight = designStyles.fontWeight || themeStyles.fontWeight;
+        el.style.letterSpacing = designStyles.letterSpacing || themeStyles.letterSpacing;
+        if ((document.documentElement.getAttribute('data-theme') || '').toLowerCase() === 'vision-impaired') {
+          el.style.fontSize = '1.08em';
+        }
+      });
+
+      updateClassicVisibility();
+    }
 
     function pushLine(text) {
       text = String(text || '').trim();
@@ -113,44 +503,89 @@
     }
 
     function renderClassic() {
+      setActiveMode('classic');
       line0.textContent = ring[2];
       line1.textContent = ring[1];
       line2.textContent = ring[0];
+      updateClassicVisibility();
     }
 
     function clearAll() {
       ring[0] = ring[1] = ring[2] = '';
       ringFilled = 0;
+      lastSeenSegId = null;
+      setActiveMode('classic');
       renderClassic();
+      if (dualContainer) dualContainer.innerHTML = '';
       multiContainer.innerHTML = '';
+    }
+
+    function renderDual(dual) {
+      if (!dual || !dual.enabled) {
+        setActiveMode('classic');
+        return;
+      }
+
+      const topText = String(dual.topText || '').trim();
+      const bottomText = String(dual.bottomText || '').trim();
+      if (!topText && !bottomText) {
+        setActiveMode('classic');
+        return;
+      }
+
+      setActiveMode('dual');
+
+      const currentHTML = dualContainer.innerHTML;
+      const newHTML = [
+        {
+          label: dual.topLanguage || 'TOP',
+          text: topText,
+          color: dual.topColor || '#FFD700'
+        },
+        {
+          label: dual.bottomLanguage || 'BOTTOM',
+          text: bottomText,
+          color: dual.bottomColor || '#FFFFFF'
+        }
+      ].map((line) => `<div class="multi-line">
+          <span class="lang-label" style="color:${line.color}">${escapeHtml(String(line.label || '').toUpperCase())}</span>
+          <span class="lang-text" style="color:${line.color}">${escapeHtml(line.text)}</span>
+        </div>`).join('');
+
+      if (newHTML !== currentHTML) {
+        dualContainer.innerHTML = newHTML;
+      }
+
+      applyOverlayStyles();
     }
 
     // ===== Multi-Language N-Zeilen Modus =====
     function renderMulti(lines) {
       if (!lines || !Array.isArray(lines) || lines.length === 0) {
-        multiContainer.style.display = 'none';
-        linesContainer.style.display = 'block';
+        setActiveMode('classic');
         return;
       }
 
-      linesContainer.style.display = 'none';
-      multiContainer.style.display = 'block';
+      setActiveMode('multi');
 
       // Prüfe ob sich der Inhalt geändert hat (vermeide DOM-Flutter)
       const currentHTML = multiContainer.innerHTML;
       let newHTML = '';
-      for (const line of lines) {
+      const visibleLines = lines.slice(0, overlayConfig.maxLines || 2);
+      for (const line of visibleLines) {
         const langLabel = (line.language || '').toUpperCase();
         const text = line.text || '';
         const color = line.color || '#FFFFFF';
         newHTML += `<div class="multi-line">
           <span class="lang-label" style="color:${color}">${langLabel}</span>
-          <span class="lang-text" style="color:${color}">${escapeHtml(text)}</span>
+      <span class="lang-text" style="color:${color}">${escapeHtml(text)}</span>
         </div>`;
       }
       if (newHTML !== currentHTML) {
         multiContainer.innerHTML = newHTML;
       }
+
+      applyOverlayStyles();
     }
 
     function escapeHtml(str) {
@@ -160,6 +595,10 @@
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+    }
+
+    function applyThemeStyles() {
+      applyOverlayStyles();
     }
 
     // ===== Socket.IO =====
@@ -176,10 +615,14 @@
         return;
       }
 
+      if (overlayConfig.design === 'dual-language' && data.dual && (String(data.dual.topText || '').trim() || String(data.dual.bottomText || '').trim())) {
+        renderDual(data.dual);
+        return;
+      }
+
       // Fallback: Classic Modus (segments / text / dual)
       // Zeige wieder den Classic-Container
-      multiContainer.style.display = 'none';
-      linesContainer.style.display = 'block';
+      setActiveMode('classic');
 
       if (Array.isArray(data.segments) && data.segments.length > 0) {
         const segs = data.segments;
@@ -212,6 +655,12 @@
     });
 
     socket.on('stt-ticker:clear', () => clearAll());
+
+    applyThemeStyles();
+    new MutationObserver(applyThemeStyles).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
 
     // Tastatur-Shortcut für Testen
     document.addEventListener('keydown', (e) => {

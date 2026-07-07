@@ -6,6 +6,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Control - Modern Configuration</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function() {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
+            }
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+            }
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <script src="/js/i18n-client.js"></script>
     
     <style>
@@ -31,8 +67,8 @@
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            max-width: none;
+            margin: 0;
             padding: 2rem 1.5rem;
         }
 
@@ -198,6 +234,25 @@
             outline: none;
             border-color: var(--color-accent-primary);
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        html[data-theme="contrast"] .form-control,
+        html[data-theme="contrast"] .form-select,
+        html[data-theme="vision-impaired"] .form-control,
+        html[data-theme="vision-impaired"] .form-select,
+        html[data-theme="contrast"] .form-input,
+        html[data-theme="vision-impaired"] .form-input {
+            background: #000 !important;
+            color: #fff !important;
+            border: 2px solid #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .form-control,
+        html[data-theme="vision-impaired"] .form-select,
+        html[data-theme="vision-impaired"] .form-input {
+            min-height: 46px;
+            font-size: 1rem;
+            font-weight: 700;
         }
 
         /* Toggle Switch */
@@ -499,7 +554,7 @@
         .preview-canvas-wrapper {
             position: relative;
             width: 100%;
-            max-width: 640px;
+            max-width: 1400px;
             margin: 0 auto 1rem;
             background: #000;
             border-radius: 8px;
@@ -570,6 +625,167 @@
 
         .preview-warning i {
             font-size: 1.25rem;
+        }
+
+        html[data-theme="vision-impaired"] .header,
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .preview-container,
+        html[data-theme="vision-impaired"] .stat-card {
+            background: #000;
+            color: #fff;
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .header-title h1,
+        html[data-theme="vision-impaired"] .card-header h3,
+        html[data-theme="vision-impaired"] .stat-value,
+        html[data-theme="vision-impaired"] .preview-stat-value {
+            color: #facc15;
+            -webkit-text-fill-color: currentColor;
+            background: none;
+        }
+
+        html[data-theme="vision-impaired"] .stat-label,
+        html[data-theme="vision-impaired"] .preview-stat-label,
+        html[data-theme="vision-impaired"] .card p,
+        html[data-theme="vision-impaired"] .help-text,
+        html[data-theme="vision-impaired"] .alert,
+        html[data-theme="vision-impaired"] .preview-warning {
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-secondary {
+            border: 3px solid #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary {
+            background: #facc15;
+            color: #000;
+        }
+
+        html[data-theme="vision-impaired"] .btn-secondary {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="vision-impaired"] .btn-danger {
+            background: #000;
+            color: #fecaca;
+            border: 3px solid #ef4444;
+        }
+
+        html[data-theme="vision-impaired"] .btn-danger:hover {
+            background: #111;
+            color: #fff7cc;
+            border-color: #f87171;
+        }
+    
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .preview-container,
+        html[data-theme="cid"] .preview-canvas-wrapper,
+        html[data-theme="cid"] .preview-stats {
+            max-width: none;
+            width: 100%;
+        }
+
+        html[data-theme="vision-impaired"] .preview-canvas-wrapper {
+            max-width: none;
+            width: 100%;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
         }
     </style>
 </head>

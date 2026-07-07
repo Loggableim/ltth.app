@@ -8,17 +8,38 @@ const {
   assertPathInside,
   resolvePluginEntryPath
 } = require('./plugin-paths');
+const { hasStoreAdminAccess } = require('./clerk-store-auth');
 
 const DEFAULT_OFFICIAL_STORE_URL = process.env.LTTH_PLUGIN_STORE_URL || 'https://ltth.app/plugin-store.json';
 
 const PREINSTALLED_PLUGIN_IDS = new Set([
   'chatango',
+  'api-bridge',
+  'clarityhud',
+  'gcce',
   'goals',
-  'lastevent-spotlight',
+  'spotlight',
   'soundboard',
   'toptier',
   'tts',
   'webgpu-emoji-rain'
+]);
+
+const SUBSCRIBER_PLUGIN_IDS = new Set([
+  'animazingpal',
+  'sidekick',
+  'streamalchemy',
+  'talking-heads',
+  'vdoninja'
+]);
+
+const CLOSED_BETA_PLUGIN_IDS = new Set([
+  'interactive-story',
+  'openshock'
+]);
+
+const ADMIN_PLUGIN_IDS = new Set([
+  'store-admin'
 ]);
 
 function normalizeLocale(locale = 'en') {
@@ -131,6 +152,67 @@ function getCategoryFromType(type) {
   return 'plugin';
 }
 
+function normalizeBadges(badges = [], access = { type: 'public' }) {
+  const items = Array.isArray(badges) ? badges.slice() : [];
+  if (access.type === 'closed-beta') {
+    items.push('closed-beta');
+  }
+  if (access.type === 'subscriber') {
+    items.push('subscriber-only');
+  }
+  if (access.type === 'admin') {
+    items.push('admin-only');
+  }
+
+  return Array.from(new Set(items.filter(Boolean)));
+}
+
+function normalizeList(value = []) {
+  return Array.isArray(value)
+    ? value.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+}
+
+function normalizeRequirements(requirements = {}) {
+  return {
+    secrets: normalizeList(requirements.secrets),
+    externalAccounts: normalizeList(requirements.externalAccounts),
+    hardware: normalizeList(requirements.hardware),
+    permissions: normalizeList(requirements.permissions)
+  };
+}
+
+function normalizeChangelog(changelog = []) {
+  return Array.isArray(changelog)
+    ? changelog.map((entry) => ({
+        version: String(entry.version || '').trim(),
+        date: String(entry.date || '').trim() || null,
+        notes: normalizeList(entry.notes)
+      })).filter((entry) => entry.version || entry.notes.length > 0)
+    : [];
+}
+
+function normalizeSupport(support = {}) {
+  return {
+    docsUrl: String(support.docsUrl || '').trim() || null,
+    feedbackEnabled: support.feedbackEnabled !== false
+  };
+}
+
+function normalizeQuality(plugin = {}, access = { type: 'public' }) {
+  const rawBadges = Array.isArray(plugin.badges) ? plugin.badges : [];
+  const quality = plugin.quality || {};
+  const badges = normalizeBadges([
+    ...rawBadges,
+    ...normalizeList(quality.badges)
+  ], access);
+
+  return {
+    level: String(quality.level || plugin.channel || 'open-beta').trim(),
+    badges
+  };
+}
+
 class PluginStore {
   constructor(pluginLoader, options = {}) {
     this.pluginLoader = pluginLoader;
@@ -141,6 +223,7 @@ class PluginStore {
     this.cache = new Map();
     this.stateFile = options.stateFile || this.getDefaultStateFile();
     this.state = readJsonFile(this.stateFile, { communityEnabled: false, sources: [] });
+    this.closedStore = options.closedStore === true;
   }
 
   getDefaultStateFile() {
@@ -167,7 +250,7 @@ class PluginStore {
       }
     ];
 
-    if (this.state.communityEnabled) {
+    if (!this.closedStore && this.state.communityEnabled) {
       for (const source of this.state.sources || []) {
         sources.push({
           id: source.id,
@@ -185,6 +268,7 @@ class PluginStore {
   getSourceState() {
     return {
       communityEnabled: this.state.communityEnabled === true,
+      closedStore: this.closedStore,
       sources: this.getSources()
     };
   }
@@ -302,6 +386,7 @@ class PluginStore {
         }
 
         const id = assertPluginId(manifest.id);
+        const access = this.normalizeAccess(manifest.access || {}, id);
         plugins.push({
           id,
           name: id === 'webgpu-emoji-rain'
@@ -310,10 +395,13 @@ class PluginStore {
           description: manifest.descriptions || { en: manifest.description || '' },
           version: manifest.version || '0.0.0',
           author: manifest.author || '',
+          icon: manifest.icon || null,
+          logo: manifest.logo || null,
           category: getCategoryFromType(manifest.type),
           channel: 'open-beta',
           pricing: { type: 'free', amount: 0, currency: 'EUR' },
-          badges: PREINSTALLED_PLUGIN_IDS.has(id) ? ['preinstalled'] : [],
+          access,
+          badges: normalizeBadges(PREINSTALLED_PLUGIN_IDS.has(id) ? ['preinstalled'] : [], access),
           packageUrl: '',
           sha256: ''
         });
@@ -370,6 +458,7 @@ class PluginStore {
     const installedVersion = installed?.version || null;
     const updateAvailable = installedVersion ? compareVersions(storeVersion, installedVersion) > 0 : false;
     const pricing = this.normalizePricing(plugin.pricing);
+    const access = this.normalizeAccess(plugin.access, id);
 
     return {
       id,
@@ -384,16 +473,66 @@ class PluginStore {
       installed: Boolean(installed),
       enabled: installed?.enabled === true,
       updateAvailable,
+      icon: plugin.icon || null,
+      logo: plugin.logo || null,
       category: plugin.category || 'other',
       channel: plugin.channel || 'stable',
       pricing,
-      badges: Array.isArray(plugin.badges) ? plugin.badges : [],
+      access,
+      quality: normalizeQuality(plugin, access),
+      requirements: normalizeRequirements(plugin.requirements),
+      changelog: normalizeChangelog(plugin.changelog),
+      support: normalizeSupport(plugin.support),
+      updateSafety: {
+        rollbackProtected: true
+      },
+      badges: normalizeBadges(plugin.badges, access),
       author: plugin.author || '',
       minLtthVersion: plugin.minLtthVersion || null,
       catalogOnly: plugin.catalogOnly === true,
       packageUrl: plugin.packageUrl || '',
+      sha256: plugin.sha256 || '',
       screenshots: Array.isArray(plugin.screenshots) ? plugin.screenshots : []
     };
+  }
+
+  normalizeAccess(access = {}, pluginId = '') {
+    const safePluginId = assertPluginId(pluginId);
+    const type = String(access?.type || '').trim().toLowerCase();
+
+    if (ADMIN_PLUGIN_IDS.has(safePluginId) || type === 'admin') {
+      return {
+        type: 'admin',
+        hidden: access.hidden !== false
+      };
+    }
+
+    if (SUBSCRIBER_PLUGIN_IDS.has(safePluginId) || type === 'subscriber') {
+      return {
+        type: 'subscriber',
+        hidden: access.hidden === true
+      };
+    }
+
+    if (CLOSED_BETA_PLUGIN_IDS.has(safePluginId) || type === 'closed-beta') {
+      return {
+        type: 'closed-beta',
+        hidden: access.hidden === true
+      };
+    }
+
+    return {
+      type: 'public',
+      hidden: access.hidden === true
+    };
+  }
+
+  shouldIncludePluginForAccount(plugin, account = {}) {
+    if (plugin.access?.type === 'admin' && plugin.access.hidden === true) {
+      return hasStoreAdminAccess(account);
+    }
+
+    return true;
   }
 
   normalizePricing(pricing) {
@@ -412,7 +551,7 @@ class PluginStore {
     return { type: 'free', amount: 0, currency: 'EUR' };
   }
 
-  async listPlugins({ locale = 'en', forceRefresh = false } = {}) {
+  async listPlugins({ locale = 'en', forceRefresh = false, account = {} } = {}) {
     const installedPlugins = this.getInstalledPlugins();
     const plugins = [];
     const errors = [];
@@ -422,13 +561,19 @@ class PluginStore {
       try {
         const registry = await this.fetchRegistry(source, forceRefresh);
         for (const plugin of registry.plugins) {
-          plugins.push(this.normalizeStorePlugin(plugin, source, locale, installedPlugins));
+          const normalized = this.normalizeStorePlugin(plugin, source, locale, installedPlugins);
+          if (this.shouldIncludePluginForAccount(normalized, account)) {
+            plugins.push(normalized);
+          }
         }
       } catch (error) {
         if (source.official) {
           const fallbackRegistry = this.buildBundledOfficialRegistry();
           for (const plugin of fallbackRegistry.plugins) {
-            plugins.push(this.normalizeStorePlugin(plugin, source, locale, installedPlugins));
+            const normalized = this.normalizeStorePlugin(plugin, source, locale, installedPlugins);
+            if (this.shouldIncludePluginForAccount(normalized, account)) {
+              plugins.push(normalized);
+            }
           }
           notices.push({
             sourceId: source.id,
@@ -444,7 +589,8 @@ class PluginStore {
     }
 
     return {
-      communityEnabled: this.state.communityEnabled === true,
+      communityEnabled: this.closedStore ? false : this.state.communityEnabled === true,
+      closedStore: this.closedStore,
       sources: this.getSources(),
       plugins,
       errors,
@@ -517,6 +663,16 @@ class PluginStore {
     const { plugin } = await this.findPlugin(sourceId, safePluginId);
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-plugin-store-'));
     const extractDir = path.join(tempDir, 'extract');
+    const rollbackDir = path.join(tempDir, 'rollback');
+    const targetDir = assertPathInside(
+      this.pluginLoader.pluginsDir,
+      path.join(this.pluginLoader.pluginsDir, safePluginId),
+      'Plugin install path'
+    );
+    const previousState = this.pluginLoader.state[safePluginId]
+      ? { ...this.pluginLoader.state[safePluginId] }
+      : null;
+    let rollbackAvailable = false;
 
     try {
       fs.mkdirSync(extractDir, { recursive: true });
@@ -524,13 +680,10 @@ class PluginStore {
       await extract(zipPath, extractDir);
       const packageRoot = findManifestRoot(extractDir);
       const manifest = this.validateExtractedPackage(packageRoot, safePluginId);
-      const targetDir = assertPathInside(
-        this.pluginLoader.pluginsDir,
-        path.join(this.pluginLoader.pluginsDir, safePluginId),
-        'Plugin install path'
-      );
 
       if (fs.existsSync(targetDir)) {
+        copyDirectory(targetDir, rollbackDir);
+        rollbackAvailable = true;
         await this.pluginLoader.unloadPlugin(safePluginId);
         fs.rmSync(targetDir, { recursive: true, force: true });
       }
@@ -547,8 +700,29 @@ class PluginStore {
         id: manifest.id,
         name: manifest.name,
         version: manifest.version || plugin.version || '0.0.0',
-        enabled: false
+        enabled: false,
+        rollbackProtected: rollbackAvailable
       };
+    } catch (error) {
+      if (rollbackAvailable && fs.existsSync(rollbackDir)) {
+        try {
+          if (fs.existsSync(targetDir)) {
+            fs.rmSync(targetDir, { recursive: true, force: true });
+          }
+          copyDirectory(rollbackDir, targetDir);
+          if (previousState) {
+            this.pluginLoader.state[safePluginId] = previousState;
+          } else {
+            delete this.pluginLoader.state[safePluginId];
+          }
+          error.rollbackApplied = true;
+          this.logger.warn?.(`Rolled back plugin ${safePluginId} after failed store install: ${error.message}`);
+        } catch (rollbackError) {
+          error.rollbackError = rollbackError.message;
+          this.logger.error?.(`Failed to roll back plugin ${safePluginId}: ${rollbackError.message}`);
+        }
+      }
+      throw error;
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
@@ -556,8 +730,11 @@ class PluginStore {
 }
 
 module.exports = {
+  ADMIN_PLUGIN_IDS,
+  CLOSED_BETA_PLUGIN_IDS,
   DEFAULT_OFFICIAL_STORE_URL,
   PluginStore,
   compareVersions,
-  ensureUrlAllowed
+  ensureUrlAllowed,
+  SUBSCRIBER_PLUGIN_IDS
 };

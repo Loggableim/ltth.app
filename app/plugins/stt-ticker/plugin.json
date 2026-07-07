@@ -5,10 +5,14 @@
   "description": "Live-Untertitel-Overlay für Hearing-Impaired Zuschauer. Transkribiert Host-Sprache via Fish.audio ASR und zeigt sie als konfigurierbaren Ticker in OBS an.",
   "author": "Pup Cid",
   "entry": "main.js",
+  "logo": "/sttlogo.png",
   "enabled": false,
   "type": "tool",
   "devStatus": "working-beta",
-  "dependencies": ["axios", "form-data"],
+  "dependencies": [
+    "axios",
+    "form-data"
+  ],
   "permissions": [
     "socket.io",
     "routes"
@@ -21,7 +25,10 @@
       "languageDefault": "de",
       "languageFixed": "de",
       "fallbackLanguage": "en",
-      "languageWhitelist": ["de", "en"],
+      "languageWhitelist": [
+        "de",
+        "en"
+      ],
       "deepgramApiKey": "",
       "deepgramModel": "nova-2"
     },

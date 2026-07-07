@@ -18,7 +18,7 @@
     "multi_cam": "Multi-Caméra",
     "osc_bridge": "Pont OSC",
     "hybridshock": "HybridShock",
-    "openshock": "OpenShock",
+    "openshock": "HybridShock",
     "leaderboard": "Classement",
     "coinbattle": "CoinBattle",
     "quiz_show": "Quiz Show",
@@ -57,7 +57,7 @@
       "flows": "Flux d'Automatisation",
       "emoji_rain": "Pluie d'Émojis",
       "osc_bridge": "OSC-Bridge",
-      "openshock_emergency_stop": "Arrêt OpenShock",
+      "openshock_emergency_stop": "Arrêt HybridShock",
       "plugin_disabled": "Plugin désactivé",
       "enable_plugin_hint": "Activez ce plugin pour utiliser les actions rapides"
     },

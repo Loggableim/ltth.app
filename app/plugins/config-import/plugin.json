@@ -5,7 +5,7 @@
   "description": "Full configuration backup and restore system. Export all settings to a ZIP archive, import from a backup, preview conflicts, and migrate from legacy installations.",
   "author": "Pup Cid",
   "entry": "main.js",
-  "enabled": true,
+  "enabled": false,
   "type": "utility",
   "devStatus": "working-beta",
   "permissions": [

@@ -6,16 +6,17 @@ class ViewerMemoryAdapter {
   }
 
   getViewerPlugin() {
-    return this.api.getPluginInstance?.('viewer-profiles') || this.api.getPlugin?.('viewer-profiles') || null;
+    return this.api.getPluginInstance?.('viewer-leaderboard') || this.api.getPlugin?.('viewer-leaderboard') || null;
   }
 
   getViewerContext(username, config = {}, privacy = {}) {
     const plugin = this.getViewerPlugin();
-    if (!plugin?.db || typeof plugin.db.getViewerInsights !== 'function') {
+    const analyticsDb = plugin?.analyticsDb || plugin?.embeddedViewerProfiles?.db || plugin?.db;
+    if (!analyticsDb || typeof analyticsDb.getViewerInsights !== 'function') {
       return { available: false, profile: null, memories: [] };
     }
 
-    const insight = plugin.db.getViewerInsights(username);
+    const insight = analyticsDb.getViewerInsights(username);
     if (!insight) return { available: true, profile: null, memories: [] };
     const allowed = new Set(config.allowedProfileFields || []);
     if (privacy.includeNotes) allowed.add('notes');
@@ -26,12 +27,12 @@ class ViewerMemoryAdapter {
     for (const field of allowed) {
       if (Object.prototype.hasOwnProperty.call(insight, field)) profile[field] = insight[field];
     }
-    if (allowed.has('tags') && typeof plugin.db.parseTags === 'function') {
-      profile.tags = plugin.db.parseTags(insight.tags);
+    if (allowed.has('tags') && typeof analyticsDb.parseTags === 'function') {
+      profile.tags = analyticsDb.parseTags(insight.tags);
     }
 
-    const memories = typeof plugin.db.getHostMemories === 'function'
-      ? plugin.db.getHostMemories(username, config.streamerId || 'default', {
+    const memories = typeof analyticsDb.getHostMemories === 'function'
+      ? analyticsDb.getHostMemories(username, config.streamerId || 'default', {
           limit: config.maxMemories,
           minimumImportance: config.minimumImportance
         })
@@ -48,8 +49,9 @@ class ViewerMemoryAdapter {
 
   recordMemory(username, memory) {
     const plugin = this.getViewerPlugin();
-    if (!plugin?.db || typeof plugin.db.recordHostMemory !== 'function') return false;
-    plugin.db.recordHostMemory(username, memory);
+    const analyticsDb = plugin?.analyticsDb || plugin?.embeddedViewerProfiles?.db || plugin?.db;
+    if (!analyticsDb || typeof analyticsDb.recordHostMemory !== 'function') return false;
+    analyticsDb.recordHostMemory(username, memory);
     return true;
   }
 }

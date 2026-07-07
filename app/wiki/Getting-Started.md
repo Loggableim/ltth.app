@@ -185,9 +185,9 @@ Dashboard → Plugins → Leaderboard → Enable
 - Shows top gifters
 - Real-time updates
 
-**4. LastEvent Spotlight** (Recommended)
+**4. Spotlight** (Recommended)
 ```
-Dashboard → Plugins → LastEvent Spotlight → Enable
+Dashboard → Plugins → Spotlight → Enable
 ```
 - Shows last follower, gifter, etc.
 - Overlay for each event type
@@ -502,9 +502,9 @@ Dashboard → Plugins → Leaderboard → Enable
 - Zeigt Top-Gifter an
 - Real-time Updates
 
-**4. LastEvent Spotlight** (Empfohlen)
+**4. Spotlight** (Empfohlen)
 ```
-Dashboard → Plugins → LastEvent Spotlight → Enable
+Dashboard → Plugins → Spotlight → Enable
 ```
 - Zeigt letzten Follower, Gifter, etc.
 - Overlay für jeden Event-Typ
@@ -819,9 +819,9 @@ Dashboard → Plugins → Leaderboard → Enable
 - Muestra los mejores donadores
 - Actualizaciones en tiempo real
 
-**4. LastEvent Spotlight** (Recomendado)
+**4. Spotlight** (Recomendado)
 ```
-Dashboard → Plugins → LastEvent Spotlight → Enable
+Dashboard → Plugins → Spotlight → Enable
 ```
 - Muestra el último seguidor, donador, etc.
 - Overlay para cada tipo de evento
@@ -1136,9 +1136,9 @@ Dashboard → Plugins → Leaderboard → Enable
 - Affiche les meilleurs donateurs
 - Mises à jour en temps réel
 
-**4. LastEvent Spotlight** (Recommandé)
+**4. Spotlight** (Recommandé)
 ```
-Dashboard → Plugins → LastEvent Spotlight → Enable
+Dashboard → Plugins → Spotlight → Enable
 ```
 - Affiche le dernier abonné, donateur, etc.
 - Overlay pour chaque type d'événement

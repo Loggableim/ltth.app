@@ -4,6 +4,49 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Interactive Story - OBS Overlay</title>
+  <script>
+    (function () {
+      const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (validThemes.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (validThemes.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+      }
+
+      syncTheme();
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style id="dynamicStyles">
     /* Styles will be injected based on configuration */
     * {
@@ -16,8 +59,10 @@
       background: transparent;
       font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
       overflow: hidden;
-      width: var(--overlay-width, 1920px);
-      height: var(--overlay-height, 1080px);
+      width: 100vw;
+      height: 100vh;
+      min-width: 100vw;
+      min-height: 100vh;
     }
 
     /*
@@ -93,6 +138,7 @@
       border: 2px solid rgba(233,69,96,0.4);
       backdrop-filter: blur(8px);
       cursor: move;
+      width: min(92vw, 1100px);
     }
     
     #titleOverlay.dragging {
@@ -158,7 +204,7 @@
       left: 50%;
       transform: translate(-50%, -50%);
       width: 85%;
-      max-width: 1000px;
+      max-width: 1600px;
       max-height: 65%;
       display: flex;
       flex-direction: column;
@@ -288,7 +334,7 @@
       left: 50%;
       transform: translate(-50%, -50%);
       width: 90%;
-      max-width: 1100px;
+      max-width: 1600px;
       display: none;
       opacity: 0;
       transition: opacity 0.6s ease-in-out;
@@ -457,7 +503,8 @@
     
     .generating-media img,
     .generating-media video {
-      max-width: 360px;
+      width: min(92vw, 720px);
+      max-width: 100%;
       max-height: 240px;
       border-radius: 12px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.35);
@@ -557,8 +604,10 @@
 
     /* Portrait orientation adjustments */
     body.portrait {
-      width: var(--overlay-width, 1080px);
-      height: var(--overlay-height, 1920px);
+      width: 100vw;
+      height: 100vh;
+      min-width: var(--overlay-width, 1080px);
+      min-height: var(--overlay-height, 1920px);
     }
 
     body.portrait #imageContainer {
@@ -577,7 +626,107 @@
     body.portrait #titleOverlay h1 {
       font-size: calc(var(--title-font-size, 2.5em) * 1.2);
     }
-  </style>
+
+    html[data-theme="cid"] body {
+      background: transparent;
+    }
+
+    html[data-theme="cid"] #titleOverlay {
+      background: rgba(7, 17, 7, 0.82);
+      border-color: #1e5b2a;
+      width: min(92vw, 1100px);
+    }
+
+    html[data-theme="cid"] #titleOverlay h1 {
+      color: #4ade80;
+      text-shadow: 0 4px 15px rgba(0,0,0,1), 0 0 30px rgba(74,222,128,0.35);
+    }
+
+    html[data-theme="cid"] #textOverlay {
+      background: linear-gradient(180deg, rgba(3,6,3,0) 0%, rgba(3,6,3,0.45) 50%, rgba(3,6,3,0.85) 100%);
+    }
+
+    html[data-theme="cid"] #chapterContent {
+      width: 92%;
+      max-width: 1700px;
+    }
+
+    html[data-theme="cid"] #votingOverlay {
+      width: 94%;
+      max-width: 1800px;
+    }
+
+    html[data-theme="cid"] .choice-item {
+      background: linear-gradient(135deg, rgba(7,17,7,0.95) 0%, rgba(15,52,96,0.34) 50%, rgba(0,0,0,0.66) 100%);
+      border-left-color: #4ade80;
+    }
+
+    html[data-theme="cid"] .scroll-sentence.current {
+      color: #f4fff4;
+      background: linear-gradient(90deg, rgba(74,222,128,0.08) 0%, rgba(74,222,128,0.16) 50%, rgba(74,222,128,0.08) 100%);
+      border-left-color: #4ade80;
+    }
+
+    html[data-theme="vision-impaired"] #titleOverlay {
+      background: #000;
+      border-color: #facc15;
+      width: min(94vw, 1200px);
+      padding: 36px 72px;
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.18), 0 0 42px rgba(0, 0, 0, 0.65);
+    }
+
+    html[data-theme="vision-impaired"] #titleOverlay h1,
+    html[data-theme="vision-impaired"] .scroll-sentence.current {
+      color: #facc15;
+      text-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] #textOverlay {
+      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.92) 100%);
+    }
+
+    html[data-theme="vision-impaired"] #chapterContent {
+      width: 95%;
+      max-width: 1700px;
+      font-size: calc(var(--text-font-size, 1.3em) * 1.65);
+      line-height: 2.15;
+      text-shadow: 0 2px 0 rgba(0,0,0,1), 0 0 24px rgba(0,0,0,0.9);
+    }
+
+    html[data-theme="vision-impaired"] #votingOverlay {
+      width: 96%;
+      max-width: 1800px;
+    }
+
+    html[data-theme="vision-impaired"] .voting-header {
+      font-size: 2.4em;
+      background: #000;
+      border-color: #facc15;
+      color: #facc15;
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.18);
+    }
+
+    html[data-theme="vision-impaired"] .choice-item {
+      background: linear-gradient(135deg, rgba(0,0,0,0.98) 0%, rgba(15,23,42,0.92) 100%);
+      border-left-color: #facc15;
+      box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.12);
+    }
+
+    html[data-theme="vision-impaired"] .choice-item.winner {
+      border-left-color: #22c55e;
+    }
+
+    html[data-theme="vision-impaired"] .choice-letter {
+      background: #facc15;
+      color: #000;
+      text-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] .choice-text,
+    html[data-theme="vision-impaired"] .results-choice {
+      color: #fff7cc;
+    }
+    </style>
 </head>
 <body>
   <div id="storyOverlay">

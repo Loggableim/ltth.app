@@ -17,7 +17,7 @@ const socket = window.socket || io();
 // Add connection status logging
 socket.on('connect', () => {
     log.info('Socket.io connected', { id: socket.id });
-    
+
     // Identify as dashboard client for preview sound support
     socket.emit('soundboard:identify', { client: 'dashboard' });
     log.info('Sent identification as dashboard client');
@@ -42,6 +42,88 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function getSoundboardLocale() {
+    const normalizeLocale = (value) => String(value || '').trim().toLowerCase().split('-')[0] || 'en';
+
+    if (window.i18n && typeof window.i18n.getLocale === 'function') {
+        return normalizeLocale(window.i18n.getLocale());
+    }
+
+    try {
+        if (window.parent && window.parent !== window) {
+            const parentLocale = window.parent.document?.documentElement?.lang;
+            if (parentLocale) return normalizeLocale(parentLocale);
+        }
+    } catch (error) {}
+
+    const documentLocale = document.documentElement?.lang;
+    if (documentLocale) return normalizeLocale(documentLocale);
+
+    try {
+        const storedLocale = localStorage.getItem('app_locale');
+        if (storedLocale) return normalizeLocale(storedLocale);
+    } catch (error) {}
+
+    return 'en';
+}
+
+function normalizeGiftCatalogText(value) {
+    return String(value ?? '').toLowerCase().trim();
+}
+
+function matchesGiftCatalogSearch(gift, query) {
+    const normalizedQuery = normalizeGiftCatalogText(query);
+    if (!normalizedQuery) return true;
+
+    const searchableText = [
+        gift.id,
+        gift.name,
+        gift.diamond_count,
+        gift.names_by_locale,
+        gift.image_url
+    ].map(normalizeGiftCatalogText).join(' ');
+
+    return searchableText.includes(normalizedQuery);
+}
+
+function syncGiftCatalogSearchInputs(query) {
+    const normalizedQuery = String(query ?? '');
+    const mainInput = document.getElementById('gift-catalog-search-input');
+    const modalInput = document.getElementById('modal-gift-search-input');
+    if (mainInput && mainInput.value !== normalizedQuery) {
+        mainInput.value = normalizedQuery;
+    }
+    if (modalInput && modalInput.value !== normalizedQuery) {
+        modalInput.value = normalizedQuery;
+    }
+}
+
+function updateGiftCatalogSearchQuery(query) {
+    giftCatalogSearchQuery = String(query ?? '').trim();
+    syncGiftCatalogSearchInputs(giftCatalogSearchQuery);
+    renderGiftCatalog();
+    if (giftCatalogModalOpen) {
+        renderGiftCatalogModal();
+    }
+}
+
+function getFilteredGiftCatalog() {
+    return giftCatalogCache.filter(gift => matchesGiftCatalogSearch(gift, giftCatalogSearchQuery));
+}
+
+function renderGiftCatalogInfo(infoDiv, visibleCount, totalCount, lastUpdate) {
+    if (!infoDiv) return;
+
+    const updateText = lastUpdate ? `Last updated: ${new Date(lastUpdate).toLocaleString()}` : 'Never updated';
+    const countText = giftCatalogSearchQuery ? `${visibleCount} / ${totalCount} gifts shown` : `${totalCount} gifts available`;
+
+    infoDiv.innerHTML = `
+        <span class="text-green-400">${escapeHtml(countText)}</span>
+        <span class="mx-2">•</span>
+        <span class="text-gray-400">${escapeHtml(updateText)}</span>
+    `;
+}
+
 // Helper function to generate unique IDs for sound controls
 let soundIdCounter = 0;
 function generateUniqueSoundId() {
@@ -50,6 +132,14 @@ function generateUniqueSoundId() {
 
 // Audio pool for soundboard playback
 let audioPool = [];
+let giftRecommendationsCache = [];
+let giftCatalogCache = [];
+let giftCatalogLocale = '';
+let giftCatalogLoadError = '';
+let giftCatalogLastUpdate = '';
+let giftCatalogSearchQuery = '';
+let giftCatalogSearchTimeout = null;
+let giftCatalogModalOpen = false;
 
 // Dedicated preview audio element (reused to prevent multiple simultaneous previews)
 let previewAudio = null;
@@ -64,17 +154,266 @@ let currentMaxQueueLength = 10;
 let activeAnimationInput = null;
 const MAX_GIFT_REPEAT_PLAYS = 50;
 
+// ========== WORKSPACE NAVIGATION ==========
+let currentWorkspaceView = 'overview';
+let workspaceDirty = false;
+
+function setWorkspaceDirty(isDirty = true) {
+    workspaceDirty = isDirty;
+    const saveState = document.getElementById('soundboard-save-state');
+    if (saveState) {
+        saveState.textContent = workspaceDirty ? 'Unsaved changes' : 'All settings saved';
+        saveState.style.color = workspaceDirty ? '#f59e0b' : '';
+    }
+}
+
+function updateWorkspaceOverview() {
+    const giftCount = document.getElementById('overview-gift-count');
+    if (giftCount) {
+        giftCount.textContent = String(giftsCache.length || 0);
+    }
+
+    const enabledState = document.getElementById('overview-enabled-state');
+    const enabledInput = document.getElementById('soundboard-enabled');
+    if (enabledState && enabledInput) {
+        enabledState.textContent = enabledInput.checked ? 'Enabled' : 'Disabled';
+    }
+
+    const obsState = document.getElementById('overview-obs-state');
+    const overlayUrl = document.getElementById('animation-overlay-url');
+    if (obsState && overlayUrl) {
+        obsState.textContent = overlayUrl.value ? 'Ready' : 'Loading';
+    }
+}
+
+async function loadGiftRecommendations() {
+    const container = document.getElementById('gift-recommendations-list');
+    if (!container) return;
+
+    container.innerHTML = '<div class="text-gray-400 text-sm">Loading recommendations...</div>';
+
+    try {
+        giftRecommendationsCache = await fetchGiftRecommendations();
+        renderGiftRecommendations();
+    } catch (error) {
+        log.error('Error loading gift recommendations', { error: error.message });
+        container.innerHTML = '<div class="text-red-400 text-sm">Could not load recommendations.</div>';
+    }
+}
+
+async function fetchGiftRecommendations() {
+    const response = await fetch('/api/soundboard/recommendations/unconfigured-gifts?limit=10&lookback=5000');
+    const contentType = response.headers.get('content-type') || '';
+
+    if (response.ok && contentType.includes('application/json')) {
+        const result = await response.json();
+        if (result.success) {
+            return result.recommendations || [];
+        }
+        throw new Error(result.error || 'Failed to load recommendations');
+    }
+
+    // Older running servers do not have the new plugin route until restart.
+    // Fall back to the existing event log API so the UI still works after a refresh.
+    return fetchGiftRecommendationsFromEventLogs();
+}
+
+async function fetchGiftRecommendationsFromEventLogs() {
+    const [giftSoundsResponse, eventLogsResponse] = await Promise.all([
+        fetch('/api/soundboard/gifts'),
+        fetch('/api/event-logs?type=gift&limit=1000')
+    ]);
+
+    if (!giftSoundsResponse.ok || !eventLogsResponse.ok) {
+        throw new Error('Recommendation fallback APIs are unavailable');
+    }
+
+    const configuredGifts = await giftSoundsResponse.json();
+    const eventLogResult = await eventLogsResponse.json();
+    const configuredIds = new Set((configuredGifts || []).map(gift => Number(gift.giftId)));
+    const grouped = new Map();
+
+    (eventLogResult.logs || []).forEach(row => {
+        const gift = normalizeRecommendationGift(row.data || {});
+        if (!gift.giftId || configuredIds.has(Number(gift.giftId))) {
+            return;
+        }
+
+        const existing = grouped.get(gift.giftId) || {
+            giftId: gift.giftId,
+            label: gift.label || `Gift ${gift.giftId}`,
+            imageUrl: gift.imageUrl || null,
+            diamondCount: gift.diamondCount || null,
+            dropCount: 0,
+            repeatCount: 0,
+            lastDroppedAt: row.timestamp || null
+        };
+
+        existing.dropCount += 1;
+        existing.repeatCount += gift.repeatCount || 1;
+        if (!existing.lastDroppedAt || (row.timestamp && row.timestamp > existing.lastDroppedAt)) {
+            existing.lastDroppedAt = row.timestamp;
+        }
+        grouped.set(gift.giftId, existing);
+    });
+
+    return Array.from(grouped.values())
+        .sort((a, b) => {
+            if (b.repeatCount !== a.repeatCount) return b.repeatCount - a.repeatCount;
+            return b.dropCount - a.dropCount;
+        })
+        .slice(0, 10);
+}
+
+function normalizeRecommendationGift(data = {}) {
+    const gift = data.giftDetails || data.gift || data.giftInfo || {};
+    const giftId = parseInt(
+        data.giftId || data.gift_id || gift.giftId || gift.gift_id || gift.id || data.id,
+        10
+    );
+    const repeatCount = parseInt(
+        data.repeatCount || data.repeat_count || data.comboCount || data.combo_count ||
+        data.giftCount || data.gift_count || gift.repeatCount || gift.repeat_count ||
+        gift.giftCount || gift.gift_count || data.count || gift.count || 1,
+        10
+    );
+    const diamondCount = parseInt(
+        data.diamondCount || data.diamond_count || gift.diamondCount || gift.diamond_count || gift.diamonds || data.diamonds,
+        10
+    );
+
+    return {
+        giftId: Number.isFinite(giftId) ? giftId : null,
+        label: data.giftName || data.gift_name || gift.giftName || gift.gift_name || gift.name || data.name,
+        imageUrl: data.giftPictureUrl || data.gift_image || gift.giftPictureUrl || gift.imageUrl || gift.image || gift.icon || null,
+        diamondCount: Number.isFinite(diamondCount) ? diamondCount : null,
+        repeatCount: Number.isFinite(repeatCount) && repeatCount > 0 ? repeatCount : 1
+    };
+}
+
+function renderGiftRecommendations() {
+    const container = document.getElementById('gift-recommendations-list');
+    if (!container) return;
+
+    if (giftRecommendationsCache.length === 0) {
+        container.innerHTML = '<div class="text-gray-400 text-sm">No recommendations yet. Gifts need to be dropped first, and already configured gifts are excluded.</div>';
+        return;
+    }
+
+    container.innerHTML = '';
+    giftRecommendationsCache.forEach(gift => {
+        const card = document.createElement('div');
+        card.className = 'gift-recommendation-card';
+        card.innerHTML = `
+            <div class="gift-recommendation-image">
+                ${gift.imageUrl ? `<img src="${escapeHtml(gift.imageUrl)}" alt="${escapeHtml(gift.label)}">` : '🎁'}
+            </div>
+            <div style="min-width: 0;">
+                <div class="gift-recommendation-title">${escapeHtml(gift.label)}</div>
+                <div class="gift-recommendation-meta">
+                    ${gift.repeatCount || gift.dropCount} received · ${gift.dropCount} drops · ID ${gift.giftId}
+                    ${gift.diamondCount ? ` · 💎 ${gift.diamondCount}` : ''}
+                </div>
+            </div>
+            <button class="btn btn-sm btn-primary" type="button" data-action="configure-recommended-gift" data-gift-id="${gift.giftId}">
+                Configure
+            </button>
+        `;
+        container.appendChild(card);
+    });
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+function configureRecommendedGift(giftId) {
+    const gift = giftRecommendationsCache.find(item => Number(item.giftId) === Number(giftId));
+    if (!gift) return;
+
+    selectGift({
+        id: gift.giftId,
+        name: gift.label,
+        image_url: gift.imageUrl || null,
+        diamond_count: gift.diamondCount || 0
+    });
+    switchSoundboardWorkspace('gift-mapping');
+}
+
+function switchSoundboardWorkspace(viewName) {
+    const targetView = viewName === 'library-search' ? 'gift-mapping' : (viewName || 'overview');
+    currentWorkspaceView = targetView;
+
+    document.querySelectorAll('[data-soundboard-view]').forEach(button => {
+        button.classList.toggle('active', button.dataset.soundboardView === currentWorkspaceView);
+    });
+
+    document.querySelectorAll('[data-workspace-panel]').forEach(panel => {
+        panel.classList.toggle('active', panel.dataset.workspacePanel === currentWorkspaceView);
+    });
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+function initializeSoundboardWorkspace() {
+    const simpleSearchSlot = document.getElementById('library-simple-search-slot');
+    const simpleSearch = document.querySelector('.myinstants-search');
+    if (simpleSearchSlot && simpleSearch) {
+        simpleSearchSlot.appendChild(simpleSearch);
+    }
+
+    const gifSearchSlot = document.getElementById('library-gif-search-slot');
+    const gifSearch = document.querySelector('.gif-search');
+    if (gifSearchSlot && gifSearch) {
+        gifSearchSlot.appendChild(gifSearch);
+    }
+
+    document.querySelectorAll('[data-soundboard-view]').forEach(button => {
+        button.addEventListener('click', () => {
+            switchSoundboardWorkspace(button.dataset.soundboardView);
+        });
+    });
+
+    document.querySelectorAll('[data-save-proxy]').forEach(button => {
+        button.addEventListener('click', () => {
+            saveSoundboardSettings();
+        });
+    });
+
+    const workspaceRoot = document.querySelector('.soundboard-workspace');
+    if (workspaceRoot) {
+        workspaceRoot.addEventListener('input', event => {
+            const target = event.target;
+            if (target && target.matches && target.matches('input, select, textarea')) {
+                setWorkspaceDirty(true);
+                updateWorkspaceOverview();
+            }
+        });
+        workspaceRoot.addEventListener('change', event => {
+            const target = event.target;
+            if (target && target.matches && target.matches('input, select, textarea')) {
+                setWorkspaceDirty(true);
+                updateWorkspaceOverview();
+            }
+        });
+    }
+
+    switchSoundboardWorkspace(currentWorkspaceView);
+}
+
 // ========== SOCKET EVENTS ==========
 socket.on('soundboard:play', (data) => {
     log.info('Received soundboard:play event', data);
-    
+
     // Check the audio target setting
     // audioTarget can be: 'dashboard', 'obs_overlay', or 'both'
     // For dashboard, we play if target is 'dashboard' or 'both'
     // Preview sounds (eventType: 'preview' or 'test') always play in dashboard
     const audioTarget = data.audioTarget || 'both';
     const isPreviewOrTest = data.eventType === 'preview' || data.eventType === 'test';
-    
+
     if (isPreviewOrTest || audioTarget === 'dashboard' || audioTarget === 'both') {
         playDashboardSoundboard(data);
         logAudioEvent('play', `Playing sound: ${data.label} (target: ${audioTarget})`, data, true);
@@ -87,25 +426,25 @@ socket.on('soundboard:play', (data) => {
 socket.on('soundboard:preview', (payload) => {
     log.info('Received soundboard:preview event', payload);
     logAudioEvent('preview', `Preview request received`, payload, true);
-    
+
     // Note: Preview events have a nested structure from transport-ws.js:
     // { type: 'preview-sound', payload: { sourceType, filename/url, timestamp } }
     if (!payload || !payload.payload) {
         log.error('Invalid preview payload structure', { payload });
         return;
     }
-    
+
     const previewData = payload.payload;
-    
+
     // Validate sourceType
     if (!previewData.sourceType) {
         log.error('Missing sourceType in preview', { previewData });
         return;
     }
-    
+
     // Prepare common playback data
     let soundData;
-    
+
     if (previewData.sourceType === 'local') {
         if (!previewData.filename) {
             log.error('Missing filename in local preview', { previewData });
@@ -132,7 +471,7 @@ socket.on('soundboard:preview', (payload) => {
         log.error('Unknown preview sourceType', { sourceType: previewData.sourceType });
         return;
     }
-    
+
     // Play the sound
     playDashboardSoundboard(soundData);
 });
@@ -155,7 +494,7 @@ function queueOrPlaySound(data) {
             return;
         }
         logAudioEvent('info', `Added to global queue: ${data.label} (queue length: ${globalSoundQueue.length})`, null, true);
-        
+
         // Start processing if not already processing
         if (!isProcessingGlobalQueue) {
             processGlobalQueue();
@@ -163,7 +502,7 @@ function queueOrPlaySound(data) {
     } else if (currentPlayMode === 'queue-per-gift') {
         // Per-gift/event queue - sounds of the same type queue together, different types play simultaneously
         const queueKey = getQueueKey(data);
-        
+
         // Initialize queue for this gift/event type if it doesn't exist
         if (!perGiftSoundQueues[queueKey]) {
             perGiftSoundQueues[queueKey] = {
@@ -171,13 +510,13 @@ function queueOrPlaySound(data) {
                 isProcessing: false
             };
         }
-        
+
         // Add to this gift's queue
         if (!enqueueSound(perGiftSoundQueues[queueKey].queue, data, queueKey, { enforceLimit: enforceQueueLimit })) {
             return;
         }
         logAudioEvent('info', `Added to queue "${queueKey}": ${data.label} (queue length: ${perGiftSoundQueues[queueKey].queue.length})`, null, true);
-        
+
         // Start processing this queue if not already processing
         if (!perGiftSoundQueues[queueKey].isProcessing) {
             processPerGiftQueue(queueKey);
@@ -282,11 +621,11 @@ function processGlobalQueue() {
         logAudioEvent('info', 'Global queue empty, processing stopped', null);
         return;
     }
-    
+
     isProcessingGlobalQueue = true;
     const data = globalSoundQueue.shift();
     logAudioEvent('info', `Processing from global queue: ${data.label} (${globalSoundQueue.length} remaining)`, null, true);
-    
+
     playSound(data, () => {
         // Callback when sound finishes - play next in queue
         // Small delay between sounds to prevent audio overlap
@@ -300,7 +639,7 @@ function processGlobalQueue() {
  */
 function processPerGiftQueue(queueKey) {
     const queueData = perGiftSoundQueues[queueKey];
-    
+
     if (!queueData || queueData.queue.length === 0) {
         if (queueData) {
             queueData.isProcessing = false;
@@ -308,11 +647,11 @@ function processPerGiftQueue(queueKey) {
         logAudioEvent('info', `Queue "${queueKey}" empty, processing stopped`, null);
         return;
     }
-    
+
     queueData.isProcessing = true;
     const data = queueData.queue.shift();
     logAudioEvent('info', `Processing from queue "${queueKey}": ${data.label} (${queueData.queue.length} remaining)`, null, true);
-    
+
     playSound(data, () => {
         // Callback when sound finishes - play next in this gift's queue
         // Small delay between sounds to prevent audio overlap
@@ -335,7 +674,7 @@ const PLAY_STALL_TIMEOUT_MS = 60000;
 function playSound(data, onComplete) {
     log.info('Playing sound', { label: data.label });
     logAudioEvent('info', `Playing sound: ${data.label}`, { url: data.url, volume: data.volume }, true);
-    
+
     // Validate sound data
     if (!data || !data.url) {
         log.error('Invalid sound data - missing URL', { label: data?.label || 'unknown', data });
@@ -343,20 +682,20 @@ function playSound(data, onComplete) {
         if (onComplete) onComplete();
         return;
     }
-    
+
     // Create new audio element
     const audio = document.createElement('audio');
     audio.src = data.url;
     audio.volume = data.volume || 1.0;
-    
+
     // CRITICAL: Append audio element to DOM for browser compatibility
     // Some browsers require audio elements to be in the DOM tree to play
     document.body.appendChild(audio);
-    
+
     // Add to pool
     audioPool.push(audio);
     updateActiveSoundsCount();
-    
+
     // Guard: ensure onComplete fires at most once regardless of which error/end
     // path triggers first (play() rejection, onerror, and onended can all fire).
     let completionFired = false;
@@ -366,7 +705,7 @@ function playSound(data, onComplete) {
             if (onComplete) onComplete();
         }
     };
-    
+
     // Safety timeout: if the audio stalls after playback starts and never fires
     // ended/error, advance the queue anyway to prevent a permanent hang.
     let stallTimeoutId = null;
@@ -378,7 +717,7 @@ function playSound(data, onComplete) {
             safeComplete();
         }, PLAY_STALL_TIMEOUT_MS);
     };
-    
+
     // Helper function to clean up audio element
     const cleanup = () => {
         if (stallTimeoutId !== null) {
@@ -396,7 +735,7 @@ function playSound(data, onComplete) {
         }
         updateActiveSoundsCount();
     };
-    
+
     // Play
     audio.play().then(() => {
         log.info('Started playing', { label: data.label });
@@ -410,22 +749,22 @@ function playSound(data, onComplete) {
         // Call onComplete even on error to continue queue
         safeComplete();
     });
-    
+
     // Remove after playback
     audio.onended = () => {
         log.info('Finished playing', { label: data.label });
         logAudioEvent('info', `Finished playing: ${data.label}`, null);
         cleanup();
-        
+
         // Call completion callback if provided
         safeComplete();
     };
-    
+
     audio.onerror = (e) => {
         log.error('Audio element error', { label: data.label, type: e.type });
         logAudioEvent('error', `Audio error for ${data.label}: ${e.type}`, { url: data.url, error: e }, true);
         cleanup();
-        
+
         // Call onComplete even on error to continue queue
         safeComplete();
     };
@@ -437,17 +776,17 @@ function playSound(data, onComplete) {
 function clearAllQueues() {
     const globalQueueCount = globalSoundQueue.length;
     let perGiftQueueCount = 0;
-    
+
     // Clear global queue
     globalSoundQueue = [];
     isProcessingGlobalQueue = false;
-    
+
     // Clear all per-gift queues
     for (const key in perGiftSoundQueues) {
         perGiftQueueCount += perGiftSoundQueues[key].queue.length;
     }
     perGiftSoundQueues = {};
-    
+
     const totalCleared = globalQueueCount + perGiftQueueCount;
     if (totalCleared > 0) {
         logAudioEvent('warning', `Cleared ${totalCleared} queued sounds due to mode change`, null);
@@ -459,11 +798,11 @@ async function loadSoundboardSettings() {
     try {
         const response = await fetch('/api/settings');
         const settings = await response.json();
-        
+
         // Playback settings
         const soundboardEnabled = document.getElementById('soundboard-enabled');
         if (soundboardEnabled) soundboardEnabled.checked = settings.soundboard_enabled === 'true';
-        
+
         // Audio playback target setting
         const audioTarget = document.getElementById('soundboard-audio-target');
         if (audioTarget) {
@@ -471,42 +810,42 @@ async function loadSoundboardSettings() {
             log.info('Audio target set', { value: audioTarget.value });
             logAudioEvent('info', `Audio target: ${audioTarget.value}`, null);
         }
-        
+
         // Handle backwards compatibility: 'sequential' -> 'queue-all'
         let playModeValue = settings.soundboard_play_mode || 'overlap';
         if (playModeValue === 'sequential') {
             playModeValue = 'queue-all'; // Migrate old setting
             log.info('Migrated play mode from "sequential" to "queue-all"');
         }
-        
+
         const playMode = document.getElementById('soundboard-play-mode');
         if (playMode) playMode.value = playModeValue;
-        
+
         // Store the play mode for use in playback
         currentPlayMode = playModeValue;
         log.info('Play mode set', { mode: currentPlayMode });
         logAudioEvent('info', `Play mode: ${currentPlayMode}`, null);
-        
+
         const maxQueue = document.getElementById('soundboard-max-queue');
         updateCurrentMaxQueueLength(settings.soundboard_max_queue_length || '10');
         if (maxQueue) maxQueue.value = String(currentMaxQueueLength);
-        
+
         // Event sounds - Follow
         loadEventSoundSettings(settings, 'follow');
-        
+
         // Event sounds - Subscribe
         loadEventSoundSettings(settings, 'subscribe');
-        
+
         // Event sounds - Share
         loadEventSoundSettings(settings, 'share');
         loadAnimationSettings(settings, 'gift');
         loadAnimationSettings(settings, 'like');
         loadOverlayLayoutSettings(settings);
-        
+
         // Default gift sound
         const giftUrl = document.getElementById('soundboard-gift-url');
         if (giftUrl) giftUrl.value = settings.soundboard_default_gift_sound || '';
-        
+
         const giftVolume = document.getElementById('soundboard-gift-volume');
         const giftVolumeSlider = document.getElementById('soundboard-gift-volume-slider');
         const giftVolumeLabel = document.getElementById('soundboard-gift-volume-label');
@@ -516,11 +855,11 @@ async function loadSoundboardSettings() {
             if (giftVolumeSlider) giftVolumeSlider.value = Math.round(volumeValue * 100);
             if (giftVolumeLabel) giftVolumeLabel.textContent = `${Math.round(volumeValue * 100)}%`;
         }
-        
+
         // Like threshold
         const likeUrl = document.getElementById('soundboard-like-url');
         if (likeUrl) likeUrl.value = settings.soundboard_like_sound || '';
-        
+
         const likeVolume = document.getElementById('soundboard-like-volume');
         const likeVolumeSlider = document.getElementById('soundboard-like-volume-slider');
         const likeVolumeLabel = document.getElementById('soundboard-like-volume-label');
@@ -530,17 +869,20 @@ async function loadSoundboardSettings() {
             if (likeVolumeSlider) likeVolumeSlider.value = Math.round(volumeValue * 100);
             if (likeVolumeLabel) likeVolumeLabel.textContent = `${Math.round(volumeValue * 100)}%`;
         }
-        
+
         const likeThreshold = document.getElementById('soundboard-like-threshold');
         if (likeThreshold) likeThreshold.value = settings.soundboard_like_threshold || '0';
-        
+
         const likeWindow = document.getElementById('soundboard-like-window');
         if (likeWindow) likeWindow.value = settings.soundboard_like_window_seconds || '10';
-        
+
+        updateWorkspaceOverview();
+        setWorkspaceDirty(false);
+
     } catch (error) {
         log.error('Error loading soundboard settings', { error: error.message });
         logAudioEvent('error', `Failed to load settings: ${error.message}`, null);
-        
+
         // Ensure currentPlayMode has a fallback value even if settings fail to load
         if (!currentPlayMode) {
             currentPlayMode = 'overlap';
@@ -557,7 +899,7 @@ function loadEventSoundSettings(settings, eventType) {
     // Sound URL
     const urlEl = document.getElementById(`soundboard-${eventType}-url`);
     if (urlEl) urlEl.value = settings[`soundboard_${eventType}_sound`] || '';
-    
+
     // Sound Volume
     const volumeEl = document.getElementById(`soundboard-${eventType}-volume`);
     const volumeSliderEl = document.getElementById(`soundboard-${eventType}-volume-slider`);
@@ -568,15 +910,15 @@ function loadEventSoundSettings(settings, eventType) {
         if (volumeSliderEl) volumeSliderEl.value = Math.round(volumeValue * 100);
         if (volumeLabelEl) volumeLabelEl.textContent = `${Math.round(volumeValue * 100)}%`;
     }
-    
+
     // Animation URL
     const animUrlEl = document.getElementById(`soundboard-${eventType}-animation-url`);
     if (animUrlEl) animUrlEl.value = settings[`soundboard_${eventType}_animation_url`] || '';
-    
+
     // Animation Type
     const animTypeEl = document.getElementById(`soundboard-${eventType}-animation-type`);
     if (animTypeEl) animTypeEl.value = settings[`soundboard_${eventType}_animation_type`] || 'none';
-    
+
     // Animation Volume
     const animVolumeEl = document.getElementById(`soundboard-${eventType}-animation-volume`);
     const animVolumeSliderEl = document.getElementById(`soundboard-${eventType}-animation-volume-slider`);
@@ -640,35 +982,35 @@ async function saveSoundboardSettings() {
     const audioTarget = document.getElementById('soundboard-audio-target');
     const playMode = document.getElementById('soundboard-play-mode');
     const maxQueue = document.getElementById('soundboard-max-queue');
-    
+
     // Follow event
     const followUrl = document.getElementById('soundboard-follow-url');
     const followVolume = document.getElementById('soundboard-follow-volume');
     const followAnimUrl = document.getElementById('soundboard-follow-animation-url');
     const followAnimType = document.getElementById('soundboard-follow-animation-type');
     const followAnimVolume = document.getElementById('soundboard-follow-animation-volume');
-    
+
     // Subscribe event
     const subscribeUrl = document.getElementById('soundboard-subscribe-url');
     const subscribeVolume = document.getElementById('soundboard-subscribe-volume');
     const subscribeAnimUrl = document.getElementById('soundboard-subscribe-animation-url');
     const subscribeAnimType = document.getElementById('soundboard-subscribe-animation-type');
     const subscribeAnimVolume = document.getElementById('soundboard-subscribe-animation-volume');
-    
+
     // Share event
     const shareUrl = document.getElementById('soundboard-share-url');
     const shareVolume = document.getElementById('soundboard-share-volume');
     const shareAnimUrl = document.getElementById('soundboard-share-animation-url');
     const shareAnimType = document.getElementById('soundboard-share-animation-type');
     const shareAnimVolume = document.getElementById('soundboard-share-animation-volume');
-    
+
     // Default gift sound
     const giftUrl = document.getElementById('soundboard-gift-url');
     const giftVolume = document.getElementById('soundboard-gift-volume');
     const giftAnimUrl = document.getElementById('soundboard-gift-animation-url');
     const giftAnimType = document.getElementById('soundboard-gift-animation-type');
     const giftAnimVolume = document.getElementById('soundboard-gift-animation-volume');
-    
+
     // Like threshold
     const likeUrl = document.getElementById('soundboard-like-url');
     const likeVolume = document.getElementById('soundboard-like-volume');
@@ -684,41 +1026,41 @@ async function saveSoundboardSettings() {
     const animationAnchor = document.getElementById('soundboard-animation-anchor');
     const animationDuration = document.getElementById('soundboard-animation-duration');
     const animationFit = document.getElementById('soundboard-animation-fit');
-    
+
     const data = {
         soundboard_enabled: soundboardEnabled ? (soundboardEnabled.checked ? 'true' : 'false') : 'false',
         soundboard_audio_target: audioTarget?.value || 'both',
         soundboard_play_mode: playMode?.value || 'overlap',
         soundboard_max_queue_length: maxQueue?.value || '10',
-        
+
         // Follow settings
         soundboard_follow_sound: followUrl?.value || '',
         soundboard_follow_volume: followVolume?.value || '1.0',
         soundboard_follow_animation_url: followAnimUrl?.value || '',
         soundboard_follow_animation_type: normalizeAnimationTypeForSave(followAnimUrl, followAnimType),
         soundboard_follow_animation_volume: followAnimVolume?.value || '1.0',
-        
+
         // Subscribe settings
         soundboard_subscribe_sound: subscribeUrl?.value || '',
         soundboard_subscribe_volume: subscribeVolume?.value || '1.0',
         soundboard_subscribe_animation_url: subscribeAnimUrl?.value || '',
         soundboard_subscribe_animation_type: normalizeAnimationTypeForSave(subscribeAnimUrl, subscribeAnimType),
         soundboard_subscribe_animation_volume: subscribeAnimVolume?.value || '1.0',
-        
+
         // Share settings
         soundboard_share_sound: shareUrl?.value || '',
         soundboard_share_volume: shareVolume?.value || '1.0',
         soundboard_share_animation_url: shareAnimUrl?.value || '',
         soundboard_share_animation_type: normalizeAnimationTypeForSave(shareAnimUrl, shareAnimType),
         soundboard_share_animation_volume: shareAnimVolume?.value || '1.0',
-        
+
         // Default gift sound
         soundboard_default_gift_sound: giftUrl?.value || '',
         soundboard_gift_volume: giftVolume?.value || '1.0',
         soundboard_gift_animation_url: giftAnimUrl?.value || '',
         soundboard_gift_animation_type: normalizeAnimationTypeForSave(giftAnimUrl, giftAnimType),
         soundboard_gift_animation_volume: giftAnimVolume?.value || '1.0',
-        
+
         // Like threshold
         soundboard_like_sound: likeUrl?.value || '',
         soundboard_like_volume: likeVolume?.value || '1.0',
@@ -747,10 +1089,12 @@ async function saveSoundboardSettings() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        
+
         if (response.ok) {
             alert('✅ Soundboard settings saved successfully!');
             logAudioEvent('success', 'Settings saved successfully', null);
+            setWorkspaceDirty(false);
+            updateWorkspaceOverview();
         }
     } catch (error) {
         log.error('Error saving soundboard settings', { error: error.message });
@@ -766,9 +1110,9 @@ function initializeEventSoundSliders() {
         const slider = document.getElementById(sliderId);
         const input = document.getElementById(inputId);
         const label = document.getElementById(labelId);
-        
+
         if (!slider || !input || !label) return;
-        
+
         // Update label and input when slider changes
         slider.addEventListener('input', function() {
             const percentage = this.value;
@@ -776,7 +1120,7 @@ function initializeEventSoundSliders() {
             label.textContent = `${percentage}%`;
             input.value = volumeValue.toFixed(1);
         });
-        
+
         // Sync slider when input changes programmatically
         input.addEventListener('change', function() {
             const volumeValue = parseFloat(this.value);
@@ -785,7 +1129,7 @@ function initializeEventSoundSliders() {
             label.textContent = `${percentage}%`;
         });
     };
-    
+
     // Setup all event sound sliders
     setupSlider('soundboard-follow-volume-slider', 'soundboard-follow-volume', 'soundboard-follow-volume-label');
     setupSlider('soundboard-subscribe-volume-slider', 'soundboard-subscribe-volume', 'soundboard-subscribe-volume-label');
@@ -797,77 +1141,303 @@ function initializeEventSoundSliders() {
 // ========== GIFT SOUNDS ==========
 // Cache for gift data to avoid redundant API calls
 let giftsCache = [];
+let giftSoundsSearchQuery = '';
+let giftSoundsSortState = {
+    key: 'giftId',
+    direction: 'asc'
+};
+let giftSoundsSearchTimeout = null;
+
+function normalizeGiftSoundText(value) {
+    return String(value ?? '').toLowerCase().trim();
+}
+
+function getGiftSoundSortValue(gift, sortKey) {
+    switch (sortKey) {
+        case 'giftId':
+            return Number(gift.giftId) || 0;
+        case 'label':
+            return normalizeGiftSoundText(gift.label);
+        case 'mp3Url':
+            return normalizeGiftSoundText(gift.mp3Url);
+        case 'volume':
+            return Number(gift.volume ?? 0);
+        case 'animation':
+            return normalizeGiftSoundText(`${gift.animationType || 'none'} ${gift.animationUrl || ''}`);
+        case 'animationVolume':
+            return Number(gift.animationVolume ?? 0);
+        default:
+            return normalizeGiftSoundText(gift[sortKey]);
+    }
+}
+
+function compareGiftSounds(a, b, sortKey) {
+    const aValue = getGiftSoundSortValue(a, sortKey);
+    const bValue = getGiftSoundSortValue(b, sortKey);
+
+    if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return aValue - bValue;
+    }
+
+    return String(aValue).localeCompare(String(bValue), undefined, {
+        numeric: true,
+        sensitivity: 'base'
+    });
+}
+
+function matchesGiftSoundSearch(gift, query) {
+    const normalizedQuery = normalizeGiftSoundText(query);
+    if (!normalizedQuery) return true;
+
+    const searchableText = [
+        gift.giftId,
+        gift.label,
+        gift.mp3Url,
+        gift.animationUrl,
+        gift.animationType,
+        gift.volume,
+        gift.animationVolume
+    ].map(normalizeGiftSoundText).join(' ');
+
+    return searchableText.includes(normalizedQuery);
+}
+
+function getVisibleGiftSounds() {
+    return [...giftsCache]
+        .filter(gift => matchesGiftSoundSearch(gift, giftSoundsSearchQuery))
+        .sort((a, b) => {
+            const direction = giftSoundsSortState.direction === 'desc' ? -1 : 1;
+            return compareGiftSounds(a, b, giftSoundsSortState.key) * direction;
+        });
+}
+
+function syncGiftSoundSortHeaders() {
+    document.querySelectorAll('[data-gift-sort-key]').forEach(button => {
+        const isActive = button.dataset.giftSortKey === giftSoundsSortState.key;
+        button.dataset.active = isActive ? 'true' : 'false';
+        button.setAttribute('aria-sort', isActive
+            ? (giftSoundsSortState.direction === 'asc' ? 'ascending' : 'descending')
+            : 'none');
+
+        const icon = button.querySelector('[data-sort-icon]');
+        if (icon) {
+            icon.setAttribute('data-lucide', isActive
+                ? (giftSoundsSortState.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                : 'arrow-up-down');
+        }
+    });
+}
+
+function updateGiftSoundsSummary(visibleCount) {
+    const countEl = document.getElementById('gift-sounds-result-count');
+    if (countEl) {
+        countEl.textContent = `${visibleCount} / ${giftsCache.length} gifts`;
+    }
+
+    const hintEl = document.getElementById('gift-sounds-result-hint');
+    if (hintEl) {
+        hintEl.textContent = giftSoundsSearchQuery
+            ? `Filtering for "${giftSoundsSearchQuery.trim()}". Click a column to sort.`
+            : 'Type to filter the list. Click a column to sort.';
+    }
+}
+
+function createGiftSoundRow(gift) {
+    const row = document.createElement('tr');
+    row.className = 'border-b border-gray-700';
+
+    const animationInfo = gift.animationUrl && gift.animationType !== 'none'
+        ? `<span class="text-green-400">${escapeHtml(gift.animationType)}</span>`
+        : '<span class="text-gray-500">none</span>';
+
+    const giftVolumeId = `gift-vol-${gift.giftId}`;
+    const giftTestVolumeId = `gift-test-vol-${gift.giftId}`;
+    const giftAnimVolumeId = `gift-anim-vol-${gift.giftId}`;
+
+    const soundVolumeContainer = document.createElement('div');
+    soundVolumeContainer.className = 'flex items-center gap-2';
+    soundVolumeContainer.innerHTML = `
+        <input type="range" id="${giftVolumeId}" min="0" max="100" value="${Math.round(gift.volume * 100)}"
+            class="volume-slider volume-slider-inline"
+            data-gift-id="${gift.giftId}"
+            data-volume-type="sound"
+            title="Sound volume">
+        <span id="${giftVolumeId}-label" class="volume-label">${Math.round(gift.volume * 100)}%</span>
+    `;
+
+    const animVolumeContainer = document.createElement('div');
+    animVolumeContainer.className = 'flex items-center gap-2';
+    animVolumeContainer.innerHTML = `
+        <input type="range" id="${giftAnimVolumeId}" min="0" max="100" value="${Math.round((gift.animationVolume || 1.0) * 100)}"
+            class="volume-slider volume-slider-inline"
+            data-gift-id="${gift.giftId}"
+            data-volume-type="animation"
+            title="Animation volume">
+        <span id="${giftAnimVolumeId}-label" class="volume-label">${Math.round((gift.animationVolume || 1.0) * 100)}%</span>
+    `;
+
+    const testContainer = document.createElement('div');
+    testContainer.className = 'flex items-center gap-2';
+    testContainer.innerHTML = `
+        <button class="bg-blue-600 px-2 py-1 rounded text-xs hover:bg-blue-700" data-action="test-sound" data-url="${gift.mp3Url}" data-volume-input-id="${giftTestVolumeId}" title="Test sound">
+            <i data-lucide="play" style="width: 12px; height: 12px;"></i>
+            <span>Test</span>
+        </button>
+        <input type="range" id="${giftTestVolumeId}" min="0" max="100" value="${Math.round(gift.volume * 100)}"
+            class="volume-slider volume-slider-test"
+            title="Test volume">
+        <span id="${giftTestVolumeId}-label" class="volume-label volume-label-test">${Math.round(gift.volume * 100)}%</span>
+    `;
+
+    const soundVolumeSlider = soundVolumeContainer.querySelector(`#${giftVolumeId}`);
+    const soundVolumeLabel = soundVolumeContainer.querySelector(`#${giftVolumeId}-label`);
+    soundVolumeSlider.addEventListener('input', function() {
+        soundVolumeLabel.textContent = `${this.value}%`;
+    });
+    soundVolumeSlider.addEventListener('change', function() {
+        updateGiftVolume(gift, parseFloat(this.value) / 100.0, 'sound');
+    });
+
+    const animVolumeSlider = animVolumeContainer.querySelector(`#${giftAnimVolumeId}`);
+    const animVolumeLabel = animVolumeContainer.querySelector(`#${giftAnimVolumeId}-label`);
+    animVolumeSlider.addEventListener('input', function() {
+        animVolumeLabel.textContent = `${this.value}%`;
+    });
+    animVolumeSlider.addEventListener('change', function() {
+        updateGiftVolume(gift, parseFloat(this.value) / 100.0, 'animation');
+    });
+
+    const testVolumeSlider = testContainer.querySelector(`#${giftTestVolumeId}`);
+    const testVolumeLabel = testContainer.querySelector(`#${giftTestVolumeId}-label`);
+    testVolumeSlider.addEventListener('input', function() {
+        testVolumeLabel.textContent = `${this.value}%`;
+    });
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'bg-green-600 px-2 py-1 rounded text-xs hover:bg-green-700 mr-1';
+    editBtn.dataset.action = 'edit-gift';
+    editBtn.dataset.giftId = gift.giftId;
+    editBtn.innerHTML = `
+        <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
+        <span>Edit</span>
+    `;
+
+    const previewBtn = document.createElement('button');
+    previewBtn.className = 'bg-purple-600 px-2 py-1 rounded text-xs hover:bg-purple-700 mr-1';
+    previewBtn.dataset.action = 'preview-animation';
+    previewBtn.dataset.animationUrl = gift.animationUrl || '';
+    previewBtn.dataset.animationType = gift.animationType || 'none';
+    previewBtn.dataset.animationVolume = gift.animationVolume || 1.0;
+    previewBtn.innerHTML = `
+        <i data-lucide="eye" style="width: 12px; height: 12px;"></i>
+        <span>Preview</span>
+    `;
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'bg-red-600 px-2 py-1 rounded text-xs hover:bg-red-700';
+    deleteBtn.dataset.action = 'delete-gift';
+    deleteBtn.dataset.giftId = gift.giftId;
+    deleteBtn.innerHTML = `
+        <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+        <span>Delete</span>
+    `;
+
+    row.innerHTML = `
+        <td class="py-2 pr-4">${gift.giftId}</td>
+        <td class="py-2 pr-4 font-semibold">${escapeHtml(gift.label)}</td>
+        <td class="py-2 pr-4 text-sm truncate max-w-xs">${escapeHtml(gift.mp3Url)}</td>
+        <td class="py-2 pr-4"></td>
+        <td class="py-2 pr-4">${animationInfo}</td>
+        <td class="py-2 pr-4"></td>
+        <td class="py-2"></td>
+    `;
+
+    row.querySelectorAll('td')[3].appendChild(soundVolumeContainer);
+    row.querySelectorAll('td')[5].appendChild(animVolumeContainer);
+
+    const actionsCell = row.querySelector('td:last-child');
+    actionsCell.appendChild(testContainer);
+    actionsCell.appendChild(previewBtn);
+    actionsCell.appendChild(editBtn);
+    actionsCell.appendChild(deleteBtn);
+
+    return row;
+}
 
 async function loadGiftSounds() {
     try {
         const response = await fetch('/api/soundboard/gifts');
         const gifts = await response.json();
-        
+
         // Update cache
         giftsCache = gifts;
-        
+        updateWorkspaceOverview();
+        renderGiftSoundsTable();
+        return;
+
         const tbody = document.getElementById('gift-sounds-list');
         if (!tbody) {
             log.debug('gift-sounds-list element not found in current view, skipping render');
             return;
         }
         tbody.innerHTML = '';
-        
+
         if (gifts.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-gray-400">No gift sounds configured yet</td></tr>';
             return;
         }
-        
+
         gifts.forEach(gift => {
             const row = document.createElement('tr');
             row.className = 'border-b border-gray-700';
-            
+
             const animationInfo = gift.animationUrl && gift.animationType !== 'none'
                 ? `<span class="text-green-400">${escapeHtml(gift.animationType)}</span>`
                 : '<span class="text-gray-500">none</span>';
-            
+
             // Generate unique IDs for this gift's volume controls
             const giftVolumeId = `gift-vol-${gift.giftId}`;
             const giftTestVolumeId = `gift-test-vol-${gift.giftId}`;
             const giftAnimVolumeId = `gift-anim-vol-${gift.giftId}`;
-            
+
             // Create sound volume slider for Volume column
             const soundVolumeContainer = document.createElement('div');
             soundVolumeContainer.className = 'flex items-center gap-2';
             soundVolumeContainer.innerHTML = `
-                <input type="range" id="${giftVolumeId}" min="0" max="100" value="${Math.round(gift.volume * 100)}" 
+                <input type="range" id="${giftVolumeId}" min="0" max="100" value="${Math.round(gift.volume * 100)}"
                     class="volume-slider volume-slider-inline"
                     data-gift-id="${gift.giftId}"
                     data-volume-type="sound"
                     title="Sound volume">
                 <span id="${giftVolumeId}-label" class="volume-label">${Math.round(gift.volume * 100)}%</span>
             `;
-            
+
             // Create animation volume slider for Anim. Vol. column
             const animVolumeContainer = document.createElement('div');
             animVolumeContainer.className = 'flex items-center gap-2';
             animVolumeContainer.innerHTML = `
-                <input type="range" id="${giftAnimVolumeId}" min="0" max="100" value="${Math.round((gift.animationVolume || 1.0) * 100)}" 
+                <input type="range" id="${giftAnimVolumeId}" min="0" max="100" value="${Math.round((gift.animationVolume || 1.0) * 100)}"
                     class="volume-slider volume-slider-inline"
                     data-gift-id="${gift.giftId}"
                     data-volume-type="animation"
                     title="Animation volume">
                 <span id="${giftAnimVolumeId}-label" class="volume-label">${Math.round((gift.animationVolume || 1.0) * 100)}%</span>
             `;
-            
+
             // Create test button with volume slider
             const testContainer = document.createElement('div');
             testContainer.className = 'flex items-center gap-2';
             testContainer.innerHTML = `
                 <button class="bg-blue-600 px-2 py-1 rounded text-xs hover:bg-blue-700" data-action="test-sound" data-url="${gift.mp3Url}" data-volume-input-id="${giftTestVolumeId}" title="Test sound">
-                    🔊 Test
-                </button>
-                <input type="range" id="${giftTestVolumeId}" min="0" max="100" value="${Math.round(gift.volume * 100)}" 
+            <i data-lucide="play" style="width: 12px; height: 12px;"></i>
+            <span>Test</span>
+        </button>
+                <input type="range" id="${giftTestVolumeId}" min="0" max="100" value="${Math.round(gift.volume * 100)}"
                     class="volume-slider volume-slider-test"
                     title="Test volume">
                 <span id="${giftTestVolumeId}-label" class="volume-label volume-label-test">${Math.round(gift.volume * 100)}%</span>
             `;
-            
+
             // Add volume slider change listeners
             const soundVolumeSlider = soundVolumeContainer.querySelector(`#${giftVolumeId}`);
             const soundVolumeLabel = soundVolumeContainer.querySelector(`#${giftVolumeId}-label`);
@@ -877,7 +1447,7 @@ async function loadGiftSounds() {
             soundVolumeSlider.addEventListener('change', function() {
                 updateGiftVolume(gift, parseFloat(this.value) / 100.0, 'sound');
             });
-            
+
             const animVolumeSlider = animVolumeContainer.querySelector(`#${giftAnimVolumeId}`);
             const animVolumeLabel = animVolumeContainer.querySelector(`#${giftAnimVolumeId}-label`);
             animVolumeSlider.addEventListener('input', function() {
@@ -886,20 +1456,23 @@ async function loadGiftSounds() {
             animVolumeSlider.addEventListener('change', function() {
                 updateGiftVolume(gift, parseFloat(this.value) / 100.0, 'animation');
             });
-            
+
             const testVolumeSlider = testContainer.querySelector(`#${giftTestVolumeId}`);
             const testVolumeLabel = testContainer.querySelector(`#${giftTestVolumeId}-label`);
             testVolumeSlider.addEventListener('input', function() {
                 testVolumeLabel.textContent = `${this.value}%`;
             });
-            
+
             // Create edit button
             const editBtn = document.createElement('button');
             editBtn.className = 'bg-green-600 px-2 py-1 rounded text-xs hover:bg-green-700 mr-1';
             editBtn.dataset.action = 'edit-gift';
             editBtn.dataset.giftId = gift.giftId;
-            editBtn.textContent = '✏️ Edit';
-            
+    editBtn.innerHTML = `
+        <i data-lucide="pencil" style="width: 12px; height: 12px;"></i>
+        <span>Edit</span>
+    `;
+
             // Create preview button
             const previewBtn = document.createElement('button');
             previewBtn.className = 'bg-purple-600 px-2 py-1 rounded text-xs hover:bg-purple-700 mr-1';
@@ -907,15 +1480,21 @@ async function loadGiftSounds() {
             previewBtn.dataset.animationUrl = gift.animationUrl || '';
             previewBtn.dataset.animationType = gift.animationType || 'none';
             previewBtn.dataset.animationVolume = gift.animationVolume || 1.0;
-            previewBtn.textContent = '👁️ Preview';
-            
+    previewBtn.innerHTML = `
+        <i data-lucide="eye" style="width: 12px; height: 12px;"></i>
+        <span>Preview</span>
+    `;
+
             // Create delete button
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'bg-red-600 px-2 py-1 rounded text-xs hover:bg-red-700';
             deleteBtn.dataset.action = 'delete-gift';
             deleteBtn.dataset.giftId = gift.giftId;
-            deleteBtn.textContent = '🗑️ Delete';
-            
+    deleteBtn.innerHTML = `
+        <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+        <span>Delete</span>
+    `;
+
             row.innerHTML = `
                 <td class="py-2 pr-4">${gift.giftId}</td>
                 <td class="py-2 pr-4 font-semibold">${escapeHtml(gift.label)}</td>
@@ -925,27 +1504,64 @@ async function loadGiftSounds() {
                 <td class="py-2 pr-4"></td>
                 <td class="py-2"></td>
             `;
-            
+
             // Append volume controls to the table cells
             const volumeCell = row.querySelectorAll('td')[3];
             volumeCell.appendChild(soundVolumeContainer);
-            
+
             const animVolumeCell = row.querySelectorAll('td')[5];
             animVolumeCell.appendChild(animVolumeContainer);
-            
+
             // Append controls to the last cell
             const actionsCell = row.querySelector('td:last-child');
             actionsCell.appendChild(testContainer);
             actionsCell.appendChild(previewBtn);
             actionsCell.appendChild(editBtn);
             actionsCell.appendChild(deleteBtn);
-            
+
             tbody.appendChild(row);
         });
-        
+
     } catch (error) {
         log.error('Error loading gift sounds', { error: error.message });
         logAudioEvent('error', `Failed to load gift sounds: ${error.message}`, null);
+    }
+}
+
+function renderGiftSoundsTable() {
+    const tbody = document.getElementById('gift-sounds-list');
+    if (!tbody) {
+        log.debug('gift-sounds-list element not found in current view, skipping render');
+        return;
+    }
+
+    const visibleGifts = getVisibleGiftSounds();
+    tbody.innerHTML = '';
+    updateGiftSoundsSummary(visibleGifts.length);
+    syncGiftSoundSortHeaders();
+
+    if (giftsCache.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-gray-400">No gift sounds configured yet</td></tr>';
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        return;
+    }
+
+    if (visibleGifts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-gray-400">No gift sounds match your search</td></tr>';
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        return;
+    }
+
+    visibleGifts.forEach(gift => {
+        tbody.appendChild(createGiftSoundRow(gift));
+    });
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
     }
 }
 
@@ -961,14 +1577,14 @@ async function updateGiftVolume(gift, volume, volumeType) {
             animationType: gift.animationType || 'none',
             animationVolume: volumeType === 'animation' ? volume : (gift.animationVolume || 1.0)
         };
-        
+
         // Save to database
         const updateResponse = await fetch('/api/soundboard/gifts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updatedData)
         });
-        
+
         const result = await updateResponse.json();
         if (result.success) {
             // Update the gift object in cache
@@ -977,7 +1593,7 @@ async function updateGiftVolume(gift, volume, volumeType) {
             } else {
                 gift.animationVolume = volume;
             }
-            
+
             const volumeTypeLabel = volumeType === 'sound' ? 'Sound' : 'Animation';
             logAudioEvent('success', `${volumeTypeLabel} volume updated for "${gift.label}": ${Math.round(volume * 100)}%`, null);
         } else {
@@ -993,12 +1609,12 @@ async function addGiftSound() {
     const giftIdEl = document.getElementById('new-gift-id');
     const labelEl = document.getElementById('new-gift-label');
     const urlEl = document.getElementById('new-gift-url');
-    
+
     if (!giftIdEl || !labelEl || !urlEl) {
         log.warn('Gift sound form elements not found');
         return;
     }
-    
+
     const giftId = giftIdEl.value;
     const label = labelEl.value;
     const url = urlEl.value;
@@ -1012,12 +1628,12 @@ async function addGiftSound() {
         animationType = inferAnimationTypeFromUrl(animationUrl);
         animationTypeEl.value = animationType;
     }
-    
+
     if (!giftId || !label || !url) {
         alert('Please select a gift from the catalog above and enter a sound URL!');
         return;
     }
-    
+
     try {
         const response = await fetch('/api/soundboard/gifts', {
             method: 'POST',
@@ -1032,18 +1648,19 @@ async function addGiftSound() {
                 animationVolume: parseFloat(animationVolume)
             })
         });
-        
+
         const result = await response.json();
         if (result.success) {
             alert('✅ Gift sound added/updated successfully!');
             logAudioEvent('success', `Gift sound added/updated: ${label}`, null);
-            
+
             // Clear inputs
             clearGiftSoundForm();
-            
+
             // Reload lists
             await loadGiftSounds();
             await loadGiftCatalog(); // Reload catalog to update checkmarks
+            await loadGiftRecommendations();
         }
     } catch (error) {
         log.error('Error adding gift sound', { error: error.message });
@@ -1054,17 +1671,18 @@ async function addGiftSound() {
 
 async function deleteGiftSound(giftId) {
     if (!confirm(`Delete sound for Gift ID ${giftId}?`)) return;
-    
+
     try {
         const response = await fetch(`/api/soundboard/gifts/${giftId}`, {
             method: 'DELETE'
         });
-        
+
         const result = await response.json();
         if (result.success) {
             logAudioEvent('success', `Gift sound deleted: ${giftId}`, null);
             await loadGiftSounds();
             await loadGiftCatalog(); // Reload catalog to update checkmarks
+            await loadGiftRecommendations();
         }
     } catch (error) {
         log.error('Error deleting gift sound', { error: error.message });
@@ -1078,12 +1696,12 @@ async function openEditGiftModal(giftId) {
         const response = await fetch('/api/soundboard/gifts');
         const gifts = await response.json();
         const gift = gifts.find(g => g.giftId === giftId);
-        
+
         if (!gift) {
             alert('Gift sound not found!');
             return;
         }
-        
+
         // Create modal overlay
         const modal = document.createElement('div');
         modal.id = 'edit-gift-modal';
@@ -1099,50 +1717,52 @@ async function openEditGiftModal(giftId) {
         modal.style.justifyContent = 'center';
         modal.style.zIndex = '10001';
         modal.style.padding = '20px';
-        
+
         modal.innerHTML = `
             <div class="edit-gift-modal-content" style="background: var(--color-bg-primary); border: 2px solid var(--color-accent-primary); border-radius: 12px; max-width: 600px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);">
                 <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px 16px; border-bottom: 1px solid var(--color-border); flex-shrink: 0;">
                     <h3 style="color: var(--color-accent-primary); font-size: 1.3rem; font-weight: 600; margin: 0;">
-                        ✏️ Edit Gift Sound: ${escapeHtml(gift.label)}
+                        <i data-lucide="pencil" style="width: 18px; height: 18px; display: inline-block; vertical-align: middle; margin-right: 8px;"></i>
+                        <span>Edit Gift Sound: ${escapeHtml(gift.label)}</span>
                     </h3>
                     <button onclick="closeEditGiftModal()" style="background: transparent; border: none; color: var(--color-text-primary); cursor: pointer; padding: 8px; border-radius: 6px; font-size: 1.5rem; position: relative; z-index: 1; pointer-events: auto;">
                         ✕
                     </button>
                 </div>
-                
+
                 <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 20px 24px;">
                     <div class="form-grid" style="display: grid; gap: 16px;">
                         <div class="form-group">
                             <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--color-text-primary);">Gift ID</label>
                             <input type="number" id="edit-gift-id" value="${gift.giftId}" readonly class="form-input" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg-secondary); color: var(--color-text-primary);">
                         </div>
-                        
+
                         <div class="form-group">
                             <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--color-text-primary);">Label</label>
                             <input type="text" id="edit-gift-label" value="${escapeHtml(gift.label)}" class="form-input" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg-primary); color: var(--color-text-primary);">
                         </div>
-                        
+
                         <div class="form-group">
                             <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--color-text-primary);">MP3 URL</label>
                             <input type="text" id="edit-gift-url" value="${escapeHtml(gift.mp3Url)}" class="form-input" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg-primary); color: var(--color-text-primary);">
                         </div>
-                        
+
                         <div class="form-group">
                             <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--color-text-primary);">Sound Volume (0.0 - 1.0)</label>
                             <input type="number" id="edit-gift-volume" value="${gift.volume}" min="0" max="1" step="0.1" class="form-input" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg-primary); color: var(--color-text-primary);">
                         </div>
-                        
+
                         <div class="form-group">
                             <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--color-text-primary);">Animation URL (optional)</label>
                             <div style="display: flex; gap: 8px; align-items: center;">
                                 <input type="text" id="edit-gift-animation-url" value="${escapeHtml(gift.animationUrl || '')}" class="form-input" style="flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg-primary); color: var(--color-text-primary);">
                                 <button onclick="previewEditModalAnimation()" style="padding: 10px 14px; border-radius: 8px; border: 1px solid var(--color-accent-primary); background: transparent; color: var(--color-accent-primary); cursor: pointer; white-space: nowrap; position: relative; z-index: 1; pointer-events: auto;">
-                                    👁️ Preview
+                                    <i data-lucide="eye" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 6px;"></i>
+                                    <span>Preview</span>
                                 </button>
                             </div>
                         </div>
-                        
+
                         <div class="form-group">
                             <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--color-text-primary);">Animation Type</label>
                             <select id="edit-gift-animation-type" class="form-select" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg-primary); color: var(--color-text-primary);">
@@ -1152,7 +1772,7 @@ async function openEditGiftModal(giftId) {
                                 <option value="gif" ${gift.animationType === 'gif' ? 'selected' : ''}>GIF</option>
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--color-text-primary);">Animation Volume (0.0 - 1.0)</label>
                             <input type="number" id="edit-gift-animation-volume" value="${gift.animationVolume || 1.0}" min="0" max="1" step="0.1" class="form-input" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg-primary); color: var(--color-text-primary);">
@@ -1160,7 +1780,7 @@ async function openEditGiftModal(giftId) {
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="form-actions" style="display: flex; gap: 12px; padding: 16px 24px 20px; border-top: 1px solid var(--color-border); flex-shrink: 0; position: relative; z-index: 1;">
                     <button onclick="saveEditedGiftSound()" class="btn btn-primary" style="flex: 1; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; background: var(--color-accent-primary); color: white; position: relative; z-index: 1; pointer-events: auto;">
                         💾 Save Changes
@@ -1171,16 +1791,16 @@ async function openEditGiftModal(giftId) {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
-        
+
         // Close on background click
         modal.addEventListener('click', function(e) {
             if (e.target === modal) {
                 closeEditGiftModal();
             }
         });
-        
+
     } catch (error) {
         log.error('Error opening edit modal', { error: error.message });
         alert('Error opening edit modal!');
@@ -1201,23 +1821,23 @@ async function saveEditedGiftSound() {
         animationType = inferAnimationTypeFromUrl(animationUrl);
         animationTypeEl.value = animationType;
     }
-    
+
     if (isNaN(giftId) || !label || !url) {
         alert('Please fill in all required fields!');
         return;
     }
-    
+
     // Validate numeric values
     if (isNaN(volume) || volume < 0 || volume > 1) {
         alert('Sound volume must be between 0.0 and 1.0!');
         return;
     }
-    
+
     if (isNaN(animationVolume) || animationVolume < 0 || animationVolume > 1) {
         alert('Animation volume must be between 0.0 and 1.0!');
         return;
     }
-    
+
     try {
         const response = await fetch('/api/soundboard/gifts', {
             method: 'POST',
@@ -1232,7 +1852,7 @@ async function saveEditedGiftSound() {
                 animationVolume: animationVolume
             })
         });
-        
+
         const result = await response.json();
         if (result.success) {
             alert('✅ Gift sound updated successfully!');
@@ -1341,77 +1961,77 @@ function closeAnimationPreview() {
 async function testGiftSound(url, volume) {
     try {
         logAudioEvent('info', `Testing sound: ${url}`, { volume }, true);
-        
+
         // Stop any currently playing preview
         if (previewAudio) {
             previewAudio.pause();
             previewAudio.currentTime = 0;
             logAudioEvent('info', 'Stopped previous preview', null);
         }
-        
+
         // Create or reuse preview audio element
         if (!previewAudio) {
             previewAudio = document.createElement('audio');
-            
+
             // CRITICAL: Append preview audio to DOM for browser compatibility
             document.body.appendChild(previewAudio);
-            
+
             // Add event listeners for preview audio (using addEventListener for proper cleanup)
             previewAudio.addEventListener('ended', () => {
                 isPreviewPlaying = false;
                 logAudioEvent('success', 'Preview finished playing', null);
             });
-            
+
             previewAudio.addEventListener('error', (e) => {
                 isPreviewPlaying = false;
                 const errorMsg = previewAudio.error ? `Error code: ${previewAudio.error.code}` : 'Unknown error';
                 logAudioEvent('error', `Preview playback error: ${errorMsg}`, { url: previewAudio.src }, true);
             });
-            
+
             previewAudio.addEventListener('pause', () => {
                 if (!previewAudio.ended) {
                     logAudioEvent('info', 'Preview paused', null);
                 }
             });
         }
-        
+
         // Ensure audio unlocking if needed
         await ensureAudioUnlocked();
-        
+
         // Set the new source and volume (after ensuring audio context is unlocked)
         previewAudio.src = url;
         previewAudio.volume = parseFloat(volume) || 1.0;
-        
+
         // Load the audio before playing
         previewAudio.load();
-        
+
         // Wait for audio to be ready before playing
         await new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 reject(new Error('Audio loading timeout'));
             }, 10000); // 10 second timeout
-            
+
             const onCanPlay = () => {
                 clearTimeout(timeout);
                 resolve();
             };
-            
+
             const onError = () => {
                 clearTimeout(timeout);
                 const errorMsg = previewAudio.error ? `Error code: ${previewAudio.error.code}` : 'Unknown error';
                 reject(new Error(`Failed to load audio: ${errorMsg}`));
             };
-            
+
             // Event listeners with { once: true } automatically clean themselves up
             previewAudio.addEventListener('canplay', onCanPlay, { once: true });
             previewAudio.addEventListener('error', onError, { once: true });
         });
-        
+
         // Play the preview
         isPreviewPlaying = true;
         await previewAudio.play();
         logAudioEvent('success', `Preview started playing: ${url}`, null, true);
-        
+
     } catch (error) {
         isPreviewPlaying = false;
         log.error('Error testing sound', { error: error.message });
@@ -1624,9 +2244,7 @@ function clearGiftSoundForm() {
     document.getElementById('new-gift-animation-volume').value = '1.0';
 }
 
-// ========== GIFT CATALOG ==========
-async function loadGiftCatalog() {
-    // SYNCHRON vor dem fetch: Guard prüfen
+function renderGiftCatalog() {
     const infoDiv = document.getElementById('gift-catalog-info');
     const catalogDiv = document.getElementById('gift-catalog-list');
     if (!infoDiv || !catalogDiv) {
@@ -1634,64 +2252,156 @@ async function loadGiftCatalog() {
         return;
     }
 
+    const visibleCatalog = getFilteredGiftCatalog();
+    const totalCount = giftCatalogCache.length;
+    const hasLoadError = Boolean(giftCatalogLoadError);
+
+    if (hasLoadError) {
+        infoDiv.innerHTML = `<span class="text-red-400">${escapeHtml(giftCatalogLoadError)}</span>`;
+        if (totalCount === 0) {
+            catalogDiv.innerHTML = '';
+            return;
+        }
+    }
+
+    if (totalCount === 0) {
+        infoDiv.innerHTML = '<span class="text-yellow-400">No gifts in catalog. Connect to a stream and click "Refresh Catalog"</span>';
+        catalogDiv.innerHTML = '';
+        return;
+    }
+
+    if (!hasLoadError) {
+        renderGiftCatalogInfo(infoDiv, visibleCatalog.length, totalCount, giftCatalogLastUpdate || null);
+    }
+    catalogDiv.innerHTML = '';
+
+    if (visibleCatalog.length === 0) {
+        catalogDiv.innerHTML = '<div class="text-gray-400 text-sm text-center py-8">No gifts match your search.</div>';
+        return;
+    }
+
+    visibleCatalog.forEach(gift => {
+        const giftCard = document.createElement('div');
+        giftCard.className = 'bg-gray-600 p-3 rounded cursor-pointer hover:bg-gray-500 transition flex flex-col items-center';
+        giftCard.onclick = () => selectGift(gift);
+
+        const hasSound = isGiftConfigured(gift.id);
+        const borderClass = hasSound ? 'border-2 border-green-500' : '';
+
+        giftCard.innerHTML = `
+            <div class="relative ${borderClass} rounded">
+                ${gift.image_url
+                    ? `<img src="${gift.image_url}" alt="${escapeHtml(gift.name)}" class="w-16 h-16 object-contain rounded">`
+                    : `<div class="w-16 h-16 flex items-center justify-center text-3xl">🎁</div>`
+                }
+                ${hasSound ? '<div class="absolute -top-1 -right-1 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center text-xs">✓</div>' : ''}
+            </div>
+            <div class="text-xs text-center mt-2 font-semibold truncate w-full">${escapeHtml(gift.name)}</div>
+            <div class="text-xs text-gray-400">ID: ${gift.id}</div>
+            ${gift.diamond_count ? `<div class="text-xs text-yellow-400">💎 ${gift.diamond_count}</div>` : ''}
+        `;
+
+        catalogDiv.appendChild(giftCard);
+    });
+}
+
+function renderGiftCatalogModal() {
+    const gridDiv = document.getElementById('modal-gift-grid');
+    const summaryDiv = document.getElementById('modal-gift-search-summary');
+    if (!gridDiv) return;
+
+    const visibleCatalog = getFilteredGiftCatalog();
+    const totalCount = giftCatalogCache.length;
+    const hasLoadError = Boolean(giftCatalogLoadError);
+    const summaryText = giftCatalogSearchQuery
+        ? `${visibleCatalog.length} / ${totalCount} gifts shown`
+        : `${totalCount} gifts available`;
+
+    if (summaryDiv) {
+        summaryDiv.textContent = summaryText;
+    }
+
+    if (hasLoadError && totalCount === 0) {
+        gridDiv.innerHTML = `<div class="text-red-400 text-sm text-center py-8">${escapeHtml(giftCatalogLoadError)}</div>`;
+        return;
+    }
+
+    if (totalCount === 0) {
+        gridDiv.innerHTML = '<div class="text-gray-400 text-sm text-center py-8">No gifts available. Please start a TikTok LIVE stream to populate the gift catalog.</div>';
+        return;
+    }
+
+    if (visibleCatalog.length === 0) {
+        gridDiv.innerHTML = '<div class="text-gray-400 text-sm text-center py-8">No gifts match your search.</div>';
+        return;
+    }
+
+    const giftSoundsMap = {};
+    document.querySelectorAll('#gift-sounds-list tr').forEach(row => {
+        const firstCell = row.querySelector('td:first-child');
+        if (firstCell) {
+            giftSoundsMap[firstCell.textContent.trim()] = true;
+        }
+    });
+
+    gridDiv.innerHTML = '';
+    visibleCatalog.forEach(gift => {
+        const card = document.createElement('div');
+        card.className = 'gift-card';
+        if (giftSoundsMap[String(gift.id)]) {
+            card.classList.add('has-sound');
+        }
+        card.dataset.giftId = gift.id;
+        card.dataset.giftLabel = gift.name;
+
+        const imageHtml = gift.diamond_count
+            ? `<div class="gift-card-image">💎</div>`
+            : `<div class="gift-card-image">🎁</div>`;
+
+        card.innerHTML = `
+            ${imageHtml}
+            <div class="gift-card-name">${escapeHtml(gift.name)}</div>
+            <div class="gift-card-id">ID: ${gift.id}</div>
+            <div class="gift-card-coins">${gift.diamond_count || 0} 💎</div>
+            ${giftSoundsMap[String(gift.id)] ? '<div class="gift-card-badge">Has Sound</div>' : ''}
+        `;
+
+        card.addEventListener('click', () => bindSoundToGift(gift.id, gift.name));
+        gridDiv.appendChild(card);
+    });
+}
+
+// ========== GIFT CATALOG ==========
+async function loadGiftCatalog() {
     try {
-        const response = await fetch('/api/gift-catalog');
+        const locale = getSoundboardLocale();
+        const response = await fetch(`/api/gift-catalog?locale=${encodeURIComponent(locale)}`);
         const data = await response.json();
 
         if (!data.success) {
-            infoDiv.innerHTML = '<span class="text-red-400">Error loading gift catalog</span>';
-            catalogDiv.innerHTML = '';
+            giftCatalogLoadError = data.error || 'Error loading gift catalog';
+            renderGiftCatalog();
+            if (giftCatalogModalOpen) {
+                renderGiftCatalogModal();
+            }
             return;
         }
-        
-        const catalog = data.catalog || [];
-        const lastUpdate = data.lastUpdate;
-        
-        // Info anzeigen
-        if (catalog.length === 0) {
-            infoDiv.innerHTML = `
-                <span class="text-yellow-400">⚠️ No gifts in catalog. Connect to a stream and click "Refresh Catalog"</span>
-            `;
-            catalogDiv.innerHTML = '';
-            return;
+
+        giftCatalogLastUpdate = data.lastUpdate || '';
+        giftCatalogLoadError = '';
+        giftCatalogLocale = locale;
+        giftCatalogCache = data.catalog || [];
+        renderGiftCatalog();
+        if (giftCatalogModalOpen) {
+            renderGiftCatalogModal();
         }
-        
-        const updateText = lastUpdate ? `Last updated: ${new Date(lastUpdate).toLocaleString()}` : 'Never updated';
-        infoDiv.innerHTML = `
-            <span class="text-green-400">✅ ${catalog.length} gifts available</span>
-            <span class="mx-2">•</span>
-            <span class="text-gray-400">${updateText}</span>
-        `;
-        
-        // Katalog anzeigen
-        catalogDiv.innerHTML = '';
-        catalog.forEach(gift => {
-            const giftCard = document.createElement('div');
-            giftCard.className = 'bg-gray-600 p-3 rounded cursor-pointer hover:bg-gray-500 transition flex flex-col items-center';
-            giftCard.onclick = () => selectGift(gift);
-            
-            const hasSound = isGiftConfigured(gift.id);
-            const borderClass = hasSound ? 'border-2 border-green-500' : '';
-            
-            giftCard.innerHTML = `
-                <div class="relative ${borderClass} rounded">
-                    ${gift.image_url
-                        ? `<img src="${gift.image_url}" alt="${gift.name}" class="w-16 h-16 object-contain rounded">`
-                        : `<div class="w-16 h-16 flex items-center justify-center text-3xl">🎁</div>`
-                    }
-                    ${hasSound ? '<div class="absolute -top-1 -right-1 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center text-xs">✓</div>' : ''}
-                </div>
-                <div class="text-xs text-center mt-2 font-semibold truncate w-full">${gift.name}</div>
-                <div class="text-xs text-gray-400">ID: ${gift.id}</div>
-                ${gift.diamond_count ? `<div class="text-xs text-yellow-400">💎 ${gift.diamond_count}</div>` : ''}
-            `;
-            
-            catalogDiv.appendChild(giftCard);
-        });
-        
     } catch (error) {
         log.error('Error loading gift catalog', { error: error.message });
-        infoDiv.innerHTML = '<span class="text-red-400">Error loading catalog</span>';
+        giftCatalogLoadError = 'Error loading catalog';
+        renderGiftCatalog();
+        if (giftCatalogModalOpen) {
+            renderGiftCatalogModal();
+        }
         logAudioEvent('error', `Failed to load gift catalog: ${error.message}`, null);
     }
 }
@@ -1700,7 +2410,7 @@ function isGiftConfigured(giftId) {
     // Prüfe ob ein Sound für dieses Gift bereits konfiguriert ist
     const table = document.getElementById('gift-sounds-list');
     if (!table) return false;
-    
+
     const rows = table.querySelectorAll('tr');
     for (const row of rows) {
         const firstCell = row.querySelector('td:first-child');
@@ -1715,20 +2425,23 @@ async function refreshGiftCatalog() {
     const btn = document.getElementById('refresh-catalog-btn');
     const icon = document.getElementById('refresh-icon');
     const infoDiv = document.getElementById('gift-catalog-info');
-    
+
     // Button deaktivieren und Animation starten
     btn.disabled = true;
     icon.style.animation = 'spin 1s linear infinite';
     icon.style.display = 'inline-block';
     infoDiv.innerHTML = '<span class="text-blue-400">🔄 Updating gift catalog from stream...</span>';
-    
+
     try {
+        const locale = getSoundboardLocale();
         const response = await fetch('/api/gift-catalog/update', {
-            method: 'POST'
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ locale })
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
             infoDiv.innerHTML = `<span class="text-green-400">✅ ${result.message || 'Catalog updated successfully'}</span>`;
             logAudioEvent('success', 'Gift catalog updated', null);
@@ -1752,10 +2465,10 @@ function selectGift(gift) {
     // Formular mit Gift-Daten füllen
     document.getElementById('new-gift-id').value = gift.id;
     document.getElementById('new-gift-label').value = gift.name;
-    
+
     // Wenn bereits ein Sound konfiguriert ist, diese Daten laden
     loadExistingGiftSound(gift.id);
-    
+
     // Scroll zum Formular
     document.getElementById('new-gift-url').scrollIntoView({ behavior: 'smooth', block: 'center' });
     document.getElementById('new-gift-url').focus();
@@ -1765,7 +2478,7 @@ async function loadExistingGiftSound(giftId) {
     try {
         const response = await fetch('/api/soundboard/gifts');
         const gifts = await response.json();
-        
+
         const existingGift = gifts.find(g => g.giftId === giftId);
         if (existingGift) {
             document.getElementById('new-gift-url').value = existingGift.mp3Url || '';
@@ -1782,43 +2495,43 @@ async function loadExistingGiftSound(giftId) {
 // ========== MYINSTANTS SEARCH ==========
 async function searchMyInstants() {
     const query = document.getElementById('myinstants-search-input').value;
-    
+
     if (!query) {
         alert('Please enter a search query!');
         return;
     }
-    
+
     const resultsDiv = document.getElementById('myinstants-results');
-    resultsDiv.innerHTML = '<div class="text-gray-400 text-sm">🔍 Searching...</div>';
-    
+    resultsDiv.innerHTML = '<div class="text-gray-400 text-sm flex items-center justify-center gap-2"><i data-lucide="search" style="width: 14px; height: 14px;"></i><span>Searching...</span></div>';
+
     try {
         const response = await fetch(`/api/myinstants/search?query=${encodeURIComponent(query)}`);
         const data = await response.json();
-        
+
         if (!data.success || data.results.length === 0) {
             resultsDiv.innerHTML = '<div class="text-gray-400 text-sm">No results found</div>';
             return;
         }
-        
+
         resultsDiv.innerHTML = '';
         data.results.forEach(sound => {
             const div = document.createElement('div');
             div.className = 'myinstants-result-item';
-            
+
             // Generate unique ID for this sound's volume control
             const soundId = generateUniqueSoundId();
-            
+
             // Create volume slider container
             const volumeContainer = document.createElement('div');
             volumeContainer.className = 'flex items-center gap-2';
             volumeContainer.innerHTML = `
                 <label for="${soundId}-volume" class="volume-label" style="min-width: 40px;">Vol:</label>
-                <input type="range" id="${soundId}-volume" min="0" max="100" value="100" 
+                <input type="range" id="${soundId}-volume" min="0" max="100" value="100"
                     class="volume-slider volume-slider-inline"
                     title="Preview volume">
                 <span id="${soundId}-volume-label" class="volume-label">100%</span>
             `;
-            
+
             // Create play button
             const playBtn = document.createElement('button');
             playBtn.className = 'bg-blue-600 px-3 py-2 rounded text-sm hover:bg-blue-700 transition flex items-center gap-2';
@@ -1830,7 +2543,7 @@ async function searchMyInstants() {
                 <i data-lucide="play" style="width: 14px; height: 14px;"></i>
                 <span>Play</span>
             `;
-            
+
             // Create use button
             const useBtn = document.createElement('button');
             useBtn.className = 'bg-green-600 px-3 py-2 rounded text-sm hover:bg-green-700 transition flex items-center gap-2';
@@ -1842,7 +2555,7 @@ async function searchMyInstants() {
                 <i data-lucide="check" style="width: 14px; height: 14px;"></i>
                 <span>Use</span>
             `;
-            
+
             // Create result structure
             div.innerHTML = `
                 <div class="myinstants-result-info">
@@ -1851,28 +2564,28 @@ async function searchMyInstants() {
                 </div>
                 <div class="myinstants-result-actions"></div>
             `;
-            
+
             // Append controls to actions div
             const actionsDiv = div.querySelector('.myinstants-result-actions');
             actionsDiv.appendChild(volumeContainer);
             actionsDiv.appendChild(playBtn);
             actionsDiv.appendChild(useBtn);
-            
+
             // Add volume slider change listener
             const volumeSlider = volumeContainer.querySelector(`#${soundId}-volume`);
             const volumeLabel = volumeContainer.querySelector(`#${soundId}-volume-label`);
             volumeSlider.addEventListener('input', function() {
                 volumeLabel.textContent = `${this.value}%`;
             });
-            
+
             resultsDiv.appendChild(div);
         });
-        
+
         // Re-initialize Lucide icons for new elements
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
-        
+
     } catch (error) {
         log.error('Error searching MyInstants', { error: error.message });
         resultsDiv.innerHTML = '<div class="text-red-400 text-sm">Error searching MyInstants</div>';
@@ -1890,13 +2603,13 @@ function useMyInstantsSound(name, url) {
 async function exportAudioAnimations() {
     try {
         logAudioEvent('info', 'Exporting audio animations...', null);
-        
+
         const response = await fetch('/api/soundboard/export-animations');
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1907,7 +2620,7 @@ async function exportAudioAnimations() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        
+
         logAudioEvent('success', 'Audio animations exported successfully!', null);
         alert('✅ Audio-Animationen erfolgreich exportiert!');
     } catch (error) {
@@ -1921,23 +2634,23 @@ async function importAudioAnimations(file) {
         alert('Bitte wählen Sie eine JSON-Datei zum Importieren!');
         return;
     }
-    
+
     if (!file.name.endsWith('.json')) {
         alert('Bitte wählen Sie eine gültige JSON-Datei!');
         return;
     }
-    
+
     try {
         logAudioEvent('info', `Importing audio animations from file: ${file.name}`, null);
-        
+
         const fileContent = await file.text();
         const importData = JSON.parse(fileContent);
-        
+
         // Validate the import data structure
         if (!importData.animations || !Array.isArray(importData.animations)) {
             throw new Error('Invalid import file format');
         }
-        
+
         const response = await fetch('/api/soundboard/import-animations', {
             method: 'POST',
             headers: {
@@ -1945,13 +2658,13 @@ async function importAudioAnimations(file) {
             },
             body: JSON.stringify(importData)
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
             const message = `Import abgeschlossen: ${result.imported} neue, ${result.updated} aktualisiert, ${result.failed} fehlgeschlagen`;
             logAudioEvent('success', message, result);
-            
+
             let alertMessage = `✅ ${message}`;
             if (result.errors && result.errors.length > 0) {
                 alertMessage += '\n\nFehler:\n' + result.errors.slice(0, 5).join('\n');
@@ -1959,9 +2672,9 @@ async function importAudioAnimations(file) {
                     alertMessage += `\n... und ${result.errors.length - 5} weitere`;
                 }
             }
-            
+
             alert(alertMessage);
-            
+
             // Reload the gift sounds list to show the imported data
             await loadGiftSounds();
             await loadGiftCatalog();
@@ -2029,7 +2742,7 @@ async function loadCategories() {
     try {
         const response = await fetch('/api/myinstants/categories');
         const data = await response.json();
-        
+
         if (data.success && data.results && data.results.length > 0) {
             availableCategories = data.results;
             renderCategoryButtons();
@@ -2062,29 +2775,29 @@ async function loadCategories() {
 function renderCategoryButtons() {
     const container = document.getElementById('category-buttons-container');
     if (!container) return;
-    
+
     // Keep the "All" button, remove the rest
     const allButton = container.querySelector('[data-category="all"]');
     container.innerHTML = '';
     if (allButton) {
         container.appendChild(allButton);
     }
-    
+
     // Add category buttons from API
     availableCategories.forEach(category => {
         const button = document.createElement('button');
         button.className = 'category-btn';
         button.dataset.category = category.slug || category.name.toLowerCase();
-        
+
         const iconName = getCategoryIcon(category.name);
         button.innerHTML = `
             <i data-lucide="${iconName}" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>
             ${escapeHtml(category.name)}
         `;
-        
+
         container.appendChild(button);
     });
-    
+
     // Re-initialize Lucide icons for new buttons
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
@@ -2094,29 +2807,29 @@ function renderCategoryButtons() {
 async function performAdvancedSearch() {
     const query = document.getElementById('advanced-search-input').value;
     const resultsDiv = document.getElementById('advanced-search-results');
-    
+
     if (!query) {
         alert('Please enter a search query!');
         return;
     }
-    
-    resultsDiv.innerHTML = '<div class="text-gray-400 text-sm text-center py-4">🔍 Searching...</div>';
-    
+
+    resultsDiv.innerHTML = '<div class="text-gray-400 text-sm text-center py-4 flex items-center justify-center gap-2"><i data-lucide="search" style="width: 14px; height: 14px;"></i><span>Searching...</span></div>';
+
     try {
         // Build search query with category if not "all"
         let searchQuery = query;
         if (currentCategory !== 'all') {
             searchQuery = `${currentCategory} ${query}`;
         }
-        
+
         const response = await fetch(`/api/myinstants/search?query=${encodeURIComponent(searchQuery)}`);
         const data = await response.json();
-        
+
         if (!data.success || data.results.length === 0) {
             resultsDiv.innerHTML = '<div class="text-gray-400 text-sm text-center py-4">No results found. Try a different search term or category.</div>';
             return;
         }
-        
+
         renderSearchResults(data.results, resultsDiv);
     } catch (error) {
         log.error('Error searching MyInstants', { error: error.message });
@@ -2126,17 +2839,17 @@ async function performAdvancedSearch() {
 
 async function searchTrending() {
     const resultsDiv = document.getElementById('advanced-search-results');
-    resultsDiv.innerHTML = '<div class="text-gray-400 text-sm text-center py-4">🔍 Loading trending sounds...</div>';
-    
+    resultsDiv.innerHTML = '<div class="text-gray-400 text-sm text-center py-4 flex items-center justify-center gap-2"><i data-lucide="search" style="width: 14px; height: 14px;"></i><span>Loading trending sounds...</span></div>';
+
     try {
         const response = await fetch('/api/myinstants/trending');
         const data = await response.json();
-        
+
         if (!data.success || data.results.length === 0) {
             resultsDiv.innerHTML = '<div class="text-gray-400 text-sm text-center py-4">No trending sounds found.</div>';
             return;
         }
-        
+
         renderSearchResults(data.results, resultsDiv);
     } catch (error) {
         log.error('Error loading trending sounds', { error: error.message });
@@ -2146,25 +2859,25 @@ async function searchTrending() {
 
 function renderSearchResults(results, container) {
     container.innerHTML = '';
-    
+
     results.forEach(sound => {
         const div = document.createElement('div');
         div.className = 'myinstants-result-item';
-        
+
         // Generate unique ID for this sound's volume control
         const soundId = generateUniqueSoundId();
-        
+
         // Create volume slider container
         const volumeContainer = document.createElement('div');
         volumeContainer.className = 'flex items-center gap-2';
         volumeContainer.innerHTML = `
             <label for="${soundId}-volume" class="volume-label" style="min-width: 40px;">Vol:</label>
-            <input type="range" id="${soundId}-volume" min="0" max="100" value="100" 
+            <input type="range" id="${soundId}-volume" min="0" max="100" value="100"
                 class="volume-slider volume-slider-inline"
                 title="Preview volume">
             <span id="${soundId}-volume-label" class="volume-label">100%</span>
         `;
-        
+
         // Create preview button
         const previewBtn = document.createElement('button');
         previewBtn.className = 'bg-blue-600 px-3 py-2 rounded text-sm hover:bg-blue-700 transition flex items-center gap-2';
@@ -2176,7 +2889,7 @@ function renderSearchResults(results, container) {
             <i data-lucide="play" style="width: 14px; height: 14px;"></i>
             <span>Preview</span>
         `;
-        
+
         // Create use button
         const useBtn = document.createElement('button');
         useBtn.className = 'bg-green-600 px-3 py-2 rounded text-sm hover:bg-green-700 transition flex items-center gap-2';
@@ -2188,7 +2901,7 @@ function renderSearchResults(results, container) {
             <i data-lucide="link" style="width: 14px; height: 14px;"></i>
             <span>Use</span>
         `;
-        
+
         // Create result structure
         div.innerHTML = `
             <div class="myinstants-result-info">
@@ -2197,23 +2910,23 @@ function renderSearchResults(results, container) {
             </div>
             <div class="myinstants-result-actions"></div>
         `;
-        
+
         // Append controls to actions div
         const actionsDiv = div.querySelector('.myinstants-result-actions');
         actionsDiv.appendChild(volumeContainer);
         actionsDiv.appendChild(previewBtn);
         actionsDiv.appendChild(useBtn);
-        
+
         // Add volume slider change listener
         const volumeSlider = volumeContainer.querySelector(`#${soundId}-volume`);
         const volumeLabel = volumeContainer.querySelector(`#${soundId}-volume-label`);
         volumeSlider.addEventListener('input', function() {
             volumeLabel.textContent = `${this.value}%`;
         });
-        
+
         container.appendChild(div);
     });
-    
+
     // Re-initialize Lucide icons for new elements
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
@@ -2222,7 +2935,7 @@ function renderSearchResults(results, container) {
 
 function handleCategoryClick(category) {
     currentCategory = category;
-    
+
     // Update active state
     document.querySelectorAll('.category-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -2235,67 +2948,26 @@ function handleCategoryClick(category) {
 // ========== GIFT CATALOG MODAL ==========
 async function openGiftCatalogModal(soundName, soundUrl) {
     selectedSoundForBinding = { name: soundName, url: soundUrl };
-    
-    // Update selected sound info
-    document.getElementById('selected-sound-name').textContent = soundName;
-    
-    // Load gift catalog
-    const gridDiv = document.getElementById('modal-gift-grid');
-    gridDiv.innerHTML = '<div class="text-gray-400 text-sm text-center py-8">Loading gifts...</div>';
-    
-    try {
-        const response = await fetch('/api/soundboard/catalog');
-        const data = await response.json();
-        
-        if (!data.success || !data.gifts || data.gifts.length === 0) {
-            gridDiv.innerHTML = '<div class="text-gray-400 text-sm text-center py-8">No gifts available. Please start a TikTok LIVE stream to populate the gift catalog.</div>';
-        } else {
-            // Get current gift sounds to mark which gifts already have sounds
-            const giftSoundsResponse = await fetch('/api/soundboard/gifts');
-            const giftSoundsData = await giftSoundsResponse.json();
-            const giftSoundsMap = {};
-            giftSoundsData.forEach(gs => {
-                giftSoundsMap[gs.giftId] = true;
-            });
-            
-            gridDiv.innerHTML = '';
-            data.gifts.forEach(gift => {
-                const card = document.createElement('div');
-                card.className = 'gift-card';
-                if (giftSoundsMap[gift.id]) {
-                    card.classList.add('has-sound');
-                }
-                card.dataset.giftId = gift.id;
-                card.dataset.giftLabel = gift.name;
-                
-                const imageHtml = gift.diamond_count 
-                    ? `<div class="gift-card-image">💎</div>`
-                    : `<div class="gift-card-image">🎁</div>`;
-                
-                card.innerHTML = `
-                    ${imageHtml}
-                    <div class="gift-card-name">${escapeHtml(gift.name)}</div>
-                    <div class="gift-card-id">ID: ${gift.id}</div>
-                    <div class="gift-card-coins">${gift.diamond_count || 0} 💎</div>
-                    ${giftSoundsMap[gift.id] ? '<div class="gift-card-badge">Has Sound</div>' : ''}
-                `;
-                
-                card.addEventListener('click', () => bindSoundToGift(gift.id, gift.name));
-                gridDiv.appendChild(card);
-            });
-        }
-    } catch (error) {
-        log.error('Error loading gift catalog', { error: error.message });
-        gridDiv.innerHTML = '<div class="text-red-400 text-sm text-center py-8">Error loading gifts. Please try again.</div>';
+    giftCatalogModalOpen = true;
+
+    const selectedNameEl = document.getElementById('selected-sound-name');
+    if (selectedNameEl) {
+        selectedNameEl.textContent = soundName;
     }
-    
-    // Show modal
+
+    if (!giftCatalogCache.length || giftCatalogLocale !== getSoundboardLocale()) {
+        await loadGiftCatalog();
+    } else {
+        renderGiftCatalogModal();
+    }
+
     document.getElementById('gift-catalog-modal').classList.add('active');
 }
 
 function closeGiftCatalogModal() {
     document.getElementById('gift-catalog-modal').classList.remove('active');
     selectedSoundForBinding = null;
+    giftCatalogModalOpen = false;
 }
 
 async function bindSoundToGift(giftId, giftLabel) {
@@ -2303,7 +2975,7 @@ async function bindSoundToGift(giftId, giftLabel) {
         alert('No sound selected!');
         return;
     }
-    
+
     try {
         const response = await fetch('/api/soundboard/gifts', {
             method: 'POST',
@@ -2317,12 +2989,12 @@ async function bindSoundToGift(giftId, giftLabel) {
                 animationType: 'none'
             })
         });
-        
+
         const result = await response.json();
         if (result.success) {
             alert(`✅ Sound "${selectedSoundForBinding.name}" successfully bound to gift "${giftLabel}"!`);
             closeGiftCatalogModal();
-            
+
             // Reload gift sounds list
             await loadGiftSounds();
             await loadGiftCatalog();
@@ -2343,24 +3015,24 @@ async function ensureAudioUnlocked() {
     if (soundboardAudioUnlocked) {
         return true;
     }
-    
+
     try {
         // Try to create and resume AudioContext
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (AudioContext) {
             const audioContext = new AudioContext();
-            
+
             if (audioContext.state === 'suspended') {
                 await audioContext.resume();
             }
-            
+
             updateAudioContextStatus(audioContext.state);
-            
+
             // Test with a silent audio to unlock
             const audio = document.createElement('audio');
             audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
             audio.volume = 0.01;
-            
+
             await audio.play();
             soundboardAudioUnlocked = true;
             updateAutoplayStatus('Allowed');
@@ -2378,7 +3050,7 @@ function toggleAudioTestCard() {
     audioTestMinimized = !audioTestMinimized;
     const content = document.getElementById('audio-test-content');
     const btn = document.getElementById('minimize-audio-test-btn');
-    
+
     if (audioTestMinimized) {
         content.style.display = 'none';
         btn.innerHTML = '<i data-lucide="chevron-down" style="width: 16px; height: 16px;"></i>';
@@ -2388,7 +3060,7 @@ function toggleAudioTestCard() {
         btn.innerHTML = '<i data-lucide="chevron-up" style="width: 16px; height: 16px;"></i>';
         btn.title = 'Collapse section';
     }
-    
+
     // Re-initialize Lucide icons
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
@@ -2397,25 +3069,25 @@ function toggleAudioTestCard() {
 
 async function enableAudioPermissions() {
     logAudioEvent('info', 'Attempting to enable audio permissions...', null);
-    
+
     try {
         // Try to create an AudioContext
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (AudioContext) {
             const audioContext = new AudioContext();
-            
+
             if (audioContext.state === 'suspended') {
                 await audioContext.resume();
             }
-            
+
             updateAudioContextStatus(audioContext.state);
             logAudioEvent('success', `Audio context enabled: ${audioContext.state}`, null);
-            
+
             // Test with a silent audio
             const audio = document.createElement('audio');
             audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
             audio.volume = 0.01;
-            
+
             try {
                 await audio.play();
                 soundboardAudioUnlocked = true;
@@ -2434,12 +3106,12 @@ async function enableAudioPermissions() {
 
 function testAudioPlayback() {
     logAudioEvent('info', 'Testing audio playback...', null);
-    
+
     const player = document.getElementById('audio-test-player');
     const audio = document.getElementById('test-audio-element');
-    
+
     player.style.display = 'block';
-    
+
     audio.play().then(() => {
         logAudioEvent('success', 'Test audio playback started', null);
     }).catch(err => {
@@ -2485,23 +3157,23 @@ function updateAutoplayStatus(status) {
 
 function logAudioEvent(level, message, data, alwaysLog = false) {
     const verboseLogging = document.getElementById('verbose-logging');
-    
+
     // Skip logging if verbose logging is disabled AND this is not a critical event
     if (!alwaysLog && verboseLogging && !verboseLogging.checked) {
         return;
     }
-    
+
     const logDiv = document.getElementById('audio-debug-log');
     if (!logDiv) return;
-    
+
     const timestamp = new Date().toLocaleTimeString();
     const icons = {
-        'info': 'ℹ️',
-        'success': '✅',
-        'warning': '⚠️',
-        'error': '❌',
-        'play': '🔊',
-        'preview': '👁️'
+        'info': 'info',
+        'success': 'check',
+        'warning': 'triangle-alert',
+        'error': 'x',
+        'play': 'volume-2',
+        'preview': 'eye'
     };
     const colors = {
         'info': '#60a5fa',
@@ -2511,26 +3183,38 @@ function logAudioEvent(level, message, data, alwaysLog = false) {
         'play': '#8b5cf6',
         'preview': '#ec4899'
     };
-    
-    const icon = icons[level] || 'ℹ️';
+
+    const icon = icons[level] || 'info';
     const color = colors[level] || '#94a3b8';
-    
+
     const entry = document.createElement('div');
     entry.style.color = color;
     entry.style.marginBottom = '4px';
-    
-    let text = `${icon} [${timestamp}] ${message}`;
-    if (data) {
-        text += ` ${JSON.stringify(data)}`;
-    }
-    
-    entry.textContent = text;
-    
+    entry.style.display = 'flex';
+    entry.style.alignItems = 'flex-start';
+    entry.style.gap = '6px';
+
+    const iconEl = document.createElement('i');
+    iconEl.dataset.lucide = icon;
+    iconEl.style.width = '14px';
+    iconEl.style.height = '14px';
+    iconEl.style.flex = '0 0 auto';
+    iconEl.style.marginTop = '2px';
+
+    const textEl = document.createElement('span');
+    textEl.textContent = `[${timestamp}] ${message}${data ? ` ${JSON.stringify(data)}` : ''}`;
+
+    entry.appendChild(iconEl);
+    entry.appendChild(textEl);
+
     logDiv.appendChild(entry);
-    
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+
     // Auto-scroll to bottom
     logDiv.scrollTop = logDiv.scrollHeight;
-    
+
     // Limit log entries to last 100
     while (logDiv.children.length > 100) {
         logDiv.removeChild(logDiv.firstChild);
@@ -2546,7 +3230,7 @@ function checkAudioSystemStatus() {
     } else {
         updateAudioContextStatus('Not supported');
     }
-    
+
     updateAutoplayStatus('Checking...');
 }
 
@@ -2556,21 +3240,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
-    
+
+    initializeSoundboardWorkspace();
+
     // Load initial data
     loadSoundboardSettings();
     loadGiftSounds();
     loadGiftCatalog();
+    loadGiftRecommendations();
     loadCategories(); // Load categories for advanced search
     checkAudioSystemStatus();
     initializeEventSoundSliders(); // Initialize event sound volume sliders
-    
-    // Soundboard save button
-    const saveSoundboardBtn = document.getElementById('save-soundboard-btn');
-    if (saveSoundboardBtn) {
-        saveSoundboardBtn.addEventListener('click', saveSoundboardSettings);
-    }
-    
+
     // Play mode selector - update currentPlayMode when changed
     const playModeSelector = document.getElementById('soundboard-play-mode');
     if (playModeSelector) {
@@ -2578,21 +3259,35 @@ document.addEventListener('DOMContentLoaded', function() {
             currentPlayMode = this.value;
             log.info('Play mode changed', { mode: currentPlayMode });
             logAudioEvent('info', `Play mode changed to: ${currentPlayMode}`, null);
-            
+
             // Clear all queues when switching modes to prevent confusion
             clearAllQueues();
         });
     }
-    
+
     // Test sound buttons (event delegation)
     document.addEventListener('click', function(event) {
+        const sortBtn = event.target.closest('[data-gift-sort-key]');
+        if (sortBtn) {
+            const sortKey = sortBtn.dataset.giftSortKey;
+            if (giftSoundsSortState.key === sortKey) {
+                giftSoundsSortState.direction = giftSoundsSortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                giftSoundsSortState.key = sortKey;
+                giftSoundsSortState.direction = 'asc';
+            }
+
+            renderGiftSoundsTable();
+            return;
+        }
+
         const testSoundBtn = event.target.closest('[data-test-sound]');
         if (testSoundBtn) {
             const soundType = testSoundBtn.dataset.testSound;
             testEventSound(soundType);
             return;
         }
-        
+
         // Handle MyInstants and gift sound action buttons
         const actionBtn = event.target.closest('[data-action]');
         if (actionBtn) {
@@ -2627,23 +3322,71 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (action === 'delete-gift') {
                 const giftId = parseInt(actionBtn.dataset.giftId);
                 deleteGiftSound(giftId);
+            } else if (action === 'configure-recommended-gift') {
+                const giftId = parseInt(actionBtn.dataset.giftId);
+                configureRecommendedGift(giftId);
             }
             return;
         }
     });
-    
+
+    const refreshGiftRecommendationsBtn = document.getElementById('refresh-gift-recommendations-btn');
+    if (refreshGiftRecommendationsBtn) {
+        refreshGiftRecommendationsBtn.addEventListener('click', loadGiftRecommendations);
+    }
+
     // Catalog refresh button
     const refreshCatalogBtn = document.getElementById('refresh-catalog-btn');
     if (refreshCatalogBtn) {
         refreshCatalogBtn.addEventListener('click', refreshGiftCatalog);
     }
-    
+
+    const giftCatalogSearchInput = document.getElementById('gift-catalog-search-input');
+    if (giftCatalogSearchInput) {
+        giftCatalogSearchInput.addEventListener('input', function() {
+            clearTimeout(giftCatalogSearchTimeout);
+            giftCatalogSearchTimeout = setTimeout(() => {
+                updateGiftCatalogSearchQuery(giftCatalogSearchInput.value || '');
+            }, 120);
+        });
+    }
+
+    const clearGiftCatalogSearchBtn = document.getElementById('clear-gift-catalog-search');
+    if (clearGiftCatalogSearchBtn) {
+        clearGiftCatalogSearchBtn.addEventListener('click', function() {
+            updateGiftCatalogSearchQuery('');
+            if (giftCatalogSearchInput) {
+                giftCatalogSearchInput.focus();
+            }
+        });
+    }
+
+    const modalGiftSearchInput = document.getElementById('modal-gift-search-input');
+    if (modalGiftSearchInput) {
+        modalGiftSearchInput.addEventListener('input', function() {
+            clearTimeout(giftCatalogSearchTimeout);
+            giftCatalogSearchTimeout = setTimeout(() => {
+                updateGiftCatalogSearchQuery(modalGiftSearchInput.value || '');
+            }, 120);
+        });
+    }
+
+    const clearModalGiftSearchBtn = document.getElementById('clear-modal-gift-search');
+    if (clearModalGiftSearchBtn) {
+        clearModalGiftSearchBtn.addEventListener('click', function() {
+            updateGiftCatalogSearchQuery('');
+            if (modalGiftSearchInput) {
+                modalGiftSearchInput.focus();
+            }
+        });
+    }
+
     // MyInstants search
     const myinstantsSearchBtn = document.getElementById('myinstants-search-btn');
     if (myinstantsSearchBtn) {
         myinstantsSearchBtn.addEventListener('click', searchMyInstants);
     }
-    
+
     // MyInstants search on Enter key
     const myinstantsSearchInput = document.getElementById('myinstants-search-input');
     if (myinstantsSearchInput) {
@@ -2651,6 +3394,29 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.key === 'Enter') {
                 searchMyInstants();
             }
+        });
+    }
+
+    const giftSoundsSearchInput = document.getElementById('gift-sounds-search-input');
+    if (giftSoundsSearchInput) {
+        giftSoundsSearchInput.addEventListener('input', function(e) {
+            clearTimeout(giftSoundsSearchTimeout);
+            giftSoundsSearchTimeout = setTimeout(() => {
+                giftSoundsSearchQuery = giftSoundsSearchInput.value || '';
+                renderGiftSoundsTable();
+            }, 180);
+        });
+    }
+
+    const clearGiftSoundsSearchBtn = document.getElementById('gift-sounds-search-clear');
+    if (clearGiftSoundsSearchBtn) {
+        clearGiftSoundsSearchBtn.addEventListener('click', function() {
+            giftSoundsSearchQuery = '';
+            if (giftSoundsSearchInput) {
+                giftSoundsSearchInput.value = '';
+                giftSoundsSearchInput.focus();
+            }
+            renderGiftSoundsTable();
         });
     }
 
@@ -2689,43 +3455,43 @@ document.addEventListener('DOMContentLoaded', function() {
     if (testFocusedAnimationBtn) {
         testFocusedAnimationBtn.addEventListener('click', testFocusedAnimation);
     }
-    
+
     // Add gift sound button
     const addGiftSoundBtn = document.getElementById('add-gift-sound-btn');
     if (addGiftSoundBtn) {
         addGiftSoundBtn.addEventListener('click', addGiftSound);
     }
-    
+
     // Clear gift form button
     const clearGiftFormBtn = document.getElementById('clear-gift-form-btn');
     if (clearGiftFormBtn) {
         clearGiftFormBtn.addEventListener('click', clearGiftSoundForm);
     }
-    
+
     // Audio test card minimize/maximize button
     const minimizeAudioTestBtn = document.getElementById('minimize-audio-test-btn');
     if (minimizeAudioTestBtn) {
         minimizeAudioTestBtn.addEventListener('click', toggleAudioTestCard);
     }
-    
+
     // Enable audio button
     const enableAudioBtn = document.getElementById('enable-audio-btn');
     if (enableAudioBtn) {
         enableAudioBtn.addEventListener('click', enableAudioPermissions);
     }
-    
+
     // Test audio button
     const testAudioBtn = document.getElementById('test-audio-btn');
     if (testAudioBtn) {
         testAudioBtn.addEventListener('click', testAudioPlayback);
     }
-    
+
     // Clear audio log button
     const clearAudioLogBtn = document.getElementById('clear-audio-log-btn');
     if (clearAudioLogBtn) {
         clearAudioLogBtn.addEventListener('click', clearAudioLog);
     }
-    
+
     // Verbose logging checkbox
     const verboseLoggingCheckbox = document.getElementById('verbose-logging');
     if (verboseLoggingCheckbox) {
@@ -2735,13 +3501,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Advanced search button
     const advancedSearchBtn = document.getElementById('advanced-search-btn');
     if (advancedSearchBtn) {
         advancedSearchBtn.addEventListener('click', performAdvancedSearch);
     }
-    
+
     // Advanced search on Enter key
     const advancedSearchInput = document.getElementById('advanced-search-input');
     if (advancedSearchInput) {
@@ -2751,13 +3517,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Trending search button
     const trendingSearchBtn = document.getElementById('trending-search-btn');
     if (trendingSearchBtn) {
         trendingSearchBtn.addEventListener('click', searchTrending);
     }
-    
+
+    if (window.i18n && typeof window.i18n.onLanguageChange === 'function') {
+        window.i18n.onLanguageChange(() => {
+            loadGiftCatalog();
+        });
+    }
+
     // Category buttons (event delegation for dynamically loaded categories)
     const categoryContainer = document.getElementById('category-buttons-container');
     if (categoryContainer) {
@@ -2768,13 +3540,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Close gift catalog modal
     const closeGiftModalBtn = document.getElementById('close-gift-modal');
     if (closeGiftModalBtn) {
         closeGiftModalBtn.addEventListener('click', closeGiftCatalogModal);
     }
-    
+
     // Close modal when clicking overlay
     const giftCatalogModal = document.getElementById('gift-catalog-modal');
     if (giftCatalogModal) {
@@ -2784,13 +3556,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Export audio animations button
     const exportAnimationsBtn = document.getElementById('export-animations-btn');
     if (exportAnimationsBtn) {
         exportAnimationsBtn.addEventListener('click', exportAudioAnimations);
     }
-    
+
     // Import audio animations file input
     const importAnimationsFile = document.getElementById('import-animations-file');
     if (importAnimationsFile) {
@@ -2803,45 +3575,45 @@ document.addEventListener('DOMContentLoaded', function() {
             e.target.value = '';
         });
     }
-    
+
     // Initialize OBS overlay URL
     initializeOverlayUrl();
-    
+
     // Initialize collapsible sections
     initializeCollapsibleSections();
-    
+
     // Initialize event animation sliders
     initializeEventAnimationSliders();
-    
+
     // Manual config import/export buttons
     const loadConfigToTextareaBtn = document.getElementById('load-config-to-textarea-btn');
     if (loadConfigToTextareaBtn) {
         loadConfigToTextareaBtn.addEventListener('click', loadConfigToTextarea);
     }
-    
+
     const importConfigFromTextareaBtn = document.getElementById('import-config-from-textarea-btn');
     if (importConfigFromTextareaBtn) {
         importConfigFromTextareaBtn.addEventListener('click', importConfigFromTextarea);
     }
-    
+
     const copyConfigTextareaBtn = document.getElementById('copy-config-textarea-btn');
     if (copyConfigTextareaBtn) {
         copyConfigTextareaBtn.addEventListener('click', copyConfigTextarea);
     }
-    
+
     const clearConfigTextareaBtn = document.getElementById('clear-config-textarea-btn');
     if (clearConfigTextareaBtn) {
         clearConfigTextareaBtn.addEventListener('click', clearConfigTextarea);
     }
-    
+
     const minimizeConfigImportExportBtn = document.getElementById('minimize-config-import-export-btn');
     if (minimizeConfigImportExportBtn) {
         minimizeConfigImportExportBtn.addEventListener('click', toggleConfigImportExportCard);
     }
-    
+
     // Load current config into textarea on page load
     loadConfigToTextarea();
-    
+
     logAudioEvent('info', 'Soundboard UI initialized', null);
 });
 
@@ -2852,7 +3624,7 @@ function toggleConfigImportExportCard() {
     configImportExportMinimized = !configImportExportMinimized;
     const content = document.getElementById('config-import-export-content');
     const btn = document.getElementById('minimize-config-import-export-btn');
-    
+
     if (configImportExportMinimized) {
         content.style.display = 'none';
         btn.innerHTML = '<i data-lucide="chevron-down" style="width: 16px; height: 16px;"></i>';
@@ -2862,7 +3634,7 @@ function toggleConfigImportExportCard() {
         btn.innerHTML = '<i data-lucide="chevron-up" style="width: 16px; height: 16px;"></i>';
         btn.title = 'Collapse section';
     }
-    
+
     // Re-initialize Lucide icons
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
@@ -2872,21 +3644,21 @@ function toggleConfigImportExportCard() {
 async function loadConfigToTextarea() {
     const textarea = document.getElementById('config-import-export-textarea');
     if (!textarea) return;
-    
+
     try {
         logAudioEvent('info', 'Loading configuration to textarea...', null);
-        
+
         const response = await fetch('/api/soundboard/export-animations');
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         // Format JSON with indentation for readability
         textarea.value = JSON.stringify(data, null, 2);
-        
+
         logAudioEvent('success', `Configuration loaded: ${data.animationsCount || 0} animations`, null);
     } catch (error) {
         logAudioEvent('error', `Failed to load configuration: ${error.message}`, null);
@@ -2898,24 +3670,24 @@ async function loadConfigToTextarea() {
 async function importConfigFromTextarea() {
     const textarea = document.getElementById('config-import-export-textarea');
     if (!textarea) return;
-    
+
     const configText = textarea.value.trim();
-    
+
     if (!configText) {
         alert('Bitte füge zuerst eine Konfiguration in das Textfeld ein!');
         return;
     }
-    
+
     try {
         logAudioEvent('info', 'Importing configuration from textarea...', null);
-        
+
         const importData = JSON.parse(configText);
-        
+
         // Validate the import data structure
         if (!importData.animations || !Array.isArray(importData.animations)) {
             throw new Error('Ungültiges Datenformat: "animations" Array fehlt');
         }
-        
+
         const response = await fetch('/api/soundboard/import-animations', {
             method: 'POST',
             headers: {
@@ -2923,13 +3695,13 @@ async function importConfigFromTextarea() {
             },
             body: JSON.stringify(importData)
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
             const message = `Import abgeschlossen: ${result.imported} neue, ${result.updated} aktualisiert, ${result.failed} fehlgeschlagen`;
             logAudioEvent('success', message, result);
-            
+
             let alertMessage = `✅ ${message}`;
             if (result.errors && result.errors.length > 0) {
                 alertMessage += '\n\nFehler:\n' + result.errors.slice(0, 5).join('\n');
@@ -2937,13 +3709,13 @@ async function importConfigFromTextarea() {
                     alertMessage += `\n... und ${result.errors.length - 5} weitere`;
                 }
             }
-            
+
             alert(alertMessage);
-            
+
             // Reload the gift sounds list and catalog to show the imported data
             await loadGiftSounds();
             await loadGiftCatalog();
-            
+
             // Reload config to show updated data
             await loadConfigToTextarea();
         } else {
@@ -2963,14 +3735,14 @@ async function importConfigFromTextarea() {
 function copyConfigTextarea() {
     const textarea = document.getElementById('config-import-export-textarea');
     if (!textarea) return;
-    
+
     const text = textarea.value;
-    
+
     if (!text) {
         alert('Das Textfeld ist leer. Klicke zuerst auf "Konfiguration laden".');
         return;
     }
-    
+
     // Use clipboard API with fallback
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
@@ -2991,7 +3763,7 @@ function fallbackCopyConfig(text) {
     textArea.style.left = '-9999px';
     document.body.appendChild(textArea);
     textArea.select();
-    
+
     try {
         const successful = document.execCommand('copy');
         if (successful) {
@@ -3003,7 +3775,7 @@ function fallbackCopyConfig(text) {
         log.error('Fallback copy failed', { error: err?.message || String(err) });
         alert('Kopieren fehlgeschlagen. Bitte manuell kopieren (Strg+C).');
     }
-    
+
     document.body.removeChild(textArea);
 }
 
@@ -3036,18 +3808,18 @@ function initializeOverlayUrl() {
     const overlayUrlInput = document.getElementById('animation-overlay-url');
     const copyBtn = document.getElementById('copy-overlay-url');
     const openBtn = document.getElementById('open-overlay-url');
-    
+
     if (overlayUrlInput) {
         // Construct the overlay URL
         const baseUrl = window.location.origin;
         const overlayUrl = `${baseUrl}/animation-overlay.html`;
         overlayUrlInput.value = overlayUrl;
-        
+
         if (openBtn) {
             openBtn.href = overlayUrl;
         }
     }
-    
+
     if (copyBtn) {
         copyBtn.addEventListener('click', function() {
             const url = overlayUrlInput?.value;
@@ -3078,7 +3850,7 @@ function fallbackCopy(text, copyBtn) {
     textArea.style.left = '-9999px';
     document.body.appendChild(textArea);
     textArea.select();
-    
+
     try {
         const successful = document.execCommand('copy');
         if (successful) {
@@ -3090,7 +3862,7 @@ function fallbackCopy(text, copyBtn) {
         log.error('Fallback copy failed', { error: err?.message || String(err) });
         alert('Failed to copy URL to clipboard');
     }
-    
+
     document.body.removeChild(textArea);
 }
 
@@ -3115,10 +3887,10 @@ function initializeCollapsibleSections() {
         header.addEventListener('click', function() {
             const targetId = this.dataset.target;
             const content = document.getElementById(targetId);
-            
+
             if (content) {
                 const isActive = this.classList.contains('active');
-                
+
                 if (isActive) {
                     // Collapse
                     this.classList.remove('active');
@@ -3136,16 +3908,16 @@ function initializeCollapsibleSections() {
 // ========== EVENT ANIMATION SLIDERS ==========
 function initializeEventAnimationSliders() {
     const events = ['follow', 'subscribe', 'share', 'gift', 'like'];
-    
+
     events.forEach(eventType => {
         const sliderId = `soundboard-${eventType}-animation-volume-slider`;
         const inputId = `soundboard-${eventType}-animation-volume`;
         const labelId = `soundboard-${eventType}-animation-volume-label`;
-        
+
         const slider = document.getElementById(sliderId);
         const input = document.getElementById(inputId);
         const label = document.getElementById(labelId);
-        
+
         if (slider && input && label) {
             slider.addEventListener('input', function() {
                 const percentage = this.value;
@@ -3153,7 +3925,7 @@ function initializeEventAnimationSliders() {
                 label.textContent = `${percentage}%`;
                 input.value = volumeValue.toFixed(1);
             });
-            
+
             input.addEventListener('change', function() {
                 const volumeValue = parseFloat(this.value);
                 const percentage = Math.round(volumeValue * 100);

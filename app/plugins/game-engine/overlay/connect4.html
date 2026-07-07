@@ -4,6 +4,49 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Connect4 Overlay - LTTH Game Engine</title>
+  <script>
+    (function () {
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (VALID_THEMES.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (VALID_THEMES.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+      }
+
+      syncTheme();
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     * {
       margin: 0;
@@ -28,6 +71,8 @@
       background: rgba(0, 0, 0, 0.8);
       border-radius: 20px;
       box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+      width: min(96vw, 1200px);
+      max-width: none;
     }
 
     #game-container.active {
@@ -412,8 +457,9 @@
       padding: 40px;
       border-radius: 20px;
       box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8);
-      min-width: 500px;
-      max-width: 800px;
+      min-width: 0;
+      width: min(96vw, 1200px);
+      max-width: none;
       z-index: 1500;
     }
 
@@ -490,6 +536,49 @@
       font-weight: bold;
     }
 
+    html[data-theme="vision-impaired"] #leaderboard-screen,
+    html[data-theme="vision-impaired"] #game-container {
+      background: #000;
+      color: #fff7cc;
+      border: 3px solid #facc15;
+      box-shadow: none;
+      width: min(96vw, 1280px);
+    }
+
+    html[data-theme="vision-impaired"] .leaderboard-title,
+    html[data-theme="vision-impaired"] .leaderboard-type,
+    html[data-theme="vision-impaired"] .leaderboard-table th,
+    html[data-theme="vision-impaired"] .leaderboard-table td,
+    html[data-theme="vision-impaired"] #game-title,
+    html[data-theme="vision-impaired"] #game-status,
+    html[data-theme="vision-impaired"] .column-label {
+      color: #fff7cc;
+    }
+
+    html[data-theme="vision-impaired"] #game-status,
+    html[data-theme="vision-impaired"] .leaderboard-table thead {
+      background: #111;
+    }
+
+    html[data-theme="cid"] #leaderboard-screen,
+    html[data-theme="cid"] #game-container {
+      background: rgba(7, 17, 7, 0.94);
+      color: #f4fff4;
+      border: 2px solid rgba(74, 222, 128, 0.35);
+      box-shadow: none;
+      width: min(96vw, 1240px);
+    }
+
+    html[data-theme="cid"] .leaderboard-title,
+    html[data-theme="cid"] .leaderboard-type,
+    html[data-theme="cid"] .leaderboard-table th,
+    html[data-theme="cid"] .leaderboard-table td,
+    html[data-theme="cid"] #game-title,
+    html[data-theme="cid"] #game-status,
+    html[data-theme="cid"] .column-label {
+      color: #f4fff4;
+    }
+
     .rank-icon {
       font-size: 24px;
       margin-right: 8px;
@@ -501,7 +590,7 @@
       color: #888;
       font-size: 18px;
     }
-  </style>
+    </style>
 </head>
 <body>
   <!-- Celebration overlay for confetti -->

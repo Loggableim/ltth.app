@@ -32,7 +32,7 @@ let isProcessingEvent = false;
  * Initialize the overlay on page load
  */
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[OpenShock Overlay] Initializing...');
+    console.log('[Hybrid Shock Overlay] Initializing...');
     loadConfig();
     initializeSocket();
 });
@@ -50,10 +50,10 @@ async function loadConfig() {
         const data = await response.json();
         if (data.overlay) {
             config = { ...config, ...data.overlay };
-            console.log('[OpenShock Overlay] Config loaded:', config);
+            console.log('[Hybrid Shock Overlay] Config loaded:', config);
         }
     } catch (error) {
-        console.error('[OpenShock Overlay] Failed to load config:', error);
+        console.error('[Hybrid Shock Overlay] Failed to load config:', error);
         // Continue with default config
     }
 }
@@ -74,19 +74,19 @@ function initializeSocket() {
 
         // Connection events
         socket.on('connect', () => {
-            console.log('[OpenShock Overlay] Socket connected:', socket.id);
+            console.log('[Hybrid Shock Overlay] Socket connected:', socket.id);
         });
 
         socket.on('disconnect', (reason) => {
-            console.log('[OpenShock Overlay] Socket disconnected:', reason);
+            console.log('[Hybrid Shock Overlay] Socket disconnected:', reason);
         });
 
         socket.on('reconnect', (attemptNumber) => {
-            console.log('[OpenShock Overlay] Socket reconnected after', attemptNumber, 'attempts');
+            console.log('[Hybrid Shock Overlay] Socket reconnected after', attemptNumber, 'attempts');
         });
 
         socket.on('error', (error) => {
-            console.error('[OpenShock Overlay] Socket error:', error);
+            console.error('[Hybrid Shock Overlay] Socket error:', error);
         });
 
         // OpenShock plugin events
@@ -95,9 +95,9 @@ function initializeSocket() {
         socket.on('openshock:queue-update', handleQueueUpdate);
         socket.on('openshock:stats-update', handleStatsUpdate);
 
-        console.log('[OpenShock Overlay] Socket.IO listeners registered');
+        console.log('[Hybrid Shock Overlay] Socket.IO listeners registered');
     } catch (error) {
-        console.error('[OpenShock Overlay] Failed to initialize socket:', error);
+        console.error('[Hybrid Shock Overlay] Failed to initialize socket:', error);
     }
 }
 
@@ -110,38 +110,25 @@ function initializeSocket() {
  * @param {Object} data - Event data containing command details
  */
 function handleCommandSent(data) {
-    console.log('[OpenShock Overlay] Command sent:', data);
+    console.log('[Hybrid Shock Overlay] Command sent:', data);
 
     if (!config.enabled) {
-        console.log('[OpenShock Overlay] Overlay disabled, ignoring event');
+        console.log('[Hybrid Shock Overlay] Overlay disabled, ignoring event');
         return;
     }
 
     try {
-        // Extract event data
-        const command = data.command || {};
-        const eventData = {
-            type: command.type || 'shock',
-            intensity: command.intensity || 0,
-            duration: command.duration || 1000,
-            deviceName: data.deviceName || 'Unknown Device',
-            deviceId: data.deviceId || '',
-            username: data.username || 'Anonymous',
-            userId: data.userId || '',
-            source: data.source || 'manual',
-            timestamp: Date.now(),
-            pattern: command.pattern || null
-        };
+        const eventData = normalizeCommandPayload(data);
 
         // Queue or process event
         if (isProcessingEvent) {
-            console.log('[OpenShock Overlay] Event in progress, queueing...');
+            console.log('[Hybrid Shock Overlay] Event in progress, queueing...');
             eventQueue.push(eventData);
         } else {
             processEvent(eventData);
         }
     } catch (error) {
-        console.error('[OpenShock Overlay] Error handling command sent:', error);
+        console.error('[Hybrid Shock Overlay] Error handling command sent:', error);
     }
 }
 
@@ -149,7 +136,7 @@ function handleCommandSent(data) {
  * Handle emergency stop event
  */
 function handleEmergencyStop() {
-    console.log('[OpenShock Overlay] Emergency stop activated!');
+    console.log('[Hybrid Shock Overlay] Emergency stop activated!');
 
     // Clear any active events
     if (currentEvent) {
@@ -173,18 +160,12 @@ function handleEmergencyStop() {
  * @param {Object} data - Queue status data
  */
 function handleQueueUpdate(data) {
-    console.log('[OpenShock Overlay] Queue update:', data);
+    console.log('[Hybrid Shock Overlay] Queue update:', data);
 
     try {
-        const stats = {
-            queueLength: data.queueLength || 0,
-            processing: data.processing || false,
-            ...data
-        };
-
-        updateStatsCorner(stats);
+        updateStatsCorner(normalizeQueueStats(data));
     } catch (error) {
-        console.error('[OpenShock Overlay] Error handling queue update:', error);
+        console.error('[Hybrid Shock Overlay] Error handling queue update:', error);
     }
 }
 
@@ -193,13 +174,92 @@ function handleQueueUpdate(data) {
  * @param {Object} data - Statistics data
  */
 function handleStatsUpdate(data) {
-    console.log('[OpenShock Overlay] Stats update:', data);
+    console.log('[Hybrid Shock Overlay] Stats update:', data);
 
     try {
-        updateStatsCorner(data);
+        updateStatsCorner(normalizeStatsSnapshot(data));
     } catch (error) {
-        console.error('[OpenShock Overlay] Error handling stats update:', error);
+        console.error('[Hybrid Shock Overlay] Error handling stats update:', error);
     }
+}
+
+/**
+ * Normalize command payloads from the backend.
+ * Accepts both nested `command` payloads and flat legacy fields.
+ */
+function normalizeCommandPayload(data = {}) {
+    const command = data.command || {};
+    const type = command.type || data.type || 'shock';
+    const intensity = command.intensity ?? data.intensity ?? 0;
+    const duration = command.duration ?? data.duration ?? 1000;
+    const deviceId = data.deviceId || command.deviceId || '';
+    const deviceName = data.deviceName || data.device || command.deviceName || deviceId || 'Unknown Device';
+    const username = data.username || data.user || command.username || 'Anonymous';
+    const userId = data.userId || command.userId || '';
+    const source = data.source || 'manual';
+
+    return {
+        ...data,
+        command: {
+            type,
+            intensity,
+            duration,
+            pattern: command.pattern ?? data.pattern ?? null
+        },
+        type,
+        intensity,
+        duration,
+        deviceName,
+        deviceId,
+        device: deviceName,
+        username,
+        userId,
+        user: username,
+        source,
+        timestamp: data.timestamp || Date.now()
+    };
+}
+
+/**
+ * Normalize queue stats for the overlay corner.
+ */
+function normalizeQueueStats(data = {}) {
+    const queueLength = data.queueLength ?? data.queueSize ?? data.pending ?? 0;
+
+    return {
+        ...data,
+        queueLength,
+        queueSize: data.queueSize ?? queueLength,
+        pending: data.pending ?? queueLength,
+        processing: data.processing ?? (data.isProcessing ? 1 : 0)
+    };
+}
+
+/**
+ * Normalize stats snapshots so the overlay can render both live socket events and HTTP snapshots.
+ */
+function normalizeStatsSnapshot(data = {}) {
+    const successfulCommands = Number(data.successfulCommands || 0);
+    const failedCommands = Number(data.failedCommands || 0);
+    const totalCommands = Math.max(Number(data.totalCommands || 0), successfulCommands + failedCommands);
+    const successRate = typeof data.successRate === 'number'
+        ? data.successRate
+        : (totalCommands > 0 ? Math.round((successfulCommands / totalCommands) * 100) : 0);
+    const queueLength = data.queueLength ?? data.queueSize ?? data.pending ?? 0;
+    const sessionDuration = data.sessionDuration ?? data.uptime ?? 0;
+
+    return {
+        ...data,
+        successfulCommands,
+        failedCommands,
+        totalCommands,
+        successRate,
+        queueLength,
+        queueSize: data.queueSize ?? queueLength,
+        pending: data.pending ?? queueLength,
+        sessionDuration,
+        uptime: data.uptime ?? sessionDuration
+    };
 }
 
 // ============================================================================
@@ -555,8 +615,9 @@ function updateStatsCorner(stats) {
 
         // Update queue length
         const queueElement = document.getElementById('queue-length');
-        if (queueElement && typeof stats.queueLength !== 'undefined') {
-            queueElement.textContent = stats.queueLength;
+        const queueLength = stats.queueLength ?? stats.queueSize ?? stats.pending;
+        if (queueElement && typeof queueLength !== 'undefined') {
+            queueElement.textContent = queueLength;
         }
 
         // Update total commands
@@ -573,8 +634,9 @@ function updateStatsCorner(stats) {
 
         // Update session duration
         const durationElement = document.getElementById('session-duration');
-        if (durationElement && typeof stats.sessionDuration !== 'undefined') {
-            durationElement.textContent = formatSessionDuration(stats.sessionDuration);
+        const sessionDuration = stats.sessionDuration ?? stats.uptime;
+        if (durationElement && typeof sessionDuration !== 'undefined') {
+            durationElement.textContent = formatSessionDuration(sessionDuration);
         }
 
         // Show stats corner if hidden

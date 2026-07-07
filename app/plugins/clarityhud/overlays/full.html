@@ -34,7 +34,7 @@
       --hud-opacity: 1;
     }
 
-    body {
+    html, body {
       font-family: 'Open Sans', sans-serif;
       overflow: hidden;
       width: 100vw;
@@ -396,6 +396,11 @@
       font-size: 1.5em;
     }
 
+    html {
+      background: transparent;
+      color-scheme: dark;
+    }
+
     /* Loading State */
     .loading {
       display: flex;
@@ -419,7 +424,7 @@
     .feed-container {
       scrollbar-width: none;
     }
-  </style>
+    </style>
 </head>
 <body>
   <div id="overlay-container">

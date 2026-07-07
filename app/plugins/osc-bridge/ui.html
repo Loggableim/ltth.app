@@ -13,11 +13,17 @@
             color: var(--color-text-primary);
             padding: 20px;
             margin: 0;
+            box-sizing: border-box;
+        }
+
+        *, *::before, *::after {
+            box-sizing: inherit;
         }
 
         .container {
-            max-width: 900px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: none;
+            margin: 0;
         }
 
         .card {
@@ -113,6 +119,12 @@
             box-shadow: 0 0 0 3px var(--color-active-bg);
         }
 
+        html[data-theme="day"] .form-control {
+            background: #fff !important;
+            color: #0f172a !important;
+            border-color: #94a3b8 !important;
+        }
+
         .checkbox-group {
             display: flex;
             align-items: center;
@@ -170,8 +182,138 @@
             color: var(--color-btn-secondary-text);
         }
 
+        html[data-theme="day"] .btn-secondary {
+            background: #e2e8f0 !important;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            border: 1px solid #64748b !important;
+        }
+
         .btn-secondary:hover {
             background: var(--color-btn-secondary-hover);
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-success,
+        html[data-theme="vision-impaired"] .btn-secondary,
+        html[data-theme="vision-impaired"] .btn-danger {
+            background: #000;
+            border: 2px solid #ffe66d;
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary:hover,
+        html[data-theme="vision-impaired"] .btn-success:hover,
+        html[data-theme="vision-impaired"] .btn-secondary:hover,
+        html[data-theme="vision-impaired"] .btn-danger:hover {
+            background: #111;
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .stat-card,
+        html[data-theme="vision-impaired"] .info-box {
+            background: #050505;
+            border-color: #ffe66d;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+            font-size: 18px;
+            line-height: 1.65;
+        }
+
+        html[data-theme="vision-impaired"] .container {
+            padding: 0 28px 28px;
+        }
+
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .stat-card,
+        html[data-theme="vision-impaired"] .info-box {
+            background: #000;
+            border: 3px solid #ffe66d;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .card-title,
+        html[data-theme="vision-impaired"] .info-box h4,
+        html[data-theme="vision-impaired"] .stat-value {
+            color: #ffe66d;
+        }
+
+        html[data-theme="vision-impaired"] .card-title {
+            font-size: 1.65rem;
+        }
+
+        html[data-theme="vision-impaired"] .stat-value {
+            font-size: 2.35rem;
+        }
+
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container {
+            padding: 0 20px 24px;
+        }
+
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .form-group,
+        html[data-theme="cid"] .log-viewer,
+        html[data-theme="cid"] .add-item-form {
+            background: #071107;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .info-box h4,
+        html[data-theme="cid"] .stat-value {
+            color: #4ade80;
+        }
+
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .info-box p,
+        html[data-theme="cid"] .empty-state,
+        html[data-theme="cid"] p {
+            color: #d1e7d1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success {
+            background: #4ade80;
+            border-color: #4ade80;
+            color: #030603;
+        }
+
+        html[data-theme="cid"] .btn-secondary,
+        html[data-theme="cid"] .btn-danger {
+            background: #061006;
+            border-color: #1e5b2a;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .mapping-table th {
+            background: #061006;
+            color: #d1e7d1;
+        }
+
+        html[data-theme="cid"] .mapping-table td,
+        html[data-theme="cid"] .mapping-table th {
+            border-color: #1e5b2a;
         }
 
         .btn-group {
@@ -349,7 +491,15 @@
             padding: 40px 20px;
             color: var(--color-text-muted);
         }
-    </style>
+    /* final day param button contrast */
+        html[data-theme="day"] .param-btn {
+            background: #e2e8f0 !important;
+            color: #10203a !important;
+            -webkit-text-fill-color: #10203a !important;
+            border: 2px solid #64748b !important;
+        }
+
+</style>
 </head>
 <body>
     <div class="container">

@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LTTH Account Callback</title>
+  <meta name="robots" content="noindex, nofollow">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #05080f;
+      --card: rgba(12, 18, 32, 0.88);
+      --line: rgba(133, 188, 255, 0.22);
+      --text: #f4f7fb;
+      --muted: #aab6cb;
+      --accent: #6ee7b7;
+      --danger: #fca5a5;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 35% 25%, rgba(110, 231, 183, 0.2), transparent 32rem),
+        linear-gradient(135deg, #020617, var(--bg));
+      color: var(--text);
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      padding: 24px;
+    }
+
+    main {
+      width: min(100%, 620px);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--card);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+      padding: 34px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(2rem, 7vw, 3.4rem);
+      line-height: 1;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    code {
+      display: block;
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 14px;
+      background: rgba(3, 7, 18, 0.72);
+      color: var(--danger);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">LTTH Account</div>
+    <h1 id="title">Completing sign-in</h1>
+    <p id="message">Verifying the Clerk session token with your local LTTH app...</p>
+    <code id="error" hidden></code>
+  </main>
+  <script>
+    (function() {
+      const TOKEN_KEY = 'ltth_store_auth_token';
+      const EXPIRY_KEY = 'ltth_store_auth_token_exp';
+      const STATE_KEY = 'ltth_store_auth_state';
+      const NEXT_KEY = 'ltth_store_auth_next';
+
+      const title = document.getElementById('title');
+      const message = document.getElementById('message');
+      const errorNode = document.getElementById('error');
+
+      function setMessage(nextTitle, nextMessage) {
+        title.textContent = nextTitle;
+        message.textContent = nextMessage;
+      }
+
+      function fail(error) {
+        setMessage('Sign-in failed', 'The account bridge could not finish the local sign-in.');
+        errorNode.hidden = false;
+        errorNode.textContent = error?.message || String(error || 'Unknown error');
+      }
+
+      function readHash() {
+        const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+        return new URLSearchParams(hash);
+      }
+
+      function clearFragment() {
+        if (window.history && typeof window.history.replaceState === 'function') {
+          window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+        }
+      }
+
+      function getSafeNext(raw) {
+        if (!raw) return '/dashboard.html';
+        try {
+          const next = new URL(raw, window.location.origin);
+          if (next.origin !== window.location.origin) return '/dashboard.html';
+          return next.pathname + next.search + next.hash;
+        } catch {
+          return '/dashboard.html';
+        }
+      }
+
+      async function createLocalSession(token) {
+        const response = await fetch('/api/plugin-store/session', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Local account verification failed with HTTP ${response.status}`);
+        }
+
+        const payload = await response.json();
+        if (!payload.success || !payload.account || payload.account.authenticated !== true) {
+          throw new Error('Local account verification did not return an authenticated account.');
+        }
+
+        return payload;
+      }
+
+      async function complete() {
+        const hash = readHash();
+        const token = hash.get('token');
+        const state = hash.get('state');
+        const expiresAt = hash.get('expires_at') || '';
+        const next = getSafeNext(hash.get('next') || sessionStorage.getItem(NEXT_KEY));
+        const expectedState = sessionStorage.getItem(STATE_KEY);
+
+        clearFragment();
+
+        if (!token) {
+          throw new Error(hash.get('error') || 'Missing Clerk session token.');
+        }
+
+        if (!state || !expectedState || state !== expectedState) {
+          throw new Error('Auth state mismatch. Start the login again from the LTTH app.');
+        }
+
+        sessionStorage.setItem(TOKEN_KEY, token);
+        if (expiresAt) {
+          sessionStorage.setItem(EXPIRY_KEY, expiresAt);
+        } else {
+          sessionStorage.removeItem(EXPIRY_KEY);
+        }
+
+        await createLocalSession(token);
+        sessionStorage.removeItem(STATE_KEY);
+        sessionStorage.removeItem(NEXT_KEY);
+        setMessage('Signed in', 'Returning to the LTTH plugin store...');
+        window.location.replace(next);
+      }
+
+      complete().catch((error) => {
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(EXPIRY_KEY);
+        fail(error);
+      });
+    })();
+  </script>
+</body>
+</html>

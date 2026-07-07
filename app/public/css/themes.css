@@ -4,29 +4,29 @@
    Corporate Branding Color: #12a116 (Green)
    ============================================ */
 
-/* Default Theme (Aurora) */
+/* Default Theme (Night-compatible legacy alias) */
 :root,
 [data-theme="aurora"] {
     color-scheme: dark;
 
     /* Branding Color */
-    --brand-primary: #34d399;
-    --brand-primary-hover: #22c55e;
-    --brand-primary-light: rgba(52, 211, 153, 0.18);
+    --brand-primary: #12a116;
+    --brand-primary-hover: #0f8712;
+    --brand-primary-light: rgba(18, 161, 22, 0.2);
     
     /* Background Colors */
-    --color-bg-primary: #08111f;
-    --color-bg-secondary: #101a2d;
-    --color-bg-tertiary: #1b2a41;
-    --color-bg-card: rgba(16, 26, 45, 0.92);
-    --color-bg-hover: #1b2a41;
+    --color-bg-primary: #0f172a;
+    --color-bg-secondary: #1e293b;
+    --color-bg-tertiary: #334155;
+    --color-bg-card: #1e293b;
+    --color-bg-hover: #334155;
     
     /* Accent Colors */
-    --color-accent-primary: #22d3ee;
+    --color-accent-primary: #3b82f6;
     --color-accent-secondary: #8b5cf6;
-    --color-accent-success: #34d399;
-    --color-accent-warning: #fbbf24;
-    --color-accent-danger: #fb7185;
+    --color-accent-success: #10b981;
+    --color-accent-warning: #f59e0b;
+    --color-accent-danger: #ef4444;
     
     /* Text Colors */
     --color-text-primary: #f8fafc;
@@ -34,56 +34,56 @@
     --color-text-muted: #94a3b8;
     
     /* Borders & Dividers */
-    --color-border: #22304a;
-    --color-divider: #152033;
+    --color-border: #334155;
+    --color-divider: #1e293b;
     
     /* Shadows & Glows */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 8px 20px -8px rgba(0, 0, 0, 0.45);
-    --shadow-lg: 0 18px 40px -18px rgba(0, 0, 0, 0.65);
-    --glow-primary: 0 0 24px rgba(34, 211, 238, 0.28);
-    --glow-success: 0 0 24px rgba(52, 211, 153, 0.28);
-    --glow-brand: 0 0 24px rgba(52, 211, 153, 0.32);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --glow-primary: 0 0 20px rgba(59, 130, 246, 0.3);
+    --glow-success: 0 0 20px rgba(16, 185, 129, 0.3);
+    --glow-brand: 0 0 20px rgba(18, 161, 22, 0.3);
     
     /* Input & Form Colors */
-    --color-input-bg: rgba(8, 17, 31, 0.92);
-    --color-input-border: #22304a;
-    --color-input-focus: #22d3ee;
+    --color-input-bg: #1e293b;
+    --color-input-border: #334155;
+    --color-input-focus: #3b82f6;
     --color-input-text: #f8fafc;
-    --color-input-placeholder: #7c8aa4;
+    --color-input-placeholder: #64748b;
     
     /* Button Colors */
-    --color-btn-secondary-bg: #162238;
-    --color-btn-secondary-hover: #22304a;
+    --color-btn-secondary-bg: #334155;
+    --color-btn-secondary-hover: #475569;
     --color-btn-secondary-text: #f8fafc;
     
     /* Chart Colors */
-    --color-chart-primary: #22d3ee;
+    --color-chart-primary: #3b82f6;
     --color-chart-secondary: #8b5cf6;
-    --color-chart-success: #34d399;
-    --color-chart-warning: #fbbf24;
-    --color-chart-danger: #fb7185;
-    --color-chart-grid: #22304a;
-    --color-chart-axis: #7c8aa4;
+    --color-chart-success: #10b981;
+    --color-chart-warning: #f59e0b;
+    --color-chart-danger: #ef4444;
+    --color-chart-grid: #334155;
+    --color-chart-axis: #64748b;
     
     /* Badge Colors */
-    --color-badge-bg: rgba(34, 48, 74, 0.9);
-    --color-badge-text: #dbeafe;
+    --color-badge-bg: #334155;
+    --color-badge-text: #cbd5e1;
     
     /* Modal & Overlay */
     --color-modal-backdrop: rgba(4, 10, 18, 0.84);
-    --color-modal-bg: rgba(12, 20, 36, 0.96);
+    --color-modal-bg: #1e293b;
     
     /* Gradient Overlays */
-    --gradient-primary: linear-gradient(135deg, #22d3ee 0%, #8b5cf6 100%);
-    --gradient-brand: linear-gradient(135deg, #34d399 0%, #22d3ee 100%);
+    --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    --gradient-brand: linear-gradient(135deg, #12a116 0%, #0f8712 100%);
     
     /* Interactive States */
     --color-disabled-bg: #132033;
     --color-disabled-text: #526178;
-    --color-active-bg: rgba(34, 211, 238, 0.16);
-    --color-active-border: #22d3ee;
-    --app-background: radial-gradient(circle at top left, rgba(34, 211, 238, 0.16), transparent 30%), radial-gradient(circle at top right, rgba(52, 211, 153, 0.12), transparent 24%), linear-gradient(180deg, #08111f 0%, #0b1424 55%, #09101d 100%);
+    --color-active-bg: rgba(59, 130, 246, 0.15);
+    --color-active-border: #3b82f6;
+    --app-background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
 }
 
 /* Aurora 2.0 Theme */
@@ -233,6 +233,74 @@
     --color-active-bg: rgba(59, 130, 246, 0.2);
     --color-active-border: #3b82f6;
     --app-background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+}
+
+/* Cid Brand Theme */
+[data-theme="cid"] {
+    color-scheme: dark;
+
+    --brand-primary: #4ade80;
+    --brand-primary-hover: #22c55e;
+    --brand-primary-light: rgba(74, 222, 128, 0.18);
+
+    --color-bg-primary: #030603;
+    --color-bg-secondary: #08110a;
+    --color-bg-tertiary: #0d1810;
+    --color-bg-card: rgba(9, 16, 10, 0.96);
+    --color-bg-hover: #122015;
+
+    --color-accent-primary: #4ade80;
+    --color-accent-secondary: #86efac;
+    --color-accent-success: #22c55e;
+    --color-accent-warning: #eab308;
+    --color-accent-danger: #fb7185;
+
+    --color-text-primary: #f4fff4;
+    --color-text-secondary: #d1e7d1;
+    --color-text-muted: #8aa38a;
+
+    --color-border: rgba(74, 222, 128, 0.22);
+    --color-divider: #0d160f;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.16);
+    --shadow-md: 0 8px 20px -10px rgba(0, 0, 0, 0.52);
+    --shadow-lg: 0 18px 38px -18px rgba(0, 0, 0, 0.72);
+    --glow-primary: 0 0 24px rgba(74, 222, 128, 0.28);
+    --glow-success: 0 0 24px rgba(34, 197, 94, 0.26);
+    --glow-brand: 0 0 32px rgba(74, 222, 128, 0.32);
+
+    --color-input-bg: rgba(5, 9, 6, 0.98);
+    --color-input-border: rgba(74, 222, 128, 0.24);
+    --color-input-focus: #4ade80;
+    --color-input-text: #f4fff4;
+    --color-input-placeholder: #6b8a6f;
+
+    --color-btn-secondary-bg: rgba(15, 25, 16, 0.96);
+    --color-btn-secondary-hover: rgba(26, 42, 28, 0.98);
+    --color-btn-secondary-text: #f4fff4;
+
+    --color-chart-primary: #4ade80;
+    --color-chart-secondary: #86efac;
+    --color-chart-success: #22c55e;
+    --color-chart-warning: #eab308;
+    --color-chart-danger: #fb7185;
+    --color-chart-grid: #203124;
+    --color-chart-axis: #8aa38a;
+
+    --color-badge-bg: rgba(10, 18, 11, 0.96);
+    --color-badge-text: #dbf7dd;
+
+    --color-modal-backdrop: rgba(0, 0, 0, 0.9);
+    --color-modal-bg: rgba(7, 12, 8, 0.98);
+
+    --gradient-primary: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+    --gradient-brand: linear-gradient(135deg, #4ade80 0%, #12a116 100%);
+
+    --color-disabled-bg: #09110b;
+    --color-disabled-text: #4d6650;
+    --color-active-bg: rgba(74, 222, 128, 0.14);
+    --color-active-border: #4ade80;
+    --app-background: radial-gradient(circle at 15% 12%, rgba(74, 222, 128, 0.16), transparent 24%), radial-gradient(circle at 80% 10%, rgba(18, 161, 22, 0.12), transparent 20%), radial-gradient(circle at 52% 82%, rgba(34, 197, 94, 0.08), transparent 26%), linear-gradient(180deg, #030603 0%, #050905 48%, #030603 100%);
 }
 
 /* Day Mode Theme */
@@ -406,13 +474,26 @@
 
 /* Apply brand color to primary buttons */
 .btn-primary {
-    background: var(--brand-primary) !important;
-    border-color: var(--brand-primary) !important;
+    background: var(--brand-primary-hover, var(--brand-primary)) !important;
+    border-color: var(--brand-primary-hover, var(--brand-primary)) !important;
+    color: #ffffff !important;
 }
 
 .btn-primary:hover {
     background: var(--brand-primary-hover) !important;
     border-color: var(--brand-primary-hover) !important;
+}
+
+.btn-success {
+    background: #047857 !important;
+    border-color: #047857 !important;
+    color: #ffffff !important;
+}
+
+.btn-warning {
+    background: #facc15 !important;
+    border-color: #facc15 !important;
+    color: #0f172a !important;
 }
 
 /* Apply brand color to status badges when connected */
@@ -1515,4 +1596,226 @@ select option:checked,
 
 .theme-glow-brand {
     box-shadow: var(--glow-brand);
+}
+
+/* Cross-plugin action contrast hardening */
+html[data-theme="day"] .btn-primary,
+html[data-theme="night"] .btn-primary {
+    background: #0f8712 !important;
+    border-color: #0f8712 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="day"] .btn-success,
+html[data-theme="night"] .btn-success {
+    background: #047857 !important;
+    border-color: #047857 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="day"] .btn-danger,
+html[data-theme="night"] .btn-danger {
+    background: #b91c1c !important;
+    border-color: #b91c1c !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="contrast"] .btn-primary,
+html[data-theme="contrast"] .btn-success,
+html[data-theme="contrast"] .btn-warning,
+html[data-theme="vision-impaired"] .btn-primary,
+html[data-theme="vision-impaired"] .btn-success,
+html[data-theme="vision-impaired"] .btn-warning {
+    background: #facc15 !important;
+    border-color: #facc15 !important;
+    color: #000000 !important;
+}
+
+html[data-theme="contrast"] .btn-danger,
+html[data-theme="vision-impaired"] .btn-danger {
+    background: #7f1d1d !important;
+    border-color: #facc15 !important;
+    color: #ffffff !important;
+}
+
+/* Plugin UI readability hardening for common local component names */
+html[data-theme="day"] :is(.form-control, .form-input, .form-select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    border-color: #94a3b8 !important;
+}
+
+html[data-theme="day"] :is(.btn-secondary, button.btn-secondary, .secondary, button.secondary) {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+}
+
+html[data-theme="day"] :is(.tab.active, .tab-button.active, .tab-btn.active, .nav-tab.active, .nav-item.active, .soundboard-nav-btn.active, .theme-toggle-btn.active) {
+    background: #0f8712 !important;
+    color: #ffffff !important;
+    border-color: #0f8712 !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+html[data-theme="night"] :is(.tab.active, .tab-button.active, .tab-btn.active, .nav-tab.active, .nav-item.active, .soundboard-nav-btn.active, .theme-toggle-btn.active) {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border-color: #2563eb !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+html[data-theme="night"] :is(.btn-danger, button.danger, .danger) {
+    background: #b91c1c !important;
+    color: #ffffff !important;
+    border-color: #b91c1c !important;
+}
+
+html[data-theme="contrast"] :is(.tab.active, .tab-button.active, .tab-btn.active, .nav-tab.active, .nav-item.active, .soundboard-nav-btn.active, .theme-toggle-btn.active),
+html[data-theme="vision-impaired"] :is(.tab.active, .tab-button.active, .tab-btn.active, .nav-tab.active, .nav-item.active, .soundboard-nav-btn.active, .theme-toggle-btn.active) {
+    background: #facc15 !important;
+    color: #000000 !important;
+    border-color: #facc15 !important;
+    -webkit-text-fill-color: #000000 !important;
+}
+
+html[data-theme="contrast"] :is(.form-control, .form-input, .form-select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea),
+html[data-theme="vision-impaired"] :is(.form-control, .form-input, .form-select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+    background: #000000 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    border-color: #facc15 !important;
+}
+
+html[data-theme="contrast"] :is(input[type="checkbox"], input[type="radio"], input[type="range"]),
+html[data-theme="vision-impaired"] :is(input[type="checkbox"], input[type="radio"], input[type="range"]) {
+    accent-color: #facc15 !important;
+    color: #facc15 !important;
+    -webkit-text-fill-color: #facc15 !important;
+    border-color: #facc15 !important;
+}
+
+html[data-theme="day"] :is(input[type="checkbox"], input[type="radio"], input[type="range"]) {
+    accent-color: #0f8712 !important;
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+}
+
+html[data-theme="contrast"] :is(.btn-secondary, button.btn-secondary, .secondary, button.secondary),
+html[data-theme="vision-impaired"] :is(.btn-secondary, button.btn-secondary, .secondary, button.secondary) {
+    background: #000000 !important;
+    color: #facc15 !important;
+    border-color: #facc15 !important;
+}
+
+html[data-theme="contrast"] :is(button.danger, .danger),
+html[data-theme="vision-impaired"] :is(button.danger, .danger) {
+    background: #7f1d1d !important;
+    color: #ffffff !important;
+    border-color: #facc15 !important;
+}
+
+html[data-theme="vision-impaired"] :is(.form-control, .form-input, .form-select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea, button, .btn) {
+    min-height: 44px;
+    font-size: 1rem;
+}
+
+html[data-theme="day"] :is(.tab:not(.active), .tab-button:not(.active), .tab-btn:not(.active), .nav-tab:not(.active), .theme-toggle-btn:not(.active)) {
+    background: #ffffff !important;
+    color: #334155 !important;
+    border-color: #94a3b8 !important;
+    -webkit-text-fill-color: #334155 !important;
+}
+
+html[data-theme="night"] :is(.tab:not(.active), .tab-button:not(.active), .tab-btn:not(.active), .nav-tab:not(.active), .theme-toggle-btn:not(.active)) {
+    background: #0f172a !important;
+    color: #e5e7eb !important;
+    border-color: #475569 !important;
+    -webkit-text-fill-color: #e5e7eb !important;
+}
+
+html[data-theme="contrast"] :is(.tab:not(.active), .tab-button:not(.active), .tab-btn:not(.active), .nav-tab:not(.active), .theme-toggle-btn:not(.active)),
+html[data-theme="vision-impaired"] :is(.tab:not(.active), .tab-button:not(.active), .tab-btn:not(.active), .nav-tab:not(.active), .theme-toggle-btn:not(.active)) {
+    background: #000000 !important;
+    color: #facc15 !important;
+    border-color: #facc15 !important;
+    -webkit-text-fill-color: #facc15 !important;
+}
+
+html[data-theme="day"] :is(button.primary, .btn.primary, [class~="primary"]) {
+    background: #0f8712 !important;
+    color: #ffffff !important;
+    border-color: #0f8712 !important;
+}
+
+html[data-theme="day"] :is(button.success, .btn.success, [class~="success"]) {
+    background: #047857 !important;
+    color: #ffffff !important;
+    border-color: #047857 !important;
+}
+
+html[data-theme="day"] :is(button.danger, .btn.danger, [class~="danger"], .btn-clear) {
+    background: #b91c1c !important;
+    color: #ffffff !important;
+    border-color: #b91c1c !important;
+}
+
+html[data-theme="night"] :is(button.primary, .btn.primary, [class~="primary"]) {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border-color: #2563eb !important;
+}
+
+html[data-theme="night"] :is(button.success, .btn.success, [class~="success"]) {
+    background: #047857 !important;
+    color: #ffffff !important;
+    border-color: #047857 !important;
+}
+
+html[data-theme="night"] :is(button.danger, .btn.danger, [class~="danger"], .btn-clear) {
+    background: #b91c1c !important;
+    color: #ffffff !important;
+    border-color: #b91c1c !important;
+}
+
+html[data-theme="day"] :is(.back-link, .external-link) {
+    background: #0f8712 !important;
+    color: #ffffff !important;
+    border-color: #0f8712 !important;
+}
+
+html[data-theme="night"] :is(.back-link, .external-link) {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border-color: #2563eb !important;
+}
+
+html[data-theme="contrast"] :is(.back-link, .external-link),
+html[data-theme="vision-impaired"] :is(.back-link, .external-link) {
+    background: #facc15 !important;
+    color: #000000 !important;
+    border-color: #facc15 !important;
+}
+
+html[data-theme] button:is([class*="bg-blue-500"], [class*="bg-blue-600"], [class*="bg-purple-500"], [class*="bg-purple-600"], [class*="bg-green-500"], [class*="bg-green-600"]) {
+    background: #facc15 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    border-color: #facc15 !important;
+}
+
+html[data-theme] button:is([class*="bg-yellow-500"], [class*="bg-yellow-600"], [class*="bg-orange-500"], [class*="bg-orange-600"], [class*="bg-amber-500"], [class*="bg-amber-600"]),
+html[data-theme] :is(.btn-warning, button.warning, .warning, [class~="warning"]) {
+    background: #facc15 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    border-color: #facc15 !important;
+}
+
+html[data-theme] button:is([class*="bg-red-500"], [class*="bg-red-600"]) {
+    background: #7f1d1d !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    border-color: #7f1d1d !important;
 }

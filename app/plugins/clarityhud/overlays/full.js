@@ -244,6 +244,29 @@ function getDefaultSettings() {
   };
 }
 
+function getVisibilitySettingKey(type) {
+  switch (type) {
+    case 'chat':
+      return 'showChat';
+    case 'sub':
+      return 'showSubs';
+    case 'treasure':
+      return 'showTreasureChests';
+    case 'like':
+      return 'showLikes';
+    case 'follow':
+      return 'showFollows';
+    case 'share':
+      return 'showShares';
+    case 'gift':
+      return 'showGifts';
+    case 'join':
+      return 'showJoins';
+    default:
+      return `show${capitalize(type)}s`;
+  }
+}
+
 function applySettings() {
   const s = STATE.settings;
   const root = document.documentElement;
@@ -515,7 +538,7 @@ function renderSingleStream() {
   // Combine all events into single feed
   const allEvents = [];
   for (const type in STATE.events) {
-    if (STATE.settings[`show${capitalize(type === 'sub' ? 'subs' : type === 'treasure' ? 'treasureChests' : type === 'like' ? 'likes' : type + 's')}`]) {
+    if (STATE.settings[getVisibilitySettingKey(type)]) {
       allEvents.push(...STATE.events[type]);
     }
   }
@@ -558,7 +581,7 @@ function renderStructured() {
   const eventTypes = ['chat', 'follow', 'share', 'like', 'gift', 'sub', 'treasure', 'join'];
 
   eventTypes.forEach(type => {
-    const settingKey = `show${capitalize(type === 'sub' ? 'subs' : type === 'treasure' ? 'treasureChests' : type === 'like' ? 'likes' : type + 's')}`;
+    const settingKey = getVisibilitySettingKey(type);
     if (!STATE.settings[settingKey]) return;
 
     const block = document.createElement('div');
@@ -591,8 +614,7 @@ function renderAdaptive() {
   
   // Get enabled types (not filtered by events length - show blocks even if empty)
   const enabledTypes = eventTypes.filter(type => {
-    const settingKey = `show${capitalize(type === 'sub' ? 'subs' : type === 'treasure' ? 'treasureChests' : type === 'like' ? 'likes' : type + 's')}`;
-    return STATE.settings[settingKey];
+    return STATE.settings[getVisibilitySettingKey(type)];
   });
 
   // Determine flex class based on number of enabled types

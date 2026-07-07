@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viewer Profiles</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b1020;
+      color: #e5eefc;
+    }
+
+    .shell {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    .panel {
+      background: rgba(16, 24, 48, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 18px;
+      padding: 24px;
+    }
+
+    .viewer-card {
+      display: grid;
+      grid-template-columns: 72px 1fr auto;
+      gap: 16px;
+      align-items: center;
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .viewer-card img {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+    }
+
+    .viewer-meta {
+      min-width: 0;
+    }
+
+    .viewer-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+
+    .viewer-tags {
+      font-size: 0.9rem;
+      color: #9fb0d4;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 700;
+      background: #5b8def;
+      color: white;
+    }
+
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="panel view-section">
+      <header class="view-header">
+        <h1>Viewer Profiles</h1>
+        <p>Analytics, favorites, memories, and VIP insight in one place.</p>
+      </header>
+
+      <article class="viewer-card" data-viewer-username="">
+        <img src="/viewer-profiles/assets/default-avatar.svg" alt="Default avatar">
+        <div class="viewer-meta">
+          <p class="viewer-name" data-viewer-username="">Select a viewer</p>
+          <div class="viewer-tags" data-action="toggle-favorite">Favorite viewer state lives here.</div>
+        </div>
+        <div class="actions">
+          <button class="btn">Open</button>
+          <button class="btn secondary" data-action="toggle-favorite">Toggle favorite</button>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

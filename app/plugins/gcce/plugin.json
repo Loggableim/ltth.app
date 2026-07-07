@@ -5,7 +5,7 @@
   "description": "Universal chat command interpreter and framework for all plugins",
   "author": "Pup Cid",
   "entry": "index.js",
-  "enabled": false,
+  "enabled": true,
   "devStatus": "development-beta",
   "permissions": [
     "socket.io",

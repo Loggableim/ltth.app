@@ -16,6 +16,13 @@ class ThemeManager {
                 badge: 'Accessibility',
                 swatches: ['#ffffff', '#fbbf24', '#000000']
             },
+            cid: {
+                name: 'Cid',
+                icon: 'sparkles',
+                description: 'Pup Cid inspired green-on-black brand mode',
+                badge: 'Brand',
+                swatches: ['#4ade80', '#12a116', '#000000']
+            },
             night: {
                 name: 'Night Mode',
                 icon: 'moon',
@@ -80,7 +87,15 @@ class ThemeManager {
             });
         });
 
-        observer.observe(document.body, {
+        const observeRoot = document.documentElement || document.body;
+        if (!observeRoot) {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => this.setupIframeMonitoring(), { once: true });
+            }
+            return;
+        }
+
+        observer.observe(observeRoot, {
             childList: true,
             subtree: true
         });
@@ -251,18 +266,14 @@ class ThemeManager {
     }
 
     updateSidebarLogo(theme) {
+        const wideLogo = document.querySelector('.sidebar-logo-wide');
         const miniIcon = document.getElementById('sidebar-mini-icon');
-        
-        const miniLogoMap = {
-            'vision-impaired': '/ltthmini_highcontrast.png',
-            day: '/ltthmini_daymode.png',
-            contrast: '/ltthmini_highcontrast.png',
-            night: '/ltthmini_nightmode.png'
-        };
-        
-        // Update mini logo icon
+
+        if (wideLogo) {
+            wideLogo.src = '/logo-wide.png';
+        }
         if (miniIcon) {
-            miniIcon.src = miniLogoMap[theme] || miniLogoMap.night;
+            miniIcon.src = '/ltthicon-cutout.png?v=6';
         }
     }
 

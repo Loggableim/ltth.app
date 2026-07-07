@@ -8,19 +8,197 @@
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/openshock/openshock.css">
     <script>
-        // Apply saved theme immediately to prevent flash
-        (function() {
-            const savedTheme = localStorage.getItem('dashboard-theme');
-            if (savedTheme && savedTheme !== 'night') {
-                document.documentElement.setAttribute('data-theme', savedTheme);
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+            function readTheme() {
+                try {
+                    const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
+                    if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                } catch (error) {}
+
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
             }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+            }
+
+            document.addEventListener('DOMContentLoaded', syncTheme);
+            window.addEventListener('load', syncTheme);
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
         })();
     </script>
     <style>
         .queue-container {
             padding: 20px;
-            max-width: 1200px;
+            max-width: 2200px;
             margin: 0 auto;
+        }
+
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="day"] .queue-header,
+        html[data-theme="day"] .current-processing,
+        html[data-theme="day"] .queue-item {
+            background: #ffffff;
+            color: #10203a;
+            border-color: #bfd0f7;
+        }
+
+        html[data-theme="night"] .queue-header,
+        html[data-theme="night"] .current-processing,
+        html[data-theme="night"] .queue-item {
+            background: #11172a;
+            color: #e5e7eb;
+            border-color: #2b3552;
+        }
+
+        html[data-theme="day"] .btn-clear {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        html[data-theme="night"] .btn-clear {
+            background: #f87171;
+            color: #ffffff;
+        }
+
+        html[data-theme="day"] .processing-title,
+        html[data-theme="night"] .processing-title {
+            color: #f59e0b;
+        }
+
+        html[data-theme="day"] .stat-label,
+        html[data-theme="day"] .detail-label,
+        html[data-theme="day"] .queue-time,
+        html[data-theme="night"] .stat-label,
+        html[data-theme="night"] .detail-label,
+        html[data-theme="night"] .queue-time {
+            color: var(--text-muted, #888);
+        }
+
+        html[data-theme="contrast"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .queue-header,
+        html[data-theme="contrast"] .current-processing,
+        html[data-theme="contrast"] .queue-item {
+            background: #050505;
+            color: #fff;
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="contrast"] .btn-clear {
+            background: #000;
+            color: #fff7cc;
+            border: 3px solid #facc15;
+        }
+
+        html[data-theme="contrast"] .processing-title,
+        html[data-theme="contrast"] .queue-position,
+        html[data-theme="contrast"] .status-badge {
+            color: #000;
+            background: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+            font-size: 1.08rem;
+            line-height: 1.7;
+        }
+
+        html[data-theme="vision-impaired"] .queue-container {
+            max-width: 2200px;
+        }
+
+        html[data-theme="vision-impaired"] .queue-header,
+        html[data-theme="vision-impaired"] .current-processing,
+        html[data-theme="vision-impaired"] .queue-item {
+            background: #000;
+            color: #fff;
+            border: 4px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .queue-header {
+            padding: 18px;
+        }
+
+        html[data-theme="vision-impaired"] .current-processing {
+            padding: 22px;
+        }
+
+        html[data-theme="vision-impaired"] .stat-label,
+        html[data-theme="vision-impaired"] .detail-label,
+        html[data-theme="vision-impaired"] .queue-time {
+            color: #fff7cc;
+            font-size: 0.92rem;
+        }
+
+        html[data-theme="vision-impaired"] .stat-value {
+            font-size: 2.2rem;
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .processing-title {
+            color: #facc15;
+            font-size: 1.25rem;
+            font-weight: 900;
+        }
+
+        html[data-theme="vision-impaired"] .queue-source {
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+
+        html[data-theme="vision-impaired"] .btn-clear {
+            background: #7f1d1d;
+            color: #fff;
+            -webkit-text-fill-color: #fff;
+            border: 3px solid #facc15;
+            font-size: 1rem;
+            padding: 14px 26px;
+        }
+
+        html[data-theme="vision-impaired"] .queue-position,
+        html[data-theme="vision-impaired"] .status-badge {
+            background: #facc15;
+            color: #000;
+            font-weight: 900;
         }
 
         .queue-header {
@@ -303,6 +481,100 @@
             display: inline-block;
             width: 20px;
             text-align: center;
+        }
+    
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
         }
     </style>
     <script src="/socket.io/socket.io.js"></script>

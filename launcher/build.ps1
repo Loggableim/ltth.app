@@ -27,7 +27,7 @@ try {
 # Icon herunterladen (optional)
 if ($DownloadIcon) {
     Write-Host "[2/5] Lade Icon herunter..." -ForegroundColor Yellow
-    $iconUrl = "https://ltth.app/assets/ltthicon.png"
+    $iconUrl = "https://ltth.app/assets/launcherlogo.png"
     $iconPath = "assets/icon.png"
     
     if (!(Test-Path "assets")) {

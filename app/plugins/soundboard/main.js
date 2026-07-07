@@ -64,6 +64,61 @@ class SoundboardManager extends EventEmitter {
     }
 
     /**
+     * Recommend frequently dropped gifts that do not have a configured sound yet.
+     */
+    getUnconfiguredGiftRecommendations(options = {}) {
+        const limit = Math.max(1, Math.min(50, parseInt(options.limit, 10) || 10));
+        const lookback = Math.max(limit, Math.min(5000, parseInt(options.lookback, 10) || 1000));
+        const configuredGiftIds = new Set(this.getAllGiftSounds().map(gift => Number(gift.giftId)));
+        const rows = this.db.getEventLogsFiltered({ limit: lookback, eventType: 'gift' });
+        const catalogStmt = this.db.db.prepare('SELECT * FROM gift_catalog WHERE id = ?');
+        const grouped = new Map();
+
+        rows.forEach(row => {
+            const normalizedGift = this.normalizeGiftEvent(row.data || {});
+            const giftId = normalizedGift.giftId;
+
+            if (!giftId || configuredGiftIds.has(Number(giftId))) {
+                return;
+            }
+
+            const existing = grouped.get(giftId) || {
+                giftId,
+                label: normalizedGift.giftName || `Gift ${giftId}`,
+                imageUrl: normalizedGift.giftPictureUrl || null,
+                diamondCount: null,
+                dropCount: 0,
+                repeatCount: 0,
+                lastDroppedAt: row.timestamp || null
+            };
+
+            const repeatCount = this._positiveInt(normalizedGift.repeatCount, 1) || 1;
+            existing.dropCount += 1;
+            existing.repeatCount += repeatCount;
+            if (!existing.lastDroppedAt || (row.timestamp && row.timestamp > existing.lastDroppedAt)) {
+                existing.lastDroppedAt = row.timestamp;
+            }
+            grouped.set(giftId, existing);
+        });
+
+        return Array.from(grouped.values())
+            .map(item => {
+                const catalog = catalogStmt.get(item.giftId);
+                return {
+                    ...item,
+                    label: catalog?.name || item.label,
+                    imageUrl: catalog?.image_url || item.imageUrl,
+                    diamondCount: catalog?.diamond_count ?? item.diamondCount
+                };
+            })
+            .sort((a, b) => {
+                if (b.repeatCount !== a.repeatCount) return b.repeatCount - a.repeatCount;
+                return b.dropCount - a.dropCount;
+            })
+            .slice(0, limit);
+    }
+
+    /**
      * Add or update gift sound
      */
     setGiftSound(giftId, label, mp3Url, volume = 1.0, animationUrl = null, animationType = 'none', animationVolume = 1.0) {
@@ -827,6 +882,20 @@ class SoundboardPlugin {
                 res.json(gifts);
             } catch (error) {
                 this.api.log(`Error getting gift sounds: ${error.message}`, 'error');
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Recommend frequently dropped gifts that do not have configured audio yet
+        this.api.registerRoute('get', '/api/soundboard/recommendations/unconfigured-gifts', (req, res) => {
+            try {
+                const recommendations = this.soundboard.getUnconfiguredGiftRecommendations({
+                    limit: req.query.limit,
+                    lookback: req.query.lookback
+                });
+                res.json({ success: true, recommendations });
+            } catch (error) {
+                this.api.log(`Error getting gift recommendations: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });

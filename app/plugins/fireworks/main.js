@@ -753,11 +753,15 @@ class FireworksPlugin {
      * Handle gift event - core fireworks trigger logic
      */
     handleGiftEvent(data) {
-        const coins = data.coins || data.diamondCount || 0;
+        const repeatCount = Math.max(1, Number(data.repeatCount || data.combo || 1) || 1);
+        const diamondCount = Number(data.diamondCount || data.diamond_count || 0) || 0;
+        const providedCoins = Number(data.coins);
+        const coins = Number.isFinite(providedCoins) && providedCoins > 0
+            ? providedCoins
+            : diamondCount * repeatCount;
         const giftId = data.giftId || data.gift_id;
         const userId = data.userId || data.uniqueId;
         const username = data.uniqueId || data.username || 'Unknown';
-        const repeatCount = data.repeatCount || data.combo || 1;
         const giftPictureUrl = data.giftPictureUrl || null;
 
         // Check minimum coins threshold
@@ -778,8 +782,9 @@ class FireworksPlugin {
             return;
         }
 
-        // Calculate effective coins (with repeat/combo count)
-        const effectiveCoins = coins * repeatCount;
+        // Adapter payloads already provide total coins. Only synthesize totals
+        // from diamondCount when the adapter did not send coins.
+        const effectiveCoins = coins;
 
         // Get escalation tier
         const tier = this.getEscalationTier(effectiveCoins);

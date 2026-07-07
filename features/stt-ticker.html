@@ -14,7 +14,7 @@
     <meta property="og:title" content="STT Ticker – Live-Untertitel-Overlay">
     <meta property="og:description" content="Live-Untertitel-Overlay für hörgeschädigte Zuschauer – Transkription in Echtzeit via Fish.audio, Deepgram Nova-2 oder ElevenLabs. Konfigurierbarer Ticker für OBS.">
     <meta property="og:url" content="https://ltth.app/features/stt-ticker.html">
-    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <meta property="og:image" content="https://ltth.app/screenshots/features/stt-ticker-night.png">
     <link rel="canonical" href="https://ltth.app/features/stt-ticker.html">
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/layout.css">
@@ -51,14 +51,70 @@
         <!-- screenshot -->
         <section class="features-preview" style="padding-top:0;">
             <div class="container">
-                <div class="screenshot-container">
-                    <img src="/assets/screenshots/stt-ticker.png"
-                         alt=""
-                         data-i18n-alt="screenshots.stt-ticker.hero.alt"
-                         loading="lazy"
-                         class="feature-screenshot"
-                         onerror="this.style.display='none'" />
-                    <p class="screenshot-caption" data-i18n="screenshots.stt-ticker.hero.caption"></p>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1.5rem;">
+                    <div class="screenshot-container">
+                        <img src="/screenshots/features/stt-ticker-night.png"
+                             alt="STT Ticker in Night Mode"
+                             loading="lazy"
+                             class="feature-screenshot"
+                             onerror="this.style.display='none'" />
+                        <p class="screenshot-caption">Night Mode für den normalen Arbeitsalltag.</p>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="/screenshots/features/stt-ticker-vision-impaired.png"
+                             alt="STT Ticker in Vision-Impaired Mode"
+                             loading="lazy"
+                             class="feature-screenshot"
+                             onerror="this.style.display='none'" />
+                        <p class="screenshot-caption">Vision-Impaired Mode mit deutlich mehr Abstand und Kontrast.</p>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="/screenshots/features/stt-ticker-overlay-url.png"
+                             alt="STT Ticker Overlay-URL mit Design-, Positions-, Zeilen- und Schriftgroessen-Parametern"
+                             loading="lazy"
+                             class="feature-screenshot"
+                             onerror="this.style.display='none'" />
+                        <p class="screenshot-caption">OBS-URL-Builder mit Design, Position, Max Lines und Font Size.</p>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="/screenshots/features/stt-ticker-capture-obs-url.png"
+                             alt="STT Ticker Capture-Seite mit OBS Overlay URL und Multi-Language Preview"
+                             loading="lazy"
+                             class="feature-screenshot"
+                             onerror="this.style.display='none'" />
+                        <p class="screenshot-caption">Capture-Seite mit OBS-URL-Helfer und Live-Output-Vorschau.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- OBS parameter verification -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">OBS-Parameter direkt im Render</h2>
+                <p style="color:var(--color-text-secondary); max-width:850px; margin:0 auto 2rem; text-align:center; line-height:1.7;">
+                    Die Overlay-URL uebergibt Design, Position, maximale Zeilenzahl, Schriftgroesse und Theme direkt an den OBS-Browser-Render. Getestet wurde unter anderem
+                    <code>design=dual-language</code>, <code>position=top-right</code>, <code>maxLines=2</code> und <code>fontSize=42px</code>.
+                </p>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1.5rem;">
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Laengeres Translation-Timeout</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Ollama-Cloud-Uebersetzungen warten jetzt standardmaessig bis zu 30 Sekunden, damit kurze Netz- oder Modell-Latenzen nicht sofort als Fehler enden.
+                        </p>
+                    </div>
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Waehlbare Darstellungen</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Die Auswahl aus der Admin-UI wird in die OBS-URL geschrieben und vom Overlay-Renderer fuer Layout, Positionierung und Schriftgroesse gelesen.
+                        </p>
+                    </div>
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Verifikation</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Browser-Checks bestaetigten den OBS-Zielpfad, und die fokussierten Jest-Tests decken Timeout-Fallback und URL-Parameter-Rendering ab.
+                        </p>
+                    </div>
                 </div>
             </div>
         </section>

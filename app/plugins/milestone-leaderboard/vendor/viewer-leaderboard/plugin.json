@@ -1,0 +1,23 @@
+{
+  "id": "viewer-leaderboard",
+  "name": "Viewer XP",
+  "version": "2.1.0",
+  "description": "Unified Viewer XP, Gifter Leaderboard, and Viewer Profiles analytics plugin. Handles XP tracking, leveling, badges, daily bonuses, rate limiting, anti-spam, event logging, profile management, VIP/birthday tracking, heatmaps, and gifter rankings in one bundle.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "overlay",
+  "devStatus": "development-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Unified Viewer XP, Viewer Profiles analytics, and Gifter Leaderboard plugin. Includes XP tracking, leveling, badges, profile management, VIP and birthday tracking, heatmaps, event logging, opt-out support, and gifter rankings in one bundle.",
+    "de": "Vereint Zuschauer-XP, Viewer-Profile-Analyse und Gifter-Bestenliste. EnthÃ¤lt XP-Tracking, Leveling, Badges, Profilverwaltung, VIP- und Geburtstags-Tracking, Heatmaps, Event-Logging, Opt-Out und Gifter-Rankings in einem Paket.",
+    "es": "Plugin unificado de XP de espectadores, anÃ¡lisis de perfiles y tabla de clasificaciÃ³n de donantes. Incluye seguimiento de XP, nivelaciÃ³n, insignias, gestiÃ³n de perfiles, VIP, cumpleaÃ±os, mapas de calor, registros de eventos, opt-out y rankings de donantes.",
+    "fr": "Plugin unifiÃ© pour l'XP des spectateurs, l'analyse des profils et le classement des donateurs. Inclut le suivi XP, la progression, les badges, la gestion de profil, les VIP, les anniversaires, les cartes thermiques, le journal d'Ã©vÃ©nements, l'opt-out et les classements des donateurs."
+  }
+}

@@ -1,11 +1,13 @@
 {
   "id": "coinbattle",
   "name": "CoinBattle",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Live battle game module where viewers compete by sending TikTok gifts to collect coins. Features team battles, multiplier events, historical rankings, badges, and customizable overlays.",
   "author": "Pup Cid",
+  "icon": "/plugins/coinbattle/assets/coinbattle-icon.png",
+  "logo": "/plugins/coinbattle/assets/coinbattle-logo-wide.png",
   "entry": "main.js",
-  "enabled": true,
+  "enabled": false,
   "type": "overlay",
   "devStatus": "early-version",
   "permissions": [

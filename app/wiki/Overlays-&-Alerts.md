@@ -31,7 +31,7 @@ Little TikTool Helper v1.2.1 bietet eine umfangreiche Sammlung von **Browser-Sou
 | **Goal Overlays** | 4 | Likes, Coins, Followers, Custom Goals |
 | **Leaderboard Overlays** | 5 | Top Gifters mit 5 Themes |
 | **WebGPU Effekte** | 3 | Emoji Rain, Fireworks, Weather |
-| **HUD Overlays** | 4 | ClarityHUD, GCCE HUD, LastEvent Spotlight |
+| **HUD Overlays** | 4 | ClarityHUD, GCCE HUD, Spotlight |
 | **Special Effects** | 3 | Flame Border, Gift Milestones, Quiz Show |
 
 **Gesamt:** 25+ verfügbare Overlays
@@ -417,19 +417,19 @@ http://localhost:3000/gcce-hud/overlay
 !hud clear           → HUD leeren
 ```
 
-#### LastEvent Spotlight
+#### Spotlight
 **URLs:**
 ```
-Plugin UI: http://localhost:3000/lastevent-spotlight/ui
-Follower: http://localhost:3000/overlay/lastevent/follower
-Like: http://localhost:3000/overlay/lastevent/like
-Chatter: http://localhost:3000/overlay/lastevent/chatter
-Share: http://localhost:3000/overlay/lastevent/share
-Gifter: http://localhost:3000/overlay/lastevent/gifter
-Subscriber: http://localhost:3000/overlay/lastevent/subscriber
-Top Gift: http://localhost:3000/overlay/lastevent/topgift
-Gift Streak: http://localhost:3000/overlay/lastevent/giftstreak
-Multi-HUD: http://localhost:3000/overlay/lastevent/multihud
+Plugin UI: http://localhost:3000/spotlight/ui
+Follower: http://localhost:3000/overlay/spotlight/follower
+Like: http://localhost:3000/overlay/spotlight/like
+Chatter: http://localhost:3000/overlay/spotlight/chatter
+Share: http://localhost:3000/overlay/spotlight/share
+Gifter: http://localhost:3000/overlay/spotlight/gifter
+Subscriber: http://localhost:3000/overlay/spotlight/subscriber
+Top Gift: http://localhost:3000/overlay/spotlight/topgift
+Gift Streak: http://localhost:3000/overlay/spotlight/giftstreak
+Multi-HUD: http://localhost:3000/overlay/spotlight/multihud
 ```
 
 **Auflösung:** 400x200 pro Event-Typ

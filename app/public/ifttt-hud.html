@@ -6,6 +6,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IFTTT HUD Overlay - TikTok Stream Tool</title>
     <link rel="stylesheet" href="/css/overlay-base.css">
+    <script>
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+            }
+
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         #hud-container {
             position: fixed;
@@ -46,7 +89,8 @@
         .overlay-text {
             padding: 16px 32px;
             border-radius: 12px;
-            max-width: 800px;
+            width: min(92vw, 960px);
+            max-width: none;
             word-wrap: break-word;
             text-align: center;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
@@ -103,6 +147,34 @@
         .position-bottom-right {
             bottom: 20px;
             right: 20px;
+        }
+
+        html[data-theme="vision-impaired"] .overlay-text {
+            background: #000;
+            color: #fff7cc;
+            border: 3px solid #facc15;
+            box-shadow: none;
+            width: min(92vw, 1100px);
+        }
+
+        html[data-theme="vision-impaired"] .overlay-image,
+        html[data-theme="vision-impaired"] .overlay-video {
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] .overlay-text {
+            background: rgba(7, 17, 7, 0.94);
+            color: #f4fff4;
+            border: 2px solid rgba(74, 222, 128, 0.35);
+            box-shadow: none;
+            width: min(92vw, 1000px);
+        }
+
+        html[data-theme="cid"] .overlay-image,
+        html[data-theme="cid"] .overlay-video {
+            border: 2px solid rgba(74, 222, 128, 0.35);
+            box-shadow: none;
         }
 
         /* Animation classes */

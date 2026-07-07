@@ -10,6 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const { execFile, execFileSync } = require('child_process');
 const TTYLogger = require('./tty-logger');
 
@@ -297,6 +298,52 @@ class Launcher {
         };
     }
 
+    getDependencyStatePath() {
+        return path.join(this.projectRoot, 'node_modules', '.ltth-deps-state.json');
+    }
+
+    readFileForDependencyHash(filePath) {
+        if (!fs.existsSync(filePath)) {
+            return '';
+        }
+        return fs.readFileSync(filePath, 'utf8');
+    }
+
+    computeDependencyState() {
+        const packageJsonPath = path.join(this.projectRoot, 'package.json');
+        const packageLockPath = path.join(this.projectRoot, 'package-lock.json');
+        const hash = crypto.createHash('sha256');
+
+        hash.update(this.readFileForDependencyHash(packageJsonPath));
+        hash.update('\n---package-lock---\n');
+        hash.update(this.readFileForDependencyHash(packageLockPath));
+
+        return {
+            version: 1,
+            packageHash: hash.digest('hex')
+        };
+    }
+
+    readDependencyState() {
+        try {
+            return JSON.parse(fs.readFileSync(this.getDependencyStatePath(), 'utf8'));
+        } catch {
+            return null;
+        }
+    }
+
+    dependencyStateMatches() {
+        const current = this.computeDependencyState();
+        const stored = this.readDependencyState();
+        return Boolean(stored && stored.version === current.version && stored.packageHash === current.packageHash);
+    }
+
+    writeDependencyState() {
+        const statePath = this.getDependencyStatePath();
+        fs.mkdirSync(path.dirname(statePath), { recursive: true });
+        fs.writeFileSync(statePath, JSON.stringify(this.computeDependencyState(), null, 2));
+    }
+
     /**
      * Prüft und installiert Dependencies
      */
@@ -310,6 +357,7 @@ class Launcher {
             this.log.newLine();
 
             await this.installDependencies();
+            this.writeDependencyState();
 
             this.log.newLine();
             this.log.success('Dependencies erfolgreich installiert!');
@@ -324,23 +372,26 @@ class Launcher {
             this.log.newLine();
 
             await this.installDependencies();
+            this.writeDependencyState();
 
             this.log.newLine();
             this.log.success('Dependencies erfolgreich installiert!');
             return;
         }
 
-        // Prüfe ob package-lock.json neuer ist als node_modules
-        const nodeModulesStat = fs.statSync(nodeModulesPath);
-        const packageLockStat = fs.existsSync(packageLockPath)
-            ? fs.statSync(packageLockPath)
-            : null;
+        // Use a package file hash marker instead of node_modules directory mtime.
+        if (!this.dependencyStateMatches()) {
+            if (!this.readDependencyState()) {
+                this.writeDependencyState();
+                this.log.success('Dependencies bereits installiert');
+                return;
+            }
 
-        if (packageLockStat && packageLockStat.mtimeMs > nodeModulesStat.mtimeMs) {
-            this.log.warn('package-lock.json wurde aktualisiert. Reinstalliere Dependencies...');
+            this.log.warn('package.json oder package-lock.json wurde geändert. Reinstalliere Dependencies...');
             this.log.newLine();
 
             await this.installDependencies();
+            this.writeDependencyState();
 
             this.log.newLine();
             this.log.success('Dependencies aktualisiert!');
@@ -447,6 +498,16 @@ class Launcher {
         });
     }
 
+    isMissingNativeBindingError(error) {
+        const detail = [
+            error && error.stderr,
+            error && error.stdout,
+            error && error.message
+        ].filter(Boolean).join('\n');
+
+        return /Could not locate the bindings file|better_sqlite3\.node|MODULE_NOT_FOUND/i.test(detail);
+    }
+
     async checkNativeModules() {
         this.log.info('Prüfe native Node-Module...');
         try {
@@ -456,6 +517,19 @@ class Launcher {
         } catch (error) {
             this.log.warn('Native Module passen nicht zur aktuellen Node.js-Version.');
             this.log.warn(error.stderr || error.message);
+
+            if (this.isMissingNativeBindingError(error)) {
+                this.log.warn('Native Module oder AbhÃ¤ngigkeiten fehlen. Repariere Dependencies...');
+                await this.installDependencies();
+                try {
+                    const verifyOutput = this.verifyNativeModules();
+                    this.log.success(`Native Module repariert: ${verifyOutput}`);
+                    return;
+                } catch (verifyError) {
+                    this.log.warn('Dependency-Reparatur hat native Module nicht behoben. Versuche npm rebuild...');
+                    this.log.warn(verifyError.stderr || verifyError.message);
+                }
+            }
         }
 
         try {

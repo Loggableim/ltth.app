@@ -2,7 +2,7 @@
   "locale": "de",
   "theme": "night",
   "preferredPort": 3000,
-  "keepLauncherOpen": true,
+  "keepLauncherOpen": false,
   "safeMode": false,
   "updateChannel": "local",
   "firstRunComplete": true

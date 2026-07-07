@@ -4,15 +4,203 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="app.name">PupCid's Little TikTool Helper</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/png" href="/ltthappicon.png">
+    <title data-i18n="app.name">LTTH.app</title>
+    <link rel="icon" type="image/png" href="/ltthicon.png">
     <link rel="stylesheet" href="/css/tailwind.output.css">
     <link rel="stylesheet" href="/css/navigation.css">
     <link rel="stylesheet" href="/css/wiki.css">
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/css/profile-manager.css">
     <link rel="stylesheet" href="/css/profile-management-ui.css">
+    <script>
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const SIDEBAR_WIDE_LOGO = '/logo-wide.png';
+            const SIDEBAR_ICON_LOGO = '/ltthicon-cutout.png?v=2';
+            const TOPBAR_DEFAULT_LOGO = '/ltthicon.png';
+            const STATIC_TOPBAR_BRANDS = new Map([
+                ['plugins', { src: '/appstore-logo.png', alt: 'LTTH App Store logo' }],
+                ['flows', { src: '/flows-logo.png', alt: 'IFTTT Automation Flows logo' }]
+            ]);
+            const LIVE_EVENT_LOG_STORAGE_KEY = 'show-live-event-log';
+            let topbarBrandingCache = null;
+            let topbarBrandingPromise = null;
+
+            function readLiveEventLogVisibility() {
+                try {
+                    return localStorage.getItem(LIVE_EVENT_LOG_STORAGE_KEY) === 'true';
+                } catch (error) {
+                    return false;
+                }
+            }
+
+            function syncLiveEventLogVisibility() {
+                document.documentElement.dataset.liveEventLog = readLiveEventLogVisibility()
+                    ? 'enabled'
+                    : 'disabled';
+            }
+
+            function getCurrentViewName() {
+                try {
+                    if (window.NavigationManager && typeof window.NavigationManager.getCurrentView === 'function') {
+                        const currentView = window.NavigationManager.getCurrentView();
+                        if (currentView) return currentView;
+                    }
+                } catch (error) {}
+
+                const activeView = document.querySelector('.content-view.active');
+                if (activeView && typeof activeView.id === 'string' && activeView.id.startsWith('view-')) {
+                    return activeView.id.slice(5);
+                }
+
+                return 'dashboard';
+            }
+
+            async function loadTopbarBranding() {
+                if (topbarBrandingCache) {
+                    return topbarBrandingCache;
+                }
+
+                if (topbarBrandingPromise) {
+                    return topbarBrandingPromise;
+                }
+
+                topbarBrandingPromise = (async () => {
+                    const cache = new Map();
+
+                    try {
+                        const response = await fetch('/api/plugins');
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data && data.success && Array.isArray(data.plugins)) {
+                                data.plugins.forEach((plugin) => {
+                                    const pluginId = String(plugin.id || '').trim();
+                                    if (!pluginId) return;
+
+                                    const logo = typeof plugin.logo === 'string' ? plugin.logo.trim() : '';
+                                    const icon = typeof plugin.icon === 'string' ? plugin.icon.trim() : '';
+                                    cache.set(pluginId, {
+                                        src: logo || icon || TOPBAR_DEFAULT_LOGO,
+                                        alt: plugin.name ? `${plugin.name} logo` : `${pluginId} logo`
+                                    });
+                                });
+                            }
+                        }
+                    } catch (error) {}
+
+                    topbarBrandingCache = cache;
+                    return cache;
+                })();
+
+                return topbarBrandingPromise;
+            }
+
+            function resolveTopbarBrand(viewName) {
+                const staticBrand = STATIC_TOPBAR_BRANDS.get(viewName);
+                if (staticBrand) {
+                    return staticBrand;
+                }
+
+                if (!viewName || viewName === 'events' || viewName === 'settings' || viewName === 'wiki') {
+                    return { src: TOPBAR_DEFAULT_LOGO, alt: 'LTTH.app logo' };
+                }
+
+                if (topbarBrandingCache && topbarBrandingCache.has(viewName)) {
+                    const brand = topbarBrandingCache.get(viewName);
+                    if (viewName === 'openshock') {
+                        return {
+                            ...brand,
+                            className: 'topbar-logo-image--hybridshock',
+                            brandClass: 'topbar-brand--hybridshock'
+                        };
+                    }
+                    return brand;
+                }
+
+                if (viewName === 'openshock') {
+                    return {
+                        src: TOPBAR_DEFAULT_LOGO,
+                        alt: 'LTTH.app logo',
+                        className: 'topbar-logo-image--hybridshock',
+                        brandClass: 'topbar-brand--hybridshock'
+                    };
+                }
+
+                return { src: TOPBAR_DEFAULT_LOGO, alt: 'LTTH.app logo' };
+            }
+
+            function readTheme() {
+                try {
+                    const current = document.documentElement.getAttribute('data-theme');
+                    if (VALID_THEMES.has(current)) return current;
+                } catch (error) {}
+
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function syncLogos() {
+                const wide = document.querySelector('.sidebar-logo-wide');
+                const mini = document.querySelector('.sidebar-logo-mini');
+                const topbarBrand = document.querySelector('.topbar-brand');
+                const topbar = document.querySelector('.topbar-logo-image');
+                const topbarBrandMeta = resolveTopbarBrand(getCurrentViewName());
+                if (wide) {
+                    if (wide.getAttribute('src') !== SIDEBAR_WIDE_LOGO) wide.setAttribute('src', SIDEBAR_WIDE_LOGO);
+                }
+                if (mini) {
+                    if (mini.getAttribute('src') !== SIDEBAR_ICON_LOGO) mini.setAttribute('src', SIDEBAR_ICON_LOGO);
+                }
+                if (topbarBrand) {
+                    topbarBrand.classList.toggle('topbar-brand--hybridshock', topbarBrandMeta.brandClass === 'topbar-brand--hybridshock');
+                }
+                if (topbar) {
+                    topbar.classList.toggle('topbar-logo-image--hybridshock', topbarBrandMeta.className === 'topbar-logo-image--hybridshock');
+                    if (topbar.getAttribute('src') !== topbarBrandMeta.src) topbar.setAttribute('src', topbarBrandMeta.src);
+                    if (topbar.getAttribute('alt') !== topbarBrandMeta.alt) topbar.setAttribute('alt', topbarBrandMeta.alt);
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', syncLogos);
+            window.addEventListener('load', syncLogos);
+            window.addEventListener('focus', syncLogos);
+            window.addEventListener('ltth:view-changed', syncLogos);
+            loadTopbarBranding().then(syncLogos);
+            syncLiveEventLogVisibility();
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncLogos();
+            });
+
+            try {
+                new MutationObserver(syncLogos).observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['data-theme']
+                });
+            } catch (error) {}
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncLogos).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         /* Plugin Manager Modern Styles - Theme-Aware */
         .plugin-card {
@@ -23,6 +211,1642 @@
             transform: translateY(-4px);
             box-shadow: var(--shadow-lg), 0 0 0 1px var(--color-active-border);
             border-color: var(--color-active-border) !important;
+        }
+
+        /* App Store marketplace styling */
+        .plugin-store-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .plugin-store-hero-slot {
+            min-width: 0;
+            margin-bottom: 1rem;
+        }
+
+        .plugin-store-header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.95rem;
+            align-items: stretch;
+            padding: 1.1rem 1.2rem;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(17, 24, 39, 0.92) 100%);
+            border: 1px solid var(--color-border);
+            border-radius: 18px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .plugin-store-header__brand {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex: 0 0 auto;
+            align-self: flex-end;
+            width: fit-content;
+            min-width: 0;
+            margin-left: auto;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .plugin-store-header__side {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.75rem;
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+
+        .plugin-store-header__body {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 1rem 1.25rem;
+            align-items: flex-start;
+            justify-content: space-between;
+            min-width: 0;
+        }
+
+        .plugin-store-header__logo {
+            display: block;
+            width: min(100%, 320px);
+            max-height: 84px;
+            object-fit: contain;
+            filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.35));
+        }
+
+        .plugin-store-header__title {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .plugin-store-header__title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            margin-bottom: 0.45rem;
+        }
+
+        .plugin-store-header__title-row h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--color-text-primary);
+        }
+
+        .plugin-store-header__title p {
+            margin: 0 0 0.85rem 0;
+            color: var(--color-text-muted);
+            line-height: 1.5;
+        }
+
+        .plugin-store-header__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .plugin-store-header__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            align-items: center;
+            justify-content: flex-end;
+            flex: 0 0 auto;
+        }
+
+        .plugin-store-inline-note {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.42rem 0.65rem;
+            border-radius: 999px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            color: var(--color-text-muted);
+            font-size: 0.78rem;
+            white-space: nowrap;
+        }
+
+        .plugin-store-update-all {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.72rem 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            background: rgba(16, 185, 129, 0.14);
+            color: #34d399;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .plugin-store-update-all:hover {
+            filter: brightness(1.08);
+        }
+
+        .plugin-store-warning {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(251, 191, 36, 0.35);
+            background: rgba(251, 191, 36, 0.12);
+            color: #fbbf24;
+            font-size: 0.9rem;
+        }
+
+        .plugin-store-mode-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .plugin-store-auth-root {
+            position: fixed;
+            inset: 0;
+            z-index: 1100;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(96, 165, 250, 0.28), transparent 32%),
+                radial-gradient(circle at 80% 10%, rgba(16, 185, 129, 0.22), transparent 30%),
+                rgba(2, 6, 23, 0.88);
+            backdrop-filter: blur(18px);
+        }
+
+        .plugin-store-auth-card {
+            width: min(100%, 540px);
+            padding: 1.6rem;
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            border-radius: 24px;
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(17, 24, 39, 0.95));
+            box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+            color: var(--color-text-primary);
+        }
+
+        .plugin-store-auth-card__eyebrow {
+            display: inline-flex;
+            margin-bottom: 0.75rem;
+            padding: 0.35rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid rgba(96, 165, 250, 0.35);
+            color: #93c5fd;
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .plugin-store-auth-card h3 {
+            margin: 0 0 0.6rem;
+            font-size: clamp(1.4rem, 4vw, 2rem);
+            font-weight: 900;
+        }
+
+        .plugin-store-auth-card p {
+            margin: 0 0 1rem;
+            color: var(--color-text-muted);
+            line-height: 1.55;
+        }
+
+        .plugin-store-auth-card code {
+            display: block;
+            padding: 0.75rem;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.85);
+            color: #bfdbfe;
+            overflow-wrap: anywhere;
+        }
+
+        .plugin-store-auth-card__actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .plugin-store-auth-card__mount {
+            min-height: 320px;
+        }
+
+        .plugin-store-account-menu {
+            min-width: 44px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .plugin-store-discovery {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .plugin-store-collection {
+            padding: 1rem;
+            border: 1px solid var(--color-border);
+            border-radius: 18px;
+            background: var(--color-bg-card);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .plugin-store-collection__header {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 0.85rem;
+            color: var(--color-text-muted);
+            font-size: 0.8rem;
+        }
+
+        .plugin-store-collection__title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--color-text-primary);
+            font-weight: 700;
+        }
+
+        .plugin-store-collection__title h4 {
+            margin: 0;
+            font-size: 0.98rem;
+        }
+
+        .plugin-store-collection__grid,
+        .plugin-store-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 0.9rem;
+            align-items: stretch;
+        }
+
+        .plugin-store-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-height: 260px;
+            padding: 2rem;
+            text-align: center;
+            border: 1px dashed var(--color-border);
+            border-radius: 18px;
+            background: var(--color-bg-card);
+            color: var(--color-text-muted);
+        }
+
+        .plugin-store-empty h4 {
+            margin: 0;
+            color: var(--color-text-primary);
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+
+        .plugin-store-empty p {
+            margin: 0;
+            max-width: 44rem;
+        }
+
+        .plugin-store-filter-chip,
+        .plugin-store-category-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.55rem 0.82rem;
+            border-radius: 999px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            color: var(--color-text-muted);
+            font-size: 0.82rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .plugin-store-filter-chip.active,
+        .plugin-store-category-chip.active {
+            background: var(--color-active-bg);
+            border-color: var(--color-active-border);
+            color: var(--color-accent-primary);
+        }
+
+        .plugin-store-filter-chip:hover,
+        .plugin-store-category-chip:hover {
+            transform: translateY(-1px);
+            border-color: var(--color-active-border);
+            color: var(--color-accent-primary);
+        }
+
+        .plugin-store-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+            min-height: 310px;
+            padding: 0.95rem;
+            border: 1px solid var(--color-border);
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(17, 24, 39, 0.92) 0%, rgba(15, 23, 42, 0.98) 100%);
+            box-shadow: var(--shadow-sm);
+            color: inherit;
+            cursor: pointer;
+            text-align: left;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .plugin-store-card:hover,
+        .plugin-store-card:focus-visible {
+            transform: translateY(-3px);
+            border-color: var(--color-active-border);
+            box-shadow: var(--shadow-lg), 0 0 0 1px var(--color-active-border);
+            outline: none;
+        }
+
+        .plugin-store-card--compact {
+            min-height: 248px;
+        }
+
+        .plugin-store-card__media {
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
+            border-radius: 14px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+        }
+
+        .plugin-store-card__media.is-compact {
+            aspect-ratio: 20 / 9;
+        }
+
+        .plugin-store-card__media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .plugin-store-card__media.is-brand {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.96));
+        }
+
+        .plugin-store-card__media.is-brand img {
+            object-fit: contain;
+            padding: 1rem;
+            background:
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.12), transparent 58%),
+                linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(17, 24, 39, 0.98));
+        }
+
+        .plugin-store-card__avatar {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            color: var(--store-icon-color, var(--color-accent-primary));
+            background: var(--store-icon-bg, rgba(16, 185, 129, 0.12));
+            box-shadow: inset 0 0 0 1px var(--store-icon-border, rgba(16, 185, 129, 0.24));
+        }
+
+        .plugin-store-card__avatar-icon {
+            width: 42%;
+            height: 42%;
+            display: block;
+            background: currentColor;
+            -webkit-mask: url("/ltthicon.png") center / contain no-repeat;
+            mask: url("/ltthicon.png") center / contain no-repeat;
+            filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.22));
+        }
+
+        .plugin-store-card__media-chip {
+            position: absolute;
+            left: 0.75rem;
+            bottom: 0.75rem;
+            padding: 0.34rem 0.55rem;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.8);
+            color: var(--color-text-primary);
+            font-size: 0.7rem;
+            font-weight: 700;
+            backdrop-filter: blur(10px);
+        }
+
+        .plugin-store-card__body {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .plugin-store-card__title-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+
+        .plugin-store-card__title-wrap {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .plugin-store-card__title {
+            color: var(--color-text-primary);
+            font-size: 1rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 0.35rem;
+            overflow-wrap: anywhere;
+        }
+
+        .plugin-store-card__badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .plugin-store-card__price {
+            flex-shrink: 0;
+            padding: 0.36rem 0.58rem;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .plugin-store-card__price.is-free {
+            color: #34d399;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .plugin-store-card__price.is-paid {
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.12);
+            border: 1px solid rgba(251, 191, 36, 0.25);
+        }
+
+        .plugin-store-card__description {
+            margin: 0;
+            color: var(--color-text-muted);
+            font-size: 0.88rem;
+            line-height: 1.45;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 3.9rem;
+        }
+
+        .plugin-store-card__summary {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.45rem 0.65rem;
+            color: var(--color-text-muted);
+            font-size: 0.78rem;
+        }
+
+        .plugin-store-card__summary-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            min-width: 0;
+        }
+
+        .plugin-store-card__summary-item span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .plugin-store-card__footer {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            align-items: flex-end;
+        }
+
+        .plugin-store-card__footer-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.28rem;
+            color: var(--color-text-muted);
+            font-size: 0.75rem;
+            min-width: 0;
+        }
+
+        .plugin-store-card__footer-meta span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .plugin-store-card__action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.42rem;
+            min-width: 102px;
+            padding: 0.68rem 0.9rem;
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            background: rgba(16, 185, 129, 0.14);
+            color: #34d399;
+            font-size: 0.84rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .plugin-store-card__action.is-disabled {
+            border-color: var(--color-border);
+            background: var(--color-bg-secondary);
+            color: var(--color-text-muted);
+            cursor: not-allowed;
+        }
+
+        .plugin-store-card__action:hover:not(.is-disabled) {
+            filter: brightness(1.08);
+        }
+
+        .plugin-store-drawer__backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.56);
+            z-index: 1200;
+        }
+
+        .plugin-store-drawer__panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: min(620px, 100vw);
+            padding: 1.1rem;
+            overflow-y: auto;
+            background: linear-gradient(180deg, rgba(10, 15, 25, 0.98) 0%, rgba(15, 23, 42, 0.99) 100%);
+            border-left: 1px solid var(--color-border);
+            box-shadow: -18px 0 40px rgba(0, 0, 0, 0.35);
+            z-index: 1201;
+        }
+
+        .plugin-store-drawer__header {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .plugin-store-drawer__hero {
+            display: flex;
+            gap: 0.9rem;
+            align-items: flex-start;
+            min-width: 0;
+        }
+
+        .plugin-store-drawer__media {
+            width: 132px;
+            height: 132px;
+            flex: 0 0 132px;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+        }
+
+        .plugin-store-drawer__media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .plugin-store-drawer__media.is-brand {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(17, 24, 39, 0.98));
+        }
+
+        .plugin-store-drawer__media.is-brand img {
+            object-fit: contain;
+            padding: 1rem;
+            background:
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.12), transparent 58%),
+                linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(17, 24, 39, 0.98));
+        }
+
+        .plugin-store-drawer__avatar {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            color: var(--store-icon-color, var(--color-accent-primary));
+            background: var(--store-icon-bg, rgba(16, 185, 129, 0.12));
+            box-shadow: inset 0 0 0 1px var(--store-icon-border, rgba(16, 185, 129, 0.24));
+        }
+
+        .plugin-store-drawer__avatar-icon {
+            width: 58%;
+            height: 58%;
+            display: block;
+            background: currentColor;
+            -webkit-mask: url("/ltthicon.png") center / contain no-repeat;
+            mask: url("/ltthicon.png") center / contain no-repeat;
+            filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.24));
+        }
+
+        .plugin-store-drawer__title {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .plugin-store-drawer__title h3 {
+            margin: 0 0 0.4rem 0;
+            color: var(--color-text-primary);
+            font-size: 1.45rem;
+            font-weight: 900;
+        }
+
+        .plugin-store-drawer__title p {
+            margin: 0.65rem 0 0 0;
+            color: var(--color-text-muted);
+            line-height: 1.55;
+        }
+
+        .plugin-store-drawer__badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .plugin-store-drawer__close {
+            flex-shrink: 0;
+            padding: 0.55rem;
+        }
+
+        .plugin-store-drawer__warning {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.85rem 1rem;
+            margin-bottom: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(251, 191, 36, 0.35);
+            background: rgba(251, 191, 36, 0.12);
+            color: #fbbf24;
+            font-size: 0.9rem;
+        }
+
+        .plugin-store-drawer__meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .plugin-store-drawer__section {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            background: var(--color-bg-card);
+        }
+
+        .plugin-store-drawer__section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            margin-bottom: 0.75rem;
+            color: var(--color-text-primary);
+            font-weight: 800;
+        }
+
+        .plugin-store-drawer__notes {
+            margin: 0.35rem 0 0 0;
+            color: var(--color-text-muted);
+            line-height: 1.55;
+            font-size: 0.92rem;
+        }
+
+        .plugin-store-drawer__gallery {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .plugin-store-drawer__gallery-main,
+        .plugin-store-drawer__thumb {
+            width: 100%;
+            display: block;
+            border-radius: 14px;
+            border: 1px solid var(--color-border);
+            object-fit: cover;
+        }
+
+        .plugin-store-drawer__gallery-main {
+            min-height: 220px;
+            max-height: 280px;
+            background: var(--color-bg-secondary);
+        }
+
+        .plugin-store-drawer__thumbs {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+
+        .plugin-store-drawer__thumb {
+            height: 88px;
+            background: var(--color-bg-secondary);
+        }
+
+        .plugin-store-drawer__empty {
+            min-height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            border: 1px dashed var(--color-border);
+            background: var(--color-bg-secondary);
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .plugin-store-drawer__action {
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .plugin-store-drawer__hint {
+            margin-bottom: 0.5rem;
+            color: var(--color-text-muted);
+            font-size: 0.84rem;
+        }
+
+        /* App Store refresh overrides */
+        .plugin-store-shell {
+            gap: 1.15rem;
+            min-width: 0;
+            --store-panel-bg: color-mix(in srgb, var(--color-bg-card) 94%, var(--color-bg-primary) 6%);
+            --store-panel-bg-strong: color-mix(in srgb, var(--color-bg-secondary) 84%, var(--color-bg-primary) 16%);
+            --store-panel-border: color-mix(in srgb, var(--color-border) 82%, transparent);
+            --store-panel-shadow: 0 18px 50px rgba(0, 0, 0, 0.16);
+            --store-accent-soft: color-mix(in srgb, var(--brand-primary) 16%, transparent);
+            --store-accent-soft-2: color-mix(in srgb, var(--color-accent-secondary) 14%, transparent);
+            --store-accent-border: color-mix(in srgb, var(--brand-primary) 45%, var(--color-border) 55%);
+        }
+
+        .plugin-store-header {
+            position: relative;
+            overflow: hidden;
+            flex-direction: column;
+            gap: 0.95rem;
+            align-items: stretch;
+            padding: 1.35rem;
+            border-radius: 24px;
+            border: 1px solid var(--store-panel-border);
+            box-shadow: var(--store-panel-shadow);
+            background:
+                radial-gradient(circle at 16% 20%, var(--store-accent-soft), transparent 34%),
+                radial-gradient(circle at 86% 18%, var(--store-accent-soft-2), transparent 30%),
+                linear-gradient(135deg, var(--store-panel-bg) 0%, color-mix(in srgb, var(--store-panel-bg) 86%, var(--brand-primary) 14%) 100%);
+        }
+
+        .plugin-store-header::before,
+        .plugin-store-header::after {
+            content: '';
+            position: absolute;
+            pointer-events: none;
+            border-radius: 999px;
+            opacity: 0.55;
+        }
+
+        .plugin-store-header::before {
+            inset: auto auto -10rem -8rem;
+            width: 22rem;
+            height: 22rem;
+            background: radial-gradient(circle, color-mix(in srgb, var(--brand-primary) 20%, transparent) 0%, transparent 68%);
+        }
+
+        .plugin-store-header::after {
+            inset: -7rem -10rem auto auto;
+            width: 18rem;
+            height: 18rem;
+            background: radial-gradient(circle, color-mix(in srgb, var(--color-accent-secondary) 18%, transparent) 0%, transparent 68%);
+        }
+
+        .plugin-store-header > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .plugin-store-header__brand {
+            flex: 0 0 auto;
+            align-self: flex-end;
+            width: fit-content;
+            min-width: 0;
+            margin-left: auto;
+            justify-content: flex-end;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .plugin-store-header__side {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: flex-start;
+            gap: 0.75rem;
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+
+        .plugin-store-header__body {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 1rem 1.25rem;
+            align-items: flex-start;
+            justify-content: space-between;
+            min-width: 0;
+        }
+
+        .plugin-store-header__logo {
+            width: min(100%, 300px);
+            max-height: 80px;
+            object-fit: contain;
+        }
+
+        .plugin-store-header__title {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            gap: 0.7rem;
+            min-width: 0;
+        }
+
+        .plugin-store-header__title-row {
+            gap: 0.75rem;
+            margin-bottom: 0;
+            flex-wrap: wrap;
+        }
+
+        .plugin-store-header__title-row h3 {
+            font-size: clamp(1.55rem, 1vw + 1.1rem, 2.15rem);
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .plugin-store-header__title p {
+            margin: 0;
+            max-width: 72ch;
+            font-size: 0.96rem;
+        }
+
+        .plugin-store-header__meta {
+            gap: 0.45rem;
+        }
+
+        .plugin-store-header__actions {
+            align-self: flex-start;
+            justify-content: flex-end;
+            flex: 0 0 auto;
+        }
+
+        .plugin-store-stats-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .plugin-store-stats-grid .stat-card {
+            display: flex;
+            align-items: center;
+            gap: 0.95rem;
+            padding: 1rem 1.05rem;
+            border-radius: 20px;
+            border: 1px solid var(--store-panel-border);
+            background: var(--store-panel-bg);
+            box-shadow: var(--store-panel-shadow);
+        }
+
+        .plugin-store-stats-grid .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            flex-shrink: 0;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 10px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .plugin-store-stats-grid .stat-content {
+            min-width: 0;
+        }
+
+        .plugin-store-stats-grid .stat-label {
+            margin-bottom: 0.2rem;
+            color: var(--color-text-muted);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .plugin-store-stats-grid .stat-value {
+            color: var(--color-text-primary);
+            font-size: clamp(1.6rem, 1.1vw + 1rem, 2.2rem);
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .plugin-store-badge,
+        .plugin-store-inline-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 0.72rem;
+            border-radius: 999px;
+            border: 1px solid var(--store-panel-border);
+            background: color-mix(in srgb, var(--color-bg-secondary) 82%, transparent);
+            color: var(--color-text-muted);
+            font-size: 0.78rem;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .plugin-store-inline-note {
+            color: var(--color-text-secondary);
+        }
+
+        .plugin-store-update-all {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.78rem 1rem;
+            border-radius: 999px;
+            border: 1px solid color-mix(in srgb, var(--brand-primary) 35%, var(--color-border));
+            background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 18%, transparent), color-mix(in srgb, var(--brand-primary) 10%, var(--color-bg-secondary)));
+            color: var(--brand-primary);
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            transition: transform 0.2s ease, filter 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .plugin-store-update-all:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.03);
+            box-shadow: 0 10px 24px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+        }
+
+        .plugin-store-warning {
+            border-color: color-mix(in srgb, var(--color-accent-warning) 35%, var(--color-border));
+            background: color-mix(in srgb, var(--color-accent-warning) 12%, transparent);
+            color: var(--color-accent-warning);
+        }
+
+        .plugin-store-mode-row {
+            margin-bottom: 0;
+            align-items: center;
+        }
+
+        .plugin-store-mode-tabs {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            padding: 0.35rem;
+            border: 1px solid var(--store-panel-border);
+            border-radius: 18px;
+            background: color-mix(in srgb, var(--color-bg-card) 90%, transparent);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .plugin-mode-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.72rem 1rem;
+            border-radius: 14px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .plugin-mode-btn:hover {
+            transform: translateY(-1px);
+            color: var(--color-text-primary);
+        }
+
+        .plugin-mode-btn.active {
+            background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 18%, transparent), color-mix(in srgb, var(--color-accent-primary) 12%, transparent));
+            border-color: var(--brand-primary);
+            color: var(--color-text-primary);
+            box-shadow: 0 12px 24px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+        }
+
+        .plugin-store-toolbar {
+            display: grid;
+            gap: 0.85rem;
+            padding: 1rem;
+            border: 1px solid var(--store-panel-border);
+            border-radius: 22px;
+            background: var(--store-panel-bg);
+            box-shadow: var(--store-panel-shadow);
+            min-width: 0;
+        }
+
+        .plugin-store-toolbar__row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            min-width: 0;
+        }
+
+        .plugin-store-toolbar__search {
+            flex: 1 1 280px;
+            min-width: 0;
+        }
+
+        .plugin-store-toolbar__search > div {
+            position: relative;
+        }
+
+        .plugin-store-search {
+            width: 100%;
+            min-width: 0;
+            height: 50px;
+            padding: 0.75rem 1rem 0.75rem 2.8rem;
+            border-radius: 16px;
+            border: 1px solid var(--color-input-border);
+            background: var(--color-input-bg);
+            color: var(--color-input-text);
+            font-size: 0.95rem;
+            box-sizing: border-box;
+        }
+
+        .plugin-store-search::placeholder {
+            color: var(--color-input-placeholder);
+        }
+
+        .plugin-store-toolbar__filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .plugin-store-toolbar__status-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem 0.85rem;
+            align-items: center;
+            padding: 0.2rem 0 0.2rem 0.9rem;
+            border-left: 1px solid var(--color-divider);
+            min-width: 0;
+        }
+
+        .plugin-store-toolbar__status-filters span {
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+            font-weight: 600;
+        }
+
+        .plugin-store-toolbar__status-filters label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            line-height: 1.2;
+        }
+
+        .plugin-store-toolbar__status-filters input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: var(--brand-primary);
+        }
+
+        .plugin-filter-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.72rem 1rem;
+            border-radius: 14px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .plugin-filter-btn:hover,
+        .plugin-filter-btn.active {
+            transform: translateY(-1px);
+            background: var(--color-active-bg);
+            border-color: var(--color-active-border);
+            color: var(--color-accent-primary);
+            box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-active-border) 40%, transparent);
+        }
+
+        .plugin-store-sort-select,
+        .plugin-store-compact-toggle {
+            height: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0 0.95rem;
+            border-radius: 16px;
+            border: 1px solid var(--color-input-border);
+            background: var(--color-input-bg);
+            color: var(--color-input-text);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .plugin-store-compact-toggle {
+            justify-content: center;
+        }
+
+        .plugin-store-sort-select:hover,
+        .plugin-store-compact-toggle:hover {
+            transform: translateY(-1px);
+            border-color: var(--color-accent-primary);
+            box-shadow: 0 0 0 3px var(--color-active-bg);
+        }
+
+        .plugin-store-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            min-width: 0;
+        }
+
+        .plugin-store-chip-row--categories {
+            margin-top: 0.2rem;
+        }
+
+        .plugin-store-chip-row--filters {
+            margin-top: 0.05rem;
+        }
+
+        .plugin-store-collection {
+            padding: 1.1rem;
+            border-radius: 22px;
+            border: 1px solid var(--store-panel-border);
+            background: var(--store-panel-bg);
+            box-shadow: var(--store-panel-shadow);
+        }
+
+        .plugin-store-collection__header {
+            padding-bottom: 0.6rem;
+            border-bottom: 1px solid var(--color-divider);
+            margin-bottom: 0.9rem;
+        }
+
+        .plugin-store-discovery {
+            gap: 1rem;
+        }
+
+        .plugin-store-empty {
+            border-radius: 22px;
+            background: var(--store-panel-bg);
+            border: 1px dashed var(--store-panel-border);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .plugin-store-grid,
+        .plugin-store-collection__grid {
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1rem;
+        }
+
+        .plugin-store-card {
+            display: grid;
+            grid-template-columns: 96px minmax(0, 1fr);
+            grid-template-areas:
+                "media body"
+                "media footer";
+            gap: 0.9rem 1rem;
+            min-height: 286px;
+            padding: 1rem;
+            border-radius: 22px;
+            border: 1px solid var(--store-panel-border);
+            background: linear-gradient(180deg, color-mix(in srgb, var(--color-bg-card) 96%, var(--brand-primary) 4%), var(--color-bg-card));
+            box-shadow: var(--store-panel-shadow);
+        }
+
+        .plugin-store-card:hover,
+        .plugin-store-card:focus-visible {
+            transform: translateY(-4px);
+            border-color: var(--color-active-border);
+            box-shadow: 0 20px 42px rgba(0, 0, 0, 0.16), 0 0 0 1px var(--color-active-border);
+            outline: none;
+        }
+
+        .plugin-store-card--compact {
+            grid-template-columns: 84px minmax(0, 1fr);
+            min-height: 256px;
+        }
+
+        .plugin-store-card__media {
+            grid-area: media;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 20px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            overflow: hidden;
+            position: relative;
+            align-self: start;
+        }
+
+        .plugin-store-card__media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .plugin-store-card__media.is-brand {
+            background: linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 88%, var(--brand-primary) 12%), color-mix(in srgb, var(--color-bg-card) 92%, var(--color-accent-secondary) 8%));
+        }
+
+        .plugin-store-card__media.is-brand img {
+            object-fit: contain;
+            padding: 0.75rem;
+            background:
+                radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--brand-primary) 12%, transparent), transparent 58%),
+                linear-gradient(180deg, transparent, transparent);
+        }
+
+        .plugin-store-card__avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+        }
+
+        .plugin-store-card__media-chip {
+            display: none;
+            left: 0.6rem;
+            bottom: 0.6rem;
+            padding: 0.32rem 0.5rem;
+            border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+            background: color-mix(in srgb, var(--color-bg-primary) 76%, transparent);
+            backdrop-filter: blur(10px);
+        }
+
+        .plugin-store-card__body {
+            grid-area: body;
+            gap: 0.55rem;
+            padding-top: 0.05rem;
+        }
+
+        .plugin-store-card__title {
+            font-size: 1.08rem;
+            line-height: 1.2;
+        }
+
+        .plugin-store-card__description {
+            font-size: 0.89rem;
+            line-height: 1.5;
+            min-height: 4.2rem;
+            -webkit-line-clamp: 3;
+        }
+
+        .plugin-store-card__summary {
+            gap: 0.45rem 0.75rem;
+            padding-top: 0.15rem;
+            border-top: 1px solid var(--color-divider);
+        }
+
+        .plugin-store-card__summary-item {
+            color: var(--color-text-secondary);
+        }
+
+        .plugin-store-card__footer {
+            grid-area: footer;
+            align-items: flex-end;
+            gap: 0.8rem;
+        }
+
+        .plugin-store-card__footer-meta {
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 0.2rem 0.7rem;
+            font-size: 0.75rem;
+        }
+
+        .plugin-store-card__action {
+            min-width: 118px;
+            height: 44px;
+            padding: 0 0.95rem;
+            border-radius: 999px;
+            border: 1px solid color-mix(in srgb, var(--brand-primary) 35%, var(--color-border));
+            background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 16%, transparent), color-mix(in srgb, var(--brand-primary) 12%, var(--color-bg-secondary)));
+            color: var(--brand-primary);
+        }
+
+        .plugin-store-card__action.is-disabled {
+            background: var(--color-disabled-bg);
+            border-color: var(--color-border);
+            color: var(--color-disabled-text);
+        }
+
+        .plugin-store-card__action:hover:not(.is-disabled) {
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px color-mix(in srgb, var(--brand-primary) 14%, transparent);
+        }
+
+        .plugin-store-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.5rem;
+            border-radius: 999px;
+            border: 1px solid var(--store-panel-border);
+            font-size: 0.7rem;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .plugin-store-chip--official {
+            background: color-mix(in srgb, var(--color-accent-primary) 16%, transparent);
+            color: var(--color-accent-primary);
+        }
+
+        .plugin-store-chip--external {
+            background: color-mix(in srgb, var(--color-accent-warning) 16%, transparent);
+            color: var(--color-accent-warning);
+        }
+
+        .plugin-store-chip--warning {
+            background: color-mix(in srgb, var(--color-accent-warning) 16%, transparent);
+            color: var(--color-accent-warning);
+        }
+
+        .plugin-store-chip--danger {
+            background: color-mix(in srgb, var(--color-accent-danger) 16%, transparent);
+            color: var(--color-accent-danger);
+        }
+
+        .plugin-store-chip--success {
+            background: color-mix(in srgb, var(--color-accent-success) 16%, transparent);
+            color: var(--color-accent-success);
+        }
+
+        .plugin-store-chip--muted {
+            background: color-mix(in srgb, var(--color-text-muted) 16%, transparent);
+            color: var(--color-text-muted);
+        }
+
+        .plugin-store-chip--installed {
+            background: color-mix(in srgb, var(--color-accent-success) 16%, transparent);
+            color: var(--color-accent-success);
+        }
+
+        .plugin-store-badge-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+
+        .plugin-store-drawer__stack {
+            display: grid;
+            gap: 0.45rem;
+        }
+
+        .plugin-store-detail-field {
+            border: 1px solid var(--store-panel-border);
+            border-radius: 14px;
+            padding: 0.8rem;
+            background: var(--color-bg-card);
+            min-width: 0;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+        }
+
+        .plugin-store-detail-field__label {
+            margin-bottom: 0.25rem;
+            color: var(--color-text-muted);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .plugin-store-detail-field__value {
+            color: var(--color-text-primary);
+            font-size: 0.9rem;
+            overflow-wrap: anywhere;
+        }
+
+        .plugin-store-drawer__panel {
+            width: min(720px, 100vw);
+            padding: 1.2rem;
+            background: linear-gradient(180deg, var(--color-bg-card), color-mix(in srgb, var(--color-bg-card) 90%, var(--brand-primary) 10%));
+            border-left: 1px solid var(--store-panel-border);
+            box-shadow: -24px 0 54px rgba(0, 0, 0, 0.24);
+        }
+
+        .plugin-store-drawer__header {
+            gap: 1rem;
+        }
+
+        .plugin-store-drawer__media {
+            width: 144px;
+            height: 144px;
+            flex: 0 0 144px;
+            border-radius: 22px;
+            border: 1px solid var(--store-panel-border);
+        }
+
+        .plugin-store-drawer__title h3 {
+            font-size: clamp(1.45rem, 1vw + 1.1rem, 2rem);
+            line-height: 1.1;
+        }
+
+        .plugin-store-drawer__badges {
+            gap: 0.35rem;
+        }
+
+        .plugin-store-drawer__section {
+            border-radius: 18px;
+            border: 1px solid var(--store-panel-border);
+            background: var(--store-panel-bg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .plugin-store-feedback-form {
+            display: grid;
+            gap: 0.65rem;
+        }
+
+        .plugin-store-feedback-form__control {
+            width: 100%;
+            min-height: 46px;
+            padding: 0.7rem 0.85rem;
+            border-radius: 14px;
+            border: 1px solid var(--color-input-border);
+            background: var(--color-input-bg);
+            color: var(--color-input-text);
+            font-size: 0.92rem;
+            box-sizing: border-box;
+        }
+
+        .plugin-store-feedback-form__textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .plugin-store-feedback-form__submit {
+            justify-content: flex-start;
+        }
+
+        @media (max-width: 1280px) {
+            .plugin-store-toolbar__status-filters {
+                border-left: 0;
+                padding-left: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .plugin-store-header,
+            .plugin-store-drawer__header {
+                flex-direction: column;
+                justify-content: flex-start;
+            }
+
+            .plugin-store-header__title {
+                flex: 0 0 auto;
+                justify-content: flex-start;
+                min-width: 0;
+                width: 100%;
+            }
+
+            .plugin-store-header__body {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .plugin-store-header__side {
+                align-items: flex-start;
+                width: 100%;
+                gap: 0.6rem;
+            }
+
+            .plugin-store-header__brand {
+                flex: 0 0 auto;
+                margin-left: 0;
+                width: fit-content;
+                align-self: flex-start;
+            }
+
+            .plugin-store-header__logo {
+                width: min(100%, 280px);
+                max-height: 72px;
+            }
+
+            .plugin-store-header__actions {
+                justify-content: flex-start;
+            }
+
+            .plugin-store-card__summary,
+            .plugin-store-drawer__meta-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .plugin-store-collection__grid,
+            .plugin-store-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .plugin-store-drawer__panel {
+                width: 100vw;
+            }
+
+            .plugin-store-drawer__hero {
+                flex-direction: column;
+            }
+
+            .plugin-store-drawer__media {
+                width: 100%;
+                flex-basis: auto;
+                height: 180px;
+            }
+
+            .plugin-store-stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .plugin-store-mode-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .plugin-store-mode-tabs {
+                width: 100%;
+                justify-content: stretch;
+            }
+
+            .plugin-mode-btn {
+                flex: 1 1 0;
+                justify-content: center;
+            }
+
+            .plugin-store-toolbar__row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .plugin-store-toolbar__filters,
+            .plugin-store-toolbar__status-filters {
+                width: 100%;
+            }
+
+            .plugin-store-sort-select,
+            .plugin-store-compact-toggle {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .plugin-store-grid,
+            .plugin-store-collection__grid {
+                grid-template-columns: 1fr;
+            }
+
+            .plugin-store-card {
+                grid-template-columns: 84px minmax(0, 1fr);
+            }
+
+            .plugin-store-card__footer {
+                align-items: flex-start;
+            }
         }
 
         .plugin-action-btn {
@@ -50,16 +1874,13 @@
             transform: translateY(0);
         }
 
-        .plugin-filter-btn:hover {
-            background: var(--color-active-bg) !important;
-            border-color: var(--color-active-border) !important;
-            color: var(--color-accent-primary) !important;
-        }
-
+        .plugin-filter-btn:hover,
         .plugin-filter-btn.active {
-            background: var(--color-active-bg) !important;
-            border-color: var(--color-active-border) !important;
-            color: var(--color-accent-primary) !important;
+            transform: translateY(-1px);
+            background: var(--color-active-bg);
+            border-color: var(--color-active-border);
+            color: var(--color-accent-primary);
+            box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-active-border) 40%, transparent);
         }
 
         /* Profile filter button styles */
@@ -249,118 +2070,6 @@
             }
         }
 
-        /* Plugin Notice Styles */
-        .plugin-notice {
-            background: linear-gradient(135deg, var(--color-active-bg) 0%, var(--color-active-bg) 100%);
-            border: 1px solid var(--color-active-border);
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            animation: slideInDown 0.4s ease-out;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-
-        .plugin-notice-content {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-
-        .plugin-notice-icon {
-            flex-shrink: 0;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--color-active-bg);
-            border-radius: 8px;
-            color: var(--color-accent-primary);
-        }
-
-        .plugin-notice-icon i {
-            width: 24px;
-            height: 24px;
-        }
-
-        .plugin-notice-text {
-            flex: 1;
-        }
-
-        .plugin-notice-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--color-accent-primary);
-            margin: 0 0 0.5rem 0;
-        }
-
-        .plugin-notice-message {
-            font-size: 0.875rem;
-            color: var(--color-text-secondary);
-            line-height: 1.5;
-            margin: 0;
-        }
-
-        .plugin-notice-dismiss {
-            flex-shrink: 0;
-            background: var(--color-bg-hover);
-            border: none;
-            border-radius: 6px;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: var(--color-text-secondary);
-        }
-
-        .plugin-notice-dismiss:hover {
-            background: var(--color-bg-tertiary);
-            color: var(--color-text-primary);
-            transform: scale(1.1);
-        }
-
-        .plugin-notice-dismiss i {
-            width: 18px;
-            height: 18px;
-        }
-
-        @keyframes slideInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .plugin-notice {
-                padding: 0.875rem;
-            }
-
-            .plugin-notice-content {
-                gap: 0.75rem;
-            }
-
-            .plugin-notice-icon {
-                width: 36px;
-                height: 36px;
-            }
-
-            .plugin-notice-title {
-                font-size: 0.9rem;
-            }
-
-            .plugin-notice-message {
-                font-size: 0.8125rem;
-            }
-        }
-
         /* Shoutbox / Community Chat Section - Theme-Aware */
         .shoutbox-section {
             margin-bottom: 2rem;
@@ -370,7 +2079,7 @@
             background: var(--color-bg-card);
             border: 1px solid var(--color-border);
             border-radius: 12px;
-            padding: 1rem;
+            padding: 0;
             min-height: 500px;
             height: 600px;
             overflow: hidden;
@@ -390,9 +2099,15 @@
 
         /* Chatango iframe will be inserted by the script */
         .shoutbox-container > iframe {
+            display: block;
             width: 100% !important;
             height: 100% !important;
             border: none;
+        }
+
+        .chatango-loading {
+            padding: 1rem;
+            box-sizing: border-box;
         }
 
         /* Mobile responsiveness for shoutbox */
@@ -400,7 +2115,7 @@
             .shoutbox-container {
                 min-height: 400px;
                 height: 500px;
-                padding: 0.5rem;
+                padding: 0;
             }
         }
 
@@ -437,8 +2152,8 @@
             background: var(--color-modal-bg);
             border: 2px solid var(--color-accent-primary);
             border-radius: 12px;
-            max-width: 800px;
-            width: 100%;
+            width: min(96vw, 1120px);
+            max-width: none;
             max-height: 80vh;
             display: flex;
             flex-direction: column;
@@ -545,7 +2260,7 @@
             border: 1px solid var(--color-accent-danger);
             border-radius: 16px;
             padding: 2rem 2.5rem;
-            max-width: 420px;
+            max-width: 560px;
             width: 90%;
             text-align: center;
             box-shadow: var(--shadow-lg);
@@ -683,6 +2398,12 @@
             color: var(--color-text-muted, #475569);
             font-size: 0.8rem;
         }
+
+        html[data-live-event-log="disabled"] .sidebar-item[data-view="events"],
+        html[data-live-event-log="disabled"] .shortcut-card[data-view="events"],
+        html[data-live-event-log="disabled"] #view-events {
+            display: none !important;
+        }
         
     </style>
     <script src="/js/lucide.min.js"></script>
@@ -698,30 +2419,30 @@
         <aside id="sidebar" class="sidebar sidebar-expanded">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
-                    <img id="sidebar-mini-icon" src="/ltthmini_nightmode.png" alt="LTTH Mini" class="sidebar-logo-mini">
-                    <span class="sidebar-logo-text">LTTH</span>
+                    <img src="/logo-wide.png" alt="LTTH logo" class="sidebar-logo-wide">
+                    <img id="sidebar-mini-icon" src="/ltthicon-cutout.png?v=2" alt="LTTH icon" class="sidebar-logo-mini">
                 </div>
                 <button id="sidebar-toggle" class="sidebar-toggle-btn">
                     <i data-lucide="panel-left"></i>
                 </button>
                 <!-- Quick Action Mini Icons (only visible when collapsed) -->
-                <div class="sidebar-quick-actions">
-                    <button class="sidebar-quick-icon" id="sidebar-quick-tts" data-action="tts" data-plugin="tts" title="Toggle TTS">
-                        <i data-lucide="mic"></i>
-                    </button>
+                    <div class="sidebar-quick-actions">
+                        <button class="sidebar-quick-icon" id="sidebar-quick-tts" data-action="tts" data-plugin="tts" title="Toggle TTS">
+                            <img src="/ltthttsicon.png" alt="" class="sidebar-quick-plugin-icon sidebar-quick-plugin-icon-tts" aria-hidden="true">
+                        </button>
                     <button class="sidebar-quick-icon" id="sidebar-quick-soundboard" data-action="soundboard" data-plugin="soundboard" title="Toggle Soundboard">
                         <i data-lucide="music"></i>
                     </button>
                     <button class="sidebar-quick-icon" id="sidebar-quick-flows" data-action="flows" title="Toggle Flows">
                         <i data-lucide="git-branch"></i>
                     </button>
-                    <button class="sidebar-quick-icon" id="sidebar-quick-webgpu-emoji-rain" data-action="webgpu-emoji-rain" data-plugin="webgpu-emoji-rain" title="Toggle WebGPU Emoji Rain">
-                        <i data-lucide="zap"></i>
+                    <button class="sidebar-quick-icon" id="sidebar-quick-webgpu-emoji-rain" data-action="webgpu-emoji-rain" data-plugin="webgpu-emoji-rain" title="Toggle Emoji Rain">
+                        <img src="/plugins/webgpu-emoji-rain/assets/sidebar-icon.png" alt="" class="sidebar-quick-plugin-icon" aria-hidden="true">
                     </button>
                     <button class="sidebar-quick-icon" id="sidebar-quick-osc-bridge" data-action="osc-bridge" data-plugin="osc-bridge" title="Toggle OSC-Bridge">
                         <i data-lucide="gamepad-2"></i>
                     </button>
-                    <button class="sidebar-quick-icon sidebar-quick-emergency" id="sidebar-quick-openshock-stop" data-action="openshock-emergency-stop" data-plugin="openshock" title="OpenShock Emergency Stop">
+                    <button class="sidebar-quick-icon sidebar-quick-emergency" id="sidebar-quick-openshock-stop" data-action="openshock-emergency-stop" data-plugin="openshock" title="HybridShock Emergency Stop">
                         <i data-lucide="shield-off"></i>
                     </button>
                 </div>
@@ -736,16 +2457,16 @@
                     </div>
                     <div class="sidebar-category-items">
                         <a href="#" class="sidebar-item active" data-view="dashboard" data-tooltip="Dashboard">
-                            <i data-lucide="layout-dashboard"></i>
+                            <img src="/dashboard-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-dashboard" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.dashboard">Dashboard</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="clarityhud" data-plugin="clarityhud" data-tooltip="ClarityHUD">
-                            <i data-lucide="layout"></i>
+                            <img src="/plugins/clarityhud/assets/clarity-icon.png" alt="" class="sidebar-plugin-icon">
                             <span class="sidebar-item-text" data-i18n="navigation.clarityhud">ClarityHUD</span>
                         </a>
-                        <a href="#" class="sidebar-item" data-view="lastevent-spotlight" data-plugin="lastevent-spotlight" data-tooltip="LastEvent">
-                            <i data-lucide="eye"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.lastevent">LastEvent</span>
+                        <a href="#" class="sidebar-item" data-view="spotlight" data-plugin="spotlight" data-tooltip="Spotlight">
+                            <img src="/plugins/spotlight/assets/spotlight-icon.png" alt="" class="sidebar-plugin-icon">
+                            <span class="sidebar-item-text" data-i18n="navigation.spotlight">Spotlight</span>
                         </a>
                     </div>
                 </div>
@@ -762,15 +2483,15 @@
                             <span class="sidebar-item-text" data-i18n="navigation.events">Events</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="flows" data-tooltip="Flows">
-                            <i data-lucide="git-branch"></i>
+                            <img src="/flows-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-flows" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.flows">Flows</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="goals" data-plugin="goals" data-tooltip="Goals">
-                            <i data-lucide="target"></i>
+                            <img src="/plugins/goals/assets/live-goals-icon.png" alt="" class="sidebar-plugin-icon" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.goals">Goals</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="advanced-timer" data-plugin="advanced-timer" data-tooltip="Advanced Timer">
-                            <i data-lucide="timer"></i>
+                            <img src="/plugins/advanced-timer/assets/advanced-timer-icon.png" alt="" class="sidebar-plugin-icon" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.advanced_timer">Advanced Timer</span>
                         </a>
                     </div>
@@ -784,15 +2505,15 @@
                     </div>
                     <div class="sidebar-category-items">
                         <a href="#" class="sidebar-item" data-view="tts" data-plugin="tts" data-tooltip="TTS">
-                            <i data-lucide="mic"></i>
+                            <img src="/ltthttsicon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-tts" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.tts">TTS</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="music-bot" data-plugin="music-bot" data-tooltip="Music Bot">
-                            <i data-lucide="headphones"></i>
+                            <img src="/plugins/music-bot/assets/soundbot.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-music-bot">
                             <span class="sidebar-item-text" data-i18n="navigation.music_bot">Music Bot</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="soundboard" data-plugin="soundboard" data-tooltip="Soundboard">
-                            <i data-lucide="music"></i>
+                            <img src="/soundboard-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-soundboard">
                             <span class="sidebar-item-text" data-i18n="navigation.soundboard">Soundboard</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="talking-heads" data-plugin="talking-heads" data-tooltip="Talking Heads">
@@ -800,7 +2521,7 @@
                             <span class="sidebar-item-text" data-i18n="navigation.talking_heads">Talking Heads</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="stt-ticker" data-plugin="stt-ticker" data-tooltip="STT Ticker">
-                            <i data-lucide="subtitles"></i>
+                            <img src="/ltthttsicon.png" alt="" class="sidebar-plugin-icon">
                             <span class="sidebar-item-text" data-i18n="navigation.stt_ticker">STT Ticker</span>
                         </a>
                         <a href="/stt-ticker/capture" target="_blank" class="sidebar-item" data-tooltip="STT Audio Capture (eigenes Fenster)">
@@ -817,17 +2538,17 @@
                         <i class="sidebar-category-toggle" data-lucide="chevron-down"></i>
                     </div>
                     <div class="sidebar-category-items">
-                        <a href="#" class="sidebar-item" data-view="webgpu-emoji-rain" data-plugin="webgpu-emoji-rain" data-tooltip="WebGPU Emoji Rain">
-                            <i data-lucide="zap"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.webgpu_emoji_rain">WebGPU Emoji Rain</span>
+                        <a href="#" class="sidebar-item" data-view="webgpu-emoji-rain" data-plugin="webgpu-emoji-rain" data-tooltip="Emoji Rain">
+                            <img src="/plugins/webgpu-emoji-rain/assets/sidebar-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-webgpu-emoji-rain" aria-hidden="true">
+                            <span class="sidebar-item-text" data-i18n="navigation.webgpu_emoji_rain">Emoji Rain</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="fireworks" data-plugin="fireworks" data-tooltip="Fireworks">
-                            <i data-lucide="sparkles"></i>
+                            <img class="sidebar-plugin-icon" src="/plugins/fireworks/assets/fireworks-icon.png" alt="" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.fireworks">Fireworks</span>
                         </a>
-                        <a href="#" class="sidebar-item" data-view="flame-overlay" data-plugin="flame-overlay" data-tooltip="Flame Overlay">
-                            <i data-lucide="flame"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.flame_overlay">Flame Overlay</span>
+                        <a href="#" class="sidebar-item" data-view="flame-overlay" data-plugin="flame-overlay" data-tooltip="Visual FX Frame">
+                            <img src="/plugins/flame-overlay/assets/branding/visual-fx-frame-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-visual-fx-frame" aria-hidden="true">
+                            <span class="sidebar-item-text" data-i18n="navigation.visual_fx_frame">Visual FX Frame</span>
                         </a>
                     </div>
                 </div>
@@ -840,24 +2561,24 @@
                     </div>
                     <div class="sidebar-category-items">
                         <a href="#" class="sidebar-item" data-view="quiz-show" data-plugin="quiz-show" data-tooltip="Quiz Show">
-                            <i data-lucide="help-circle"></i>
+                            <img class="sidebar-plugin-icon" src="/plugins/quiz-show/assets/quiz-show-icon.png" alt="" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.quiz_show">Quiz Show</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="interactive-story" data-plugin="interactive-story" data-tooltip="Interactive Story">
-                            <i data-lucide="book-open"></i>
+                            <img class="sidebar-plugin-icon" src="/plugins/interactive-story/assets/interactive-story-icon.png" alt="" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.interactive_story">Interactive Story</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="coinbattle" data-plugin="coinbattle" data-tooltip="CoinBattle">
-                            <i data-lucide="coins"></i>
+                            <img src="/plugins/coinbattle/assets/coinbattle-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-coinbattle" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.coinbattle">CoinBattle</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="game-engine" data-plugin="game-engine" data-tooltip="Game Engine">
-                            <i data-lucide="gamepad-2"></i>
+                            <img src="/plugins/game-engine/assets/branding/ltth-game-engine-icon.png?v=20260707-2" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-game-engine" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.game_engine">Game Engine</span>
                         </a>
-                        <a href="#" class="sidebar-item" data-view="viewer-leaderboard" data-plugin="viewer-leaderboard" data-tooltip="Viewer XP &amp; Leaderboard">
-                            <i data-lucide="trophy"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.viewer_leaderboard">Viewer XP & Leaderboard</span>
+                        <a href="#" class="sidebar-item" data-view="milestone-leaderboard" data-plugin="milestone-leaderboard" data-tooltip="Viewer XP">
+                            <img src="/plugins/milestone-leaderboard/assets/viewer-xp-icon.png?v=20260707-5" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-viewer-xp" aria-hidden="true">
+                            <span class="sidebar-item-text" data-i18n="navigation.viewer_leaderboard">Viewer XP</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="viewer-profiles" data-plugin="viewer-profiles" data-tooltip="Viewer Profiles">
                             <i data-lucide="users"></i>
@@ -867,8 +2588,12 @@
                             <i data-lucide="gift"></i>
                             <span class="sidebar-item-text" data-i18n="navigation.gift_milestone">Gift Milestone</span>
                         </a>
+                        <a href="#" class="sidebar-item" data-view="gift-catalog" data-plugin="gift-catalog" data-tooltip="Developer Guides">
+                            <i data-lucide="database"></i>
+                            <span class="sidebar-item-text">Developer Guides</span>
+                        </a>
                         <a href="#" class="sidebar-item" data-view="toptier" data-plugin="toptier" data-tooltip="Top Tier Leaderboard">
-                            <i data-lucide="trophy"></i>
+                            <img src="/plugins/toptier/assets/toptier-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-toptier" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.toptier">Top Tier</span>
                         </a>
                     </div>
@@ -886,24 +2611,20 @@
                             <span class="sidebar-item-text" data-i18n="navigation.vdoninja">VDO.Ninja</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="multicam" data-plugin="multicam" data-tooltip="Multi-Cam">
-                            <i data-lucide="video"></i>
+                            <img src="/multicam-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-multicam" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.multi_cam">Multi-Cam</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="osc-bridge" data-plugin="osc-bridge" data-tooltip="OSC-Bridge">
-                            <i data-lucide="gamepad-2"></i>
+                            <img src="/osc-bridge-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-osc-bridge" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.osc_bridge">OSC-Bridge</span>
                         </a>
-                        <a href="#" class="sidebar-item" data-view="openshock" data-plugin="openshock" data-tooltip="OpenShock">
-                            <i data-lucide="zap"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.openshock">OpenShock</span>
+                        <a href="#" class="sidebar-item" data-view="openshock" data-plugin="openshock" data-tooltip="HybridShock">
+                            <img src="/plugins/openshock/assets/branding/hybridshock-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-openshock" aria-hidden="true">
+                            <span class="sidebar-item-text" data-i18n="navigation.openshock">HybridShock</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="weather-control" data-plugin="weather-control" data-tooltip="Weather Control">
-                            <i data-lucide="cloud-rain"></i>
+                            <img src="/weather-control-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-weather-control" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.weather_control">Weather Control</span>
-                        </a>
-                        <a href="#" class="sidebar-item" data-view="minecraft-connect" data-plugin="minecraft-connect" data-tooltip="Minecraft Connect">
-                            <i data-lucide="box"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.minecraft_connect">Minecraft Connect</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="streamalchemy" data-plugin="streamalchemy" data-tooltip="Stream Alchemy">
                             <i data-lucide="flask-conical"></i>
@@ -943,9 +2664,9 @@
                         <i class="sidebar-category-toggle" data-lucide="chevron-down"></i>
                     </div>
                     <div class="sidebar-category-items">
-                        <a href="#" class="sidebar-item" data-view="plugins" data-tooltip="Plugin Store">
-                            <i data-lucide="plug"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.plugins">Plugin Store</span>
+                        <a href="#" class="sidebar-item" data-view="plugins" data-tooltip="App Store">
+                            <img src="/ltthicon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-appstore" aria-hidden="true">
+                            <span class="sidebar-item-text" data-i18n="navigation.plugins">App Store</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="wiki" data-tooltip="Wiki">
                             <i data-lucide="book-open"></i>
@@ -968,7 +2689,9 @@
                 <!-- Drag region for moving frameless window -->
                 <div class="topbar-drag-region"></div>
                 <div class="topbar-left">
-                    <h1 class="topbar-title" data-i18n="app.name">Pup Cid's Little TikTool Helper</h1>
+                    <div class="topbar-brand" aria-label="Pup Cid's Little TikTool Helper">
+                        <img src="/ltthicon.png" alt="LTTH.app logo" class="topbar-logo-image">
+                    </div>
                 </div>
                 <div class="topbar-right">
                     <div class="topbar-status">
@@ -1017,28 +2740,6 @@
 
                 <!-- View: Dashboard -->
                 <div id="view-dashboard" class="content-view active">
-
-                    <!-- Plugin Notice - Dismissible Info -->
-                    <div id="plugin-notice" class="plugin-notice" style="display: none;">
-                        <div class="plugin-notice-content">
-                            <div class="plugin-notice-icon">
-                                <i data-lucide="info"></i>
-                            </div>
-                            <div class="plugin-notice-text">
-                                <h3 class="plugin-notice-title" data-i18n="dashboard.plugin_notice.title">Plugin Notice</h3>
-                                <p class="plugin-notice-message">
-                                    <span data-i18n="dashboard.plugin_notice.message">All enabled plugins should work without bugs. You are welcome to test inactive plugins, but please expect bugs.</span>
-                                    <br>
-                                    <span data-i18n="dashboard.plugin_notice.report_issues">Found a bug or have a feature request?</span>
-                                        <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener noreferrer" style="color: var(--color-accent-primary); text-decoration: underline; font-weight: 600;" data-i18n="dashboard.plugin_notice.report_link">Report it on GitHub</a>
-                                </p>
-                            </div>
-                            <button id="dismiss-plugin-notice" class="plugin-notice-dismiss" aria-label="Dismiss notice">
-                                <i data-lucide="x"></i>
-                            </button>
-                        </div>
-                    </div>
-
                     <div class="dashboard-cockpit-grid">
                         <div class="dashboard-primary-column">
 
@@ -1189,7 +2890,7 @@
                             </button>
                             <button class="quick-action-btn" id="quick-webgpu-emoji-rain-btn" data-action="webgpu-emoji-rain" data-state="off" data-plugin="webgpu-emoji-rain">
                                 <i data-lucide="zap"></i>
-                                <span data-i18n="dashboard.quick_action.emoji_rain">WebGPU Emoji Rain</span>
+                                <span data-i18n="dashboard.quick_action.emoji_rain">Emoji Rain</span>
                             </button>
                             <button class="quick-action-btn" id="quick-osc-bridge-btn" data-action="osc-bridge" data-state="off" data-plugin="osc-bridge">
                                 <i data-lucide="gamepad-2"></i>
@@ -1197,7 +2898,7 @@
                             </button>
                             <button class="quick-action-btn emergency-stop-btn" id="quick-openshock-stop-btn" data-action="openshock-emergency-stop" data-state="off" data-plugin="openshock">
                                 <i data-lucide="shield-off"></i>
-                                <span data-i18n="dashboard.quick_action.openshock_emergency_stop">OpenShock Stop</span>
+                                <span data-i18n="dashboard.quick_action.openshock_emergency_stop">HybridShock Stop</span>
                             </button>
                         </div>
                     </section>
@@ -1527,7 +3228,7 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <i data-lucide="git-branch"></i>
+                                <img src="/flows-icon.png" alt="" class="view-brand-icon" aria-hidden="true">
                                 IFTTT Automation Flows
                             </h2>
                             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
@@ -1589,16 +3290,6 @@
                 <!-- View: Goals -->
                 <div id="view-goals" class="content-view" data-plugin="goals">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="target"></i>
-                                Live Goals
-                            </h2>
-                            <a href="/goals/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/goals/ui" title="Live Goals Configuration"></iframe>
                         </div>
@@ -1608,16 +3299,6 @@
                 <!-- View: TTS -->
                 <div id="view-tts" class="content-view" data-plugin="tts">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="mic"></i>
-                                TTS v2.0 - Text-to-Speech System
-                            </h2>
-                            <a href="/plugins/tts/ui/admin-panel.html" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/plugins/tts/ui/admin-panel.html" title="TTS Configuration"></iframe>
                         </div>
@@ -1646,16 +3327,6 @@
                 <!-- View: STT Ticker -->
                 <div id="view-stt-ticker" class="content-view" data-plugin="stt-ticker">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="subtitles"></i>
-                                STT Ticker
-                            </h2>
-                            <a href="/stt-ticker/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/stt-ticker/ui" title="STT Ticker Configuration" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
                         </div>
@@ -1665,16 +3336,6 @@
                 <!-- View: Music Bot -->
                 <div id="view-music-bot" class="content-view" data-plugin="music-bot">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="headphones"></i>
-                                Music Bot
-                            </h2>
-                            <a href="/plugins/music-bot/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/plugins/music-bot/ui" title="Music Bot Configuration"></iframe>
                         </div>
@@ -1684,37 +3345,17 @@
                 <!-- View: Soundboard -->
                 <div id="view-soundboard" class="content-view" data-plugin="soundboard">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="music"></i>
-                                Soundboard Configuration
-                            </h2>
-                            <a href="/soundboard/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/soundboard/ui" title="Soundboard Configuration"></iframe>
                         </div>
                     </section>
                 </div>
 
-                <!-- View: WebGPU Emoji Rain -->
+                <!-- View: Emoji Rain -->
                 <div id="view-webgpu-emoji-rain" class="content-view" data-plugin="webgpu-emoji-rain">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="zap"></i>
-                                WebGPU Emoji Rain
-                            </h2>
-                            <a href="/webgpu-emoji-rain/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
-                            <iframe data-src="/webgpu-emoji-rain/ui" title="WebGPU Emoji Rain Configuration"></iframe>
+                            <iframe data-src="/webgpu-emoji-rain/ui" title="Emoji Rain Configuration"></iframe>
                         </div>
                     </section>
                 </div>
@@ -1722,37 +3363,17 @@
                 <!-- View: Fireworks -->
                 <div id="view-fireworks" class="content-view" data-plugin="fireworks">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="sparkles"></i>
-                                Fireworks Superplugin
-                            </h2>
-                            <a href="/fireworks/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/fireworks/ui" title="Fireworks Configuration"></iframe>
                         </div>
                     </section>
                 </div>
 
-                <!-- View: Flame Overlay -->
+                <!-- View: Visual FX Frame -->
                 <div id="view-flame-overlay" class="content-view" data-plugin="flame-overlay">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="flame"></i>
-                                TikTok Visual Effects Overlay
-                            </h2>
-                            <a href="/flame-overlay/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
-                            <iframe data-src="/flame-overlay/ui" title="Visual Effects Overlay Configuration"></iframe>
+                            <iframe data-src="/flame-overlay/ui" title="Visual FX Frame Configuration"></iframe>
                         </div>
                     </section>
                 </div>
@@ -1760,16 +3381,6 @@
                 <!-- View: Multi-Guest -->
                 <div id="view-multi-guest" class="content-view" data-plugin="vdoninja">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="users"></i>
-                                VDO.Ninja Multi-Guest
-                            </h2>
-                            <a href="/vdoninja/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/vdoninja/ui" title="VDO.Ninja Multi-Guest Manager"></iframe>
                         </div>
@@ -1795,19 +3406,18 @@
                     </section>
                 </div>
 
+                <!-- View: Gift Catalog -->
+                <div id="view-gift-catalog" class="content-view" data-plugin="gift-catalog">
+                    <section class="view-section">
+                        <div class="iframe-container">
+                            <iframe data-src="/gift-catalog/ui" title="Developer Guides"></iframe>
+                        </div>
+                    </section>
+                </div>
+
                 <!-- View: Top Tier Leaderboard -->
                 <div id="view-toptier" class="content-view" data-plugin="toptier">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="trophy"></i>
-                                Top Tier Leaderboard
-                            </h2>
-                            <a href="/plugins/toptier/ui.html" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/plugins/toptier/ui.html" title="Top Tier Leaderboard Admin"></iframe>
                         </div>
@@ -1817,16 +3427,6 @@
                 <!-- View: Multi-Cam -->
                 <div id="view-multicam" class="content-view" data-plugin="multicam">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="video"></i>
-                                Multi-Cam Switcher
-                            </h2>
-                            <a href="/multicam/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/multicam/ui" title="Multi-Cam Configuration"></iframe>
                         </div>
@@ -1836,16 +3436,6 @@
                 <!-- View: OSC-Bridge -->
                 <div id="view-osc-bridge" class="content-view" data-plugin="osc-bridge">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="gamepad-2"></i>
-                                OSC-Bridge (VRChat)
-                            </h2>
-                            <a href="/osc-bridge/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/osc-bridge/ui" title="OSC-Bridge Configuration"></iframe>
                         </div>
@@ -1855,18 +3445,8 @@
                 <!-- View: OpenShock -->
                 <div id="view-openshock" class="content-view" data-plugin="openshock">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="zap"></i>
-                                OpenShock Integration
-                            </h2>
-                            <a href="/openshock/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
-                            <iframe data-src="/openshock/ui" title="OpenShock Configuration"></iframe>
+                            <iframe data-src="/openshock/ui" title="HybridShock Configuration"></iframe>
                         </div>
                     </section>
                 </div>
@@ -1874,16 +3454,6 @@
                 <!-- View: Quiz Show -->
                 <div id="view-quiz-show" class="content-view" data-plugin="quiz-show">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="help-circle"></i>
-                                Quiz Show
-                            </h2>
-                            <a href="/quiz-show/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/quiz-show/ui" title="Quiz Show Configuration"></iframe>
                         </div>
@@ -1893,37 +3463,17 @@
                 <!-- View: Interactive Story -->
                 <div id="view-interactive-story" class="content-view" data-plugin="interactive-story">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="book-open"></i>
-                                Interactive Story Generator
-                            </h2>
-                            <a href="/interactive-story/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/interactive-story/ui" title="Interactive Story Configuration"></iframe>
                         </div>
                     </section>
                 </div>
 
-                <!-- View: Viewer XP & Leaderboard -->
-                <div id="view-viewer-leaderboard" class="content-view" data-plugin="viewer-leaderboard">
+                <!-- View: Viewer XP -->
+                <div id="view-milestone-leaderboard" class="content-view" data-plugin="milestone-leaderboard">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="trophy"></i>
-                                Viewer XP & Leaderboard
-                            </h2>
-                            <a href="/viewer-xp/admin" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
-                            <iframe data-src="/viewer-xp/admin" title="Viewer XP & Leaderboard Admin Panel"></iframe>
+                            <iframe data-src="/viewer-xp/admin" title="Viewer XP Admin Panel"></iframe>
                         </div>
                     </section>
                 </div>
@@ -1950,16 +3500,6 @@
                 <!-- View: CoinBattle -->
                 <div id="view-coinbattle" class="content-view" data-plugin="coinbattle">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="coins"></i>
-                                CoinBattle
-                            </h2>
-                            <a href="/plugins/coinbattle/ui.html" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/plugins/coinbattle/ui.html" title="CoinBattle Admin Panel"></iframe>
                         </div>
@@ -1969,16 +3509,6 @@
                 <!-- View: Game Engine -->
                 <div id="view-game-engine" class="content-view" data-plugin="game-engine">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="gamepad-2"></i>
-                                LTTH Game Engine
-                            </h2>
-                            <a href="/game-engine/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/game-engine/ui" title="Game Engine Configuration"></iframe>
                         </div>
@@ -1988,37 +3518,8 @@
                 <!-- View: Weather Control -->
                 <div id="view-weather-control" class="content-view" data-plugin="weather-control">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="cloud-rain"></i>
-                                Weather Control System
-                            </h2>
-                            <a href="/weather-control/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/weather-control/ui" title="Weather Control"></iframe>
-                        </div>
-                    </section>
-                </div>
-
-                <!-- View: Minecraft Connect -->
-                <div id="view-minecraft-connect" class="content-view" data-plugin="minecraft-connect">
-                    <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="box"></i>
-                                Minecraft Connect
-                            </h2>
-                            <a href="/minecraft-connect/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
-                        <div class="iframe-container">
-                            <iframe data-src="/minecraft-connect/ui" title="Minecraft Connect"></iframe>
                         </div>
                     </section>
                 </div>
@@ -2026,16 +3527,6 @@
                 <!-- View: Stream Alchemy -->
                 <div id="view-streamalchemy" class="content-view" data-plugin="streamalchemy">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="flask-conical"></i>
-                                <span data-i18n="navigation.streamalchemy">Stream Alchemy</span>
-                            </h2>
-                            <a href="/streamalchemy/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/streamalchemy/ui" title="Stream Alchemy"></iframe>
                         </div>
@@ -2045,16 +3536,6 @@
                 <!-- View: Global Chat Command Engine -->
                 <div id="view-gcce" class="content-view" data-plugin="gcce">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="terminal"></i>
-                                <span data-i18n="navigation.gcce">Global Chat Command Engine</span>
-                            </h2>
-                            <a href="/gcce/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/gcce/ui" title="Global Chat Command Engine"></iframe>
                         </div>
@@ -2092,16 +3573,6 @@
                 <!-- View: Thermal Printer -->
                 <div id="view-thermal-printer" class="content-view" data-plugin="thermal-printer">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="printer"></i>
-                                <span data-i18n="navigation.thermal_printer">Thermal Printer</span>
-                            </h2>
-                            <a href="/thermal-printer/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/thermal-printer/ui" title="Thermal Printer"></iframe>
                         </div>
@@ -2111,16 +3582,6 @@
                 <!-- View: Chatango -->
                 <div id="view-chatango" class="content-view" data-plugin="chatango">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="message-circle"></i>
-                                <span data-i18n="navigation.chatango">Chatango Integration</span>
-                            </h2>
-                            <a href="/chatango/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/chatango/ui" title="Chatango Integration"></iframe>
                         </div>
@@ -2130,16 +3591,6 @@
                 <!-- View: AnimazingPal -->
                 <div id="view-animazingpal" class="content-view" data-plugin="animazingpal">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="brain"></i>
-                                <span data-i18n="navigation.animazingpal">AnimazingPal - AI VTuber Brain</span>
-                            </h2>
-                            <a href="/animazingpal/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/animazingpal/ui" title="AnimazingPal"></iframe>
                         </div>
@@ -2165,21 +3616,11 @@
                     </section>
                 </div>
 
-                <!-- View: LastEvent Spotlight -->
-                <div id="view-lastevent-spotlight" class="content-view" data-plugin="lastevent-spotlight">
+                <!-- View: Spotlight -->
+                <div id="view-spotlight" class="content-view" data-plugin="spotlight">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="eye"></i>
-                                LastEvent Spotlight
-                            </h2>
-                            <a href="/lastevent-spotlight/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
-                            <iframe data-src="/lastevent-spotlight/ui" title="LastEvent Spotlight"></iframe>
+                            <iframe data-src="/spotlight/ui" title="Spotlight"></iframe>
                         </div>
                     </section>
                 </div>
@@ -2187,16 +3628,6 @@
                 <!-- View: ClarityHUD -->
                 <div id="view-clarityhud" class="content-view" data-plugin="clarityhud">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="layout"></i>
-                                ClarityHUD
-                            </h2>
-                            <a href="/clarityhud/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/clarityhud/ui" title="ClarityHUD Configuration"></iframe>
                         </div>
@@ -2206,31 +3637,17 @@
                 <!-- View: Advanced Timer -->
                 <div id="view-advanced-timer" class="content-view" data-plugin="advanced-timer">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="timer"></i>
-                                Advanced Timer
-                            </h2>
-                            <a href="/plugins/advanced-timer/ui.html" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/plugins/advanced-timer/ui.html" title="Advanced Timer Configuration"></iframe>
                         </div>
                     </section>
                 </div>
 
-                <!-- View: Plugin Store -->
+                <!-- View: App Store -->
                 <div id="view-plugins" class="content-view">
                     <section class="view-section">
                         <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="package"></i>
-                                Plugin Store
-                            </h2>
-                            <div style="display: flex; gap: 12px;">
+                            <div style="display: flex; gap: 12px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end;">
                                 <button id="upload-plugin-btn" class="btn btn-primary">
                                     <i data-lucide="upload"></i>
                                     Upload Plugin (ZIP)
@@ -2241,10 +3658,11 @@
                                 </button>
                             </div>
                         </div>
+                        <div id="plugin-store-hero" class="plugin-store-hero-slot"></div>
                         <input type="file" id="plugin-file-input" accept=".zip" style="display: none;">
                         
                         <!-- Plugin Stats Overview -->
-                        <div id="plugin-stats" class="stats-grid" style="margin-bottom: 1.5rem;">
+                        <div id="plugin-stats" class="stats-grid plugin-store-stats-grid" style="margin-bottom: 1.5rem;">
                             <div class="stat-card">
                                 <div class="stat-icon" style="background: linear-gradient(135deg, var(--color-accent-success) 0%, var(--color-accent-success) 100%);">
                                     <i data-lucide="check-circle"></i>
@@ -2274,101 +3692,50 @@
                             </div>
                         </div>
 
-                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
-                            <button class="plugin-mode-btn active" data-plugin-mode="store" style="padding: 0.75rem 1.15rem; background: var(--color-active-bg); border: 1px solid var(--color-active-border); border-radius: 8px; color: var(--color-accent-primary); font-size: 0.9rem; cursor: pointer;">
-                                <i data-lucide="shopping-bag" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
-                                Store
-                            </button>
-                            <button class="plugin-mode-btn" data-plugin-mode="installed" style="padding: 0.75rem 1.15rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;">
-                                <i data-lucide="hard-drive" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
-                                Installed
-                            </button>
-                            <button class="plugin-mode-btn" data-plugin-mode="updates" style="padding: 0.75rem 1.15rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;">
-                                <i data-lucide="download" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
-                                Updates
-                            </button>
-                            <button class="plugin-mode-btn" data-plugin-mode="sources" style="padding: 0.75rem 1.15rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;">
-                                <i data-lucide="database" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
-                                Sources
-                            </button>
-                        </div>
-
-                        <div id="plugin-store-sources-panel" style="display: none; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                                <div style="border: 1px solid var(--color-border); border-radius: 8px; padding: 1rem; background: var(--color-bg-secondary);">
-                                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 6px;">
-                                        <i data-lucide="shield-check" style="width: 18px; height: 18px; color: var(--color-accent-success);"></i>
-                                        Official LTTH Store
-                                    </div>
-                                    <div style="font-size: 0.9rem; color: var(--color-text-muted);">Official plugins are available by default and remain the primary catalog.</div>
-                                </div>
-                                <div style="border: 1px solid var(--color-border); border-radius: 8px; padding: 1rem; background: var(--color-bg-secondary);">
-                                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 6px;">
-                                        <i data-lucide="users" style="width: 18px; height: 18px; color: var(--color-accent-warning);"></i>
-                                        Community Sources
-                                    </div>
-                                    <div style="font-size: 0.9rem; color: var(--color-text-muted);">Community plugin sources can install code from third-party registries. Only add sources you trust.</div>
-                                </div>
-                            </div>
-                            <div id="plugin-store-source-errors" style="display: none; margin-bottom: 1rem;"></div>
-                            <div id="plugin-community-disabled" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--color-border); padding-top: 1rem;">
-                                <div>
-                                    <div style="font-weight: 700; color: var(--color-text-primary); margin-bottom: 4px;">Community plugin sources are disabled</div>
-                                    <div style="font-size: 0.9rem; color: var(--color-text-muted);">Enable this only if you want to add plugin registries outside the official LTTH store.</div>
-                                </div>
-                                <button id="enable-community-store-btn" class="btn btn-ghost">
-                                    <i data-lucide="unlock"></i>
-                                    Enable Community Sources
+                        <div class="plugin-store-mode-row">
+                            <div class="plugin-store-mode-tabs">
+                                <button class="plugin-mode-btn active" data-plugin-mode="store">
+                                    <i data-lucide="shopping-bag" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
+                                    Store
+                                </button>
+                                <button class="plugin-mode-btn" data-plugin-mode="installed">
+                                    <i data-lucide="hard-drive" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
+                                    Installed
+                                </button>
+                                <button class="plugin-mode-btn" data-plugin-mode="updates">
+                                    <i data-lucide="download" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
+                                    Updates
                                 </button>
                             </div>
-                            <div id="plugin-community-enabled" style="display: none; border-top: 1px solid var(--color-border); padding-top: 1rem;">
-                                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: end;">
-                                    <label style="display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 180px; font-size: 0.85rem; color: var(--color-text-muted);">
-                                        Source ID
-                                        <input id="community-source-id" type="text" placeholder="creator-name" style="padding: 0.7rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text);">
-                                    </label>
-                                    <label style="display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 200px; font-size: 0.85rem; color: var(--color-text-muted);">
-                                        Name
-                                        <input id="community-source-name" type="text" placeholder="Creator Plugin Repo" style="padding: 0.7rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text);">
-                                    </label>
-                                    <label style="display: flex; flex-direction: column; gap: 0.35rem; flex: 2; min-width: 280px; font-size: 0.85rem; color: var(--color-text-muted);">
-                                        Registry URL
-                                        <input id="community-source-url" type="url" placeholder="https://example.com/store.json" style="padding: 0.7rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text);">
-                                    </label>
-                                    <button id="add-community-source-btn" class="btn btn-primary">
-                                        <i data-lucide="plus"></i>
-                                        Add Source
-                                    </button>
-                                </div>
-                                <div id="plugin-store-source-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.75rem; margin-top: 1rem;"></div>
-                            </div>
+                            <div id="plugin-store-account-menu" class="plugin-store-account-menu"></div>
                         </div>
 
+                        <div id="plugin-store-auth-root" class="plugin-store-auth-root" aria-hidden="true" style="display: none;"></div>
+
                         <!-- Filters and Search -->
-                        <div style="background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
-                            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-                                <div style="flex: 1; min-width: 250px;">
+                        <div class="plugin-store-toolbar">
+                            <div class="plugin-store-toolbar__row">
+                                <div class="plugin-store-toolbar__search">
                                     <div style="position: relative;">
                                         <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--color-text-muted);"></i>
-                                        <input type="text" id="plugin-search" placeholder="Search plugins..." 
-                                               style="width: 100%; padding: 0.75rem 1rem 0.75rem 2.75rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text); font-size: 0.95rem;">
+                                        <input type="text" id="plugin-search" class="plugin-store-search" placeholder="Search plugins...">
                                     </div>
                                 </div>
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <button class="plugin-filter-btn active" data-filter="all" style="padding: 0.75rem 1.25rem; background: var(--color-active-bg); border: 1px solid var(--color-active-border); border-radius: 8px; color: var(--color-accent-primary); font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                                <div class="plugin-store-toolbar__filters">
+                                    <button class="plugin-filter-btn active" data-filter="all">
                                         <i data-lucide="grid-3x3" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
                                         All
                                     </button>
-                                    <button class="plugin-filter-btn" data-filter="active" style="padding: 0.75rem 1.25rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                                    <button class="plugin-filter-btn" data-filter="active">
                                         <i data-lucide="check-circle" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
                                         Active
                                     </button>
-                                    <button class="plugin-filter-btn" data-filter="inactive" style="padding: 0.75rem 1.25rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                                    <button class="plugin-filter-btn" data-filter="inactive">
                                         <i data-lucide="pause-circle" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
                                         Inactive
                                     </button>
                                 </div>
-                                <div style="display: flex; gap: 0.75rem; align-items: center; padding: 0.5rem 0; border-left: 1px solid var(--color-border); padding-left: 0.75rem;">
+                                <div class="plugin-store-toolbar__status-filters">
                                     <span style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 500;">Dev Status:</span>
                                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: var(--color-accent-primary);">
                                         <input type="checkbox" class="dev-status-filter" data-status="stable" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-accent-primary);">
@@ -2391,18 +3758,19 @@
                                         <span>Non-working Beta</span>
                                     </label>
                                 </div>
-                                <select id="plugin-sort" style="padding: 0.75rem 1rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text); font-size: 0.9rem; cursor: pointer;">
+                                <select id="plugin-sort" class="plugin-store-sort-select">
                                     <option value="name">Sort by Name</option>
                                     <option value="status">Sort by Status</option>
                                     <option value="type">Sort by Type</option>
                                     <option value="author">Sort by Author</option>
                                 </select>
-                                <button id="compact-mode-toggle" style="padding: 0.75rem 1.25rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                                <button id="compact-mode-toggle" class="plugin-store-compact-toggle">
                                     <i data-lucide="layout-list" style="width: 16px; height: 16px;"></i>
                                     <span>Compact</span>
                                 </button>
                             </div>
-                            <div id="plugin-store-category-chips" style="display: none; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;"></div>
+                            <div id="plugin-store-category-chips" class="plugin-store-chip-row plugin-store-chip-row--categories" style="display: none;"></div>
+                            <div id="plugin-store-filter-chips" class="plugin-store-chip-row plugin-store-chip-row--filters" style="display: none;"></div>
                         </div>
 
                         <div id="plugins-container" class="space-y-4">
@@ -2420,10 +3788,6 @@
                                 <i data-lucide="book-open"></i>
                                 <span data-i18n="wiki.title">Wiki & Documentation</span>
                             </h2>
-                            <button id="wiki-open-new-tab" class="btn btn-primary" style="margin-left: auto;" data-i18n-title="wiki.open_new_tab" title="Open in new tab">
-                                <i data-lucide="external-link"></i>
-                                <span data-i18n="wiki.open_new_tab">Open in New Tab</span>
-                            </button>
                         </div>
                         <div class="wiki-container">
                             <!-- Wiki Sidebar -->
@@ -2447,6 +3811,12 @@
                                 <nav id="wiki-nav" class="wiki-nav">
                                     <!-- Navigation will be populated by wiki.js -->
                                 </nav>
+                                <div class="wiki-sidebar-actions">
+                                    <button id="wiki-open-new-tab" class="wiki-sidebar-action-btn" data-i18n-title="wiki.open_new_tab" title="Open in New Tab">
+                                        <i data-lucide="external-link"></i>
+                                        <span class="wiki-sidebar-action-label" data-i18n="wiki.open_new_tab">Open in New Tab</span>
+                                    </button>
+                                </div>
                             </aside>
                             
                             <!-- Wiki Content Area -->
@@ -2487,11 +3857,11 @@
                                         </label>
                                     </div>
                                     <div class="form-group">
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" id="show-live-event-log">
-                                            <span>Show Live Event Log</span>
-                                        </label>
-                                        <p class="text-xs text-gray-500 ml-6">Enable this if you want direct access to the Events view.</p>
+                                        <button type="button" id="show-live-event-log" class="btn btn-secondary inline-flex items-center gap-2" aria-pressed="false" data-state="disabled">
+                                            <i data-lucide="eye"></i>
+                                            <span id="show-live-event-log-label">Enable Live Event Log</span>
+                                        </button>
+                                        <p class="text-xs text-gray-500 mt-2 ml-1">Debug only. Hidden from the navigation by default.</p>
                                     </div>
                                     <div class="form-group">
                                         <label class="checkbox-label">
@@ -3017,7 +4387,7 @@
                                     <i data-lucide="users"></i>
                                     Profile Management Tools
                                     <span class="profile-help-icon" data-tooltip="Tools to verify profile integrity, check migration status, and manage profiles" title="Tools to verify profile integrity, check migration status, and manage profiles">
-                                        <i data-lucide="help-circle"></i>
+                            <img src="/plugins/quiz-show/assets/quiz-show-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-quiz-show">
                                     </span>
                                 </h3>
                                 <p class="text-sm text-gray-400 mb-4">
@@ -3475,7 +4845,7 @@
                                     <span>Über die App / About</span>
                                 </h3>
                                 <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
-                                    <h4 class="text-lg font-semibold mb-2">PupCid's Little TikTool Helper (LTTH)</h4>
+                                    <h4 class="text-lg font-semibold mb-2">LTTH.app (LTTH)</h4>
                                     <p class="text-sm text-gray-300 mb-3">
                                         Professional TikTok-compatible LIVE streaming tool for creators
                                     </p>
@@ -3501,7 +4871,7 @@
                                         <div>
                                             <h4 class="text-sm font-semibold text-yellow-300 mb-2">Wichtiger Hinweis / Important Notice</h4>
                                             <p class="text-xs text-gray-300 mb-2">
-                                                <strong>PupCid's Little TikTool Helper ist ein unabhängiges Analyse- und Creator-Tool.</strong>
+                                                <strong>LTTH ist ein unabhängiges Analyse- und Creator-Tool.</strong>
                                                 Es besteht keine geschäftliche, partnerschaftliche oder technische Verbindung zu TikTok oder ByteDance.
                                             </p>
                                             <p class="text-xs text-gray-300">
@@ -3575,7 +4945,7 @@
 
     <!-- Modal: Flow Wizard -->
     <div id="flow-wizard-modal" class="modal">
-        <div class="modal-content" style="max-width:760px;width:95vw;max-height:90vh;display:flex;flex-direction:column;">
+        <div class="modal-content" style="width:min(96vw,1120px);max-width:none;max-height:90vh;display:flex;flex-direction:column;">
             <div class="modal-header" style="flex-shrink:0;">
                 <h3 class="modal-title">
                     🧙 Flow Wizard
@@ -3598,7 +4968,7 @@
 
     <!-- Modal: Flow Presets -->
     <div id="flow-presets-modal" class="modal">
-        <div class="modal-content" style="max-width:860px;width:95vw;max-height:90vh;display:flex;flex-direction:column;">
+        <div class="modal-content" style="width:min(96vw,1120px);max-width:none;max-height:90vh;display:flex;flex-direction:column;">
             <div class="modal-header" style="flex-shrink:0;">
                 <h3 class="modal-title">
                     📦 Flow Presets / Vorlagen
@@ -3644,6 +5014,7 @@
     <script src="/js/profile-manager.js"></script>
     <script src="/js/profile-management-ui.js"></script>
     <!-- vdoninja-dashboard.js is now lazy-loaded when VDO.Ninja view is accessed -->
+    <script src="/js/clerk-store-auth.js"></script>
     <script src="/js/plugin-manager.js"></script>
     <script src="/js/update-checker.js"></script>
     <script src="/js/audio-settings.js"></script>

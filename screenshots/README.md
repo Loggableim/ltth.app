@@ -44,6 +44,112 @@ When taking screenshots during development, testing, or documentation:
 
 ---
 
+## Accessibility Audit Captures
+
+These screenshots document the theme variants that were checked during the UI audit.
+
+**viewer-profiles-night.png**
+- Shows: Viewer Profiles dashboard in Night Mode
+- Context: Baseline dark-theme rendering for leaderboard and analytics views
+- Theme: Night
+
+**viewer-profiles-contrast.png**
+- Shows: Viewer Profiles dashboard in High Contrast Mode
+- Context: Accessibility comparison with stronger separation and brighter contrast
+- Theme: High Contrast
+
+**viewer-profiles-vision-impaired.png**
+- Shows: Viewer Profiles dashboard in Vision-Impaired Mode
+- Context: Distinct accessibility variant with larger spacing and stronger type
+- Theme: Vision-Impaired
+
+**stt-ticker-night.png**
+- Shows: STT Ticker settings in Night Mode
+- Context: Baseline dark-theme view for the subtitle overlay admin screen
+- Theme: Night
+
+**stt-ticker-vision-impaired.png**
+- Shows: STT Ticker settings in Vision-Impaired Mode
+- Context: Accessibility variant with more generous spacing and clearer controls
+- Theme: Vision-Impaired
+
+**stt-ticker-overlay-url.png**
+- Shows: STT Ticker Overlay tab with dual-language design, top-right position, maxLines=2, and 42px font size encoded in the OBS URL
+- Context: Documents the verified OBS parameter wiring from the Admin UI into the Browser Source URL
+- Theme: Night
+- State: Overlay URL builder configured for OBS
+
+**stt-ticker-capture-obs-url.png**
+- Shows: STT Ticker Capture page with the OBS URL helper and Multi-Language preview
+- Context: Documents the standalone capture route used while streaming
+- Theme: Night
+- State: Capture idle, ready to start
+
+**stt-ticker-overlay-render.png**
+- Shows: Idle OBS overlay render with the configured top-right dual-language panel
+- Context: Documents the direct `/overlay/stt-ticker` render target before transcript data arrives
+- Theme: Night
+- State: OBS render idle
+
+**flame-overlay-night.png**
+- Shows: Flame Overlay settings in Night Mode
+- Context: Baseline rendering for the visual effects overlay admin screen
+- Theme: Night
+
+**flame-overlay-vision-impaired.png**
+- Shows: Flame Overlay settings in Vision-Impaired Mode
+- Context: Accessibility variant with more readable controls and spacing
+- Theme: Vision-Impaired
+
+**viewer-xp.png**
+- Shows: Viewer XP feature page preview
+- Context: Main screenshot used for the viewer level and progress overview page
+- Theme: Dark theme
+
+## Browser Screenshot Imports
+
+The following files were promoted from the local browser capture set into the canonical `screenshots/features/` folder:
+
+- `advanced-timer.png`
+- `clarityhud.png`
+- `config-import.png`
+- `dashboard.png`
+- `flows-editor.png`
+- `fireworks.png`
+- `gift-milestone.png`
+- `gcce-hud.png`
+- `gcce.png`
+- `goals-overlay.png`
+- `game-engine.png`
+- `lastevent.png`
+- `interactive-story.png`
+- `multicam.png`
+- `music-bot.png`
+- `openshock.png`
+- `osc-bridge.png`
+- `plugin-chatango-dashboard.png`
+- `quiz-show.png`
+- `settings.png`
+- `soundboard.png`
+- `talking-heads.png`
+- `sidekick-dashboard.png`
+- `api-bridge-admin.png`
+- `plugins.png`
+- `stt-capture.png`
+- `stt-ticker-night.png`
+- `stream-alchemy.png`
+- `thermal-printer.png`
+- `toptier.png`
+- `tts.png`
+- `viewer-profiles-night.png`
+- `viewer-xp-leaderboard.png`
+- `viewer-xp.png`
+- `vdoninja.png`
+- `weather-control.png`
+- `webgpu-emoji-rain-dashboard.png`
+
+The legacy site-level screenshot set from `assets/screenshots/` was mirrored into `screenshots/features/` as well, so the marketing pages, plugin overview pages, changelog, and plugin store can all reference the same canonical screenshot folder.
+
 ## Format for New Entries
 
 When adding screenshots, use this format:

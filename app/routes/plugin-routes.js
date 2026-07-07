@@ -4,6 +4,18 @@ const multer = require('multer');
 const { getRootLogsDir } = require('../modules/log-paths');
 const { extract } = require('zip-lib');
 const { PluginStore } = require('../modules/plugin-store');
+const { PluginStoreInsights } = require('../modules/plugin-store-insights');
+const {
+    buildStoreAccountResponse,
+    buildStoreAuthConfig,
+    claimBetaLicenseForStoreAccount,
+    clearStoreSessionCookie,
+    hasActiveStoreLicense,
+    hasClosedBetaPluginAccess,
+    hasStoreAdminAccess,
+    hasSubscriberPluginAccess,
+    setStoreSessionCookie
+} = require('../modules/clerk-store-auth');
 const {
     assertPluginId,
     resolvePluginChildPath,
@@ -13,10 +25,18 @@ const {
 /**
  * Plugin Routes - Verwaltet Plugin-Upload, Aktivierung, Deaktivierung, etc.
  */
-function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger, io = null, pluginLimiter = null) {
+function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger, io = null, pluginLimiter = null, options = {}) {
     // Use pluginLimiter if provided, otherwise fall back to apiLimiter
     const limiter = pluginLimiter || apiLimiter;
-    const pluginStore = new PluginStore(pluginLoader, { logger });
+    const closedStore = options.closedStore !== false;
+    const storeAuth = options.storeAuth || ((req, res, next) => next());
+    const storeAuthConfig = options.storeAuthConfig || (() => buildStoreAuthConfig());
+    const storeAccountResponse = options.storeAccountResponse || ((req) => buildStoreAccountResponse(req));
+    const claimBetaLicense = options.claimBetaLicense || ((req) => claimBetaLicenseForStoreAccount(req.storeAccount, options));
+    const pluginStore = new PluginStore(pluginLoader, { logger, closedStore });
+    const storeInsights = options.storeInsights || new PluginStoreInsights({
+        filePath: options.storeInsightsFile || path.join(path.dirname(pluginStore.stateFile), 'plugin_store_insights.json')
+    });
     // Multer für ZIP-Upload konfigurieren
     const pluginUploadDir = path.join(__dirname, '..', 'plugins', '_uploads');
     if (!fs.existsSync(pluginUploadDir)) {
@@ -50,14 +70,132 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
         return JSON.parse(value.charCodeAt(0) === 0xFEFF ? value.slice(1) : value);
     }
 
+    function sendCommunitySourcesDisabled(res) {
+        return res.status(410).json({
+            success: false,
+            code: 'COMMUNITY_SOURCES_DISABLED',
+            error: 'Community plugin sources are disabled for the closed LTTH app store.'
+        });
+    }
+
     /**
-     * GET /api/plugin-store - List official store plugins and opt-in community plugins.
+     * GET /api/plugin-store/config - Public Clerk appstore configuration.
      */
-    app.get('/api/plugin-store', limiter, async (req, res) => {
+    app.get('/api/plugin-store/config', limiter, (req, res) => {
+        res.json({
+            success: true,
+            ...storeAuthConfig()
+        });
+    });
+
+    /**
+     * GET /api/plugin-store/account - Authenticated store account status.
+     */
+    app.get('/api/plugin-store/account', limiter, storeAuth, (req, res) => {
+        res.json(storeAccountResponse(req));
+    });
+
+    /**
+     * POST /api/plugin-store/session - Persist the verified Clerk account in a local 14-day HttpOnly cookie.
+     */
+    app.post('/api/plugin-store/session', limiter, storeAuth, (req, res) => {
+        setStoreSessionCookie(res, req.storeAccount || {}, options);
+        res.json(storeAccountResponse(req));
+    });
+
+    /**
+     * DELETE /api/plugin-store/session - Clear the local store session cookie.
+     */
+    app.delete('/api/plugin-store/session', limiter, (req, res) => {
+        clearStoreSessionCookie(res, options);
+        res.json({
+            success: true
+        });
+    });
+
+    /**
+     * POST /api/plugin-store/license/claim - Claim the free beta license for this Clerk account.
+     */
+    app.post('/api/plugin-store/license/claim', limiter, storeAuth, async (req, res) => {
+        try {
+            const license = await claimBetaLicense(req);
+            if (req.storeAccount) {
+                req.storeAccount.license = license;
+            }
+            res.json({
+                success: true,
+                license
+            });
+        } catch (error) {
+            logger.error(`Failed to claim beta store license: ${error.message}`);
+            const code = error.code || 'BETA_LICENSE_CLAIM_FAILED';
+            res.status(code === 'AUTH_REQUIRED' ? 401 : 503).json({
+                success: false,
+                code,
+                error: error.message
+            });
+        }
+    });
+
+    /**
+     * POST /api/plugin-store/feedback - Local beta feedback/review capture.
+     */
+    app.post('/api/plugin-store/feedback', limiter, storeAuth, (req, res) => {
+        try {
+            const feedback = storeInsights.recordFeedback(req.storeAccount || {}, req.body || {});
+            res.status(201).json({
+                success: true,
+                feedback
+            });
+        } catch (error) {
+            logger.warn(`Failed to record store feedback: ${error.message}`);
+            res.status(400).json({
+                success: false,
+                code: 'STORE_FEEDBACK_INVALID',
+                error: error.message
+            });
+        }
+    });
+
+    /**
+     * POST /api/plugin-store/telemetry - Local opt-in/lightweight store health event capture.
+     */
+    app.post('/api/plugin-store/telemetry', limiter, storeAuth, (req, res) => {
+        try {
+            const telemetry = storeInsights.recordTelemetry(req.storeAccount || {}, req.body || {});
+            res.status(202).json({
+                success: true,
+                telemetry
+            });
+        } catch (error) {
+            logger.warn(`Failed to record store telemetry: ${error.message}`);
+            res.status(400).json({
+                success: false,
+                code: 'STORE_TELEMETRY_INVALID',
+                error: error.message
+            });
+        }
+    });
+
+    /**
+     * GET /api/plugin-store/health - Local health summary for the signed-in account/admin UI.
+     */
+    app.get('/api/plugin-store/health', limiter, storeAuth, (req, res) => {
+        res.json({
+            success: true,
+            summary: storeInsights.getSummary()
+        });
+    });
+
+    /**
+     * GET /api/plugin-store - List official store plugins for signed-in users.
+     */
+    app.get('/api/plugin-store', limiter, storeAuth, async (req, res) => {
         try {
             const store = await pluginStore.listPlugins({
                 locale: req.query.locale || 'en',
-                forceRefresh: req.query.refresh === 'true'
+                forceRefresh: req.query.refresh === 'true',
+                account: req.storeAccount || {}
             });
 
             res.json({
@@ -76,7 +214,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     /**
      * GET /api/plugin-store/sources - List configured store sources.
      */
-    app.get('/api/plugin-store/sources', limiter, (req, res) => {
+    app.get('/api/plugin-store/sources', limiter, storeAuth, (req, res) => {
         try {
             res.json({
                 success: true,
@@ -92,67 +230,81 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     });
 
     /**
-     * POST /api/plugin-store/community/enable - Opt in to community plugin sources.
+     * POST /api/plugin-store/community/enable - Disabled in the closed app store.
      */
-    app.post('/api/plugin-store/community/enable', limiter, (req, res) => {
-        try {
-            res.json({
-                success: true,
-                ...pluginStore.enableCommunitySources()
-            });
-        } catch (error) {
-            logger.error(`Failed to enable community plugin sources: ${error.message}`);
-            res.status(500).json({
-                success: false,
-                error: error.message
-            });
-        }
+    app.post('/api/plugin-store/community/enable', limiter, storeAuth, (req, res) => {
+        sendCommunitySourcesDisabled(res);
     });
 
     /**
-     * POST /api/plugin-store/sources - Add a community registry source.
+     * POST /api/plugin-store/sources - Disabled in the closed app store.
      */
-    app.post('/api/plugin-store/sources', limiter, (req, res) => {
-        try {
-            const sourceState = pluginStore.addCommunitySource(req.body || {});
-            res.json({
-                success: true,
-                ...sourceState
-            });
-        } catch (error) {
-            logger.error(`Failed to add plugin store source: ${error.message}`);
-            res.status(400).json({
-                success: false,
-                error: error.message
-            });
-        }
+    app.post('/api/plugin-store/sources', limiter, storeAuth, (req, res) => {
+        sendCommunitySourcesDisabled(res);
     });
 
     /**
-     * DELETE /api/plugin-store/sources/:id - Remove a community registry source.
+     * DELETE /api/plugin-store/sources/:id - Disabled in the closed app store.
      */
-    app.delete('/api/plugin-store/sources/:id', limiter, (req, res) => {
-        try {
-            const sourceState = pluginStore.removeCommunitySource(req.params.id);
-            res.json({
-                success: true,
-                ...sourceState
-            });
-        } catch (error) {
-            logger.error(`Failed to remove plugin store source: ${error.message}`);
-            res.status(400).json({
-                success: false,
-                error: error.message
-            });
-        }
+    app.delete('/api/plugin-store/sources/:id', limiter, storeAuth, (req, res) => {
+        sendCommunitySourcesDisabled(res);
     });
 
     /**
      * POST /api/plugin-store/:sourceId/:pluginId/install - Install from a registry source.
      */
-    app.post('/api/plugin-store/:sourceId/:pluginId/install', limiter, async (req, res) => {
+    app.post('/api/plugin-store/:sourceId/:pluginId/install', limiter, storeAuth, async (req, res) => {
+        if (!hasActiveStoreLicense(req.storeAccount)) {
+            return res.status(402).json({
+                success: false,
+                code: 'BETA_LICENSE_REQUIRED',
+                licenseRequired: true,
+                error: 'Claim the free LTTH beta license before installing store plugins.'
+            });
+        }
+
         try {
+            const { source, plugin: registryPlugin } = await pluginStore.findPlugin(req.params.sourceId, req.params.pluginId);
+            const storePlugin = pluginStore.normalizeStorePlugin(
+                registryPlugin,
+                source,
+                req.query.locale || 'en',
+                pluginStore.getInstalledPlugins()
+            );
+
+            if (storePlugin.access?.type === 'admin' && !hasStoreAdminAccess(req.storeAccount)) {
+                return res.status(403).json({
+                    success: false,
+                    code: 'ADMIN_ACCESS_REQUIRED',
+                    error: 'This store plugin is only available to LTTH store administrators.'
+                });
+            }
+
+            if (storePlugin.access?.type === 'subscriber' && !hasSubscriberPluginAccess(req.storeAccount)) {
+                return res.status(403).json({
+                    success: false,
+                    code: 'SUBSCRIBER_ACCESS_REQUIRED',
+                    error: 'This plugin is only available to LTTH subscribers.'
+                });
+            }
+
+            if (storePlugin.access?.type === 'closed-beta' && !hasClosedBetaPluginAccess(req.storeAccount, storePlugin.id)) {
+                return res.status(403).json({
+                    success: false,
+                    code: 'CLOSED_BETA_INVITE_REQUIRED',
+                    error: 'This plugin is in closed beta and requires an invite for your LTTH account.'
+                });
+            }
+
             const plugin = await pluginStore.installPlugin(req.params.sourceId, req.params.pluginId);
+            storeInsights.recordTelemetry(req.storeAccount || {}, {
+                pluginId: plugin.id,
+                event: 'install_success',
+                metadata: {
+                    version: plugin.version,
+                    rollbackProtected: plugin.rollbackProtected === true
+                }
+            });
 
             if (io) {
                 io.emit('plugins:changed', { action: 'installed', pluginId: plugin.id });
@@ -165,9 +317,24 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             });
         } catch (error) {
             logger.error(`Failed to install plugin from store: ${error.message}`);
+            try {
+                storeInsights.recordTelemetry(req.storeAccount || {}, {
+                    pluginId: req.params.pluginId,
+                    event: error.rollbackApplied ? 'rollback_applied' : 'install_failure',
+                    metadata: {
+                        error: error.message,
+                        rollbackApplied: error.rollbackApplied === true,
+                        rollbackError: error.rollbackError || null
+                    }
+                });
+            } catch (telemetryError) {
+                logger.warn(`Failed to record store install telemetry: ${telemetryError.message}`);
+            }
             res.status(400).json({
                 success: false,
-                error: error.message
+                error: error.message,
+                rollbackApplied: error.rollbackApplied === true,
+                rollbackError: error.rollbackError || null
             });
         }
     });
@@ -228,6 +395,8 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                                 descriptions: manifest.descriptions, // Include all descriptions
                                 version: manifest.version,
                                 author: manifest.author,
+                                icon: manifest.icon || null,
+                                logo: manifest.logo || null,
                                 type: manifest.type,
                                 devStatus: manifest.devStatus, // Include development status
                                 enabled: isEnabled,
@@ -287,6 +456,8 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                     descriptions: plugin.manifest.descriptions, // Include all descriptions
                     version: plugin.manifest.version,
                     author: plugin.manifest.author,
+                    icon: plugin.manifest.icon || null,
+                    logo: plugin.manifest.logo || null,
                     type: plugin.manifest.type,
                     dependencies: plugin.manifest.dependencies,
                     permissions: plugin.manifest.permissions,

@@ -22,7 +22,7 @@ describe('TemplateRenderer CSP Compliance', () => {
     document = dom.window.document;
 
     // Load the TemplateRenderer module
-    const rendererPath = path.join(__dirname, '../plugins/lastevent-spotlight/lib/template-renderer.js');
+    const rendererPath = path.join(__dirname, '../plugins/spotlight/lib/template-renderer.js');
     delete require.cache[require.resolve(rendererPath)];
     TemplateRenderer = require(rendererPath);
 
@@ -245,7 +245,7 @@ describe('TemplateRenderer CSP Compliance', () => {
   });
 
   test('username text effects wrap only the actual username characters', async () => {
-    const textEffectsPath = path.join(__dirname, '../plugins/lastevent-spotlight/lib/text-effects.js');
+    const textEffectsPath = path.join(__dirname, '../plugins/spotlight/lib/text-effects.js');
     const TextEffects = require(textEffectsPath);
     window.TextEffects = TextEffects;
     global.requestAnimationFrame = jest.fn(() => 1);
@@ -269,7 +269,7 @@ describe('TemplateRenderer CSP Compliance', () => {
   });
 
   test('username text effects keep multi-code-point grapheme clusters together', async () => {
-    const textEffectsPath = path.join(__dirname, '../plugins/lastevent-spotlight/lib/text-effects.js');
+    const textEffectsPath = path.join(__dirname, '../plugins/spotlight/lib/text-effects.js');
     const TextEffects = require(textEffectsPath);
     window.TextEffects = TextEffects;
     global.requestAnimationFrame = jest.fn(() => 1);
@@ -317,7 +317,7 @@ describe('TemplateRenderer CSP Compliance', () => {
   });
 
   test('rendering null clears active text effects', async () => {
-    const textEffectsPath = path.join(__dirname, '../plugins/lastevent-spotlight/lib/text-effects.js');
+    const textEffectsPath = path.join(__dirname, '../plugins/spotlight/lib/text-effects.js');
     const TextEffects = require(textEffectsPath);
     window.TextEffects = TextEffects;
     global.requestAnimationFrame = jest.fn(() => 1);

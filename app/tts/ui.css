@@ -18,10 +18,12 @@ body {
     padding: 20px 30px;
     border-radius: 10px;
     font-size: 24px;
-    max-width: 80%;
+    width: min(92vw, 760px);
+    max-width: none;
     text-align: center;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     z-index: 1000;
+    border: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 #tts-container p {
@@ -36,13 +38,15 @@ body {
     position: fixed;
     top: 20px;
     right: 20px;
-    background-color: rgba(255, 255, 255, 0.95);
-    color: #333;
+    background-color: rgba(15, 23, 42, 0.94);
+    color: #e5e7eb;
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    max-width: 400px;
+    width: min(92vw, 560px);
+    max-width: none;
     z-index: 2000;
+    border: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 #controls {
@@ -61,8 +65,10 @@ body {
 #controls input[type="text"] {
     width: 100%;
     padding: 8px;
-    border: 1px solid #ccc;
+    border: 1px solid #334155;
     border-radius: 5px;
+    background: rgba(15, 23, 42, 0.9);
+    color: #f8fafc;
 }
 
 #controls button {
@@ -80,6 +86,57 @@ body {
     background-color: #45a049;
 }
 
+html[data-theme="day"] #tts-container {
+    background-color: rgba(255, 255, 255, 0.96);
+    color: #10203a;
+    border-color: rgba(37, 99, 235, 0.18);
+}
+
+html[data-theme="day"] #tts-container strong {
+    color: #2563eb;
+}
+
+html[data-theme="day"] #admin-panel {
+    background-color: rgba(255, 255, 255, 0.96);
+    color: #10203a;
+    border-color: rgba(37, 99, 235, 0.18);
+}
+
+html[data-theme="day"] #controls input[type="range"],
+html[data-theme="day"] #controls select,
+html[data-theme="day"] #controls input[type="text"] {
+    background: #ffffff;
+    color: #10203a;
+    border-color: #cbd5e1;
+}
+
+html[data-theme="night"] #tts-container,
+html[data-theme="night"] #admin-panel {
+    background-color: rgba(15, 23, 42, 0.94);
+    color: #e5e7eb;
+    border-color: rgba(148, 163, 184, 0.18);
+}
+
+html[data-theme="contrast"] #tts-container,
+html[data-theme="contrast"] #admin-panel {
+    background: #000;
+    color: #fff;
+    border: 3px solid #fff;
+    box-shadow: none;
+}
+
+html[data-theme="contrast"] #tts-container strong {
+    color: #facc15;
+}
+
+html[data-theme="contrast"] #controls input[type="range"],
+html[data-theme="contrast"] #controls select,
+html[data-theme="contrast"] #controls input[type="text"] {
+    background: #000;
+    color: #fff;
+    border-color: #facc15;
+}
+
 #test-controls {
     display: flex;
     gap: 10px;
@@ -87,6 +144,84 @@ body {
 
 #test-controls input {
     flex: 1;
+}
+
+html[data-theme="vision-impaired"] body {
+    background: #000;
+    color: #fff7cc;
+}
+
+html[data-theme="vision-impaired"] #tts-container {
+    background: #000;
+    color: #fff7cc;
+    border: 3px solid #facc15;
+    box-shadow: none;
+    width: min(92vw, 860px);
+}
+
+html[data-theme="vision-impaired"] #tts-container strong {
+    color: #facc15;
+}
+
+html[data-theme="vision-impaired"] #admin-panel {
+    background: #000;
+    color: #fff7cc;
+    border: 3px solid #facc15;
+    box-shadow: none;
+    width: min(92vw, 640px);
+}
+
+html[data-theme="vision-impaired"] #controls input[type="range"],
+html[data-theme="vision-impaired"] #controls select,
+html[data-theme="vision-impaired"] #controls input[type="text"] {
+    background: #111;
+    color: #fff7cc;
+    border-color: #facc15;
+}
+
+html[data-theme="vision-impaired"] #controls button {
+    background: #facc15;
+    color: #000;
+    font-weight: 700;
+}
+
+html[data-theme="cid"] body {
+    background: #030603;
+    color: #f4fff4;
+}
+
+html[data-theme="cid"] #tts-container {
+    background: rgba(7, 17, 7, 0.94);
+    color: #f4fff4;
+    border: 2px solid rgba(74, 222, 128, 0.35);
+    box-shadow: none;
+    width: min(92vw, 820px);
+}
+
+html[data-theme="cid"] #tts-container strong {
+    color: #4ade80;
+}
+
+html[data-theme="cid"] #admin-panel {
+    background: rgba(7, 17, 7, 0.94);
+    color: #f4fff4;
+    border: 2px solid rgba(74, 222, 128, 0.35);
+    box-shadow: none;
+    width: min(92vw, 640px);
+}
+
+html[data-theme="cid"] #controls input[type="range"],
+html[data-theme="cid"] #controls select,
+html[data-theme="cid"] #controls input[type="text"] {
+    background: #071107;
+    color: #f4fff4;
+    border-color: #1e5b2a;
+}
+
+html[data-theme="cid"] #controls button {
+    background: #4ade80;
+    color: #030603;
+    font-weight: 700;
 }
 
 #test-controls button {

@@ -5,6 +5,9 @@ function createApi(savedConfig = null) {
   return {
     emit: jest.fn(),
     getConfig: jest.fn(() => savedConfig),
+    getDatabase: jest.fn(() => ({
+      getGift: jest.fn(() => null)
+    })),
     getPluginDataDir: jest.fn(() => path.join(__dirname, 'tmp-fireworks-data')),
     log: jest.fn(),
     setConfig: jest.fn()
@@ -72,6 +75,36 @@ describe('Fireworks stable plugin stability integration', () => {
         tier: 'massive',
         particleCount: 500,
         requestedParticleCount: 900
+      })
+    );
+
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+  });
+
+  test('handleGiftEvent treats adapter coins as total coins instead of multiplying repeatCount twice', () => {
+    jest.useFakeTimers();
+    const api = createApi();
+    const plugin = new FireworksPlugin(api);
+    plugin.loadConfig();
+    plugin.currentFps = 60;
+
+    plugin.handleGiftEvent({
+      giftId: 5655,
+      giftName: 'Rose',
+      userId: 'viewer-1',
+      uniqueId: 'viewer_1',
+      diamondCount: 1,
+      repeatCount: 100,
+      coins: 100
+    });
+
+    expect(api.emit).toHaveBeenCalledWith(
+      'fireworks:trigger',
+      expect.objectContaining({
+        reason: 'gift',
+        coins: 100,
+        tier: 'medium'
       })
     );
 

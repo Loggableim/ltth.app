@@ -231,6 +231,16 @@ function updateUI() {
         document.getElementById('enable_depth').checked = config.enable_depth !== false;
         document.getElementById('target_fps').value = config.target_fps || 60;
 
+        setSummaryText('hero-visual-mode', document.getElementById('visual_mode')?.selectedOptions?.[0]?.textContent || 'Premium Stage');
+        setSummaryText('hero-obs-size', `${document.getElementById('obs_hud_width').value || 1920} × ${document.getElementById('obs_hud_height').value || 1080}`);
+        setSummaryText('hero-obs-state', config.obs_hud_enabled === false ? 'Deaktiviert' : 'Aktiviert');
+        setSummaryText('hero-preview-mode', document.getElementById('visual_mode')?.selectedOptions?.[0]?.textContent || 'Premium Stage');
+        setSummaryText('hero-preview-mode-copy', document.getElementById('visual_mode')?.selectedOptions?.[0]?.textContent || 'Premium Stage');
+        setSummaryText('hero-preview-size', `${document.getElementById('obs_hud_width').value || 1920} × ${document.getElementById('obs_hud_height').value || 1080}`);
+        setSummaryText('hero-preview-size-copy', `${document.getElementById('obs_hud_width').value || 1920} × ${document.getElementById('obs_hud_height').value || 1080}`);
+        setSummaryText('hero-preview-state', config.enabled ? 'Aktiviert' : 'Deaktiviert');
+        setSummaryText('hero-preview-state-copy', config.enabled ? 'Aktiviert' : 'Deaktiviert');
+
         // Detect preset
         const width = config.obs_hud_width || 1920;
         const height = config.obs_hud_height || 1080;
@@ -410,6 +420,13 @@ function setRangeValue(id, value) {
         valueDisplay.textContent = value;
     } else {
         console.warn(`?? [EMOJI RAIN UI] Value display element "${id}_value" not found`);
+    }
+}
+
+function setSummaryText(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = value;
     }
 }
 
@@ -668,10 +685,34 @@ function onEnabledToggleChange(event) {
 }
 
 function updateEnabledStatus() {
-    const status = document.getElementById('enabled-status');
+    const heroStatus = document.getElementById('hero-enabled-status');
+    const toggleStatus = document.getElementById('toggle-enabled-status');
+    const previewStatus = document.getElementById('hero-preview-state');
+    const previewStatusCopy = document.getElementById('hero-preview-state-copy');
     const enabled = document.getElementById('enabled-toggle').checked;
-    status.textContent = enabled ? 'Aktiviert' : 'Deaktiviert';
-    status.style.color = enabled ? '#4CAF50' : '#ccc';
+    const statusText = enabled ? 'Aktiviert' : 'Deaktiviert';
+
+    [heroStatus, toggleStatus, previewStatus, previewStatusCopy].forEach(element => {
+        if (!element) return;
+        element.textContent = statusText;
+    });
+
+    if (heroStatus) {
+        heroStatus.style.color = enabled ? '#4CAF50' : '#ccc';
+    }
+
+    if (previewStatus) {
+        previewStatus.dataset.state = enabled ? 'on' : 'off';
+    }
+
+    if (previewStatusCopy) {
+        previewStatusCopy.dataset.state = enabled ? 'on' : 'off';
+    }
+
+    const pill = document.querySelector('.status-pill');
+    if (pill) {
+        pill.dataset.state = enabled ? 'on' : 'off';
+    }
 }
 
 // Update emoji preview
@@ -1028,6 +1069,9 @@ function updatePerformanceDisplay(fps, activeEmojis, mode) {
             modeDisplay.style.color = '#4CAF50';
         }
     }
+
+    setSummaryText('hero-performance', `${fps || '--'} FPS`);
+    setSummaryText('hero-performance-detail', `${activeEmojis || '--'} aktive Emojis · ${mode || 'Normal'}`);
 }
 
 // ========== INITIALIZATION ==========

@@ -1,21 +1,97 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>STT Ticker - Admin</title>
   <link rel="stylesheet" href="/css/themes.css">
+  <script>
+      (function () {
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+      const LOGO_BY_THEME = {
+        day: '/sttlogo.png',
+        night: '/sttlogo.png',
+        contrast: '/sttlogo.png',
+        'vision-impaired': '/sttlogo.png',
+        cid: '/sttlogo.png'
+      };
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (VALID_THEMES.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (VALID_THEMES.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+        const logo = document.querySelector('[data-brand-logo]');
+        if (logo) logo.src = LOGO_BY_THEME[theme] || LOGO_BY_THEME.night;
+      }
+
+      syncTheme();
+      window.addEventListener('storage', (event) => {
+        if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+          syncTheme();
+        }
+      });
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
+      --stt-status-warning: #92400e;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #1a1a2e;
       color: #eee;
       padding: 16px;
     }
-    .container { max-width: 960px; margin: 0 auto; }
+    .container {
+      width: 100%;
+      max-width: 2200px;
+      margin: 0 auto;
+      padding: 0 12px;
+    }
     h1 { color: #4CAF50; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; font-size: 22px; }
     .subtitle { color: #888; font-size: 13px; margin-bottom: 16px; }
+    .brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 8px;
+    }
+    .brand-logo {
+      display: block;
+      width: min(108px, 22vw);
+      height: auto;
+      object-fit: contain;
+    }
 
     /* Tabs */
     .tabs {
@@ -41,6 +117,27 @@
     }
     .tab-btn:hover { color: #ccc; background: rgba(255,255,255,0.05); }
     .tab-btn.active { background: #4CAF50; color: #fff; }
+    html[data-theme="day"] .tab-btn {
+      background: #fff !important;
+      color: #334155 !important;
+      border: 1px solid #94a3b8 !important;
+    }
+    html[data-theme="day"] .tab-btn.active {
+      background: #0f8712 !important;
+      color: #fff !important;
+      border-color: #0f8712 !important;
+    }
+    html[data-theme="contrast"] .tab-btn,
+    html[data-theme="vision-impaired"] .tab-btn {
+      background: #000 !important;
+      color: #facc15 !important;
+      border: 2px solid #facc15 !important;
+    }
+    html[data-theme="contrast"] .tab-btn.active,
+    html[data-theme="vision-impaired"] .tab-btn.active {
+      background: #facc15 !important;
+      color: #000 !important;
+    }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
@@ -109,12 +206,28 @@
       font-size: 10px; font-weight: 700; margin-left: auto;
     }
     .badge-green { background: rgba(76,175,80,0.2); color: #4CAF50; }
-    .badge-yellow { background: rgba(255,193,7,0.2); color: #FFC107; }
+    .badge-yellow { background: #facc15; color: #111827; border: 1px solid #b45309; }
     .badge-gray { background: #444; color: #aaa; }
     .external-link {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 8px 14px; background: #2196F3; color: white;
       text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
+    }
+    html[data-theme="night"] body,
+    html[data-theme="contrast"] body,
+    html[data-theme="vision-impaired"] body {
+      --stt-status-warning: #facc15;
+    }
+    html[data-theme="day"] .external-link,
+    html[data-theme="night"] .external-link {
+      background: #2563eb !important;
+      color: #fff !important;
+    }
+    html[data-theme="contrast"] .external-link,
+    html[data-theme="vision-impaired"] .external-link {
+      background: #facc15 !important;
+      color: #000 !important;
+      border: 2px solid #facc15 !important;
     }
     .external-link:hover { background: #1976D2; }
     .inline-flex { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -137,57 +250,954 @@
     }
     .key-section .key-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
     .key-section .key-header strong { color: #64B5F6; font-size: 12px; }
-  </style>
+
+    html[data-theme="day"] body {
+      --stt-status-warning: #92400e;
+      background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+      color: #10203a;
+    }
+
+    html[data-theme="day"] .tabs {
+      background: #dbe6ff;
+    }
+
+    html[data-theme="day"] .card,
+    html[data-theme="day"] .stat,
+    html[data-theme="day"] .btn-secondary,
+    html[data-theme="day"] input,
+    html[data-theme="day"] select,
+    html[data-theme="day"] .key-section,
+    html[data-theme="day"] .info-box {
+      background: #ffffff;
+      color: #10203a;
+      border-color: #c7d2fe;
+    }
+
+    html[data-theme="day"] .subtitle,
+    html[data-theme="day"] .help-text,
+    html[data-theme="day"] .stat-label {
+      color: #475569;
+    }
+
+    html[data-theme="night"] body {
+      --stt-status-warning: #facc15;
+      background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+      color: #e5e7eb;
+    }
+
+    html[data-theme="night"] .tabs {
+      background: #121a30;
+    }
+
+    html[data-theme="night"] .card,
+    html[data-theme="night"] .stat,
+    html[data-theme="night"] .btn-secondary,
+    html[data-theme="night"] input,
+    html[data-theme="night"] select,
+    html[data-theme="night"] .key-section,
+    html[data-theme="night"] .info-box {
+      background: #11172a;
+      color: #e5e7eb;
+      border-color: #2b3552;
+    }
+
+    html[data-theme="contrast"] body {
+      --stt-status-warning: #facc15;
+      background: #000;
+      color: #fff;
+    }
+
+    html[data-theme="contrast"] .tabs {
+      background: #000;
+      border-bottom: 2px solid #facc15;
+    }
+
+    html[data-theme="contrast"] .card,
+    html[data-theme="contrast"] .stat,
+    html[data-theme="contrast"] .btn-secondary,
+    html[data-theme="contrast"] input,
+    html[data-theme="contrast"] select,
+    html[data-theme="contrast"] .key-section,
+    html[data-theme="contrast"] .info-box {
+      background: #050505;
+      color: #fff;
+      border-color: #facc15;
+    }
+
+    html[data-theme="contrast"] .tab-btn.active,
+    html[data-theme="contrast"] .btn-primary {
+      background: #facc15;
+      color: #000;
+    }
+
+    html[data-theme="contrast"] .subtitle,
+    html[data-theme="contrast"] .help-text,
+    html[data-theme="contrast"] .stat-label,
+    html[data-theme="contrast"] .tab-content p,
+    html[data-theme="contrast"] .info-box p,
+    html[data-theme="contrast"] .key-section p {
+      color: #fff7cc;
+    }
+
+    html[data-theme="contrast"] .card-title,
+    html[data-theme="contrast"] .stat-value {
+      color: #facc15;
+    }
+    html[data-theme="night"] .tab-btn.active,
+    html[data-theme="night"] .btn-primary {
+      background: #4CAF50;
+      color: #fff;
+    }
+
+    html[data-theme="cid"] body {
+      --stt-status-warning: #92400e;
+      background: #030603;
+      color: #f4fff4;
+    }
+
+    html[data-theme="cid"] h1,
+    html[data-theme="cid"] .card-title,
+    html[data-theme="cid"] .stat-value {
+      color: #4ade80;
+    }
+
+    html[data-theme="cid"] .subtitle,
+    html[data-theme="cid"] .help-text,
+    html[data-theme="cid"] .stat-label,
+    html[data-theme="cid"] .tab-content p,
+    html[data-theme="cid"] .info-box p,
+    html[data-theme="cid"] .key-section p,
+    html[data-theme="cid"] label {
+      color: #d1e7d1;
+    }
+
+    html[data-theme="cid"] .tabs {
+      background: #061006;
+      border: 1px solid #1e5b2a;
+    }
+
+    html[data-theme="cid"] .card,
+    html[data-theme="cid"] .stat,
+    html[data-theme="cid"] .btn-secondary,
+    html[data-theme="cid"] input,
+    html[data-theme="cid"] select,
+    html[data-theme="cid"] .key-section,
+    html[data-theme="cid"] .info-box {
+      background: #071107;
+      color: #f4fff4;
+      border-color: #1e5b2a;
+    }
+
+    html[data-theme="cid"] .tab-btn {
+      color: #d1e7d1;
+    }
+
+    html[data-theme="cid"] .tab-btn:hover {
+      color: #f4fff4;
+      background: #0b1a0b;
+    }
+
+    html[data-theme="cid"] .tab-btn.active,
+    html[data-theme="cid"] .btn-primary {
+      background: #4ade80;
+      color: #030603;
+    }
+
+    html[data-theme="vision-impaired"] body {
+      --stt-status-warning: #facc15;
+      background: #000;
+      color: #fff;
+      font-size: 1.12rem;
+      line-height: 1.75;
+    }
+
+    html[data-theme="vision-impaired"] .container {
+      max-width: 100%;
+      padding-left: 40px;
+      padding-right: 40px;
+    }
+
+    html[data-theme="vision-impaired"] h1 {
+      color: #facc15;
+      font-size: clamp(40px, 4.8vw, 56px);
+      letter-spacing: 0.04em;
+    }
+
+    html[data-theme="vision-impaired"] .brand-logo {
+      width: min(260px, 54vw);
+    }
+
+    html[data-theme="vision-impaired"] .subtitle,
+    html[data-theme="vision-impaired"] .help-text,
+    html[data-theme="vision-impaired"] .stat-label,
+    html[data-theme="vision-impaired"] .tab-content p,
+    html[data-theme="vision-impaired"] .info-box p,
+    html[data-theme="vision-impaired"] .key-section p {
+      color: #fff7cc;
+      font-size: 1.08rem;
+      line-height: 1.6;
+    }
+
+    html[data-theme="vision-impaired"] .tabs,
+    html[data-theme="vision-impaired"] .card,
+    html[data-theme="vision-impaired"] .stat,
+    html[data-theme="vision-impaired"] input,
+    html[data-theme="vision-impaired"] select,
+    html[data-theme="vision-impaired"] .key-section,
+    html[data-theme="vision-impaired"] .info-box {
+      background: #050505;
+      color: #fff;
+      border: 6px solid #facc15;
+      box-shadow: 0 0 0 4px #facc15, 0 0 0 10px rgba(250, 204, 21, 0.34);
+    }
+    html[data-theme="vision-impaired"] .tabs {
+      gap: 10px;
+      padding: 8px;
+    }
+    html[data-theme="vision-impaired"] .card-title,
+    html[data-theme="vision-impaired"] .tab-content p,
+    html[data-theme="vision-impaired"] .info-box p,
+    html[data-theme="vision-impaired"] .key-section p {
+      color: #fff7cc;
+    }
+
+    html[data-theme="vision-impaired"] #overlay-url {
+      font-size: 1.2rem;
+      line-height: 1.35;
+    }
+
+    html[data-theme="vision-impaired"] .tab-btn {
+      color: #fff7cc;
+      font-size: 17px;
+      padding: 16px 22px;
+      letter-spacing: 0.03em;
+    }
+
+    html[data-theme="vision-impaired"] .tab-btn.active {
+      background: #facc15;
+      color: #000;
+      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.28);
+    }
+
+    html[data-theme="vision-impaired"] .card-title,
+    html[data-theme="vision-impaired"] .stat-value {
+      color: #facc15;
+      font-size: 1.34rem;
+    }
+
+    html[data-theme="vision-impaired"] .btn-primary {
+      background: #facc15;
+      color: #000;
+      font-size: 1.03rem;
+      padding: 12px 18px;
+    }
+
+    html[data-theme="vision-impaired"] .btn-secondary {
+      background: #000;
+      color: #fff;
+      border: 6px solid #facc15;
+      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.24);
+      font-size: 1.03rem;
+      padding: 12px 18px;
+    }
+
+    html[data-theme="vision-impaired"] .btn-danger {
+      background: #7f1d1d;
+      color: #fff;
+      border: 6px solid #facc15;
+      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.24);
+      font-size: 1.03rem;
+      padding: 12px 18px;
+    }
+
+    html[data-theme="vision-impaired"] .badge-green,
+    html[data-theme="vision-impaired"] .badge-yellow,
+    html[data-theme="vision-impaired"] .badge-gray {
+      background: #000;
+      color: #facc15;
+      border: 2px solid #facc15;
+    }
+
+    @media (max-width: 820px) {
+      body {
+        padding: 12px;
+      }
+
+      .container {
+        max-width: 100%;
+      }
+
+      .tabs {
+        padding: 3px 4px;
+      }
+
+      .tab-btn {
+        flex: 1 1 130px;
+      }
+
+      .grid-2,
+      .grid-3,
+      .grid-4 {
+        grid-template-columns: 1fr;
+      }
+
+      .btn-row,
+      .inline-flex {
+        align-items: stretch;
+      }
+
+      .btn-row .btn,
+      .btn-row .external-link,
+      .inline-flex > * {
+        width: 100%;
+      }
+
+      .key-section .key-header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .key-section .key-header .badge {
+        margin-left: 0;
+      }
+
+      #overlay-url {
+        font-size: 11px;
+      }
+    }
+
+    /* ===== STT Ticker Dashboard Rework ===== */
+    body {
+      padding: 16px;
+      background:
+        radial-gradient(circle at 10% 6%, rgba(59, 130, 246, 0.16), transparent 18%),
+        radial-gradient(circle at 88% 8%, rgba(74, 222, 128, 0.15), transparent 16%),
+        var(--app-background, linear-gradient(180deg, #0f172a 0%, #111827 100%));
+      color: var(--color-text-primary, #eef3ff);
+      font-family: "Segoe UI Variable", "Bahnschrift", "Segoe UI", sans-serif;
+    }
+
+    .container {
+      width: min(2400px, calc(100vw - 32px));
+      max-width: none;
+      margin: 0 auto;
+      padding: 0;
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .stt-sidebar {
+      position: sticky;
+      top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 18px;
+      border-radius: 26px;
+      background: linear-gradient(180deg, rgba(7, 11, 20, 0.94), rgba(12, 16, 27, 0.95));
+      border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+      box-shadow: var(--shadow-lg, 0 18px 38px -18px rgba(0, 0, 0, 0.72));
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .stt-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .stt-brand__icon {
+      width: 68px;
+      height: 68px;
+      object-fit: contain;
+      flex-shrink: 0;
+      filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.32));
+    }
+
+    .stt-brand__copy {
+      min-width: 0;
+    }
+
+    .stt-brand__eyebrow,
+    .eyebrow {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--color-text-muted, #94a3b8);
+    }
+
+    .stt-brand__title {
+      margin-top: 4px;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--color-text-primary, #f8fafc);
+      line-height: 1.1;
+    }
+
+    .stt-brand__subtitle {
+      margin-top: 4px;
+      color: var(--color-text-secondary, #cbd5e1);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .stt-live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      align-self: flex-start;
+      padding: 0.58rem 0.82rem;
+      border-radius: 999px;
+      background: rgba(74, 222, 128, 0.12);
+      border: 1px solid rgba(74, 222, 128, 0.24);
+      color: var(--color-text-primary, #f8fafc);
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--brand-primary, #12a116);
+      box-shadow: var(--glow-brand, 0 0 20px rgba(18, 161, 22, 0.3));
+      flex-shrink: 0;
+    }
+
+    .tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      border-radius: 0;
+      overflow: visible;
+    }
+
+    .tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 13px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+      background: var(--color-bg-card, rgba(17, 23, 42, 0.96));
+      color: var(--color-text-secondary, #cbd5e1);
+      box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+      text-align: left;
+      white-space: normal;
+    }
+
+    .tab-btn:hover {
+      background: var(--color-bg-hover, rgba(26, 35, 58, 0.96));
+      border-color: var(--color-active-border, #3b82f6);
+      color: var(--color-text-primary, #f8fafc);
+      transform: translateY(-1px);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(74, 222, 128, 0.16), rgba(59, 130, 246, 0.12));
+      border-color: var(--color-active-border, #3b82f6);
+      color: var(--color-text-primary, #f8fafc);
+      box-shadow: var(--glow-brand, 0 0 20px rgba(18, 161, 22, 0.3));
+    }
+
+    .tab-chip {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      background: rgba(148, 163, 184, 0.14);
+      color: var(--color-text-primary, #f8fafc);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .tab-btn.active .tab-chip {
+      background: rgba(74, 222, 128, 0.22);
+      color: #d1fae5;
+    }
+
+    .tab-label {
+      flex: 1;
+      font-size: 0.95rem;
+      line-height: 1.35;
+    }
+
+    .stt-sidebar-card {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(12, 18, 33, 0.82);
+      border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+    }
+
+    .stt-sidebar-card .card-title {
+      margin-bottom: 10px;
+      padding-bottom: 0;
+      border: 0;
+    }
+
+    .sidebar-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sidebar-note {
+      color: var(--color-text-secondary, #cbd5e1);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .stt-main {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-width: 0;
+    }
+
+    .stt-hero {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      padding: 24px 26px;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(74, 222, 128, 0.08), transparent 28%),
+        radial-gradient(circle at 92% 4%, rgba(59, 130, 246, 0.12), transparent 22%),
+        var(--color-bg-card, rgba(17, 23, 42, 0.96));
+      border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+      box-shadow: var(--shadow-lg, 0 18px 38px -18px rgba(0, 0, 0, 0.72));
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .hero-brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .hero-logo {
+      width: min(310px, 34vw);
+      height: auto;
+      object-fit: contain;
+      display: block;
+      flex-shrink: 0;
+      filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.32));
+    }
+
+    .hero-copy {
+      min-width: 0;
+      max-width: 68ch;
+    }
+
+    .hero-copy h1 {
+      margin: 4px 0 8px;
+      font-size: clamp(2rem, 2.8vw, 3.25rem);
+      line-height: 1.04;
+      color: var(--color-text-primary, #f8fafc);
+    }
+
+    .hero-copy p {
+      margin: 0;
+      color: var(--color-text-secondary, #cbd5e1);
+      line-height: 1.6;
+      font-size: 0.98rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .hero-actions .btn {
+      min-height: 42px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .metrics-grid .stat {
+      position: relative;
+      overflow: hidden;
+      padding: 16px 14px;
+      border-radius: 20px;
+      background: var(--color-bg-card, rgba(17, 23, 42, 0.96));
+      border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+      box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+      text-align: left;
+    }
+
+    .metrics-grid .stat::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 3px;
+      background: var(--gradient-primary, linear-gradient(135deg, #2563eb 0%, #7c3aed 100%));
+      opacity: 0.96;
+    }
+
+    .metrics-grid .stat-value {
+      font-size: clamp(1.3rem, 1.7vw, 2rem);
+    }
+
+    .metrics-grid .stat-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+    }
+
+    .tab-content {
+      display: block !important;
+      margin-bottom: 18px;
+      padding: 22px;
+      border-radius: 24px;
+      background: var(--color-bg-card, rgba(17, 23, 42, 0.96));
+      border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+      box-shadow: var(--shadow-md, 0 8px 20px -10px rgba(0, 0, 0, 0.52));
+      scroll-margin-top: 18px;
+    }
+
+    .tab-content.active {
+      border-color: var(--color-active-border, #3b82f6);
+      box-shadow: var(--glow-brand, 0 0 20px rgba(18, 161, 22, 0.3)), var(--shadow-md, 0 8px 20px -10px rgba(0, 0, 0, 0.52));
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      color: var(--color-text-primary, #f8fafc);
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+
+    .section-heading::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--brand-primary, #12a116), var(--color-accent-primary, #3b82f6));
+      box-shadow: var(--glow-brand, 0 0 20px rgba(18, 161, 22, 0.3));
+    }
+
+    .card {
+      background: color-mix(in srgb, var(--color-bg-card, #1e293b) 88%, transparent);
+      border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+      box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+    }
+
+    .card-title {
+      font-size: 0.98rem;
+      color: var(--color-text-primary, #f8fafc);
+      border-color: var(--color-divider, rgba(255, 255, 255, 0.08));
+    }
+
+    .help-text,
+    .info-box,
+    .sidebar-note {
+      color: var(--color-text-secondary, #cbd5e1);
+    }
+
+    .external-link {
+      justify-content: center;
+      background: var(--brand-primary-hover, #0f8712);
+      box-shadow: var(--glow-brand, 0 0 20px rgba(18, 161, 22, 0.3));
+    }
+
+    .external-link:hover {
+      background: var(--brand-primary, #12a116);
+    }
+
+    .btn-secondary {
+      background: var(--color-btn-secondary-bg, #334155);
+      color: var(--color-btn-secondary-text, #f8fafc);
+    }
+
+    .btn-danger {
+      background: var(--color-accent-danger, #ef4444);
+      color: #fff;
+    }
+
+    .btn-primary {
+      background: var(--brand-primary-hover, #0f8712);
+      color: #fff;
+    }
+
+    .btn:focus-visible,
+    .tab-btn:focus-visible,
+    .external-link:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 2px solid var(--color-accent-primary, #3b82f6);
+      outline-offset: 2px;
+    }
+
+    .tab-btn,
+    .btn,
+    .external-link,
+    input,
+    select {
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+    }
+
+    .tab-btn:hover,
+    .btn:hover,
+    .external-link:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-row,
+    .inline-flex {
+      align-items: center;
+    }
+
+    .btn-row {
+      gap: 10px;
+    }
+
+    .btn-row .btn,
+    .btn-row .external-link {
+      min-width: 0;
+    }
+
+    html[data-theme="day"] .stt-sidebar,
+    html[data-theme="day"] .stt-hero,
+    html[data-theme="day"] .tab-content,
+    html[data-theme="day"] .stt-sidebar-card,
+    html[data-theme="day"] .metrics-grid .stat {
+      background: rgba(255, 255, 255, 0.94);
+      color: #10203a;
+      border-color: #cbd5e1;
+    }
+
+    html[data-theme="day"] .hero-copy p,
+    html[data-theme="day"] .stt-brand__subtitle,
+    html[data-theme="day"] .sidebar-note,
+    html[data-theme="day"] .help-text,
+    html[data-theme="day"] .stat-label {
+      color: #475569;
+    }
+
+    html[data-theme="day"] .tab-btn {
+      background: #ffffff;
+      color: #334155;
+    }
+
+    html[data-theme="day"] .tab-btn.active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(74, 222, 128, 0.12));
+      color: #10203a;
+    }
+
+    html[data-theme="contrast"] .stt-sidebar,
+    html[data-theme="contrast"] .stt-hero,
+    html[data-theme="contrast"] .tab-content,
+    html[data-theme="contrast"] .stt-sidebar-card,
+    html[data-theme="vision-impaired"] .stt-sidebar,
+    html[data-theme="vision-impaired"] .stt-hero,
+    html[data-theme="vision-impaired"] .tab-content,
+    html[data-theme="vision-impaired"] .stt-sidebar-card {
+      background: #000 !important;
+      color: #fff !important;
+      border: 2px solid #facc15 !important;
+      box-shadow: none !important;
+    }
+
+    html[data-theme="contrast"] .tab-btn,
+    html[data-theme="vision-impaired"] .tab-btn {
+      background: #000 !important;
+      color: #fff !important;
+      border: 2px solid #facc15 !important;
+      box-shadow: none !important;
+    }
+
+    html[data-theme="contrast"] .tab-btn.active,
+    html[data-theme="vision-impaired"] .tab-btn.active {
+      background: #facc15 !important;
+      color: #000 !important;
+    }
+
+    html[data-theme="contrast"] .hero-copy p,
+    html[data-theme="contrast"] .stt-brand__subtitle,
+    html[data-theme="contrast"] .sidebar-note,
+    html[data-theme="contrast"] .help-text,
+    html[data-theme="contrast"] .stat-label,
+    html[data-theme="vision-impaired"] .hero-copy p,
+    html[data-theme="vision-impaired"] .stt-brand__subtitle,
+    html[data-theme="vision-impaired"] .sidebar-note,
+    html[data-theme="vision-impaired"] .help-text,
+    html[data-theme="vision-impaired"] .stat-label {
+      color: #fff7cc !important;
+    }
+
+    html[data-theme="vision-impaired"] body {
+      font-size: 1.1rem;
+      line-height: 1.7;
+    }
+
+    html[data-theme="vision-impaired"] .stt-brand__title,
+    html[data-theme="vision-impaired"] .hero-copy h1 {
+      letter-spacing: 0.03em;
+    }
+
+    html[data-theme="vision-impaired"] .tab-btn {
+      font-size: 1rem;
+      padding: 16px 18px;
+    }
+
+    @media (max-width: 1700px) {
+      .container {
+        grid-template-columns: 280px minmax(0, 1fr);
+      }
+
+      .hero-brand {
+        align-items: flex-start;
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        padding: 12px;
+      }
+
+      .container {
+        width: min(100vw - 24px, 2400px);
+        grid-template-columns: 1fr;
+      }
+
+      .stt-sidebar {
+        position: static;
+      }
+
+      .tabs {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+
+      .tab-btn {
+        flex: 1 1 210px;
+      }
+
+      .stt-hero {
+        flex-direction: column;
+      }
+
+      .hero-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+    </style>
 </head>
 <body>
-<div class="container">
-    <h1>STT Ticker</h1>
-    <p class="subtitle">Live-Untertitel-Overlay für gehörlose und schwerhörige Zuschauer</p>
+  <div class="container stt-shell">
+    <aside class="stt-sidebar">
+      <div class="stt-brand">
+        <img class="stt-brand__icon" src="/ltthttsicon.png" alt="STT Ticker Icon">
+        <div class="stt-brand__copy">
+          <div class="stt-brand__eyebrow">LTTH.app</div>
+          <div class="stt-brand__title">STT Ticker</div>
+          <div class="stt-brand__subtitle">Live captions, translation and overlay control</div>
+        </div>
+      </div>
 
-    <!-- Tabs -->
-    <div class="tabs" id="tabs">
-      <button class="tab-btn active" data-tab="tab-status">Status & Capture</button>
-      <button class="tab-btn" data-tab="tab-overlay">Overlay</button>
-      <button class="tab-btn" data-tab="tab-asr">ASR & Sprache</button>
-      <button class="tab-btn" data-tab="tab-translation">Übersetzung</button>
-      <button class="tab-btn" data-tab="tab-multilang">Multi-Language</button>
-    </div>
+      <div class="stt-live-pill"><span class="status-dot"></span> Live / Active</div>
+
+      <div class="tabs" id="tabs">
+        <button class="tab-btn active" data-tab="tab-status"><span class="tab-chip">SC</span><span class="tab-label">Status & Capture</span></button>
+        <button class="tab-btn" data-tab="tab-overlay"><span class="tab-chip">OV</span><span class="tab-label">Overlay</span></button>
+        <button class="tab-btn" data-tab="tab-asr"><span class="tab-chip">AS</span><span class="tab-label">ASR & Sprache</span></button>
+        <button class="tab-btn" data-tab="tab-translation"><span class="tab-chip">TR</span><span class="tab-label">Übersetzung</span></button>
+        <button class="tab-btn" data-tab="tab-multilang"><span class="tab-chip">ML</span><span class="tab-label">Multi-Language</span></button>
+      </div>
+
+      <div class="stt-sidebar-card">
+        <div class="card-title">Quick Links</div>
+        <div class="sidebar-actions">
+          <a id="capture-link" class="external-link" href="/stt-ticker/capture" target="_blank">Capture öffnen</a>
+          <a class="btn btn-secondary btn-sm" href="#tab-overlay" style="text-decoration:none;justify-content:center;">Overlay springen</a>
+        </div>
+      </div>
+
+      <div class="stt-sidebar-card">
+        <div class="card-title">Theme Safe</div>
+        <p class="sidebar-note">Optimiert für Day, Night, CID, Vision-Impaired und High Contrast. Das Layout bevorzugt breite Monitore und bleibt in allen Themes lesbar.</p>
+      </div>
+    </aside>
+
+    <main class="stt-main">
+      <header class="stt-hero card">
+        <div class="hero-brand">
+          <img class="hero-logo" data-brand-logo src="/sttlogo.png" alt="STT Ticker">
+          <div class="hero-copy">
+            <h1>STT Ticker</h1>
+            <p>Live Untertitel, Übersetzung und Accessibility für deinen Stream. Die Oberfläche bleibt auf breiten Displays übersichtlich und theme-sicher.</p>
+          </div>
+          <div class="badge badge-green">Live / Active</div>
+        </div>
+        <div class="hero-actions">
+          <button id="btn-refresh-status" class="btn btn-secondary btn-sm">Status aktualisieren</button>
+          <button id="btn-clear-buffer" class="btn btn-danger btn-sm">Buffer leeren</button>
+        </div>
+      </header>
+
+      <section class="metrics-grid">
+        <div class="stat"><div class="stat-value" id="stat-enabled">-</div><div class="stat-label">Enabled</div></div>
+        <div class="stat"><div class="stat-value" id="stat-provider">-</div><div class="stat-label">ASR Provider</div></div>
+        <div class="stat"><div class="stat-value" id="stat-translation">-</div><div class="stat-label">Translation</div></div>
+        <div class="stat"><div class="stat-value" id="stat-segments">0</div><div class="stat-label">Buffer Segments</div></div>
+      </section>
 
     <!-- ==================== TAB 1: Status & Capture ==================== -->
-    <div id="tab-status" class="tab-content active">
-      <div class="card">
-        <div class="card-title">Status</div>
-        <div class="grid-4">
-          <div class="stat"><div class="stat-value" id="stat-enabled">-</div><div class="stat-label">Enabled</div></div>
-          <div class="stat"><div class="stat-value" id="stat-provider">-</div><div class="stat-label">ASR Provider</div></div>
-          <div class="stat"><div class="stat-value" id="stat-translation">-</div><div class="stat-label">Translation</div></div>
-          <div class="stat"><div class="stat-value" id="stat-segments">0</div><div class="stat-label">Buffer Segments</div></div>
+    <section id="tab-status" class="tab-content active">
+      <div class="section-heading">Status & Capture</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Status</div>
+          <p class="help-text">Die Live-Status-Kurzinfos sitzen oben im Dashboard. Der Provider-Hinweis darunter zeigt Routing, Sprache und aktive Fallbacks an.</p>
+          <div id="provider-hint" style="margin-top:8px;padding:10px 12px;border-radius:14px;font-size:11px;"></div>
         </div>
-        <div id="provider-hint" style="margin-top:8px;padding:6px 10px;border-radius:6px;font-size:11px;"></div>
-        <div class="btn-row">
-          <button id="btn-clear-buffer" class="btn btn-danger btn-sm">Buffer leeren</button>
-          <button id="btn-refresh-status" class="btn btn-secondary btn-sm">Status aktualisieren</button>
-        </div>
-      </div>
 
-      <div class="card">
-        <div class="card-title">Audio-Capture</div>
-        <p class="help-text">Läuft in <strong>eigenem Tab</strong> (zuverlässiger Mikrofon-Zugriff). Kann minimiert werden.</p>
-        <div class="btn-row">
-          <a id="capture-link" class="external-link" href="/stt-ticker?tab=capture" target="_blank">Capture-Tab öffnen</a>
+        <div class="card">
+          <div class="card-title">Audio-Capture</div>
+          <p class="help-text">Laeuft in <strong>eigenem Tab</strong> (zuverlaessiger Mikrofon-Zugriff). Kann minimiert werden.</p>
+          <ol class="help-text" style="padding-left:16px;margin-top:6px;">
+            <li>Capture-Tab oeffnen, dann <strong>Capture starten</strong> klicken</li>
+            <li>Mikrofon erlauben, dann Audio geht an ASR und Transkripte im Overlay erscheinen</li>
+          </ol>
         </div>
-        <ol class="help-text" style="padding-left:16px;margin-top:6px;">
-          <li>Capture-Tab öffnen, dann <strong>Capture starten</strong> klicken</li>
-          <li>Mikrofon erlauben, dann Audio geht an ASR und Transkripte im Overlay erscheinen</li>
-        </ol>
       </div>
-    </div>
+    </section>
 
     <!-- ==================== TAB 2: Overlay ==================== -->
     <div id="tab-overlay" class="tab-content">
+      <div class="section-heading">Overlay</div>
       <div class="card">
         <div class="card-title">Overlay (OBS Browser Source)</div>
-        <p class="help-text" style="margin-bottom:8px;">Diese URL als Browser Source in OBS hinzufügen:</p>
+        <p class="help-text" style="margin-bottom:8px;">Diese URL als Browser Source in OBS hinzufï¿½gen:</p>
         <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:12px;cursor:text;">
         <div class="grid-2" style="margin-top:10px;">
           <div>
@@ -202,7 +1212,7 @@
               <option value="compact">Compact (Klein)</option>
               <option value="cinematic">Cinematic (Film)</option>
               <option value="scrolling">Scrolling (Laufband)</option>
-              <option value="fliessend">Fließend (Liste)</option>
+              <option value="fliessend">Fliessend (Liste)</option>
               <option value="starwars">Star Wars (Crawl)</option>
               <option value="ticker3">3-Zeilen Ticker</option>
               <option value="karaoke">Karaoke (Wort-Highlight)</option>
@@ -231,13 +1241,14 @@
         </div>
         <div class="btn-row">
           <button id="btn-update-url" class="btn btn-primary btn-sm">URL aktualisieren</button>
-          <a id="open-overlay-btn" href="#" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">Overlay öffnen</a>
+          <a id="open-overlay-btn" href="#" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">Overlay ï¿½ffnen</a>
         </div>
       </div>
     </div>
 
     <!-- ==================== TAB 3: ASR & Sprache ==================== -->
     <div id="tab-asr" class="tab-content">
+      <div class="section-heading">ASR & Sprache</div>
       <!-- API Keys (kompakt) -->
       <div class="card">
         <div class="card-title">API Keys</div>
@@ -277,7 +1288,7 @@
             <input type="password" id="asr-fishaudioApiKey" placeholder="Fish.audio API key..." style="flex:1;min-width:200px;font-family:monospace;">
             <span id="fishaudio-test-status" style="font-size:11px;color:#888;">Fallback zum TTS-Plugin-Key</span>
           </div>
-          <p class="help-text">Überschreibt den Fish.audio-Key aus dem TTS-Plugin. <a href="https://docs.fish.audio" target="_blank" style="color:#64B5F6;">docs.fish.audio</a></p>
+          <p class="help-text">ï¿½berschreibt den Fish.audio-Key aus dem TTS-Plugin. <a href="https://docs.fish.audio" target="_blank" style="color:#64B5F6;">docs.fish.audio</a></p>
         </div>
       </div>
 
@@ -297,7 +1308,7 @@
           <div>
             <label>STT-Modell</label>
             <select id="asr-model-select">
-              <option value="">Modell wählen</option>
+              <option value="">Modell wï¿½hlen</option>
             </select>
           </div>
         </div>
@@ -346,13 +1357,14 @@
       </div>
     </div>
 
-    <!-- ==================== TAB 4: Übersetzung ==================== -->
+    <!-- ==================== TAB 4: Uebersetzung ==================== -->
     <div id="tab-translation" class="tab-content">
+      <div class="section-heading">Übersetzung</div>
       <div class="card">
-        <div class="card-title">Übersetzung (Ollama Cloud)</div>
+        <div class="card-title">Uebersetzung (Ollama Cloud)</div>
         <div class="inline-flex" style="margin-bottom:8px;">
           <label class="mt-0" style="display:inline-flex;align-items:center;gap:4px;">
-            <input type="checkbox" id="translation-enabled"> Übersetzung aktivieren
+            <input type="checkbox" id="translation-enabled"> Uebersetzung aktivieren
           </label>
           <span id="translation-key-status" style="font-size:11px;color:#4CAF50;"></span>
         </div>
@@ -370,7 +1382,7 @@
             <select id="translation-model"><option value="">Modelle laden...</option></select>
           </div>
           <div>
-            <label>Übersetzungs-Farbe</label>
+            <label>Uebersetzungs-Farbe</label>
             <input type="color" id="translation-color" value="#ffd700">
           </div>
           <div>
@@ -378,12 +1390,12 @@
             <select id="translation-sourceLanguage"></select>
           </div>
           <div>
-            <label>Zielsprache (Übersetzung)</label>
+            <label>Zielsprache (Uebersetzung)</label>
             <select id="translation-targetLanguage"></select>
           </div>
         </div>
         <div class="btn-row">
-          <button id="btn-save-translation" class="btn btn-primary btn-sm">Übersetzung speichern</button>
+          <button id="btn-save-translation" class="btn btn-primary btn-sm">Uebersetzung speichern</button>
           <button id="btn-clear-cache" class="btn btn-secondary btn-sm">Cache leeren</button>
           <span id="translation-status" style="font-size:12px;"></span>
         </div>
@@ -392,10 +1404,11 @@
 
     <!-- ==================== TAB 5: Multi-Language ==================== -->
     <div id="tab-multilang" class="tab-content">
+      <div class="section-heading">Multi-Language</div>
       <div class="card">
         <div class="card-title">Multi-Language Output (N Zeilen)</div>
-        <p class="help-text">Je Zeile eine Sprache. Zeile 1 = Original, Zeile 2..N = Übersetzungen.<br>
-        <strong>Voraussetzung:</strong> Übersetzung muss im Tab "Übersetzung" aktiviert sein.</p>
+        <p class="help-text">Je Zeile eine Sprache. Zeile 1 = Original, Zeile 2..N = Uebersetzungen.<br>
+        <strong>Voraussetzung:</strong> Uebersetzung muss im Tab "Uebersetzung" aktiviert sein.</p>
 
         <div class="grid-2" style="margin-top:10px;">
           <div>
@@ -403,7 +1416,7 @@
             <select id="ml-default-lang"></select>
           </div>
           <div>
-            <label>Sprache hinzufügen</label>
+            <label>Sprache hinzufï¿½gen</label>
             <div class="inline-flex">
               <select id="ml-add-lang" style="flex:1;"></select>
               <button id="btn-add-lang" class="btn btn-primary btn-sm">+</button>
@@ -429,9 +1442,13 @@
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
-        document.getElementById(btn.dataset.tab).classList.add('active');
+        const target = document.getElementById(btn.dataset.tab);
+        if (target) {
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          target.classList.add('active');
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       });
     });
 
@@ -444,7 +1461,7 @@
         const s = data.status;
 
         document.getElementById('stat-enabled').textContent = s.enabled ? 'Active' : 'Disabled';
-        document.getElementById('stat-enabled').style.color = s.enabled ? '#4CAF50' : '#FFC107';
+        document.getElementById('stat-enabled').style.color = s.enabled ? '#4CAF50' : 'var(--stt-status-warning, #facc15)';
 
         const asr = s.asr || {};
         const providerEl = document.getElementById('stat-provider');
@@ -470,10 +1487,10 @@
           }
         } else if (asr.provider === 'fish.audio') {
           providerEl.textContent = 'Fish.audio';
-          providerEl.style.color = '#FFC107';
+          providerEl.style.color = 'var(--stt-status-warning, #facc15)';
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(255, 193, 7, 0.1)';
-            providerHintEl.style.color = '#FFC107';
+            providerHintEl.style.color = 'var(--stt-status-warning, #facc15)';
             providerHintEl.innerHTML = '<strong>Fish.audio aktiv</strong> - Token-Verbrauch sichtbar. Deepgram/ElevenLabs-Key spart Kosten.';
           }
         } else {
@@ -530,7 +1547,7 @@
           keyStatus.style.color = '#4CAF50';
         } else {
           keyStatus.textContent = '(nicht gesetzt)';
-          keyStatus.style.color = '#FFC107';
+          keyStatus.style.color = 'var(--stt-status-warning, #facc15)';
         }
         await loadLanguages(tc.sourceLanguage || 'de', tc.targetLanguage || 'en');
         await loadModels(tc.model || 'nemotron-3-nano');
@@ -548,30 +1565,30 @@
     const LANGUAGE_OPTIONS = [
       ['de', 'Deutsch'],
       ['en', 'English'],
-      ['es', 'Español'],
-      ['fr', 'Français'],
+      ['es', 'Espaï¿½ol'],
+      ['fr', 'Franï¿½ais'],
       ['it', 'Italiano'],
-      ['pt', 'Português'],
+      ['pt', 'Portuguï¿½s'],
       ['nl', 'Nederlands'],
       ['pl', 'Polski'],
-      ['ru', 'Русский'],
-      ['ja', '日本語'],
-      ['ko', '한국어'],
-      ['zh', '中文'],
-      ['ar', 'العربية'],
-      ['tr', 'Türkçe'],
+      ['ru', '???????'],
+      ['ja', '???'],
+      ['ko', '???'],
+      ['zh', '??'],
+      ['ar', '???????'],
+      ['tr', 'Tï¿½rkï¿½e'],
       ['sv', 'Svenska'],
       ['da', 'Dansk'],
       ['fi', 'Suomi'],
       ['no', 'Norsk'],
-      ['cs', 'Čeština'],
+      ['cs', 'Ceï¿½tina'],
       ['hu', 'Magyar'],
-      ['ro', 'Română'],
-      ['uk', 'Українська'],
-      ['el', 'Ελληνικά'],
-      ['he', 'עברית'],
-      ['th', 'ไทย'],
-      ['vi', 'Tiếng Việt']
+      ['ro', 'Romï¿½na'],
+      ['uk', '??????????'],
+      ['el', '????????'],
+      ['he', '?????'],
+      ['th', '???'],
+      ['vi', 'Ti?ng Vi?t']
     ];
 
     function populateLanguageSelect(selectId, selectedValue, includeEmpty = false) {
@@ -582,7 +1599,7 @@
       if (includeEmpty) {
         const placeholder = document.createElement('option');
         placeholder.value = '';
-        placeholder.textContent = 'Sprache wählen...';
+        placeholder.textContent = 'Sprache wï¿½hlen...';
         select.appendChild(placeholder);
       }
       for (const [code, label] of LANGUAGE_OPTIONS) {
@@ -611,7 +1628,7 @@
       const providerEl = document.getElementById('asr-provider');
       if (providerEl) providerEl.value = asr.provider || 'auto';
 
-      // STT-Modell-Dropdown befüllen (wird von loadAsrModels() gemacht)
+      // STT-Modell-Dropdown befï¿½llen (wird von loadAsrModels() gemacht)
       // Gespeichertes Modell aus Config setzen
       const modelSelect = document.getElementById('asr-model-select');
       if (modelSelect) {
@@ -654,7 +1671,7 @@
       }
     }
 
-    // Lädt Deepgram + ElevenLabs Modelle und befüllt das STT-Modell-Dropdown
+    // Laedt Deepgram + ElevenLabs Modelle und befuelle das STT-Modell-Dropdown
     async function loadAsrModels() {
       const dgModels = [], elModels = [];
       try {
@@ -725,30 +1742,30 @@
     const LANG_NAMES = {
       'de': 'Deutsch',
       'en': 'English',
-      'es': 'Español',
-      'fr': 'Français',
+      'es': 'Espaï¿½ol',
+      'fr': 'Franï¿½ais',
       'it': 'Italiano',
-      'pt': 'Português',
+      'pt': 'Portuguï¿½s',
       'nl': 'Nederlands',
       'pl': 'Polski',
-      'ru': 'Русский',
-      'ja': '日本語',
-      'ko': '한국어',
-      'zh': '中文',
-      'ar': 'العربية',
-      'tr': 'Türkçe',
+      'ru': '???????',
+      'ja': '???',
+      'ko': '???',
+      'zh': '??',
+      'ar': '???????',
+      'tr': 'Tï¿½rkï¿½e',
       'sv': 'Svenska',
       'da': 'Dansk',
       'fi': 'Suomi',
       'no': 'Norsk',
-      'cs': 'Čeština',
+      'cs': 'Ceï¿½tina',
       'hu': 'Magyar',
-      'ro': 'Română',
-      'uk': 'Українська',
-      'el': 'Ελληνικά',
-      'he': 'עברית',
-      'th': 'ไทย',
-      'vi': 'Tiếng Việt'
+      'ro': 'Romï¿½na',
+      'uk': '??????????',
+      'el': '????????',
+      'he': '?????',
+      'th': '???',
+      'vi': 'Ti?ng Vi?t'
     };
     let currentOutputLangs = ['en'];
 
@@ -759,7 +1776,7 @@
       for (const lang of currentOutputLangs) {
         const tag = document.createElement('span');
         tag.className = 'lang-tag';
-        tag.innerHTML = (LANG_NAMES[lang] || lang.toUpperCase()) + ' <span class="remove">×</span>';
+        tag.innerHTML = (LANG_NAMES[lang] || lang.toUpperCase()) + ' <span class="remove">ï¿½</span>';
         tag.addEventListener('click', () => {
           currentOutputLangs = currentOutputLangs.filter(l => l !== lang);
           renderLangTags(currentOutputLangs);
@@ -851,7 +1868,7 @@
 
       const statusEl = document.getElementById('asr-status');
       statusEl.textContent = 'Speichere...';
-      statusEl.style.color = '#FFC107';
+      statusEl.style.color = 'var(--stt-status-warning, #facc15)';
 
       try {
         const res = await fetch('/api/stt-ticker/asr/settings', {
@@ -880,10 +1897,14 @@
       const position = (document.getElementById('position-select')?.value) || 'bottom-center';
       const maxLines = (document.getElementById('maxLines-input')?.value) || '2';
       const fontSize = (document.getElementById('fontSize-input')?.value) || '36px';
+      const themeRaw = localStorage.getItem('dashboard-theme') || localStorage.getItem('theme') || localStorage.getItem('ui-theme') || 'night';
+      const validThemes = ['day', 'night', 'contrast', 'vision-impaired', 'cid'];
+      const theme = validThemes.includes(themeRaw) ? themeRaw : 'night';
       const url = BASE + '/overlay/stt-ticker?design=' + encodeURIComponent(design)
         + '&position=' + encodeURIComponent(position)
         + '&maxLines=' + encodeURIComponent(maxLines)
-        + '&fontSize=' + encodeURIComponent(fontSize);
+        + '&fontSize=' + encodeURIComponent(fontSize)
+        + '&theme=' + encodeURIComponent(theme);
       const input = document.getElementById('overlay-url');
       const link = document.getElementById('open-overlay-btn');
       if (input) input.value = url;
@@ -1014,7 +2035,7 @@
         return;
       }
       statusEl.textContent = 'Teste...';
-      statusEl.style.color = '#FFC107';
+      statusEl.style.color = 'var(--stt-status-warning, #facc15)';
       try {
         const res = await fetch('/api/stt-ticker/asr/test-deepgram', {
           method: 'POST',
@@ -1023,10 +2044,10 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = 'Key gültig!';
+          statusEl.textContent = 'Key gï¿½ltig!';
           statusEl.style.color = '#4CAF50';
         } else {
-          statusEl.textContent = data.message || data.error || 'Ungültig';
+          statusEl.textContent = data.message || data.error || 'Ungï¿½ltig';
           statusEl.style.color = '#f44336';
         }
       } catch (e) {
@@ -1045,7 +2066,7 @@
         return;
       }
       statusEl.textContent = 'Teste...';
-      statusEl.style.color = '#FFC107';
+      statusEl.style.color = 'var(--stt-status-warning, #facc15)';
       try {
         const res = await fetch('/api/stt-ticker/asr/test-elevenlabs', {
           method: 'POST',
@@ -1054,10 +2075,10 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = 'Key gültig!';
+          statusEl.textContent = 'Key gï¿½ltig!';
           statusEl.style.color = '#4CAF50';
         } else {
-          statusEl.textContent = data.message || data.error || 'Ungültig';
+          statusEl.textContent = data.message || data.error || 'Ungï¿½ltig';
           statusEl.style.color = '#f44336';
         }
       } catch (e) {
@@ -1096,7 +2117,14 @@
       }
       updateOverlayUrl();
     }
-    init();
+  init();
   </script>
+  </main>
+  </div>
 </body>
 </html>
+
+
+
+
+

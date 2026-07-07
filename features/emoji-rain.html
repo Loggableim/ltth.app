@@ -14,7 +14,7 @@
     <meta property="og:title" content="WebGPU Emoji Rain – PupCid's Little TikTool Helper">
     <meta property="og:description" content="Hardwarebeschleunigte Partikeleffekte für TikTok LIVE. Tausende Emojis gleichzeitig – reibungslos per WebGPU.">
     <meta property="og:url" content="https://ltth.app/features/emoji-rain.html">
-    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <meta property="og:image" content="https://ltth.app/screenshots/features/webgpu-emoji-rain-dashboard.png">
     <link rel="canonical" href="https://ltth.app/features/emoji-rain.html">
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/layout.css">
@@ -52,14 +52,23 @@
         <!-- screenshot -->
         <section class="features-preview" style="padding-top:0;">
             <div class="container">
-                <div class="screenshot-container">
-                    <img src="/screenshots/features/emoji-rain.png"
-                         alt=""
-                         data-i18n-alt="screenshots.emojiRain.hero.alt"
-                         loading="lazy"
-                         class="feature-screenshot"
-                         onerror="this.style.display='none'" />
-                    <p class="screenshot-caption" data-i18n="screenshots.emojiRain.hero.caption"></p>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1.5rem;">
+                    <div class="screenshot-container">
+                        <img src="/screenshots/features/webgpu-emoji-rain-dashboard.png"
+                             alt="WebGPU Emoji Rain Dashboard nach dem Layout-Fix"
+                             loading="lazy"
+                             class="feature-screenshot"
+                             onerror="this.style.display='none'" />
+                        <p class="screenshot-caption">Das Overlay zeigt den gefixten Zustand ohne den unnötigen grünen Balken und mit sauberer Kopfzeile.</p>
+                    </div>
+                    <div class="screenshot-container">
+                        <img src="/screenshots/features/emoji-rain.png"
+                             alt="WebGPU Emoji Rain Overlay"
+                             loading="lazy"
+                             class="feature-screenshot"
+                             onerror="this.style.display='none'" />
+                        <p class="screenshot-caption">Die reine Effektansicht bleibt groß, klar und streamtauglich, auch ohne Admin-Rahmen.</p>
+                    </div>
                 </div>
             </div>
         </section>

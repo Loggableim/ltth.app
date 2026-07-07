@@ -9,12 +9,65 @@
     <link rel="stylesheet" href="/css/navigation.css">
     <link rel="stylesheet" href="/css/themes.css">
     <script>
-        // Apply saved theme immediately to prevent flash
+        // Apply shared theme immediately to prevent flash
         (function() {
-            const savedTheme = localStorage.getItem('dashboard-theme');
-            if (savedTheme && savedTheme !== 'night') {
-                document.documentElement.setAttribute('data-theme', savedTheme);
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const logoByTheme = {
+                day: '/soundboard-logo.png',
+                night: '/soundboard-logo.png',
+                contrast: '/soundboard-logo.png',
+                'vision-impaired': '/soundboard-logo.png',
+                cid: '/soundboard-logo.png'
+            };
+
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
             }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                const logo = document.querySelector('[data-brand-logo]');
+                if (logo) logo.src = logoByTheme[theme] || logoByTheme.night;
+            }
+
+            syncTheme();
+            document.addEventListener('DOMContentLoaded', () => {
+                syncTheme();
+            });
+            window.addEventListener('focus', syncTheme);
+            window.addEventListener('storage', (event) => {
+                if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+                    syncTheme();
+                }
+            });
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
         })();
     </script>
     <script src="/js/lucide.min.js"></script>
@@ -28,38 +81,50 @@
             min-height: 100vh;
         }
         .standalone-header {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
             align-items: center;
-            margin-bottom: 24px;
-            padding: 16px;
-            background: var(--gradient-primary);
-            border-radius: 8px;
-            border: 1px solid var(--color-accent-primary);
+            gap: 16px;
+            margin-bottom: 18px;
+            padding: 18px 20px;
+            background: linear-gradient(180deg, var(--color-bg-secondary), var(--color-bg-tertiary));
+            border-radius: 18px;
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(12px);
         }
-        .standalone-title {
+        .standalone-brand {
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--color-accent-primary);
+            justify-content: center;
+            min-width: 0;
+            grid-column: 2;
         }
-        .back-link {
-            display: inline-flex;
-            align-items: center;
+        .standalone-logo {
+            display: block;
+            width: min(640px, 54vw);
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.24));
+        }
+        .standalone-actions {
+            grid-column: 3;
+            justify-self: end;
+            display: grid;
             gap: 8px;
-            padding: 8px 16px;
-            background: var(--color-active-bg);
-            border: 1px solid var(--color-accent-primary);
-            border-radius: 6px;
-            color: var(--color-accent-primary);
-            text-decoration: none;
-            transition: all 0.2s;
+            justify-items: end;
+            min-width: 0;
         }
-        .back-link:hover {
-            background: var(--color-active-bg);
-            transform: translateX(-2px);
+        .standalone-save-btn {
+            min-width: 212px;
+            justify-content: center;
+        }
+        .soundboard-save-state {
+            color: var(--color-text-secondary);
+            font-size: 0.84rem;
+            text-align: right;
+            max-width: 240px;
         }
         
         /* Volume Slider Styles */
@@ -95,15 +160,15 @@
         
         /* OBS Overlay Section */
         .obs-overlay-section {
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
-            border: 2px solid #22c55e;
+            background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
+            border: 1px solid var(--color-border);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 24px;
         }
         
         .obs-overlay-section h3 {
-            color: #22c55e;
+            color: var(--color-text-primary);
             margin-bottom: 12px;
             display: flex;
             align-items: center;
@@ -114,7 +179,7 @@
             display: flex;
             gap: 8px;
             align-items: center;
-            background: var(--color-bg-secondary);
+            background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
             border: 1px solid var(--color-border);
             border-radius: 8px;
             padding: 12px;
@@ -196,7 +261,7 @@
         
         /* Event Sound Card with Animation */
         .event-sound-card {
-            background: var(--color-bg-tertiary);
+            background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
             border: 1px solid var(--color-border);
             border-radius: 10px;
             padding: 16px;
@@ -262,7 +327,7 @@
         .myinstants-search {
             margin-top: 24px;
             padding: 16px;
-            background: var(--color-bg-secondary);
+            background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
             border: 1px solid var(--color-border);
             border-radius: 8px;
         }
@@ -293,7 +358,7 @@
         }
         
         .myinstants-result-item {
-            background: var(--color-bg-tertiary);
+            background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
             padding: 12px;
             border-radius: 6px;
             display: flex;
@@ -301,6 +366,10 @@
             justify-content: space-between;
             border: 1px solid var(--color-border);
             transition: all 0.2s;
+        }
+
+        .myinstants-results > .myinstants-result-item:nth-child(even) {
+            background: linear-gradient(180deg, var(--color-bg-secondary), var(--color-bg-tertiary));
         }
         
         .myinstants-result-item:hover {
@@ -331,6 +400,83 @@
             display: flex;
             gap: 8px;
             flex-shrink: 0;
+        }
+
+        .gift-list-toolbar {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 14px;
+            padding: 12px;
+            background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+        }
+
+        .gift-list-search {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .gift-list-search i {
+            color: var(--color-accent-primary);
+            flex-shrink: 0;
+        }
+
+        .gift-list-search input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .gift-list-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            color: var(--color-text-secondary);
+            font-size: 0.82rem;
+            flex-wrap: wrap;
+        }
+
+        .gift-list-summary span:first-child {
+            color: var(--color-text-primary);
+            font-weight: 600;
+        }
+
+        .gift-sort-header {
+            width: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .gift-sort-header i {
+            width: 14px;
+            height: 14px;
+            opacity: 0.7;
+            flex-shrink: 0;
+        }
+
+        .gift-sort-header[data-active="true"] {
+            color: var(--color-accent-primary);
+        }
+
+        .gift-sort-header[data-active="true"] i {
+            opacity: 1;
+        }
+
+        html[data-theme="vision-impaired"] .gift-list-toolbar,
+        html[data-theme="contrast"] .gift-list-toolbar {
+            border-width: 2px;
         }
 
         .overlay-layout-grid {
@@ -401,7 +547,7 @@
         .add-gift-sound {
             margin-top: 24px;
             padding: 16px;
-            background: var(--color-bg-secondary);
+            background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
             border: 1px solid var(--color-border);
             border-radius: 8px;
         }
@@ -416,7 +562,7 @@
         .gift-catalog {
             margin-bottom: 24px;
             padding: 16px;
-            background: var(--color-bg-secondary);
+            background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
             border: 1px solid var(--color-border);
             border-radius: 8px;
         }
@@ -466,11 +612,15 @@
             gap: 8px;
             flex-wrap: wrap;
             margin-bottom: 16px;
+            padding: 8px;
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
         }
         
         .category-btn {
             padding: 6px 14px;
-            background: var(--color-bg-secondary);
+            background: var(--color-bg-primary);
             border: 1px solid var(--color-border);
             border-radius: 6px;
             color: var(--color-text-primary);
@@ -514,8 +664,8 @@
             background: var(--color-bg-primary);
             border: 2px solid var(--color-accent-primary);
             border-radius: 12px;
-            max-width: 800px;
-            width: 100%;
+            width: min(96vw, 1600px);
+            max-width: none;
             max-height: 80vh;
             display: flex;
             flex-direction: column;
@@ -553,6 +703,25 @@
         .modal-close:hover {
             background: var(--color-bg-hover);
         }
+
+        html[data-theme="vision-impaired"] .modal-close {
+            background: #000;
+            border: 2px solid #ffe66d;
+            color: #ffe66d;
+        }
+
+        html[data-theme="vision-impaired"] .modal-close:hover {
+            background: #111;
+        }
+
+        html[data-theme="vision-impaired"] .modal-content {
+            background: #000;
+            color: #fff7cc;
+            border: 3px solid #facc15;
+            box-shadow: none;
+            width: min(96vw, 1200px);
+            max-width: none;
+        }
         
         .modal-body {
             padding: 20px;
@@ -587,13 +756,17 @@
         }
         
         .gift-card {
-            background: var(--color-bg-secondary);
+            background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
             border: 2px solid var(--color-border);
             border-radius: 8px;
             padding: 12px;
             cursor: pointer;
             transition: all 0.2s;
             text-align: center;
+        }
+
+        .gift-grid > .gift-card:nth-child(even) {
+            background: linear-gradient(180deg, var(--color-bg-secondary), var(--color-bg-tertiary));
         }
         
         .gift-card:hover {
@@ -603,7 +776,7 @@
         }
         
         .gift-card.has-sound {
-            border-color: #22c55e;
+            border-color: var(--color-accent-primary);
         }
         
         .gift-card-image {
@@ -643,33 +816,1009 @@
         
         .gift-card-badge {
             display: inline-block;
-            background: #22c55e;
-            color: #0f172a;
+            background: var(--color-accent-primary);
+            color: #ffffff;
             font-size: 0.7rem;
             padding: 2px 8px;
             border-radius: 4px;
             margin-top: 4px;
             font-weight: 600;
         }
-    </style>
+
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="day"] .standalone-header {
+            background: linear-gradient(135deg, #f8fbff 0%, #dbeafe 100%);
+            border-color: #93c5fd;
+        }
+
+        html[data-theme="day"] .back-link {
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="night"] .standalone-header {
+            background: linear-gradient(135deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.96));
+        }
+
+        html[data-theme="night"] .back-link {
+            color: #f8fafc;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .standalone-header,
+        html[data-theme="vision-impaired"] .standalone-header {
+            background: #000;
+            border: 3px solid #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .standalone-logo {
+            width: min(760px, 82vw);
+        }
+        html[data-theme="cid"] .standalone-logo {
+            width: min(720px, 60vw);
+        }
+
+        html[data-theme="contrast"] .back-link,
+        html[data-theme="vision-impaired"] .back-link {
+            background: #000;
+            color: #fff;
+            border: 3px solid #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .collapsible-header,
+        html[data-theme="vision-impaired"] .collapsible-content,
+        html[data-theme="vision-impaired"] .event-sound-card,
+        html[data-theme="vision-impaired"] .overlay-url-box {
+            background: #000;
+            color: #fff;
+            border-color: #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .obs-overlay-section {
+            background: #000;
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .card-title,
+        html[data-theme="vision-impaired"] .collapsible-header h3,
+        html[data-theme="vision-impaired"] .event-sound-card .event-header h4,
+        html[data-theme="vision-impaired"] .obs-overlay-section h3 {
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .obs-overlay-section h3 {
+            font-size: 1.5rem;
+        }
+
+        html[data-theme="vision-impaired"] .event-sound-card .event-header h4 {
+            font-size: 1.15rem;
+        }
+
+        html[data-theme="vision-impaired"] input,
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="vision-impaired"] .btn-secondary,
+        html[data-theme="vision-impaired"] .back-link {
+            background: #000;
+            color: #fff;
+            border: 3px solid #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .overlay-url-box input {
+            font-size: 1rem;
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary {
+            background: #facc15;
+            color: #000;
+        }
+
+        html[data-theme="vision-impaired"] .btn-ghost,
+        html[data-theme="vision-impaired"] .btn-xs.btn-ghost,
+        html[data-theme="vision-impaired"] .btn-sm.btn-ghost,
+        html[data-theme="vision-impaired"] .event-sound-card .event-header .btn-ghost {
+            background: #000;
+            color: #facc15;
+            border: 3px solid #facc15;
+            box-shadow: inset 0 0 0 1px #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .btn-ghost:hover,
+        html[data-theme="vision-impaired"] .btn-xs.btn-ghost:hover,
+        html[data-theme="vision-impaired"] .btn-sm.btn-ghost:hover {
+            background: #111;
+            color: #fff7cc;
+            border-color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] .category-btn {
+            background: #000;
+            color: #facc15;
+            border: 3px solid #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .category-btn.active {
+            background: #facc15;
+            color: #000;
+            border-color: #facc15;
+        }
+
+        html[data-theme="contrast"] button[data-action="test-sound"],
+        html[data-theme="contrast"] button[data-action="preview-animation"],
+        html[data-theme="contrast"] button[data-action="edit-gift"],
+        html[data-theme="vision-impaired"] button[data-action="test-sound"],
+        html[data-theme="vision-impaired"] button[data-action="preview-animation"],
+        html[data-theme="vision-impaired"] button[data-action="edit-gift"] {
+            background: #facc15 !important;
+            color: #000 !important;
+            border: 2px solid #facc15 !important;
+            font-weight: 900;
+            text-shadow: none;
+            box-shadow: none;
+        }
+
+        html[data-theme="contrast"] button[data-action="delete-gift"],
+        html[data-theme="vision-impaired"] button[data-action="delete-gift"] {
+            background: #7f1d1d !important;
+            color: #fff !important;
+            border: 2px solid #facc15 !important;
+            font-weight: 900;
+            text-shadow: none;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] button[data-action="test-sound"],
+        html[data-theme="vision-impaired"] button[data-action="preview-animation"],
+        html[data-theme="vision-impaired"] button[data-action="edit-gift"],
+        html[data-theme="vision-impaired"] button[data-action="delete-gift"] {
+            min-height: 38px;
+            padding: 8px 12px !important;
+            font-size: 1rem !important;
+            line-height: 1.25;
+        }
+
+        html[data-theme="contrast"] .help-text,
+        html[data-theme="contrast"] .volume-label,
+        html[data-theme="contrast"] .myinstants-result-url,
+        html[data-theme="contrast"] .gift-card-id,
+        html[data-theme="contrast"] .badge-gray,
+        html[data-theme="contrast"] #gif-search-status,
+        html[data-theme="vision-impaired"] .help-text,
+        html[data-theme="vision-impaired"] .volume-label,
+        html[data-theme="vision-impaired"] .myinstants-result-url,
+        html[data-theme="vision-impaired"] .gift-card-id,
+        html[data-theme="vision-impaired"] .badge-gray,
+        html[data-theme="vision-impaired"] #gif-search-status {
+            color: #fff7cc;
+            font-size: 1.03rem;
+            font-weight: 600;
+            line-height: 1.5;
+            letter-spacing: 0.01em;
+        }
+
+        html[data-theme="contrast"] .myinstants-result-url,
+        html[data-theme="vision-impaired"] .myinstants-result-url {
+            white-space: normal;
+            overflow-wrap: anywhere;
+            text-overflow: clip;
+        }
+
+        html[data-theme="contrast"] .volume-label,
+        html[data-theme="vision-impaired"] .volume-label {
+            min-width: 42px;
+        }
+
+        html[data-theme="vision-impaired"] .gift-card,
+        html[data-theme="vision-impaired"] .gift-card:hover {
+            background: #050505;
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .gift-card-badge {
+            background: #facc15;
+            color: #000;
+        }
+
+        .soundboard-content {
+            max-width: 1820px;
+            margin: 0 auto;
+        }
+
+        .soundboard-workspace {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        .soundboard-sidebar {
+            position: sticky;
+            top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 14px;
+            background: linear-gradient(180deg, var(--color-bg-secondary), var(--color-bg-tertiary));
+            border: 1px solid var(--color-border);
+            border-radius: 18px;
+            box-shadow: var(--shadow-sm);
+            max-height: none;
+            width: 100%;
+        }
+
+        .soundboard-nav {
+            display: flex;
+            flex: 1 1 auto;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 0;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .soundboard-nav-btn {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start !important;
+            gap: 10px;
+            flex: 1 1 185px;
+            min-width: 160px;
+            padding: 12px 14px;
+            border: 1px solid transparent;
+            border-radius: 14px;
+            color: var(--color-text-secondary);
+            text-align: left;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+
+        html[data-theme="vision-impaired"] .soundboard-nav-btn {
+            font: inherit !important;
+            font-size: 18px !important;
+            font-family: inherit !important;
+            font-weight: 800;
+            line-height: 1.4;
+            min-height: 52px;
+            padding: 15px 12px;
+        }
+
+        html[data-theme="vision-impaired"] .soundboard-nav-label {
+            font-size: 18px;
+            line-height: 1.3;
+            letter-spacing: 0.01em;
+            font-weight: 700;
+        }
+
+        .soundboard-nav-label {
+            margin-left: 0;
+            text-align: left;
+        }
+
+        .soundboard-nav-btn:hover,
+        .soundboard-nav-btn.active {
+            background: var(--color-active-bg);
+            border-color: var(--color-active-border);
+            color: var(--color-text-primary);
+            box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.08);
+        }
+
+        .soundboard-nav-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .soundboard-main {
+            min-width: 0;
+        }
+
+        .workspace-status-card,
+        .workspace-save-card,
+        .workspace-panel,
+        .workspace-card {
+            background: linear-gradient(180deg, var(--color-bg-secondary), var(--color-bg-tertiary));
+            border: 1px solid var(--color-border);
+            border-radius: 18px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .workspace-status-card,
+        .workspace-save-card,
+        .workspace-card {
+            padding: 14px;
+        }
+
+        .workspace-save-card {
+            display: grid;
+            gap: 10px;
+            margin-left: auto;
+            min-width: 220px;
+            max-width: 280px;
+        }
+
+        .save-state {
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .soundboard-content .workspace-card h2,
+        .soundboard-content .workspace-card h3,
+        .soundboard-content .workspace-card h4,
+        .soundboard-content .workspace-panel h2,
+        .soundboard-content .workspace-panel h3,
+        .soundboard-content .workspace-panel h4,
+        .soundboard-content .collapsible-header h3,
+        .soundboard-content .metric-value,
+        .soundboard-content .gift-recommendation-title {
+            color: var(--color-text-primary);
+        }
+
+        .soundboard-content .metric-label,
+        .soundboard-content .workspace-subtitle,
+        .soundboard-content .gift-recommendation-meta {
+            color: var(--color-text-secondary);
+        }
+
+        .soundboard-content .btn-ghost,
+        .soundboard-content .btn-secondary,
+        .soundboard-content .btn-sm.btn-ghost {
+            border-color: rgba(148, 163, 184, 0.22);
+        }
+
+        .soundboard-content .collapsible-header,
+        .soundboard-content .overlay-url-box,
+        .soundboard-content .gift-recommendation-card,
+        .soundboard-content .gift-list-toolbar,
+        .soundboard-content .audio-debug-log,
+        .soundboard-content .event-sound-card,
+        .soundboard-content .category-btn,
+        .soundboard-content .table-container {
+            background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
+            border-color: var(--color-border);
+        }
+
+        .soundboard-content .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            overflow: hidden;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            background: var(--color-bg-card);
+        }
+
+        .soundboard-content .data-table thead th {
+            background: var(--color-bg-secondary);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .soundboard-content .data-table tbody td {
+            background: var(--color-bg-card);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .soundboard-content .data-table tbody tr:nth-child(even) td {
+            background: var(--color-bg-secondary);
+        }
+
+        .soundboard-content .data-table tbody tr:hover td {
+            background: var(--color-active-bg);
+        }
+
+        .soundboard-content .gift-list-search input,
+        .soundboard-content .overlay-url-box input,
+        .soundboard-content .form-input,
+        .soundboard-content .form-select,
+        .soundboard-content textarea {
+            background: var(--color-bg-primary);
+            border-color: var(--color-border);
+            color: var(--color-text-primary);
+        }
+
+        .soundboard-content .workspace-header i,
+        .soundboard-content .collapsible-header i,
+        .soundboard-content .overlay-url-box > i,
+        .soundboard-content .soundboard-nav-btn svg {
+            color: var(--color-accent-primary);
+        }
+
+        html[data-theme="vision-impaired"] .save-state {
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+
+        .workspace-panel {
+            display: none;
+            padding: 12px;
+            min-height: 0;
+        }
+
+        .workspace-panel.active {
+            display: block;
+        }
+
+        .workspace-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .workspace-header > div {
+            flex: 1 1 auto;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .workspace-header h2,
+        .workspace-card h3,
+        .workspace-card h4 {
+            color: var(--color-text-primary);
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .workspace-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.3rem;
+            justify-content: flex-start;
+            width: 100%;
+            text-align: left;
+        }
+
+        html[data-theme="vision-impaired"] .workspace-header h2,
+        html[data-theme="vision-impaired"] .card-title,
+        html[data-theme="vision-impaired"] .collapsible-header h3 {
+            font-size: 1.55rem;
+            line-height: 1.25;
+        }
+
+        .workspace-subtitle {
+            margin-top: 4px;
+            color: var(--color-text-secondary);
+            font-size: 0.88rem;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+        }
+
+        .overview-metric {
+            display: grid;
+            gap: 6px;
+            min-height: 92px;
+            justify-items: start;
+            text-align: left;
+        }
+
+        .overview-metric .metric-value,
+        .overview-metric .workspace-subtitle {
+            text-align: left;
+        }
+
+        .metric-label {
+            color: var(--color-text-secondary);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+
+        .metric-value {
+            color: var(--color-text-primary);
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+        }
+
+        .gift-workspace-grid {
+            display: grid;
+            grid-template-columns: minmax(300px, 0.95fr) minmax(360px, 1.25fr);
+            gap: 12px;
+        }
+
+        .gift-workspace-panel > .collapsible-content.active {
+            display: grid;
+            grid-template-columns: minmax(360px, 0.95fr) minmax(560px, 1.35fr);
+            gap: 12px;
+            align-items: start;
+        }
+
+        .gift-workspace-panel .gift-catalog,
+        .gift-workspace-panel .table-container,
+        .gift-workspace-panel .add-gift-sound {
+            margin: 0;
+        }
+
+        .gift-workspace-panel .gift-catalog {
+            grid-column: 1;
+        }
+
+        .gift-workspace-panel .add-gift-sound {
+            grid-column: 2;
+            grid-row: 1;
+            position: sticky;
+            top: 12px;
+        }
+
+        .gift-workspace-panel .gift-library-card {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        .gift-workspace-panel .table-container {
+            grid-column: 1 / -1;
+        }
+
+        .gift-list-column,
+        .gift-editor-column {
+            display: grid;
+            gap: 12px;
+            align-content: start;
+        }
+
+        .gift-catalog-grid {
+            max-height: 480px;
+            overflow: auto;
+            padding-right: 4px;
+        }
+
+        .gift-editor-card {
+            position: sticky;
+            top: 12px;
+        }
+
+        .compact-table {
+            max-height: 360px;
+            overflow: auto;
+        }
+
+        .library-grid,
+        .tools-grid {
+            display: grid;
+            grid-template-columns: minmax(280px, 0.85fr) minmax(360px, 1.15fr);
+            gap: 12px;
+        }
+
+        .workspace-section-stack {
+            display: grid;
+            gap: 12px;
+        }
+
+        .audio-debug-log {
+            max-height: 260px;
+            overflow: auto;
+            padding: 12px;
+            background: var(--color-bg-primary);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.82rem;
+        }
+
+        .workspace-bottom-save {
+            position: sticky;
+            bottom: 0;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+        }
+
+        .workspace-jump {
+            cursor: pointer;
+        }
+
+        .gift-recommendations-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 8px;
+        }
+
+        .gift-recommendation-card {
+            display: grid;
+            grid-template-columns: 52px minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            padding: 8px 10px;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+        }
+
+        .gift-recommendation-image {
+            width: 52px;
+            height: 52px;
+            display: grid;
+            place-items: center;
+            background: var(--color-bg-primary);
+            border-radius: 10px;
+            overflow: hidden;
+            font-size: 1.6rem;
+        }
+
+        .gift-recommendation-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .gift-recommendation-title {
+            color: var(--color-text-primary);
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 0.92rem;
+        }
+
+        .gift-recommendation-meta {
+            color: var(--color-text-secondary);
+            font-size: 0.74rem;
+            margin-top: 2px;
+        }
+
+        @media (max-width: 720px) {
+            .standalone-header {
+                grid-template-columns: 1fr;
+            }
+
+            .standalone-brand {
+                grid-column: auto;
+            }
+
+            .back-link {
+                grid-column: auto;
+                width: 100%;
+                justify-content: center;
+                white-space: normal;
+            }
+
+            .overlay-url-box {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .overlay-url-box input {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .overlay-url-box > i {
+                align-self: flex-start;
+            }
+
+            .overlay-url-box .btn,
+            .overlay-url-box a.btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .soundboard-workspace,
+            .gift-workspace-grid,
+            .gift-workspace-panel > .collapsible-content.active,
+            .library-grid,
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .soundboard-sidebar,
+            .gift-editor-card {
+                position: static;
+                max-height: none;
+                flex-direction: column;
+            }
+
+            .soundboard-nav {
+                width: 100%;
+            }
+
+            .workspace-save-card {
+                display: none;
+            }
+
+            .workspace-bottom-save {
+                display: flex;
+            }
+        }
+    
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] body {
+            padding: 16px;
+        }
+
+        html[data-theme="cid"] .standalone-header,
+        html[data-theme="cid"] .collapsible-header,
+        html[data-theme="cid"] .collapsible-content,
+        html[data-theme="cid"] .modal-header,
+        html[data-theme="cid"] .modal-body {
+            padding: 16px;
+        }
+
+        html[data-theme="cid"] .modal-content {
+            max-width: none;
+            width: min(100%, 1280px);
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #dbe3ff;
+            -webkit-text-fill-color: #dbe3ff;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1d9ec;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #07121f;
+            color: #f4f7ff;
+            border-color: #24314d;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #07121f;
+            color: #f4f7ff;
+            border-color: #24314d;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: var(--brand-primary-hover, var(--brand-primary)) !important;
+            color: #ffffff !important;
+            border-color: var(--brand-primary-hover, var(--brand-primary)) !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+
+        html[data-theme="cid"] .soundboard-content .soundboard-nav-btn:hover,
+        html[data-theme="cid"] .soundboard-content .soundboard-nav-btn.active,
+        html[data-theme="cid"] .soundboard-content .category-btn.active {
+            background: var(--color-active-bg);
+            border-color: var(--color-active-border);
+            color: var(--color-text-primary);
+            -webkit-text-fill-color: var(--color-text-primary);
+            box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.08);
+        }
+    
+        /* Accessibility contrast pass: explicit readable controls in contrast modes */
+        html[data-theme="contrast"] .btn-primary,
+        html[data-theme="contrast"] .btn-success,
+        html[data-theme="contrast"] .category-btn.active,
+        html[data-theme="contrast"] .soundboard-nav-btn.active,
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-success,
+        html[data-theme="vision-impaired"] .category-btn.active,
+        html[data-theme="vision-impaired"] .soundboard-nav-btn.active {
+            background: #facc15 !important;
+            color: #000 !important;
+            border: 3px solid #facc15 !important;
+            -webkit-text-fill-color: #000 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="contrast"] .btn-secondary,
+        html[data-theme="contrast"] .btn-ghost,
+        html[data-theme="contrast"] .category-btn,
+        html[data-theme="contrast"] .soundboard-nav-btn,
+        html[data-theme="vision-impaired"] .btn-secondary,
+        html[data-theme="vision-impaired"] .btn-ghost,
+        html[data-theme="vision-impaired"] .category-btn,
+        html[data-theme="vision-impaired"] .soundboard-nav-btn {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 3px solid #facc15 !important;
+            -webkit-text-fill-color: #fff7cc !important;
+        }
+
+        html[data-theme="contrast"] .btn-danger,
+        html[data-theme="vision-impaired"] .btn-danger {
+            background: #7f1d1d !important;
+            color: #fff !important;
+            border: 3px solid #facc15 !important;
+            -webkit-text-fill-color: #fff !important;
+        }</style>
 </head>
 <body>
     <!-- Standalone Header -->
     <div class="standalone-header">
-        <div class="standalone-title">
-            <i data-lucide="music"></i>
-            Soundboard Configuration
+        <div class="standalone-brand">
+            <img class="standalone-logo" data-brand-logo src="/soundboard-logo.png" alt="LTTH Soundboard">
         </div>
-        <a href="/dashboard.html#soundboard" class="back-link">
-            <i data-lucide="arrow-left"></i>
-            Back to Dashboard
-        </a>
+        <div class="standalone-actions">
+            <div class="soundboard-save-state" id="soundboard-save-state">Workspace ready</div>
+            <button class="btn btn-primary btn-lg standalone-save-btn" type="button" data-save-proxy>
+                <i data-lucide="save"></i>
+                Save Settings
+            </button>
+        </div>
     </div>
 
     <!-- Soundboard Content -->
     <div class="soundboard-content">
+        <div class="soundboard-workspace">
+            <aside class="soundboard-sidebar" aria-label="Soundboard workspace navigation">
+                <nav class="soundboard-nav">
+                    <button class="soundboard-nav-btn active" type="button" data-soundboard-view="overview">
+                        <i data-lucide="layout-dashboard"></i>
+                        <span class="soundboard-nav-label">Overview</span>
+                    </button>
+                    <button class="soundboard-nav-btn" type="button" data-soundboard-view="gift-mapping">
+                        <i data-lucide="gift"></i>
+                        <span class="soundboard-nav-label">Gift Mapping</span>
+                    </button>
+                    <button class="soundboard-nav-btn" type="button" data-soundboard-view="event-sounds">
+                        <i data-lucide="zap"></i>
+                        <span class="soundboard-nav-label">Event Sounds</span>
+                    </button>
+                    <button class="soundboard-nav-btn" type="button" data-soundboard-view="obs-overlay">
+                        <i data-lucide="monitor"></i>
+                        <span class="soundboard-nav-label">OBS Overlay</span>
+                    </button>
+                    <button class="soundboard-nav-btn" type="button" data-soundboard-view="advanced-tools">
+                        <i data-lucide="wrench"></i>
+                        <span class="soundboard-nav-label">Advanced Tools</span>
+                    </button>
+                </nav>
+            </aside>
+
+            <main class="soundboard-main">
+                <section class="workspace-panel active" data-workspace-panel="overview">
+                    <div class="workspace-header">
+                        <div>
+                            <h2><i data-lucide="layout-dashboard"></i> Overview</h2>
+                            <p class="workspace-subtitle">Status, quick actions, and the shortest path to the common soundboard tasks.</p>
+                        </div>
+                    </div>
+                    <div class="overview-grid">
+                        <button class="workspace-card overview-metric workspace-jump" type="button" data-soundboard-view="gift-mapping">
+                            <span class="metric-label">Configured gifts</span>
+                            <span class="metric-value" id="overview-gift-count">0</span>
+                            <span class="workspace-subtitle">Open gift mapping</span>
+                        </button>
+                        <button class="workspace-card overview-metric workspace-jump" type="button" data-soundboard-view="event-sounds">
+                            <span class="metric-label">Soundboard</span>
+                            <span class="metric-value" id="overview-enabled-state">Unknown</span>
+                            <span class="workspace-subtitle">Open event settings</span>
+                        </button>
+                        <button class="workspace-card overview-metric workspace-jump" type="button" data-soundboard-view="obs-overlay">
+                            <span class="metric-label">OBS Overlay</span>
+                            <span class="metric-value" id="overview-obs-state">Ready</span>
+                            <span class="workspace-subtitle">Copy URL and tune layout</span>
+                        </button>
+                        <button class="workspace-card overview-metric workspace-jump" type="button" data-soundboard-view="library-search">
+                            <span class="metric-label">Library</span>
+                            <span class="metric-value">Sounds + GIFs</span>
+                            <span class="workspace-subtitle">Search MyInstants and GIFs</span>
+                        </button>
+                    </div>
+                    <div class="workspace-card" style="margin-top: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <div>
+                                <h3>Recommended gift mappings</h3>
+                                <p class="workspace-subtitle">Frequently dropped gifts that do not have dedicated audio yet.</p>
+                            </div>
+                            <button id="refresh-gift-recommendations-btn" class="btn btn-sm btn-ghost" type="button">
+                                <i data-lucide="refresh-cw"></i>
+                                Refresh
+                            </button>
+                        </div>
+                        <div id="gift-recommendations-list" class="gift-recommendations-list">
+                            <div class="text-gray-400 text-sm">Loading recommendations...</div>
+                        </div>
+                    </div>
+                </section>
         <!-- OBS Overlay Section - PROMINENT -->
-        <div class="obs-overlay-section">
+        <section class="obs-overlay-section workspace-panel" data-workspace-panel="obs-overlay">
             <h3>
                 <i data-lucide="monitor"></i>
                 OBS Animation Overlay
@@ -693,7 +1842,7 @@
                 <div style="display: flex; align-items: flex-start; gap: 8px;">
                     <i data-lucide="info" style="color: #3b82f6; width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0;"></i>
                     <span style="font-size: 0.85rem; color: var(--color-text-secondary);">
-                        <strong>How to use:</strong> In OBS, add a Browser Source → paste this URL → set width to 1920, height to 1080 → check "Transparent Background".
+                        <strong>How to use:</strong> In OBS, add a Browser Source -> paste this URL -> preview it in the canvas.
                         Animations will play automatically when configured gifts are received.
                     </span>
                 </div>
@@ -748,18 +1897,18 @@
                     Test selected animation in OBS
                 </button>
             </div>
-        </div>
+        </section>
 
         <!-- SECTION 1: Playback Settings (Collapsible) -->
-        <div class="collapsible-section">
-            <div class="collapsible-header" data-target="playback-settings-content">
+        <section class="collapsible-section workspace-panel" data-workspace-panel="overview">
+            <div class="collapsible-header active" data-target="playback-settings-content">
                 <h3>
                     <i data-lucide="settings"></i>
                     Playback Settings
                 </h3>
                 <i data-lucide="chevron-down" class="collapsible-toggle"></i>
             </div>
-            <div id="playback-settings-content" class="collapsible-content">
+            <div id="playback-settings-content" class="collapsible-content active">
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="checkbox-label" style="margin-bottom: 16px;">
@@ -799,10 +1948,10 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
         <!-- SECTION 2: Event Sounds & Animations (Collapsible) -->
-        <div class="collapsible-section">
+        <section class="collapsible-section workspace-panel" data-workspace-panel="event-sounds">
             <div class="collapsible-header active" data-target="event-sounds-content">
                 <h3>
                     <i data-lucide="zap"></i>
@@ -819,9 +1968,9 @@
                     <!-- Follow Event -->
                     <div class="event-sound-card">
                         <div class="event-header">
-                            <i data-lucide="user-plus" style="color: #22c55e;"></i>
+                            <i data-lucide="user-plus" style="color: var(--color-accent-primary);"></i>
                             <h4>Follow</h4>
-                            <button data-test-sound="follow" class="btn btn-xs btn-ghost" title="Test Sound">
+                            <button data-test-sound="follow" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Follow sound">
                                 <i data-lucide="play"></i>
                             </button>
                         </div>
@@ -866,7 +2015,7 @@
                         <div class="event-header">
                             <i data-lucide="crown" style="color: #f59e0b;"></i>
                             <h4>Subscribe (Super Fan)</h4>
-                            <button data-test-sound="subscribe" class="btn btn-xs btn-ghost" title="Test Sound">
+                            <button data-test-sound="subscribe" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Subscribe sound">
                                 <i data-lucide="play"></i>
                             </button>
                         </div>
@@ -911,7 +2060,7 @@
                         <div class="event-header">
                             <i data-lucide="share-2" style="color: #8b5cf6;"></i>
                             <h4>Share</h4>
-                            <button data-test-sound="share" class="btn btn-xs btn-ghost" title="Test Sound">
+                            <button data-test-sound="share" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Share sound">
                                 <i data-lucide="play"></i>
                             </button>
                         </div>
@@ -956,7 +2105,7 @@
                         <div class="event-header">
                             <i data-lucide="gift" style="color: #ec4899;"></i>
                             <h4>Default Gift Sound</h4>
-                            <button data-test-sound="gift" class="btn btn-xs btn-ghost" title="Test Sound">
+                            <button data-test-sound="gift" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Gift sound">
                                 <i data-lucide="play"></i>
                             </button>
                         </div>
@@ -1005,7 +2154,7 @@
                         <div class="event-header">
                             <i data-lucide="heart" style="color: #ef4444;"></i>
                             <h4>Like Threshold</h4>
-                            <button data-test-sound="like" class="btn btn-xs btn-ghost" title="Test Sound">
+                            <button data-test-sound="like" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Like sound">
                                 <i data-lucide="play"></i>
                             </button>
                         </div>
@@ -1056,10 +2205,10 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
         <!-- SECTION 3: Gift-Specific Sounds (Collapsible) -->
-        <div class="collapsible-section">
+        <section class="collapsible-section workspace-panel gift-workspace-panel" data-workspace-panel="gift-mapping">
             <div class="collapsible-header active" data-target="gift-sounds-content">
                 <h3>
                     <i data-lucide="gift"></i>
@@ -1077,6 +2226,11 @@
                         <i data-lucide="refresh-cw" id="refresh-icon"></i>
                         Refresh Catalog
                     </button>
+                </div>
+                <div class="gift-catalog-search" style="display: flex; gap: 8px; align-items: center; margin-top: 10px;">
+                    <i data-lucide="search" style="width: 16px; height: 16px; color: var(--color-text-secondary); flex-shrink: 0;"></i>
+                    <input type="search" id="gift-catalog-search-input" placeholder="Search gifts by ID or name..." class="form-input" style="flex: 1;">
+                    <button id="clear-gift-catalog-search" class="btn btn-sm btn-ghost" type="button">Clear</button>
                 </div>
                 <div id="gift-catalog-info" class="gift-catalog-info"></div>
                 <div id="gift-catalog-list" class="gift-catalog-grid"></div>
@@ -1146,6 +2300,49 @@
                 </div>
             </div>
 
+            <div class="workspace-card gift-library-card">
+                <div class="workspace-header" style="margin-bottom: 0; padding-bottom: 12px;">
+                    <div>
+                        <h2><i data-lucide="search"></i> Library Search</h2>
+                        <p class="workspace-subtitle">Search MyInstants and GIFs without leaving the gift mapping workspace.</p>
+                    </div>
+                </div>
+                <div class="library-grid" style="margin-top: 4px;">
+                    <div id="library-simple-search-slot"></div>
+                    <div id="library-gif-search-slot"></div>
+                </div>
+                <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 12px; margin-top: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <i data-lucide="info" style="color: #3b82f6; width: 18px; height: 18px; flex-shrink: 0;"></i>
+                        <span style="font-size: 0.85rem; line-height: 1.4;">
+                            Search for sounds by keyword or browse by category. Click <strong>Preview</strong> to test a sound, or <strong>Use</strong> to bind it to a gift.
+                        </span>
+                    </div>
+                </div>
+                <div class="search-filters" style="margin-top: 12px;">
+                    <input type="text" id="advanced-search-input" placeholder="Search for sound effects..." class="form-input">
+                    <button id="trending-search-btn" class="btn btn-ghost">
+                        <i data-lucide="trending-up"></i>
+                        Trending
+                    </button>
+                    <button id="advanced-search-btn" class="btn btn-primary">
+                        <i data-lucide="search"></i>
+                        Search
+                    </button>
+                </div>
+                <div class="category-buttons" id="category-buttons-container" style="margin-top: 12px;">
+                    <button class="category-btn active" data-category="all">
+                        <i data-lucide="grid-3x3" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>
+                        All
+                    </button>
+                </div>
+                <div id="advanced-search-results" class="myinstants-results" style="margin-top: 12px;">
+                    <div class="text-gray-400 text-sm text-center py-4">
+                        Search for sounds or browse trending sounds to get started
+                    </div>
+                </div>
+            </div>
+
             <!-- Gift Sounds List -->
             <div class="table-container">
                 <!-- Export/Import Audio Animations -->
@@ -1166,16 +2363,30 @@
                         <input type="file" id="import-animations-file" accept=".json" style="display: none;">
                     </div>
                 </div>
-                
+
+                <div class="gift-list-toolbar">
+                    <div class="gift-list-search">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="gift-sounds-search-input" placeholder="Type to filter by gift ID, label, sound, or animation..." class="form-input">
+                        <button id="gift-sounds-search-clear" class="btn btn-sm btn-ghost" type="button">
+                            Clear
+                        </button>
+                    </div>
+                    <div class="gift-list-summary">
+                        <span id="gift-sounds-result-count">0 / 0 gifts</span>
+                        <span id="gift-sounds-result-hint">Click a column to sort. Type to filter the list.</span>
+                    </div>
+                </div>
+
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Gift ID</th>
-                            <th>Label</th>
-                            <th>Sound</th>
-                            <th>Volume</th>
-                            <th>Animation</th>
-                            <th>Anim. Vol.</th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="giftId"><span>Gift ID</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="label"><span>Label</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="mp3Url"><span>Sound</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="volume"><span>Volume</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="animation"><span>Animation</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="animationVolume"><span>Anim. Vol.</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -1183,64 +2394,104 @@
                 </table>
             </div>
             </div> <!-- Close collapsible-content -->
-        </div> <!-- Close collapsible-section -->
-
-        <!-- SECTION 4: Advanced Sound Search (Collapsible) -->
-        <div class="collapsible-section">
-            <div class="collapsible-header" data-target="advanced-search-content">
-                <h3>
-                    <i data-lucide="search"></i>
-                    Advanced Sound Search (MyInstants)
-                </h3>
-                <i data-lucide="chevron-down" class="collapsible-toggle"></i>
-            </div>
-            <div id="advanced-search-content" class="collapsible-content">
-                <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <i data-lucide="info" style="color: #3b82f6; width: 18px; height: 18px; flex-shrink: 0;"></i>
-                        <span style="font-size: 0.85rem; line-height: 1.4;">
-                            Search for sounds by keyword or browse by category. Click <strong>Preview</strong> to test a sound, or <strong>Use</strong> to bind it to a gift.
-                        </span>
-                    </div>
-                </div>
-                
-                <!-- Search Filters -->
-                <div class="search-filters">
-                    <input type="text" id="advanced-search-input" placeholder="Search for sound effects..." class="form-input">
-                    <button id="trending-search-btn" class="btn btn-ghost">
-                        <i data-lucide="trending-up"></i>
-                        Trending
-                    </button>
-                    <button id="advanced-search-btn" class="btn btn-primary">
-                        <i data-lucide="search"></i>
-                        Search
-                    </button>
-                </div>
-                
-                <!-- Category Filter Buttons -->
-                <div class="category-buttons" id="category-buttons-container">
-                    <button class="category-btn active" data-category="all">
-                        <i data-lucide="grid-3x3" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>
-                        All
-                    </button>
-                    <!-- Categories will be loaded dynamically from MyInstants API -->
-                </div>
-                
-                <!-- Search Results -->
-                <div id="advanced-search-results" class="myinstants-results">
-                    <div class="text-gray-400 text-sm text-center py-4">
-                        Search for sounds or browse trending sounds to get started
-                    </div>
-                </div>
-            </div>
-        </div>
+        </section> <!-- Close collapsible-section -->
 
         <!-- Save Button -->
-        <div class="form-actions" style="margin-top: 24px;">
-            <button id="save-soundboard-btn" class="btn btn-primary btn-lg">
-                <i data-lucide="save"></i>
-                Save Soundboard Settings
-            </button>
+                <section class="workspace-panel" data-workspace-panel="advanced-tools">
+                    <div class="workspace-header">
+                        <div>
+                            <h2><i data-lucide="wrench"></i> Advanced Tools</h2>
+                            <p class="workspace-subtitle">Diagnostics, import/export, and low-frequency maintenance tools.</p>
+                        </div>
+                    </div>
+                    <div class="tools-grid">
+                        <div class="workspace-section-stack">
+                            <div class="workspace-card">
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                                    <h3>Audio Diagnostics</h3>
+                                    <button id="minimize-audio-test-btn" class="btn btn-sm btn-ghost" type="button" title="Collapse section">
+                                        <i data-lucide="chevron-up"></i>
+                                    </button>
+                                </div>
+                                <div id="audio-test-content" class="workspace-section-stack" style="margin-top: 12px;">
+                                    <div class="settings-grid">
+                                        <div class="workspace-card">
+                                            <span class="metric-label">Audio Context</span>
+                                            <div id="audio-context-status" class="metric-value">Unknown</div>
+                                        </div>
+                                        <div class="workspace-card">
+                                            <span class="metric-label">Autoplay</span>
+                                            <div id="autoplay-status" class="metric-value">Checking...</div>
+                                        </div>
+                                        <div class="workspace-card">
+                                            <span class="metric-label">Active Sounds</span>
+                                            <div id="active-sounds-count" class="metric-value">0</div>
+                                        </div>
+                                    </div>
+                                    <div class="quick-actions">
+                                        <button id="enable-audio-btn" class="btn btn-primary" type="button">
+                                            <i data-lucide="volume-2"></i>
+                                            Enable Audio Permissions
+                                        </button>
+                                        <button id="test-audio-btn" class="btn btn-ghost" type="button">
+                                            <i data-lucide="play"></i>
+                                            Test Audio
+                                        </button>
+                                        <button id="clear-audio-log-btn" class="btn btn-ghost" type="button">
+                                            <i data-lucide="trash-2"></i>
+                                            Clear Log
+                                        </button>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="verbose-logging">
+                                            <span>Verbose logging</span>
+                                        </label>
+                                    </div>
+                                    <div id="audio-test-player" style="display: none;">
+                                        <audio id="test-audio-element" controls preload="none">
+                                            <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA" type="audio/wav">
+                                        </audio>
+                                    </div>
+                                    <div id="audio-debug-log" class="audio-debug-log">
+                                        <div style="color: #60a5fa;">Audio system ready. Waiting for events...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="workspace-section-stack">
+                            <div class="workspace-card">
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                                    <h3>Manual Config Import / Export</h3>
+                                    <button id="minimize-config-import-export-btn" class="btn btn-sm btn-ghost" type="button" title="Collapse section">
+                                        <i data-lucide="chevron-up"></i>
+                                    </button>
+                                </div>
+                                <div id="config-import-export-content" class="workspace-section-stack" style="margin-top: 12px;">
+                                    <textarea id="config-import-export-textarea" class="form-input" rows="16" placeholder="Load or paste exported soundboard animation JSON here."></textarea>
+                                    <div class="quick-actions">
+                                        <button id="load-config-to-textarea-btn" class="btn btn-ghost" type="button">
+                                            <i data-lucide="download"></i>
+                                            Load Config
+                                        </button>
+                                        <button id="import-config-from-textarea-btn" class="btn btn-primary" type="button">
+                                            <i data-lucide="upload"></i>
+                                            Import Text
+                                        </button>
+                                        <button id="copy-config-textarea-btn" class="btn btn-ghost" type="button">
+                                            <i data-lucide="copy"></i>
+                                            Copy
+                                        </button>
+                                        <button id="clear-config-textarea-btn" class="btn btn-ghost" type="button">
+                                            <i data-lucide="x"></i>
+                                            Clear
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
         </div>
     </div>
 
@@ -1252,7 +2503,7 @@
                     <i data-lucide="gift"></i>
                     Select Gift for Sound
                 </h3>
-                <button class="modal-close" id="close-gift-modal">
+                <button class="modal-close" id="close-gift-modal" type="button" aria-label="Close gift catalog modal" title="Close gift catalog modal">
                     <i data-lucide="x" style="width: 24px; height: 24px;"></i>
                 </button>
             </div>
@@ -1261,6 +2512,12 @@
                     <h4>Selected Sound:</h4>
                     <div class="selected-sound-name" id="selected-sound-name">-</div>
                 </div>
+                <div class="gift-catalog-search" style="display: flex; gap: 8px; align-items: center; margin: 12px 0 14px;">
+                    <i data-lucide="search" style="width: 16px; height: 16px; color: var(--color-text-secondary); flex-shrink: 0;"></i>
+                    <input type="search" id="modal-gift-search-input" placeholder="Search gifts by ID or name..." class="form-input" style="flex: 1;">
+                    <button id="clear-modal-gift-search" class="btn btn-sm btn-ghost" type="button">Clear</button>
+                </div>
+                <div id="modal-gift-search-summary" style="color: var(--color-text-secondary); font-size: 0.85rem; margin-bottom: 10px;"></div>
                 <div class="gift-grid" id="modal-gift-grid">
                     <div class="text-gray-400 text-sm text-center py-8">Loading gifts...</div>
                 </div>

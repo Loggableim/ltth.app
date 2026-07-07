@@ -337,12 +337,15 @@ describe('AnimazingPal Long-term Memory', () => {
         CREATE TABLE animazingpal_memories (id INTEGER PRIMARY KEY, memory_type TEXT NOT NULL, content TEXT NOT NULL, importance REAL, created_at DATETIME, source_user TEXT);
         CREATE TABLE animazingpal_user_profiles (id INTEGER PRIMARY KEY, username TEXT NOT NULL UNIQUE, nickname TEXT, interaction_count INTEGER DEFAULT 0);
         CREATE TABLE animazingpal_conversations (id INTEGER PRIMARY KEY, session_id TEXT, role TEXT, content TEXT, created_at DATETIME);
+        CREATE TABLE animazingpal_memory_archive (id INTEGER PRIMARY KEY, summary TEXT NOT NULL, memory_ids TEXT NOT NULL, key_topics TEXT, key_users TEXT, created_at DATETIME);
       `);
       const MemoryDatabase = require('../plugins/animazingpal/brain/memory-database');
       const testMemoryDb = new MemoryDatabase(oldDb, logger);
 
       expect(() => testMemoryDb.initialize()).not.toThrow();
       expect(oldDb.prepare('PRAGMA table_info(animazingpal_memories)').all().map(column => column.name)).toContain('streamer_id');
+      expect(oldDb.prepare('PRAGMA table_info(animazingpal_memory_archive)').all().map(column => column.name)).toContain('streamer_id');
+      expect(() => testMemoryDb.getStatistics()).not.toThrow();
       expect(testMemoryDb.getPersonalities().map(item => item.name)).toEqual(expect.arrayContaining(['cynical_host', 'sarcastic_host']));
       oldDb.close();
     });

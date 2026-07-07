@@ -4,9 +4,14 @@
   "description": "Live Like & Gift Leaderboard mit Decay-Mechanik, Rang-Animationen, Combined-View und Overlay-Varianten für Hochformat und Querformat.",
   "version": "2.0.0",
   "author": "PupCid",
+  "icon": "assets/toptier-icon.png",
+  "logo": "assets/toptier-logo.png",
   "entry": "main.js",
   "enabled": true,
   "type": "overlay",
   "dependencies": [],
-  "permissions": ["tiktok-events", "database"]
+  "permissions": [
+    "tiktok-events",
+    "database"
+  ]
 }

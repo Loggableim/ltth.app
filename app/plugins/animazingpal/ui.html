@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
@@ -7,6 +7,55 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/themes.css">
+  <script>
+    (function () {
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (VALID_THEMES.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (VALID_THEMES.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+      }
+
+      syncTheme();
+      window.addEventListener('storage', (event) => {
+        if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+          syncTheme();
+        }
+      });
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     .status-dot {
       width: 12px;
@@ -129,10 +178,246 @@
     input:checked + .slider:before {
       transform: translateX(24px);
     }
-  </style>
+
+    html[data-theme] body {
+      background: var(--color-bg-primary) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    html[data-theme] .card {
+      background: var(--color-bg-card) !important;
+      border-color: var(--color-border) !important;
+    }
+
+    html[data-theme] .btn,
+    html[data-theme] .grid-item,
+    html[data-theme] .tab,
+    html[data-theme] .input,
+    html[data-theme] .select {
+      border-color: var(--color-border) !important;
+    }
+
+    html[data-theme] .btn-primary {
+      background: #0f8712 !important;
+      color: #fff !important;
+    }
+
+    html[data-theme] .btn-success {
+      background: #047857 !important;
+      color: #fff !important;
+    }
+
+    html[data-theme] .btn-danger {
+      background: #b91c1c !important;
+      color: #fff !important;
+    }
+
+    html[data-theme] .btn-secondary {
+      background: var(--color-bg-hover) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    html[data-theme] .input,
+    html[data-theme] .select {
+      background: var(--color-bg-secondary) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    html[data-theme] .grid-item {
+      background: var(--color-bg-secondary) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    html[data-theme] .grid-item:hover,
+    html[data-theme] .tab:hover {
+      background: var(--color-bg-hover) !important;
+    }
+
+    html[data-theme] .tab.active {
+      border-bottom-color: var(--color-accent-primary) !important;
+      color: var(--color-accent-primary) !important;
+    }
+
+    html[data-theme] .text-gray-300,
+    html[data-theme] .text-gray-400,
+    html[data-theme] .text-gray-500,
+    html[data-theme] .text-red-400,
+    html[data-theme] .border-gray-700,
+    html[data-theme] .bg-gray-800,
+    html[data-theme] .bg-gray-900,
+    html[data-theme] .bg-gray-900\/60 {
+      color: var(--color-text-secondary) !important;
+      background: var(--color-bg-secondary) !important;
+      border-color: var(--color-border) !important;
+    }
+
+    html[data-theme="day"] .text-yellow-300,
+    html[data-theme="day"] .text-yellow-100 {
+      color: #92400e !important;
+      -webkit-text-fill-color: #92400e !important;
+    }
+
+    html[data-theme="night"] .text-yellow-300,
+    html[data-theme="night"] .text-yellow-100,
+    html[data-theme="contrast"] .text-yellow-300,
+    html[data-theme="contrast"] .text-yellow-100,
+    html[data-theme="vision-impaired"] .text-yellow-300,
+    html[data-theme="vision-impaired"] .text-yellow-100 {
+      color: #facc15 !important;
+      -webkit-text-fill-color: #facc15 !important;
+    }
+
+    html[data-theme] .text-green-400,
+    html[data-theme] .text-green-300,
+    html[data-theme] .text-green-200 {
+      color: #22c55e !important;
+      -webkit-text-fill-color: #22c55e !important;
+    }
+
+    html[data-theme] .text-red-400,
+    html[data-theme] .text-red-300 {
+      color: #f87171 !important;
+      -webkit-text-fill-color: #f87171 !important;
+    }
+
+    html[data-theme="vision-impaired"] body {
+      font-size: 1.08rem;
+      line-height: 1.7;
+    }
+
+    html[data-theme="vision-impaired"] .card,
+    html[data-theme="vision-impaired"] .grid-item,
+    html[data-theme="vision-impaired"] .tab,
+    html[data-theme="vision-impaired"] .input,
+    html[data-theme="vision-impaired"] .select {
+      background: #000 !important;
+      color: #fff !important;
+      border: 3px solid #facc15 !important;
+      box-shadow: none !important;
+    }
+
+    html[data-theme="vision-impaired"] .btn-primary,
+    html[data-theme="vision-impaired"] .btn-success,
+    html[data-theme="vision-impaired"] .btn-danger {
+      background: #facc15 !important;
+      color: #000 !important;
+      border: 3px solid #facc15 !important;
+    }
+
+    html[data-theme="vision-impaired"] .btn-secondary {
+      background: #000 !important;
+      color: #fff !important;
+      border: 3px solid #facc15 !important;
+    }
+
+    html[data-theme="vision-impaired"] .tab.active {
+      background: #facc15 !important;
+      color: #000 !important;
+    }
+
+    html[data-theme="vision-impaired"] .text-gray-300,
+    html[data-theme="vision-impaired"] .text-gray-400,
+    html[data-theme="vision-impaired"] .text-gray-500 {
+      color: #fff7cc !important;
+    }
+  
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
+    </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
-  <div class="container mx-auto p-6 max-w-6xl">
+  <div class="container mx-auto w-full max-w-none p-6">
     <!-- Header -->
     <div class="card flex items-center justify-between">
       <div class="flex items-center gap-4">

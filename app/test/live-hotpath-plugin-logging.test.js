@@ -1,4 +1,4 @@
-const LastEventSpotlightPlugin = require('../plugins/lastevent-spotlight/main');
+const LastEventSpotlightPlugin = require('../plugins/spotlight/main');
 const { Timer } = require('../plugins/advanced-timer/engine/timer-engine');
 
 function createLastEventApi() {
