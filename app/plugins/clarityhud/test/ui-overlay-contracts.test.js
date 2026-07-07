@@ -67,6 +67,8 @@ describe('ClarityHUD UI and overlay contracts', () => {
     expect(fullJs).toContain('function initializeFullVirtualScrolling');
     expect(fullJs).toContain('STATE.virtualScroller');
     expect(fullJs).toContain('useVirtualScrolling');
+    expect(fullJs).toContain("return 'showChat';");
+    expect(fullJs).not.toContain("showChats");
   });
 
   test('documents the new ClarityHUD API and setup features', () => {
