@@ -832,22 +832,24 @@
                 <img class="header-logo" src="/plugins/coinbattle/assets/coinbattle-logo-wide.png" alt="CoinBattle">
             </div>
             <div class="header-copy">
-                <h1>CoinBattle</h1>
-                <p>Live battle operations, refined for wide-screen dashboards</p>
-            </div>
-            <div class="header-actions">
-                <select id="languageSelector" class="form-select" style="width: auto;">
-                    <option value="en">English</option>
-                    <option value="de">Deutsch</option>
-                </select>
+                <div class="header-copy-row">
+                    <div class="header-copy-text">
+                        <h1 data-i18n="ui.title">CoinBattle</h1>
+                        <p data-i18n="ui.subtitle">Live battle operations, refined for wide-screen dashboards</p>
+                    </div>
+                    <button id="coinbattle-tab-toggle" type="button" class="btn btn-secondary btn-sm header-tab-toggle">
+                        <i data-lucide="external-link"></i>
+                        <span class="header-tab-toggle-label">Open in New Tab</span>
+                    </button>
+                </div>
             </div>
         </div>
 
         <div class="tabs">
-            <button class="tab active" data-tab="control">Control</button>
-            <button class="tab" data-tab="settings">Settings</button>
-            <button class="tab" data-tab="leaderboard">Leaderboard</button>
-            <button class="tab" data-tab="history">History</button>
+            <button class="tab active" data-tab="control" data-i18n="ui.tabs.control">Control</button>
+            <button class="tab" data-tab="settings" data-i18n="ui.tabs.settings">Settings</button>
+            <button class="tab" data-tab="leaderboard" data-i18n="ui.tabs.leaderboard">Leaderboard</button>
+            <button class="tab" data-tab="history" data-i18n="ui.tabs.history">History</button>
         </div>
 
         <!-- Control Tab -->

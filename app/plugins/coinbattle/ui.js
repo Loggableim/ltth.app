@@ -20,7 +20,8 @@
   };
 
   let translations = {};
-  let currentLanguage = 'en';
+  const SUPPORTED_LANGUAGES = new Set(['en', 'de', 'es', 'fr']);
+  let currentLanguage = resolveCurrentLanguage();
 
   const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
   const LEGACY_THEME_MAP = {
@@ -35,6 +36,101 @@
       return value;
     }
     return LEGACY_THEME_MAP[value] || 'night';
+  }
+
+  function normalizeLanguage(value) {
+    if (!value) return null;
+    const normalized = String(value).toLowerCase();
+    return SUPPORTED_LANGUAGES.has(normalized) ? normalized : null;
+  }
+
+  function readAppLanguage() {
+    try {
+      if (window.parent && window.parent !== window) {
+        const parentLocale = window.parent.i18n?.getLocale?.();
+        const normalizedParentLocale = normalizeLanguage(parentLocale);
+        if (normalizedParentLocale) {
+          return normalizedParentLocale;
+        }
+
+        const parentLang = window.parent.document?.documentElement?.getAttribute('lang');
+        const normalizedParentLang = normalizeLanguage(parentLang);
+        if (normalizedParentLang) {
+          return normalizedParentLang;
+        }
+      }
+    } catch (error) {}
+
+    try {
+      const storedLocale = localStorage.getItem('app_locale');
+      const normalizedStoredLocale = normalizeLanguage(storedLocale);
+      if (normalizedStoredLocale) {
+        return normalizedStoredLocale;
+      }
+    } catch (error) {}
+
+    return null;
+  }
+
+  function resolveCurrentLanguage(fallback = 'en') {
+    return readAppLanguage() || normalizeLanguage(fallback) || 'en';
+  }
+
+  function isStandaloneView() {
+    try {
+      return !window.parent || window.parent === window;
+    } catch (error) {
+      return true;
+    }
+  }
+
+  function getTranslationValue(key) {
+    return key.split('.').reduce((value, part) => {
+      if (!value || typeof value !== 'object') return undefined;
+      return value[part];
+    }, translations);
+  }
+
+  function updateHeaderTabAction() {
+    const button = document.getElementById('coinbattle-tab-toggle');
+    if (!button) return;
+
+    const label = isStandaloneView()
+      ? (getTranslationValue('ui.actions.closeTab') || 'Tab schließen')
+      : (getTranslationValue('ui.actions.openTab') || 'Open in New Tab');
+
+    const labelNode = button.querySelector('.header-tab-toggle-label');
+    if (labelNode) {
+      labelNode.textContent = label;
+    }
+
+    button.setAttribute('aria-label', label);
+    button.setAttribute('title', label);
+  }
+
+  function applyTranslations() {
+    document.documentElement.lang = currentLanguage;
+
+    document.querySelectorAll('[data-i18n]').forEach((element) => {
+      const key = element.getAttribute('data-i18n');
+      const value = getTranslationValue(key);
+      if (typeof value === 'string') {
+        element.textContent = value;
+      }
+    });
+
+    document.querySelectorAll('[data-i18n-title]').forEach((element) => {
+      const key = element.getAttribute('data-i18n-title');
+      const value = getTranslationValue(key);
+      if (typeof value === 'string') {
+        element.setAttribute('title', value);
+      }
+    });
+
+    const title = getTranslationValue('ui.title') || 'CoinBattle';
+    document.title = `${title} - Admin Panel`;
+
+    updateHeaderTabAction();
   }
 
   const overlayResolutionPresets = {
@@ -115,6 +211,7 @@
     initLeaderboardTabs(); // Initialize leaderboard sub-tabs
     loadSeasonInfo(); // Load season info
     initUsersManagement(); // Initialize users management event delegation
+    bindLocaleSync();
   });
 
   /**
@@ -220,11 +317,10 @@
       btnSaveSeason.addEventListener('click', saveSeason);
     }
 
-    // Language selector
-    document.getElementById('languageSelector').addEventListener('change', (e) => {
-      currentLanguage = e.target.value;
-      loadTranslations();
-    });
+    const btnOpenInTab = document.getElementById('coinbattle-tab-toggle');
+    if (btnOpenInTab) {
+      btnOpenInTab.addEventListener('click', handleTabAction);
+    }
     
     // Post-match duration sliders
     document.getElementById('setting-postmatch-lb-duration').addEventListener('input', (e) => {
@@ -234,6 +330,48 @@
     document.getElementById('setting-postmatch-credits-duration').addEventListener('input', (e) => {
       document.getElementById('credits-duration-value').textContent = e.target.value;
     });
+  }
+
+  function bindLocaleSync() {
+    const syncLocale = async () => {
+      const nextLanguage = resolveCurrentLanguage(currentLanguage);
+      if (nextLanguage !== currentLanguage) {
+        currentLanguage = nextLanguage;
+        await loadTranslations();
+      } else {
+        applyTranslations();
+      }
+    };
+
+    window.addEventListener('focus', syncLocale);
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'app_locale') {
+        syncLocale();
+      }
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        syncLocale();
+      }
+    });
+
+    try {
+      if (window.parent && window.parent !== window) {
+        new MutationObserver(syncLocale).observe(window.parent.document.documentElement, {
+          attributes: true,
+          attributeFilter: ['lang']
+        });
+      }
+    } catch (error) {}
+  }
+
+  function handleTabAction() {
+    if (isStandaloneView()) {
+      window.close();
+      return;
+    }
+
+    window.open(window.location.href, '_blank', 'noopener,noreferrer');
   }
 
   /**
@@ -500,6 +638,17 @@
 
       if (result.success) {
         const config = result.data;
+        const appLanguage = readAppLanguage();
+        const configLanguage = normalizeLanguage(config.language);
+        const nextLanguage = appLanguage || configLanguage || currentLanguage;
+
+        if (nextLanguage !== currentLanguage) {
+          currentLanguage = nextLanguage;
+          await loadTranslations();
+        } else {
+          applyTranslations();
+        }
+
         currentState.config = {
           ...config,
           theme: normalizeTheme(config.theme)
@@ -927,9 +1076,10 @@
     try {
       const response = await fetch(`/plugins/coinbattle/locales/${currentLanguage}.json`);
       translations = await response.json();
-      // Could apply translations here
+      applyTranslations();
     } catch (error) {
       console.error('Error loading translations:', error);
+      applyTranslations();
     }
   }
 
@@ -1490,4 +1640,3 @@
   }
 
 })();
-

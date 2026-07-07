@@ -11,6 +11,10 @@
       "settings": "Configuración",
       "history": "History",
       "leaderboard": "Leaderboard"
+    },
+    "actions": {
+      "openTab": "Abrir en nueva pestaña",
+      "closeTab": "Cerrar pestaña"
     }
   },
   "match": {

@@ -123,8 +123,8 @@ body {
 
 .header {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) auto;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+  gap: 18px 22px;
   align-items: center;
   margin-bottom: 20px;
   padding: 18px 22px;
@@ -138,13 +138,14 @@ body {
 .header-brand {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 18px;
   min-width: 0;
 }
 
 .header-logo {
   display: block;
-  width: clamp(220px, 24vw, 420px);
+  width: clamp(280px, 31vw, 560px);
   max-width: 100%;
   height: auto;
   object-fit: contain;
@@ -157,6 +158,22 @@ html[data-theme="day"] .header-logo {
 
 .header-copy {
   min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.header-copy-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  width: 100%;
+}
+
+.header-copy-text {
+  min-width: 0;
+  text-align: right;
 }
 
 .header-copy h1 {
@@ -181,6 +198,15 @@ html[data-theme="day"] .header-logo {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.header-tab-toggle {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.header-tab-toggle-label {
+  display: inline-block;
 }
 
 .tabs {
@@ -1057,6 +1083,23 @@ html[data-theme="vision-impaired"] .form-select {
     justify-items: start;
   }
 
+  .header-brand {
+    justify-content: flex-start;
+  }
+
+  .header-copy {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .header-copy-row {
+    justify-content: space-between;
+  }
+
+  .header-copy-text {
+    text-align: left;
+  }
+
   .header-actions {
     justify-content: flex-start;
   }
@@ -1105,6 +1148,20 @@ html[data-theme="vision-impaired"] .form-select {
     width: min(320px, 78vw);
   }
 
+  .header-copy-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-copy-text {
+    text-align: left;
+  }
+
+  .header-tab-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+
   .tabs {
     gap: 8px;
   }
@@ -1133,4 +1190,3 @@ html[data-theme="vision-impaired"] .form-select {
     justify-content: center;
   }
 }
-

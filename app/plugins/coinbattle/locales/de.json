@@ -11,6 +11,10 @@
       "settings": "Einstellungen",
       "history": "Verlauf",
       "leaderboard": "Rangliste"
+    },
+    "actions": {
+      "openTab": "In neuem Tab öffnen",
+      "closeTab": "Tab schließen"
     }
   },
   "match": {

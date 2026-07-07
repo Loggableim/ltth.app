@@ -11,6 +11,10 @@
       "settings": "Paramètres",
       "history": "History",
       "leaderboard": "Leaderboard"
+    },
+    "actions": {
+      "openTab": "Ouvrir dans un nouvel onglet",
+      "closeTab": "Fermer l'onglet"
     }
   },
   "match": {

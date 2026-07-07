@@ -10,6 +10,7 @@ let overlayPreviewWindow = null;
 let overlayPreviewStateTimer = null;
 
 const OVERLAY_PREVIEW_WINDOW_NAME = 'fireworks-overlay-preview';
+const OVERLAY_PREVIEW_URL = '/fireworks/overlay?preview=1';
 const OVERLAY_PREVIEW_STATE_KEY = 'fireworks-overlay-preview-state';
 const OVERLAY_PREVIEW_STALE_MS = 5000;
 const OVERLAY_PREVIEW_HEARTBEAT_MS = 2000;
@@ -619,7 +620,7 @@ function openOverlayPreview() {
         return;
     }
 
-    const popup = window.open('/fireworks/overlay', OVERLAY_PREVIEW_WINDOW_NAME);
+    const popup = window.open(OVERLAY_PREVIEW_URL, OVERLAY_PREVIEW_WINDOW_NAME);
     if (!popup) {
         const message = resolveOverlayLabel('fireworks.overlay_popup_blocked', 'Could not open overlay window. Please allow pop-ups.');
         showToast(message, 'error');

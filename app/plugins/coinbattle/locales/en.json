@@ -11,6 +11,10 @@
       "settings": "Settings",
       "history": "History",
       "leaderboard": "Leaderboard"
+    },
+    "actions": {
+      "openTab": "Open in New Tab",
+      "closeTab": "Close Tab"
     }
   },
   "match": {
