@@ -160,13 +160,15 @@
         "es": "Juego de batalla en vivo donde los espectadores compiten enviando regalos de TikTok para recolectar monedas. Incluye batallas por equipos, eventos multiplicadores, rankings histÃ³ricos, insignias y overlays personalizables.",
         "fr": "Jeu de bataille en direct oÃ¹ les spectateurs rivalisent en envoyant des cadeaux TikTok pour collecter des piÃ¨ces. Comprend des batailles d'Ã©quipe, Ã©vÃ©nements multiplicateurs, classements historiques, badges et overlays personnalisables."
       },
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": "Pup Cid",
+      "icon": "/plugins/coinbattle/assets/coinbattle-icon.png",
+      "logo": "/plugins/coinbattle/assets/coinbattle-logo-wide.png",
       "category": "overlay",
       "channel": "open-beta",
       "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/coinbattle-1.0.0.zip",
-      "sha256": "df03d2559a392995650e1b00d072a82de783d113a8ffa97b1d53e32da1b346b5",
+      "packageUrl": "https://ltth.app/plugin-store/packages/coinbattle-1.1.0.zip",
+      "sha256": "3073c0ebb89911f32633fc976d286aecd8a8a726d1856fa37878f5abbad11cff",
       "pricing": {
         "type": "free",
         "amount": 0,
@@ -239,6 +241,8 @@
       "author": "Pup Cid",
       "category": "plugin",
       "channel": "open-beta",
+      "icon": "/plugins/fireworks/assets/fireworks-icon.png",
+      "logo": "/plugins/fireworks/assets/fireworks-logo.png",
       "badges": [],
       "packageUrl": "https://ltth.app/plugin-store/packages/fireworks-2.0.0.zip",
       "sha256": "24cae3dc9cb1d040e3c425cf1d37b1257e7f6961f1c38bc30abce72ae24e67fa",
@@ -674,6 +678,7 @@
         "currency": "EUR"
       },
       "screenshots": [
+        "/soundboard-logo.png",
         "/screenshots/features/soundboard-detail.png"
       ]
     },
@@ -765,6 +770,7 @@
         "currency": "EUR"
       },
       "screenshots": [
+        "/ltthttslogo.png",
         "/screenshots/features/stt-ticker-overlay-url.png",
         "/screenshots/features/stt-ticker-capture-obs-url.png",
         "/screenshots/features/stt-ticker.png"

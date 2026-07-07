@@ -1,7 +1,7 @@
 {
   "fireworks": {
     "title": "Fireworks Superplugin Settings",
-    "subtitle": "GPU-Accelerated Fireworks Effects",
+    "subtitle": "Efectos de fuegos artificiales acelerados por GPU",
     "toaster_mode": {
       "title": "🍞 Toaster Mode (Low-End PCs)",
       "description": "Uses Canvas 2D rendering instead of WebGL for maximum compatibility",

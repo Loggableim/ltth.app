@@ -49,6 +49,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Initialize benchmark
     initializeBenchmark();
+    updateOverviewSummary();
+    window.addEventListener('focus', updateOverviewSummary);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            updateOverviewSummary();
+        }
+    });
+    try {
+        new MutationObserver(updateOverviewSummary).observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+        });
+    } catch (error) {}
     
     console.log('[Fireworks Settings] Initialized');
 });
@@ -124,8 +137,8 @@ async function saveConfig(showSuccessToast = true) {
 
 async function triggerTest() {
     try {
-        const selectedShape = document.querySelector('.shape-preview.selected');
-        const shape = selectedShape ? selectedShape.dataset.shape : 'burst';
+        const selectedShape = document.querySelector('.shape-preview.active-shape, .shape-preview.selected');
+        const shape = selectedShape ? selectedShape.dataset.shape : (config.defaultShape || 'burst');
         
         await fetch('/api/fireworks/trigger', {
             method: 'POST',
@@ -419,6 +432,7 @@ function updateUI() {
 
     updateToggle('adaptive-toggle', config.adaptivePerformance !== false);
     updateToggle('frame-skip-toggle', config.frameSkipEnabled !== false);
+    updateOverviewSummary();
 }
 
 function updateToggle(id, value) {
@@ -426,6 +440,69 @@ function updateToggle(id, value) {
     if (toggle) {
         toggle.classList.toggle('active', value !== false);
     }
+}
+
+function readCurrentTheme() {
+    const documentTheme = document.documentElement?.getAttribute('data-theme');
+    if (documentTheme) {
+        return documentTheme;
+    }
+
+    try {
+        for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (value) {
+                return value;
+            }
+        }
+    } catch (error) {}
+
+    return 'night';
+}
+
+function formatThemeLabel(theme) {
+    switch (theme) {
+        case 'day':
+            return 'Day';
+        case 'contrast':
+            return 'High Contrast';
+        case 'vision-impaired':
+            return 'Vision';
+        case 'cid':
+            return 'CID';
+        default:
+            return 'Night';
+    }
+}
+
+function setChipState(id, value, enabled = null) {
+    const chip = document.getElementById(id);
+    if (!chip) return;
+
+    chip.textContent = value;
+    chip.classList.remove('status-chip--success', 'status-chip--danger');
+
+    if (enabled === true) {
+        chip.classList.add('status-chip--success');
+    } else if (enabled === false) {
+        chip.classList.add('status-chip--danger');
+    }
+}
+
+function updateOverviewSummary() {
+    const theme = formatThemeLabel(readCurrentTheme());
+    const resolutionPreset = config.resolutionPreset || '1080p';
+    const orientation = config.orientation || 'landscape';
+    const targetFps = Number(config.targetFps || 60);
+    const maxParticles = Number(config.maxParticles || 1000);
+    const queueEnabled = !!config.queueEnabled;
+    const adaptiveEnabled = config.adaptivePerformance !== false;
+
+    setChipState('overview-enabled-state', config.enabled ? 'Enabled' : 'Disabled', config.enabled);
+    setChipState('overview-theme-state', `Theme: ${theme}`);
+    setChipState('overview-resolution-state', `${resolutionPreset} · ${orientation === 'portrait' ? 'Portrait' : 'Landscape'}`);
+    setChipState('overview-performance-state', `${targetFps} FPS · ${maxParticles.toLocaleString()} particles`);
+    setChipState('overview-safety-state', `${queueEnabled ? 'Queue on' : 'Queue off'} · ${adaptiveEnabled ? 'Adaptive on' : 'Adaptive off'}`);
 }
 
 function updateResolutionInfo(preset, orientation) {
@@ -802,6 +879,10 @@ function setupEventListeners() {
     document.getElementById('open-overlay').addEventListener('click', () => {
         window.open('/fireworks/overlay', '_blank');
     });
+
+    document.getElementById('open-overlay-hero')?.addEventListener('click', () => {
+        window.open('/fireworks/overlay', '_blank', 'noopener,noreferrer');
+    });
     
     // Add color button
     document.getElementById('add-color').addEventListener('click', () => {
@@ -938,14 +1019,17 @@ async function triggerTestRandom() {
  * Test avatar firework
  */
 async function triggerTestAvatar() {
+    let avatarUrl = null;
     try {
-        // Create a simple data URI for a test avatar (small colored circle SVG)
-        const avatarDataUri = 'data:image/svg+xml;base64,' + btoa(`
-            <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+        // Use a Blob URL so the image loader accepts the avatar and we avoid
+        // base64/Unicode encoding issues in btoa().
+        const avatarSvg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" fill="#FF6B6B"/>
-                <text x="50" y="65" font-size="40" text-anchor="middle" fill="white">👤</text>
+                <text x="50" y="64" font-size="40" text-anchor="middle" fill="white">👤</text>
             </svg>
-        `);
+        `;
+        avatarUrl = URL.createObjectURL(new Blob([avatarSvg], { type: 'image/svg+xml' }));
         
         // Trigger with the test avatar
         await fetch('/api/fireworks/trigger', {
@@ -955,7 +1039,7 @@ async function triggerTestAvatar() {
                 shape: config.defaultShape || 'burst',
                 intensity: 1.5,
                 position: { x: 0.5, y: 0.5 },
-                userAvatar: avatarDataUri
+                userAvatar: avatarUrl
             })
         });
         
@@ -963,6 +1047,10 @@ async function triggerTestAvatar() {
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger avatar test:', e);
         showToast('Failed to trigger avatar test', 'error');
+    } finally {
+        if (avatarUrl) {
+            setTimeout(() => URL.revokeObjectURL(avatarUrl), 60000);
+        }
     }
 }
 

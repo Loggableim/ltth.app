@@ -941,6 +941,7 @@
     "copy_overlay_url": "?? Copy Overlay URL",
     "open_in_new_tab": "?? Open in New Tab",
     "test_firework": "Test Firework",
+    "subtitle": "GPU-accelerated fireworks effects",
     "tab_settings": "Settings",
     "tab_presets": "Presets",
     "tab_benchmark": "Benchmark",

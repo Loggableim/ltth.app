@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.socket.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws: wss:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';">
     <title>CoinBattle - Admin Panel</title>
+    <link rel="stylesheet" href="/fonts/exo-2.css">
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function() {
             const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
             const logoByTheme = {
-                day: '/ltthicon.png',
-                night: '/ltthicon.png',
-                contrast: '/ltthicon.png',
-                'vision-impaired': '/ltthicon.png',
-                cid: '/ltthicon.png'
+                day: '/plugins/coinbattle/assets/coinbattle-logo-wide.png',
+                night: '/plugins/coinbattle/assets/coinbattle-logo-wide.png',
+                contrast: '/plugins/coinbattle/assets/coinbattle-logo-wide.png',
+                'vision-impaired': '/plugins/coinbattle/assets/coinbattle-logo-wide.png',
+                cid: '/plugins/coinbattle/assets/coinbattle-logo-wide.png'
             };
             function readTheme() {
                 try {
@@ -822,15 +823,17 @@
             border: 3px solid #facc15 !important;
             -webkit-text-fill-color: #fff !important;
         }</style>
+    <link rel="stylesheet" href="/plugins/coinbattle/ui/ui-improvements.css">
 </head>
 <body>
-    <div class="container">
+    <div class="container coinbattle-shell">
         <div class="header">
             <div class="header-brand">
+                <img class="header-logo" src="/plugins/coinbattle/assets/coinbattle-logo-wide.png" alt="CoinBattle">
             </div>
             <div class="header-copy">
                 <h1>CoinBattle</h1>
-                <p>Live battle game management</p>
+                <p>Live battle operations, refined for wide-screen dashboards</p>
             </div>
             <div class="header-actions">
                 <select id="languageSelector" class="form-select" style="width: auto;">
@@ -841,14 +844,26 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" data-tab="control">ðŸŽ® Control</button>
-            <button class="tab" data-tab="settings">âš™ï¸ Settings</button>
-            <button class="tab" data-tab="leaderboard">ðŸ† Leaderboard</button>
-            <button class="tab" data-tab="history">ðŸ“Š History</button>
+            <button class="tab active" data-tab="control">Control</button>
+            <button class="tab" data-tab="settings">Settings</button>
+            <button class="tab" data-tab="leaderboard">Leaderboard</button>
+            <button class="tab" data-tab="history">History</button>
         </div>
 
         <!-- Control Tab -->
         <div id="control-tab" class="tab-content active">
+            <div class="card dashboard-hero">
+                <div class="dashboard-hero-copy">
+                    <div class="dashboard-kicker">Battle Control Deck</div>
+                    <h2>Three-column dashboard for live match operations</h2>
+                    <p>All CoinBattle controls stay available. The layout is reorganized for faster scanning, cleaner hierarchy, and broader monitor use.</p>
+                </div>
+                <div class="dashboard-hero-badges">
+                    <span class="hero-chip">Wide-screen first</span>
+                    <span class="hero-chip">Theme safe</span>
+                    <span class="hero-chip">No feature loss</span>
+                </div>
+            </div>
             <div class="grid grid-4">
                 <div class="stat-card">
                     <div class="stat-label">Match Status</div>
@@ -869,18 +884,18 @@
             </div>
 
             <div class="card">
-                <div class="card-title">â±ï¸ Match Timer</div>
+                <div class="card-title">Match Timer</div>
                 <div class="timer-display" id="timer-display">00:00</div>
                 <div class="btn-group">
-                    <button class="btn btn-success" id="btn-start-match">â–¶ï¸ Start Match</button>
-                    <button class="btn btn-danger" id="btn-end-match" disabled>â¹ï¸ End Match</button>
-                    <button class="btn btn-warning" id="btn-pause-match" disabled>â¸ï¸ Pause</button>
-                    <button class="btn btn-warning" id="btn-extend-match" disabled>â° Extend +60s</button>
+                    <button class="btn btn-success" id="btn-start-match">Start Match</button>
+                    <button class="btn btn-danger" id="btn-end-match" disabled>End Match</button>
+                    <button class="btn btn-warning" id="btn-pause-match" disabled>Pause</button>
+                    <button class="btn btn-warning" id="btn-extend-match" disabled>Extend +60s</button>
                 </div>
             </div>
 
             <div class="card" id="multiplier-card" style="display: none;">
-                <div class="card-title">âœ¨ Active Multiplier</div>
+                <div class="card-title">Active Multiplier</div>
                 <div class="multiplier-indicator">
                     <div class="value" id="multiplier-value">2.0x</div>
                     <div class="label" id="multiplier-time">Ends in <span id="multiplier-remaining">--</span></div>
@@ -888,7 +903,7 @@
             </div>
 
             <div class="card">
-                <div class="card-title">ðŸŽ¯ Match Controls</div>
+                <div class="card-title">Match Controls</div>
                 <div class="grid grid-2">
                     <div class="form-group">
                         <label class="form-label">Match Mode</label>
@@ -904,23 +919,23 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <button class="btn" id="btn-activate-multiplier">âœ¨ Activate 2x Multiplier (30s)</button>
+                    <button class="btn" id="btn-activate-multiplier">Activate 2x Multiplier (30s)</button>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title">ðŸŽª Testing & Simulation</div>
+                <div class="card-title">Testing & Simulation</div>
                 <div class="alert alert-info">
                     Test layouts and animations without TikTok Live connection
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-secondary" id="btn-start-simulation">ðŸŽ² Start Simulation</button>
-                    <button class="btn btn-danger" id="btn-stop-simulation" disabled>â¹ï¸ Stop Simulation</button>
+                    <button class="btn btn-secondary" id="btn-start-simulation">Start Simulation</button>
+                    <button class="btn btn-danger" id="btn-stop-simulation" disabled>Stop Simulation</button>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title">ðŸ“º Current Match Leaderboard</div>
+                <div class="card-title">Current Match Leaderboard</div>
                 <div id="current-leaderboard">
                     <p class="loading">No active match</p>
                 </div>
@@ -930,7 +945,7 @@
         <!-- Settings Tab -->
         <div id="settings-tab" class="tab-content">
             <div class="card">
-                <div class="card-title">âš™ï¸ Gameplay Settings</div>
+                <div class="card-title">Gameplay Settings</div>
                 <div class="grid grid-2">
                     <div class="form-group">
                         <label class="form-checkbox">
@@ -970,7 +985,7 @@
             </div>
 
             <div class="card">
-                <div class="card-title">ðŸ‘¥ Team Settings</div>
+                <div class="card-title">Team Settings</div>
                 <div class="form-group">
                     <label class="form-label">Team Assignment Method</label>
                     <select class="form-select" id="setting-team-assignment">
@@ -982,7 +997,7 @@
             </div>
 
             <div class="card">
-                <div class="card-title">â¤ï¸ Likes & Interactions as Points</div>
+                <div class="card-title">Likes & Interactions as Points</div>
                 <div class="alert alert-info" style="margin-bottom: 16px;">
                     Convert TikTok interactions (likes, shares, follows) into battle points during active matches.
                 </div>
@@ -1015,12 +1030,12 @@
                     </div>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-success" id="btn-save-likes-settings">ðŸ’¾ Save Likes Settings</button>
+                    <button class="btn btn-success" id="btn-save-likes-settings">Save Likes Settings</button>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title">ðŸ”º Pyramid Mode Settings</div>
+                <div class="card-title">Pyramid Mode Settings</div>
                 <div class="alert alert-info" style="margin-bottom: 16px;">
                     Pyramid Mode: Players compete to climb the pyramid by sending gifts or likes. The leader can be knocked out!
                 </div>
@@ -1077,7 +1092,7 @@
                 
                 <!-- XP Rewards Integration -->
                 <div class="alert alert-success" style="margin-top: 20px; margin-bottom: 16px;">
-                    <strong>ðŸŽ® XP Rewards Integration</strong><br>
+                    <strong>XP Rewards Integration</strong><br>
                     Automatically award XP points to pyramid winners via the Viewer XP System plugin
                 </div>
                 <div class="form-group">
@@ -1119,19 +1134,19 @@
                     <label class="form-label">Pyramid Overlay URL</label>
                     <div class="overlay-url">
                         <input type="text" class="form-input" id="pyramid-overlay-url" readonly>
-                        <button class="btn btn-sm" id="btn-copy-pyramid-url">ðŸ“‹ Copy</button>
-                        <button class="btn btn-sm btn-secondary" id="btn-preview-pyramid">ðŸ‘ï¸ Preview</button>
+                        <button class="btn btn-sm" id="btn-copy-pyramid-url">Copy</button>
+                        <button class="btn btn-sm btn-secondary" id="btn-preview-pyramid">Preview</button>
                     </div>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-success" id="btn-save-pyramid-settings">ðŸ’¾ Save Pyramid Settings</button>
+                    <button class="btn btn-success" id="btn-save-pyramid-settings">Save Pyramid Settings</button>
                     <button class="btn" id="btn-start-pyramid">â–¶ï¸ Start Pyramid</button>
                     <button class="btn btn-danger" id="btn-stop-pyramid" disabled>â¹ï¸ Stop Pyramid</button>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title">ðŸŽ¨ Display Settings</div>
+                <div class="card-title">Display Settings</div>
                 <div class="grid grid-2">
                     <div class="form-group">
                         <label class="form-label">Theme</label>
@@ -1204,7 +1219,7 @@
             </div>
 
             <div class="card">
-                <div class="card-title">ðŸ† Post-Match Display Settings</div>
+                <div class="card-title">Post-Match Display Settings</div>
                 <div class="alert alert-info" style="margin-bottom: 16px;">
                     Configure what to display after each match ends. Leaderboards and winner credits will show in the OBS overlay.
                 </div>
@@ -1274,20 +1289,20 @@
             </div>
 
             <div class="card">
-                <div class="card-title">ðŸ“º Overlay Configuration</div>
+                <div class="card-title">Overlay Configuration</div>
                 <div class="form-group">
                     <label class="form-label">OBS Browser Source URL</label>
                     <div class="overlay-url">
                         <input type="text" class="form-input" id="overlay-url" readonly>
-                        <button class="btn btn-sm" id="btn-copy-url">ðŸ“‹ Copy</button>
-                        <button class="btn btn-sm btn-secondary" id="btn-preview-overlay">ðŸ‘ï¸ Preview</button>
+                        <button class="btn btn-sm" id="btn-copy-url">Copy</button>
+                        <button class="btn btn-sm btn-secondary" id="btn-preview-overlay">Preview</button>
                     </div>
                 </div>
             </div>
 
             <div class="btn-group">
-                <button class="btn btn-success" id="btn-save-settings">ðŸ’¾ Save Settings</button>
-                <button class="btn btn-secondary" id="btn-reset-settings">ðŸ”„ Reset to Defaults</button>
+                <button class="btn btn-success" id="btn-save-settings">Save Settings</button>
+                <button class="btn btn-secondary" id="btn-reset-settings">Reset to Defaults</button>
             </div>
         </div>
 
@@ -1295,7 +1310,7 @@
         <div id="leaderboard-tab" class="tab-content">
             <!-- Season Management Card -->
             <div class="card">
-                <div class="card-title">ðŸ—“ï¸ Season Configuration</div>
+                <div class="card-title">Season Configuration</div>
                 <div class="alert alert-info" style="margin-bottom: 16px;">
                     Configure season leaderboard date range. Only one season can be active at a time.
                 </div>
@@ -1319,18 +1334,18 @@
                     </div>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-success" id="btn-save-season">ðŸ’¾ Create/Update Season</button>
+                    <button class="btn btn-success" id="btn-save-season">Create/Update Season</button>
                 </div>
             </div>
 
             <!-- Leaderboard Type Selector -->
             <div class="card">
-                <div class="card-title">ðŸ† Leaderboards</div>
+                <div class="card-title">Leaderboards</div>
                 <div class="tabs" style="border-bottom: none; margin-bottom: 16px;">
-                    <button class="tab active" data-leaderboard="lifetime">ðŸ“ˆ Lifetime</button>
-                    <button class="tab" data-leaderboard="weekly">ðŸ“… Weekly</button>
-                    <button class="tab" data-leaderboard="season">ðŸ… Season</button>
-                    <button class="tab" data-leaderboard="manage">ðŸ‘¥ Manage Users</button>
+                    <button class="tab active" data-leaderboard="lifetime">Lifetime</button>
+                    <button class="tab" data-leaderboard="weekly">Weekly</button>
+                    <button class="tab" data-leaderboard="season">Season</button>
+                    <button class="tab" data-leaderboard="manage">Manage Users</button>
                 </div>
 
                 <div id="lifetime-leaderboard-view" class="leaderboard-view">
@@ -1371,7 +1386,7 @@
         <!-- History Tab -->
         <div id="history-tab" class="tab-content">
             <div class="card">
-                <div class="card-title">ðŸ“Š Match History</div>
+                <div class="card-title">Match History</div>
                 <div id="match-history">
                     <p class="loading">Loading...</p>
                 </div>

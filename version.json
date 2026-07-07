@@ -1,10 +1,10 @@
 {
-  "version": "1.3.16",
+  "version": "1.3.18",
   "releaseDate": "2026-07-07",
   "status": "stable",
-  "downloadVersion": "1.3.16",
-  "downloadNote": "Viewer profiles, XP, and leaderboard tracking are now consolidated into viewer-leaderboard with migrated analytics storage and updated integrations.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.16",
+  "downloadVersion": "1.3.18",
+  "downloadNote": "Fireworks superplugin gets a modern widescreen rework with transparent branding assets, clearer status chips, and theme-safe layouts across day/night/contrast/vision/cid.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.18",
   "oneLineInstaller": {
     "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex",
     "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
@@ -19,6 +19,22 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.18": {
+      "date": "2026-07-07",
+      "changes": [
+        "IMPROVED: Fireworks superplugin reworked into a modern widescreen hero layout with icon left, text left, logo centered, and status/actions grouped on the right",
+        "IMPROVED: Fireworks branding now uses freigestellte sidebar/appstore assets for the icon and in-app logo",
+        "IMPROVED: Fireworks settings remain feature-complete and render across day, night, contrast, vision-impaired, and cid themes"
+      ]
+    },
+    "1.3.17": {
+      "date": "2026-07-07",
+      "changes": [
+        "IMPROVED: TTS uses the freigestellte icon in the far-left app navigation in both expanded and collapsed states",
+        "IMPROVED: App and plugin version metadata updated for the sidebar branding refresh",
+        "FIXED: TTS sidebar branding now matches the updated asset set used across the app"
+      ]
+    },
     "1.3.16": {
       "date": "2026-07-07",
       "changes": [

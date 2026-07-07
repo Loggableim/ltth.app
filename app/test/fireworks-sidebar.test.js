@@ -14,8 +14,15 @@ describe('Fireworks Plugin Sidebar Integration', () => {
   let dashboardHtml;
   let enLocale;
   let deLocale;
+  let pluginManifest;
+  let pluginStore;
 
   function readLocale(filePath) {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(raw.replace(/^\uFEFF/, ''));
+  }
+
+  function readJson(filePath) {
     const raw = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(raw.replace(/^\uFEFF/, ''));
   }
@@ -30,6 +37,9 @@ describe('Fireworks Plugin Sidebar Integration', () => {
     const deLocalePath = path.join(__dirname, '..', 'locales', 'de.json');
     enLocale = readLocale(enLocalePath);
     deLocale = readLocale(deLocalePath);
+
+    pluginManifest = readJson(path.join(__dirname, '..', 'plugins', 'fireworks', 'plugin.json'));
+    pluginStore = readJson(path.join(__dirname, '..', '..', 'plugin-store.json'));
   });
 
   describe('Sidebar Menu Entry', () => {
@@ -47,19 +57,19 @@ describe('Fireworks Plugin Sidebar Integration', () => {
       expect(fireworksIndex).toBeGreaterThan(webgpuEmojiRainIndex);
     });
 
-    test('should use sparkles icon for fireworks', () => {
-      // Check if sparkles icon is near the fireworks sidebar item
+    test('should use the branded fireworks icon for the sidebar item', () => {
       const fireworksSidebarSection = dashboardHtml.substring(
         dashboardHtml.indexOf('data-view="fireworks"') - 100,
-        dashboardHtml.indexOf('data-view="fireworks"') + 200
+        dashboardHtml.indexOf('data-view="fireworks"') + 450
       );
-      expect(fireworksSidebarSection).toContain('data-lucide="sparkles"');
+      expect(fireworksSidebarSection).toContain('/plugins/fireworks/assets/fireworks-icon.png');
+      expect(fireworksSidebarSection).toContain('sidebar-plugin-icon');
     });
 
     test('should use i18n key for fireworks label', () => {
       const fireworksSidebarSection = dashboardHtml.substring(
         dashboardHtml.indexOf('data-view="fireworks"') - 100,
-        dashboardHtml.indexOf('data-view="fireworks"') + 300
+        dashboardHtml.indexOf('data-view="fireworks"') + 450
       );
       expect(fireworksSidebarSection).toContain('data-i18n="navigation.fireworks"');
     });
@@ -135,25 +145,39 @@ describe('Fireworks Plugin Sidebar Integration', () => {
     });
   });
 
+  describe('Brand Assets', () => {
+    test('should expose icon and logo in the plugin manifest', () => {
+      expect(pluginManifest.icon).toBe('/plugins/fireworks/assets/fireworks-icon.png');
+      expect(pluginManifest.logo).toBe('/plugins/fireworks/assets/fireworks-logo.png');
+    });
+
+    test('should expose icon and logo in the plugin store registry', () => {
+      const fireworksEntry = (pluginStore.plugins || []).find(entry => entry.id === 'fireworks');
+      expect(fireworksEntry).toBeDefined();
+      expect(fireworksEntry.icon).toBe('/plugins/fireworks/assets/fireworks-icon.png');
+      expect(fireworksEntry.logo).toBe('/plugins/fireworks/assets/fireworks-logo.png');
+    });
+  });
+
   describe('Pattern Consistency', () => {
     test('sidebar item should follow same pattern as webgpu-emoji-rain', () => {
       // Extract webgpu-emoji-rain sidebar pattern
       const webgpuEmojiRainPattern = dashboardHtml.substring(
         dashboardHtml.indexOf('data-view="webgpu-emoji-rain"') - 100,
-        dashboardHtml.indexOf('data-view="webgpu-emoji-rain"') + 300
+        dashboardHtml.indexOf('data-view="webgpu-emoji-rain"') + 520
       );
       
       // Extract fireworks sidebar pattern
       const fireworksPattern = dashboardHtml.substring(
         dashboardHtml.indexOf('data-view="fireworks"') - 100,
-        dashboardHtml.indexOf('data-view="fireworks"') + 300
+        dashboardHtml.indexOf('data-view="fireworks"') + 520
       );
       
       // Both should have the same structural elements
       expect(webgpuEmojiRainPattern).toContain('class="sidebar-item"');
       expect(fireworksPattern).toContain('class="sidebar-item"');
-      expect(webgpuEmojiRainPattern).toContain('<i data-lucide=');
-      expect(fireworksPattern).toContain('<i data-lucide=');
+      expect(webgpuEmojiRainPattern).toContain('sidebar-plugin-icon');
+      expect(fireworksPattern).toContain('sidebar-plugin-icon');
       expect(webgpuEmojiRainPattern).toContain('sidebar-item-text');
       expect(fireworksPattern).toContain('sidebar-item-text');
     });

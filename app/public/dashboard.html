@@ -861,6 +861,723 @@
             font-size: 0.84rem;
         }
 
+        /* App Store refresh overrides */
+        .plugin-store-shell {
+            gap: 1.15rem;
+            min-width: 0;
+            --store-panel-bg: color-mix(in srgb, var(--color-bg-card) 94%, var(--color-bg-primary) 6%);
+            --store-panel-bg-strong: color-mix(in srgb, var(--color-bg-secondary) 84%, var(--color-bg-primary) 16%);
+            --store-panel-border: color-mix(in srgb, var(--color-border) 82%, transparent);
+            --store-panel-shadow: 0 18px 50px rgba(0, 0, 0, 0.16);
+            --store-accent-soft: color-mix(in srgb, var(--brand-primary) 16%, transparent);
+            --store-accent-soft-2: color-mix(in srgb, var(--color-accent-secondary) 14%, transparent);
+            --store-accent-border: color-mix(in srgb, var(--brand-primary) 45%, var(--color-border) 55%);
+        }
+
+        .plugin-store-header {
+            position: relative;
+            overflow: hidden;
+            align-items: stretch;
+            padding: 1.35rem;
+            border-radius: 24px;
+            border: 1px solid var(--store-panel-border);
+            box-shadow: var(--store-panel-shadow);
+            background:
+                radial-gradient(circle at 16% 20%, var(--store-accent-soft), transparent 34%),
+                radial-gradient(circle at 86% 18%, var(--store-accent-soft-2), transparent 30%),
+                linear-gradient(135deg, var(--store-panel-bg) 0%, color-mix(in srgb, var(--store-panel-bg) 86%, var(--brand-primary) 14%) 100%);
+        }
+
+        .plugin-store-header::before,
+        .plugin-store-header::after {
+            content: '';
+            position: absolute;
+            pointer-events: none;
+            border-radius: 999px;
+            opacity: 0.55;
+        }
+
+        .plugin-store-header::before {
+            inset: auto auto -10rem -8rem;
+            width: 22rem;
+            height: 22rem;
+            background: radial-gradient(circle, color-mix(in srgb, var(--brand-primary) 20%, transparent) 0%, transparent 68%);
+        }
+
+        .plugin-store-header::after {
+            inset: -7rem -10rem auto auto;
+            width: 18rem;
+            height: 18rem;
+            background: radial-gradient(circle, color-mix(in srgb, var(--color-accent-secondary) 18%, transparent) 0%, transparent 68%);
+        }
+
+        .plugin-store-header > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .plugin-store-header__brand {
+            flex: 0 1 360px;
+            min-width: 260px;
+            padding: 0.9rem;
+            border-radius: 22px;
+            border: 1px solid color-mix(in srgb, var(--store-panel-border) 78%, transparent);
+            background:
+                linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 88%, var(--brand-primary) 12%), color-mix(in srgb, var(--color-bg-card) 92%, var(--color-accent-secondary) 8%));
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.03),
+                0 14px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .plugin-store-header__logo {
+            width: min(100%, 360px);
+            max-height: 104px;
+            object-fit: contain;
+        }
+
+        .plugin-store-header__title {
+            display: flex;
+            flex: 1 1 420px;
+            flex-direction: column;
+            gap: 0.7rem;
+            min-width: 0;
+        }
+
+        .plugin-store-header__title-row {
+            gap: 0.75rem;
+            margin-bottom: 0;
+            flex-wrap: wrap;
+        }
+
+        .plugin-store-header__title-row h3 {
+            font-size: clamp(1.55rem, 1vw + 1.1rem, 2.15rem);
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .plugin-store-header__title p {
+            margin: 0;
+            max-width: 72ch;
+            font-size: 0.96rem;
+        }
+
+        .plugin-store-header__meta {
+            gap: 0.45rem;
+        }
+
+        .plugin-store-header__actions {
+            align-self: flex-start;
+        }
+
+        .plugin-store-stats-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .plugin-store-stats-grid .stat-card {
+            display: flex;
+            align-items: center;
+            gap: 0.95rem;
+            padding: 1rem 1.05rem;
+            border-radius: 20px;
+            border: 1px solid var(--store-panel-border);
+            background: var(--store-panel-bg);
+            box-shadow: var(--store-panel-shadow);
+        }
+
+        .plugin-store-stats-grid .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            flex-shrink: 0;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 10px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .plugin-store-stats-grid .stat-content {
+            min-width: 0;
+        }
+
+        .plugin-store-stats-grid .stat-label {
+            margin-bottom: 0.2rem;
+            color: var(--color-text-muted);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .plugin-store-stats-grid .stat-value {
+            color: var(--color-text-primary);
+            font-size: clamp(1.6rem, 1.1vw + 1rem, 2.2rem);
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .plugin-store-badge,
+        .plugin-store-inline-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 0.72rem;
+            border-radius: 999px;
+            border: 1px solid var(--store-panel-border);
+            background: color-mix(in srgb, var(--color-bg-secondary) 82%, transparent);
+            color: var(--color-text-muted);
+            font-size: 0.78rem;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .plugin-store-inline-note {
+            color: var(--color-text-secondary);
+        }
+
+        .plugin-store-update-all {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.78rem 1rem;
+            border-radius: 999px;
+            border: 1px solid color-mix(in srgb, var(--brand-primary) 35%, var(--color-border));
+            background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 18%, transparent), color-mix(in srgb, var(--brand-primary) 10%, var(--color-bg-secondary)));
+            color: var(--brand-primary);
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            transition: transform 0.2s ease, filter 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .plugin-store-update-all:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.03);
+            box-shadow: 0 10px 24px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+        }
+
+        .plugin-store-warning {
+            border-color: color-mix(in srgb, var(--color-accent-warning) 35%, var(--color-border));
+            background: color-mix(in srgb, var(--color-accent-warning) 12%, transparent);
+            color: var(--color-accent-warning);
+        }
+
+        .plugin-store-mode-row {
+            margin-bottom: 0;
+            align-items: center;
+        }
+
+        .plugin-store-mode-tabs {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            padding: 0.35rem;
+            border: 1px solid var(--store-panel-border);
+            border-radius: 18px;
+            background: color-mix(in srgb, var(--color-bg-card) 90%, transparent);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .plugin-mode-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.72rem 1rem;
+            border-radius: 14px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .plugin-mode-btn:hover {
+            transform: translateY(-1px);
+            color: var(--color-text-primary);
+        }
+
+        .plugin-mode-btn.active {
+            background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 18%, transparent), color-mix(in srgb, var(--color-accent-primary) 12%, transparent));
+            border-color: var(--brand-primary);
+            color: var(--color-text-primary);
+            box-shadow: 0 12px 24px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+        }
+
+        .plugin-store-toolbar {
+            display: grid;
+            gap: 0.85rem;
+            padding: 1rem;
+            border: 1px solid var(--store-panel-border);
+            border-radius: 22px;
+            background: var(--store-panel-bg);
+            box-shadow: var(--store-panel-shadow);
+            min-width: 0;
+        }
+
+        .plugin-store-toolbar__row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            min-width: 0;
+        }
+
+        .plugin-store-toolbar__search {
+            flex: 1 1 280px;
+            min-width: 0;
+        }
+
+        .plugin-store-toolbar__search > div {
+            position: relative;
+        }
+
+        .plugin-store-search {
+            width: 100%;
+            min-width: 0;
+            height: 50px;
+            padding: 0.75rem 1rem 0.75rem 2.8rem;
+            border-radius: 16px;
+            border: 1px solid var(--color-input-border);
+            background: var(--color-input-bg);
+            color: var(--color-input-text);
+            font-size: 0.95rem;
+            box-sizing: border-box;
+        }
+
+        .plugin-store-search::placeholder {
+            color: var(--color-input-placeholder);
+        }
+
+        .plugin-store-toolbar__filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .plugin-store-toolbar__status-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem 0.85rem;
+            align-items: center;
+            padding: 0.2rem 0 0.2rem 0.9rem;
+            border-left: 1px solid var(--color-divider);
+            min-width: 0;
+        }
+
+        .plugin-store-toolbar__status-filters span {
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+            font-weight: 600;
+        }
+
+        .plugin-store-toolbar__status-filters label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            line-height: 1.2;
+        }
+
+        .plugin-store-toolbar__status-filters input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: var(--brand-primary);
+        }
+
+        .plugin-filter-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.72rem 1rem;
+            border-radius: 14px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .plugin-filter-btn:hover,
+        .plugin-filter-btn.active {
+            transform: translateY(-1px);
+            background: var(--color-active-bg);
+            border-color: var(--color-active-border);
+            color: var(--color-accent-primary);
+            box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-active-border) 40%, transparent);
+        }
+
+        .plugin-store-sort-select,
+        .plugin-store-compact-toggle {
+            height: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0 0.95rem;
+            border-radius: 16px;
+            border: 1px solid var(--color-input-border);
+            background: var(--color-input-bg);
+            color: var(--color-input-text);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .plugin-store-compact-toggle {
+            justify-content: center;
+        }
+
+        .plugin-store-sort-select:hover,
+        .plugin-store-compact-toggle:hover {
+            transform: translateY(-1px);
+            border-color: var(--color-accent-primary);
+            box-shadow: 0 0 0 3px var(--color-active-bg);
+        }
+
+        .plugin-store-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            min-width: 0;
+        }
+
+        .plugin-store-chip-row--categories {
+            margin-top: 0.2rem;
+        }
+
+        .plugin-store-chip-row--filters {
+            margin-top: 0.05rem;
+        }
+
+        .plugin-store-collection {
+            padding: 1.1rem;
+            border-radius: 22px;
+            border: 1px solid var(--store-panel-border);
+            background: var(--store-panel-bg);
+            box-shadow: var(--store-panel-shadow);
+        }
+
+        .plugin-store-collection__header {
+            padding-bottom: 0.6rem;
+            border-bottom: 1px solid var(--color-divider);
+            margin-bottom: 0.9rem;
+        }
+
+        .plugin-store-discovery {
+            gap: 1rem;
+        }
+
+        .plugin-store-empty {
+            border-radius: 22px;
+            background: var(--store-panel-bg);
+            border: 1px dashed var(--store-panel-border);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .plugin-store-grid,
+        .plugin-store-collection__grid {
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1rem;
+        }
+
+        .plugin-store-card {
+            display: grid;
+            grid-template-columns: 96px minmax(0, 1fr);
+            grid-template-areas:
+                "media body"
+                "media footer";
+            gap: 0.9rem 1rem;
+            min-height: 286px;
+            padding: 1rem;
+            border-radius: 22px;
+            border: 1px solid var(--store-panel-border);
+            background: linear-gradient(180deg, color-mix(in srgb, var(--color-bg-card) 96%, var(--brand-primary) 4%), var(--color-bg-card));
+            box-shadow: var(--store-panel-shadow);
+        }
+
+        .plugin-store-card:hover,
+        .plugin-store-card:focus-visible {
+            transform: translateY(-4px);
+            border-color: var(--color-active-border);
+            box-shadow: 0 20px 42px rgba(0, 0, 0, 0.16), 0 0 0 1px var(--color-active-border);
+            outline: none;
+        }
+
+        .plugin-store-card--compact {
+            grid-template-columns: 84px minmax(0, 1fr);
+            min-height: 256px;
+        }
+
+        .plugin-store-card__media {
+            grid-area: media;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 20px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            overflow: hidden;
+            position: relative;
+            align-self: start;
+        }
+
+        .plugin-store-card__media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .plugin-store-card__media.is-brand {
+            background: linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 88%, var(--brand-primary) 12%), color-mix(in srgb, var(--color-bg-card) 92%, var(--color-accent-secondary) 8%));
+        }
+
+        .plugin-store-card__media.is-brand img {
+            object-fit: contain;
+            padding: 0.75rem;
+            background:
+                radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--brand-primary) 12%, transparent), transparent 58%),
+                linear-gradient(180deg, transparent, transparent);
+        }
+
+        .plugin-store-card__avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+        }
+
+        .plugin-store-card__media-chip {
+            display: none;
+            left: 0.6rem;
+            bottom: 0.6rem;
+            padding: 0.32rem 0.5rem;
+            border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+            background: color-mix(in srgb, var(--color-bg-primary) 76%, transparent);
+            backdrop-filter: blur(10px);
+        }
+
+        .plugin-store-card__body {
+            grid-area: body;
+            gap: 0.55rem;
+            padding-top: 0.05rem;
+        }
+
+        .plugin-store-card__title {
+            font-size: 1.08rem;
+            line-height: 1.2;
+        }
+
+        .plugin-store-card__description {
+            font-size: 0.89rem;
+            line-height: 1.5;
+            min-height: 4.2rem;
+            -webkit-line-clamp: 3;
+        }
+
+        .plugin-store-card__summary {
+            gap: 0.45rem 0.75rem;
+            padding-top: 0.15rem;
+            border-top: 1px solid var(--color-divider);
+        }
+
+        .plugin-store-card__summary-item {
+            color: var(--color-text-secondary);
+        }
+
+        .plugin-store-card__footer {
+            grid-area: footer;
+            align-items: flex-end;
+            gap: 0.8rem;
+        }
+
+        .plugin-store-card__footer-meta {
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 0.2rem 0.7rem;
+            font-size: 0.75rem;
+        }
+
+        .plugin-store-card__action {
+            min-width: 118px;
+            height: 44px;
+            padding: 0 0.95rem;
+            border-radius: 999px;
+            border: 1px solid color-mix(in srgb, var(--brand-primary) 35%, var(--color-border));
+            background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 16%, transparent), color-mix(in srgb, var(--brand-primary) 12%, var(--color-bg-secondary)));
+            color: var(--brand-primary);
+        }
+
+        .plugin-store-card__action.is-disabled {
+            background: var(--color-disabled-bg);
+            border-color: var(--color-border);
+            color: var(--color-disabled-text);
+        }
+
+        .plugin-store-card__action:hover:not(.is-disabled) {
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px color-mix(in srgb, var(--brand-primary) 14%, transparent);
+        }
+
+        .plugin-store-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.5rem;
+            border-radius: 999px;
+            border: 1px solid var(--store-panel-border);
+            font-size: 0.7rem;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .plugin-store-chip--official {
+            background: color-mix(in srgb, var(--color-accent-primary) 16%, transparent);
+            color: var(--color-accent-primary);
+        }
+
+        .plugin-store-chip--external {
+            background: color-mix(in srgb, var(--color-accent-warning) 16%, transparent);
+            color: var(--color-accent-warning);
+        }
+
+        .plugin-store-chip--warning {
+            background: color-mix(in srgb, var(--color-accent-warning) 16%, transparent);
+            color: var(--color-accent-warning);
+        }
+
+        .plugin-store-chip--danger {
+            background: color-mix(in srgb, var(--color-accent-danger) 16%, transparent);
+            color: var(--color-accent-danger);
+        }
+
+        .plugin-store-chip--success {
+            background: color-mix(in srgb, var(--color-accent-success) 16%, transparent);
+            color: var(--color-accent-success);
+        }
+
+        .plugin-store-chip--muted {
+            background: color-mix(in srgb, var(--color-text-muted) 16%, transparent);
+            color: var(--color-text-muted);
+        }
+
+        .plugin-store-chip--installed {
+            background: color-mix(in srgb, var(--color-accent-success) 16%, transparent);
+            color: var(--color-accent-success);
+        }
+
+        .plugin-store-badge-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+
+        .plugin-store-drawer__stack {
+            display: grid;
+            gap: 0.45rem;
+        }
+
+        .plugin-store-detail-field {
+            border: 1px solid var(--store-panel-border);
+            border-radius: 14px;
+            padding: 0.8rem;
+            background: var(--color-bg-card);
+            min-width: 0;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+        }
+
+        .plugin-store-detail-field__label {
+            margin-bottom: 0.25rem;
+            color: var(--color-text-muted);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .plugin-store-detail-field__value {
+            color: var(--color-text-primary);
+            font-size: 0.9rem;
+            overflow-wrap: anywhere;
+        }
+
+        .plugin-store-drawer__panel {
+            width: min(720px, 100vw);
+            padding: 1.2rem;
+            background: linear-gradient(180deg, var(--color-bg-card), color-mix(in srgb, var(--color-bg-card) 90%, var(--brand-primary) 10%));
+            border-left: 1px solid var(--store-panel-border);
+            box-shadow: -24px 0 54px rgba(0, 0, 0, 0.24);
+        }
+
+        .plugin-store-drawer__header {
+            gap: 1rem;
+        }
+
+        .plugin-store-drawer__media {
+            width: 144px;
+            height: 144px;
+            flex: 0 0 144px;
+            border-radius: 22px;
+            border: 1px solid var(--store-panel-border);
+        }
+
+        .plugin-store-drawer__title h3 {
+            font-size: clamp(1.45rem, 1vw + 1.1rem, 2rem);
+            line-height: 1.1;
+        }
+
+        .plugin-store-drawer__badges {
+            gap: 0.35rem;
+        }
+
+        .plugin-store-drawer__section {
+            border-radius: 18px;
+            border: 1px solid var(--store-panel-border);
+            background: var(--store-panel-bg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .plugin-store-feedback-form {
+            display: grid;
+            gap: 0.65rem;
+        }
+
+        .plugin-store-feedback-form__control {
+            width: 100%;
+            min-height: 46px;
+            padding: 0.7rem 0.85rem;
+            border-radius: 14px;
+            border: 1px solid var(--color-input-border);
+            background: var(--color-input-bg);
+            color: var(--color-input-text);
+            font-size: 0.92rem;
+            box-sizing: border-box;
+        }
+
+        .plugin-store-feedback-form__textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .plugin-store-feedback-form__submit {
+            justify-content: flex-start;
+        }
+
+        @media (max-width: 1280px) {
+            .plugin-store-toolbar__status-filters {
+                border-left: 0;
+                padding-left: 0;
+            }
+        }
+
         @media (max-width: 768px) {
             .plugin-store-header,
             .plugin-store-drawer__header {
@@ -901,6 +1618,54 @@
                 flex-basis: auto;
                 height: 180px;
             }
+
+            .plugin-store-stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .plugin-store-mode-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .plugin-store-mode-tabs {
+                width: 100%;
+                justify-content: stretch;
+            }
+
+            .plugin-mode-btn {
+                flex: 1 1 0;
+                justify-content: center;
+            }
+
+            .plugin-store-toolbar__row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .plugin-store-toolbar__filters,
+            .plugin-store-toolbar__status-filters {
+                width: 100%;
+            }
+
+            .plugin-store-sort-select,
+            .plugin-store-compact-toggle {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .plugin-store-grid,
+            .plugin-store-collection__grid {
+                grid-template-columns: 1fr;
+            }
+
+            .plugin-store-card {
+                grid-template-columns: 84px minmax(0, 1fr);
+            }
+
+            .plugin-store-card__footer {
+                align-items: flex-start;
+            }
         }
 
         .plugin-action-btn {
@@ -928,16 +1693,13 @@
             transform: translateY(0);
         }
 
-        .plugin-filter-btn:hover {
-            background: var(--color-active-bg) !important;
-            border-color: var(--color-active-border) !important;
-            color: var(--color-accent-primary) !important;
-        }
-
+        .plugin-filter-btn:hover,
         .plugin-filter-btn.active {
-            background: var(--color-active-bg) !important;
-            border-color: var(--color-active-border) !important;
-            color: var(--color-accent-primary) !important;
+            transform: translateY(-1px);
+            background: var(--color-active-bg);
+            border-color: var(--color-active-border);
+            color: var(--color-accent-primary);
+            box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-active-border) 40%, transparent);
         }
 
         /* Profile filter button styles */
@@ -1589,10 +2351,10 @@
                     <i data-lucide="panel-left"></i>
                 </button>
                 <!-- Quick Action Mini Icons (only visible when collapsed) -->
-                <div class="sidebar-quick-actions">
-                    <button class="sidebar-quick-icon" id="sidebar-quick-tts" data-action="tts" data-plugin="tts" title="Toggle TTS">
-                        <i data-lucide="mic"></i>
-                    </button>
+                    <div class="sidebar-quick-actions">
+                        <button class="sidebar-quick-icon" id="sidebar-quick-tts" data-action="tts" data-plugin="tts" title="Toggle TTS">
+                            <img src="/ltthttsicon.png" alt="" class="sidebar-quick-plugin-icon sidebar-quick-plugin-icon-tts" aria-hidden="true">
+                        </button>
                     <button class="sidebar-quick-icon" id="sidebar-quick-soundboard" data-action="soundboard" data-plugin="soundboard" title="Toggle Soundboard">
                         <i data-lucide="music"></i>
                     </button>
@@ -1668,7 +2430,7 @@
                     </div>
                     <div class="sidebar-category-items">
                         <a href="#" class="sidebar-item" data-view="tts" data-plugin="tts" data-tooltip="TTS">
-                            <i data-lucide="mic"></i>
+                            <img src="/ltthttsicon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-tts" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.tts">TTS</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="music-bot" data-plugin="music-bot" data-tooltip="Music Bot">
@@ -1732,7 +2494,7 @@
                             <span class="sidebar-item-text" data-i18n="navigation.interactive_story">Interactive Story</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="coinbattle" data-plugin="coinbattle" data-tooltip="CoinBattle">
-                            <i data-lucide="coins"></i>
+                            <img src="/plugins/coinbattle/assets/coinbattle-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-coinbattle" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.coinbattle">CoinBattle</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="game-engine" data-plugin="game-engine" data-tooltip="Game Engine">
@@ -2843,8 +3605,8 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <i data-lucide="coins"></i>
-                                CoinBattle
+                                <img src="/plugins/coinbattle/assets/coinbattle-logo-wide.png" alt="CoinBattle" class="view-title-logo" style="height: 32px; width: auto; max-width: min(360px, 40vw); object-fit: contain;">
+                                <span class="sr-only">CoinBattle</span>
                             </h2>
                             <a href="/plugins/coinbattle/ui.html" target="_blank" class="btn btn-sm btn-ghost">
                                 <i data-lucide="external-link"></i>
@@ -3116,7 +3878,7 @@
                         <input type="file" id="plugin-file-input" accept=".zip" style="display: none;">
                         
                         <!-- Plugin Stats Overview -->
-                        <div id="plugin-stats" class="stats-grid" style="margin-bottom: 1.5rem;">
+                        <div id="plugin-stats" class="stats-grid plugin-store-stats-grid" style="margin-bottom: 1.5rem;">
                             <div class="stat-card">
                                 <div class="stat-icon" style="background: linear-gradient(135deg, var(--color-accent-success) 0%, var(--color-accent-success) 100%);">
                                     <i data-lucide="check-circle"></i>
@@ -3147,16 +3909,16 @@
                         </div>
 
                         <div class="plugin-store-mode-row">
-                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                                <button class="plugin-mode-btn active" data-plugin-mode="store" style="padding: 0.75rem 1.15rem; background: var(--color-active-bg); border: 1px solid var(--color-active-border); border-radius: 8px; color: var(--color-accent-primary); font-size: 0.9rem; cursor: pointer;">
+                            <div class="plugin-store-mode-tabs">
+                                <button class="plugin-mode-btn active" data-plugin-mode="store">
                                     <i data-lucide="shopping-bag" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
                                     Store
                                 </button>
-                                <button class="plugin-mode-btn" data-plugin-mode="installed" style="padding: 0.75rem 1.15rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;">
+                                <button class="plugin-mode-btn" data-plugin-mode="installed">
                                     <i data-lucide="hard-drive" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
                                     Installed
                                 </button>
-                                <button class="plugin-mode-btn" data-plugin-mode="updates" style="padding: 0.75rem 1.15rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;">
+                                <button class="plugin-mode-btn" data-plugin-mode="updates">
                                     <i data-lucide="download" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
                                     Updates
                                 </button>
@@ -3167,30 +3929,29 @@
                         <div id="plugin-store-auth-root" class="plugin-store-auth-root" aria-hidden="true" style="display: none;"></div>
 
                         <!-- Filters and Search -->
-                        <div style="background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
-                            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-                                <div style="flex: 1; min-width: 250px;">
+                        <div class="plugin-store-toolbar">
+                            <div class="plugin-store-toolbar__row">
+                                <div class="plugin-store-toolbar__search">
                                     <div style="position: relative;">
                                         <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--color-text-muted);"></i>
-                                        <input type="text" id="plugin-search" placeholder="Search plugins..." 
-                                               style="width: 100%; padding: 0.75rem 1rem 0.75rem 2.75rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text); font-size: 0.95rem;">
+                                        <input type="text" id="plugin-search" class="plugin-store-search" placeholder="Search plugins...">
                                     </div>
                                 </div>
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <button class="plugin-filter-btn active" data-filter="all" style="padding: 0.75rem 1.25rem; background: var(--color-active-bg); border: 1px solid var(--color-active-border); border-radius: 8px; color: var(--color-accent-primary); font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                                <div class="plugin-store-toolbar__filters">
+                                    <button class="plugin-filter-btn active" data-filter="all">
                                         <i data-lucide="grid-3x3" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
                                         All
                                     </button>
-                                    <button class="plugin-filter-btn" data-filter="active" style="padding: 0.75rem 1.25rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                                    <button class="plugin-filter-btn" data-filter="active">
                                         <i data-lucide="check-circle" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
                                         Active
                                     </button>
-                                    <button class="plugin-filter-btn" data-filter="inactive" style="padding: 0.75rem 1.25rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                                    <button class="plugin-filter-btn" data-filter="inactive">
                                         <i data-lucide="pause-circle" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
                                         Inactive
                                     </button>
                                 </div>
-                                <div style="display: flex; gap: 0.75rem; align-items: center; padding: 0.5rem 0; border-left: 1px solid var(--color-border); padding-left: 0.75rem;">
+                                <div class="plugin-store-toolbar__status-filters">
                                     <span style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 500;">Dev Status:</span>
                                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: var(--color-accent-primary);">
                                         <input type="checkbox" class="dev-status-filter" data-status="stable" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-accent-primary);">
@@ -3213,19 +3974,19 @@
                                         <span>Non-working Beta</span>
                                     </label>
                                 </div>
-                                <select id="plugin-sort" style="padding: 0.75rem 1rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text); font-size: 0.9rem; cursor: pointer;">
+                                <select id="plugin-sort" class="plugin-store-sort-select">
                                     <option value="name">Sort by Name</option>
                                     <option value="status">Sort by Status</option>
                                     <option value="type">Sort by Type</option>
                                     <option value="author">Sort by Author</option>
                                 </select>
-                                <button id="compact-mode-toggle" style="padding: 0.75rem 1.25rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                                <button id="compact-mode-toggle" class="plugin-store-compact-toggle">
                                     <i data-lucide="layout-list" style="width: 16px; height: 16px;"></i>
                                     <span>Compact</span>
                                 </button>
                             </div>
-                            <div id="plugin-store-category-chips" style="display: none; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;"></div>
-                            <div id="plugin-store-filter-chips" style="display: none; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;"></div>
+                            <div id="plugin-store-category-chips" class="plugin-store-chip-row plugin-store-chip-row--categories" style="display: none;"></div>
+                            <div id="plugin-store-filter-chips" class="plugin-store-chip-row plugin-store-chip-row--filters" style="display: none;"></div>
                         </div>
 
                         <div id="plugins-container" class="space-y-4">
