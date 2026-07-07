@@ -5,7 +5,7 @@
   "description": "Ermöglicht externen Anwendungen die Steuerung des Tools via HTTP und WebSocket",
   "author": "copilot",
   "entry": "main.js",
-  "enabled": false,
+  "enabled": true,
   "type": "core",
   "devStatus": "working-beta",
   "permissions": [

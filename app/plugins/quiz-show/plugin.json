@@ -7,7 +7,7 @@
   "icon": "/plugins/quiz-show/assets/quiz-show-icon.png",
   "logo": "/plugins/quiz-show/assets/quiz-show-logo-wide.png",
   "entry": "main.js",
-  "enabled": true,
+  "enabled": false,
   "type": "module",
   "devStatus": "development-beta",
   "permissions": [

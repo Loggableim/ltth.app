@@ -408,6 +408,13 @@ function hasClosedBetaPluginAccess(account = {}, pluginId = '') {
   return groups.has('admin') || groups.has('closed-beta') || pluginIds.has(safePluginId);
 }
 
+function hasSubscriberPluginAccess(account = {}) {
+  const access = normalizeStoreAccess(account.access || {});
+  const groups = new Set(access.groups);
+
+  return groups.has('admin') || groups.has('subscriber');
+}
+
 function buildBetaLicense(userId, now = () => new Date()) {
   const safeUserId = cleanEnvValue(userId);
   const timestamp = now().toISOString();
@@ -718,6 +725,7 @@ module.exports = {
   hasClosedBetaPluginAccess,
   hasActiveStoreLicense,
   hasStoreAdminAccess,
+  hasSubscriberPluginAccess,
   loadStoreEntitlements,
   parseStoreSessionCookie,
   normalizeStoreAccess,

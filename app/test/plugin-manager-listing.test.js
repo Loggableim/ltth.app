@@ -183,10 +183,20 @@ describe('Plugin Manager listing', () => {
     it('includes closed beta store UI locks and invite-required errors', () => {
         const managerScript = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'plugin-manager.js'), 'utf8');
 
+        assert(managerScript.includes('hasSubscriberPluginAccess'));
+        assert(managerScript.includes('SUBSCRIBER_ACCESS_REQUIRED'));
+        assert(managerScript.includes('Subscriber required'));
+        assert(managerScript.includes('Subscriber Only'));
         assert(managerScript.includes('hasClosedBetaPluginAccess'));
         assert(managerScript.includes('CLOSED_BETA_INVITE_REQUIRED'));
         assert(managerScript.includes('Invite required'));
         assert(managerScript.includes('Closed Beta'));
+    });
+
+    it('keeps the featured store plugin list aligned with the preinstalled set', () => {
+        const managerScript = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'plugin-manager.js'), 'utf8');
+
+        assert(managerScript.includes("['chatango', 'api-bridge', 'clarityhud', 'gcce', 'goals', 'spotlight', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain']"));
     });
 
     it('includes Store v2 detail pages, feedback, telemetry and rollback messaging', () => {

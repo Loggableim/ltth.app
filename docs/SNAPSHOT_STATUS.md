@@ -50,7 +50,7 @@ Do not confuse this snapshot with older LTTH repositories or stale archive refer
 - Runtime state: `runtime/`
 - Repository identity: `REPOSITORY_IDENTITY.md`
 - Developer onboarding: `AGENTS.md` and `infos/llm_start_here.md`
-- Version: `1.3.20` (see `version.json` and `app/package.json`)
+- Version: `1.3.21` (see `version.json` and `app/package.json`)
 
 ## Dependency State
 
@@ -84,7 +84,9 @@ The plugin store is the major new feature of v1.3.9:
 - **Frontend:** `app/public/js/plugin-manager.js` (1590 lines) — `PluginManager` class with `store` and `installed` tabs, category filters, dev-status filters, badges, and one-click install flow.
 - **Tests:** `plugin-store.test.js`, `plugin-store-registry.test.js`, `plugin-store-routes.test.js`.
 - **Design docs:** `docs/superpowers/plans/2026-07-04-plugin-store*.md` + `docs/superpowers/specs/2026-07-04-plugin-store-appstore-ui-design.md`.
-- **Preinstalled plugins** (enabled by default in store): `chatango`, `goals`, `spotlight`, `soundboard`, `toptier`, `tts`, `webgpu-emoji-rain`.
+- **Preinstalled plugins** (enabled by default in store): `chatango`, `goals`, `spotlight`, `soundboard`, `toptier`, `tts`, `webgpu-emoji-rain`, `gcce`, `api-bridge`, `clarityhud`.
+- **Subscriber-only plugins**: `animazingpal`, `sidekick`, `streamalchemy`, `talking-heads`, `vdoninja`.
+- **Closed-beta plugins**: `interactive-story`, `openshock`.
 
 Community plugin repositories are supported behind explicit user opt-in (`POST /api/plugin-store/community/enable`).
 
@@ -93,9 +95,10 @@ Community plugin repositories are supported behind explicit user opt-in (`POST /
 Cross-platform one-line installer system:
 
 - **Real scripts:** `install/install.js` (Node 18+), `install/install.sh` (Bash ≥4.0), `install/install.ps1` (PowerShell ≥5.0).
-- **Legacy shims:** Root `install.js`, `install.sh`, `install.ps1` — thin wrappers that curl-pipe to `install/` versions.
-- **Documentation:** `install/README.md` — full reference with environment variables (`LTTH_VERSION`, `LTTH_DIR`, `LTTH_PORT`, `LTTH_NO_BROWSER`, `LTTH_QUIET`, `LTTH_REPO_OWNER`, `LTTH_REPO_NAME`).
-- **Integration:** `version.json` contains `oneLineInstaller` commands for Windows/macOS/Linux/Universal.
+- **Real uninstallers:** `install/uninstall.sh` (Bash ≥4.0), `install/uninstall.ps1` (PowerShell ≥5.0).
+- **Legacy shims:** Root `install.js`, `install.sh`, `install.ps1`, `uninstall.sh`, `uninstall.ps1` — thin wrappers that curl-pipe to `install/` versions.
+- **Documentation:** `install/README.md` — full reference with environment variables (`LTTH_VERSION`, `LTTH_DIR`, `LTTH_PORT`, `LTTH_NO_BROWSER`, `LTTH_QUIET`, `LTTH_REPO_OWNER`, `LTTH_REPO_NAME`, `LTTH_REMOVE_DATA`, `LTTH_KEEP_DATA`).
+- **Integration:** `version.json` contains `oneLineInstaller` commands for Windows/macOS/Linux/Universal and `oneLineUninstaller` commands for Windows/macOS/Linux.
 
 ## Shared Website Layout
 

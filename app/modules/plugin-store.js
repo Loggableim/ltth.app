@@ -14,6 +14,9 @@ const DEFAULT_OFFICIAL_STORE_URL = process.env.LTTH_PLUGIN_STORE_URL || 'https:/
 
 const PREINSTALLED_PLUGIN_IDS = new Set([
   'chatango',
+  'api-bridge',
+  'clarityhud',
+  'gcce',
   'goals',
   'spotlight',
   'soundboard',
@@ -22,12 +25,17 @@ const PREINSTALLED_PLUGIN_IDS = new Set([
   'webgpu-emoji-rain'
 ]);
 
-const CLOSED_BETA_PLUGIN_IDS = new Set([
+const SUBSCRIBER_PLUGIN_IDS = new Set([
   'animazingpal',
-  'interactive-story',
-  'openshock',
   'sidekick',
-  'streamalchemy'
+  'streamalchemy',
+  'talking-heads',
+  'vdoninja'
+]);
+
+const CLOSED_BETA_PLUGIN_IDS = new Set([
+  'interactive-story',
+  'openshock'
 ]);
 
 const ADMIN_PLUGIN_IDS = new Set([
@@ -148,6 +156,9 @@ function normalizeBadges(badges = [], access = { type: 'public' }) {
   const items = Array.isArray(badges) ? badges.slice() : [];
   if (access.type === 'closed-beta') {
     items.push('closed-beta');
+  }
+  if (access.type === 'subscriber') {
+    items.push('subscriber-only');
   }
   if (access.type === 'admin') {
     items.push('admin-only');
@@ -375,6 +386,7 @@ class PluginStore {
         }
 
         const id = assertPluginId(manifest.id);
+        const access = this.normalizeAccess(manifest.access || {}, id);
         plugins.push({
           id,
           name: id === 'webgpu-emoji-rain'
@@ -388,7 +400,8 @@ class PluginStore {
           category: getCategoryFromType(manifest.type),
           channel: 'open-beta',
           pricing: { type: 'free', amount: 0, currency: 'EUR' },
-          badges: PREINSTALLED_PLUGIN_IDS.has(id) ? ['preinstalled'] : [],
+          access,
+          badges: normalizeBadges(PREINSTALLED_PLUGIN_IDS.has(id) ? ['preinstalled'] : [], access),
           packageUrl: '',
           sha256: ''
         });
@@ -491,6 +504,13 @@ class PluginStore {
       return {
         type: 'admin',
         hidden: access.hidden !== false
+      };
+    }
+
+    if (SUBSCRIBER_PLUGIN_IDS.has(safePluginId) || type === 'subscriber') {
+      return {
+        type: 'subscriber',
+        hidden: access.hidden === true
       };
     }
 
@@ -715,5 +735,6 @@ module.exports = {
   DEFAULT_OFFICIAL_STORE_URL,
   PluginStore,
   compareVersions,
-  ensureUrlAllowed
+  ensureUrlAllowed,
+  SUBSCRIBER_PLUGIN_IDS
 };

@@ -422,6 +422,19 @@ class PluginManager {
             normalizedPlugins.includes(pluginId);
     }
 
+    hasSubscriberPluginAccess(plugin) {
+        if (plugin?.access?.type !== 'subscriber') {
+            return true;
+        }
+
+        const access = this.storeAccount?.access || {};
+        const groups = Array.isArray(access.groups) ? access.groups : [];
+        const normalizedGroups = groups.map(group => String(group || '').toLowerCase());
+
+        return normalizedGroups.includes('admin') ||
+            normalizedGroups.includes('subscriber');
+    }
+
     getStoreLicense() {
         return this.storeAccount?.license || {
             active: false,
@@ -753,7 +766,7 @@ class PluginManager {
 
     isFeaturedStorePlugin(plugin) {
         const id = String(plugin.id || '').toLowerCase();
-        return plugin.installed || ['chatango', 'goals', 'spotlight', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain'].includes(id);
+        return plugin.installed || ['chatango', 'api-bridge', 'clarityhud', 'gcce', 'goals', 'spotlight', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain'].includes(id);
     }
 
     renderStoreCategoryChips() {
@@ -1199,11 +1212,14 @@ class PluginManager {
         if (this.getStorePluginPricing(plugin).type === 'paid' && !plugin.owned) {
             return { label: 'Buy', icon: 'shopping-cart', disabled: true };
         }
-        if ((!plugin.installed || plugin.updateAvailable) && plugin.access?.type === 'closed-beta' && !this.hasClosedBetaPluginAccess(plugin)) {
-            return { label: 'Invite required', icon: 'lock', disabled: true };
-        }
         if (!this.hasStoreLicense() && (!plugin.installed || plugin.updateAvailable)) {
             return { label: 'Claim License', icon: 'badge-check', disabled: false };
+        }
+        if ((!plugin.installed || plugin.updateAvailable) && plugin.access?.type === 'subscriber' && !this.hasSubscriberPluginAccess(plugin)) {
+            return { label: 'Subscriber required', icon: 'lock', disabled: true };
+        }
+        if ((!plugin.installed || plugin.updateAvailable) && plugin.access?.type === 'closed-beta' && !this.hasClosedBetaPluginAccess(plugin)) {
+            return { label: 'Invite required', icon: 'lock', disabled: true };
         }
         if (plugin.installed && plugin.updateAvailable) {
             return { label: 'Update', icon: 'download', disabled: false };
@@ -1225,13 +1241,18 @@ class PluginManager {
             return;
         }
 
-        if ((!plugin.installed || plugin.updateAvailable) && plugin.access?.type === 'closed-beta' && !this.hasClosedBetaPluginAccess(plugin)) {
+        if (!this.hasStoreLicense() && (!plugin.installed || plugin.updateAvailable)) {
+            await this.claimBetaLicense();
+            return;
+        }
+
+        if ((!plugin.installed || plugin.updateAvailable) && plugin.access?.type === 'subscriber' && !this.hasSubscriberPluginAccess(plugin)) {
             this.openStorePluginDetail(plugin.sourceId, plugin.id);
             return;
         }
 
-        if (!this.hasStoreLicense() && (!plugin.installed || plugin.updateAvailable)) {
-            await this.claimBetaLicense();
+        if ((!plugin.installed || plugin.updateAvailable) && plugin.access?.type === 'closed-beta' && !this.hasClosedBetaPluginAccess(plugin)) {
+            this.openStorePluginDetail(plugin.sourceId, plugin.id);
             return;
         }
 
@@ -1288,6 +1309,10 @@ class PluginManager {
 
         if (plugin.channel === 'open-beta' || rawBadges.includes('open-beta')) {
             badges.push('<span class="plugin-store-chip plugin-store-chip--warning">Open Beta</span>');
+        }
+
+        if (plugin.access?.type === 'subscriber' || rawBadges.includes('subscriber-only')) {
+            badges.push('<span class="plugin-store-chip plugin-store-chip--warning">Subscriber Only</span>');
         }
 
         if (plugin.access?.type === 'closed-beta' || rawBadges.includes('closed-beta')) {
@@ -1658,6 +1683,7 @@ class PluginManager {
 
                 ${!plugin.packageUrl ? '<div class="plugin-store-drawer__hint">This store entry does not provide an install package yet.</div>' : ''}
                 ${pricing.type === 'paid' ? '<div class="plugin-store-drawer__hint">Paid plugin checkout is reserved for a later store release.</div>' : ''}
+                ${plugin.access?.type === 'subscriber' && !this.hasSubscriberPluginAccess(plugin) ? '<div class="plugin-store-drawer__hint">Subscriber access required. Sign in with a subscriber LTTH account to install this plugin.</div>' : ''}
                 ${plugin.access?.type === 'closed-beta' && !this.hasClosedBetaPluginAccess(plugin) ? '<div class="plugin-store-drawer__hint">Invite required. This plugin is in closed beta and must be enabled for your account first.</div>' : ''}
                 ${!this.hasStoreLicense() && (!plugin.installed || plugin.updateAvailable) ? '<div class="plugin-store-drawer__hint">Beta license required. Claim the free LTTH beta license to install or update this plugin.</div>' : ''}
             </aside>
@@ -2238,6 +2264,14 @@ class PluginManager {
                 return false;
             }
 
+            if (plugin?.access?.type === 'subscriber' && !this.hasSubscriberPluginAccess(plugin)) {
+                if (!silent) {
+                    this.showError('Subscriber access required. Sign in with a subscriber LTTH account before installing plugins.');
+                    this.renderStoreShell();
+                }
+                return false;
+            }
+
             if (plugin?.access?.type === 'closed-beta' && !this.hasClosedBetaPluginAccess(plugin)) {
                 if (!silent) {
                     this.showError('Invite required. This closed beta plugin must be enabled for your account first.');
@@ -2282,6 +2316,8 @@ class PluginManager {
                 if (!silent) {
                     if (data.code === 'BETA_LICENSE_REQUIRED') {
                         this.showError('Beta license required. Claim the free LTTH beta license before installing plugins.');
+                    } else if (data.code === 'SUBSCRIBER_ACCESS_REQUIRED') {
+                        this.showError('Subscriber access required. Sign in with a subscriber LTTH account before installing plugins.');
                     } else if (data.code === 'CLOSED_BETA_INVITE_REQUIRED') {
                         this.showError('Invite required. This closed beta plugin must be enabled for your account first.');
                     } else if (data.code === 'ADMIN_ACCESS_REQUIRED') {

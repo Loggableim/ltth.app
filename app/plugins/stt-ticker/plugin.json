@@ -9,7 +9,10 @@
   "enabled": false,
   "type": "tool",
   "devStatus": "working-beta",
-  "dependencies": ["axios", "form-data"],
+  "dependencies": [
+    "axios",
+    "form-data"
+  ],
   "permissions": [
     "socket.io",
     "routes"
@@ -22,7 +25,10 @@
       "languageDefault": "de",
       "languageFixed": "de",
       "fallbackLanguage": "en",
-      "languageWhitelist": ["de", "en"],
+      "languageWhitelist": [
+        "de",
+        "en"
+      ],
       "deepgramApiKey": "",
       "deepgramModel": "nova-2"
     },

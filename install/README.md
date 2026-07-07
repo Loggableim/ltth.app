@@ -36,7 +36,7 @@ Auf Windows legt der Installer zusaetzlich Desktop- und Startmenue-Verknuepfunge
 
 ```bash
 # Andere Version installieren
-LTTH_VERSION=v1.3.20 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
+LTTH_VERSION=v1.3.21 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
 
 # Anderes Verzeichnis
 LTTH_DIR=/opt/ltth curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
@@ -65,12 +65,21 @@ npm install
 ## Deinstallation
 
 ```bash
-# Linux/macOS
-rm -rf ~/.local/share/ltth
-
 # Windows (PowerShell)
-Remove-Item -Recurse -Force $env:LOCALAPPDATA\LTTH
+iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.ps1 | iex
+
+# Linux/macOS
+curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.sh | bash
 ```
+
+Der Uninstaller fragt vor dem Loeschen der lokalen Daten und Configs nach. Standard ist, nur die LTTH-Installation zu entfernen und die Benutzerkonfiguration zu behalten.
+
+### Optionen fuer die Deinstallation
+
+| Variable | Bedeutung |
+|---|---|
+| `LTTH_REMOVE_DATA=1` | Loescht die aktive LTTH-Konfiguration zusaetzlich ohne Rueckfrage |
+| `LTTH_KEEP_DATA=1` | Behält lokale Daten und Configs explizit bei |
 
 ## Sicherheit
 
@@ -86,6 +95,8 @@ Remove-Item -Recurse -Force $env:LOCALAPPDATA\LTTH
 | `install.sh` | Linux + macOS | Bash >= 4.0 |
 | `install.ps1` | Windows | PowerShell >= 5.0 |
 | `install.js` | Plattformunabhängig | Node.js 18+ |
+| `uninstall.sh` | Linux + macOS | Bash >= 4.0 |
+| `uninstall.ps1` | Windows | PowerShell >= 5.0 |
 
 ## Lizenz
 

@@ -145,6 +145,14 @@ describe('PluginStore', () => {
           packageUrl: 'https://example.com/store-admin.zip'
         },
         {
+          id: 'animazingpal',
+          name: { en: 'AnimazingPal' },
+          description: { en: 'VTuber avatar control' },
+          version: '1.4.0',
+          access: { type: 'subscriber' },
+          packageUrl: 'https://example.com/animazingpal.zip'
+        },
+        {
           id: 'openshock',
           name: { en: 'OpenShock' },
           description: { en: 'Shock integration' },
@@ -164,9 +172,11 @@ describe('PluginStore', () => {
 
     assert.strictEqual(normalResult.plugins.some((plugin) => plugin.id === 'store-admin'), false);
     assert.strictEqual(normalResult.plugins.some((plugin) => plugin.id === 'openshock'), true);
+    assert.strictEqual(normalResult.plugins.some((plugin) => plugin.id === 'animazingpal'), true);
     assert.strictEqual(adminResult.plugins.some((plugin) => plugin.id === 'store-admin'), true);
     assert.strictEqual(adminResult.plugins.find((plugin) => plugin.id === 'store-admin').access.type, 'admin');
     assert.strictEqual(normalResult.plugins.find((plugin) => plugin.id === 'openshock').access.type, 'closed-beta');
+    assert.strictEqual(normalResult.plugins.find((plugin) => plugin.id === 'animazingpal').access.type, 'subscriber');
   });
 
   it('normalizes detail metadata for quality badges, requirements and update notes', async () => {

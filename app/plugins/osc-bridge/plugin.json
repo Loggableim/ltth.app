@@ -7,7 +7,7 @@
   "icon": "/osc-bridge-icon.png",
   "logo": "/osc-bridge-logo.png",
   "entry": "main.js",
-  "enabled": true,
+  "enabled": false,
   "devStatus": "stable",
   "settings": {
     "enabled": false,

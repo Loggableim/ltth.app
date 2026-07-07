@@ -6,7 +6,7 @@
   "author": "Pup Cid",
   "entry": "main.js",
   "logo": "/advanced-timer/assets/advanced-timer-logo.png",
-  "enabled": true,
+  "enabled": false,
   "devStatus": "early-version",
   "permissions": [
     "socket.io",

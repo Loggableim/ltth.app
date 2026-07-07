@@ -223,7 +223,7 @@ func TestVersionReadWrite(t *testing.T) {
 	os.MkdirAll(runtimeDir, 0755)
 	defer os.RemoveAll(runtimeDir) // Clean up
 	
-	testVersion := "v1.2.3"
+	testVersion := "v1.3.21"
 	
 	// Write version
 	err = writeLocalVersion(testVersion)
@@ -292,4 +292,3 @@ func TestDetectUpdateMode(t *testing.T) {
 		t.Errorf("Expected %s mode from env var, got %s", updateModeCommit, mode)
 	}
 }
-

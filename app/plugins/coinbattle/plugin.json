@@ -7,7 +7,7 @@
   "icon": "/plugins/coinbattle/assets/coinbattle-icon.png",
   "logo": "/plugins/coinbattle/assets/coinbattle-logo-wide.png",
   "entry": "main.js",
-  "enabled": true,
+  "enabled": false,
   "type": "overlay",
   "devStatus": "early-version",
   "permissions": [

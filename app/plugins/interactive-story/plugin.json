@@ -7,7 +7,7 @@
   "icon": "/plugins/interactive-story/assets/interactive-story-icon.png",
   "logo": "/plugins/interactive-story/assets/interactive-story-logo-wide.png",
   "entry": "main.js",
-  "enabled": true,
+  "enabled": false,
   "type": "entertainment",
   "devStatus": "early-version",
   "dependencies": [],

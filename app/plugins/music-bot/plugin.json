@@ -6,8 +6,13 @@
   "author": "PupCid",
   "entry": "main.js",
   "logo": "/plugins/music-bot/assets/musicbotlogo.png",
-  "enabled": true,
+  "enabled": false,
   "type": "integration",
   "dependencies": [],
-  "permissions": ["tiktok-events", "database", "filesystem", "network"]
+  "permissions": [
+    "tiktok-events",
+    "database",
+    "filesystem",
+    "network"
+  ]
 }

@@ -74,19 +74,48 @@ describe('Official plugin store registry', () => {
     const registryPath = path.join(repoRoot, 'plugin-store.json');
     const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
     const byId = new Map(registry.plugins.map((plugin) => [plugin.id, plugin]));
-    const closedBetaIds = [
-      'animazingpal',
-      'interactive-story',
-      'openshock',
-      'sidekick',
-      'streamalchemy'
+    const preinstalledIds = [
+      'chatango',
+      'goals',
+      'spotlight',
+      'soundboard',
+      'toptier',
+      'tts',
+      'webgpu-emoji-rain',
+      'gcce',
+      'api-bridge',
+      'clarityhud'
     ];
+    const closedBetaIds = [
+      'interactive-story',
+      'openshock'
+    ];
+    const subscriberIds = [
+      'animazingpal',
+      'sidekick',
+      'streamalchemy',
+      'talking-heads',
+      'vdoninja'
+    ];
+
+    for (const id of preinstalledIds) {
+      const plugin = byId.get(id);
+      assert(plugin, `${id} must exist in the official store registry`);
+      assert(plugin.badges.includes('preinstalled'), `${id} must include the preinstalled badge`);
+    }
 
     for (const id of closedBetaIds) {
       const plugin = byId.get(id);
       assert(plugin, `${id} must exist in the official store registry`);
       assert.strictEqual(plugin.access?.type, 'closed-beta', `${id} must be closed beta`);
       assert(plugin.badges.includes('closed-beta'), `${id} must include the closed-beta badge`);
+    }
+
+    for (const id of subscriberIds) {
+      const plugin = byId.get(id);
+      assert(plugin, `${id} must exist in the official store registry`);
+      assert.strictEqual(plugin.access?.type, 'subscriber', `${id} must be subscriber-only`);
+      assert(plugin.badges.includes('subscriber-only'), `${id} must include the subscriber-only badge`);
     }
 
     const adminPlugin = byId.get('store-admin');

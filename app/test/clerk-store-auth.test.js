@@ -148,20 +148,22 @@ describe('Clerk store auth', () => {
   it('normalizes store access metadata for admin and closed beta grants', () => {
     const {
       hasClosedBetaPluginAccess,
+      hasSubscriberPluginAccess,
       hasStoreAdminAccess,
       normalizeStoreAccess
     } = require('../modules/clerk-store-auth');
 
     const access = normalizeStoreAccess({
       ltthAccess: {
-        groups: ['admin', 'closed-beta', ''],
+        groups: ['admin', 'subscriber', 'closed-beta', ''],
         closedBetaPlugins: ['sidekick', 'openshock', 'sidekick']
       }
     });
 
-    assert.deepStrictEqual(access.groups, ['admin', 'closed-beta']);
+    assert.deepStrictEqual(access.groups, ['admin', 'subscriber', 'closed-beta']);
     assert.deepStrictEqual(access.closedBetaPlugins, ['sidekick', 'openshock']);
     assert.strictEqual(hasStoreAdminAccess({ access }), true);
+    assert.strictEqual(hasSubscriberPluginAccess({ access }), true);
     assert.strictEqual(hasClosedBetaPluginAccess({ access }, 'sidekick'), true);
     assert.strictEqual(hasClosedBetaPluginAccess({ access }, 'openshock'), true);
     assert.strictEqual(hasClosedBetaPluginAccess({ access }, 'animazingpal'), true);

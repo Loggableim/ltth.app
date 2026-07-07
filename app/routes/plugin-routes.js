@@ -13,6 +13,7 @@ const {
     hasActiveStoreLicense,
     hasClosedBetaPluginAccess,
     hasStoreAdminAccess,
+    hasSubscriberPluginAccess,
     setStoreSessionCookie
 } = require('../modules/clerk-store-auth');
 const {
@@ -276,6 +277,14 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                     success: false,
                     code: 'ADMIN_ACCESS_REQUIRED',
                     error: 'This store plugin is only available to LTTH store administrators.'
+                });
+            }
+
+            if (storePlugin.access?.type === 'subscriber' && !hasSubscriberPluginAccess(req.storeAccount)) {
+                return res.status(403).json({
+                    success: false,
+                    code: 'SUBSCRIBER_ACCESS_REQUIRED',
+                    error: 'This plugin is only available to LTTH subscribers.'
                 });
             }
 

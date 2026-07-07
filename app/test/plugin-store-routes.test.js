@@ -325,6 +325,43 @@ describe('Plugin store routes', () => {
     assert.strictEqual(response.body.code, 'ADMIN_ACCESS_REQUIRED');
   });
 
+  it('blocks subscriber-only plugin installs without subscriber access', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        schemaVersion: 1,
+        plugins: [
+          {
+            id: 'animazingpal',
+            name: { en: 'AnimazingPal' },
+            description: { en: 'VTuber avatar control' },
+            version: '1.4.0',
+            access: { type: 'subscriber' },
+            packageUrl: 'https://example.com/animazingpal.zip',
+            channel: 'open-beta'
+          }
+        ]
+      })
+    }));
+    const storeAuth = (req, res, next) => {
+      req.storeAccount = {
+        userId: 'user_test',
+        license: { active: true, status: 'active', plan: 'beta-free' },
+        access: { groups: [], closedBetaPlugins: [] }
+      };
+      next();
+    };
+    const { app } = createTestApp(tempDir, { storeAuth });
+
+    const response = await request(app)
+      .post('/api/plugin-store/official/animazingpal/install')
+      .expect(403);
+
+    assert.strictEqual(response.body.success, false);
+    assert.strictEqual(response.body.code, 'SUBSCRIBER_ACCESS_REQUIRED');
+  });
+
   it('blocks closed beta plugin installs without an invite grant', async () => {
     global.fetch = jest.fn(async () => ({
       ok: true,

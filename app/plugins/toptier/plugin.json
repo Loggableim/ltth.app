@@ -10,5 +10,8 @@
   "enabled": true,
   "type": "overlay",
   "dependencies": [],
-  "permissions": ["tiktok-events", "database"]
+  "permissions": [
+    "tiktok-events",
+    "database"
+  ]
 }

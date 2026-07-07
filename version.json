@@ -1,15 +1,20 @@
 {
-  "version": "1.3.20",
+  "version": "1.3.21",
   "releaseDate": "2026-07-07",
   "status": "stable",
-  "downloadVersion": "1.3.20",
-  "downloadNote": "Fireworks trims obsolete top branding, removes the dashboard open-tab header, and keeps the widescreen settings surface intact.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.20",
+  "downloadVersion": "1.3.21",
+  "downloadNote": "Default plugins now auto-enable the core set, subscriber-only plugins are gated by Clerk access, and the remaining catalog is marked beta.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.21",
   "oneLineInstaller": {
     "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex",
     "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
     "linux": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
     "universal": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.js | node"
+  },
+  "oneLineUninstaller": {
+    "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.ps1 | iex",
+    "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.sh | bash",
+    "linux": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.sh | bash"
   },
   "supportedPlatforms": [
     "windows-amd64",
@@ -19,6 +24,14 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.21": {
+      "date": "2026-07-07",
+      "changes": [
+        "IMPROVED: Default plugin set now preinstalls and auto-enables the 10 core LTTH plugins",
+        "IMPROVED: Subscriber-only plugins are gated behind Clerk subscription access and surfaced with explicit store badges",
+        "IMPROVED: Remaining official plugins are marked beta to make the catalog tiers clear"
+      ]
+    },
     "1.3.20": {
       "date": "2026-07-07",
       "changes": [

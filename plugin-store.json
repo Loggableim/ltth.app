@@ -50,10 +50,10 @@
       "category": "integration",
       "channel": "open-beta",
       "badges": [
-        "closed-beta"
+        "subscriber-only"
       ],
       "access": {
-        "type": "closed-beta"
+        "type": "subscriber"
       },
       "packageUrl": "https://ltth.app/plugin-store/packages/animazingpal-1.4.0.zip",
       "sha256": "15951a3f7752ebbb317b2f1c31b11c2feb427dc82e4683e938e14b23b60ae693",
@@ -81,7 +81,9 @@
       "author": "copilot",
       "category": "core",
       "channel": "open-beta",
-      "badges": [],
+      "badges": [
+        "preinstalled"
+      ],
       "packageUrl": "https://ltth.app/plugin-store/packages/api-bridge-1.0.0.zip",
       "sha256": "735bfdfb635113a8b4c8d58343f1af52f39adbc32cc1f62fb562a2776960fb11",
       "pricing": {
@@ -137,7 +139,9 @@
       "author": "Plugin System",
       "category": "overlay",
       "channel": "open-beta",
-      "badges": [],
+      "badges": [
+        "preinstalled"
+      ],
       "packageUrl": "https://ltth.app/plugin-store/packages/clarityhud-1.1.0.zip",
       "sha256": "98f37b507f234e978997cc4973607ee72d920119e99619cc8bc8a4c653d91847",
       "pricing": {
@@ -290,10 +294,10 @@
         "en": "LTTH Game Engine"
       },
       "description": {
-        "en": "Interactive game engine for TikTok LIVE streams. Play games like Connect4, Chess, Plinko, Wheel of Fortune, Slot Machine, and Live Arena with viewers using chat commands, live activity, and gifts. Features configurable odds profiles, OpenShock reward integration, customizable overlays, compact HUD, XP rewards, win streaks, sound effects, and extensible game framework.",
-        "de": "Interaktive Spielmaschine für TikTok LIVE Streams. Spiele wie Vier Gewinnt, Schach, Plinko, Glücksrad, Slot Machine und Live Arena mit Zuschauern über Chat-Befehle, Live-Aktivität und Geschenke. Bietet konfigurierbare Odds-Profile, OpenShock-Belohnungsintegration, anpassbare Overlays, kompaktes HUD, XP-Belohnungen, Siegesserien, Sound-Effekte und erweiterbares Spiel-Framework.",
-        "es": "Motor de juegos interactivo para transmisiones en vivo de TikTok. Juega juegos como Connect4, Ajedrez, Plinko, Ruleta de la Fortuna y Máquina Tragaperras con espectadores usando comandos de chat y regalos. Incluye perfiles de probabilidades configurables, integración de recompensas OpenShock, overlays personalizables, HUD compacto, recompensas de XP y framework de juegos extensible.",
-        "fr": "Moteur de jeux interactif pour les diffusions en direct TikTok. Jouez à des jeux comme Connect4, Échecs, Plinko, Roue de la Fortune et Machine à Sous avec les spectateurs en utilisant des commandes de chat et des cadeaux. Comprend des profils de probabilités configurables, intégration de récompenses OpenShock, des overlays personnalisables, HUD compact, des récompenses XP et un framework de jeux extensible."
+        "en": "Interactive game engine for TikTok LIVE streams. Play games like Connect4, Chess, Plinko, Wheel of Fortune, Slot Machine, and Live Arena with viewers using chat commands, live activity, and gifts. Features configurable odds profiles, Hybridshock reward integration, customizable overlays, compact HUD, XP rewards, win streaks, sound effects, and extensible game framework.",
+        "de": "Interaktive Spielmaschine für TikTok LIVE Streams. Spiele wie Vier Gewinnt, Schach, Plinko, Glücksrad, Slot Machine und Live Arena mit Zuschauern über Chat-Befehle, Live-Aktivität und Geschenke. Bietet konfigurierbare Odds-Profile, Hybridshock-Belohnungsintegration, anpassbare Overlays, kompaktes HUD, XP-Belohnungen, Siegesserien, Sound-Effekte und erweiterbares Spiel-Framework.",
+        "es": "Motor de juegos interactivo para transmisiones en vivo de TikTok. Juega juegos como Connect4, Ajedrez, Plinko, Ruleta de la Fortuna y Máquina Tragaperras con espectadores usando comandos de chat y regalos. Incluye perfiles de probabilidades configurables, integración de recompensas Hybridshock, overlays personalizables, HUD compacto, recompensas de XP y framework de juegos extensible.",
+        "fr": "Moteur de jeux interactif pour les diffusions en direct TikTok. Jouez à des jeux comme Connect4, Échecs, Plinko, Roue de la Fortune et Machine à Sous avec les spectateurs en utilisant des commandes de chat et des cadeaux. Comprend des profils de probabilités configurables, intégration de récompenses Hybridshock, des overlays personnalisables, HUD compact, des récompenses XP et un framework de jeux extensible."
       },
       "version": "1.3.0",
       "author": "Pup Cid",
@@ -326,7 +330,9 @@
       "author": "Pup Cid",
       "category": "plugin",
       "channel": "open-beta",
-      "badges": [],
+      "badges": [
+        "preinstalled"
+      ],
       "packageUrl": "https://ltth.app/plugin-store/packages/gcce-1.0.0.zip",
       "sha256": "525d640209062c6dfab38a796de70a0a9910252962fa853e2ea871da0afb8644",
       "pricing": {
@@ -538,13 +544,13 @@
     {
       "id": "openshock",
       "name": {
-        "en": "OpenShock & PiShock Integration"
+        "en": "Hybridshock"
       },
       "description": {
-        "en": "Hybrid Shock for TikTok Live events - supports OpenShock and PiShock. Includes event mapping, pattern control, safety layers, queue management, and overlay support.",
-        "de": "Hybrid Shock fur TikTok-Live-Events - unterstutzt OpenShock und PiShock. Mit Event-Mapping, Pattern-Steuerung, Safety-Layer, Queue-Management und Overlay-Unterstutzung.",
-        "es": "Hybrid Shock para eventos en vivo de TikTok - compatible con OpenShock y PiShock. Incluye mapeo de eventos, control de patrones, capas de seguridad, gestion de colas y soporte de overlay.",
-        "fr": "Hybrid Shock pour les evenements TikTok Live - prend en charge OpenShock et PiShock. Inclut le mappage d'evenements, le controle des patterns, les couches de securite, la gestion de file d'attente et le support d'overlay."
+        "en": "Hybridshock for TikTok Live events - supports PiShock and haptic reward workflows. Includes event mapping, pattern control, safety layers, queue management, and overlay support.",
+        "de": "Hybridshock für TikTok-Live-Events - unterstützt PiShock und haptische Belohnungs-Workflows. Mit Event-Mapping, Pattern-Steuerung, Safety-Layer, Queue-Management und Overlay-Unterstützung.",
+        "es": "Hybridshock para eventos en vivo de TikTok - compatible con PiShock y flujos de trabajo de recompensas hápticas. Incluye mapeo de eventos, control de patrones, capas de seguridad, gestión de colas y soporte de overlay.",
+        "fr": "Hybridshock pour les événements TikTok Live - prend en charge PiShock et des workflows de récompenses haptiques. Inclut le mappage d'événements, le contrôle des patterns, les couches de sécurité, la gestion de file d'attente et le support d'overlay."
       },
       "version": "1.1.0",
       "author": "ltth.app Team",
@@ -640,10 +646,10 @@
       "category": "tool",
       "channel": "open-beta",
       "badges": [
-        "closed-beta"
+        "subscriber-only"
       ],
       "access": {
-        "type": "closed-beta"
+        "type": "subscriber"
       },
       "packageUrl": "https://ltth.app/plugin-store/packages/sidekick-1.0.0.zip",
       "sha256": "8c0940d3fe3541ea19d5b280fb7cafbf07189d2c6859f01a548526ee393d0fad",
@@ -702,10 +708,10 @@
       "category": "plugin",
       "channel": "open-beta",
       "badges": [
-        "closed-beta"
+        "subscriber-only"
       ],
       "access": {
-        "type": "closed-beta"
+        "type": "subscriber"
       },
       "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.0.0.zip",
       "sha256": "100e98aa4e8b6df3f435502686e120c2f7949edd275503897e3478a325fe6fe3",
@@ -793,7 +799,9 @@
       "author": "Pup Cid",
       "category": "module",
       "channel": "open-beta",
-      "badges": [],
+      "badges": [
+        "subscriber-only"
+      ],
       "packageUrl": "https://ltth.app/plugin-store/packages/talking-heads-1.0.0.zip",
       "sha256": "a8da39feb2dc7e7ea697865c98c2b35b3c9efa2272174f5bafbf957d2b66b1c9",
       "pricing": {
@@ -803,7 +811,10 @@
       },
       "screenshots": [
         "/screenshots/features/talking-heads.png"
-      ]
+      ],
+      "access": {
+        "type": "subscriber"
+      }
     },
     {
       "id": "thermal-printer",
@@ -904,7 +915,9 @@
       "author": "Pup Cid",
       "category": "integration",
       "channel": "open-beta",
-      "badges": [],
+      "badges": [
+        "subscriber-only"
+      ],
       "packageUrl": "https://ltth.app/plugin-store/packages/vdoninja-1.0.0.zip",
       "sha256": "1b7e83c98e32d21f26213d5958576c803c10281d59e13120735509d017b8f268",
       "pricing": {
@@ -914,7 +927,10 @@
       },
       "screenshots": [
         "/screenshots/features/vdoninja.png"
-      ]
+      ],
+      "access": {
+        "type": "subscriber"
+      }
     },
     {
       "id": "viewer-leaderboard",

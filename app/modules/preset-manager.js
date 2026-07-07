@@ -23,7 +23,7 @@ class PresetManager {
                     name: options.name || 'Unnamed Preset',
                     description: options.description || '',
                     exportDate: new Date().toISOString(),
-                    version: '1.3.20', // Current app version
+                    version: '1.3.21', // Current app version
                     author: options.author || 'Unknown',
                 },
                 data: {},

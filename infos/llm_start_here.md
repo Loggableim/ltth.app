@@ -23,7 +23,7 @@ This workspace is a full Git checkout:
 - `app/` is the maintained runtime.
 - The old Electron main-process folder is not present.
 - Root `package.json` is a convenience wrapper, not the backend dependency manifest.
-- Current version: `1.3.20` (see `version.json` and `app/package.json`).
+- Current version: `1.3.21` (see `version.json` and `app/package.json`).
 
 Before making changes, read:
 
@@ -111,7 +111,7 @@ css/               ← shared website CSS (layout.css, main.css, docs.css)
 locales/           ← client-side website translations (de/en/es/fr + home-*.json)
 features/          ← static HTML feature pages (alerts, emoji-rain, tts, etc.)
 screenshots/       ← website screenshots (de/, features/, live-check/)
-install/           ← one-line installer scripts (install.js, install.sh, install.ps1)
+  install/           ← one-line installer/uninstaller scripts (install.js, install.sh, install.ps1, uninstall.sh, uninstall.ps1)
 plugin-store.json  ← official plugin store registry (36 entries)
 plugin-store/      ← pre-packaged plugin ZIPs (packages/*.zip)
   build-src/         ← Go launcher sources (launcher-gui.go)
@@ -145,6 +145,12 @@ The plugin store (v1.3.9) adds:
 
 Security: HTTPS-only package URLs, SHA-256 checksum verification, safe ZIP extraction with path-traversal protection, plugin ID validation.
 
+Store access classes:
+
+- Preinstalled plugins: `chatango`, `goals`, `spotlight`, `soundboard`, `toptier`, `tts`, `webgpu-emoji-rain`, `gcce`, `api-bridge`, `clarityhud`
+- Subscriber-only plugins: `animazingpal`, `sidekick`, `streamalchemy`, `talking-heads`, `vdoninja`
+- Closed-beta plugins: `interactive-story`, `openshock`
+
 ## Important Files
 
 - `app/server.js`: central runtime composition and route wiring
@@ -163,7 +169,7 @@ Security: HTTPS-only package URLs, SHA-256 checksum verification, safe ZIP extra
 - `app/package.json`: backend dependency manifest
 - `plugin-store.json`: plugin store registry
 - `build-src/`: Go launcher source
-- `version.json`: current version and one-line installer commands
+- `version.json`: current version and one-line install/uninstall commands
 - `_partials/` + `js/layout.js`: shared website layout system
 
 ## Plugin Rules

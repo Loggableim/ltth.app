@@ -41,26 +41,31 @@ const mockApp = {
 
 const mockIO = {
     emit: () => {},
+    on: () => {},
+    off: () => {},
     sockets: {
         sockets: new Map()
     }
 };
 
-const mockDB = {
-    prepare: () => ({
-        get: () => null,
-        run: () => {}
-    })
-};
+const DatabaseManager = require('../modules/database');
+const mockDB = new DatabaseManager(path.join(userConfigsDir, 'plugin-state-persistence.db'));
 
 const mockLogger = {
+    debug: (msg) => console.log(`[DEBUG] ${msg}`),
     info: (msg) => console.log(`[INFO] ${msg}`),
     warn: (msg) => console.log(`[WARN] ${msg}`),
     error: (msg) => console.log(`[ERROR] ${msg}`)
 };
 
 const mockConfigPathManager = {
-    getUserConfigsDir: () => userConfigsDir
+    getUserConfigsDir: () => userConfigsDir,
+    getUserDataDir: () => path.join(userConfigsDir, 'user-data'),
+    getPluginDataDir: (pluginId) => {
+        const dir = path.join(userConfigsDir, 'plugin-data', pluginId);
+        fs.mkdirSync(dir, { recursive: true });
+        return dir;
+    }
 };
 
 // Load the PluginLoader
@@ -80,7 +85,7 @@ async function runTest() {
         console.log(`Loaded ${plugins1.length} plugins initially`);
         
         // Verify default active plugins
-        const defaultActive = ['webgpu-emoji-rain', 'spotlight', 'goals', 'quiz-show', 'soundboard', 'tts'];
+        const defaultActive = ['chatango', 'goals', 'spotlight', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'gcce', 'api-bridge', 'clarityhud'];
         const activePlugins1 = plugins1.map(p => p.id);
         
         console.log('Active plugins:', activePlugins1.sort().join(', '));
@@ -91,19 +96,19 @@ async function runTest() {
         
         assert.ok(allDefaultsActive, 'All default plugins should be active');
         assert.ok(onlyDefaultsActive, 'Only default plugins should be active');
-        assert.strictEqual(plugins1.length, 6, 'Should have exactly 6 active plugins');
+        assert.strictEqual(plugins1.length, 10, 'Should have exactly 10 active plugins');
         
         console.log('✓ Test 1 passed: Correct plugins loaded by default\n');
         
         console.log('Test 2: Enable a disabled plugin');
         console.log('----------------------------------');
         // Enable a plugin that's disabled by default
-        await loader1.enablePlugin('api-bridge');
+        await loader1.enablePlugin('quiz-show');
         
         // Verify the plugin is now in the loaded plugins
         const plugins2 = loader1.getAllPlugins();
-        const apiPluginEnabled = plugins2.some(p => p.id === 'api-bridge');
-        assert.ok(apiPluginEnabled, 'api-bridge should be enabled');
+        const quizShowEnabled = plugins2.some(p => p.id === 'quiz-show');
+        assert.ok(quizShowEnabled, 'quiz-show should be enabled');
         console.log('✓ Test 2 passed: Plugin enabled successfully\n');
         
         console.log('Test 3: Disable a default plugin');
@@ -124,7 +129,7 @@ async function runTest() {
         const stateData = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
         console.log('State file contents:', JSON.stringify(stateData, null, 2));
         
-        assert.strictEqual(stateData['api-bridge'].enabled, true, 'api-bridge should be enabled in state');
+        assert.strictEqual(stateData['quiz-show'].enabled, true, 'quiz-show should be enabled in state');
         assert.strictEqual(stateData['webgpu-emoji-rain'].enabled, false, 'webgpu-emoji-rain should be disabled in state');
         console.log('✓ Test 4 passed: State file contains correct data\n');
         
@@ -140,14 +145,14 @@ async function runTest() {
         console.log('Active plugins after "restart":', activePluginIds.join(', '));
         
         // Verify that our changes persisted
-        const apiBridgeStillEnabled = activePluginIds.includes('api-bridge');
+        const quizShowStillEnabled = activePluginIds.includes('quiz-show');
         const emojiRainStillDisabled = !activePluginIds.includes('webgpu-emoji-rain');
         
-        assert.ok(apiBridgeStillEnabled, 'api-bridge should still be enabled after restart');
+        assert.ok(quizShowStillEnabled, 'quiz-show should still be enabled after restart');
         assert.ok(emojiRainStillDisabled, 'webgpu-emoji-rain should still be disabled after restart');
         
         // Verify other default plugins are still active
-        const otherDefaults = ['spotlight', 'goals', 'quiz-show', 'soundboard', 'tts'];
+        const otherDefaults = ['chatango', 'goals', 'spotlight', 'soundboard', 'toptier', 'tts', 'gcce', 'api-bridge', 'clarityhud'];
         const otherDefaultsActive = otherDefaults.every(id => activePluginIds.includes(id));
         assert.ok(otherDefaultsActive, 'Other default plugins should still be active');
         
@@ -176,12 +181,14 @@ async function runTest() {
         // Keep the state file for manual inspection
         console.log(`State file preserved at: ${stateFile}`);
         console.log('Final state:', JSON.stringify(JSON.parse(fs.readFileSync(stateFile, 'utf8')), null, 2));
+        mockDB.close();
         
         process.exit(0);
         
     } catch (error) {
         console.error('\n✗ TEST FAILED:', error.message);
         console.error(error.stack);
+        mockDB.close();
         process.exit(1);
     }
 }

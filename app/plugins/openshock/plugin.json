@@ -1,13 +1,13 @@
 {
   "id": "openshock",
-  "name": "Hybrid Shock",
+  "name": "Hybridshock",
   "version": "1.1.0",
-  "description": "Hybrid Shock for TikTok Live events - supports OpenShock and PiShock. Includes event mapping, pattern control, safety layers, queue management, and overlay support.",
+  "description": "Hybridshock for TikTok Live events - supports PiShock and haptic reward workflows. Includes event mapping, pattern control, safety layers, queue management, and overlay support.",
   "author": "ltth.app Team",
   "icon": "/plugins/openshock/assets/branding/hybridshock-icon.png",
   "logo": "/plugins/openshock/assets/branding/hybridshock-logo.png",
   "entry": "main.js",
-  "enabled": true,
+  "enabled": false,
   "type": "integration",
   "devStatus": "development-beta",
   "permissions": [
@@ -21,7 +21,7 @@
     {
       "id": "api-integration",
       "name": "Shock API Integration",
-      "description": "Full integration with OpenShock and PiShock APIs for shock, vibrate, and sound commands. Provider selection is available via dropdown."
+      "description": "Full integration with PiShock and haptic reward workflows for shock, vibrate, and sound commands. Provider selection is available via dropdown."
     },
     {
       "id": "pishock-support",
@@ -31,7 +31,7 @@
     {
       "id": "device-management",
       "name": "Device Management & Status Monitoring",
-      "description": "Management of OpenShock devices and PiShock share codes with real-time status monitoring and configuration."
+      "description": "Management of PiShock devices and haptic reward endpoints with real-time status monitoring and configuration."
     },
     {
       "id": "event-mapping",
@@ -153,9 +153,9 @@
     }
   },
   "descriptions": {
-    "en": "Hybrid Shock for TikTok Live events - supports OpenShock and PiShock. Includes event mapping, pattern control, safety layers, queue management, and overlay support.",
-    "de": "Hybrid Shock fur TikTok-Live-Events - unterstutzt OpenShock und PiShock. Mit Event-Mapping, Pattern-Steuerung, Safety-Layer, Queue-Management und Overlay-Unterstutzung.",
-    "es": "Hybrid Shock para eventos en vivo de TikTok - compatible con OpenShock y PiShock. Incluye mapeo de eventos, control de patrones, capas de seguridad, gestion de colas y soporte de overlay.",
-    "fr": "Hybrid Shock pour les evenements TikTok Live - prend en charge OpenShock et PiShock. Inclut le mappage d'evenements, le controle des patterns, les couches de securite, la gestion de file d'attente et le support d'overlay."
+    "en": "Hybridshock for TikTok Live events - supports PiShock and haptic reward workflows. Includes event mapping, pattern control, safety layers, queue management, and overlay support.",
+    "de": "Hybridshock für TikTok-Live-Events - unterstützt PiShock und haptische Belohnungs-Workflows. Mit Event-Mapping, Pattern-Steuerung, Safety-Layer, Queue-Management und Overlay-Unterstützung.",
+    "es": "Hybridshock para eventos en vivo de TikTok - compatible con PiShock y flujos de trabajo de recompensas hápticas. Incluye mapeo de eventos, control de patrones, capas de seguridad, gestión de colas y soporte de overlay.",
+    "fr": "Hybridshock pour les événements TikTok Live - prend en charge PiShock et des workflows de récompenses haptiques. Inclut le mappage d'événements, le contrôle des patterns, les couches de sécurité, la gestion de file d'attente et le support d'overlay."
   }
 }
