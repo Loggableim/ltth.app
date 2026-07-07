@@ -244,6 +244,50 @@ func startLauncherHealthTestServer(t *testing.T, pid int, name string) (int, fun
 	return port, server.Close
 }
 
+func startLauncherShutdownTestServer(t *testing.T, pid int, name string, shutdownCalls *int) (int, func()) {
+	t.Helper()
+
+	reportedPort := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/health":
+			_ = json.NewEncoder(w).Encode(ServerHealthInfo{
+				Status:  "ok",
+				Success: true,
+				Name:    name,
+				PID:     pid,
+				Port:    reportedPort,
+			})
+		case "/api/launcher/shutdown":
+			*shutdownCalls = *shutdownCalls + 1
+			_ = json.NewEncoder(w).Encode(map[string]bool{"success": true})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+
+	parsedURL, err := url.Parse(server.URL)
+	if err != nil {
+		server.Close()
+		t.Fatalf("failed to parse test server URL: %v", err)
+	}
+
+	_, portText, err := net.SplitHostPort(parsedURL.Host)
+	if err != nil {
+		server.Close()
+		t.Fatalf("failed to split test server host: %v", err)
+	}
+
+	port, err := strconv.Atoi(portText)
+	if err != nil {
+		server.Close()
+		t.Fatalf("failed to parse test server port: %v", err)
+	}
+	reportedPort = port
+
+	return port, server.Close
+}
+
 func TestStopDetectedLTTHServersTerminatesExternalHealthPID(t *testing.T) {
 	port, closeServer := startLauncherHealthTestServer(t, 4242, "LTTH - Pup Cids little TikTool Helper")
 	defer closeServer()
@@ -283,6 +327,133 @@ func TestStopDetectedLTTHServersTerminatesExternalHealthPID(t *testing.T) {
 	}
 	if !foundExpectedPID {
 		t.Fatalf("expected PID 4242 to be terminated, got %#v", terminated)
+	}
+}
+
+func TestStopDetectedLTTHServersAttemptsGracefulShutdownBeforeTaskkill(t *testing.T) {
+	shutdownCalls := 0
+	port, closeServer := startLauncherShutdownTestServer(t, 4342, "LTTH - Pup Cids little TikTool Helper", &shutdownCalls)
+	defer closeServer()
+
+	launcher := NewLauncher()
+	launcher.exeDir = t.TempDir()
+	launcher.preferredPort = port
+	launcher.launcherToken = "test-token"
+
+	var terminated []int
+	oldTerminate := terminateProcessTreeByPID
+	oldWait := waitForHealthyServerToStop
+	terminateProcessTreeByPID = func(pid int) error {
+		if shutdownCalls == 0 {
+			t.Fatalf("taskkill fallback ran before graceful shutdown was attempted")
+		}
+		terminated = append(terminated, pid)
+		return nil
+	}
+	waitForHealthyServerToStop = func(_ *Launcher, checkedPort int, timeout time.Duration) bool {
+		if timeout > 5*time.Second {
+			t.Fatalf("graceful shutdown wait should be short, got %v", timeout)
+		}
+		if checkedPort != port {
+			return true
+		}
+		return timeout == taskkillPortWaitTimeout
+	}
+	defer func() {
+		terminateProcessTreeByPID = oldTerminate
+		waitForHealthyServerToStop = oldWait
+	}()
+
+	stopped, err := launcher.stopDetectedLTTHServers("TEST")
+	if err != nil {
+		t.Fatalf("expected taskkill fallback to recover after graceful shutdown timeout, got: %v", err)
+	}
+	if !stopped {
+		t.Fatal("expected stopDetectedLTTHServers to report that a server was stopped")
+	}
+	if shutdownCalls != 1 {
+		t.Fatalf("expected one graceful shutdown request, got %d", shutdownCalls)
+	}
+	foundExpectedPID := false
+	for _, pid := range terminated {
+		if pid == 4342 {
+			foundExpectedPID = true
+			break
+		}
+	}
+	if !foundExpectedPID {
+		t.Fatalf("expected PID 4342 to be terminated after graceful timeout, got %#v", terminated)
+	}
+}
+
+func TestLauncherTokenPersistsPerInstallDirectory(t *testing.T) {
+	exeDir := t.TempDir()
+
+	first := NewLauncher()
+	first.exeDir = exeDir
+	firstToken := first.loadOrCreateLauncherToken()
+	if len(firstToken) < 32 {
+		t.Fatalf("expected generated launcher token to be persisted, got %q", firstToken)
+	}
+
+	second := NewLauncher()
+	second.exeDir = exeDir
+	secondToken := second.loadOrCreateLauncherToken()
+
+	if secondToken != firstToken {
+		t.Fatalf("expected launcher token to be reused, got %q then %q", firstToken, secondToken)
+	}
+}
+
+func TestParseListeningPortPIDsAcceptsLocalizedWindowsListeningState(t *testing.T) {
+	netstatOutput := `
+  TCP    127.0.0.1:3000         0.0.0.0:0              ABHÖREN         46792
+  TCP    127.0.0.1:3001         0.0.0.0:0              LISTENING       12345
+`
+
+	result := parseListeningPortPIDs(netstatOutput, []int{3000, 3001})
+
+	if got := result[3000]; len(got) != 1 || got[0] != 46792 {
+		t.Fatalf("expected German ABHÖREN state to be treated as listening, got %#v", got)
+	}
+	if got := result[3001]; len(got) != 1 || got[0] != 12345 {
+		t.Fatalf("expected English LISTENING state to still work, got %#v", got)
+	}
+}
+
+func TestFreshBackendStartupRunsBeforeDependencyRepair(t *testing.T) {
+	source, err := os.ReadFile("launcher-gui.go")
+	if err != nil {
+		t.Fatalf("failed to read launcher source: %v", err)
+	}
+
+	content := string(source)
+	cleanupIndex := strings.Index(content, `prepareFreshBackendStartup("STARTUP")`)
+	dependencyIndex := strings.Index(content, `[Phase 3] Checking dependencies`)
+	if cleanupIndex < 0 {
+		t.Fatal("expected startup cleanup to call prepareFreshBackendStartup")
+	}
+	if dependencyIndex < 0 {
+		t.Fatal("expected dependency check phase marker to exist")
+	}
+	if cleanupIndex > dependencyIndex {
+		t.Fatalf("startup cleanup must run before dependency/native module repair; cleanup index %d, dependency index %d", cleanupIndex, dependencyIndex)
+	}
+}
+
+func TestNativeModuleFailureSuggestsDependencyInstallForMissingBinding(t *testing.T) {
+	err := fmt.Errorf("exit status 1\nError: Could not locate the bindings file. Tried:\n -> build\\Release\\better_sqlite3.node")
+
+	if !nativeModuleFailureSuggestsDependencyInstall(err) {
+		t.Fatal("missing better-sqlite3 binding should trigger dependency install before rebuild")
+	}
+}
+
+func TestNativeModuleFailureDoesNotSuggestDependencyInstallForAbiMismatch(t *testing.T) {
+	err := fmt.Errorf("Error: The module was compiled against a different Node.js version using NODE_MODULE_VERSION 115")
+
+	if nativeModuleFailureSuggestsDependencyInstall(err) {
+		t.Fatal("ABI mismatch should use native rebuild path")
 	}
 }
 
@@ -393,19 +564,105 @@ func TestBackendPortConfigPinsMaxPortToPreferredPort(t *testing.T) {
 	}
 }
 
-func TestNativeModuleFailureSuggestsDependencyInstallForMissingBinding(t *testing.T) {
-	err := fmt.Errorf("exit status 1\nError: Could not locate the bindings file. Tried:\n -> build\\Release\\better_sqlite3.node")
+func TestAutoFixPortReleasesOccupiedPreferredPort(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("failed to reserve occupied port: %v", err)
+	}
+	defer listener.Close()
 
-	if !nativeModuleFailureSuggestsDependencyInstall(err) {
-		t.Fatal("missing better-sqlite3 binding should trigger dependency install before rebuild")
+	_, portText, err := net.SplitHostPort(listener.Addr().String())
+	if err != nil {
+		t.Fatalf("failed to parse occupied port: %v", err)
+	}
+	port, err := strconv.Atoi(portText)
+	if err != nil {
+		t.Fatalf("failed to convert occupied port: %v", err)
+	}
+
+	launcher := NewLauncher()
+	launcher.preferredPort = port
+
+	oldStopStale := stopStaleLTTHPortOwners
+	cleanupCalls := 0
+	stopStaleLTTHPortOwners = func(_ *Launcher, source string) (bool, error) {
+		cleanupCalls++
+		if source != "STARTUP" {
+			t.Fatalf("expected startup cleanup source, got %q", source)
+		}
+		if err := listener.Close(); err != nil {
+			t.Fatalf("failed to release occupied port: %v", err)
+		}
+		return true, nil
+	}
+	defer func() {
+		stopStaleLTTHPortOwners = oldStopStale
+	}()
+
+	if !launcher.autoFixPort() {
+		t.Fatal("expected autoFixPort to continue after releasing the occupied port")
+	}
+	if cleanupCalls != 1 {
+		t.Fatalf("expected one startup cleanup attempt, got %d", cleanupCalls)
 	}
 }
 
-func TestNativeModuleFailureDoesNotSuggestDependencyInstallForAbiMismatch(t *testing.T) {
-	err := fmt.Errorf("Error: The module was compiled against a different Node.js version using NODE_MODULE_VERSION 115")
+func TestAutoFixPortFailsFastWhenCleanupCannotFreePort(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("failed to reserve occupied port: %v", err)
+	}
+	defer listener.Close()
 
-	if nativeModuleFailureSuggestsDependencyInstall(err) {
-		t.Fatal("ABI mismatch should use native rebuild path")
+	_, portText, err := net.SplitHostPort(listener.Addr().String())
+	if err != nil {
+		t.Fatalf("failed to parse occupied port: %v", err)
+	}
+	port, err := strconv.Atoi(portText)
+	if err != nil {
+		t.Fatalf("failed to convert occupied port: %v", err)
+	}
+
+	launcher := NewLauncher()
+	launcher.preferredPort = port
+
+	oldStopStale := stopStaleLTTHPortOwners
+	stopStaleLTTHPortOwners = func(_ *Launcher, source string) (bool, error) {
+		if source != "STARTUP" {
+			t.Fatalf("expected startup cleanup source, got %q", source)
+		}
+		return false, nil
+	}
+	defer func() {
+		stopStaleLTTHPortOwners = oldStopStale
+	}()
+
+	if launcher.autoFixPort() {
+		t.Fatal("expected autoFixPort to fail when the occupied port cannot be freed")
+	}
+}
+
+func TestKillNodeProcessUsesConfiguredTerminator(t *testing.T) {
+	launcher := NewLauncher()
+	launcher.nodeCmd = &exec.Cmd{Process: &os.Process{Pid: 12345}}
+
+	oldTerminate := terminateProcessTreeByPID
+	terminatedPID := 0
+	terminateProcessTreeByPID = func(pid int) error {
+		terminatedPID = pid
+		return nil
+	}
+	defer func() {
+		terminateProcessTreeByPID = oldTerminate
+	}()
+
+	launcher.killNodeProcess()
+
+	if terminatedPID != 12345 {
+		t.Fatalf("expected terminator to be called with PID 12345, got %d", terminatedPID)
+	}
+	if launcher.nodeCmd != nil {
+		t.Fatal("expected nodeCmd to be cleared after termination")
 	}
 }
 

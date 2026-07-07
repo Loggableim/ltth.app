@@ -122,9 +122,10 @@ body {
 }
 
 .header {
-  display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
-  gap: 18px 22px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 22px;
   align-items: center;
   margin-bottom: 20px;
   padding: 18px 22px;
@@ -138,18 +139,26 @@ body {
 .header-brand {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 18px;
+  justify-content: flex-end;
+  flex: 0 0 auto;
   min-width: 0;
 }
 
 .header-logo {
   display: block;
-  width: clamp(280px, 31vw, 560px);
+  width: clamp(340px, 34vw, 620px);
   max-width: 100%;
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.35));
+}
+
+html[data-theme="cid"] .header-logo {
+  width: clamp(380px, 36vw, 700px);
+}
+
+html[data-theme="vision-impaired"] .header-logo {
+  width: clamp(360px, 38vw, 620px);
 }
 
 html[data-theme="day"] .header-logo {
@@ -157,23 +166,24 @@ html[data-theme="day"] .header-logo {
 }
 
 .header-copy {
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .header-copy-row {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 14px;
   width: 100%;
 }
 
 .header-copy-text {
   min-width: 0;
-  text-align: right;
+  text-align: left;
 }
 
 .header-copy h1 {
@@ -1062,11 +1072,12 @@ html[data-theme="vision-impaired"] .form-select {
 
 @media (max-width: 1180px) {
   .header {
-    grid-template-columns: 1fr;
-    justify-items: start;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .header-brand {
+    width: 100%;
     justify-content: flex-start;
   }
 
@@ -1076,7 +1087,7 @@ html[data-theme="vision-impaired"] .form-select {
   }
 
   .header-copy-row {
-    justify-content: space-between;
+    justify-content: flex-start;
   }
 
   .header-copy-text {
@@ -1124,7 +1135,7 @@ html[data-theme="vision-impaired"] .form-select {
   }
 
   .header-logo {
-    width: min(320px, 78vw);
+    width: min(420px, 82vw);
   }
 
   .header-copy-row {

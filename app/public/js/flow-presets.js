@@ -165,11 +165,11 @@ const FLOW_PRESETS = [
     {
         id: 'sub-flame-particles',
         name: 'Abo → Partikel-Feuerwerk',
-        description: 'Neues Abonnement löst Partikel-Effekt im Flame Overlay aus',
+        description: 'Neues Abonnement loest Partikel-Effekt im Visual FX Frame aus',
         category: 'subscribe',
         icon: '✨',
         flow: {
-            name: 'Neues Abo → Partikel Overlay',
+            name: 'Neues Abo → Partikel im Visual FX Frame',
             trigger_type: 'tiktok:subscribe',
             trigger_condition: null,
             actions: [
@@ -182,11 +182,11 @@ const FLOW_PRESETS = [
     {
         id: 'follow-flame-glow',
         name: 'Follow → Flammen-Glow',
-        description: 'Neue Follower lösen kurzen Flammen-Glow aus',
+        description: 'Neue Follower loesen kurzen Glow im Visual FX Frame aus',
         category: 'follow',
         icon: '🔥',
         flow: {
-            name: 'Neuer Follow → Flammen Glow',
+            name: 'Neuer Follow → Visual FX Glow',
             trigger_type: 'tiktok:follow',
             trigger_condition: null,
             actions: [

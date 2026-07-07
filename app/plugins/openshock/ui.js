@@ -143,7 +143,7 @@ function toggleDebugVerbose() {
 // ====================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[OpenShock] Initializing plugin UI...');
+    console.log('[Hybrid Shock] Initializing plugin UI...');
 
     initializeSocket();
     initializeTabs();
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadInitialData();
     startPeriodicUpdates();
 
-    console.log('[OpenShock] UI initialization complete');
+    console.log('[Hybrid Shock] UI initialization complete');
 });
 
 // ====================================================================
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function initializeSocket() {
     if (!window.io) {
-        console.warn('[OpenShock] Socket.IO not available');
+        console.warn('[Hybrid Shock] Socket.IO not available');
         return;
     }
 
@@ -172,60 +172,110 @@ function initializeSocket() {
     });
 
     socket.on('connect', () => {
-        console.log('[OpenShock] Socket.IO connected');
+        console.log('[Hybrid Shock] Socket.IO connected');
         updateConnectionStatus('connected');
     });
 
     socket.on('disconnect', () => {
-        console.log('[OpenShock] Socket.IO disconnected');
+        console.log('[Hybrid Shock] Socket.IO disconnected');
         updateConnectionStatus('disconnected');
     });
 
     socket.on('error', (error) => {
-        console.error('[OpenShock] Socket.IO error:', error);
+        console.error('[Hybrid Shock] Socket.IO error:', error);
         updateConnectionStatus('error');
     });
 
-    // OpenShock-specific events
+    // Hybrid Shock-specific events
     socket.on('openshock:device-update', (data) => {
-        console.log('[OpenShock] Device update:', data);
+        console.log('[Hybrid Shock] Device update:', data);
         handleDeviceUpdate(data);
     });
 
     socket.on('openshock:command-sent', (data) => {
-        console.log('[OpenShock] Command sent:', data);
+        console.log('[Hybrid Shock] Command sent:', data);
         handleCommandSent(data);
     });
 
     socket.on('openshock:queue-update', (data) => {
-        console.log('[OpenShock] Queue update:', data);
+        console.log('[Hybrid Shock] Queue update:', data);
         handleQueueUpdate(data);
     });
 
     socket.on('openshock:emergency-stop', (data) => {
-        console.log('[OpenShock] Emergency stop triggered:', data);
+        console.log('[Hybrid Shock] Emergency stop triggered:', data);
         handleEmergencyStop(data);
     });
 
     socket.on('openshock:stats-update', (data) => {
-        console.log('[OpenShock] Stats update:', data);
+        console.log('[Hybrid Shock] Stats update:', data);
         handleStatsUpdate(data);
     });
 }
 
 function handleDeviceUpdate(data) {
-    const deviceIndex = devices.findIndex(d => d.id === data.deviceId);
-    if (deviceIndex >= 0) {
-        devices[deviceIndex] = { ...devices[deviceIndex], ...data };
+    if (data && Array.isArray(data.devices)) {
+        devices = data.devices;
         renderDeviceList();
+        updateApiStatus(devices.length > 0, devices.length);
+        return;
     }
+
+    const deviceId = data?.deviceId || data?.id;
+    if (!deviceId) {
+        return;
+    }
+
+    const deviceIndex = devices.findIndex(d => d.id === deviceId);
+    if (deviceIndex >= 0) {
+        devices[deviceIndex] = { ...devices[deviceIndex], ...data, id: deviceId };
+    } else {
+        devices = [...devices, { ...data, id: deviceId }];
+    }
+
+    renderDeviceList();
+    updateApiStatus(devices.length > 0, devices.length);
+}
+
+function normalizeCommandPayload(data = {}) {
+    const command = data.command || {};
+    const type = command.type || data.type || 'shock';
+    const intensity = command.intensity ?? data.intensity ?? 0;
+    const duration = command.duration ?? data.duration ?? 1000;
+    const deviceId = data.deviceId || command.deviceId || '';
+    const deviceName = data.deviceName || data.device || command.deviceName || deviceId || 'Unknown Device';
+    const username = data.username || data.user || command.username || 'Anonymous';
+    const userId = data.userId || command.userId || '';
+    const source = data.source || 'manual';
+
+    return {
+        ...data,
+        command: {
+            type,
+            intensity,
+            duration,
+            pattern: command.pattern ?? data.pattern ?? null
+        },
+        type,
+        intensity,
+        duration,
+        deviceId,
+        deviceName,
+        device: deviceName,
+        username,
+        userId,
+        user: username,
+        source,
+        timestamp: data.timestamp || new Date().toISOString()
+    };
 }
 
 function handleCommandSent(data) {
+    const normalized = normalizeCommandPayload(data);
+
     debugLogs.unshift({
-        timestamp: new Date().toISOString(),
-        type: 'command',
-        ...data
+        eventType: 'command',
+        ...normalized
     });
 
     if (debugLogs.length > 100) {
@@ -238,7 +288,7 @@ function handleCommandSent(data) {
 }
 
 function handleQueueUpdate(data) {
-    queueStatus = data;
+    queueStatus = normalizeQueueStatus(data);
     renderQueueStatus();
 }
 
@@ -251,8 +301,45 @@ function handleEmergencyStop(data) {
 }
 
 function handleStatsUpdate(data) {
-    stats = data;
+    stats = normalizeStatsSnapshot(data);
     renderStats();
+}
+
+function normalizeQueueStatus(data = {}) {
+    const queueLength = data.queueLength ?? data.queueSize ?? data.pending ?? 0;
+    const processing = data.processing ?? (data.isProcessing ? 1 : 0);
+
+    return {
+        ...data,
+        queueLength,
+        queueSize: data.queueSize ?? queueLength,
+        pending: data.pending ?? queueLength,
+        processing
+    };
+}
+
+function normalizeStatsSnapshot(data = {}) {
+    const successfulCommands = Number(data.successfulCommands || 0);
+    const failedCommands = Number(data.failedCommands || 0);
+    const totalCommands = Math.max(Number(data.totalCommands || 0), successfulCommands + failedCommands);
+    const successRate = typeof data.successRate === 'number'
+        ? data.successRate
+        : (totalCommands > 0 ? Math.round((successfulCommands / totalCommands) * 100) : 0);
+    const uptime = data.uptime ?? data.sessionDuration ?? 0;
+    const queueLength = data.queueLength ?? data.queueSize ?? data.queuePending ?? data.pending ?? 0;
+
+    return {
+        ...data,
+        successfulCommands,
+        failedCommands,
+        totalCommands,
+        successRate,
+        uptime,
+        sessionDuration: data.sessionDuration ?? uptime,
+        queueLength,
+        queueSize: data.queueSize ?? queueLength,
+        pending: data.pending ?? queueLength
+    };
 }
 
 // ====================================================================
@@ -281,10 +368,10 @@ async function loadInitialData() {
         // Update API status with device count
         updateApiStatus(devices.length > 0, devices.length);
 
-        showNotification('OpenShock plugin loaded successfully', 'success');
+        showNotification('Hybrid Shock plugin loaded successfully', 'success');
     } catch (error) {
-        console.error('[OpenShock] Error loading initial data:', error);
-        showNotification('Error loading OpenShock data', 'error');
+        console.error('[Hybrid Shock] Error loading initial data:', error);
+        showNotification('Error loading Hybrid Shock data', 'error');
         
         // Update API status as failed
         updateApiStatus(false, 0);
@@ -297,7 +384,7 @@ async function loadConfig() {
         if (!response.ok) throw new Error('Failed to load config');
         const data = await response.json();
         config = data.config || {};
-        console.log('[OpenShock] Config loaded:', config);
+        console.log('[Hybrid Shock] Config loaded:', config);
 
         // ---- Provider selector ----
         const apiProviderEl = document.getElementById('apiProvider');
@@ -386,7 +473,7 @@ async function loadConfig() {
 
         return config;
     } catch (error) {
-        console.error('[OpenShock] Error loading config:', error);
+        console.error('[Hybrid Shock] Error loading config:', error);
         throw error;
     }
 }
@@ -407,10 +494,10 @@ async function loadDevices() {
         }
         const data = await response.json();
         devices = data.devices || [];
-        console.log('[OpenShock] Devices loaded:', devices);
+        console.log('[Hybrid Shock] Devices loaded:', devices);
         return devices;
     } catch (error) {
-        console.error('[OpenShock] Error loading devices:', error);
+        console.error('[Hybrid Shock] Error loading devices:', error);
         throw error;
     }
 }
@@ -421,10 +508,10 @@ async function loadMappings() {
         if (!response.ok) throw new Error('Failed to load mappings');
         const data = await response.json();
         mappings = data.mappings || [];
-        console.log('[OpenShock] Mappings loaded:', mappings);
+        console.log('[Hybrid Shock] Mappings loaded:', mappings);
         return mappings;
     } catch (error) {
-        console.error('[OpenShock] Error loading mappings:', error);
+        console.error('[Hybrid Shock] Error loading mappings:', error);
         throw error;
     }
 }
@@ -435,10 +522,10 @@ async function loadPatterns() {
         if (!response.ok) throw new Error('Failed to load patterns');
         const data = await response.json();
         patterns = data.patterns || [];
-        console.log('[OpenShock] Patterns loaded:', patterns);
+        console.log('[Hybrid Shock] Patterns loaded:', patterns);
         return patterns;
     } catch (error) {
-        console.error('[OpenShock] Error loading patterns:', error);
+        console.error('[Hybrid Shock] Error loading patterns:', error);
         throw error;
     }
 }
@@ -448,11 +535,11 @@ async function loadStats() {
         const response = await fetch('/api/openshock/stats');
         if (!response.ok) throw new Error('Failed to load stats');
         const data = await response.json();
-        stats = data.stats || {};
-        console.log('[OpenShock] Stats loaded:', stats);
+        stats = normalizeStatsSnapshot(data.stats || {});
+        console.log('[Hybrid Shock] Stats loaded:', stats);
         return stats;
     } catch (error) {
-        console.error('[OpenShock] Error loading stats:', error);
+        console.error('[Hybrid Shock] Error loading stats:', error);
         throw error;
     }
 }
@@ -462,11 +549,11 @@ async function loadQueueStatus() {
         const response = await fetch('/api/openshock/queue/status');
         if (!response.ok) throw new Error('Failed to load queue status');
         const data = await response.json();
-        queueStatus = data.status || {};
-        console.log('[OpenShock] Queue status loaded:', queueStatus);
+        queueStatus = normalizeQueueStatus(data.status || {});
+        console.log('[Hybrid Shock] Queue status loaded:', queueStatus);
         return queueStatus;
     } catch (error) {
-        console.error('[OpenShock] Error loading queue status:', error);
+        console.error('[Hybrid Shock] Error loading queue status:', error);
         throw error;
     }
 }
@@ -477,10 +564,10 @@ async function loadGiftCatalog() {
         if (!response.ok) throw new Error('Failed to load gift catalog');
         const data = await response.json();
         giftCatalog = data.gifts || [];
-        console.log('[OpenShock] Gift catalog loaded:', giftCatalog.length, 'gifts');
+        console.log('[Hybrid Shock] Gift catalog loaded:', giftCatalog.length, 'gifts');
         return giftCatalog;
     } catch (error) {
-        console.error('[OpenShock] Error loading gift catalog:', error);
+        console.error('[Hybrid Shock] Error loading gift catalog:', error);
         throw error;
     }
 }
@@ -605,10 +692,10 @@ function renderCommandLog(commands) {
         <div class="log-entry ${cmd.success !== false ? 'success' : 'error'}">
             <span class="log-timestamp">${formatTimestamp(cmd.timestamp)}</span>
             <div class="log-message">
-                <strong>${escapeHtml(cmd.type)}</strong>
-                ${escapeHtml(cmd.deviceName || cmd.deviceId)}
-                ${cmd.intensity ? `- ${cmd.intensity}%` : ''}
-                ${cmd.duration ? `- ${cmd.duration}ms` : ''}
+                <strong>${escapeHtml(cmd.type || cmd.command?.type || 'unknown')}</strong>
+                ${escapeHtml(cmd.deviceName || cmd.device || cmd.deviceId || cmd.command?.deviceName || cmd.command?.deviceId || '')}
+                ${cmd.intensity !== undefined || cmd.command?.intensity !== undefined ? `- ${cmd.intensity ?? cmd.command?.intensity}%` : ''}
+                ${cmd.duration !== undefined || cmd.command?.duration !== undefined ? `- ${cmd.duration ?? cmd.command?.duration}ms` : ''}
             </div>
         </div>
     `).join('');
@@ -774,9 +861,10 @@ function renderQueueStatus() {
     // Update the stat values directly in the dashboard
     const queueLengthEl = document.getElementById('queueLength');
     const queueProcessingEl = document.getElementById('queueProcessing');
+    const queueLength = queueStatus.queueLength ?? queueStatus.queueSize ?? queueStatus.pending ?? 0;
     
     if (queueLengthEl) {
-        queueLengthEl.textContent = queueStatus.pending || 0;
+        queueLengthEl.textContent = queueLength;
     }
     if (queueProcessingEl) {
         queueProcessingEl.textContent = queueStatus.processing ? 'Yes' : 'No';
@@ -788,16 +876,22 @@ function renderStats() {
     const totalCommandsEl = document.getElementById('totalCommands');
     const successRateEl = document.getElementById('successRate');
     const uptimeEl = document.getElementById('uptime');
+    const totalCommands = Number(stats.totalCommands || 0);
+    const successfulCommands = Number(stats.successfulCommands || 0);
+    const successRate = Number.isFinite(Number(stats.successRate))
+        ? Number(stats.successRate)
+        : (totalCommands > 0 ? Math.round((successfulCommands / totalCommands) * 100) : 0);
+    const uptime = Number.isFinite(Number(stats.uptime))
+        ? Number(stats.uptime)
+        : (stats.startTime ? Date.now() - stats.startTime : 0);
     
     if (totalCommandsEl) {
-        totalCommandsEl.textContent = stats.totalCommands || 0;
+        totalCommandsEl.textContent = totalCommands;
     }
-    if (successRateEl && stats.totalCommands > 0) {
-        const rate = Math.round((stats.successfulCommands / stats.totalCommands) * 100);
-        successRateEl.textContent = rate + '%';
+    if (successRateEl) {
+        successRateEl.textContent = successRate + '%';
     }
-    if (uptimeEl && stats.startTime) {
-        const uptime = Date.now() - stats.startTime;
+    if (uptimeEl && uptime >= 0) {
         uptimeEl.textContent = formatDuration(uptime);
     }
 }
@@ -4323,7 +4417,7 @@ function renderChainStepsPreview(steps) {
         let label = step.type;
         
         switch(step.type) {
-            case 'openshock': icon = '⚡'; label = 'OpenShock'; break;
+            case 'openshock': icon = '⚡'; label = 'Hybrid Shock'; break;
             case 'delay': icon = '⏱️'; label = `Delay (${step.durationMs}ms)`; break;
             case 'audio': icon = '🔊'; label = 'Audio/TTS'; break;
             case 'webhook': icon = '🌐'; label = `Webhook (${step.url})`; break;
@@ -4615,7 +4709,7 @@ function renderChainSteps() {
         switch(step.type) {
             case 'openshock':
                 icon = '⚡';
-                label = 'OpenShock';
+                label = 'Hybrid Shock';
                 details = step.patternId ? `Pattern ID: ${step.patternId}` : `${step.commandType || 'vibrate'} - ${step.intensity}% - ${step.durationMs}ms`;
                 break;
             case 'delay':
@@ -4880,4 +4974,4 @@ window.openShock = {
     removeChainStep
 };
 
-console.log('[OpenShock] Plugin UI loaded and ready');
+console.log('[Hybrid Shock] Plugin UI loaded and ready');

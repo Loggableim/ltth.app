@@ -386,6 +386,8 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                                 descriptions: manifest.descriptions, // Include all descriptions
                                 version: manifest.version,
                                 author: manifest.author,
+                                icon: manifest.icon || null,
+                                logo: manifest.logo || null,
                                 type: manifest.type,
                                 devStatus: manifest.devStatus, // Include development status
                                 enabled: isEnabled,
@@ -445,6 +447,8 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                     descriptions: plugin.manifest.descriptions, // Include all descriptions
                     version: plugin.manifest.version,
                     author: plugin.manifest.author,
+                    icon: plugin.manifest.icon || null,
+                    logo: plugin.manifest.logo || null,
                     type: plugin.manifest.type,
                     dependencies: plugin.manifest.dependencies,
                     permissions: plugin.manifest.permissions,

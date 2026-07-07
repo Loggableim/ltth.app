@@ -1,9 +1,11 @@
 {
   "id": "openshock",
-  "name": "OpenShock & PiShock Integration",
+  "name": "Hybrid Shock",
   "version": "1.1.0",
-  "description": "Vollständige Shock-Device-Integration für TikTok Live Events – unterstützt OpenShock und PiShock. Mit Event-Mapping, Pattern-System, Safety-Layer, Queue-Management und professionellem Overlay",
+  "description": "Hybrid Shock for TikTok Live events - supports OpenShock and PiShock. Includes event mapping, pattern control, safety layers, queue management, and overlay support.",
   "author": "ltth.app Team",
+  "icon": "/plugins/openshock/assets/branding/hybridshock-icon.png",
+  "logo": "/plugins/openshock/assets/branding/hybridshock-logo.png",
   "entry": "main.js",
   "enabled": true,
   "type": "integration",
@@ -18,98 +20,98 @@
   "features": [
     {
       "id": "api-integration",
-      "name": "OpenShock & PiShock API-Integration",
-      "description": "Vollständige Integration mit OpenShock und PiShock API für Shock-, Vibrate- und Sound-Befehle. Provider per Dropdown wählbar."
+      "name": "Shock API Integration",
+      "description": "Full integration with OpenShock and PiShock APIs for shock, vibrate, and sound commands. Provider selection is available via dropdown."
     },
     {
       "id": "pishock-support",
       "name": "PiShock Provider Support",
-      "description": "Native PiShock-Integration mit ShareCode-Management, Op-Code-Mapping und automatischer Duration-Konvertierung (ms → Sekunden)"
+      "description": "Native PiShock integration with ShareCode management, op-code mapping, and automatic duration conversion (ms to seconds)."
     },
     {
       "id": "device-management",
       "name": "Device Management & Status Monitoring",
-      "description": "Verwaltung von OpenShock-Geräten und PiShock-ShareCodes mit Echtzeit-Status-Überwachung und Konfiguration"
+      "description": "Management of OpenShock devices and PiShock share codes with real-time status monitoring and configuration."
     },
     {
       "id": "event-mapping",
-      "name": "Event-Mapping-System",
-      "description": "Abbildung von TikTok-Events auf Shock-Aktionen mit erweiterbarem System"
+      "name": "Event Mapping System",
+      "description": "Map TikTok events to shock actions with an extensible system."
     },
     {
       "id": "pattern-engine",
-      "name": "Pattern Engine mit 8 Preset-Patterns",
-      "description": "Vordefinierte Muster und benutzerdefinierte Sequenzen für komplexe Effekte"
+      "name": "Pattern Engine with 8 Presets",
+      "description": "Preset patterns and custom sequences for complex effects."
     },
     {
       "id": "curve-generator",
-      "name": "Curve-Generator",
-      "description": "Erzeugt Kurven in verschiedenen Modes: Linear, Exponential, Sine, Cosine und Custom"
+      "name": "Curve Generator",
+      "description": "Generates curves in multiple modes: linear, exponential, sine, cosine, and custom."
     },
     {
       "id": "safety-layer",
-      "name": "Safety-Layer mit Multi-Level Limits",
-      "description": "Mehrschichtiges Sicherheitssystem mit globalen, gerätespezifischen und benutzerspezifischen Grenzen"
+      "name": "Safety Layer with Multi-Level Limits",
+      "description": "Multi-layer safety system with global, device-specific, and user-specific limits."
     },
     {
       "id": "queue-system",
-      "name": "Queue-System mit Priority & Retry",
-      "description": "Verarbeitungswarteschlange mit Prioritäten, Retry-Mechanismus und Load-Balancing"
+      "name": "Queue System with Priority & Retry",
+      "description": "Execution queue with priorities, retry handling, and load balancing."
     },
     {
       "id": "cooldown-system",
       "name": "Global/Device/User Cooldowns",
-      "description": "Abklingzeiten auf mehreren Ebenen zur Kontrolle der Befehlshäufigkeit"
+      "description": "Cooldowns on multiple levels to control command frequency."
     },
     {
       "id": "emergency-stop",
-      "name": "Emergency Stop Funktion",
-      "description": "Sofortige Deaktivierung aller Shock-Geräte im Notfall"
+      "name": "Emergency Stop Function",
+      "description": "Immediate deactivation of all shock devices in an emergency."
     },
     {
       "id": "whitelist-blacklist",
       "name": "Whitelist/Blacklist System",
-      "description": "Benutzer- und Gerätefilterung über Whitelist- und Blacklist-Mechanismen"
+      "description": "User and device filtering through whitelist and blacklist mechanisms."
     },
     {
       "id": "follower-age-filter",
       "name": "Follower Age Filtering",
-      "description": "Filterung von Befehlen basierend auf Follower-Alter und Account-Status"
+      "description": "Filter commands based on follower age and account status."
     },
     {
       "id": "live-dashboard",
-      "name": "Live Dashboard mit Tabs",
-      "description": "Übersichtliches Dashboard mit Status, Events, Log und Einstellungen-Tabs"
+      "name": "Live Dashboard with Tabs",
+      "description": "Clear dashboard with status, events, log, and settings tabs."
     },
     {
       "id": "event-mapper-ui",
-      "name": "Event-Mapper UI",
-      "description": "Benutzeroberfläche zur Verwaltung und Bearbeitung von Event-Mappings"
+      "name": "Event Mapper UI",
+      "description": "User interface for managing and editing event mappings."
     },
     {
       "id": "pattern-builder-ui",
       "name": "Pattern Builder UI",
-      "description": "Visueller Editor zur Erstellung und Bearbeitung von Custom Patterns"
+      "description": "Visual editor for creating and editing custom patterns."
     },
     {
       "id": "safety-settings-ui",
-      "name": "Safety-Settings UI",
-      "description": "Konfigurierbare Benutzeroberfläche für alle Sicherheitsparameter und Limits"
+      "name": "Safety Settings UI",
+      "description": "Configurable interface for all safety parameters and limits."
     },
     {
       "id": "debug-monitoring",
       "name": "Debug & Monitoring Tools",
-      "description": "Umfassende Debug-Werkzeuge, Logging und Performance-Monitoring"
+      "description": "Comprehensive debug tools, logging, and performance monitoring."
     },
     {
       "id": "high-end-overlay",
-      "name": "High-End Overlay mit Animations",
-      "description": "Professionelle Overlay-Anzeige mit Animationen, Echtzeit-Feedback und visuellen Effekten"
+      "name": "High-End Overlay with Animations",
+      "description": "Professional overlay display with animations, real-time feedback, and visual effects."
     },
     {
       "id": "import-export",
-      "name": "Import/Export von Mappings & Patterns",
-      "description": "Möglichkeit zum Exportieren und Importieren von Konfigurationen, Mappings und Patterns"
+      "name": "Import/Export of Mappings & Patterns",
+      "description": "Export and import configurations, mappings, and patterns."
     }
   ],
   "config": {
@@ -151,9 +153,9 @@
     }
   },
   "descriptions": {
-    "en": "Complete Shock Device integration for TikTok Live events – supports OpenShock and PiShock. With event mapping, pattern system, safety layer, queue management, and professional overlay support.",
-    "de": "Vollständige Shock-Device-Integration für TikTok-Live-Events – unterstützt OpenShock und PiShock. Mit Event-Mapping, Pattern-System, Safety-Layer, Queue-Management und professioneller Overlay-Unterstützung.",
-    "es": "Integración completa de dispositivos Shock para eventos en vivo de TikTok – compatible con OpenShock y PiShock. Con mapeo de eventos, sistema de patrones, capa de seguridad, gestión de colas y soporte de overlay profesional.",
-    "fr": "Intégration complète de dispositifs Shock pour événements TikTok Live – compatible OpenShock et PiShock. Avec mappage d'événements, système de patterns, couche de sécurité, gestion de file d'attente et support d'overlay professionnel."
+    "en": "Hybrid Shock for TikTok Live events - supports OpenShock and PiShock. Includes event mapping, pattern control, safety layers, queue management, and overlay support.",
+    "de": "Hybrid Shock fur TikTok-Live-Events - unterstutzt OpenShock und PiShock. Mit Event-Mapping, Pattern-Steuerung, Safety-Layer, Queue-Management und Overlay-Unterstutzung.",
+    "es": "Hybrid Shock para eventos en vivo de TikTok - compatible con OpenShock y PiShock. Incluye mapeo de eventos, control de patrones, capas de seguridad, gestion de colas y soporte de overlay.",
+    "fr": "Hybrid Shock pour les evenements TikTok Live - prend en charge OpenShock et PiShock. Inclut le mappage d'evenements, le controle des patterns, les couches de securite, la gestion de file d'attente et le support d'overlay."
   }
 }

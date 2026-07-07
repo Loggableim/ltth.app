@@ -1,13 +1,15 @@
 {
   "id": "milestone-leaderboard",
-  "name": "Milestone Leaderboard",
+  "name": "Viewer XP",
   "version": "1.0.0",
-  "description": "Mega plugin that merges Gift Milestone celebrations with the real-time gifter leaderboard overlay.",
+  "description": "Unified Viewer XP bundle that merges gift milestones, the real-time gifter leaderboard, and viewer profile analytics.",
   "author": "Pup Cid",
   "entry": "main.js",
   "enabled": true,
   "type": "overlay",
   "devStatus": "development-beta",
+  "icon": "/plugins/milestone-leaderboard/assets/viewer-xp-icon.png",
+  "logo": "/plugins/milestone-leaderboard/assets/viewer-xp-logo.png",
   "permissions": [
     "socket.io",
     "routes",
@@ -16,9 +18,9 @@
     "file-upload"
   ],
   "descriptions": {
-    "en": "Mega plugin that merges Gift Milestone celebrations with the real-time gifter leaderboard overlay.",
-    "de": "Mega-Plugin, das die Gift-Milestone-Feiern mit dem Echtzeit-Gifter-Leaderboard-Overlay kombiniert.",
-    "es": "Mega plugin que combina las celebraciones de Gift Milestone con el overlay del leaderboard de donadores en tiempo real.",
-    "fr": "Mega plugin qui fusionne les célébrations Gift Milestone avec l’overlay de classement des donateurs en temps réel."
+    "en": "Unified Viewer XP bundle that combines gift milestone celebrations, the real-time gifter leaderboard, and viewer profile analytics.",
+    "de": "Vereintes Viewer-XP-Bundle, das Gift-Milestone-Feiern, das Echtzeit-Gifter-Leaderboard und Viewer-Profil-Analysen kombiniert.",
+    "es": "Paquete unificado de Viewer XP que combina celebraciones de hitos de regalos, el leaderboard de donadores en tiempo real y analisis de perfiles de espectadores.",
+    "fr": "Bundle Viewer XP unifie qui combine les celebrations de jalons de cadeaux, le classement des donateurs en temps reel et l'analyse des profils de spectateurs."
   }
 }

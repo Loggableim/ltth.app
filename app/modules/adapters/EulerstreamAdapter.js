@@ -2738,7 +2738,7 @@ class EulerstreamAdapter extends BaseAdapter {
             tz_name: options.tz_name || options.tzName || options.timeZone,
             fetchRoomId: options.fetchRoomId
         };
-        const localeCode = this.normalizeLocaleCode(options.locale_code || options.localeCode);
+        const localeCode = this._normalizeLocaleCode(options.locale_code || options.localeCode);
 
         // Fetch gift catalog from TikTok's Webcast API.
         this._mergeSessionGiftsIntoCatalog();
@@ -2777,7 +2777,9 @@ class EulerstreamAdapter extends BaseAdapter {
                 const giftsToSave = this._normalizeGiftCatalogEntries(response.data.data.gifts);
 
                 if (giftsToSave.length > 0) {
-                    const savedCount = this.db.updateGiftCatalog(giftsToSave, localeCode);
+                    const savedCount = localeCode !== null
+                        ? this.db.updateGiftCatalog(giftsToSave, localeCode)
+                        : this.db.updateGiftCatalog(giftsToSave);
 
                     this.logger.info(`✅ Gift catalog updated with ${savedCount} gifts from TikTok API`);
 

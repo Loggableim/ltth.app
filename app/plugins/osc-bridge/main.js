@@ -131,9 +131,9 @@ class OSCBridgePlugin {
             this.handleIncomingMessage(oscMessage, info);
         });
         this.transport.on('transport_error', (error) => {
-            if (this.transport.state !== 'starting') {
+            if (this.isRunning) {
                 this.stats.errors++;
-                this.logger.error('OSC-Bridge transport error:', error);
+                this.api.log(`OSC-Bridge transport error: ${error.message}`, 'error');
                 this.logToFile('ERROR', `${error.message}`);
                 this.emitStatus();
             }
@@ -1258,8 +1258,11 @@ class OSCBridgePlugin {
             this.isRunning = false;
             this.udpPort = null;
             this.stats.errors++;
-            this.logger.error(`Failed to start OSC-Bridge: ${result.error}`);
-            this.logToFile('ERROR', `Start failed: ${result.error}`);
+            const isPortConflict = result.code === 'EADDRINUSE' || String(result.error || '').includes('EADDRINUSE');
+            const logLevel = isPortConflict ? 'warn' : 'error';
+            const fileLevel = isPortConflict ? 'WARN' : 'ERROR';
+            this.api.log(`Failed to start OSC-Bridge: ${result.error}`, logLevel);
+            this.logToFile(fileLevel, `Start failed: ${result.error}`);
             this.emitStatus();
             return result;
         }

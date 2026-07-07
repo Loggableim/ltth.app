@@ -659,6 +659,8 @@ class PluginLoader extends EventEmitter {
         this.pluginRouter = express.Router();
         this.app.use(this.pluginRouter);
         this.logger.info('🔌 Plugin router initialized - dynamic plugin routes will be handled correctly');
+
+        this.loadedPluginsView = this.createLoadedPluginsView();
     }
 
     /**
@@ -785,7 +787,7 @@ class PluginLoader extends EventEmitter {
         try {
             if (fs.existsSync(this.stateFile)) {
                 const data = fs.readFileSync(this.stateFile, 'utf8');
-                return JSON.parse(data);
+                return this.migratePluginStateAliases(JSON.parse(data));
             }
 
             // Legacy fallback: migrate old global state into profile-scoped file
@@ -793,10 +795,11 @@ class PluginLoader extends EventEmitter {
                 try {
                     const legacyRaw = fs.readFileSync(this.legacyStateFile, 'utf8');
                     const legacyData = JSON.parse(legacyRaw);
+                    const migratedLegacyData = this.migratePluginStateAliases(legacyData);
 
-                    fs.writeFileSync(this.stateFile, JSON.stringify(legacyData, null, 2));
+                    fs.writeFileSync(this.stateFile, JSON.stringify(migratedLegacyData, null, 2));
                     this.logger?.info?.('📦 Migrated global plugin state to profile-scoped storage');
-                    return legacyData;
+                    return migratedLegacyData;
                 } catch (legacyError) {
                     this.logger?.warn?.(`Failed to migrate legacy plugin state: ${legacyError.message}`);
                 }
@@ -846,12 +849,30 @@ class PluginLoader extends EventEmitter {
     }
 
     getSupersedingPluginId(pluginId) {
+        if (pluginId === 'lastevent-spotlight' && this.isPluginEnabledFromDisk('spotlight')) {
+            return 'spotlight';
+        }
+
         if ((pluginId === 'viewer-leaderboard' || pluginId === 'gift-milestone') &&
             this.isPluginEnabledFromDisk('milestone-leaderboard')) {
             return 'milestone-leaderboard';
         }
 
+        if (pluginId === 'viewer-profiles' && this.isPluginEnabledFromDisk('viewer-leaderboard')) {
+            return 'viewer-leaderboard';
+        }
+
         return null;
+    }
+
+    migratePluginStateAliases(state = {}) {
+        const migrated = { ...state };
+
+        if (migrated['lastevent-spotlight'] && migrated.spotlight === undefined) {
+            migrated.spotlight = { ...migrated['lastevent-spotlight'] };
+        }
+
+        return migrated;
     }
 
     pruneStalePluginState(pluginDirs) {
@@ -1401,18 +1422,20 @@ class PluginLoader extends EventEmitter {
         const plugins = [];
 
         for (const [id, plugin] of this.plugins.entries()) {
-            plugins.push({
-                id: plugin.manifest.id,
-                name: plugin.manifest.name,
-                description: this.getLocalizedDescription(plugin.manifest, locale),
-                descriptions: plugin.manifest.descriptions, // Include all descriptions
-                version: plugin.manifest.version,
-                author: plugin.manifest.author,
-                type: plugin.manifest.type,
-                devStatus: plugin.manifest.devStatus, // Include development status
-                enabled: true,
-                loadedAt: plugin.loadedAt
-            });
+                plugins.push({
+                    id: plugin.manifest.id,
+                    name: plugin.manifest.name,
+                    description: this.getLocalizedDescription(plugin.manifest, locale),
+                    descriptions: plugin.manifest.descriptions, // Include all descriptions
+                    version: plugin.manifest.version,
+                    author: plugin.manifest.author,
+                    icon: plugin.manifest.icon || null,
+                    logo: plugin.manifest.logo || null,
+                    type: plugin.manifest.type,
+                    devStatus: plugin.manifest.devStatus, // Include development status
+                    enabled: true,
+                    loadedAt: plugin.loadedAt
+                });
         }
 
         return plugins;
@@ -1424,21 +1447,79 @@ class PluginLoader extends EventEmitter {
      * @returns {Map} Map of loaded plugins
      */
     get loadedPlugins() {
-        return this.plugins;
+        return this.loadedPluginsView;
+    }
+
+    createLoadedPluginsView() {
+        const loader = this;
+
+        return {
+            get(pluginId) {
+                if (loader.plugins.has(pluginId)) {
+                    return loader.plugins.get(pluginId);
+                }
+
+                const resolvedPluginId = loader.getSupersedingPluginId(pluginId);
+                return resolvedPluginId ? loader.plugins.get(resolvedPluginId) : undefined;
+            },
+            has(pluginId) {
+                if (loader.plugins.has(pluginId)) {
+                    return true;
+                }
+
+                const resolvedPluginId = loader.getSupersedingPluginId(pluginId);
+                return resolvedPluginId ? loader.plugins.has(resolvedPluginId) : false;
+            },
+            set(pluginId, value) {
+                loader.plugins.set(pluginId, value);
+                return this;
+            },
+            delete(pluginId) {
+                if (loader.plugins.delete(pluginId)) {
+                    return true;
+                }
+
+                const resolvedPluginId = loader.getSupersedingPluginId(pluginId);
+                return resolvedPluginId ? loader.plugins.delete(resolvedPluginId) : false;
+            },
+            clear() {
+                loader.plugins.clear();
+            },
+            keys() {
+                return loader.plugins.keys();
+            },
+            values() {
+                return loader.plugins.values();
+            },
+            entries() {
+                return loader.plugins.entries();
+            },
+            forEach(callback, thisArg) {
+                loader.plugins.forEach((value, key) => {
+                    callback.call(thisArg, value, key, loader.loadedPlugins);
+                });
+            },
+            get size() {
+                return loader.plugins.size;
+            },
+            [Symbol.iterator]() {
+                return loader.plugins[Symbol.iterator]();
+            }
+        };
     }
 
     /**
      * Gibt Plugin-Info zurück
      */
     getPlugin(pluginId) {
-        return this.plugins.get(pluginId);
+        return this.plugins.get(pluginId) || this.plugins.get(this.getSupersedingPluginId(pluginId) || '');
     }
 
     /**
      * Gibt die Plugin-Instanz zurück (für Injektionen)
      */
     getPluginInstance(pluginId) {
-        const plugin = this.plugins.get(pluginId);
+        const plugin = this.plugins.get(pluginId) || this.plugins.get(this.getSupersedingPluginId(pluginId) || '');
         return plugin ? plugin.instance : null;
     }
 

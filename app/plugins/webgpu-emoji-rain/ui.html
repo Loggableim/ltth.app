@@ -782,9 +782,9 @@
         }
 
         .hero-shell {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+            align-items: stretch;
             gap: 24px;
             padding: 24px 28px;
             margin-bottom: 18px;
@@ -793,19 +793,20 @@
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 28%), var(--color-bg-card);
             box-shadow: var(--shadow-lg);
             backdrop-filter: blur(16px) saturate(140%);
+            position: relative;
+            overflow: hidden;
         }
 
         .hero-brand {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 18px;
             min-width: 0;
-            flex: 1 1 auto;
         }
 
         .hero-icon {
-            width: 92px;
-            height: 92px;
+            width: 88px;
+            height: 88px;
             flex: 0 0 auto;
             object-fit: contain;
             border-radius: 22px;
@@ -815,6 +816,7 @@
         .hero-copy {
             min-width: 0;
             flex: 1 1 auto;
+            padding-top: 2px;
         }
 
         .hero-title-row {
@@ -829,6 +831,20 @@
             height: auto;
             object-fit: contain;
             display: block;
+        }
+
+        .hero-logo-panel {
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            min-width: 0;
+            padding-top: 10px;
+            padding-right: 10px;
+        }
+
+        .hero-logo-panel .hero-logo {
+            width: min(680px, 100%);
+            margin: 0;
         }
 
         .hero-subtitle {
@@ -883,14 +899,262 @@
             line-height: 1.4;
         }
 
+        .hero-side {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-width: 0;
+        }
+
         .hero-actions {
             flex: 0 0 auto;
             min-width: 0;
         }
 
         .nav-buttons.hero-actions {
-            text-align: right;
+            text-align: left;
+            justify-content: flex-start;
             margin-bottom: 0;
+        }
+
+        .hero-preview {
+            position: relative;
+            min-height: 180px;
+            border-radius: 22px;
+            padding: 1px;
+            background:
+                radial-gradient(circle at top right, rgba(34, 197, 94, 0.2), transparent 38%),
+                radial-gradient(circle at 18% 18%, rgba(16, 185, 129, 0.16), transparent 34%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 28%);
+        }
+
+        .hero-preview::before,
+        .hero-preview::after {
+            content: "";
+            position: absolute;
+            inset: auto;
+            pointer-events: none;
+            border-radius: 999px;
+            filter: blur(0);
+            opacity: 0.9;
+        }
+
+        .hero-preview::before {
+            width: 170px;
+            height: 170px;
+            right: -42px;
+            bottom: -68px;
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.14), transparent 68%);
+        }
+
+        .hero-preview::after {
+            width: 120px;
+            height: 120px;
+            left: -34px;
+            top: -22px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.12), transparent 68%);
+        }
+
+        .hero-preview__panel {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-height: 180px;
+            padding: 18px;
+            border: 1px solid var(--color-border);
+            border-radius: 22px;
+            background:
+                linear-gradient(180deg, rgba(8, 16, 10, 0.96), rgba(10, 19, 13, 0.92)),
+                var(--color-bg-card);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .hero-preview__panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(90deg, rgba(34, 197, 94, 0.12) 0, transparent 22%),
+                linear-gradient(180deg, transparent 0, rgba(255, 255, 255, 0.015) 50%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .hero-preview__top {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            z-index: 1;
+        }
+
+        .hero-preview__label {
+            color: var(--color-text-muted);
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+        }
+
+        .hero-preview__state {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.42rem 0.72rem;
+            border-radius: 999px;
+            border: 1px solid rgba(16, 185, 129, 0.28);
+            background: rgba(16, 185, 129, 0.12);
+            color: #7dffad;
+            font-size: 0.8rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .hero-preview__state[data-state="off"] {
+            border-color: rgba(148, 163, 184, 0.26);
+            background: rgba(148, 163, 184, 0.12);
+            color: var(--color-text-muted);
+        }
+
+        .hero-preview__visual {
+            position: relative;
+            z-index: 1;
+            min-height: 96px;
+            border-radius: 18px;
+            border: 1px solid rgba(16, 185, 129, 0.18);
+            background:
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.14), transparent 42%),
+                radial-gradient(circle at 68% 18%, rgba(59, 130, 246, 0.14), transparent 26%),
+                linear-gradient(135deg, rgba(6, 11, 8, 0.96), rgba(13, 20, 15, 0.92));
+            overflow: hidden;
+        }
+
+        .hero-preview__visual::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px) 0 0 / 22px 22px,
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px) 0 0 / 22px 22px;
+            opacity: 0.28;
+        }
+
+        .hero-preview__visual::after {
+            content: "";
+            position: absolute;
+            inset: 50% auto auto 50%;
+            width: 126px;
+            height: 126px;
+            transform: translate(-50%, -46%);
+            border-radius: 28px;
+            border: 1px solid rgba(125, 255, 173, 0.2);
+            background:
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.18), transparent 56%),
+                linear-gradient(145deg, rgba(5, 10, 7, 0.8), rgba(14, 22, 16, 0.88));
+            box-shadow:
+                0 14px 34px rgba(0, 0, 0, 0.24),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+        }
+
+        .hero-preview__orb {
+            position: absolute;
+            border-radius: 999px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .hero-preview__orb--one {
+            width: 54px;
+            height: 54px;
+            left: 18px;
+            top: 16px;
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.42), rgba(34, 197, 94, 0.04) 72%);
+        }
+
+        .hero-preview__orb--two {
+            width: 70px;
+            height: 70px;
+            right: 18px;
+            bottom: 18px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.36), rgba(59, 130, 246, 0.04) 72%);
+        }
+
+        .hero-preview__core {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .hero-preview__chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.32rem 0.64rem;
+            border-radius: 999px;
+            border: 1px solid rgba(16, 185, 129, 0.22);
+            background: rgba(16, 185, 129, 0.08);
+            color: #88ffc4;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .hero-preview__value {
+            color: var(--color-text-primary);
+            font-size: 1.12rem;
+            font-weight: 900;
+            line-height: 1.1;
+        }
+
+        .hero-preview__detail {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.35;
+        }
+
+        .hero-preview__footer-item strong[data-state="off"] {
+            color: var(--color-text-muted);
+        }
+
+        .hero-preview__footer {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .hero-preview__footer-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 0.7rem 0.8rem;
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            background: rgba(15, 23, 42, 0.48);
+        }
+
+        .hero-preview__footer-item strong {
+            color: var(--color-text-primary);
+            font-size: 0.92rem;
+            line-height: 1.2;
+        }
+
+        .hero-preview__footer-label {
+            color: var(--color-text-muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
         .summary-strip {
@@ -1050,14 +1314,20 @@
         }
 
         @media (max-width: 1280px) {
-            .hero-shell,
-            .toggle-section {
-                flex-direction: column;
-                align-items: flex-start;
+            .hero-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-logo-panel {
+                order: -1;
+                justify-content: flex-start;
+            }
+
+            .hero-side {
+                width: 100%;
             }
 
             .nav-buttons.hero-actions {
-                width: 100%;
                 justify-content: flex-start;
             }
 
@@ -1079,6 +1349,8 @@
         }
 
         html[data-theme="vision-impaired"] .hero-shell,
+        html[data-theme="vision-impaired"] .hero-logo-panel,
+        html[data-theme="vision-impaired"] .hero-preview__panel,
         html[data-theme="vision-impaired"] .summary-card,
         html[data-theme="vision-impaired"] .toggle-section,
         html[data-theme="vision-impaired"] .config-section {
@@ -1109,34 +1381,91 @@
             box-shadow: 0 0 0 5px rgba(250, 204, 21, 0.18);
         }
 
+        html[data-theme="vision-impaired"] .hero-preview__state,
+        html[data-theme="vision-impaired"] .hero-preview__chip {
+            background: #111;
+            border-color: #facc15;
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] .hero-preview__footer-item {
+            border-color: #facc15;
+            background: #111;
+        }
+
+        html[data-theme="vision-impaired"] .hero-preview__visual {
+            border-color: rgba(250, 204, 21, 0.35);
+        }
+
         html[data-theme="contrast"] .hero-shell,
+        html[data-theme="contrast"] .hero-logo-panel,
+        html[data-theme="contrast"] .hero-preview__panel,
         html[data-theme="contrast"] .summary-card,
         html[data-theme="contrast"] .toggle-section,
         html[data-theme="contrast"] .config-section {
             backdrop-filter: none;
+        }
+
+        html[data-theme="contrast"] .hero-preview__visual {
+            border-color: rgba(148, 163, 184, 0.4);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header class="hero-shell">
-            <div class="hero-brand">
-                <img class="hero-icon" src="/plugins/webgpu-emoji-rain/assets/sidebar-icon.png" alt="Emoji Rain Icon">
-                <div class="hero-copy">
-                    <div class="hero-title-row">
-                        <img class="brand-logo hero-logo" data-brand-logo src="/plugins/webgpu-emoji-rain/assets/sidebar-logo-wide.png" alt="Emoji Rain">
+            <div class="hero-side">
+                <div class="hero-brand">
+                    <img class="hero-icon" src="/plugins/webgpu-emoji-rain/assets/sidebar-icon.png" alt="Emoji Rain Icon">
+                    <div class="hero-copy">
+                        <p class="subtitle hero-subtitle">Physik-basierte Emoji-Animationen f&uuml;r TikTok Events</p>
+                        <div class="hero-status-row">
+                            <span class="status-pill"><span class="status-pill-dot"></span><span id="hero-enabled-status">Deaktiviert</span></span>
+                            <span class="hero-meta">Optimiert f&uuml;r Day / Night / CID / Vision / High Contrast</span>
+                        </div>
                     </div>
-                    <p class="subtitle hero-subtitle">Physik-basierte Emoji-Animationen f&uuml;r TikTok Events</p>
-                    <div class="hero-status-row">
-                        <span class="status-pill"><span class="status-pill-dot"></span><span id="enabled-status">Deaktiviert</span></span>
-                        <span class="hero-meta">Optimiert f&uuml;r Day / Night / CID / Vision / High Contrast</span>
+                </div>
+
+                <div class="hero-actions nav-buttons">
+                    <button id="save-config-btn" type="button" class="nav-button nav-button-primary">💾 Konfiguration speichern</button>
+                    <a href="/webgpu-emoji-rain/obs-hud" class="nav-button" target="_blank">OBS HUD &ouml;ffnen</a>
+                </div>
+
+                <div class="hero-preview" aria-label="Emoji Rain Vorschau">
+                    <div class="hero-preview__panel">
+                        <div class="hero-preview__top">
+                            <span class="hero-preview__label">Live Vorschau</span>
+                            <span class="hero-preview__state" id="hero-preview-state">Deaktiviert</span>
+                        </div>
+                        <div class="hero-preview__visual" aria-hidden="true">
+                            <span class="hero-preview__orb hero-preview__orb--one"></span>
+                            <span class="hero-preview__orb hero-preview__orb--two"></span>
+                            <div class="hero-preview__core">
+                                <span class="hero-preview__chip">OBS HUD</span>
+                                <strong id="hero-preview-size" class="hero-preview__value">1920 &times; 1080</strong>
+                                <span id="hero-preview-mode" class="hero-preview__detail">Premium Stage</span>
+                            </div>
+                        </div>
+                        <div class="hero-preview__footer">
+                            <div class="hero-preview__footer-item">
+                                <span class="hero-preview__footer-label">Preset</span>
+                                <strong id="hero-preview-mode-copy">Premium Stage</strong>
+                            </div>
+                            <div class="hero-preview__footer-item">
+                                <span class="hero-preview__footer-label">HUD</span>
+                                <strong id="hero-preview-size-copy">1920 &times; 1080</strong>
+                            </div>
+                            <div class="hero-preview__footer-item">
+                                <span class="hero-preview__footer-label">Status</span>
+                                <strong id="hero-preview-state-copy">Deaktiviert</strong>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="hero-actions nav-buttons">
-                <a href="/dashboard.html" class="nav-button">&larr; Zur&uuml;ck zum Dashboard</a>
-                <a href="/webgpu-emoji-rain/obs-hud" class="nav-button nav-button-primary" target="_blank">OBS HUD &ouml;ffnen</a>
+            <div class="hero-logo-panel">
+                <img class="brand-logo hero-logo" data-brand-logo src="/plugins/webgpu-emoji-rain/assets/sidebar-logo-wide.png" alt="Emoji Rain">
             </div>
         </header>
 
@@ -1167,7 +1496,7 @@
                     <input type="checkbox" id="enabled-toggle">
                     <span class="slider"></span>
                 </label>
-                <span id="enabled-status">Deaktiviert</span>
+                <span id="toggle-enabled-status">Deaktiviert</span>
             </div>
         </div>
 
@@ -1917,7 +2246,6 @@
 
         <!-- Save & Test Buttons -->
         <div class="button-group">
-            <button id="save-config-btn">💾 Konfiguration speichern</button>
             <button class="secondary" id="test-emoji-rain-btn">🧪 Emoji Rain testen</button>
             <button class="secondary" id="test-gift-ball-btn">🎁 Geschenk-Kugel testen</button>
             <button class="secondary" id="test-heart-balloons-btn">&hearts; Herzballons testen</button>

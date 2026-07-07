@@ -45,6 +45,7 @@ const socketIO = require('socket.io');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const crypto = require('crypto');
 
 // Browser opening guard - prevents duplicate browser opens
 let browserOpened = false;
@@ -1120,6 +1121,44 @@ function scheduleServerRestartAfterResponse(res, reason) {
     });
 }
 
+function scheduleServerShutdownAfterResponse(res, reason) {
+    res.on('finish', () => {
+        logger.info(`Launcher requested graceful server shutdown (${reason})`);
+        gracefulShutdown('LAUNCHER_SHUTDOWN');
+    });
+}
+
+function normalizeRemoteAddress(address) {
+    return String(address || '').replace(/^::ffff:/, '');
+}
+
+function isLocalLauncherRequest(req) {
+    const candidates = [
+        req.ip,
+        req.socket && req.socket.remoteAddress,
+        req.connection && req.connection.remoteAddress
+    ].map(normalizeRemoteAddress);
+
+    return candidates.some(address => (
+        address === '127.0.0.1' ||
+        address === '::1' ||
+        address === 'localhost'
+    ));
+}
+
+function launcherTokenMatches(req) {
+    const expected = process.env.LTTH_LAUNCHER_TOKEN;
+    const actual = req.get('x-ltth-launcher-token');
+    if (!expected || !actual) {
+        return false;
+    }
+
+    const expectedBuffer = Buffer.from(expected, 'utf8');
+    const actualBuffer = Buffer.from(actual, 'utf8');
+    return expectedBuffer.length === actualBuffer.length &&
+        crypto.timingSafeEqual(expectedBuffer, actualBuffer);
+}
+
 // Haupt-Seite
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
@@ -1354,6 +1393,24 @@ app.get('/api/health', (req, res) => {
         port: PORT,
         uptime: process.uptime(),
         timestamp: new Date().toISOString()
+    });
+});
+
+app.post('/api/launcher/shutdown', (req, res) => {
+    if (!isLocalLauncherRequest(req)) {
+        return res.status(403).json({ success: false, error: 'Launcher shutdown is only available from localhost' });
+    }
+
+    if (!launcherTokenMatches(req)) {
+        return res.status(401).json({ success: false, error: 'Invalid launcher token' });
+    }
+
+    scheduleServerShutdownAfterResponse(res, 'launcher graceful shutdown');
+    res.json({
+        success: true,
+        status: 'shutdown_scheduled',
+        pid: process.pid,
+        port: PORT
     });
 });
 
@@ -2577,7 +2634,8 @@ app.post('/api/alerts/test', apiLimiter, (req, res) => {
 
 app.get('/api/gift-catalog', apiLimiter, (req, res) => {
     try {
-        const catalog = db.getGiftCatalog();
+        const locale = req.query.locale || req.locale || db.getSetting('language') || 'en';
+        const catalog = db.getGiftCatalog(locale);
         const lastUpdate = db.getCatalogLastUpdate();
         res.json({ success: true, catalog, lastUpdate, count: catalog.length });
     } catch (error) {
@@ -2588,7 +2646,8 @@ app.get('/api/gift-catalog', apiLimiter, (req, res) => {
 
 app.post('/api/gift-catalog/update', apiLimiter, async (req, res) => {
     try {
-        const result = await tiktok.updateGiftCatalog();
+        const locale = req.query.locale || req.body?.locale || req.locale || db.getSetting('language') || 'en';
+        const result = await tiktok.updateGiftCatalog({ localeCode: locale });
         logger.info('🎁 Gift catalog updated');
         res.json({ success: true, ...result });
     } catch (error) {

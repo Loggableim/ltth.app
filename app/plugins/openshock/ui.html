@@ -4,18 +4,20 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenShock Control Panel</title>
+    <title>Hybrid Shock Control Panel</title>
+    <link rel="icon" type="image/png" href="/plugins/openshock/assets/branding/hybridshock-icon.png">
+    <link rel="apple-touch-icon" href="/plugins/openshock/assets/branding/hybridshock-icon.png">
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/openshock/openshock.css">
     <script>
         (function () {
             const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
             const LOGO_BY_THEME = {
-                day: '/ltthicon.png',
-                night: '/ltthicon.png',
-                contrast: '/ltthicon.png',
-                'vision-impaired': '/ltthicon.png',
-                cid: '/ltthicon.png'
+                day: '/plugins/openshock/assets/branding/hybridshock-logo.png',
+                night: '/plugins/openshock/assets/branding/hybridshock-logo.png',
+                contrast: '/plugins/openshock/assets/branding/hybridshock-logo.png',
+                'vision-impaired': '/plugins/openshock/assets/branding/hybridshock-logo.png',
+                cid: '/plugins/openshock/assets/branding/hybridshock-logo.png'
             };
             function readTheme() {
                 try {
@@ -477,7 +479,7 @@
         <!-- Header -->
         <header>
             <div class="brand">
-                <img class="brand-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
+                <img class="brand-logo" data-brand-logo src="/plugins/openshock/assets/branding/hybridshock-logo.png" alt="HybridShock">
             </div>
             <div style="display: flex; align-items: center; gap: 16px;">
                 <button id="headerEmergencyStop" class="btn btn-danger" title="Emergency Stop - Immediately stops all shocks and disables further commands">
@@ -825,7 +827,7 @@
                 <div class="info-box">
                     <strong>💡 Info:</strong> ZappieHell is a goal-based system that triggers event chains when coin targets are reached.
                     Goals can be stream-specific (reset after each stream) or global (persistent across streams).
-                    Event chains can include OpenShock actions, delays, TTS, webhooks, and overlay animations.
+                    Event chains can include Hybrid Shock actions, delays, TTS, webhooks, and overlay animations.
                 </div>
             </div>
 
@@ -1346,7 +1348,7 @@
                 <div class="info-box mt-3">
                     <strong>💡 Available Step Types:</strong>
                     <ul style="margin-top: 8px; margin-left: 20px;">
-                        <li><strong>OpenShock:</strong> Trigger OpenShock pattern or direct command</li>
+                        <li><strong>Hybrid Shock:</strong> Trigger shock pattern or direct command</li>
                         <li><strong>Delay:</strong> Wait for specified duration before next step</li>
                         <li><strong>Audio/TTS:</strong> Play audio or text-to-speech</li>
                         <li><strong>Webhook:</strong> Send HTTP request to external URL</li>
@@ -1374,7 +1376,7 @@
                 <div class="form-group">
                     <label class="form-label">Step Type *</label>
                     <select class="form-select" id="stepTypeSelect">
-                        <option value="openshock">⚡ OpenShock</option>
+                        <option value="openshock">⚡ Hybrid Shock</option>
                         <option value="delay">⏱️ Delay</option>
                         <option value="audio">🔊 Audio/TTS</option>
                         <option value="webhook">🌐 Webhook</option>
@@ -1382,7 +1384,7 @@
                     </select>
                 </div>
 
-                <!-- OpenShock Step Fields -->
+                <!-- Hybrid Shock Step Fields -->
                 <div id="openshockStepFields" class="step-fields">
                     <div class="form-group">
                         <label class="form-label">Pattern</label>
@@ -1484,7 +1486,7 @@
     <!-- Socket.IO Client Library -->
     <script src="/socket.io/socket.io.js"></script>
 
-    <!-- OpenShock UI JavaScript -->
+    <!-- Hybrid Shock UI JavaScript -->
     <script src="/openshock/ui.js"></script>
 
 <style id="final-late-day-device-control-contrast">

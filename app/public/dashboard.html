@@ -17,7 +17,117 @@
             const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
             const SIDEBAR_WIDE_LOGO = '/logo-wide.png';
             const SIDEBAR_ICON_LOGO = '/ltthicon-cutout.png?v=2';
-            const TOPBAR_ICON_LOGO = '/ltthicon.png';
+            const TOPBAR_DEFAULT_LOGO = '/ltthicon.png';
+            const STATIC_TOPBAR_BRANDS = new Map([
+                ['plugins', { src: '/appstore-logo.png', alt: 'LTTH App Store logo' }],
+                ['flows', { src: '/flows-logo.png', alt: 'IFTTT Automation Flows logo' }]
+            ]);
+            const LIVE_EVENT_LOG_STORAGE_KEY = 'show-live-event-log';
+            let topbarBrandingCache = null;
+            let topbarBrandingPromise = null;
+
+            function readLiveEventLogVisibility() {
+                try {
+                    return localStorage.getItem(LIVE_EVENT_LOG_STORAGE_KEY) === 'true';
+                } catch (error) {
+                    return false;
+                }
+            }
+
+            function syncLiveEventLogVisibility() {
+                document.documentElement.dataset.liveEventLog = readLiveEventLogVisibility()
+                    ? 'enabled'
+                    : 'disabled';
+            }
+
+            function getCurrentViewName() {
+                try {
+                    if (window.NavigationManager && typeof window.NavigationManager.getCurrentView === 'function') {
+                        const currentView = window.NavigationManager.getCurrentView();
+                        if (currentView) return currentView;
+                    }
+                } catch (error) {}
+
+                const activeView = document.querySelector('.content-view.active');
+                if (activeView && typeof activeView.id === 'string' && activeView.id.startsWith('view-')) {
+                    return activeView.id.slice(5);
+                }
+
+                return 'dashboard';
+            }
+
+            async function loadTopbarBranding() {
+                if (topbarBrandingCache) {
+                    return topbarBrandingCache;
+                }
+
+                if (topbarBrandingPromise) {
+                    return topbarBrandingPromise;
+                }
+
+                topbarBrandingPromise = (async () => {
+                    const cache = new Map();
+
+                    try {
+                        const response = await fetch('/api/plugins');
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data && data.success && Array.isArray(data.plugins)) {
+                                data.plugins.forEach((plugin) => {
+                                    const pluginId = String(plugin.id || '').trim();
+                                    if (!pluginId) return;
+
+                                    const logo = typeof plugin.logo === 'string' ? plugin.logo.trim() : '';
+                                    const icon = typeof plugin.icon === 'string' ? plugin.icon.trim() : '';
+                                    cache.set(pluginId, {
+                                        src: logo || icon || TOPBAR_DEFAULT_LOGO,
+                                        alt: plugin.name ? `${plugin.name} logo` : `${pluginId} logo`
+                                    });
+                                });
+                            }
+                        }
+                    } catch (error) {}
+
+                    topbarBrandingCache = cache;
+                    return cache;
+                })();
+
+                return topbarBrandingPromise;
+            }
+
+            function resolveTopbarBrand(viewName) {
+                const staticBrand = STATIC_TOPBAR_BRANDS.get(viewName);
+                if (staticBrand) {
+                    return staticBrand;
+                }
+
+                if (!viewName || viewName === 'events' || viewName === 'settings' || viewName === 'wiki') {
+                    return { src: TOPBAR_DEFAULT_LOGO, alt: 'LTTH.app logo' };
+                }
+
+                if (topbarBrandingCache && topbarBrandingCache.has(viewName)) {
+                    const brand = topbarBrandingCache.get(viewName);
+                    if (viewName === 'openshock') {
+                        return {
+                            ...brand,
+                            className: 'topbar-logo-image--hybridshock',
+                            brandClass: 'topbar-brand--hybridshock'
+                        };
+                    }
+                    return brand;
+                }
+
+                if (viewName === 'openshock') {
+                    return {
+                        src: TOPBAR_DEFAULT_LOGO,
+                        alt: 'LTTH.app logo',
+                        className: 'topbar-logo-image--hybridshock',
+                        brandClass: 'topbar-brand--hybridshock'
+                    };
+                }
+
+                return { src: TOPBAR_DEFAULT_LOGO, alt: 'LTTH.app logo' };
+            }
 
             function readTheme() {
                 try {
@@ -45,15 +155,22 @@
             function syncLogos() {
                 const wide = document.querySelector('.sidebar-logo-wide');
                 const mini = document.querySelector('.sidebar-logo-mini');
+                const topbarBrand = document.querySelector('.topbar-brand');
                 const topbar = document.querySelector('.topbar-logo-image');
+                const topbarBrandMeta = resolveTopbarBrand(getCurrentViewName());
                 if (wide) {
                     if (wide.getAttribute('src') !== SIDEBAR_WIDE_LOGO) wide.setAttribute('src', SIDEBAR_WIDE_LOGO);
                 }
                 if (mini) {
                     if (mini.getAttribute('src') !== SIDEBAR_ICON_LOGO) mini.setAttribute('src', SIDEBAR_ICON_LOGO);
                 }
+                if (topbarBrand) {
+                    topbarBrand.classList.toggle('topbar-brand--hybridshock', topbarBrandMeta.brandClass === 'topbar-brand--hybridshock');
+                }
                 if (topbar) {
-                    if (topbar.getAttribute('src') !== TOPBAR_ICON_LOGO) topbar.setAttribute('src', TOPBAR_ICON_LOGO);
+                    topbar.classList.toggle('topbar-logo-image--hybridshock', topbarBrandMeta.className === 'topbar-logo-image--hybridshock');
+                    if (topbar.getAttribute('src') !== topbarBrandMeta.src) topbar.setAttribute('src', topbarBrandMeta.src);
+                    if (topbar.getAttribute('alt') !== topbarBrandMeta.alt) topbar.setAttribute('alt', topbarBrandMeta.alt);
                 }
             }
 
@@ -61,6 +178,8 @@
             window.addEventListener('load', syncLogos);
             window.addEventListener('focus', syncLogos);
             window.addEventListener('ltth:view-changed', syncLogos);
+            loadTopbarBranding().then(syncLogos);
+            syncLiveEventLogVisibility();
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden) syncLogos();
             });
@@ -101,12 +220,16 @@
             gap: 1rem;
         }
 
+        .plugin-store-hero-slot {
+            min-width: 0;
+            margin-bottom: 1rem;
+        }
+
         .plugin-store-header {
             display: flex;
-            justify-content: space-between;
-            gap: 1rem 1.25rem;
-            align-items: center;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 0.95rem;
+            align-items: stretch;
             padding: 1.1rem 1.2rem;
             background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(17, 24, 39, 0.92) 100%);
             border: 1px solid var(--color-border);
@@ -117,22 +240,47 @@
         .plugin-store-header__brand {
             display: flex;
             align-items: center;
-            justify-content: center;
-            flex: 0 1 390px;
-            min-width: 240px;
+            justify-content: flex-end;
+            flex: 0 0 auto;
+            align-self: flex-end;
+            width: fit-content;
+            min-width: 0;
+            margin-left: auto;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .plugin-store-header__side {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.75rem;
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+
+        .plugin-store-header__body {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 1rem 1.25rem;
+            align-items: flex-start;
+            justify-content: space-between;
+            min-width: 0;
         }
 
         .plugin-store-header__logo {
             display: block;
-            width: min(100%, 390px);
-            max-height: 112px;
+            width: min(100%, 320px);
+            max-height: 84px;
             object-fit: contain;
             filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.35));
         }
 
         .plugin-store-header__title {
             min-width: 0;
-            flex: 1;
+            flex: 1 1 auto;
         }
 
         .plugin-store-header__title-row {
@@ -166,6 +314,8 @@
             flex-wrap: wrap;
             gap: 0.6rem;
             align-items: center;
+            justify-content: flex-end;
+            flex: 0 0 auto;
         }
 
         .plugin-store-inline-note {
@@ -861,6 +1011,8 @@
         .plugin-store-header {
             position: relative;
             overflow: hidden;
+            flex-direction: column;
+            gap: 0.95rem;
             align-items: stretch;
             padding: 1.35rem;
             border-radius: 24px;
@@ -901,27 +1053,46 @@
         }
 
         .plugin-store-header__brand {
-            flex: 0 1 360px;
-            min-width: 260px;
-            padding: 0.9rem;
-            border-radius: 22px;
-            border: 1px solid color-mix(in srgb, var(--store-panel-border) 78%, transparent);
-            background:
-                linear-gradient(180deg, color-mix(in srgb, var(--color-bg-secondary) 88%, var(--brand-primary) 12%), color-mix(in srgb, var(--color-bg-card) 92%, var(--color-accent-secondary) 8%));
-            box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.03),
-                0 14px 30px rgba(0, 0, 0, 0.12);
+            flex: 0 0 auto;
+            align-self: flex-end;
+            width: fit-content;
+            min-width: 0;
+            margin-left: auto;
+            justify-content: flex-end;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .plugin-store-header__side {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: flex-start;
+            gap: 0.75rem;
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+
+        .plugin-store-header__body {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 1rem 1.25rem;
+            align-items: flex-start;
+            justify-content: space-between;
+            min-width: 0;
         }
 
         .plugin-store-header__logo {
-            width: min(100%, 360px);
-            max-height: 104px;
+            width: min(100%, 300px);
+            max-height: 80px;
             object-fit: contain;
         }
 
         .plugin-store-header__title {
             display: flex;
-            flex: 1 1 420px;
+            flex: 1 1 auto;
             flex-direction: column;
             gap: 0.7rem;
             min-width: 0;
@@ -951,6 +1122,8 @@
 
         .plugin-store-header__actions {
             align-self: flex-start;
+            justify-content: flex-end;
+            flex: 0 0 auto;
         }
 
         .plugin-store-stats-grid {
@@ -1566,17 +1739,41 @@
             .plugin-store-header,
             .plugin-store-drawer__header {
                 flex-direction: column;
+                justify-content: flex-start;
             }
 
-            .plugin-store-header__brand {
+            .plugin-store-header__title {
+                flex: 0 0 auto;
                 justify-content: flex-start;
                 min-width: 0;
                 width: 100%;
             }
 
+            .plugin-store-header__body {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .plugin-store-header__side {
+                align-items: flex-start;
+                width: 100%;
+                gap: 0.6rem;
+            }
+
+            .plugin-store-header__brand {
+                flex: 0 0 auto;
+                margin-left: 0;
+                width: fit-content;
+                align-self: flex-start;
+            }
+
             .plugin-store-header__logo {
-                width: min(100%, 320px);
-                max-height: 92px;
+                width: min(100%, 280px);
+                max-height: 72px;
+            }
+
+            .plugin-store-header__actions {
+                justify-content: flex-start;
             }
 
             .plugin-store-card__summary,
@@ -2201,6 +2398,12 @@
             color: var(--color-text-muted, #475569);
             font-size: 0.8rem;
         }
+
+        html[data-live-event-log="disabled"] .sidebar-item[data-view="events"],
+        html[data-live-event-log="disabled"] .shortcut-card[data-view="events"],
+        html[data-live-event-log="disabled"] #view-events {
+            display: none !important;
+        }
         
     </style>
     <script src="/js/lucide.min.js"></script>
@@ -2239,7 +2442,7 @@
                     <button class="sidebar-quick-icon" id="sidebar-quick-osc-bridge" data-action="osc-bridge" data-plugin="osc-bridge" title="Toggle OSC-Bridge">
                         <i data-lucide="gamepad-2"></i>
                     </button>
-                    <button class="sidebar-quick-icon sidebar-quick-emergency" id="sidebar-quick-openshock-stop" data-action="openshock-emergency-stop" data-plugin="openshock" title="OpenShock Emergency Stop">
+                    <button class="sidebar-quick-icon sidebar-quick-emergency" id="sidebar-quick-openshock-stop" data-action="openshock-emergency-stop" data-plugin="openshock" title="HybridShock Emergency Stop">
                         <i data-lucide="shield-off"></i>
                     </button>
                 </div>
@@ -2254,16 +2457,16 @@
                     </div>
                     <div class="sidebar-category-items">
                         <a href="#" class="sidebar-item active" data-view="dashboard" data-tooltip="Dashboard">
-                            <i data-lucide="layout-dashboard"></i>
+                            <img src="/dashboard-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-dashboard" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.dashboard">Dashboard</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="clarityhud" data-plugin="clarityhud" data-tooltip="ClarityHUD">
                             <img src="/plugins/clarityhud/assets/clarity-icon.png" alt="" class="sidebar-plugin-icon">
                             <span class="sidebar-item-text" data-i18n="navigation.clarityhud">ClarityHUD</span>
                         </a>
-                        <a href="#" class="sidebar-item" data-view="lastevent-spotlight" data-plugin="lastevent-spotlight" data-tooltip="LastEvent">
-                            <i data-lucide="eye"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.lastevent">LastEvent</span>
+                        <a href="#" class="sidebar-item" data-view="spotlight" data-plugin="spotlight" data-tooltip="Spotlight">
+                            <img src="/plugins/spotlight/assets/spotlight-icon.png" alt="" class="sidebar-plugin-icon">
+                            <span class="sidebar-item-text" data-i18n="navigation.spotlight">Spotlight</span>
                         </a>
                     </div>
                 </div>
@@ -2280,7 +2483,7 @@
                             <span class="sidebar-item-text" data-i18n="navigation.events">Events</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="flows" data-tooltip="Flows">
-                            <i data-lucide="git-branch"></i>
+                            <img src="/flows-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-flows" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.flows">Flows</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="goals" data-plugin="goals" data-tooltip="Goals">
@@ -2343,9 +2546,9 @@
                             <img class="sidebar-plugin-icon" src="/plugins/fireworks/assets/fireworks-icon.png" alt="" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.fireworks">Fireworks</span>
                         </a>
-                        <a href="#" class="sidebar-item" data-view="flame-overlay" data-plugin="flame-overlay" data-tooltip="Flame Overlay">
-                            <i data-lucide="flame"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.flame_overlay">Flame Overlay</span>
+                        <a href="#" class="sidebar-item" data-view="flame-overlay" data-plugin="flame-overlay" data-tooltip="Visual FX Frame">
+                            <img src="/plugins/flame-overlay/assets/branding/visual-fx-frame-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-visual-fx-frame" aria-hidden="true">
+                            <span class="sidebar-item-text" data-i18n="navigation.visual_fx_frame">Visual FX Frame</span>
                         </a>
                     </div>
                 </div>
@@ -2373,8 +2576,8 @@
                             <img src="/plugins/game-engine/assets/branding/ltth-game-engine-icon.png?v=20260707-2" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-game-engine" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.game_engine">Game Engine</span>
                         </a>
-                        <a href="#" class="sidebar-item" data-view="viewer-leaderboard" data-plugin="viewer-leaderboard" data-tooltip="Viewer XP">
-                            <i data-lucide="trophy"></i>
+                        <a href="#" class="sidebar-item" data-view="milestone-leaderboard" data-plugin="milestone-leaderboard" data-tooltip="Viewer XP">
+                            <img src="/plugins/milestone-leaderboard/assets/viewer-xp-icon.png?v=20260707-5" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-viewer-xp" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.viewer_leaderboard">Viewer XP</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="viewer-profiles" data-plugin="viewer-profiles" data-tooltip="Viewer Profiles">
@@ -2408,19 +2611,19 @@
                             <span class="sidebar-item-text" data-i18n="navigation.vdoninja">VDO.Ninja</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="multicam" data-plugin="multicam" data-tooltip="Multi-Cam">
-                            <i data-lucide="video"></i>
+                            <img src="/multicam-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-multicam" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.multi_cam">Multi-Cam</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="osc-bridge" data-plugin="osc-bridge" data-tooltip="OSC-Bridge">
-                            <i data-lucide="gamepad-2"></i>
+                            <img src="/osc-bridge-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-osc-bridge" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.osc_bridge">OSC-Bridge</span>
                         </a>
-                        <a href="#" class="sidebar-item" data-view="openshock" data-plugin="openshock" data-tooltip="OpenShock">
-                            <i data-lucide="zap"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.openshock">OpenShock</span>
+                        <a href="#" class="sidebar-item" data-view="openshock" data-plugin="openshock" data-tooltip="HybridShock">
+                            <img src="/plugins/openshock/assets/branding/hybridshock-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-openshock" aria-hidden="true">
+                            <span class="sidebar-item-text" data-i18n="navigation.openshock">HybridShock</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="weather-control" data-plugin="weather-control" data-tooltip="Weather Control">
-                            <i data-lucide="cloud-rain"></i>
+                            <img src="/weather-control-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-weather-control" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.weather_control">Weather Control</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="streamalchemy" data-plugin="streamalchemy" data-tooltip="Stream Alchemy">
@@ -2487,7 +2690,7 @@
                 <div class="topbar-drag-region"></div>
                 <div class="topbar-left">
                     <div class="topbar-brand" aria-label="Pup Cid's Little TikTool Helper">
-                        <img src="/ltthicon.png" alt="LTTH icon" class="topbar-logo-image">
+                        <img src="/ltthicon.png" alt="LTTH.app logo" class="topbar-logo-image">
                     </div>
                 </div>
                 <div class="topbar-right">
@@ -2537,7 +2740,6 @@
 
                 <!-- View: Dashboard -->
                 <div id="view-dashboard" class="content-view active">
-
                     <div class="dashboard-cockpit-grid">
                         <div class="dashboard-primary-column">
 
@@ -2696,7 +2898,7 @@
                             </button>
                             <button class="quick-action-btn emergency-stop-btn" id="quick-openshock-stop-btn" data-action="openshock-emergency-stop" data-state="off" data-plugin="openshock">
                                 <i data-lucide="shield-off"></i>
-                                <span data-i18n="dashboard.quick_action.openshock_emergency_stop">OpenShock Stop</span>
+                                <span data-i18n="dashboard.quick_action.openshock_emergency_stop">HybridShock Stop</span>
                             </button>
                         </div>
                     </section>
@@ -3026,7 +3228,7 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <i data-lucide="git-branch"></i>
+                                <img src="/flows-icon.png" alt="" class="view-brand-icon" aria-hidden="true">
                                 IFTTT Automation Flows
                             </h2>
                             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
@@ -3125,16 +3327,6 @@
                 <!-- View: STT Ticker -->
                 <div id="view-stt-ticker" class="content-view" data-plugin="stt-ticker">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <img src="/ltthttsicon.png" alt="" class="view-plugin-icon">
-                                STT Ticker
-                            </h2>
-                            <a href="/stt-ticker/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/stt-ticker/ui" title="STT Ticker Configuration" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
                         </div>
@@ -3144,16 +3336,6 @@
                 <!-- View: Music Bot -->
                 <div id="view-music-bot" class="content-view" data-plugin="music-bot">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <img src="/plugins/music-bot/assets/soundbot.png" alt="" class="view-plugin-icon">
-                                Music Bot
-                            </h2>
-                            <a href="/plugins/music-bot/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/plugins/music-bot/ui" title="Music Bot Configuration"></iframe>
                         </div>
@@ -3172,16 +3354,6 @@
                 <!-- View: Emoji Rain -->
                 <div id="view-webgpu-emoji-rain" class="content-view" data-plugin="webgpu-emoji-rain">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="zap"></i>
-                                Emoji Rain
-                            </h2>
-                            <a href="/webgpu-emoji-rain/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/webgpu-emoji-rain/ui" title="Emoji Rain Configuration"></iframe>
                         </div>
@@ -3197,21 +3369,11 @@
                     </section>
                 </div>
 
-                <!-- View: Flame Overlay -->
+                <!-- View: Visual FX Frame -->
                 <div id="view-flame-overlay" class="content-view" data-plugin="flame-overlay">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="flame"></i>
-                                TikTok Visual Effects Overlay
-                            </h2>
-                            <a href="/flame-overlay/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
-                            <iframe data-src="/flame-overlay/ui" title="Visual Effects Overlay Configuration"></iframe>
+                            <iframe data-src="/flame-overlay/ui" title="Visual FX Frame Configuration"></iframe>
                         </div>
                     </section>
                 </div>
@@ -3219,16 +3381,6 @@
                 <!-- View: Multi-Guest -->
                 <div id="view-multi-guest" class="content-view" data-plugin="vdoninja">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="users"></i>
-                                VDO.Ninja Multi-Guest
-                            </h2>
-                            <a href="/vdoninja/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/vdoninja/ui" title="VDO.Ninja Multi-Guest Manager"></iframe>
                         </div>
@@ -3257,16 +3409,6 @@
                 <!-- View: Gift Catalog -->
                 <div id="view-gift-catalog" class="content-view" data-plugin="gift-catalog">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="database"></i>
-                                Developer Guides
-                            </h2>
-                            <a href="/gift-catalog/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/gift-catalog/ui" title="Developer Guides"></iframe>
                         </div>
@@ -3285,16 +3427,6 @@
                 <!-- View: Multi-Cam -->
                 <div id="view-multicam" class="content-view" data-plugin="multicam">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="video"></i>
-                                Multi-Cam Switcher
-                            </h2>
-                            <a href="/multicam/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/multicam/ui" title="Multi-Cam Configuration"></iframe>
                         </div>
@@ -3304,16 +3436,6 @@
                 <!-- View: OSC-Bridge -->
                 <div id="view-osc-bridge" class="content-view" data-plugin="osc-bridge">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="gamepad-2"></i>
-                                OSC-Bridge (VRChat)
-                            </h2>
-                            <a href="/osc-bridge/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/osc-bridge/ui" title="OSC-Bridge Configuration"></iframe>
                         </div>
@@ -3323,18 +3445,8 @@
                 <!-- View: OpenShock -->
                 <div id="view-openshock" class="content-view" data-plugin="openshock">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="zap"></i>
-                                OpenShock Integration
-                            </h2>
-                            <a href="/openshock/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
-                            <iframe data-src="/openshock/ui" title="OpenShock Configuration"></iframe>
+                            <iframe data-src="/openshock/ui" title="HybridShock Configuration"></iframe>
                         </div>
                     </section>
                 </div>
@@ -3342,16 +3454,6 @@
                 <!-- View: Quiz Show -->
                 <div id="view-quiz-show" class="content-view" data-plugin="quiz-show">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <img class="view-plugin-icon" src="/plugins/quiz-show/assets/quiz-show-icon.png" alt="" aria-hidden="true">
-                                Quiz Show
-                            </h2>
-                            <a href="/quiz-show/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/quiz-show/ui" title="Quiz Show Configuration"></iframe>
                         </div>
@@ -3361,16 +3463,6 @@
                 <!-- View: Interactive Story -->
                 <div id="view-interactive-story" class="content-view" data-plugin="interactive-story">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="book-open"></i>
-                                Interactive Story Generator
-                            </h2>
-                            <a href="/interactive-story/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/interactive-story/ui" title="Interactive Story Configuration"></iframe>
                         </div>
@@ -3378,18 +3470,8 @@
                 </div>
 
                 <!-- View: Viewer XP -->
-                <div id="view-viewer-leaderboard" class="content-view" data-plugin="viewer-leaderboard">
+                <div id="view-milestone-leaderboard" class="content-view" data-plugin="milestone-leaderboard">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="trophy"></i>
-                                Viewer XP
-                            </h2>
-                            <a href="/viewer-xp/admin" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/viewer-xp/admin" title="Viewer XP Admin Panel"></iframe>
                         </div>
@@ -3436,16 +3518,6 @@
                 <!-- View: Weather Control -->
                 <div id="view-weather-control" class="content-view" data-plugin="weather-control">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="cloud-rain"></i>
-                                Weather Control System
-                            </h2>
-                            <a href="/weather-control/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/weather-control/ui" title="Weather Control"></iframe>
                         </div>
@@ -3455,16 +3527,6 @@
                 <!-- View: Stream Alchemy -->
                 <div id="view-streamalchemy" class="content-view" data-plugin="streamalchemy">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="flask-conical"></i>
-                                <span data-i18n="navigation.streamalchemy">Stream Alchemy</span>
-                            </h2>
-                            <a href="/streamalchemy/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/streamalchemy/ui" title="Stream Alchemy"></iframe>
                         </div>
@@ -3474,16 +3536,6 @@
                 <!-- View: Global Chat Command Engine -->
                 <div id="view-gcce" class="content-view" data-plugin="gcce">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="terminal"></i>
-                                <span data-i18n="navigation.gcce">Global Chat Command Engine</span>
-                            </h2>
-                            <a href="/gcce/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/gcce/ui" title="Global Chat Command Engine"></iframe>
                         </div>
@@ -3521,16 +3573,6 @@
                 <!-- View: Thermal Printer -->
                 <div id="view-thermal-printer" class="content-view" data-plugin="thermal-printer">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="printer"></i>
-                                <span data-i18n="navigation.thermal_printer">Thermal Printer</span>
-                            </h2>
-                            <a href="/thermal-printer/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/thermal-printer/ui" title="Thermal Printer"></iframe>
                         </div>
@@ -3540,16 +3582,6 @@
                 <!-- View: Chatango -->
                 <div id="view-chatango" class="content-view" data-plugin="chatango">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="message-circle"></i>
-                                <span data-i18n="navigation.chatango">Chatango Integration</span>
-                            </h2>
-                            <a href="/chatango/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/chatango/ui" title="Chatango Integration"></iframe>
                         </div>
@@ -3559,16 +3591,6 @@
                 <!-- View: AnimazingPal -->
                 <div id="view-animazingpal" class="content-view" data-plugin="animazingpal">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="brain"></i>
-                                <span data-i18n="navigation.animazingpal">AnimazingPal - AI VTuber Brain</span>
-                            </h2>
-                            <a href="/animazingpal/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/animazingpal/ui" title="AnimazingPal"></iframe>
                         </div>
@@ -3594,21 +3616,11 @@
                     </section>
                 </div>
 
-                <!-- View: LastEvent Spotlight -->
-                <div id="view-lastevent-spotlight" class="content-view" data-plugin="lastevent-spotlight">
+                <!-- View: Spotlight -->
+                <div id="view-spotlight" class="content-view" data-plugin="spotlight">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="eye"></i>
-                                LastEvent Spotlight
-                            </h2>
-                            <a href="/lastevent-spotlight/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
-                            <iframe data-src="/lastevent-spotlight/ui" title="LastEvent Spotlight"></iframe>
+                            <iframe data-src="/spotlight/ui" title="Spotlight"></iframe>
                         </div>
                     </section>
                 </div>
@@ -3625,16 +3637,6 @@
                 <!-- View: Advanced Timer -->
                 <div id="view-advanced-timer" class="content-view" data-plugin="advanced-timer">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="timer"></i>
-                                Advanced Timer
-                            </h2>
-                            <a href="/plugins/advanced-timer/ui.html" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/plugins/advanced-timer/ui.html" title="Advanced Timer Configuration"></iframe>
                         </div>
@@ -3645,11 +3647,7 @@
                 <div id="view-plugins" class="content-view">
                     <section class="view-section">
                         <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="package"></i>
-                                App Store
-                            </h2>
-                            <div style="display: flex; gap: 12px;">
+                            <div style="display: flex; gap: 12px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end;">
                                 <button id="upload-plugin-btn" class="btn btn-primary">
                                     <i data-lucide="upload"></i>
                                     Upload Plugin (ZIP)
@@ -3660,6 +3658,7 @@
                                 </button>
                             </div>
                         </div>
+                        <div id="plugin-store-hero" class="plugin-store-hero-slot"></div>
                         <input type="file" id="plugin-file-input" accept=".zip" style="display: none;">
                         
                         <!-- Plugin Stats Overview -->
@@ -3858,11 +3857,11 @@
                                         </label>
                                     </div>
                                     <div class="form-group">
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" id="show-live-event-log">
-                                            <span>Show Live Event Log</span>
-                                        </label>
-                                        <p class="text-xs text-gray-500 ml-6">Enable this if you want direct access to the Events view.</p>
+                                        <button type="button" id="show-live-event-log" class="btn btn-secondary inline-flex items-center gap-2" aria-pressed="false" data-state="disabled">
+                                            <i data-lucide="eye"></i>
+                                            <span id="show-live-event-log-label">Enable Live Event Log</span>
+                                        </button>
+                                        <p class="text-xs text-gray-500 mt-2 ml-1">Debug only. Hidden from the navigation by default.</p>
                                     </div>
                                     <div class="form-group">
                                         <label class="checkbox-label">

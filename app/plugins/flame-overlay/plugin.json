@@ -1,12 +1,14 @@
 {
   "id": "flame-overlay",
-  "name": "TikTok Visual Effects Overlay",
+  "name": "Visual FX Frame",
   "version": "3.0.0",
   "description": "Broadcast-safe WebGL effects overlay with 4 role-based visual modes, real-time preview, layered TikTok LIVE trigger reactions, gift catalog rule builder, preset system, flow integration, and Kawase bloom. Supports up to 4K resolution. Features: Flames, Particle Burst, Energy Waves, Electric Lightning. Fully configurable trigger rules reacting to gifts, coin ranges, follows, likes, shares, subscribes and chat commands. Cooldown, anti-spam protection, trigger cleanup, 4 trigger presets (default/hype/chill/party), named config presets, manual trigger API.",
   "author": "Pup Cid",
   "entry": "main.js",
   "enabled": false,
   "devStatus": "early-version",
+  "icon": "/plugins/flame-overlay/assets/branding/visual-fx-frame-icon.png",
+  "logo": "/plugins/flame-overlay/assets/branding/visual-fx-frame-logo.png",
   "permissions": [
     "socket.io",
     "routes",

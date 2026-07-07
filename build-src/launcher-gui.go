@@ -4,6 +4,9 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"crypto/rand"
+	"encoding/csv"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -38,6 +41,8 @@ const (
 	defaultBackendPort         = 3000
 	serverHealthTimeoutSeconds = 180
 	serverHealthTimeout        = time.Duration(serverHealthTimeoutSeconds) * time.Second
+	gracefulShutdownTimeout    = 3 * time.Second
+	taskkillPortWaitTimeout    = 2 * time.Second
 
 	// GitHub API settings for auto-update
 	githubOwner    = "Loggableim"
@@ -97,38 +102,41 @@ func (wc *loggedWriteCounter) Write(p []byte) (int, error) {
 }
 
 type Launcher struct {
-	nodePath            string
-	appDir              string
-	exeDir              string
-	configDir           string
-	userConfigsDir      string
-	progress            int
-	status              string
-	statusKey           string
-	statusFallback      string
-	statusArgs          []interface{}
-	clients             map[chan string]bool
-	clientsMu           sync.Mutex // Protects concurrent map access to clients
-	logFile             *os.File
-	logger              *log.Logger
-	logPath             string
-	envFileFixed        bool // Track if we auto-created .env file
-	serverPort          int  // Actual port the server responded on
-	preferredPort       int
-	startupInProgress   bool
-	serverStarted       bool
-	lastStartError      string
-	profiles            []ProfileInfo
-	profilesLoaded      time.Time // Last time profiles were loaded
-	selectedProfile     string
-	locale              string
-	translations        map[string]interface{}
-	nodeCmd             *exec.Cmd  // Referenz auf laufenden Node-Prozess
-	nodeMu              sync.Mutex // Schützt nodeCmd-Zugriff
-	startMu             sync.Mutex
-	resolvedNodeVersion string // Node.js LTS version resolved at startup
-	settings            LauncherSettings
-	pluginFailures      []PluginFailure
+	nodePath               string
+	appDir                 string
+	exeDir                 string
+	configDir              string
+	userConfigsDir         string
+	progress               int
+	status                 string
+	statusKey              string
+	statusFallback         string
+	statusArgs             []interface{}
+	clients                map[chan string]bool
+	clientsMu              sync.Mutex // Protects concurrent map access to clients
+	logFile                *os.File
+	logger                 *log.Logger
+	logPath                string
+	envFileFixed           bool // Track if we auto-created .env file
+	serverPort             int  // Actual port the server responded on
+	preferredPort          int
+	startupInProgress      bool
+	serverStarted          bool
+	lastStartError         string
+	profiles               []ProfileInfo
+	profilesLoaded         time.Time // Last time profiles were loaded
+	selectedProfile        string
+	locale                 string
+	translations           map[string]interface{}
+	nodeCmd                *exec.Cmd  // Referenz auf laufenden Node-Prozess
+	nodeMu                 sync.Mutex // Schützt nodeCmd-Zugriff
+	startMu                sync.Mutex
+	resolvedNodeVersion    string // Node.js LTS version resolved at startup
+	settings               LauncherSettings
+	pluginFailures         []PluginFailure
+	nativeModuleBlockers   []NativeModuleBlocker
+	nativeModuleBlockersMu sync.RWMutex
+	launcherToken          string
 }
 
 var allowedLocales = []string{"de", "en", "es", "fr"}
@@ -165,10 +173,15 @@ var launcherTranslationFallbacks = map[string]map[string]string{
 		"community.contribute":             "Mithelfen?",
 		"community.contribute_text":        "Pull Requests, Tests und Feedback sind willkommen.",
 		"footer.powered_by":                "Bereitgestellt von LTTH",
+		"language.label":                   "Sprache",
 		"theme.label":                      "Theme",
 		"theme.daymode":                    "Tag",
 		"theme.nightmode":                  "Nacht",
 		"theme.highcontrast":               "Kontrast",
+		"native_module.blockers.title":     "Blockierende Prozesse",
+		"native_module.blockers.intro":     "Diese Prozesse halten better-sqlite3 offen und blockieren den Launcher-Start.",
+		"native_module.blockers.empty":     "Kein blockierender Prozess erkannt.",
+		"native_module.blockers.kill":      "Prozess beenden",
 		"options.keep_open":                "Launcher offen halten",
 		"options.keep_open_hint":           "Der Launcher verwaltet den Serverprozess.",
 		"options.open_app":                 "App oeffnen",
@@ -211,10 +224,15 @@ var launcherTranslationFallbacks = map[string]map[string]string{
 		"community.contribute":             "Contribute?",
 		"community.contribute_text":        "Pull requests, tests, and feedback are welcome.",
 		"footer.powered_by":                "Powered by LTTH",
+		"language.label":                   "Language",
 		"theme.label":                      "Theme",
 		"theme.daymode":                    "Day",
 		"theme.nightmode":                  "Night",
 		"theme.highcontrast":               "High contrast",
+		"native_module.blockers.title":     "Blocking processes",
+		"native_module.blockers.intro":     "These processes keep better-sqlite3 open and block launcher startup.",
+		"native_module.blockers.empty":     "No blocking process detected.",
+		"native_module.blockers.kill":      "End process",
 		"options.keep_open":                "Keep launcher open",
 		"options.keep_open_hint":           "The launcher manages the server process.",
 		"options.open_app":                 "Open app",
@@ -287,6 +305,13 @@ type ServerHealthInfo struct {
 	Port    int    `json:"port"`
 }
 
+type NativeModuleBlocker struct {
+	PID               int    `json:"pid"`
+	ImageName         string `json:"imageName"`
+	CommandLine       string `json:"commandLine"`
+	ManagedByLauncher bool   `json:"managedByLauncher"`
+}
+
 type VacuumMaintenanceResult struct {
 	Success         bool   `json:"success"`
 	DeletedUsers    int64  `json:"deletedUsers"`
@@ -323,7 +348,16 @@ func NewLauncher() *Launcher {
 		selectedProfile: "",
 		profiles:        []ProfileInfo{},
 		settings:        defaultSettings,
+		launcherToken:   newLauncherToken(),
 	}
+}
+
+func newLauncherToken() string {
+	token := make([]byte, 32)
+	if _, err := rand.Read(token); err == nil {
+		return hex.EncodeToString(token)
+	}
+	return fmt.Sprintf("launcher-%d", time.Now().UnixNano())
 }
 
 func defaultLauncherSettings() LauncherSettings {
@@ -598,6 +632,36 @@ func (l *Launcher) runtimePortFilePath() string {
 	return filepath.Join(l.exeDir, ".ltth_port")
 }
 
+func (l *Launcher) launcherTokenPath() string {
+	return filepath.Join(l.exeDir, "runtime", "launcher_token")
+}
+
+func (l *Launcher) loadOrCreateLauncherToken() string {
+	if l.exeDir == "" {
+		return newLauncherToken()
+	}
+
+	tokenPath := l.launcherTokenPath()
+	if content, err := os.ReadFile(tokenPath); err == nil {
+		token := strings.TrimSpace(string(content))
+		if len(token) >= 32 {
+			return token
+		}
+	}
+
+	token := newLauncherToken()
+	if err := os.MkdirAll(filepath.Dir(tokenPath), 0755); err != nil {
+		if l.logger != nil {
+			l.logger.Printf("[WARNING] Could not create launcher token directory: %v\n", err)
+		}
+		return token
+	}
+	if err := os.WriteFile(tokenPath, []byte(token), 0600); err != nil && l.logger != nil {
+		l.logger.Printf("[WARNING] Could not persist launcher token: %v\n", err)
+	}
+	return token
+}
+
 func (l *Launcher) clearRuntimePortFile() {
 	portFile := l.runtimePortFilePath()
 	if err := os.Remove(portFile); err != nil && !os.IsNotExist(err) {
@@ -662,6 +726,11 @@ func isPortAvailable(port int) bool {
 	return true
 }
 
+func isWindowsListeningState(state string) bool {
+	normalized := strings.ToUpper(strings.TrimSpace(state))
+	return normalized == "LISTENING" || normalized == "ABHÖREN" || normalized == "ABHOEREN"
+}
+
 func describePortOwner(port int) string {
 	if runtime.GOOS == "windows" {
 		output, err := hiddenCommand("netstat", "-ano", "-p", "tcp").CombinedOutput()
@@ -675,7 +744,7 @@ func describePortOwner(port int) string {
 			fields := strings.Fields(trimmed)
 			if len(fields) >= 5 &&
 				strings.EqualFold(fields[0], "TCP") &&
-				strings.EqualFold(fields[len(fields)-2], "LISTENING") &&
+				isWindowsListeningState(fields[len(fields)-2]) &&
 				strings.HasSuffix(fields[1], target) {
 				pid := fields[len(fields)-1]
 				matches = append(matches, fmt.Sprintf("%s (%s)", trimmed, windowsProcessName(pid)))
@@ -684,7 +753,7 @@ func describePortOwner(port int) string {
 		if len(matches) > 0 {
 			return strings.Join(matches, " | ")
 		}
-		return "no LISTENING owner found via netstat"
+		return "no listening owner found via netstat"
 	}
 
 	output, err := hiddenCommand("sh", "-c", fmt.Sprintf("lsof -nP -iTCP:%d -sTCP:LISTEN", port)).CombinedOutput()
@@ -711,6 +780,175 @@ func windowsProcessName(pid string) string {
 		return "process name unavailable"
 	}
 	return strings.Trim(parts[0], `"`)
+}
+
+func (l *Launcher) nativeModuleBlockersSnapshot() []NativeModuleBlocker {
+	l.nativeModuleBlockersMu.RLock()
+	defer l.nativeModuleBlockersMu.RUnlock()
+
+	if len(l.nativeModuleBlockers) == 0 {
+		return nil
+	}
+
+	blockers := make([]NativeModuleBlocker, len(l.nativeModuleBlockers))
+	copy(blockers, l.nativeModuleBlockers)
+	return blockers
+}
+
+func (l *Launcher) setNativeModuleBlockers(blockers []NativeModuleBlocker) {
+	l.nativeModuleBlockersMu.Lock()
+	defer l.nativeModuleBlockersMu.Unlock()
+
+	if len(blockers) == 0 {
+		l.nativeModuleBlockers = nil
+		return
+	}
+
+	l.nativeModuleBlockers = append([]NativeModuleBlocker(nil), blockers...)
+}
+
+func (l *Launcher) clearNativeModuleBlockers() {
+	l.setNativeModuleBlockers(nil)
+}
+
+func truncateForDisplay(text string, max int) string {
+	text = strings.TrimSpace(text)
+	if max <= 0 || len(text) <= max {
+		return text
+	}
+	if max <= 3 {
+		return text[:max]
+	}
+	return strings.TrimSpace(text[:max-3]) + "..."
+}
+
+func (l *Launcher) formatNativeModuleBlockers(blockers []NativeModuleBlocker) string {
+	if len(blockers) == 0 {
+		return ""
+	}
+
+	parts := make([]string, 0, len(blockers))
+	for _, blocker := range blockers {
+		label := blocker.ImageName
+		if label == "" {
+			label = "node.exe"
+		}
+		label = fmt.Sprintf("%s PID %d", label, blocker.PID)
+		if blocker.ManagedByLauncher {
+			label += " (LTTH)"
+		}
+		if cmd := strings.TrimSpace(blocker.CommandLine); cmd != "" {
+			label += " - " + truncateForDisplay(cmd, 120)
+		}
+		parts = append(parts, label)
+	}
+	return strings.Join(parts, "\n")
+}
+
+func (l *Launcher) refreshNativeModuleBlockers() []NativeModuleBlocker {
+	if runtime.GOOS != "windows" {
+		l.setNativeModuleBlockers(nil)
+		return nil
+	}
+
+	cmd := hiddenCommand("tasklist", "/m", "better_sqlite3.node", "/fi", "imagename eq node.exe", "/fo", "csv", "/nh")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		if l.logger != nil {
+			l.logger.Printf("[WARNING] Could not inspect better-sqlite3 blockers: %v\n", err)
+		}
+		l.setNativeModuleBlockers(nil)
+		return nil
+	}
+
+	raw := strings.TrimSpace(string(output))
+	if raw == "" || strings.Contains(strings.ToUpper(raw), "INFO:") {
+		l.setNativeModuleBlockers(nil)
+		return nil
+	}
+
+	reader := csv.NewReader(strings.NewReader(raw))
+	reader.FieldsPerRecord = -1
+	seen := map[int]bool{}
+	var blockers []NativeModuleBlocker
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil || len(record) < 2 {
+			continue
+		}
+
+		imageName := strings.TrimSpace(record[0])
+		pid, err := strconv.Atoi(strings.TrimSpace(record[1]))
+		if err != nil || pid <= 0 || seen[pid] {
+			continue
+		}
+		seen[pid] = true
+
+		commandLine := strings.TrimSpace(windowsProcessCommandLine(pid))
+		blockers = append(blockers, NativeModuleBlocker{
+			PID:               pid,
+			ImageName:         imageName,
+			CommandLine:       commandLine,
+			ManagedByLauncher: isManagedLTTHProcessCommandLine(commandLine, l.exeDir, l.appDir),
+		})
+	}
+
+	l.setNativeModuleBlockers(blockers)
+	return blockers
+}
+
+func nativeModuleBlockerStillLoaded(pid int) bool {
+	if runtime.GOOS != "windows" || pid <= 0 {
+		return false
+	}
+
+	cmd := hiddenCommand("tasklist", "/m", "better_sqlite3.node", "/fi", fmt.Sprintf("pid eq %d", pid), "/fo", "csv", "/nh")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return false
+	}
+
+	raw := strings.TrimSpace(string(output))
+	if raw == "" || strings.Contains(strings.ToUpper(raw), "INFO:") {
+		return false
+	}
+
+	reader := csv.NewReader(strings.NewReader(raw))
+	reader.FieldsPerRecord = -1
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil || len(record) < 2 {
+			continue
+		}
+		loadedPID, err := strconv.Atoi(strings.TrimSpace(record[1]))
+		if err == nil && loadedPID == pid {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (l *Launcher) pruneNativeModuleBlockers() []NativeModuleBlocker {
+	blockers := l.nativeModuleBlockersSnapshot()
+	if len(blockers) == 0 {
+		return nil
+	}
+
+	filtered := make([]NativeModuleBlocker, 0, len(blockers))
+	for _, blocker := range blockers {
+		if nativeModuleBlockerStillLoaded(blocker.PID) {
+			filtered = append(filtered, blocker)
+		}
+	}
+	l.setNativeModuleBlockers(filtered)
+	return filtered
 }
 
 func (l *Launcher) logPortDiagnostics() {
@@ -1374,17 +1612,37 @@ func (l *Launcher) collectDiagnostics() []DiagnosticItem {
 	}
 	items = append(items, deps)
 
+	if blockers := l.pruneNativeModuleBlockers(); len(blockers) > 0 {
+		items = append(items, DiagnosticItem{
+			ID:          "native_module_blockers",
+			Label:       "Native Module",
+			Status:      diagnosticWarning,
+			Message:     fmt.Sprintf("better-sqlite3 wird von %d Prozess(en) blockiert.", len(blockers)),
+			Details:     l.formatNativeModuleBlockers(blockers),
+			Blocking:    true,
+			LastChecked: now,
+		})
+	} else {
+		items = append(items, DiagnosticItem{
+			ID:          "native_module_blockers",
+			Label:       "Native Module",
+			Status:      diagnosticOK,
+			Message:     "better-sqlite3 ist frei.",
+			LastChecked: now,
+		})
+	}
+
 	port := normalizePort(l.preferredPort, defaultBackendPort)
 	portItem := DiagnosticItem{
 		ID:          "preferred_port",
 		Label:       "Port",
 		Status:      diagnosticOK,
-		Message:     fmt.Sprintf("Wunschport %d ist frei.", port),
+		Message:     fmt.Sprintf("Wunschport %d ist frei. LTTH kann jetzt starten.", port),
 		LastChecked: now,
 	}
 	if !isPortAvailable(port) {
 		portItem.Status = diagnosticWarning
-		portItem.Message = fmt.Sprintf("Wunschport %d ist belegt. Der Launcher stoppt alte LTTH-Instanzen vor dem Start; andere Prozesse müssen beendet oder ein anderer Port gewählt werden.", port)
+		portItem.Message = fmt.Sprintf("Wunschport %d ist belegt. LTTH raeumt alte Instanzen zuerst frei; wenn das nicht klappt, ist manueller Start erforderlich.", port)
 		portItem.Details = describePortOwner(port)
 		portItem.FixAction = "port-auto"
 		portItem.FixLabel = "Freien Port wählen"
@@ -1632,7 +1890,7 @@ func parseListeningPortPIDs(netstatOutput string, ports []int) map[int][]int {
 	seen := map[string]bool{}
 	for _, line := range strings.Split(netstatOutput, "\n") {
 		fields := strings.Fields(strings.TrimSpace(line))
-		if len(fields) < 5 || !strings.EqualFold(fields[0], "TCP") || !strings.EqualFold(fields[len(fields)-2], "LISTENING") {
+		if len(fields) < 5 || !strings.EqualFold(fields[0], "TCP") || !isWindowsListeningState(fields[len(fields)-2]) {
 			continue
 		}
 		portText := fields[1]
@@ -1727,7 +1985,7 @@ func defaultStopStaleLTTHPortOwners(l *Launcher, source string) (bool, error) {
 				continue
 			}
 			stopped = true
-			if !waitForPortAvailable(port, 15*time.Second) {
+			if !waitForPortAvailable(port, taskkillPortWaitTimeout) {
 				failures = append(failures, fmt.Sprintf("port %d was still occupied after stopping PID %d", port, pid))
 			}
 		}
@@ -2824,6 +3082,9 @@ func (l *Launcher) startTool() (*exec.Cmd, error) {
 		if strings.HasPrefix(e, "LTTH_LOG_DIR=") || strings.HasPrefix(e, "LTTH_LOG_ARCHIVE_DONE=") || strings.HasPrefix(e, "LTTH_CURRENT_LAUNCHER_LOG=") {
 			continue
 		}
+		if strings.HasPrefix(e, "LTTH_LAUNCHER_TOKEN=") {
+			continue
+		}
 		if strings.HasPrefix(e, "LTTH_SAFE_MODE=") || strings.HasPrefix(e, "DISABLE_PLUGINS=") {
 			continue
 		}
@@ -2839,6 +3100,7 @@ func (l *Launcher) startTool() (*exec.Cmd, error) {
 	env = append(env, fmt.Sprintf("LTTH_MAX_PORT=%d", maxPort))
 	env = append(env, fmt.Sprintf("LTTH_LOG_DIR=%s", rootLogDir))
 	env = append(env, "LTTH_LOG_ARCHIVE_DONE=true")
+	env = append(env, fmt.Sprintf("LTTH_LAUNCHER_TOKEN=%s", l.launcherToken))
 	if l.logPath != "" {
 		env = append(env, fmt.Sprintf("LTTH_CURRENT_LAUNCHER_LOG=%s", l.logPath))
 	}
@@ -2897,7 +3159,7 @@ func (l *Launcher) killNodeProcess() {
 		l.logger.Printf("[INFO] Terminating Node.js process (PID: %d)...\n", pid)
 	}
 
-	killNodeProcessOS(cmd, pid)
+	_ = terminateProcessTreeByPID(pid)
 
 	l.nodeMu.Lock()
 	l.nodeCmd = nil
@@ -2934,7 +3196,7 @@ func (l *Launcher) getServerHealthOnPortWithTimeout(port int, timeout time.Durat
 		Timeout: timeout,
 	}
 
-	url := fmt.Sprintf("http://localhost:%d/api/health", port)
+	url := fmt.Sprintf("http://127.0.0.1:%d/api/health", port)
 	resp, err := client.Get(url)
 	if err != nil {
 		return payload, false
@@ -3005,6 +3267,38 @@ func defaultWaitForHealthyServerToStop(l *Launcher, port int, timeout time.Durat
 	return false
 }
 
+func (l *Launcher) requestGracefulServerShutdown(port int) error {
+	port = normalizePort(port, 0)
+	if port == 0 {
+		return fmt.Errorf("invalid server port")
+	}
+	if strings.TrimSpace(l.launcherToken) == "" {
+		return fmt.Errorf("launcher token is not configured")
+	}
+
+	url := fmt.Sprintf("http://127.0.0.1:%d/api/launcher/shutdown", port)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader([]byte("{}")))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-ltth-launcher-token", l.launcherToken)
+
+	client := &http.Client{Timeout: 1200 * time.Millisecond}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return fmt.Errorf("shutdown endpoint returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	return nil
+}
+
 func (l *Launcher) stopDetectedLTTHServers(source string) (bool, error) {
 	servers := l.detectedLTTHServers()
 	if len(servers) == 0 {
@@ -3015,7 +3309,13 @@ func (l *Launcher) stopDetectedLTTHServers(source string) (bool, error) {
 		source = "INFO"
 	}
 
-	stopped := false
+	type stopTarget struct {
+		PID               int
+		Port              int
+		GracefulRequested bool
+	}
+
+	targets := make([]stopTarget, 0, len(servers))
 	var failures []string
 	for _, server := range servers {
 		if server.PID <= 0 {
@@ -3023,15 +3323,36 @@ func (l *Launcher) stopDetectedLTTHServers(source string) (bool, error) {
 			continue
 		}
 
-		l.logAndSync("[%s] Existing LTTH server detected on port %d with PID %d. Stopping it before continuing.", source, server.Port, server.PID)
-		if err := terminateProcessTreeByPID(server.PID); err != nil {
-			failures = append(failures, fmt.Sprintf("could not stop LTTH server PID %d on port %d: %v", server.PID, server.Port, err))
-			continue
+		l.logAndSync("[%s] Existing LTTH server detected on port %d with PID %d. Requesting graceful shutdown.", source, server.Port, server.PID)
+		target := stopTarget{PID: server.PID, Port: server.Port}
+		if err := l.requestGracefulServerShutdown(server.Port); err == nil {
+			target.GracefulRequested = true
+		} else {
+			l.logAndSync("[%s] Graceful shutdown request failed for PID %d on port %d: %v.", source, server.PID, server.Port, err)
+		}
+		targets = append(targets, target)
+	}
+
+	stopped := false
+	for _, target := range targets {
+		if target.GracefulRequested {
+			if waitForHealthyServerToStop(l, target.Port, gracefulShutdownTimeout) {
+				l.logAndSync("[%s] Existing LTTH server on port %d stopped gracefully.", source, target.Port)
+				stopped = true
+				continue
+			}
+			l.logAndSync("[%s] Graceful shutdown timed out for PID %d on port %d. Falling back to taskkill.", source, target.PID, target.Port)
+		} else {
+			l.logAndSync("[%s] Falling back to taskkill for PID %d on port %d.", source, target.PID, target.Port)
 		}
 
+		if err := terminateProcessTreeByPID(target.PID); err != nil {
+			failures = append(failures, fmt.Sprintf("could not stop LTTH server PID %d on port %d: %v", target.PID, target.Port, err))
+			continue
+		}
 		stopped = true
-		if !waitForHealthyServerToStop(l, server.Port, 15*time.Second) {
-			failures = append(failures, fmt.Sprintf("LTTH server PID %d on port %d did not stop in time", server.PID, server.Port))
+		if !waitForHealthyServerToStop(l, target.Port, taskkillPortWaitTimeout) {
+			failures = append(failures, fmt.Sprintf("LTTH server PID %d on port %d did not stop in time", target.PID, target.Port))
 		}
 	}
 
@@ -3114,23 +3435,24 @@ func (l *Launcher) statusPayload() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"progress":          l.progress,
-		"status":            l.currentStatus(),
-		"preferredPort":     l.preferredPort,
-		"runtimePort":       runtimePort,
-		"serverPort":        serverPort,
-		"serverRunning":     serverRunning,
-		"nodeRunning":       nodeRunning,
-		"startupInProgress": l.startupInProgress,
-		"lastStartError":    l.lastStartError,
-		"logPath":           l.logPath,
-		"activeProfile":     l.currentProfileName(),
-		"vacuumAvailable":   !l.startupInProgress && !nodeRunning && !serverRunning,
-		"settings":          l.settings,
-		"safeMode":          l.settings.SafeMode,
-		"updateChannel":     l.settings.UpdateChannel,
-		"firstRunComplete":  l.settings.FirstRunComplete,
-		"pluginFailures":    l.pluginFailures,
+		"progress":             l.progress,
+		"status":               l.currentStatus(),
+		"preferredPort":        l.preferredPort,
+		"runtimePort":          runtimePort,
+		"serverPort":           serverPort,
+		"serverRunning":        serverRunning,
+		"nodeRunning":          nodeRunning,
+		"startupInProgress":    l.startupInProgress,
+		"lastStartError":       l.lastStartError,
+		"logPath":              l.logPath,
+		"activeProfile":        l.currentProfileName(),
+		"vacuumAvailable":      !l.startupInProgress && !nodeRunning && !serverRunning,
+		"settings":             l.settings,
+		"safeMode":             l.settings.SafeMode,
+		"updateChannel":        l.settings.UpdateChannel,
+		"firstRunComplete":     l.settings.FirstRunComplete,
+		"pluginFailures":       l.pluginFailures,
+		"nativeModuleBlockers": l.pruneNativeModuleBlockers(),
 	}
 }
 
@@ -3184,6 +3506,20 @@ func (l *Launcher) manualStartServer(port int) error {
 		return err
 	} else if stopped {
 		l.updateProgressLocalized(88, "status.old_instance_stopped", "Alte Server-Instanz gestoppt.")
+	}
+
+	if !isPortAvailable(port) {
+		if stoppedPorts, err := stopStaleLTTHPortOwners(l, "MANUAL"); err != nil {
+			return err
+		} else if stoppedPorts {
+			l.updateProgressLocalized(88, "status.old_instance_stopped", "Alte Server-Instanz gestoppt.")
+		}
+
+		if !isPortAvailable(port) {
+			l.logAndSync("[MANUAL] Preferred port %d is still occupied after cleanup.", port)
+			l.updateProgressLocalized(95, "status.port_occupied", "Port %d ist belegt. Manueller Start erforderlich.", port)
+			return fmt.Errorf("preferred port %d is still occupied", port)
+		}
 	}
 
 	l.startMu.Lock()
@@ -3246,6 +3582,7 @@ func (l *Launcher) manualStartServer(port int) error {
 			case <-timeout:
 				err := fmt.Errorf("manual server start timed out after %d seconds", serverHealthTimeoutSeconds)
 				l.logAndSync("[ERROR] %v", err)
+				l.killNodeProcess()
 				l.updateProgressLocalized(95, "status.server_timeout", "Server-Start Timeout (%ds)", serverHealthTimeoutSeconds)
 				l.markServerStartDone(err)
 				return
@@ -3330,25 +3667,38 @@ func (l *Launcher) autoFixYtDlp() {
 }
 
 // autoFixPort reports fixed-port readiness before starting the backend.
-func (l *Launcher) autoFixPort() {
+func (l *Launcher) autoFixPort() bool {
 	preferred := normalizePort(l.preferredPort, defaultBackendPort)
-
-	if existingPort, ok := l.detectHealthyServerPort(); ok {
-		l.logAndSync("[INFO] Existing LTTH server detected on port %d; startup cleanup will stop it before a fresh backend starts.", existingPort)
-		l.updateProgressLocalized(87, "status.port_existing", "Bestehender LTTH-Server wird vor Neustart gestoppt...")
-		return
-	}
 
 	if isPortAvailable(preferred) {
 		l.logAndSync("[INFO] Preferred backend port %d is available", preferred)
-		l.updateProgressLocalized(87, "status.port_available", "Port %d ist frei", preferred)
-		return
+		l.updateProgressLocalized(87, "status.port_available", "Port %d ist frei. LTTH startet jetzt.", preferred)
+		return true
 	}
 
-	l.logAndSync("[WARNING] Preferred backend port %d is occupied.", preferred)
+	l.logAndSync("[WARNING] Preferred backend port %d is occupied. Attempting startup cleanup.", preferred)
+	cleanupStopped := false
+	if stopped, err := stopStaleLTTHPortOwners(l, "STARTUP"); err != nil {
+		l.logAndSync("[WARNING] Startup port cleanup failed: %v", err)
+	} else if stopped {
+		l.logAndSync("[INFO] Managed LTTH port owner stopped before backend start.")
+		cleanupStopped = true
+	}
+
+	if isPortAvailable(preferred) {
+		l.logAndSync("[INFO] Preferred backend port %d is available after startup cleanup", preferred)
+		if cleanupStopped {
+			l.updateProgressLocalized(87, "status.port_available", "Port %d wurde freigeraeumt. LTTH startet jetzt.", preferred)
+		} else {
+			l.updateProgressLocalized(87, "status.port_available", "Port %d ist frei. LTTH startet jetzt.", preferred)
+		}
+		return true
+	}
+
 	l.logAndSync("[WARNING] Port owner details: %s", describePortOwner(preferred))
 	l.logAndSync("[WARNING] Backend startup stays fixed to port %d. If this is not LTTH, stop the other process or choose another port manually.", preferred)
-	l.updateProgressLocalized(87, "status.port_occupied", "Port %d ist belegt", preferred)
+	l.updateProgressLocalized(87, "status.port_occupied", "Port %d konnte nicht automatisch freigeraeumt werden. Manueller Start erforderlich.", preferred)
+	return false
 }
 
 // ============================================================
@@ -4283,6 +4633,23 @@ func (l *Launcher) runLauncher() {
 	time.Sleep(300 * time.Millisecond)
 
 	// Phase 3: Check and install dependencies (35–80%)
+	// Auto-fix: Create .env file if missing before any backend restart/repair work.
+	if err := l.autoFixEnvFile(); err != nil {
+		l.logger.Printf("[WARNING] Could not auto-create .env: %v\n", err)
+	}
+
+	// Startup policy: replace old LTTH servers before dependency/native-module repair.
+	if stopped, err := l.prepareFreshBackendStartup("STARTUP"); err != nil {
+		l.logAndSync("[ERROR] Could not prepare fresh backend startup: %v", err)
+		preferredPort := normalizePort(l.preferredPort, defaultBackendPort)
+		l.updateProgressLocalized(95, "status.stop_old_instance_failed", "Port %d konnte nicht freigeraeumt werden: %v", preferredPort, err)
+		l.updateProgressLocalized(100, "status.manual_start_available", "Port %d konnte nicht automatisch freigeraeumt werden. Manueller Start erforderlich.", preferredPort)
+		return
+	} else if stopped {
+		l.updateProgressLocalized(36, "status.old_instance_stopped", "Alte Server-Instanz gestoppt.")
+		time.Sleep(500 * time.Millisecond)
+	}
+
 	l.updateProgressLocalized(35, "status.checking_dependencies", "Prüfe Abhängigkeiten...")
 	l.logger.Println("[Phase 3] Checking dependencies...")
 	time.Sleep(300 * time.Millisecond)
@@ -4322,17 +4689,25 @@ func (l *Launcher) runLauncher() {
 	l.logger.Println("[Phase 3.1] Verifying native Node modules...")
 	if err := l.verifyNativeModules(); err != nil {
 		l.logAndSync("[WARNING] Native module verification failed: %v", err)
+		if blockers := l.refreshNativeModuleBlockers(); len(blockers) > 0 {
+			summary := l.formatNativeModuleBlockers(blockers)
+			l.logAndSync("[WARNING] better-sqlite3 is currently loaded by:\n%s", summary)
+			summaryLine := strings.ReplaceAll(summary, "\n", "; ")
+			l.markServerStartDone(fmt.Errorf("native module blocked by process(es): %s", summaryLine))
+			l.updateProgress(95, "Native Module blockiert: "+summaryLine+". Prozesse hier beenden und Start erneut versuchen.")
+			return
+		}
 		if nativeModuleFailureSuggestsDependencyInstall(err) {
 			l.logAndSync("[WARNING] Native module file is missing; repairing dependencies before rebuild.")
 			l.updateProgressLocalized(83, "status.reinstalling_dependencies", "Installiere Abhängigkeiten neu...")
 			if installErr := l.installDependencies(); installErr != nil {
 				l.logAndSync("[ERROR] Dependency reinstall after missing native module failed: %v", installErr)
+				l.markServerStartDone(installErr)
 				l.updateProgressLocalized(95, "status.installation_failed", "FEHLER: %v", installErr)
-				time.Sleep(5 * time.Second)
-				l.closeLogging()
-				os.Exit(1)
+				return
 			}
 			if verifyErr := l.verifyNativeModules(); verifyErr == nil {
+				l.clearNativeModuleBlockers()
 				goto nativeModulesReady
 			} else {
 				l.logAndSync("[WARNING] Native modules still fail after dependency repair: %v", verifyErr)
@@ -4344,19 +4719,26 @@ func (l *Launcher) runLauncher() {
 			l.updateProgressLocalized(83, "status.reinstalling_dependencies", "Installiere Abhängigkeiten neu...")
 			if installErr := l.installDependencies(); installErr != nil {
 				l.logAndSync("[ERROR] Dependency reinstall after native module failure failed: %v", installErr)
+				l.markServerStartDone(installErr)
 				l.updateProgressLocalized(95, "status.installation_failed", "FEHLER: %v", installErr)
-				time.Sleep(5 * time.Second)
-				l.closeLogging()
-				os.Exit(1)
+				return
 			}
 		}
 		if verifyErr := l.verifyNativeModules(); verifyErr != nil {
+			if blockers := l.refreshNativeModuleBlockers(); len(blockers) > 0 {
+				summary := l.formatNativeModuleBlockers(blockers)
+				l.logAndSync("[WARNING] Native module repair is still blocked by:\n%s", summary)
+				summaryLine := strings.ReplaceAll(summary, "\n", "; ")
+				l.markServerStartDone(fmt.Errorf("native module blocked by process(es): %s", summaryLine))
+				l.updateProgress(95, "Native Module blockiert: "+summaryLine+". Prozesse hier beenden und Start erneut versuchen.")
+				return
+			}
 			l.logAndSync("[ERROR] Native modules still fail after repair: %v", verifyErr)
+			l.markServerStartDone(verifyErr)
 			l.updateProgressLocalized(95, "status.native_modules_failed", "Native Module konnten nicht repariert werden")
-			time.Sleep(5 * time.Second)
-			l.closeLogging()
-			os.Exit(1)
+			return
 		}
+		l.clearNativeModuleBlockers()
 	}
 
 nativeModulesReady:
@@ -4365,24 +4747,12 @@ nativeModulesReady:
 	l.logger.Println("[Phase 3.5] Auto-fixing common issues...")
 	time.Sleep(300 * time.Millisecond)
 
-	// Auto-fix: Create .env file if missing
-	if err := l.autoFixEnvFile(); err != nil {
-		l.logger.Printf("[WARNING] Could not auto-create .env: %v\n", err)
-	}
-
-	// Startup policy: replace old LTTH servers and launch fresh on port 3000.
-	if stopped, err := l.prepareFreshBackendStartup("STARTUP"); err != nil {
-		l.logAndSync("[ERROR] Could not prepare fresh backend startup: %v", err)
-		l.updateProgressLocalized(95, "status.stop_old_instance_failed", "Alte Server-Instanz konnte nicht gestoppt werden: %v", err)
-		l.updateProgressLocalized(100, "status.manual_start_available", "Manueller Start ist im Launcher verfügbar. Logs prüfen und Port wählen.")
-		return
-	} else if stopped {
-		l.updateProgressLocalized(86, "status.old_instance_stopped", "Alte Server-Instanz gestoppt.")
-		time.Sleep(500 * time.Millisecond)
-	}
-
 	// Auto-fix: Check port availability
-	l.autoFixPort()
+	if !l.autoFixPort() {
+		preferredPort := normalizePort(l.preferredPort, defaultBackendPort)
+		l.updateProgressLocalized(100, "status.manual_start_available", "Port %d konnte nicht automatisch freigeraeumt werden. Manueller Start erforderlich.", preferredPort)
+		return
+	}
 
 	// Auto-fix: Install yt-dlp if missing
 	l.autoFixYtDlp()
@@ -4394,16 +4764,6 @@ nativeModulesReady:
 	l.updateProgressLocalized(90, "status.starting_tool", "Starte Tool...")
 	l.logger.Println("[Phase 4] Starting Node.js server...")
 	time.Sleep(500 * time.Millisecond)
-
-	if stopped, err := l.stopDetectedLTTHServers("STARTUP"); err != nil {
-		l.logAndSync("[ERROR] Could not stop existing LTTH server before startup: %v", err)
-		l.updateProgressLocalized(95, "status.stop_old_instance_failed", "Alte Server-Instanz konnte nicht gestoppt werden: %v", err)
-		l.updateProgressLocalized(100, "status.manual_start_available", "Manueller Start ist im Launcher verfügbar. Logs prüfen und Port wählen.")
-		return
-	} else if stopped {
-		l.updateProgressLocalized(90, "status.old_instance_stopped", "Alte Server-Instanz gestoppt.")
-		time.Sleep(500 * time.Millisecond)
-	}
 
 	// Start the tool
 	l.startMu.Lock()
@@ -4419,7 +4779,7 @@ nativeModulesReady:
 		l.markServerStartDone(err)
 		l.updateProgressLocalized(90, "status.start_error", "FEHLER beim Starten: %v", err)
 		l.updateProgressLocalized(90, "status.check_logs", "Prüfe bitte die Log-Dateien im logs/ Ordner für Details.")
-		l.updateProgressLocalized(100, "status.manual_start_available", "Manueller Start ist im Launcher verfügbar. Logs prüfen und Port wählen.")
+		l.updateProgressLocalized(100, "status.manual_start_available", "Server konnte nicht gestartet werden. Manueller Start erforderlich.")
 		return
 	}
 
@@ -4517,7 +4877,7 @@ nativeModulesReady:
 			l.updateProgressLocalized(99, "status.port_check_hint", "💡 Oder prüfe ob Port 3000 frei ist")
 			time.Sleep(2 * time.Second)
 			l.markServerStartDone(fmt.Errorf("node process exited before ready: %v", err))
-			l.updateProgressLocalized(100, "status.manual_start_available", "Manueller Start ist im Launcher verfügbar. Logs prüfen und Port wählen.")
+			l.updateProgressLocalized(100, "status.manual_start_available", "Serverstart fehlgeschlagen. Manueller Start erforderlich.")
 			return
 		case <-healthCheckTicker.C:
 			attemptCount++
@@ -4549,6 +4909,7 @@ nativeModulesReady:
 			l.logger.Println("[ERROR]  - Port 3000 ist blockiert durch Firewall oder einen anderen Prozess")
 			l.logger.Println("[ERROR] ===========================================")
 
+			l.killNodeProcess()
 			l.updateProgressLocalized(95, "status.server_timeout", "Server-Start Timeout (%ds)", serverHealthTimeoutSeconds)
 			time.Sleep(2 * time.Second)
 			l.updateProgressLocalized(96, "status.server_no_response", "📋 Server antwortet nicht - prüfe logs/")
@@ -4558,7 +4919,7 @@ nativeModulesReady:
 			l.updateProgressLocalized(98, "status.wait_manual_open", fmt.Sprintf("💡 Warte 2-3 Minuten und öffne localhost:%d", getCurrentNodePort()))
 			time.Sleep(2 * time.Second)
 			l.markServerStartDone(fmt.Errorf("server health check timed out after %d seconds", serverHealthTimeoutSeconds))
-			l.updateProgressLocalized(100, "status.manual_start_available", "Manueller Start ist im Launcher verfügbar. Logs prüfen und Port wählen.")
+			l.updateProgressLocalized(100, "status.manual_start_available", "Server antwortet nicht. Manueller Start erforderlich.")
 			return
 		}
 	}
@@ -4717,6 +5078,7 @@ func main() {
 		// (since stdout doesn't exist in GUI mode)
 		launcher.logger = log.New(io.Discard, "", log.LstdFlags)
 	}
+	launcher.launcherToken = launcher.loadOrCreateLauncherToken()
 
 	launcher.logStartupPreflight(templatePath)
 	launcher.loadSettings()
@@ -4805,60 +5167,65 @@ func main() {
 			localVer = "–"
 		}
 		data := map[string]interface{}{
-			"AppName":            launcher.getTranslation("app_name"),
-			"TagLine":            "Open-Source TikTok LIVE Tool",
-			"Locale":             lang,
-			"Version":            localVer,
-			"HasProfiles":        len(launcher.profiles) > 0,
-			"Profiles":           launcher.profiles,
-			"ProfileLabel":       launcher.getTranslation("profile.title"),
-			"NoProfilesText":     launcher.getTranslation("profile.no_profiles"),
-			"TabChangelog":       launcher.getTranslation("tabs.changelog"),
-			"TabApiKeys":         launcher.getTranslation("tabs.api_keys"),
-			"TabCommunity":       launcher.getTranslation("tabs.community"),
-			"StatusTitle":        launcher.getTranslation("status.progress"),
-			"StatusInitializing": launcher.getTranslation("status.initializing"),
-			"ChangelogTitle":     launcher.getTranslation("changelog.title"),
-			"ChangelogLoading":   launcher.getTranslation("changelog.loading"),
-			"ChangelogError":     launcher.getTranslation("changelog.error"),
-			"ApiKeysTitle":       launcher.getTranslation("api_keys.title"),
-			"ApiKeysIntro":       launcher.getTranslation("api_keys.intro"),
-			"MandatoryWarning":   launcher.getTranslation("api_keys.mandatory_warning"),
-			"FallbackWarning":    launcher.getTranslation("api_keys.fallback_warning"),
-			"ElevenLabsDesc":     launcher.getTranslation("api_keys.elevenlabs.description"),
-			"OpenAIDesc":         launcher.getTranslation("api_keys.openai.description"),
-			"SiliconFlowDesc":    launcher.getTranslation("api_keys.siliconflow.description"),
-			"FishAudioDesc":      launcher.getTranslation("api_keys.fishAudio.description"),
-			"CommunityTitle":     launcher.getTranslation("community.title"),
-			"CommunityIntro":     launcher.getTranslation("community.intro"),
-			"HelpAppreciated":    launcher.getTranslation("community.help_appreciated"),
-			"LinkRepo":           launcher.getTranslation("community.links.repo"),
-			"LinkDiscussions":    launcher.getTranslation("community.links.discussions"),
-			"LinkIssues":         launcher.getTranslation("community.links.issues"),
-			"LinkDiscord":        launcher.getTranslation("community.links.discord"),
-			"ContributeQuestion": launcher.getTranslation("community.contribute"),
-			"ContributeText":     launcher.getTranslation("community.contribute_text"),
-			"PoweredBy":          launcher.getTranslation("footer.powered_by"),
-			"ThemeLabel":         launcher.getTranslation("theme.label"),
-			"ThemeDay":           launcher.getTranslation("theme.daymode"),
-			"ThemeNight":         launcher.getTranslation("theme.nightmode"),
-			"ThemeHighContrast":  launcher.getTranslation("theme.highcontrast"),
-			"KeepOpenLabel":      launcher.getTranslation("options.keep_open"),
-			"KeepOpenHint":       launcher.getTranslation("options.keep_open_hint"),
-			"OpenAppLabel":       launcher.getTranslation("options.open_app"),
-			"AppNotReady":        launcher.getTranslation("options.app_not_ready"),
-			"AppReady":           launcher.getTranslation("options.app_ready"),
-			"TabLogs":            launcher.getTranslation("tabs.logging"),
-			"LogsTitle":          launcher.getTranslation("logs.title"),
-			"LogsIntro":          launcher.getTranslation("logs.intro"),
-			"LogsLoading":        launcher.getTranslation("logs.loading"),
-			"LogsEmpty":          launcher.getTranslation("logs.empty"),
-			"LogsError":          launcher.getTranslation("logs.error"),
-			"CurrentTheme":       theme,
-			"KeepLauncherOpen":   launcher.settings.KeepLauncherOpen,
-			"SafeMode":           launcher.settings.SafeMode,
-			"UpdateChannel":      launcher.settings.UpdateChannel,
-			"FirstRunComplete":   launcher.settings.FirstRunComplete,
+			"AppName":                   launcher.getTranslation("app_name"),
+			"TagLine":                   "Open-Source TikTok LIVE Tool",
+			"Locale":                    lang,
+			"Version":                   localVer,
+			"HasProfiles":               len(launcher.profiles) > 0,
+			"Profiles":                  launcher.profiles,
+			"ProfileLabel":              launcher.getTranslation("profile.title"),
+			"NoProfilesText":            launcher.getTranslation("profile.no_profiles"),
+			"TabChangelog":              launcher.getTranslation("tabs.changelog"),
+			"TabApiKeys":                launcher.getTranslation("tabs.api_keys"),
+			"TabCommunity":              launcher.getTranslation("tabs.community"),
+			"StatusTitle":               launcher.getTranslation("status.progress"),
+			"StatusInitializing":        launcher.getTranslation("status.initializing"),
+			"ChangelogTitle":            launcher.getTranslation("changelog.title"),
+			"ChangelogLoading":          launcher.getTranslation("changelog.loading"),
+			"ChangelogError":            launcher.getTranslation("changelog.error"),
+			"ApiKeysTitle":              launcher.getTranslation("api_keys.title"),
+			"ApiKeysIntro":              launcher.getTranslation("api_keys.intro"),
+			"MandatoryWarning":          launcher.getTranslation("api_keys.mandatory_warning"),
+			"FallbackWarning":           launcher.getTranslation("api_keys.fallback_warning"),
+			"ElevenLabsDesc":            launcher.getTranslation("api_keys.elevenlabs.description"),
+			"OpenAIDesc":                launcher.getTranslation("api_keys.openai.description"),
+			"SiliconFlowDesc":           launcher.getTranslation("api_keys.siliconflow.description"),
+			"FishAudioDesc":             launcher.getTranslation("api_keys.fishAudio.description"),
+			"CommunityTitle":            launcher.getTranslation("community.title"),
+			"CommunityIntro":            launcher.getTranslation("community.intro"),
+			"HelpAppreciated":           launcher.getTranslation("community.help_appreciated"),
+			"LinkRepo":                  launcher.getTranslation("community.links.repo"),
+			"LinkDiscussions":           launcher.getTranslation("community.links.discussions"),
+			"LinkIssues":                launcher.getTranslation("community.links.issues"),
+			"LinkDiscord":               launcher.getTranslation("community.links.discord"),
+			"ContributeQuestion":        launcher.getTranslation("community.contribute"),
+			"ContributeText":            launcher.getTranslation("community.contribute_text"),
+			"PoweredBy":                 launcher.getTranslation("footer.powered_by"),
+			"LanguageLabel":             launcher.getTranslation("language.label"),
+			"ThemeLabel":                launcher.getTranslation("theme.label"),
+			"ThemeDay":                  launcher.getTranslation("theme.daymode"),
+			"ThemeNight":                launcher.getTranslation("theme.nightmode"),
+			"ThemeHighContrast":         launcher.getTranslation("theme.highcontrast"),
+			"NativeModuleBlockersTitle": launcher.getTranslation("native_module.blockers.title"),
+			"NativeModuleBlockersIntro": launcher.getTranslation("native_module.blockers.intro"),
+			"NativeModuleBlockersEmpty": launcher.getTranslation("native_module.blockers.empty"),
+			"NativeModuleBlockersKill":  launcher.getTranslation("native_module.blockers.kill"),
+			"KeepOpenLabel":             launcher.getTranslation("options.keep_open"),
+			"KeepOpenHint":              launcher.getTranslation("options.keep_open_hint"),
+			"OpenAppLabel":              launcher.getTranslation("options.open_app"),
+			"AppNotReady":               launcher.getTranslation("options.app_not_ready"),
+			"AppReady":                  launcher.getTranslation("options.app_ready"),
+			"TabLogs":                   launcher.getTranslation("tabs.logging"),
+			"LogsTitle":                 launcher.getTranslation("logs.title"),
+			"LogsIntro":                 launcher.getTranslation("logs.intro"),
+			"LogsLoading":               launcher.getTranslation("logs.loading"),
+			"LogsEmpty":                 launcher.getTranslation("logs.empty"),
+			"LogsError":                 launcher.getTranslation("logs.error"),
+			"CurrentTheme":              theme,
+			"KeepLauncherOpen":          launcher.settings.KeepLauncherOpen,
+			"SafeMode":                  launcher.settings.SafeMode,
+			"UpdateChannel":             launcher.settings.UpdateChannel,
+			"FirstRunComplete":          launcher.settings.FirstRunComplete,
 		}
 
 		tmpl.Execute(w, data)
@@ -4993,6 +5360,72 @@ func main() {
 			return
 		}
 		writeJSON(w, result)
+	})
+
+	http.HandleFunc("/api/launcher/processes/kill", func(w http.ResponseWriter, r *http.Request) {
+		if !methodAllowed(w, r, "POST") {
+			return
+		}
+
+		pid, err := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("pid")))
+		if err != nil || pid <= 0 {
+			http.Error(w, "invalid pid", http.StatusBadRequest)
+			return
+		}
+
+		blockers := launcher.nativeModuleBlockersSnapshot()
+		found := NativeModuleBlocker{}
+		ok := false
+		for _, blocker := range blockers {
+			if blocker.PID == pid {
+				found = blocker
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			blockers = launcher.refreshNativeModuleBlockers()
+			for _, blocker := range blockers {
+				if blocker.PID == pid {
+					found = blocker
+					ok = true
+					break
+				}
+			}
+		}
+		if !ok {
+			http.Error(w, fmt.Sprintf("process %d is not listed as a blocker", pid), http.StatusNotFound)
+			return
+		}
+
+		launcher.logAndSync("[MANUAL] Terminating native module blocker PID %d (%s)", pid, strings.TrimSpace(found.ImageName))
+
+		launcher.nodeMu.Lock()
+		currentNode := launcher.nodeCmd
+		currentNodePID := 0
+		if currentNode != nil && currentNode.Process != nil {
+			currentNodePID = currentNode.Process.Pid
+		}
+		launcher.nodeMu.Unlock()
+
+		var killErr error
+		if currentNodePID == pid {
+			launcher.killNodeProcess()
+		} else {
+			killErr = terminateProcessTreeByPID(pid)
+		}
+		if killErr != nil {
+			http.Error(w, killErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		remaining := launcher.refreshNativeModuleBlockers()
+		writeJSON(w, map[string]interface{}{
+			"success":           true,
+			"pid":               pid,
+			"blocker":           found,
+			"remainingBlockers": remaining,
+		})
 	})
 
 	http.HandleFunc("/api/launcher/export-diagnostics", func(w http.ResponseWriter, r *http.Request) {

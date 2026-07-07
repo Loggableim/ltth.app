@@ -87,7 +87,15 @@ class ThemeManager {
             });
         });
 
-        observer.observe(document.body, {
+        const observeRoot = document.documentElement || document.body;
+        if (!observeRoot) {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => this.setupIframeMonitoring(), { once: true });
+            }
+            return;
+        }
+
+        observer.observe(observeRoot, {
             childList: true,
             subtree: true
         });
@@ -265,7 +273,7 @@ class ThemeManager {
             wideLogo.src = '/logo-wide.png';
         }
         if (miniIcon) {
-            miniIcon.src = '/ltthicon.png';
+            miniIcon.src = '/ltthicon-cutout.png?v=6';
         }
     }
 

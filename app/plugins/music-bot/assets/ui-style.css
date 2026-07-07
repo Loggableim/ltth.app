@@ -87,7 +87,7 @@ textarea {
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: 148px minmax(320px, 0.72fr) minmax(360px, 1fr) auto;
+  grid-template-columns: 148px minmax(320px, 0.72fr) minmax(360px, 1fr);
   gap: 24px;
   align-items: center;
   min-height: 168px;
@@ -269,10 +269,6 @@ h3 {
   color: var(--musicbot-accent);
   font-style: normal;
   font-size: 13px;
-}
-
-.open-tab-btn {
-  align-self: start;
 }
 
 .onboarding-panel[hidden] {
@@ -997,11 +993,6 @@ input[type="range"] {
     max-height: 76px;
   }
 
-  .open-tab-btn {
-    grid-column: 2;
-    justify-self: start;
-  }
-
   .hero-art {
     width: 104px;
     height: 104px;
@@ -1043,10 +1034,6 @@ input[type="range"] {
 
   .hero-art {
     display: none;
-  }
-
-  .open-tab-btn {
-    grid-column: auto;
   }
 
   .card-header,

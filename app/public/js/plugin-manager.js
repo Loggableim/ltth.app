@@ -753,7 +753,7 @@ class PluginManager {
 
     isFeaturedStorePlugin(plugin) {
         const id = String(plugin.id || '').toLowerCase();
-        return plugin.installed || ['chatango', 'goals', 'lastevent-spotlight', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain'].includes(id);
+        return plugin.installed || ['chatango', 'goals', 'spotlight', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain'].includes(id);
     }
 
     renderStoreCategoryChips() {
@@ -836,6 +836,7 @@ class PluginManager {
 
     renderStoreShell() {
         const container = document.getElementById('plugins-container');
+        const heroContainer = document.getElementById('plugin-store-hero');
         if (!container) return;
 
         this.updateStoreModeControls();
@@ -872,13 +873,21 @@ class PluginManager {
                 </div>
             `;
 
-        container.innerHTML = [headerHtml, errorsHtml, discoveryHtml, gridHtml].join('');
+        if (heroContainer) {
+            heroContainer.innerHTML = headerHtml;
+            container.innerHTML = [errorsHtml, discoveryHtml, gridHtml].join('');
+        } else {
+            container.innerHTML = [headerHtml, errorsHtml, discoveryHtml, gridHtml].join('');
+        }
 
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
 
         this.bindStoreCardEvents(container);
+        if (heroContainer) {
+            this.bindStoreCardEvents(heroContainer);
+        }
     }
 
     renderStorePlugins() {
@@ -929,27 +938,31 @@ class PluginManager {
 
         return `
             <section class="plugin-store-header">
-                <div class="plugin-store-header__brand">
-                    <img src="/appstore-logo.png" alt="LTTH AppStore logo" class="plugin-store-header__logo" loading="lazy">
-                </div>
-                <div class="plugin-store-header__title">
-                    <div class="plugin-store-header__title-row">
-                        <i data-lucide="${this.currentStoreMode === 'updates' ? 'download' : this.currentStoreMode === 'installed' ? 'hard-drive' : 'shopping-bag'}" style="width: 22px; height: 22px; color: var(--color-accent-primary);"></i>
-                        <h3>${title}</h3>
+                <div class="plugin-store-header__body">
+                    <div class="plugin-store-header__title">
+                        <div class="plugin-store-header__title-row">
+                            <i data-lucide="${this.currentStoreMode === 'updates' ? 'download' : this.currentStoreMode === 'installed' ? 'hard-drive' : 'shopping-bag'}" style="width: 22px; height: 22px; color: var(--color-accent-primary);"></i>
+                            <h3>${title}</h3>
+                        </div>
+                        <p>${subtitle}</p>
+                        <div class="plugin-store-header__meta">
+                            ${this.renderStoreBadge(`${total} total`, 'package')}
+                            ${this.renderStoreBadge(`${installed} installed`, 'check-circle')}
+                            ${this.renderStoreBadge(`${updates} updates`, 'download')}
+                            ${this.renderStoreBadge('Official catalog', 'shield-check')}
+                            ${licenseMeta}
+                            ${trustHtml}
+                            ${licenseHintHtml}
+                        </div>
                     </div>
-                    <p>${subtitle}</p>
-                    <div class="plugin-store-header__meta">
-                        ${this.renderStoreBadge(`${total} total`, 'package')}
-                        ${this.renderStoreBadge(`${installed} installed`, 'check-circle')}
-                        ${this.renderStoreBadge(`${updates} updates`, 'download')}
-                        ${this.renderStoreBadge('Official catalog', 'shield-check')}
-                        ${licenseMeta}
-                        ${trustHtml}
-                        ${licenseHintHtml}
+                    <div class="plugin-store-header__side">
+                        <div class="plugin-store-header__brand">
+                            <img src="/appstore-logo.png" alt="LTTH AppStore logo" class="plugin-store-header__logo" loading="lazy">
+                        </div>
+                        <div class="plugin-store-header__actions">
+                            ${actionHtml}
+                        </div>
                     </div>
-                </div>
-                <div class="plugin-store-header__actions">
-                    ${actionHtml}
                 </div>
             </section>
         `;
@@ -1669,6 +1682,29 @@ class PluginManager {
         `;
     }
 
+    getPluginBrandMedia(plugin) {
+        const logo = typeof plugin.logo === 'string' ? plugin.logo.trim() : '';
+        const icon = typeof plugin.icon === 'string' ? plugin.icon.trim() : '';
+
+        if (logo) {
+            return {
+                src: logo,
+                alt: `${plugin.name || plugin.id} logo`,
+                kind: 'logo'
+            };
+        }
+
+        if (icon) {
+            return {
+                src: icon,
+                alt: `${plugin.name || plugin.id} icon`,
+                kind: 'icon'
+            };
+        }
+
+        return null;
+    }
+
     renderInstalledHeader() {
         return `
             <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; flex-wrap: wrap; margin-bottom: 1rem; padding: 1rem 1.05rem; background: var(--store-panel-bg, var(--color-bg-card)); border: 1px solid var(--store-panel-border, var(--color-border)); border-radius: 18px; box-shadow: var(--store-panel-shadow, var(--shadow-sm));">
@@ -1782,6 +1818,7 @@ class PluginManager {
      * Renders a single plugin in compact table row format
      */
     renderPluginCompact(plugin) {
+        const brandMedia = this.getPluginBrandMedia(plugin);
         const statusBadge = plugin.enabled
             ? '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: linear-gradient(135deg, color-mix(in srgb, var(--color-accent-success) 88%, transparent) 0%, color-mix(in srgb, var(--color-accent-success) 68%, var(--color-bg-secondary)) 100%); border: 1px solid color-mix(in srgb, var(--color-accent-success) 34%, transparent); border-radius: 12px; font-size: 0.7rem; font-weight: 600; color: var(--color-text-primary);"><i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Active</span>'
             : '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: color-mix(in srgb, var(--color-bg-secondary) 82%, var(--color-border) 18%); border: 1px solid var(--color-border); border-radius: 12px; font-size: 0.7rem; font-weight: 600; color: var(--color-text-muted);"><i data-lucide="pause-circle" style="width: 12px; height: 12px;"></i> Inactive</span>';
@@ -1812,8 +1849,17 @@ class PluginManager {
         return `
             <tr style="background: ${rowBackground};">
                 <td>
-                    <div style="font-weight: 600; color: var(--color-text-primary); margin-bottom: 2px;">${this.escapeHtml(plugin.name)}</div>
-                    <div style="font-size: 0.75rem; color: var(--color-text-muted); font-family: monospace;">${this.escapeHtml(plugin.id)}</div>
+                    <div style="display: flex; align-items: center; gap: 0.85rem; min-width: 0;">
+                        <div style="width: 46px; height: 46px; flex-shrink: 0; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--color-border) 66%, transparent); background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 16%, transparent) 0%, color-mix(in srgb, var(--color-accent-secondary) 12%, transparent) 100%); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                            ${brandMedia
+                                ? `<img src="${this.escapeHtml(brandMedia.src)}" alt="${this.escapeHtml(brandMedia.alt)}" loading="lazy" style="width: 100%; height: 100%; object-fit: contain; padding: 8px;" />`
+                                : '<i data-lucide="package" style="width: 22px; height: 22px; color: var(--brand-primary);"></i>'}
+                        </div>
+                        <div style="min-width: 0;">
+                            <div style="font-weight: 700; color: var(--color-text-primary); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.escapeHtml(plugin.name)}</div>
+                            <div style="font-size: 0.75rem; color: var(--color-text-muted); font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.escapeHtml(plugin.id)}</div>
+                        </div>
+                    </div>
                 </td>
                 <td>
                     <span style="padding: 2px 8px; background: color-mix(in srgb, var(--color-bg-primary) 72%, transparent); border: 1px solid var(--color-border); border-radius: 4px; font-size: 0.7rem; color: var(--color-text-muted); font-family: monospace;">v${this.escapeHtml(plugin.version)}</span>
@@ -1843,6 +1889,7 @@ class PluginManager {
      * Rendert ein einzelnes Plugin
      */
     renderPlugin(plugin) {
+        const brandMedia = this.getPluginBrandMedia(plugin);
         const statusBadge = plugin.enabled
             ? '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; background: linear-gradient(135deg, color-mix(in srgb, var(--color-accent-success) 88%, transparent) 0%, color-mix(in srgb, var(--color-accent-success) 68%, var(--color-bg-secondary)) 100%); border: 1px solid color-mix(in srgb, var(--color-accent-success) 34%, transparent); border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: var(--color-text-primary);"><i data-lucide="check-circle" style="width: 14px; height: 14px;"></i> Aktiv</span>'
             : '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; background: color-mix(in srgb, var(--color-bg-secondary) 82%, var(--color-border) 18%); border: 1px solid var(--color-border); border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: var(--color-text-muted);"><i data-lucide="pause-circle" style="width: 14px; height: 14px;"></i> Inaktiv</span>';
@@ -1897,8 +1944,10 @@ class PluginManager {
                 <div style="position: relative; display: flex; gap: 1.5rem;">
                     <!-- Plugin Icon -->
                     <div style="flex-shrink: 0;">
-                        <div style="width: 64px; height: 64px; background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 18%, transparent) 0%, color-mix(in srgb, var(--color-accent-secondary) 14%, transparent) 100%); border: 1px solid color-mix(in srgb, var(--brand-primary) 34%, var(--color-border)); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="package" style="width: 32px; height: 32px; color: var(--brand-primary);"></i>
+                        <div style="width: 72px; height: 72px; background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 18%, transparent) 0%, color-mix(in srgb, var(--color-accent-secondary) 14%, transparent) 100%); border: 1px solid color-mix(in srgb, var(--brand-primary) 34%, var(--color-border)); border-radius: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                            ${brandMedia
+                                ? `<img src="${this.escapeHtml(brandMedia.src)}" alt="${this.escapeHtml(brandMedia.alt)}" loading="lazy" style="width: 100%; height: 100%; object-fit: contain; padding: ${brandMedia.kind === 'logo' ? '10px' : '12px'};" />`
+                                : '<i data-lucide="package" style="width: 32px; height: 32px; color: var(--brand-primary);"></i>'}
                         </div>
                     </div>
 

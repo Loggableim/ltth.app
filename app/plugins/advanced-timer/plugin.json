@@ -5,6 +5,7 @@
   "description": "Professional multi-timer system with event triggers, automation, viewer interaction, and customizable overlays. Perfect for subathons, challenges, stream schedules, and goals.",
   "author": "Pup Cid",
   "entry": "main.js",
+  "logo": "/advanced-timer/assets/advanced-timer-logo.png",
   "enabled": true,
   "devStatus": "early-version",
   "permissions": [

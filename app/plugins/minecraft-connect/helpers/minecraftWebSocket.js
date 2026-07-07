@@ -49,12 +49,13 @@ class MinecraftWebSocketServer extends EventEmitter {
 
             this.isRunning = true;
             this.connectionStatus = 'Waiting';
-            
+
             this.logger.info(`Minecraft WebSocket server started on ${host}:${port}`);
             this.emit('server:started', { host, port });
         } catch (error) {
-            this.logger.error(`Failed to start WebSocket server: ${error.message}`);
-            this.emit('server:error', error);
+            this.isRunning = false;
+            this.connectionStatus = 'Disconnected';
+            this.wss = null;
             throw error;
         }
     }
@@ -152,7 +153,19 @@ class MinecraftWebSocketServer extends EventEmitter {
      * Handle server errors
      */
     handleServerError(error) {
-        this.logger.error(`WebSocket server error: ${error.message}`);
+        this.isRunning = false;
+        this.connectionStatus = 'Disconnected';
+        this.stopHeartbeat();
+        this.client = null;
+        this.availableActions = [];
+        if (this.wss) {
+            try {
+                this.wss.close();
+            } catch (_) {
+                // Ignore shutdown errors during fatal server failure handling.
+            }
+            this.wss = null;
+        }
         this.emit('server:error', error);
     }
 

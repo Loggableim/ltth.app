@@ -82,21 +82,34 @@ class KeyboardNavigationManager {
    * Setup modal ESC handlers
    */
   setupModalHandlers() {
-    // Listen for new modals
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node.classList && node.classList.contains('modal')) {
-            this.setupModalFocusTrap(node);
-          }
+    const attachObserver = () => {
+      const root = document.body || document.documentElement;
+
+      if (!root) {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', attachObserver, { once: true });
+        }
+        return;
+      }
+
+      // Listen for new modals after the DOM root exists.
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.classList && node.classList.contains('modal')) {
+              this.setupModalFocusTrap(node);
+            }
+          });
         });
       });
-    });
 
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
+      observer.observe(root, {
+        childList: true,
+        subtree: true
+      });
+    };
+
+    attachObserver();
   }
 
   /**

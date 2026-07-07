@@ -46,7 +46,10 @@
 
             function syncTheme() {
                 const theme = readTheme();
-                document.documentElement.setAttribute('data-theme', theme);
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme !== theme) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                }
                 document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
                 const logo = document.querySelector('[data-brand-logo]');
                 if (logo) {
@@ -66,13 +69,8 @@
                 if (!document.hidden) syncTheme();
             });
 
-            try {
-                new MutationObserver(syncTheme).observe(document.documentElement, {
-                    attributes: true,
-                    attributeFilter: ['data-theme']
-                });
-            } catch (error) {}
-
+            // Only watch the parent theme. Watching our own data-theme caused
+            // syncTheme() to retrigger itself after each update and could lock up the iframe.
             try {
                 if (window.parent && window.parent !== window) {
                     new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {

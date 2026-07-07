@@ -5,6 +5,7 @@
   "version": "1.2.0",
   "author": "PupCid",
   "entry": "main.js",
+  "logo": "/plugins/music-bot/assets/musicbotlogo.png",
   "enabled": true,
   "type": "integration",
   "dependencies": [],

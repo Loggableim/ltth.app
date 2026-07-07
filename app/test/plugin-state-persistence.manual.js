@@ -80,7 +80,7 @@ async function runTest() {
         console.log(`Loaded ${plugins1.length} plugins initially`);
         
         // Verify default active plugins
-        const defaultActive = ['webgpu-emoji-rain', 'lastevent-spotlight', 'goals', 'quiz-show', 'soundboard', 'tts'];
+        const defaultActive = ['webgpu-emoji-rain', 'spotlight', 'goals', 'quiz-show', 'soundboard', 'tts'];
         const activePlugins1 = plugins1.map(p => p.id);
         
         console.log('Active plugins:', activePlugins1.sort().join(', '));
@@ -147,7 +147,7 @@ async function runTest() {
         assert.ok(emojiRainStillDisabled, 'webgpu-emoji-rain should still be disabled after restart');
         
         // Verify other default plugins are still active
-        const otherDefaults = ['lastevent-spotlight', 'goals', 'quiz-show', 'soundboard', 'tts'];
+        const otherDefaults = ['spotlight', 'goals', 'quiz-show', 'soundboard', 'tts'];
         const otherDefaultsActive = otherDefaults.every(id => activePluginIds.includes(id));
         assert.ok(otherDefaultsActive, 'Other default plugins should still be active');
         

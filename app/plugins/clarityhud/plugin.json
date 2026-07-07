@@ -8,6 +8,7 @@
   "enabled": false,
   "type": "overlay",
   "uiPath": "/clarityhud/ui",
+  "logo": "/plugins/clarityhud/assets/clarity-hud-logo.png",
   "devStatus": "working-beta",
   "permissions": [
     "socket.io",

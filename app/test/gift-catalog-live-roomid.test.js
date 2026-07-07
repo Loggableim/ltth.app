@@ -132,6 +132,38 @@ describe('Gift catalog refresh while connected', () => {
     expect(result.count).toBe(1);
   });
 
+  test('normalizes locale codes before persisting refreshed gift catalogs', async () => {
+    const { adapter, db } = createAdapter();
+
+    axios.get.mockResolvedValueOnce({
+      data: {
+        data: {
+          gifts: [{
+            id: '5655',
+            name: 'Rose',
+            image: { url_list: ['https://example.test/rose.png'] },
+            diamond_count: '1'
+          }]
+        }
+      }
+    });
+
+    const result = await adapter.updateGiftCatalog({ locale_code: ' EN-US ' });
+
+    expect(axios.get).toHaveBeenCalledWith(
+      expect.stringContaining('/gift/list/?'),
+      expect.any(Object)
+    );
+    expect(db.updateGiftCatalog).toHaveBeenCalledWith([{
+      id: 5655,
+      name: 'Rose',
+      image_url: 'https://example.test/rose.png',
+      diamond_count: 1
+    }], 'en-us');
+    expect(result.success).toBe(true);
+    expect(result.count).toBe(1);
+  });
+
   test('falls back to gifts already seen in the live session when room ID is unavailable', async () => {
     const { adapter, db } = createAdapter();
     adapter.sessionGifts.set(5655, {

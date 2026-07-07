@@ -6,6 +6,8 @@ window.socket = null; // Global reference for navigation.js
 // State
 let currentTab = 'events';
 let settings = {};
+const LIVE_EVENT_LOG_SETTING_KEY = 'show_live_event_log';
+const LIVE_EVENT_LOG_STORAGE_KEY = 'show-live-event-log';
 // voices wird vom tts_core_v2 Plugin verwaltet
 
 // Audio unlock state (for browser autoplay restrictions)
@@ -318,6 +320,24 @@ function initializeButtons() {
         });
     }
 
+    const liveEventLogToggle = document.getElementById('show-live-event-log');
+    if (liveEventLogToggle) {
+        liveEventLogToggle.addEventListener('click', async () => {
+            const nextEnabled = !isLiveEventLogEnabled();
+            liveEventLogToggle.disabled = true;
+
+            try {
+                await saveLiveEventLogVisibility(nextEnabled);
+            } catch (error) {
+                console.error('Error saving Live Event Log visibility:', error);
+                alert('❌ Error saving Live Event Log setting!');
+                applyLiveEventLogVisibility(isLiveEventLogEnabled());
+            } finally {
+                liveEventLogToggle.disabled = false;
+            }
+        });
+    }
+
     // TikTok/Eulerstream API Key save button
     const saveTikTokCredentialsBtn = document.getElementById('save-tiktok-credentials');
     if (saveTikTokCredentialsBtn) {
@@ -444,9 +464,6 @@ function initializeButtons() {
         });
     }
 
-    // Plugin Notice Dismissal
-    initializePluginNotice();
-
     // Event delegation for dynamically created buttons
     setupEventDelegation();
 
@@ -560,33 +577,6 @@ function setupEventDelegation() {
         if (e.target.classList.contains('flow-select-checkbox')) {
             updateBulkBar();
         }
-    });
-}
-
-// ========== PLUGIN NOTICE ==========
-function initializePluginNotice() {
-    const pluginNotice = document.getElementById('plugin-notice');
-    const dismissBtn = document.getElementById('dismiss-plugin-notice');
-
-    if (!pluginNotice || !dismissBtn) return;
-
-    // Check if user has dismissed the notice before
-    const isDismissed = localStorage.getItem('plugin-notice-dismissed');
-
-    if (!isDismissed) {
-        // Show the notice
-        pluginNotice.style.display = 'block';
-    }
-
-    // Handle dismiss button click
-    dismissBtn.addEventListener('click', () => {
-        pluginNotice.style.opacity = '0';
-        pluginNotice.style.transform = 'translateY(-20px)';
-
-        setTimeout(() => {
-            pluginNotice.style.display = 'none';
-            localStorage.setItem('plugin-notice-dismissed', 'true');
-        }, 300);
     });
 }
 
@@ -1596,6 +1586,77 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function isLiveEventLogEnabled() {
+    if (Object.prototype.hasOwnProperty.call(settings, LIVE_EVENT_LOG_SETTING_KEY)) {
+        return settings[LIVE_EVENT_LOG_SETTING_KEY] === 'true';
+    }
+
+    try {
+        return localStorage.getItem(LIVE_EVENT_LOG_STORAGE_KEY) === 'true';
+    } catch (error) {
+        return false;
+    }
+}
+
+function updateLiveEventLogToggleButton(enabled) {
+    const button = document.getElementById('show-live-event-log');
+    if (!button) {
+        return;
+    }
+
+    const label = document.getElementById('show-live-event-log-label');
+    if (label) {
+        label.textContent = enabled ? 'Disable Live Event Log' : 'Enable Live Event Log';
+    }
+
+    button.dataset.state = enabled ? 'enabled' : 'disabled';
+    button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+
+    const icon = button.querySelector('i');
+    if (icon) {
+        icon.setAttribute('data-lucide', enabled ? 'eye-off' : 'eye');
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+}
+
+function applyLiveEventLogVisibility(enabled) {
+    const visible = Boolean(enabled);
+    document.documentElement.dataset.liveEventLog = visible ? 'enabled' : 'disabled';
+
+    try {
+        localStorage.setItem(LIVE_EVENT_LOG_STORAGE_KEY, visible ? 'true' : 'false');
+    } catch (error) {}
+
+    updateLiveEventLogToggleButton(visible);
+
+    if (!visible) {
+        const activeEventsView = document.querySelector('.content-view.active#view-events');
+        if (activeEventsView && window.NavigationManager && typeof window.NavigationManager.switchView === 'function') {
+            window.NavigationManager.switchView('dashboard');
+        }
+    }
+}
+
+async function saveLiveEventLogVisibility(enabled) {
+    const nextValue = enabled ? 'true' : 'false';
+
+    const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [LIVE_EVENT_LOG_SETTING_KEY]: nextValue })
+    });
+
+    const result = await response.json();
+    if (!result.success) {
+        throw new Error(result.error || 'Failed to save Live Event Log setting');
+    }
+
+    settings[LIVE_EVENT_LOG_SETTING_KEY] = nextValue;
+    applyLiveEventLogVisibility(enabled);
+}
+
 // ========== SETTINGS ==========
 async function loadSettings() {
     try {
@@ -1605,6 +1666,7 @@ async function loadSettings() {
         // Settings in UI laden (falls Elemente existieren)
         // TTS-Settings werden nun vom tts_core_v2 Plugin verwaltet
         updateFlowsGlobalToggle();
+        applyLiveEventLogVisibility(settings[LIVE_EVENT_LOG_SETTING_KEY] === 'true');
 
         // Load TikTok/Eulerstream API Key with masking
         const tiktokApiKeyInput = document.getElementById('tiktok-euler-api-key');

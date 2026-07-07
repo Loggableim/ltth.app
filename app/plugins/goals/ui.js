@@ -113,6 +113,8 @@ function init() {
     observeThemeBadge();
     updateThemeBadge();
     updateWorkspaceStats();
+    resetMainContentScroll();
+    updateWindowActionButton();
 }
 
 function updateConnectionBadge(isConnected) {
@@ -888,6 +890,15 @@ function switchTab(tab) {
         document.getElementById('create-goal-btn').style.display = 'none';
         document.getElementById('create-multigoal-btn').style.display = 'flex';
         loadMultiGoals();
+    }
+
+    resetMainContentScroll();
+}
+
+function resetMainContentScroll() {
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.scrollTop = 0;
     }
 }
 

@@ -7,7 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
             --bg-0: #02090b;
@@ -210,16 +209,17 @@
 
         .top-controls {
             display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 18px;
-            flex-wrap: wrap;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: flex-start;
+            gap: 12px;
         }
 
         .control-cluster {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
         }
 
         .control-label {
@@ -234,7 +234,6 @@
         }
 
         .theme-btn,
-        .lang-btn,
         .manual-btn,
         .tab-button,
         .app-link,
@@ -248,17 +247,23 @@
             transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
         }
 
-        .theme-btn,
-        .lang-btn {
-            padding: 0 18px;
-            min-width: 68px;
+        .theme-btn {
+            width: 42px;
+            min-width: 42px;
+            padding: 0;
+            display: inline-grid;
+            place-items: center;
             font-size: 13px;
             font-weight: 800;
             cursor: pointer;
         }
 
+        .theme-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
         .theme-btn:hover,
-        .lang-btn:hover,
         .manual-btn:hover:not(:disabled),
         .tab-button:hover,
         .app-link:hover:not(.disabled) {
@@ -268,12 +273,32 @@
             box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
         }
 
-        .theme-btn.active,
-        .lang-btn.active {
+        .theme-btn.active {
             background: linear-gradient(135deg, var(--primary-2), var(--primary-3));
             border-color: rgba(72, 231, 154, 0.72);
             color: #fff;
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 24px rgba(72, 231, 154, 0.2);
+        }
+
+        .theme-group .segmented {
+            display: flex;
+            gap: 10px;
+        }
+
+        .language-selector select {
+            width: 220px;
+            padding: 0 44px 0 16px;
+            appearance: none;
+            background-image:
+                linear-gradient(45deg, transparent 50%, var(--text-soft) 50%),
+                linear-gradient(135deg, var(--text-soft) 50%, transparent 50%);
+            background-position:
+                calc(100% - 20px) 18px,
+                calc(100% - 14px) 18px;
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
+            font-size: 13px;
+            font-weight: 700;
         }
 
         .profile-selector select {
@@ -473,8 +498,10 @@
             display: grid;
             grid-template-columns: minmax(0, 1fr) minmax(340px, 470px);
             gap: 16px;
-            align-items: start;
+            align-items: stretch;
             min-height: 0;
+            overflow: auto;
+            scrollbar-gutter: stable;
         }
 
         .content-area {
@@ -840,6 +867,88 @@
             white-space: pre-wrap;
         }
 
+        .blockers-card {
+            display: grid;
+            gap: 12px;
+        }
+
+        .blocker-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .blocker-item {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            background: rgba(255,255,255,0.035);
+        }
+
+        .blocker-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .blocker-title {
+            font-weight: 850;
+            line-height: 1.35;
+        }
+
+        .blocker-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            color: var(--text-soft);
+            font-size: 12px;
+        }
+
+        .blocker-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            background: rgba(72, 231, 154, 0.12);
+            color: var(--primary);
+        }
+
+        .blocker-badge.external {
+            background: rgba(244, 185, 74, 0.12);
+            color: var(--warning);
+        }
+
+        .blocker-command {
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-md);
+            background: rgba(0,0,0,0.16);
+            color: var(--text-soft);
+            font-family: "Cascadia Mono", "Consolas", monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .blocker-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .blocker-empty {
+            color: var(--text-soft);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
         .content-card {
             min-height: 0;
         }
@@ -901,6 +1010,7 @@
             align-items: center;
             justify-content: space-between;
             gap: 18px;
+            flex-wrap: wrap;
             margin: 12px -26px -26px;
             padding: 12px 26px;
             border-top: 1px solid var(--line);
@@ -914,6 +1024,14 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            min-width: 0;
+            flex: 1 1 320px;
+            overflow-wrap: anywhere;
+        }
+
+        .footer-center {
+            justify-content: flex-end;
+            text-align: right;
         }
 
         .kbd-dot {
@@ -967,15 +1085,18 @@
             }
 
             .theme-btn,
-            .lang-btn {
+            .language-selector select,
+            .profile-selector select {
                 min-height: 36px;
-                padding: 0 14px;
-                min-width: 58px;
+            }
+
+            .theme-btn {
+                width: 36px;
+                min-width: 36px;
             }
 
             .profile-selector select {
                 width: 166px;
-                min-height: 36px;
                 padding-right: 38px;
             }
 
@@ -1160,6 +1281,11 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
+
+            .footer-center {
+                justify-content: flex-start;
+                text-align: left;
+            }
         }
 
         @media (max-width: 620px) {
@@ -1176,13 +1302,13 @@
                 flex-direction: column;
             }
 
-            .segmented {
+            .theme-group .segmented {
                 display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-columns: repeat(3, minmax(0, 1fr));
             }
 
             .theme-btn,
-            .lang-btn,
+            .language-selector select,
             .profile-selector select {
                 width: 100%;
             }
@@ -1208,10 +1334,33 @@
                 <div class="control-cluster theme-group">
                     <span class="control-label">{{.ThemeLabel}}</span>
                     <div class="segmented">
-                        <button class="theme-btn {{if eq .CurrentTheme "night"}}active{{end}}" id="theme-night" data-theme="night" type="button">Nacht</button>
-                        <button class="theme-btn {{if eq .CurrentTheme "day"}}active{{end}}" id="theme-day" data-theme="day" type="button">Tag</button>
-                        <button class="theme-btn {{if eq .CurrentTheme "highcontrast"}}active{{end}}" id="theme-highcontrast" data-theme="highcontrast" type="button">Kontrast</button>
+                        <button class="theme-btn {{if eq .CurrentTheme "night"}}active{{end}}" id="theme-night" data-theme="night" type="button" aria-label="Nacht" title="Nacht">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>
+                            </svg>
+                        </button>
+                        <button class="theme-btn {{if eq .CurrentTheme "day"}}active{{end}}" id="theme-day" data-theme="day" type="button" aria-label="Tag" title="Tag">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                        <button class="theme-btn {{if eq .CurrentTheme "highcontrast"}}active{{end}}" id="theme-highcontrast" data-theme="highcontrast" type="button" aria-label="Kontrast" title="Kontrast">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20V2Z"/>
+                            </svg>
+                        </button>
                     </div>
+                </div>
+
+                <div class="control-cluster language-selector">
+                    <label class="control-label" for="languageSelector">{{.LanguageLabel}}</label>
+                    <select id="languageSelector" aria-label="{{.LanguageLabel}}">
+                        <option value="de" {{if eq .Locale "de"}}selected{{end}}>🇩🇪 Deutsch</option>
+                        <option value="en" {{if eq .Locale "en"}}selected{{end}}>🇬🇧 English</option>
+                        <option value="es" {{if eq .Locale "es"}}selected{{end}}>🇪🇸 Español</option>
+                        <option value="fr" {{if eq .Locale "fr"}}selected{{end}}>🇫🇷 Français</option>
+                    </select>
                 </div>
 
                 <div class="control-cluster profile-selector">
@@ -1225,15 +1374,6 @@
                             <option>{{.NoProfilesText}}</option>
                         {{end}}
                     </select>
-                </div>
-
-                <div class="control-cluster language-selector">
-                    <div class="segmented">
-                        <button class="lang-btn {{if eq .Locale "de"}}active{{end}}" data-lang="de" type="button"><span class="flag flag-de"></span>DE</button>
-                        <button class="lang-btn {{if eq .Locale "en"}}active{{end}}" data-lang="en" type="button"><span class="flag flag-en"></span>EN</button>
-                        <button class="lang-btn {{if eq .Locale "es"}}active{{end}}" data-lang="es" type="button"><span class="flag flag-es"></span>ES</button>
-                        <button class="lang-btn {{if eq .Locale "fr"}}active{{end}}" data-lang="fr" type="button"><span class="flag flag-fr"></span>FR</button>
-                    </div>
                 </div>
             </div>
         </header>
@@ -1403,6 +1543,14 @@
                         </div>
                     </section>
 
+                    <section class="glass-panel status-card blockers-card" id="nativeModuleBlockersCard" style="display:none">
+                        <div class="card-heading"><span class="panel-icon"><svg viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg></span><h2 class="card-title">{{.NativeModuleBlockersTitle}}</h2></div>
+                        <p class="hint" style="margin-top:0">{{.NativeModuleBlockersIntro}}</p>
+                        <div class="blocker-list" id="nativeModuleBlockers">
+                            <div class="blocker-empty">{{.NativeModuleBlockersEmpty}}</div>
+                        </div>
+                    </section>
+
                     <section class="glass-panel status-card">
                         <div class="card-heading"><span class="panel-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span><h2 class="card-title">Datenbank-Wartung</h2></div>
                         <div class="db-actions" style="margin-top:18px">
@@ -1411,7 +1559,7 @@
                             <button class="manual-btn secondary wide" id="profileRestoreBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M17 18a5 5 0 0 0 0-10 7 7 0 0 0-13 3 4 4 0 0 0 1 7h12z"/><path d="M12 12v7M8 16l4-4 4 4"/></svg></span><span>Letztes Profil-Backup wiederherstellen</span></button>
                         </div>
                         <p class="hint" id="vacuumHint">Server zuerst stoppen. VACUUM laeuft nur, wenn die Datenbank nicht aktiv ist.</p>
-                        <div class="manual-status" id="manualStatus">Port 3000 wird beim Launcher-Start fest verwendet; alte LTTH-Instanzen werden vorher gestoppt.</div>
+                        <div class="manual-status" id="manualStatus">Port 3000 wird beim Start automatisch freigeraeumt. Wenn better-sqlite3 blockiert, siehst du hier die Prozesse und kannst sie beenden.</div>
                     </section>
                 </aside>
             </main>
@@ -1429,6 +1577,7 @@
         const LANG_STORAGE_KEY = 'ltth-launcher-lang';
         const urlParams = new URLSearchParams(window.location.search);
         const templateTheme = '{{.CurrentTheme}}';
+        const templateLocale = '{{.Locale}}';
         const launcherVersion = '{{.Version}}';
         const LOGS_EMPTY_TEXT = '{{.LogsEmpty}}';
         const LOGS_ERROR_TEXT = '{{.LogsError}}';
@@ -1525,6 +1674,9 @@
 
         const manualPortEl = document.getElementById('manualPort');
         const manualStatusEl = document.getElementById('manualStatus');
+        const languageSelectorEl = document.getElementById('languageSelector');
+        const nativeModuleBlockersCardEl = document.getElementById('nativeModuleBlockersCard');
+        const nativeModuleBlockersEl = document.getElementById('nativeModuleBlockers');
         const vacuumDbBtn = document.getElementById('vacuumDbBtn');
         const vacuumHintEl = document.getElementById('vacuumHint');
         let vacuumInProgress = false;
@@ -1545,6 +1697,170 @@
             }
             const digits = unitIndex === 0 || value >= 10 ? 0 : 1;
             return sign + value.toFixed(digits) + ' ' + units[unitIndex];
+        }
+
+        const SUPPORTED_LANGUAGES = ['de', 'en', 'es', 'fr'];
+        const LANGUAGE_FLAGS = {
+            de: '🇩🇪',
+            en: '🇬🇧',
+            es: '🇪🇸',
+            fr: '🇫🇷'
+        };
+        const LANGUAGE_FALLBACK_NAMES = {
+            de: 'Deutsch',
+            en: 'English',
+            es: 'Español',
+            fr: 'Français'
+        };
+
+        populateLanguageSelector();
+
+        function getLanguageDisplayName(locale, displayLocale) {
+            const fallback = LANGUAGE_FALLBACK_NAMES[locale] || locale.toUpperCase();
+            try {
+                if (typeof Intl !== 'undefined' && Intl.DisplayNames) {
+                    const displayNames = new Intl.DisplayNames([displayLocale || templateLocale || 'en'], { type: 'language' });
+                    const resolved = displayNames.of(locale);
+                    if (resolved) {
+                        return resolved;
+                    }
+                }
+            } catch (error) {
+                console.debug('Language display name lookup failed:', error);
+            }
+            return fallback;
+        }
+
+        function populateLanguageSelector() {
+            if (!languageSelectorEl) return;
+
+            const currentLocale = SUPPORTED_LANGUAGES.includes(templateLocale) ? templateLocale : 'de';
+            const displayLocale = currentLocale || 'de';
+            languageSelectorEl.innerHTML = '';
+
+            SUPPORTED_LANGUAGES.forEach(locale => {
+                const option = document.createElement('option');
+                option.value = locale;
+                option.textContent = LANGUAGE_FLAGS[locale] + ' ' + getLanguageDisplayName(locale, displayLocale);
+                if (locale === currentLocale) {
+                    option.selected = true;
+                }
+                languageSelectorEl.appendChild(option);
+            });
+
+            languageSelectorEl.value = currentLocale;
+        }
+
+        function summarizeNativeModuleBlocker(blocker) {
+            if (!blocker) return '';
+            const imageName = fixMojibake(String(blocker.imageName || blocker.ImageName || 'node.exe').trim() || 'node.exe');
+            const pid = Number(blocker.pid || blocker.PID || 0);
+            const managed = Boolean(blocker.managedByLauncher || blocker.ManagedByLauncher);
+            const parts = [imageName, 'PID ' + pid];
+            if (managed) {
+                parts.push('(LTTH)');
+            }
+            return parts.join(' ');
+        }
+
+        function summarizeNativeModuleBlockers(blockers) {
+            return (blockers || []).map(summarizeNativeModuleBlocker).filter(Boolean).join('; ');
+        }
+
+        function renderNativeModuleBlockers(blockers) {
+            if (!nativeModuleBlockersCardEl || !nativeModuleBlockersEl) {
+                return '';
+            }
+
+            nativeModuleBlockersEl.innerHTML = '';
+            if (!Array.isArray(blockers) || blockers.length === 0) {
+                nativeModuleBlockersCardEl.style.display = 'none';
+                nativeModuleBlockersEl.innerHTML = '<div class="blocker-empty">{{.NativeModuleBlockersEmpty}}</div>';
+                return '';
+            }
+
+            nativeModuleBlockersCardEl.style.display = '';
+
+            blockers.forEach(blocker => {
+                const pid = Number(blocker.pid || blocker.PID || 0);
+                const imageName = fixMojibake(String(blocker.imageName || blocker.ImageName || 'node.exe').trim() || 'node.exe');
+                const commandLine = fixMojibake(String(blocker.commandLine || blocker.CommandLine || '').trim());
+                const managed = Boolean(blocker.managedByLauncher || blocker.ManagedByLauncher);
+
+                const item = document.createElement('article');
+                item.className = 'blocker-item';
+
+                const head = document.createElement('div');
+                head.className = 'blocker-head';
+
+                const titleWrap = document.createElement('div');
+                const title = document.createElement('div');
+                title.className = 'blocker-title';
+                title.textContent = pid > 0 ? imageName + ' PID ' + pid : imageName;
+                titleWrap.appendChild(title);
+
+                const meta = document.createElement('div');
+                meta.className = 'blocker-meta';
+
+                const badge = document.createElement('span');
+                badge.className = 'blocker-badge' + (managed ? '' : ' external');
+                badge.textContent = managed ? 'LTTH' : 'Extern';
+                meta.appendChild(badge);
+
+                const pidMeta = document.createElement('span');
+                pidMeta.textContent = 'PID ' + (pid > 0 ? pid : 'unbekannt');
+                meta.appendChild(pidMeta);
+
+                if (managed) {
+                    const managedMeta = document.createElement('span');
+                    managedMeta.textContent = 'Launcher-Prozess';
+                    meta.appendChild(managedMeta);
+                }
+
+                titleWrap.appendChild(meta);
+                head.appendChild(titleWrap);
+                item.appendChild(head);
+
+                if (commandLine) {
+                    const command = document.createElement('div');
+                    command.className = 'blocker-command';
+                    command.textContent = commandLine;
+                    item.appendChild(command);
+                }
+
+                const actions = document.createElement('div');
+                actions.className = 'blocker-actions';
+
+                if (pid > 0) {
+                    const killBtn = document.createElement('button');
+                    killBtn.className = 'manual-btn secondary';
+                    killBtn.type = 'button';
+                    killBtn.textContent = '{{.NativeModuleBlockersKill}}';
+                    killBtn.addEventListener('click', async () => {
+                        if (!confirm('Prozess PID ' + pid + ' (' + imageName + ') beenden?')) {
+                            return;
+                        }
+                        try {
+                            setManualStatus('Beende Prozess PID ' + pid + '...');
+                            const result = await postLauncherAction('/api/launcher/processes/kill?pid=' + encodeURIComponent(pid));
+                            const remaining = Array.isArray(result.remainingBlockers) ? result.remainingBlockers : [];
+                            setManualStatus(remaining.length
+                                ? 'Noch ' + remaining.length + ' better-sqlite3-Prozess(e) aktiv.'
+                                : 'Prozess PID ' + pid + ' beendet. better-sqlite3 ist frei.');
+                            refreshLauncherStatus();
+                            refreshDiagnostics();
+                        } catch (error) {
+                            setManualStatus('Prozess konnte nicht beendet werden: ' + error.message);
+                        }
+                    });
+                    actions.appendChild(killBtn);
+                }
+
+                item.appendChild(actions);
+                nativeModuleBlockersEl.appendChild(item);
+            });
+
+            return summarizeNativeModuleBlockers(blockers);
         }
 
         async function postLauncherAction(url) {
@@ -1667,6 +1983,11 @@
                 if (!response.ok) throw new Error(response.statusText);
                 const data = await response.json();
                 const port = data.serverPort || data.runtimePort || data.preferredPort || 3000;
+                const preferredPort = data.preferredPort || 3000;
+                const statusText = fixMojibake(data.status || '');
+                const lastStartError = fixMojibake(data.lastStartError || '');
+                const nativeModuleBlockers = Array.isArray(data.nativeModuleBlockers) ? data.nativeModuleBlockers : [];
+                const blockerSummary = renderNativeModuleBlockers(nativeModuleBlockers);
                 renderDiagnostics(data.diagnostics || [], data.pluginFailures || []);
 
                 if (manualPortEl && document.activeElement !== manualPortEl) {
@@ -1697,13 +2018,33 @@
                     if (data.serverRunning || data.serverPort || data.runtimePort) {
                         if (appLink) appLink.classList.remove('disabled');
                         if (appLinkHint) appLinkHint.textContent = 'App erreichbar auf Port ' + port;
-                        setManualStatus('Serverstatus: erreichbar auf Port ' + port + '. Log: ' + (data.logPath || 'app/logs/launcher_*.log'));
+                        setManualStatus((statusText || ('Serverstatus: erreichbar auf Port ' + port)) + '. Log: ' + (data.logPath || 'app/logs/launcher_*.log'));
                     } else if (data.startupInProgress) {
-                        setManualStatus('Server startet... Wunschport: ' + (data.preferredPort || 3000));
+                        setManualStatus(statusText || ('Server startet... Wunschport: ' + preferredPort));
                     } else if (data.lastStartError) {
-                        setManualStatus('Letzter Startfehler: ' + data.lastStartError);
+                        const portIssue = /port|belegt|occupied|freigeraeumt|cleanup/i.test(lastStartError + ' ' + statusText);
+                        if (portIssue && /freigeraeumt|manueller start|required/i.test(statusText)) {
+                            setManualStatus(statusText);
+                        } else if (portIssue) {
+                            setManualStatus('Port ' + preferredPort + ' konnte nicht automatisch freigeraeumt werden. Manueller Start erforderlich.');
+                        } else {
+                            setManualStatus('Letzter Startfehler: ' + lastStartError);
+                        }
+                    } else if (statusText) {
+                        setManualStatus(statusText);
                     } else {
-                        setManualStatus('Bereit. Wunschport: ' + (data.preferredPort || 3000));
+                        setManualStatus('Bereit. Wunschport: ' + preferredPort);
+                    }
+
+                    if (nativeModuleBlockers.length) {
+                        const blockerCountText = nativeModuleBlockers.length === 1 ? '1 Prozess' : nativeModuleBlockers.length + ' Prozesse';
+                        const blockerText = blockerSummary || summarizeNativeModuleBlockers(nativeModuleBlockers);
+                        if (data.serverRunning) {
+                            setManualStatus('better-sqlite3 wird aktuell von ' + (blockerText || blockerCountText) + ' genutzt.');
+                        } else {
+                            const lead = statusText || ('better-sqlite3 blockiert durch ' + blockerCountText);
+                            setManualStatus(lead + ': ' + (blockerText || 'Prozesse unbekannt') + '. Prozesse beenden und Start erneut versuchen.');
+                        }
                     }
                 }
             } catch (error) {
@@ -1844,6 +2185,11 @@
                 setManualStatus('Update-Kanal konnte nicht gespeichert werden: ' + error.message);
             }
         });
+        if (languageSelectorEl) {
+            languageSelectorEl.addEventListener('change', () => {
+                changeLanguage(languageSelectorEl.value);
+            });
+        }
         document.getElementById('safeModeToggle').addEventListener('change', async () => {
             try {
                 await saveLauncherSettings({ safeMode: document.getElementById('safeModeToggle').checked });
@@ -1972,10 +2318,6 @@
             btn.addEventListener('click', () => switchTab(btn.dataset.tab));
         });
 
-        document.querySelectorAll('.lang-btn[data-lang]').forEach(btn => {
-            btn.addEventListener('click', () => changeLanguage(btn.dataset.lang));
-        });
-        
         // Profile selection
         document.getElementById('profileSelector').addEventListener('change', function() {
             fetch('/api/select-profile?profile=' + encodeURIComponent(this.value), {
@@ -2032,7 +2374,7 @@
             
             progressBar.style.width = data.progress + '%';
             progressBar.textContent = data.progress + '%';
-            statusText.textContent = fixMojibake(data.status);
+            statusText.textContent = fixMojibake(data.status || '');
         };
         
         evtSource.onerror = function(error) {
@@ -2050,8 +2392,6 @@
                 document.getElementById('changelog-content').innerHTML = '<p style="color: #999;">{{.ChangelogError}}</p>';
             });
 
-        // Initialize Lucide icons
-        lucide.createIcons();
     </script>
 </body>
 </html>

@@ -3,7 +3,7 @@ const path = require('path');
 const vm = require('vm');
 const { JSDOM } = require('jsdom');
 
-const overlayClientPath = path.join(__dirname, '../plugins/lastevent-spotlight/overlays/single-overlay.js');
+const overlayClientPath = path.join(__dirname, '../plugins/spotlight/overlays/single-overlay.js');
 
 function flushPromises() {
   return new Promise(resolve => setImmediate(resolve));

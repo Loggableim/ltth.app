@@ -150,7 +150,7 @@ async function triggerTest() {
             })
         });
         
-        showToast('Test firework triggered!', 'success');
+        showToast('Firework triggered', 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger test:', e);
         showToast('Failed to trigger test', 'error');
