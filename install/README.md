@@ -6,21 +6,21 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 
 | Betriebssystem | Befehl |
 |---|---|
-| 🪟 Windows (PowerShell) | `iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))` |
-| 🍎 macOS (Terminal)     | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh \| bash` |
-| 🐧 Linux (Bash)         | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh \| bash` |
-| 🌐 Beliebiges OS (Node) | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.js \| node` |
+| 🪟 Windows (PowerShell) | `iex ((iwr -useb https://ltth.app/install/install.ps1).Content.TrimStart([char]0xFEFF))` |
+| 🍎 macOS (Terminal)     | `curl -fsSL https://ltth.app/install/install.sh \| bash` |
+| 🐧 Linux (Bash)         | `curl -fsSL https://ltth.app/install/install.sh \| bash` |
+| 🌐 Beliebiges OS (Node) | `curl -fsSL https://ltth.app/install/install.js \| node` |
 
 ## Was passiert?
 
-1. **Prüfen** — Git und Node.js (18/20/22/24 LTS) werden erkannt. Fehlende Tools werden via Homebrew/winget/NodeSource/apt automatisch installiert.
+1. **Prüfen** — Git wird erkannt und bei Bedarf installiert.
 2. **Laden** — Das Repository wird von GitHub nach `~/.local/share/ltth` (Linux/macOS) bzw. `%LOCALAPPDATA%\LTTH` (Windows) geklont oder aktualisiert.
-3. **Bauen** — `npm install` richtet alle 36 Plugins und Module ein.
+3. **Bootstrap** — Der Launcher übernimmt beim ersten Start Node.js 22.14.0, `npm install` und den Native-Module-Rebuild.
 4. **Starten** — Das Dashboard öffnet sich unter `http://localhost:3000/dashboard.html`.
 
 Auf Windows legt der Installer zusaetzlich Desktop- und Startmenue-Verknuepfungen an.
 
-Der Windows-One-Liner fordert bei der ersten Ausfuehrung Admin-Freigabe an und installiert fehlende Abhaengigkeiten automatisch nach. Wenn `winget` fehlt, nutzt er die offiziellen Installer von Git for Windows und Node.js als Fallback. Waehren langer Schritte zeigt der Windows-Installer einen rotierenden Status-Indikator und Download-Fortschritt an, damit er nicht wie eingefroren wirkt.
+Der Windows-One-Liner fordert bei der ersten Ausfuehrung Admin-Freigabe an und installiert fehlendes Git automatisch nach. Der Launcher uebernimmt danach Node.js 22.14.0, `npm install` und Native-Module-Rebuilds beim ersten Start. Wenn `winget` fehlt, nutzt der Installer die offiziellen Git-for-Windows-Installer als Fallback. Waehren langer Schritte zeigt der Windows-Installer einen rotierenden Status-Indikator und Download-Fortschritt an, damit er nicht wie eingefroren wirkt.
 
 Der Windows-Befehl trimmt eine moegliche UTF-8-BOM aus dem Raw-Download, damit PowerShell den ersten Token sauber auswertet.
 
@@ -28,7 +28,7 @@ Der Bash-One-Liner installiert fehlendes Git automatisch nach und zieht Node.js 
 
 Der Node-Fallback (`install.js`) benoetigt einen vorhandenen Node-Interpreter zum Start, installiert aber fehlendes Git automatisch nach.
 
-Hinweis fuer Windows: Der PowerShell-Installer bevorzugt unterstuetzte Node.js-LTS-Builds (18/20/22/24) und umgeht Node.js 23.x, damit native Module ohne Visual-Studio-Build-Tools installiert werden koennen.
+Hinweis fuer Windows: Der PowerShell-Installer uebergibt die Node/npm-Arbeit an den Launcher, damit der Terminal-Installer schneller fertig wird und der Launcher den ersten Bootstrap mit sichtbarem Status uebernimmt.
 
 ## Umgebungsvariablen
 
@@ -49,16 +49,16 @@ Der Installer liest `version.json` standardmäßig aus `main`. Für Legacy- oder
 
 ```bash
 # Andere Version installieren
-LTTH_VERSION=v1.3.21 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
+LTTH_VERSION=v1.3.21 curl -fsSL https://ltth.app/install/install.sh | bash
 
 # Anderes Verzeichnis
-LTTH_DIR=/opt/ltth curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
+LTTH_DIR=/opt/ltth curl -fsSL https://ltth.app/install/install.sh | bash
 
 # Anderer Port
-LTTH_PORT=8080 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
+LTTH_PORT=8080 curl -fsSL https://ltth.app/install/install.sh | bash
 
 # PowerShell (Windows)
-$env:LTTH_PORT=8080; iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))
+$env:LTTH_PORT=8080; iex ((iwr -useb https://ltth.app/install/install.ps1).Content.TrimStart([char]0xFEFF))
 ```
 
 ## Updates
@@ -79,10 +79,10 @@ npm install
 
 ```bash
 # Windows (PowerShell)
-iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.ps1).Content.TrimStart([char]0xFEFF))
+iex ((iwr -useb https://ltth.app/install/uninstall.ps1).Content.TrimStart([char]0xFEFF))
 
 # Linux/macOS
-curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.sh | bash
+curl -fsSL https://ltth.app/install/uninstall.sh | bash
 ```
 
 Der Uninstaller fragt vor dem Loeschen der lokalen Daten und Configs nach. Standard ist, nur die LTTH-Installation zu entfernen und die Benutzerkonfiguration zu behalten.

@@ -510,7 +510,13 @@ class MusicBotPlugin extends EventEmitter {
 
   _buildWindowsElevatedCommand(executablePath, args = []) {
     const quotePs = (value) => `'${String(value).replace(/'/g, "''")}'`;
-    const argumentList = args.map(quotePs).join(',');
+    const quoteCmd = (value) => `"${String(value).replace(/"/g, '""')}"`;
+    const commandLine = [
+      [quoteCmd(executablePath), ...args.map(quoteCmd)].join(' '),
+      'echo.',
+      'echo [LTTH] The installer window stays open for 30 seconds so you can read the logs.',
+      'timeout /t 30 /nobreak >nul'
+    ].join(' & ');
     return {
       executable: 'powershell.exe',
       args: [
@@ -518,8 +524,9 @@ class MusicBotPlugin extends EventEmitter {
         '-ExecutionPolicy',
         'Bypass',
         '-Command',
-        `Start-Process -FilePath ${quotePs(executablePath)} -ArgumentList @(${argumentList}) -Verb RunAs -Wait`
-      ]
+        `Start-Process -FilePath 'cmd.exe' -ArgumentList @('/c', ${quotePs(commandLine)}) -Verb RunAs -Wait`
+      ],
+      windowsHide: true
     };
   }
 
@@ -634,7 +641,7 @@ class MusicBotPlugin extends EventEmitter {
 
     const child = spawn(installCommand.executable, installCommand.args, {
       stdio: ['ignore', 'pipe', 'pipe'],
-      windowsHide: !installCommand.opensWindow
+      windowsHide: installCommand.windowsHide ?? !installCommand.opensWindow
     });
     this._mpvInstallChild = child;
 

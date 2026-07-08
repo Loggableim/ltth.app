@@ -3,8 +3,8 @@
 #  PupCid's Little TikTool Helper -- https://ltth.app
 #
 #  Verwendung (PowerShell):
-#    iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))
-#    Trimt eine moegliche UTF-8-BOM aus Raw-GitHub-Antworten vor `iex`.
+#    iex ((iwr -useb https://ltth.app/install/install.ps1).Content.TrimStart([char]0xFEFF))
+#    Trimt eine moegliche UTF-8-BOM aus Website-Antworten vor `iex`.
 #
 #  Optionale Umgebungsvariablen:
 #    $env:LTTH_VERSION     - zu installierende Version (Default: latest)
@@ -33,7 +33,10 @@ $LTTHNoBrowser = if ($env:LTTH_NO_BROWSER)  { $env:LTTH_NO_BROWSER  } else { '0'
 $LTTHNoLauncher = if ($env:LTTH_NO_LAUNCHER) { $env:LTTH_NO_LAUNCHER } else { '0' }
 $LTTHQuiet     = if ($env:LTTH_QUIET)       { $env:LTTH_QUIET       } else { '0' }
 $LTTHNoPause   = if ($env:LTTH_NO_PAUSE)    { $env:LTTH_NO_PAUSE    } else { '0' }
+$env:GIT_HTTP_VERSION = if ($env:GIT_HTTP_VERSION) { $env:GIT_HTTP_VERSION } else { 'HTTP/1.1' }
 $script:LTTHNodePath = $null
+$script:LTTHLauncherNodeMajor = 22
+$script:LTTHLauncherNodeVersion = '22.14.0'
 $script:LTTHInstallerLog = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-installer-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + ".log")
 $script:LTTHSystemNetHttpReady = $false
 
@@ -77,6 +80,18 @@ function Ensure-SystemNetHttp {
     } catch {
         return $false
     }
+}
+
+function Get-InstallerScriptUrl {
+    if (
+        $LTTHRepoOwner -eq 'Loggableim' -and
+        $LTTHRepoName -eq 'ltth.app' -and
+        $LTTHRepoBranch -eq 'main'
+    ) {
+        return 'https://ltth.app/install/install.ps1'
+    }
+
+    return "https://github.com/$LTTHRepoOwner/$LTTHRepoName/raw/$LTTHRepoBranch/install/install.ps1"
 }
 
 function ConvertTo-CommandLineArgument {
@@ -305,8 +320,8 @@ function Get-CurrentPowerShellExecutable {
 }
 
 function Restart-InstallerAsAdministrator {
-    # Raw-GitHub-Antworten koennen eine fuehrende UTF-8-BOM enthalten, daher vor `iex` trimmen.
-    $installerCommand = "iex ((iwr -useb https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/main/install/install.ps1).Content.TrimStart([char]0xFEFF))"
+    # Website-Antworten koennen eine fuehrende UTF-8-BOM enthalten, daher vor `iex` trimmen.
+    $installerCommand = "iex ((iwr -useb $(Get-InstallerScriptUrl)).Content.TrimStart([char]0xFEFF))"
     $encodedCommand = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($installerCommand))
     $psExe = Get-CurrentPowerShellExecutable
 
@@ -358,7 +373,7 @@ function Test-SupportedNodeMajor {
         [int]$Major
     )
 
-    return ($Major -ge 18 -and $Major -lt 25 -and ($Major % 2 -eq 0))
+    return ($Major -eq $script:LTTHLauncherNodeMajor)
 }
 
 function Get-NodeVersionInfo {
@@ -446,35 +461,11 @@ function Set-PreferredNodeEnvironment {
 }
 
 function Get-NodeInstallerInfo {
-    param(
-        [string[]]$SupportedMajors = @('24', '22', '20', '18')
-    )
-
-    try {
-        $index = Invoke-RestMethod -Uri 'https://nodejs.org/dist/index.json' -TimeoutSec 30 -ErrorAction Stop
-        foreach ($entry in $index) {
-            if (-not $entry.lts) {
-                continue
-            }
-
-            $version = [string]$entry.version
-            if ([string]::IsNullOrWhiteSpace($version)) {
-                continue
-            }
-
-            $major = $version -replace '^v(\d+)\..*', '$1'
-            if ($SupportedMajors -contains $major) {
-                return [pscustomobject]@{
-                    Version = $version.TrimStart('v')
-                    Major = $major
-                }
-            }
-        }
-    } catch {
-        throw "Konnte Node.js Release-Index nicht lesen: $($_.Exception.Message)"
+    # Match the launcher runtime line so Windows installs do not fetch a second Node branch later.
+    return [pscustomobject]@{
+        Version = $script:LTTHLauncherNodeVersion
+        Major = $script:LTTHLauncherNodeMajor
     }
-
-    throw "Keine unterstuetzte Node.js-LTS-Version gefunden."
 }
 
 function Get-PreferredGitInfo {
@@ -719,6 +710,7 @@ function Invoke-Git {
         $startInfo.RedirectStandardOutput = $true
         $startInfo.RedirectStandardError = $true
         $startInfo.CreateNoWindow = $true
+        $startInfo.EnvironmentVariables['GIT_HTTP_VERSION'] = if ($env:GIT_HTTP_VERSION) { $env:GIT_HTTP_VERSION } else { 'HTTP/1.1' }
 
         $proc = [System.Diagnostics.Process]::Start($startInfo)
         Wait-ProcessWithSpinner -Process $proc -Activity ("git " + ($Arguments -join ' ')) -Detail $WorkingDirectory
@@ -756,6 +748,74 @@ function Invoke-Git {
             $proc.Dispose()
         }
         Remove-Item -LiteralPath $stdoutLog, $stderrLog -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Invoke-GitClone {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepoUrl
+    )
+
+    Log "Klone Repository nach $LTTHDir..."
+    Invoke-Git -Arguments @('clone', '--depth', '1', '--branch', $LTTHRepoBranch, '--single-branch', $RepoUrl, $LTTHDir)
+
+    if ($script:LTTHInstallMode -ne 'latest') {
+        try {
+            Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/v${LTTHVersion}:refs/tags/v${LTTHVersion}") -WorkingDirectory $LTTHDir
+            Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
+        } catch {
+            try {
+                Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/${LTTHVersion}:refs/tags/${LTTHVersion}") -WorkingDirectory $LTTHDir
+                Invoke-Git -Arguments @('checkout', '--quiet', "$LTTHVersion") -WorkingDirectory $LTTHDir
+            } catch {
+                Warn "Tag nicht verfuegbar, nutze Branch $LTTHRepoBranch..."
+            }
+        }
+    }
+}
+
+function Restore-RepositoryFromFreshClone {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepoUrl,
+        [string]$Reason
+    )
+
+    $reasonText = if ([string]::IsNullOrWhiteSpace($Reason)) { '' } else { " ($Reason)" }
+    $parentDir = Split-Path -Parent $LTTHDir
+    $leafDir = Split-Path -Leaf $LTTHDir
+    $backupDir = Join-Path $parentDir ($leafDir + '.broken-' + [guid]::NewGuid().ToString('N'))
+    $backupCreated = $false
+
+    Warn "Bestehende Installation ist nicht sauber aktualisierbar$reasonText; erstelle frische Kopie..."
+
+    try {
+        if (Test-Path -LiteralPath $backupDir) {
+            Remove-Item -LiteralPath $backupDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        Move-Item -LiteralPath $LTTHDir -Destination $backupDir -Force
+        $backupCreated = $true
+    } catch {
+        Warn "Bestehende Installation konnte nicht in ein Backup verschoben werden; ueberschreibe sie direkt."
+        if (Test-Path -LiteralPath $LTTHDir) {
+            Remove-Item -LiteralPath $LTTHDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    try {
+        Invoke-GitClone -RepoUrl $RepoUrl
+        if ($backupCreated) {
+            Remove-Item -LiteralPath $backupDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    } catch {
+        if (Test-Path -LiteralPath $LTTHDir) {
+            Remove-Item -LiteralPath $LTTHDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        if ($backupCreated -and (Test-Path -LiteralPath $backupDir)) {
+            Move-Item -LiteralPath $backupDir -Destination $LTTHDir -Force
+        }
+        throw
     }
 }
 
@@ -819,12 +879,14 @@ function Install-NodeViaWinget {
         return $false
     }
 
-    Log "Installiere Node.js LTS via winget..."
+    $nodeInfo = Get-NodeInstallerInfo
+    Log "Installiere Node.js $($nodeInfo.Version) via winget..."
     try {
         $process = Start-Process -FilePath 'winget' `
             -ArgumentList @(
                 'install',
                 '--id', 'OpenJS.NodeJS.LTS',
+                '--version', $nodeInfo.Version,
                 '-e',
                 '--source', 'winget',
                 '--silent',
@@ -849,9 +911,8 @@ function Install-NodeViaWinget {
 }
 
 function Install-NodeFromOfficialSource {
-    Log "Installiere Node.js LTS ueber die offizielle Node.js-Quelle..."
-
     $nodeInfo = Get-NodeInstallerInfo
+    Log "Installiere Node.js $($nodeInfo.Version) ueber die offizielle Node.js-Quelle..."
     $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
     if ($architecture -eq 'arm64') {
         $archLabel = 'arm64'
@@ -907,7 +968,7 @@ function Ensure-Node {
     $installedNode = Get-Command node -ErrorAction SilentlyContinue
     if ($installedNode) {
         $installedVersion = & $installedNode.Source --version
-        Warn "Node.js $installedVersion ist zwar installiert, aber LTTH braucht ein LTS-Build (18/20/22/24)."
+        Warn "Node.js $installedVersion ist zwar installiert, aber LTTH braucht Node.js 22 LTS."
     }
 
     Log "Node.js fehlt - installiere es automatisch..."
@@ -962,81 +1023,80 @@ function Download-Source {
     if (Test-Path (Join-Path $LTTHDir '.git')) {
         Repair-LauncherFile
         Log "Bestehende Installation gefunden -- aktualisiere..."
+        $refreshRequired = $false
+        $refreshReason = ''
         try {
             Invoke-Git -Arguments @('fetch', '--tags', '--prune', 'origin', $LTTHBranchRefSpec) -WorkingDirectory $LTTHDir
         } catch {
-            Warn "Git Fetch fehlgeschlagen, verwende vorhandene lokale Branch-Struktur..."
+            $refreshRequired = $true
+            $refreshReason = $_.Exception.Message
+            Warn "Git Fetch fehlgeschlagen ($refreshReason); pruefe frische Kopie..."
         }
-        if ($script:LTTHInstallMode -eq 'latest') {
-            try {
-                Invoke-Git -Arguments @('checkout', '--quiet', $LTTHRepoBranch) -WorkingDirectory $LTTHDir
-            } catch {
-                try {
-                    Invoke-Git -Arguments @('checkout', '--quiet', '-B', $LTTHRepoBranch, "origin/$LTTHRepoBranch") -WorkingDirectory $LTTHDir
-                } catch {
-                    Fail "Konnte Branch $LTTHRepoBranch nicht auschecken: $($_.Exception.Message)"
-                }
-            }
-        } else {
-            $tagCheckedOut = $false
-            try {
-                Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/v${LTTHVersion}:refs/tags/v${LTTHVersion}") -WorkingDirectory $LTTHDir
-                Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
-                $tagCheckedOut = $true
-            } catch {
-            }
-            if (-not $tagCheckedOut) {
-                try {
-                    Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/${LTTHVersion}:refs/tags/${LTTHVersion}") -WorkingDirectory $LTTHDir
-                    Invoke-Git -Arguments @('checkout', '--quiet', "$LTTHVersion") -WorkingDirectory $LTTHDir
-                    $tagCheckedOut = $true
-                } catch {
-                }
-            }
-            if (-not $tagCheckedOut) {
-                try {
-                    Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
-                    $tagCheckedOut = $true
-                } catch {
-                }
-            }
-            if (-not $tagCheckedOut) {
-                Warn "Gewuenschte Version nicht gefunden, nutze Standard-Branch $LTTHRepoBranch..."
-                Invoke-Git -Arguments @('checkout', '--quiet', $LTTHRepoBranch) -WorkingDirectory $LTTHDir
-            }
-        }
-    } else {
-        Log "Klone Repository nach $LTTHDir..."
-        if (Test-Path $LTTHDir) {
-            Warn "Bestehendes Zielverzeichnis gefunden, aber keine Git-Installation. Bereinige..."
-            Remove-Item -Path $LTTHDir -Recurse -Force
-        }
-        New-Item -ItemType Directory -Force -Path $LTTHDir | Out-Null
-        try {
-            Invoke-Git -Arguments @('clone', '--depth', '1', '--branch', $LTTHRepoBranch, '--single-branch', $repoUrl, $LTTHDir)
 
-            if ($script:LTTHInstallMode -ne 'latest') {
+        if (-not $refreshRequired) {
+            if ($script:LTTHInstallMode -eq 'latest') {
+                try {
+                    Invoke-Git -Arguments @('checkout', '--quiet', $LTTHRepoBranch) -WorkingDirectory $LTTHDir
+                } catch {
+                    try {
+                        Invoke-Git -Arguments @('checkout', '--quiet', '-B', $LTTHRepoBranch, "origin/$LTTHRepoBranch") -WorkingDirectory $LTTHDir
+                    } catch {
+                        $refreshRequired = $true
+                        $refreshReason = $_.Exception.Message
+                        Warn "Branch-Checkout fehlgeschlagen ($refreshReason); pruefe frische Kopie..."
+                    }
+                }
+            } else {
+                $tagCheckedOut = $false
                 try {
                     Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/v${LTTHVersion}:refs/tags/v${LTTHVersion}") -WorkingDirectory $LTTHDir
                     Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
+                    $tagCheckedOut = $true
                 } catch {
+                }
+                if (-not $tagCheckedOut) {
                     try {
                         Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/${LTTHVersion}:refs/tags/${LTTHVersion}") -WorkingDirectory $LTTHDir
                         Invoke-Git -Arguments @('checkout', '--quiet', "$LTTHVersion") -WorkingDirectory $LTTHDir
+                        $tagCheckedOut = $true
                     } catch {
-                        Warn "Tag nicht verfuegbar, nutze Branch $LTTHRepoBranch..."
+                    }
+                }
+                if (-not $tagCheckedOut) {
+                    try {
+                        Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
+                        $tagCheckedOut = $true
+                    } catch {
+                    }
+                }
+                if (-not $tagCheckedOut) {
+                    try {
+                        Warn "Gewuenschte Version nicht gefunden, nutze Standard-Branch $LTTHRepoBranch..."
+                        Invoke-Git -Arguments @('checkout', '--quiet', $LTTHRepoBranch) -WorkingDirectory $LTTHDir
+                    } catch {
+                        $refreshRequired = $true
+                        $refreshReason = $_.Exception.Message
+                        Warn "Branch-Checkout fehlgeschlagen ($refreshReason); pruefe frische Kopie..."
                     }
                 }
             }
+        }
+
+        if ($refreshRequired) {
+            Restore-RepositoryFromFreshClone -RepoUrl $repoUrl -Reason $refreshReason
+        }
+    } else {
+        try {
+            Invoke-GitClone -RepoUrl $repoUrl
         } catch {
             Fail "Repository konnte nicht vom Branch $LTTHRepoBranch geklont werden: $($_.Exception.Message)"
         }
     }
     Ok "Quellcode bereit in $LTTHDir"
 }
-# ---------- Dependencies ----------
+# ---------- Fallback Dependencies ----------
 function Install-Deps {
-    Log "Installiere npm-Abhaengigkeiten (kann einige Minuten dauern)..."
+    Log "Installiere npm-Abhaengigkeiten fuer den direkten Node-Fallback (kann einige Minuten dauern)..."
     $appDir = Join-Path $LTTHDir 'app'
     Push-Location $appDir
     try {
@@ -1132,7 +1192,6 @@ function Install-Launcher {
         return $launcherPath
     } catch {
         Warn "Launcher konnte nicht eingerichtet werden: $($_.Exception.Message)"
-        Warn "Verwende direkten Node-Start als Fallback."
         return $null
     } finally {
         Remove-Item -LiteralPath $tmpLauncher -Force -ErrorAction SilentlyContinue
@@ -1171,25 +1230,7 @@ function Get-ShortcutConfig {
         }
     }
 
-    $nodePath = $script:LTTHNodePath
-    if ([string]::IsNullOrWhiteSpace($nodePath)) {
-        $nodeInfo = Get-PreferredNodeInfo
-        if ($nodeInfo) {
-            $nodePath = $nodeInfo.Path
-        }
-    }
-
-    if ([string]::IsNullOrWhiteSpace($nodePath)) {
-        return $null
-    }
-
-    return [pscustomobject]@{
-        TargetPath = $nodePath
-        Arguments = 'launch.js'
-        WorkingDirectory = (Join-Path $LTTHDir 'app')
-        IconLocation = if ($iconPath) { $iconPath } else { $nodePath }
-        Description = $description
-    }
+    return $null
 }
 
 function Create-WindowsShortcut {
@@ -1291,7 +1332,6 @@ function Start-Launcher {
         return $true
     } catch {
         Warn "Launcher konnte nicht gestartet werden: $($_.Exception.Message)"
-        Warn "Verwende direkten Node-Start als Fallback."
         return $false
     }
 }
@@ -1350,28 +1390,25 @@ function Main {
     }
 
     Ensure-Git
-    Ensure-Node
     Resolve-Version
     Download-Source
-    Install-Deps
     $launcherPath = Install-Launcher
-    $shortcutConfig = Get-ShortcutConfig -LauncherPath $launcherPath
+    if (-not $launcherPath) {
+        Fail "Launcher konnte nicht bereitgestellt werden. Der Windows-Installer installiert Node.js nicht mehr selbst; bitte Launcher-Log und Netzwerkzugriff pruefen."
+    }
+
     $desktopShortcutPath = $null
     $startMenuShortcutPath = $null
-    $launcherStarted = $false
 
+    $shortcutConfig = Get-ShortcutConfig -LauncherPath $launcherPath
     if ($shortcutConfig) {
         $desktopShortcutPath = Create-DesktopShortcut -ShortcutConfig $shortcutConfig
         $startMenuShortcutPath = Create-StartMenuShortcut -ShortcutConfig $shortcutConfig
     }
 
-    if ($launcherPath) {
-        $launcherStarted = Start-Launcher -LauncherPath $launcherPath
-    }
-
+    $launcherStarted = Start-Launcher -LauncherPath $launcherPath
     if (-not $launcherStarted) {
-        Start-App
-        Open-Browser
+        Fail "Launcher konnte nicht gestartet werden. Der Windows-Installer installiert Node.js nicht mehr selbst; bitte launcher.exe manuell starten und die Launcher-Logs pruefen."
     }
 
     Write-Host ""

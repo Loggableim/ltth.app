@@ -6,10 +6,10 @@
   "downloadNote": "Version 1.3.24 enables automatic launcher updates for Git-backed installs before the app starts.",
   "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.24",
   "oneLineInstaller": {
-    "windows": "iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))",
-    "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
-    "linux": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
-    "universal": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.js | node"
+    "windows": "iex ((iwr -useb https://ltth.app/install/install.ps1).Content.TrimStart([char]0xFEFF))",
+    "macos": "curl -fsSL https://ltth.app/install/install.sh | bash",
+    "linux": "curl -fsSL https://ltth.app/install/install.sh | bash",
+    "universal": "curl -fsSL https://ltth.app/install/install.js | node"
   },
   "supportedPlatforms": [
     "windows-amd64",

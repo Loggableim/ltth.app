@@ -3,6 +3,9 @@
 // Keeps module resolution stable when the server is started by a packaged
 // launcher or another embedded Node runtime.
 // ===========================================================================
+const fs = require('fs');
+const path = require('path');
+
 if (process.env.ELECTRON === 'true' || process.env.ELECTRON_RUN_AS_NODE === '1') {
   const path = require('path');
   const Module = require('module');
@@ -87,9 +90,7 @@ loadClerkEnvFallback();
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
-const path = require('path');
 const multer = require('multer');
-const fs = require('fs');
 const crypto = require('crypto');
 
 // Browser opening guard - prevents duplicate browser opens
