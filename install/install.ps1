@@ -1180,7 +1180,6 @@ function Install-Launcher {
         return $launcherPath
     } catch {
         Warn "Launcher konnte nicht eingerichtet werden: $($_.Exception.Message)"
-        Warn "Verwende direkten Node-Start als Fallback."
         return $null
     } finally {
         Remove-Item -LiteralPath $tmpLauncher -Force -ErrorAction SilentlyContinue
@@ -1219,25 +1218,7 @@ function Get-ShortcutConfig {
         }
     }
 
-    $nodePath = $script:LTTHNodePath
-    if ([string]::IsNullOrWhiteSpace($nodePath)) {
-        $nodeInfo = Get-PreferredNodeInfo
-        if ($nodeInfo) {
-            $nodePath = $nodeInfo.Path
-        }
-    }
-
-    if ([string]::IsNullOrWhiteSpace($nodePath)) {
-        return $null
-    }
-
-    return [pscustomobject]@{
-        TargetPath = $nodePath
-        Arguments = 'launch.js'
-        WorkingDirectory = (Join-Path $LTTHDir 'app')
-        IconLocation = if ($iconPath) { $iconPath } else { $nodePath }
-        Description = $description
-    }
+    return $null
 }
 
 function Create-WindowsShortcut {
@@ -1339,7 +1320,6 @@ function Start-Launcher {
         return $true
     } catch {
         Warn "Launcher konnte nicht gestartet werden: $($_.Exception.Message)"
-        Warn "Verwende direkten Node-Start als Fallback."
         return $false
     }
 }
@@ -1401,18 +1381,12 @@ function Main {
     Resolve-Version
     Download-Source
     $launcherPath = Install-Launcher
+    if (-not $launcherPath) {
+        Fail "Launcher konnte nicht bereitgestellt werden. Der Windows-Installer installiert Node.js nicht mehr selbst; bitte Launcher-Log und Netzwerkzugriff pruefen."
+    }
+
     $desktopShortcutPath = $null
     $startMenuShortcutPath = $null
-    $launcherStarted = $false
-
-    if ($launcherPath) {
-        $launcherStarted = Start-Launcher -LauncherPath $launcherPath
-    }
-
-    if (-not $launcherStarted) {
-        Ensure-Node
-        Install-Deps
-    }
 
     $shortcutConfig = Get-ShortcutConfig -LauncherPath $launcherPath
     if ($shortcutConfig) {
@@ -1420,9 +1394,9 @@ function Main {
         $startMenuShortcutPath = Create-StartMenuShortcut -ShortcutConfig $shortcutConfig
     }
 
+    $launcherStarted = Start-Launcher -LauncherPath $launcherPath
     if (-not $launcherStarted) {
-        Start-App
-        Open-Browser
+        Fail "Launcher konnte nicht gestartet werden. Der Windows-Installer installiert Node.js nicht mehr selbst; bitte launcher.exe manuell starten und die Launcher-Logs pruefen."
     }
 
     Write-Host ""

@@ -224,7 +224,7 @@
                 <li data-i18n="install.quick.step2">Klicke auf „Kopieren“ und füge den Befehl in PowerShell/Terminal ein.</li>
                 <li data-i18n="install.quick.step3">Drücke Enter und warte – der Installer kümmert sich um den Rest.</li>
             </ol>
-            <p class="install-quick-note" data-i18n="install.quick.note">Du musst nichts weiter einstellen. Git und Node.js werden automatisch geprüft.</p>
+            <p class="install-quick-note" data-i18n="install.quick.note">Du musst nichts weiter einstellen. Git wird vom Installer geprüft; Node.js, npm und Native-Module übernimmt der Launcher beim ersten Start.</p>
         </div>
 
         <div class="os-tabs" role="tablist" aria-label="Betriebssystem wählen">
@@ -256,7 +256,7 @@
                     <span class="command-text">iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))</span>
                 </div>
                 <div class="os-warning" data-i18n="install.windows.warn">
-                    ⚠ Falls Windows SmartScreen warnt: "Weitere Informationen" → "Trotzdem ausführen". Das Skript ist signiert und sicher. Wenn auf dem System nur Node.js 23.x oder ein anderes ungeeignetes Build vorhanden ist, wechselt der Installer auf ein unterstütztes LTS-Build, damit native Module ohne Visual Studio-Build-Tools installiert werden können.
+                    ⚠ Falls Windows SmartScreen warnt: "Weitere Informationen" → "Trotzdem ausführen". Das Skript ist signiert und sicher. Wenn auf dem System nur Node.js 23.x oder ein anderes ungeeignetes Build vorhanden ist, wechselt der Launcher auf ein unterstütztes LTS-Build, damit native Module ohne Visual Studio-Build-Tools installiert werden können.
                 </div>
             </div>
 
