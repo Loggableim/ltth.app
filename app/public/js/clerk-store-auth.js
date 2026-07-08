@@ -155,15 +155,13 @@
             ? 'CLERK_PUBLISHABLE_KEY missing'
             : config.publishableKey;
         const setupHint = !config.publishableKey
-            ? 'Add the live publishable key to app/.env or app/.env.example so the app can load Clerk.'
-            : (!config.secretConfigured
-                ? 'Set LTTH_STORE_CLERK_SECRET_KEY or CLERK_SECRET_KEY on the server to unlock the closed store.'
-                : 'Clerk configuration loaded.');
+            ? 'Set LTTH_STORE_CLERK_PUBLISHABLE_KEY or CLERK_PUBLISHABLE_KEY so the app can load Clerk.'
+            : 'Clerk configuration loaded.';
 
         root.innerHTML = `
             <div class="plugin-store-auth-card">
                 <div class="plugin-store-auth-card__eyebrow">Account required</div>
-                <h3>Clerk is not configured yet</h3>
+                <h3>LTTH Store is not configured yet</h3>
                 <p>${escapeHtml(setupHint)}</p>
                 <code>${escapeHtml(missingKey)}</code>
             </div>

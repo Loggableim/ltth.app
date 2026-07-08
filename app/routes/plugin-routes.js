@@ -99,7 +99,10 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
      * POST /api/plugin-store/session - Persist the verified Clerk account in a local 14-day HttpOnly cookie.
      */
     app.post('/api/plugin-store/session', limiter, storeAuth, (req, res) => {
-        setStoreSessionCookie(res, req.storeAccount || {}, options);
+        setStoreSessionCookie(res, req.storeAccount || {}, {
+            ...options,
+            token: req.storeAuthToken
+        });
         res.json(storeAccountResponse(req));
     });
 

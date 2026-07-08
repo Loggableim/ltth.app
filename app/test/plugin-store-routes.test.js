@@ -1,9 +1,11 @@
 const assert = require('assert');
+const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const request = require('supertest');
 
 const { setupPluginRoutes } = require('../routes/plugin-routes');
@@ -112,10 +114,7 @@ describe('Plugin store routes', () => {
       return next();
     });
     const { app } = createTestApp(tempDir, {
-      storeAuth,
-      env: {
-        CLERK_SECRET_KEY: 'sk_test_cookie_secret'
-      }
+      storeAuth
     });
 
     await request(app)
@@ -205,57 +204,42 @@ describe('Plugin store routes', () => {
     assert.strictEqual(healthResponse.body.summary.plugins.tts.installSuccessCount, 1);
   });
 
-  it('sets a two-week local store session cookie and restores accounts from it', async () => {
-    const getUser = jest.fn(async (userId) => ({
-      id: userId,
-      privateMetadata: {
-        ltthLicense: {
-          status: 'active',
-          plan: 'beta-free',
-          licenseId: `ltth_beta_${userId}`
-        },
-        ltthAccess: {
-          groups: ['admin'],
-          closedBetaPlugins: ['openshock']
-        }
-      }
-    }));
-    const getAuth = jest.fn((req) => {
-      if (req.get('authorization') === 'Bearer bridge-token') {
-        return {
-          isAuthenticated: true,
-          userId: 'user_cookie',
-          sessionId: 'sess_cookie'
-        };
-      }
-      return { isAuthenticated: false };
+  it('sets a local store session cookie and restores accounts from a public JWT', async () => {
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048
+    });
+    const publicPem = publicKey.export({ type: 'spki', format: 'pem' });
+    const token = jwt.sign({
+      sub: 'user_cookie',
+      sid: 'sess_cookie',
+      azp: 'https://ltth.app'
+    }, privateKey.export({ type: 'pkcs8', format: 'pem' }), {
+      algorithm: 'RS256',
+      header: { kid: 'ltth-test-key' },
+      expiresIn: '1h'
     });
     const storeAuth = createRequireStoreAuth({
       env: {
         CLERK_PUBLISHABLE_KEY: 'pk_test_public',
-        CLERK_SECRET_KEY: 'sk_test_cookie_secret'
-      },
-      clerkExpress: { getAuth },
-      clerkClient: {
-        users: { getUser }
+        CLERK_JWT_KEY: publicPem,
+        LTTH_ACCOUNT_PORTAL_URL: 'https://ltth.app/auth/'
       }
     });
     const { app } = createTestApp(tempDir, {
       storeAuth,
-      env: {
-        CLERK_SECRET_KEY: 'sk_test_cookie_secret'
-      }
+      env: {}
     });
 
     const sessionResponse = await request(app)
       .post('/api/plugin-store/session')
-      .set('authorization', 'Bearer bridge-token')
+      .set('authorization', `Bearer ${token}`)
       .expect(200);
     const cookie = sessionResponse.headers['set-cookie'].find((value) => value.startsWith('ltth_store_session='));
 
     assert(cookie.includes('Max-Age=1209600'));
     assert(cookie.includes('HttpOnly'));
     assert(cookie.includes('SameSite=Lax'));
+    assert(cookie.includes(encodeURIComponent(token)));
 
     const accountResponse = await request(app)
       .get('/api/plugin-store/account')
@@ -265,8 +249,6 @@ describe('Plugin store routes', () => {
     assert.strictEqual(accountResponse.body.account.authenticated, true);
     assert.strictEqual(accountResponse.body.account.userId, 'user_cookie');
     assert.strictEqual(accountResponse.body.account.license.active, true);
-    assert.deepStrictEqual(accountResponse.body.account.access.groups, ['admin']);
-    assert.deepStrictEqual(accountResponse.body.account.access.closedBetaPlugins, ['openshock']);
   });
 
   it('blocks plugin installs until the authenticated account has a beta license', async () => {

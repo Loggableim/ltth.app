@@ -1,7 +1,10 @@
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 
 const STORE_SESSION_COOKIE = 'ltth_store_session';
 const STORE_SESSION_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+const CLERK_JWKS_URL = 'https://api.clerk.com/v1/jwks';
+const jwksCache = new Map();
 
 function cleanEnvValue(value) {
   return String(value || '').trim();
@@ -21,31 +24,21 @@ function base64UrlDecode(value) {
   return Buffer.from(padded, 'base64').toString('utf8');
 }
 
-function getStoreSessionSecret(env = process.env) {
-  return cleanEnvValue(
+function serializeStoreSession(account = {}, options = {}) {
+  const token = cleanEnvValue(options.token || account.sessionToken || account.token);
+  if (token) {
+    return token;
+  }
+
+  const env = options.env || process.env;
+  const now = options.now || (() => new Date());
+  const userId = cleanEnvValue(account.userId);
+  const secret = cleanEnvValue(
     env.LTTH_STORE_SESSION_SECRET ||
     env.LTTH_STORE_CLERK_SECRET_KEY ||
     env.CLERK_SECRET_KEY
   );
-}
-
-function signStoreSessionPayload(encodedPayload, env = process.env) {
-  const secret = getStoreSessionSecret(env);
-  if (!secret) {
-    return '';
-  }
-
-  return crypto
-    .createHmac('sha256', secret)
-    .update(encodedPayload)
-    .digest('base64url');
-}
-
-function serializeStoreSession(account = {}, options = {}) {
-  const env = options.env || process.env;
-  const now = options.now || (() => new Date());
-  const userId = cleanEnvValue(account.userId);
-  if (!userId || !getStoreSessionSecret(env)) {
+  if (!userId || !secret) {
     return '';
   }
 
@@ -57,7 +50,10 @@ function serializeStoreSession(account = {}, options = {}) {
     iat: issuedAt,
     exp: expiresAt
   }));
-  const signature = signStoreSessionPayload(payload, env);
+  const signature = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('base64url');
 
   return signature ? `${payload}.${signature}` : '';
 }
@@ -77,45 +73,23 @@ function parseCookies(cookieHeader = '') {
 }
 
 function parseStoreSessionCookie(req, options = {}) {
-  const env = options.env || process.env;
-  const now = options.now || (() => new Date());
   const cookieName = options.cookieName || STORE_SESSION_COOKIE;
-  const value = parseCookies(req.headers?.cookie || '')[cookieName];
-  if (!value) {
-    return null;
+  const cookies = parseCookies(req.headers?.cookie || '');
+  const value = cookies[cookieName] || cookies.__session;
+  return cleanEnvValue(value) || null;
+}
+
+function extractSessionToken(req, options = {}) {
+  const header = cleanEnvValue(req.headers?.authorization || req.get?.('authorization'));
+  if (header) {
+    const bearerMatch = header.match(/^Bearer\s+(.+)$/i);
+    if (bearerMatch) {
+      return cleanEnvValue(bearerMatch[1]);
+    }
+    return header;
   }
 
-  const [encodedPayload, signature] = value.split('.');
-  if (!encodedPayload || !signature) {
-    return null;
-  }
-
-  const expectedSignature = signStoreSessionPayload(encodedPayload, env);
-  if (!expectedSignature) {
-    return null;
-  }
-
-  const provided = Buffer.from(signature);
-  const expected = Buffer.from(expectedSignature);
-  if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
-    return null;
-  }
-
-  let payload;
-  try {
-    payload = JSON.parse(base64UrlDecode(encodedPayload));
-  } catch {
-    return null;
-  }
-
-  if (!payload.userId || !Number.isFinite(payload.exp) || payload.exp <= now().getTime()) {
-    return null;
-  }
-
-  return {
-    userId: cleanEnvValue(payload.userId),
-    sessionId: cleanEnvValue(payload.sessionId) || null
-  };
+  return parseStoreSessionCookie(req, options);
 }
 
 function appendSetCookie(res, cookie) {
@@ -150,6 +124,156 @@ function clearStoreSessionCookie(res, options = {}) {
   appendSetCookie(res, `${cookieName}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; HttpOnly; SameSite=Lax`);
 }
 
+function normalizeAuthorizedParties(value) {
+  return normalizeList(value)
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean);
+}
+
+function getRequestOrigin(req = {}) {
+  const origin = cleanEnvValue(req.headers?.origin || req.get?.('origin'));
+  if (origin) {
+    return origin;
+  }
+
+  const host = cleanEnvValue(req.get?.('host') || req.headers?.host);
+  if (!host) {
+    return '';
+  }
+
+  const protocol = cleanEnvValue(req.protocol || req.headers?.['x-forwarded-proto'] || 'http').split(',')[0].trim() || 'http';
+  return `${protocol}://${host}`;
+}
+
+function buildAuthorizedParties(req, config, env = process.env) {
+  const parties = new Set([
+    ...normalizeAuthorizedParties(env.LTTH_STORE_AUTHORIZED_PARTIES || env.CLERK_AUTHORIZED_PARTIES),
+    ...normalizeAuthorizedParties(config.authBridgeUrl ? new URL(config.authBridgeUrl).origin : ''),
+    ...normalizeAuthorizedParties(config.accountPortalBaseUrl ? new URL(config.accountPortalBaseUrl).origin : ''),
+    ...normalizeAuthorizedParties(getRequestOrigin(req))
+  ]);
+
+  return Array.from(parties).filter(Boolean);
+}
+
+function decodeJwtHeader(token) {
+  try {
+    return jwt.decode(token, { complete: true }) || null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchClerkJwks(jwksUrl, logger) {
+  const cacheKey = String(jwksUrl || '').trim() || CLERK_JWKS_URL;
+  const cached = jwksCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.keys;
+  }
+
+  const response = await fetch(cacheKey, {
+    headers: {
+      accept: 'application/json'
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch Clerk JWKS from ${cacheKey} (${response.status})`);
+  }
+
+  const payload = await response.json();
+  const keys = Array.isArray(payload?.keys) ? payload.keys : [];
+  if (keys.length === 0) {
+    throw new Error(`Clerk JWKS response from ${cacheKey} did not include any keys`);
+  }
+
+  jwksCache.set(cacheKey, {
+    keys,
+    expiresAt: Date.now() + (10 * 60 * 1000)
+  });
+
+  return keys;
+}
+
+async function resolveClerkVerificationKey(token, options = {}) {
+  const env = options.env || process.env;
+  const config = options.config || buildStoreAuthConfig(env);
+  const header = decodeJwtHeader(token);
+  const jwtKey = cleanEnvValue(
+    env.LTTH_STORE_CLERK_JWT_KEY ||
+    env.CLERK_JWT_KEY ||
+    env.NEXT_PUBLIC_CLERK_JWT_KEY ||
+    env.VITE_CLERK_JWT_KEY
+  );
+
+  if (jwtKey) {
+    return jwtKey;
+  }
+
+  const jwksUrl = cleanEnvValue(
+    env.LTTH_STORE_CLERK_JWKS_URL ||
+    env.CLERK_JWKS_URL ||
+    (config.frontendDomain ? `https://${config.frontendDomain}/.well-known/jwks.json` : '') ||
+    CLERK_JWKS_URL
+  );
+  const keys = await fetchClerkJwks(jwksUrl, options.logger);
+  const candidates = header?.header?.kid
+    ? keys.filter((key) => key.kid === header.header.kid)
+    : keys;
+
+  for (const key of candidates) {
+    try {
+      return crypto.createPublicKey({ key, format: 'jwk' });
+    } catch (error) {
+      options.logger?.warn?.(`[Clerk] Ignoring invalid JWKS key ${key.kid || '<unknown>'}: ${error.message}`);
+    }
+  }
+
+  throw new Error('No usable Clerk public key was found for the current token.');
+}
+
+async function verifyClerkSessionToken(token, options = {}) {
+  const env = options.env || process.env;
+  const config = options.config || buildStoreAuthConfig(env);
+  const header = decodeJwtHeader(token);
+
+  if (!header?.header || header.header.alg !== 'RS256') {
+    const error = new Error('Unsupported Clerk session token algorithm.');
+    error.code = 'CLERK_TOKEN_INVALID';
+    throw error;
+  }
+
+  const publicKey = await resolveClerkVerificationKey(token, {
+    env,
+    config,
+    logger: options.logger
+  });
+
+  let payload;
+  try {
+    payload = jwt.verify(token, publicKey, {
+      algorithms: ['RS256'],
+      clockTolerance: 5
+    });
+  } catch (error) {
+    const wrapped = new Error(`Clerk session token verification failed: ${error.message}`);
+    wrapped.code = 'CLERK_TOKEN_INVALID';
+    throw wrapped;
+  }
+
+  const authorizedParties = Array.from(new Set([
+    ...normalizeAuthorizedParties(options.authorizedParties || ''),
+    ...buildAuthorizedParties(options.req || {}, config, env)
+  ]));
+  const tokenOrigin = cleanEnvValue(payload.azp).toLowerCase();
+  if (tokenOrigin && authorizedParties.length > 0 && !authorizedParties.includes(tokenOrigin)) {
+    const error = new Error(`Clerk session token was issued for an unexpected origin: ${payload.azp}`);
+    error.code = 'CLERK_TOKEN_INVALID';
+    throw error;
+  }
+
+  return payload;
+}
+
 function deriveClerkFrontendDomain(publishableKey) {
   try {
     let encoded = String(publishableKey || '').split('_')[2] || '';
@@ -167,10 +291,6 @@ function buildStoreAuthConfig(env = process.env) {
     env.CLERK_PUBLISHABLE_KEY ||
     env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
     env.VITE_CLERK_PUBLISHABLE_KEY
-  );
-  const secretKey = cleanEnvValue(
-    env.LTTH_STORE_CLERK_SECRET_KEY ||
-    env.CLERK_SECRET_KEY
   );
   const proxyUrl = cleanEnvValue(env.CLERK_PROXY_URL || env.NEXT_PUBLIC_CLERK_PROXY_URL);
   const frontendDomain = cleanEnvValue(env.CLERK_FRONTEND_API || deriveClerkFrontendDomain(publishableKey));
@@ -197,11 +317,25 @@ function buildStoreAuthConfig(env = process.env) {
     env.LTTH_ACCOUNT_UNAUTHORIZED_SIGN_IN_URL ||
     `${accountPortalBaseUrl}/?mode=sign-in&reason=unauthorized`
   );
+  const jwtKey = cleanEnvValue(
+    env.LTTH_STORE_CLERK_JWT_KEY ||
+    env.CLERK_JWT_KEY ||
+    env.NEXT_PUBLIC_CLERK_JWT_KEY ||
+    env.VITE_CLERK_JWT_KEY
+  );
+  const storeAuthorizedParties = normalizeAuthorizedParties(
+    [
+      env.LTTH_STORE_AUTHORIZED_PARTIES,
+      env.CLERK_AUTHORIZED_PARTIES,
+      authBridgeUrl ? new URL(authBridgeUrl).origin : '',
+      accountPortalBaseUrl ? new URL(accountPortalBaseUrl).origin : ''
+    ].filter(Boolean).join(',')
+  );
 
   return {
     authRequired: true,
     closedStore: true,
-    clerkEnabled: Boolean(publishableKey && secretKey),
+    clerkEnabled: Boolean(publishableKey),
     publishableKey,
     frontendDomain,
     proxyUrl,
@@ -212,7 +346,14 @@ function buildStoreAuthConfig(env = process.env) {
     signInUrl,
     signUpUrl,
     unauthorizedSignInUrl,
-    secretConfigured: Boolean(secretKey),
+    jwtKey,
+    storeAuthorizedParties,
+    secretConfigured: Boolean(
+      cleanEnvValue(
+        env.LTTH_STORE_CLERK_SECRET_KEY ||
+        env.CLERK_SECRET_KEY
+      )
+    ),
     billingEnabled: env.CLERK_BILLING_ENABLED !== 'false',
     loginMethods: ['email', 'passkey', 'google', 'apple', 'tiktok']
   };
@@ -369,7 +510,7 @@ async function loadStoreEntitlements(userId, options = {}) {
   const clerkClient = resolveClerkClient(options);
   if (!userId || !clerkClient?.users || typeof clerkClient.users.getUser !== 'function') {
     return {
-      license: claimsLicense,
+      license: claimsLicense.active ? claimsLicense : buildBetaLicense(userId),
       access: claimsAccess
     };
   }
@@ -382,20 +523,34 @@ async function loadStoreEntitlements(userId, options = {}) {
 }
 
 async function loadStoreAccountFromSessionCookie(req, options = {}) {
-  const session = parseStoreSessionCookie(req, options);
-  if (!session?.userId) {
+  const token = parseStoreSessionCookie(req, options);
+  if (!token) {
     return null;
   }
 
-  const entitlements = await loadStoreEntitlements(session.userId, options);
+  const sessionClaims = await verifyClerkSessionToken(token, {
+    ...options,
+    req
+  });
+  const userId = cleanEnvValue(sessionClaims.sub || sessionClaims.userId);
+  if (!userId) {
+    return null;
+  }
+
+  const entitlements = await loadStoreEntitlements(userId, {
+    ...options,
+    sessionClaims
+  });
   return {
-    userId: session.userId,
-    sessionId: session.sessionId,
-    actor: null,
+    userId,
+    sessionId: cleanEnvValue(sessionClaims.sid || sessionClaims.sessionId) || null,
+    actor: sessionClaims.act || null,
+    sessionClaims,
     license: entitlements.license,
     access: entitlements.access,
     has: () => false,
-    source: 'local-cookie'
+    source: 'local-cookie',
+    sessionToken: token
   };
 }
 
@@ -446,9 +601,7 @@ async function claimBetaLicenseForStoreAccount(account = {}, options = {}) {
 
   const clerkClient = resolveClerkClient(options);
   if (!clerkClient?.users || typeof clerkClient.users.updateUserMetadata !== 'function') {
-    const error = new Error('Clerk user metadata API is unavailable.');
-    error.code = 'CLERK_METADATA_UNAVAILABLE';
-    throw error;
+    return buildBetaLicense(userId, options.now);
   }
 
   const license = buildBetaLicense(userId, options.now);
@@ -477,25 +630,7 @@ async function claimBetaLicenseForStoreAccount(account = {}, options = {}) {
 }
 
 function createClerkMiddleware(options = {}) {
-  const env = options.env || process.env;
-  const logger = options.logger;
-  const config = buildStoreAuthConfig(env);
-
-  if (!config.clerkEnabled) {
-    return (req, res, next) => next();
-  }
-
-  const clerkExpress = resolveClerkExpress(options.clerkExpress, logger);
-  if (!clerkExpress || typeof clerkExpress.clerkMiddleware !== 'function') {
-    return (req, res, next) => next();
-  }
-
-  try {
-    return clerkExpress.clerkMiddleware();
-  } catch (error) {
-    logger?.error?.(`[Clerk] Failed to initialize Clerk middleware: ${error.message}`);
-    return (req, res, next) => next();
-  }
+  return (req, res, next) => next();
 }
 
 function createClerkFrontendProxy(options = {}) {
@@ -624,47 +759,35 @@ function createRequireStoreAuth(options = {}) {
       return res.status(503).json({
         success: false,
         code: 'CLERK_NOT_CONFIGURED',
-        error: 'Plugin store login is required, but Clerk is not configured.'
+        error: 'Plugin store login is required, but the public Clerk config is missing.'
       });
     }
 
-    const clerkExpress = resolveClerkExpress(options.clerkExpress, logger);
-    if (!clerkExpress || typeof clerkExpress.getAuth !== 'function') {
-      return res.status(503).json({
+    const sessionToken = extractSessionToken(req, options);
+    if (!sessionToken) {
+      return res.status(401).json({
         success: false,
-        code: 'CLERK_SDK_UNAVAILABLE',
-        error: 'Plugin store login is required, but the Clerk SDK is unavailable.'
+        code: 'AUTH_REQUIRED',
+        error: 'Sign in to use the plugin store.'
       });
     }
 
-    let auth;
+    let sessionClaims;
     try {
-      auth = clerkExpress.getAuth(req);
+      sessionClaims = await verifyClerkSessionToken(sessionToken, {
+        ...options,
+        env,
+        req,
+        logger,
+        config,
+        authorizedParties: config.storeAuthorizedParties
+      });
     } catch (error) {
-      logger?.warn?.(`[Clerk] Could not read store auth state: ${error.message}`);
-      return res.status(401).json({
-        success: false,
-        code: 'AUTH_REQUIRED',
-        error: 'Sign in to use the plugin store.'
-      });
-    }
-
-    if (!auth || auth.isAuthenticated !== true) {
-      try {
-        const cookieAccount = await loadStoreAccountFromSessionCookie(req, {
-          ...options,
-          env,
-          logger
-        });
-        if (cookieAccount) {
-          req.storeAccount = cookieAccount;
-          return next();
-        }
-      } catch (error) {
-        logger?.warn?.(`[Clerk] Could not restore local store session: ${error.message}`);
-        clearStoreSessionCookie(res);
+      logger?.warn?.(`[Clerk] Could not verify store session token: ${error.message}`);
+      const cookieHeader = String(req.headers?.cookie || '');
+      if (cookieHeader.includes(`${STORE_SESSION_COOKIE}=`) || cookieHeader.includes('__session=')) {
+        clearStoreSessionCookie(res, options);
       }
-
       return res.status(401).json({
         success: false,
         code: 'AUTH_REQUIRED',
@@ -672,13 +795,24 @@ function createRequireStoreAuth(options = {}) {
       });
     }
 
+    const userId = cleanEnvValue(sessionClaims.sub || sessionClaims.userId);
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        code: 'AUTH_REQUIRED',
+        error: 'Sign in to use the plugin store.'
+      });
+    }
+
+    req.storeAuthToken = sessionToken;
     req.storeAccount = {
-      userId: auth.userId || null,
-      sessionId: auth.sessionId || null,
-      actor: auth.actor || null,
+      userId,
+      sessionId: cleanEnvValue(sessionClaims.sid || sessionClaims.sessionId) || null,
+      actor: sessionClaims.act || null,
+      sessionClaims,
       license: normalizeStoreLicense(),
       access: normalizeStoreAccess(),
-      has: typeof auth.has === 'function' ? auth.has.bind(auth) : () => false
+      has: () => false
     };
 
     try {
@@ -686,13 +820,13 @@ function createRequireStoreAuth(options = {}) {
         ...options,
         env,
         logger,
-        sessionClaims: auth.sessionClaims || {}
+        sessionClaims
       });
       req.storeAccount.license = entitlements.license;
       req.storeAccount.access = entitlements.access;
     } catch (error) {
       logger?.warn?.(`[Clerk] Could not load store entitlements: ${error.message}`);
-      req.storeAccount.license = normalizeStoreLicense();
+      req.storeAccount.license = buildBetaLicense(userId);
       req.storeAccount.access = normalizeStoreAccess();
     }
 

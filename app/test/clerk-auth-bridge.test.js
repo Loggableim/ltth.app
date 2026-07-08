@@ -42,8 +42,7 @@ describe('Clerk auth bridge', () => {
     const { buildStoreAuthConfig } = require('../modules/clerk-store-auth');
 
     const config = buildStoreAuthConfig({
-      CLERK_PUBLISHABLE_KEY: 'pk_test_public',
-      LTTH_STORE_CLERK_SECRET_KEY: 'sk_test_store_secret'
+      CLERK_PUBLISHABLE_KEY: 'pk_test_public'
     });
 
     assert.strictEqual(config.authBridgeUrl, '');
@@ -72,9 +71,10 @@ describe('Clerk auth bridge', () => {
     assert(storeAuthScript.includes('/api/plugin-store/account'));
     assert(storeAuthScript.includes('Authorization'));
     assert(storeAuthScript.includes('restoreBridgeSession'));
-    assert(storeAuthScript.includes('Set LTTH_STORE_CLERK_SECRET_KEY or CLERK_SECRET_KEY'));
+    assert(storeAuthScript.includes('Set LTTH_STORE_CLERK_PUBLISHABLE_KEY or CLERK_PUBLISHABLE_KEY'));
     assert(storeAuthScript.includes("credentials: 'same-origin'"));
     assert(!storeAuthScript.includes('accounts.ltth.app/user'));
+    assert(!storeAuthScript.includes('LTTH_STORE_CLERK_SECRET_KEY or CLERK_SECRET_KEY'));
   });
 
   it('renders the embedded Clerk UI when the bridge is disabled', async () => {

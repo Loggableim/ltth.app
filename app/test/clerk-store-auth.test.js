@@ -1,16 +1,17 @@
 const assert = require('assert');
+const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 
 describe('Clerk store auth', () => {
   afterEach(() => {
     jest.resetModules();
   });
 
-  it('builds public config without exposing the secret key', () => {
+  it('builds public config without requiring a secret key', () => {
     const { buildStoreAuthConfig } = require('../modules/clerk-store-auth');
 
     const config = buildStoreAuthConfig({
-      CLERK_PUBLISHABLE_KEY: 'pk_test_public',
-      LTTH_STORE_CLERK_SECRET_KEY: 'sk_test_store_secret'
+      CLERK_PUBLISHABLE_KEY: 'pk_test_public'
     });
 
     assert.strictEqual(config.authRequired, true);
@@ -23,7 +24,7 @@ describe('Clerk store auth', () => {
     assert.strictEqual(config.signInUrl, 'https://ltth.app/auth/?mode=sign-in');
     assert.strictEqual(config.signUpUrl, 'https://ltth.app/auth/?mode=sign-up');
     assert.strictEqual(config.unauthorizedSignInUrl, 'https://ltth.app/auth/?mode=sign-in&reason=unauthorized');
-    assert.strictEqual(config.secretConfigured, true);
+    assert.strictEqual(config.secretConfigured, false);
     assert.strictEqual(Object.prototype.hasOwnProperty.call(config, 'secretKey'), false);
   });
 
@@ -32,7 +33,6 @@ describe('Clerk store auth', () => {
 
     const config = buildStoreAuthConfig({
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: 'pk_test_public',
-      CLERK_SECRET_KEY: 'sk_test_secret',
       CLERK_PROXY_URL: '/auth-proxy'
     });
 
@@ -46,24 +46,23 @@ describe('Clerk store auth', () => {
 
     const config = buildStoreAuthConfig({
       CLERK_PUBLISHABLE_KEY: 'pk_test_public',
-      CLERK_SECRET_KEY: 'sk_test_secret',
       LTTH_ACCOUNT_MANAGEMENT_URL: 'https://ltth.app/account'
     });
 
     assert.strictEqual(config.accountManagementUrl, 'https://ltth.app/account');
   });
 
-  it('prefers store-specific Clerk secrets over the generic secret key', () => {
+  it('prefers store-specific publishable keys over the generic publishable key', () => {
     const { buildStoreAuthConfig } = require('../modules/clerk-store-auth');
 
     const config = buildStoreAuthConfig({
       CLERK_PUBLISHABLE_KEY: 'pk_test_public',
-      LTTH_STORE_CLERK_SECRET_KEY: 'sk_test_store_secret',
-      CLERK_SECRET_KEY: 'sk_test_generic_secret'
+      LTTH_STORE_CLERK_PUBLISHABLE_KEY: 'pk_test_store_public'
     });
 
     assert.strictEqual(config.clerkEnabled, true);
-    assert.strictEqual(config.secretConfigured, true);
+    assert.strictEqual(config.publishableKey, 'pk_test_store_public');
+    assert.strictEqual(config.secretConfigured, false);
   });
 
   it('derives the Clerk frontend domain from publishable keys', () => {
@@ -92,11 +91,7 @@ describe('Clerk store auth', () => {
     const { createRequireStoreAuth } = require('../modules/clerk-store-auth');
     const middleware = createRequireStoreAuth({
       env: {
-        CLERK_PUBLISHABLE_KEY: 'pk_test_public',
-        CLERK_SECRET_KEY: 'sk_test_secret'
-      },
-      clerkExpress: {
-        getAuth: () => ({ isAuthenticated: false })
+        CLERK_PUBLISHABLE_KEY: 'pk_test_public'
       }
     });
     const response = createJsonResponse();
@@ -109,33 +104,44 @@ describe('Clerk store auth', () => {
     assert.strictEqual(next.mock.calls.length, 0);
   });
 
-  it('attaches account context for authenticated store requests', async () => {
+  it('attaches account context for authenticated store requests using the public JWT key', async () => {
     const { createRequireStoreAuth } = require('../modules/clerk-store-auth');
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048
+    });
+    const token = jwt.sign({
+      sub: 'user_123',
+      sid: 'sess_123',
+      azp: 'https://ltth.app'
+    }, privateKey.export({ type: 'pkcs8', format: 'pem' }), {
+      algorithm: 'RS256',
+      header: { kid: 'ltth-test-key' },
+      expiresIn: '1h'
+    });
+    const publicPem = publicKey.export({ type: 'spki', format: 'pem' });
     const request = {};
     const response = createJsonResponse();
     const next = jest.fn();
-    const has = jest.fn(() => true);
     const middleware = createRequireStoreAuth({
       env: {
         CLERK_PUBLISHABLE_KEY: 'pk_test_public',
-        CLERK_SECRET_KEY: 'sk_test_secret'
-      },
-      clerkExpress: {
-        getAuth: () => ({
-          isAuthenticated: true,
-          userId: 'user_123',
-          sessionId: 'sess_123',
-          has
-        })
+        CLERK_JWT_KEY: publicPem,
+        LTTH_ACCOUNT_PORTAL_URL: 'https://ltth.app/auth/'
       }
     });
+    request.headers = {
+      authorization: `Bearer ${token}`,
+      origin: 'https://ltth.app'
+    };
+    request.get = (name) => request.headers[String(name || '').toLowerCase()];
 
     await middleware(request, response, next);
 
     assert.strictEqual(next.mock.calls.length, 1);
     assert.strictEqual(request.storeAccount.userId, 'user_123');
     assert.strictEqual(request.storeAccount.sessionId, 'sess_123');
-    assert.strictEqual(request.storeAccount.has({ plan: 'pro' }), true);
+    assert.strictEqual(request.storeAccount.license.active, true);
+    assert.strictEqual(request.storeAccount.license.plan, 'beta-free');
   });
 
   it('includes beta license status in the store account response', () => {
@@ -200,19 +206,14 @@ describe('Clerk store auth', () => {
     assert.deepStrictEqual(response.account.access.closedBetaPlugins, ['store-admin']);
   });
 
-  it('sets the local store session as an explicit persistent 14-day cookie', () => {
+  it('sets the local store session cookie from a verified token', () => {
     const {
       setStoreSessionCookie,
       STORE_SESSION_COOKIE
     } = require('../modules/clerk-store-auth');
     const response = createHeaderResponse();
-    const ok = setStoreSessionCookie(response, {
-      userId: 'user_cookie',
-      sessionId: 'sess_cookie'
-    }, {
-      env: {
-        CLERK_SECRET_KEY: 'sk_test_secret'
-      },
+    const ok = setStoreSessionCookie(response, {}, {
+      token: 'eyJhbGciOiJSUzI1NiJ9.test.signature',
       now: () => new Date('2026-07-06T12:00:00.000Z')
     });
     const cookie = response.getHeader('Set-Cookie');
@@ -224,6 +225,7 @@ describe('Clerk store auth', () => {
     assert(cookie.includes('Path=/'));
     assert(cookie.includes('HttpOnly'));
     assert(cookie.includes('SameSite=Lax'));
+    assert(cookie.includes('eyJhbGciOiJSUzI1NiJ9.test.signature'));
   });
 
   it('claims a free beta license through Clerk metadata', async () => {
