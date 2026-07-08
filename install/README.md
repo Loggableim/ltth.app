@@ -6,10 +6,10 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 
 | Betriebssystem | Befehl |
 |---|---|
-| 🪟 Windows (PowerShell) | `iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))` |
-| 🍎 macOS (Terminal)     | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh \| bash` |
-| 🐧 Linux (Bash)         | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh \| bash` |
-| 🌐 Beliebiges OS (Node) | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.js \| node` |
+| 🪟 Windows (PowerShell) | `iex ((iwr -useb https://ltth.app/install/install.ps1).Content.TrimStart([char]0xFEFF))` |
+| 🍎 macOS (Terminal)     | `curl -fsSL https://ltth.app/install/install.sh \| bash` |
+| 🐧 Linux (Bash)         | `curl -fsSL https://ltth.app/install/install.sh \| bash` |
+| 🌐 Beliebiges OS (Node) | `curl -fsSL https://ltth.app/install/install.js \| node` |
 
 ## Was passiert?
 
@@ -49,16 +49,16 @@ Der Installer liest `version.json` standardmäßig aus `main`. Für Legacy- oder
 
 ```bash
 # Andere Version installieren
-LTTH_VERSION=v1.3.21 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
+LTTH_VERSION=v1.3.21 curl -fsSL https://ltth.app/install/install.sh | bash
 
 # Anderes Verzeichnis
-LTTH_DIR=/opt/ltth curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
+LTTH_DIR=/opt/ltth curl -fsSL https://ltth.app/install/install.sh | bash
 
 # Anderer Port
-LTTH_PORT=8080 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
+LTTH_PORT=8080 curl -fsSL https://ltth.app/install/install.sh | bash
 
 # PowerShell (Windows)
-$env:LTTH_PORT=8080; iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))
+$env:LTTH_PORT=8080; iex ((iwr -useb https://ltth.app/install/install.ps1).Content.TrimStart([char]0xFEFF))
 ```
 
 ## Updates
@@ -79,10 +79,10 @@ npm install
 
 ```bash
 # Windows (PowerShell)
-iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.ps1).Content.TrimStart([char]0xFEFF))
+iex ((iwr -useb https://ltth.app/install/uninstall.ps1).Content.TrimStart([char]0xFEFF))
 
 # Linux/macOS
-curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.sh | bash
+curl -fsSL https://ltth.app/install/uninstall.sh | bash
 ```
 
 Der Uninstaller fragt vor dem Loeschen der lokalen Daten und Configs nach. Standard ist, nur die LTTH-Installation zu entfernen und die Benutzerkonfiguration zu behalten.

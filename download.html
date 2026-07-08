@@ -252,8 +252,8 @@
                     Öffne PowerShell, klicke auf "Kopieren" und füge den Befehl anschließend ein.
                 </p>
                 <div class="install-cmd" id="cmd-windows">
-                    <button class="copy-btn" data-copy-target="cmd-windows" data-copy-text="iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))" data-i18n="install.copy">Kopieren</button>
-                    <span class="command-text">iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))</span>
+                    <button class="copy-btn" data-copy-target="cmd-windows" data-copy-text="iex ((iwr -useb https://ltth.app/install/install.ps1).Content.TrimStart([char]0xFEFF))" data-i18n="install.copy">Kopieren</button>
+                    <span class="command-text">iex ((iwr -useb https://ltth.app/install/install.ps1).Content.TrimStart([char]0xFEFF))</span>
                 </div>
                 <div class="os-warning" data-i18n="install.windows.warn">
                     ⚠ Falls Windows SmartScreen warnt: "Weitere Informationen" → "Trotzdem ausführen". Das Skript ist signiert und sicher. Wenn auf dem System nur Node.js 23.x oder ein anderes ungeeignetes Build vorhanden ist, wechselt der Launcher auf ein unterstütztes LTS-Build, damit native Module ohne Visual Studio-Build-Tools installiert werden können.
@@ -269,8 +269,8 @@
                     Öffne das Terminal, klicke auf "Kopieren" und füge den Befehl anschließend ein.
                 </p>
                 <div class="install-cmd" id="cmd-macos">
-                    <button class="copy-btn" data-copy-target="cmd-macos" data-copy-text="curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash" data-i18n="install.copy">Kopieren</button>
-                    <span class="command-text">curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash</span>
+                    <button class="copy-btn" data-copy-target="cmd-macos" data-copy-text="curl -fsSL https://ltth.app/install/install.sh | bash" data-i18n="install.copy">Kopieren</button>
+                    <span class="command-text">curl -fsSL https://ltth.app/install/install.sh | bash</span>
                 </div>
                 <div class="os-warning" data-i18n="install.macos.warn">
                     💡 Falls Node.js fehlt, wirst du aufgefordert, Homebrew zu installieren (https://brew.sh) — das ist eine einmalige Aktion.
@@ -286,8 +286,8 @@
                     Öffne ein Terminal, klicke auf "Kopieren" und füge den Befehl anschließend ein.
                 </p>
                 <div class="install-cmd" id="cmd-linux">
-                    <button class="copy-btn" data-copy-target="cmd-linux" data-copy-text="curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash" data-i18n="install.copy">Kopieren</button>
-                    <span class="command-text">curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash</span>
+                    <button class="copy-btn" data-copy-target="cmd-linux" data-copy-text="curl -fsSL https://ltth.app/install/install.sh | bash" data-i18n="install.copy">Kopieren</button>
+                    <span class="command-text">curl -fsSL https://ltth.app/install/install.sh | bash</span>
                 </div>
                 <div class="os-warning" data-i18n="install.linux.warn">
                     💡 Das Skript nutzt sudo nur, falls Node.js über den Paketmanager installiert werden muss.
@@ -341,15 +341,15 @@
             </div>
 
             <div class="install-cmd" id="cmd-uninstall-windows" style="margin-top: var(--space-5);">
-                <button class="copy-btn" data-copy-target="cmd-uninstall-windows" data-copy-text="iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.ps1).Content.TrimStart([char]0xFEFF))">Kopieren</button>
+                <button class="copy-btn" data-copy-target="cmd-uninstall-windows" data-copy-text="iex ((iwr -useb https://ltth.app/install/uninstall.ps1).Content.TrimStart([char]0xFEFF))">Kopieren</button>
                 <span class="comment">Windows · PowerShell</span>
-                <span class="command-text">iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.ps1).Content.TrimStart([char]0xFEFF))</span>
+                <span class="command-text">iex ((iwr -useb https://ltth.app/install/uninstall.ps1).Content.TrimStart([char]0xFEFF))</span>
             </div>
 
             <div class="install-cmd" id="cmd-uninstall-unix">
-                <button class="copy-btn" data-copy-target="cmd-uninstall-unix" data-copy-text="curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/uninstall.sh | bash">Kopieren</button>
+                <button class="copy-btn" data-copy-target="cmd-uninstall-unix" data-copy-text="curl -fsSL https://ltth.app/install/uninstall.sh | bash">Kopieren</button>
                 <span class="comment">macOS · Linux · Bash</span>
-                <span class="command-text">curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/uninstall.sh | bash</span>
+                <span class="command-text">curl -fsSL https://ltth.app/install/uninstall.sh | bash</span>
             </div>
 
             <details style="margin-top: var(--space-4);">
@@ -412,13 +412,13 @@
             <details style="margin-top: var(--space-2);">
                 <summary style="cursor:pointer; font-weight:600;" data-i18n="install.trouble.q3">Port 3000 ist belegt</summary>
                 <p style="margin-top: var(--space-2); color: var(--color-text-secondary);" data-i18n="install.trouble.a3">
-                    Setze einen anderen Port: <code>LTTH_PORT=8080 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash</code>
+                    Setze einen anderen Port: <code>LTTH_PORT=8080 curl -fsSL https://ltth.app/install/install.sh | bash</code>
                 </p>
             </details>
             <details style="margin-top: var(--space-2);">
                 <summary style="cursor:pointer; font-weight:600;" data-i18n="install.trouble.q4">Installation in ein anderes Verzeichnis</summary>
                 <p style="margin-top: var(--space-2); color: var(--color-text-secondary);" data-i18n="install.trouble.a4">
-                    <code>LTTH_DIR=/opt/ltth curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash</code>
+                    <code>LTTH_DIR=/opt/ltth curl -fsSL https://ltth.app/install/install.sh | bash</code>
                 </p>
             </details>
         </div>

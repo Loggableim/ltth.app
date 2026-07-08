@@ -4,7 +4,7 @@
  *  PupCid's Little TikTool Helper - https://ltth.app
  *
  *  Verwendung:
- *    curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.js | node
+ *    curl -fsSL https://ltth.app/install/install.js | node
  *
  *  Optionale Umgebungsvariablen:
  *    LTTH_VERSION      - zu installierende Version (Default: latest)

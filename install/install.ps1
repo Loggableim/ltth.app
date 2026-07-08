@@ -3,8 +3,8 @@
 #  PupCid's Little TikTool Helper -- https://ltth.app
 #
 #  Verwendung (PowerShell):
-#    iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))
-#    Trimt eine moegliche UTF-8-BOM aus Raw-GitHub-Antworten vor `iex`.
+#    iex ((iwr -useb https://ltth.app/install/install.ps1).Content.TrimStart([char]0xFEFF))
+#    Trimt eine moegliche UTF-8-BOM aus Website-Antworten vor `iex`.
 #
 #  Optionale Umgebungsvariablen:
 #    $env:LTTH_VERSION     - zu installierende Version (Default: latest)
@@ -80,6 +80,18 @@ function Ensure-SystemNetHttp {
     } catch {
         return $false
     }
+}
+
+function Get-InstallerScriptUrl {
+    if (
+        $LTTHRepoOwner -eq 'Loggableim' -and
+        $LTTHRepoName -eq 'ltth.app' -and
+        $LTTHRepoBranch -eq 'main'
+    ) {
+        return 'https://ltth.app/install/install.ps1'
+    }
+
+    return "https://github.com/$LTTHRepoOwner/$LTTHRepoName/raw/$LTTHRepoBranch/install/install.ps1"
 }
 
 function ConvertTo-CommandLineArgument {
@@ -308,8 +320,8 @@ function Get-CurrentPowerShellExecutable {
 }
 
 function Restart-InstallerAsAdministrator {
-    # Raw-GitHub-Antworten koennen eine fuehrende UTF-8-BOM enthalten, daher vor `iex` trimmen.
-    $installerCommand = "iex ((iwr -useb https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/main/install/install.ps1).Content.TrimStart([char]0xFEFF))"
+    # Website-Antworten koennen eine fuehrende UTF-8-BOM enthalten, daher vor `iex` trimmen.
+    $installerCommand = "iex ((iwr -useb $(Get-InstallerScriptUrl)).Content.TrimStart([char]0xFEFF))"
     $encodedCommand = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($installerCommand))
     $psExe = Get-CurrentPowerShellExecutable
 
