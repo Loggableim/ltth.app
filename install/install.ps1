@@ -35,6 +35,8 @@ $LTTHQuiet     = if ($env:LTTH_QUIET)       { $env:LTTH_QUIET       } else { '0'
 $LTTHNoPause   = if ($env:LTTH_NO_PAUSE)    { $env:LTTH_NO_PAUSE    } else { '0' }
 $env:GIT_HTTP_VERSION = if ($env:GIT_HTTP_VERSION) { $env:GIT_HTTP_VERSION } else { 'HTTP/1.1' }
 $script:LTTHNodePath = $null
+$script:LTTHLauncherNodeMajor = 22
+$script:LTTHLauncherNodeVersion = '22.14.0'
 $script:LTTHInstallerLog = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-installer-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + ".log")
 $script:LTTHSystemNetHttpReady = $false
 
@@ -359,7 +361,7 @@ function Test-SupportedNodeMajor {
         [int]$Major
     )
 
-    return ($Major -ge 18 -and $Major -lt 25 -and ($Major % 2 -eq 0))
+    return ($Major -eq $script:LTTHLauncherNodeMajor)
 }
 
 function Get-NodeVersionInfo {
@@ -447,35 +449,11 @@ function Set-PreferredNodeEnvironment {
 }
 
 function Get-NodeInstallerInfo {
-    param(
-        [string[]]$SupportedMajors = @('24', '22', '20', '18')
-    )
-
-    try {
-        $index = Invoke-RestMethod -Uri 'https://nodejs.org/dist/index.json' -TimeoutSec 30 -ErrorAction Stop
-        foreach ($entry in $index) {
-            if (-not $entry.lts) {
-                continue
-            }
-
-            $version = [string]$entry.version
-            if ([string]::IsNullOrWhiteSpace($version)) {
-                continue
-            }
-
-            $major = $version -replace '^v(\d+)\..*', '$1'
-            if ($SupportedMajors -contains $major) {
-                return [pscustomobject]@{
-                    Version = $version.TrimStart('v')
-                    Major = $major
-                }
-            }
-        }
-    } catch {
-        throw "Konnte Node.js Release-Index nicht lesen: $($_.Exception.Message)"
+    # Match the launcher runtime line so Windows installs do not fetch a second Node branch later.
+    return [pscustomobject]@{
+        Version = $script:LTTHLauncherNodeVersion
+        Major = $script:LTTHLauncherNodeMajor
     }
-
-    throw "Keine unterstuetzte Node.js-LTS-Version gefunden."
 }
 
 function Get-PreferredGitInfo {
@@ -889,12 +867,14 @@ function Install-NodeViaWinget {
         return $false
     }
 
-    Log "Installiere Node.js LTS via winget..."
+    $nodeInfo = Get-NodeInstallerInfo
+    Log "Installiere Node.js $($nodeInfo.Version) via winget..."
     try {
         $process = Start-Process -FilePath 'winget' `
             -ArgumentList @(
                 'install',
                 '--id', 'OpenJS.NodeJS.LTS',
+                '--version', $nodeInfo.Version,
                 '-e',
                 '--source', 'winget',
                 '--silent',
@@ -919,9 +899,8 @@ function Install-NodeViaWinget {
 }
 
 function Install-NodeFromOfficialSource {
-    Log "Installiere Node.js LTS ueber die offizielle Node.js-Quelle..."
-
     $nodeInfo = Get-NodeInstallerInfo
+    Log "Installiere Node.js $($nodeInfo.Version) ueber die offizielle Node.js-Quelle..."
     $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
     if ($architecture -eq 'arm64') {
         $archLabel = 'arm64'
@@ -977,7 +956,7 @@ function Ensure-Node {
     $installedNode = Get-Command node -ErrorAction SilentlyContinue
     if ($installedNode) {
         $installedVersion = & $installedNode.Source --version
-        Warn "Node.js $installedVersion ist zwar installiert, aber LTTH braucht ein LTS-Build (18/20/22/24)."
+        Warn "Node.js $installedVersion ist zwar installiert, aber LTTH braucht Node.js 22 LTS."
     }
 
     Log "Node.js fehlt - installiere es automatisch..."

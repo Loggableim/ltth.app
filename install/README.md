@@ -13,14 +13,14 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 
 ## Was passiert?
 
-1. **Prüfen** — Git und Node.js (18/20/22/24 LTS) werden erkannt. Fehlende Tools werden via Homebrew/winget/NodeSource/apt automatisch installiert.
+1. **Prüfen** — Git und Node.js werden erkannt. Fehlende Tools werden via Homebrew/winget/NodeSource/apt automatisch installiert.
 2. **Laden** — Das Repository wird von GitHub nach `~/.local/share/ltth` (Linux/macOS) bzw. `%LOCALAPPDATA%\LTTH` (Windows) geklont oder aktualisiert.
 3. **Bauen** — `npm install` richtet alle 36 Plugins und Module ein.
 4. **Starten** — Das Dashboard öffnet sich unter `http://localhost:3000/dashboard.html`.
 
 Auf Windows legt der Installer zusaetzlich Desktop- und Startmenue-Verknuepfungen an.
 
-Der Windows-One-Liner fordert bei der ersten Ausfuehrung Admin-Freigabe an und installiert fehlende Abhaengigkeiten automatisch nach. Wenn `winget` fehlt, nutzt er die offiziellen Installer von Git for Windows und Node.js als Fallback. Waehren langer Schritte zeigt der Windows-Installer einen rotierenden Status-Indikator und Download-Fortschritt an, damit er nicht wie eingefroren wirkt.
+Der Windows-One-Liner fordert bei der ersten Ausfuehrung Admin-Freigabe an und installiert fehlende Abhaengigkeiten automatisch nach. Wenn `winget` fehlt, nutzt er die offiziellen Installer von Git for Windows und Node.js 22.14.0 als Fallback. Waehren langer Schritte zeigt der Windows-Installer einen rotierenden Status-Indikator und Download-Fortschritt an, damit er nicht wie eingefroren wirkt.
 
 Der Windows-Befehl trimmt eine moegliche UTF-8-BOM aus dem Raw-Download, damit PowerShell den ersten Token sauber auswertet.
 
@@ -28,7 +28,7 @@ Der Bash-One-Liner installiert fehlendes Git automatisch nach und zieht Node.js 
 
 Der Node-Fallback (`install.js`) benoetigt einen vorhandenen Node-Interpreter zum Start, installiert aber fehlendes Git automatisch nach.
 
-Hinweis fuer Windows: Der PowerShell-Installer bevorzugt unterstuetzte Node.js-LTS-Builds (18/20/22/24) und umgeht Node.js 23.x, damit native Module ohne Visual-Studio-Build-Tools installiert werden koennen.
+Hinweis fuer Windows: Der PowerShell-Installer bevorzugt Node.js 22.14.0, damit der Launcher keine zweite Node-Linie nachlaedt und native Module ohne Visual-Studio-Build-Tools installiert werden koennen.
 
 ## Umgebungsvariablen
 
