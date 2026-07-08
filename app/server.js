@@ -39,6 +39,49 @@ if (process.env.ELECTRON === 'true' || process.env.ELECTRON_RUN_AS_NODE === '1')
 // Load environment variables first
 require('dotenv').config();
 
+function loadClerkEnvFallback() {
+    const exampleEnvPath = path.join(__dirname, '.env.example');
+    if (!fs.existsSync(exampleEnvPath)) {
+        return;
+    }
+
+    const currentKeys = [
+        process.env.CLERK_PUBLISHABLE_KEY,
+        process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+        process.env.VITE_CLERK_PUBLISHABLE_KEY
+    ].map((value) => String(value || '').trim());
+
+    if (currentKeys.some(Boolean)) {
+        return;
+    }
+
+    const fallbackKeys = new Set([
+        'CLERK_PUBLISHABLE_KEY',
+        'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
+        'VITE_CLERK_PUBLISHABLE_KEY'
+    ]);
+
+    const lines = fs.readFileSync(exampleEnvPath, 'utf8').split(/\r?\n/);
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) {
+            continue;
+        }
+
+        const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+        if (!match || !fallbackKeys.has(match[1])) {
+            continue;
+        }
+
+        const value = match[2].trim();
+        if (value) {
+            process.env[match[1]] = value;
+        }
+    }
+}
+
+loadClerkEnvFallback();
+
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');

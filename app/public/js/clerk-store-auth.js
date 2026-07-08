@@ -151,12 +151,21 @@
         const root = getAuthRoot();
         if (!root) return;
 
+        const missingKey = !config.publishableKey
+            ? 'CLERK_PUBLISHABLE_KEY missing'
+            : config.publishableKey;
+        const setupHint = !config.publishableKey
+            ? 'Add the live publishable key to app/.env or app/.env.example so the app can load Clerk.'
+            : (!config.secretConfigured
+                ? 'CLERK_SECRET_KEY is still required on the server to unlock the closed store.'
+                : 'Clerk configuration loaded.');
+
         root.innerHTML = `
             <div class="plugin-store-auth-card">
                 <div class="plugin-store-auth-card__eyebrow">Account required</div>
                 <h3>Clerk is not configured yet</h3>
-                <p>Set CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY in app/.env to unlock the closed LTTH plugin store.</p>
-                <code>${escapeHtml(config.publishableKey || 'CLERK_PUBLISHABLE_KEY missing')}</code>
+                <p>${escapeHtml(setupHint)}</p>
+                <code>${escapeHtml(missingKey)}</code>
             </div>
         `;
         setSplashVisible(true);
