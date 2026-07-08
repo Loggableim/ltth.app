@@ -1,17 +1,26 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+
+jest.mock('../modules/update-manager', () => jest.fn());
+
 const Launcher = require('../modules/launcher');
+const UpdateManager = require('../modules/update-manager');
 
 function createQuietLauncher(projectRoot) {
   const launcher = new Launcher();
   launcher.projectRoot = projectRoot;
   launcher.log = {
+    clear: jest.fn(),
+    header: jest.fn(),
+    step: jest.fn(),
+    separator: jest.fn(),
     warn: jest.fn(),
     info: jest.fn(),
     success: jest.fn(),
     error: jest.fn(),
     newLine: jest.fn(),
+    keyValue: jest.fn(),
     spinner: jest.fn(() => ({ stop: jest.fn() }))
   };
   return launcher;
@@ -119,5 +128,63 @@ describe('launcher runtime toolchain', () => {
     expect(launcher.installDependencies).toHaveBeenCalledTimes(1);
     expect(launcher.rebuildNativeModules).not.toHaveBeenCalled();
     expect(launcher.verifyNativeModules).toHaveBeenCalledTimes(2);
+  });
+
+  test('auto-updates the launcher before the dependency check when a Git update is available', async () => {
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-update-'));
+    fs.writeFileSync(path.join(projectRoot, 'package.json'), JSON.stringify({ version: '1.3.23' }, null, 2));
+    fs.writeFileSync(path.join(projectRoot, 'package-lock.json'), JSON.stringify({ lockfileVersion: 3 }, null, 2));
+
+    const performUpdate = jest.fn(async () => ({
+      success: true,
+      disabled: false,
+      available: true,
+      currentVersion: '1.3.23',
+      updatedVersion: '1.3.24',
+      needsRestart: true
+    }));
+
+    UpdateManager.mockImplementation(() => ({
+      performUpdate,
+      currentVersion: '1.3.23'
+    }));
+
+    const launcher = createQuietLauncher(projectRoot);
+    launcher.writeDependencyState = jest.fn();
+
+    const updateResult = await launcher.checkUpdates();
+
+    expect(UpdateManager).toHaveBeenCalledTimes(1);
+    expect(UpdateManager.mock.calls[0][1]).toEqual({
+      appRoot: projectRoot,
+      repoRoot: path.resolve(projectRoot, '..')
+    });
+    expect(performUpdate).toHaveBeenCalledTimes(1);
+    expect(launcher.writeDependencyState).toHaveBeenCalledTimes(1);
+    expect(launcher.log.success).toHaveBeenCalledWith(expect.stringContaining('1.3.24'));
+    expect(updateResult.available).toBe(true);
+  });
+
+  test('launch checks for updates before dependency validation', async () => {
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-launch-'));
+    fs.writeFileSync(path.join(projectRoot, 'package.json'), JSON.stringify({ version: '1.3.23' }, null, 2));
+    fs.writeFileSync(path.join(projectRoot, 'package-lock.json'), JSON.stringify({ lockfileVersion: 3 }, null, 2));
+
+    const launcher = createQuietLauncher(projectRoot);
+    launcher._loadEnvCache = jest.fn(() => null);
+    launcher.checkNode = jest.fn(async () => {});
+    launcher.checkNpm = jest.fn(async () => {});
+    launcher.checkUpdates = jest.fn(async () => ({}));
+    launcher.checkDependencies = jest.fn(async () => {});
+    launcher.checkNativeModules = jest.fn(async () => {});
+    launcher.startServer = jest.fn(async () => {});
+
+    await launcher.launch();
+
+    expect(launcher.checkUpdates).toHaveBeenCalledTimes(1);
+    expect(launcher.checkDependencies).toHaveBeenCalledTimes(1);
+    expect(launcher.checkUpdates.mock.invocationCallOrder[0]).toBeLessThan(
+      launcher.checkDependencies.mock.invocationCallOrder[0]
+    );
   });
 });

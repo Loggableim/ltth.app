@@ -33,6 +33,7 @@ $LTTHNoBrowser = if ($env:LTTH_NO_BROWSER)  { $env:LTTH_NO_BROWSER  } else { '0'
 $LTTHNoLauncher = if ($env:LTTH_NO_LAUNCHER) { $env:LTTH_NO_LAUNCHER } else { '0' }
 $LTTHQuiet     = if ($env:LTTH_QUIET)       { $env:LTTH_QUIET       } else { '0' }
 $LTTHNoPause   = if ($env:LTTH_NO_PAUSE)    { $env:LTTH_NO_PAUSE    } else { '0' }
+$env:GIT_HTTP_VERSION = if ($env:GIT_HTTP_VERSION) { $env:GIT_HTTP_VERSION } else { 'HTTP/1.1' }
 $script:LTTHNodePath = $null
 $script:LTTHInstallerLog = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-installer-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + ".log")
 $script:LTTHSystemNetHttpReady = $false
@@ -719,6 +720,7 @@ function Invoke-Git {
         $startInfo.RedirectStandardOutput = $true
         $startInfo.RedirectStandardError = $true
         $startInfo.CreateNoWindow = $true
+        $startInfo.EnvironmentVariables['GIT_HTTP_VERSION'] = if ($env:GIT_HTTP_VERSION) { $env:GIT_HTTP_VERSION } else { 'HTTP/1.1' }
 
         $proc = [System.Diagnostics.Process]::Start($startInfo)
         Wait-ProcessWithSpinner -Process $proc -Activity ("git " + ($Arguments -join ' ')) -Detail $WorkingDirectory
@@ -756,6 +758,74 @@ function Invoke-Git {
             $proc.Dispose()
         }
         Remove-Item -LiteralPath $stdoutLog, $stderrLog -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Invoke-GitClone {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepoUrl
+    )
+
+    Log "Klone Repository nach $LTTHDir..."
+    Invoke-Git -Arguments @('clone', '--depth', '1', '--branch', $LTTHRepoBranch, '--single-branch', $RepoUrl, $LTTHDir)
+
+    if ($script:LTTHInstallMode -ne 'latest') {
+        try {
+            Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/v${LTTHVersion}:refs/tags/v${LTTHVersion}") -WorkingDirectory $LTTHDir
+            Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
+        } catch {
+            try {
+                Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/${LTTHVersion}:refs/tags/${LTTHVersion}") -WorkingDirectory $LTTHDir
+                Invoke-Git -Arguments @('checkout', '--quiet', "$LTTHVersion") -WorkingDirectory $LTTHDir
+            } catch {
+                Warn "Tag nicht verfuegbar, nutze Branch $LTTHRepoBranch..."
+            }
+        }
+    }
+}
+
+function Restore-RepositoryFromFreshClone {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepoUrl,
+        [string]$Reason
+    )
+
+    $reasonText = if ([string]::IsNullOrWhiteSpace($Reason)) { '' } else { " ($Reason)" }
+    $parentDir = Split-Path -Parent $LTTHDir
+    $leafDir = Split-Path -Leaf $LTTHDir
+    $backupDir = Join-Path $parentDir ($leafDir + '.broken-' + [guid]::NewGuid().ToString('N'))
+    $backupCreated = $false
+
+    Warn "Bestehende Installation ist nicht sauber aktualisierbar$reasonText; erstelle frische Kopie..."
+
+    try {
+        if (Test-Path -LiteralPath $backupDir) {
+            Remove-Item -LiteralPath $backupDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        Move-Item -LiteralPath $LTTHDir -Destination $backupDir -Force
+        $backupCreated = $true
+    } catch {
+        Warn "Bestehende Installation konnte nicht in ein Backup verschoben werden; ueberschreibe sie direkt."
+        if (Test-Path -LiteralPath $LTTHDir) {
+            Remove-Item -LiteralPath $LTTHDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    try {
+        Invoke-GitClone -RepoUrl $RepoUrl
+        if ($backupCreated) {
+            Remove-Item -LiteralPath $backupDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    } catch {
+        if (Test-Path -LiteralPath $LTTHDir) {
+            Remove-Item -LiteralPath $LTTHDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        if ($backupCreated -and (Test-Path -LiteralPath $backupDir)) {
+            Move-Item -LiteralPath $backupDir -Destination $LTTHDir -Force
+        }
+        throw
     }
 }
 
@@ -962,72 +1032,71 @@ function Download-Source {
     if (Test-Path (Join-Path $LTTHDir '.git')) {
         Repair-LauncherFile
         Log "Bestehende Installation gefunden -- aktualisiere..."
+        $refreshRequired = $false
+        $refreshReason = ''
         try {
             Invoke-Git -Arguments @('fetch', '--tags', '--prune', 'origin', $LTTHBranchRefSpec) -WorkingDirectory $LTTHDir
         } catch {
-            Warn "Git Fetch fehlgeschlagen, verwende vorhandene lokale Branch-Struktur..."
+            $refreshRequired = $true
+            $refreshReason = $_.Exception.Message
+            Warn "Git Fetch fehlgeschlagen ($refreshReason); pruefe frische Kopie..."
         }
-        if ($script:LTTHInstallMode -eq 'latest') {
-            try {
-                Invoke-Git -Arguments @('checkout', '--quiet', $LTTHRepoBranch) -WorkingDirectory $LTTHDir
-            } catch {
-                try {
-                    Invoke-Git -Arguments @('checkout', '--quiet', '-B', $LTTHRepoBranch, "origin/$LTTHRepoBranch") -WorkingDirectory $LTTHDir
-                } catch {
-                    Fail "Konnte Branch $LTTHRepoBranch nicht auschecken: $($_.Exception.Message)"
-                }
-            }
-        } else {
-            $tagCheckedOut = $false
-            try {
-                Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/v${LTTHVersion}:refs/tags/v${LTTHVersion}") -WorkingDirectory $LTTHDir
-                Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
-                $tagCheckedOut = $true
-            } catch {
-            }
-            if (-not $tagCheckedOut) {
-                try {
-                    Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/${LTTHVersion}:refs/tags/${LTTHVersion}") -WorkingDirectory $LTTHDir
-                    Invoke-Git -Arguments @('checkout', '--quiet', "$LTTHVersion") -WorkingDirectory $LTTHDir
-                    $tagCheckedOut = $true
-                } catch {
-                }
-            }
-            if (-not $tagCheckedOut) {
-                try {
-                    Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
-                    $tagCheckedOut = $true
-                } catch {
-                }
-            }
-            if (-not $tagCheckedOut) {
-                Warn "Gewuenschte Version nicht gefunden, nutze Standard-Branch $LTTHRepoBranch..."
-                Invoke-Git -Arguments @('checkout', '--quiet', $LTTHRepoBranch) -WorkingDirectory $LTTHDir
-            }
-        }
-    } else {
-        Log "Klone Repository nach $LTTHDir..."
-        if (Test-Path $LTTHDir) {
-            Warn "Bestehendes Zielverzeichnis gefunden, aber keine Git-Installation. Bereinige..."
-            Remove-Item -Path $LTTHDir -Recurse -Force
-        }
-        New-Item -ItemType Directory -Force -Path $LTTHDir | Out-Null
-        try {
-            Invoke-Git -Arguments @('clone', '--depth', '1', '--branch', $LTTHRepoBranch, '--single-branch', $repoUrl, $LTTHDir)
 
-            if ($script:LTTHInstallMode -ne 'latest') {
+        if (-not $refreshRequired) {
+            if ($script:LTTHInstallMode -eq 'latest') {
+                try {
+                    Invoke-Git -Arguments @('checkout', '--quiet', $LTTHRepoBranch) -WorkingDirectory $LTTHDir
+                } catch {
+                    try {
+                        Invoke-Git -Arguments @('checkout', '--quiet', '-B', $LTTHRepoBranch, "origin/$LTTHRepoBranch") -WorkingDirectory $LTTHDir
+                    } catch {
+                        $refreshRequired = $true
+                        $refreshReason = $_.Exception.Message
+                        Warn "Branch-Checkout fehlgeschlagen ($refreshReason); pruefe frische Kopie..."
+                    }
+                }
+            } else {
+                $tagCheckedOut = $false
                 try {
                     Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/v${LTTHVersion}:refs/tags/v${LTTHVersion}") -WorkingDirectory $LTTHDir
                     Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
+                    $tagCheckedOut = $true
                 } catch {
+                }
+                if (-not $tagCheckedOut) {
                     try {
                         Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/${LTTHVersion}:refs/tags/${LTTHVersion}") -WorkingDirectory $LTTHDir
                         Invoke-Git -Arguments @('checkout', '--quiet', "$LTTHVersion") -WorkingDirectory $LTTHDir
+                        $tagCheckedOut = $true
                     } catch {
-                        Warn "Tag nicht verfuegbar, nutze Branch $LTTHRepoBranch..."
+                    }
+                }
+                if (-not $tagCheckedOut) {
+                    try {
+                        Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
+                        $tagCheckedOut = $true
+                    } catch {
+                    }
+                }
+                if (-not $tagCheckedOut) {
+                    try {
+                        Warn "Gewuenschte Version nicht gefunden, nutze Standard-Branch $LTTHRepoBranch..."
+                        Invoke-Git -Arguments @('checkout', '--quiet', $LTTHRepoBranch) -WorkingDirectory $LTTHDir
+                    } catch {
+                        $refreshRequired = $true
+                        $refreshReason = $_.Exception.Message
+                        Warn "Branch-Checkout fehlgeschlagen ($refreshReason); pruefe frische Kopie..."
                     }
                 }
             }
+        }
+
+        if ($refreshRequired) {
+            Restore-RepositoryFromFreshClone -RepoUrl $repoUrl -Reason $refreshReason
+        }
+    } else {
+        try {
+            Invoke-GitClone -RepoUrl $repoUrl
         } catch {
             Fail "Repository konnte nicht vom Branch $LTTHRepoBranch geklont werden: $($_.Exception.Message)"
         }

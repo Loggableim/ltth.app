@@ -13,6 +13,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { execFile, execFileSync } = require('child_process');
 const TTYLogger = require('./tty-logger');
+const UpdateManager = require('./update-manager');
 
 // PERFORMANCE: Cache file for npm/node version checks
 const ENV_CACHE_FILE = path.join(os.tmpdir(), 'ltth-env-cache.json');
@@ -161,30 +162,30 @@ class Launcher {
             this._envCache = this._loadEnvCache();
 
             // 1. Node.js prüfen
-            this.log.step(1, 4, 'Prüfe Node.js Installation...');
+            this.log.step(1, 5, 'Prüfe Node.js Installation...');
             await this.checkNode();
             this.log.newLine();
 
             // 2. npm prüfen
-            this.log.step(2, 4, 'Prüfe npm Installation...');
+            this.log.step(2, 5, 'Prüfe npm Installation...');
             await this.checkNpm();
             this.log.newLine();
 
-            // 3. Dependencies prüfen
-            this.log.step(3, 4, 'Prüfe Dependencies...');
+            // 3. Updates prüfen und vor dem Dependency-Check anwenden
+            this.log.step(3, 5, 'Prüfe Updates...');
+            await this.checkUpdates();
+            this.log.newLine();
+
+            // 4. Dependencies prüfen
+            this.log.step(4, 5, 'Prüfe Dependencies...');
             await this.checkDependencies();
             this.log.newLine();
 
             await this.checkNativeModules();
             this.log.newLine();
 
-            // Update-Check intentionally disabled for local snapshots
-            this.log.info('Auto-Update deaktiviert...');
-            await this.checkUpdates();
-            this.log.newLine();
-
-            // Server starten
-            this.log.step(4, 4, 'Starte Server...');
+            // 5. Server starten
+            this.log.step(5, 5, 'Starte Server...');
             await this.startServer();
 
         } catch (error) {
@@ -556,11 +557,65 @@ class Launcher {
         }
     }
 
-    /**
-     * Auto-update is intentionally disabled for this local snapshot.
-     */
     async checkUpdates() {
-        this.log.info('Auto-Update ist deaktiviert; es werden keine Releases heruntergeladen.');
+        if (process.env.LTTH_DISABLE_AUTO_UPDATE === 'true') {
+            this.log.info('Auto-Update ist durch LTTH_DISABLE_AUTO_UPDATE deaktiviert.');
+            return {
+                success: false,
+                disabled: true,
+                available: false,
+                error: 'Auto-update disabled by LTTH_DISABLE_AUTO_UPDATE'
+            };
+        }
+
+        this.log.info('Prüfe auf verfügbare Launcher-Updates...');
+
+        let updateManager;
+        try {
+            updateManager = new UpdateManager(this.log, {
+                appRoot: this.projectRoot,
+                repoRoot: path.resolve(this.projectRoot, '..')
+            });
+        } catch (error) {
+            this.log.warn(`Update-Manager konnte nicht initialisiert werden: ${error.message}`);
+            return {
+                success: false,
+                disabled: true,
+                available: false,
+                error: error.message
+            };
+        }
+
+        const result = await updateManager.performUpdate();
+
+        if (result.disabled) {
+            this.log.info(result.error || 'Auto-Update ist deaktiviert.');
+            return result;
+        }
+
+        if (result.success) {
+            if (result.available) {
+                const updatedVersion = result.updatedVersion || result.currentVersion || updateManager.currentVersion;
+                this.log.success(`Launcher aktualisiert auf ${updatedVersion}`);
+            } else {
+                this.log.success(`Launcher bereits aktuell (${result.currentVersion || updateManager.currentVersion})`);
+            }
+
+            try {
+                this.writeDependencyState();
+            } catch (error) {
+                this.log.warn(`Dependency-Status konnte nicht aktualisiert werden: ${error.message}`);
+            }
+
+            return result;
+        }
+
+        this.log.warn(`Auto-Update fehlgeschlagen: ${result.error || 'unbekannter Fehler'}`);
+        if (result.rolledBack) {
+            this.log.warn('Die fehlgeschlagene Aktualisierung wurde zurückgerollt.');
+        }
+
+        return result;
     }
 
     /**

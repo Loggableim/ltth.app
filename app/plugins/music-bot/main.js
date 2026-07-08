@@ -436,17 +436,37 @@ class MusicBotPlugin extends EventEmitter {
     add(resolvedMpv);
 
     if (process.platform === 'win32') {
+      const chocolateyRoot = process.env.ChocolateyInstall || 'C:\\ProgramData\\chocolatey';
+      const chocolateyLibDir = path.join(chocolateyRoot, 'lib');
       const userProfile = process.env.USERPROFILE || '';
       const localAppData = process.env.LOCALAPPDATA || '';
       const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
       const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
       [
-        'C:\\ProgramData\\chocolatey\\bin\\mpv.exe',
+        path.join(chocolateyRoot, 'bin', 'mpv.exe'),
         path.join(userProfile, 'scoop', 'shims', 'mpv.exe'),
         'C:\\ProgramData\\scoop\\shims\\mpv.exe',
         path.join(programFiles, 'mpv', 'mpv.exe'),
         path.join(programFilesX86, 'mpv', 'mpv.exe')
       ].forEach(add);
+
+      try {
+        const entries = await fsp.readdir(chocolateyLibDir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (!entry.isDirectory() || !entry.name.toLowerCase().includes('mpv')) continue;
+          for (const filename of ['mpv.exe', 'mpv.com']) {
+            const candidate = path.join(chocolateyLibDir, entry.name, 'tools', filename);
+            try {
+              await fsp.access(candidate, fs.constants.F_OK);
+              add(candidate);
+            } catch (_error) {
+              // Chocolatey's mpv packages are versioned and may expose the executable only in one package directory.
+            }
+          }
+        }
+      } catch (_error) {
+        // Chocolatey may not be installed, or the lib directory may not exist yet.
+      }
 
       const wingetPackagesDir = path.join(localAppData, 'Microsoft', 'WinGet', 'Packages');
       try {
@@ -490,7 +510,13 @@ class MusicBotPlugin extends EventEmitter {
 
   _buildWindowsElevatedCommand(executablePath, args = []) {
     const quotePs = (value) => `'${String(value).replace(/'/g, "''")}'`;
-    const argumentList = args.map(quotePs).join(',');
+    const quoteCmd = (value) => `"${String(value).replace(/"/g, '""')}"`;
+    const commandLine = [
+      [quoteCmd(executablePath), ...args.map(quoteCmd)].join(' '),
+      'echo.',
+      'echo [LTTH] The installer window stays open for 30 seconds so you can read the logs.',
+      'timeout /t 30 /nobreak >nul'
+    ].join(' & ');
     return {
       executable: 'powershell.exe',
       args: [
@@ -498,8 +524,9 @@ class MusicBotPlugin extends EventEmitter {
         '-ExecutionPolicy',
         'Bypass',
         '-Command',
-        `Start-Process -FilePath ${quotePs(executablePath)} -ArgumentList @(${argumentList}) -Verb RunAs -Wait`
-      ]
+        `Start-Process -FilePath 'cmd.exe' -ArgumentList @('/c', ${quotePs(commandLine)}) -Verb RunAs -Wait`
+      ],
+      windowsHide: true
     };
   }
 
@@ -521,10 +548,10 @@ class MusicBotPlugin extends EventEmitter {
 
       const chocoPath = await this._resolveExecutable('choco');
       if (chocoPath) {
-        const elevated = this._buildWindowsElevatedCommand(chocoPath, ['install', 'mpv', '-y', '--no-progress']);
+        const elevated = this._buildWindowsElevatedCommand(chocoPath, ['install', 'mpvio.install', '-y', '--no-progress']);
         return {
           ...elevated,
-          label: 'choco install mpv (Administrator)',
+          label: 'choco install mpvio.install (Administrator)',
           opensWindow: true
         };
       }
@@ -614,7 +641,7 @@ class MusicBotPlugin extends EventEmitter {
 
     const child = spawn(installCommand.executable, installCommand.args, {
       stdio: ['ignore', 'pipe', 'pipe'],
-      windowsHide: !installCommand.opensWindow
+      windowsHide: installCommand.windowsHide ?? !installCommand.opensWindow
     });
     this._mpvInstallChild = child;
 

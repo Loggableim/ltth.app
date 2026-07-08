@@ -4,6 +4,8 @@ const { JSDOM } = require('jsdom');
 const MusicBotPlugin = require('../plugins/music-bot/main');
 const MusicResolver = require('../plugins/music-bot/lib/music-resolver');
 
+const windowsTest = process.platform === 'win32' ? test : test.skip;
+
 function createPluginWithQueue(queue) {
   const emitted = [];
   const api = {
@@ -199,6 +201,44 @@ describe('Music Bot runtime and UI regressions', () => {
       return body.playback?.mpvPath === 'C:\\tools\\mpv\\mpv.exe';
     });
     expect(mpvPost).toBeTruthy();
+  });
+
+  windowsTest('detects mpv in the Chocolatey mpvio.install tools directory', async () => {
+    const { plugin } = createPluginWithQueue([]);
+
+    const candidates = await plugin._getMpvPathCandidates('mpv');
+
+    expect(candidates).toContain('C:\\ProgramData\\chocolatey\\lib\\mpvio.install\\tools\\mpv.exe');
+  });
+
+  windowsTest('uses mpvio.install for the Chocolatey mpv installer command', async () => {
+    const { plugin } = createPluginWithQueue([]);
+    plugin._resolveExecutable = jest.fn(async (name) => {
+      if (name === 'winget' || name === 'scoop') return null;
+      if (name === 'choco') return 'C:\\ProgramData\\chocolatey\\bin\\choco.exe';
+      return null;
+    });
+
+    const installCommand = await plugin._getMpvInstallCommand();
+
+    expect(installCommand?.label).toBe('choco install mpvio.install (Administrator)');
+    expect(installCommand?.args.join(' ')).toContain('mpvio.install');
+  });
+
+  windowsTest('keeps the elevated installer window open for mpv install logs', async () => {
+    const { plugin } = createPluginWithQueue([]);
+    plugin._resolveExecutable = jest.fn(async (name) => {
+      if (name === 'winget' || name === 'scoop') return null;
+      if (name === 'choco') return 'C:\\ProgramData\\chocolatey\\bin\\choco.exe';
+      return null;
+    });
+
+    const installCommand = await plugin._getMpvInstallCommand();
+    const commandText = installCommand?.args.join(' ');
+
+    expect(commandText).toContain('cmd.exe');
+    expect(commandText).toContain('timeout /t 30');
+    expect(installCommand?.windowsHide).toBe(true);
   });
 
   test('UI shows the first-run assistant until the setup is completed', async () => {
