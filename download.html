@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Installiere PupCid's Little TikTool Helper (LTTH) mit einem einzigen Befehl auf Windows, macOS oder Linux. One-Line Installer fuer alle Plattformen.">
+    <meta name="description" content="Installiere PupCid's Little TikTool Helper (LTTH) mit dem Windows Launcher auf Windows oder per One-Line Installer auf macOS und Linux.">
     <title>Download & Installieren - PupCid's Little TikTool Helper</title>
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
@@ -212,7 +212,7 @@
             Installiere <span class="hero-highlight">LTTH</span>
         </h1>
         <p class="hero-description text-center" data-i18n="install.tagline" style="max-width: 720px; margin: 0 auto;">
-            Ein einziger Befehl. Windows, macOS, Linux. Windows laedt das App-Bundle direkt als ZIP und startet den Launcher.
+            Ein einziger Weg. Windows, macOS, Linux. Windows laedt direkt den signierten Launcher herunter, macOS und Linux nutzen weiterhin die One-Line-Installer.
         </p>
 
         <div class="install-card" style="max-width: 820px; margin-bottom: var(--space-5);">
@@ -221,10 +221,10 @@
             </h2>
             <ol class="install-quick-steps">
                 <li data-i18n="install.quick.step1">Wähle oben dein Betriebssystem oder nutze die automatische Erkennung.</li>
-                <li data-i18n="install.quick.step2">Klicke auf „Kopieren“ und füge den Befehl in PowerShell/Terminal ein.</li>
+                <li data-i18n="install.quick.step2">Klicke auf den Download-Button oder auf „Kopieren“, wenn du den Befehl direkt starten willst.</li>
                 <li data-i18n="install.quick.step3">Drücke Enter und warte – der Installer kümmert sich um den Rest.</li>
             </ol>
-            <p class="install-quick-note" data-i18n="install.quick.note">Du musst nichts weiter einstellen. Auf Windows laedt der Installer direkt das App-Bundle als ZIP und startet dann den Launcher; Node.js, npm und Native-Module uebernimmt der Launcher beim ersten Start.</p>
+            <p class="install-quick-note" data-i18n="install.quick.note">Du musst nichts weiter einstellen. Auf Windows laedt der Installer direkt launcher.exe herunter; Node.js, npm und Native-Module uebernimmt der Launcher beim ersten Start.</p>
         </div>
 
         <div class="os-tabs" role="tablist" aria-label="Betriebssystem wählen">
@@ -246,17 +246,23 @@
             <!-- =================== WINDOWS =================== -->
             <div class="os-panel" data-os-panel="windows">
                 <h3 style="margin-top:0; color: var(--color-primary);">
-                    <span data-i18n="install.windows.title">Windows — PowerShell</span>
+                    <span data-i18n="install.windows.title">Windows — Direktdownload</span>
                 </h3>
                 <p style="color: var(--color-text-secondary); margin-top:0;" data-i18n="install.windows.desc">
-                    Öffne PowerShell, klicke auf "Kopieren" und füge den Befehl anschließend ein.
+                    Lade den signierten Windows Launcher direkt herunter und starte ihn. Er installiert LTTH automatisch und h&auml;lt alles aktuell.
                 </p>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: var(--space-4) 0;">
+                    <a href="/downloads/launcher.exe" class="btn btn-primary download-btn" style="flex: 1 1 260px; text-align: center;" download>
+                        Windows Launcher herunterladen
+                    </a>
+                </div>
                 <div class="install-cmd" id="cmd-windows">
-                    <button class="copy-btn" data-copy-target="cmd-windows" data-copy-text="$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))" data-i18n="install.copy">Kopieren</button>
-                    <span class="command-text">$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))</span>
+                    <button class="copy-btn" data-copy-target="cmd-windows" data-copy-text="iwr -useb https://ltth.app/downloads/launcher.exe -OutFile launcher.exe" data-i18n="install.copy">Kopieren</button>
+                    <span class="comment">Optional: PowerShell-Download</span>
+                    <span class="command-text">iwr -useb https://ltth.app/downloads/launcher.exe -OutFile launcher.exe</span>
                 </div>
                 <div class="os-warning" data-i18n="install.windows.warn">
-                    ⚠ Falls Windows SmartScreen warnt: "Weitere Informationen" → "Trotzdem ausführen". Das Skript ist signiert und sicher. Wenn auf dem System nur Node.js 23.x oder ein anderes ungeeignetes Build vorhanden ist, wechselt der Launcher auf ein unterstütztes LTS-Build, damit native Module ohne Visual Studio-Build-Tools installiert werden können.
+                    ⚠ Falls Windows SmartScreen warnt: "Weitere Informationen" → "Trotzdem ausführen". Die launcher.exe ist signiert und sicher. Wenn auf dem System nur Node.js 23.x oder ein anderes ungeeignetes Build vorhanden ist, wechselt der Launcher auf ein unterstütztes LTS-Build, damit native Module ohne Visual Studio-Build-Tools installiert werden können.
                 </div>
             </div>
 
@@ -299,11 +305,11 @@
             <div class="install-steps">
                 <div class="install-step-mini">
                     <h4 data-i18n="install.step1.title">1. Prüfen</h4>
-                    <p data-i18n="install.step1.desc">Der Windows-Pfad laedt das App-Bundle als ZIP, andere Plattformen folgen ihrem jeweiligen Bootstrap.</p>
+                    <p data-i18n="install.step1.desc">Der Windows-Pfad laedt direkt launcher.exe; andere Plattformen folgen ihrem jeweiligen Bootstrap.</p>
                 </div>
                 <div class="install-step-mini">
                     <h4 data-i18n="install.step2.title">2. Laden</h4>
-                    <p data-i18n="install.step2.desc">Das Windows-App-Bundle wird direkt von ltth.app geladen und entpackt.</p>
+                    <p data-i18n="install.step2.desc">Der Windows-Launcher wird direkt von ltth.app geladen und gestartet.</p>
                 </div>
                 <div class="install-step-mini">
                     <h4 data-i18n="install.step3.title">3. Bootstrap</h4>
