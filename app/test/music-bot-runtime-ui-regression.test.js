@@ -225,6 +225,22 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(installCommand?.args.join(' ')).toContain('mpvio.install');
   });
 
+  windowsTest('keeps the elevated installer window open for mpv install logs', async () => {
+    const { plugin } = createPluginWithQueue([]);
+    plugin._resolveExecutable = jest.fn(async (name) => {
+      if (name === 'winget' || name === 'scoop') return null;
+      if (name === 'choco') return 'C:\\ProgramData\\chocolatey\\bin\\choco.exe';
+      return null;
+    });
+
+    const installCommand = await plugin._getMpvInstallCommand();
+    const commandText = installCommand?.args.join(' ');
+
+    expect(commandText).toContain('cmd.exe');
+    expect(commandText).toContain('timeout /t 30');
+    expect(installCommand?.windowsHide).toBe(true);
+  });
+
   test('UI shows the first-run assistant until the setup is completed', async () => {
     const { dom, fetchMock } = bootMusicBotUi();
     doms.push(dom);

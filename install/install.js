@@ -35,6 +35,7 @@ const cfg = {
 };
 const useLatestBranch = cfg.version === 'latest';
 const branchRefSpec = `+refs/heads/${cfg.branch}:refs/remotes/origin/${cfg.branch}`;
+const gitHttpVersion = process.env.GIT_HTTP_VERSION || 'HTTP/1.1';
 
 function defaultInstallDir() {
     const home = os.homedir();
@@ -59,7 +60,12 @@ const err = (m) => console.error(`${c('red', '[X]')}  ${m}`);
 
 function exec(cmd, args, opts = {}) {
     return new Promise((resolve, reject) => {
-        execFile(cmd, args, { ...opts, stdio: cfg.quiet ? 'ignore' : 'inherit' }, (e) => {
+        const env = { ...process.env, ...(opts.env || {}) };
+        if (path.basename(cmd).toLowerCase().startsWith('git')) {
+            env.GIT_HTTP_VERSION = env.GIT_HTTP_VERSION || gitHttpVersion;
+        }
+
+        execFile(cmd, args, { ...opts, env, stdio: cfg.quiet ? 'ignore' : 'inherit' }, (e) => {
             if (e) reject(e);
             else resolve();
         });
@@ -106,6 +112,61 @@ function downloadFile(url, destination) {
             });
         }).on('error', reject);
     });
+}
+
+async function cloneRepository() {
+    const url = `https://github.com/${cfg.repoOwner}/${cfg.repoName}.git`;
+
+    log(`Klone Repository nach ${cfg.dir}...`);
+    await exec('git', ['clone', '--depth', '1', '--branch', cfg.branch, '--single-branch', url, cfg.dir]);
+
+    if (!useLatestBranch) {
+        try {
+            await exec('git', ['-C', cfg.dir, 'fetch', '--depth', '1', 'origin', `refs/tags/v${cfg.version}:refs/tags/v${cfg.version}`]);
+            await exec('git', ['-C', cfg.dir, 'checkout', `v${cfg.version}`]);
+        } catch {
+            try {
+                await exec('git', ['-C', cfg.dir, 'fetch', '--depth', '1', 'origin', `${cfg.version}:refs/tags/${cfg.version}`]);
+                await exec('git', ['-C', cfg.dir, 'checkout', cfg.version]);
+            } catch {
+                warn(`Tag nicht verfuegbar, nutze Branch ${cfg.branch}...`);
+            }
+        }
+    }
+}
+
+async function replaceWithFreshClone(reason) {
+    const backupDir = `${cfg.dir}.broken-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const reasonText = reason ? ` (${reason})` : '';
+    let backupCreated = false;
+
+    warn(`Bestehende Installation ist nicht sauber aktualisierbar${reasonText}; erstelle frische Kopie...`);
+
+    try {
+        fs.rmSync(backupDir, { recursive: true, force: true });
+        fs.renameSync(cfg.dir, backupDir);
+        backupCreated = true;
+    } catch {
+        warn('Bestehende Installation konnte nicht in ein Backup verschoben werden; ueberschreibe sie direkt.');
+        fs.rmSync(cfg.dir, { recursive: true, force: true });
+    }
+
+    try {
+        await cloneRepository();
+        if (backupCreated) {
+            fs.rmSync(backupDir, { recursive: true, force: true });
+        }
+    } catch (error) {
+        fs.rmSync(cfg.dir, { recursive: true, force: true });
+        if (backupCreated) {
+            try {
+                fs.renameSync(backupDir, cfg.dir);
+            } catch {
+                // Best effort restore only.
+            }
+        }
+        throw error;
+    }
 }
 
 function probeExecutable(executable) {
@@ -481,49 +542,55 @@ async function downloadSource() {
 
     if (fs.existsSync(gitDir)) {
         log('Bestehende Installation gefunden -- aktualisiere...');
+        let refreshRequired = false;
+        let refreshReason = '';
         try {
             await exec('git', ['-C', cfg.dir, 'fetch', '--tags', '--prune', 'origin', branchRefSpec]);
-        } catch {
-            warn('Git Fetch fehlgeschlagen, verwende vorhandene lokale Branch-Struktur...');
+        } catch (error) {
+            warn(`Git Fetch fehlgeschlagen (${error.message}); pruefe frische Kopie...`);
+            refreshRequired = true;
+            refreshReason = error.message;
         }
 
-        if (useLatestBranch) {
-            try {
-                await exec('git', ['-C', cfg.dir, 'checkout', cfg.branch]);
-            } catch {
-                await exec('git', ['-C', cfg.dir, 'checkout', '-B', cfg.branch, `origin/${cfg.branch}`]);
-            }
-        } else {
-            try {
-                await exec('git', ['-C', cfg.dir, 'checkout', `v${cfg.version}`]);
-            } catch {
+        if (!refreshRequired) {
+            if (useLatestBranch) {
                 try {
-                    await exec('git', ['-C', cfg.dir, 'checkout', cfg.version]);
-                } catch {
-                    warn(`Gewuenschte Version nicht gefunden, nutze Standard-Branch ${cfg.branch}...`);
                     await exec('git', ['-C', cfg.dir, 'checkout', cfg.branch]);
+                } catch (error) {
+                    try {
+                        await exec('git', ['-C', cfg.dir, 'checkout', '-B', cfg.branch, `origin/${cfg.branch}`]);
+                    } catch (checkoutError) {
+                        warn(`Branch-Checkout fehlgeschlagen (${checkoutError.message}); pruefe frische Kopie...`);
+                        refreshRequired = true;
+                        refreshReason = checkoutError.message;
+                    }
                 }
-            }
-        }
-    } else {
-        log(`Klone Repository nach ${cfg.dir}...`);
-        const url = `https://github.com/${cfg.repoOwner}/${cfg.repoName}.git`;
-        try {
-            await exec('git', ['clone', '--depth', '1', '--branch', cfg.branch, '--single-branch', url, cfg.dir]);
-
-            if (!useLatestBranch) {
+            } else {
                 try {
-                    await exec('git', ['-C', cfg.dir, 'fetch', '--depth', '1', 'origin', `refs/tags/v${cfg.version}:refs/tags/v${cfg.version}`]);
                     await exec('git', ['-C', cfg.dir, 'checkout', `v${cfg.version}`]);
                 } catch {
                     try {
-                        await exec('git', ['-C', cfg.dir, 'fetch', '--depth', '1', 'origin', `${cfg.version}:refs/tags/${cfg.version}`]);
                         await exec('git', ['-C', cfg.dir, 'checkout', cfg.version]);
                     } catch {
-                        warn(`Tag nicht verfuegbar, nutze Branch ${cfg.branch}...`);
+                        warn(`Gewuenschte Version nicht gefunden, nutze Standard-Branch ${cfg.branch}...`);
+                        try {
+                            await exec('git', ['-C', cfg.dir, 'checkout', cfg.branch]);
+                        } catch (error) {
+                            warn(`Branch-Checkout fehlgeschlagen (${error.message}), erstelle frische Kopie...`);
+                            refreshRequired = true;
+                            refreshReason = error.message;
+                        }
                     }
                 }
             }
+        }
+
+        if (refreshRequired) {
+            await replaceWithFreshClone(refreshReason);
+        }
+    } else {
+        try {
+            await cloneRepository();
         } catch (e) {
             err(`Konnte Repository nicht vom Branch ${cfg.branch} klonen: ${e.message}`);
             process.exit(1);

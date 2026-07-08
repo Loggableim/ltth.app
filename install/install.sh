@@ -31,6 +31,7 @@ LTTH_DIR="${LTTH_DIR:-$HOME/.local/share/ltth}"
 LTTH_PORT="${LTTH_PORT:-3000}"
 LTTH_NO_BROWSER="${LTTH_NO_BROWSER:-0}"
 LTTH_QUIET="${LTTH_QUIET:-0}"
+export GIT_HTTP_VERSION="${GIT_HTTP_VERSION:-HTTP/1.1}"
 
 # ---------- Hilfsfunktionen ----------
 log()  { [ "$LTTH_QUIET" = "1" ] || echo -e "\033[1;36m[ltth]\033[0m $*"; }
@@ -251,39 +252,100 @@ ensure_git() {
 
 # ---------- Download ----------
 download_source() {
-    log "Klone Repository nach ${LTTH_DIR}..."
-    if [ -d "$LTTH_DIR/.git" ]; then
-        log "Bestehende Installation gefunden - aktualisiere..."
-        if ! git -C "$LTTH_DIR" fetch --tags --prune origin "$LTTH_BRANCH_REFSPEC"; then
-            warn "Git Fetch fehlgeschlagen, verwende vorhandene lokale Branch-Struktur..."
+    local repo_url="https://github.com/${LTTH_REPO_OWNER}/${LTTH_REPO_NAME}.git"
+
+    clone_repository() {
+        log "Klone Repository nach ${LTTH_DIR}..."
+        if ! git clone --depth 1 --branch "$LTTH_REPO_BRANCH" --single-branch "$repo_url" "$LTTH_DIR"; then
+            err "Repository konnte nicht vom Branch ${LTTH_REPO_BRANCH} geklont werden."
+            return 1
         fi
-        if [ "$LTTH_INSTALL_MODE" = "latest" ]; then
-            if ! git -C "$LTTH_DIR" checkout "$LTTH_REPO_BRANCH" >/dev/null 2>&1; then
-                git -C "$LTTH_DIR" checkout -B "$LTTH_REPO_BRANCH" "origin/$LTTH_REPO_BRANCH"
+
+        if [ "$LTTH_INSTALL_MODE" != "latest" ]; then
+            if git -C "$LTTH_DIR" fetch --depth 1 origin "refs/tags/v${LTTH_VERSION}:refs/tags/v${LTTH_VERSION}" >/dev/null 2>&1 && \
+                git -C "$LTTH_DIR" checkout "v${LTTH_VERSION}" >/dev/null 2>&1; then
+                return 0
             fi
-        elif ! git -C "$LTTH_DIR" checkout "v${LTTH_VERSION}" >/dev/null 2>&1; then
-            if ! git -C "$LTTH_DIR" checkout "${LTTH_VERSION}" >/dev/null 2>&1; then
-                warn "Gewuenschte Version nicht gefunden, nutze Standard-Branch ${LTTH_REPO_BRANCH}..."
-                git -C "$LTTH_DIR" checkout "$LTTH_REPO_BRANCH"
+
+            if git -C "$LTTH_DIR" fetch --depth 1 origin "refs/tags/${LTTH_VERSION}:refs/tags/${LTTH_VERSION}" >/dev/null 2>&1 && \
+                git -C "$LTTH_DIR" checkout "${LTTH_VERSION}" >/dev/null 2>&1; then
+                return 0
             fi
+
+            warn "Tag nicht verfuegbar, nutze Branch ${LTTH_REPO_BRANCH}..."
         fi
-    else
-        if [ -d "$LTTH_DIR" ]; then
-            warn "Bestehendes Zielverzeichnis gefunden, aber keine Git-Installation. Bereinige..."
+    }
+
+    restore_repository_from_fresh_clone() {
+        local reason="${1:-}"
+        local reason_text=""
+        local backup_dir
+        local backup_created=0
+
+        [ -n "$reason" ] && reason_text=" (${reason})"
+        backup_dir="${LTTH_DIR}.broken-$$-$(date +%s)"
+
+        warn "Bestehende Installation ist nicht sauber aktualisierbar${reason_text}; erstelle frische Kopie..."
+
+        if mv "$LTTH_DIR" "$backup_dir" 2>/dev/null; then
+            backup_created=1
+        else
+            warn "Bestehende Installation konnte nicht in ein Backup verschoben werden; ueberschreibe sie direkt."
             rm -rf "$LTTH_DIR"
         fi
-        mkdir -p "$(dirname "$LTTH_DIR")"
-        if git clone --depth 1 --branch "$LTTH_REPO_BRANCH" --single-branch "https://github.com/${LTTH_REPO_OWNER}/${LTTH_REPO_NAME}.git" "$LTTH_DIR" 2>/dev/null; then
-            if [ "$LTTH_INSTALL_MODE" != "latest" ]; then
-                git -C "$LTTH_DIR" fetch --depth 1 origin "refs/tags/v${LTTH_VERSION}:refs/tags/v${LTTH_VERSION}" >/dev/null 2>&1 || true
-                if ! git -C "$LTTH_DIR" checkout "v${LTTH_VERSION}" >/dev/null 2>&1; then
-                    if ! git -C "$LTTH_DIR" checkout "${LTTH_VERSION}" >/dev/null 2>&1; then
-                        warn "Tag nicht verfuegbar, nutze Branch ${LTTH_REPO_BRANCH}..."
+
+        if clone_repository; then
+            if [ "$backup_created" -eq 1 ]; then
+                rm -rf "$backup_dir"
+            fi
+            return 0
+        fi
+
+        if [ "$backup_created" -eq 1 ] && [ -d "$backup_dir" ]; then
+            rm -rf "$LTTH_DIR"
+            mv "$backup_dir" "$LTTH_DIR"
+        fi
+
+        return 1
+    }
+
+    if [ -d "$LTTH_DIR/.git" ]; then
+        log "Bestehende Installation gefunden - aktualisiere..."
+        local refresh_required=0
+        local refresh_reason=""
+
+        if ! git -C "$LTTH_DIR" fetch --tags --prune origin "$LTTH_BRANCH_REFSPEC"; then
+            refresh_required=1
+            refresh_reason="git fetch"
+            warn "Git Fetch fehlgeschlagen; pruefe frische Kopie..."
+        fi
+
+        if [ "$refresh_required" -eq 0 ]; then
+            if [ "$LTTH_INSTALL_MODE" = "latest" ]; then
+                if ! git -C "$LTTH_DIR" checkout "$LTTH_REPO_BRANCH" >/dev/null 2>&1; then
+                    if ! git -C "$LTTH_DIR" checkout -B "$LTTH_REPO_BRANCH" "origin/$LTTH_REPO_BRANCH"; then
+                        refresh_required=1
+                        refresh_reason="branch checkout"
+                        warn "Branch-Checkout fehlgeschlagen; pruefe frische Kopie..."
+                    fi
+                fi
+            elif ! git -C "$LTTH_DIR" checkout "v${LTTH_VERSION}" >/dev/null 2>&1; then
+                if ! git -C "$LTTH_DIR" checkout "${LTTH_VERSION}" >/dev/null 2>&1; then
+                    warn "Gewuenschte Version nicht gefunden, nutze Standard-Branch ${LTTH_REPO_BRANCH}..."
+                    if ! git -C "$LTTH_DIR" checkout "$LTTH_REPO_BRANCH" >/dev/null 2>&1; then
+                        refresh_required=1
+                        refresh_reason="branch checkout"
+                        warn "Branch-Checkout fehlgeschlagen; pruefe frische Kopie..."
                     fi
                 fi
             fi
-        else
-            err "Repository konnte nicht vom Branch ${LTTH_REPO_BRANCH} geklont werden."
+        fi
+
+        if [ "$refresh_required" -eq 1 ]; then
+            restore_repository_from_fresh_clone "$refresh_reason" || return 1
+        fi
+    else
+        if ! clone_repository; then
             return 1
         fi
     fi
