@@ -360,6 +360,8 @@ document.addEventListener('visibilitychange', () => {
 // ============================================================================
 
 function switchTab(tabName) {
+    const configLanding = document.getElementById('tts-config-landing');
+
     // Hide all tab contents
     document.querySelectorAll('.tab-content').forEach(el => {
         el.classList.add('hidden');
@@ -386,6 +388,11 @@ function switchTab(tabName) {
     const contentEl = document.getElementById(`content-${tabName}`);
     if (contentEl) {
         contentEl.classList.remove('hidden');
+    }
+
+    if (configLanding) {
+        configLanding.classList.toggle('hidden', tabName !== 'config');
+        configLanding.setAttribute('aria-hidden', tabName === 'config' ? 'false' : 'true');
     }
 
     // Highlight selected button
@@ -832,15 +839,10 @@ function addFishCustomVoice() {
     showNotification(`Custom voice "${name}" added successfully. Don't forget to save your configuration!`, 'success');
 
     // Highlight save button
-    const saveBtn = document.getElementById('saveConfigBtn');
-    const saveTopBtn = document.getElementById('saveConfigBtnTop');
+    const saveBtn = document.getElementById('saveConfigBtnSidebar');
     if (saveBtn) {
         saveBtn.classList.add('animate-pulse');
         setTimeout(() => saveBtn.classList.remove('animate-pulse'), 3000);
-    }
-    if (saveTopBtn) {
-        saveTopBtn.classList.add('animate-pulse');
-        setTimeout(() => saveTopBtn.classList.remove('animate-pulse'), 3000);
     }
 }
 
@@ -874,15 +876,10 @@ function removeFishCustomVoice(voiceId) {
     showNotification(`Custom voice "${voiceId}" removed. Don't forget to save your configuration!`, 'success');
 
     // Highlight save button
-    const saveBtn = document.getElementById('saveConfigBtn');
-    const saveTopBtn = document.getElementById('saveConfigBtnTop');
+    const saveBtn = document.getElementById('saveConfigBtnSidebar');
     if (saveBtn) {
         saveBtn.classList.add('animate-pulse');
         setTimeout(() => saveBtn.classList.remove('animate-pulse'), 3000);
-    }
-    if (saveTopBtn) {
-        saveTopBtn.classList.add('animate-pulse');
-        setTimeout(() => saveTopBtn.classList.remove('animate-pulse'), 3000);
     }
 }
 
@@ -2144,15 +2141,9 @@ function setupEventListeners() {
     });
 
     // Action buttons
-    const saveConfigBtn = document.getElementById('saveConfigBtn');
-    if (saveConfigBtn) {
-        saveConfigBtn.addEventListener('click', saveConfig);
-    }
-    
-    // Also hook up the top save button
-    const saveConfigBtnTop = document.getElementById('saveConfigBtnTop');
-    if (saveConfigBtnTop) {
-        saveConfigBtnTop.addEventListener('click', saveConfig);
+    const saveConfigBtnSidebar = document.getElementById('saveConfigBtnSidebar');
+    if (saveConfigBtnSidebar) {
+        saveConfigBtnSidebar.addEventListener('click', saveConfig);
     }
 
     const clearQueueBtn = document.getElementById('clearQueueBtn');

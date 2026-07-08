@@ -913,7 +913,7 @@ class TalkingHeadsPlugin {
             reason: speakResult.reason,
             blocked: speakResult.blocked,
             details: speakResult.reason === 'tts_disabled' 
-              ? 'TTS ist global deaktiviert. Bitte aktivieren Sie TTS in den Quick Actions oder Einstellungen.'
+              ? 'TTS ist über Quick Actions deaktiviert. Bitte aktivieren Sie TTS in den Quick Actions oder Einstellungen.'
               : undefined
           });
         }

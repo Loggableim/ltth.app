@@ -2558,16 +2558,18 @@ class TTSPlugin {
         const db = this.api.getDatabase();
         const ttsEnabled = db.getSetting('tts_enabled');
         if (ttsEnabled === 'false') {
-            this._logDebug('SPEAK_BLOCKED', 'TTS is globally disabled via Quick Actions', {
+            this._logDebug('SPEAK_BLOCKED', 'TTS is disabled via Quick Actions', {
                 tts_enabled: false,
+                disabledBy: 'quick_actions',
                 source: params.source || 'unknown'
             });
-            this.logger.info(`TTS: Blocked - TTS is globally disabled (source: ${params.source || 'unknown'})`);
+            this.logger.info(`TTS: Blocked - TTS is disabled via Quick Actions (source: ${params.source || 'unknown'})`);
             return {
                 success: false,
-                error: 'TTS is globally disabled',
+                error: 'TTS is disabled via Quick Actions',
                 blocked: true,
-                reason: 'tts_disabled'
+                reason: 'tts_disabled',
+                disabledBy: 'quick_actions'
             };
         }
 

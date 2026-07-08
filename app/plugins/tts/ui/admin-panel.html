@@ -281,7 +281,7 @@
                 width: 100%;
             }
 
-            #saveConfigBtnTop {
+            #saveConfigBtnSidebar {
                 width: 100%;
             }
 
@@ -704,18 +704,28 @@
         }
 
         .tts-main-inner {
-            padding: 24px;
+            padding: 16px 24px 24px;
+        }
+
+        .tts-config-landing {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .tts-config-landing.hidden {
+            display: none !important;
         }
 
         .tts-hero {
             display: grid;
-            grid-template-columns: minmax(260px, 1fr) minmax(360px, 440px) minmax(240px, 1fr);
-            align-items: center;
-            gap: 22px;
-            padding: 18px 24px 16px;
-            margin-bottom: 14px;
+            grid-template-columns: minmax(0, 4fr) minmax(240px, 1fr);
+            align-items: start;
+            gap: 12px 20px;
+            padding: 12px 18px 14px;
+            margin-bottom: 6px;
             border: 1px solid var(--tts-border);
-            border-radius: 28px;
+            border-radius: 24px;
             background: linear-gradient(180deg, var(--tts-bg-panel), var(--tts-panel));
             box-shadow: var(--tts-shadow);
         }
@@ -730,27 +740,27 @@
             gap: 6px;
             justify-items: start;
             align-content: start;
-            max-width: 72ch;
+            max-width: 24ch;
             grid-column: 1;
+            grid-row: 1;
         }
 
         .tts-hero-logo-stage {
             min-width: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: grid;
+            justify-items: center;
+            align-content: start;
+            gap: 8px;
+            padding-top: 2px;
         }
 
         .tts-hero-logo {
-            width: min(460px, 100%);
-            max-height: 116px;
+            width: min(360px, 100%);
+            max-height: 92px;
             object-fit: contain;
             display: block;
             margin-top: 0;
-            filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.26));
-            grid-column: 2;
-            justify-self: center;
-            align-self: center;
+            filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.22));
         }
 
         .tts-hero-kicker {
@@ -770,8 +780,10 @@
         .tts-hero-subtitle {
             margin: 0;
             color: var(--tts-muted);
-            font-size: 1rem;
-            line-height: 1.55;
+            font-size: 0.98rem;
+            line-height: 1.4;
+            text-align: center;
+            max-width: 30ch;
         }
 
         .tts-hero-meta {
@@ -779,13 +791,6 @@
             flex-wrap: wrap;
             gap: 8px;
             margin-top: 0;
-        }
-
-        .tts-hero-cta-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 6px;
         }
 
         .tts-pill {
@@ -854,21 +859,50 @@
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            gap: 10px;
+            gap: 6px;
             flex-shrink: 0;
+            align-self: start;
             justify-self: end;
-            align-self: center;
             grid-column: 3;
+            grid-row: 1 / span 2;
+            padding-top: 0;
+        }
+
+        .tts-inline-status {
+            padding: 10px 12px;
+            border: 1px solid var(--tts-border);
+            border-radius: 18px;
+            background: rgba(148, 163, 184, 0.08);
+            font-size: 0.82rem;
+            color: var(--tts-muted);
+            text-align: right;
+            line-height: 1.45;
+            max-width: 22ch;
+        }
+
+        .tts-hero-footer {
+            grid-column: 1;
+            grid-row: 2;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+            padding-top: 0;
+        }
+
+        .tts-hero-footer .tts-pill {
+            min-width: 0;
         }
 
         .tts-save-btn {
-            min-width: 240px;
-            padding: 16px 20px !important;
+            width: 100%;
+            min-width: 0;
+            padding: 14px 16px !important;
             border: none !important;
-            border-radius: 18px !important;
+            border-radius: 16px !important;
             background: linear-gradient(135deg, var(--tts-success), var(--tts-accent-2)) !important;
             color: #fff !important;
-            box-shadow: 0 18px 36px rgba(59, 130, 246, 0.24);
+            box-shadow: 0 16px 30px rgba(59, 130, 246, 0.22);
             font-weight: 900 !important;
         }
 
@@ -876,24 +910,21 @@
             transform: translateY(-1px);
         }
 
-        .tts-inline-status {
-            font-size: 0.82rem;
-            color: var(--tts-muted);
-            text-align: right;
-            max-width: 34ch;
-        }
-
         @media (max-width: 1280px) {
             .tts-hero {
                 grid-template-columns: minmax(0, 1fr);
+                grid-template-rows: auto;
                 justify-items: start;
             }
 
             .tts-hero-brand,
             .tts-hero-copy,
+            .tts-hero-logo-stage,
+            .tts-hero-footer,
             .tts-hero-logo,
             .tts-hero-actions {
                 grid-column: auto;
+                grid-row: auto;
             }
 
             .tts-hero-logo-stage,
@@ -902,16 +933,23 @@
                 align-self: start;
             }
 
+            .tts-hero-footer {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
+
             .tts-inline-status {
                 text-align: left;
+                max-width: 100%;
             }
         }
 
         .tts-summary-grid {
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 12px;
-            margin-bottom: 18px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 0;
         }
 
         .tts-config-stack {
@@ -926,10 +964,10 @@
         }
 
         .tts-summary-card {
-            min-height: 90px;
-            padding: 16px 18px;
+            min-height: 82px;
+            padding: 14px 16px;
             display: grid;
-            gap: 8px;
+            gap: 6px;
             border: 1px solid var(--tts-border);
             border-radius: 22px;
             background: linear-gradient(180deg, rgba(148, 163, 184, 0.08), rgba(148, 163, 184, 0.03));
@@ -944,14 +982,14 @@
         }
 
         .tts-summary-value {
-            font-size: 1.35rem;
+            font-size: 1.28rem;
             font-weight: 900;
             letter-spacing: -0.03em;
             color: var(--tts-text);
         }
 
         .tts-summary-detail {
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             color: var(--tts-muted);
         }
 
@@ -1255,12 +1293,19 @@
             }
 
             .tts-hero {
-                flex-direction: column;
-                align-items: stretch;
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+                justify-items: start;
             }
 
             .tts-hero-actions {
                 align-items: flex-start;
+            }
+
+            .tts-hero-footer {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: flex-start;
             }
 
             .tts-tabbar {
@@ -1324,68 +1369,43 @@
 
             <div class="tts-sidebar-footer">
                 <div class="tts-status-chip"><span class="tts-status-dot"></span><span>Bereit</span></div>
+                <button id="saveConfigBtnSidebar" class="tts-save-btn" type="button">Konfiguration speichern</button>
             </div>
         </aside>
 
         <main class="tts-main">
             <div class="container mx-auto w-full max-w-none p-6 tts-main-inner">
         <!-- Header -->
-        <section class="tts-hero">
-            <div class="tts-hero-brand">
-                <img class="tts-hero-logo tts-logo" data-brand-logo src="/ltthttslogo.png" alt="LTTH TTS">
-                <div class="tts-hero-copy">
-                    <div class="tts-hero-kicker">LTTH Suite</div>
-                    <p class="tts-hero-subtitle">High-density, wide-screen admin surface for the TTS plugin with engine control, queue visibility, user permissions and live debug feedback.</p>
-                    <div class="tts-hero-meta">
-                        <span class="tts-pill">Desktop optimized</span>
-                        <span class="tts-pill">Theme aware</span>
-                        <span class="tts-pill">All features preserved</span>
-                        <span id="init-status" class="tts-pill" data-i18n="tts.admin_panel.initializing">Initializing...</span>
+        <section id="tts-config-landing" class="tts-config-landing" aria-label="TTS configuration landing">
+            <section class="tts-hero">
+                <section class="tts-summary-grid tts-hero-summary" aria-label="TTS overview">
+                    <div class="tts-summary-card">
+                        <div class="tts-summary-label">Fallback Engines</div>
+                        <div id="overviewFallbackEngines" class="tts-summary-value">0</div>
+                        <div class="tts-summary-detail">Engines enabled as failover options</div>
                     </div>
-                    <div class="tts-hero-cta-row">
-                        <a id="tts-tab-open-link" class="tts-tab-launch-btn" href="/plugins/tts/ui/admin-panel.html?source=dashboard" target="_blank" rel="noopener noreferrer" aria-label="Open in New Tab">
-                            <span class="tts-tab-launch-mark" aria-hidden="true">↗</span>
-                            <span class="tts-tab-launch-text">Open in New Tab</span>
-                        </a>
-                        <button id="tts-tab-close-btn" class="tts-tab-launch-btn is-close" type="button" aria-label="Close Tab" hidden>
-                            <span class="tts-tab-launch-mark" aria-hidden="true">×</span>
-                            <span class="tts-tab-launch-text">Close Tab</span>
-                        </button>
+                    <div class="tts-summary-card">
+                        <div class="tts-summary-label">Queue Länge</div>
+                        <div id="overviewQueueLength" class="tts-summary-value">0</div>
+                        <div class="tts-summary-detail">Current live queue length</div>
                     </div>
+                    <div class="tts-summary-card">
+                        <div class="tts-summary-label">Audio Output</div>
+                        <div id="overviewAudioOutput" class="tts-summary-value">Unknown</div>
+                        <div class="tts-summary-detail">Current output and ducking mode</div>
+                    </div>
+                    <div class="tts-summary-card">
+                        <div class="tts-summary-label">Modus</div>
+                        <div id="overviewMode" class="tts-summary-value">Balanced</div>
+                        <div class="tts-summary-detail">Performance mode and safety status</div>
+                    </div>
+                </section>
+                <div class="tts-hero-logo-stage">
+                    <img class="tts-hero-logo tts-logo" data-brand-logo src="/ltthttslogo.png" alt="LTTH TTS">
+                    <p class="tts-hero-subtitle">Alles für dein TTS an einem Ort: Konfiguration, Queue, Berechtigungen und Live-Debugging.</p>
+                    <span id="init-status" class="tts-pill tts-hero-status" data-i18n="tts.admin_panel.initializing">Initializing...</span>
                 </div>
-            </div>
-            <div class="tts-hero-actions">
-                <button id="saveConfigBtnTop" class="tts-save-btn">Konfiguration speichern</button>
-                <div class="tts-inline-status">Theme-aware and responsive across day, night, cid, vision and contrast modes.</div>
-            </div>
-        </section>
-
-        <section class="tts-summary-grid" aria-label="TTS overview">
-            <div class="tts-summary-card">
-                <div class="tts-summary-label">Aktive Voices</div>
-                <div id="overviewActiveVoices" class="tts-summary-value">0</div>
-                <div class="tts-summary-detail" id="overviewActiveVoicesDetail">Loading voices...</div>
-            </div>
-            <div class="tts-summary-card">
-                <div class="tts-summary-label">Fallback Engines</div>
-                <div id="overviewFallbackEngines" class="tts-summary-value">0</div>
-                <div class="tts-summary-detail">Engines enabled as failover options</div>
-            </div>
-            <div class="tts-summary-card">
-                <div class="tts-summary-label">Queue Länge</div>
-                <div id="overviewQueueLength" class="tts-summary-value">0</div>
-                <div class="tts-summary-detail">Current live queue length</div>
-            </div>
-            <div class="tts-summary-card">
-                <div class="tts-summary-label">Audio Output</div>
-                <div id="overviewAudioOutput" class="tts-summary-value">Unknown</div>
-                <div class="tts-summary-detail">Current output and ducking mode</div>
-            </div>
-            <div class="tts-summary-card">
-                <div class="tts-summary-label">Modus</div>
-                <div id="overviewMode" class="tts-summary-value">Balanced</div>
-                <div class="tts-summary-detail">Performance mode and safety status</div>
-            </div>
+            </section>
         </section>
 
         <!-- Tabs -->
@@ -1400,6 +1420,7 @@
                 <button data-tab="debug" id="tab-debug" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.debug">Debug Logs</button>
             </nav>
         </div>
+        </section>
 
         <!-- Configuration Tab -->
         <div id="content-config" class="tab-content">
@@ -1783,11 +1804,6 @@
                     </div>
                 </div>
 
-            </div>
-
-        <div class="mt-6">
-                <button id="saveConfigBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition">Save Configuration
-                </button>
             </div>
         </div>
 
