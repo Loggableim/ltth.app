@@ -1082,9 +1082,9 @@ function Download-Source {
     }
     Ok "Quellcode bereit in $LTTHDir"
 }
-# ---------- Dependencies ----------
+# ---------- Fallback Dependencies ----------
 function Install-Deps {
-    Log "Installiere npm-Abhaengigkeiten (kann einige Minuten dauern)..."
+    Log "Installiere npm-Abhaengigkeiten fuer den direkten Node-Fallback (kann einige Minuten dauern)..."
     $appDir = Join-Path $LTTHDir 'app'
     Push-Location $appDir
     try {
@@ -1398,23 +1398,26 @@ function Main {
     }
 
     Ensure-Git
-    Ensure-Node
     Resolve-Version
     Download-Source
-    Install-Deps
     $launcherPath = Install-Launcher
-    $shortcutConfig = Get-ShortcutConfig -LauncherPath $launcherPath
     $desktopShortcutPath = $null
     $startMenuShortcutPath = $null
     $launcherStarted = $false
 
+    if ($launcherPath) {
+        $launcherStarted = Start-Launcher -LauncherPath $launcherPath
+    }
+
+    if (-not $launcherStarted) {
+        Ensure-Node
+        Install-Deps
+    }
+
+    $shortcutConfig = Get-ShortcutConfig -LauncherPath $launcherPath
     if ($shortcutConfig) {
         $desktopShortcutPath = Create-DesktopShortcut -ShortcutConfig $shortcutConfig
         $startMenuShortcutPath = Create-StartMenuShortcut -ShortcutConfig $shortcutConfig
-    }
-
-    if ($launcherPath) {
-        $launcherStarted = Start-Launcher -LauncherPath $launcherPath
     }
 
     if (-not $launcherStarted) {
