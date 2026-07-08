@@ -6,7 +6,7 @@
   "downloadNote": "Version 1.3.24 enables automatic launcher updates for Git-backed installs before the app starts.",
   "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.24",
   "oneLineInstaller": {
-    "windows": "$installer = irm https://ltth.app/install/install.ps1; iex ($installer.TrimStart([char]0xFEFF))",
+    "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
     "macos": "curl -fsSL https://ltth.app/install/install.sh | bash",
     "linux": "curl -fsSL https://ltth.app/install/install.sh | bash",
     "universal": "curl -fsSL https://ltth.app/install/install.js | node"

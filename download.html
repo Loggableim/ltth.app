@@ -252,8 +252,8 @@
                     Öffne PowerShell, klicke auf "Kopieren" und füge den Befehl anschließend ein.
                 </p>
                 <div class="install-cmd" id="cmd-windows">
-                    <button class="copy-btn" data-copy-target="cmd-windows" data-copy-text="$installer = irm https://ltth.app/install/install.ps1; iex ($installer.TrimStart([char]0xFEFF))" data-i18n="install.copy">Kopieren</button>
-                    <span class="command-text">$installer = irm https://ltth.app/install/install.ps1; iex ($installer.TrimStart([char]0xFEFF))</span>
+                    <button class="copy-btn" data-copy-target="cmd-windows" data-copy-text="$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))" data-i18n="install.copy">Kopieren</button>
+                    <span class="command-text">$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))</span>
                 </div>
                 <div class="os-warning" data-i18n="install.windows.warn">
                     ⚠ Falls Windows SmartScreen warnt: "Weitere Informationen" → "Trotzdem ausführen". Das Skript ist signiert und sicher. Wenn auf dem System nur Node.js 23.x oder ein anderes ungeeignetes Build vorhanden ist, wechselt der Launcher auf ein unterstütztes LTS-Build, damit native Module ohne Visual Studio-Build-Tools installiert werden können.

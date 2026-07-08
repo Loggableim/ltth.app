@@ -3,8 +3,9 @@
 #  PupCid's Little TikTool Helper -- https://ltth.app
 #
 #  Verwendung (PowerShell):
-#    $installer = irm https://ltth.app/install/install.ps1; iex ($installer.TrimStart([char]0xFEFF))
-#    Trimt eine moegliche UTF-8-BOM aus Website-Antworten vor `iex`.
+#    $installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))
+#    Laedt den Installer als Bytes und decodiert ihn explizit, damit der Bootstrap
+#    in Windows PowerShell und PowerShell 7 gleich laeuft.
 #
 #  Optionale Umgebungsvariablen:
 #    $env:LTTH_VERSION     - zu installierende Version (Default: latest)
@@ -321,7 +322,7 @@ function Get-CurrentPowerShellExecutable {
 
 function Restart-InstallerAsAdministrator {
     # Website-Antworten koennen eine fuehrende UTF-8-BOM enthalten, daher vor `iex` trimmen.
-    $installerCommand = "`$installer = irm $(Get-InstallerScriptUrl); iex (`$installer.TrimStart([char]0xFEFF))"
+    $installerCommand = "`$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('$(Get-InstallerScriptUrl)')); iex (`$installer.TrimStart([char]0xFEFF))"
     $encodedCommand = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($installerCommand))
     $psExe = Get-CurrentPowerShellExecutable
 
