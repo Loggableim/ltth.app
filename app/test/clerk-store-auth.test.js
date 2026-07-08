@@ -10,18 +10,19 @@ describe('Clerk store auth', () => {
 
     const config = buildStoreAuthConfig({
       CLERK_PUBLISHABLE_KEY: 'pk_test_public',
-      CLERK_SECRET_KEY: 'sk_test_secret'
+      LTTH_STORE_CLERK_SECRET_KEY: 'sk_test_store_secret'
     });
 
     assert.strictEqual(config.authRequired, true);
     assert.strictEqual(config.clerkEnabled, true);
     assert.strictEqual(config.publishableKey, 'pk_test_public');
     assert.strictEqual(config.proxyUrl, '');
-    assert.strictEqual(config.accountPortalBaseUrl, 'https://accounts.ltth.app');
-    assert.strictEqual(config.accountManagementUrl, 'https://accounts.ltth.app/user');
-    assert.strictEqual(config.signInUrl, 'https://accounts.ltth.app/sign-in');
-    assert.strictEqual(config.signUpUrl, 'https://accounts.ltth.app/sign-up');
-    assert.strictEqual(config.unauthorizedSignInUrl, 'https://accounts.ltth.app/unauthorized-sign-in');
+    assert.strictEqual(config.authBridgeUrl, '');
+    assert.strictEqual(config.accountPortalBaseUrl, 'https://ltth.app/auth');
+    assert.strictEqual(config.accountManagementUrl, 'https://ltth.app/auth/');
+    assert.strictEqual(config.signInUrl, 'https://ltth.app/auth/?mode=sign-in');
+    assert.strictEqual(config.signUpUrl, 'https://ltth.app/auth/?mode=sign-up');
+    assert.strictEqual(config.unauthorizedSignInUrl, 'https://ltth.app/auth/?mode=sign-in&reason=unauthorized');
     assert.strictEqual(config.secretConfigured, true);
     assert.strictEqual(Object.prototype.hasOwnProperty.call(config, 'secretKey'), false);
   });
@@ -46,10 +47,23 @@ describe('Clerk store auth', () => {
     const config = buildStoreAuthConfig({
       CLERK_PUBLISHABLE_KEY: 'pk_test_public',
       CLERK_SECRET_KEY: 'sk_test_secret',
-      LTTH_ACCOUNT_MANAGEMENT_URL: 'https://accounts.example.test/profile'
+      LTTH_ACCOUNT_MANAGEMENT_URL: 'https://ltth.app/account'
     });
 
-    assert.strictEqual(config.accountManagementUrl, 'https://accounts.example.test/profile');
+    assert.strictEqual(config.accountManagementUrl, 'https://ltth.app/account');
+  });
+
+  it('prefers store-specific Clerk secrets over the generic secret key', () => {
+    const { buildStoreAuthConfig } = require('../modules/clerk-store-auth');
+
+    const config = buildStoreAuthConfig({
+      CLERK_PUBLISHABLE_KEY: 'pk_test_public',
+      LTTH_STORE_CLERK_SECRET_KEY: 'sk_test_store_secret',
+      CLERK_SECRET_KEY: 'sk_test_generic_secret'
+    });
+
+    assert.strictEqual(config.clerkEnabled, true);
+    assert.strictEqual(config.secretConfigured, true);
   });
 
   it('derives the Clerk frontend domain from publishable keys', () => {

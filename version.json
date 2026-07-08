@@ -1,10 +1,10 @@
 {
-  "version": "1.3.22",
+  "version": "1.3.23",
   "releaseDate": "2026-07-08",
   "status": "stable",
-  "downloadVersion": "1.3.22",
-  "downloadNote": "Version 1.3.22 synchronizes the app, website, and launcher release metadata.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.22",
+  "downloadVersion": "1.3.23",
+  "downloadNote": "Version 1.3.23 keeps appstore login inline and moves website account management to ltth.app/auth.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.23",
   "oneLineInstaller": {
     "windows": "iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))",
     "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
@@ -19,6 +19,14 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.23": {
+      "date": "2026-07-08",
+      "changes": [
+        "IMPROVED: App store login now stays embedded inside the desktop app by default",
+        "IMPROVED: ltth.app/auth serves as the canonical website account portal and profile entry point",
+        "IMPROVED: Store auth now supports store-specific Clerk secrets and ltth.app account links"
+      ]
+    },
     "1.3.22": {
       "date": "2026-07-08",
       "changes": [

@@ -3,6 +3,7 @@
     const EXPIRY_KEY = 'ltth_store_auth_token_exp';
     const STATE_KEY = 'ltth_store_auth_state';
     const NEXT_KEY = 'ltth_store_auth_next';
+    const DEFAULT_ACCOUNT_PORTAL_URL = 'https://ltth.app/auth/';
 
     const state = {
         initialized: false,
@@ -109,24 +110,23 @@
 
     function buildAccountPortalUrl(rawUrl) {
         try {
-            const url = new URL(rawUrl || 'https://accounts.ltth.app/user', window.location.origin);
-            url.searchParams.set('redirect_url', window.location.href);
+            const url = new URL(rawUrl || DEFAULT_ACCOUNT_PORTAL_URL, window.location.origin);
             return url.toString();
         } catch {
-            return 'https://accounts.ltth.app/user';
+            return DEFAULT_ACCOUNT_PORTAL_URL;
         }
     }
 
     function getAccountManagementUrl() {
-        return buildAccountPortalUrl(state.config?.accountManagementUrl || 'https://accounts.ltth.app/user');
+        return buildAccountPortalUrl(state.config?.accountManagementUrl || DEFAULT_ACCOUNT_PORTAL_URL);
     }
 
     function getAccountSignInUrl() {
-        return buildAccountPortalUrl(state.config?.signInUrl || 'https://accounts.ltth.app/sign-in');
+        return buildAccountPortalUrl(state.config?.signInUrl || `${DEFAULT_ACCOUNT_PORTAL_URL}?mode=sign-in`);
     }
 
     function getAccountSignUpUrl() {
-        return buildAccountPortalUrl(state.config?.signUpUrl || 'https://accounts.ltth.app/sign-up');
+        return buildAccountPortalUrl(state.config?.signUpUrl || `${DEFAULT_ACCOUNT_PORTAL_URL}?mode=sign-up`);
     }
 
     function renderUsernameGuidance() {
@@ -157,7 +157,7 @@
         const setupHint = !config.publishableKey
             ? 'Add the live publishable key to app/.env or app/.env.example so the app can load Clerk.'
             : (!config.secretConfigured
-                ? 'CLERK_SECRET_KEY is still required on the server to unlock the closed store.'
+                ? 'Set LTTH_STORE_CLERK_SECRET_KEY or CLERK_SECRET_KEY on the server to unlock the closed store.'
                 : 'Clerk configuration loaded.');
 
         root.innerHTML = `
@@ -234,7 +234,7 @@
 
         root.querySelector('[data-store-auth-mode="sign-up"]')?.addEventListener('click', () => mountSignUp());
         root.querySelector('[data-store-auth-mode="sign-in"]')?.addEventListener('click', () => mountSignIn());
-        mountSignUp();
+        mountSignIn();
         setSplashVisible(true);
     }
 

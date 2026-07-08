@@ -46,6 +46,7 @@ function loadClerkEnvFallback() {
     }
 
     const currentKeys = [
+        process.env.LTTH_STORE_CLERK_PUBLISHABLE_KEY,
         process.env.CLERK_PUBLISHABLE_KEY,
         process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
         process.env.VITE_CLERK_PUBLISHABLE_KEY
@@ -56,6 +57,7 @@ function loadClerkEnvFallback() {
     }
 
     const fallbackKeys = new Set([
+        'LTTH_STORE_CLERK_PUBLISHABLE_KEY',
         'CLERK_PUBLISHABLE_KEY',
         'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
         'VITE_CLERK_PUBLISHABLE_KEY'
@@ -187,7 +189,8 @@ function normalizeCspOrigin(value) {
 }
 
 function buildClerkCspSources(env = process.env) {
-    const publishableKey = env.CLERK_PUBLISHABLE_KEY ||
+    const publishableKey = env.LTTH_STORE_CLERK_PUBLISHABLE_KEY ||
+        env.CLERK_PUBLISHABLE_KEY ||
         env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
         env.VITE_CLERK_PUBLISHABLE_KEY;
     const frontendDomain = decodeClerkFrontendDomain(publishableKey);

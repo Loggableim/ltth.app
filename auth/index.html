@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LTTH Account Bridge</title>
+  <title>LTTH Account</title>
   <meta name="robots" content="noindex, nofollow">
   <style>
     :root {
@@ -144,12 +144,13 @@
   <main>
     <section class="hero">
       <div class="eyebrow">LTTH Account</div>
-      <h1>Secure plugin store login.</h1>
-      <p>This bridge signs you in on ltth.app and returns a short-lived Clerk session token to your local LTTH desktop app. No server secret is stored on this static page.</p>
+      <h1>Manage your LTTH account on ltth.app.</h1>
+      <p>Sign in, create a profile, or jump back to the app when a return target is provided. The desktop app keeps login inline, while this page handles the website account experience and profile management.</p>
       <nav class="switcher" aria-label="Authentication mode">
         <a data-mode-link="sign-up" href="#">Create account</a>
         <a data-mode-link="sign-in" href="#">Sign in</a>
       </nav>
+      <p style="margin-top: 18px;">The same Clerk account is used for the app store and the web portal. Profile edits stay on ltth.app.</p>
     </section>
     <section class="panel" aria-live="polite">
       <div id="ltth-auth-bridge-root">

@@ -22,7 +22,11 @@ function base64UrlDecode(value) {
 }
 
 function getStoreSessionSecret(env = process.env) {
-  return cleanEnvValue(env.LTTH_STORE_SESSION_SECRET || env.CLERK_SECRET_KEY);
+  return cleanEnvValue(
+    env.LTTH_STORE_SESSION_SECRET ||
+    env.LTTH_STORE_CLERK_SECRET_KEY ||
+    env.CLERK_SECRET_KEY
+  );
 }
 
 function signStoreSessionPayload(encodedPayload, env = process.env) {
@@ -159,35 +163,39 @@ function deriveClerkFrontendDomain(publishableKey) {
 
 function buildStoreAuthConfig(env = process.env) {
   const publishableKey = cleanEnvValue(
+    env.LTTH_STORE_CLERK_PUBLISHABLE_KEY ||
     env.CLERK_PUBLISHABLE_KEY ||
     env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
     env.VITE_CLERK_PUBLISHABLE_KEY
   );
-  const secretKey = cleanEnvValue(env.CLERK_SECRET_KEY);
+  const secretKey = cleanEnvValue(
+    env.LTTH_STORE_CLERK_SECRET_KEY ||
+    env.CLERK_SECRET_KEY
+  );
   const proxyUrl = cleanEnvValue(env.CLERK_PROXY_URL || env.NEXT_PUBLIC_CLERK_PROXY_URL);
   const frontendDomain = cleanEnvValue(env.CLERK_FRONTEND_API || deriveClerkFrontendDomain(publishableKey));
-  const authBridgeUrl = cleanEnvValue(env.CLERK_AUTH_BRIDGE_URL || 'https://ltth.app/auth/');
+  const authBridgeUrl = cleanEnvValue(env.CLERK_AUTH_BRIDGE_URL);
   const authCallbackPath = cleanEnvValue(env.CLERK_AUTH_CALLBACK_PATH || '/auth/clerk/callback.html');
   const accountPortalBaseUrl = cleanEnvValue(
     env.LTTH_ACCOUNT_PORTAL_URL ||
     env.CLERK_ACCOUNT_PORTAL_URL ||
-    'https://accounts.ltth.app'
+    'https://ltth.app/auth/'
   ).replace(/\/+$/, '');
   const accountManagementUrl = cleanEnvValue(
     env.LTTH_ACCOUNT_MANAGEMENT_URL ||
-    `${accountPortalBaseUrl}/user`
+    `${accountPortalBaseUrl}/`
   );
   const signInUrl = cleanEnvValue(
     env.LTTH_ACCOUNT_SIGN_IN_URL ||
-    `${accountPortalBaseUrl}/sign-in`
+    `${accountPortalBaseUrl}/?mode=sign-in`
   );
   const signUpUrl = cleanEnvValue(
     env.LTTH_ACCOUNT_SIGN_UP_URL ||
-    `${accountPortalBaseUrl}/sign-up`
+    `${accountPortalBaseUrl}/?mode=sign-up`
   );
   const unauthorizedSignInUrl = cleanEnvValue(
     env.LTTH_ACCOUNT_UNAUTHORIZED_SIGN_IN_URL ||
-    `${accountPortalBaseUrl}/unauthorized-sign-in`
+    `${accountPortalBaseUrl}/?mode=sign-in&reason=unauthorized`
   );
 
   return {

@@ -3,8 +3,15 @@
   const CLERK_FRONTEND_DOMAIN = 'clerk.ltth.app';
   const CLERK_UI_SCRIPT = 'https://clerk.ltth.app/npm/@clerk/ui@1/dist/ui.browser.js';
   const CLERK_BROWSER_SCRIPT = 'https://clerk.ltth.app/npm/@clerk/clerk-js@6/dist/clerk.browser.js';
-  const ALLOWED_RETURN_HOSTS = ['127.0.0.1', 'localhost', '::1'];
-  const ALLOWED_RETURN_PATH = '/auth/clerk/callback.html';
+  const DEFAULT_ACCOUNT_PORTAL_URL = 'https://ltth.app/auth/';
+  const LEGACY_LOCAL_CALLBACK_PATH = '/auth/clerk/callback.html';
+  const ALLOWED_RETURN_HOSTS = new Set([
+    '127.0.0.1',
+    'localhost',
+    '::1',
+    'ltth.app',
+    'www.ltth.app'
+  ]);
 
   const params = new URLSearchParams(window.location.search);
   const root = document.getElementById('ltth-auth-bridge-root');
@@ -51,42 +58,50 @@
   }
 
   function getMode() {
-    return params.get('mode') === 'sign-in' ? 'sign-in' : 'sign-up';
+    return params.get('mode') === 'sign-up' ? 'sign-up' : 'sign-in';
+  }
+
+  function hasReturnFlow() {
+    return Boolean(String(params.get('return_to') || '').trim());
   }
 
   function getState() {
     const state = String(params.get('state') || '').trim();
-    if (!/^[A-Za-z0-9._~-]{24,160}$/.test(state)) {
+    if (hasReturnFlow() && !/^[A-Za-z0-9._~-]{24,160}$/.test(state)) {
       throw new Error('Missing or invalid auth state.');
     }
     return state;
   }
 
   function getReturnUrl() {
-    const raw = params.get('return_to');
+    const raw = String(params.get('return_to') || '').trim();
     if (!raw) {
-      throw new Error('Missing return_to URL.');
+      return null;
     }
 
     const url = new URL(raw);
-    const hostAllowed = ALLOWED_RETURN_HOSTS.includes(url.hostname);
     const protocolAllowed = url.protocol === 'http:' || url.protocol === 'https:';
-    const pathAllowed = url.pathname === ALLOWED_RETURN_PATH;
-
-    if (!hostAllowed || !protocolAllowed || !pathAllowed) {
-      throw new Error('Return URL is not allowed for the LTTH desktop bridge.');
+    if (!protocolAllowed) {
+      throw new Error('Return URL must use http or https.');
     }
 
-    return url;
+    if (ALLOWED_RETURN_HOSTS.has(url.hostname)) {
+      if (['127.0.0.1', 'localhost', '::1'].includes(url.hostname) && url.pathname !== LEGACY_LOCAL_CALLBACK_PATH) {
+        throw new Error('Return URL is not allowed for the LTTH local bridge.');
+      }
+      return url;
+    }
+
+    throw new Error('Return URL is not allowed for the LTTH account portal.');
   }
 
   function getSafeNext() {
-    const raw = params.get('next');
+    const raw = String(params.get('next') || '').trim();
     if (!raw) return '';
 
     try {
       const next = new URL(raw);
-      if (!ALLOWED_RETURN_HOSTS.includes(next.hostname)) return '';
+      if (!ALLOWED_RETURN_HOSTS.has(next.hostname)) return '';
       if (next.protocol !== 'http:' && next.protocol !== 'https:') return '';
       return next.toString();
     } catch {
@@ -135,6 +150,12 @@
     });
   }
 
+  function withMode(mode) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('mode', mode);
+    return url.toString();
+  }
+
   function mountAuth(clerk, mode) {
     if (!root) return;
     root.innerHTML = '';
@@ -161,13 +182,41 @@
     throw new Error('Clerk auth components are unavailable.');
   }
 
-  function withMode(mode) {
-    const url = new URL(window.location.href);
-    url.searchParams.set('mode', mode);
-    return url.toString();
+  function mountAccountPortal(clerk, returnUrl) {
+    if (!root) return;
+    root.innerHTML = `
+      <div class="status">
+        <strong>Signed in on ltth.app</strong>
+        <span>You can manage your LTTH profile here. The app store uses inline login, so you only need this page for web account management and optional return flows.</span>
+        <div id="ltth-auth-account-root" style="margin-top: 18px;"></div>
+        <div class="switcher">
+          <a data-mode-link="sign-up" href="#">Create account</a>
+          <a data-mode-link="sign-in" href="#">Sign in</a>
+        </div>
+      </div>
+    `;
+
+    const accountRoot = document.getElementById('ltth-auth-account-root');
+    if (accountRoot && typeof clerk.mountUserButton === 'function') {
+      clerk.mountUserButton(accountRoot, {
+        userProfileMode: 'navigation',
+        userProfileUrl: returnUrl ? returnUrl.toString() : DEFAULT_ACCOUNT_PORTAL_URL,
+        signInUrl: withMode('sign-in')
+      });
+    } else if (accountRoot) {
+      accountRoot.innerHTML = `
+        <a href="${escapeHtml(DEFAULT_ACCOUNT_PORTAL_URL)}" style="color: #6ee7b7; font-weight: 800;">Open the LTTH account portal</a>
+      `;
+    }
+
+    updateModeLinks(getMode());
   }
 
   async function completeIfSignedIn(clerk, returnUrl, state) {
+    if (!returnUrl) {
+      return false;
+    }
+
     const session = clerk.session;
     if (!session || typeof session.getToken !== 'function') {
       return false;
@@ -183,11 +232,25 @@
     return true;
   }
 
+  async function renderPortal(clerk, mode, returnUrl, state) {
+    if (await completeIfSignedIn(clerk, returnUrl, state)) {
+      return true;
+    }
+
+    if (!returnUrl && clerk.session) {
+      mountAccountPortal(clerk, null);
+      return true;
+    }
+
+    mountAuth(clerk, mode);
+    return false;
+  }
+
   async function init() {
     try {
       const mode = getMode();
-      const state = getState();
       const returnUrl = getReturnUrl();
+      const state = returnUrl ? getState() : '';
       updateModeLinks(mode);
 
       await loadScript(CLERK_UI_SCRIPT);
@@ -205,21 +268,19 @@
         ui: { ClerkUI: window.__internal_ClerkUICtor }
       });
 
-      if (await completeIfSignedIn(clerk, returnUrl, state)) {
+      if (await renderPortal(clerk, mode, returnUrl, state)) {
         return;
       }
 
       if (typeof clerk.addListener === 'function') {
         clerk.addListener(async () => {
           try {
-            await completeIfSignedIn(clerk, returnUrl, state);
+            await renderPortal(clerk, mode, returnUrl, state);
           } catch (error) {
             setStatus('Could not finish login', error.message, 'error');
           }
         });
       }
-
-      mountAuth(clerk, mode);
     } catch (error) {
       setStatus('Account bridge failed', error.message || 'Unknown authentication error.', 'error');
     }
