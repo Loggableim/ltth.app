@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -41,10 +42,11 @@ const (
 	serverHealthTimeout        = time.Duration(serverHealthTimeoutSeconds) * time.Second
 
 	// GitHub API settings for auto-update
-	githubOwner    = "Loggableim"
-	githubRepo     = "ltth.app"
-	githubAPIURL   = "https://api.github.com"
-	updateInterval = 24 * time.Hour
+	githubOwner      = "Loggableim"
+	githubRepo       = "ltth.app"
+	githubAPIURL     = "https://api.github.com"
+	updateInterval   = 24 * time.Hour
+	maxUpdateBackups = 2
 
 	// Version / update state files (relative to exeDir)
 	versionFile     = "runtime/version.txt"
@@ -340,7 +342,7 @@ func defaultLauncherSettings() LauncherSettings {
 		PreferredPort:    defaultBackendPort,
 		KeepLauncherOpen: true,
 		SafeMode:         false,
-		UpdateChannel:    updateChannelLocal,
+		UpdateChannel:    updateChannelStable,
 		FirstRunComplete: false,
 	}
 }
@@ -1315,6 +1317,9 @@ func selectReleaseForChannel(releases []GitHubRelease, channel string) (*GitHubR
 	}
 	for i := range releases {
 		release := releases[i]
+		if !isAppReleaseTag(release.TagName) {
+			continue
+		}
 		if strings.TrimSpace(release.ZipballURL) == "" {
 			continue
 		}
@@ -1326,6 +1331,11 @@ func selectReleaseForChannel(releases []GitHubRelease, channel string) (*GitHubR
 		}
 	}
 	return nil, fmt.Errorf("no release available for channel %s", channel)
+}
+
+func isAppReleaseTag(tag string) bool {
+	tag = strings.TrimSpace(tag)
+	return strings.HasPrefix(tag, "v")
 }
 
 func diagnosticTimestamp() string {
@@ -1947,7 +1957,7 @@ func (l *Launcher) checkUpdateForCurrentChannel() (map[string]interface{}, error
 			"channel":   updateChannelLocal,
 			"disabled":  true,
 			"available": false,
-			"message":   "Lokaler Snapshot: Netzwerk-Updates sind deaktiviert.",
+			"message":   "Updates sind deaktiviert.",
 		}, nil
 	}
 	releases, err := fetchReleases()
@@ -1978,7 +1988,7 @@ func (l *Launcher) applyUpdateForCurrentChannel() (map[string]interface{}, error
 		settings = l.loadSettings()
 	}
 	if settings.UpdateChannel == updateChannelLocal {
-		return nil, fmt.Errorf("local snapshot channel does not apply network updates")
+		return nil, fmt.Errorf("updates are disabled")
 	}
 	releases, err := fetchReleases()
 	if err != nil {
@@ -1995,28 +2005,21 @@ func (l *Launcher) applyUpdateForCurrentChannel() (map[string]interface{}, error
 }
 
 func (l *Launcher) rollbackLastUpdate() (map[string]interface{}, error) {
-	backupRoot := filepath.Join(l.exeDir, "runtime", "update_backups")
-	entries, err := os.ReadDir(backupRoot)
+	backupRoot := l.updateBackupRoot()
+	entries, err := listUpdateBackups(backupRoot)
 	if err != nil {
 		return nil, err
 	}
-	var latest os.DirEntry
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		if latest == nil || entry.Name() > latest.Name() {
-			latest = entry
-		}
-	}
-	if latest == nil {
+	if len(entries) == 0 {
 		return nil, fmt.Errorf("no update backup found")
 	}
+	latest := entries[0]
 	backupApp := filepath.Join(backupRoot, latest.Name(), "app")
 	if info, err := os.Stat(backupApp); err != nil || !info.IsDir() {
 		return nil, fmt.Errorf("latest backup does not contain app directory")
 	}
 	failedApp := filepath.Join(l.exeDir, "runtime", "failed_update_app_"+time.Now().Format("2006-01-02_15-04-05"))
+	_ = os.RemoveAll(failedApp)
 	if _, err := os.Stat(l.appDir); err == nil {
 		if err := os.Rename(l.appDir, failedApp); err != nil {
 			return nil, fmt.Errorf("could not move current app before rollback: %w", err)
@@ -2026,7 +2029,63 @@ func (l *Launcher) rollbackLastUpdate() (map[string]interface{}, error) {
 		_ = os.Rename(failedApp, l.appDir)
 		return nil, fmt.Errorf("rollback restore failed: %w", err)
 	}
+	if err := os.RemoveAll(filepath.Join(backupRoot, latest.Name())); err != nil {
+		l.logAndSync("[WARNING] Could not remove consumed rollback backup %s: %v", latest.Name(), err)
+	}
+	if err := pruneUpdateBackups(backupRoot, maxUpdateBackups); err != nil {
+		l.logAndSync("[WARNING] Could not prune old update backups after rollback: %v", err)
+	}
 	return map[string]interface{}{"success": true, "backup": latest.Name(), "failedApp": failedApp}, nil
+}
+
+func (l *Launcher) updateBackupRoot() string {
+	return filepath.Join(l.exeDir, "runtime", "update_backups")
+}
+
+func (l *Launcher) hasInstalledApp() bool {
+	if strings.TrimSpace(l.appDir) == "" {
+		return false
+	}
+	info, err := os.Stat(filepath.Join(l.appDir, "package.json"))
+	return err == nil && !info.IsDir()
+}
+
+func listUpdateBackups(backupRoot string) ([]os.DirEntry, error) {
+	entries, err := os.ReadDir(backupRoot)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	backups := make([]os.DirEntry, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() {
+			backups = append(backups, entry)
+		}
+	}
+
+	sort.Slice(backups, func(i, j int) bool {
+		return backups[i].Name() > backups[j].Name()
+	})
+	return backups, nil
+}
+
+func pruneUpdateBackups(backupRoot string, keep int) error {
+	if keep < 1 {
+		keep = 1
+	}
+	backups, err := listUpdateBackups(backupRoot)
+	if err != nil || len(backups) <= keep {
+		return err
+	}
+	for _, backup := range backups[keep:] {
+		if err := os.RemoveAll(filepath.Join(backupRoot, backup.Name())); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type vacuumMaintenanceOptions struct {
@@ -4027,6 +4086,9 @@ func (l *Launcher) downloadAndApplyUpdate(release *GitHubRelease) error {
 	if strings.TrimSpace(release.ZipballURL) == "" {
 		return fmt.Errorf("release %s does not include a zipball URL", release.TagName)
 	}
+	if !isAppReleaseTag(release.TagName) {
+		return fmt.Errorf("release %s is not an app release", release.TagName)
+	}
 	if l.isNodeRunning() || l.serverStarted || l.startupInProgress {
 		return fmt.Errorf("stop the server before applying an update")
 	}
@@ -4093,6 +4155,73 @@ func (l *Launcher) downloadAndApplyUpdate(release *GitHubRelease) error {
 	}
 
 	l.logAndSync("[SUCCESS] Update %s applied", release.TagName)
+	if err := pruneUpdateBackups(filepath.Join(runtimeDir, "update_backups"), maxUpdateBackups); err != nil {
+		l.logAndSync("[WARNING] Could not prune old update backups: %v", err)
+	}
+	return nil
+}
+
+func (l *Launcher) ensureAppReadyOnStartup() error {
+	settings := l.settings
+	if settings.UpdateChannel == "" {
+		settings = l.loadSettings()
+	}
+
+	installed := l.hasInstalledApp()
+	localVersion, _ := getLocalVersion()
+	localVersion = strings.TrimSpace(localVersion)
+	needsBootstrap := !installed || localVersion == ""
+
+	channel := settings.UpdateChannel
+	if channel == "" {
+		channel = updateChannelStable
+	}
+	if channel == updateChannelLocal && needsBootstrap {
+		channel = updateChannelStable
+		l.logAndSync("[INFO] App bootstrap requested with updates disabled; using stable release once for the first start.")
+	}
+
+	if !needsBootstrap && channel == updateChannelLocal {
+		l.logAndSync("[INFO] App updates are disabled; using installed app version %s.", localVersion)
+		return nil
+	}
+
+	releases, err := fetchReleases()
+	if err != nil {
+		if needsBootstrap {
+			return fmt.Errorf("could not fetch app release for startup bootstrap: %w", err)
+		}
+		l.logAndSync("[WARNING] Could not fetch app updates: %v", err)
+		return nil
+	}
+
+	release, err := selectReleaseForChannel(releases, channel)
+	if err != nil {
+		if needsBootstrap {
+			return fmt.Errorf("could not select startup release for channel %s: %w", channel, err)
+		}
+		l.logAndSync("[WARNING] Could not select app update for channel %s: %v", channel, err)
+		return nil
+	}
+
+	if !needsBootstrap && compareVersions(release.TagName, localVersion) <= 0 {
+		l.logAndSync("[INFO] App release %s already installed on channel %s.", localVersion, channel)
+		return nil
+	}
+
+	if err := l.downloadAndApplyUpdate(release); err != nil {
+		if needsBootstrap {
+			return err
+		}
+		l.logAndSync("[WARNING] Startup update failed for channel %s: %v", channel, err)
+		return nil
+	}
+
+	if needsBootstrap {
+		l.logAndSync("[SUCCESS] App bootstrap finished with release %s.", release.TagName)
+	} else {
+		l.logAndSync("[SUCCESS] App update applied on startup: %s", release.TagName)
+	}
 	return nil
 }
 
@@ -4218,10 +4347,18 @@ func (l *Launcher) startTrayMenu(launcherURL string) {
 func (l *Launcher) runLauncher() {
 	time.Sleep(1 * time.Second) // Give browser time to load
 
-	// Phase 0: App auto-update is intentionally disabled.
-	l.updateProgressLocalized(0, "status.update_disabled", "App Auto-Update deaktiviert")
-	l.logAndSync("[Phase 0] App auto-update disabled; startup will not download GitHub releases.")
+	// Phase 0: Bootstrap or update the LTTH app before Node.js and dependencies.
+	l.updateProgressLocalized(1, "status.checking_updates", "Pruefe LTTH App-Update...")
+	l.logAndSync("[Phase 0] Checking LTTH app release channel before startup...")
 	time.Sleep(300 * time.Millisecond)
+	if err := l.ensureAppReadyOnStartup(); err != nil {
+		l.logAndSync("[ERROR] App bootstrap/update failed: %v", err)
+		l.updateProgressLocalized(5, "status.update_failed", "FEHLER: %v", err)
+		time.Sleep(5 * time.Second)
+		l.closeLogging()
+		os.Exit(1)
+	}
+	l.updateProgressLocalized(9, "status.update_ready", "LTTH App bereit...")
 	time.Sleep(300 * time.Millisecond)
 
 	// Phase 1: Check / Install / Update Node.js (10–30%)

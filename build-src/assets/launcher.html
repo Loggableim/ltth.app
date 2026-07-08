@@ -175,26 +175,13 @@
             min-width: 0;
         }
 
-        .logo-shell {
-            width: 92px;
-            height: 92px;
-            border-radius: 50%;
-            display: grid;
-            place-items: center;
-            background:
-                linear-gradient(145deg, rgba(72, 231, 154, 0.26), rgba(15, 48, 48, 0.1)),
-                rgba(4, 12, 15, 0.62);
-            border: 1px solid var(--line-strong);
-            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.36), 0 0 34px rgba(72, 231, 154, 0.12);
-            overflow: hidden;
-        }
-
         .logo {
-            width: 86px;
-            height: 86px;
-            border-radius: 50%;
-            object-fit: cover;
+            width: clamp(96px, 8vw, 128px);
+            height: auto;
+            object-fit: contain;
             display: block;
+            flex-shrink: 0;
+            filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.38));
         }
 
         .title-group h1 {
@@ -956,14 +943,8 @@
                 align-items: flex-start;
             }
 
-            .logo-shell {
-                width: 72px;
-                height: 72px;
-            }
-
             .logo {
-                width: 66px;
-                height: 66px;
+                width: clamp(84px, 22vw, 110px);
             }
 
             .workspace {
@@ -1039,9 +1020,7 @@
     <div class="launcher-container">
         <header class="header">
             <div class="brand-block">
-                <div class="logo-shell">
-                    <img src="/logo?theme={{.CurrentTheme}}" alt="LTTH Launcher Logo" class="logo">
-                </div>
+                <img src="/logo?theme={{.CurrentTheme}}" alt="LTTH Launcher Logo" class="logo">
                 <div class="title-group">
                     <h1><span class="brand-accent">LTTH</span> Launcher</h1>
                     <p class="tagline">{{.TagLine}}</p>
@@ -1085,8 +1064,8 @@
         <div class="workspace">
             <aside class="launcher-sidebar" aria-label="Launcher Navigation">
                 <nav class="tabs">
-                    <button class="tab-button active" data-tab="diagnostics" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg></span><span>Diagnose</span></button>
-                    <button class="tab-button" data-tab="changelog" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><span>{{.TabChangelog}}</span></button>
+                    <button class="tab-button active" data-tab="changelog" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><span>{{.TabChangelog}}</span></button>
+                    <button class="tab-button" data-tab="diagnostics" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg></span><span>Diagnose</span></button>
                     <button class="tab-button" data-tab="apikeys" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 7a5 5 0 1 0 1.5 3.5L21 5v4h-3V6"/></svg></span><span>{{.TabApiKeys}}</span></button>
                     <button class="tab-button" data-tab="community" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.85"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span>{{.TabCommunity}}</span></button>
                     <button class="tab-button" data-tab="logs" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M10 8h4M10 12h4M10 16h2"/></svg></span><span>{{.TabLogs}}</span></button>
@@ -1112,7 +1091,13 @@
 
             <main class="main-content">
                 <div class="content-area">
-                    <section id="tab-diagnostics" class="tab-content active glass-panel">
+                    <section id="tab-changelog" class="tab-content active glass-panel content-card">
+                        <h2>{{.ChangelogTitle}}</h2>
+                        <p>{{.ChangelogLoading}}</p>
+                        <div id="changelog-content">{{.ChangelogLoading}}</div>
+                    </section>
+
+                    <section id="tab-diagnostics" class="tab-content glass-panel">
                         <div id="firstRunPanel" class="first-run-panel" {{if .FirstRunComplete}}style="display:none"{{end}}>
                             <h3>Erster Start</h3>
                             <p>Der Launcher richtet LTTH ein und verwaltet danach Server, Updates und Diagnosen.</p>
@@ -1149,9 +1134,9 @@
                             <div class="field-control">
                                 <label class="field-label" for="updateChannel">Update-Kanal <span class="info-dot">i</span></label>
                                 <select id="updateChannel">
-                                    <option value="local" {{if eq .UpdateChannel "local"}}selected{{end}}>Local Snapshot</option>
-                                    <option value="stable" {{if eq .UpdateChannel "stable"}}selected{{end}}>Stable Release</option>
-                                    <option value="beta" {{if eq .UpdateChannel "beta"}}selected{{end}}>Beta Release</option>
+                                    <option value="local" {{if eq .UpdateChannel "local"}}selected{{end}}>Updates aus</option>
+                                    <option value="stable" {{if eq .UpdateChannel "stable"}}selected{{end}}>Stabile Version</option>
+                                    <option value="beta" {{if eq .UpdateChannel "beta"}}selected{{end}}>Beta-Version</option>
                                 </select>
                             </div>
                             <div class="field-control">
@@ -1164,7 +1149,7 @@
                         <div class="maintenance-grid">
                             <button class="manual-btn secondary" id="checkUpdateBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M20 6v6h-6"/><path d="M4 18v-6h6"/><path d="M19 12a7 7 0 0 0-12-5M5 12a7 7 0 0 0 12 5"/></svg></span><span>Update pruefen</span></button>
                             <button class="manual-btn secondary" id="applyUpdateBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span><span>Update installieren</span></button>
-                            <button class="manual-btn secondary" id="rollbackUpdateBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M9 14l-5-5 5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg></span><span>Update zurueckrollen</span></button>
+                            <button class="manual-btn secondary" id="rollbackUpdateBtn" type="button" title="Bis zu 2 Versionen werden vorgehalten"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M9 14l-5-5 5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg></span><span>Update zurueckrollen</span></button>
                             <button class="manual-btn secondary" id="nodeRepairBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5 5L3 18v3h3l6.7-6.7a4 4 0 0 0 5-5L15 12l-3-3z"/></svg></span><span>Node reparieren</span></button>
                             <button class="manual-btn secondary" id="nodeRemoveBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M7 6l1 15h8l1-15"/></svg></span><span>Portable Node entfernen</span></button>
                         </div>
@@ -1177,12 +1162,6 @@
                             <div class="diagnostics-grid" id="diagnosticsGrid"></div>
                             <div id="pluginFailures" class="plugin-failures"></div>
                         </div>
-                    </section>
-
-                    <section id="tab-changelog" class="tab-content glass-panel content-card">
-                        <h2>{{.ChangelogTitle}}</h2>
-                        <p>{{.ChangelogLoading}}</p>
-                        <div id="changelog-content">{{.ChangelogLoading}}</div>
                     </section>
 
                     <section id="tab-apikeys" class="tab-content glass-panel content-card">
@@ -1410,7 +1389,7 @@
                 preferredPort: Number(manualPortEl && manualPortEl.value || 3000),
                 keepLauncherOpen: Boolean(document.getElementById('keepLauncherOpen') && document.getElementById('keepLauncherOpen').checked),
                 safeMode: Boolean(document.getElementById('safeModeToggle') && document.getElementById('safeModeToggle').checked),
-                updateChannel: document.getElementById('updateChannel') ? document.getElementById('updateChannel').value : 'local',
+                updateChannel: document.getElementById('updateChannel') ? document.getElementById('updateChannel').value : 'stable',
                 firstRunComplete: firstRunComplete
             }, partial || {});
 

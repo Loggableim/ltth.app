@@ -113,10 +113,10 @@ function Get-LauncherDownloadUrl {
         $LTTHRepoName -eq 'ltth.app' -and
         $LTTHRepoBranch -eq 'main'
     ) {
-        return 'https://ltth.app/launcher.exe'
+        return 'https://ltth.app/downloads/launcher.exe'
     }
 
-    return "https://github.com/$LTTHRepoOwner/$LTTHRepoName/raw/$LTTHRepoBranch/launcher.exe"
+    return "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/downloads/launcher.exe"
 }
 
 function Use-OfficialWindowsZipBootstrap {
@@ -1200,12 +1200,13 @@ function Download-Source {
 
         try {
             Install-AppBundleFromZip | Out-Null
+            Ok "App-Bundle bereit in $LTTHDir"
+            return
         } catch {
-            Fail "App-Bundle konnte nicht vom offiziellen ZIP geladen werden: $($_.Exception.Message)"
+            Warn "App-Bundle konnte nicht vom offiziellen ZIP geladen werden; wechsle auf Git-Clone-Fallback: $($_.Exception.Message)"
+            Ensure-Git
+            Resolve-Version
         }
-
-        Ok "App-Bundle bereit in $LTTHDir"
-        return
     }
 
     if (Test-Path (Join-Path $LTTHDir '.git')) {
@@ -1351,21 +1352,14 @@ function Install-Deps {
 # ---------- Launcher ----------
 function Install-Launcher {
     $launcherPath = Join-Path $LTTHDir 'launcher.exe'
-    $downloadLauncherPath = Join-Path $LTTHDir 'downloads\launcher.exe'
     $launcherUrl = Get-LauncherDownloadUrl
     $tmpLauncher = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-launcher-" + [guid]::NewGuid().ToString('N') + ".exe")
+    $launcherExisted = Test-Path $launcherPath
 
     try {
-        $launcherMatchesDownloads = $false
-        if ((Test-Path $launcherPath) -and (Test-Path $downloadLauncherPath)) {
-            $launcherMatchesDownloads = ((Get-FileHash -Algorithm SHA256 -LiteralPath $launcherPath).Hash -eq (Get-FileHash -Algorithm SHA256 -LiteralPath $downloadLauncherPath).Hash)
-        }
-
-        if ((-not (Test-Path $launcherPath)) -or $launcherMatchesDownloads) {
-            Log "Lade LTTH Windows Launcher herunter..."
-            Invoke-DownloadFileWithProgress -Uri $launcherUrl -OutFile $tmpLauncher -Activity 'LTTH Launcher wird heruntergeladen'
-            Move-Item -LiteralPath $tmpLauncher -Destination $launcherPath -Force
-        }
+        Log "Lade LTTH Windows Launcher herunter..."
+        Invoke-DownloadFileWithProgress -Uri $launcherUrl -OutFile $tmpLauncher -Activity 'LTTH Launcher wird heruntergeladen'
+        Move-Item -LiteralPath $tmpLauncher -Destination $launcherPath -Force
 
         if (-not (Test-Path $launcherPath)) {
             throw "Launcher-Datei fehlt nach Installation."
@@ -1379,6 +1373,11 @@ function Install-Launcher {
         Ok "Launcher bereit: $launcherPath"
         return $launcherPath
     } catch {
+        if ($launcherExisted -and (Test-Path $launcherPath)) {
+            Warn "Launcher-Download fehlgeschlagen, verwende vorhandene Datei: $($_.Exception.Message)"
+            return $launcherPath
+        }
+
         Warn "Launcher konnte nicht eingerichtet werden: $($_.Exception.Message)"
         return $null
     } finally {
@@ -1577,21 +1576,13 @@ function Main {
         return
     }
 
-    $useOfficialZipBootstrap = Use-OfficialWindowsZipBootstrap
-    if ($useOfficialZipBootstrap) {
-        Log "Offizieller Windows-Pfad: lade App-Bundle direkt als ZIP statt Git-Clone."
-    } else {
-        Ensure-Git
-        Resolve-Version
-    }
-
-    Download-Source
+    Log "Offizieller Windows-Pfad: lade nur launcher.exe; der Launcher zieht App, Updates und Abhaengigkeiten selbst."
     $launcherPath = Install-Launcher
     if (-not $launcherPath) {
         Fail "Launcher konnte nicht bereitgestellt werden. Der Windows-Installer installiert Node.js nicht mehr selbst; bitte Launcher-Log und Netzwerkzugriff pruefen."
     }
 
-    Log "Windows-Installer uebergibt App-Bundle und Launcher an launcher.exe; Node.js, npm install und Native-Module-Rebuilds laufen dort beim ersten Start."
+    Log "Windows-Installer uebergibt Installation, Updates und Native-Module-Rebuilds an launcher.exe."
 
     $launcherStarted = Start-Launcher -LauncherPath $launcherPath
     if (-not $launcherStarted) {

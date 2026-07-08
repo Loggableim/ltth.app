@@ -585,8 +585,8 @@ func TestLauncherSettingsRoundTripAndDefaults(t *testing.T) {
 	if !settings.KeepLauncherOpen {
 		t.Fatal("launcher should keep open by default")
 	}
-	if settings.UpdateChannel != updateChannelLocal {
-		t.Fatalf("local snapshot should default to local update channel, got %q", settings.UpdateChannel)
+	if settings.UpdateChannel != updateChannelStable {
+		t.Fatalf("launcher should default to stable update channel, got %q", settings.UpdateChannel)
 	}
 
 	settings.Locale = "en"
@@ -711,6 +711,7 @@ func TestPluginFailureLinesAreClassifiedByPluginID(t *testing.T) {
 
 func TestSelectReleaseForUpdateChannel(t *testing.T) {
 	releases := []GitHubRelease{
+		{TagName: "launcher-v1.3.25", Prerelease: false, ZipballURL: "https://example.invalid/launcher.zip"},
 		{TagName: "v1.4.0-beta.2", Prerelease: true, ZipballURL: "https://example.invalid/beta.zip"},
 		{TagName: "v1.3.21", Prerelease: false, ZipballURL: "https://example.invalid/stable.zip"},
 	}
@@ -733,6 +734,43 @@ func TestSelectReleaseForUpdateChannel(t *testing.T) {
 
 	if _, err := selectReleaseForChannel(releases, updateChannelLocal); err == nil {
 		t.Fatal("local snapshot channel must not select a network release")
+	}
+}
+
+func TestPruneUpdateBackupsKeepsNewestTwo(t *testing.T) {
+	backupRoot := t.TempDir()
+	for _, name := range []string{
+		"2026-07-05_10-00-00-v1.3.20",
+		"2026-07-06_10-00-00-v1.3.21",
+		"2026-07-07_10-00-00-v1.3.22",
+	} {
+		if err := os.MkdirAll(filepath.Join(backupRoot, name, "app"), 0755); err != nil {
+			t.Fatalf("failed to create backup %s: %v", name, err)
+		}
+	}
+
+	if err := pruneUpdateBackups(backupRoot, 2); err != nil {
+		t.Fatalf("pruneUpdateBackups failed: %v", err)
+	}
+
+	entries, err := os.ReadDir(backupRoot)
+	if err != nil {
+		t.Fatalf("failed to read backup root: %v", err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 backups to remain, got %d", len(entries))
+	}
+
+	if _, err := os.Stat(filepath.Join(backupRoot, "2026-07-05_10-00-00-v1.3.20")); !os.IsNotExist(err) {
+		t.Fatalf("oldest backup should be removed, got err=%v", err)
+	}
+	for _, name := range []string{
+		"2026-07-06_10-00-00-v1.3.21",
+		"2026-07-07_10-00-00-v1.3.22",
+	} {
+		if _, err := os.Stat(filepath.Join(backupRoot, name)); err != nil {
+			t.Fatalf("expected backup %s to remain: %v", name, err)
+		}
 	}
 }
 

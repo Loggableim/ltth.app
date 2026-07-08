@@ -13,7 +13,7 @@ permissions:
 jobs:
   build:
     name: Build launcher binaries
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - name: Checkout code
@@ -50,7 +50,35 @@ jobs:
 
       - name: Build Windows GUI launcher
         working-directory: ./build-src
-        run: GOOS=windows GOARCH=amd64 go build -ldflags="-H windowsgui -s -w" -o ../launcher.exe launcher-gui.go
+        shell: bash
+        run: GOOS=windows GOARCH=amd64 go build -ldflags="-H windowsgui -s -w" -o ../launcher.exe launcher-gui.go sysproc_windows.go
+
+      - name: Ensure Windows signing certificate is configured
+        if: startsWith(github.ref, 'refs/tags/launcher-') && (secrets.WINDOWS_SIGN_CERT_BASE64 == '' || secrets.WINDOWS_SIGN_CERT_PASSWORD == '')
+        shell: bash
+        run: |
+          echo "Windows signing certificate secrets are required for launcher release tags." >&2
+          exit 1
+
+      - name: Import Windows signing certificate
+        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' && secrets.WINDOWS_SIGN_CERT_PASSWORD != '' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $certPath = Join-Path $env:RUNNER_TEMP 'ltth-signing-cert.pfx'
+          [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String('${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}'))
+          Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\My -Password (ConvertTo-SecureString '${{ secrets.WINDOWS_SIGN_CERT_PASSWORD }}' -AsPlainText -Force) | Out-Null
+
+      - name: Sign Windows launcher artifacts
+        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' && secrets.WINDOWS_SIGN_CERT_PASSWORD != '' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $signtool = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin' -Recurse -Filter signtool.exe | Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $signtool) {
+            throw 'signtool.exe not found on runner.'
+          }
+          & $signtool.FullName sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /a launcher.exe
 
       - name: Write launcher release metadata
         shell: bash
