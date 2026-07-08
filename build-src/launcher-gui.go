@@ -59,6 +59,9 @@ var embeddedLauncherHTML string
 //go:embed assets/launcher-logo.png
 var embeddedLauncherLogo []byte
 
+//go:embed assets/launcher-bg.png
+var embeddedLauncherBackground []byte
+
 // NodeRelease represents a single entry from https://nodejs.org/dist/index.json
 type NodeRelease struct {
 	Version string      `json:"version"` // "v22.14.0"
@@ -5025,6 +5028,27 @@ func main() {
 		}
 
 		http.ServeFile(w, r, themeLogoPath)
+	})
+
+	http.HandleFunc("/launcher-bg", func(w http.ResponseWriter, r *http.Request) {
+		if len(embeddedLauncherBackground) > 0 {
+			w.Header().Set("Content-Type", "image/png")
+			w.Header().Set("Cache-Control", "public, max-age=3600")
+			_, _ = w.Write(embeddedLauncherBackground)
+			return
+		}
+
+		for _, bgPath := range []string{
+			filepath.Join(launcher.exeDir, "build-src", "assets", "launcher-bg.png"),
+			filepath.Join(launcher.exeDir, "assets", "launcher-bg.png"),
+		} {
+			if info, err := os.Stat(bgPath); err == nil && !info.IsDir() {
+				http.ServeFile(w, r, bgPath)
+				return
+			}
+		}
+
+		http.NotFound(w, r)
 	})
 
 	http.HandleFunc("/logs", func(w http.ResponseWriter, r *http.Request) {
