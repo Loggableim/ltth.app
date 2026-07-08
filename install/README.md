@@ -6,7 +6,7 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 
 | Betriebssystem | Befehl |
 |---|---|
-| 🪟 Windows (PowerShell) | `iex ((iwr -useb https://ltth.app/install/install.ps1).Content.TrimStart([char]0xFEFF))` |
+| 🪟 Windows (PowerShell) | `$installer = irm https://ltth.app/install/install.ps1; iex ($installer.TrimStart([char]0xFEFF))` |
 | 🍎 macOS (Terminal)     | `curl -fsSL https://ltth.app/install/install.sh \| bash` |
 | 🐧 Linux (Bash)         | `curl -fsSL https://ltth.app/install/install.sh \| bash` |
 | 🌐 Beliebiges OS (Node) | `curl -fsSL https://ltth.app/install/install.js \| node` |
@@ -58,7 +58,7 @@ LTTH_DIR=/opt/ltth curl -fsSL https://ltth.app/install/install.sh | bash
 LTTH_PORT=8080 curl -fsSL https://ltth.app/install/install.sh | bash
 
 # PowerShell (Windows)
-$env:LTTH_PORT=8080; iex ((iwr -useb https://ltth.app/install/install.ps1).Content.TrimStart([char]0xFEFF))
+$env:LTTH_PORT=8080; $installer = irm https://ltth.app/install/install.ps1; iex ($installer.TrimStart([char]0xFEFF))
 ```
 
 ## Updates

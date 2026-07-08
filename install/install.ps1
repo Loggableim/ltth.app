@@ -3,7 +3,7 @@
 #  PupCid's Little TikTool Helper -- https://ltth.app
 #
 #  Verwendung (PowerShell):
-#    iex ((iwr -useb https://ltth.app/install/install.ps1).Content.TrimStart([char]0xFEFF))
+#    $installer = irm https://ltth.app/install/install.ps1; iex ($installer.TrimStart([char]0xFEFF))
 #    Trimt eine moegliche UTF-8-BOM aus Website-Antworten vor `iex`.
 #
 #  Optionale Umgebungsvariablen:
@@ -321,7 +321,7 @@ function Get-CurrentPowerShellExecutable {
 
 function Restart-InstallerAsAdministrator {
     # Website-Antworten koennen eine fuehrende UTF-8-BOM enthalten, daher vor `iex` trimmen.
-    $installerCommand = "iex ((iwr -useb $(Get-InstallerScriptUrl)).Content.TrimStart([char]0xFEFF))"
+    $installerCommand = "`$installer = irm $(Get-InstallerScriptUrl); iex (`$installer.TrimStart([char]0xFEFF))"
     $encodedCommand = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($installerCommand))
     $psExe = Get-CurrentPowerShellExecutable
 
