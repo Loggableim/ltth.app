@@ -36,6 +36,13 @@ jobs:
         run: |
           GOOS=windows GOARCH=amd64 go build -ldflags="-H windowsgui -s -w" -o ../launcher.exe launcher-gui.go sysproc_windows.go
 
+      - name: Ensure Windows signing certificate is configured
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && (secrets.WINDOWS_SIGN_CERT_BASE64 == '' || secrets.WINDOWS_SIGN_CERT_PASSWORD == '') }}
+        shell: bash
+        run: |
+          echo "Windows signing certificate secrets are required for release tags." >&2
+          exit 1
+
       - name: Import Windows signing certificate
         if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' && secrets.WINDOWS_SIGN_CERT_PASSWORD != '' }}
         shell: powershell
@@ -75,10 +82,68 @@ jobs:
             launcher.exe
             launcher-release.json
 
+  publish_site_bundle:
+    name: Publish site bundle
+    runs-on: ubuntu-latest
+    needs: build_windows_release_assets
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Download signed launcher artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: launcher-assets
+
+      - name: Publish launcher download
+        shell: bash
+        run: |
+          cp launcher-assets/launcher.exe launcher.exe
+          mkdir -p downloads
+          cp launcher-assets/launcher.exe downloads/launcher.exe
+
+      - name: Build release bundle
+        run: |
+          python scripts/build_release_bundle.py --version "${{ steps.version.outputs.VERSION }}"
+
+      - name: Run release automation
+        run: |
+          python scripts/release_from_new_patch.py
+
+      - name: Commit and push site bundle
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A app released_patches new_patch launcher.exe downloads/launcher.exe
+          if git diff --cached --quiet; then
+            echo "No site bundle changes to publish."
+            exit 0
+          fi
+          git commit -m "Publish LTTH v${{ steps.version.outputs.VERSION }} site bundle"
+          git push origin HEAD:main
+
   publish_release:
     name: Publish GitHub release
     runs-on: ubuntu-latest
-    needs: build_windows_release_assets
+    needs: [build_windows_release_assets, publish_site_bundle]
 
     steps:
       - name: Checkout code

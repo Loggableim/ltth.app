@@ -14,13 +14,13 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl â�
 ## Was passiert?
 
 1. **Pruefen** - Der Installer validiert nur die minimale Startumgebung fuer die gewaehlte Plattform.
-2. **Laden** - Der Windows-Pfad laedt das App-Bundle direkt als ZIP und entpackt es; macOS/Linux nutzen weiterhin den Repo-Checkout.
-3. **Bootstrap** - Der Launcher uebernimmt beim ersten Start Node.js 22.14.0, `npm install` und den Native-Module-Rebuild.
+2. **Laden** - Der Windows-Pfad laedt nur `launcher.exe`; macOS/Linux nutzen weiterhin den Repo-Checkout.
+3. **Bootstrap** - Der Launcher zieht beim ersten Start die App, Node.js 22.14.0, `npm install` und den Native-Module-Rebuild selbst nach.
 4. **Starten** - Das Dashboard oeffnet sich unter `http://localhost:3000/dashboard.html`.
 
 Auf Windows legt der Installer zusaetzlich Desktop- und Startmenue-Verknuepfungen an.
 
-Der Windows-One-Liner fordert bei der ersten Ausfuehrung Admin-Freigabe an. Der offizielle Windows-Pfad laedt das App-Bundle direkt als ZIP und startet danach den Launcher; Node.js 22.14.0, `npm install` und Native-Module-Rebuilds uebernimmt der Launcher beim ersten Start. Wenn auf einem Legacy- oder Custom-Installationspfad Git benoetigt wird und `winget` fehlt, nutzt der Installer die offiziellen Git-for-Windows-Installer als Fallback. Waehren langer Schritte zeigt der Windows-Installer einen rotierenden Status-Indikator und Download-Fortschritt an, damit er nicht wie eingefroren wirkt.
+Der Windows-One-Liner fordert bei der ersten Ausfuehrung Admin-Freigabe an. Der offizielle Windows-Pfad laedt direkt `launcher.exe` von `ltth.app` und startet danach den Launcher; Node.js 22.14.0, die App und alle nativen Abhaengigkeiten werden beim ersten Start vom Launcher selbst bereitgestellt. Waehren langer Schritte zeigt der Windows-Installer einen rotierenden Status-Indikator und Download-Fortschritt an, damit er nicht wie eingefroren wirkt.
 
 Der Windows-Befehl trimmt eine moegliche UTF-8-BOM aus dem Raw-Download, damit PowerShell den ersten Token sauber auswertet.
 
@@ -38,7 +38,7 @@ Hinweis fuer Windows: Der PowerShell-Installer uebergibt die Node/npm-Arbeit an 
 | `LTTH_PORT` | `3000` | HTTP-Port fÃ¼rs Dashboard |
 | `LTTH_NO_BROWSER` | `0` | Browser nach Start nicht Ã¶ffnen (`1` = aus) |
 | `LTTH_QUIET` | `0` | Reduzierte Ausgabe (`1` = still) |
-| `LTTH_REPO_BRANCH` | `main` | Git-Branch fÃ¼r Repository-Checkout und Versionsermittlung |
+| `LTTH_REPO_BRANCH` | `main` | Git-Branch fÃ¼r Legacy- oder Custom-Launcher-Downloads |
 | `LTTH_REPO_OWNER` | `Loggableim` | GitHub-Owner |
 | `LTTH_REPO_NAME` | `ltth.app` | GitHub-Repo-Name |
 
@@ -74,7 +74,7 @@ git pull
 npm install
 ```
 
-Der offizielle Windows-ZIP-Installationspfad laesst Updates vom Launcher verwalten, statt manuell `git pull` zu verwenden.
+Der offizielle Windows-Pfad ueberlaesst Updates und App-Bootstrap komplett dem Launcher. Manuelles `git pull` ist nur noch fuer Legacy-/Custom-Installationen relevant.
 ## Deinstallation
 
 ```bash
