@@ -20,7 +20,7 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 
 Auf Windows legt der Installer zusaetzlich Desktop- und Startmenue-Verknuepfungen an.
 
-Der Windows-One-Liner fordert bei der ersten Ausfuehrung Admin-Freigabe an und installiert fehlendes Git automatisch nach. Der Launcher uebernimmt danach Node.js 22.14.0, `npm install` und Native-Module-Rebuilds beim ersten Start. Wenn `winget` fehlt, nutzt der Installer die offiziellen Git-for-Windows-Installer als Fallback. Waehren langer Schritte zeigt der Windows-Installer einen rotierenden Status-Indikator und Download-Fortschritt an, damit er nicht wie eingefroren wirkt.
+Der Windows-One-Liner fordert bei der ersten Ausfuehrung Admin-Freigabe an und installiert fehlendes Git automatisch nach. Der Windows-Installer selbst bleibt bei Git/Repo/Launcher-Vorbereitung; Node.js 22.14.0, `npm install` und Native-Module-Rebuilds uebernimmt der Launcher beim ersten Start. Wenn `winget` fehlt, nutzt der Installer die offiziellen Git-for-Windows-Installer als Fallback. Waehren langer Schritte zeigt der Windows-Installer einen rotierenden Status-Indikator und Download-Fortschritt an, damit er nicht wie eingefroren wirkt.
 
 Der Windows-Befehl trimmt eine moegliche UTF-8-BOM aus dem Raw-Download, damit PowerShell den ersten Token sauber auswertet.
 

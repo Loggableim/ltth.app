@@ -3,7 +3,7 @@
   "releaseDate": "2026-07-08",
   "status": "stable",
   "downloadVersion": "1.3.24",
-  "downloadNote": "Version 1.3.24 enables automatic launcher updates for Git-backed installs before the app starts.",
+  "downloadNote": "Version 1.3.24 keeps the Windows first install launcher-only: PowerShell prepares Git/repo/launcher, then launcher.exe handles Node.js 22.14.0, npm install, and native-module rebuilds on first start.",
   "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.24",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
@@ -24,7 +24,8 @@
       "changes": [
         "IMPROVED: Launcher now auto-pulls Git-backed updates before starting the server",
         "IMPROVED: Auto-update runs before dependency validation so updated package metadata stays in sync",
-        "IMPROVED: Version metadata bumped to 1.3.24 so the launcher recognizes the new release"
+        "IMPROVED: Version metadata bumped to 1.3.24 so the launcher recognizes the new release",
+        "FIXED: Windows one-line installer now stays launcher-only on first install; Node.js, npm install, and native-module rebuilds happen in launcher.exe"
       ]
     },
     "1.3.23": {

@@ -95,6 +95,30 @@ function Get-InstallerScriptUrl {
     return "https://github.com/$LTTHRepoOwner/$LTTHRepoName/raw/$LTTHRepoBranch/install/install.ps1"
 }
 
+function Get-VersionJsonUrl {
+    if (
+        $LTTHRepoOwner -eq 'Loggableim' -and
+        $LTTHRepoName -eq 'ltth.app' -and
+        $LTTHRepoBranch -eq 'main'
+    ) {
+        return 'https://ltth.app/version.json'
+    }
+
+    return "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/version.json"
+}
+
+function Get-LauncherDownloadUrl {
+    if (
+        $LTTHRepoOwner -eq 'Loggableim' -and
+        $LTTHRepoName -eq 'ltth.app' -and
+        $LTTHRepoBranch -eq 'main'
+    ) {
+        return 'https://ltth.app/launcher.exe'
+    }
+
+    return "https://github.com/$LTTHRepoOwner/$LTTHRepoName/raw/$LTTHRepoBranch/launcher.exe"
+}
+
 function ConvertTo-CommandLineArgument {
     param(
         [Parameter(Mandatory = $true)]
@@ -759,7 +783,16 @@ function Invoke-GitClone {
     )
 
     Log "Klone Repository nach $LTTHDir..."
-    Invoke-Git -Arguments @('clone', '--depth', '1', '--branch', $LTTHRepoBranch, '--single-branch', $RepoUrl, $LTTHDir)
+    $cloneArgs = @('clone', '--depth', '1', '--branch', $LTTHRepoBranch, '--single-branch', '--no-tags', '--filter=blob:none', $RepoUrl, $LTTHDir)
+    try {
+        Invoke-Git -Arguments $cloneArgs
+    } catch {
+        Warn "Gefilterter Git-Clone fehlgeschlagen; versuche Standard-Clone..."
+        if (Test-Path -LiteralPath $LTTHDir) {
+            Remove-Item -LiteralPath $LTTHDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        Invoke-Git -Arguments @('clone', '--depth', '1', '--branch', $LTTHRepoBranch, '--single-branch', '--no-tags', $RepoUrl, $LTTHDir)
+    }
 
     if ($script:LTTHInstallMode -ne 'latest') {
         try {
@@ -825,7 +858,7 @@ function Resolve-Version {
     if ($script:LTTHInstallMode -eq 'latest') {
         Log "Ermittle neueste Version vom Branch $LTTHRepoBranch..."
         try {
-            $versionInfo = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/version.json" -TimeoutSec 15 -ErrorAction Stop
+            $versionInfo = Invoke-RestMethod -Uri (Get-VersionJsonUrl) -TimeoutSec 15 -ErrorAction Stop
             $resolvedVersion = $null
             if ($versionInfo -and $versionInfo.downloadVersion) {
                 $resolvedVersion = $versionInfo.downloadVersion
@@ -874,7 +907,7 @@ function Ensure-Git {
     Fail "Git konnte nicht bereitgestellt werden."
 }
 
-# ---------- Node.js pruefen / installieren ----------
+# ---------- Node.js fallback helpers (not used by Windows main path) ----------
 function Install-NodeViaWinget {
     if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         return $false
@@ -1008,7 +1041,7 @@ function Repair-LauncherFile {
         Warn "Falscher downloads/launcher.exe im Root erkannt; repariere launcher.exe..."
         $tmpLauncher = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-launcher-" + [guid]::NewGuid().ToString('N') + ".exe")
         try {
-            Invoke-DownloadFileWithProgress -Uri "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/launcher.exe" -OutFile $tmpLauncher -Activity 'Launcher.exe wird repariert'
+            Invoke-DownloadFileWithProgress -Uri (Get-LauncherDownloadUrl) -OutFile $tmpLauncher -Activity 'Launcher.exe wird repariert'
             Move-Item -LiteralPath $tmpLauncher -Destination $launcherPath -Force
         } finally {
             Remove-Item -LiteralPath $tmpLauncher -Force -ErrorAction SilentlyContinue
@@ -1165,7 +1198,7 @@ function Install-Deps {
 function Install-Launcher {
     $launcherPath = Join-Path $LTTHDir 'launcher.exe'
     $downloadLauncherPath = Join-Path $LTTHDir 'downloads\launcher.exe'
-    $launcherUrl = "https://github.com/Loggableim/ltth.app/raw/$LTTHRepoBranch/launcher.exe"
+    $launcherUrl = Get-LauncherDownloadUrl
     $tmpLauncher = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-launcher-" + [guid]::NewGuid().ToString('N') + ".exe")
 
     try {
@@ -1398,6 +1431,13 @@ function Main {
         Fail "Launcher konnte nicht bereitgestellt werden. Der Windows-Installer installiert Node.js nicht mehr selbst; bitte Launcher-Log und Netzwerkzugriff pruefen."
     }
 
+    Log "Windows-Installer uebergibt jetzt an den Launcher; Node.js, npm install und Native-Module-Rebuilds laufen dort beim ersten Start."
+
+    $launcherStarted = Start-Launcher -LauncherPath $launcherPath
+    if (-not $launcherStarted) {
+        Fail "Launcher konnte nicht gestartet werden. Der Windows-Installer installiert Node.js nicht mehr selbst; bitte launcher.exe manuell starten und die Launcher-Logs pruefen."
+    }
+
     $desktopShortcutPath = $null
     $startMenuShortcutPath = $null
 
@@ -1405,11 +1445,6 @@ function Main {
     if ($shortcutConfig) {
         $desktopShortcutPath = Create-DesktopShortcut -ShortcutConfig $shortcutConfig
         $startMenuShortcutPath = Create-StartMenuShortcut -ShortcutConfig $shortcutConfig
-    }
-
-    $launcherStarted = Start-Launcher -LauncherPath $launcherPath
-    if (-not $launcherStarted) {
-        Fail "Launcher konnte nicht gestartet werden. Der Windows-Installer installiert Node.js nicht mehr selbst; bitte launcher.exe manuell starten und die Launcher-Logs pruefen."
     }
 
     Write-Host ""
