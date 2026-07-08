@@ -98,7 +98,7 @@ Cross-platform one-line installer system:
 - **Documentation:** `install/README.md` — full reference with environment variables (`LTTH_VERSION`, `LTTH_DIR`, `LTTH_PORT`, `LTTH_NO_BROWSER`, `LTTH_QUIET`, `LTTH_REPO_OWNER`, `LTTH_REPO_NAME`).
 - **Integration:** `version.json` contains `oneLineInstaller` commands for Windows/macOS/Linux/Universal.
 - **Default release branch:** `main` (override with `LTTH_REPO_BRANCH` only for legacy/custom installs).
-- **Windows bootstrap:** the PowerShell installer requests admin elevation on first run, auto-installs missing Git, and then hands off to `launcher.exe` for the first Node/npm/bootstrap run. The launcher provisions portable Node 22.14.0 and rebuilds native modules when needed.
+- **Windows bootstrap:** the PowerShell installer requests admin elevation on first run, downloads the app bundle ZIP plus `launcher.exe`, and then hands off to `launcher.exe` for the first Node/npm/bootstrap run. The launcher provisions portable Node 22.14.0 and rebuilds native modules when needed.
 - **Unix/bootstrap:** `install/install.sh` auto-installs Git and current Node LTS on macOS/Linux, and `install/install.js` auto-installs Git where possible while still requiring a compatible Node runtime to launch.
 
 ## Shared Website Layout

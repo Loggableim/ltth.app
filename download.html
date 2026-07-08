@@ -212,7 +212,7 @@
             Installiere <span class="hero-highlight">LTTH</span>
         </h1>
         <p class="hero-description text-center" data-i18n="install.tagline" style="max-width: 720px; margin: 0 auto;">
-            Ein einziger Befehl. Windows, macOS, Linux. Lädt die neueste Version, bereitet Git/Repo vor und startet den Launcher.
+            Ein einziger Befehl. Windows, macOS, Linux. Windows laedt das App-Bundle direkt als ZIP und startet den Launcher.
         </p>
 
         <div class="install-card" style="max-width: 820px; margin-bottom: var(--space-5);">
@@ -224,7 +224,7 @@
                 <li data-i18n="install.quick.step2">Klicke auf „Kopieren“ und füge den Befehl in PowerShell/Terminal ein.</li>
                 <li data-i18n="install.quick.step3">Drücke Enter und warte – der Installer kümmert sich um den Rest.</li>
             </ol>
-            <p class="install-quick-note" data-i18n="install.quick.note">Du musst nichts weiter einstellen. Auf Windows installiert der Installer nur Git und startet den Launcher; Node.js, npm und Native-Module übernimmt der Launcher beim ersten Start.</p>
+            <p class="install-quick-note" data-i18n="install.quick.note">Du musst nichts weiter einstellen. Auf Windows laedt der Installer direkt das App-Bundle als ZIP und startet dann den Launcher; Node.js, npm und Native-Module uebernimmt der Launcher beim ersten Start.</p>
         </div>
 
         <div class="os-tabs" role="tablist" aria-label="Betriebssystem wählen">
@@ -299,11 +299,11 @@
             <div class="install-steps">
                 <div class="install-step-mini">
                     <h4 data-i18n="install.step1.title">1. Prüfen</h4>
-                    <p data-i18n="install.step1.desc">Git wird erkannt und bei Bedarf installiert.</p>
+                    <p data-i18n="install.step1.desc">Der Windows-Pfad laedt das App-Bundle als ZIP, andere Plattformen folgen ihrem jeweiligen Bootstrap.</p>
                 </div>
                 <div class="install-step-mini">
                     <h4 data-i18n="install.step2.title">2. Laden</h4>
-                    <p data-i18n="install.step2.desc">Neueste LTTH-Version wird von GitHub heruntergeladen und vorbereitet.</p>
+                    <p data-i18n="install.step2.desc">Das Windows-App-Bundle wird direkt von ltth.app geladen und entpackt.</p>
                 </div>
                 <div class="install-step-mini">
                     <h4 data-i18n="install.step3.title">3. Bootstrap</h4>
@@ -380,7 +380,7 @@
                 <h3 style="color:var(--color-primary);" data-i18n="install.req.runtime">⚙️ Runtime</h3>
                 <ul class="requirements-list">
                     <li>Node.js 18, 20, 22 oder 24 LTS</li>
-                    <li>Git 2.20+</li>
+                    <li>Git 2.20+ (nur fuer Linux/macOS und Legacy-/Custom-Installationen)</li>
                     <li>~500 MB freier Festplattenspeicher</li>
                 </ul>
             </div>

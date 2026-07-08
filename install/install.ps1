@@ -119,6 +119,142 @@ function Get-LauncherDownloadUrl {
     return "https://github.com/$LTTHRepoOwner/$LTTHRepoName/raw/$LTTHRepoBranch/launcher.exe"
 }
 
+function Use-OfficialWindowsZipBootstrap {
+    return (
+        $LTTHRepoOwner -eq 'Loggableim' -and
+        $LTTHRepoName -eq 'ltth.app' -and
+        $LTTHRepoBranch -eq 'main' -and
+        $script:LTTHInstallMode -eq 'latest'
+    )
+}
+
+function Get-AppBundleZipUrl {
+    if (Use-OfficialWindowsZipBootstrap) {
+        return 'https://ltth.app/app/ltth_latest.zip'
+    }
+
+    return "https://github.com/$LTTHRepoOwner/$LTTHRepoName/raw/$LTTHRepoBranch/app/ltth_latest.zip"
+}
+
+function Test-AppRootDirectory {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path -PathType Container)) {
+        return $false
+    }
+
+    $packageJson = Join-Path $Path 'package.json'
+    $launchJs = Join-Path $Path 'launch.js'
+    $serverJs = Join-Path $Path 'server.js'
+
+    return (Test-Path -LiteralPath $packageJson) -and ((Test-Path -LiteralPath $launchJs) -or (Test-Path -LiteralPath $serverJs))
+}
+
+function Find-AppRootDirectory {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$BaseDir
+    )
+
+    if (Test-AppRootDirectory -Path $BaseDir) {
+        return $BaseDir
+    }
+
+    $directAppDir = Join-Path $BaseDir 'app'
+    if (Test-AppRootDirectory -Path $directAppDir) {
+        return $directAppDir
+    }
+
+    try {
+        $directories = Get-ChildItem -LiteralPath $BaseDir -Directory -Force -Recurse -ErrorAction Stop
+    } catch {
+        return $null
+    }
+
+    foreach ($directory in $directories) {
+        if (Test-AppRootDirectory -Path $directory.FullName) {
+            return $directory.FullName
+        }
+    }
+
+    return $null
+}
+
+function Copy-DirectoryContents {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourceDir,
+        [Parameter(Mandatory = $true)]
+        [string]$TargetDir
+    )
+
+    Get-ChildItem -LiteralPath $SourceDir -Force | ForEach-Object {
+        Copy-Item -LiteralPath $_.FullName -Destination $TargetDir -Recurse -Force
+    }
+}
+
+function Install-AppBundleFromZip {
+    $appDir = Join-Path $LTTHDir 'app'
+    $appZipUrl = Get-AppBundleZipUrl
+    $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-app-" + [guid]::NewGuid().ToString('N'))
+    $zipPath = Join-Path $tempDir 'ltth_latest.zip'
+    $extractDir = Join-Path $tempDir 'extract'
+    $backupDir = $null
+    $backupCreated = $false
+
+    try {
+        New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
+        Log "Lade LTTH App-Bundle herunter..."
+        Invoke-DownloadFileWithProgress -Uri $appZipUrl -OutFile $zipPath -Activity 'LTTH App-Bundle wird heruntergeladen'
+
+        Log "Entpacke LTTH App-Bundle..."
+        Expand-Archive -LiteralPath $zipPath -DestinationPath $extractDir -Force
+
+        $sourceAppDir = Find-AppRootDirectory -BaseDir $extractDir
+        if (-not $sourceAppDir) {
+            throw "App-Bundle enthaelt kein gueltiges app-Verzeichnis."
+        }
+
+        if (Test-Path -LiteralPath $appDir) {
+            $backupDir = Join-Path $LTTHDir ("app.bak-" + [guid]::NewGuid().ToString('N'))
+            Move-Item -LiteralPath $appDir -Destination $backupDir -Force
+            $backupCreated = $true
+        }
+
+        New-Item -ItemType Directory -Force -Path $appDir | Out-Null
+        Copy-DirectoryContents -SourceDir $sourceAppDir -TargetDir $appDir
+
+        if (-not (Test-Path -LiteralPath (Join-Path $appDir 'package.json'))) {
+            throw "Entpacktes app-Verzeichnis ist unvollstaendig."
+        }
+
+        if ($backupCreated) {
+            Remove-Item -LiteralPath $backupDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+
+        Ok "LTTH App-Bundle bereit: $appDir"
+        return $appDir
+    } catch {
+        if ($backupCreated) {
+            try {
+                if (Test-Path -LiteralPath $appDir) {
+                    Remove-Item -LiteralPath $appDir -Recurse -Force -ErrorAction SilentlyContinue
+                }
+                Move-Item -LiteralPath $backupDir -Destination $appDir -Force
+            } catch {
+                Warn "App-Backup konnte nach einem Fehler nicht wiederhergestellt werden: $($_.Exception.Message)"
+            }
+        }
+
+        throw
+    } finally {
+        Remove-Item -LiteralPath $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function ConvertTo-CommandLineArgument {
     param(
         [Parameter(Mandatory = $true)]
@@ -1021,7 +1157,7 @@ function Ensure-Node {
     Fail "Node.js konnte nicht bereitgestellt werden."
 }
 
-# ---------- Launcher-Reparatur vor Git-Checkout ----------
+# ---------- Launcher-Reparatur vor Source-Update ----------
 function Repair-LauncherFile {
     $launcherPath = Join-Path $LTTHDir 'launcher.exe'
     $downloadLauncherPath = Join-Path $LTTHDir 'downloads\launcher.exe'
@@ -1054,6 +1190,24 @@ function Repair-LauncherFile {
 # ---------- Download ----------
 function Download-Source {
     $repoUrl = "https://github.com/$LTTHRepoOwner/$LTTHRepoName.git"
+    if (Use-OfficialWindowsZipBootstrap) {
+        $appDir = Join-Path $LTTHDir 'app'
+        if (Test-AppRootDirectory -Path $appDir) {
+            Log "Bestehendes App-Verzeichnis gefunden: $appDir"
+            Ok "App-Bundle bereit in $LTTHDir"
+            return
+        }
+
+        try {
+            Install-AppBundleFromZip | Out-Null
+        } catch {
+            Fail "App-Bundle konnte nicht vom offiziellen ZIP geladen werden: $($_.Exception.Message)"
+        }
+
+        Ok "App-Bundle bereit in $LTTHDir"
+        return
+    }
+
     if (Test-Path (Join-Path $LTTHDir '.git')) {
         Repair-LauncherFile
         Log "Bestehende Installation gefunden -- aktualisiere..."
@@ -1423,15 +1577,21 @@ function Main {
         return
     }
 
-    Ensure-Git
-    Resolve-Version
+    $useOfficialZipBootstrap = Use-OfficialWindowsZipBootstrap
+    if ($useOfficialZipBootstrap) {
+        Log "Offizieller Windows-Pfad: lade App-Bundle direkt als ZIP statt Git-Clone."
+    } else {
+        Ensure-Git
+        Resolve-Version
+    }
+
     Download-Source
     $launcherPath = Install-Launcher
     if (-not $launcherPath) {
         Fail "Launcher konnte nicht bereitgestellt werden. Der Windows-Installer installiert Node.js nicht mehr selbst; bitte Launcher-Log und Netzwerkzugriff pruefen."
     }
 
-    Log "Windows-Installer uebergibt jetzt an den Launcher; Node.js, npm install und Native-Module-Rebuilds laufen dort beim ersten Start."
+    Log "Windows-Installer uebergibt App-Bundle und Launcher an launcher.exe; Node.js, npm install und Native-Module-Rebuilds laufen dort beim ersten Start."
 
     $launcherStarted = Start-Launcher -LauncherPath $launcherPath
     if (-not $launcherStarted) {

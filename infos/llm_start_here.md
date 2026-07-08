@@ -163,7 +163,7 @@ Security: HTTPS-only package URLs, SHA-256 checksum verification, safe ZIP extra
 - `app/package.json`: backend dependency manifest
 - `plugin-store.json`: plugin store registry
 - `build-src/`: Go launcher source
-- `version.json`: current version and one-line installer commands; the Windows PowerShell path elevates on first run, auto-installs missing Git, and hands off to `launcher.exe` for Node/npm/bootstrap work, `install/install.sh` bootstraps Git and current Node LTS on macOS/Linux, and `install/install.js` auto-installs Git where possible
+- `version.json`: current version and one-line installer commands; the Windows PowerShell path elevates on first run, downloads the app bundle ZIP plus `launcher.exe`, and hands off to `launcher.exe` for Node/npm/bootstrap work, `install/install.sh` bootstraps Git and current Node LTS on macOS/Linux, and `install/install.js` auto-installs Git where possible
 - `_partials/` + `js/layout.js`: shared website layout system
 
 ## Plugin Rules
