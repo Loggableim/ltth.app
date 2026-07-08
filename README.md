@@ -83,7 +83,7 @@ npm run lint
 
 ## Status
 
-- Version shown in package manifests: `1.3.21`
+- Version shown in package manifests: `1.3.24`
 - Current changelog: [CHANGELOG.md](CHANGELOG.md)
 - Active app changelog: [app/CHANGELOG.md](app/CHANGELOG.md)
 - License: [LICENSE](LICENSE)
