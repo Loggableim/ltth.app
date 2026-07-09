@@ -22,6 +22,8 @@ describe('Release workflow syntax', () => {
     expect(releaseWorkflow).not.toContain('go build -ldflags="-H windowsgui -s -w"');
     expect(releaseWorkflow).not.toContain('Ensure Windows signing certificate is configured');
     expect(releaseWorkflow).not.toContain('signtool.exe');
+    expect(releaseWorkflow).toContain('git fetch origin main');
+    expect(releaseWorkflow).toContain('git rebase origin/main');
     expect(launcherWorkflow).not.toContain('WINDOWS_SIGN_CERT_BASE64');
     expect(launcherWorkflow).not.toContain('WINDOWS_SIGN_CERT_PASSWORD');
     expect(launcherWorkflow).not.toContain('go build -ldflags="-H windowsgui -s -w"');

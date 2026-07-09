@@ -111,6 +111,8 @@ jobs:
             exit 0
           fi
           git commit -m "Publish LTTH v${{ steps.version.outputs.VERSION }} site bundle"
+          git fetch origin main
+          git rebase origin/main
           git push origin HEAD:main
 
   publish_release:
