@@ -1,10 +1,10 @@
 {
-  "version": "1.3.24",
-  "releaseDate": "2026-07-08",
+  "version": "1.3.25",
+  "releaseDate": "2026-07-09",
   "status": "stable",
-  "downloadVersion": "1.3.24",
-  "downloadNote": "Version 1.3.24 uses a direct Windows launcher bootstrap: PowerShell downloads launcher.exe, then launcher.exe bootstraps the app, Node.js 22.14.0, npm install, and native-module rebuilds on first start.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.24",
+  "downloadVersion": "1.3.25",
+  "downloadNote": "Version 1.3.25 keeps the Windows path on launcher.exe, routes app-store auth through the ltth.app website bridge, and keeps launcher-driven updates and rollback handling intact.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.25",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
     "macos": "curl -fsSL https://ltth.app/install/install.sh | bash",
@@ -19,6 +19,14 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.25": {
+      "date": "2026-07-09",
+      "changes": [
+        "IMPROVED: App store auth now uses the ltth.app website Clerk bridge and local callback handoff instead of loading Clerk directly inside the desktop app",
+        "FIXED: Windows desktop shortcuts now prefer the LTTH launcher icon instead of falling back to the generic favicon",
+        "IMPROVED: Public release metadata and download surfaces bumped to 1.3.25"
+      ]
+    },
     "1.3.24": {
       "date": "2026-07-08",
       "changes": [

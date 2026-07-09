@@ -1389,6 +1389,7 @@ function Get-ShortcutIconPath {
     foreach ($candidate in @(
         (Join-Path $LTTHDir 'build-src\icon.ico'),
         (Join-Path $LTTHDir 'icon.ico'),
+        (Join-Path $LTTHDir 'launcher.exe'),
         (Join-Path $LTTHDir 'app\public\favicon.ico')
     )) {
         if (Test-Path -LiteralPath $candidate) {

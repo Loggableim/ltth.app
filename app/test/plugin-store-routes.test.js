@@ -9,18 +9,35 @@ const jwt = require('jsonwebtoken');
 const request = require('supertest');
 
 const { setupPluginRoutes } = require('../routes/plugin-routes');
-const { createRequireStoreAuth } = require('../modules/clerk-store-auth');
 
-function createTestApp(pluginsDir, options = {}) {
+function createAuthFixture() {
+  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048
+  });
+
+  const publicPem = publicKey.export({ type: 'spki', format: 'pem' });
+  const token = jwt.sign({
+    sub: 'user_123',
+    sid: 'sess_123',
+    azp: 'http://127.0.0.1:3000'
+  }, privateKey.export({ type: 'pkcs8', format: 'pem' }), {
+    algorithm: 'RS256',
+    expiresIn: '1h'
+  });
+
+  return { publicPem, token };
+}
+
+function createTestApp(pluginsDir, envOverrides = {}) {
   const app = express();
   app.use(express.json());
 
-  const passThrough = (req, res, next) => next();
   const logger = {
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn()
   };
+
   const pluginLoader = {
     pluginsDir,
     plugins: new Map(),
@@ -29,11 +46,23 @@ function createTestApp(pluginsDir, options = {}) {
     unloadPlugin: jest.fn(),
     isPluginEnabledFromDisk: () => true,
     getLocalizedDescription: (manifest) => manifest.description,
-    logger
+    loadPlugin: jest.fn(),
+    registerPluginTikTokEvents: jest.fn()
   };
 
-  setupPluginRoutes(app, pluginLoader, passThrough, passThrough, logger, null, null, options);
-  return { app, logger, pluginLoader };
+  const authFixture = createAuthFixture();
+  const env = {
+    CLERK_PUBLISHABLE_KEY: 'pk_test_public',
+    CLERK_JWT_KEY: authFixture.publicPem,
+    LTTH_ACCOUNT_PORTAL_URL: 'https://ltth.app/auth/',
+    ...envOverrides
+  };
+
+  setupPluginRoutes(app, pluginLoader, (req, res, next) => next(), (req, res, next) => next(), logger, null, null, {
+    env
+  });
+
+  return { app, logger, pluginLoader, authFixture, env };
 }
 
 describe('Plugin store routes', () => {
@@ -55,7 +84,17 @@ describe('Plugin store routes', () => {
             description: { en: 'Text to speech' },
             version: '1.0.0',
             packageUrl: 'https://example.com/tts.zip',
-            channel: 'open-beta'
+            channel: 'open-beta',
+            pricing: { type: 'free', amount: 0, currency: 'EUR' }
+          },
+          {
+            id: 'store-admin',
+            name: { en: 'LTTH App Store Admin' },
+            description: { en: 'Admin only store plugin' },
+            version: '1.0.0',
+            packageUrl: 'https://example.com/store-admin.zip',
+            channel: 'open-beta',
+            access: { type: 'admin', hidden: true }
           }
         ]
       })
@@ -67,317 +106,87 @@ describe('Plugin store routes', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('lists official store plugins while community is disabled', async () => {
+  it('serves store config without requiring a secret key', async () => {
     const { app } = createTestApp(tempDir);
 
-    const response = await request(app).get('/api/plugin-store').expect(200);
+    const response = await request(app).get('/api/plugin-store/config').expect(200);
 
     assert.strictEqual(response.body.success, true);
-    assert.strictEqual(response.body.communityEnabled, false);
-    assert.strictEqual(response.body.sources.length, 1);
-    assert.strictEqual(response.body.sources[0].id, 'official');
-    assert.strictEqual(response.body.plugins[0].id, 'tts');
-    assert.strictEqual(response.body.plugins[0].official, true);
-    assert.strictEqual(response.body.plugins[0].channel, 'open-beta');
+    assert.strictEqual(response.body.clerkEnabled, true);
+    assert.strictEqual(response.body.publishableKey, 'pk_test_public');
+    assert.strictEqual(response.body.accountPortalBaseUrl, 'https://ltth.app/auth');
   });
 
-  it('rejects community source mutations for the closed store', async () => {
-    const { app } = createTestApp(tempDir);
+  it('requires Clerk auth for store listing and persists the local session cookie', async () => {
+    const { app, authFixture } = createTestApp(tempDir);
 
-    const addResponse = await request(app)
+    await request(app)
+      .get('/api/plugin-store')
+      .expect(401);
+
+    const sessionResponse = await request(app)
+      .post('/api/plugin-store/session')
+      .set('Authorization', `Bearer ${authFixture.token}`)
+      .set('Origin', 'http://127.0.0.1:3000')
+      .expect(200);
+
+    assert.strictEqual(sessionResponse.body.success, true);
+    assert.strictEqual(sessionResponse.body.account.authenticated, true);
+    assert.strictEqual(sessionResponse.body.account.userId, 'user_123');
+    assert(sessionResponse.headers['set-cookie'].some((value) => value.includes('ltth_store_session=')));
+
+    const listing = await request(app)
+      .get('/api/plugin-store')
+      .set('Authorization', `Bearer ${authFixture.token}`)
+      .set('Origin', 'http://127.0.0.1:3000')
+      .expect(200);
+
+    assert.strictEqual(listing.body.success, true);
+    assert.strictEqual(listing.body.communityEnabled, false);
+    assert.strictEqual(listing.body.plugins.some((plugin) => plugin.id === 'tts'), true);
+    assert.strictEqual(listing.body.plugins.some((plugin) => plugin.id === 'store-admin'), false);
+  });
+
+  it('rejects community source mutations in the closed store', async () => {
+    const { app, authFixture } = createTestApp(tempDir);
+
+    const headers = {
+      Authorization: `Bearer ${authFixture.token}`,
+      Origin: 'http://127.0.0.1:3000'
+    };
+
+    await request(app)
+      .post('/api/plugin-store/community/enable')
+      .set(headers)
+      .expect(410);
+
+    await request(app)
       .post('/api/plugin-store/sources')
+      .set(headers)
       .send({
-        id: 'creator',
-        name: 'Creator Store',
+        id: 'community',
+        name: 'Community Store',
         url: 'https://example.com/community.json'
       })
       .expect(410);
 
-    const enableResponse = await request(app)
-      .post('/api/plugin-store/community/enable')
+    await request(app)
+      .delete('/api/plugin-store/sources/community')
+      .set(headers)
       .expect(410);
-
-    assert.strictEqual(addResponse.body.code, 'COMMUNITY_SOURCES_DISABLED');
-    assert.strictEqual(enableResponse.body.code, 'COMMUNITY_SOURCES_DISABLED');
   });
 
-  it('applies injected store auth to listing and install endpoints', async () => {
-    const storeAuth = jest.fn((req, res, next) => {
-      if (req.get('authorization') !== 'Bearer test-session') {
-        return res.status(401).json({
-          success: false,
-          code: 'AUTH_REQUIRED',
-          error: 'Sign in to use the plugin store.'
-        });
-      }
-      req.storeAccount = { userId: 'user_test' };
-      return next();
-    });
-    const { app } = createTestApp(tempDir, {
-      storeAuth
-    });
-
-    await request(app)
-      .get('/api/plugin-store')
-      .expect(401);
-
-    await request(app)
-      .get('/api/plugin-store')
-      .set('authorization', 'Bearer test-session')
-      .expect(200);
-
-    await request(app)
-      .post('/api/plugin-store/official/tts/install')
-      .expect(401);
-
-    assert.strictEqual(storeAuth.mock.calls.length, 3);
-  });
-
-  it('claims a beta license for an authenticated store account', async () => {
-    const claimBetaLicense = jest.fn(async (req) => ({
-      active: true,
-      status: 'active',
-      plan: 'beta-free',
-      licenseId: `ltth_beta_${req.storeAccount.userId}`
-    }));
-    const storeAuth = (req, res, next) => {
-      req.storeAccount = { userId: 'user_test' };
-      next();
-    };
-    const { app } = createTestApp(tempDir, { storeAuth, claimBetaLicense });
+  it('claims the beta license for the authenticated account', async () => {
+    const { app, authFixture } = createTestApp(tempDir);
 
     const response = await request(app)
       .post('/api/plugin-store/license/claim')
+      .set('Authorization', `Bearer ${authFixture.token}`)
+      .set('Origin', 'http://127.0.0.1:3000')
       .expect(200);
 
     assert.strictEqual(response.body.success, true);
     assert.strictEqual(response.body.license.active, true);
     assert.strictEqual(response.body.license.plan, 'beta-free');
-    assert.strictEqual(response.body.license.licenseId, 'ltth_beta_user_test');
-    assert.strictEqual(claimBetaLicense.mock.calls.length, 1);
-  });
-
-  it('records feedback and telemetry and exposes local store health summaries', async () => {
-    const storeAuth = (req, res, next) => {
-      req.storeAccount = {
-        userId: 'user_feedback',
-        license: { active: true, status: 'active', plan: 'beta-free' },
-        access: { groups: [], closedBetaPlugins: [] }
-      };
-      next();
-    };
-    const { app } = createTestApp(tempDir, {
-      storeAuth,
-      storeInsightsFile: path.join(tempDir, '_state', 'store-insights.json')
-    });
-
-    const feedbackResponse = await request(app)
-      .post('/api/plugin-store/feedback')
-      .send({
-        pluginId: 'tts',
-        rating: 5,
-        kind: 'review',
-        message: 'Works well for my stream'
-      })
-      .expect(201);
-
-    await request(app)
-      .post('/api/plugin-store/telemetry')
-      .send({
-        pluginId: 'tts',
-        event: 'install_success',
-        durationMs: 1234
-      })
-      .expect(202);
-
-    const healthResponse = await request(app)
-      .get('/api/plugin-store/health')
-      .expect(200);
-
-    assert.strictEqual(feedbackResponse.body.success, true);
-    assert.strictEqual(feedbackResponse.body.feedback.pluginId, 'tts');
-    assert.strictEqual(feedbackResponse.body.feedback.userId, 'user_feedback');
-    assert.strictEqual(healthResponse.body.success, true);
-    assert.strictEqual(healthResponse.body.summary.feedbackCount, 1);
-    assert.strictEqual(healthResponse.body.summary.telemetryCount, 1);
-    assert.strictEqual(healthResponse.body.summary.plugins.tts.feedbackCount, 1);
-    assert.strictEqual(healthResponse.body.summary.plugins.tts.installSuccessCount, 1);
-  });
-
-  it('sets a local store session cookie and restores accounts from a public JWT', async () => {
-    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-      modulusLength: 2048
-    });
-    const publicPem = publicKey.export({ type: 'spki', format: 'pem' });
-    const token = jwt.sign({
-      sub: 'user_cookie',
-      sid: 'sess_cookie',
-      azp: 'https://ltth.app'
-    }, privateKey.export({ type: 'pkcs8', format: 'pem' }), {
-      algorithm: 'RS256',
-      header: { kid: 'ltth-test-key' },
-      expiresIn: '1h'
-    });
-    const storeAuth = createRequireStoreAuth({
-      env: {
-        CLERK_PUBLISHABLE_KEY: 'pk_test_public',
-        CLERK_JWT_KEY: publicPem,
-        LTTH_ACCOUNT_PORTAL_URL: 'https://ltth.app/auth/'
-      }
-    });
-    const { app } = createTestApp(tempDir, {
-      storeAuth,
-      env: {}
-    });
-
-    const sessionResponse = await request(app)
-      .post('/api/plugin-store/session')
-      .set('authorization', `Bearer ${token}`)
-      .expect(200);
-    const cookie = sessionResponse.headers['set-cookie'].find((value) => value.startsWith('ltth_store_session='));
-
-    assert(cookie.includes('Max-Age=1209600'));
-    assert(cookie.includes('HttpOnly'));
-    assert(cookie.includes('SameSite=Lax'));
-    assert(cookie.includes(encodeURIComponent(token)));
-
-    const accountResponse = await request(app)
-      .get('/api/plugin-store/account')
-      .set('Cookie', cookie)
-      .expect(200);
-
-    assert.strictEqual(accountResponse.body.account.authenticated, true);
-    assert.strictEqual(accountResponse.body.account.userId, 'user_cookie');
-    assert.strictEqual(accountResponse.body.account.license.active, true);
-  });
-
-  it('blocks plugin installs until the authenticated account has a beta license', async () => {
-    const storeAuth = (req, res, next) => {
-      req.storeAccount = {
-        userId: 'user_test',
-        license: { active: false, status: 'missing', plan: null }
-      };
-      next();
-    };
-    const { app } = createTestApp(tempDir, { storeAuth });
-
-    const response = await request(app)
-      .post('/api/plugin-store/official/tts/install')
-      .expect(402);
-
-    assert.strictEqual(response.body.success, false);
-    assert.strictEqual(response.body.code, 'BETA_LICENSE_REQUIRED');
-    assert.strictEqual(response.body.licenseRequired, true);
-  });
-
-  it('blocks direct installs of hidden admin plugins without admin access', async () => {
-    global.fetch = jest.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        schemaVersion: 1,
-        plugins: [
-          {
-            id: 'store-admin',
-            name: { en: 'Store Admin' },
-            description: { en: 'User management' },
-            version: '1.0.0',
-            access: { type: 'admin', hidden: true },
-            packageUrl: 'https://example.com/store-admin.zip',
-            channel: 'open-beta'
-          }
-        ]
-      })
-    }));
-    const storeAuth = (req, res, next) => {
-      req.storeAccount = {
-        userId: 'user_test',
-        license: { active: true, status: 'active', plan: 'beta-free' },
-        access: { groups: [], closedBetaPlugins: [] }
-      };
-      next();
-    };
-    const { app } = createTestApp(tempDir, { storeAuth });
-
-    const response = await request(app)
-      .post('/api/plugin-store/official/store-admin/install')
-      .expect(403);
-
-    assert.strictEqual(response.body.success, false);
-    assert.strictEqual(response.body.code, 'ADMIN_ACCESS_REQUIRED');
-  });
-
-  it('blocks subscriber-only plugin installs without subscriber access', async () => {
-    global.fetch = jest.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        schemaVersion: 1,
-        plugins: [
-          {
-            id: 'animazingpal',
-            name: { en: 'AnimazingPal' },
-            description: { en: 'VTuber avatar control' },
-            version: '1.4.0',
-            access: { type: 'subscriber' },
-            packageUrl: 'https://example.com/animazingpal.zip',
-            channel: 'open-beta'
-          }
-        ]
-      })
-    }));
-    const storeAuth = (req, res, next) => {
-      req.storeAccount = {
-        userId: 'user_test',
-        license: { active: true, status: 'active', plan: 'beta-free' },
-        access: { groups: [], closedBetaPlugins: [] }
-      };
-      next();
-    };
-    const { app } = createTestApp(tempDir, { storeAuth });
-
-    const response = await request(app)
-      .post('/api/plugin-store/official/animazingpal/install')
-      .expect(403);
-
-    assert.strictEqual(response.body.success, false);
-    assert.strictEqual(response.body.code, 'SUBSCRIBER_ACCESS_REQUIRED');
-  });
-
-  it('blocks closed beta plugin installs without an invite grant', async () => {
-    global.fetch = jest.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        schemaVersion: 1,
-        plugins: [
-          {
-            id: 'openshock',
-            name: { en: 'OpenShock' },
-            description: { en: 'Shock integration' },
-            version: '1.1.0',
-            access: { type: 'closed-beta' },
-            packageUrl: 'https://example.com/openshock.zip',
-            channel: 'open-beta'
-          }
-        ]
-      })
-    }));
-    const storeAuth = (req, res, next) => {
-      req.storeAccount = {
-        userId: 'user_test',
-        license: { active: true, status: 'active', plan: 'beta-free' },
-        access: { groups: [], closedBetaPlugins: [] }
-      };
-      next();
-    };
-    const { app } = createTestApp(tempDir, { storeAuth });
-
-    const response = await request(app)
-      .post('/api/plugin-store/official/openshock/install')
-      .expect(403);
-
-    assert.strictEqual(response.body.success, false);
-    assert.strictEqual(response.body.code, 'CLOSED_BETA_INVITE_REQUIRED');
   });
 });

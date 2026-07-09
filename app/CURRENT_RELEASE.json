@@ -1,5 +1,5 @@
 {
-  "version": "1.3.24",
-  "updated_at": "2026-07-09T03:44:36.531232+00:00",
-  "notes": "LTTH Version 1.3.24 Release Notes\n\nVersion 1.3.24 uses a Windows ZIP bootstrap: PowerShell downloads the app bundle ZIP plus launcher.exe, then launcher.exe handles Node.js 22.14.0, npm install, and native-module rebuilds on first start.\n\n- IMPROVED: Launcher now auto-pulls Git-backed updates before starting the server\n- IMPROVED: Auto-update runs before dependency validation so updated package metadata stays in sync\n- IMPROVED: Version metadata bumped to 1.3.24 so the launcher recognizes the new release\n- FIXED: Windows one-line installer now downloads the app bundle ZIP on first install; Node.js, npm install, and native-module rebuilds happen in launcher.exe\n"
+  "version": "1.3.25",
+  "updated_at": "2026-07-09T06:33:47.064895+00:00",
+  "notes": "LTTH Version 1.3.25 Release Notes\n\nVersion 1.3.25 keeps the Windows path on launcher.exe, routes app-store auth through the ltth.app website bridge, and keeps launcher-driven updates and rollback handling intact.\n\n- IMPROVED: App store auth now uses the ltth.app website Clerk bridge and local callback handoff instead of loading Clerk directly inside the desktop app\n- FIXED: Windows desktop shortcuts now prefer the LTTH launcher icon instead of falling back to the generic favicon\n- IMPROVED: Public release metadata and download surfaces bumped to 1.3.25\n"
 }

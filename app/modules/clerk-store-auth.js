@@ -10,83 +10,50 @@ function cleanEnvValue(value) {
   return String(value || '').trim();
 }
 
-function base64UrlEncode(value) {
-  return Buffer.from(value)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
-}
+function normalizeList(value) {
+  const rawItems = Array.isArray(value) ? value : String(value || '').split(',');
+  const items = [];
+  const seen = new Set();
 
-function base64UrlDecode(value) {
-  const normalized = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
-  const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
-  return Buffer.from(padded, 'base64').toString('utf8');
-}
-
-function serializeStoreSession(account = {}, options = {}) {
-  const token = cleanEnvValue(options.token || account.sessionToken || account.token);
-  if (token) {
-    return token;
+  for (const rawItem of rawItems) {
+    const item = cleanEnvValue(rawItem).toLowerCase();
+    if (item && !seen.has(item)) {
+      seen.add(item);
+      items.push(item);
+    }
   }
 
-  const env = options.env || process.env;
-  const now = options.now || (() => new Date());
-  const userId = cleanEnvValue(account.userId);
-  const secret = cleanEnvValue(
-    env.LTTH_STORE_SESSION_SECRET ||
-    env.LTTH_STORE_CLERK_SECRET_KEY ||
-    env.CLERK_SECRET_KEY
-  );
-  if (!userId || !secret) {
-    return '';
-  }
-
-  const issuedAt = now().getTime();
-  const expiresAt = issuedAt + STORE_SESSION_MAX_AGE_MS;
-  const payload = base64UrlEncode(JSON.stringify({
-    userId,
-    sessionId: cleanEnvValue(account.sessionId) || null,
-    iat: issuedAt,
-    exp: expiresAt
-  }));
-  const signature = crypto
-    .createHmac('sha256', secret)
-    .update(payload)
-    .digest('base64url');
-
-  return signature ? `${payload}.${signature}` : '';
+  return items;
 }
 
 function parseCookies(cookieHeader = '') {
   const cookies = {};
+
   for (const part of String(cookieHeader || '').split(';')) {
     const index = part.indexOf('=');
     if (index === -1) continue;
+
     const key = part.slice(0, index).trim();
     const value = part.slice(index + 1).trim();
     if (key) {
       cookies[key] = decodeURIComponent(value);
     }
   }
+
   return cookies;
 }
 
 function parseStoreSessionCookie(req, options = {}) {
   const cookieName = options.cookieName || STORE_SESSION_COOKIE;
   const cookies = parseCookies(req.headers?.cookie || '');
-  const value = cookies[cookieName] || cookies.__session;
-  return cleanEnvValue(value) || null;
+  return cleanEnvValue(cookies[cookieName] || cookies.__session) || null;
 }
 
 function extractSessionToken(req, options = {}) {
   const header = cleanEnvValue(req.headers?.authorization || req.get?.('authorization'));
   if (header) {
-    const bearerMatch = header.match(/^Bearer\s+(.+)$/i);
-    if (bearerMatch) {
-      return cleanEnvValue(bearerMatch[1]);
-    }
-    return header;
+    const bearer = header.match(/^Bearer\s+(.+)$/i);
+    return cleanEnvValue(bearer ? bearer[1] : header) || null;
   }
 
   return parseStoreSessionCookie(req, options);
@@ -103,7 +70,7 @@ function appendSetCookie(res, cookie) {
 }
 
 function setStoreSessionCookie(res, account = {}, options = {}) {
-  const token = serializeStoreSession(account, options);
+  const token = cleanEnvValue(options.token || account.sessionToken || account.token);
   if (!token) {
     return false;
   }
@@ -112,22 +79,18 @@ function setStoreSessionCookie(res, account = {}, options = {}) {
   const maxAgeSeconds = Math.floor(STORE_SESSION_MAX_AGE_MS / 1000);
   const now = options.now || (() => new Date());
   const expiresAt = new Date(now().getTime() + STORE_SESSION_MAX_AGE_MS).toUTCString();
+
   appendSetCookie(
     res,
     `${cookieName}=${encodeURIComponent(token)}; Max-Age=${maxAgeSeconds}; Expires=${expiresAt}; Path=/; HttpOnly; SameSite=Lax`
   );
+
   return true;
 }
 
 function clearStoreSessionCookie(res, options = {}) {
   const cookieName = options.cookieName || STORE_SESSION_COOKIE;
   appendSetCookie(res, `${cookieName}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; HttpOnly; SameSite=Lax`);
-}
-
-function normalizeAuthorizedParties(value) {
-  return normalizeList(value)
-    .map((entry) => String(entry || '').trim())
-    .filter(Boolean);
 }
 
 function getRequestOrigin(req = {}) {
@@ -147,10 +110,10 @@ function getRequestOrigin(req = {}) {
 
 function buildAuthorizedParties(req, config, env = process.env) {
   const parties = new Set([
-    ...normalizeAuthorizedParties(env.LTTH_STORE_AUTHORIZED_PARTIES || env.CLERK_AUTHORIZED_PARTIES),
-    ...normalizeAuthorizedParties(config.authBridgeUrl ? new URL(config.authBridgeUrl).origin : ''),
-    ...normalizeAuthorizedParties(config.accountPortalBaseUrl ? new URL(config.accountPortalBaseUrl).origin : ''),
-    ...normalizeAuthorizedParties(getRequestOrigin(req))
+    ...normalizeList(env.LTTH_STORE_AUTHORIZED_PARTIES || env.CLERK_AUTHORIZED_PARTIES),
+    ...normalizeList(config.authBridgeUrl ? new URL(config.authBridgeUrl).origin : ''),
+    ...normalizeList(config.accountPortalBaseUrl ? new URL(config.accountPortalBaseUrl).origin : ''),
+    ...normalizeList(getRequestOrigin(req))
   ]);
 
   return Array.from(parties).filter(Boolean);
@@ -164,6 +127,86 @@ function decodeJwtHeader(token) {
   }
 }
 
+function deriveClerkFrontendDomain(publishableKey) {
+  try {
+    let encoded = String(publishableKey || '').split('_')[2] || '';
+    encoded = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    while (encoded.length % 4) encoded += '=';
+    return Buffer.from(encoded, 'base64').toString('utf8').replace(/\$$/, '');
+  } catch {
+    return '';
+  }
+}
+
+function buildStoreAuthConfig(env = process.env) {
+  const publishableKey = cleanEnvValue(
+    env.LTTH_STORE_CLERK_PUBLISHABLE_KEY ||
+    env.CLERK_PUBLISHABLE_KEY ||
+    env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+    env.VITE_CLERK_PUBLISHABLE_KEY
+  );
+  const accountPortalBaseUrl = cleanEnvValue(
+    env.LTTH_ACCOUNT_PORTAL_URL ||
+    env.CLERK_ACCOUNT_PORTAL_URL ||
+    'https://ltth.app/auth/'
+  ).replace(/\/+$/, '');
+  const authBridgeUrl = cleanEnvValue(
+    env.LTTH_AUTH_BRIDGE_URL ||
+    env.CLERK_AUTH_BRIDGE_URL ||
+    `${accountPortalBaseUrl}/`
+  );
+  const authCallbackPath = cleanEnvValue(env.CLERK_AUTH_CALLBACK_PATH || '/auth/clerk/callback.html');
+  const accountManagementUrl = cleanEnvValue(
+    env.LTTH_ACCOUNT_MANAGEMENT_URL ||
+    `${accountPortalBaseUrl}/`
+  );
+  const signInUrl = cleanEnvValue(
+    env.LTTH_ACCOUNT_SIGN_IN_URL ||
+    `${accountPortalBaseUrl}/?mode=sign-in`
+  );
+  const signUpUrl = cleanEnvValue(
+    env.LTTH_ACCOUNT_SIGN_UP_URL ||
+    `${accountPortalBaseUrl}/?mode=sign-up`
+  );
+  const unauthorizedSignInUrl = cleanEnvValue(
+    env.LTTH_ACCOUNT_UNAUTHORIZED_SIGN_IN_URL ||
+    `${accountPortalBaseUrl}/?mode=sign-in&reason=unauthorized`
+  );
+  const frontendDomain = cleanEnvValue(env.CLERK_FRONTEND_API || deriveClerkFrontendDomain(publishableKey));
+  const jwtKey = cleanEnvValue(
+    env.LTTH_STORE_CLERK_JWT_KEY ||
+    env.CLERK_JWT_KEY ||
+    env.NEXT_PUBLIC_CLERK_JWT_KEY ||
+    env.VITE_CLERK_JWT_KEY
+  );
+  const storeAuthorizedParties = normalizeList([
+    env.LTTH_STORE_AUTHORIZED_PARTIES,
+    env.CLERK_AUTHORIZED_PARTIES,
+    authBridgeUrl ? new URL(authBridgeUrl).origin : '',
+    accountPortalBaseUrl ? new URL(accountPortalBaseUrl).origin : ''
+  ].filter(Boolean).join(','));
+
+  return {
+    authRequired: true,
+    closedStore: true,
+    clerkEnabled: Boolean(publishableKey),
+    publishableKey,
+    frontendDomain,
+    authBridgeUrl,
+    authCallbackPath,
+    accountPortalBaseUrl,
+    accountManagementUrl,
+    signInUrl,
+    signUpUrl,
+    unauthorizedSignInUrl,
+    jwtKey,
+    storeAuthorizedParties,
+    secretConfigured: Boolean(cleanEnvValue(env.LTTH_STORE_CLERK_SECRET_KEY || env.CLERK_SECRET_KEY)),
+    billingEnabled: env.CLERK_BILLING_ENABLED !== 'false',
+    loginMethods: ['email', 'passkey', 'google', 'apple', 'tiktok']
+  };
+}
+
 async function fetchClerkJwks(jwksUrl, logger) {
   const cacheKey = String(jwksUrl || '').trim() || CLERK_JWKS_URL;
   const cached = jwksCache.get(cacheKey);
@@ -172,10 +215,9 @@ async function fetchClerkJwks(jwksUrl, logger) {
   }
 
   const response = await fetch(cacheKey, {
-    headers: {
-      accept: 'application/json'
-    }
+    headers: { accept: 'application/json' }
   });
+
   if (!response.ok) {
     throw new Error(`Failed to fetch Clerk JWKS from ${cacheKey} (${response.status})`);
   }
@@ -216,9 +258,7 @@ async function resolveClerkVerificationKey(token, options = {}) {
     CLERK_JWKS_URL
   );
   const keys = await fetchClerkJwks(jwksUrl, options.logger);
-  const candidates = header?.header?.kid
-    ? keys.filter((key) => key.kid === header.header.kid)
-    : keys;
+  const candidates = header?.header?.kid ? keys.filter((key) => key.kid === header.header.kid) : keys;
 
   for (const key of candidates) {
     try {
@@ -261,7 +301,7 @@ async function verifyClerkSessionToken(token, options = {}) {
   }
 
   const authorizedParties = Array.from(new Set([
-    ...normalizeAuthorizedParties(options.authorizedParties || ''),
+    ...normalizeList(options.authorizedParties || ''),
     ...buildAuthorizedParties(options.req || {}, config, env)
   ]));
   const tokenOrigin = cleanEnvValue(payload.azp).toLowerCase();
@@ -274,89 +314,70 @@ async function verifyClerkSessionToken(token, options = {}) {
   return payload;
 }
 
-function deriveClerkFrontendDomain(publishableKey) {
-  try {
-    let encoded = String(publishableKey || '').split('_')[2] || '';
-    encoded = encoded.replace(/-/g, '+').replace(/_/g, '/');
-    while (encoded.length % 4) encoded += '=';
-    return Buffer.from(encoded, 'base64').toString('utf8').replace(/\$$/, '');
-  } catch (error) {
-    return '';
-  }
-}
-
-function buildStoreAuthConfig(env = process.env) {
-  const publishableKey = cleanEnvValue(
-    env.LTTH_STORE_CLERK_PUBLISHABLE_KEY ||
-    env.CLERK_PUBLISHABLE_KEY ||
-    env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
-    env.VITE_CLERK_PUBLISHABLE_KEY
-  );
-  const proxyUrl = cleanEnvValue(env.CLERK_PROXY_URL || env.NEXT_PUBLIC_CLERK_PROXY_URL);
-  const frontendDomain = cleanEnvValue(env.CLERK_FRONTEND_API || deriveClerkFrontendDomain(publishableKey));
-  const authBridgeUrl = cleanEnvValue(env.CLERK_AUTH_BRIDGE_URL);
-  const authCallbackPath = cleanEnvValue(env.CLERK_AUTH_CALLBACK_PATH || '/auth/clerk/callback.html');
-  const accountPortalBaseUrl = cleanEnvValue(
-    env.LTTH_ACCOUNT_PORTAL_URL ||
-    env.CLERK_ACCOUNT_PORTAL_URL ||
-    'https://ltth.app/auth/'
-  ).replace(/\/+$/, '');
-  const accountManagementUrl = cleanEnvValue(
-    env.LTTH_ACCOUNT_MANAGEMENT_URL ||
-    `${accountPortalBaseUrl}/`
-  );
-  const signInUrl = cleanEnvValue(
-    env.LTTH_ACCOUNT_SIGN_IN_URL ||
-    `${accountPortalBaseUrl}/?mode=sign-in`
-  );
-  const signUpUrl = cleanEnvValue(
-    env.LTTH_ACCOUNT_SIGN_UP_URL ||
-    `${accountPortalBaseUrl}/?mode=sign-up`
-  );
-  const unauthorizedSignInUrl = cleanEnvValue(
-    env.LTTH_ACCOUNT_UNAUTHORIZED_SIGN_IN_URL ||
-    `${accountPortalBaseUrl}/?mode=sign-in&reason=unauthorized`
-  );
-  const jwtKey = cleanEnvValue(
-    env.LTTH_STORE_CLERK_JWT_KEY ||
-    env.CLERK_JWT_KEY ||
-    env.NEXT_PUBLIC_CLERK_JWT_KEY ||
-    env.VITE_CLERK_JWT_KEY
-  );
-  const storeAuthorizedParties = normalizeAuthorizedParties(
-    [
-      env.LTTH_STORE_AUTHORIZED_PARTIES,
-      env.CLERK_AUTHORIZED_PARTIES,
-      authBridgeUrl ? new URL(authBridgeUrl).origin : '',
-      accountPortalBaseUrl ? new URL(accountPortalBaseUrl).origin : ''
-    ].filter(Boolean).join(',')
-  );
+function normalizeStoreLicense(source = {}) {
+  const license = source.ltthLicense || source.license || source;
+  const status = cleanEnvValue(license.status);
+  const plan = cleanEnvValue(license.plan);
+  const active = license.active === true || (status === 'active' && plan === 'beta-free');
 
   return {
-    authRequired: true,
-    closedStore: true,
-    clerkEnabled: Boolean(publishableKey),
-    publishableKey,
-    frontendDomain,
-    proxyUrl,
-    authBridgeUrl,
-    authCallbackPath,
-    accountPortalBaseUrl,
-    accountManagementUrl,
-    signInUrl,
-    signUpUrl,
-    unauthorizedSignInUrl,
-    jwtKey,
-    storeAuthorizedParties,
-    secretConfigured: Boolean(
-      cleanEnvValue(
-        env.LTTH_STORE_CLERK_SECRET_KEY ||
-        env.CLERK_SECRET_KEY
-      )
-    ),
-    billingEnabled: env.CLERK_BILLING_ENABLED !== 'false',
-    loginMethods: ['email', 'passkey', 'google', 'apple', 'tiktok']
+    active,
+    status: active ? 'active' : (status || 'missing'),
+    plan: active ? (plan || 'beta-free') : (plan || null),
+    licenseId: cleanEnvValue(license.licenseId) || null,
+    claimedAt: cleanEnvValue(license.claimedAt) || null,
+    termsVersion: cleanEnvValue(license.termsVersion) || null
   };
+}
+
+function normalizeStoreAccess(source = {}) {
+  const access = source.ltthAccess || source.access || source;
+
+  return {
+    groups: normalizeList(access.groups || access.group),
+    closedBetaPlugins: normalizeList(
+      access.closedBetaPlugins ||
+      access.closed_beta_plugins ||
+      access.plugins ||
+      access.pluginIds
+    )
+  };
+}
+
+function buildBetaLicense(userId, now = () => new Date()) {
+  const safeUserId = cleanEnvValue(userId);
+  const timestamp = now().toISOString();
+  return {
+    active: true,
+    status: 'active',
+    plan: 'beta-free',
+    licenseId: `ltth_beta_${safeUserId}`,
+    claimedAt: timestamp,
+    termsVersion: 'beta-2026-07'
+  };
+}
+
+function hasActiveStoreLicense(account = {}) {
+  return normalizeStoreLicense(account.license || {}).active === true;
+}
+
+function hasStoreAdminAccess(account = {}) {
+  return normalizeStoreAccess(account.access || {}).groups.includes('admin');
+}
+
+function hasClosedBetaPluginAccess(account = {}, pluginId = '') {
+  const access = normalizeStoreAccess(account.access || {});
+  const groups = new Set(access.groups);
+  const pluginIds = new Set(access.closedBetaPlugins);
+  const safePluginId = cleanEnvValue(pluginId).toLowerCase();
+
+  return groups.has('admin') || groups.has('closed-beta') || pluginIds.has(safePluginId);
+}
+
+function hasSubscriberPluginAccess(account = {}) {
+  const access = normalizeStoreAccess(account.access || {});
+  const groups = new Set(access.groups);
+  return groups.has('admin') || groups.has('subscriber');
 }
 
 function resolveClerkExpress(clerkExpress, logger) {
@@ -379,54 +400,6 @@ function resolveClerkClient(options = {}) {
 
   const clerkExpress = resolveClerkExpress(options.clerkExpress, options.logger);
   return clerkExpress?.clerkClient || null;
-}
-
-function normalizeStoreLicense(source = {}) {
-  const license = source.ltthLicense || source.license || source;
-  const status = cleanEnvValue(license.status);
-  const plan = cleanEnvValue(license.plan);
-  const active = license.active === true || (status === 'active' && plan === 'beta-free');
-
-  return {
-    active,
-    status: active ? 'active' : (status || 'missing'),
-    plan: active ? (plan || 'beta-free') : (plan || null),
-    licenseId: cleanEnvValue(license.licenseId) || null,
-    claimedAt: cleanEnvValue(license.claimedAt) || null,
-    termsVersion: cleanEnvValue(license.termsVersion) || null
-  };
-}
-
-function normalizeList(value) {
-  const rawItems = Array.isArray(value)
-    ? value
-    : String(value || '').split(',');
-  const seen = new Set();
-  const items = [];
-
-  for (const rawItem of rawItems) {
-    const item = cleanEnvValue(rawItem).toLowerCase();
-    if (item && !seen.has(item)) {
-      seen.add(item);
-      items.push(item);
-    }
-  }
-
-  return items;
-}
-
-function normalizeStoreAccess(source = {}) {
-  const access = source.ltthAccess || source.access || source;
-
-  return {
-    groups: normalizeList(access.groups || access.group),
-    closedBetaPlugins: normalizeList(
-      access.closedBetaPlugins ||
-      access.closed_beta_plugins ||
-      access.plugins ||
-      access.pluginIds
-    )
-  };
 }
 
 function extractLicenseFromUser(user = {}) {
@@ -510,7 +483,7 @@ async function loadStoreEntitlements(userId, options = {}) {
   const clerkClient = resolveClerkClient(options);
   if (!userId || !clerkClient?.users || typeof clerkClient.users.getUser !== 'function') {
     return {
-      license: claimsLicense.active ? claimsLicense : buildBetaLicense(userId),
+      license: claimsLicense.active ? claimsLicense : buildBetaLicense(userId, options.now),
       access: claimsAccess
     };
   }
@@ -541,6 +514,7 @@ async function loadStoreAccountFromSessionCookie(req, options = {}) {
     ...options,
     sessionClaims
   });
+
   return {
     userId,
     sessionId: cleanEnvValue(sessionClaims.sid || sessionClaims.sessionId) || null,
@@ -554,43 +528,6 @@ async function loadStoreAccountFromSessionCookie(req, options = {}) {
   };
 }
 
-function hasActiveStoreLicense(account = {}) {
-  return normalizeStoreLicense(account.license || {}).active === true;
-}
-
-function hasStoreAdminAccess(account = {}) {
-  return normalizeStoreAccess(account.access || {}).groups.includes('admin');
-}
-
-function hasClosedBetaPluginAccess(account = {}, pluginId = '') {
-  const access = normalizeStoreAccess(account.access || {});
-  const groups = new Set(access.groups);
-  const pluginIds = new Set(access.closedBetaPlugins);
-  const safePluginId = cleanEnvValue(pluginId).toLowerCase();
-
-  return groups.has('admin') || groups.has('closed-beta') || pluginIds.has(safePluginId);
-}
-
-function hasSubscriberPluginAccess(account = {}) {
-  const access = normalizeStoreAccess(account.access || {});
-  const groups = new Set(access.groups);
-
-  return groups.has('admin') || groups.has('subscriber');
-}
-
-function buildBetaLicense(userId, now = () => new Date()) {
-  const safeUserId = cleanEnvValue(userId);
-  const timestamp = now().toISOString();
-  return {
-    active: true,
-    status: 'active',
-    plan: 'beta-free',
-    licenseId: `ltth_beta_${safeUserId}`,
-    claimedAt: timestamp,
-    termsVersion: 'beta-2026-07'
-  };
-}
-
 async function claimBetaLicenseForStoreAccount(account = {}, options = {}) {
   const userId = cleanEnvValue(account.userId);
   if (!userId) {
@@ -600,11 +537,12 @@ async function claimBetaLicenseForStoreAccount(account = {}, options = {}) {
   }
 
   const clerkClient = resolveClerkClient(options);
+  const license = buildBetaLicense(userId, options.now);
+
   if (!clerkClient?.users || typeof clerkClient.users.updateUserMetadata !== 'function') {
-    return buildBetaLicense(userId, options.now);
+    return license;
   }
 
-  const license = buildBetaLicense(userId, options.now);
   await clerkClient.users.updateUserMetadata(userId, {
     privateMetadata: {
       ltthLicense: {
@@ -629,8 +567,75 @@ async function claimBetaLicenseForStoreAccount(account = {}, options = {}) {
   return license;
 }
 
-function createClerkMiddleware(options = {}) {
+function createClerkMiddleware() {
   return (req, res, next) => next();
+}
+
+function buildProxyUrl(req, config) {
+  const configured = cleanEnvValue(config.proxyUrl);
+  if (/^https?:\/\//i.test(configured)) {
+    return configured.replace(/\/+$/, '');
+  }
+
+  const protocol = req.protocol || 'http';
+  const host = req.get?.('host') || req.headers?.host || '127.0.0.1:3000';
+  return `${protocol}://${host}${configured || '/__clerk'}`.replace(/\/+$/, '');
+}
+
+function buildProxyHeaders(req, config, env = process.env) {
+  const blocked = new Set([
+    'connection',
+    'content-length',
+    'host',
+    'keep-alive',
+    'proxy-authenticate',
+    'proxy-authorization',
+    'te',
+    'trailer',
+    'transfer-encoding',
+    'upgrade'
+  ]);
+  const headers = {};
+
+  for (const [key, value] of Object.entries(req.headers || {})) {
+    if (!blocked.has(key.toLowerCase()) && value != null) {
+      headers[key] = Array.isArray(value) ? value.join(', ') : value;
+    }
+  }
+
+  headers['Clerk-Proxy-Url'] = buildProxyUrl(req, config);
+  headers['Clerk-Secret-Key'] = config.secretConfigured ? cleanEnvValue(env.CLERK_SECRET_KEY) : '';
+  headers['X-Forwarded-For'] = req.ip || req.socket?.remoteAddress || '';
+
+  return headers;
+}
+
+function copyProxyResponseHeaders(headers, res) {
+  const blocked = new Set([
+    'connection',
+    'content-encoding',
+    'content-length',
+    'keep-alive',
+    'proxy-authenticate',
+    'proxy-authorization',
+    'te',
+    'trailer',
+    'transfer-encoding',
+    'upgrade'
+  ]);
+
+  headers.forEach((value, key) => {
+    if (!blocked.has(key.toLowerCase())) {
+      res.setHeader(key, value);
+    }
+  });
+
+  if (typeof headers.getSetCookie === 'function') {
+    const cookies = headers.getSetCookie();
+    if (cookies.length > 0) {
+      res.setHeader('set-cookie', cookies);
+    }
+  }
 }
 
 function createClerkFrontendProxy(options = {}) {
@@ -639,11 +644,11 @@ function createClerkFrontendProxy(options = {}) {
 
   return async (req, res, next) => {
     const config = buildStoreAuthConfig(env);
-    if (!config.clerkEnabled || !config.frontendDomain || !config.proxyUrl) {
+    if (!config.clerkEnabled || !config.frontendDomain || !config.authBridgeUrl) {
       return next();
     }
 
-    const basePath = config.proxyUrl.replace(/^https?:\/\/[^/]+/i, '').replace(/\/+$/, '') || '/__clerk';
+    const basePath = config.authBridgeUrl.replace(/^https?:\/\/[^/]+/i, '').replace(/\/+$/, '') || '/__clerk';
     const originalUrl = req.originalUrl || req.url || '';
     if (!originalUrl.startsWith(basePath)) {
       return next();
@@ -680,73 +685,6 @@ function createClerkFrontendProxy(options = {}) {
       });
     }
   };
-}
-
-function buildProxyHeaders(req, config, env = process.env) {
-  const blocked = new Set([
-    'connection',
-    'content-length',
-    'host',
-    'keep-alive',
-    'proxy-authenticate',
-    'proxy-authorization',
-    'te',
-    'trailer',
-    'transfer-encoding',
-    'upgrade'
-  ]);
-  const headers = {};
-
-  for (const [key, value] of Object.entries(req.headers || {})) {
-    if (!blocked.has(key.toLowerCase()) && value != null) {
-      headers[key] = Array.isArray(value) ? value.join(', ') : value;
-    }
-  }
-
-  headers['Clerk-Proxy-Url'] = buildProxyUrl(req, config);
-  headers['Clerk-Secret-Key'] = config.secretConfigured ? cleanEnvValue(env.CLERK_SECRET_KEY) : '';
-  headers['X-Forwarded-For'] = req.ip || req.socket?.remoteAddress || '';
-
-  return headers;
-}
-
-function buildProxyUrl(req, config) {
-  const configured = cleanEnvValue(config.proxyUrl);
-  if (/^https?:\/\//i.test(configured)) {
-    return configured.replace(/\/+$/, '');
-  }
-
-  const protocol = req.protocol || 'http';
-  const host = req.get?.('host') || req.headers?.host || '127.0.0.1:3000';
-  return `${protocol}://${host}${configured || '/__clerk'}`.replace(/\/+$/, '');
-}
-
-function copyProxyResponseHeaders(headers, res) {
-  const blocked = new Set([
-    'connection',
-    'content-encoding',
-    'content-length',
-    'keep-alive',
-    'proxy-authenticate',
-    'proxy-authorization',
-    'te',
-    'trailer',
-    'transfer-encoding',
-    'upgrade'
-  ]);
-
-  headers.forEach((value, key) => {
-    if (!blocked.has(key.toLowerCase())) {
-      res.setHeader(key, value);
-    }
-  });
-
-  if (typeof headers.getSetCookie === 'function') {
-    const cookies = headers.getSetCookie();
-    if (cookies.length > 0) {
-      res.setHeader('set-cookie', cookies);
-    }
-  }
 }
 
 function createRequireStoreAuth(options = {}) {
@@ -810,9 +748,11 @@ function createRequireStoreAuth(options = {}) {
       sessionId: cleanEnvValue(sessionClaims.sid || sessionClaims.sessionId) || null,
       actor: sessionClaims.act || null,
       sessionClaims,
-      license: normalizeStoreLicense(),
+      license: buildBetaLicense(userId),
       access: normalizeStoreAccess(),
-      has: () => false
+      has: () => false,
+      source: 'local-cookie',
+      sessionToken
     };
 
     try {
@@ -853,26 +793,33 @@ function buildStoreAccountResponse(req, env = process.env) {
 }
 
 module.exports = {
+  STORE_SESSION_COOKIE,
+  STORE_SESSION_MAX_AGE_MS,
+  buildBetaLicense,
   buildStoreAccountResponse,
   buildStoreAuthConfig,
-  buildBetaLicense,
   claimBetaLicenseForStoreAccount,
+  clearStoreSessionCookie,
   createClerkFrontendProxy,
   createClerkMiddleware,
   createRequireStoreAuth,
-  clearStoreSessionCookie,
   deriveClerkFrontendDomain,
+  extractAccessFromClaims,
   extractAccessFromUser,
+  extractLicenseFromClaims,
   extractLicenseFromUser,
-  hasClosedBetaPluginAccess,
   hasActiveStoreLicense,
+  hasClosedBetaPluginAccess,
   hasStoreAdminAccess,
   hasSubscriberPluginAccess,
+  loadStoreAccountFromSessionCookie,
   loadStoreEntitlements,
+  loadStoreLicense,
   parseStoreSessionCookie,
   normalizeStoreAccess,
   normalizeStoreLicense,
+  resolveClerkClient,
   setStoreSessionCookie,
-  STORE_SESSION_COOKIE,
-  STORE_SESSION_MAX_AGE_MS
+  extractSessionToken,
+  verifyClerkSessionToken
 };
