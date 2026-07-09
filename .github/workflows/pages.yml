@@ -10,6 +10,7 @@ on:
       - 'CNAME'
       - 'assets/**'
       - 'css/**'
+      - 'app/**'
       - 'downloads/**'
       - 'features/**'
       - 'install.js'

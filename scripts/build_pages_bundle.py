@@ -13,6 +13,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 ROOT_FILES = [
     ".nojekyll",
     "CNAME",
+    "app/CURRENT_RELEASE.json",
+    "app/CURRENT_VERSION.txt",
+    "app/ltth_latest.zip",
     "manifest.json",
     "plugin-store.json",
     "robots.txt",
