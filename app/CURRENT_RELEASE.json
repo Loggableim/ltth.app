@@ -1,5 +1,5 @@
 {
   "version": "1.3.26",
-  "updated_at": "2026-07-09T06:53:19.239901+00:00",
+  "updated_at": "2026-07-09T07:17:10.019248+00:00",
   "notes": "LTTH Version 1.3.26 Release Notes\n\nVersion 1.3.26 fixes the Live Goals create modal crash so the Create New Goal button works again, while keeping the Windows launcher flow and website-backed store auth intact.\n\n- FIXED: Live Goals create modal no longer crashes when optional firework fields are absent from the current UI\n- IMPROVED: The Create New Goal button now opens the modal reliably again\n- IMPROVED: Public release metadata and download surfaces bumped to 1.3.26\n"
 }
