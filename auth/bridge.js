@@ -85,9 +85,17 @@
       throw new Error('Return URL must use http or https.');
     }
 
-    if (ALLOWED_RETURN_HOSTS.has(url.hostname)) {
-      if (['127.0.0.1', 'localhost', '::1'].includes(url.hostname) && url.pathname !== LEGACY_LOCAL_CALLBACK_PATH) {
+    if (['127.0.0.1', 'localhost', '::1'].includes(url.hostname)) {
+      if (url.pathname !== LEGACY_LOCAL_CALLBACK_PATH) {
         throw new Error('Return URL is not allowed for the LTTH local bridge.');
+      }
+      return url;
+    }
+
+    if (['ltth.app', 'www.ltth.app'].includes(url.hostname)) {
+      const allowedPaths = ['/auth', '/auth/'];
+      if (!allowedPaths.includes(url.pathname) && !url.pathname.startsWith('/auth/')) {
+        throw new Error('Return URL is not allowed for the LTTH account portal.');
       }
       return url;
     }
@@ -232,6 +240,50 @@
     return true;
   }
 
+  function watchForAuthenticatedSession(clerk, mode, returnUrl, state) {
+    let settled = false;
+    let intervalId = null;
+
+    const stop = () => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      if (intervalId !== null) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const tick = async () => {
+      if (settled) {
+        return;
+      }
+
+      try {
+        if (returnUrl) {
+          if (await completeIfSignedIn(clerk, returnUrl, state)) {
+            stop();
+          }
+          return;
+        }
+
+        if (clerk.session) {
+          stop();
+          mountAccountPortal(clerk, null);
+        }
+      } catch (error) {
+        stop();
+        setStatus('Could not finish login', error.message, 'error');
+      }
+    };
+
+    intervalId = window.setInterval(tick, 500);
+    window.addEventListener('beforeunload', stop, { once: true });
+    void tick();
+  }
+
   async function renderPortal(clerk, mode, returnUrl, state) {
     if (await completeIfSignedIn(clerk, returnUrl, state)) {
       return true;
@@ -272,15 +324,7 @@
         return;
       }
 
-      if (typeof clerk.addListener === 'function') {
-        clerk.addListener(async () => {
-          try {
-            await renderPortal(clerk, mode, returnUrl, state);
-          } catch (error) {
-            setStatus('Could not finish login', error.message, 'error');
-          }
-        });
-      }
+      watchForAuthenticatedSession(clerk, mode, returnUrl, state);
     } catch (error) {
       setStatus('Account bridge failed', error.message || 'Unknown authentication error.', 'error');
     }
