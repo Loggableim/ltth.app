@@ -22,6 +22,9 @@ describe('Clerk auth bridge', () => {
     assert(authScript.includes('mountUserButton'));
     assert(authScript.includes('session.getToken'));
     assert(authScript.includes('redirectWithToken'));
+    assert(authScript.includes('watchForAuthenticatedSession'));
+    assert(authScript.includes('window.setInterval(tick, 500)'));
+    assert(!authScript.includes('clerk.addListener'));
     assert(!authScript.includes('CLERK_SECRET_KEY'));
     assert(!authScript.includes('sk_live_'));
     assert(!authScript.includes('accounts.ltth.app/user'));
@@ -45,7 +48,7 @@ describe('Clerk auth bridge', () => {
       CLERK_PUBLISHABLE_KEY: 'pk_test_public'
     });
 
-    assert.strictEqual(config.authBridgeUrl, '');
+    assert.strictEqual(config.authBridgeUrl, 'https://ltth.app/auth/');
     assert.strictEqual(config.authCallbackPath, '/auth/clerk/callback.html');
     assert.strictEqual(config.accountPortalBaseUrl, 'https://ltth.app/auth');
     assert.strictEqual(config.accountManagementUrl, 'https://ltth.app/auth/');
@@ -64,9 +67,9 @@ describe('Clerk auth bridge', () => {
     assert(storeAuthScript.includes('You can change it later'));
     assert(storeAuthScript.includes('authBridgeUrl'));
     assert(storeAuthScript.includes('beginBridgeAuth'));
+    assert(storeAuthScript.includes('mountUserButton'));
     assert(storeAuthScript.includes('signInUrl'));
     assert(storeAuthScript.includes('signUpUrl'));
-    assert(storeAuthScript.includes('userProfileMode'));
     assert(storeAuthScript.includes('/api/plugin-store/session'));
     assert(storeAuthScript.includes('/api/plugin-store/account'));
     assert(storeAuthScript.includes('Authorization'));
@@ -77,7 +80,7 @@ describe('Clerk auth bridge', () => {
     assert(!storeAuthScript.includes('LTTH_STORE_CLERK_SECRET_KEY or CLERK_SECRET_KEY'));
   });
 
-  it('renders the embedded Clerk UI when the bridge is disabled', async () => {
+  it('renders the signed-out store auth card when the bridge is disabled', async () => {
     const storeAuthScript = readAppFile('public', 'js', 'clerk-store-auth.js');
     const dom = new JSDOM(`<!doctype html>
       <div id="plugin-store-auth-root"></div>
@@ -87,27 +90,7 @@ describe('Clerk auth bridge', () => {
       runScripts: 'outside-only'
     });
     const { window } = dom;
-    const appendChild = window.document.head.appendChild.bind(window.document.head);
 
-    window.__internal_ClerkUICtor = {};
-    window.Clerk = {
-      load: jest.fn(async () => {}),
-      mountSignIn: jest.fn((mount) => {
-        mount.innerHTML = '<div data-mounted="sign-in"></div>';
-      }),
-      mountSignUp: jest.fn((mount) => {
-        mount.innerHTML = '<div data-mounted="sign-up"></div>';
-      }),
-      mountUserButton: jest.fn(),
-      addListener: jest.fn()
-    };
-    window.document.head.appendChild = function(node) {
-      const result = appendChild(node);
-      setTimeout(() => {
-        if (typeof node.onload === 'function') node.onload();
-      }, 0);
-      return result;
-    };
     window.fetch = async (url) => {
       if (url === '/api/plugin-store/config') {
         return jsonResponse({
@@ -126,9 +109,10 @@ describe('Clerk auth bridge', () => {
     window.eval(storeAuthScript);
     await window.StoreAuth.init();
 
-    assert.strictEqual(window.Clerk.load.mock.calls.length, 1);
-    assert.strictEqual(window.Clerk.mountSignIn.mock.calls.length, 1);
-    assert(window.document.getElementById('plugin-store-auth-root').textContent.includes('Sign in'));
+    const authRoot = window.document.getElementById('plugin-store-auth-root');
+    assert(authRoot.textContent.includes('Create your store account'));
+    assert(authRoot.textContent.includes('Sign in'));
+    assert(authRoot.querySelector('[data-store-auth-mode="sign-in"]'));
   });
 
   it('keeps users signed in when the local store session cookie restores the account without a bridge token', async () => {
@@ -178,7 +162,7 @@ describe('Clerk auth bridge', () => {
     assert.strictEqual(window.StoreAuth.isSignedIn, true);
     assert.strictEqual(window.StoreAuth.account.userId, 'user_cookie');
     assert.strictEqual(window.document.getElementById('plugin-store-auth-root').style.display, 'none');
-    assert(window.document.getElementById('plugin-store-account-menu').textContent.includes('Manage account'));
+    assert(window.document.getElementById('plugin-store-account-menu').textContent.includes('user_cookie'));
     const accountUrl = new URL(window.document.querySelector('[data-store-account-manage]').href);
     assert.strictEqual(accountUrl.origin, 'https://ltth.app');
     assert.strictEqual(accountUrl.pathname, '/auth/');

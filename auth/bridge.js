@@ -246,6 +246,50 @@
     return false;
   }
 
+  function watchForAuthenticatedSession(clerk, mode, returnUrl, state) {
+    let settled = false;
+    let intervalId = null;
+
+    const stop = () => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      if (intervalId !== null) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const tick = async () => {
+      if (settled) {
+        return;
+      }
+
+      try {
+        if (returnUrl) {
+          if (await completeIfSignedIn(clerk, returnUrl, state)) {
+            stop();
+          }
+          return;
+        }
+
+        if (clerk.session) {
+          stop();
+          mountAccountPortal(clerk, null);
+        }
+      } catch (error) {
+        stop();
+        setStatus('Could not finish login', error.message, 'error');
+      }
+    };
+
+    intervalId = window.setInterval(tick, 500);
+    window.addEventListener('beforeunload', stop, { once: true });
+    void tick();
+  }
+
   async function init() {
     try {
       const mode = getMode();
@@ -272,15 +316,7 @@
         return;
       }
 
-      if (typeof clerk.addListener === 'function') {
-        clerk.addListener(async () => {
-          try {
-            await renderPortal(clerk, mode, returnUrl, state);
-          } catch (error) {
-            setStatus('Could not finish login', error.message, 'error');
-          }
-        });
-      }
+      watchForAuthenticatedSession(clerk, mode, returnUrl, state);
     } catch (error) {
       setStatus('Account bridge failed', error.message || 'Unknown authentication error.', 'error');
     }
