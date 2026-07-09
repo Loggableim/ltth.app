@@ -46,6 +46,9 @@ function createTempRepo() {
     )
   );
   fs.writeFileSync(path.join(root, 'app', 'ltth_latest.zip'), Buffer.from('zip-bundle'));
+  fs.mkdirSync(path.join(root, 'auth'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'auth', 'index.html'), '<!doctype html><title>Auth</title>');
+  fs.writeFileSync(path.join(root, 'auth', 'bridge.js'), 'window.__authBridge = true;');
 
   return root;
 }
@@ -82,16 +85,22 @@ describe('Pages release bundle', () => {
     const versionPath = path.join(outputDir, 'app', 'CURRENT_VERSION.txt');
     const releasePath = path.join(outputDir, 'app', 'CURRENT_RELEASE.json');
     const zipPath = path.join(outputDir, 'app', 'ltth_latest.zip');
+    const authIndexPath = path.join(outputDir, 'auth', 'index.html');
+    const authBridgePath = path.join(outputDir, 'auth', 'bridge.js');
 
     expect(fs.existsSync(versionPath)).toBe(true);
     expect(fs.existsSync(releasePath)).toBe(true);
     expect(fs.existsSync(zipPath)).toBe(true);
+    expect(fs.existsSync(authIndexPath)).toBe(true);
+    expect(fs.existsSync(authBridgePath)).toBe(true);
     expect(fs.readFileSync(versionPath, 'utf8')).toBe('1.3.24\n');
     expect(JSON.parse(fs.readFileSync(releasePath, 'utf8'))).toMatchObject({
       version: '1.3.24',
       notes: 'Release notes'
     });
     expect(fs.readFileSync(zipPath)).toEqual(Buffer.from('zip-bundle'));
+    expect(fs.readFileSync(authIndexPath, 'utf8')).toBe('<!doctype html><title>Auth</title>');
+    expect(fs.readFileSync(authBridgePath, 'utf8')).toBe('window.__authBridge = true;');
   });
 
   it('triggers Pages deployments when app release artifacts change', () => {
@@ -99,5 +108,6 @@ describe('Pages release bundle', () => {
     const workflow = fs.readFileSync(workflowPath, 'utf8');
 
     expect(workflow).toContain('app/**');
+    expect(workflow).toContain('auth/**');
   });
 });

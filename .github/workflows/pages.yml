@@ -9,6 +9,7 @@ on:
       - '.nojekyll'
       - 'CNAME'
       - 'assets/**'
+      - 'auth/**'
       - 'css/**'
       - 'app/**'
       - 'downloads/**'

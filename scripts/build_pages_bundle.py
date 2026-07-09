@@ -33,6 +33,7 @@ ROOT_DIRS = [
     "_partials",
     "assets",
     "css",
+    "auth",
     "downloads",
     "features",
     "install",
