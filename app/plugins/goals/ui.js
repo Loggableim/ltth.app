@@ -21,15 +21,6 @@ function init() {
         console.log('Connected');
         socket.emit('goals:get-all');
         socket.emit('multigoals:get-all');
-        updateConnectionBadge(true);
-    });
-
-    socket.on('disconnect', () => {
-        updateConnectionBadge(false);
-    });
-
-    socket.on('connect_error', () => {
-        updateConnectionBadge(false);
     });
 
     socket.on('goals:all', (data) => {
@@ -109,224 +100,6 @@ function init() {
         multigoals = multigoals.filter(mg => mg.id !== data.multigoalId);
         renderMultiGoals();
     });
-
-    observeThemeBadge();
-    updateThemeBadge();
-    updateWorkspaceStats();
-    resetMainContentScroll();
-    updateWindowActionButton();
-}
-
-function updateConnectionBadge(isConnected) {
-    const badge = document.getElementById('goals-connection-pill');
-    if (!badge) return;
-
-    badge.classList.toggle('status-pill--connected', !!isConnected);
-    badge.innerHTML = `
-        <span class="status-pill__dot"></span>
-        <span>${isConnected ? 'Connected' : 'Offline'}</span>
-    `;
-}
-
-function updateThemeBadge() {
-    const badge = document.getElementById('goals-theme-pill');
-    if (!badge) return;
-
-    const theme = document.documentElement.getAttribute('data-theme') || 'night';
-    badge.textContent = `Theme: ${theme}`;
-}
-
-function observeThemeBadge() {
-    if (window._goalsThemeBadgeObserver) return;
-
-    try {
-        window._goalsThemeBadgeObserver = new MutationObserver(() => updateThemeBadge());
-        window._goalsThemeBadgeObserver.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['data-theme']
-        });
-    } catch (error) {
-        console.warn('Unable to observe theme changes for goals UI', error);
-    }
-}
-
-function updateWorkspaceStats() {
-    const container = document.getElementById('workspace-metrics');
-    if (!container) return;
-
-    const totalGoals = goals.length;
-    const totalMultiGoals = multigoals.length;
-    const averageProgress = totalGoals
-        ? Math.round(goals.reduce((sum, goal) => {
-            const current = Number(goal.current_value) || 0;
-            const target = Math.max(1, Number(goal.target_value) || 1);
-            return sum + Math.min(100, (current / target) * 100);
-        }, 0) / totalGoals)
-        : 0;
-    const uniqueTemplates = new Set(goals.map(goal => goal.template_id || 'compact-bar')).size;
-
-    container.innerHTML = `
-        <article class="metric-card">
-            <div class="metric-card__label">Goals</div>
-            <div class="metric-card__value">${totalGoals}</div>
-            <div class="metric-card__hint">Single overlay goals configured</div>
-        </article>
-        <article class="metric-card">
-            <div class="metric-card__label">MultiGoals</div>
-            <div class="metric-card__value">${totalMultiGoals}</div>
-            <div class="metric-card__hint">Rotation sets ready</div>
-        </article>
-        <article class="metric-card">
-            <div class="metric-card__label">Avg Progress</div>
-            <div class="metric-card__value">${averageProgress}%</div>
-            <div class="metric-card__hint">Across all goals</div>
-        </article>
-        <article class="metric-card">
-            <div class="metric-card__label">Templates</div>
-            <div class="metric-card__value">${uniqueTemplates}</div>
-            <div class="metric-card__hint">Distinct overlay templates</div>
-        </article>
-    `;
-}
-
-function updateWindowActionButton() {
-    const button = document.getElementById('goals-window-action');
-    const label = document.getElementById('goals-window-action-label');
-    const icon = document.getElementById('goals-window-action-icon');
-    if (!button || !label || !icon) return;
-
-    const fromDashboard = new URLSearchParams(window.location.search).get('from') === 'dashboard';
-    if (fromDashboard) {
-        button.href = '#';
-        button.target = '_self';
-        button.dataset.windowAction = 'close';
-        button.classList.add('workspace-action-pill--close');
-        button.classList.remove('workspace-action-pill--open');
-        icon.innerHTML = '<i data-lucide="x"></i>';
-        label.textContent = 'Close Tab';
-        button.setAttribute('aria-label', 'Close Tab');
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-        return;
-    }
-
-    button.href = '/goals/ui?from=dashboard';
-    button.target = '_blank';
-    button.dataset.windowAction = 'open';
-    button.classList.add('workspace-action-pill--open');
-    button.classList.remove('workspace-action-pill--close');
-    icon.innerHTML = '<i data-lucide="external-link"></i>';
-    label.textContent = 'Open in New Tab';
-    button.setAttribute('aria-label', 'Open in New Tab');
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
-}
-
-function getGoalAccent(goalType) {
-    const palette = {
-        coin: { primary: '#f59e0b', secondary: '#f97316', icon: 'C' },
-        likes: { primary: '#fb7185', secondary: '#ef4444', icon: 'L' },
-        follower: { primary: '#38bdf8', secondary: '#3b82f6', icon: 'F' },
-        superfans: { primary: '#c084fc', secondary: '#8b5cf6', icon: 'S' },
-        custom: { primary: '#4ade80', secondary: '#22c55e', icon: 'U' }
-    };
-
-    return palette[goalType] || palette.custom;
-}
-
-function getGoalTypeLabel(goalType) {
-    const labels = {
-        coin: 'Coin',
-        likes: 'Likes',
-        follower: 'Follower',
-        superfans: 'Superfans',
-        custom: 'Custom'
-    };
-
-    return labels[goalType] || goalType;
-}
-
-function renderGoalCard(goal) {
-    const current = Number(goal.current_value) || 0;
-    const target = Math.max(1, Number(goal.target_value) || 1);
-    const progress = Math.min(100, (current / target) * 100);
-    const overlayUrl = `${window.location.origin}/goals/overlay?id=${goal.id}`;
-    const accent = getGoalAccent(goal.goal_type);
-    const isVisible = goal.enabled !== 0 && goal.show !== false;
-    const statusLabel = isVisible ? 'Overlay ready' : 'Hidden';
-    const templateId = goal.template_id || 'compact-bar';
-    const overlaySize = `${goal.overlay_width || 0} x ${goal.overlay_height || 0}`;
-
-    return `
-        <article class="goal-card" style="--goal-accent: ${accent.primary}; --goal-accent-2: ${accent.secondary}; --goal-accent-soft: ${hexToRgba(accent.primary, 0.16)}; --goal-accent-border: ${hexToRgba(accent.primary, 0.32)};">
-            <div class="goal-card__inner">
-                <header class="goal-card__header">
-                    <div class="goal-card__headline">
-                        <div class="goal-card__title-row">
-                            <span class="goal-card__icon" aria-hidden="true">${accent.icon}</span>
-                            <div>
-                                <div class="goal-card__title">${escapeHtml(goal.name)}</div>
-                                <div class="goal-card__subline">${getGoalTypeLabel(goal.goal_type)} goal - Template ${escapeHtml(templateId)}</div>
-                            </div>
-                        </div>
-                        <div class="goal-card__badges">
-                            <span class="goal-card__badge">${escapeHtml(goal.goal_type)}</span>
-                            <span class="goal-card__status" data-state="${isVisible ? 'visible' : 'hidden'}">${statusLabel}</span>
-                        </div>
-                    </div>
-
-                    <div class="goal-card__actions">
-                        <button class="goal-card__action goal-card__action--secondary" data-action="edit-goal" data-goal-id="${goal.id}">Edit</button>
-                        <button class="goal-card__action goal-card__action--danger" data-action="delete-goal" data-goal-id="${goal.id}">Delete</button>
-                    </div>
-                </header>
-
-                <section class="goal-card__progress-wrap">
-                    <div class="goal-card__progress-meta">
-                        <div>
-                            <div class="goal-card__progress-value">${current} / ${target}</div>
-                            <div class="goal-card__progress-text">${progress.toFixed(0)}% complete</div>
-                        </div>
-                        <div class="goal-card__progress-text">Overlay size ${escapeHtml(overlaySize)}</div>
-                    </div>
-                    <div class="goal-card__progress-bar" aria-hidden="true">
-                        <div class="goal-card__progress-fill" style="width: ${progress}%"></div>
-                    </div>
-                </section>
-
-                <section class="goal-card__meta-grid">
-                    <div class="meta-tile">
-                        <span class="meta-tile__label">Current</span>
-                        <div class="meta-tile__value">${current}</div>
-                    </div>
-                    <div class="meta-tile">
-                        <span class="meta-tile__label">Target</span>
-                        <div class="meta-tile__value">${target}</div>
-                    </div>
-                    <div class="meta-tile">
-                        <span class="meta-tile__label">Template</span>
-                        <div class="meta-tile__value">${escapeHtml(templateId)}</div>
-                    </div>
-                </section>
-
-                <section class="goal-url">
-                    <div class="goal-url__label">Overlay URL</div>
-                    <div class="goal-url__row">
-                        <div class="goal-url__value" title="${escapeHtml(overlayUrl)}">${escapeHtml(overlayUrl)}</div>
-                        <button class="goal-url-copy btn-primary" data-action="copy-url" data-url="${escapeHtml(overlayUrl)}">Copy</button>
-                    </div>
-                </section>
-
-                <footer class="goal-card__actions">
-                    <button class="goal-card__action goal-card__action--secondary" data-action="reset-goal" data-goal-id="${goal.id}">Reset</button>
-                    <button class="goal-card__action goal-card__action--success" data-action="increment-goal" data-goal-id="${goal.id}">+1</button>
-                    ${goal.goal_type === 'custom' ? `<button class="goal-card__action goal-card__action--secondary" data-action="set-goal-value" data-goal-id="${goal.id}">Set Value</button>` : ''}
-                </footer>
-            </div>
-        </article>
-    `;
 }
 
 function renderGoals() {
@@ -335,20 +108,63 @@ function renderGoals() {
     if (goals.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">??</div>
+                <div class="empty-state-icon">🎯</div>
                 <div class="empty-state-text">No goals created yet</div>
-                <div class="empty-state-copy">Create a goal, choose a template, and copy the overlay URL into OBS. The layout stays responsive and theme-aware.</div>
                 <button class="btn btn-primary" id="create-first-goal-btn">Create Your First Goal</button>
             </div>
         `;
+        // Add event listener to the newly created button
         document.getElementById('create-first-goal-btn').addEventListener('click', openCreateModal);
-        updateWorkspaceStats();
         return;
     }
 
-    container.innerHTML = goals.map(goal => renderGoalCard(goal)).join('');
+    container.innerHTML = goals.map(goal => {
+        const progress = Math.min(100, (goal.current_value / goal.target_value) * 100);
+        const badgeClass = `badge-${goal.goal_type}`;
+        const overlayUrl = `${window.location.origin}/goals/overlay?id=${goal.id}`;
+
+        return `
+            <div class="goal-card">
+                <div class="goal-card-header">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span class="goal-card-title">${escapeHtml(goal.name)}</span>
+                        <span class="goal-card-badge ${badgeClass}">${goal.goal_type}</span>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;" data-action="edit-goal" data-goal-id="${goal.id}">Edit</button>
+                        <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85rem;" data-action="delete-goal" data-goal-id="${goal.id}">Delete</button>
+                    </div>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${progress}%"></div>
+                </div>
+
+                <div class="goal-stats">
+                    <span>${goal.current_value} / ${goal.target_value}</span>
+                    <span>${progress.toFixed(0)}%</span>
+                    <span>Template: ${goal.template_id}</span>
+                </div>
+
+                <div style="margin-top: 16px;">
+                    <strong style="font-size: 0.85rem; color: var(--text-secondary);">Overlay URL:</strong>
+                    <div class="overlay-url">
+                        ${overlayUrl}
+                        <button class="btn btn-primary copy-btn" data-action="copy-url" data-url="${escapeHtml(overlayUrl)}">Copy</button>
+                    </div>
+                </div>
+
+                <div class="goal-actions">
+                    <button class="btn btn-secondary" data-action="reset-goal" data-goal-id="${goal.id}">Reset</button>
+                    <button class="btn btn-secondary" data-action="increment-goal" data-goal-id="${goal.id}">+1</button>
+                    ${goal.goal_type === 'custom' ? `<button class="btn btn-secondary" data-action="set-goal-value" data-goal-id="${goal.id}">Set Value</button>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Set up event delegation for dynamically created buttons
     setupGoalCardEventListeners();
-    updateWorkspaceStats();
 }
 
 function openCreateModal() {
@@ -356,26 +172,28 @@ function openCreateModal() {
     document.querySelector('.modal-header').textContent = 'Create New Goal';
     document.getElementById('goal-form').reset();
 
+    // Set default colors based on coin type (will update when type changes)
     const defaultTheme = getDefaultTheme('coin');
     document.getElementById('goal-primary-color').value = defaultTheme.primaryColor;
     document.getElementById('goal-secondary-color').value = defaultTheme.secondaryColor;
     document.getElementById('goal-text-color').value = defaultTheme.textColor;
-    document.getElementById('goal-bg-color').value = '#0f172a';
+    document.getElementById('goal-bg-color').value = '#0f172a'; // Default bg in hex
     document.getElementById('goal-font-family').value = "'Impact', 'Haettenschweiler', 'Arial Narrow Bold', sans-serif";
     document.getElementById('goal-font-size').value = '20';
     document.getElementById('goal-firework-enabled').checked = false;
     document.getElementById('goal-firework-intensity').value = '3';
     document.getElementById('goal-firework-duration').value = '5';
-    document.getElementById('goal-firework-theme').value = '';
-    document.getElementById('goal-firework-encounter').value = 'finale';
-    document.getElementById('goal-firework-quality').value = 'high';
-    document.getElementById('goal-firework-hud-label').value = '';
+    setOptionalInputValue('goal-firework-theme', '');
+    setOptionalInputValue('goal-firework-encounter', 'finale');
+    setOptionalInputValue('goal-firework-quality', 'high');
+    setOptionalInputValue('goal-firework-hud-label', '');
     document.getElementById('goal-firework-progress-enabled').checked = true;
     document.getElementById('goal-firework-progress-milestones').value = '25,50,75';
     toggleGoalFireworkOptions();
 
     document.getElementById('goal-modal').classList.add('active');
 
+    // Update preview with default values
     setTimeout(() => {
         updatePreview();
         const firstInput = document.getElementById('goal-name');
@@ -424,6 +242,7 @@ function editGoal(id) {
 
     document.getElementById('goal-modal').classList.add('active');
 
+    // Update preview with current goal values
     setTimeout(() => {
         updatePreview();
         const firstInput = document.getElementById('goal-name');
@@ -445,21 +264,21 @@ async function saveGoal(e) {
         name: document.getElementById('goal-name').value,
         goal_type: document.getElementById('goal-type').value,
         template_id: document.getElementById('goal-template').value,
-        start_value: parseInt(document.getElementById('goal-start').value, 10),
-        target_value: parseInt(document.getElementById('goal-target').value, 10),
-        current_value: parseInt(document.getElementById('goal-start').value, 10),
+        start_value: parseInt(document.getElementById('goal-start').value),
+        target_value: parseInt(document.getElementById('goal-target').value),
+        current_value: parseInt(document.getElementById('goal-start').value),
         animation_on_update: document.getElementById('goal-anim-update').value,
         animation_on_reach: document.getElementById('goal-anim-reach').value,
         on_reach_action: document.getElementById('goal-on-reach').value,
-        on_reach_increment: parseInt(document.getElementById('goal-increment').value, 10),
+        on_reach_increment: parseInt(document.getElementById('goal-increment').value),
         firework_enabled: document.getElementById('goal-firework-enabled').checked ? 1 : 0,
         firework_intensity: clampNumber(document.getElementById('goal-firework-intensity').value, 1, 10, 3),
         firework_duration: Math.round(clampNumber(document.getElementById('goal-firework-duration').value, 1, 30, 5) * 1000),
         firework_progress_enabled: document.getElementById('goal-firework-progress-enabled').checked ? 1 : 0,
         firework_progress_milestones: document.getElementById('goal-firework-progress-milestones').value.trim() || '25,50,75',
         theme: buildGoalThemeFromForm(),
-        overlay_width: parseInt(document.getElementById('goal-width').value, 10),
-        overlay_height: parseInt(document.getElementById('goal-height').value, 10),
+        overlay_width: parseInt(document.getElementById('goal-width').value),
+        overlay_height: parseInt(document.getElementById('goal-height').value),
         enabled: 1
     };
 
@@ -467,7 +286,7 @@ async function saveGoal(e) {
     const method = editingGoalId ? 'PUT' : 'POST';
 
     const response = await fetch(url, {
-        method,
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     });
@@ -517,7 +336,7 @@ async function setGoalValue(id) {
     const response = await fetch(`/api/goals/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ current_value: parseInt(value, 10) })
+        body: JSON.stringify({ current_value: parseInt(value) })
     });
     const result = await response.json();
     if (!result.success) {
@@ -551,6 +370,13 @@ function clampNumber(value, min, max, fallback) {
         return fallback;
     }
     return Math.min(max, Math.max(min, parsed));
+}
+
+function setOptionalInputValue(id, value) {
+    const field = document.getElementById(id);
+    if (field) {
+        field.value = value;
+    }
 }
 
 function buildGoalThemeFromForm() {
@@ -587,7 +413,9 @@ function cssColorToHex(color) {
     if (!match) return null;
 
     return [match[1], match[2], match[3]]
-        .map(value => Math.max(0, Math.min(255, parseInt(value, 10))).toString(16).padStart(2, '0'))
+        .map(value => Math.max(0, Math.min(255, parseInt(value, 10)))
+            .toString(16)
+            .padStart(2, '0'))
         .join('')
         .replace(/^/, '#');
 }
@@ -883,22 +711,13 @@ function switchTab(tab) {
 
     if (tab === 'goals') {
         document.getElementById('goals-tab-content').classList.add('active');
-        document.getElementById('create-goal-btn').style.display = 'flex';
+        document.getElementById('create-goal-btn').style.display = 'block';
         document.getElementById('create-multigoal-btn').style.display = 'none';
     } else if (tab === 'multigoals') {
         document.getElementById('multigoals-tab-content').classList.add('active');
         document.getElementById('create-goal-btn').style.display = 'none';
-        document.getElementById('create-multigoal-btn').style.display = 'flex';
+        document.getElementById('create-multigoal-btn').style.display = 'block';
         loadMultiGoals();
-    }
-
-    resetMainContentScroll();
-}
-
-function resetMainContentScroll() {
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-        mainContent.scrollTop = 0;
     }
 }
 
@@ -1071,23 +890,21 @@ function renderMultiGoals() {
     if (multigoals.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">??</div>
+                <div class="empty-state-icon">🔄</div>
                 <div class="empty-state-text">No multigoals created yet</div>
-                <div class="empty-state-copy">Build a rotation set from at least two goals and keep the overlay presentation smooth in widescreen scenes.</div>
                 <button class="btn btn-primary" id="create-first-multigoal-btn">Create Your First MultiGoal</button>
             </div>
         `;
+        // Re-attach event listener
         document.getElementById('create-first-multigoal-btn').addEventListener('click', () => {
             editingMultiGoalId = null;
             openMultiGoalModal();
         });
-        updateWorkspaceStats();
         return;
     }
 
     container.innerHTML = multigoals.map(mg => renderMultiGoalCard(mg)).join('');
     setupMultiGoalCardEventListeners();
-    updateWorkspaceStats();
 }
 
 // Setup delegated event listeners for multigoal cards
@@ -1135,77 +952,80 @@ function renderMultiGoalCard(multigoal) {
         wave: 'Wave',
         particle: 'Particle'
     };
-    const goalCount = multigoal.goal_ids?.length || 0;
 
     return `
-        <article class="multigoal-card" style="--goal-accent: #8b5cf6; --goal-accent-2: #22d3ee; --goal-accent-soft: rgba(139, 92, 246, 0.16); --goal-accent-border: rgba(139, 92, 246, 0.32);">
-            <div class="multigoal-card__inner">
-                <header class="multigoal-card__header">
-                    <div class="goal-card__headline">
-                        <div class="goal-card__title-row">
-                            <span class="multigoal-card__icon" aria-hidden="true">MG</span>
-                            <div>
-                                <div class="multigoal-card__title">${escapeHtml(multigoal.name)}</div>
-                                <div class="multigoal-card__subline">Rotation set with ${goalCount} linked goals</div>
-                            </div>
-                        </div>
-                        <div class="multigoal-card__badges">
-                            <span class="multigoal-card__badge">${animationNames[multigoal.animation_type] || multigoal.animation_type}</span>
-                            <span class="goal-card__status" data-state="visible">Rotation ready</span>
-                        </div>
-                    </div>
-
-                    <div class="goal-card__actions">
-                        <button class="multigoal-card__action multigoal-card__action--secondary" data-action="edit-multigoal" data-id="${escapeHtml(multigoal.id)}">Edit</button>
-                        <button class="multigoal-card__action multigoal-card__action--danger" data-action="delete-multigoal" data-id="${escapeHtml(multigoal.id)}" data-name="${escapeHtml(multigoal.name)}">Delete</button>
-                    </div>
-                </header>
-
-                <section class="multigoal-card__meta-grid">
-                    <div class="multigoal-info-item">
-                        <div class="multigoal-info-label">Interval</div>
-                        <div class="multigoal-info-value">${multigoal.rotation_interval}s</div>
-                    </div>
-                    <div class="multigoal-info-item">
-                        <div class="multigoal-info-label">Animation</div>
-                        <div class="multigoal-info-value">${escapeHtml(animationNames[multigoal.animation_type] || multigoal.animation_type)}</div>
-                    </div>
-                    <div class="multigoal-info-item">
-                        <div class="multigoal-info-label">Size</div>
-                        <div class="multigoal-info-value">${multigoal.overlay_width} x ${multigoal.overlay_height}</div>
-                    </div>
-                </section>
-
-                <section class="multigoal-card__list">
-                    <div class="multigoal-card__list-title">Included Goals</div>
-                    ${(multigoal.goal_ids || []).map(goalId => {
-                        const goal = goals.find(g => g.id === goalId);
-                        if (!goal) {
-                            return `<div class="multigoal-card__item multigoal-card__item--missing">Goal not found <small>(${escapeHtml(goalId)})</small></div>`;
-                        }
-                        return `
-                            <div class="multigoal-card__item">
-                                <span>${getGoalTypeIcon(goal.goal_type)} ${escapeHtml(goal.name)}</span>
-                                <small>${goal.current_value || 0} / ${goal.target_value}</small>
-                            </div>
-                        `;
-                    }).join('')}
-                </section>
-
-                <section class="goal-url">
-                    <div class="goal-url__label">Overlay URL</div>
-                    <div class="goal-url__row">
-                        <input type="text"
-                               class="multigoal-url__value"
-                               value="${overlayUrl}"
-                               readonly
-                               data-action="select-url">
-                        <button class="goal-url-copy btn-primary" data-action="copy-multigoal-url" data-url="${escapeHtml(overlayUrl)}">Copy</button>
-                    </div>
-                </section>
-
+        <div class="multigoal-card">
+            <div class="multigoal-header">
+                <div class="multigoal-title">🔄 ${multigoal.name}</div>
+                <div>
+                    <span style="padding: 4px 12px; background: var(--color-active-bg); border-radius: 12px; font-size: 0.85rem; font-weight: 600;">
+                        ${multigoal.goal_ids?.length || 0} goals
+                    </span>
+                </div>
             </div>
-        </article>
+
+            <div class="multigoal-info">
+                <div class="multigoal-info-item">
+                    <div class="multigoal-info-label">Interval</div>
+                    <div class="multigoal-info-value">${multigoal.rotation_interval}s</div>
+                </div>
+                <div class="multigoal-info-item">
+                    <div class="multigoal-info-label">Animation</div>
+                    <div class="multigoal-info-value">${animationNames[multigoal.animation_type] || multigoal.animation_type}</div>
+                </div>
+                <div class="multigoal-info-item">
+                    <div class="multigoal-info-label">Size</div>
+                    <div class="multigoal-info-value">${multigoal.overlay_width}×${multigoal.overlay_height}</div>
+                </div>
+            </div>
+
+            <div class="multigoal-goals-list">
+                <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--color-text-muted);">
+                    Included Goals:
+                </div>
+                ${(multigoal.goal_ids || []).map(goalId => {
+                    const goal = goals.find(g => g.id === goalId);
+                    if (!goal) return `<div class="multigoal-goal-item" style="color: var(--color-text-muted);">Goal not found (${goalId})</div>`;
+                    return `
+                        <div class="multigoal-goal-item">
+                            ${getGoalTypeIcon(goal.goal_type)} ${goal.name}
+                            <span style="color: var(--color-text-muted); font-size: 0.85rem;">
+                                (${goal.current_value || 0} / ${goal.target_value})
+                            </span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+
+            <div style="background: var(--color-bg-tertiary); padding: 12px; border-radius: 8px; margin-top: 12px;">
+                <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">Overlay URL:</div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text"
+                           value="${overlayUrl}"
+                           readonly
+                           style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--color-border); background: var(--color-bg-card); color: var(--color-text-primary); font-size: 0.85rem;"
+                           data-action="select-url">
+                    <button class="btn btn-secondary"
+                            style="padding: 8px 16px;"
+                            data-action="copy-multigoal-url" data-url="${escapeHtml(overlayUrl)}">
+                        📋 Copy
+                    </button>
+                </div>
+            </div>
+
+            <div class="multigoal-actions">
+                <button class="btn btn-primary"
+                        style="flex: 1;"
+                        data-action="edit-multigoal" data-id="${escapeHtml(multigoal.id)}">
+                    ✏️ Edit
+                </button>
+                <button class="btn btn-danger"
+                        style="flex: 1;"
+                        data-action="delete-multigoal" data-id="${escapeHtml(multigoal.id)}" data-name="${escapeHtml(multigoal.name)}">
+                    🗑️ Delete
+                </button>
+            </div>
+        </div>
     `;
 }
 
@@ -1261,22 +1081,5 @@ window.copyToClipboard = copyToClipboard;
 // Initialize on load - show goals tab by default
 window.addEventListener('DOMContentLoaded', () => {
     switchTab('goals');
-    document.getElementById('create-goal-btn').style.display = 'flex';
-    updateWindowActionButton();
-
-    const windowActionButton = document.getElementById('goals-window-action');
-    if (windowActionButton) {
-        windowActionButton.addEventListener('click', (event) => {
-            if (windowActionButton.dataset.windowAction !== 'close') return;
-            event.preventDefault();
-
-            try {
-                window.close();
-            } catch (error) {}
-
-            if (!window.closed) {
-                window.location.href = '/dashboard.html';
-            }
-        });
-    }
+    document.getElementById('create-goal-btn').style.display = 'block';
 });
