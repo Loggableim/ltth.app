@@ -17,5 +17,15 @@ describe('Release workflow syntax', () => {
     expect(releaseWorkflow).not.toContain('\nenv:\njobs:');
     expect(hasSecretsInIfCondition(releaseWorkflow)).toBe(false);
     expect(hasSecretsInIfCondition(launcherWorkflow)).toBe(false);
+    expect(releaseWorkflow).not.toContain('WINDOWS_SIGN_CERT_BASE64');
+    expect(releaseWorkflow).not.toContain('WINDOWS_SIGN_CERT_PASSWORD');
+    expect(releaseWorkflow).not.toContain('go build -ldflags="-H windowsgui -s -w"');
+    expect(releaseWorkflow).not.toContain('Ensure Windows signing certificate is configured');
+    expect(releaseWorkflow).not.toContain('signtool.exe');
+    expect(launcherWorkflow).not.toContain('WINDOWS_SIGN_CERT_BASE64');
+    expect(launcherWorkflow).not.toContain('WINDOWS_SIGN_CERT_PASSWORD');
+    expect(launcherWorkflow).not.toContain('go build -ldflags="-H windowsgui -s -w"');
+    expect(launcherWorkflow).not.toContain('Ensure Windows signing certificate is configured');
+    expect(launcherWorkflow).not.toContain('signtool.exe');
   });
 });
