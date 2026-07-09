@@ -112,8 +112,7 @@ jobs:
           fi
           git commit -m "Publish LTTH v${{ steps.version.outputs.VERSION }} site bundle"
           git fetch origin main
-          git rebase origin/main
-          git push origin HEAD:main
+          git push --force-with-lease origin HEAD:main
 
   publish_release:
     name: Publish GitHub release
