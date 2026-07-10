@@ -165,6 +165,7 @@ const PresetManager = require('./modules/preset-manager');
 const BackupManager = require('./modules/backup-manager');
 const CloudSyncEngine = require('./modules/cloud-sync');
 const { createAdminAuth } = require('./modules/admin-auth');
+const { obsCacheControl } = require('./modules/obs-cache-control');
 const {
     createClerkFrontendProxy,
     createClerkMiddleware,
@@ -264,6 +265,9 @@ const io = socketIO(server, {
 io.sockets.setMaxListeners(50);
 
 // Middleware
+// OBS Browser Sources can otherwise retain stale overlay shells, scripts, or API data.
+// This must run before static and plugin route middleware so every delivery path is covered.
+app.use(obsCacheControl);
 app.use(express.json());
 // Locale API – serve translation JSON files
 const localeRouter = require('./routes/locale');
@@ -3808,22 +3812,6 @@ function writeObsOverlayWrapper(resolvedPort) {
     );
 }
 
-// Conservative cache control middleware for plugin overlays (OBS compatibility)
-// Prevents freezing when many gifts come in rapidly by ensuring fresh content
-const pluginCacheControl = (req, res, next) => {
-    // Apply conservative cache headers to overlay and OBS HUD files
-    if (req.path.includes('overlay') || req.path.includes('obs-hud') || req.path.endsWith('.html') || req.path.endsWith('.js')) {
-        // Prevent all caching - always fetch fresh content
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache'); // HTTP 1.0 compatibility
-        res.setHeader('Expires', '0'); // Proxies
-    } else {
-        // For other assets (images, CSS), allow short-term caching
-        res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutes
-    }
-    next();
-};
-
 // Async Initialisierung vor Server-Start
 (async () => {
     // ========== PORT RESOLUTION (VOR Plugin-Loading) ==========
@@ -3857,9 +3845,8 @@ const pluginCacheControl = (req, res, next) => {
         // Register static file serving AFTER plugins are loaded
         // This ensures plugin-registered routes take precedence over static file serving
         
-        app.use('/plugins', pluginCacheControl);
         app.use('/plugins', express.static(path.join(__dirname, 'plugins')));
-        logger.info('📂 Plugin static files served from /plugins/* with conservative cache headers');
+        logger.info('📂 Plugin static files served from /plugins/* with global OBS cache protection');
 
         if (loadedCount > 0) {
             logger.info(`✅ ${loadedCount} plugin(s) loaded successfully`);
@@ -3908,13 +3895,11 @@ const pluginCacheControl = (req, res, next) => {
         } else {
             logger.info('ℹ️  No plugins found in /plugins directory');
             
-            // Still register static file serving even with no plugins
-            // Reuse the same cache control middleware
-            app.use('/plugins', pluginCacheControl);
+            // Still register static file serving even with no plugins.
             app.use('/plugins', express.static(path.join(__dirname, 'plugins')));
             iftttEngine.setupTimerTriggers();
             logger.info('IFTTT timer triggers initialized');
-            logger.info('📂 Plugin static files served from /plugins/* with conservative cache headers');
+            logger.info('📂 Plugin static files served from /plugins/* with global OBS cache protection');
             
             initState.setPluginsLoaded(0);
             initState.setPluginInjectionsComplete();
