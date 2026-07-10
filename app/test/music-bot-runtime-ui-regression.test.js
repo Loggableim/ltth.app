@@ -46,6 +46,7 @@ function createJsonResponse(payload) {
 
 function bootMusicBotUi(options = {}) {
   const setupIssues = options.setupIssues || [];
+  const postHandler = options.postHandler;
   const autoDjConfig = options.autoDjConfig || {
     enabled: false,
     mode: 'history',
@@ -64,6 +65,9 @@ function bootMusicBotUi(options = {}) {
   const fetchMock = jest.fn(async (url, options = {}) => {
     const target = String(url);
     if (options.method === 'POST') {
+      if (typeof postHandler === 'function') {
+        return postHandler(target, options);
+      }
       return createJsonResponse({ success: true, config: {} });
     }
     if (target.includes('/status')) {
@@ -278,6 +282,74 @@ describe('Music Bot runtime and UI regressions', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  test('waits for the Auto-DJ handoff after a skip and returns the next title', async () => {
+    const current = { id: 'current', title: 'Current Song', requestedBy: 'viewer' };
+    const { plugin, api } = createPluginWithQueue([]);
+    const playbackEngine = new (require('events'))();
+    playbackEngine.getNowPlaying = jest.fn(() => current);
+    playbackEngine.skip = jest.fn(async () => {
+      playbackEngine.emit('track-end', { track: current, reason: 'skip' });
+    });
+    plugin.playbackEngine = playbackEngine;
+    plugin.queueManager = {
+      addToHistory: jest.fn(),
+      removeSkipImmunity: jest.fn(),
+      resetVoteSkips: jest.fn()
+    };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._clearCrossfadeTimer = jest.fn();
+    plugin._playNextFromQueue = jest.fn(async () => ({
+      success: true,
+      song: { id: 'next', title: 'Auto-DJ Next' }
+    }));
+    plugin._registerPlaybackEvents();
+
+    const result = await plugin._skipCurrent('dashboard');
+
+    expect(plugin._playNextFromQueue).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({
+      success: true,
+      next: { id: 'next', title: 'Auto-DJ Next' },
+      nextError: null
+    });
+    expect(api.emit).toHaveBeenCalledWith('musicbot:playback-advancing', expect.objectContaining({
+      reason: 'skip'
+    }));
+  });
+
+  test('shows a loading state immediately while a skip waits for the next track', async () => {
+    let resolveSkip;
+    const { dom } = bootMusicBotUi({
+      postHandler: (target) => {
+        if (target.endsWith('/skip')) {
+          return new Promise((resolve) => { resolveSkip = resolve; });
+        }
+        return createJsonResponse({ success: true });
+      }
+    });
+    doms.push(dom);
+    const skipButton = dom.window.document.getElementById('skip-btn');
+    const state = dom.window.document.getElementById('playback-state');
+
+    skipButton.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    expect(skipButton.disabled).toBe(true);
+    expect(skipButton.textContent).toBe('Lädt …');
+    expect(state.textContent).toContain('Lädt den nächsten Titel');
+
+    await Promise.resolve();
+    resolveSkip(createJsonResponse({
+      success: true,
+      next: { title: 'Auto-DJ Next', requestedBy: 'AutoDJ', duration: 180 }
+    }));
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(skipButton.disabled).toBe(false);
+    expect(skipButton.textContent).toBe('Skip');
+    expect(dom.window.document.getElementById('now-playing').textContent).toContain('Auto-DJ Next');
   });
 
   test('UI exposes mpv path configuration and persists it to playback config', async () => {

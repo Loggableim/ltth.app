@@ -89,6 +89,7 @@
   const masterVolumeValue = document.getElementById('master-volume-value');
   const volumeInput = document.getElementById('volume-input');
   const volumeValue = document.getElementById('volume-value');
+  const skipButton = document.getElementById('skip-btn');
   const crossfadeInput = document.getElementById('crossfade-input');
   const crossfadeValue = document.getElementById('crossfade-value');
   const duplicateDetection = document.getElementById('duplicate-detection');
@@ -180,6 +181,7 @@
   let currentOnboarding = { completed: false, completedAt: null };
   let mpvInstallPollTimer = null;
   let mpvInstallPollAttempts = 0;
+  let skipInProgress = false;
 
   // Client-side YouTube ID extraction (no server call needed for direct links)
   function extractYouTubeId(url) {
@@ -448,10 +450,24 @@
   document.getElementById('resume-btn').addEventListener('click', () => {
     post('/resume');
   });
-  document.getElementById('skip-btn').addEventListener('click', async () => {
+  skipButton?.addEventListener('click', async () => {
+    if (skipInProgress) return;
+    skipInProgress = true;
+    setSkipLoading(true);
+    try {
     const result = await post('/skip');
+    if (result?.success && result.next) {
+      renderNowPlaying(result.next);
+      showToast('success', 'Skip', `Spielt jetzt: ${result.next.title || 'nächster Titel'}`);
+    } else if (result?.success && result.nextError) {
+      showToast('warn', 'Auto-DJ', result.nextError);
+    }
     if (!result?.success) {
       showToast('warn', 'Skip', result?.error || 'Aktuell läuft kein Titel.');
+    }
+    } finally {
+      skipInProgress = false;
+      setSkipLoading(false);
     }
   });
   document.getElementById('clear-btn').addEventListener('click', () => {
@@ -963,6 +979,9 @@
   socket.on('musicbot:playback-stopped', () => {
     renderNowPlaying(null);
   });
+  socket.on('musicbot:playback-advancing', (payload) => {
+    setSkipLoading(true, payload?.message);
+  });
   socket.on('musicbot:playback-sync', (payload) => {
     if (typeof payload.position === 'number') {
       progressCurrentPos = payload.position;
@@ -1151,6 +1170,9 @@
   }
 
   function renderNowPlaying(track) {
+    if (!skipInProgress) {
+      setSkipLoading(false);
+    }
     if (!track) {
       nowPlayingEl.classList.add('empty');
       nowPlayingEl.innerHTML = '<p>Aktuell läuft nichts.</p>';
@@ -1381,6 +1403,17 @@
 
   function updateState(state) {
     stateEl.textContent = state || 'Idle';
+  }
+
+  function setSkipLoading(active, message) {
+    if (skipButton) {
+      skipButton.disabled = Boolean(active);
+      skipButton.setAttribute('aria-busy', String(Boolean(active)));
+      skipButton.textContent = active ? 'Lädt …' : 'Skip';
+    }
+    if (active) {
+      updateState(message || 'Lädt den nächsten Titel …');
+    }
   }
 
   async function refreshAutoDjStatus() {

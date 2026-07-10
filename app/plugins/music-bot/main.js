@@ -162,6 +162,8 @@ class MusicBotPlugin extends EventEmitter {
     this.playbackSyncTimer = null;
     this.crossfadeTimer = null;
     this._mpvRestartAttempts = 0;
+    this._pendingTrackAdvance = null;
+    this._pendingSkipAdvance = null;
 
     this.config = { ...DEFAULT_CONFIG };
     this.banList = null;
@@ -875,7 +877,23 @@ class MusicBotPlugin extends EventEmitter {
         return;
       }
       this._stopPlaybackSync();
-      this._playNextFromQueue();
+      this._emitPlaybackAdvancing(info.reason);
+      const advance = Promise.resolve(this._playNextFromQueue())
+        .catch((error) => {
+          const message = error?.message || String(error || 'Unbekannter Wiedergabefehler');
+          this.api.log(`[music-bot] Failed to advance playback: ${message}`, 'error');
+          this._emitError(message);
+          return { success: false, error: message };
+        });
+      this._pendingTrackAdvance = advance;
+      if (info.reason === 'skip') {
+        this._pendingSkipAdvance = advance;
+      }
+      advance.finally(() => {
+        if (this._pendingTrackAdvance === advance) {
+          this._pendingTrackAdvance = null;
+        }
+      });
     });
 
     this.playbackEngine.on('volume-changed', (volume) => {
@@ -1666,9 +1684,19 @@ class MusicBotPlugin extends EventEmitter {
     if (!current) {
       return { success: false, error: 'Nothing is playing' };
     }
+    this._pendingSkipAdvance = null;
     await this.playbackEngine.skip();
+    const advance = this._pendingSkipAdvance;
+    const nextResult = advance ? await advance : null;
+    if (this._pendingSkipAdvance === advance) {
+      this._pendingSkipAdvance = null;
+    }
     this._emitSongSkipped(current.title, reasonUser || 'skip');
-    return { success: true };
+    return {
+      success: true,
+      next: nextResult?.success ? nextResult.song || null : null,
+      nextError: nextResult?.success === false ? nextResult.error || 'Kein Folgetitel verfügbar' : null
+    };
   }
 
   _buildMpvUnavailableMessage(error) {
@@ -2044,6 +2072,13 @@ class MusicBotPlugin extends EventEmitter {
   _emitNowPlaying(track) {
     const payload = track || this.playbackEngine.getNowPlaying();
     this.api.emit('musicbot:now-playing', payload);
+  }
+
+  _emitPlaybackAdvancing(reason) {
+    this.api.emit('musicbot:playback-advancing', {
+      reason: reason || 'track-end',
+      message: 'Lädt den nächsten Titel …'
+    });
   }
 
   _emitVoteSkipUpdate(result) {
