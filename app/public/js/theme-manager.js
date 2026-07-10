@@ -6,7 +6,7 @@
 
 class ThemeManager {
     constructor() {
-        this.currentTheme = 'night'; // Default theme
+        this.currentTheme = 'cid'; // Default theme for new installations
         this.monitoredIframes = new WeakSet(); // Track iframes to avoid duplicate listeners
         this.themes = {
             'vision-impaired': {
