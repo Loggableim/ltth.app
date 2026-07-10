@@ -4126,7 +4126,7 @@
   <script src="/js/theme-manager.js"></script>
   <script src="/js/language-switcher.js"></script>
   <script>
-    const socket = io();
+    const socket = io({ auth: { role: 'admin' } });
     let currentSessionId = null;
 
     // Initialize language switcher
@@ -4490,11 +4490,17 @@
         }
         
         const updateText = lastUpdate ? `Zuletzt aktualisiert: ${new Date(lastUpdate).toLocaleString('de-DE')}` : 'Nie aktualisiert';
-        infoDiv.innerHTML = `
-          <span style="color: #4CAF50;">✅ ${giftCatalog.length} Geschenke verfügbar</span>
-          <span style="margin: 0 10px;">•</span>
-          <span style="color: #aaa;">${updateText}</span>
-        `;
+        infoDiv.replaceChildren();
+        const catalogCount = document.createElement('span');
+        catalogCount.style.color = '#4CAF50';
+        catalogCount.textContent = `✅ ${giftCatalog.length} Geschenke verfügbar`;
+        const separator = document.createElement('span');
+        separator.style.margin = '0 10px';
+        separator.textContent = '•';
+        const catalogUpdated = document.createElement('span');
+        catalogUpdated.style.color = '#aaa';
+        catalogUpdated.textContent = updateText;
+        infoDiv.append(catalogCount, separator, catalogUpdated);
         
         // Render gift grid
         gridDiv.innerHTML = '';
@@ -4504,14 +4510,24 @@
           giftCard.dataset.giftId = gift.id;
           giftCard.dataset.giftName = gift.name;
           
-          giftCard.innerHTML = `
-            ${gift.image_url 
-              ? `<img src="${gift.image_url}" alt="${gift.name}">`
-              : `<div class="gift-placeholder">🎁</div>`
-            }
-            <div class="gift-name">${gift.name}</div>
-            <div class="gift-id">ID: ${gift.id}</div>
-          `;
+          if (gift.image_url) {
+            const image = document.createElement('img');
+            image.src = gift.image_url;
+            image.alt = String(gift.name || 'Gift');
+            giftCard.appendChild(image);
+          } else {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'gift-placeholder';
+            placeholder.textContent = '🎁';
+            giftCard.appendChild(placeholder);
+          }
+          const giftName = document.createElement('div');
+          giftName.className = 'gift-name';
+          giftName.textContent = String(gift.name || '');
+          const giftId = document.createElement('div');
+          giftId.className = 'gift-id';
+          giftId.textContent = `ID: ${gift.id}`;
+          giftCard.append(giftName, giftId);
           gridDiv.appendChild(giftCard);
         });
         
@@ -4653,12 +4669,15 @@
           
           const item = document.createElement('div');
           item.className = 'trigger-item';
-          item.innerHTML = `
-            <div>
-              <strong>${trigger.game_type}</strong> - ${trigger.trigger_type}: ${displayValue}
-            </div>
-            <button class="danger remove-trigger-btn" data-trigger-id="${trigger.id}">Entfernen</button>
-          `;
+          const description = document.createElement('div');
+          const gameType = document.createElement('strong');
+          gameType.textContent = String(trigger.game_type || '');
+          description.append(gameType, document.createTextNode(` - ${trigger.trigger_type || ''}: ${displayValue}`));
+          const removeButton = document.createElement('button');
+          removeButton.className = 'danger remove-trigger-btn';
+          removeButton.dataset.triggerId = String(trigger.id);
+          removeButton.textContent = 'Entfernen';
+          item.append(description, removeButton);
           listEl.appendChild(item);
         });
       } catch (error) {
@@ -4927,24 +4946,45 @@
           return;
         }
         
-        let html = '<table style="width: 100%; border-collapse: collapse;">';
-        html += '<thead><tr style="background: #3a3a4e;"><th style="padding: 10px; text-align: left;">Rang</th><th>Spieler</th><th>ELO</th><th>Peak ELO</th><th>Spiele</th></tr></thead>';
-        html += '<tbody>';
-        
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        const header = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        headerRow.style.background = '#3a3a4e';
+        ['Rang', 'Spieler', 'ELO', 'Peak ELO', 'Spiele'].forEach((label, index) => {
+          const cell = document.createElement('th');
+          if (index === 0) {
+            cell.style.padding = '10px';
+            cell.style.textAlign = 'left';
+          }
+          cell.textContent = label;
+          headerRow.appendChild(cell);
+        });
+        header.appendChild(headerRow);
+        const body = document.createElement('tbody');
         data.forEach((player, index) => {
           const rank = index + 1;
-          const icon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
-          html += `<tr style="background: ${index % 2 === 0 ? '#2a2a3e' : '#3a3a4e'};">`;
-          html += `<td style="padding: 10px;">${icon}</td>`;
-          html += `<td>${player.username}</td>`;
-          html += `<td><strong>${player.elo_rating || 1000}</strong></td>`;
-          html += `<td>${player.peak_elo || 1000}</td>`;
-          html += `<td>${player.total_games || 0}</td>`;
-          html += '</tr>';
+          const row = document.createElement('tr');
+          row.style.background = index % 2 === 0 ? '#2a2a3e' : '#3a3a4e';
+          const rankCell = document.createElement('td');
+          rankCell.style.padding = '10px';
+          rankCell.textContent = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : String(rank);
+          const playerCell = document.createElement('td');
+          playerCell.textContent = String(player.username || '');
+          const eloCell = document.createElement('td');
+          const elo = document.createElement('strong');
+          elo.textContent = String(player.elo_rating || 1000);
+          eloCell.appendChild(elo);
+          const peakCell = document.createElement('td');
+          peakCell.textContent = String(player.peak_elo || 1000);
+          const gamesCell = document.createElement('td');
+          gamesCell.textContent = String(player.total_games || 0);
+          row.append(rankCell, playerCell, eloCell, peakCell, gamesCell);
+          body.appendChild(row);
         });
-        
-        html += '</tbody></table>';
-        display.innerHTML = html;
+        table.append(header, body);
+        display.replaceChildren(table);
       } catch (error) {
         display.innerHTML = '<p>Fehler beim Laden der ELO-Rangliste.</p>';
         console.error('Failed to load ELO leaderboard:', error);
@@ -6456,7 +6496,7 @@
           <div class="slot-sym-image-cfg" style="display:flex;gap:8px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid #222;flex-wrap:wrap;">
             <span style="font-size:12px;color:#aaa;flex-shrink:0;">🖼️ Bild-Symbol:</span>
             <input type="hidden" data-field="imageUrl" value="${escapeHtml(sym.imageUrl || '')}">
-            <input type="file" class="slot-sym-image-input" accept="image/*" style="font-size:12px;flex:1;min-width:0;">
+            <input type="file" class="slot-sym-image-input" accept="image/png,image/jpeg,image/gif,image/webp" style="font-size:12px;flex:1;min-width:0;">
             <button type="button" class="secondary slot-sym-image-upload-btn" style="padding:4px 10px;font-size:12px;white-space:nowrap;">⬆️ Upload</button>
             ${hasImage ? `<button type="button" class="danger slot-sym-image-clear-btn" style="padding:4px 8px;font-size:12px;" title="Bild entfernen">✕</button>` : ''}
             ${hasImage ? `<span style="font-size:11px;color:#4CAF50;">✓ Bild aktiv</span>` : `<span style="font-size:11px;color:#666;">Kein Bild – Emoji wird verwendet</span>`}
@@ -8914,9 +8954,13 @@
         // Popular prizes
         const popularContainer = document.getElementById('wheel-popular-prizes');
         if (stats.popularPrizes && stats.popularPrizes.length > 0) {
-          popularContainer.innerHTML = stats.popularPrizes.map((p, i) => 
-            `<span style="margin-right: 15px;">${i + 1}. ${p.prize_text} (${p.count}x)</span>`
-          ).join('');
+          popularContainer.replaceChildren();
+          stats.popularPrizes.forEach((prize, index) => {
+            const item = document.createElement('span');
+            item.style.marginRight = '15px';
+            item.textContent = `${index + 1}. ${prize.prize_text || ''} (${prize.count || 0}x)`;
+            popularContainer.appendChild(item);
+          });
         } else {
           popularContainer.innerHTML = '<span style="color: #666;">Noch keine Daten</span>';
         }
@@ -8938,28 +8982,48 @@
           return;
         }
         
-        tbody.innerHTML = wins.map(win => `
-          <tr style="background: ${win.paid_out ? '#2a3a2e' : '#3a2a2e'};" data-win-id="${win.id}">
-            <td style="padding: 8px;">${new Date(win.timestamp).toLocaleString('de-DE')}</td>
-            <td>${win.nickname || win.username}</td>
-            <td style="color: #FFD700; font-weight: bold;">${win.prize_text}</td>
-            <td>${win.gift_name || '-'}${win.wheel_name ? ` <small style="color: #888;">(${win.wheel_name})</small>` : ''}</td>
-            <td style="text-align: center;">
-              ${win.paid_out 
-                ? '<span style="color: #4CAF50;">✅ Ausgezahlt</span>' 
-                : '<span style="color: #FFC107;">⏳ Ausstehend</span>'}
-            </td>
-            <td style="text-align: center;">
-              <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
-                ${!win.paid_out 
-                  ? `<button class="wheel-pay-btn secondary" data-win-id="${win.id}" style="padding: 5px 8px; font-size: 11px;">💰 Auszahlen</button>`
-                  : ''}
-                <button class="wheel-edit-btn secondary" data-win-id="${win.id}" data-prize="${encodeURIComponent(win.prize_text)}" style="padding: 5px 8px; font-size: 11px; background: #2196F3;">✏️</button>
-                <button class="wheel-delete-btn danger" data-win-id="${win.id}" style="padding: 5px 8px; font-size: 11px;">🗑️</button>
-              </div>
-            </td>
-          </tr>
-        `).join('');
+        tbody.replaceChildren();
+        wins.forEach(win => {
+          const row = document.createElement('tr');
+          row.style.background = win.paid_out ? '#2a3a2e' : '#3a2a2e';
+          row.dataset.winId = String(win.id);
+          const addCell = (text, styles = {}) => {
+            const cell = document.createElement('td');
+            Object.assign(cell.style, styles);
+            cell.textContent = text;
+            row.appendChild(cell);
+            return cell;
+          };
+          addCell(new Date(win.timestamp).toLocaleString('de-DE'), { padding: '8px' });
+          addCell(String(win.nickname || win.username || ''));
+          addCell(String(win.prize_text || ''), { color: '#FFD700', fontWeight: 'bold' });
+          const giftCell = addCell(String(win.gift_name || '-'));
+          if (win.wheel_name) {
+            const wheelName = document.createElement('small');
+            wheelName.style.color = '#888';
+            wheelName.textContent = ` (${win.wheel_name})`;
+            giftCell.appendChild(wheelName);
+          }
+          addCell(win.paid_out ? '✅ Ausgezahlt' : '⏳ Ausstehend', { textAlign: 'center', color: win.paid_out ? '#4CAF50' : '#FFC107' });
+          const actionsCell = addCell('', { textAlign: 'center' });
+          const actions = document.createElement('div');
+          Object.assign(actions.style, { display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' });
+          const button = (className, label) => {
+            const element = document.createElement('button');
+            element.className = className;
+            element.dataset.winId = String(win.id);
+            Object.assign(element.style, { padding: '5px 8px', fontSize: '11px' });
+            element.textContent = label;
+            return element;
+          };
+          if (!win.paid_out) actions.appendChild(button('wheel-pay-btn secondary', '💰 Auszahlen'));
+          const edit = button('wheel-edit-btn secondary', '✏️');
+          edit.style.background = '#2196F3';
+          edit.dataset.prize = encodeURIComponent(String(win.prize_text || ''));
+          actions.append(edit, button('wheel-delete-btn danger', '🗑️'));
+          actionsCell.appendChild(actions);
+          tbody.appendChild(row);
+        });
       } catch (error) {
         console.error('Error loading Wheel wins:', error);
       }

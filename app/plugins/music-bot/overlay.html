@@ -782,7 +782,6 @@
       root.classList.add(`pos-${position}`);
       document.body.classList.add(`theme-${theme}`);
       document.body.classList.add(`design-${design}`);
-      refreshVisualizerThemeColors();
 
       // Show only the active design widget
       const widgetEl = document.getElementById(`widget-${design}`);
@@ -848,6 +847,7 @@
       let visualizerMediaElement = null;
       let visualizerAccentColor = '#38bdf8';
       let visualizerAccentStrongColor = '#60a5fa';
+      refreshVisualizerThemeColors();
       // Balance between responsive beat reaction and smooth bar movement in OBS.
       const VISUALIZER_SMOOTHING_CONSTANT = 0.78;
       // Good readability/performance balance for 1080p overlays.

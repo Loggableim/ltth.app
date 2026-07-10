@@ -178,15 +178,12 @@ describe('Connect4 Unified Queue Integration', () => {
       expect(completeProcessingSpy).toHaveBeenCalled();
     });
 
-    test('should not use unified queue for non-Connect4/Chess games', () => {
+    test('rejects unsupported interactive game types instead of using a legacy queue', () => {
       // Simulate an active game
       plugin.activeSessions.set(1, {});
       
-      // Try to start a non-Connect4 game (assuming 'othergame' exists)
-      plugin.handleGameStart('othergame', 'user1', 'User One', 'command', '/start');
-      
-      // Verify game was queued in old gameQueue, not unified queue
-      expect(plugin.gameQueue.length).toBe(1);
+      const result = plugin.handleGameStart('othergame', 'user1', 'User One', 'command', '/start');
+      expect(result).toMatchObject({ success: false, error: 'unsupported_game_type' });
       expect(plugin.unifiedQueue.queue.length).toBe(0);
     });
   });

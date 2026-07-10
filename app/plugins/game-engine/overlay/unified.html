@@ -135,7 +135,7 @@
   </div>
 
   <script>
-    const socket = io();
+    const socket = io({ auth: { role: 'overlay' } });
     let currentGame = null;
 
     // Game switched event

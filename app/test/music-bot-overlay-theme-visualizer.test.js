@@ -22,6 +22,13 @@ describe('Music Bot overlay theme engine and visualizer', () => {
     expect(overlayHtml).toContain("sunset: 'cyberpunk'");
   });
 
+  test('initializes visualizer colors only after their state variables exist', () => {
+    const initialRefresh = overlayHtml.indexOf('refreshVisualizerThemeColors();');
+    const accentState = overlayHtml.indexOf("let visualizerAccentColor = '#38bdf8';");
+
+    expect(initialRefresh).toBeGreaterThan(accentState);
+  });
+
   test('contains visualizer canvas and analyser wiring', () => {
     expect(overlayHtml).toContain('id="visualizer-canvas"');
     expect(overlayHtml).toContain('createAnalyser()');

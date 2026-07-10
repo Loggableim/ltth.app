@@ -132,6 +132,7 @@ describe('Wheel Segment Landing - End-to-End Integration', () => {
         // Clean up for next iteration
         wheelGame.isSpinning = false;
         wheelGame.currentSpin = null;
+        wheelGame.unifiedQueue.completeProcessing();
       }
     }
   });

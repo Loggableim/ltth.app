@@ -219,6 +219,7 @@ describe('Plinko Test Mode', () => {
         nickname: 'TestUser',
         bet: 100,
         isTest: true,
+        serverSlotIndex: 0,
         timestamp: Date.now() - 2000 // 2 seconds ago to pass anti-cheat
       });
 
@@ -243,6 +244,7 @@ describe('Plinko Test Mode', () => {
         username: 'test_user_456',
         bet: 100,
         isTest: true,
+        serverSlotIndex: 0,
         timestamp: Date.now() - 2000 // 2 seconds ago to pass anti-cheat
       });
 
@@ -252,7 +254,7 @@ describe('Plinko Test Mode', () => {
       expect(plinkoGame.awardXP).not.toHaveBeenCalled();
     });
 
-    test('should trigger OpenShock for test balls', async () => {
+    test('should require streamer review instead of triggering OpenShock for test balls', async () => {
       plinkoGame.getConfig = jest.fn().mockReturnValue({
         slots: [
           {
@@ -274,21 +276,15 @@ describe('Plinko Test Mode', () => {
         username: 'test_user_789',
         bet: 100,
         isTest: true,
+        serverSlotIndex: 0,
         timestamp: Date.now() - 2000 // 2 seconds ago to pass anti-cheat
       });
 
       await plinkoGame.handleBallLanded(ballId, 0);
 
-      // Should trigger OpenShock even for test balls
-      expect(plinkoGame.triggerOpenshockReward).toHaveBeenCalledWith(
-        'test_user_789',
-        expect.objectContaining({
-          enabled: true,
-          type: 'Shock',
-          duration: 1000,
-          intensity: 50
-        }),
-        0
+      expect(plinkoGame.triggerOpenshockReward).not.toHaveBeenCalled();
+      expect(mockIo.emit).toHaveBeenCalledWith('plinko:openshock-review-required',
+        expect.objectContaining({ ballId, username: 'test_user_789', slotIndex: 0 })
       );
     });
 
@@ -298,6 +294,7 @@ describe('Plinko Test Mode', () => {
         username: 'real_user',
         bet: 100,
         isTest: false, // Regular ball
+        serverSlotIndex: 1,
         timestamp: Date.now() - 2000 // 2 seconds ago to pass anti-cheat
       });
 
@@ -319,8 +316,29 @@ describe('Plinko Test Mode', () => {
       expect(plinkoGame.awardXP).toHaveBeenCalled();
     });
 
-    test('should trigger OpenShock when global testModeEnabled is true', async () => {
-      // Test that OpenShock is now triggered for test balls when global test mode is enabled
+    test('uses the server-selected slot even when the overlay reports another slot', async () => {
+      const ballId = 'server-authoritative-ball';
+      plinkoGame.activeBalls.set(ballId, {
+        username: 'server_authoritative_user',
+        bet: 100,
+        isTest: false,
+        serverSlotIndex: 0,
+        timestamp: Date.now() - 2000
+      });
+
+      await plinkoGame.handleBallLanded(ballId, 1);
+
+      expect(db.recordPlinkoTransaction).toHaveBeenCalledWith(
+        'server_authoritative_user',
+        100,
+        2.0,
+        100,
+        0
+      );
+      expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('visual desync'));
+    });
+
+    test('should require streamer review when global testModeEnabled is true', async () => {
       plinkoGame.getConfig = jest.fn().mockReturnValue({
         slots: [
           {
@@ -356,16 +374,9 @@ describe('Plinko Test Mode', () => {
       // Now land the ball
       await plinkoGame.handleBallLanded(result.ballId, 0);
 
-      // Should trigger OpenShock even though isTest flag is set
-      expect(plinkoGame.triggerOpenshockReward).toHaveBeenCalledWith(
-        'test_user_global',
-        expect.objectContaining({
-          enabled: true,
-          type: 'Shock',
-          duration: 1000,
-          intensity: 50
-        }),
-        0
+      expect(plinkoGame.triggerOpenshockReward).not.toHaveBeenCalled();
+      expect(mockIo.emit).toHaveBeenCalledWith('plinko:openshock-review-required',
+        expect.objectContaining({ ballId: result.ballId, username: 'test_user_global' })
       );
       
       // Should record in test table
