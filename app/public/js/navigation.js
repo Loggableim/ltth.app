@@ -42,7 +42,6 @@
         'weather-control': '#38bdf8',
         streamalchemy: '#ec4899',
         gcce: '#f59e0b',
-        'gcce-hud': '#8b5cf6',
         'thermal-printer': '#64748b',
         chatango: '#f97316',
         animazingpal: '#ef4444',
