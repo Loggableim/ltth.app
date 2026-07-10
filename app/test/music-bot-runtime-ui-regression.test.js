@@ -316,6 +316,7 @@ describe('Music Bot runtime and UI regressions', () => {
     });
     expect(togglePost).toBeTruthy();
     const payload = JSON.parse(togglePost[1].body);
+    expect(payload.mode).toBe('playlist');
     expect(payload.randomKeywords).toEqual(['lofi', 'synthwave']);
     expect(payload.playlistUrls).toEqual([
       'https://www.youtube.com/watch?v=first',

@@ -739,14 +739,17 @@
   onboardingComplete?.addEventListener('click', completeOnboarding);
 
   autoDjSave.addEventListener('click', async () => {
+    const playlistUrls = parseList(autoDjPlaylistUrls?.value || '');
+    const mode = playlistUrls.length ? 'playlist' : autoDjMode.value;
+    autoDjMode.value = mode;
     const payload = {
       enabled: autoDjEnabled.checked,
-      mode: autoDjMode.value,
+      mode,
       historyMinPlays: Number(autoDjHistoryPlays.value) || 1,
       maxConsecutiveAutoDJ: Number(autoDjMaxConsecutive.value) || 1,
       announceAutoDJ: autoDjAnnounce.checked,
       randomKeywords: parseList(autoDjRandomKeywords?.value || ''),
-      playlistUrls: parseList(autoDjPlaylistUrls?.value || '')
+      playlistUrls
     };
     const result = await post('/auto-dj/toggle', payload);
     if (result?.track) {
