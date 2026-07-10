@@ -456,6 +456,27 @@ h3 {
   min-width: 0;
 }
 
+.preview-volume-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: var(--musicbot-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.preview-volume-control input {
+  min-width: 0;
+}
+
+.preview-volume-control output {
+  min-width: 3ch;
+  color: var(--musicbot-text);
+  text-align: right;
+}
+
 .player-frame {
   position: relative;
   width: 100%;

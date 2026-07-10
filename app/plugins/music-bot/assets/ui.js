@@ -83,6 +83,8 @@
   const previewFrame = document.getElementById('preview-frame');
   const playerFrameBox = document.getElementById('player-frame-box');
   const previewSource = document.getElementById('preview-source');
+  const previewVolumeInput = document.getElementById('preview-volume-input');
+  const previewVolumeValue = document.getElementById('preview-volume-value');
   const masterVolumeInput = document.getElementById('master-volume-input');
   const masterVolumeValue = document.getElementById('master-volume-value');
   const volumeInput = document.getElementById('volume-input');
@@ -197,9 +199,28 @@
 
   function setPreviewVideo(youtubeId) {
     if (!previewFrame || !youtubeId) return;
-    previewFrame.src = `https://www.youtube.com/embed/${youtubeId}`;
+    const params = new URLSearchParams({
+      controls: '0',
+      enablejsapi: '1',
+      origin: window.location.origin,
+      playsinline: '1',
+      rel: '0'
+    });
+    previewFrame.onload = () => setPreviewVolume(previewVolumeInput?.value);
+    previewFrame.src = `https://www.youtube.com/embed/${youtubeId}?${params.toString()}`;
     playerFrameBox?.classList.add('has-video');
     previewSource.textContent = 'YouTube';
+  }
+
+  function setPreviewVolume(value) {
+    const volume = Math.max(0, Math.min(100, Number(value) || 0));
+    if (previewVolumeValue) previewVolumeValue.value = String(volume);
+    if (!previewFrame?.contentWindow || !previewFrame.src) return;
+    previewFrame.contentWindow.postMessage(JSON.stringify({
+      event: 'command',
+      func: 'setVolume',
+      args: [volume]
+    }), 'https://www.youtube.com');
   }
 
   function clearPreview() {
@@ -429,6 +450,10 @@
   });
   document.getElementById('clear-btn').addEventListener('click', () => {
     post('/clear');
+  });
+
+  previewVolumeInput?.addEventListener('input', () => {
+    setPreviewVolume(previewVolumeInput.value);
   });
 
   // Auto-detect YouTube URLs as the user types/pastes

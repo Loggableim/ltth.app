@@ -231,6 +231,27 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(mpvPost).toBeTruthy();
   });
 
+  test('keeps preview volume visible outside YouTube\'s auto-hiding controls', async () => {
+    const { dom } = bootMusicBotUi();
+    doms.push(dom);
+    const previewVolume = dom.window.document.getElementById('preview-volume-input');
+    const previewVolumeValue = dom.window.document.getElementById('preview-volume-value');
+    const searchInput = dom.window.document.getElementById('search-input');
+    const previewFrame = dom.window.document.getElementById('preview-frame');
+
+    expect(previewVolume).not.toBeNull();
+    expect(previewVolumeValue).not.toBeNull();
+
+    previewVolume.value = '73';
+    previewVolume.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    expect(previewVolumeValue.value).toBe('73');
+
+    searchInput.value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+    searchInput.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    expect(previewFrame.src).toContain('controls=0');
+    expect(previewFrame.src).toContain('enablejsapi=1');
+  });
+
   test('serves German Music Bot labels as UTF-8 text instead of mojibake', () => {
     const html = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/ui.html'), 'utf8');
 

@@ -155,6 +155,11 @@
               </div>
               <iframe id="preview-frame" title="YouTube Vorschau" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
+            <label class="preview-volume-control" for="preview-volume-input">
+              <span>Vorschau-Lautstärke</span>
+              <input type="range" id="preview-volume-input" min="0" max="100" value="50" aria-label="Vorschau-Lautstärke">
+              <output id="preview-volume-value" for="preview-volume-input">50</output>
+            </label>
           </div>
           <div class="player-info">
             <div id="now-playing" class="now-playing empty">
