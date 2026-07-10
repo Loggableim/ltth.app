@@ -10,7 +10,7 @@ describe('Clerk auth bridge', () => {
     const authIndex = readRootFile('auth', 'index.html');
     const authScript = readRootFile('auth', 'bridge.js');
 
-    assert(authIndex.includes('<script src="bridge.js"'));
+    assert(authIndex.includes('<script src="bridge.js?v=20260710-profile"'));
     assert(authIndex.includes('id="ltth-auth-bridge-root"'));
     assert(authIndex.includes('data-auth-mode-switcher'));
     assert(authIndex.includes('Manage your LTTH account on ltth.app'));
