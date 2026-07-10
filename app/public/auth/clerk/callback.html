@@ -17,9 +17,7 @@
       --danger: #fca5a5;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       min-height: 100vh;
@@ -79,9 +77,10 @@
   <main>
     <div class="eyebrow">LTTH Account</div>
     <h1 id="title">Completing sign-in</h1>
-    <p id="message">Verifying the Clerk session token with your local LTTH app...</p>
+    <p id="message">Verifying the LTTH account session with your local app...</p>
     <code id="error" hidden></code>
   </main>
+  <script src="/auth/clerk/callback-utils.js"></script>
   <script>
     (function() {
       const TOKEN_KEY = 'ltth_store_auth_token';
@@ -105,24 +104,13 @@
       }
 
       function readHash() {
-        const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
-        return new URLSearchParams(hash);
+        const rawHash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+        return new URLSearchParams(rawHash);
       }
 
       function clearFragment() {
         if (window.history && typeof window.history.replaceState === 'function') {
           window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
-        }
-      }
-
-      function getSafeNext(raw) {
-        if (!raw) return '/dashboard.html';
-        try {
-          const next = new URL(raw, window.location.origin);
-          if (next.origin !== window.location.origin) return '/dashboard.html';
-          return next.pathname + next.search + next.hash;
-        } catch {
-          return '/dashboard.html';
         }
       }
 
@@ -152,7 +140,10 @@
         const token = hash.get('token');
         const state = hash.get('state');
         const expiresAt = hash.get('expires_at') || '';
-        const next = getSafeNext(hash.get('next') || sessionStorage.getItem(NEXT_KEY));
+        const callbackUtils = window.LTTHAccountCallbackUtils || {};
+        const next = typeof callbackUtils.getSafeNext === 'function'
+          ? callbackUtils.getSafeNext(hash.get('next') || sessionStorage.getItem(NEXT_KEY), window.location.origin)
+          : '/dashboard.html';
         const expectedState = sessionStorage.getItem(STATE_KEY);
 
         clearFragment();
