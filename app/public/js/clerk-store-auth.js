@@ -12,6 +12,7 @@
     signedIn: false,
     bridgeToken: '',
     account: null,
+    storeMode: 'store',
     listeners: []
   };
 
@@ -82,8 +83,18 @@
   function setSplashVisible(visible) {
     const root = getAuthRoot();
     if (!root) return;
-    root.style.display = visible ? 'flex' : 'none';
-    root.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    const shouldShow = visible && state.storeMode !== 'installed';
+    root.style.display = shouldShow ? 'flex' : 'none';
+    root.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+  }
+
+  function setStoreMode(mode) {
+    state.storeMode = mode === 'installed' ? 'installed' : 'store';
+    if (state.storeMode === 'installed') {
+      setSplashVisible(false);
+    } else if (state.initialized && !state.signedIn) {
+      renderSignedOut();
+    }
   }
 
   function renderUsernameGuidance() {
@@ -478,6 +489,7 @@
     refreshAccount,
     requireAuth,
     renderSignedIn,
+    setStoreMode,
     showSignIn,
     signOut: clearBridgeSession
   };

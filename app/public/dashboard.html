@@ -370,12 +370,15 @@
         }
 
         .plugin-store-auth-root {
-            position: fixed;
-            inset: 0;
-            z-index: 1100;
+            position: relative;
+            z-index: 1;
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
+            min-height: min(440px, 62vh);
+            margin-bottom: 1rem;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 24px;
             background:
                 radial-gradient(circle at 20% 20%, rgba(96, 165, 250, 0.28), transparent 32%),
                 radial-gradient(circle at 80% 10%, rgba(16, 185, 129, 0.22), transparent 30%),

@@ -55,7 +55,6 @@ class PluginManager {
         const uploadBtn = document.getElementById('upload-plugin-btn');
         const fileInput = document.getElementById('plugin-file-input');
         const reloadBtn = document.getElementById('reload-plugins-btn');
-        const modeBtns = document.querySelectorAll('.plugin-mode-btn, .plugin-tab-btn');
         const enableCommunityBtn = document.getElementById('enable-community-store-btn');
         const addCommunityBtn = document.getElementById('add-community-source-btn');
 
@@ -77,11 +76,22 @@ class PluginManager {
             });
         }
 
-        modeBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.setStoreMode(btn.getAttribute('data-plugin-mode') || btn.getAttribute('data-plugin-tab'));
-            });
-        });
+        // Store controls may be re-rendered while auth and translations load.
+        // Delegate in the capture phase so the buttons retain their behavior
+        // even when their DOM nodes are replaced by another UI pass.
+        this.storeControlClickHandler = event => {
+            const modeButton = event.target.closest('.plugin-mode-btn, .plugin-tab-btn');
+            if (modeButton) {
+                this.setStoreMode(modeButton.getAttribute('data-plugin-mode') || modeButton.getAttribute('data-plugin-tab'));
+                return;
+            }
+
+            const filterButton = event.target.closest('.plugin-filter-btn');
+            if (filterButton) {
+                this.setPluginFilter(filterButton.getAttribute('data-filter'));
+            }
+        };
+        document.addEventListener('click', this.storeControlClickHandler, true);
 
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
@@ -125,24 +135,6 @@ class PluginManager {
                 this.applyFiltersAndSort();
             });
         }
-
-        // Filter buttons
-        const filterBtns = document.querySelectorAll('.plugin-filter-btn');
-        filterBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                filterBtns.forEach(b => {
-                    b.classList.remove('active');
-                    b.style.removeProperty('background');
-                    b.style.removeProperty('border-color');
-                    b.style.removeProperty('color');
-                });
-                
-                btn.classList.add('active');
-                
-                this.currentFilter = btn.getAttribute('data-filter');
-                this.applyFiltersAndSort();
-            });
-        });
 
         // Sort functionality
         const sortSelect = document.getElementById('plugin-sort');
@@ -296,6 +288,19 @@ class PluginManager {
         this.setStoreMode(tab === 'store' ? 'store' : 'installed');
     }
 
+    setPluginFilter(filter) {
+        const nextFilter = ['all', 'active', 'inactive'].includes(filter) ? filter : 'all';
+        document.querySelectorAll('.plugin-filter-btn').forEach(button => {
+            const isActive = button.getAttribute('data-filter') === nextFilter;
+            button.classList.toggle('active', isActive);
+            button.style.removeProperty('background');
+            button.style.removeProperty('border-color');
+            button.style.removeProperty('color');
+        });
+        this.currentFilter = nextFilter;
+        this.applyFiltersAndSort();
+    }
+
     setStoreMode(mode) {
         const nextMode = ['store', 'installed', 'updates', 'sources'].includes(mode) ? mode : 'store';
         this.currentStoreMode = nextMode;
@@ -433,6 +438,10 @@ class PluginManager {
         const installedMode = this.currentStoreMode === 'installed';
         const sourcesMode = this.currentStoreMode === 'sources';
         const storeMode = this.currentStoreMode === 'store';
+
+        if (window.StoreAuth && typeof window.StoreAuth.setStoreMode === 'function') {
+            window.StoreAuth.setStoreMode(installedMode ? 'installed' : 'store');
+        }
 
         ['upload-plugin-btn', 'reload-plugins-btn', 'compact-mode-toggle'].forEach(id => {
             const element = document.getElementById(id);
@@ -1738,11 +1747,18 @@ class PluginManager {
     }
 }
 
-// Plugin Manager initialisieren, wenn DOM geladen ist
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        window.pluginManager = new PluginManager();
-    });
-} else {
+function initializePluginManager() {
+    if (window.pluginManager) return window.pluginManager;
+    if (!document.getElementById('view-plugins')) return null;
+
     window.pluginManager = new PluginManager();
+    return window.pluginManager;
+}
+
+// The script is loaded after the App Store markup, so initialize immediately.
+// This makes the manager available when navigation restores the App Store in
+// its earlier DOMContentLoaded handler and calls loadPlugins(). Keep the event
+// fallback for pages that embed this script before the App Store markup.
+if (!initializePluginManager()) {
+    document.addEventListener('DOMContentLoaded', initializePluginManager, { once: true });
 }
