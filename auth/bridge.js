@@ -185,6 +185,7 @@
     const switcher = document.querySelector('[data-auth-mode-switcher]');
     if (switcher) {
       switcher.hidden = !visible;
+      switcher.style.display = visible ? '' : 'none';
     }
   }
 
@@ -221,21 +222,30 @@
     throw new Error('Clerk auth components are unavailable.');
   }
 
-  function mountAccountPortal(clerk, returnUrl) {
+  function mountAccountPortal(clerk) {
     if (!root) return;
     root.innerHTML = `
       <div class="status">
         <strong>Signed in on ltth.app</strong>
-        <span>You can manage your LTTH profile here. The app store uses inline login, so you only need this page for web account management and optional return flows.</span>
-        <div id="ltth-auth-account-root" style="margin-top: 18px;"></div>
+        <span>Your LTTH account is connected. Manage your profile, security settings, and account details here.</span>
+        <div class="account-actions">
+          <button type="button" data-account-manage-profile>Manage profile</button>
+          <div id="ltth-auth-account-root"></div>
+        </div>
       </div>
     `;
 
     const accountRoot = document.getElementById('ltth-auth-account-root');
+    const manageProfileButton = root.querySelector('[data-account-manage-profile]');
+    manageProfileButton?.addEventListener('click', () => {
+      if (typeof clerk.openUserProfile === 'function') {
+        clerk.openUserProfile();
+      }
+    });
+
     if (accountRoot && typeof clerk.mountUserButton === 'function') {
       clerk.mountUserButton(accountRoot, {
-        userProfileMode: 'navigation',
-        userProfileUrl: returnUrl ? returnUrl.toString() : DEFAULT_ACCOUNT_PORTAL_URL,
+        userProfileMode: 'modal',
         signInUrl: withMode('sign-in')
       });
     } else if (accountRoot) {
@@ -273,7 +283,7 @@
     }
 
     if (!returnUrl && clerk.session) {
-      mountAccountPortal(clerk, null);
+      mountAccountPortal(clerk);
       return true;
     }
 
@@ -312,7 +322,7 @@
 
         if (clerk.session) {
           stop();
-          mountAccountPortal(clerk, null);
+          mountAccountPortal(clerk);
         }
       } catch (error) {
         stop();

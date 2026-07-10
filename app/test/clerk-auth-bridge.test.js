@@ -21,6 +21,10 @@ describe('Clerk auth bridge', () => {
     assert(authScript.includes('localhost'));
     assert(authScript.includes('ltth.app/auth/'));
     assert(authScript.includes('mountUserButton'));
+    assert(authScript.includes('data-account-manage-profile'));
+    assert(authScript.includes('clerk.openUserProfile'));
+    assert(authScript.includes("userProfileMode: 'modal'"));
+    assert(!authScript.includes("userProfileMode: 'navigation'"));
     assert(authScript.includes('session.getToken'));
     assert(authScript.includes('redirectWithToken'));
     assert(authScript.includes('watchForAuthenticatedSession'));
@@ -30,6 +34,7 @@ describe('Clerk auth bridge', () => {
     assert(authScript.includes('Retrying account bridge'));
     assert(authScript.includes('Reload the page to try again.'));
     assert(authScript.includes('setModeSwitcherVisible'));
+    assert(authScript.includes("switcher.style.display = visible ? '' : 'none'"));
     assert(!authScript.includes('<div class="switcher">'));
     assert(!authScript.includes('clerk.addListener'));
     assert(!authScript.includes('CLERK_SECRET_KEY'));
