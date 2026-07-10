@@ -390,7 +390,7 @@ class QueueManager {
           (id, position, title, artist, duration, thumbnail, url, youtubeId, source, requestedBy, requesterAvatar, isGiftRequest, addedAt)
           VALUES (@id, @position, @title, @artist, @duration, @thumbnail, @url, @youtubeId, @source, @requestedBy, @requesterAvatar, @isGiftRequest, @addedAt)`
       );
-      const persist = this.db.transaction((songs) => {
+      const writeSongs = (songs) => {
         this.db.prepare('DELETE FROM plugin_music_bot_queue').run();
         songs.forEach((song, idx) => {
           stmt.run({
@@ -409,8 +409,15 @@ class QueueManager {
             addedAt: song.addedAt || Date.now()
           });
         });
-      });
-      persist(this.queue);
+      };
+      const transaction = typeof this.db.transaction === 'function'
+        ? this.db.transaction.bind(this.db)
+        : this.db.db?.transaction?.bind(this.db.db);
+      if (transaction) {
+        transaction(writeSongs)(this.queue);
+      } else {
+        writeSongs(this.queue);
+      }
     } catch (error) {
       this.api.log?.(`[music-bot] Failed to persist queue: ${error.message}`, 'error');
     }

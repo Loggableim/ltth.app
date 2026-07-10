@@ -243,16 +243,16 @@ class PlaybackEngine extends EventEmitter {
   async _ensureProcess() {
     if (this.process && this.process.exitCode === null) return;
 
-    this.ipcPath = path.join(os.tmpdir(), `music-bot-mpv-${Date.now()}.sock`);
+    this.ipcPath = process.platform === 'win32'
+      ? `\\\\.\\pipe\\music-bot-mpv-${Date.now()}`
+      : path.join(os.tmpdir(), `music-bot-mpv-${Date.now()}.sock`);
     const args = [
       '--idle=yes',
-      '--input-ipc-server',
-      this.ipcPath,
+      `--input-ipc-server=${this.ipcPath}`,
       '--no-video',
       '--force-window=no',
       '--audio-display=no',
-      '--audio-device',
-      this.config.audioDevice || 'auto'
+      `--audio-device=${this.config.audioDevice || 'auto'}`
     ];
 
     this.process = spawn(this.config.mpvPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });

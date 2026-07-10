@@ -59,4 +59,38 @@ describe('music-bot queue manager', () => {
     expect(reorder.success).toBe(true);
     expect(manager.getQueue().map((entry) => entry.title)).toEqual(['B', 'A']);
   });
+
+  it('uses the raw database transaction exposed by the plugin database wrapper', () => {
+    const stmt = {
+      run: jest.fn(),
+      get: jest.fn(() => null),
+      all: jest.fn(() => [])
+    };
+    const transaction = jest.fn((writeSongs) => writeSongs);
+    const api = {
+      getDatabase: () => ({
+        prepare: jest.fn(() => stmt),
+        db: { transaction }
+      }),
+      log: jest.fn()
+    };
+    const manager = new QueueManager({
+      queue: {
+        maxLength: 10,
+        maxPerUser: 3,
+        maxSongDurationSeconds: 600,
+        duplicateDetection: 'off',
+        allowDuplicates: true,
+        cooldownPerUserSeconds: 0
+      }
+    }, api);
+
+    manager.addSong({ title: 'Persistent Song', url: 'https://example.com/song' });
+
+    expect(transaction).toHaveBeenCalled();
+    expect(api.log).not.toHaveBeenCalledWith(
+      expect.stringContaining('Failed to persist queue'),
+      'error'
+    );
+  });
 });
