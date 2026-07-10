@@ -171,4 +171,34 @@ describe('Music Bot core features', () => {
     expect(autoDJ.getStatus().consecutiveCount).toBe(1);
     expect(autoDJ.getStatus().lastResult.state).toBe('playing');
   });
+
+  test('advances through individual entries when Auto-DJ receives one playlist URL', async () => {
+    const resolver = {
+      resolvePlaylistEntry: jest.fn(async (_url, index) => ({
+        success: true,
+        song: { title: `Playlist ${index}`, youtubeId: `playlist-${index}` }
+      }))
+    };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'playlist',
+      playlistUrls: ['https://www.youtube.com/playlist?list=PLScN1UM-Rlxo']
+    }, resolver, createDbMock(), { log: jest.fn() });
+
+    const first = await autoDJ.getNextSong();
+    const second = await autoDJ.getNextSong();
+
+    expect(first.song.title).toBe('Playlist 1');
+    expect(second.song.title).toBe('Playlist 2');
+    expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(
+      1,
+      'https://www.youtube.com/playlist?list=PLScN1UM-Rlxo',
+      1
+    );
+    expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(
+      2,
+      'https://www.youtube.com/playlist?list=PLScN1UM-Rlxo',
+      2
+    );
+  });
 });

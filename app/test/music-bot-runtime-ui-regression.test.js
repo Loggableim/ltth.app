@@ -195,7 +195,31 @@ describe('Music Bot runtime and UI regressions', () => {
     const resolver = new MusicResolver({ ytdlpPath: 'yt-dlp' }, { log: jest.fn() });
 
     expect(resolver._isSupportedSourceUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(true);
+    expect(resolver._isSupportedSourceUrl('https://www.youtube.com/playlist?list=PLScN1UM-Rlxo')).toBe(true);
     expect(resolver._isSupportedSourceUrl('https://soundcloud.com/artist/track')).toBe(true);
+  });
+
+  test('resolves one requested YouTube playlist entry without fetching the entire playlist', async () => {
+    const resolver = new MusicResolver({ ytdlpPath: 'yt-dlp' }, { log: jest.fn() });
+    resolver._runYtDlp = jest.fn(async () => [
+      '0',
+      'channel-id',
+      'Channel',
+      "['Music']",
+      JSON.stringify({
+        id: 'playlist-video',
+        title: 'Playlist song',
+        webpage_url: 'https://www.youtube.com/watch?v=playlist-video',
+        duration: 180
+      })
+    ].join('\n'));
+
+    const result = await resolver.resolvePlaylistEntry('https://www.youtube.com/playlist?list=PLScN1UM-Rlxo', 3);
+
+    expect(result.song.title).toBe('Playlist song');
+    expect(resolver._runYtDlp.mock.calls[0][0]).toContain('--playlist-items');
+    expect(resolver._runYtDlp.mock.calls[0][0]).toContain('3');
+    expect(resolver._runYtDlp.mock.calls[0][0]).not.toContain('--no-playlist');
   });
 
   test('preserves the persisted queue during plugin shutdown', async () => {

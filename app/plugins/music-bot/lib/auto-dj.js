@@ -6,6 +6,7 @@ class AutoDJ {
     this.db = db;
     this.musicResolver = musicResolver;
     this.playlistIndex = 0;
+    this.playlistTrackIndices = new Map();
     this.playedInSession = new Set();
     this.consecutiveCount = 0;
     this.lastResult = { state: 'idle', message: 'Auto-DJ bereit.' };
@@ -98,6 +99,7 @@ class AutoDJ {
   reset() {
     this.consecutiveCount = 0;
     this.playedInSession.clear();
+    this.playlistTrackIndices.clear();
   }
 
   markTrackStarted(track) {
@@ -161,12 +163,17 @@ class AutoDJ {
       const item = this._nextPlaylistItem();
       if (!item) break;
       try {
-        const resolved = await this.musicResolver.resolve(item);
+        const playlistItem = this.playlistTrackIndices.get(item) || 1;
+        const resolved = this.musicResolver.resolvePlaylistEntry
+          ? await this.musicResolver.resolvePlaylistEntry(item, playlistItem)
+          : await this.musicResolver.resolve(item);
         if (resolved?.success) {
+          this.playlistTrackIndices.set(item, playlistItem + 1);
           return resolved.song;
         }
       } catch (error) {
         this.api.log?.(`[music-bot] AutoDJ playlist resolve failed: ${error.message}`, 'error');
+        this._setResult('error', `Playlist konnte nicht geladen werden: ${error.message}`);
       }
     }
     return null;

@@ -62,6 +62,10 @@ class MusicResolver {
       throw new Error('Only YouTube and SoundCloud URLs are supported for direct song requests.');
     }
 
+    if (isUrl && this._isYouTubePlaylistUrl(trimmed)) {
+      return this.resolvePlaylistEntry(trimmed);
+    }
+
     const target = isUrl ? trimmed : `ytsearch1:${trimmed}`;
 
     const args = [
@@ -114,6 +118,45 @@ class MusicResolver {
       return output;
     }
 
+    const response = this._createSongResponse(output, trimmed, isUrl);
+    this._addToCache(trimmed, response);
+    return response;
+  }
+
+  async resolvePlaylistEntry(url, playlistItem = 1) {
+    if (!this._isYouTubePlaylistUrl(url)) {
+      throw new Error('Only YouTube playlist URLs are supported for playlist playback.');
+    }
+
+    const index = Math.max(1, Math.floor(Number(playlistItem) || 1));
+    const cacheKey = `playlist:${url}:${index}`;
+    const cacheHit = this._fromCache(cacheKey);
+    if (cacheHit) return cacheHit;
+
+    const args = [
+      '--no-warnings',
+      '--ignore-errors',
+      '--skip-download',
+      '--playlist-items',
+      String(index),
+      '--print',
+      '%(age_limit)s',
+      '--print',
+      '%(channel_id)s',
+      '--print',
+      '%(channel)s',
+      '--print',
+      '%(categories)s',
+      '--dump-json',
+      url
+    ];
+    const output = await this._runYtDlp(args);
+    const response = this._createSongResponse(output, url, true);
+    this._addToCache(cacheKey, response);
+    return response;
+  }
+
+  _createSongResponse(output, fallbackUrl, isUrl) {
     const { data, meta } = this._parseYtDlpOutput(output);
 
     const ageLimit = Number.isFinite(meta.ageLimit) ? meta.ageLimit : Number(data.age_limit ?? NaN);
@@ -122,11 +165,11 @@ class MusicResolver {
     const categories = Array.isArray(data.categories) && data.categories.length ? data.categories : meta.categories;
 
     const song = {
-      title: data.title || trimmed,
+      title: data.title || fallbackUrl,
       artist: data.artist || data.uploader || '',
       duration: data.duration || null,
       thumbnail: Array.isArray(data.thumbnails) ? data.thumbnails.at(-1)?.url : data.thumbnail,
-      url: data.webpage_url || data.url || trimmed,
+      url: data.webpage_url || data.url || fallbackUrl,
       localPath: null,
       source: data.extractor || (isUrl ? 'url' : 'youtube'),
       youtubeId: data.id || null,
@@ -141,9 +184,7 @@ class MusicResolver {
       return moderationResult;
     }
 
-    const response = { success: true, song };
-    this._addToCache(trimmed, response);
-    return response;
+    return { success: true, song };
   }
 
   async _runYtDlp(args) {
@@ -352,7 +393,18 @@ class MusicResolver {
   }
 
   _isSupportedSourceUrl(url) {
-    return Boolean(this._extractYouTubeId(url)) || this._isSoundCloudUrl(url);
+    return Boolean(this._extractYouTubeId(url)) || this._isYouTubePlaylistUrl(url) || this._isSoundCloudUrl(url);
+  }
+
+  _isYouTubePlaylistUrl(url) {
+    try {
+      const parsed = new URL(url);
+      const hostname = parsed.hostname.replace(/^www\./, '');
+      if (!['youtube.com', 'm.youtube.com', 'music.youtube.com'].includes(hostname)) return false;
+      return Boolean(parsed.searchParams.get('list')) && ['/playlist', '/watch'].includes(parsed.pathname);
+    } catch (error) {
+      return false;
+    }
   }
 
   async _resolveSoundCloudOEmbed(url) {
