@@ -918,13 +918,13 @@
         "es": "Plugin profesional de efectos climaticos con 13 efectos de overlay, gamificacion comunitaria, presets, secuencias, audio, disparadores de eventos, calidad configurable y capas por efecto.",
         "fr": "Plugin professionnel d'effets meteo avec 13 effets d'overlay, gamification communautaire, presets, sequences, audio, declencheurs d'evenements, qualite configurable et calques par effet."
       },
-      "version": "1.1.0",
+      "version": "1.1.1",
       "author": "Pup Cid",
       "category": "plugin",
       "channel": "open-beta",
       "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/weather-control-1.1.0.zip",
-      "sha256": "54b75b5e52c08d8d2a17955d49d727bd8025cd3322d6a603af453d700e5fba82",
+      "packageUrl": "https://ltth.app/plugin-store/packages/weather-control-1.1.1.zip",
+      "sha256": "f2cc91bca626a687f5225c60207a72117bf67ded871eeab58eccffc260a76bee",
       "pricing": {
         "type": "free",
         "amount": 0,

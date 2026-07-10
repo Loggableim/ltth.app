@@ -20,7 +20,7 @@ Current supported effects: rain, snow, storm, fog, thunder, sunbeam, glitchcloud
 - **Gift Triggers**: Automatic weather effects based on gift value
 - **Chat Commands**: Integration with Global Chat Command Engine (GCCE)
 - **Configurable**: Intensity, duration, and visual parameters for each effect
-- **Security**: Input validation, sanitization, and API key authentication
+- **Security**: Global LTTH admin authentication for every mutation, optional Weather API key as a second factor, input validation, and sanitized overlay state
 
 ## ⚡ Performance Enhancements (v1.3.0+)
 
@@ -438,7 +438,8 @@ permissions: {
 ```http
 POST /api/weather/trigger
 Content-Type: application/json
-X-Weather-Key: <api-key> (optional, if not using global auth)
+X-LTTH-Admin-Token: <admin-token> (required for non-loopback mutation requests)
+X-Weather-Key: <weather-api-key> (additional header when separate Weather API key mode is enabled)
 
 {
   "action": "rain",
@@ -452,7 +453,7 @@ X-Weather-Key: <api-key> (optional, if not using global auth)
 }
 ```
 
-**Supported Actions**: `rain`, `snow`, `storm`, `fog`, `thunder`, `sunbeam`, `glitchclouds`
+**Supported Actions**: `rain`, `snow`, `storm`, `fog`, `thunder`, `sunbeam`, `glitchclouds`, `aurora`, `fireflies`, `meteors`, `sakura`, `embers`, `heatwave`
 
 **Parameters**:
 - `action` (required): Weather effect to trigger
@@ -579,7 +580,8 @@ These can be customized in the plugin code.
 - **Rate Limiting**: Configurable per-user limits (default: 10/minute)
 - **Input Validation**: All parameters are validated and sanitized
 - **Permission Checks**: Role-based access control
-- **API Key Authentication**: Optional separate API key for external access
+- **Global Admin Authentication**: Every `POST` and `DELETE` endpoint requires LTTH admin authentication; loopback requests follow the central LTTH localhost policy
+- **Weather API Key**: Optional additional key for the trigger endpoint when separate Weather API key mode is enabled
 - **XSS Protection**: Meta data is sanitized to prevent injection
 - **Logging**: All weather events are logged
 
@@ -589,7 +591,7 @@ These can be customized in the plugin code.
 - **FPS Cap**: 60 FPS maximum
 - **Particle Limits**: Configurable max particles (default: 500)
 - **Memory Management**: Automatic cleanup of expired effects
-- **No Memory Leaks**: Clean start/stop routines
+- **Lifecycle Cleanup**: Socket listeners, sequence timers, preview intervals, effect timers, and pending gamification state are cleaned up during unload
 
 ## 🐛 Debugging
 
@@ -781,23 +783,7 @@ If transparency still doesn't work after trying all the above, there may be a sy
 
 ## 🧪 Testing
 
-### Transparency Test
-
-A standalone transparency test page is available to verify that canvas transparency works correctly:
-
-```
-/app/plugins/weather-control/transparency-test.html
-```
-
-Open this file directly in a browser (or serve it via the app) to run automated tests that verify:
-- Canvas context initialization with alpha channel
-- Premultiplied alpha setting
-- Background transparency
-- Semi-transparent rendering
-- clearRect() transparency maintenance
-- HTML/Body element transparency
-
-This test uses a checkerboard background pattern to visually confirm transparency is working.
+Automated Jest integration tests cover the Express routes, LTTH admin authentication, overlay configuration broadcasts, main-switch behavior, socket cleanup, payload sanitization, sequence cancellation, and gamification persistence. Renderer regression tests cover effect cleanup and the shared weather engine.
 
 ## 📄 License
 
@@ -814,6 +800,6 @@ For issues and feature requests, please create an issue on GitHub.
 
 ---
 
-**Version**: 1.0.0
+**Version**: 1.1.1
 **Author**: Pup Cid
-**Last Updated**: 2025-11-19
+**Last Updated**: 2026-07-10

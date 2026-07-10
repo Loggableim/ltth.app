@@ -2584,12 +2584,13 @@
         function renderActiveEffects(activeEffects = []) {
             const list = document.getElementById('activeEffectsList');
             if (!list) return;
-            document.getElementById('activeEffectsCount').textContent = activeEffects.length;
-            if (activeEffects.length === 0) {
+            const safeEffects = activeEffects.filter(effect => effect && effects.includes(effect.type));
+            document.getElementById('activeEffectsCount').textContent = safeEffects.length;
+            if (safeEffects.length === 0) {
                 list.innerHTML = '<p class="help-text">No active effects reported by the overlay.</p>';
                 return;
             }
-            list.innerHTML = activeEffects.map(effect => `
+            list.innerHTML = safeEffects.map(effect => `
                 <div class="effect-card">
                     <div class="effect-header">
                         <div class="effect-title">${translate(`effects.names.${effect.type}`) || effect.type}</div>

@@ -232,7 +232,10 @@
       let totalEventsReceived = 0;
       let audioContext = null;
       let stateBroadcastTimer = null;
+      let queueTimer = null;
+      let debugTimer = null;
       let gamificationState = null;
+      const resizeEngine = () => engine?.updateDimensions();
 
       function log(message) {
         if (debug) {
@@ -343,7 +346,7 @@
         });
 
         engine.start();
-        window.addEventListener('resize', () => engine.updateDimensions());
+        window.addEventListener('resize', resizeEngine);
       }
 
       function flashLightning(intensity) {
@@ -442,7 +445,7 @@
       }
 
       function handleWeatherEvent(data) {
-        if (!data?.action || !SUPPORTED_EFFECTS.includes(data.action)) return;
+        if (config?.enabled === false || !data?.action || !SUPPORTED_EFFECTS.includes(data.action)) return;
         const isPermanent = data.permanent === true || data.duration === 0 || data.duration === '0';
 
         if (isPermanent || engine.getActiveEffects().length < config.maxConcurrentEffects) {
@@ -579,8 +582,8 @@
         await fetchGamificationState();
         updateConnectionStatus('reconnecting', 'Connecting');
 
-        setInterval(processQueue, 250);
-        setInterval(updateDebugInfo, 250);
+        queueTimer = setInterval(processQueue, 250);
+        debugTimer = setInterval(updateDebugInfo, 250);
         stateBroadcastTimer = setInterval(broadcastState, 1000);
 
         if (debug) {
@@ -591,9 +594,13 @@
       }
 
       function cleanup() {
+        if (queueTimer) clearInterval(queueTimer);
+        if (debugTimer) clearInterval(debugTimer);
         if (stateBroadcastTimer) clearInterval(stateBroadcastTimer);
+        window.removeEventListener('resize', resizeEngine);
         if (socket) socket.disconnect();
         if (engine) engine.destroy();
+        if (audioContext) audioContext.close().catch(() => {});
       }
 
       window.addEventListener('load', () => {

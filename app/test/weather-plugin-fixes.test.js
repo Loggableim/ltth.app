@@ -229,8 +229,8 @@ describe('Weather Plugin Critical Fixes', () => {
             expect(mainContent).toMatch(/oldPermanentEffects\.size\s*!==\s*newPermanentEffects\.size/);
         });
 
-        test('main.js only syncs if effects actually changed', () => {
-            expect(mainContent).toMatch(/if\s*\(\s*effectsChanged\s*\)\s*\{[\s\S]*?syncPermanentEffects/);
+        test('main.js syncs permanent effects and notifies overlays for every config update', () => {
+            expect(mainContent).toMatch(/this\.syncPermanentEffects\(\);[\s\S]*?this\.api\.emit\('weather:config-changed'/);
         });
 
         test('main.js logs permanent effects sync', () => {

@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Fireworks Stability Pass**: Added validated configuration handling, sanitized trigger/finale/gift-mapping payloads, and centralized backpressure for safer OBS streaming during gift spam or low-FPS conditions.
+- **Weather Control Integration Coverage**: Added real Express and Socket.IO lifecycle tests for admin authentication, live overlay configuration sync, main-switch behavior, state sanitization, timer cleanup, and shutdown persistence.
+
+### Fixed
+
+- **Weather Control Runtime Sync**: Open OBS overlays now reload every runtime-facing configuration change, including quality, audio, layers, limits, and permanent-effect settings.
+- **Weather Control Main Switch**: Disabling the plugin now stops active effects and blocks HTTP, sequence, IFTTT, permanent-effect, and gamification triggers.
+- **Weather Control Security and Lifecycle**: Protected plugin mutations with LTTH admin authentication, removed the API key from public configuration responses, sanitized overlay state, and cleaned up socket listeners and timers on unload.
 
 ### Changed
 

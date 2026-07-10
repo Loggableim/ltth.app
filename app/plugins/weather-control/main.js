@@ -1,4 +1,6 @@
 const path = require('path');
+const crypto = require('crypto');
+const { createAdminAuth } = require('../../modules/admin-auth');
 
 /**
  * Weather Control Plugin
@@ -17,6 +19,7 @@ const path = require('path');
 class WeatherControlPlugin {
     constructor(api) {
         this.api = api;
+        this.adminAuth = createAdminAuth();
         this.supportedEffects = [
             'rain',
             'snow', 
@@ -68,6 +71,10 @@ class WeatherControlPlugin {
         // Track permanent effects
         this.activePermanentEffects = new Set();
         this.socketSyncRegistered = false;
+        this.socketConnectionHandler = null;
+        this.socketHandlers = new Map();
+        this.sequenceTimers = new Set();
+        this.questRotationTimer = null;
         this.gamificationPersistTimer = null;
         this.gamification = this.createDefaultGamificationRuntimeState();
         this.likeMilestoneState = {
@@ -165,6 +172,47 @@ class WeatherControlPlugin {
     emitWeatherEvent(event) {
         this.api.emit('weather:trigger', event);
         return event;
+    }
+
+    registerAdminRoute(method, routePath, handler) {
+        this.api.registerRoute(method, routePath, (req, res, next) => (
+            this.adminAuth(req, res, () => handler(req, res, next))
+        ));
+    }
+
+    getDesiredPermanentEffects() {
+        if (!this.config?.enabled) {
+            return new Set();
+        }
+
+        return new Set(
+            this.supportedEffects.filter(effect =>
+                this.config.effects[effect]?.permanent === true &&
+                this.config.effects[effect]?.enabled !== false
+            )
+        );
+    }
+
+    sanitizeOverlayState(payload = {}) {
+        const activeEffects = Array.isArray(payload.activeEffects)
+            ? payload.activeEffects.slice(0, 20)
+                .filter(effect => effect && this.supportedEffects.includes(effect.type))
+                .map(effect => ({
+                    type: effect.type,
+                    intensity: this.clampNumber(effect.intensity, 0, 1, 0.5),
+                    permanent: effect.permanent === true,
+                    duration: Math.max(0, Math.min(this.maxDuration, parseInt(effect.duration) || 0)),
+                    startedAt: Math.max(0, parseInt(effect.startedAt) || 0),
+                    layer: Math.round(this.clampNumber(effect.layer, 0, 100, 50))
+                }))
+            : [];
+
+        return {
+            activeEffects,
+            fps: this.clampNumber(payload.fps, 0, 240, 0),
+            particles: Math.max(0, Math.min(10000, parseInt(payload.particles) || 0)),
+            quality: this.validateQualityPreset(payload.quality)
+        };
     }
 
     sanitizeSequences(sequences) {
@@ -389,13 +437,14 @@ class WeatherControlPlugin {
     }
 
     generateApiKey() {
-        // Generate a random API key
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let key = 'weather_';
-        for (let i = 0; i < 32; i++) {
-            key += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return key;
+        return `weather_${crypto.randomBytes(24).toString('base64url')}`;
+    }
+
+    apiKeysEqual(provided, expected) {
+        const providedBuffer = Buffer.from(String(provided || ''), 'utf8');
+        const expectedBuffer = Buffer.from(String(expected || ''), 'utf8');
+        return providedBuffer.length === expectedBuffer.length &&
+            crypto.timingSafeEqual(providedBuffer, expectedBuffer);
     }
 
     registerRoutes() {
@@ -415,10 +464,11 @@ class WeatherControlPlugin {
         this.api.registerRoute('get', '/api/weather/config', async (req, res) => {
             try {
                 // Return config without sensitive data
-                const safeConfig = { ...this.config };
-                if (!this.config.useGlobalAuth) {
-                    safeConfig.apiKey = '***hidden***';
-                }
+                const safeConfig = {
+                    ...this.config,
+                    apiKey: undefined,
+                    hasApiKey: Boolean(this.apiKey)
+                };
                 res.json({ success: true, config: safeConfig });
             } catch (error) {
                 this.api.log(`❌ [WEATHER CONTROL] Error getting config: ${error.message}`, 'error');
@@ -427,9 +477,10 @@ class WeatherControlPlugin {
         });
 
         // Update configuration
-        this.api.registerRoute('post', '/api/weather/config', async (req, res) => {
+        this.registerAdminRoute('post', '/api/weather/config', async (req, res) => {
             try {
                 const newConfig = req.body;
+                const wasEnabled = this.config.enabled !== false;
                 
                 // Track if command names changed
                 let commandNamesChanged = false;
@@ -472,7 +523,10 @@ class WeatherControlPlugin {
                     this.config.chatCommands = { ...this.config.chatCommands, ...newConfig.chatCommands };
                 }
                 if (typeof newConfig.enabled !== 'undefined') {
-                    this.config.enabled = newConfig.enabled;
+                    this.config.enabled = newConfig.enabled === true;
+                }
+                if (typeof newConfig.useGlobalAuth !== 'undefined') {
+                    this.config.useGlobalAuth = newConfig.useGlobalAuth !== false;
                 }
                 if (typeof newConfig.rateLimitPerMinute !== 'undefined') {
                     this.config.rateLimitPerMinute = Math.max(1, Math.min(100, newConfig.rateLimitPerMinute));
@@ -543,21 +597,25 @@ class WeatherControlPlugin {
                     [...oldPermanentEffects].some(e => !newPermanentEffects.has(e)) ||
                     [...newPermanentEffects].some(e => !oldPermanentEffects.has(e));
                 
-                if (effectsChanged) {
-                    this.api.log('♾️ [WEATHER CONTROL] Permanent effects changed, syncing...', 'info');
-                    this.syncPermanentEffects();
-                    
-                    // ✅ NEW: Notify all overlays that config changed
-                    this.api.emit('weather:config-changed', { 
-                        timestamp: Date.now(),
-                        permanentEffects: Array.from(
-                            this.supportedEffects.filter(effect => 
-                                this.config.effects[effect]?.permanent === true && 
-                                this.config.effects[effect]?.enabled !== false
-                            )
-                        )
+                if (wasEnabled && !this.config.enabled) {
+                    this.api.emit('weather:stop', {
+                        username: 'system',
+                        meta: { triggeredBy: 'plugin-disabled' },
+                        timestamp: Date.now()
                     });
                 }
+
+                if (effectsChanged || wasEnabled !== this.config.enabled) {
+                    this.api.log('♾️ [WEATHER CONTROL] Permanent effects changed, syncing...', 'info');
+                }
+                this.syncPermanentEffects();
+
+                // Every runtime-facing setting change must reach already-open OBS overlays.
+                this.api.emit('weather:config-changed', {
+                    timestamp: Date.now(),
+                    enabled: this.config.enabled,
+                    permanentEffects: Array.from(this.getDesiredPermanentEffects())
+                });
                 
                 // Re-register commands if names changed
                 if (commandNamesChanged) {
@@ -574,12 +632,16 @@ class WeatherControlPlugin {
         });
 
         // Main weather trigger endpoint
-        this.api.registerRoute('post', '/api/weather/trigger', async (req, res) => {
+        this.registerAdminRoute('post', '/api/weather/trigger', async (req, res) => {
             try {
+                if (!this.config.enabled) {
+                    return res.status(403).json({ success: false, error: 'Weather Control is disabled' });
+                }
+
                 // Authentication check
                 if (!this.config.useGlobalAuth) {
                     const providedKey = req.headers['x-weather-key'];
-                    if (providedKey !== this.apiKey) {
+                    if (!this.apiKeysEqual(providedKey, this.apiKey)) {
                         this.api.log('🚫 [WEATHER CONTROL] Invalid API key attempt', 'warn');
                         return res.status(401).json({ success: false, error: 'Invalid API key' });
                     }
@@ -666,7 +728,7 @@ class WeatherControlPlugin {
         });
 
         // Stop all effects or one specific effect
-        this.api.registerRoute('post', '/api/weather/stop', async (req, res) => {
+        this.registerAdminRoute('post', '/api/weather/stop', async (req, res) => {
             try {
                 const action = req.body?.action;
                 if (action && !this.supportedEffects.includes(action)) {
@@ -698,8 +760,12 @@ class WeatherControlPlugin {
         });
 
         // Trigger a timed weather sequence
-        this.api.registerRoute('post', '/api/weather/sequence/trigger', async (req, res) => {
+        this.registerAdminRoute('post', '/api/weather/sequence/trigger', async (req, res) => {
             try {
+                if (!this.config.enabled) {
+                    return res.status(403).json({ success: false, error: 'Weather Control is disabled' });
+                }
+
                 const requestedSteps = Array.isArray(req.body?.steps) ? req.body.steps : null;
                 const sequenceName = req.body?.name;
                 const configuredSequence = sequenceName
@@ -717,7 +783,11 @@ class WeatherControlPlugin {
                 }
 
                 sanitized.steps.forEach((step) => {
-                    setTimeout(() => {
+                    const timer = setTimeout(() => {
+                        this.sequenceTimers.delete(timer);
+                        if (!this.config.enabled) {
+                            return;
+                        }
                         if (!this.config.effects[step.action]?.enabled) {
                             return;
                         }
@@ -730,6 +800,7 @@ class WeatherControlPlugin {
                             meta: { triggeredBy: 'weather-sequence', sequence: sanitized.name }
                         }));
                     }, step.delay);
+                    this.sequenceTimers.add(timer);
                 });
 
                 res.json({ success: true, sequence: sanitized });
@@ -762,7 +833,7 @@ class WeatherControlPlugin {
         });
 
         // Reset gamification progress
-        this.api.registerRoute('post', '/api/weather/gamification/reset', async (req, res) => {
+        this.registerAdminRoute('post', '/api/weather/gamification/reset', async (req, res) => {
             try {
                 const scope = req.body?.scope || 'all';
                 this.resetGamificationProgress(scope);
@@ -775,7 +846,7 @@ class WeatherControlPlugin {
         });
 
         // Reset API key
-        this.api.registerRoute('post', '/api/weather/reset-key', async (req, res) => {
+        this.registerAdminRoute('post', '/api/weather/reset-key', async (req, res) => {
             try {
                 this.apiKey = this.generateApiKey();
                 this.config.apiKey = this.apiKey;
@@ -814,7 +885,7 @@ class WeatherControlPlugin {
         });
 
         // Create or update gift-to-weather mapping
-        this.api.registerRoute('post', '/api/weather/gift-mappings', (req, res) => {
+        this.registerAdminRoute('post', '/api/weather/gift-mappings', (req, res) => {
             try {
                 const { giftId, weatherEffect, intensity, duration, enabled } = req.body;
 
@@ -856,7 +927,7 @@ class WeatherControlPlugin {
         });
 
         // Delete gift-to-weather mapping
-        this.api.registerRoute('delete', '/api/weather/gift-mappings/:giftId', (req, res) => {
+        this.registerAdminRoute('delete', '/api/weather/gift-mappings/:giftId', (req, res) => {
             try {
                 const db = this.api.getDatabase();
                 db.deleteGiftWeatherMapping(req.params.giftId);
@@ -1046,6 +1117,10 @@ class WeatherControlPlugin {
         // Register flow action for weather trigger
         this.api.registerFlowAction('weather.trigger', async (params) => {
             try {
+                if (!this.config.enabled) {
+                    return { success: false, error: 'Weather Control is disabled' };
+                }
+
                 const { action, intensity, duration, meta, permanent } = params;
 
                 if (!action || !this.supportedEffects.includes(action)) {
@@ -1092,41 +1167,51 @@ class WeatherControlPlugin {
                 return;
             }
 
-            io.on('connection', (socket) => {
+            this.socketConnectionHandler = (socket) => {
                 try {
                     this.api.log('🔄 [WEATHER CONTROL] New overlay client connected, waiting for ready signal...', 'debug');
-                    
+
+                    const handlers = {
+                        clientReady: () => {
+                            this.api.log('✅ [WEATHER CONTROL] Client ready, syncing permanent effects...', 'debug');
+                            this.syncPermanentEffects(socket);
+                        },
+                        requestPermanentEffects: () => {
+                            this.api.log('🔄 [WEATHER CONTROL] Client requested permanent effects', 'debug');
+                            this.syncPermanentEffects(socket);
+                        },
+                        overlayState: (payload = {}) => {
+                            this.api.emit('weather:active-state', {
+                                ...this.sanitizeOverlayState(payload),
+                                gamification: this.getGamificationSnapshot(),
+                                timestamp: Date.now()
+                            });
+                        },
+                        requestGamificationState: () => {
+                            socket.emit('weather:gamification-state', this.getGamificationSnapshot());
+                        },
+                        disconnect: () => {
+                            this.socketHandlers.delete(socket);
+                        }
+                    };
+
+                    this.socketHandlers.set(socket, handlers);
+
                     // Wait for Ready-Signal from client
-                    socket.on('weather:client-ready', () => {
-                        this.api.log('✅ [WEATHER CONTROL] Client ready, syncing permanent effects...', 'debug');
-                        this.syncPermanentEffects(socket);
-                    });
+                    socket.on('weather:client-ready', handlers.clientReady);
                     
                     // Allow clients to request permanent effects explicitly
-                    socket.on('weather:request-permanent-effects', () => {
-                        this.api.log('🔄 [WEATHER CONTROL] Client requested permanent effects', 'debug');
-                        this.syncPermanentEffects(socket);
-                    });
-                    socket.on('weather:overlay-state', (payload = {}) => {
-                        this.api.emit('weather:active-state', {
-                            activeEffects: Array.isArray(payload.activeEffects)
-                                ? payload.activeEffects.slice(0, 20)
-                                : [],
-                            fps: payload.fps,
-                            particles: payload.particles,
-                            quality: payload.quality,
-                            gamification: this.getGamificationSnapshot(),
-                            timestamp: Date.now()
-                        });
-                    });
-                    socket.on('weather:request-gamification-state', () => {
-                        socket.emit('weather:gamification-state', this.getGamificationSnapshot());
-                    });
+                    socket.on('weather:request-permanent-effects', handlers.requestPermanentEffects);
+                    socket.on('weather:overlay-state', handlers.overlayState);
+                    socket.on('weather:request-gamification-state', handlers.requestGamificationState);
+                    socket.on('disconnect', handlers.disconnect);
                     socket.emit('weather:gamification-state', this.getGamificationSnapshot());
                 } catch (error) {
                     this.api.log(`❌ [WEATHER CONTROL] Error syncing permanent effects: ${error.message}`, 'error');
                 }
-            });
+            };
+
+            io.on('connection', this.socketConnectionHandler);
 
             this.socketSyncRegistered = true;
         } catch (error) {
@@ -1134,12 +1219,8 @@ class WeatherControlPlugin {
         }
     }
 
-        syncPermanentEffects(targetSocket = null) {
-            const desiredEffects = new Set(
-                this.supportedEffects.filter(effect => 
-                    this.config.effects[effect]?.permanent === true && this.config.effects[effect]?.enabled !== false
-                )
-        );
+    syncPermanentEffects(targetSocket = null) {
+        const desiredEffects = this.getDesiredPermanentEffects();
 
         // When called for a specific socket, send ALL desired permanent effects
         if (targetSocket) {
@@ -2100,7 +2181,15 @@ class WeatherControlPlugin {
             });
 
             if (config.quests?.rotateOnCompletion !== false) {
-                setTimeout(() => this.createNextQuest(), 0);
+                if (this.questRotationTimer) {
+                    clearTimeout(this.questRotationTimer);
+                }
+                this.questRotationTimer = setTimeout(() => {
+                    this.questRotationTimer = null;
+                    if (this.config?.enabled) {
+                        this.createNextQuest();
+                    }
+                }, 0);
             }
             this.scheduleGamificationPersist();
             this.broadcastGamificationState('quest-completed', { quest: { ...quest } });
@@ -2188,7 +2277,7 @@ class WeatherControlPlugin {
 
     applyGamificationEvent(eventType, payload = {}) {
         const config = this.config?.gamification || this.getDefaultGamificationConfig();
-        if (!config.enabled) {
+        if (!this.config?.enabled || !config.enabled) {
             return null;
         }
 
@@ -2286,10 +2375,40 @@ class WeatherControlPlugin {
         
         // Clear rate limit cache
         this.userRateLimit.clear();
+
+        this.sequenceTimers.forEach(timer => clearTimeout(timer));
+        this.sequenceTimers.clear();
+        if (this.questRotationTimer) {
+            clearTimeout(this.questRotationTimer);
+            this.questRotationTimer = null;
+        }
+
         if (this.gamificationPersistTimer) {
             clearTimeout(this.gamificationPersistTimer);
             this.gamificationPersistTimer = null;
         }
+
+        try {
+            await this.persistGamificationState(true);
+        } catch (error) {
+            this.api.log(`❌ [WEATHER CONTROL] Error persisting gamification state during shutdown: ${error.message}`, 'error');
+        }
+
+        const io = this.api.getSocketIO ? this.api.getSocketIO() : null;
+        if (io && this.socketConnectionHandler) {
+            io.off('connection', this.socketConnectionHandler);
+        }
+        this.socketConnectionHandler = null;
+
+        this.socketHandlers.forEach((handlers, socket) => {
+            socket.off('weather:client-ready', handlers.clientReady);
+            socket.off('weather:request-permanent-effects', handlers.requestPermanentEffects);
+            socket.off('weather:overlay-state', handlers.overlayState);
+            socket.off('weather:request-gamification-state', handlers.requestGamificationState);
+            socket.off('disconnect', handlers.disconnect);
+        });
+        this.socketHandlers.clear();
+        this.socketSyncRegistered = false;
         
         this.api.log('✅ [WEATHER CONTROL] Weather Control Plugin destroyed', 'info');
     }

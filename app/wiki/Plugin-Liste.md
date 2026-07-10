@@ -598,28 +598,29 @@ gcce.registerCommand({
 ## 🟢 Alpha Plugins
 
 ### 17. Weather Control
-**Status:** 🟢 Alpha
-**Version:** 1.0.0
+**Status:** 🟡 Open Beta
+**Version:** 1.1.1
 **Autor:** Pup Cid
 
 **Beschreibung:**
-Professionelles Wetter-Effekt-Plugin mit Regen, Schnee, Sturm, Nebel, Donner, Sonnenstrahl und Glitch-Cloud-Effekten für TikTok Live Overlays.
+Professionelles Wetter-Effekt-Plugin mit 13 Effekten, Live-Vorschau, Community-Gamification, Sequenzen, Gift-Mappings und OBS-Overlay für TikTok LIVE.
 
 **Features:**
-- 🌧️ Regen-Effekt (WebGL)
-- ❄️ Schnee-Effekt
-- ⛈️ Sturm mit Blitzen
-- 🌫️ Nebel-Effekt
-- ⚡ Donner-Effekte
-- ☀️ Sonnenstrahl-Effekt
-- 👾 Glitch-Cloud-Effekt
-- 🎁 Gift-Trigger
-- ⏱️ Timer-basierte Wetter-Wechsel
+- 13 Canvas-Wettereffekte: Regen, Schnee, Sturm, Nebel, Donner, Sonnenstrahlen, Glitch-Wolken, Aurora, Glühwürmchen, Meteore, Sakura, Glut und Hitzeflimmern
+- Qualitätsstufen, adaptives Rendering, Layering und Live-Vorschau
+- TikTok-Event- und Gift-Trigger, GCCE-Chatbefehle und IFTTT-Aktion
+- Permanente Effekte, Presets, Sequenzen und Community-Gamification
+- Laufende OBS-Overlays übernehmen Konfigurationsänderungen ohne manuellen Reload
 
 **Endpoints:**
-- `POST /api/weather-control/trigger` - Wetter-Effekt triggern
-- `POST /api/weather-control/stop` - Alle Effekte stoppen
-- `GET /api/weather-control/status` - Aktuelles Wetter
+- `GET /api/weather/config` - Bereinigte Konfiguration lesen
+- `POST /api/weather/trigger` - Wettereffekt auslösen
+- `POST /api/weather/stop` - Einen oder alle Effekte stoppen
+- `POST /api/weather/sequence/trigger` - Effektsequenz auslösen
+- `GET /api/weather/effects` - Unterstützte Effekte lesen
+- `GET /api/weather/gamification` - Gamification-Status lesen
+
+Schreibende Endpunkte verwenden die zentrale LTTH-Admin-Authentifizierung. Nicht-lokale Aufrufe benötigen ein gültiges `X-LTTH-Admin-Token`; der optionale Weather-API-Key kann als zusätzliche Schutzstufe aktiviert werden.
 
 **Overlay-URL:**
 ```
@@ -627,7 +628,7 @@ http://localhost:3000/weather-control/overlay
 ```
 
 **Bekannte Einschränkungen:**
-- Keine bekannten Einschränkungen
+- Open Beta: Für produktive Streams zuerst Qualität und maximale gleichzeitige Effekte im OBS-System testen.
 
 ---
 
