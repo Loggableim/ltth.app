@@ -614,7 +614,7 @@
     let hideTimer       = null;
     let currentSpinId   = null; // track active spin for spin-completed reporting
 
-    const socket = io({ transports: ['websocket'] });
+    const socket = io({ transports: ['websocket'], auth: { role: 'overlay' } });
 
     const container  = document.getElementById('slot-container');
     const machine    = document.getElementById('slot-machine');

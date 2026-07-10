@@ -294,18 +294,18 @@
         "en": "LTTH Game Engine"
       },
       "description": {
-        "en": "Interactive game engine for TikTok LIVE streams. Play games like Connect4, Chess, Plinko, Wheel of Fortune, Slot Machine, and Live Arena with viewers using chat commands, live activity, and gifts. Features configurable odds profiles, Hybridshock reward integration, customizable overlays, compact HUD, XP rewards, win streaks, sound effects, and extensible game framework.",
-        "de": "Interaktive Spielmaschine für TikTok LIVE Streams. Spiele wie Vier Gewinnt, Schach, Plinko, Glücksrad, Slot Machine und Live Arena mit Zuschauern über Chat-Befehle, Live-Aktivität und Geschenke. Bietet konfigurierbare Odds-Profile, Hybridshock-Belohnungsintegration, anpassbare Overlays, kompaktes HUD, XP-Belohnungen, Siegesserien, Sound-Effekte und erweiterbares Spiel-Framework.",
-        "es": "Motor de juegos interactivo para transmisiones en vivo de TikTok. Juega juegos como Connect4, Ajedrez, Plinko, Ruleta de la Fortuna y Máquina Tragaperras con espectadores usando comandos de chat y regalos. Incluye perfiles de probabilidades configurables, integración de recompensas Hybridshock, overlays personalizables, HUD compacto, recompensas de XP y framework de juegos extensible.",
-        "fr": "Moteur de jeux interactif pour les diffusions en direct TikTok. Jouez à des jeux comme Connect4, Échecs, Plinko, Roue de la Fortune et Machine à Sous avec les spectateurs en utilisant des commandes de chat et des cadeaux. Comprend des profils de probabilités configurables, intégration de récompenses Hybridshock, des overlays personnalisables, HUD compact, des récompenses XP et un framework de jeux extensible."
+        "en": "Interactive game engine for TikTok LIVE streams. Play Connect4, Chess, Plinko, Wheel of Fortune, Slot Machine, and Live Arena with viewers using chat commands, live activity, and gifts. Features server-authoritative Plinko payouts, configurable odds profiles, reviewed OpenShock workflows, customizable overlays, compact HUD, XP rewards, win streaks, sound effects, and an extensible game framework.",
+        "de": "Interaktive Spielmaschine für TikTok LIVE Streams. Spiele Vier Gewinnt, Schach, Plinko, Glücksrad, Slot Machine und Live Arena mit Zuschauern über Chat-Befehle, Live-Aktivität und Geschenke. Bietet serverautoritativ bestimmte Plinko-Auszahlungen, konfigurierbare Odds-Profile, geprüfte OpenShock-Workflows, anpassbare Overlays, kompaktes HUD, XP-Belohnungen, Siegesserien, Sound-Effekte und ein erweiterbares Spiel-Framework.",
+        "es": "Motor de juegos interactivo para transmisiones en vivo de TikTok. Juega Connect4, Ajedrez, Plinko, Ruleta de la Fortuna, Máquina Tragaperras y Live Arena con espectadores usando comandos de chat, actividad en directo y regalos. Incluye pagos de Plinko controlados por el servidor, perfiles de probabilidades configurables, flujos de OpenShock revisados, overlays personalizables, HUD compacto y recompensas XP.",
+        "fr": "Moteur de jeux interactif pour les diffusions TikTok LIVE. Jouez à Connect4, Échecs, Plinko, Roue de la Fortune, Machine à Sous et Live Arena avec les spectateurs. Comprend des paiements Plinko déterminés par le serveur, des profils de probabilités configurables, des flux OpenShock soumis à validation, des overlays personnalisables, un HUD compact et des récompenses XP."
       },
-      "version": "1.3.0",
+      "version": "1.3.1",
       "author": "Pup Cid",
       "category": "overlay",
       "channel": "open-beta",
       "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/game-engine-1.3.0.zip",
-      "sha256": "b253f40897090002279b7161bca4a13ae4b9a7ae4d9a721a9a5dd5d8308ca4de",
+      "packageUrl": "https://ltth.app/plugin-store/packages/game-engine-1.3.1.zip",
+      "sha256": "5966c7fc3c5d11f08561b1665e7fe04c10f288c50724193d0f1fea143b1b22cf",
       "pricing": {
         "type": "free",
         "amount": 0,

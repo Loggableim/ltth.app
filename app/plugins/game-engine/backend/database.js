@@ -215,20 +215,19 @@ class GameEngineDatabase {
 
     // Plinko configuration table - migrate to multi-board support
     // Check if the old single-board table exists with CHECK constraint
-    try {
-      const tableInfo = this.db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='game_plinko_config'`).get();
-      if (tableInfo && tableInfo.sql && tableInfo.sql.includes('CHECK')) {
+    const plinkoTableInfo = this.db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='game_plinko_config'`).get();
+    if (plinkoTableInfo && plinkoTableInfo.sql && plinkoTableInfo.sql.includes('CHECK')) {
         // Old table with CHECK constraint - need to migrate
         this.logger.info('Migrating game_plinko_config table to multi-board support...');
         
-        // Get existing data
-        const existingData = this.db.prepare('SELECT * FROM game_plinko_config').all();
-        
-        // Drop old table
-        this.db.exec('DROP TABLE game_plinko_config');
-        
-        // Create new table without CHECK constraint
-        this.db.exec(`
+        this.db.transaction(() => {
+          // Get existing data before replacing the table.
+          const existingData = this.db.prepare('SELECT * FROM game_plinko_config').all();
+
+          this.db.exec('DROP TABLE game_plinko_config');
+
+          // Create new table without CHECK constraint
+          this.db.exec(`
           CREATE TABLE game_plinko_config (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL DEFAULT 'Standard Plinko',
@@ -240,32 +239,30 @@ class GameEngineDatabase {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
           )
-        `);
-        
-        // Re-insert data
-        if (existingData.length > 0) {
-          const insertStmt = this.db.prepare(`
+          `);
+
+          // Re-insert data atomically so a failed migration rolls back the DROP.
+          if (existingData.length > 0) {
+            const insertStmt = this.db.prepare(`
             INSERT INTO game_plinko_config (id, name, slots, physics_settings, gift_mappings, chat_command, enabled, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          `);
-          for (const row of existingData) {
-            insertStmt.run(
-              row.id,
-              'Standard Plinko',
-              row.slots,
-              row.physics_settings,
-              row.gift_mappings || '{}',
-              null,
-              1,
-              row.updated_at || new Date().toISOString()
-            );
+            `);
+            for (const row of existingData) {
+              insertStmt.run(
+                row.id,
+                'Standard Plinko',
+                row.slots,
+                row.physics_settings,
+                row.gift_mappings || '{}',
+                null,
+                1,
+                row.updated_at || new Date().toISOString()
+              );
+            }
           }
-        }
+        })();
         
         this.logger.info('Migration complete - multi-board plinko support enabled');
-      }
-    } catch (error) {
-      // Table doesn't exist yet or migration failed, will be created below
     }
     
     this.db.exec(`
@@ -349,20 +346,19 @@ class GameEngineDatabase {
     // Wheel (Glücksrad) configuration table - supports multiple wheels
     // Check if the table has a CHECK constraint that limits it to single row
     // If so, we need to migrate to the new schema
-    try {
-      const tableInfo = this.db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='game_wheel_config'`).get();
-      if (tableInfo && tableInfo.sql && tableInfo.sql.includes('CHECK')) {
+    const wheelTableInfo = this.db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='game_wheel_config'`).get();
+    if (wheelTableInfo && wheelTableInfo.sql && wheelTableInfo.sql.includes('CHECK')) {
         // Old table with CHECK constraint - need to migrate
         this.logger.info('Migrating game_wheel_config table to multi-wheel support...');
         
-        // Get existing data
-        const existingData = this.db.prepare('SELECT * FROM game_wheel_config').all();
-        
-        // Drop old table
-        this.db.exec('DROP TABLE game_wheel_config');
-        
-        // Create new table without CHECK constraint
-        this.db.exec(`
+        this.db.transaction(() => {
+          // Get existing data before replacing the table.
+          const existingData = this.db.prepare('SELECT * FROM game_wheel_config').all();
+
+          this.db.exec('DROP TABLE game_wheel_config');
+
+          // Create new table without CHECK constraint
+          this.db.exec(`
           CREATE TABLE game_wheel_config (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL DEFAULT 'Standard Wheel',
@@ -374,32 +370,30 @@ class GameEngineDatabase {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
           )
-        `);
-        
-        // Re-insert data
-        if (existingData.length > 0) {
-          const insertStmt = this.db.prepare(`
+          `);
+
+          // Re-insert data atomically so a failed migration rolls back the DROP.
+          if (existingData.length > 0) {
+            const insertStmt = this.db.prepare(`
             INSERT INTO game_wheel_config (id, name, segments, settings, gift_triggers, chat_command, enabled, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          `);
-          for (const row of existingData) {
-            insertStmt.run(
-              row.id,
-              row.name || 'Standard Wheel',
-              row.segments,
-              row.settings,
-              row.gift_triggers || '{}',
-              row.chat_command || null,
-              row.enabled !== undefined ? row.enabled : 1,
-              row.updated_at || new Date().toISOString()
-            );
+            `);
+            for (const row of existingData) {
+              insertStmt.run(
+                row.id,
+                row.name || 'Standard Wheel',
+                row.segments,
+                row.settings,
+                row.gift_triggers || '{}',
+                row.chat_command || null,
+                row.enabled !== undefined ? row.enabled : 1,
+                row.updated_at || new Date().toISOString()
+              );
+            }
           }
-        }
+        })();
         
         this.logger.info('Migration complete - multi-wheel support enabled');
-      }
-    } catch (error) {
-      // Table doesn't exist yet or migration failed, will be created below
     }
     
     this.db.exec(`

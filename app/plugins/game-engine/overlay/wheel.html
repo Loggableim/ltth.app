@@ -721,7 +721,7 @@
     loadWheelAudio('1');
 
     // Socket.io
-    const socket = io();
+    const socket = io({ auth: { role: 'overlay' } });
 
     /**
      * Draw the wheel with current configuration
@@ -1255,10 +1255,12 @@
         const li = document.createElement('li');
         const typeIcon = TYPE_ICONS[item.type] || TYPE_ICONS.default;
         const displayName = item.nickname || item.username || 'Spieler';
-        li.innerHTML = `
-          <span class="position">${index + 1}</span>
-          <span>${typeIcon} ${displayName}</span>
-        `;
+        const position = document.createElement('span');
+        position.className = 'position';
+        position.textContent = String(index + 1);
+        const label = document.createElement('span');
+        label.textContent = `${typeIcon} ${displayName}`;
+        li.append(position, label);
         queueList.appendChild(li);
       });
     }

@@ -10,10 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Fireworks Stability Pass**: Added validated Fireworks configuration handling, sanitized trigger/finale/gift-mapping API payloads, and centralized trigger backpressure for safer OBS streaming under gift spam or low-FPS conditions.
+- **Game Engine 1.3.1**: Plinko outcomes are selected server-side; the browser only reports animation completion. Plinko OpenShock rules now create a streamer review notice instead of dispatching hardware actions.
+
+### Fixed
+
+- **Game Engine Security**: Authorized Socket.IO mutations by admin/streamer and overlay role, removed SVG slot uploads, made destructive Plinko/Wheel migrations transactional, and moved live viewer data rendering to DOM APIs.
 
 ### Changed
 
 - **Fireworks Plugin Store**: Removed the obsolete `fireworks-dev` Bossfight plugin from the repo and public plugin catalog. Stable `fireworks` is now the maintained Fireworks plugin.
+- **Game Engine Queues**: Consolidated Plinko and Wheel processing on the unified queue and published the refreshed 1.3.1 open-beta package.
 ## [1.3.8] - 2026-07-03
 
 ### Fixed

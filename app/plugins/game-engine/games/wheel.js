@@ -5,6 +5,8 @@
  * Supports multiple wheels with individual configurations and triggers.
  */
 
+const UnifiedQueueManager = require('../backend/unified-queue');
+
 // Constants
 const CLEANUP_INTERVAL_MS = 30000; // 30 seconds
 const MAX_SPIN_AGE_MS = 120000; // 2 minutes
@@ -32,13 +34,13 @@ class WheelGame {
     this.db = db;
     this.logger = this._normalizeLogger(logger);
     this.io = this._getSocketIO();
-    this.unifiedQueue = null; // Set by main.js
+    // Standalone instances use the same queue abstraction. The main plugin
+    // replaces this with its shared queue during initialization.
+    this.unifiedQueue = new UnifiedQueueManager(this.logger, this.io);
+    this.unifiedQueue.setWheelGame(this);
     
     // Track active spins in-flight
     this.activeSpins = new Map(); // spinId -> { username, nickname, timestamp, status, wheelId }
-    
-    // Spin queue (FIFO) - legacy, kept for backward compatibility
-    this.spinQueue = []; // Array of { spinId, username, nickname, profilePictureUrl, giftName, timestamp, wheelId }
     
     // Is a spin currently in progress?
     this.isSpinning = false;
@@ -319,12 +321,8 @@ class WheelGame {
     // Store spin data
     this.activeSpins.set(spinId, spinData);
 
-    // === FIX: Always use unified queue when available ===
-    // All spins MUST go through the unified queue to ensure proper state tracking.
-    // When queue is empty and nothing is processing, the spin will start immediately
-    // via processNext() being called from queueWheel().
-    // This fixes the bug where subsequent gifts were lost because the first spin
-    // bypassed the queue and set isSpinning=true without notifying the unified queue.
+    // All spins go through the shared queue. A Wheel instance without the queue
+    // is not a usable runtime configuration.
     if (this.unifiedQueue) {
       // Determine if this spin will start immediately by checking state BEFORE queueing.
       // JavaScript is single-threaded, so no race condition between check and queueWheel().
@@ -346,6 +344,15 @@ class WheelGame {
         };
       }
       
+      const startResult = willStartImmediately
+        ? await this.unifiedQueue.processNext()
+        : null;
+
+      if (willStartImmediately && (!startResult || !startResult.success)) {
+        this.activeSpins.delete(spinId);
+        return { success: false, error: startResult?.error || 'Failed to start wheel spin' };
+      }
+
       this.logger.info(`🎡 Wheel spin ${willStartImmediately ? 'starting' : 'queued'} via unified queue: ${username} on "${config.name}" (spinId: ${spinId}, position: ${queueResult.position}, segments: ${config.segments.length})`);
       
       return { 
@@ -354,37 +361,12 @@ class WheelGame {
         queued: !willStartImmediately,
         position: queueResult.position, 
         wheelId: actualWheelId, 
-        wheelName: config.name 
+        wheelName: config.name,
+        ...(startResult?.winningSegment && { winningSegment: startResult.winningSegment })
       };
-    } else {
-      // Legacy queue fallback (only used if unified queue is not available)
-      if (this.isSpinning || this.spinQueue.length > 0) {
-        this.spinQueue.push(spinData);
-        
-        const position = this.spinQueue.length;
-        
-        this.logger.info(`🎡 Wheel spin queued (legacy): ${username} on "${config.name}" (spinId: ${spinId}, position: ${position}, segments: ${config.segments.length})`);
-        
-        // Emit queue event with validated segment information
-        this.io.emit('wheel:spin-queued', {
-          spinId,
-          username,
-          nickname,
-          position,
-          queueLength: this.spinQueue.length,
-          wheelId: actualWheelId,
-          wheelName: config.name,
-          segmentCount: config.segments.length,
-          timestamp: Date.now()
-        });
-
-        return { success: true, spinId, queued: true, position, wheelId: actualWheelId, wheelName: config.name };
-      }
-      // If queue is empty and not spinning, fall through to immediate spin
     }
-
-    // Start spin immediately (legacy mode only - when queue is empty)
-    return await this.startSpin(spinData);
+    this.activeSpins.delete(spinId);
+    return { success: false, error: 'Unified queue unavailable' };
   }
 
   /**
@@ -861,13 +843,8 @@ class WheelGame {
     const infoScreenDuration = (settings.infoScreenEnabled && !segment.isNiete) ? (settings.infoScreenDuration || 5) * 1000 : 0;
     const nextSpinDelay = winnerDisplayDuration + infoScreenDuration + 1000;
     const nextSpinTimer = setTimeout(() => {
-      // Notify unified queue that spin is complete
-      if (this.unifiedQueue) {
-        this.unifiedQueue.completeProcessing();
-      } else {
-        // Legacy: process next from local queue
-        this.processNextSpin();
-      }
+      // Every wheel spin belongs to the unified queue.
+      this.unifiedQueue?.completeProcessing();
     }, nextSpinDelay);
     if (typeof nextSpinTimer.unref === 'function') {
       nextSpinTimer.unref();
@@ -978,55 +955,7 @@ class WheelGame {
     this.logger.info(`⚠️ Wheel spin timeout handled: ${spinData.nickname} -> "${segment.text}" (spinId: ${spinId}, wheelId: ${wheelId})`);
     
     // Notify unified queue that spin is complete (immediate, no delay for timeout)
-    if (this.unifiedQueue) {
-      this.unifiedQueue.completeProcessing();
-    } else {
-      // Legacy: process next from local queue
-      this.processNextSpin();
-    }
-  }
-
-  /**
-   * Process next spin in queue (legacy - deprecated when using unified queue)
-   */
-  async processNextSpin() {
-    // If using unified queue, this method should not be called
-    if (this.unifiedQueue) {
-      this.logger.warn('⚠️ processNextSpin() called but unified queue should be used instead');
-      return;
-    }
-    
-    if (this.spinQueue.length === 0) {
-      this.logger.debug('No spins in queue');
-      return;
-    }
-
-    if (this.isSpinning) {
-      this.logger.debug('Cannot process queue: spin in progress');
-      return;
-    }
-
-    // Get next spin from queue (FIFO)
-    const nextSpin = this.spinQueue.shift();
-    
-    if (!nextSpin) {
-      return;
-    }
-
-    this.logger.info(`🎡 Processing queued spin for ${nextSpin.username} on "${nextSpin.wheelName}" (${this.spinQueue.length} remaining in queue)`);
-    
-    // Emit queue processing event
-    this.io.emit('wheel:queue-processing', {
-      spinId: nextSpin.spinId,
-      username: nextSpin.username,
-      nickname: nextSpin.nickname,
-      remainingInQueue: this.spinQueue.length,
-      wheelId: nextSpin.wheelId,
-      wheelName: nextSpin.wheelName
-    });
-
-    // Start the spin
-    await this.startSpin(nextSpin);
+    this.unifiedQueue?.completeProcessing();
   }
 
   /**
@@ -1054,6 +983,7 @@ class WheelGame {
    * Get queue status
    */
   getQueueStatus() {
+    const status = this.unifiedQueue?.getStatus();
     return {
       isSpinning: this.isSpinning,
       currentSpin: this.currentSpin ? {
@@ -1063,16 +993,8 @@ class WheelGame {
         wheelId: this.currentSpin.wheelId,
         wheelName: this.currentSpin.wheelName
       } : null,
-      queueLength: this.spinQueue.length,
-      queue: this.spinQueue.map((spin, index) => ({
-        position: index + 1,
-        spinId: spin.spinId,
-        username: spin.username,
-        nickname: spin.nickname,
-        timestamp: spin.timestamp,
-        wheelId: spin.wheelId,
-        wheelName: spin.wheelName
-      }))
+      queueLength: status?.queue.filter(item => item.type === 'wheel').length || 0,
+      queue: (status?.queue || []).filter(item => item.type === 'wheel')
     };
   }
 
@@ -1115,12 +1037,8 @@ class WheelGame {
       if (this.currentSpin && oldSpins.includes(this.currentSpin.spinId)) {
         const stuckSpinId = this.currentSpin.spinId;
         this._cleanupSpinState(stuckSpinId, 'cleanup_old_spins');
-        // Notify the appropriate queue so the next item can be processed
-        if (this.unifiedQueue) {
-          this.unifiedQueue.completeProcessing();
-        } else {
-          this.processNextSpin();
-        }
+        // Notify the unified queue so the next item can be processed.
+        this.unifiedQueue?.completeProcessing();
       }
     }
   }
@@ -1374,7 +1292,6 @@ class WheelGame {
     }
     
     this.activeSpins.clear();
-    this.spinQueue = [];
     this.isSpinning = false;
     this.currentSpin = null;
     this.logger.info('🎡 Glücksrad game destroyed');

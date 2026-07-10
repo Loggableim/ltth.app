@@ -396,7 +396,7 @@
     let overlayTestMode = testMode;
 
     // Socket.io
-    const socket = io();
+    const socket = io({ auth: { role: 'overlay' } });
 
     function refreshDimensions() {
       const container = document.getElementById('canvas-container');
@@ -593,7 +593,12 @@
 
     // Spawn a ball
     function spawnBall(data) {
-      const startX = WIDTH / 2 + (Math.random() - 0.5) * 100; // Randomize spawn slightly
+      const targetSlot = Number.isInteger(data.targetSlotIndex)
+        ? slots.find(entry => entry.index === data.targetSlotIndex)?.floor
+        : null;
+      const startX = targetSlot
+        ? targetSlot.position.x + (Math.random() - 0.5) * 16
+        : WIDTH / 2 + (Math.random() - 0.5) * 100;
       const startY = 50;
       const ballColor = data.color || (data.ballType === 'golden' ? '#FFD700' : '#FF00FF');
 
@@ -614,7 +619,8 @@
             type: 'ball',
             ballId: data.ballId,
             username: data.username,
-            bet: data.bet
+            bet: data.bet,
+            targetSlotIndex: data.targetSlotIndex
           }
         }
       });
@@ -630,10 +636,16 @@
       // Create HTML label for user info
       const label = document.createElement('div');
       label.className = 'ball-label';
-      label.innerHTML = `
-        ${data.profilePictureUrl ? `<img src="${data.profilePictureUrl}" alt="${data.username}">` : ''}
-        <div class="username">${data.nickname || data.username}</div>
-      `;
+      if (data.profilePictureUrl) {
+        const image = document.createElement('img');
+        image.src = data.profilePictureUrl;
+        image.alt = data.username || '';
+        label.appendChild(image);
+      }
+      const username = document.createElement('div');
+      username.className = 'username';
+      username.textContent = data.nickname || data.username || '';
+      label.appendChild(username);
       label.classList.add('glow');
       document.body.appendChild(label);
 
@@ -691,15 +703,29 @@
     // Handle ball landing in slot
     function handleBallLanded(ball, slot) {
       const ballId = ball.plugin?.plinko?.ballId;
-      const slotIndex = slot.plugin?.plinko?.slotIndex;
+      const reportedSlotIndex = slot.plugin?.plinko?.slotIndex;
 
-      if (!ballId || slotIndex === undefined) return;
+      if (!ballId || reportedSlotIndex === undefined) return;
 
       const ballData = balls.get(ballId);
       if (!ballData || ballData.hasLanded) return;
 
+      const targetSlotIndex = Number.isInteger(ballData.data?.targetSlotIndex)
+        ? ballData.data.targetSlotIndex
+        : reportedSlotIndex;
+      const targetSlot = slots.find(entry => entry.index === targetSlotIndex)?.floor || slot;
+      const slotIndex = targetSlot.plugin?.plinko?.slotIndex ?? targetSlotIndex;
+
       // Mark as landed
       ballData.hasLanded = true;
+
+      // The server selected the target before this animation began. Snap the
+      // final frame to that target so visual physics cannot choose a payout.
+      Body.setPosition(ball, {
+        x: targetSlot.position.x,
+        y: targetSlot.position.y - BALL_RADIUS
+      });
+      Body.setVelocity(ball, { x: 0, y: 0 });
 
       console.log(`🎯 Ball ${ballId} landed in slot ${slotIndex}`);
       if (slotHitCounts.length > slotIndex) {
@@ -708,11 +734,11 @@
       }
 
       // Enhanced slot glow animation
-      if (slot && slot.render) {
-        const originalColor = slot.render.fillStyle;
-        slot.render.fillStyle = '#ffffff';
-        slot.render.shadowBlur = 30;
-        slot.render.shadowColor = originalColor;
+      if (targetSlot && targetSlot.render) {
+        const originalColor = targetSlot.render.fillStyle;
+        targetSlot.render.fillStyle = '#ffffff';
+        targetSlot.render.shadowBlur = 30;
+        targetSlot.render.shadowColor = originalColor;
         
         // Animate slot label
         const labels = document.querySelectorAll('.slot-label');
@@ -724,15 +750,15 @@
         }
         
         setTimeout(() => {
-          slot.render.fillStyle = originalColor;
-          slot.render.shadowBlur = 0;
+          targetSlot.render.fillStyle = originalColor;
+          targetSlot.render.shadowBlur = 0;
         }, 400);
       }
 
-      // Notify server
+      // Notify server that rendering completed. The server owns the selected
+      // payout slot and deliberately receives no client-provided outcome.
       socket.emit('plinko:ball-landed', {
-        ballId,
-        slotIndex
+        ballId
       });
 
       // Schedule cleanup
@@ -850,24 +876,30 @@
 
         const item = document.createElement('li');
         item.className = `leaderboard-item rank-${rank}`;
-        item.innerHTML = `
-          <div class="leaderboard-rank rank-${rank}">${rank}</div>
-          <div class="leaderboard-user">${player.user}</div>
-          <div class="leaderboard-stats">
-            <div class="leaderboard-stat">
-              <span class="leaderboard-stat-value ${profitClass}">${profitSign}${profit}</span>
-              <span class="leaderboard-stat-label">Profit</span>
-            </div>
-            <div class="leaderboard-stat">
-              <span class="leaderboard-stat-value">${player.totalGames || 0}</span>
-              <span class="leaderboard-stat-label">Games</span>
-            </div>
-            <div class="leaderboard-stat">
-              <span class="leaderboard-stat-value">${(player.avgMultiplier || 0).toFixed(2)}x</span>
-              <span class="leaderboard-stat-label">Avg</span>
-            </div>
-          </div>
-        `;
+        const rankElement = document.createElement('div');
+        rankElement.className = `leaderboard-rank rank-${rank}`;
+        rankElement.textContent = String(rank);
+        const userElement = document.createElement('div');
+        userElement.className = 'leaderboard-user';
+        userElement.textContent = player.user || '';
+        const statsElement = document.createElement('div');
+        statsElement.className = 'leaderboard-stats';
+        const addStat = (value, label, valueClass = '') => {
+          const stat = document.createElement('div');
+          stat.className = 'leaderboard-stat';
+          const statValue = document.createElement('span');
+          statValue.className = `leaderboard-stat-value ${valueClass}`.trim();
+          statValue.textContent = value;
+          const statLabel = document.createElement('span');
+          statLabel.className = 'leaderboard-stat-label';
+          statLabel.textContent = label;
+          stat.append(statValue, statLabel);
+          statsElement.appendChild(stat);
+        };
+        addStat(`${profitSign}${profit}`, 'Profit', profitClass);
+        addStat(String(player.totalGames || 0), 'Games');
+        addStat(`${(player.avgMultiplier || 0).toFixed(2)}x`, 'Avg');
+        item.append(rankElement, userElement, statsElement);
         leaderboardList.appendChild(item);
       });
 
