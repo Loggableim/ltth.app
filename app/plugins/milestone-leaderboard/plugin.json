@@ -5,7 +5,7 @@
   "description": "Unified Viewer XP bundle that merges gift milestones, the real-time gifter leaderboard, and viewer profile analytics.",
   "author": "Pup Cid",
   "entry": "main.js",
-  "enabled": false,
+  "enabled": true,
   "type": "overlay",
   "devStatus": "development-beta",
   "icon": "/plugins/milestone-leaderboard/assets/viewer-xp-icon.png",

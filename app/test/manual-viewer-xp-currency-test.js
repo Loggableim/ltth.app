@@ -168,8 +168,8 @@ async function runTests() {
   const mockTikTok = new EventEmitter();
   
   // Load the viewer-leaderboard plugin
-  const ViewerXPPlugin = require('../plugins/viewer-leaderboard/viewer-xp-impl');
-  const ViewerXPDatabase = require('../plugins/viewer-leaderboard/backend/database');
+  const ViewerXPPlugin = require('../plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-impl');
+  const ViewerXPDatabase = require('../plugins/milestone-leaderboard/vendor/viewer-leaderboard/backend/database');
   
   // Mock the database module
   ViewerXPDatabase.prototype.initialize = MockViewerXPDatabase.prototype.initialize;

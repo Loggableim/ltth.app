@@ -10,7 +10,7 @@
  * The viewer-leaderboard plugin now contains all the implementation directly.
  */
 
-const ViewerLeaderboardPlugin = require('../plugins/viewer-leaderboard/main');
+const ViewerLeaderboardPlugin = require('../plugins/milestone-leaderboard/vendor/viewer-leaderboard/main');
 
 describe('Viewer-Leaderboard Plugin (Consolidated)', () => {
   let mockApi;
@@ -75,11 +75,11 @@ describe('Viewer-Leaderboard Plugin (Consolidated)', () => {
       await plugin.init();
 
       expect(mockApi.log).toHaveBeenCalledWith(
-        expect.stringContaining('Initializing Viewer XP System Plugin'),
+        expect.stringContaining('Initializing Viewer XP Plugin'),
         'info'
       );
       expect(mockApi.log).toHaveBeenCalledWith(
-        expect.stringContaining('Viewer XP System initialized successfully'),
+        expect.stringContaining('Viewer XP initialized successfully'),
         'info'
       );
     });

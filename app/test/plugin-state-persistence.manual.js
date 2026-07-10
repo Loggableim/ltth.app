@@ -85,7 +85,7 @@ async function runTest() {
         console.log(`Loaded ${plugins1.length} plugins initially`);
         
         // Verify default active plugins
-        const defaultActive = ['chatango', 'goals', 'spotlight', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'gcce', 'api-bridge', 'clarityhud'];
+        const defaultActive = ['chatango', 'goals', 'spotlight', 'milestone-leaderboard', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'gcce', 'api-bridge', 'clarityhud'];
         const activePlugins1 = plugins1.map(p => p.id);
         
         console.log('Active plugins:', activePlugins1.sort().join(', '));

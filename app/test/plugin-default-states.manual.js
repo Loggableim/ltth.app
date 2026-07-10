@@ -21,7 +21,7 @@ console.log('==========================\n');
 console.log('Test 1: Verify plugin.json default states');
 console.log('-------------------------------------------');
 
-const expectedActive = ['chatango', 'goals', 'spotlight', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'gcce', 'api-bridge', 'clarityhud'];
+const expectedActive = ['chatango', 'goals', 'spotlight', 'milestone-leaderboard', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'gcce', 'api-bridge', 'clarityhud'];
 const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
 
 let activeCount = 0;
@@ -46,8 +46,8 @@ for (const entry of entries) {
     }
 }
 
-assert.strictEqual(activeCount, 10, `Should have exactly 10 active plugins, but found ${activeCount}`);
-console.log(`✓ Found ${activeCount} active plugins (expected 10)`);
+assert.strictEqual(activeCount, 11, `Should have exactly 11 active plugins, but found ${activeCount}`);
+console.log(`✓ Found ${activeCount} active plugins (expected 11)`);
 console.log(`✓ Found ${inactiveCount} inactive plugins`);
 console.log('✓ All plugins have correct default states\n');
 

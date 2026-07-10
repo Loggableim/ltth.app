@@ -11,7 +11,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
-const ViewerXPDatabase = require('../plugins/viewer-leaderboard/backend/database');
+const ViewerXPDatabase = require('../plugins/milestone-leaderboard/vendor/viewer-leaderboard/backend/database');
 
 describe('XP Rank Display Fix', () => {
   let db;

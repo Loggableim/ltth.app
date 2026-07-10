@@ -137,7 +137,7 @@ describe('Viewer XP - IFTTT Integration', () => {
 
   beforeAll(() => {
     // Load the plugin
-    const pluginPath = path.join(__dirname, '../plugins/viewer-leaderboard/main.js');
+    const pluginPath = path.join(__dirname, '../plugins/milestone-leaderboard/vendor/viewer-leaderboard/main.js');
     ViewerXPPlugin = require(pluginPath);
   });
 

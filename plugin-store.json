@@ -345,33 +345,6 @@
       ]
     },
     {
-      "id": "gift-milestone",
-      "name": {
-        "en": "Gift Milestone Celebration"
-      },
-      "description": {
-        "en": "Celebrate coin milestones with custom animations (GIF, MP4) and audio. Triggers special celebrations when cumulative gift coins reach configured thresholds with overlay support.",
-        "de": "Feiern Sie Münz-Meilensteine mit benutzerdefinierten Animationen (GIF, MP4) und Audio. Löst spezielle Feierlichkeiten aus, wenn kumulative Geschenk-Münzen konfigurierte Schwellenwerte mit Overlay-Unterstützung erreichen.",
-        "es": "Celebra hitos de monedas con animaciones personalizadas (GIF, MP4) y audio. Activa celebraciones especiales cuando las monedas de regalo acumuladas alcanzan umbrales configurados con soporte de overlay.",
-        "fr": "Célébrez les jalons de pièces avec animations personnalisées (GIF, MP4) et audio. Déclenche des célébrations spéciales lorsque les pièces de cadeaux cumulées atteignent les seuils configurés avec support d'overlay."
-      },
-      "version": "1.0.0",
-      "author": "Pup Cid",
-      "category": "plugin",
-      "channel": "open-beta",
-      "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/gift-milestone-1.0.0.zip",
-      "sha256": "276d611b88f691d66988244aca578d86eb860f9c84ae1669f3586a5744e4b9b5",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": [
-        "/screenshots/features/gift-milestone.png"
-      ]
-    },
-    {
       "id": "goals",
       "name": {
         "en": "Live Goals"
@@ -478,9 +451,11 @@
       "author": "Pup Cid",
       "category": "overlay",
       "channel": "open-beta",
-      "badges": [],
+      "badges": [
+        "preinstalled"
+      ],
       "packageUrl": "https://ltth.app/plugin-store/packages/milestone-leaderboard-1.0.0.zip",
-      "sha256": "652823106250afc3f7be74846440e66a665fda87273a46ee940b689ee1706c5b",
+      "sha256": "a257f9b3070c162457761adcde919d478d844176d5ad219bbb50a4df614720ee",
       "pricing": {
         "type": "free",
         "amount": 0,
@@ -931,60 +906,6 @@
       "access": {
         "type": "subscriber"
       }
-    },
-    {
-      "id": "viewer-leaderboard",
-      "name": {
-        "en": "Viewer XP"
-      },
-      "description": {
-        "en": "Unified Viewer XP, Viewer Profiles analytics, and Gifter Leaderboard plugin. Includes XP tracking, leveling, badges, profile management, VIP and birthday tracking, heatmaps, event logging, opt-out support, and gifter rankings in one bundle.",
-        "de": "Vereint Zuschauer-XP, Viewer-Profile-Analyse und Gifter-Bestenliste. Enthält XP-Tracking, Leveling, Badges, Profilverwaltung, VIP- und Geburtstags-Tracking, Heatmaps, Event-Logging, Opt-Out-Support und Gifter-Rankings in einem Paket.",
-        "es": "Plugin unificado de XP de espectadores, análisis de perfiles de espectadores y tabla de clasificación de donantes. Incluye seguimiento de XP, nivelación, insignias, gestión de perfiles, VIP y cumpleaños, mapas de calor, registros de eventos, compatibilidad con opt-out y rankings de donantes en un solo paquete.",
-        "fr": "Plugin unifié pour l'XP des spectateurs, l'analyse des profils de spectateurs et le classement des donateurs. Inclut le suivi de l'XP, la progression, les badges, la gestion des profils, le suivi VIP et des anniversaires, les cartes thermiques, le journal d'événements, la prise en charge de l'opt-out et les classements des donateurs dans un seul bundle."
-      },
-      "version": "2.1.0",
-      "author": "Pup Cid",
-      "category": "overlay",
-      "channel": "open-beta",
-      "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/viewer-leaderboard-2.1.0.zip",
-      "sha256": "7952b6a50bed6be27b0a515e1783e970bfc27651e8cb08c7e919f5442d7e622e",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": [
-        "/screenshots/features/viewer-leaderboard.png"
-      ]
-    },
-    {
-      "id": "viewer-profiles",
-      "name": {
-        "en": "Viewer Profiles"
-      },
-      "description": {
-        "en": "Comprehensive viewer tracking and analytics system with VIP management, birthday tracking, activity heatmaps, and detailed profile management. Track coins, watchtime, interactions, and more.",
-        "de": "Umfassendes Zuschauer-Tracking- und Analysesystem mit VIP-Verwaltung, Geburtstags-Tracking, Aktivitäts-Heatmaps und detaillierter Profilverwaltung. Verfolgen Sie Münzen, Watchtime, Interaktionen und mehr.",
-        "es": "Sistema integral de seguimiento y análisis de espectadores con gestión VIP, seguimiento de cumpleaños, mapas de calor de actividad y gestión detallada de perfiles.",
-        "fr": "Système complet de suivi et d'analyse des spectateurs avec gestion VIP, suivi des anniversaires, cartes thermiques d'activité et gestion détaillée des profils."
-      },
-      "version": "1.1.0",
-      "author": "Pup Cid",
-      "category": "utility",
-      "channel": "open-beta",
-      "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/viewer-profiles-1.1.0.zip",
-      "sha256": "5b527a3ba2c2b33e0cd8bd50deccdcaa82ec8ef8ff26720f3e8e4523eb89b962",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": [
-        "/screenshots/features/viewer-profiles.png"
-      ]
     },
     {
       "id": "weather-control",

@@ -2,7 +2,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const Database = require('better-sqlite3');
-const ViewerXPDatabase = require('../plugins/viewer-leaderboard/backend/database');
+const ViewerXPDatabase = require('../plugins/milestone-leaderboard/vendor/viewer-leaderboard/backend/database');
 
 describe('Viewer XP detail log retention', () => {
   let tmpDir;

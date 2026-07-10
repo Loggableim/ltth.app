@@ -101,7 +101,7 @@ describe('Viewer XP System - Profile Isolation', () => {
         };
 
         // Load viewer-leaderboard plugin for both profiles
-        const ViewerXPPlugin = require('../plugins/viewer-leaderboard/viewer-xp-impl');
+        const ViewerXPPlugin = require('../plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-impl');
         viewerXPPlugin1 = new ViewerXPPlugin(mockAPI1);
         viewerXPPlugin2 = new ViewerXPPlugin(mockAPI2);
 
@@ -227,7 +227,7 @@ describe('Viewer XP System - Profile Isolation', () => {
             }
         };
 
-        const ViewerXPPlugin = require('../plugins/viewer-leaderboard/viewer-xp-impl');
+        const ViewerXPPlugin = require('../plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-impl');
         viewerXPPlugin1 = new ViewerXPPlugin(mockAPI1New);
         await viewerXPPlugin1.init();
 

@@ -196,7 +196,7 @@ describe('Plugin Manager listing', () => {
     it('keeps the featured store plugin list aligned with the preinstalled set', () => {
         const managerScript = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'plugin-manager.js'), 'utf8');
 
-        assert(managerScript.includes("['chatango', 'api-bridge', 'clarityhud', 'gcce', 'goals', 'spotlight', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain']"));
+        assert(managerScript.includes("['chatango', 'goals', 'spotlight', 'milestone-leaderboard', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain']"));
     });
 
     it('includes Store v2 detail pages, feedback, telemetry and rollback messaging', () => {

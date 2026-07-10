@@ -3,7 +3,7 @@ const os = require('os');
 const path = require('path');
 
 const Database = require('../modules/database');
-const GiftMilestonePlugin = require('../plugins/gift-milestone/main');
+const GiftMilestonePlugin = require('../plugins/milestone-leaderboard/vendor/gift-milestone/main');
 
 function createTempDatabase() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-gift-milestone-'));
@@ -224,14 +224,14 @@ describe('Gift Milestone regression coverage', () => {
   });
 
   test('plugin serves uploads through lifecycle-managed routes instead of direct app middleware', () => {
-    const mainSource = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'gift-milestone', 'main.js'), 'utf8');
+    const mainSource = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'milestone-leaderboard', 'vendor', 'gift-milestone', 'main.js'), 'utf8');
 
     expect(mainSource).not.toContain("getApp().use('/gift-milestone/uploads'");
     expect(mainSource).toContain("registerRoute('get', '/gift-milestone/uploads/:filename'");
   });
 
   test('admin UI escapes dynamic tier and user text before writing list markup', () => {
-    const uiSource = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'gift-milestone', 'ui.js'), 'utf8');
+    const uiSource = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'milestone-leaderboard', 'vendor', 'gift-milestone', 'ui.js'), 'utf8');
 
     expect(uiSource).toContain('function escapeHtml');
     expect(uiSource).toContain('escapeHtml(tier.name)');

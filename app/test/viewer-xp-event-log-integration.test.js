@@ -45,7 +45,7 @@ describe('Viewer XP System - Event Log Processing', () => {
         };
 
         // Load viewer-leaderboard plugin
-        const ViewerXPPlugin = require('../plugins/viewer-leaderboard/viewer-xp-impl');
+        const ViewerXPPlugin = require('../plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-impl');
         viewerXPPlugin = new ViewerXPPlugin(mockAPI);
         await viewerXPPlugin.init();
     });

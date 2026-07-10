@@ -17,7 +17,8 @@ const DEFAULT_OFFICIAL_STORE_URL = process.env.LTTH_PLUGIN_STORE_URL || 'https:/
 const PREINSTALLED_PLUGIN_IDS = new Set([
   'chatango',
   'goals',
-  'lastevent-spotlight',
+  'spotlight',
+  'milestone-leaderboard',
   'soundboard',
   'toptier',
   'tts',

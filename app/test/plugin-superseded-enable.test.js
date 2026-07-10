@@ -82,9 +82,9 @@ describe('superseded plugin enabling', () => {
     );
   });
 
-  test('reports that viewer-profiles is provided by viewer-leaderboard instead of a generic load failure', async () => {
+  test('reports that viewer-profiles is provided by milestone-leaderboard instead of a generic load failure', async () => {
     writePlugin(pluginsDir, 'viewer-profiles');
-    writePlugin(pluginsDir, 'viewer-leaderboard', { enabled: true });
+    writePlugin(pluginsDir, 'milestone-leaderboard', { enabled: true });
 
     const logger = createLogger();
     const loader = new PluginLoader(
@@ -101,12 +101,12 @@ describe('superseded plugin enabling', () => {
     );
 
     await expect(loader.enablePlugin('viewer-profiles')).rejects.toThrow(
-      'Plugin viewer-profiles is already provided by viewer-leaderboard. Disable viewer-leaderboard before enabling viewer-profiles.'
+      'Plugin viewer-profiles is already provided by milestone-leaderboard. Disable milestone-leaderboard before enabling viewer-profiles.'
     );
 
     expect(loader.state['viewer-profiles']).toEqual({
       enabled: false,
-      supersededBy: 'viewer-leaderboard'
+      supersededBy: 'milestone-leaderboard'
     });
   });
 });

@@ -853,13 +853,9 @@ class PluginLoader extends EventEmitter {
             return 'spotlight';
         }
 
-        if ((pluginId === 'viewer-leaderboard' || pluginId === 'gift-milestone') &&
+        if (['viewer-leaderboard', 'gift-milestone', 'viewer-profiles', 'viewer-xp'].includes(pluginId) &&
             this.isPluginEnabledFromDisk('milestone-leaderboard')) {
             return 'milestone-leaderboard';
-        }
-
-        if (pluginId === 'viewer-profiles' && this.isPluginEnabledFromDisk('viewer-leaderboard')) {
-            return 'viewer-leaderboard';
         }
 
         return null;
@@ -870,6 +866,19 @@ class PluginLoader extends EventEmitter {
 
         if (migrated['lastevent-spotlight'] && migrated.spotlight === undefined) {
             migrated.spotlight = { ...migrated['lastevent-spotlight'] };
+        }
+
+        const legacyMasterIds = ['gift-milestone', 'viewer-leaderboard', 'viewer-profiles', 'viewer-xp'];
+        const legacyMasterStates = legacyMasterIds
+            .map((pluginId) => migrated[pluginId])
+            .filter((pluginState) => pluginState && typeof pluginState === 'object');
+
+        if (legacyMasterStates.length > 0 && migrated['milestone-leaderboard'] === undefined) {
+            const enabled = legacyMasterStates.some((pluginState) => pluginState.enabled === true);
+            migrated['milestone-leaderboard'] = {
+                ...legacyMasterStates[0],
+                enabled
+            };
         }
 
         return migrated;

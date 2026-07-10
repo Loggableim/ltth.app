@@ -700,7 +700,7 @@
             { icon: 'music', label: 'Soundboard', view: 'soundboard', plugin: 'soundboard' },
             { icon: 'zap', label: 'Emoji Rain', view: 'webgpu-emoji-rain', plugin: 'webgpu-emoji-rain' },
             { icon: 'users', label: 'Multi-Guest', view: 'multi-guest', plugin: 'vdoninja' },
-            { icon: 'gift', label: 'Gift Milestone', view: 'gift-milestone', plugin: 'gift-milestone' },
+            { icon: 'gift', label: 'Gift Milestone', view: 'gift-milestone', plugin: 'milestone-leaderboard' },
             { icon: 'video', label: 'Multi-Cam', view: 'multicam', plugin: 'multicam' },
             { icon: 'gamepad-2', label: 'OSC-Bridge', view: 'osc-bridge', plugin: 'osc-bridge' },
             { icon: 'zap', label: 'HybridShock', view: 'openshock', plugin: 'openshock' },

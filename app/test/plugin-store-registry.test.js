@@ -77,6 +77,7 @@ describe('Official plugin store registry', () => {
     const preinstalledIds = [
       'chatango',
       'goals',
+      'milestone-leaderboard',
       'spotlight',
       'soundboard',
       'toptier',

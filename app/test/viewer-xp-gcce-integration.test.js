@@ -162,7 +162,7 @@ describe('Viewer XP - GCCE Integration', () => {
     mockAPI.pluginLoader.loadedPlugins.set('gcce', { instance: mockGCCE });
 
     // Load ViewerXP plugin
-    const ViewerXPPlugin = require('../plugins/viewer-leaderboard/viewer-xp-impl.js');
+    const ViewerXPPlugin = require('../plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-impl.js');
     viewerXPPlugin = new ViewerXPPlugin(mockAPI);
     
     // Replace database with mock

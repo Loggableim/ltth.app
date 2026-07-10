@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const Database = require('better-sqlite3');
-const ViewerProfilesPlugin = require('../plugins/viewer-leaderboard/backend/analytics-plugin');
+const ViewerProfilesPlugin = require('../plugins/milestone-leaderboard/vendor/viewer-leaderboard/backend/analytics-plugin');
 
 function createResponse() {
   return {
@@ -244,13 +244,13 @@ describe('Viewer Profiles analytics dashboard', () => {
     expect(badRes.statusCode).toBe(404);
     expect(badRes.payload.error).toBe('Asset not found');
 
-    const uiPath = path.join(__dirname, '..', 'plugins', 'viewer-leaderboard', 'viewer-profiles-ui.html');
+    const uiPath = path.join(__dirname, '..', 'plugins', 'milestone-leaderboard', 'vendor', 'viewer-leaderboard', 'viewer-profiles-ui.html');
     const uiHtml = fs.readFileSync(uiPath, 'utf8');
     expect(uiHtml).toContain('/viewer-profiles/assets/default-avatar.svg');
   });
 
   test('ui markup avoids inline event handlers that CSP blocks', () => {
-    const uiPath = path.join(__dirname, '..', 'plugins', 'viewer-leaderboard', 'viewer-profiles-ui.html');
+    const uiPath = path.join(__dirname, '..', 'plugins', 'milestone-leaderboard', 'vendor', 'viewer-leaderboard', 'viewer-profiles-ui.html');
     const uiHtml = fs.readFileSync(uiPath, 'utf8');
 
     expect(uiHtml).not.toMatch(/<[^>]+\s(onclick|onchange|onkeypress|onerror)\s*=/i);

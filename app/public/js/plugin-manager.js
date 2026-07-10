@@ -498,7 +498,7 @@ class PluginManager {
 
     isFeaturedStorePlugin(plugin) {
         const id = String(plugin.id || '').toLowerCase();
-        return plugin.installed || ['chatango', 'goals', 'lastevent-spotlight', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain'].includes(id);
+        return plugin.installed || ['chatango', 'goals', 'spotlight', 'milestone-leaderboard', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain'].includes(id);
     }
 
     renderStoreCategoryChips() {

@@ -1,7 +1,8 @@
 /**
  * Test: Viewer Profiles Plugin Sidebar Integration
  *
- * Validates that the viewer-profiles plugin is properly integrated into the dashboard:
+ * Validates that the Viewer Profiles feature is exposed by the consolidated
+ * milestone-leaderboard plugin in the dashboard:
  * - Sidebar menu entry exists with correct attributes
  * - View container exists with iframe lazy-loading
  * - Locale translations exist in supported locales
@@ -37,8 +38,8 @@ describe('Viewer Profiles Plugin Sidebar Integration', () => {
       expect(dashboardHtml).toContain('data-view="viewer-profiles"');
     });
 
-    test('should have viewer-profiles sidebar item with correct data-plugin', () => {
-      expect(dashboardHtml).toContain('data-plugin="viewer-profiles"');
+    test('should have viewer-profiles sidebar item backed by milestone-leaderboard', () => {
+      expect(dashboardHtml).toContain('data-view="viewer-profiles" data-plugin="milestone-leaderboard"');
     });
 
     test('should use users icon for viewer-profiles sidebar item', () => {
@@ -57,8 +58,8 @@ describe('Viewer Profiles Plugin Sidebar Integration', () => {
       expect(sidebarSection).toContain('data-i18n="navigation.viewer_profiles"');
     });
 
-    test('should appear after viewer-leaderboard in sidebar', () => {
-      const leaderboardIdx = dashboardHtml.indexOf('data-view="viewer-leaderboard"');
+    test('should appear after the master Viewer XP entry in sidebar', () => {
+      const leaderboardIdx = dashboardHtml.indexOf('data-view="milestone-leaderboard"');
       const profilesIdx = dashboardHtml.indexOf('data-view="viewer-profiles"');
       expect(leaderboardIdx).toBeGreaterThan(0);
       expect(profilesIdx).toBeGreaterThan(leaderboardIdx);
@@ -85,7 +86,7 @@ describe('Viewer Profiles Plugin Sidebar Integration', () => {
         dashboardHtml.indexOf('id="view-viewer-profiles"'),
         dashboardHtml.indexOf('id="view-viewer-profiles"') + 1000
       );
-      expect(viewSection).toContain('data-plugin="viewer-profiles"');
+      expect(viewSection).toContain('data-plugin="milestone-leaderboard"');
     });
 
     test('should have iframe with correct data-src for lazy loading', () => {
@@ -96,7 +97,7 @@ describe('Viewer Profiles Plugin Sidebar Integration', () => {
       expect(viewSection).toContain('data-src="/viewer-profiles/ui"');
     });
 
-    test('should have external link to standalone viewer-profiles UI', () => {
+    test('should have external link to the master-provided viewer-profiles UI', () => {
       const viewSection = dashboardHtml.substring(
         dashboardHtml.indexOf('id="view-viewer-profiles"'),
         dashboardHtml.indexOf('id="view-viewer-profiles"') + 1000
