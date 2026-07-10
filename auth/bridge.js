@@ -3,6 +3,7 @@
   const CLERK_FRONTEND_DOMAIN = 'clerk.ltth.app';
   const CLERK_UI_SCRIPT = 'https://clerk.ltth.app/npm/@clerk/ui@1/dist/ui.browser.js';
   const CLERK_BROWSER_SCRIPT = 'https://clerk.ltth.app/npm/@clerk/clerk-js@6/dist/clerk.browser.js';
+  const SCRIPT_LOAD_TIMEOUT_MS = 15000;
   const DEFAULT_ACCOUNT_PORTAL_URL = 'https://ltth.app/auth/';
   const LEGACY_LOCAL_CALLBACK_PATH = '/auth/clerk/callback.html';
   const ALLOWED_RETURN_HOSTS = new Set([
@@ -41,6 +42,18 @@
       }
 
       const script = existing || document.createElement('script');
+      let settled = false;
+      let timeoutId = null;
+
+      const finish = (callback, value) => {
+        if (settled) return;
+        settled = true;
+        if (timeoutId !== null) {
+          window.clearTimeout(timeoutId);
+        }
+        callback(value);
+      };
+
       for (const [key, value] of Object.entries(attributes)) {
         if (value) script.setAttribute(key, value);
       }
@@ -50,11 +63,29 @@
       script.type = 'text/javascript';
       script.onload = () => {
         script.dataset.loaded = 'true';
-        resolve();
+        finish(resolve);
       };
-      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      script.onerror = () => finish(reject, new Error(`Failed to load ${src}`));
       if (!existing) document.head.appendChild(script);
+
+      timeoutId = window.setTimeout(() => {
+        finish(reject, new Error(`Timed out while loading ${src}`));
+      }, SCRIPT_LOAD_TIMEOUT_MS);
     });
+  }
+
+  async function loadScriptWithRetry(src, attributes = {}, label = 'authentication component') {
+    try {
+      await loadScript(src, attributes);
+    } catch (firstError) {
+      const failedScript = document.querySelector(`script[src="${src}"]`);
+      if (failedScript?.dataset.loaded !== 'true') {
+        failedScript.remove();
+      }
+
+      setStatus('Retrying account bridge', `The ${label} was slow to load. Trying once more...`);
+      await loadScript(src, attributes);
+    }
   }
 
   function getMode() {
@@ -150,6 +181,13 @@
     });
   }
 
+  function setModeSwitcherVisible(visible) {
+    const switcher = document.querySelector('[data-auth-mode-switcher]');
+    if (switcher) {
+      switcher.hidden = !visible;
+    }
+  }
+
   function withMode(mode) {
     const url = new URL(window.location.href);
     url.searchParams.set('mode', mode);
@@ -158,6 +196,7 @@
 
   function mountAuth(clerk, mode) {
     if (!root) return;
+    setModeSwitcherVisible(true);
     root.innerHTML = '';
 
     const options = {
@@ -189,10 +228,6 @@
         <strong>Signed in on ltth.app</strong>
         <span>You can manage your LTTH profile here. The app store uses inline login, so you only need this page for web account management and optional return flows.</span>
         <div id="ltth-auth-account-root" style="margin-top: 18px;"></div>
-        <div class="switcher">
-          <a data-mode-link="sign-up" href="#">Create account</a>
-          <a data-mode-link="sign-in" href="#">Sign in</a>
-        </div>
       </div>
     `;
 
@@ -209,7 +244,7 @@
       `;
     }
 
-    updateModeLinks(getMode());
+    setModeSwitcherVisible(false);
   }
 
   async function completeIfSignedIn(clerk, returnUrl, state) {
@@ -297,11 +332,12 @@
       const state = returnUrl ? getState() : '';
       updateModeLinks(mode);
 
-      await loadScript(CLERK_UI_SCRIPT);
-      await loadScript(CLERK_BROWSER_SCRIPT, {
+      setStatus('Loading account bridge', 'Loading secure sign-in components...');
+      await loadScriptWithRetry(CLERK_UI_SCRIPT, {}, 'Clerk interface');
+      await loadScriptWithRetry(CLERK_BROWSER_SCRIPT, {
         'data-clerk-publishable-key': CLERK_PUBLISHABLE_KEY,
         'data-clerk-domain': CLERK_FRONTEND_DOMAIN
-      });
+      }, 'Clerk session service');
 
       const clerk = window.Clerk;
       if (!clerk || typeof clerk.load !== 'function') {
@@ -318,7 +354,7 @@
 
       watchForAuthenticatedSession(clerk, mode, returnUrl, state);
     } catch (error) {
-      setStatus('Account bridge failed', error.message || 'Unknown authentication error.', 'error');
+      setStatus('Account bridge failed', `${error.message || 'Unknown authentication error.'} Reload the page to try again.`, 'error');
     }
   }
 

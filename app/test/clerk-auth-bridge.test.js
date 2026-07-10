@@ -12,6 +12,7 @@ describe('Clerk auth bridge', () => {
 
     assert(authIndex.includes('<script src="bridge.js"'));
     assert(authIndex.includes('id="ltth-auth-bridge-root"'));
+    assert(authIndex.includes('data-auth-mode-switcher'));
     assert(authIndex.includes('Manage your LTTH account on ltth.app'));
     assert(authScript.includes('pk_live_Y2xlcmsubHR0aC5hcHAk'));
     assert(authScript.includes('https://clerk.ltth.app/npm/@clerk/clerk-js@6/dist/clerk.browser.js'));
@@ -24,6 +25,12 @@ describe('Clerk auth bridge', () => {
     assert(authScript.includes('redirectWithToken'));
     assert(authScript.includes('watchForAuthenticatedSession'));
     assert(authScript.includes('window.setInterval(tick, 500)'));
+    assert(authScript.includes('SCRIPT_LOAD_TIMEOUT_MS = 15000'));
+    assert(authScript.includes('loadScriptWithRetry'));
+    assert(authScript.includes('Retrying account bridge'));
+    assert(authScript.includes('Reload the page to try again.'));
+    assert(authScript.includes('setModeSwitcherVisible'));
+    assert(!authScript.includes('<div class="switcher">'));
     assert(!authScript.includes('clerk.addListener'));
     assert(!authScript.includes('CLERK_SECRET_KEY'));
     assert(!authScript.includes('sk_live_'));
