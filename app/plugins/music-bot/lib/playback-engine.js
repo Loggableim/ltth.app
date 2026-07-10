@@ -28,6 +28,7 @@ class PlaybackEngine extends EventEmitter {
     this._shuttingDown = false;
     this._duckActiveCount = 0;
     this._duckReleaseTimer = null;
+    this._crossfadeOutgoingTrack = null;
   }
 
   async play(track) {
@@ -59,17 +60,22 @@ class PlaybackEngine extends EventEmitter {
 
     if (crossfadeMs > 0 && hasCurrent) {
       const currentVolume = this.volume;
-      await this._fadeVolume(currentVolume, 0, crossfadeMs, true);
+      const halfFadeMs = Math.floor(crossfadeMs / 2);
+      this._crossfadeOutgoingTrack = this.nowPlaying;
+      try {
+        await this._fadeVolume(currentVolume, 0, halfFadeMs, true);
+        await this._sendCommand(['loadfile', playbackUrl, 'replace']);
+        await this._sendCommand(['set_property', 'volume', 0]);
 
-      await this._sendCommand(['loadfile', playbackUrl, 'append-play']);
-      await this._sendCommand(['playlist-next', 'force']);
-      await this._sendCommand(['set_property', 'volume', 0]);
+        this.nowPlaying = newTrackPayload;
+        this.state = 'playing';
+        this.emit('track-start', this.nowPlaying);
 
-      this.nowPlaying = newTrackPayload;
-      this.state = 'playing';
-      this.emit('track-start', this.nowPlaying);
-
-      await this._fadeVolume(0, currentVolume, crossfadeMs, true);
+        await this._fadeVolume(0, currentVolume, halfFadeMs, true);
+      } catch (error) {
+        this._crossfadeOutgoingTrack = null;
+        throw error;
+      }
     } else {
       await this._sendCommand(['loadfile', playbackUrl, 'replace']);
       await this.setVolume(this.masterVolume);
@@ -192,6 +198,7 @@ class PlaybackEngine extends EventEmitter {
   clearNowPlaying() {
     this.nowPlaying = null;
     this.state = 'idle';
+    this._crossfadeOutgoingTrack = null;
   }
 
   isPlaying() {
@@ -457,9 +464,17 @@ class PlaybackEngine extends EventEmitter {
     try {
       const msg = JSON.parse(raw);
       if (msg.event === 'end-file') {
-        this.state = 'idle';
-        this.emit('track-end', { track: this.nowPlaying, reason: 'ended' });
-        this.nowPlaying = null;
+        const outgoingTrack = this._crossfadeOutgoingTrack;
+        const endedTrack = outgoingTrack || this.nowPlaying;
+        const reason = outgoingTrack ? 'crossfade' : 'ended';
+        this._crossfadeOutgoingTrack = null;
+        if (!outgoingTrack) {
+          this.state = 'idle';
+        }
+        this.emit('track-end', { track: endedTrack, reason });
+        if (this.nowPlaying?.id === endedTrack?.id) {
+          this.nowPlaying = null;
+        }
       } else if (msg.event === 'property-change' && msg.name === 'volume') {
         this.volume = msg.data;
         this.emit('volume-changed', this.volume);

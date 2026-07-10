@@ -212,6 +212,28 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin.queueManager.clear).not.toHaveBeenCalled();
   });
 
+  test('starts the next song in the final configured crossfade interval', () => {
+    jest.useFakeTimers();
+    try {
+      const { plugin } = createPluginWithQueue([]);
+      plugin.config.playback.crossfadeDuration = 3000;
+      plugin.playbackEngine = {
+        getNowPlaying: jest.fn(() => ({ id: 'current' })),
+        isPlaying: jest.fn(() => true)
+      };
+      plugin._playNextFromQueue = jest.fn(async () => ({ success: true }));
+
+      plugin._scheduleCrossfadeTransition({ id: 'current', duration: 120 });
+      jest.advanceTimersByTime(116999);
+      expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(1);
+      expect(plugin._playNextFromQueue).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   test('UI exposes mpv path configuration and persists it to playback config', async () => {
     const { dom, fetchMock } = bootMusicBotUi();
     doms.push(dom);

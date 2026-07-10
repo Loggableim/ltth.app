@@ -134,4 +134,21 @@ describe('Music Bot core features', () => {
     expect(commands[0][1]).toBe('set');
     expect(commands[0][2]).toContain('loudnorm=I=-14:TP=-1:LRA=9');
   });
+
+  test('keeps the incoming track active when the outgoing track ends during a crossfade', () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const outgoing = { id: 'outgoing', title: 'Outgoing' };
+    const incoming = { id: 'incoming', title: 'Incoming' };
+    const trackEnd = jest.fn();
+    engine.on('track-end', trackEnd);
+    engine.nowPlaying = incoming;
+    engine.state = 'playing';
+    engine._crossfadeOutgoingTrack = outgoing;
+
+    engine._handleMessage(JSON.stringify({ event: 'end-file', reason: 'stop' }));
+
+    expect(trackEnd).toHaveBeenCalledWith({ track: outgoing, reason: 'crossfade' });
+    expect(engine.getNowPlaying()).toEqual(incoming);
+    expect(engine.getState()).toBe('playing');
+  });
 });

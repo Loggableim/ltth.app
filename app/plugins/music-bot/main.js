@@ -160,6 +160,7 @@ class MusicBotPlugin extends EventEmitter {
     this.io = api.getSocketIO();
     this.db = api.getDatabase();
     this.playbackSyncTimer = null;
+    this.crossfadeTimer = null;
     this._mpvRestartAttempts = 0;
 
     this.config = { ...DEFAULT_CONFIG };
@@ -248,6 +249,7 @@ class MusicBotPlugin extends EventEmitter {
     this._userLikes.clear();
     this.removeAllListeners();
     this._stopPlaybackSync();
+    this._clearCrossfadeTimer();
     this.api.log('[music-bot] Plugin destroyed', 'info');
   }
 
@@ -854,15 +856,22 @@ class MusicBotPlugin extends EventEmitter {
       this._emitNowPlaying(track);
       this._mpvRestartAttempts = 0;
       this._startPlaybackSync();
+      this._scheduleCrossfadeTransition(track);
       this._schedulePreCache();
     });
 
     this.playbackEngine.on('track-end', (info) => {
+      if (info.reason !== 'crossfade') {
+        this._clearCrossfadeTimer();
+      }
       this.queueManager.addToHistory(info.track, info.reason === 'skip');
       if (info.track?.requestedBy) {
         this.queueManager.removeSkipImmunity(info.track.requestedBy);
       }
       this.queueManager.resetVoteSkips();
+      if (info.reason === 'crossfade') {
+        return;
+      }
       this._stopPlaybackSync();
       this._playNextFromQueue();
     });
@@ -2200,6 +2209,30 @@ class MusicBotPlugin extends EventEmitter {
       clearInterval(this.playbackSyncTimer);
       this.playbackSyncTimer = null;
     }
+  }
+
+  _clearCrossfadeTimer() {
+    if (this.crossfadeTimer) {
+      clearTimeout(this.crossfadeTimer);
+      this.crossfadeTimer = null;
+    }
+  }
+
+  _scheduleCrossfadeTransition(track) {
+    this._clearCrossfadeTimer();
+    const durationMs = Math.round(Number(track?.duration) * 1000);
+    const crossfadeMs = Math.max(0, Number(this.config?.playback?.crossfadeDuration) || 0);
+    if (!Number.isFinite(durationMs) || durationMs <= crossfadeMs || crossfadeMs <= 0) return;
+
+    const trackId = track?.id;
+    this.crossfadeTimer = setTimeout(() => {
+      this.crossfadeTimer = null;
+      const current = this.playbackEngine?.getNowPlaying?.();
+      if (!trackId || current?.id !== trackId || !this.playbackEngine?.isPlaying?.()) return;
+      this._playNextFromQueue().catch((error) => {
+        this.api.log(`[music-bot] Crossfade transition failed: ${error.message}`, 'warn');
+      });
+    }, durationMs - crossfadeMs);
   }
 }
 
