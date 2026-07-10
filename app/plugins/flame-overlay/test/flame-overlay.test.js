@@ -138,8 +138,8 @@ describe('flame-overlay trigger handling', () => {
 
         expect(engine.canvas.width).toBe(1024);
         expect(engine.canvas.height).toBe(768);
-        expect(engine.canvas.style.width).toBe('1024px');
-        expect(engine.canvas.style.height).toBe('768px');
+        expect(engine.canvas.style.width).toBe('100%');
+        expect(engine.canvas.style.height).toBe('100%');
         expect(engine.gl.viewport).toHaveBeenCalledWith(0, 0, 1024, 768);
         expect(engine.postProcessor.resize).toHaveBeenCalledWith(1024, 768);
     });

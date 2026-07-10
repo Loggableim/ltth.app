@@ -8,6 +8,7 @@
  */
 
 const path = require('path');
+const { VISUAL_FX_DEFAULT_CONFIG } = require('./default-config');
 
 /**
  * Preset definitions for the trigger system
@@ -244,98 +245,15 @@ class FlameOverlayPlugin {
     loadConfig() {
         const savedConfig = this.api.getConfig('settings');
         
-        // Default configuration with all features
         const defaultConfig = {
-            // Effect type selection
-            effectType: 'flames', // 'flames', 'particles', 'energy', 'lightning'
-            qualityMode: 'obs-safe',
-            
-            // Resolution settings
-            resolutionPreset: 'tiktok-portrait',
-            customWidth: 720,
-            customHeight: 1280,
-            
-            // Frame settings
-            frameMode: 'bottom', // 'bottom', 'top', 'sides', 'all'
-            frameThickness: 150, // pixels
-            
-            // Frame positioning (for multiple frames in preview)
-            framePositions: [
-                { x: 0, y: 0, width: 100, height: 100 } // Default: full screen
-            ],
-            
-            // Flame appearance
-            flameColor: '#ff6600', // Main flame color
-            backgroundTint: '#000000', // Background tint color
-            backgroundTintOpacity: 0.0, // 0.0 = fully transparent
-            
-            // Flame animation
-            flameSpeed: 0.5, // Time multiplier
-            flameIntensity: 1.3, // Magnitude/turbulence
-            flameBrightness: 0.38, // Overall brightness multiplier
-            
-            // Visual effects
-            enableGlow: true,
-            enableAdditiveBlend: true,
-            
-            // Advanced
-            maskOnlyEdges: true, // Only show flames on frame edges
-            highDPI: true, // Handle high DPI displays
-            
-            // ===== NEW FEATURES (v2.2.0) =====
-            // Quality Settings
-            noiseOctaves: 9, // 4-12 octaves for fBm
-            useHighQualityTextures: true, // Enable when HQ textures are available
-            detailScaleAuto: true, // Automatic detail scaling based on resolution
-            
-            // Edge Settings
-            edgeFeather: 0.46, // 0.0-1.0: Soft edge blending amount
-            frameCurve: 0.1, // 0.0-1.0: Curved frame edges (0=sharp corners)
-            frameNoiseAmount: 0.12, // 0.0-1.0: Noise modulation on frame edges
-            
-            // Animation
-            animationEasing: 'linear', // 'linear', 'sine', 'quad', 'elastic'
-            pulseEnabled: false, // Enable pulsing/breathing animation
-            pulseAmount: 0.16, // 0.0-1.0: Pulse intensity
-            pulseSpeed: 1.0, // 0.1-3.0: Pulse frequency
-            
-            // Bloom
-            bloomEnabled: true, // Enable bloom post-processing
-            bloomIntensity: 0.78, // 0.0-2.0: Bloom strength
-            bloomThreshold: 0.58, // 0.0-1.0: Brightness threshold for bloom
-            bloomRadius: 4, // 1-10: Bloom blur radius
-            
-            // Layers
-            layersEnabled: true, // Enable multi-layer compositing
-            layerCount: 2, // 1-3: Number of layers
-            layerParallax: 0.18, // 0.0-1.0: Parallax effect strength
-            
-            // Post-FX
-            chromaticAberration: 0.004, // 0.0-0.02: RGB channel offset
-            filmGrain: 0.015, // 0.0-0.1: Film grain intensity
-            depthIntensity: 0.66, // 0.0-1.0: Fake depth/inner glow
-            cinematicContrast: 1.12,
-            coreWhiteness: 0.66,
-            emberTrailAmount: 0.28,
-            sparkEnabled: true,
-            sparkDensity: 0.52,
-            heatDistortionEnabled: true,
-            heatDistortionStrength: 0.24,
-            
-            // Smoke
-            smokeEnabled: false, // Enable smoke layer
-            smokeIntensity: 0.18, // 0.0-1.0: Smoke opacity
-            smokeSpeed: 0.22, // 0.1-1.0: Smoke movement speed
-            smokeColor: '#2d2623', // Smoke color
-
-            // ===== TRIGGER SYSTEM (v3.0.0) =====
+            ...this.cloneConfig(VISUAL_FX_DEFAULT_CONFIG),
+            // Trigger defaults depend on the preset registry in this module.
             triggersEnabled: true,
-            triggerRules: TRIGGER_PRESETS.default.triggerRules,
+            triggerRules: this.cloneConfig(TRIGGER_PRESETS.default.triggerRules),
             chatColorCommands: true,
             triggerCooldown: 2000,
             triggerMaxStack: 5,
-            triggerPreset: 'default',
-            visualProfileVersion: 3
+            triggerPreset: 'default'
         };
         
         this.defaultConfig = this.cloneConfig(defaultConfig);
@@ -1020,6 +938,10 @@ class FlameOverlayPlugin {
         });
 
         // Serve renderer dependencies. Legacy flame.js was removed in v3.
+        this.api.registerRoute('get', '/flame-overlay/default-config.js', (req, res) => {
+            res.sendFile(path.join(__dirname, 'default-config.js'));
+        });
+
         const rendererDir = path.join(__dirname, 'renderer');
         this.api.registerRoute('get', '/flame-overlay/:asset', (req, res) => {
             this.serveAllowlistedFile(res, rendererDir, req.params?.asset, RENDERER_ASSETS);
@@ -1578,6 +1500,7 @@ class FlameOverlayPlugin {
         this.api.log('?? [VISUAL FX FRAME] Routes registered:', 'info');
         this.api.log('   - GET  /flame-overlay/ui', 'info');
         this.api.log('   - GET  /flame-overlay/overlay', 'info');
+        this.api.log('   - GET  /flame-overlay/default-config.js', 'info');
         this.api.log('   - GET  /api/flame-overlay/config', 'info');
         this.api.log('   - POST /api/flame-overlay/config', 'info');
         this.api.log('   - GET  /api/flame-overlay/status', 'info');

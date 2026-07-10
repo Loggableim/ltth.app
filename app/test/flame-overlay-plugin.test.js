@@ -80,6 +80,7 @@ describe('Visual FX Frame Plugin', () => {
     
     test('required files exist', () => {
         const files = [
+            'default-config.js',
             'ui/settings.html',
             'renderer/index.html',
             'textures/nzw.png',
@@ -304,6 +305,7 @@ describe('Visual FX Frame Plugin', () => {
         plugin.registerRoutes();
 
         expect(mockApp.use).not.toHaveBeenCalled();
+        expect(registeredRoutes.has('get /flame-overlay/default-config.js')).toBe(true);
         expect(registeredRoutes.has('get /flame-overlay/:asset')).toBe(true);
         expect(registeredRoutes.has('get /plugins/flame-overlay/textures/:texture')).toBe(true);
 
@@ -323,6 +325,12 @@ describe('Visual FX Frame Plugin', () => {
         );
         expect(rendererRes.sendFile).toHaveBeenCalledWith(
             path.join(pluginDir, 'renderer', 'effects-engine.js')
+        );
+
+        const defaultsRes = createResponse();
+        registeredRoutes.get('get /flame-overlay/default-config.js')({}, defaultsRes);
+        expect(defaultsRes.sendFile).toHaveBeenCalledWith(
+            path.join(pluginDir, 'default-config.js')
         );
 
         const textureRes = createResponse();
@@ -367,6 +375,21 @@ describe('Visual FX Frame Plugin', () => {
             expect(content).toContain(`id="${id}"`);
             expect(content).toContain(`document.getElementById('${id}').addEventListener('click', ${handler})`);
         });
+    });
+
+    test('backend, renderer, and settings UI share the visual default source', () => {
+        const defaultsPath = path.join(pluginDir, 'default-config.js');
+        const defaults = require(defaultsPath).VISUAL_FX_DEFAULT_CONFIG;
+        const main = fs.readFileSync(path.join(pluginDir, 'main.js'), 'utf8');
+        const renderer = fs.readFileSync(path.join(pluginDir, 'renderer', 'index.html'), 'utf8');
+        const settings = fs.readFileSync(path.join(pluginDir, 'ui', 'settings.html'), 'utf8');
+
+        expect(defaults.flameIntensity).toBe(1.3);
+        expect(defaults.sparkDensity).toBe(0.52);
+        expect(main).toContain("require('./default-config')");
+        expect(renderer).toContain('src="default-config.js"');
+        expect(settings).toContain('src="/flame-overlay/default-config.js"');
+        expect(settings).toContain('window.VISUAL_FX_DEFAULT_CONFIG');
     });
 
     test('trigger save button persists adjacent trigger settings', () => {
@@ -427,5 +450,16 @@ describe('Visual FX Frame Plugin', () => {
         expect(content).toContain('<label for="frameHeight">');
         expect(content).toContain("removeBtn.setAttribute('aria-label'");
         expect(content).toMatch(/class="btn btn-secondary preset-delete-btn"[^>]*aria-label=/);
+    });
+
+    test('settings category navigation is keyboard accessible and exposes pressed state', () => {
+        const settingsPath = path.join(pluginDir, 'ui', 'settings.html');
+        const content = fs.readFileSync(settingsPath, 'utf8');
+
+        expect(content).toContain('role="toolbar"');
+        expect(content).toContain('aria-pressed="true"');
+        expect(content).toContain("btn.addEventListener('keydown', focusAdjacentTab)");
+        expect(content).toContain("event.key === 'ArrowRight'");
+        expect(content).toContain("event.key === 'ArrowLeft'");
     });
 });

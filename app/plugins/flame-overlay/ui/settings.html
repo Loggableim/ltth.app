@@ -1595,12 +1595,12 @@
                 <p>Grosse Gifts, Shares oder manuelle Tests ziehen Lightning und starke Bloom-Spikes nur fuer wenige Sekunden.</p>
             </div>
         </div>
-        <div class="tab-strip" role="tablist">
-            <button class="tab-btn active" type="button" data-tab-target="look">Look</button>
-            <button class="tab-btn" type="button" data-tab-target="frame">Frame</button>
-            <button class="tab-btn" type="button" data-tab-target="motion">Motion</button>
-            <button class="tab-btn" type="button" data-tab-target="postfx">Post-FX</button>
-            <button class="tab-btn" type="button" data-tab-target="trigger">Trigger</button>
+        <div class="tab-strip" role="toolbar" aria-label="Visual FX Einstellungen">
+            <button class="tab-btn active" type="button" data-tab-target="look" aria-pressed="true">Look</button>
+            <button class="tab-btn" type="button" data-tab-target="frame" aria-pressed="false">Frame</button>
+            <button class="tab-btn" type="button" data-tab-target="motion" aria-pressed="false">Motion</button>
+            <button class="tab-btn" type="button" data-tab-target="postfx" aria-pressed="false">Post-FX</button>
+            <button class="tab-btn" type="button" data-tab-target="trigger" aria-pressed="false">Trigger</button>
         </div>
 
         <div id="status" class="status" role="status" aria-live="polite"></div>
@@ -2242,6 +2242,7 @@
     </div>
     
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/flame-overlay/default-config.js"></script>
     <script>
         // Configuration constants
         const LANDSCAPE_PRESETS = ['tiktok-landscape', 'hd-landscape', '2k-landscape', '4k-landscape'];
@@ -2392,11 +2393,30 @@
 
         function activateTab(name) {
             document.querySelectorAll('.tab-btn').forEach(button => {
-                button.classList.toggle('active', button.dataset.tabTarget === name);
+                const active = button.dataset.tabTarget === name;
+                button.classList.toggle('active', active);
+                button.setAttribute('aria-pressed', String(active));
             });
             document.querySelectorAll('.tab-pane').forEach(pane => {
                 pane.classList.toggle('hidden', pane.dataset.tab !== name);
             });
+        }
+
+        function focusAdjacentTab(event) {
+            const buttons = Array.from(document.querySelectorAll('.tab-btn'));
+            const currentIndex = buttons.indexOf(event.currentTarget);
+            if (currentIndex < 0) return;
+
+            let nextIndex = null;
+            if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % buttons.length;
+            if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+            if (event.key === 'Home') nextIndex = 0;
+            if (event.key === 'End') nextIndex = buttons.length - 1;
+            if (nextIndex === null) return;
+
+            event.preventDefault();
+            buttons[nextIndex].focus();
+            activateTab(buttons[nextIndex].dataset.tabTarget);
         }
         
         // Initialize socket.io with error handling
@@ -3011,6 +3031,7 @@
 
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => activateTab(btn.dataset.tabTarget));
+            btn.addEventListener('keydown', focusAdjacentTab);
         });
 
         // Cooldown/MaxStack sliders
@@ -3295,7 +3316,10 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    const config = data.config;
+                    const config = {
+                        ...(window.VISUAL_FX_DEFAULT_CONFIG || {}),
+                        ...data.config
+                    };
                     
                     // Effect Type
                     document.getElementById('effectType').value = config.effectType || 'flames';

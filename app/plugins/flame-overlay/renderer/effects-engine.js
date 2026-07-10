@@ -145,63 +145,26 @@ class EffectsEngine {
     }
     
     async loadConfig() {
+        const defaults = this.getDefaultConfig();
         try {
             const response = await fetch('/api/flame-overlay/config');
             const data = await response.json();
             if (data.success) {
-                this.config = data.config;
+                this.config = { ...defaults, ...data.config };
+                return;
             }
         } catch (error) {
             console.error('Failed to load config:', error);
-            this.config = {
-                effectType: 'flames',
-                qualityMode: 'obs-safe',
-                resolutionPreset: 'tiktok-portrait',
-                customWidth: 720,
-                customHeight: 1280,
-                frameMode: 'bottom',
-                frameThickness: 150,
-                flameColor: '#ff6600',
-                flameSpeed: 0.46,
-                flameIntensity: 1.18,
-                flameBrightness: 0.34,
-                enableGlow: true,
-                enableAdditiveBlend: true,
-                maskOnlyEdges: true,
-                noiseOctaves: 9,
-                useHighQualityTextures: true,
-                detailScaleAuto: true,
-                edgeFeather: 0.46,
-                frameCurve: 0.1,
-                frameNoiseAmount: 0.12,
-                animationEasing: 'linear',
-                pulseEnabled: false,
-                pulseAmount: 0.16,
-                pulseSpeed: 1.0,
-                bloomEnabled: true,
-                bloomIntensity: 0.78,
-                bloomThreshold: 0.58,
-                bloomRadius: 4,
-                layersEnabled: true,
-                layerCount: 2,
-                layerParallax: 0.18,
-                chromaticAberration: 0.004,
-                filmGrain: 0.015,
-                depthIntensity: 0.66,
-                cinematicContrast: 1.12,
-                coreWhiteness: 0.66,
-                emberTrailAmount: 0.28,
-                sparkEnabled: true,
-                sparkDensity: 0.52,
-                heatDistortionEnabled: true,
-                heatDistortionStrength: 0.24,
-                smokeEnabled: false,
-                smokeIntensity: 0.18,
-                smokeSpeed: 0.22,
-                smokeColor: '#2d2623',
-                visualProfileVersion: 3
-            };
         }
+
+        this.config = defaults;
+    }
+
+    getDefaultConfig() {
+        const defaults = typeof window !== 'undefined'
+            ? window.VISUAL_FX_DEFAULT_CONFIG
+            : null;
+        return this.cloneConfig(defaults || {});
     }
     
     setupSocketListener() {
@@ -1991,9 +1954,32 @@ void main() {
         return this.numberOr(this.config.bloomIntensity, 1.05) * quality.bloomScale;
     }
 
+    getRenderPixelRatio(dimensions = this.getConfiguredCanvasDimensions()) {
+        const requestedRatio = this.config.highDPI
+            ? Math.min(Math.max(this.numberOr(window.devicePixelRatio, 1), 1), 2)
+            : 1;
+        const maxPixels = this.config.qualityMode === 'low-load'
+            ? 8 * 1024 * 1024
+            : 16 * 1024 * 1024;
+        const sourcePixels = Math.max(1, dimensions.width * dimensions.height);
+        const pixelBudgetRatio = Math.sqrt(maxPixels / sourcePixels);
+
+        let textureLimitRatio = Infinity;
+        if (this.gl && typeof this.gl.getParameter === 'function' && this.gl.MAX_TEXTURE_SIZE) {
+            const maxTextureSize = Number(this.gl.getParameter(this.gl.MAX_TEXTURE_SIZE));
+            if (Number.isFinite(maxTextureSize) && maxTextureSize > 0) {
+                textureLimitRatio = Math.min(
+                    maxTextureSize / Math.max(1, dimensions.width),
+                    maxTextureSize / Math.max(1, dimensions.height)
+                );
+            }
+        }
+
+        return Math.max(0.1, Math.min(requestedRatio, pixelBudgetRatio, textureLimitRatio));
+    }
+
     getDevicePixelRatio() {
-        if (!this.config.highDPI) return 1;
-        return this.numberOr(window.devicePixelRatio, 1);
+        return this.getRenderPixelRatio();
     }
 
     getScaledFrameThickness() {
@@ -2161,13 +2147,15 @@ void main() {
     handleResize() {
         if (!this.canvas || !this.gl) return;
 
-        const dpr = this.getDevicePixelRatio();
         const dimensions = this.getConfiguredCanvasDimensions();
-        
-        this.canvas.width = dimensions.width * dpr;
-        this.canvas.height = dimensions.height * dpr;
-        this.canvas.style.width = dimensions.width + 'px';
-        this.canvas.style.height = dimensions.height + 'px';
+        const dpr = this.getRenderPixelRatio(dimensions);
+
+        this.canvas.width = Math.max(1, Math.floor(dimensions.width * dpr));
+        this.canvas.height = Math.max(1, Math.floor(dimensions.height * dpr));
+        // Keep CSS sizing bound to the browser source / preview iframe. Only the
+        // drawing buffer follows the configured output resolution.
+        this.canvas.style.width = '100%';
+        this.canvas.style.height = '100%';
         
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         

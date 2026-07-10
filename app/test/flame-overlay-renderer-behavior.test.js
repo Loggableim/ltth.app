@@ -314,6 +314,33 @@ describe('Flame Overlay renderer behavior', () => {
     expect(gl.uniform1f).toHaveBeenCalledWith('frameThickness', 300);
   });
 
+  test('render resolution is capped by the framebuffer budget while canvas CSS fills its host', () => {
+    const { EffectsEngine } = loadEffectsEngine({
+      window: { devicePixelRatio: 2 }
+    });
+    const engine = Object.create(EffectsEngine.prototype);
+    engine.canvas = { style: {} };
+    engine.gl = {
+      MAX_TEXTURE_SIZE: 'MAX_TEXTURE_SIZE',
+      getParameter: jest.fn(() => 16384),
+      viewport: jest.fn()
+    };
+    engine.config = {
+      highDPI: true,
+      qualityMode: 'obs-safe',
+      resolutionPreset: '4k-landscape'
+    };
+    engine.postProcessor = null;
+    engine.updateUniforms = jest.fn();
+
+    engine.handleResize();
+
+    expect(engine.canvas.width * engine.canvas.height).toBeLessThanOrEqual(16 * 1024 * 1024);
+    expect(engine.canvas.style.width).toBe('100%');
+    expect(engine.canvas.style.height).toBe('100%');
+    expect(engine.gl.viewport).toHaveBeenCalledWith(0, 0, engine.canvas.width, engine.canvas.height);
+  });
+
   test('framePositions are converted from top-left percentages into shader pixel rects', () => {
     const { EffectsEngine } = loadEffectsEngine();
     const engine = Object.create(EffectsEngine.prototype);
