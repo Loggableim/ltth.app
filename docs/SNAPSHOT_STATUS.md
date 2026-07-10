@@ -174,7 +174,6 @@ Key modules in `app/modules/`:
 - Some app/wiki pages may still be user-facing historical copy and should be updated feature-by-feature when touched.
 - The active Jest suite is currently test-green. Treat future failures as new regressions or environmental drift and investigate them from current output.
 - `update-manager.js` is now Git-backed again. It refuses dirty working trees, performs fast-forward updates, and rolls back on failure.
-- `fireworks-dev-2.0.0.zip` remains in `plugin-store/packages/` although the `app/plugins/fireworks-dev/` source directory was deleted. This may be intentional (transitional) or an oversight.
 - `launcher.exe~` (9.8 MB) in root is a stale backup binary. `.gitignore` covers `*.backup` but not `*.exe~`.
 - Go version inconsistency: `go.mod` requires Go 1.24.10, but `build-launcher.yml` CI uses `~1.21`. Launcher CI builds may fail if Go 1.21 cannot parse 1.24 syntax.
 - `naked/` is a reduced repo clone from 2026-04-30 (29 MB), ignored by `.gitignore`. It predates the plugin store, shared layout, and installer systems.
@@ -191,7 +190,7 @@ The workspace currently contains 36 plugin manifests in `app/plugins/`:
 - coinbattle
 - config-import
 - data-source
-- fireworks (stable, v2.0.0 — `fireworks-dev/` was removed and consolidated into `fireworks/`)
+- fireworks (stable, v2.0.1 — `fireworks-dev/` was removed and consolidated into `fireworks/`)
 - flame-overlay (v3.0.0)
 - game-engine
 - gcce
@@ -220,7 +219,7 @@ The workspace currently contains 36 plugin manifests in `app/plugins/`:
 - weather-control
 - webgpu-emoji-rain
 
-`fireworks-dev/` was deleted and consolidated into `fireworks/` (v2.0.0, `devStatus: stable`). The dev plugin had its own 7 test files, all removed and replaced by 3 new stable test files.
+`fireworks-dev/` was deleted and consolidated into `fireworks/` (v2.0.1, `devStatus: stable`). Its stale package archive has also been removed from the plugin store.
 
 ## Validation Performed
 

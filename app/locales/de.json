@@ -921,7 +921,7 @@
     "visual_effects": "🌟 Visuelle Effekte",
     "particle_trails": "Partikelspuren",
     "glow_effect": "Leuchteffekt",
-    "max_particles": "Max. Partikel",
+    "max_particles": "Max. Partikel pro Explosion",
     "particle_size": "Partikelgröße",
     "user_avatar_integration": "👤 Benutzer-Avatar-Integration",
     "use_user_avatars": "Benutzer-Avatare verwenden",
@@ -953,7 +953,7 @@
       "gpu": "GPU-Beschleunigung: Deaktiviert",
       "compatibility": "Kompatibilität: Maximum",
       "performance": "Performance: Reduziert, aber stabil",
-      "effects": "Visuelle Effekte: Alle beibehalten",
+      "effects": "Visuelle Effekte: Spuren und Leuchten reduziert",
       "tip_title": "Tipp:",
       "tip": "Nutzen Sie den Toaster-Modus, wenn der PC beim Feuerwerk langsamer wird oder Rendering-Probleme in OBS auftreten."
     },

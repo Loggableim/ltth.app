@@ -36,7 +36,11 @@ describe('Fireworks stable plugin stability integration', () => {
     const api = createApi();
     const plugin = new FireworksPlugin(api);
     plugin.loadConfig();
-    plugin.currentFps = 10;
+    plugin.overlayTelemetry.set('obs-overlay', {
+      benchmark: false,
+      fps: 10,
+      updatedAt: Date.now()
+    });
     plugin.config.minFps = 24;
 
     plugin.triggerFirework({
@@ -60,7 +64,11 @@ describe('Fireworks stable plugin stability integration', () => {
     plugin.config.maxConcurrentFireworks = 10;
     plugin.config.maxTotalParticles = 1000;
     plugin.activeFireworkCount = 7;
-    plugin.currentFps = 60;
+    plugin.overlayTelemetry.set('obs-overlay', {
+      benchmark: false,
+      fps: 60,
+      updatedAt: Date.now()
+    });
 
     plugin.triggerFirework({
       reason: 'gift',
@@ -87,7 +95,11 @@ describe('Fireworks stable plugin stability integration', () => {
     const api = createApi();
     const plugin = new FireworksPlugin(api);
     plugin.loadConfig();
-    plugin.currentFps = 60;
+    plugin.overlayTelemetry.set('obs-overlay', {
+      benchmark: false,
+      fps: 60,
+      updatedAt: Date.now()
+    });
 
     plugin.handleGiftEvent({
       giftId: 5655,
@@ -110,5 +122,37 @@ describe('Fireworks stable plugin stability integration', () => {
 
     jest.runOnlyPendingTimers();
     jest.useRealTimers();
+  });
+
+  test('keeps benchmark FPS isolated from live overlay stability telemetry', () => {
+    const plugin = new FireworksPlugin(createApi());
+    const now = Date.now();
+    plugin.overlayTelemetry.set('obs-overlay', { benchmark: false, fps: 22, updatedAt: now });
+    plugin.overlayTelemetry.set('preview-overlay', { benchmark: false, fps: 48, updatedAt: now });
+    plugin.overlayTelemetry.set('benchmark-overlay', { benchmark: true, fps: 60, updatedAt: now });
+
+    expect(plugin.getOverlayFps(false)).toEqual({ fps: 22, sampleCount: 2 });
+    expect(plugin.getOverlayFps(true)).toEqual({ fps: 60, sampleCount: 1 });
+  });
+
+  test('drops stale overlay telemetry instead of using it for backpressure', () => {
+    const plugin = new FireworksPlugin(createApi());
+    plugin.overlayTelemetry.set('stale-overlay', {
+      benchmark: false,
+      fps: 5,
+      updatedAt: Date.now() - 6000
+    });
+
+    expect(plugin.getOverlayFps(false)).toEqual({ fps: 0, sampleCount: 0 });
+    expect(plugin.overlayTelemetry.size).toBe(0);
+  });
+
+  test('ignores hidden browser previews when selecting live overlay FPS', () => {
+    const plugin = new FireworksPlugin(createApi());
+    const now = Date.now();
+    plugin.overlayTelemetry.set('obs-overlay', { benchmark: false, visible: true, fps: 58, updatedAt: now });
+    plugin.overlayTelemetry.set('hidden-preview', { benchmark: false, visible: false, fps: 2, updatedAt: now });
+
+    expect(plugin.getOverlayFps(false)).toEqual({ fps: 58, sampleCount: 1 });
   });
 });

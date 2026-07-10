@@ -693,10 +693,9 @@ class WebGLParticleEngine {
     /**
      * Cleanup WebGL resources
      */
-    destroy() {
-        if (!this.initialized) return;
-
+    destroy({ loseContext = true } = {}) {
         const gl = this.gl;
+        if (!gl) return;
 
         if (this.buffers.quad) gl.deleteBuffer(this.buffers.quad);
         if (this.buffers.particles) gl.deleteBuffer(this.buffers.particles);
@@ -704,8 +703,10 @@ class WebGLParticleEngine {
         if (this.program) gl.deleteProgram(this.program);
         if (this.atlasTexture) gl.deleteTexture(this.atlasTexture);
 
-        const ext = gl.getExtension('WEBGL_lose_context');
-        if (ext) ext.loseContext();
+        if (loseContext) {
+            const ext = gl.getExtension('WEBGL_lose_context');
+            if (ext) ext.loseContext();
+        }
 
         this.initialized = false;
         console.log('[WebGL] Particle engine destroyed');

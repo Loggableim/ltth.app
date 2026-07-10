@@ -65,10 +65,8 @@ describe('Fireworks Engine Optimizations', () => {
         });
         
         test('Uses swap-and-pop instead of splice for O(1) cleanup', () => {
-            const applyPerformanceSection = engineCode.substring(
-                engineCode.indexOf('applyPerformanceMode()'),
-                engineCode.indexOf('applyPerformanceMode()') + 5000
-            );
+            const methodStart = engineCode.indexOf('    applyPerformanceMode() {');
+            const applyPerformanceSection = engineCode.substring(methodStart, methodStart + 7000);
             expect(applyPerformanceSection).toContain('this.fireworks[i] = this.fireworks[this.fireworks.length - 1]');
             expect(applyPerformanceSection).toContain('this.fireworks.pop()');
         });

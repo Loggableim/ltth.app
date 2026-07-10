@@ -758,6 +758,7 @@
     }
   },
   "fireworks": {
+    "subtitle": "Efectos de fuegos artificiales acelerados por GPU",
     "fireworks_superplugin": "Superplugin de Fuegos Artificiales",
     "gpu_accelerated_fireworks_for_tiktok_live": "Fuegos artificiales acelerados por GPU para TikTok LIVE",
     "save_settings": "💾 Guardar Configuración",
@@ -810,7 +811,7 @@
     "visual_effects": "🌟 Efectos Visuales",
     "particle_trails": "Estelas de Partículas",
     "glow_effect": "Efecto de Brillo",
-    "max_particles": "Partículas Máximas",
+    "max_particles": "Partículas Máximas por Explosión",
     "particle_size": "Tamaño de Partículas",
     "user_avatar_integration": "👤 Integración de Avatar de Usuario",
     "use_user_avatars": "Usar Avatares de Usuarios",
@@ -841,7 +842,7 @@
       "gpu": "Aceleración GPU: Desactivada",
       "compatibility": "Compatibilidad: Máxima",
       "performance": "Rendimiento: Reducido pero estable",
-      "effects": "Efectos Visuales: Todos mantenidos",
+      "effects": "Efectos Visuales: Estelas y brillo reducidos",
       "tip_title": "Consejo:",
       "tip": "Use el Modo Tostadora si su PC se ralentiza durante los fuegos artificiales o si experimenta problemas de renderizado en OBS."
     },

@@ -921,7 +921,7 @@
     "visual_effects": "Visual Effects",
     "particle_trails": "Particle Trails",
     "glow_effect": "Glow Effect",
-    "max_particles": "Max Particles",
+    "max_particles": "Max Particles per Explosion",
     "particle_size": "Particle Size",
     "user_avatar_integration": "?? User Avatar Integration",
     "use_user_avatars": "Use User Avatars",
@@ -953,7 +953,7 @@
       "gpu": "GPU Acceleration: Disabled",
       "compatibility": "Compatibility: Maximum",
       "performance": "Performance: Reduced but stable",
-      "effects": "Visual Effects: All maintained",
+      "effects": "Visual Effects: Trails and glow reduced",
       "tip_title": "Tip:",
       "tip": "Use Toaster Mode if your PC slows down during fireworks or if you experience rendering issues in OBS."
     },

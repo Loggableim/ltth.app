@@ -123,6 +123,10 @@ async function saveConfig(showSuccessToast = true) {
         const data = await response.json();
         
         if (data.success) {
+            if (data.config) {
+                config = data.config;
+                updateUI();
+            }
             if (showSuccessToast) {
                 showToast('Settings saved successfully!', 'success');
             }
@@ -1237,6 +1241,7 @@ async function applyPreset(presetName) {
 let benchmarkWindow = null;
 let benchmarkRunning = false;
 let benchmarkResults = [];
+let cancelActiveBenchmarkMeasurement = null;
 
 function initializeBenchmark() {
     const startBtn = document.getElementById('start-benchmark');
@@ -1300,7 +1305,7 @@ async function startBenchmark() {
             document.getElementById('benchmark-progress-bar').style.width = `${((i + 1) / totalSteps) * 100}%`;
             
             const result = await runBenchmarkTest(presetName);
-            benchmarkResults.push(result);
+            if (result) benchmarkResults.push(result);
             
             // Wait between tests
             await new Promise(resolve => setTimeout(resolve, BENCHMARK_CONFIG.INTER_TEST_DELAY));
@@ -1323,6 +1328,10 @@ async function startBenchmark() {
 
 function stopBenchmark() {
     benchmarkRunning = false;
+    if (cancelActiveBenchmarkMeasurement) {
+        cancelActiveBenchmarkMeasurement();
+        cancelActiveBenchmarkMeasurement = null;
+    }
     closeBenchmarkWindow();
     resetBenchmarkUi();
     restoreBenchmarkPreset();
@@ -1377,9 +1386,11 @@ async function runBenchmarkTest(presetName) {
     if (!response.ok) {
         throw new Error(`Failed to apply benchmark preset: ${response.status}`);
     }
+    if (!benchmarkRunning) return null;
     
     // Trigger test fireworks and measure FPS
     const fpsData = await measureFPS();
+    if (!benchmarkRunning) return null;
     
     return {
         preset: presetName,
@@ -1400,18 +1411,25 @@ async function measureFPS() {
     // Start FPS measurement
     const measureStart = Date.now();
     
-    // Trigger fireworks periodically
-    const fireworkTimer = setInterval(async () => {
-        await fetch('/api/fireworks/trigger', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                shape: 'burst',
-                intensity: 1.5,
-                position: { x: Math.random(), y: Math.random() * 0.5 + 0.25 }
-            })
-        });
-    }, fireworkInterval);
+    // Trigger one immediately so the benchmark window never looks idle while
+    // the first interval is pending, then keep the visual load consistent.
+    const triggerBenchmarkFirework = async () => {
+        try {
+            await fetch('/api/fireworks/trigger', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    shape: 'burst',
+                    intensity: 1.5,
+                    position: { x: Math.random(), y: Math.random() * 0.5 + 0.25 }
+                })
+            });
+        } catch (e) {
+            console.error('Failed to trigger benchmark firework:', e);
+        }
+    };
+    triggerBenchmarkFirework();
+    const fireworkTimer = setInterval(triggerBenchmarkFirework, fireworkInterval);
     
     // Collect FPS readings
     const fpsTimer = setInterval(async () => {
@@ -1426,12 +1444,20 @@ async function measureFPS() {
         }
     }, BENCHMARK_CONFIG.FPS_SAMPLE_INTERVAL);
     
-    // Wait for test duration
-    await new Promise(resolve => setTimeout(resolve, testDuration));
-    
-    // Stop timers
-    clearInterval(fireworkTimer);
-    clearInterval(fpsTimer);
+    await new Promise(resolve => {
+        let finished = false;
+        const finish = () => {
+            if (finished) return;
+            finished = true;
+            clearInterval(fireworkTimer);
+            clearInterval(fpsTimer);
+            clearTimeout(durationTimer);
+            cancelActiveBenchmarkMeasurement = null;
+            resolve();
+        };
+        const durationTimer = setTimeout(finish, testDuration);
+        cancelActiveBenchmarkMeasurement = finish;
+    });
     
     // Calculate statistics
     if (fpsReadings.length === 0) {

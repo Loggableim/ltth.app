@@ -758,6 +758,7 @@
     }
   },
   "fireworks": {
+    "subtitle": "Effets de feux d'artifice accélérés par GPU",
     "fireworks_superplugin": "Superplugin Feux d'Artifice",
     "gpu_accelerated_fireworks_for_tiktok_live": "Feux d'artifice accélérés par GPU pour TikTok LIVE",
     "save_settings": "💾 Enregistrer les Paramètres",
@@ -810,7 +811,7 @@
     "visual_effects": "🌟 Effets Visuels",
     "particle_trails": "Traînées de Particules",
     "glow_effect": "Effet de Lueur",
-    "max_particles": "Particules Maximales",
+    "max_particles": "Particules Maximales par Explosion",
     "particle_size": "Taille des Particules",
     "user_avatar_integration": "👤 Intégration d'Avatar Utilisateur",
     "use_user_avatars": "Utiliser les Avatars d'Utilisateur",
@@ -841,7 +842,7 @@
       "gpu": "Accélération GPU : Désactivée",
       "compatibility": "Compatibilité : Maximale",
       "performance": "Performances : Réduites mais stables",
-      "effects": "Effets Visuels : Tous conservés",
+      "effects": "Effets Visuels : Traînées et lueur réduites",
       "tip_title": "Conseil :",
       "tip": "Utilisez le Mode Grille-Pain si votre PC ralentit pendant les feux d'artifice ou si vous rencontrez des problèmes de rendu dans OBS."
     },

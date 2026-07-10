@@ -30,7 +30,7 @@ Little TikTool Helper v1.2.1 bietet eine umfangreiche Sammlung von **Browser-Sou
 | **Alert Overlays** | 6 | Gift, Follow, Subscribe, Share, Like, Chat Alerts |
 | **Goal Overlays** | 4 | Likes, Coins, Followers, Custom Goals |
 | **Leaderboard Overlays** | 5 | Top Gifters mit 5 Themes |
-| **WebGPU Effekte** | 3 | Emoji Rain, Fireworks, Weather |
+| **GPU-Effekte** | 3 | WebGPU Emoji Rain, Fireworks (WebGL2), Weather |
 | **HUD Overlays** | 4 | ClarityHUD, GCCE HUD, Spotlight |
 | **Special Effects** | 3 | Flame Border, Gift Milestones, Quiz Show |
 
@@ -590,7 +590,7 @@ Dashboard → Plugins → [Plugin] → Configure → Styling
 **Symptom:** Overlay läuft mit niedriger FPS
 
 **Lösungen:**
-1. **WebGPU nutzen** - Für Emoji Rain & Fireworks
+1. **GPU-Rendering nutzen** - WebGPU für Emoji Rain, WebGL2 für Fireworks
 2. **Overlay-FPS reduzieren** - Von 60 auf 30 FPS (für statische Overlays)
 3. **Nicht benötigte Overlays deaktivieren**
 4. **OBS Hardware-Encoding** - NVENC statt x264

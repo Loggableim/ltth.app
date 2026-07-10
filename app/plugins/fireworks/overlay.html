@@ -776,22 +776,6 @@
         </div>
     </div>
 
-    <script>
-        window.FIREWORKS_USE_WORKER = Boolean(
-            typeof OffscreenCanvas !== 'undefined' &&
-            HTMLCanvasElement.prototype.transferControlToOffscreen &&
-            new URLSearchParams(window.location.search).get('worker') === '1'
-        );
-
-        function applyBackgroundConfig(backgroundColor) {
-            const color = backgroundColor || 'transparent';
-            document.documentElement.style.setProperty('background-color', color, 'important');
-            document.body.style.setProperty('background-color', color, 'important');
-            document.getElementById('fireworks-container')?.style.setProperty('background-color', color, 'important');
-            document.getElementById('fireworks-canvas')?.style.setProperty('background-color', color, 'important');
-        }
-
-    </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/plugins/fireworks/gpu/particle-system-soa.js"></script>
     <script src="/plugins/fireworks/gpu/webgl-particle-engine.js"></script>

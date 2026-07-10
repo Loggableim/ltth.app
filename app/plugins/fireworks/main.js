@@ -2,7 +2,7 @@
  * Fireworks Superplugin - Main Entry Point
  * 
  * GPU-accelerated fireworks effects with gift-specific displays, combo systems,
- * and interactive triggers. Features WebGL/WebGPU rendering with Canvas fallback.
+ * and interactive triggers. Features WebGL2 rendering with Canvas 2D fallback.
  * 
  * Features:
  * - Gift-triggered fireworks with GiftCatalogue integration
@@ -50,6 +50,7 @@ class FireworksPlugin {
         this.currentFps = 0;
         this.benchmarkPreset = null;
         this.connectedSockets = new Set();
+        this.overlayTelemetry = new Map();
         
         // Combo timeout (ms) - reset combo if no gift within this time
         this.COMBO_TIMEOUT = 10000;
@@ -148,12 +149,31 @@ class FireworksPlugin {
                 
                 // Send current config to newly connected overlay
                 socket.emit('fireworks:config-update', { config: this.config });
+
+                socket.on('fireworks:register-overlay', (data = {}) => {
+                    this.overlayTelemetry.set(socket.id, {
+                        benchmark: data.benchmark === true,
+                        visible: data.visible !== false,
+                        fps: 0,
+                        updatedAt: Date.now()
+                    });
+                });
                 
                 // Listen for FPS updates
                 socket.on('fireworks:fps-update', (data) => {
-                    if (data && data.fps !== undefined) {
-                        this.currentFps = data.fps;
-                    }
+                    const fps = Number(data && data.fps);
+                    if (!Number.isFinite(fps) || fps < 0 || fps > 240) return;
+
+                    const previous = this.overlayTelemetry.get(socket.id) || {
+                        benchmark: data && data.benchmark === true
+                    };
+                    this.overlayTelemetry.set(socket.id, {
+                        benchmark: previous.benchmark === true,
+                        visible: data.visible !== false,
+                        fps,
+                        updatedAt: Date.now()
+                    });
+                    this.currentFps = this.getOverlayFps(false).fps;
                 });
                 
                 // Listen for active firework count responses
@@ -166,12 +186,35 @@ class FireworksPlugin {
                 // Clean up on disconnect
                 socket.on('disconnect', () => {
                     this.connectedSockets.delete(socket);
+                    this.overlayTelemetry.delete(socket.id);
+                    this.currentFps = this.getOverlayFps(false).fps;
                 });
             };
             
             // Listen for new connections
             io.on('connection', this.fpsUpdateHandler);
         }
+    }
+
+    getOverlayFps(benchmark = false) {
+        const cutoff = Date.now() - 5000;
+        const readings = [];
+
+        for (const [socketId, telemetry] of this.overlayTelemetry.entries()) {
+            if (!telemetry || telemetry.updatedAt < cutoff) {
+                this.overlayTelemetry.delete(socketId);
+                continue;
+            }
+            if (telemetry.benchmark === benchmark && telemetry.visible !== false && telemetry.fps > 0) {
+                readings.push(telemetry.fps);
+            }
+        }
+
+        if (readings.length === 0) return { fps: 0, sampleCount: 0 };
+        const fps = benchmark
+            ? readings.reduce((sum, value) => sum + value, 0) / readings.length
+            : Math.min(...readings);
+        return { fps, sampleCount: readings.length };
     }
 
     /**
@@ -214,6 +257,7 @@ class FireworksPlugin {
         const defaultConfig = {
             // Global settings
             enabled: true,
+            renderer: 'auto',
             maxParticles: 1000,
             targetFps: 60,
             
@@ -298,6 +342,10 @@ class FireworksPlugin {
             
             // Performance
             gpuAcceleration: true,
+            toasterMode: false,
+            trailsEnabled: true,
+            trailLength: 10,
+            glowEnabled: true,
             preserveDrawingBuffer: true, // Preserve drawing buffer for OBS capture (disable for better GPU performance in browser preview)
             desynchronized: true, // Enable desynchronized rendering for better GPU performance (safe for OBS Browser Source)
             particleSizeRange: [4, 12],
@@ -433,7 +481,7 @@ class FireworksPlugin {
                 // Notify overlays about config change
                 this.api.emit('fireworks:config-update', { config: this.config });
                 
-                res.json({ success: true, message: 'Configuration updated' });
+                res.json({ success: true, message: 'Configuration updated', config: this.config });
             } catch (error) {
                 this.api.log(`❌ [FIREWORKS] Error updating config: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
@@ -457,8 +505,8 @@ class FireworksPlugin {
         // Toggle enabled
         this.api.registerRoute('post', '/api/fireworks/toggle', (req, res) => {
             try {
-                const { enabled } = req.body;
-                this.config.enabled = enabled !== undefined ? enabled : !this.config.enabled;
+                const { enabled } = req.body || {};
+                this.config.enabled = typeof enabled === 'boolean' ? enabled : !this.config.enabled;
                 this.saveConfig();
                 
                 this.api.emit('fireworks:toggle', { enabled: this.config.enabled });
@@ -642,7 +690,7 @@ class FireworksPlugin {
                 if (!this.benchmarkPreset) {
                     this.benchmarkPreset = { ...this.config };
                 }
-                Object.assign(this.config, preset);
+                this.config = normalizeConfig({ ...this.config, ...preset });
 
                 // Notify overlay about config change
                 this.api.emit('fireworks:config-update', { config: this.config });
@@ -656,14 +704,12 @@ class FireworksPlugin {
 
         this.api.registerRoute('get', '/api/fireworks/benchmark/fps', (req, res) => {
             try {
-                // FPS is tracked in the overlay's GPU engine
-                // We'll use socket.io to request current FPS
-                this.api.emit('fireworks:request-fps');
-
-                // Return current FPS if available (stored from overlay)
+                const telemetry = this.getOverlayFps(true);
                 res.json({ 
                     success: true, 
-                    fps: this.currentFps || 0,
+                    fps: telemetry.fps,
+                    sampleCount: telemetry.sampleCount,
+                    source: 'benchmark-overlay',
                     timestamp: Date.now()
                 });
             } catch (error) {
@@ -985,8 +1031,10 @@ class FireworksPlugin {
      * Get overlay/server health used by the stability trigger policy.
      */
     getTriggerHealth() {
+        const telemetry = this.getOverlayFps(false);
+        this.currentFps = telemetry.fps;
         return {
-            currentFps: this.currentFps || 0,
+            currentFps: telemetry.fps,
             activeFireworkCount: this.getActiveFireworkCount(),
             queueDepth: this.queueTimestamps.length
         };
@@ -1442,9 +1490,12 @@ class FireworksPlugin {
         if (this.connectedSockets) {
             this.connectedSockets.forEach(socket => {
                 socket.removeAllListeners('fireworks:fps-update');
+                socket.removeAllListeners('fireworks:register-overlay');
+                socket.removeAllListeners('fireworks:active-count-response');
             });
             this.connectedSockets.clear();
         }
+        this.overlayTelemetry.clear();
         
         this.api.log('🎆 [FIREWORKS] Fireworks Superplugin destroyed', 'info');
     }

@@ -113,17 +113,12 @@ Mehrstufige Effekte wie Feuerwerke mit Launch, Burst, Trail und Fade.
 | **GPU-Auslastung** | 10-20% | 50-70% |
 | **Memory-Footprint** | 150-200 MB | 80-120 MB |
 
-### Fireworks: WebGL vs. WebGPU
+### Fireworks-Renderer
 
-| Metrik | WebGL | WebGPU |
-|--------|-------|--------|
-| **FPS bei 5000 Partikeln** | 45-55 FPS | 60 FPS |
-| **FPS bei 10000 Partikeln** | 20-30 FPS | 60 FPS |
-| **Draw Calls** | 100+ | 5-10 |
-| **CPU-Overhead** | Mittel | Niedrig |
-| **Compute Shader** | ❌ | ✅ |
-
-**Benchmark-System:** Chrome 120, RTX 3060, i7-10700K
+Das aktive Fireworks-Plugin verwendet WebGL2 Instanced Rendering mit einem
+Canvas-2D-Fallback. Es verwendet derzeit kein WebGPU und keine Compute Shader.
+Der integrierte Fireworks-Benchmark misst deshalb ausschließlich die realen
+WebGL2- und Canvas-2D-Pfade des Plugins.
 
 ---
 

@@ -243,7 +243,6 @@ npm run build:bootstrapper:win # builds ltth-bootstrapper.exe
 - `docs_archive/` contains many historical reports that can be stale.
 - Some user wiki pages may still contain older feature counts or release wording.
 - Root `node_modules/` is intentionally absent because root package scripts forward into `app/`.
-- `fireworks-dev-2.0.0.zip` remains in `plugin-store/packages/` although `app/plugins/fireworks-dev/` source was deleted.
 - `launcher.exe~` in root is a stale backup binary (not covered by `.gitignore`).
 - Go version inconsistency: `go.mod` requires 1.24.10, `build-launcher.yml` CI uses `~1.21`.
 - `naked/` is a reduced repo clone from 2026-04-30, ignored by `.gitignore`.

@@ -63,7 +63,7 @@ describe('Fireworks WebGL Instanced Rendering', () => {
 
         test('should have resize and destroy methods', () => {
             expect(webglCode).toContain('resize(width, height)');
-            expect(webglCode).toContain('destroy()');
+            expect(webglCode).toMatch(/destroy\([^)]*\)/);
         });
 
         test('should store 9 floats per particle (textureIndex added)', () => {
@@ -79,7 +79,7 @@ describe('Fireworks WebGL Instanced Rendering', () => {
         });
 
         test('should have renderer config option', () => {
-            expect(engineCode).toContain('renderer: \'webgl\'');
+            expect(engineCode).toContain('renderer: \'auto\'');
         });
 
         test('should have initRenderer method', () => {
@@ -87,12 +87,12 @@ describe('Fireworks WebGL Instanced Rendering', () => {
         });
 
         test('should force Canvas 2D in toaster mode', () => {
-            expect(engineCode).toContain('if (this.config.toasterMode)');
-            expect(engineCode).toContain('Toaster mode enabled, using Canvas 2D');
+            expect(engineCode).toContain('this.config.toasterMode || this.config.gpuAcceleration === false');
+            expect(engineCode).toContain("rendererMode = 'canvas'");
         });
 
         test('should try WebGL initialization', () => {
-            expect(engineCode).toContain('new WebGLParticleEngine(this.canvas)');
+            expect(engineCode).toContain('new WebGLParticleEngine(this.canvas, {');
             expect(engineCode).toContain('this.webglEngine.init()');
         });
 

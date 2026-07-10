@@ -239,17 +239,17 @@
         "en": "Fireworks Superplugin (Stable)"
       },
       "description": {
-        "en": "GPU-accelerated fireworks effects with gift-specific displays, combo systems, and interactive triggers. Features WebGL/WebGPU rendering with Canvas 2D fallback for maximum compatibility."
+        "en": "GPU-accelerated fireworks effects with gift-specific displays, combo systems, and interactive triggers. Features WebGL2 rendering with Canvas 2D fallback for maximum compatibility."
       },
-      "version": "2.0.0",
+      "version": "2.0.1",
       "author": "Pup Cid",
       "category": "plugin",
       "channel": "open-beta",
       "icon": "/plugins/fireworks/assets/fireworks-icon.png",
       "logo": "/plugins/fireworks/assets/fireworks-logo.png",
       "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/fireworks-2.0.0.zip",
-      "sha256": "080d32054c46c1ca3693a0e62198b8ea55c5fb2000636580548727e74885e327",
+      "packageUrl": "https://ltth.app/plugin-store/packages/fireworks-2.0.1.zip",
+      "sha256": "6ae04d166c6e1eefa6c5a11561cdf11b2b36f05abfcdf3e27e6a939b9b695379",
       "pricing": {
         "type": "free",
         "amount": 0,

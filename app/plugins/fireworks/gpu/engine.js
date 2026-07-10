@@ -20,7 +20,7 @@
  * - AudioManager: Audio playback with tier-based sound selection
  * 
  * Requirements:
- * - WebGL2 support (mandatory, no fallback)
+ * - WebGL2 support when available, with Canvas 2D fallback
  * - particle-system-soa.js
  * - webgl-particle-engine.js
  */
@@ -725,6 +725,8 @@ class Firework {
             particleCount = Math.min(particleCount, Math.floor(this.requestedParticleCount));
         }
         
+        particleCount = Math.min(particleCount, CONFIG.maxParticlesPerExplosion);
+
         // Get velocities from cached shape blueprints to avoid repeated generator spikes
         const velocities = globalParticleBlueprintCache.getParticleBlueprint(this.shape, particleCount, this.intensity);
         
@@ -1525,6 +1527,16 @@ class AudioManager {
         this.enabled = enabled;
     }
 
+    destroy() {
+        this.pendingSounds.clear();
+        this.sounds.clear();
+        this.initialized = false;
+        if (this.audioContext && this.audioContext.state !== 'closed' && typeof this.audioContext.close === 'function') {
+            void this.audioContext.close().catch(() => {});
+        }
+        this.audioContext = null;
+    }
+
     /**
      * Play a sound after a specified delay (in seconds).
      * Useful for synchronizing explosion sounds with visual explosions when using separate audio files.
@@ -1677,7 +1689,10 @@ class AudioManager {
 class FireworksEngine {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
-        this.ctx = this.canvas.getContext('2d');
+        // Defer context creation until the renderer is selected. A canvas cannot
+        // own a 2D and WebGL context at the same time.
+        this.ctx = null;
+        this.contextMode = null;
         
         // WebGL rendering engine (initialized in init() if available)
         this.webglEngine = null;
@@ -1734,11 +1749,13 @@ class FireworksEngine {
         
         this.config = { 
             ...CONFIG,
-            renderer: 'webgl', // 'webgl', 'canvas', 'auto' - will be set from main.js config
+            renderer: 'auto',
+            gpuAcceleration: true,
             toasterMode: false,
             audioEnabled: true,
             audioVolume: 0.7,
             trailsEnabled: true,
+            trailLength: CONFIG.baseTrailLength,
             glowEnabled: true,
             resolution: CONFIG.resolution,
             resolutionPreset: CONFIG.resolutionPreset,
@@ -1751,7 +1768,12 @@ class FireworksEngine {
             minFps: CONFIG.minFps,
             giftPopupPosition: CONFIG.giftPopupPosition
         };
-        this.workerModeRequested = typeof window !== 'undefined' && Boolean(window.FIREWORKS_USE_WORKER);
+        this.configuredVisualEffects = {
+            trailsEnabled: true,
+            glowEnabled: true
+        };
+        this.configuredMaxParticles = 1000;
+        this.configuredTrailLength = CONFIG.baseTrailLength;
         
         // Performance limits from config (set via fireworks:config-update)
         this.MAX_FIREWORKS = 5; // Will be updated from config
@@ -1789,13 +1811,11 @@ class FireworksEngine {
         this.transitionFadeMs = 180;
         this.transitionStartTime = 0;
         this.isBenchmarkMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('benchmark') === 'true';
+        this.animationFrameId = null;
+        this.resizeHandler = () => this.resize();
     }
 
     async init() {
-        if (this.workerModeRequested) {
-            console.warn('[Fireworks Engine] Worker mode requested; using main-thread renderer fallback.');
-        }
-
         // Setup canvas
         this.resize();
         this.applyOverlayOrientationLayout();
@@ -1807,7 +1827,7 @@ class FireworksEngine {
         // Optimization #6: Initialize layer splitting
         this.initLayerSplitting();
         
-        window.addEventListener('resize', () => this.resize());
+        window.addEventListener('resize', this.resizeHandler);
 
         // Initialize audio
         await this.audioManager.init();
@@ -1824,34 +1844,47 @@ class FireworksEngine {
     }
     
     initRenderer() {
-        // Force Canvas 2D if toaster mode is enabled
-        if (this.config.toasterMode) {
+        const rendererConfig = this.config.renderer || 'auto';
+        const wantsCanvas = this.config.toasterMode || this.config.gpuAcceleration === false || rendererConfig === 'canvas';
+        const desiredMode = wantsCanvas ? 'canvas' : 'webgl';
+
+        this.disposeRenderer(true);
+        if (this.contextMode) {
+            this.replaceRenderCanvas();
+        }
+
+        if (wantsCanvas) {
+            this.ctx = this.canvas.getContext('2d');
+            this.contextMode = 'canvas';
             this.useWebGL = false;
             this.rendererMode = 'canvas';
-            if (DEBUG) console.log('[Fireworks] Toaster mode enabled, using Canvas 2D');
+            if (DEBUG) console.log('[Fireworks] Canvas 2D renderer configured');
             return;
         }
-        
-        const rendererConfig = this.config.renderer || 'webgl';
-        
-        // Try WebGL if renderer is 'webgl' or 'auto'
+
+        // Try WebGL if renderer is 'webgl' or 'auto'.
         if (rendererConfig === 'webgl' || rendererConfig === 'auto') {
             try {
                 // Load WebGL engine (defined in webgl-particle-engine.js)
                 if (typeof WebGLParticleEngine === 'undefined') {
                     console.warn('[Fireworks] WebGLParticleEngine not loaded, falling back to Canvas 2D');
+                    this.ctx = this.canvas.getContext('2d');
+                    this.contextMode = 'canvas';
                     this.useWebGL = false;
                     this.rendererMode = 'canvas';
                     return;
                 }
                 
-                this.webglEngine = new WebGLParticleEngine(this.canvas);
-                this.webglEngine.preserveDrawingBuffer = this.config.preserveDrawingBuffer ?? true;
-                this.webglEngine.desynchronized = this.config.desynchronized ?? true;
+                this.webglEngine = new WebGLParticleEngine(this.canvas, {
+                    maxParticles: this.config.maxTotalParticles || 1400,
+                    preserveDrawingBuffer: this.config.preserveDrawingBuffer ?? true,
+                    desynchronized: this.config.desynchronized ?? true
+                });
                 const success = this.webglEngine.init();
                 
                 if (success) {
                     this.useWebGL = true;
+                    this.contextMode = 'webgl';
                     this.rendererMode = 'webgl';
                     this.webglEngine.resize(this.renderWidth || this.canvas.width, this.renderHeight || this.canvas.height);
                     if (typeof this.webglEngine.setLogicalSize === 'function') {
@@ -1859,22 +1892,47 @@ class FireworksEngine {
                     }
                     console.log('[Fireworks] WebGL2 renderer initialized successfully');
                 } else {
+                    this.replaceRenderCanvas();
+                    this.ctx = this.canvas.getContext('2d');
+                    this.contextMode = 'canvas';
                     this.useWebGL = false;
                     this.rendererMode = 'canvas';
                     console.log('[Fireworks] WebGL initialization failed, using Canvas 2D fallback');
                 }
             } catch (error) {
                 console.error('[Fireworks] WebGL initialization error:', error);
+                this.replaceRenderCanvas();
+                this.ctx = this.canvas.getContext('2d');
+                this.contextMode = 'canvas';
                 this.useWebGL = false;
                 this.rendererMode = 'canvas';
                 console.log('[Fireworks] Using Canvas 2D fallback due to error');
             }
         } else {
-            // Force Canvas 2D
+            this.ctx = this.canvas.getContext('2d');
+            this.contextMode = 'canvas';
             this.useWebGL = false;
             this.rendererMode = 'canvas';
             if (DEBUG) console.log('[Fireworks] Canvas 2D renderer configured');
         }
+    }
+
+    replaceRenderCanvas() {
+        const replacement = this.canvas.cloneNode(false);
+        replacement.width = this.canvas.width;
+        replacement.height = this.canvas.height;
+        this.canvas.replaceWith(replacement);
+        this.canvas = replacement;
+        this.ctx = null;
+        this.contextMode = null;
+    }
+
+    disposeRenderer(loseContext = false) {
+        if (this.webglEngine) {
+            this.webglEngine.destroy({ loseContext });
+            this.webglEngine = null;
+        }
+        this.useWebGL = false;
     }
 
     resize() {
@@ -2029,6 +2087,10 @@ class FireworksEngine {
             });
 
             this.socket.on('connect', () => {
+                this.socket.emit('fireworks:register-overlay', {
+                    benchmark: this.isBenchmarkMode,
+                    visible: document.visibilityState !== 'hidden'
+                });
                 if (DEBUG) console.log('[Fireworks Engine] Connected to server');
             });
 
@@ -2060,6 +2122,15 @@ class FireworksEngine {
                     const oldOrientation = this.config.orientation;
                     const oldRenderer = this.config.renderer;
                     const oldToasterMode = this.config.toasterMode;
+                    const oldGpuAcceleration = this.config.gpuAcceleration;
+                    const oldMaxTotalParticles = this.config.maxTotalParticles;
+
+                    if (typeof data.config.trailsEnabled === 'boolean') {
+                        this.configuredVisualEffects.trailsEnabled = data.config.trailsEnabled;
+                    }
+                    if (typeof data.config.glowEnabled === 'boolean') {
+                        this.configuredVisualEffects.glowEnabled = data.config.glowEnabled;
+                    }
                     
                     Object.assign(this.config, data.config);
                     if (typeof window !== 'undefined') {
@@ -2092,6 +2163,12 @@ class FireworksEngine {
                     if (data.config.maxTotalParticles !== undefined) {
                         this.MAX_PARTICLES = data.config.maxTotalParticles;
                     }
+                    if (data.config.maxParticles !== undefined) {
+                        this.configuredMaxParticles = data.config.maxParticles;
+                    }
+                    if (data.config.trailLength !== undefined) {
+                        this.configuredTrailLength = data.config.trailLength;
+                    }
                     if (data.config.emergencyCleanupThreshold !== undefined) {
                         this.EMERGENCY_CLEANUP_THRESHOLD = data.config.emergencyCleanupThreshold;
                     }
@@ -2107,10 +2184,15 @@ class FireworksEngine {
                     }
                     
                     // Re-initialize renderer if renderer or toasterMode changed
-                    if (oldRenderer !== this.config.renderer || oldToasterMode !== this.config.toasterMode) {
+                    if (oldRenderer !== this.config.renderer ||
+                        oldToasterMode !== this.config.toasterMode ||
+                        oldGpuAcceleration !== this.config.gpuAcceleration ||
+                        (this.useWebGL && oldMaxTotalParticles !== this.config.maxTotalParticles)) {
                         console.log('[Fireworks] Renderer config changed, re-initializing...');
                         this.initRenderer();
                     }
+
+                    this.applyPerformanceMode();
                     
                     // Resize canvas if resolution or orientation changed
                     if (oldResolution !== this.config.resolution || 
@@ -2763,7 +2845,7 @@ class FireworksEngine {
                 this.skippedFrames = 0;
             }
             
-            requestAnimationFrame(() => this.render());
+            this.animationFrameId = requestAnimationFrame(() => this.render());
             return;
         }
         
@@ -2777,7 +2859,7 @@ class FireworksEngine {
         
         // Skip this frame if we're rendering too fast (with tolerance for timing jitter)
         if (timeSinceLastRender < targetFrameTime - CONFIG.FPS_TIMING_TOLERANCE) {
-            requestAnimationFrame(() => this.render());
+            this.animationFrameId = requestAnimationFrame(() => this.render());
             return;
         }
         
@@ -2804,7 +2886,7 @@ class FireworksEngine {
                     // Jeder zweite Frame wird übersprungen
                     if (this.frameSkip % 2 === 0) {
                         if (DEBUG) console.log(`[Fireworks] Frame skip active (avgFPS: ${avgFPS.toFixed(1)} < ${this.minTargetFps})`);
-                        requestAnimationFrame(() => this.render());
+                        this.animationFrameId = requestAnimationFrame(() => this.render());
                         return;
                     }
                 } else {
@@ -2924,11 +3006,16 @@ class FireworksEngine {
 
             // Emit FPS to server for benchmark tracking
             if (this.socket && this.socket.connected) {
-                this.socket.emit('fireworks:fps-update', { fps: this.fps, timestamp: now });
+                this.socket.emit('fireworks:fps-update', {
+                    fps: this.fps,
+                    benchmark: this.isBenchmarkMode,
+                    visible: document.visibilityState !== 'hidden',
+                    timestamp: now
+                });
             }
         }
 
-        requestAnimationFrame(() => this.render());
+        this.animationFrameId = requestAnimationFrame(() => this.render());
     }
     
     /**
@@ -3175,12 +3262,12 @@ class FireworksEngine {
         switch (this.performanceMode) {
             case 'minimal':
                 // Extreme reduction for very low FPS
-                CONFIG.maxParticlesPerExplosion = 50;
-                CONFIG.baseTrailLength = 5;
+                CONFIG.maxParticlesPerExplosion = Math.min(this.configuredMaxParticles, 50);
+                CONFIG.baseTrailLength = Math.min(this.configuredTrailLength, 5);
                 CONFIG.sparkleChance = 0.05;
                 CONFIG.baseSecondaryExplosionChance = 0.03;
-                this.config.glowEnabled = true;
-                this.config.trailsEnabled = true;
+                this.config.glowEnabled = false;
+                this.config.trailsEnabled = false;
 
                 if (!this.shouldUseEmergencyDespawn()) break;
                 
@@ -3201,12 +3288,12 @@ class FireworksEngine {
                 
             case 'reduced':
                 // Moderate reduction for low FPS
-                CONFIG.maxParticlesPerExplosion = 100;
-                CONFIG.baseTrailLength = 10;
+                CONFIG.maxParticlesPerExplosion = Math.min(this.configuredMaxParticles, 100);
+                CONFIG.baseTrailLength = Math.min(this.configuredTrailLength, 10);
                 CONFIG.sparkleChance = 0.08;
                 CONFIG.baseSecondaryExplosionChance = 0.05;
-                this.config.glowEnabled = true;
-                this.config.trailsEnabled = true;
+                this.config.glowEnabled = false;
+                this.config.trailsEnabled = this.configuredVisualEffects.trailsEnabled;
 
                 if (!this.shouldUseEmergencyDespawn()) break;
                 
@@ -3227,12 +3314,12 @@ class FireworksEngine {
                 
             case 'normal':
                 // Full quality
-                CONFIG.maxParticlesPerExplosion = 200;
-                CONFIG.baseTrailLength = 20;
+                CONFIG.maxParticlesPerExplosion = this.configuredMaxParticles;
+                CONFIG.baseTrailLength = this.configuredTrailLength;
                 CONFIG.sparkleChance = 0.15;
                 CONFIG.baseSecondaryExplosionChance = 0.1;
-                this.config.glowEnabled = true;
-                this.config.trailsEnabled = true;
+                this.config.glowEnabled = this.configuredVisualEffects.glowEnabled;
+                this.config.trailsEnabled = this.configuredVisualEffects.trailsEnabled;
                 break;
         }
         this.adjustSecondaryEffectsForLoad();
@@ -3642,9 +3729,19 @@ class FireworksEngine {
 
     destroy() {
         this.running = false;
+        if (this.animationFrameId !== null) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+        window.removeEventListener('resize', this.resizeHandler);
         if (this.socket) {
             this.socket.disconnect();
+            this.socket = null;
         }
+        this.disposeRenderer(true);
+        this.audioManager.destroy();
+        this.fireworks.length = 0;
+        this.imageCache.clear();
     }
 }
 
@@ -3719,6 +3816,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (DEBUG) console.log('[Fireworks] Advanced engine ready');
 });
+
+window.addEventListener('pagehide', () => {
+    if (engine) engine.destroy();
+}, { once: true });
 
 // Only expose engine after initialization
 if (typeof window !== 'undefined') {

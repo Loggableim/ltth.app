@@ -96,21 +96,23 @@ describe('Fireworks Plugin Sidebar Integration', () => {
       expect(viewSection).toContain('data-src="/fireworks/ui"');
     });
 
-    test('should have external link to fireworks UI', () => {
+    test('should load the fireworks UI inside the dashboard view', () => {
       const viewSection = dashboardHtml.substring(
         dashboardHtml.indexOf('id="view-fireworks"'),
         dashboardHtml.indexOf('id="view-fireworks"') + 1000
       );
-      expect(viewSection).toContain('href="/fireworks/ui"');
+      expect(viewSection).toContain('<iframe data-src="/fireworks/ui"');
+      expect(viewSection).toContain('title="Fireworks Configuration"');
     });
 
-    test('should have proper view title with icon', () => {
+    test('should use the shared iframe-only plugin view layout', () => {
       const viewSection = dashboardHtml.substring(
         dashboardHtml.indexOf('id="view-fireworks"'),
         dashboardHtml.indexOf('id="view-fireworks"') + 1000
       );
-      expect(viewSection).toContain('Fireworks Superplugin');
-      expect(viewSection).toContain('data-lucide="sparkles"');
+      expect(viewSection).toContain('class="view-section"');
+      expect(viewSection).toContain('class="iframe-container"');
+      expect(viewSection).not.toContain('class="view-header"');
     });
   });
 
@@ -195,8 +197,8 @@ describe('Fireworks Plugin Sidebar Integration', () => {
       
       expect(webgpuEmojiRainView).toContain('class="view-section"');
       expect(fireworksView).toContain('class="view-section"');
-      expect(webgpuEmojiRainView).toContain('class="view-header"');
-      expect(fireworksView).toContain('class="view-header"');
+      expect(webgpuEmojiRainView).not.toContain('class="view-header"');
+      expect(fireworksView).not.toContain('class="view-header"');
       expect(webgpuEmojiRainView).toContain('class="iframe-container"');
       expect(fireworksView).toContain('class="iframe-container"');
     });

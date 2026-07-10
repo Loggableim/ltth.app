@@ -45,15 +45,51 @@ describe('Fireworks config schema', () => {
 
   test('sanitizes shapes, colors, and active shape arrays', () => {
     const config = normalizeConfig({
-      defaultShape: 'invalid',
-      activeShapes: ['heart', 'invalid', 'spiral', 'heart'],
+      defaultShape: 'paws',
+      activeShapes: ['heart', 'invalid', 'spiral', 'paws', 'heart'],
       themeColors: ['#ff0000', 'not-a-color', 'hsl(120, 100%, 50%)', 'hsl(120.5, 100%, 50%)', '#abc']
     });
 
-    expect(config.defaultShape).toBe(DEFAULT_FIREWORKS_CONFIG.defaultShape);
-    expect(config.activeShapes).toEqual(['heart', 'spiral']);
+    expect(config.defaultShape).toBe('paws');
+    expect(config.activeShapes).toEqual(['heart', 'spiral', 'paws']);
     expect(config.themeColors).toEqual(['#ff0000', 'hsl(120, 100%, 50%)', 'hsl(120.5, 100%, 50%)', '#abc']);
     expect(ALLOWED_SHAPES).toContain(config.defaultShape);
+  });
+
+  test('preserves renderer and visual settings exposed by the settings UI', () => {
+    const config = normalizeConfig({
+      renderer: 'canvas',
+      gpuAcceleration: false,
+      toasterMode: true,
+      trailsEnabled: false,
+      trailLength: 4,
+      glowEnabled: false
+    });
+
+    expect(config).toMatchObject({
+      renderer: 'canvas',
+      gpuAcceleration: false,
+      toasterMode: true,
+      trailsEnabled: false,
+      trailLength: 4,
+      glowEnabled: false
+    });
+  });
+
+  test('normalizes ordered thresholds and enumerated presentation settings', () => {
+    const config = normalizeConfig({
+      escalationThresholds: { small: 100, medium: 50, big: 10, massive: 1 },
+      resolutionPreset: '8k',
+      followerAnimationPosition: 'center injected-class',
+      followerAnimationStyle: 'unknown',
+      followerAnimationEntrance: 'unknown'
+    });
+
+    expect(config.escalationThresholds).toEqual({ small: 100, medium: 100, big: 100, massive: 100 });
+    expect(config.resolutionPreset).toBe(DEFAULT_FIREWORKS_CONFIG.resolutionPreset);
+    expect(config.followerAnimationPosition).toBe(DEFAULT_FIREWORKS_CONFIG.followerAnimationPosition);
+    expect(config.followerAnimationStyle).toBe(DEFAULT_FIREWORKS_CONFIG.followerAnimationStyle);
+    expect(config.followerAnimationEntrance).toBe(DEFAULT_FIREWORKS_CONFIG.followerAnimationEntrance);
   });
 
   test('normalizes manual trigger payloads before emitting them', () => {

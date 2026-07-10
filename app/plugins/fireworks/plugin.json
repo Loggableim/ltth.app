@@ -1,8 +1,8 @@
 {
   "id": "fireworks",
   "name": "Fireworks Superplugin (Stable)",
-  "version": "2.0.0",
-  "description": "GPU-accelerated fireworks effects with gift-specific displays, combo systems, and interactive triggers. Features WebGL/WebGPU rendering with Canvas 2D fallback for maximum compatibility.",
+  "version": "2.0.1",
+  "description": "GPU-accelerated fireworks effects with gift-specific displays, combo systems, and interactive triggers. Features WebGL2 rendering with Canvas 2D fallback for maximum compatibility.",
   "author": "Pup Cid",
   "icon": "/plugins/fireworks/assets/fireworks-icon.png",
   "logo": "/plugins/fireworks/assets/fireworks-logo.png",

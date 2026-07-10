@@ -54,8 +54,9 @@ describe('Fireworks Overlay Transparency', () => {
         expect(overlayContent).toMatch(/overlay-bg-transparent[^}]*background:\s*transparent\s*!important/);
     });
     
-    test('should have applyBackgroundConfig function', () => {
-        expect(overlayContent).toMatch(/function applyBackgroundConfig/);
-        expect(overlayContent).toMatch(/setProperty.*background-color.*important/);
+    test('should not require an inline background or worker bootstrap script', () => {
+        expect(overlayContent).not.toMatch(/function applyBackgroundConfig/);
+        expect(overlayContent).not.toContain('FIREWORKS_USE_WORKER');
+        expect(overlayContent).not.toMatch(/<script>\s*[\s\S]*?<\/script>/);
     });
 });

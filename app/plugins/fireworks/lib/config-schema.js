@@ -1,9 +1,15 @@
-const ALLOWED_SHAPES = ['burst', 'heart', 'star', 'ring', 'spiral'];
+const ALLOWED_SHAPES = ['burst', 'heart', 'star', 'ring', 'spiral', 'paws'];
 const VALID_GIFT_POPUP_POSITIONS = ['top', 'middle', 'bottom', 'none'];
 const VALID_ORIENTATIONS = ['landscape', 'portrait'];
+const VALID_RENDERERS = ['auto', 'webgl', 'canvas'];
+const VALID_RESOLUTION_PRESETS = ['360p', '480p', '540p', '720p', '1080p', '1440p', '4k'];
+const VALID_FOLLOWER_POSITIONS = ['top-left', 'top-center', 'top-right', 'center', 'bottom-left', 'bottom-center', 'bottom-right'];
+const VALID_FOLLOWER_STYLES = ['gradient-purple', 'gradient-blue', 'gradient-gold', 'gradient-rainbow', 'neon', 'minimal'];
+const VALID_FOLLOWER_ENTRANCES = ['scale', 'fade', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'bounce', 'rotate'];
 
 const DEFAULT_FIREWORKS_CONFIG = {
   enabled: true,
+  renderer: 'auto',
   maxParticles: 1000,
   targetFps: 60,
   giftTriggersEnabled: true,
@@ -62,6 +68,10 @@ const DEFAULT_FIREWORKS_CONFIG = {
   randomMinIntensity: 0.5,
   randomMaxIntensity: 1.5,
   gpuAcceleration: true,
+  toasterMode: false,
+  trailsEnabled: true,
+  trailLength: 10,
+  glowEnabled: true,
   preserveDrawingBuffer: true,
   desynchronized: true,
   particleSizeRange: [4, 12],
@@ -161,12 +171,15 @@ function normalizeParticleCounts(value) {
 function normalizeThresholds(value) {
   const source = isPlainObject(value) ? value : {};
   const defaults = DEFAULT_FIREWORKS_CONFIG.escalationThresholds;
-  return {
-    small: clampInteger(source.small, 0, 1000000, defaults.small),
-    medium: clampInteger(source.medium, 1, 1000000, defaults.medium),
-    big: clampInteger(source.big, 1, 1000000, defaults.big),
-    massive: clampInteger(source.massive, 1, 1000000, defaults.massive)
-  };
+  const small = clampInteger(source.small, 0, 1000000, defaults.small);
+  const medium = Math.max(small, clampInteger(source.medium, 0, 1000000, defaults.medium));
+  const big = Math.max(medium, clampInteger(source.big, 0, 1000000, defaults.big));
+  const massive = Math.max(big, clampInteger(source.massive, 0, 1000000, defaults.massive));
+  return { small, medium, big, massive };
+}
+
+function normalizePreset(value, fallback) {
+  return VALID_RESOLUTION_PRESETS.includes(value) ? value : fallback;
 }
 
 function normalizeGiftShapeMappings(value) {
@@ -192,6 +205,7 @@ function normalizeConfig(config = {}) {
   return {
     ...defaults,
     enabled: normalizeBoolean(source.enabled, defaults.enabled),
+    renderer: VALID_RENDERERS.includes(source.renderer) ? source.renderer : defaults.renderer,
     maxParticles: clampInteger(source.maxParticles, 200, 3000, defaults.maxParticles),
     targetFps: clampInteger(source.targetFps, 24, 120, defaults.targetFps),
     giftTriggersEnabled: normalizeBoolean(source.giftTriggersEnabled, defaults.giftTriggersEnabled),
@@ -225,11 +239,11 @@ function normalizeConfig(config = {}) {
     followerShowProfilePicture: normalizeBoolean(source.followerShowProfilePicture, defaults.followerShowProfilePicture),
     followerAnimationDuration: clampInteger(source.followerAnimationDuration, 1000, 10000, defaults.followerAnimationDuration),
     followerAnimationDelay: clampInteger(source.followerAnimationDelay, 0, 10000, defaults.followerAnimationDelay),
-    followerAnimationPosition: typeof source.followerAnimationPosition === 'string' ? source.followerAnimationPosition : defaults.followerAnimationPosition,
+    followerAnimationPosition: VALID_FOLLOWER_POSITIONS.includes(source.followerAnimationPosition) ? source.followerAnimationPosition : defaults.followerAnimationPosition,
     followerAnimationSize: ['small', 'medium', 'large', 'custom'].includes(source.followerAnimationSize) ? source.followerAnimationSize : defaults.followerAnimationSize,
     followerAnimationScale: clampNumber(source.followerAnimationScale, 0.5, 2, defaults.followerAnimationScale),
-    followerAnimationStyle: typeof source.followerAnimationStyle === 'string' ? source.followerAnimationStyle : defaults.followerAnimationStyle,
-    followerAnimationEntrance: typeof source.followerAnimationEntrance === 'string' ? source.followerAnimationEntrance : defaults.followerAnimationEntrance,
+    followerAnimationStyle: VALID_FOLLOWER_STYLES.includes(source.followerAnimationStyle) ? source.followerAnimationStyle : defaults.followerAnimationStyle,
+    followerAnimationEntrance: VALID_FOLLOWER_ENTRANCES.includes(source.followerAnimationEntrance) ? source.followerAnimationEntrance : defaults.followerAnimationEntrance,
     followerThankYouText: typeof source.followerThankYouText === 'string' ? source.followerThankYouText.slice(0, 120) : defaults.followerThankYouText,
     interactiveEnabled: normalizeBoolean(source.interactiveEnabled, defaults.interactiveEnabled),
     clickTriggerEnabled: normalizeBoolean(source.clickTriggerEnabled, defaults.clickTriggerEnabled),
@@ -238,8 +252,15 @@ function normalizeConfig(config = {}) {
     randomEnabled: normalizeBoolean(source.randomEnabled, defaults.randomEnabled),
     randomInterval: clampInteger(source.randomInterval, 1000, 3600000, defaults.randomInterval),
     randomMinIntensity: clampNumber(source.randomMinIntensity, 0.1, 10, defaults.randomMinIntensity),
-    randomMaxIntensity: clampNumber(source.randomMaxIntensity, 0.1, 10, defaults.randomMaxIntensity),
+    randomMaxIntensity: Math.max(
+      clampNumber(source.randomMinIntensity, 0.1, 10, defaults.randomMinIntensity),
+      clampNumber(source.randomMaxIntensity, 0.1, 10, defaults.randomMaxIntensity)
+    ),
     gpuAcceleration: normalizeBoolean(source.gpuAcceleration, defaults.gpuAcceleration),
+    toasterMode: normalizeBoolean(source.toasterMode, defaults.toasterMode),
+    trailsEnabled: normalizeBoolean(source.trailsEnabled, defaults.trailsEnabled),
+    trailLength: clampInteger(source.trailLength, 0, 50, defaults.trailLength),
+    glowEnabled: normalizeBoolean(source.glowEnabled, defaults.glowEnabled),
     preserveDrawingBuffer: normalizeBoolean(source.preserveDrawingBuffer, defaults.preserveDrawingBuffer),
     desynchronized: normalizeBoolean(source.desynchronized, defaults.desynchronized),
     particleSizeRange: Array.isArray(source.particleSizeRange)
@@ -249,9 +270,9 @@ function normalizeConfig(config = {}) {
       ].sort((a, b) => a - b)
       : [...defaults.particleSizeRange],
     resolution: clampNumber(source.resolution, 0.25, 2, defaults.resolution),
-    resolutionPreset: typeof source.resolutionPreset === 'string' ? source.resolutionPreset : defaults.resolutionPreset,
-    internalMaxResolutionPreset: typeof source.internalMaxResolutionPreset === 'string' ? source.internalMaxResolutionPreset : defaults.internalMaxResolutionPreset,
-    internalMinResolutionPreset: typeof source.internalMinResolutionPreset === 'string' ? source.internalMinResolutionPreset : defaults.internalMinResolutionPreset,
+    resolutionPreset: normalizePreset(source.resolutionPreset, defaults.resolutionPreset),
+    internalMaxResolutionPreset: normalizePreset(source.internalMaxResolutionPreset, defaults.internalMaxResolutionPreset),
+    internalMinResolutionPreset: normalizePreset(source.internalMinResolutionPreset, defaults.internalMinResolutionPreset),
     orientation: VALID_ORIENTATIONS.includes(source.orientation) ? source.orientation : defaults.orientation,
     adaptiveRenderScaleEnabled: normalizeBoolean(source.adaptiveRenderScaleEnabled, defaults.adaptiveRenderScaleEnabled),
     minRenderScale: clampNumber(source.minRenderScale, 0.25, 1, defaults.minRenderScale),
