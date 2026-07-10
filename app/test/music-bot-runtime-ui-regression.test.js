@@ -345,11 +345,28 @@ describe('Music Bot runtime and UI regressions', () => {
     }));
     await Promise.resolve();
     await Promise.resolve();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 25));
 
     expect(skipButton.disabled).toBe(false);
     expect(skipButton.textContent).toBe('Skip');
     expect(dom.window.document.getElementById('now-playing').textContent).toContain('Auto-DJ Next');
+  });
+
+  test('updates the visible player state after a successful pause action', async () => {
+    const { dom } = bootMusicBotUi({
+      postHandler: () => createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    const pauseButton = dom.window.document.getElementById('pause-btn');
+    const state = dom.window.document.getElementById('playback-state');
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    pauseButton.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(state.textContent).toBe('Paused');
   });
 
   test('UI exposes mpv path configuration and persists it to playback config', async () => {

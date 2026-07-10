@@ -1032,6 +1032,15 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/skip', async (req, res) => {
+      const current = this.playbackEngine.getNowPlaying();
+      if (!current) {
+        const next = await this._playNextFromQueue();
+        res.status(next.success ? 200 : 400).json({
+          ...next,
+          next: next.success ? next.song || null : null
+        });
+        return;
+      }
       const skipped = await this._skipCurrent('dashboard');
       res.status(skipped.success ? 200 : 400).json(skipped);
     });
@@ -1065,13 +1074,30 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/pause', async (req, res) => {
+      if (!this.playbackEngine.getNowPlaying() || !this.playbackEngine.isPlaying()) {
+        res.status(400).json({ success: false, error: 'Kein aktiver Titel zum Pausieren.' });
+        return;
+      }
       await this.playbackEngine.pause();
       res.json({ success: true });
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/resume', async (req, res) => {
-      await this.playbackEngine.resume();
-      res.json({ success: true });
+      const current = this.playbackEngine.getNowPlaying();
+      if (current) {
+        if (this.playbackEngine.getState() === 'paused') {
+          await this.playbackEngine.resume();
+        }
+        res.json({ success: true, track: current, resumed: true });
+        return;
+      }
+
+      const next = await this._playNextFromQueue();
+      res.status(next.success ? 200 : 400).json({
+        ...next,
+        track: next.success ? next.song || null : null,
+        resumed: false
+      });
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/clear', async (req, res) => {
@@ -1185,6 +1211,28 @@ class MusicBotPlugin extends EventEmitter {
         this._emitQueue();
       }
       res.status(result.success ? 200 : 400).json(result);
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/queue/:index/play', async (req, res) => {
+      const index = Number(req.params.index);
+      if (!Number.isInteger(index) || index < 0) {
+        res.status(400).json({ success: false, error: 'Invalid queue position' });
+        return;
+      }
+
+      const moved = this.queueManager.reorderSong(index, 0);
+      if (!moved.success) {
+        res.status(400).json(moved);
+        return;
+      }
+
+      const current = this.playbackEngine.getNowPlaying();
+      const result = current
+        ? await this._skipCurrent('queue-play')
+        : await this._playNextFromQueue();
+      const track = result.next || result.song || null;
+      this._emitQueue();
+      res.status(result.success ? 200 : 400).json({ ...result, track });
     });
 
     this.api.registerRoute('get', '/api/plugins/music-bot/bans', async (req, res) => {

@@ -213,6 +213,7 @@ class PlaybackEngine extends EventEmitter {
   }
 
   isPlaying() {
+    this._repairStalePlaybackState();
     return this.state === 'playing';
   }
 
@@ -221,7 +222,16 @@ class PlaybackEngine extends EventEmitter {
   }
 
   getState() {
+    this._repairStalePlaybackState();
     return this.state;
+  }
+
+  _repairStalePlaybackState() {
+    // MPV can emit a delayed start-file event after a track has already ended
+    // or been stopped. Do not let that event block queue and Auto-DJ recovery.
+    if (this.state === 'playing' && !this.nowPlaying) {
+      this.state = 'idle';
+    }
   }
 
   async getPosition() {
@@ -540,7 +550,9 @@ class PlaybackEngine extends EventEmitter {
       } else if (msg.event === 'property-change' && msg.name === 'volume') {
         this.volume = msg.data;
         this.emit('volume-changed', this.volume);
-      } else if (msg.event === 'start-file') {
+      } else if (msg.event === 'start-file' && this.nowPlaying) {
+        // play() owns the state transition. A late MPV event must not revive a
+        // "playing" state once there is no active application-level track.
         this.state = 'playing';
       }
     } catch (error) {

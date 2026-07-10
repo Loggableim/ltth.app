@@ -444,11 +444,23 @@
     }
   }
 
-  document.getElementById('pause-btn').addEventListener('click', () => {
-    post('/pause');
+  document.getElementById('pause-btn').addEventListener('click', async () => {
+    const result = await post('/pause');
+    if (result?.success) {
+      updateState('Paused');
+      stopProgressTimer();
+    } else {
+      showToast('warn', 'Pause', result?.error || 'Aktuell läuft kein Titel.');
+    }
   });
-  document.getElementById('resume-btn').addEventListener('click', () => {
-    post('/resume');
+  document.getElementById('resume-btn').addEventListener('click', async () => {
+    const result = await post('/resume');
+    if (result?.success && result.track) {
+      renderNowPlaying(result.track);
+      showToast('success', result.resumed ? 'Wiedergabe fortgesetzt' : 'Wiedergabe gestartet', result.track.title || 'Nächster Titel läuft.');
+    } else if (!result?.success) {
+      showToast('warn', 'Resume', result?.error || 'Queue und Auto-DJ enthalten keinen startbaren Titel.');
+    }
   });
   skipButton?.addEventListener('click', async () => {
     if (skipInProgress) return;
@@ -1233,6 +1245,9 @@
             <span class="queue-meta">${escapeHtml(item.requestedBy || 'Viewer')}${dur}</span>
           </div>
           <div class="queue-actions">
+            <button class="btn primary small" data-queue-action="play" data-idx="${idx}" title="Jetzt spielen">▶</button>
+            <button class="btn ghost small" data-queue-action="move-up" data-idx="${idx}" title="Nach oben" ${idx === 0 ? 'disabled' : ''}>↑</button>
+            <button class="btn ghost small" data-queue-action="move-down" data-idx="${idx}" title="Nach unten" ${idx === queue.length - 1 ? 'disabled' : ''}>↓</button>
             <button class="btn danger small" data-queue-action="remove" data-idx="${idx}" title="Entfernen">✕</button>
           </div>
         </div>`;
@@ -1249,10 +1264,30 @@
 
   queueListEl?.addEventListener('click', async (event) => {
     const btn = event.target.closest('[data-queue-action]');
-    if (!btn || btn.disabled) return;
-    const action = btn.dataset.queueAction;
-    const idx = Number(btn.dataset.idx);
-    if (!Number.isFinite(idx)) return;
+    const item = event.target.closest('.queue-item');
+    const action = btn?.dataset.queueAction || (item ? 'play' : null);
+    const idx = Number(btn?.dataset.idx ?? item?.dataset.queueIndex);
+    if (!action || btn?.disabled || !Number.isFinite(idx)) return;
+    if (action === 'play') {
+      const result = await post(`/queue/${idx}/play`);
+      if (result?.success && result.track) {
+        renderNowPlaying(result.track);
+        showToast('success', 'Queue', `Spielt jetzt: ${result.track.title || 'Ausgewählter Titel'}`);
+      } else if (!result?.success) {
+        showToast('warn', 'Queue', result?.error || 'Titel konnte nicht gestartet werden.');
+      }
+      await renderQueueFromServer();
+      return;
+    }
+    if (action === 'move-up' || action === 'move-down') {
+      const toIndex = action === 'move-up' ? idx - 1 : idx + 1;
+      const result = await post('/queue/reorder', { fromIndex: idx, toIndex });
+      if (result?.success) {
+        showToast('success', 'Queue', 'Reihenfolge aktualisiert.');
+        await renderQueueFromServer();
+      }
+      return;
+    }
     if (action === 'remove') {
       await del(`/queue/${idx}`);
       await renderQueueFromServer();

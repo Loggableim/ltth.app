@@ -269,4 +269,50 @@ describe('music-bot Auto-DJ routes', () => {
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, track }));
   });
+
+  test('starts a selected queue item when the player has no current track', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    const selected = { id: 'queued-song', title: 'Queued Song' };
+    plugin.queueManager = {
+      reorderSong: jest.fn(() => ({ success: true })),
+      getQueue: jest.fn(() => [selected])
+    };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => null) };
+    plugin._playNextFromQueue = jest.fn(async () => ({ success: true, song: selected }));
+    plugin._emitQueue = jest.fn();
+    plugin._registerRoutes();
+
+    const handler = api.handlers['POST:/api/plugins/music-bot/queue/:index/play'];
+    const res = createResponseMock();
+    await handler({ params: { index: '0' } }, res);
+
+    expect(plugin.queueManager.reorderSong).toHaveBeenCalledWith(0, 0);
+    expect(plugin._playNextFromQueue).toHaveBeenCalledTimes(1);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      track: selected
+    }));
+  });
+
+  test('uses resume as a recovery action when a queue is waiting without a current track', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    const queued = { id: 'queued-song', title: 'Queued Song' };
+    plugin.queueManager = { getQueue: jest.fn(() => [queued]) };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => null) };
+    plugin._playNextFromQueue = jest.fn(async () => ({ success: true, song: queued }));
+    plugin._registerRoutes();
+
+    const handler = api.handlers['POST:/api/plugins/music-bot/resume'];
+    const res = createResponseMock();
+    await handler({}, res);
+
+    expect(plugin._playNextFromQueue).toHaveBeenCalledTimes(1);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      track: queued,
+      resumed: false
+    }));
+  });
 });

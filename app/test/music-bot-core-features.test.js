@@ -176,6 +176,17 @@ describe('Music Bot core features', () => {
     expect(engine.getState()).toBe('playing');
   });
 
+  test('does not revive playback from a late MPV start-file event without a track', () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+
+    engine._handleMessage(JSON.stringify({ event: 'start-file' }));
+    expect(engine.getState()).toBe('idle');
+
+    engine.state = 'playing';
+    expect(engine.isPlaying()).toBe(false);
+    expect(engine.getState()).toBe('idle');
+  });
+
   test('waits for MPV acknowledgement before considering a command applied', async () => {
     const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
     engine.socket = {

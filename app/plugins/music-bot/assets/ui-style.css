@@ -912,6 +912,7 @@ input[type="range"] {
   min-width: 0;
   display: grid;
   gap: 3px;
+  cursor: pointer;
 }
 
 .queue-title,
@@ -925,6 +926,8 @@ input[type="range"] {
 .queue-actions {
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .table-wrapper {
