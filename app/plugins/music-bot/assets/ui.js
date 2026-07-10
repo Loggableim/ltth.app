@@ -106,7 +106,6 @@
   const autoDjDetail = document.getElementById('auto-dj-detail');
   const autoDjSave = document.getElementById('auto-dj-save');
   const autoDjSkip = document.getElementById('auto-dj-skip');
-  const autoDjRandomKeywords = document.getElementById('auto-dj-random-keywords');
   const autoDjPlaylistUrls = document.getElementById('auto-dj-playlist-urls');
   const aliasInputs = document.querySelectorAll('.alias-input');
   const aliasSave = document.getElementById('alias-save');
@@ -792,7 +791,6 @@
       historyMinPlays: Number(autoDjHistoryPlays.value) || 1,
       maxConsecutiveAutoDJ: Number(autoDjMaxConsecutive.value) || 1,
       announceAutoDJ: autoDjAnnounce.checked,
-      randomKeywords: parseList(autoDjRandomKeywords?.value || ''),
       playlistUrls,
       playlistFallbackToRandom: true
     };
@@ -1074,9 +1072,6 @@
       autoDjHistoryPlays.value = configData.config.autoDJ.historyMinPlays || 1;
       autoDjMaxConsecutive.value = configData.config.autoDJ.maxConsecutiveAutoDJ || 1;
       autoDjAnnounce.checked = Boolean(configData.config.autoDJ.announceAutoDJ);
-      if (autoDjRandomKeywords) {
-        autoDjRandomKeywords.value = (configData.config.autoDJ.randomKeywords || []).join('\n');
-      }
       if (autoDjPlaylistUrls) {
         autoDjPlaylistUrls.value = (configData.config.autoDJ.playlistUrls || []).join('\n');
       }
@@ -1459,7 +1454,6 @@
     autoDjHistoryPlays.value = status.historyMinPlays || 1;
     autoDjMaxConsecutive.value = status.maxConsecutiveAutoDJ || 1;
     autoDjAnnounce.checked = Boolean(status.announceAutoDJ);
-    if (autoDjRandomKeywords) autoDjRandomKeywords.value = (status.randomKeywords || []).join(', ');
     if (autoDjPlaylistUrls) autoDjPlaylistUrls.value = (status.playlistUrls || []).join('\n');
     autoDjStatus.textContent = status.enabled ? (status.lastResult?.state === 'playing' ? 'Spielt' : 'Aktiv') : 'Deaktiviert';
     autoDjStatus.title = status.lastResult?.message || '';

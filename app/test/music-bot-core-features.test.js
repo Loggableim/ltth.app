@@ -241,16 +241,20 @@ describe('Music Bot core features', () => {
 
   test('only counts Auto-DJ tracks after playback starts successfully', async () => {
     const resolver = {
-      resolve: jest.fn(async () => ({
+      resolvePlaylistEntry: jest.fn(async () => ({
         success: true,
-        song: { title: 'Lo-fi track', youtubeId: 'lofi123' }
+        song: { title: 'Playlist track', youtubeId: 'playlist123' }
       }))
     };
-    const autoDJ = new AutoDJ({ enabled: true, mode: 'random', randomKeywords: ['lofi'] }, resolver, createDbMock(), { log: jest.fn() });
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'playlist',
+      playlistUrls: ['https://www.youtube.com/playlist?list=playlist']
+    }, resolver, createDbMock(), { log: jest.fn() });
 
     const result = await autoDJ.onQueueEmpty();
 
-    expect(result.song.title).toBe('Lo-fi track');
+    expect(result.song.title).toBe('Playlist track');
     expect(autoDJ.getStatus().consecutiveCount).toBe(0);
 
     autoDJ.markTrackStarted(result.song);
@@ -288,57 +292,63 @@ describe('Music Bot core features', () => {
     );
   });
 
-  test('falls back to a random suggestion when the configured playlist is exhausted', async () => {
+  test('continues with matching playlist-radio titles when the configured playlist is exhausted', async () => {
+    const playlistUrl = 'https://www.youtube.com/playlist?list=finished';
+    const radioUrl = 'https://www.youtube.com/watch?v=playlist-seed&list=RDplaylist-seed';
     const resolver = {
-      resolvePlaylistEntry: jest.fn(async () => ({ success: false })),
-      resolve: jest.fn(async () => ({
-        success: true,
-        song: { title: 'Suggested track', youtubeId: 'suggested-1' }
-      }))
+      resolvePlaylistEntry: jest.fn(async (url, index) => {
+        if (url === playlistUrl && index === 1) {
+          return { success: true, song: { title: 'Playlist seed', youtubeId: 'playlist-seed' } };
+        }
+        if (url === radioUrl && index === 2) {
+          return { success: true, song: { title: 'Matching radio title', youtubeId: 'radio-1' } };
+        }
+        return { success: false };
+      })
     };
     const autoDJ = new AutoDJ({
       enabled: true,
       mode: 'playlist',
-      playlistUrls: ['https://www.youtube.com/playlist?list=finished'],
-      randomKeywords: ['synthwave']
+      playlistUrls: [playlistUrl]
     }, resolver, createDbMock(), { log: jest.fn() });
 
+    const first = await autoDJ.getNextSong();
+    autoDJ.markTrackStarted(first.song);
     const result = await autoDJ.getNextSong();
 
-    expect(result.song.title).toBe('Suggested track');
-    expect(resolver.resolve).toHaveBeenCalledWith('synthwave');
+    expect(result.song.title).toBe('Matching radio title');
+    expect(resolver.resolvePlaylistEntry).toHaveBeenCalledWith(radioUrl, 2);
   });
 
-  test('prefers an unplayed result when generating random Auto-DJ suggestions', async () => {
+  test('skips recently played titles when choosing playlist-radio suggestions', async () => {
+    const radioUrl = 'https://www.youtube.com/watch?v=playlist-seed&list=RDplaylist-seed';
     const resolver = {
-      resolve: jest.fn(async (keyword) => ({
+      resolvePlaylistEntry: jest.fn(async (_url, index) => ({
         success: true,
-        song: keyword === 'first'
+        song: index === 2
           ? { title: 'Already played', youtubeId: 'already-played' }
           : { title: 'Fresh suggestion', youtubeId: 'fresh-suggestion' }
       }))
     };
     const autoDJ = new AutoDJ({
       enabled: true,
-      mode: 'random',
-      randomKeywords: ['first', 'second']
+      mode: 'random'
     }, resolver, createDbMock(), { log: jest.fn() });
+    autoDJ.lastPlaylistTrack = { title: 'Playlist seed', youtubeId: 'playlist-seed' };
     autoDJ.markTrackStarted({ title: 'Already played', youtubeId: 'already-played' });
-    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
 
     const result = await autoDJ.getNextSong();
 
-    randomSpy.mockRestore();
-
     expect(result.song.title).toBe('Fresh suggestion');
-    expect(resolver.resolve).toHaveBeenNthCalledWith(1, 'first');
-    expect(resolver.resolve).toHaveBeenNthCalledWith(2, 'second');
+    expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(1, radioUrl, 2);
+    expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(2, radioUrl, 3);
   });
 
-  test('tries the next random keyword after a suggestion lookup fails', async () => {
+  test('tries the next playlist-radio title after a lookup fails', async () => {
+    const radioUrl = 'https://www.youtube.com/watch?v=playlist-seed&list=RDplaylist-seed';
     const resolver = {
-      resolve: jest.fn(async (keyword) => {
-        if (keyword === 'unavailable') throw new Error('yt-dlp timed out');
+      resolvePlaylistEntry: jest.fn(async (_url, index) => {
+        if (index === 2) throw new Error('yt-dlp timed out');
         return {
           success: true,
           song: { title: 'Working suggestion', youtubeId: 'working-suggestion' }
@@ -347,17 +357,14 @@ describe('Music Bot core features', () => {
     };
     const autoDJ = new AutoDJ({
       enabled: true,
-      mode: 'random',
-      randomKeywords: ['unavailable', 'working']
+      mode: 'random'
     }, resolver, createDbMock(), { log: jest.fn() });
-    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+    autoDJ.lastPlaylistTrack = { title: 'Playlist seed', youtubeId: 'playlist-seed' };
 
     const result = await autoDJ.getNextSong();
 
-    randomSpy.mockRestore();
-
     expect(result.song.title).toBe('Working suggestion');
-    expect(resolver.resolve).toHaveBeenNthCalledWith(1, 'unavailable');
-    expect(resolver.resolve).toHaveBeenNthCalledWith(2, 'working');
+    expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(1, radioUrl, 2);
+    expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(2, radioUrl, 3);
   });
 });

@@ -409,15 +409,13 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(previewFrame.src).toContain('enablejsapi=1');
   });
 
-  test('persists Auto-DJ playlist URLs and keeps an explicitly selected random mode', async () => {
+  test('persists Auto-DJ playlist URLs and keeps an explicitly selected related-title mode', async () => {
     const { dom, fetchMock } = bootMusicBotUi();
     doms.push(dom);
-    const keywords = dom.window.document.getElementById('auto-dj-random-keywords');
     const playlistUrls = dom.window.document.getElementById('auto-dj-playlist-urls');
     const mode = dom.window.document.getElementById('auto-dj-mode');
     const save = dom.window.document.getElementById('auto-dj-save');
 
-    keywords.value = 'lofi, synthwave';
     playlistUrls.value = 'https://www.youtube.com/watch?v=first\nhttps://www.youtube.com/watch?v=second';
     mode.value = 'random';
     save.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
@@ -431,7 +429,6 @@ describe('Music Bot runtime and UI regressions', () => {
     const payload = JSON.parse(togglePost[1].body);
     expect(payload.mode).toBe('random');
     expect(payload.playlistFallbackToRandom).toBe(true);
-    expect(payload.randomKeywords).toEqual(['lofi', 'synthwave']);
     expect(payload.playlistUrls).toEqual([
       'https://www.youtube.com/watch?v=first',
       'https://www.youtube.com/watch?v=second'
@@ -446,7 +443,6 @@ describe('Music Bot runtime and UI regressions', () => {
         historyMinPlays: 1,
         maxConsecutiveAutoDJ: 10,
         announceAutoDJ: true,
-        randomKeywords: ['synthwave'],
         playlistUrls: ['https://youtube.com/playlist?list=PLScN1UM-Rlxo']
       }
     });
@@ -457,8 +453,6 @@ describe('Music Bot runtime and UI regressions', () => {
 
     expect(dom.window.document.getElementById('auto-dj-playlist-urls').value)
       .toBe('https://youtube.com/playlist?list=PLScN1UM-Rlxo');
-    expect(dom.window.document.getElementById('auto-dj-random-keywords').value)
-      .toBe('synthwave');
   });
 
   test('serves German Music Bot labels as UTF-8 text instead of mojibake', () => {

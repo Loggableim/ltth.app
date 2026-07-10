@@ -1,5 +1,3 @@
-const DEFAULT_RANDOM_KEYWORDS = ['lofi hip hop', 'chill music', 'gaming music', 'study mix'];
-
 class AutoDJ {
   constructor(config, musicResolver, db, api) {
     this.api = api;
@@ -7,6 +5,8 @@ class AutoDJ {
     this.musicResolver = musicResolver;
     this.playlistIndex = 0;
     this.playlistTrackIndices = new Map();
+    this.relatedTrackIndices = new Map();
+    this.lastPlaylistTrack = null;
     this.playedInSession = new Set();
     this.consecutiveCount = 0;
     this.lastResult = { state: 'idle', message: 'Auto-DJ bereit.' };
@@ -23,7 +23,6 @@ class AutoDJ {
       historyShuffled: true,
       maxConsecutiveAutoDJ: 10,
       announceAutoDJ: true,
-      randomKeywords: DEFAULT_RANDOM_KEYWORDS,
       playlistUrls: [],
       playlistFallbackToRandom: true,
       ...(config || {})
@@ -39,13 +38,13 @@ class AutoDJ {
   activate() {
     this.isActive = true;
     this.consecutiveCount = 0;
-    this._setResult('ready', 'Auto-DJ wartet auf den nächsten freien Queue-Slot.');
+    this._setResult('ready', 'Auto-DJ wartet auf den naechsten freien Queue-Slot.');
   }
 
   deactivate() {
     this.isActive = false;
     this.consecutiveCount = 0;
-    this._setResult('idle', 'Auto-DJ pausiert für Zuschauer-Requests.');
+    this._setResult('idle', 'Auto-DJ pausiert fuer Zuschauer-Requests.');
   }
 
   onSongRequested() {
@@ -59,7 +58,7 @@ class AutoDJ {
       return null;
     }
     this.isActive = true;
-    this._setResult('selecting', 'Auto-DJ sucht den nächsten Titel.');
+    this._setResult('selecting', 'Auto-DJ sucht den naechsten Titel.');
     return this.getNextSong();
   }
 
@@ -80,14 +79,13 @@ class AutoDJ {
 
     const track = await this._selectTrack();
     if (!track) {
-      if (this.lastResult.state !== 'error') {
-        this._setResult('no-track', 'Kein passender Auto-DJ-Titel gefunden. Prüfe Playlist oder Suchbegriffe.');
+      if (this.lastResult.state !== 'error' && this.lastResult.state !== 'no-playlist-context') {
+        this._setResult('no-track', 'Kein passender Auto-DJ-Titel gefunden. Pruefe Playlist oder History.');
       }
       return null;
     }
 
-    this._setResult('selected', `Ausgewählt: ${track.title || 'Unbekannter Titel'}`);
-
+    this._setResult('selected', `Ausgewaehlt: ${track.title || 'Unbekannter Titel'}`);
     return {
       song: {
         ...track,
@@ -101,6 +99,8 @@ class AutoDJ {
     this.consecutiveCount = 0;
     this.playedInSession.clear();
     this.playlistTrackIndices.clear();
+    this.relatedTrackIndices.clear();
+    this.lastPlaylistTrack = null;
   }
 
   markTrackStarted(track) {
@@ -125,9 +125,15 @@ class AutoDJ {
       maxConsecutiveAutoDJ: this.config.maxConsecutiveAutoDJ,
       historyMinPlays: this.config.historyMinPlays,
       announceAutoDJ: this.config.announceAutoDJ,
-      randomKeywords: this.config.randomKeywords,
       playlistUrls: this.config.playlistUrls,
       playlistFallbackToRandom: this.config.playlistFallbackToRandom,
+      lastPlaylistTrack: this.lastPlaylistTrack
+        ? {
+          title: this.lastPlaylistTrack.title,
+          artist: this.lastPlaylistTrack.artist || '',
+          channelName: this.lastPlaylistTrack.channelName || ''
+        }
+        : null,
       lastResult: this.lastResult
     };
   }
@@ -138,7 +144,7 @@ class AutoDJ {
         case 'playlist':
           return this._pickFromPlaylist();
         case 'random':
-          return this._pickRandom();
+          return this._pickRelatedToLastPlaylistTrack();
         case 'history':
         default:
           return this._pickFromHistory();
@@ -171,6 +177,7 @@ class AutoDJ {
           : await this.musicResolver.resolve(item);
         if (resolved?.success) {
           this.playlistTrackIndices.set(item, playlistItem + 1);
+          this.lastPlaylistTrack = resolved.song;
           return resolved.song;
         }
       } catch (error) {
@@ -179,37 +186,45 @@ class AutoDJ {
     }
 
     if (this.config.playlistFallbackToRandom !== false) {
-      this._setResult('playlist-finished', 'Playlist ist beendet oder nicht verfÃ¼gbar. Auto-DJ sucht einen passenden Vorschlag.');
-      return this._pickRandom();
+      this._setResult('playlist-finished', 'Playlist ist beendet oder nicht verfuegbar. Auto-DJ startet passende Titel aus dem Playlist-Radio.');
+      return this._pickRelatedToLastPlaylistTrack();
     }
     return null;
   }
 
-  async _pickRandom() {
-    const keywords =
-      Array.isArray(this.config.randomKeywords) && this.config.randomKeywords.length
-        ? this.config.randomKeywords
-        : DEFAULT_RANDOM_KEYWORDS;
-    const startIndex = Math.floor(Math.random() * keywords.length);
+  async _pickRelatedToLastPlaylistTrack() {
+    const seed = this.lastPlaylistTrack;
+    if (!seed?.youtubeId || !this.musicResolver.resolvePlaylistEntry) {
+      this._setResult('no-playlist-context', 'Es fehlt ein zuletzt gespielter Playlist-Titel als Stilvorlage.');
+      return null;
+    }
+
+    const encodedId = encodeURIComponent(seed.youtubeId);
+    const radioUrl = `https://www.youtube.com/watch?v=${encodedId}&list=RD${encodedId}`;
+    let playlistItem = this.relatedTrackIndices.get(radioUrl) || 2;
     let fallback = null;
 
-    for (let offset = 0; offset < keywords.length; offset += 1) {
-      const keyword = keywords[(startIndex + offset) % keywords.length];
+    for (let attempt = 0; attempt < 4; attempt += 1) {
       let resolved;
       try {
-        resolved = await this.musicResolver.resolve(keyword);
+        resolved = await this.musicResolver.resolvePlaylistEntry(radioUrl, playlistItem);
       } catch (error) {
-        this.api.log?.(`[music-bot] AutoDJ random suggestion failed for "${keyword}": ${error.message}`, 'warn');
+        this.api.log?.(`[music-bot] AutoDJ playlist radio lookup failed: ${error.message}`, 'warn');
+        playlistItem += 1;
         continue;
       }
+      playlistItem += 1;
       if (!resolved?.success || !resolved.song) continue;
 
+      if (resolved.song.youtubeId === seed.youtubeId) continue;
       if (!fallback) fallback = resolved.song;
       if (!resolved.song.youtubeId || !this.playedInSession.has(resolved.song.youtubeId)) {
+        this.relatedTrackIndices.set(radioUrl, playlistItem);
         return resolved.song;
       }
     }
 
+    this.relatedTrackIndices.set(radioUrl, playlistItem);
     return fallback;
   }
 
@@ -229,7 +244,7 @@ class AutoDJ {
       .all(minPlays);
 
     const candidate = rows.find((row) => !this.playedInSession.has(row.youtubeId)) || rows[0];
-    if (!candidate) return this._pickRandom();
+    if (!candidate) return this._pickRelatedToLastPlaylistTrack();
 
     return {
       title: candidate.title,
