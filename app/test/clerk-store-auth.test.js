@@ -18,7 +18,7 @@ describe('Clerk store auth', () => {
     assert.strictEqual(config.clerkEnabled, true);
     assert.strictEqual(config.publishableKey, 'pk_test_public');
     assert.strictEqual(config.proxyUrl, '');
-    assert.strictEqual(config.authBridgeUrl, '');
+    assert.strictEqual(config.authBridgeUrl, 'https://ltth.app/auth/');
     assert.strictEqual(config.accountPortalBaseUrl, 'https://ltth.app/auth');
     assert.strictEqual(config.accountManagementUrl, 'https://ltth.app/auth/');
     assert.strictEqual(config.signInUrl, 'https://ltth.app/auth/?mode=sign-in');
@@ -26,6 +26,22 @@ describe('Clerk store auth', () => {
     assert.strictEqual(config.unauthorizedSignInUrl, 'https://ltth.app/auth/?mode=sign-in&reason=unauthorized');
     assert.strictEqual(config.secretConfigured, false);
     assert.strictEqual(Object.prototype.hasOwnProperty.call(config, 'secretKey'), false);
+  });
+
+  it('keeps local Clerk callback assets out of the account-portal proxy', async () => {
+    const { createClerkFrontendProxy } = require('../modules/clerk-store-auth');
+    const middleware = createClerkFrontendProxy({
+      env: {
+        CLERK_PUBLISHABLE_KEY: 'pk_test_public',
+        CLERK_FRONTEND_API: 'clerk.ltth.app'
+      }
+    });
+
+    for (const originalUrl of ['/auth/clerk/callback.html', '/auth/clerk/callback-utils.js']) {
+      const next = jest.fn();
+      await middleware({ originalUrl, method: 'GET' }, {}, next);
+      assert.strictEqual(next.mock.calls.length, 1);
+    }
   });
 
   it('accepts framework-prefixed publishable keys', () => {

@@ -156,6 +156,7 @@ function buildStoreAuthConfig(env = process.env) {
     `${accountPortalBaseUrl}/`
   );
   const authCallbackPath = cleanEnvValue(env.CLERK_AUTH_CALLBACK_PATH || '/auth/clerk/callback.html');
+  const proxyUrl = cleanEnvValue(env.LTTH_STORE_CLERK_PROXY_URL || env.CLERK_PROXY_URL);
   const accountManagementUrl = cleanEnvValue(
     env.LTTH_ACCOUNT_MANAGEMENT_URL ||
     `${accountPortalBaseUrl}/`
@@ -192,6 +193,7 @@ function buildStoreAuthConfig(env = process.env) {
     clerkEnabled: Boolean(publishableKey),
     publishableKey,
     frontendDomain,
+    proxyUrl,
     authBridgeUrl,
     authCallbackPath,
     accountPortalBaseUrl,
@@ -650,6 +652,16 @@ function createClerkFrontendProxy(options = {}) {
 
     const basePath = config.authBridgeUrl.replace(/^https?:\/\/[^/]+/i, '').replace(/\/+$/, '') || '/__clerk';
     const originalUrl = req.originalUrl || req.url || '';
+    const originalPath = originalUrl.split(/[?#]/, 1)[0];
+    const localCallbackPath = config.authCallbackPath.replace(/[?#].*$/, '');
+    const callbackDirectory = localCallbackPath.slice(0, localCallbackPath.lastIndexOf('/') + 1);
+
+    // The local callback page is served from app/public. Do not proxy it (or
+    // its adjacent browser helpers) to the public account portal.
+    if (callbackDirectory && originalPath.startsWith(callbackDirectory)) {
+      return next();
+    }
+
     if (!originalUrl.startsWith(basePath)) {
       return next();
     }
