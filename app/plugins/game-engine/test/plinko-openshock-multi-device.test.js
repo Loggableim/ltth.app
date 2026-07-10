@@ -286,7 +286,7 @@ describe('Plinko OpenShock Multi-Device Integration', () => {
     });
   });
 
-  describe('handleBallLanded - OpenShock Decoupling', () => {
+  describe('handleBallLanded - OpenShock Integration', () => {
     beforeEach(() => {
       // Setup plinkoGame with a test configuration
       plinkoGame.cachedConfig = {
@@ -324,30 +324,29 @@ describe('Plinko OpenShock Multi-Device Integration', () => {
         nickname: 'Test User',
         bet: 100,
         timestamp: Date.now() - 5000,  // 5 seconds ago (valid)
-        serverSlotIndex: 0,
         isTest: false
       });
     });
 
-    test('should not trigger OpenShock rewards when a ball lands', async () => {
+    test('should trigger OpenShock rewards on multiple devices when ball lands', async () => {
       const result = await plinkoGame.handleBallLanded('ball-123', 0);
 
       expect(result.success).toBe(true);
-      expect(queuedCommands).toHaveLength(0);
-      expect(mockSocketIO.emit).toHaveBeenCalledWith('plinko:openshock-review-required',
-        expect.objectContaining({ ballId: 'ball-123', username: 'testuser', slotIndex: 0 })
-      );
+      expect(queuedCommands).toHaveLength(2);
+      expect(queuedCommands[0].command.deviceId).toBe('device-1');
+      expect(queuedCommands[1].command.deviceId).toBe('device-2');
     });
 
-    test('should keep OpenShock decoupled for test balls', async () => {
+    test('should trigger OpenShock for test balls', async () => {
       // Make it a test ball
       plinkoGame.activeBalls.get('ball-123').isTest = true;
 
       const result = await plinkoGame.handleBallLanded('ball-123', 0);
 
       expect(result.success).toBe(true);
-      expect(queuedCommands).toHaveLength(0);
-      expect(mockSocketIO.emit).toHaveBeenCalledWith('plinko:openshock-review-required', expect.any(Object));
+      expect(queuedCommands).toHaveLength(2);  // Should trigger OpenShock even for test balls
+      expect(queuedCommands[0].command.deviceId).toBe('device-1');
+      expect(queuedCommands[1].command.deviceId).toBe('device-2');
     });
 
     test('should not trigger OpenShock when not enabled', async () => {

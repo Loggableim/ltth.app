@@ -552,13 +552,13 @@ Plugin-Logs sind im Haupt-Logger verfügbar. Achte auf:
 
 ### Was ist Plinko?
 
-Plinko ist ein servergesteuertes Glücksspiel, bei dem Zuschauer XP setzen können, um einen Ball fallen zu lassen. Der Server bestimmt den Ergebnis-Slot vor der Animation mit einer zentrierten Plinko-Verteilung; das Overlay visualisiert diesen bereits feststehenden Ausgang über die Pegs und Slots.
+Plinko ist ein physikbasiertes Glücksspiel, bei dem Zuschauer XP setzen können, um einen Ball fallen zu lassen. Der Ball prallt von Pegs ab und landet schließlich in einem von mehreren Slots mit unterschiedlichen Multiplikatoren (z.B. 0.2x, 1x, 2x, 5x, 10x). Der Gewinn wird durch den Multiplikator des Slots bestimmt, in dem der Ball landet.
 
 ### Funktionsweise
 
 1. **Einsatz tätigen**: Zuschauer verwenden den Befehl `!plinko <betrag>` um XP zu setzen
 2. **Ball fällt**: Ein Ball mit dem Namen und Profilbild des Zuschauers wird spawnt und fällt durch die Pegs
-3. **Landung**: Das Overlay zeigt den vom Server vorgegebenen Ergebnis-Slot
+3. **Landung**: Der Ball landet in einem Slot mit einem Multiplikator
 4. **Auszahlung**: Der Gewinn wird berechnet (Einsatz × Multiplikator) und dem Zuschauer gutgeschrieben
 
 ### Chat-Befehle
@@ -629,8 +629,7 @@ Getestet mit 50+ gleichzeitigen Bällen ohne Performance-Einbußen.
 
 - **Bet-Validierung**: Negative Einsätze und Einsätze über dem verfügbaren XP werden abgelehnt
 - **XP-Deduktion**: XP wird sofort beim Ball-Spawn abgezogen (kein Double-Spending möglich)
-- **Serverautoritatives Ergebnis**: Der Auszahlungsslot wird vor dem Overlay-Rendern auf dem Server festgelegt; Browserdaten können das Ergebnis nicht verändern
-- **OpenShock-Trennung**: Plinko-Ergebnisse lösen keine Hardwareaktion automatisch aus; vorhandene Regeln erzeugen ausschließlich einen Review-Hinweis für den Streamer
+- **Server-Side Tracking**: Alle Ball-Positionen und Ergebnisse werden server-seitig verfolgt
 - **Refund-System**: Bei technischen Problemen (stuck balls) wird der Einsatz automatisch zurückerstattet
 
 ### Troubleshooting

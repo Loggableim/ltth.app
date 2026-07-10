@@ -496,7 +496,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io({ auth: { role: 'overlay' } });
+    const socket = io();
     
     // Parse URL parameters
     const urlParams = new URLSearchParams(window.location.search);
@@ -744,19 +744,18 @@
 
       plinkoActivity.style.display = 'block';
       
-      plinkoBallsList.replaceChildren();
+      // Build list of active balls
+      let html = '';
       for (const [ballId, ballData] of activePlinkoBalls.entries()) {
-        const item = document.createElement('div');
-        item.className = 'plinko-ball-item';
-        const playerName = document.createElement('span');
-        playerName.className = 'plinko-player-name';
-        playerName.textContent = ballData.nickname || ballData.username || '';
-        const betAmount = document.createElement('span');
-        betAmount.className = 'plinko-bet-amount';
-        betAmount.textContent = `${ballData.bet || 0} XP`;
-        item.append(playerName, betAmount);
-        plinkoBallsList.appendChild(item);
+        html += `
+          <div class="plinko-ball-item">
+            <span class="plinko-player-name">${ballData.nickname || ballData.username}</span>
+            <span class="plinko-bet-amount">${ballData.bet} XP</span>
+          </div>
+        `;
       }
+      
+      plinkoBallsList.innerHTML = html;
       
       // Show HUD when Plinko is active
       hud.classList.add('active');

@@ -123,7 +123,7 @@ describe('Wheel Segment Validation and Synchronization', () => {
       expect(result.queued).toBe(true);
       
       // Check emitted event
-      const queueEvent = mockAPI.emittedEvents.find(e => e.event === 'unified-queue:wheel-queued');
+      const queueEvent = mockAPI.emittedEvents.find(e => e.event === 'wheel:spin-queued');
       expect(queueEvent).toBeDefined();
       expect(queueEvent.data.segmentCount).toBe(config.segments.length);
       expect(queueEvent.data.wheelId).toBe(config.id);
@@ -532,11 +532,10 @@ describe('Wheel Segment Validation and Synchronization', () => {
       ];
       wheelGame.updateConfig(config.id, newSegments, config.settings);
       
-      // Release the first unified-queue item, then process the queued spin.
+      // Manually process queued spin
       wheelGame.isSpinning = false;
       wheelGame.currentSpin = null;
-      wheelGame.unifiedQueue.completeProcessing();
-      await wheelGame.unifiedQueue.processNext();
+      await wheelGame.processNextSpin();
       
       // Second spin should have been REJECTED due to segment count change
       const errorEvent = mockAPI.emittedEvents.find(e => e.event === 'wheel:spin-error');

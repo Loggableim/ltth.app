@@ -26,7 +26,6 @@ const WheelGame = require('./games/wheel');
 const SlotGame = require('./games/slot');
 const ArenaGame = require('./games/arena');
 const UnifiedQueueManager = require('./backend/unified-queue');
-const SocketAuthorization = require('./backend/socket-authorization');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
@@ -43,7 +42,6 @@ const AVATAR_PROXY_ALLOWED_HOST_SUFFIXES = [
 const AVATAR_PROXY_BLOCKED_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '::ffff:127.0.0.1']);
 const AVATAR_PROXY_MAX_BYTES = 2 * 1024 * 1024;
 const AVATAR_PROXY_TIMEOUT_MS = 5000;
-const AVATAR_PROXY_MAX_REDIRECTS = 3;
 
 class GameEnginePlugin {
   constructor(api) {
@@ -56,7 +54,6 @@ class GameEnginePlugin {
       warn: (msg) => this.api.log(msg, 'warn'),
       debug: (msg) => this.api.log(msg, 'debug')
     };
-    this.socketAuthorization = new SocketAuthorization(this.logger);
     
     // Active game sessions (in-memory)
     this.activeSessions = new Map(); // sessionId -> gameInstance
@@ -64,6 +61,12 @@ class GameEnginePlugin {
     // Pending challenges (waiting for opponent)
     this.pendingChallenges = new Map(); // sessionId -> { challenger, gift, timeout }
     
+    // Game queue (FIFO - First In First Out)
+    this.gameQueue = []; // Array of { gameType, viewerUsername, viewerNickname, triggerType, triggerValue, timestamp }
+    
+    // Queue processing state (Bug #2 fix - prevent race conditions)
+    this._queueProcessing = false;
+    this._queueProcessingTimeout = null;
     
     // Plinko game instance
     this.plinkoGame = null;
@@ -176,6 +179,26 @@ class GameEnginePlugin {
     };
   }
 
+  _mirrorUnifiedQueueEntry(entry) {
+    if (!entry || !entry.viewerUsername || !entry.gameType) {
+      return;
+    }
+
+    this.gameQueue.push({ ...entry, queueType: 'unified' });
+  }
+
+  _removeMirroredUnifiedQueueEntry(gameType, viewerUsername) {
+    const index = this.gameQueue.findIndex(entry =>
+      entry.queueType === 'unified' &&
+      entry.gameType === gameType &&
+      entry.viewerUsername === viewerUsername
+    );
+
+    if (index !== -1) {
+      this.gameQueue.splice(index, 1);
+    }
+  }
+
   _getSocketIO() {
     const noopSocket = { emit: () => {}, on: () => {} };
     try {
@@ -248,26 +271,6 @@ class GameEnginePlugin {
     return validTypes.has(audioType) ? audioType : null;
   }
 
-  _getSocketAddress(socket) {
-    return this.socketAuthorization.getSocketAddress(socket);
-  }
-
-  _hasValidAdminSocketToken(socket) {
-    return this.socketAuthorization.hasValidAdminToken(socket);
-  }
-
-  _isAdminSocket(socket) {
-    return this.socketAuthorization.isAdmin(socket);
-  }
-
-  _isOverlaySocket(socket) {
-    return this.socketAuthorization.isOverlay(socket);
-  }
-
-  _requireSocketRole(socket, eventName, allowedRoles) {
-    return this.socketAuthorization.requireRole(socket, eventName, allowedRoles);
-  }
-
   _isPrivateIpAddress(hostname) {
     const ipVersion = net.isIP(hostname);
     if (!ipVersion) return false;
@@ -304,67 +307,6 @@ class GameEnginePlugin {
     return !AVATAR_PROXY_ALLOWED_HOST_SUFFIXES.some((suffix) => {
       return normalizedHost === suffix || normalizedHost.endsWith(`.${suffix}`);
     });
-  }
-
-  _assertAllowedArenaAvatarUrl(value) {
-    let parsed;
-    try {
-      parsed = new URL(value);
-    } catch (_) {
-      const error = new Error('Invalid avatar URL');
-      error.statusCode = 400;
-      throw error;
-    }
-
-    if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') || parsed.username || parsed.password) {
-      const error = new Error('Invalid avatar URL');
-      error.statusCode = 400;
-      throw error;
-    }
-    if (this._isDisallowedAvatarHost(parsed.hostname)) {
-      const error = new Error('Avatar host is not allowed');
-      error.statusCode = 403;
-      throw error;
-    }
-    return parsed;
-  }
-
-  async _fetchAllowedArenaAvatar(rawUrl) {
-    let currentUrl = this._assertAllowedArenaAvatarUrl(rawUrl);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), AVATAR_PROXY_TIMEOUT_MS);
-
-    try {
-      for (let redirectCount = 0; redirectCount <= AVATAR_PROXY_MAX_REDIRECTS; redirectCount += 1) {
-        // Validate every hop. Native fetch follows redirects by default, which
-        // would otherwise bypass the hostname/IP policy after the first URL.
-        currentUrl = this._assertAllowedArenaAvatarUrl(currentUrl.toString());
-        const upstream = await fetch(currentUrl.toString(), {
-          redirect: 'manual',
-          signal: controller.signal,
-          headers: { 'User-Agent': 'LTTH-GameEngine/1.3 AvatarProxy' }
-        });
-
-        if (upstream.status >= 300 && upstream.status < 400) {
-          const location = upstream.headers.get('location');
-          if (!location) {
-            const error = new Error('Avatar redirect is missing a location');
-            error.statusCode = 502;
-            throw error;
-          }
-          currentUrl = new URL(location, currentUrl);
-          continue;
-        }
-
-        return upstream;
-      }
-
-      const error = new Error('Avatar redirect limit exceeded');
-      error.statusCode = 502;
-      throw error;
-    } finally {
-      clearTimeout(timeout);
-    }
   }
 
   _isDrawReason(reason) {
@@ -785,6 +727,7 @@ class GameEnginePlugin {
 
       // Reset transient queue state on init while preserving constructor-time availability
       this.unifiedQueue.clearQueue();
+      this.gameQueue = [];
       this.unifiedQueue.setGameEnginePlugin(this);
 
       // Initialize Plinko game
@@ -827,6 +770,9 @@ class GameEnginePlugin {
         this.logger.warn(`Failed to load overlay settings: ${error.message}`);
       }
       
+      // Keep legacy wheel reference for backward compatibility
+      this.plinkoGame.setWheelGame(this.wheelGame);
+
       // Register routes
       this.registerRoutes();
 
@@ -956,6 +902,9 @@ class GameEnginePlugin {
       this.unifiedQueue.destroy();
       this.unifiedQueue = null;
     }
+
+    // Clear game queue
+    this.gameQueue = [];
 
     // Cancel all pending challenges
     for (const [sessionId, challenge] of this.pendingChallenges.entries()) {
@@ -1580,7 +1529,28 @@ class GameEnginePlugin {
     this.api.registerRoute('GET', '/api/game-engine/arena/avatar', async (req, res) => {
       try {
         const rawUrl = String(req.query?.url || '').trim();
-        const upstream = await this._fetchAllowedArenaAvatar(rawUrl);
+        const parsed = new URL(rawUrl);
+        const host = String(parsed.hostname || '').toLowerCase();
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          return res.status(400).json({ error: 'Invalid avatar URL' });
+        }
+        if (this._isDisallowedAvatarHost(host)) {
+          return res.status(403).json({ error: 'Avatar host is not allowed' });
+        }
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), AVATAR_PROXY_TIMEOUT_MS);
+        let upstream;
+        try {
+          upstream = await fetch(parsed.toString(), {
+            signal: controller.signal,
+            headers: {
+              'User-Agent': 'LTTH-GameEngine/1.3 AvatarProxy'
+            }
+          });
+        } finally {
+          clearTimeout(timeout);
+        }
 
         if (!upstream.ok) {
           return res.status(upstream.status).json({ error: 'Avatar image unavailable' });
@@ -1601,7 +1571,7 @@ class GameEnginePlugin {
         res.send(bytes);
       } catch (error) {
         this.logger.warn(`Arena avatar proxy failed: ${error.message}`);
-        res.status(error.statusCode || 400).json({ error: 'Invalid avatar request' });
+        res.status(400).json({ error: 'Invalid avatar request' });
       }
     });
 
@@ -1774,11 +1744,17 @@ class GameEnginePlugin {
     // API: Get game queue status
     this.api.registerRoute('GET', '/api/game-engine/queue', (req, res) => {
       try {
-        res.json(this.unifiedQueue ? this.unifiedQueue.getStatus() : {
-          isProcessing: false,
-          queueLength: 0,
-          currentItem: null,
-          queue: []
+        res.json({
+          length: this.gameQueue.length,
+          queue: this.gameQueue.map((entry, index) => ({
+            position: index + 1,
+            gameType: entry.gameType,
+            viewerUsername: entry.viewerUsername,
+            viewerNickname: entry.viewerNickname,
+            triggerType: entry.triggerType,
+            triggerValue: entry.triggerValue,
+            timestamp: entry.timestamp
+          }))
         });
       } catch (error) {
         this.logger.error(`Error getting queue: ${error.message}`);
@@ -3164,15 +3140,7 @@ class GameEnginePlugin {
       fs.mkdirSync(slotImagesDir, { recursive: true });
     }
 
-    const ALLOWED_IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
-    const detectSlotImageExtension = (filePath) => {
-      const bytes = fs.readFileSync(filePath);
-      if (bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))) return 'png';
-      if (bytes.length >= 3 && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return 'jpg';
-      if (bytes.length >= 6 && (bytes.subarray(0, 6).toString('ascii') === 'GIF87a' || bytes.subarray(0, 6).toString('ascii') === 'GIF89a')) return 'gif';
-      if (bytes.length >= 12 && bytes.subarray(0, 4).toString('ascii') === 'RIFF' && bytes.subarray(8, 12).toString('ascii') === 'WEBP') return 'webp';
-      return null;
-    };
+    const ALLOWED_IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml']);
 
     const slotImageStorage = multer.diskStorage({
       destination: (req, file, cb) => {
@@ -3197,7 +3165,7 @@ class GameEnginePlugin {
         if (ALLOWED_IMAGE_MIME.has(file.mimetype)) {
           cb(null, true);
         } else {
-          cb(new Error('Only PNG, JPEG, GIF, and WebP image files are allowed'));
+          cb(new Error('Only image files are allowed (PNG, JPEG, GIF, WebP, SVG)'));
         }
       }
     });
@@ -3213,18 +3181,8 @@ class GameEnginePlugin {
         }
         const safeId = String(parseInt(req.body.machineId, 10) || 1);
         const symId  = (req.body.symbolId || 'sym').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-        const extension = detectSlotImageExtension(req.file.path);
-        if (!extension) {
-          fs.unlinkSync(req.file.path);
-          return res.status(400).json({ success: false, error: 'Invalid image content' });
-        }
-        const filename = `${symId}.${extension}`;
-        const finalPath = path.join(path.dirname(req.file.path), filename);
-        if (req.file.path !== finalPath) {
-          if (fs.existsSync(finalPath)) fs.unlinkSync(finalPath);
-          fs.renameSync(req.file.path, finalPath);
-        }
-        const imageUrl = `/game-engine/slot-images/${safeId}/${filename}`;
+        const ext    = path.extname(req.file.filename);
+        const imageUrl = `/game-engine/slot-images/${safeId}/${symId}${ext}`;
         this.logger.info(`Slot symbol image uploaded: ${symId} for machine ${safeId}`);
         res.json({ success: true, imageUrl });
       });
@@ -3233,7 +3191,7 @@ class GameEnginePlugin {
     // Serve slot symbol images
     this.api.registerRoute('GET', '/game-engine/slot-images/:machineId/:filename', (req, res) => {
       const { machineId, filename } = req.params;
-      if (!/^\d+$/.test(machineId) || !/^[\w\-]+\.(png|jpe?g|gif|webp)$/i.test(filename)) {
+      if (!/^\d+$/.test(machineId) || !/^[\w\-]+\.(png|jpe?g|gif|webp|svg)$/i.test(filename)) {
         return res.status(400).json({ error: 'Invalid path' });
       }
       const imgPath = path.join(slotImagesDir, machineId, filename);
@@ -3339,22 +3297,18 @@ class GameEnginePlugin {
     // Streamer makes a move
     this.io.on('connection', (socket) => {
       socket.on('game-engine:streamer-move', (data) => {
-        if (!this._requireSocketRole(socket, 'game-engine:streamer-move', 'admin')) return;
         this.handleStreamerMove(data);
       });
 
       socket.on('game-engine:cancel-game', (data) => {
-        if (!this._requireSocketRole(socket, 'game-engine:cancel-game', 'admin')) return;
         this.cancelGame(data.sessionId);
       });
 
       socket.on('game-engine:accept-challenge', (data) => {
-        if (!this._requireSocketRole(socket, 'game-engine:accept-challenge', 'admin')) return;
         this.acceptChallenge(data?.sessionId, data?.opponentUsername || data?.username);
       });
 
       socket.on('game-engine:reject-challenge', (data) => {
-        if (!this._requireSocketRole(socket, 'game-engine:reject-challenge', 'admin')) return;
         this.rejectChallenge(data.sessionId);
       });
 
@@ -3362,14 +3316,12 @@ class GameEnginePlugin {
       
       // Overlay requests current Plinko config
       socket.on('plinko:request-config', () => {
-        if (!this._requireSocketRole(socket, 'plinko:request-config', ['admin', 'overlay'])) return;
         const config = this.plinkoGame.getConfig();
         socket.emit('plinko:config', config);
       });
 
       // Overlay requests Plinko leaderboard
       socket.on('plinko:request-leaderboard', (data) => {
-        if (!this._requireSocketRole(socket, 'plinko:request-leaderboard', ['admin', 'overlay'])) return;
         const limit = data?.limit || 10;
         const leaderboard = this.plinkoGame.getLeaderboard(limit);
         socket.emit('plinko:leaderboard', leaderboard);
@@ -3377,23 +3329,20 @@ class GameEnginePlugin {
 
       // Ball landed in slot (sent from overlay)
       socket.on('plinko:ball-landed', async (data) => {
-        if (!this._requireSocketRole(socket, 'plinko:ball-landed', 'overlay')) return;
-        const { ballId } = data || {};
-        await this.plinkoGame.handleBallLanded(ballId);
+        const { ballId, slotIndex } = data;
+        await this.plinkoGame.handleBallLanded(ballId, slotIndex);
       });
 
       // === WHEEL (GLÜCKSRAD) SOCKET EVENTS ===
       
       // Overlay requests current Wheel config
       socket.on('wheel:request-config', () => {
-        if (!this._requireSocketRole(socket, 'wheel:request-config', ['admin', 'overlay'])) return;
         const config = this.wheelGame.getConfig();
         socket.emit('wheel:config', config);
       });
 
       // Overlay requests current unified queue status
       socket.on('unified-queue:request-status', () => {
-        if (!this._requireSocketRole(socket, 'unified-queue:request-status', ['admin', 'overlay'])) return;
         if (this.unifiedQueue) {
           socket.emit('unified-queue:status', this.unifiedQueue.getStatus());
         }
@@ -3401,7 +3350,6 @@ class GameEnginePlugin {
 
       // Unified overlay requests current game state (e.g. on load or reconnect)
       socket.on('game-engine:request-state', () => {
-        if (!this._requireSocketRole(socket, 'game-engine:request-state', ['admin', 'overlay'])) return;
         if (this.activeSessions.size > 0) {
           const [sessionId] = [...this.activeSessions.entries()][0];
           const session = this.db.getSession(sessionId);
@@ -3423,7 +3371,6 @@ class GameEnginePlugin {
 
       // Spin completed (sent from overlay)
       socket.on('wheel:spin-complete', async (data) => {
-        if (!this._requireSocketRole(socket, 'wheel:spin-complete', 'overlay')) return;
         const { spinId, segmentIndex, reportedSegmentIndex } = data;
         await this.wheelGame.handleSpinComplete(spinId, segmentIndex, reportedSegmentIndex);
       });
@@ -3432,7 +3379,6 @@ class GameEnginePlugin {
 
       // Overlay requests current slot config
       socket.on('slot:request-config', (data) => {
-        if (!this._requireSocketRole(socket, 'slot:request-config', ['admin', 'overlay'])) return;
         if (!this.slotGame) { socket.emit('slot:config', null); return; }
         const machineId = data && data.machineId ? data.machineId : null;
         const config = this.slotGame.getConfig(machineId);
@@ -3443,7 +3389,6 @@ class GameEnginePlugin {
       // Rewards (OpenShock, XP, audio) are dispatched only now so they fire
       // AFTER the reels have visually stopped and the result is displayed.
       socket.on('slot:spin-completed', (data) => {
-        if (!this._requireSocketRole(socket, 'slot:spin-completed', 'overlay')) return;
         if (!this.slotGame) return;
         const spinId = data && data.spinId;
         if (!spinId) return;
@@ -3454,7 +3399,6 @@ class GameEnginePlugin {
 
       // Listen for config updates to re-register GCCE commands
       socket.on('game-engine:config-updated', (data) => {
-        if (!this._requireSocketRole(socket, 'game-engine:config-updated', 'admin')) return;
         if (data.gameType === 'connect4') {
           this.logger.info('💬 [GAME ENGINE] Connect4 config updated, re-registering GCCE commands');
           this.registerGCCECommands();
@@ -4289,10 +4233,6 @@ class GameEnginePlugin {
   handleGameStart(gameType, viewerUsername, viewerNickname, triggerType, triggerValue, giftPictureUrl = null) {
     this._ensureDatabaseInitialized();
 
-    if (!['connect4', 'chess'].includes(gameType)) {
-      return { success: false, error: 'unsupported_game_type' };
-    }
-
     // Check if unified queue is available for this game type
     const useUnifiedQueue = this.shouldUseUnifiedQueue(gameType);
     
@@ -4324,8 +4264,42 @@ class GameEnginePlugin {
           };
         }
 
+        if (result.queued) {
+          this._mirrorUnifiedQueueEntry(gameData);
+        }
+        
         this.logger.info(`Game queued in unified queue: ${viewerUsername} for ${gameType}`);
         return { queued: true, queueType: 'unified', position: result.position };
+      }
+    } else {
+      // Use old gameQueue for backwards compatibility with other game types
+      // Check if ANY game is currently active (not just for this player)
+      if (this.activeSessions.size > 0 || this.pendingChallenges.size > 0) {
+        // Game is active or challenge pending - add to queue
+        const queueEntry = {
+          gameType,
+          viewerUsername,
+          viewerNickname,
+          triggerType,
+          triggerValue,
+          giftPictureUrl,
+          timestamp: Date.now()
+        };
+        
+        this.gameQueue.push(queueEntry);
+        
+        this.logger.info(`Game queued: ${viewerUsername} for ${gameType} (Queue length: ${this.gameQueue.length})`);
+        
+        // Emit queue event
+        this.io.emit('game-engine:game-queued', {
+          position: this.gameQueue.length,
+          gameType,
+          viewerUsername,
+          viewerNickname,
+          message: `Spiel wurde in Warteschlange hinzugefügt. Position: ${this.gameQueue.length}`
+        });
+        
+        return { queued: true, queueType: 'legacy', position: this.gameQueue.length };
       }
     }
 
@@ -4369,6 +4343,8 @@ class GameEnginePlugin {
       this._ensureDatabaseInitialized();
 
       this.logger.info(`🎮 [GAME ENGINE] Starting ${gameType} from unified queue for ${viewerUsername}`);
+      this._removeMirroredUnifiedQueueEntry(gameType, viewerUsername);
+      
       // Check if player already has an active game
       const activeSession = this.db.getActiveSessionForPlayer(viewerUsername);
       if (activeSession) {
@@ -4415,6 +4391,101 @@ class GameEnginePlugin {
         completed: true,
         error: error.message
       };
+    }
+  }
+
+  /**
+   * Process next game in queue (called after a game ends)
+   * Bug #2 fix: Implements semaphore/lock pattern to prevent race conditions
+   */
+  processNextQueuedGame() {
+    // Check if already processing (atomic check)
+    if (this._queueProcessing) {
+      this.logger.debug('Queue processing already in progress, skipping');
+      return;
+    }
+
+    // Check for empty queue
+    if (this.gameQueue.length === 0) {
+      this.logger.debug('No games in queue');
+      return;
+    }
+
+    // Check if there's still an active game or challenge
+    if (this.activeSessions.size > 0 || this.pendingChallenges.size > 0) {
+      this.logger.debug('Cannot process queue: game still active or challenge pending');
+      return;
+    }
+
+    // Acquire lock
+    this._queueProcessing = true;
+    
+    // Set timeout to release lock if processing gets stuck (30 seconds)
+    this._queueProcessingTimeout = setTimeout(() => {
+      if (this._queueProcessing) {
+        this.logger.warn('Queue processing stuck for 30 seconds, releasing lock');
+        this._queueProcessing = false;
+        this._queueProcessingTimeout = null;
+      }
+    }, 30000);
+    if (typeof this._queueProcessingTimeout.unref === 'function') {
+      this._queueProcessingTimeout.unref();
+    }
+
+    try {
+      // Get next game from queue (FIFO)
+      const nextGame = this.gameQueue.shift();
+      
+      if (!nextGame) {
+        return;
+      }
+
+      this.logger.info(`Processing queued game for ${nextGame.viewerUsername} (${this.gameQueue.length} remaining in queue)`);
+      
+      // Emit queue processing event
+      this.io.emit('game-engine:queue-processing', {
+        gameType: nextGame.gameType,
+        viewerUsername: nextGame.viewerUsername,
+        viewerNickname: nextGame.viewerNickname,
+        remainingInQueue: this.gameQueue.length
+      });
+
+      // Get configuration
+      const config = this.db.getGameConfig(nextGame.gameType) || this.defaultConfigs[nextGame.gameType];
+
+      // If challenge screen is disabled, start game directly
+      if (!config.showChallengeScreen) {
+        this.startGame(
+          nextGame.gameType, 
+          nextGame.viewerUsername, 
+          nextGame.viewerNickname, 
+          nextGame.triggerType, 
+          nextGame.triggerValue
+        );
+        return;
+      }
+
+      // Create a pending challenge
+      const sessionId = this.createPendingChallenge(
+        nextGame.gameType, 
+        nextGame.viewerUsername, 
+        nextGame.viewerNickname, 
+        nextGame.triggerValue,
+        nextGame.giftPictureUrl,
+        config,
+        nextGame.triggerType
+      );
+
+      this.logger.info(`Challenge created from queue #${sessionId}: ${nextGame.viewerUsername} with ${nextGame.triggerValue}`);
+    } catch (error) {
+      this.logger.error(`Error processing queued game: ${error.message}`);
+    } finally {
+      // Release lock
+      if (this._queueProcessingTimeout) {
+        clearTimeout(this._queueProcessingTimeout);
+        this._queueProcessingTimeout = null;
+      }
+      this._queueProcessing = false;
     }
   }
 
@@ -4715,7 +4786,7 @@ class GameEnginePlugin {
         
         return {
           success: true,
-          message: `Game queued! You are position ${result?.position || 0} in the queue.`,
+          message: `Game queued! You are position ${result?.position || this.gameQueue.length} in the queue.`,
           displayOverlay: true
         };
       }
@@ -5303,6 +5374,7 @@ class GameEnginePlugin {
     } else {
       // Process next game in old queue after a short delay (allow UI to update)
       const nextGameTimer = setTimeout(() => {
+        this.processNextQueuedGame();
       }, 2000);
       if (typeof nextGameTimer.unref === 'function') {
         nextGameTimer.unref();
@@ -5683,7 +5755,7 @@ class GameEnginePlugin {
         
         return {
           success: true,
-          message: `Chess game queued! You are position ${result?.position || 0} in the queue.`,
+          message: `Chess game queued! You are position ${result?.position || this.gameQueue.length} in the queue.`,
           displayOverlay: true
         };
       }

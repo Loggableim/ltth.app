@@ -508,8 +508,6 @@ class ArenaGame {
     this.tickTimer = null;
     this.destroyed = false;
     this.lastStateEmitAt = 0;
-    this.pendingStateEmitTimer = null;
-    this.pendingStateEmitReason = null;
     this.lastWeaponPickupSpawnAt = 0;
     this.lastTickAt = null;
     this.aiSpatialIndex = null;
@@ -587,11 +585,6 @@ class ArenaGame {
       clearTimeout(this.tickTimer);
       this.tickTimer = null;
     }
-    if (this.pendingStateEmitTimer) {
-      clearTimeout(this.pendingStateEmitTimer);
-      this.pendingStateEmitTimer = null;
-    }
-    this.pendingStateEmitReason = null;
     this.lastTickAt = null;
     this.players.clear();
     this.pendingSpawns.clear();
@@ -2395,49 +2388,9 @@ class ArenaGame {
       return false;
     }
 
-    // Live activity can arrive in bursts (chat, likes, gifts). The first
-    // mutation is sent immediately, while later mutations in the current
-    // snapshot window are folded into one authoritative state packet.
-    if (force && config.stateEmitIntervalMs > 0 && now - this.lastStateEmitAt < config.stateEmitIntervalMs) {
-      this._scheduleCoalescedStateEmit(reason, config.stateEmitIntervalMs - (now - this.lastStateEmitAt));
-      return false;
-    }
-
-    this._emitStateNow(reason);
-    return true;
-  }
-
-  _emitStateNow(reason) {
-    if (this.pendingStateEmitTimer) {
-      clearTimeout(this.pendingStateEmitTimer);
-      this.pendingStateEmitTimer = null;
-    }
-    this.pendingStateEmitReason = null;
-    this.lastStateEmitAt = this.now();
+    this.lastStateEmitAt = now;
     this.io.emit('arena:state', this.getState(reason));
-  }
-
-  _scheduleCoalescedStateEmit(reason, delayMs) {
-    this.pendingStateEmitReason = reason;
-    if (this.pendingStateEmitTimer || this.destroyed) return;
-
-    const delay = Math.max(1, Math.ceil(delayMs));
-    this.pendingStateEmitTimer = setTimeout(() => {
-      this.pendingStateEmitTimer = null;
-      const pendingReason = this.pendingStateEmitReason;
-      this.pendingStateEmitReason = null;
-      if (this.destroyed || !pendingReason) return;
-
-      const config = this.getConfig();
-      const now = this.now();
-      // A regular tick may already have carried the pending changes.
-      if (config.stateEmitIntervalMs > 0 && now - this.lastStateEmitAt < config.stateEmitIntervalMs) return;
-      this.lastStateEmitAt = now;
-      this.io.emit('arena:state', this.getState(pendingReason));
-    }, delay);
-    if (typeof this.pendingStateEmitTimer.unref === 'function') {
-      this.pendingStateEmitTimer.unref();
-    }
+    return true;
   }
 
   reset() {

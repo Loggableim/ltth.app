@@ -443,7 +443,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io({ auth: { role: 'overlay' } });
+    const socket = io();
     
     // Check if test mode is enabled
     const urlParams = new URLSearchParams(window.location.search);

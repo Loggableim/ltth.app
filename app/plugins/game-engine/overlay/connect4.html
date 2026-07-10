@@ -682,7 +682,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io({ auth: { role: 'overlay' } });
+    const socket = io();
     
     let currentSession = null;
     let gameConfig = null;
@@ -975,7 +975,7 @@
         if (!data || data.length === 0) {
           contentDiv.innerHTML = '<div class="leaderboard-empty">Noch keine Daten / No data yet</div>';
         } else {
-          contentDiv.replaceChildren(renderLeaderboardTable(data, type));
+          contentDiv.innerHTML = renderLeaderboardTable(data, type);
         }
       } catch (error) {
         console.error('Failed to load leaderboard:', error);
@@ -996,68 +996,50 @@
     function renderLeaderboardTable(data, type) {
       const rankIcons = ['🥇', '🥈', '🥉'];
       
-      const table = document.createElement('table');
-      table.className = 'leaderboard-table';
-      const thead = document.createElement('thead');
-      const headerRow = document.createElement('tr');
-      const addHeader = (text) => {
-        const cell = document.createElement('th');
-        cell.textContent = text;
-        headerRow.appendChild(cell);
-      };
-      addHeader('Rang');
-      addHeader('Spieler');
+      let html = '<table class="leaderboard-table"><thead><tr>';
+      html += '<th>Rang</th>';
+      html += '<th>Spieler</th>';
       
       if (type === 'daily') {
-        addHeader('Siege Heute');
-        addHeader('Spiele Heute');
+        html += '<th>Siege Heute</th>';
+        html += '<th>Spiele Heute</th>';
       } else if (type === 'season') {
-        addHeader('Siege Saison');
-        addHeader('Spiele Saison');
+        html += '<th>Siege Saison</th>';
+        html += '<th>Spiele Saison</th>';
       } else if (type === 'lifetime') {
-        addHeader('Gesamt Siege');
-        addHeader('Gesamt Spiele');
+        html += '<th>Gesamt Siege</th>';
+        html += '<th>Gesamt Spiele</th>';
       } else if (type === 'elo') {
-        addHeader('ELO Rating');
-        addHeader('Peak ELO');
+        html += '<th>ELO Rating</th>';
+        html += '<th>Peak ELO</th>';
       }
-      thead.appendChild(headerRow);
-      table.appendChild(thead);
-      const tbody = document.createElement('tbody');
+      
+      html += '</tr></thead><tbody>';
       
       data.forEach((player, index) => {
-        const row = document.createElement('tr');
-        const rankCell = document.createElement('td');
-        const icon = document.createElement('span');
-        icon.className = 'rank-icon';
-        icon.textContent = rankIcons[index] || String(index + 1);
-        rankCell.append(icon, document.createTextNode(String(index + 1)));
-        const userCell = document.createElement('td');
-        userCell.textContent = player.username || '';
-        row.append(rankCell, userCell);
-        const addCell = (value) => {
-          const cell = document.createElement('td');
-          cell.textContent = String(value);
-          row.appendChild(cell);
-        };
+        html += '<tr>';
+        html += `<td><span class="rank-icon">${rankIcons[index] || (index + 1)}</span>${index + 1}</td>`;
+        html += `<td>${player.username}</td>`;
         
         if (type === 'daily') {
-          addCell(player.wins_today || 0);
-          addCell(player.games_today || 0);
+          html += `<td>${player.wins_today || 0}</td>`;
+          html += `<td>${player.games_today || 0}</td>`;
         } else if (type === 'season') {
-          addCell(player.wins_season || 0);
-          addCell(player.games_season || 0);
+          html += `<td>${player.wins_season || 0}</td>`;
+          html += `<td>${player.games_season || 0}</td>`;
         } else if (type === 'lifetime') {
-          addCell(player.wins || 0);
-          addCell(player.total_games || 0);
+          html += `<td>${player.wins || 0}</td>`;
+          html += `<td>${player.total_games || 0}</td>`;
         } else if (type === 'elo') {
-          addCell(player.elo_rating || 1000);
-          addCell(player.peak_elo || 1000);
+          html += `<td>${player.elo_rating || 1000}</td>`;
+          html += `<td>${player.peak_elo || 1000}</td>`;
         }
-        tbody.appendChild(row);
+        
+        html += '</tr>';
       });
-      table.appendChild(tbody);
-      return table;
+      
+      html += '</tbody></table>';
+      return html;
     }
 
     // Initialize board grid
@@ -1254,24 +1236,33 @@
         eloContainer.style.marginTop = '15px';
         eloContainer.style.fontSize = '16px';
         
-        const appendEloChange = (player, change) => {
-          if (!change) return;
-          const row = document.createElement('div');
-          row.style.margin = '5px 0';
-          const name = document.createElement('strong');
-          name.textContent = `${player.nickname || player.username || ''}: `;
-          const delta = document.createElement('span');
-          delta.style.color = change.change > 0 ? '#4CAF50' : '#f44336';
-          delta.textContent = `${change.change > 0 ? '↑' : '↓'} ${Math.abs(change.change)} ELO`;
-          const rating = document.createElement('span');
-          rating.style.color = '#aaa';
-          rating.textContent = ` (${change.newELO})`;
-          row.append(name, delta, rating);
-          if (change.isPeakELO) row.append(document.createTextNode(' 🌟 Neuer Rekord!'));
-          eloContainer.appendChild(row);
-        };
-        appendEloChange(data.state.player1, data.eloChanges.player1);
-        appendEloChange(data.state.player2, data.eloChanges.player2);
+        if (data.eloChanges.player1) {
+          const p1Change = data.eloChanges.player1.change;
+          const p1Color = p1Change > 0 ? '#4CAF50' : '#f44336';
+          const p1Arrow = p1Change > 0 ? '↑' : '↓';
+          eloContainer.innerHTML += `
+            <div style="margin: 5px 0;">
+              <strong>${data.state.player1.nickname || data.state.player1.username}:</strong> 
+              <span style="color: ${p1Color};">${p1Arrow} ${Math.abs(p1Change)} ELO</span>
+              <span style="color: #aaa;"> (${data.eloChanges.player1.newELO})</span>
+              ${data.eloChanges.player1.isPeakELO ? ' 🌟 Neuer Rekord!' : ''}
+            </div>
+          `;
+        }
+        
+        if (data.eloChanges.player2) {
+          const p2Change = data.eloChanges.player2.change;
+          const p2Color = p2Change > 0 ? '#4CAF50' : '#f44336';
+          const p2Arrow = p2Change > 0 ? '↑' : '↓';
+          eloContainer.innerHTML += `
+            <div style="margin: 5px 0;">
+              <strong>${data.state.player2.nickname || data.state.player2.username}:</strong> 
+              <span style="color: ${p2Color};">${p2Arrow} ${Math.abs(p2Change)} ELO</span>
+              <span style="color: #aaa;"> (${data.eloChanges.player2.newELO})</span>
+              ${data.eloChanges.player2.isPeakELO ? ' 🌟 Neuer Rekord!' : ''}
+            </div>
+          `;
+        }
         
         xpReward.after(eloContainer);
       }

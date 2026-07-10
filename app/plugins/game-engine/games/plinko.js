@@ -23,7 +23,7 @@ class PlinkoGame {
     this.db = db;
     this.logger = logger;
     this.io = api.getSocketIO();
-    this.random = typeof api.random === 'function' ? api.random.bind(api) : Math.random;
+    this.wheelGame = null;
     this.unifiedQueue = null; // Set by main.js
     
     // Debug flag - can be set via config or environment variable
@@ -56,32 +56,18 @@ class PlinkoGame {
   }
 
   /**
-   * Choose the payout slot on the server before the ball is rendered.
-   * A binomial walk keeps the familiar centre-weighted Plinko distribution
-   * without trusting a browser-side physics result for XP or hardware actions.
-   */
-  _selectServerSlotIndex(config) {
-    const slotCount = Array.isArray(config?.slots) ? config.slots.length : 0;
-    if (slotCount < 1) {
-      throw new Error('Plinko board has no slots');
-    }
-
-    const pegRows = Math.max(1, Math.min(32, Number(config?.physicsSettings?.pegRows) || 12));
-    let rightSteps = 0;
-    for (let index = 0; index < pegRows; index++) {
-      if (this.random() >= 0.5) {
-        rightSteps++;
-      }
-    }
-
-    return Math.max(0, Math.min(slotCount - 1, Math.round((rightSteps / pegRows) * (slotCount - 1))));
-  }
-
-  /**
    * Initialize Plinko game
    */
   init() {
     this.logger.info('🎰 Plinko game initialized');
+  }
+
+  /**
+   * Provide wheel reference so Plinko can respect queue state (legacy)
+   * @deprecated Use setUnifiedQueue instead
+   */
+  setWheelGame(wheelGame) {
+    this.wheelGame = wheelGame;
   }
 
   /**
@@ -330,9 +316,31 @@ class PlinkoGame {
     return color;
   }
 
-  /** Check whether the unified queue is currently busy. */
+  /**
+   * Check if Plinko should queue (unified queue version)
+   */
   shouldQueuePlinko() {
-    return Boolean(this.unifiedQueue?.shouldQueue());
+    // If unified queue is available, use it
+    if (this.unifiedQueue) {
+      return this.unifiedQueue.shouldQueue();
+    }
+    
+    // Legacy: check wheel queue directly
+    if (!this.wheelGame || !this.wheelGame.getQueueStatus) {
+      return false;
+    }
+    const status = this.wheelGame.getQueueStatus();
+    return !!(status?.isSpinning || (status?.queueLength || 0) > 0);
+  }
+
+  /**
+   * Process next queued Plinko drop when wheel is free (legacy - deprecated)
+   * @deprecated Use unified queue instead
+   */
+  async processPlinkoQueue() {
+    // This method is kept for backward compatibility but no longer used
+    // with unified queue
+    this.logger.warn('⚠️ processPlinkoQueue() called but unified queue should be used instead');
   }
 
   /**
@@ -445,10 +453,6 @@ class PlinkoGame {
       }
     }
 
-    // Resolve the outcome before notifying an overlay. The browser renders the
-    // selected target but never decides a payout-relevant slot.
-    const serverSlotIndex = this._selectServerSlotIndex(config);
-
     // Generate unique ball ID
     const ballId = `ball_${Date.now()}_${this.ballIdCounter++}`;
 
@@ -462,7 +466,6 @@ class PlinkoGame {
       timestamp: Date.now(),
       batchId,
       boardId,
-      serverSlotIndex,
       isTest // Store test mode flag for proper handling in handleBallLanded
     });
 
@@ -488,7 +491,6 @@ class PlinkoGame {
       batchId,
       boardId,
       boardName: config.name,
-      targetSlotIndex: serverSlotIndex,
       testMode: isTest
     });
 
@@ -523,6 +525,7 @@ class PlinkoGame {
     if (this.shouldQueuePlinko() && !options.forceStart) {
       const batchId = options.batchId || `batch_${Date.now()}_${this.ballIdCounter++}`;
       
+      // Use unified queue if available
       if (this.unifiedQueue) {
         const dropData = {
           username,
@@ -538,6 +541,25 @@ class PlinkoGame {
         this.logger.info(`🎰 Plinko queued via unified queue for ${username} (batch ${batchId})`);
         const queueResult = this.unifiedQueue.queuePlinko(dropData);
         return { success: true, queued: true, position: queueResult.position, batchId };
+      } else {
+        // Legacy queue (kept for backward compatibility)
+        this.plinkoQueue.push({
+          username,
+          nickname,
+          profilePictureUrl,
+          betAmount,
+          count: limitedCount,
+          batchId,
+          preferredColor: options.preferredColor || null,
+          boardId
+        });
+        this.logger.info(`🎰 Plinko queued for ${username} (batch ${batchId}, position ${this.plinkoQueue.length})`);
+        this.io.emit('plinko:queued', { position: this.plinkoQueue.length, username, batchId });
+        const queueTimer = setTimeout(() => this.processPlinkoQueue(), 500);
+        if (typeof queueTimer.unref === 'function') {
+          queueTimer.unref();
+        }
+        return { success: true, queued: true, position: this.plinkoQueue.length };
       }
     }
 
@@ -610,8 +632,6 @@ class PlinkoGame {
       return { success: false, error: 'Board not found' };
     }
 
-    const serverSlotIndex = this._selectServerSlotIndex(config);
-
     // Generate unique ball ID
     const ballId = `test-ball-${Date.now()}_${this.ballIdCounter++}`;
 
@@ -624,7 +644,6 @@ class PlinkoGame {
       ballType: 'standard',
       timestamp: Date.now(),
       boardId,
-      serverSlotIndex,
       isTest: true // <-- Flag for test mode
     });
 
@@ -644,7 +663,6 @@ class PlinkoGame {
       color,
       boardId,
       boardName: config.name,
-      targetSlotIndex: serverSlotIndex,
       isTest: true // <-- Flag for overlay (optional tracking)
     });
 
@@ -656,10 +674,10 @@ class PlinkoGame {
   /**
    * Handle ball landing in a slot
    */
-  async handleBallLanded(ballId, reportedSlotIndex) {
+  async handleBallLanded(ballId, slotIndex) {
     const ballData = this.activeBalls.get(ballId);
     
-    this._debugLog(`Ball landing reported: ${ballId} in slot ${reportedSlotIndex}`);
+    this._debugLog(`Ball landed: ${ballId} in slot ${slotIndex}`);
     
     if (!ballData) {
       this.logger.warn(`Ball ${ballId} not found in active balls`);
@@ -682,19 +700,7 @@ class PlinkoGame {
       }
     }
 
-    // The browser result is display-only. It can diagnose a visual desync but
-    // must never determine XP, statistics, or OpenShock behaviour.
-    // Balls created before this release do not have a stored target. Pick one
-    // on the server as a safe migration path; never fall back to browser input.
-    const slotIndex = Number.isInteger(ballData.serverSlotIndex)
-      ? ballData.serverSlotIndex
-      : this._selectServerSlotIndex(config);
-
-    if (Number.isInteger(reportedSlotIndex) && reportedSlotIndex !== slotIndex) {
-      this.logger.warn(`Plinko visual desync for ${ballId}: overlay reported ${reportedSlotIndex}, server selected ${slotIndex}`);
-    }
-
-    // Validate the server-selected slot configuration
+    // Validate slot configuration
     if (!config || !config.slots || slotIndex < 0 || slotIndex >= config.slots.length) {
       this.logger.error(`Invalid slot index: ${slotIndex}`);
       this.activeBalls.delete(ballId);
@@ -728,18 +734,28 @@ class PlinkoGame {
       await this.awardXP(ballData.username, profit, multiplier);
     }
 
-    // OpenShock is deliberately decoupled from gambling outcomes. Existing
-    // configurations are surfaced to the streamer as a review signal only;
-    // no Plinko result can dispatch a hardware command automatically.
-    if (slot.openshockReward?.enabled) {
-      this.io.emit('plinko:openshock-review-required', {
-        ballId,
+    // Trigger OpenShock reward if configured
+    this._debugLog('Checking OpenShock trigger conditions', {
+      hasRewardConfig: !!slot.openshockReward,
+      enabled: slot.openshockReward?.enabled,
+      username: ballData.username
+    });
+    
+    if (slot.openshockReward && slot.openshockReward.enabled) {
+      this._debugLog('✅ Triggering OpenShock reward', {
         username: ballData.username,
-        nickname: ballData.nickname,
-        slotIndex,
-        boardId: ballData.boardId
+        type: slot.openshockReward.type,
+        intensity: slot.openshockReward.intensity,
+        duration: slot.openshockReward.duration,
+        deviceCount: slot.openshockReward.deviceIds?.length || 0
       });
-      this.logger.warn(`Plinko OpenShock reward suppressed for ${ballId}; streamer review is required`);
+      
+      await this.triggerOpenshockReward(ballData.username, slot.openshockReward, slotIndex);
+    } else {
+      this._debugLog('❌ OpenShock NOT triggered', {
+        reason: !slot.openshockReward ? 'No reward config' : 'Reward disabled',
+        slotIndex
+      });
     }
 
     // Record transaction (separate tables for test vs regular)
@@ -833,6 +849,14 @@ class PlinkoGame {
       `🎰 Plinko result: ${ballData.username} bet ${ballData.bet} XP, ` +
       `landed in slot ${slotIndex} (${multiplier}x), won ${profit} XP (net: ${netProfit >= 0 ? '+' : ''}${netProfit} XP)`
     );
+
+    // Try processing queued drops after each landing (legacy mode only)
+    if (!this.unifiedQueue) {
+      const queueTimer = setTimeout(() => this.processPlinkoQueue(), 400);
+      if (typeof queueTimer.unref === 'function') {
+        queueTimer.unref();
+      }
+    }
 
     return {
       success: true,

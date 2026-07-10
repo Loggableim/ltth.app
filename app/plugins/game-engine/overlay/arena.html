@@ -943,7 +943,7 @@
   <div id="empty-state">Waiting for live activity</div>
 
   <script>
-    const socket = io({ auth: { role: 'overlay' } });
+    const socket = io();
     const canvas = document.getElementById('arena-canvas');
     const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true }) || canvas.getContext('2d');
     const fieldFrameEl = document.getElementById('arena-field-frame');

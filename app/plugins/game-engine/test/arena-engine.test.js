@@ -2718,39 +2718,6 @@ describe('ArenaGame', () => {
     }));
   });
 
-  it('coalesces burst activity snapshots into one state packet per interval', () => {
-    jest.useFakeTimers();
-    try {
-      let now = 1000;
-      const { arena, io } = createArena({ stateEmitIntervalMs: 250 }, { now: () => now });
-
-      arena.handleActivity({ uniqueId: 'viewer_1', nickname: 'Viewer One' }, 'chat');
-      io.emit.mockClear();
-
-      now = 1010;
-      arena.handleActivity({ uniqueId: 'viewer_2', nickname: 'Viewer Two' }, 'chat');
-      now = 1020;
-      arena.handleActivity({ uniqueId: 'viewer_3', nickname: 'Viewer Three' }, 'chat');
-
-      expect(io.emit).not.toHaveBeenCalledWith('arena:state', expect.any(Object));
-
-      now = 1250;
-      jest.advanceTimersByTime(240);
-
-      const stateEmits = io.emit.mock.calls.filter(([eventName]) => eventName === 'arena:state');
-      expect(stateEmits).toHaveLength(1);
-      expect(stateEmits[0][1]).toEqual(expect.objectContaining({
-        reason: 'activity',
-        players: expect.arrayContaining([
-          expect.objectContaining({ username: 'viewer_2' }),
-          expect.objectContaining({ username: 'viewer_3' })
-        ])
-      }));
-    } finally {
-      jest.useRealTimers();
-    }
-  });
-
   it('chooses to flee from a larger nearby player before chasing food', () => {
     const { arena } = createArena();
     arena.handleActivity({ uniqueId: 'small', nickname: 'Small' }, 'chat');
@@ -6589,28 +6556,6 @@ describe('GameEnginePlugin arena integration', () => {
     plugin.registerRoutes();
 
     expect(routes['GET /api/game-engine/arena/avatar']).toEqual(expect.any(Function));
-  });
-
-  it('revalidates every Arena avatar redirect before fetching the next hop', async () => {
-    const { plugin } = createPlugin();
-    const originalFetch = global.fetch;
-    global.fetch = jest.fn()
-      .mockResolvedValueOnce({
-        status: 302,
-        headers: { get: jest.fn(() => 'http://127.0.0.1/private-avatar') }
-      });
-
-    try {
-      await expect(plugin._fetchAllowedArenaAvatar('https://avatars.tiktokcdn.com/avatar.webp'))
-        .rejects.toMatchObject({ statusCode: 403 });
-      expect(global.fetch).toHaveBeenCalledTimes(1);
-      expect(global.fetch).toHaveBeenCalledWith(
-        'https://avatars.tiktokcdn.com/avatar.webp',
-        expect.objectContaining({ redirect: 'manual' })
-      );
-    } finally {
-      global.fetch = originalFetch;
-    }
   });
 
   it('keeps chat activity flowing to the arena when GCCE owns chat commands', () => {

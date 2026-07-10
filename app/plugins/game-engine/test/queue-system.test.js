@@ -83,9 +83,9 @@ describe('Game Engine Queue System', () => {
     }
   });
 
-  test('Unified queue should be empty initially', () => {
-    expect(plugin.unifiedQueue).toBeDefined();
-    expect(plugin.unifiedQueue.queue).toHaveLength(0);
+  test('Queue should be empty initially', () => {
+    expect(plugin.gameQueue).toBeDefined();
+    expect(plugin.gameQueue.length).toBe(0);
   });
 
   test('Chat command trigger should be recognized', () => {
@@ -108,17 +108,18 @@ describe('Game Engine Queue System', () => {
     // Try to start another game
     plugin.handleGameStart('connect4', 'testuser', 'Test User', 'command', '!play');
 
-    // Should be queued by the single queue manager.
-    expect(plugin.unifiedQueue.queue).toHaveLength(1);
-    expect(plugin.unifiedQueue.queue[0].data.viewerUsername).toBe('testuser');
-    expect(plugin.unifiedQueue.queue[0].type).toBe('connect4');
+    // Should be queued
+    expect(plugin.gameQueue.length).toBe(1);
+    expect(plugin.gameQueue[0].viewerUsername).toBe('testuser');
+    expect(plugin.gameQueue[0].gameType).toBe('connect4');
 
     // Cleanup
     plugin.activeSessions.clear();
   });
 
-  test('unified queue preserves FIFO order', () => {
-    plugin.unifiedQueue.queueConnect4({
+  test('processNextQueuedGame should process FIFO', () => {
+    // Add multiple entries to queue
+    plugin.gameQueue.push({
       gameType: 'connect4',
       viewerUsername: 'user1',
       viewerNickname: 'User 1',
@@ -126,7 +127,7 @@ describe('Game Engine Queue System', () => {
       triggerValue: '!play',
       timestamp: Date.now()
     });
-    plugin.unifiedQueue.queueConnect4({
+    plugin.gameQueue.push({
       gameType: 'connect4',
       viewerUsername: 'user2',
       viewerNickname: 'User 2',
@@ -135,14 +136,19 @@ describe('Game Engine Queue System', () => {
       timestamp: Date.now() + 1000
     });
 
-    expect(plugin.unifiedQueue.queue).toHaveLength(2);
-    const firstUser = plugin.unifiedQueue.queue[0].data.viewerUsername;
+    expect(plugin.gameQueue.length).toBe(2);
+
+    // Process next game
+    const firstUser = plugin.gameQueue[0].viewerUsername;
     expect(firstUser).toBe('user1');
+
+    // After processing, user1 should be removed, user2 should be next
+    // (we can't actually process it without a full game setup, but we can verify queue order)
   });
 
-  test('Unified queue should be cleared on plugin destroy', async () => {
-    const queue = plugin.unifiedQueue;
-    queue.queueConnect4({
+  test('Queue should be cleared on plugin destroy', async () => {
+    // Add entries to queue
+    plugin.gameQueue.push({
       gameType: 'connect4',
       viewerUsername: 'user1',
       viewerNickname: 'User 1',
@@ -151,11 +157,12 @@ describe('Game Engine Queue System', () => {
       timestamp: Date.now()
     });
 
-    expect(queue.queue).toHaveLength(1);
+    expect(plugin.gameQueue.length).toBe(1);
 
     // Destroy plugin
     await plugin.destroy();
 
-    expect(queue.queue).toHaveLength(0);
+    // Queue should be empty
+    expect(plugin.gameQueue.length).toBe(0);
   });
 });

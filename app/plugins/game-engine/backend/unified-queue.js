@@ -205,9 +205,6 @@ class UnifiedQueueManager {
       username: spinData.username,
       nickname: this.getDisplayName(spinData),
       spinId: spinData.spinId,
-      wheelId: spinData.wheelId,
-      segmentCount: spinData.segmentCount,
-      timestamp: spinData.timestamp,
       queueLength: this.queue.length
     });
     
@@ -514,19 +511,17 @@ class UnifiedQueueManager {
     }
 
     try {
-      let result;
       if (item.type === 'plinko') {
-        result = await this.processPlinkoItem(item.data);
+        await this.processPlinkoItem(item.data);
       } else if (item.type === 'wheel') {
-        result = await this.processWheelItem(item.data);
+        await this.processWheelItem(item.data);
       } else if (item.type === 'slot') {
-        result = await this.processSlotItem(item.data);
+        await this.processSlotItem(item.data);
       } else if (item.type === 'connect4') {
-        result = await this.processConnect4Item(item.data);
+        await this.processConnect4Item(item.data);
       } else if (item.type === 'chess') {
-        result = await this.processChessItem(item.data);
+        await this.processChessItem(item.data);
       }
-      return result;
     } catch (error) {
       this.logger.error(`❌ [UNIFIED QUEUE] Error processing ${item.type}: ${error.message}`);
       // Don't call completeProcessing here - let games handle their own completion
@@ -615,11 +610,10 @@ class UnifiedQueueManager {
       if (!result || !result.success) {
         this.logger.warn(`⚠️ [UNIFIED QUEUE] Wheel startSpin returned failure: ${result?.error || 'unknown'}`);
         this.completeProcessing();
-        return result;
+        return;
       }
-
+      
       // Note: completeProcessing() will be called by Wheel when spin is complete
-      return result;
     } catch (error) {
       this.logger.error(`❌ [UNIFIED QUEUE] Error starting Wheel spin: ${error.message}`);
       this.completeProcessing();
