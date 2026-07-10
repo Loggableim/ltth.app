@@ -245,3 +245,28 @@ describe('music-bot POST /api/plugins/music-bot/config', () => {
     expect(getBody.config.monetization.payToSkipGiftCatalog).toEqual(['star']);
   });
 });
+
+describe('music-bot Auto-DJ routes', () => {
+  test('starts Auto-DJ immediately when it is enabled while the player and queue are idle', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    plugin.queueManager = { getQueue: jest.fn(() => []) };
+    plugin.playbackEngine = { isPlaying: jest.fn(() => false) };
+    plugin.autoDJ = {
+      updateConfig: jest.fn(),
+      activate: jest.fn(),
+      getStatus: jest.fn(() => ({ enabled: true, lastResult: { state: 'playing' } }))
+    };
+    const track = { title: 'Auto-DJ Song', youtubeId: 'autodj123' };
+    plugin._maybePlayAutoDJ = jest.fn(async () => track);
+    plugin._registerRoutes();
+
+    const handler = api.handlers['POST:/api/plugins/music-bot/auto-dj/toggle'];
+    const res = createResponseMock();
+    await handler({ body: { enabled: true, mode: 'random' } }, res);
+
+    expect(plugin.autoDJ.activate).toHaveBeenCalledTimes(1);
+    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, track }));
+  });
+});

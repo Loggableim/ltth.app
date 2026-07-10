@@ -1,5 +1,6 @@
 const QueueManager = require('../plugins/music-bot/lib/queue-manager');
 const PlaybackEngine = require('../plugins/music-bot/lib/playback-engine');
+const AutoDJ = require('../plugins/music-bot/lib/auto-dj');
 
 function createDbMock() {
   return {
@@ -150,5 +151,24 @@ describe('Music Bot core features', () => {
     expect(trackEnd).toHaveBeenCalledWith({ track: outgoing, reason: 'crossfade' });
     expect(engine.getNowPlaying()).toEqual(incoming);
     expect(engine.getState()).toBe('playing');
+  });
+
+  test('only counts Auto-DJ tracks after playback starts successfully', async () => {
+    const resolver = {
+      resolve: jest.fn(async () => ({
+        success: true,
+        song: { title: 'Lo-fi track', youtubeId: 'lofi123' }
+      }))
+    };
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'random', randomKeywords: ['lofi'] }, resolver, createDbMock(), { log: jest.fn() });
+
+    const result = await autoDJ.onQueueEmpty();
+
+    expect(result.song.title).toBe('Lo-fi track');
+    expect(autoDJ.getStatus().consecutiveCount).toBe(0);
+
+    autoDJ.markTrackStarted(result.song);
+    expect(autoDJ.getStatus().consecutiveCount).toBe(1);
+    expect(autoDJ.getStatus().lastResult.state).toBe('playing');
   });
 });

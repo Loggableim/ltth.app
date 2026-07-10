@@ -436,7 +436,7 @@
       <div class="card-header">
         <div>
           <h2>Auto-DJ</h2>
-          <p class="text-secondary">Fuellt die Queue automatisch</p>
+          <p class="text-secondary">Startet bei freier Queue automatisch und bevorzugt deine History.</p>
         </div>
         <span id="auto-dj-status" class="pill">Deaktiviert</span>
       </div>
@@ -465,7 +465,16 @@
           <input type="checkbox" id="auto-dj-announce">
           <span>Chat-Ansage fuer Auto-DJ</span>
         </label>
+        <label class="field span-2">
+          <span>Random-Suchbegriffe</span>
+          <textarea id="auto-dj-random-keywords" rows="2" placeholder="lofi hip hop, chill music, gaming music"></textarea>
+        </label>
+        <label class="field span-2">
+          <span>Playlist-Links (einer pro Zeile oder kommagetrennt)</span>
+          <textarea id="auto-dj-playlist-urls" rows="3" placeholder="https://www.youtube.com/watch?v=..."></textarea>
+        </label>
       </div>
+      <p id="auto-dj-detail" class="feedback" aria-live="polite"></p>
       <div class="actions">
         <button id="auto-dj-save" class="btn primary">Speichern</button>
         <button id="auto-dj-skip" class="btn ghost">Naechster Auto-DJ Track</button>

@@ -274,6 +274,31 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(previewFrame.src).toContain('enablejsapi=1');
   });
 
+  test('persists Auto-DJ playlist URLs and random search terms', async () => {
+    const { dom, fetchMock } = bootMusicBotUi();
+    doms.push(dom);
+    const keywords = dom.window.document.getElementById('auto-dj-random-keywords');
+    const playlistUrls = dom.window.document.getElementById('auto-dj-playlist-urls');
+    const save = dom.window.document.getElementById('auto-dj-save');
+
+    keywords.value = 'lofi, synthwave';
+    playlistUrls.value = 'https://www.youtube.com/watch?v=first\nhttps://www.youtube.com/watch?v=second';
+    save.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const togglePost = fetchMock.mock.calls.find(([url, options = {}]) => {
+      return url === '/api/plugins/music-bot/auto-dj/toggle' && options.method === 'POST';
+    });
+    expect(togglePost).toBeTruthy();
+    const payload = JSON.parse(togglePost[1].body);
+    expect(payload.randomKeywords).toEqual(['lofi', 'synthwave']);
+    expect(payload.playlistUrls).toEqual([
+      'https://www.youtube.com/watch?v=first',
+      'https://www.youtube.com/watch?v=second'
+    ]);
+  });
+
   test('serves German Music Bot labels as UTF-8 text instead of mojibake', () => {
     const html = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/ui.html'), 'utf8');
 

@@ -102,8 +102,11 @@
   const autoDjMaxConsecutive = document.getElementById('auto-dj-max-consecutive');
   const autoDjAnnounce = document.getElementById('auto-dj-announce');
   const autoDjStatus = document.getElementById('auto-dj-status');
+  const autoDjDetail = document.getElementById('auto-dj-detail');
   const autoDjSave = document.getElementById('auto-dj-save');
   const autoDjSkip = document.getElementById('auto-dj-skip');
+  const autoDjRandomKeywords = document.getElementById('auto-dj-random-keywords');
+  const autoDjPlaylistUrls = document.getElementById('auto-dj-playlist-urls');
   const aliasInputs = document.querySelectorAll('.alias-input');
   const aliasSave = document.getElementById('alias-save');
   const rejectAge = document.getElementById('reject-age');
@@ -741,14 +744,27 @@
       mode: autoDjMode.value,
       historyMinPlays: Number(autoDjHistoryPlays.value) || 1,
       maxConsecutiveAutoDJ: Number(autoDjMaxConsecutive.value) || 1,
-      announceAutoDJ: autoDjAnnounce.checked
+      announceAutoDJ: autoDjAnnounce.checked,
+      randomKeywords: parseList(autoDjRandomKeywords?.value || ''),
+      playlistUrls: parseList(autoDjPlaylistUrls?.value || '')
     };
-    await post('/auto-dj/toggle', payload);
+    const result = await post('/auto-dj/toggle', payload);
+    if (result?.track) {
+      showToast('success', 'Auto-DJ gestartet', result.track.title || 'Nächster Titel läuft.');
+    } else if (payload.enabled) {
+      showToast('warn', 'Auto-DJ wartet', result?.status?.lastResult?.message || 'Kein Titel verfügbar.');
+    }
     await refreshAutoDjStatus();
   });
 
   autoDjSkip.addEventListener('click', async () => {
-    await post('/auto-dj/skip');
+    const result = await post('/auto-dj/skip');
+    if (result?.success) {
+      showToast('success', 'Auto-DJ', result.track?.title || 'Nächster Titel läuft.');
+    } else {
+      showToast('warn', 'Auto-DJ', result?.status?.lastResult?.message || 'Kein Titel verfügbar.');
+    }
+    await refreshAutoDjStatus();
   });
 
   aliasSave.addEventListener('click', async () => {
@@ -1351,7 +1367,11 @@
     autoDjHistoryPlays.value = status.historyMinPlays || 1;
     autoDjMaxConsecutive.value = status.maxConsecutiveAutoDJ || 1;
     autoDjAnnounce.checked = Boolean(status.announceAutoDJ);
-    autoDjStatus.textContent = status.enabled ? 'Aktiv' : 'Deaktiviert';
+    if (autoDjRandomKeywords) autoDjRandomKeywords.value = (status.randomKeywords || []).join(', ');
+    if (autoDjPlaylistUrls) autoDjPlaylistUrls.value = (status.playlistUrls || []).join('\n');
+    autoDjStatus.textContent = status.enabled ? (status.lastResult?.state === 'playing' ? 'Spielt' : 'Aktiv') : 'Deaktiviert';
+    autoDjStatus.title = status.lastResult?.message || '';
+    if (autoDjDetail) autoDjDetail.textContent = status.lastResult?.message || '';
     if (heroAutodjStatus) heroAutodjStatus.textContent = status.enabled ? 'Ein' : 'Aus';
   }
 

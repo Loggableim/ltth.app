@@ -1209,13 +1209,24 @@ class MusicBotPlugin extends EventEmitter {
       const payload = req.body || {};
       this.config.autoDJ = this._mergeDeep(this.config.autoDJ, payload);
       this.autoDJ?.updateConfig(this.config.autoDJ);
+      if (this.config.autoDJ.enabled) {
+        this.autoDJ?.activate();
+      }
       await this.api.setConfig('config', this.config);
-      res.json({ success: true, status: this.autoDJ?.getStatus() });
+      let track = null;
+      if (
+        this.config.autoDJ.enabled &&
+        !this.playbackEngine?.isPlaying?.() &&
+        this.queueManager?.getQueue?.().length === 0
+      ) {
+        track = await this._maybePlayAutoDJ();
+      }
+      res.json({ success: true, status: this.autoDJ?.getStatus(), track });
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/auto-dj/skip', async (req, res) => {
       const next = await this._maybePlayAutoDJ(true);
-      res.json({ success: Boolean(next), track: next || null });
+      res.json({ success: Boolean(next), track: next || null, status: this.autoDJ?.getStatus() });
     });
   }
 
@@ -2137,6 +2148,7 @@ class MusicBotPlugin extends EventEmitter {
     const track = result.song || result;
     try {
       await this.playbackEngine.play(track);
+      this.autoDJ.markTrackStarted(track);
       this.queueManager.markPlaying(track);
       this._emitQueue();
       this.api.emit('musicbot:auto-dj-playing', {
@@ -2148,6 +2160,7 @@ class MusicBotPlugin extends EventEmitter {
       }
       return track;
     } catch (error) {
+      this.autoDJ.markPlaybackFailed(error);
       this.api.log(`[music-bot] AutoDJ playback failed: ${error.message}`, 'error');
       return null;
     }

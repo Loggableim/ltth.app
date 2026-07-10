@@ -8,11 +8,13 @@ class AutoDJ {
     this.playlistIndex = 0;
     this.playedInSession = new Set();
     this.consecutiveCount = 0;
+    this.lastResult = { state: 'idle', message: 'Auto-DJ bereit.' };
     this.updateConfig(config);
     this.isActive = this.config.enabled;
   }
 
   updateConfig(config) {
+    const wasEnabled = Boolean(this.config?.enabled);
     this.config = {
       enabled: false,
       mode: 'history',
@@ -26,17 +28,22 @@ class AutoDJ {
     };
     if (!this.config.enabled) {
       this.isActive = false;
+      this._setResult('disabled', 'Auto-DJ ist deaktiviert.');
+    } else if (!wasEnabled) {
+      this.activate();
     }
   }
 
   activate() {
     this.isActive = true;
     this.consecutiveCount = 0;
+    this._setResult('ready', 'Auto-DJ wartet auf den nächsten freien Queue-Slot.');
   }
 
   deactivate() {
     this.isActive = false;
     this.consecutiveCount = 0;
+    this._setResult('idle', 'Auto-DJ pausiert für Zuschauer-Requests.');
   }
 
   onSongRequested() {
@@ -45,27 +52,39 @@ class AutoDJ {
   }
 
   async onQueueEmpty() {
-    if (!this.config.enabled) return null;
+    if (!this.config.enabled) {
+      this._setResult('disabled', 'Auto-DJ ist deaktiviert.');
+      return null;
+    }
     this.isActive = true;
+    this._setResult('selecting', 'Auto-DJ sucht den nächsten Titel.');
     return this.getNextSong();
   }
 
   async getNextSong(force = false) {
-    if (!this.config.enabled) return null;
-    if (!force && !this.isActive) return null;
+    if (!this.config.enabled) {
+      this._setResult('disabled', 'Auto-DJ ist deaktiviert.');
+      return null;
+    }
+    if (!force && !this.isActive) {
+      this._setResult('idle', 'Auto-DJ wartet auf einen freien Queue-Slot.');
+      return null;
+    }
 
     if (!force && this.consecutiveCount >= this.config.maxConsecutiveAutoDJ) {
+      this._setResult('limit-reached', `Auto-DJ-Limit von ${this.config.maxConsecutiveAutoDJ} Titeln erreicht.`);
       return null;
     }
 
     const track = await this._selectTrack();
-    if (!track) return null;
-
-    this.consecutiveCount += 1;
-    this.isActive = true;
-    if (track.youtubeId) {
-      this.playedInSession.add(track.youtubeId);
+    if (!track) {
+      if (this.lastResult.state !== 'error') {
+        this._setResult('no-track', 'Kein passender Auto-DJ-Titel gefunden. Prüfe Playlist oder Suchbegriffe.');
+      }
+      return null;
     }
+
+    this._setResult('selected', `Ausgewählt: ${track.title || 'Unbekannter Titel'}`);
 
     return {
       song: {
@@ -81,6 +100,19 @@ class AutoDJ {
     this.playedInSession.clear();
   }
 
+  markTrackStarted(track) {
+    this.consecutiveCount += 1;
+    this.isActive = true;
+    if (track?.youtubeId) {
+      this.playedInSession.add(track.youtubeId);
+    }
+    this._setResult('playing', `Spielt: ${track?.title || 'Unbekannter Titel'}`);
+  }
+
+  markPlaybackFailed(error) {
+    this._setResult('error', `Wiedergabe fehlgeschlagen: ${error?.message || error || 'Unbekannter Fehler'}`);
+  }
+
   getStatus() {
     return {
       enabled: this.config.enabled,
@@ -89,7 +121,10 @@ class AutoDJ {
       consecutiveCount: this.consecutiveCount,
       maxConsecutiveAutoDJ: this.config.maxConsecutiveAutoDJ,
       historyMinPlays: this.config.historyMinPlays,
-      announceAutoDJ: this.config.announceAutoDJ
+      announceAutoDJ: this.config.announceAutoDJ,
+      randomKeywords: this.config.randomKeywords,
+      playlistUrls: this.config.playlistUrls,
+      lastResult: this.lastResult
     };
   }
 
@@ -106,6 +141,7 @@ class AutoDJ {
       }
     } catch (error) {
       this.api.log?.(`[music-bot] AutoDJ selection failed: ${error.message}`, 'error');
+      this._setResult('error', `Auswahl fehlgeschlagen: ${error.message}`);
       return null;
     }
   }
@@ -172,6 +208,14 @@ class AutoDJ {
       source: candidate.source || 'youtube',
       thumbnail: candidate.thumbnail,
       youtubeId: candidate.youtubeId
+    };
+  }
+
+  _setResult(state, message) {
+    this.lastResult = {
+      state,
+      message,
+      updatedAt: Date.now()
     };
   }
 }
