@@ -184,6 +184,34 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(resolver.config.moderation.blockedKeywords).toEqual(['blocked']);
   });
 
+  test('rejects direct URLs outside the supported music providers before starting yt-dlp', async () => {
+    const resolver = new MusicResolver({ ytdlpPath: 'yt-dlp' }, { log: jest.fn() });
+
+    await expect(resolver.resolve('http://127.0.0.1:3000/internal-status'))
+      .rejects.toThrow('Only YouTube and SoundCloud URLs are supported');
+  });
+
+  test('keeps YouTube and SoundCloud URLs in the supported direct-request allowlist', () => {
+    const resolver = new MusicResolver({ ytdlpPath: 'yt-dlp' }, { log: jest.fn() });
+
+    expect(resolver._isSupportedSourceUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(true);
+    expect(resolver._isSupportedSourceUrl('https://soundcloud.com/artist/track')).toBe(true);
+  });
+
+  test('preserves the persisted queue during plugin shutdown', async () => {
+    const { plugin } = createPluginWithQueue([]);
+    plugin.queueManager = {
+      clear: jest.fn(),
+      persistQueue: jest.fn()
+    };
+    plugin.playbackEngine = { shutdown: jest.fn(async () => {}) };
+
+    await plugin.destroy();
+
+    expect(plugin.queueManager.persistQueue).toHaveBeenCalledTimes(1);
+    expect(plugin.queueManager.clear).not.toHaveBeenCalled();
+  });
+
   test('UI exposes mpv path configuration and persists it to playback config', async () => {
     const { dom, fetchMock } = bootMusicBotUi();
     doms.push(dom);
@@ -201,6 +229,14 @@ describe('Music Bot runtime and UI regressions', () => {
       return body.playback?.mpvPath === 'C:\\tools\\mpv\\mpv.exe';
     });
     expect(mpvPost).toBeTruthy();
+  });
+
+  test('serves German Music Bot labels as UTF-8 text instead of mojibake', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/ui.html'), 'utf8');
+
+    expect(html).toContain('Maximale Songlänge');
+    expect(html).toContain('Benötigt für die Audio-Wiedergabe');
+    expect(html).not.toContain('ÃƒÂ');
   });
 
   windowsTest('detects mpv in the Chocolatey mpvio.install tools directory', async () => {

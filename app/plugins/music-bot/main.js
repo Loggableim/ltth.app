@@ -238,7 +238,9 @@ class MusicBotPlugin extends EventEmitter {
       this.api.log(`[music-bot] Failed to shutdown playback: ${error.message}`, 'error');
     }
 
-    this.queueManager.clear();
+    // Keep queued songs across app restarts and plugin reloads. Explicit user
+    // actions still use queueManager.clear() through the clear route/command.
+    this.queueManager?.persistQueue?.();
     this._cleanupDuckingHooks();
     await this._stopPrecacheTasks();
     this._pendingRequests.clear();

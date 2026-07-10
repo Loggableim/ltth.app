@@ -58,6 +58,10 @@ class MusicResolver {
 
     const isUrl = /^https?:\/\//i.test(trimmed);
 
+    if (isUrl && !this._isSupportedSourceUrl(trimmed)) {
+      throw new Error('Only YouTube and SoundCloud URLs are supported for direct song requests.');
+    }
+
     const target = isUrl ? trimmed : `ytsearch1:${trimmed}`;
 
     const args = [
@@ -340,10 +344,15 @@ class MusicResolver {
   _isSoundCloudUrl(url) {
     try {
       const parsed = new URL(url);
-      return parsed.hostname === 'soundcloud.com' || parsed.hostname === 'on.soundcloud.com';
+      const hostname = parsed.hostname.replace(/^www\./, '');
+      return hostname === 'soundcloud.com' || hostname === 'on.soundcloud.com';
     } catch (e) {
       return false;
     }
+  }
+
+  _isSupportedSourceUrl(url) {
+    return Boolean(this._extractYouTubeId(url)) || this._isSoundCloudUrl(url);
   }
 
   async _resolveSoundCloudOEmbed(url) {
