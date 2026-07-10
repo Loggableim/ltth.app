@@ -274,8 +274,10 @@ class MusicBotPlugin extends EventEmitter {
     }
     this.config.monetization.minLikesPerUser = Math.max(1, Number(this.config.monetization.minLikesPerUser) || 1);
     this.config.monetization.payToPlayMinCoins = Math.max(0, Number(this.config.monetization.payToPlayMinCoins) || 0);
-    this.config.audio.masterVolume = Math.max(0, Math.min(100, Number(this.config.audio.masterVolume) || DEFAULT_CONFIG.audio.masterVolume));
-    this.config.audio.sourceVolume = Math.max(0, Math.min(100, Number(this.config.audio.sourceVolume) || DEFAULT_CONFIG.audio.sourceVolume));
+    const savedMasterVolume = Number(this.config.audio.masterVolume);
+    const savedSourceVolume = Number(this.config.audio.sourceVolume);
+    this.config.audio.masterVolume = Math.max(0, Math.min(100, Number.isFinite(savedMasterVolume) ? savedMasterVolume : DEFAULT_CONFIG.audio.masterVolume));
+    this.config.audio.sourceVolume = Math.max(0, Math.min(100, Number.isFinite(savedSourceVolume) ? savedSourceVolume : DEFAULT_CONFIG.audio.sourceVolume));
     this.config.playback.defaultVolume = this._computeEffectiveVolume();
     if (!saved) {
       this.api.setConfig('config', this.config);
@@ -1098,8 +1100,10 @@ class MusicBotPlugin extends EventEmitter {
       this.config.monetization.payToSkipGiftCatalog = this._normalizeGiftList(this.config.monetization.payToSkipGiftCatalog);
       this.config.monetization.minLikesPerUser = Math.max(1, Number(this.config.monetization.minLikesPerUser) || 1);
       this.config.monetization.payToPlayMinCoins = Math.max(0, Number(this.config.monetization.payToPlayMinCoins) || 0);
-      this.config.audio.masterVolume = Math.max(0, Math.min(100, Number(this.config.audio.masterVolume) || DEFAULT_CONFIG.audio.masterVolume));
-      this.config.audio.sourceVolume = Math.max(0, Math.min(100, Number(this.config.audio.sourceVolume) || DEFAULT_CONFIG.audio.sourceVolume));
+      const requestedMasterVolume = Number(this.config.audio.masterVolume);
+      const requestedSourceVolume = Number(this.config.audio.sourceVolume);
+      this.config.audio.masterVolume = Math.max(0, Math.min(100, Number.isFinite(requestedMasterVolume) ? requestedMasterVolume : DEFAULT_CONFIG.audio.masterVolume));
+      this.config.audio.sourceVolume = Math.max(0, Math.min(100, Number.isFinite(requestedSourceVolume) ? requestedSourceVolume : DEFAULT_CONFIG.audio.sourceVolume));
       this.config.onboarding = this._normalizeOnboarding(this.config.onboarding);
       this.queueManager.config = this.config;
       this.queueManager.queueConfig = this.config.queue;

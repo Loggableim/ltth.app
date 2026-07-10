@@ -43,7 +43,7 @@ class PlaybackEngine extends EventEmitter {
     await this._applyNormalizationFilter();
     const crossfadeMs = Number(this.config.crossfadeDuration || 0);
     const hasCurrent = this.nowPlaying && this.state === 'playing';
-    const playbackUrl = track.localPath || track.url;
+    const playbackUrl = track.localPath || track.streamUrl || track.url;
 
     const newTrackPayload = {
       id: track.id,
@@ -56,6 +56,7 @@ class PlaybackEngine extends EventEmitter {
       source: track.source || 'youtube',
       url: track.url || playbackUrl,
       localPath: track.localPath || null,
+      streamUrl: track.streamUrl || null,
       youtubeId: track.youtubeId || null,
       isGiftRequest: Boolean(track.isGiftRequest),
       startedAt: Date.now()

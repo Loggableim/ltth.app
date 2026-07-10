@@ -448,8 +448,11 @@
   document.getElementById('resume-btn').addEventListener('click', () => {
     post('/resume');
   });
-  document.getElementById('skip-btn').addEventListener('click', () => {
-    post('/skip');
+  document.getElementById('skip-btn').addEventListener('click', async () => {
+    const result = await post('/skip');
+    if (!result?.success) {
+      showToast('warn', 'Skip', result?.error || 'Aktuell läuft kein Titel.');
+    }
   });
   document.getElementById('clear-btn').addEventListener('click', () => {
     post('/clear');
@@ -523,21 +526,36 @@
 
   // Debounced volume/crossfade POSTs — the label updates immediately for responsiveness,
   // but the server request (which also persists config) only fires after the user stops dragging.
-  const postMasterVolume = debounce((vol) => post('/volume', { masterVolume: vol }));
+  const postMasterVolume = debounce(async (vol) => {
+    const result = await post('/volume', { masterVolume: vol });
+    if (!result?.success) {
+      showToast('error', 'Master-Lautstärke', result?.error || 'Lautstärke konnte nicht gesetzt werden.');
+    }
+  });
   masterVolumeInput?.addEventListener('input', () => {
     const vol = Number(masterVolumeInput.value);
     if (masterVolumeValue) masterVolumeValue.textContent = vol;
     postMasterVolume(vol);
   });
 
-  const postSourceVolume = debounce((vol) => post('/volume', { sourceVolume: vol }));
+  const postSourceVolume = debounce(async (vol) => {
+    const result = await post('/volume', { sourceVolume: vol });
+    if (!result?.success) {
+      showToast('error', 'Quell-Lautstärke', result?.error || 'Lautstärke konnte nicht gesetzt werden.');
+    }
+  });
   volumeInput.addEventListener('input', () => {
     const vol = Number(volumeInput.value);
     volumeValue.textContent = vol;
     postSourceVolume(vol);
   });
 
-  const postCrossfade = debounce((ms) => post('/config', { playback: { crossfadeDuration: ms } }));
+  const postCrossfade = debounce(async (ms) => {
+    const result = await post('/config', { playback: { crossfadeDuration: ms } });
+    if (!result?.success) {
+      showToast('error', 'Crossfade', result?.error || 'Crossfade konnte nicht gespeichert werden.');
+    }
+  });
   crossfadeInput.addEventListener('input', () => {
     const seconds = Number(crossfadeInput.value);
     crossfadeValue.textContent = `${seconds}s`;
@@ -943,9 +961,7 @@
     startProgressTimer();
   });
   socket.on('musicbot:playback-stopped', () => {
-    updateState('Idle');
-    stopProgressTimer();
-    if (npProgressWrapper) npProgressWrapper.style.display = 'none';
+    renderNowPlaying(null);
   });
   socket.on('musicbot:playback-sync', (payload) => {
     if (typeof payload.position === 'number') {
@@ -1028,6 +1044,12 @@
       autoDjHistoryPlays.value = configData.config.autoDJ.historyMinPlays || 1;
       autoDjMaxConsecutive.value = configData.config.autoDJ.maxConsecutiveAutoDJ || 1;
       autoDjAnnounce.checked = Boolean(configData.config.autoDJ.announceAutoDJ);
+      if (autoDjRandomKeywords) {
+        autoDjRandomKeywords.value = (configData.config.autoDJ.randomKeywords || []).join('\n');
+      }
+      if (autoDjPlaylistUrls) {
+        autoDjPlaylistUrls.value = (configData.config.autoDJ.playlistUrls || []).join('\n');
+      }
     }
 
     if (configData?.config?.moderation) {

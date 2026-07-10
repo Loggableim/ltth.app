@@ -83,6 +83,29 @@ describe('Music Bot core features', () => {
     expect(second.error).toContain('Sekunden');
   });
 
+  test('keeps a resolver-provided media URL when putting a song into the queue', () => {
+    const queueManager = new QueueManager({
+      queue: {
+        maxLength: 50,
+        maxPerUser: 3,
+        maxSongDurationSeconds: 600,
+        allowDuplicates: true,
+        duplicateDetection: 'off',
+        cooldownPerUserSeconds: 0
+      }
+    }, createApiMock(createDbMock()));
+
+    const result = queueManager.addSong({
+      title: 'Direct stream',
+      url: 'https://www.youtube.com/watch?v=example',
+      streamUrl: 'https://media.example.test/direct-stream.m4a',
+      requestedBy: 'viewer'
+    });
+
+    expect(result.success).toBe(true);
+    expect(queueManager.getQueue()[0].streamUrl).toBe('https://media.example.test/direct-stream.m4a');
+  });
+
   test('applies ducking and restores master volume', async () => {
     const engine = new PlaybackEngine({
       defaultVolume: 50,
@@ -183,6 +206,26 @@ describe('Music Bot core features', () => {
     expect(trackEnd).toHaveBeenCalledTimes(1);
     expect(trackEnd).toHaveBeenCalledWith({ track, reason: 'skip' });
     expect(engine.getNowPlaying()).toBeNull();
+  });
+
+  test('plays yt-dlp media URLs instead of relying on mpv\'s optional YouTube hook', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50, normalization: { enabled: false } }, { log: jest.fn() });
+    const commands = [];
+    engine.process = { exitCode: null };
+    engine._sendCommand = jest.fn(async (command) => {
+      commands.push(command);
+    });
+    engine._applyNormalizationFilter = jest.fn(async () => {});
+    engine.setVolume = jest.fn(async () => {});
+
+    await engine.play({
+      id: 'direct-media',
+      title: 'Direct media',
+      url: 'https://www.youtube.com/watch?v=example',
+      streamUrl: 'https://media.example.test/direct-media.m4a'
+    });
+
+    expect(commands[0]).toEqual(['loadfile', 'https://media.example.test/direct-media.m4a', 'replace']);
   });
 
   test('only counts Auto-DJ tracks after playback starts successfully', async () => {

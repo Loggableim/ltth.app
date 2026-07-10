@@ -46,6 +46,15 @@ function createJsonResponse(payload) {
 
 function bootMusicBotUi(options = {}) {
   const setupIssues = options.setupIssues || [];
+  const autoDjConfig = options.autoDjConfig || {
+    enabled: false,
+    mode: 'history',
+    historyMinPlays: 2,
+    maxConsecutiveAutoDJ: 10,
+    announceAutoDJ: true,
+    randomKeywords: [],
+    playlistUrls: []
+  };
   const statusOnboarding = options.statusOnboarding || {
     completed: false,
     completedAt: null
@@ -97,13 +106,7 @@ function bootMusicBotUi(options = {}) {
           },
           playback: { crossfadeDuration: 3000, mpvPath: 'mpv' },
           commandAliases: {},
-          autoDJ: {
-            enabled: false,
-            mode: 'history',
-            historyMinPlays: 2,
-            maxConsecutiveAutoDJ: 10,
-            announceAutoDJ: true
-          },
+          autoDJ: autoDjConfig,
           moderation: { rejectAgeRestricted: true, rejectExplicit: false, blockedKeywords: [] },
           resolver: { ytdlpPath: 'yt-dlp' },
           audio: { masterVolume: 100, sourceVolume: 50 },
@@ -184,6 +187,22 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(resolver.config.moderation.blockedKeywords).toEqual(['blocked']);
   });
 
+  test('preserves a saved zero for master and source volume', () => {
+    const api = {
+      getSocketIO: jest.fn(() => ({ emit: jest.fn() })),
+      getDatabase: jest.fn(() => ({})),
+      getConfig: jest.fn(() => ({ audio: { masterVolume: 0, sourceVolume: 0 } })),
+      setConfig: jest.fn()
+    };
+    const plugin = new MusicBotPlugin(api);
+
+    plugin._loadConfig();
+
+    expect(plugin.config.audio.masterVolume).toBe(0);
+    expect(plugin.config.audio.sourceVolume).toBe(0);
+    expect(plugin._computeEffectiveVolume()).toBe(0);
+  });
+
   test('rejects direct URLs outside the supported music providers before starting yt-dlp', async () => {
     const resolver = new MusicResolver({ ytdlpPath: 'yt-dlp' }, { log: jest.fn() });
 
@@ -210,6 +229,7 @@ describe('Music Bot runtime and UI regressions', () => {
         id: 'playlist-video',
         title: 'Playlist song',
         webpage_url: 'https://www.youtube.com/watch?v=playlist-video',
+        url: 'https://media.example.test/playlist-video.m4a',
         duration: 180
       })
     ].join('\n'));
@@ -217,6 +237,8 @@ describe('Music Bot runtime and UI regressions', () => {
     const result = await resolver.resolvePlaylistEntry('https://www.youtube.com/playlist?list=PLScN1UM-Rlxo', 3);
 
     expect(result.song.title).toBe('Playlist song');
+    expect(result.song.url).toBe('https://www.youtube.com/watch?v=playlist-video');
+    expect(result.song.streamUrl).toBe('https://media.example.test/playlist-video.m4a');
     expect(resolver._runYtDlp.mock.calls[0][0]).toContain('--playlist-items');
     expect(resolver._runYtDlp.mock.calls[0][0]).toContain('3');
     expect(resolver._runYtDlp.mock.calls[0][0]).not.toContain('--no-playlist');
@@ -322,6 +344,29 @@ describe('Music Bot runtime and UI regressions', () => {
       'https://www.youtube.com/watch?v=first',
       'https://www.youtube.com/watch?v=second'
     ]);
+  });
+
+  test('restores saved Auto-DJ playlist URLs into the settings form', async () => {
+    const { dom } = bootMusicBotUi({
+      autoDjConfig: {
+        enabled: true,
+        mode: 'playlist',
+        historyMinPlays: 1,
+        maxConsecutiveAutoDJ: 10,
+        announceAutoDJ: true,
+        randomKeywords: ['synthwave'],
+        playlistUrls: ['https://youtube.com/playlist?list=PLScN1UM-Rlxo']
+      }
+    });
+    doms.push(dom);
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(dom.window.document.getElementById('auto-dj-playlist-urls').value)
+      .toBe('https://youtube.com/playlist?list=PLScN1UM-Rlxo');
+    expect(dom.window.document.getElementById('auto-dj-random-keywords').value)
+      .toBe('synthwave');
   });
 
   test('serves German Music Bot labels as UTF-8 text instead of mojibake', () => {

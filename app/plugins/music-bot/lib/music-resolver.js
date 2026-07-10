@@ -73,6 +73,8 @@ class MusicResolver {
       '--ignore-errors',
       '--skip-download',
       '--no-playlist',
+      '--format',
+      'bestaudio/best',
       '--print',
       '%(age_limit)s',
       '--print',
@@ -139,6 +141,8 @@ class MusicResolver {
       '--skip-download',
       '--playlist-items',
       String(index),
+      '--format',
+      'bestaudio/best',
       '--print',
       '%(age_limit)s',
       '--print',
@@ -170,6 +174,10 @@ class MusicResolver {
       duration: data.duration || null,
       thumbnail: Array.isArray(data.thumbnails) ? data.thumbnails.at(-1)?.url : data.thumbnail,
       url: data.webpage_url || data.url || fallbackUrl,
+      streamUrl: /^https?:\/\//i.test(String(data.url || '')) ? data.url : null,
+      streamHeaders: data.http_headers && typeof data.http_headers === 'object'
+        ? data.http_headers
+        : null,
       localPath: null,
       source: data.extractor || (isUrl ? 'url' : 'youtube'),
       youtubeId: data.id || null,
@@ -188,6 +196,27 @@ class MusicResolver {
   }
 
   async _runYtDlp(args) {
+    let lastError = null;
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      try {
+        const output = await this._runYtDlpOnce(args);
+        if (String(output || '').trim()) {
+          return output;
+        }
+        lastError = new Error('Empty yt-dlp response');
+        this.api.log?.(`[music-bot] yt-dlp returned no data (attempt ${attempt}/2)`, 'warn');
+      } catch (error) {
+        lastError = error;
+        if (attempt === 2) {
+          throw error;
+        }
+        this.api.log?.(`[music-bot] yt-dlp attempt ${attempt}/2 failed: ${error.message}`, 'warn');
+      }
+    }
+    throw lastError || new Error('Empty yt-dlp response');
+  }
+
+  async _runYtDlpOnce(args) {
     return new Promise((resolve, reject) => {
       const proc = spawn(this.config.ytdlpPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
       let stdout = '';
