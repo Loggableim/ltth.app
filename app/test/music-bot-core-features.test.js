@@ -153,6 +153,38 @@ describe('Music Bot core features', () => {
     expect(engine.getState()).toBe('playing');
   });
 
+  test('waits for MPV acknowledgement before considering a command applied', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    engine.socket = {
+      destroyed: false,
+      write: jest.fn((_payload, callback) => callback())
+    };
+
+    const command = engine._sendCommand(['set_property', 'volume', 15], { waitForResponse: true });
+    const payload = JSON.parse(engine.socket.write.mock.calls[0][0]);
+    engine._handleMessage(JSON.stringify({ request_id: payload.request_id, error: 'success' }));
+
+    await expect(command).resolves.toEqual(expect.objectContaining({ error: 'success' }));
+  });
+
+  test('skips once and ignores MPV\'s follow-up end-file event', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const trackEnd = jest.fn();
+    const track = { id: 'skip-me', title: 'Skip me' };
+    engine.nowPlaying = track;
+    engine.state = 'playing';
+    engine._sendCommand = jest.fn(async () => ({}));
+    engine.on('track-end', trackEnd);
+
+    await engine.skip();
+    engine._handleMessage(JSON.stringify({ event: 'end-file', reason: 'stop' }));
+
+    expect(engine._sendCommand).toHaveBeenCalledWith(['stop']);
+    expect(trackEnd).toHaveBeenCalledTimes(1);
+    expect(trackEnd).toHaveBeenCalledWith({ track, reason: 'skip' });
+    expect(engine.getNowPlaying()).toBeNull();
+  });
+
   test('only counts Auto-DJ tracks after playback starts successfully', async () => {
     const resolver = {
       resolve: jest.fn(async () => ({

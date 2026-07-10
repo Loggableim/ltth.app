@@ -897,11 +897,13 @@
 
       function handlePlaybackStopped() {
         clearTrack();
-        // Show idle message
+        showIdleMessage();
+      }
+
+      function showIdleMessage() {
         const idle = document.getElementById('idle-message');
         if (idle) {
           idle.classList.add('visible');
-          // Clear any existing timer before setting a new one
           if (idleHideTimer) { clearTimeout(idleHideTimer); }
           idleHideTimer = setTimeout(() => {
             idle.classList.remove('visible');
@@ -913,10 +915,14 @@
       function connect() {
         if (typeof io !== 'function') {
           console.warn('[music-bot overlay] Socket.IO not available.');
+          showIdleMessage();
           return;
         }
         socket = io();
-        socket.on('connect', () => socket.emit('musicbot:request-status'));
+        socket.on('connect', () => {
+          socket.emit('musicbot:request-status');
+          showIdleMessage();
+        });
         socket.on('musicbot:now-playing', handleNowPlaying);
         socket.on('musicbot:paused', () => setState('paused'));
         socket.on('musicbot:resumed', () => setState('playing'));

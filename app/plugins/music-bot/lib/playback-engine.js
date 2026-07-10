@@ -29,6 +29,9 @@ class PlaybackEngine extends EventEmitter {
     this._duckActiveCount = 0;
     this._duckReleaseTimer = null;
     this._crossfadeOutgoingTrack = null;
+    this._pendingCommands = new Map();
+    this._nextCommandId = 1;
+    this._skipInProgress = false;
   }
 
   async play(track) {
@@ -65,7 +68,7 @@ class PlaybackEngine extends EventEmitter {
       try {
         await this._fadeVolume(currentVolume, 0, halfFadeMs, true);
         await this._sendCommand(['loadfile', playbackUrl, 'replace']);
-        await this._sendCommand(['set_property', 'volume', 0]);
+        await this._sendCommand(['set_property', 'volume', 0], { waitForResponse: true });
 
         this.nowPlaying = newTrackPayload;
         this.state = 'playing';
@@ -102,13 +105,19 @@ class PlaybackEngine extends EventEmitter {
 
   async stop() {
     if (!this.process) return;
-    await this._sendCommand(['stop']);
+    await this._sendCommand(['stop'], { waitForResponse: true });
     this.state = 'stopped';
   }
 
   async skip() {
-    await this.stop();
-    this.emit('track-end', { track: this.nowPlaying, reason: 'skip' });
+    const skippedTrack = this.nowPlaying;
+    if (!skippedTrack) return;
+    this._skipInProgress = true;
+    this.nowPlaying = null;
+    this.state = 'idle';
+    this._crossfadeOutgoingTrack = null;
+    await this._sendCommand(['stop']);
+    this.emit('track-end', { track: skippedTrack, reason: 'skip' });
   }
 
   async setVolume(volume) {
@@ -116,7 +125,7 @@ class PlaybackEngine extends EventEmitter {
     const effectiveVolume = this._getEffectiveVolume();
     this.volume = effectiveVolume;
     if (!this.process) return;
-    await this._sendCommand(['set_property', 'volume', effectiveVolume]);
+    await this._sendCommand(['set_property', 'volume', effectiveVolume], { waitForResponse: true });
     this.emit('volume-changed', effectiveVolume);
   }
 
@@ -176,6 +185,7 @@ class PlaybackEngine extends EventEmitter {
       this.socket.destroy();
       this.socket = null;
     }
+    this._rejectPendingCommands(new Error('mpv playback engine was shut down'));
     if (this.process) {
       this.process.kill('SIGTERM');
       this.process = null;
@@ -273,6 +283,7 @@ class PlaybackEngine extends EventEmitter {
     this.process.on('close', (code) => {
       this.socket?.destroy();
       this.socket = null;
+      this._rejectPendingCommands(new Error(`mpv exited with code ${code ?? 'unknown'}`));
       this.process = null;
       if (this._shuttingDown) {
         return;
@@ -300,7 +311,10 @@ class PlaybackEngine extends EventEmitter {
         this.socket = net.createConnection(this.ipcPath, () => {
           this.socket.setEncoding('utf8');
           this.socket.on('data', (chunk) => this._onData(chunk));
-          this.socket.on('error', (error) => this.emit('error', error));
+          this.socket.on('error', (error) => {
+            this._rejectPendingCommands(error);
+            this.emit('error', error);
+          });
           resolve();
         });
         this.socket.on('error', (err) => {
@@ -315,10 +329,41 @@ class PlaybackEngine extends EventEmitter {
     });
   }
 
-  async _sendCommand(command) {
-    if (!this.socket) return;
-    const payload = JSON.stringify({ command });
-    this.socket.write(`${payload}\n`);
+  async _sendCommand(command, { waitForResponse = false } = {}) {
+    if (!this.socket || this.socket.destroyed) {
+      throw new Error('mpv IPC is not connected');
+    }
+
+    if (!waitForResponse) {
+      const payload = JSON.stringify({ command });
+      return new Promise((resolve, reject) => {
+        this.socket.write(`${payload}\n`, (error) => (error ? reject(error) : resolve()));
+      });
+    }
+
+    const requestId = this._nextCommandId++;
+    const payload = JSON.stringify({ command, request_id: requestId });
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this._pendingCommands.delete(requestId);
+        reject(new Error(`mpv did not acknowledge command: ${command[0]}`));
+      }, 1500);
+      this._pendingCommands.set(requestId, { resolve, reject, timeout });
+      this.socket.write(`${payload}\n`, (error) => {
+        if (!error) return;
+        clearTimeout(timeout);
+        this._pendingCommands.delete(requestId);
+        reject(error);
+      });
+    });
+  }
+
+  _rejectPendingCommands(error) {
+    this._pendingCommands.forEach(({ reject, timeout }) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+    this._pendingCommands.clear();
   }
 
   _clampVolume(volume) {
@@ -376,7 +421,7 @@ class PlaybackEngine extends EventEmitter {
     const duration = Math.max(durationMs, 0);
     if (duration === 0 || from === to) {
       this.volume = to;
-      await this._sendCommand(['set_property', 'volume', to]);
+      await this._sendCommand(['set_property', 'volume', to], { waitForResponse: true });
       if (emitVolumeEvent) {
         this.emit('volume-changed', to);
       }
@@ -389,7 +434,7 @@ class PlaybackEngine extends EventEmitter {
     let currentStep = 0;
     let currentVolume = from;
 
-    await this._sendCommand(['set_property', 'volume', from]);
+    await this._sendCommand(['set_property', 'volume', from], { waitForResponse: true });
 
     await new Promise((resolve) => {
       this._fadeTimer = setInterval(async () => {
@@ -400,7 +445,7 @@ class PlaybackEngine extends EventEmitter {
             currentVolume = to;
           }
           this.volume = currentVolume;
-          await this._sendCommand(['set_property', 'volume', currentVolume]);
+          await this._sendCommand(['set_property', 'volume', currentVolume], { waitForResponse: true });
           if (emitVolumeEvent) {
             this.emit('volume-changed', currentVolume);
           }
@@ -463,7 +508,23 @@ class PlaybackEngine extends EventEmitter {
     if (!raw.trim()) return;
     try {
       const msg = JSON.parse(raw);
+      const pending = this._pendingCommands.get(msg.request_id);
+      if (pending) {
+        clearTimeout(pending.timeout);
+        this._pendingCommands.delete(msg.request_id);
+        if (msg.error && msg.error !== 'success') {
+          pending.reject(new Error(`mpv command failed: ${msg.error}`));
+        } else {
+          pending.resolve(msg);
+        }
+        return;
+      }
+
       if (msg.event === 'end-file') {
+        if (this._skipInProgress) {
+          this._skipInProgress = false;
+          return;
+        }
         const outgoingTrack = this._crossfadeOutgoingTrack;
         const endedTrack = outgoingTrack || this.nowPlaying;
         const reason = outgoingTrack ? 'crossfade' : 'ended';

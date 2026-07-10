@@ -28,4 +28,10 @@ describe('Music Bot overlay theme engine and visualizer', () => {
     expect(overlayHtml).toContain('requestAnimationFrame(draw)');
     expect(overlayHtml).toContain('getByteFrequencyData');
   });
+
+  test('shows an initial idle message so a newly added OBS source is visible', () => {
+    expect(overlayHtml).toContain('function showIdleMessage()');
+    expect(overlayHtml).toContain("socket.on('connect', () => {");
+    expect(overlayHtml).toContain('showIdleMessage();');
+  });
 });
