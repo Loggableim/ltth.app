@@ -126,7 +126,8 @@ const DEFAULT_CONFIG = {
     maxConsecutiveAutoDJ: 10,
     announceAutoDJ: true,
     randomKeywords: ['lofi hip hop', 'chill music', 'gaming music', 'pop hits'],
-    playlistUrls: []
+    playlistUrls: [],
+    playlistFallbackToRandom: true
   },
   resolver: {
     ytdlpPath: process.env.YTDLP_PATH || 'yt-dlp',

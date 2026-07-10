@@ -25,6 +25,7 @@ class AutoDJ {
       announceAutoDJ: true,
       randomKeywords: DEFAULT_RANDOM_KEYWORDS,
       playlistUrls: [],
+      playlistFallbackToRandom: true,
       ...(config || {})
     };
     if (!this.config.enabled) {
@@ -126,6 +127,7 @@ class AutoDJ {
       announceAutoDJ: this.config.announceAutoDJ,
       randomKeywords: this.config.randomKeywords,
       playlistUrls: this.config.playlistUrls,
+      playlistFallbackToRandom: this.config.playlistFallbackToRandom,
       lastResult: this.lastResult
     };
   }
@@ -173,8 +175,12 @@ class AutoDJ {
         }
       } catch (error) {
         this.api.log?.(`[music-bot] AutoDJ playlist resolve failed: ${error.message}`, 'error');
-        this._setResult('error', `Playlist konnte nicht geladen werden: ${error.message}`);
       }
+    }
+
+    if (this.config.playlistFallbackToRandom !== false) {
+      this._setResult('playlist-finished', 'Playlist ist beendet oder nicht verfÃ¼gbar. Auto-DJ sucht einen passenden Vorschlag.');
+      return this._pickRandom();
     }
     return null;
   }
@@ -184,9 +190,27 @@ class AutoDJ {
       Array.isArray(this.config.randomKeywords) && this.config.randomKeywords.length
         ? this.config.randomKeywords
         : DEFAULT_RANDOM_KEYWORDS;
-    const keyword = keywords[Math.floor(Math.random() * keywords.length)];
-    const resolved = await this.musicResolver.resolve(keyword);
-    return resolved?.success ? resolved.song : null;
+    const startIndex = Math.floor(Math.random() * keywords.length);
+    let fallback = null;
+
+    for (let offset = 0; offset < keywords.length; offset += 1) {
+      const keyword = keywords[(startIndex + offset) % keywords.length];
+      let resolved;
+      try {
+        resolved = await this.musicResolver.resolve(keyword);
+      } catch (error) {
+        this.api.log?.(`[music-bot] AutoDJ random suggestion failed for "${keyword}": ${error.message}`, 'warn');
+        continue;
+      }
+      if (!resolved?.success || !resolved.song) continue;
+
+      if (!fallback) fallback = resolved.song;
+      if (!resolved.song.youtubeId || !this.playedInSession.has(resolved.song.youtubeId)) {
+        return resolved.song;
+      }
+    }
+
+    return fallback;
   }
 
   async _pickFromHistory() {

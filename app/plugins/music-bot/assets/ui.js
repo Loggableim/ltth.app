@@ -786,16 +786,15 @@
 
   autoDjSave.addEventListener('click', async () => {
     const playlistUrls = parseList(autoDjPlaylistUrls?.value || '');
-    const mode = playlistUrls.length ? 'playlist' : autoDjMode.value;
-    autoDjMode.value = mode;
     const payload = {
       enabled: autoDjEnabled.checked,
-      mode,
+      mode: autoDjMode.value,
       historyMinPlays: Number(autoDjHistoryPlays.value) || 1,
       maxConsecutiveAutoDJ: Number(autoDjMaxConsecutive.value) || 1,
       announceAutoDJ: autoDjAnnounce.checked,
       randomKeywords: parseList(autoDjRandomKeywords?.value || ''),
-      playlistUrls
+      playlistUrls,
+      playlistFallbackToRandom: true
     };
     const result = await post('/auto-dj/toggle', payload);
     if (result?.track) {

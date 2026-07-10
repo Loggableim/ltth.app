@@ -287,4 +287,77 @@ describe('Music Bot core features', () => {
       2
     );
   });
+
+  test('falls back to a random suggestion when the configured playlist is exhausted', async () => {
+    const resolver = {
+      resolvePlaylistEntry: jest.fn(async () => ({ success: false })),
+      resolve: jest.fn(async () => ({
+        success: true,
+        song: { title: 'Suggested track', youtubeId: 'suggested-1' }
+      }))
+    };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'playlist',
+      playlistUrls: ['https://www.youtube.com/playlist?list=finished'],
+      randomKeywords: ['synthwave']
+    }, resolver, createDbMock(), { log: jest.fn() });
+
+    const result = await autoDJ.getNextSong();
+
+    expect(result.song.title).toBe('Suggested track');
+    expect(resolver.resolve).toHaveBeenCalledWith('synthwave');
+  });
+
+  test('prefers an unplayed result when generating random Auto-DJ suggestions', async () => {
+    const resolver = {
+      resolve: jest.fn(async (keyword) => ({
+        success: true,
+        song: keyword === 'first'
+          ? { title: 'Already played', youtubeId: 'already-played' }
+          : { title: 'Fresh suggestion', youtubeId: 'fresh-suggestion' }
+      }))
+    };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'random',
+      randomKeywords: ['first', 'second']
+    }, resolver, createDbMock(), { log: jest.fn() });
+    autoDJ.markTrackStarted({ title: 'Already played', youtubeId: 'already-played' });
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+
+    const result = await autoDJ.getNextSong();
+
+    randomSpy.mockRestore();
+
+    expect(result.song.title).toBe('Fresh suggestion');
+    expect(resolver.resolve).toHaveBeenNthCalledWith(1, 'first');
+    expect(resolver.resolve).toHaveBeenNthCalledWith(2, 'second');
+  });
+
+  test('tries the next random keyword after a suggestion lookup fails', async () => {
+    const resolver = {
+      resolve: jest.fn(async (keyword) => {
+        if (keyword === 'unavailable') throw new Error('yt-dlp timed out');
+        return {
+          success: true,
+          song: { title: 'Working suggestion', youtubeId: 'working-suggestion' }
+        };
+      })
+    };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'random',
+      randomKeywords: ['unavailable', 'working']
+    }, resolver, createDbMock(), { log: jest.fn() });
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+
+    const result = await autoDJ.getNextSong();
+
+    randomSpy.mockRestore();
+
+    expect(result.song.title).toBe('Working suggestion');
+    expect(resolver.resolve).toHaveBeenNthCalledWith(1, 'unavailable');
+    expect(resolver.resolve).toHaveBeenNthCalledWith(2, 'working');
+  });
 });

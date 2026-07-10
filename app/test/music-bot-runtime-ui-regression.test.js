@@ -409,15 +409,17 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(previewFrame.src).toContain('enablejsapi=1');
   });
 
-  test('persists Auto-DJ playlist URLs and random search terms', async () => {
+  test('persists Auto-DJ playlist URLs and keeps an explicitly selected random mode', async () => {
     const { dom, fetchMock } = bootMusicBotUi();
     doms.push(dom);
     const keywords = dom.window.document.getElementById('auto-dj-random-keywords');
     const playlistUrls = dom.window.document.getElementById('auto-dj-playlist-urls');
+    const mode = dom.window.document.getElementById('auto-dj-mode');
     const save = dom.window.document.getElementById('auto-dj-save');
 
     keywords.value = 'lofi, synthwave';
     playlistUrls.value = 'https://www.youtube.com/watch?v=first\nhttps://www.youtube.com/watch?v=second';
+    mode.value = 'random';
     save.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
     await Promise.resolve();
     await Promise.resolve();
@@ -427,7 +429,8 @@ describe('Music Bot runtime and UI regressions', () => {
     });
     expect(togglePost).toBeTruthy();
     const payload = JSON.parse(togglePost[1].body);
-    expect(payload.mode).toBe('playlist');
+    expect(payload.mode).toBe('random');
+    expect(payload.playlistFallbackToRandom).toBe(true);
     expect(payload.randomKeywords).toEqual(['lofi', 'synthwave']);
     expect(payload.playlistUrls).toEqual([
       'https://www.youtube.com/watch?v=first',
