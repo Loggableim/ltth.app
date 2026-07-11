@@ -775,7 +775,7 @@
   "faq.span.40": "🎥",
   "faq.p.41": "Ja, vollständige OBS-Integration!• Transparente Full-HD-Overlays (1920x1080) als Browser-Source• OBS WebSocket v5 für Szenen-Steuerung via Gifts/Chat• Separate Browser-Source-URLs für Goals• HUD-Konfiguration mit Drag & DropSieheOBS-Integration Features",
   "faq.a.42": "OBS-Integration Features",
-  "faq.h3.43": "Do I need Node.jsí",
+  "faq.h3.43": "Do I need Node.js?",
   "faq.span.44": "🔌",
   "faq.p.45": "Der Launcher bringt alle erforderlichen Komponenten mit. Du musst dich um nichts kümmern.",
   "faq.h3.46": "Are my data uploaded to the cloud?",
@@ -1013,7 +1013,7 @@
       "30": "What does \"beta version\" mean? Is the tool stable?",
       "34": "How can I contribute to the community?",
       "39": "Does the tool work with OBS?",
-      "43": "Do I need Node.jsí",
+      "43": "Do I need Node.js?",
       "46": "Are my data uploaded to the cloud?"
     },
     "p": {
