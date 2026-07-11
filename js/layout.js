@@ -451,7 +451,7 @@
         const link = document.createElement('link');
         link.id = 'ltthSiteV2Styles';
         link.rel = 'stylesheet';
-        link.href = '/css/site-v2.css?v=site-v2-20260711e';
+        link.href = '/css/site-v2.css?v=site-v2-20260712a';
         document.head.appendChild(link);
     }
 
