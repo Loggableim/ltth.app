@@ -214,6 +214,23 @@ body.site-v2 .copy-btn:hover {
   transform: translateY(-2px);
 }
 
+/* CTA links must retain the same high-contrast ink as buttons. The generic
+   site link color is cyan, which is not readable on the yellow CTA surface. */
+body.site-v2 a.btn,
+body.site-v2 a.cta-button,
+body.site-v2 a.download-button,
+body.site-v2 a.copy-btn,
+body.site-v2 a.btn:visited {
+  color: #251b3e !important;
+}
+
+body.site-v2 a.btn:hover,
+body.site-v2 a.cta-button:hover,
+body.site-v2 a.download-button:hover,
+body.site-v2 a.copy-btn:hover {
+  color: #251b3e !important;
+}
+
 body.site-v2 input,
 body.site-v2 textarea,
 body.site-v2 select {
@@ -279,6 +296,25 @@ body.site-v2 .feature-hero {
 
 body.site-v2 .feature-hero-title {
   color: var(--site-v2-ink);
+}
+
+body.site-v2 .feature-plugin-logo {
+  background: rgba(255, 248, 237, 0.96);
+  border: 3px solid #24163f;
+  border-radius: 1rem;
+  box-shadow: 5px 5px 0 rgba(36, 22, 63, 0.58);
+  display: block;
+  height: 4.75rem;
+  margin: 0 auto 1.25rem;
+  object-fit: contain;
+  padding: 0.45rem;
+  position: relative;
+  width: 4.75rem;
+  z-index: 1;
+}
+
+body.site-v2 .plugin-screenshot-grid--single > .screenshot-container:not(:first-child) {
+  display: none;
 }
 
 body.site-v2 .feature-hero-subtitle,

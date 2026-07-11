@@ -44,6 +44,32 @@ body.auth-page .auth-brand {
   margin-bottom: 2.5rem;
 }
 
+body.auth-page .auth-home-link {
+  align-items: center;
+  align-self: flex-start;
+  background: rgba(255, 248, 237, 0.1);
+  border: 1px solid rgba(255, 248, 237, 0.28);
+  border-radius: 999px;
+  color: #fff8ed;
+  display: inline-flex;
+  font-size: 0.9rem;
+  font-weight: 800;
+  gap: 0.45rem;
+  margin-bottom: 1.25rem;
+  padding: 0.62rem 0.9rem;
+  text-decoration: none;
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+body.auth-page .auth-home-link:hover,
+body.auth-page .auth-home-link:focus-visible {
+  background: #ffd34e;
+  border-color: #ffd34e;
+  color: #251b3e;
+  outline: none;
+  transform: translateX(-2px);
+}
+
 body.auth-page .auth-brand img {
   filter: drop-shadow(3px 3px 0 rgba(11,7,29,0.4));
   height: 3.2rem;
