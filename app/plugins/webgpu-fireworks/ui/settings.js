@@ -138,6 +138,12 @@ async function loadRendererStatus() {
         const audioBackend = document.getElementById('webgpu-audio-backend');
         const audioLibrary = document.getElementById('webgpu-audio-library');
         const audioLastPlayed = document.getElementById('webgpu-audio-last-played');
+        const crackleState = document.getElementById('webgpu-crackle-state');
+        const audioProfile = document.getElementById('webgpu-audio-profile');
+        const audioVoices = document.getElementById('webgpu-audio-voices');
+        const audioEvents = document.getElementById('webgpu-audio-events');
+        const audioPeak = document.getElementById('webgpu-audio-peak');
+        const timelineSync = document.getElementById('webgpu-timeline-sync');
         const visualStyle = document.getElementById('webgpu-visual-style');
         const frameTime = document.getElementById('webgpu-frame-time');
         const particles = document.getElementById('webgpu-particle-state');
@@ -154,6 +160,23 @@ async function loadRendererStatus() {
         if (audioBackend) audioBackend.textContent = String(renderer.audioBackend || 'none').toUpperCase();
         if (audioLibrary) audioLibrary.textContent = `${Number(renderer.loadedSounds || 0)} loaded / ${Number(renderer.failedSounds || 0)} failed`;
         if (audioLastPlayed) audioLastPlayed.textContent = renderer.lastPlayed || 'None';
+        if (crackleState) crackleState.textContent = String(renderer.crackleState || 'idle').toUpperCase();
+        if (audioProfile) audioProfile.textContent = renderer.lastAudioProfile || 'None';
+        if (audioVoices) {
+            const voices = renderer.activeVoices || {};
+            audioVoices.textContent = `L${Number(voices.launch || 0)} / B${Number(voices.bang || 0)} / C${Number(voices.crackle || 0)} (${Number(voices.total || 0)} total)`;
+        }
+        if (audioEvents) audioEvents.textContent = `${Number(renderer.missedAudioEvents || 0)} missed / ${Number(renderer.audioEvictions || 0)} evicted`;
+        if (audioPeak) audioPeak.textContent = renderer.audioPeak !== null && renderer.audioPeak !== undefined && Number.isFinite(Number(renderer.audioPeak))
+            ? `${Number(renderer.audioPeak).toFixed(1)} dBFS`
+            : '-';
+        if (timelineSync) {
+            const events = Array.isArray(renderer.timelineEvents) ? renderer.timelineEvents : [];
+            const lastEvent = events.length > 0 ? events[events.length - 1] : null;
+            timelineSync.textContent = lastEvent
+                ? `${lastEvent.type || 'event'} ${Number.isFinite(Number(lastEvent.driftMs)) ? `${Number(lastEvent.driftMs) >= 0 ? '+' : ''}${Number(lastEvent.driftMs).toFixed(1)} ms` : lastEvent.state || ''}`.trim()
+                : 'No events';
+        }
         if (visualStyle) visualStyle.textContent = formatVisualStyle(renderer.visualStyle || config.visualStyle);
         if (frameTime) frameTime.textContent = Number.isFinite(Number(renderer.gpuFrameMs)) ? `${Number(renderer.gpuFrameMs).toFixed(2)} ms` : '-';
         if (particles) particles.textContent = `${Number(renderer.activeParticles || 0).toLocaleString()} active · ${Number(renderer.droppedParticles || 0).toLocaleString()} dropped`;
@@ -303,9 +326,15 @@ function updateUI() {
 
     // Audio
     updateToggle('audio-toggle', config.audioEnabled);
-    const volume = Math.round((config.audioVolume || 0.7) * 100);
+    const volume = Math.round((config.audioVolume ?? 0.7) * 100);
     document.getElementById('audio-volume').value = volume;
     document.getElementById('audio-volume-value').textContent = volume + '%';
+    const crackleFrequency = Math.round((config.crackleFrequency ?? 0.5) * 100);
+    document.getElementById('crackle-frequency').value = crackleFrequency;
+    document.getElementById('crackle-frequency-value').textContent = crackleFrequency + '%';
+    const crackleVolume = Math.round((config.crackleVolume ?? 0.75) * 100);
+    document.getElementById('crackle-volume').value = crackleVolume;
+    document.getElementById('crackle-volume-value').textContent = crackleVolume + '%';
 
     // Color mode
     document.getElementById('color-mode').value = config.colorMode || 'gift';
@@ -755,6 +784,7 @@ function setupEventListeners() {
         saveGiftStyleMapping().catch(error => showToast(error.message, 'error'));
     });
     document.getElementById('test-audio-btn')?.addEventListener('click', () => triggerTestShape('burst', 1.25));
+    document.getElementById('test-crackle-btn')?.addEventListener('click', triggerTestCrackle);
 
     // Range sliders
     setupRangeSlider('combo-timeout', 'combo-timeout-value', 's', (val) => {
@@ -767,6 +797,14 @@ function setupEventListeners() {
 
     setupRangeSlider('audio-volume', 'audio-volume-value', '%', (val) => {
         config.audioVolume = val / 100;
+    });
+
+    setupRangeSlider('crackle-frequency', 'crackle-frequency-value', '%', (val) => {
+        config.crackleFrequency = val / 100;
+    });
+
+    setupRangeSlider('crackle-volume', 'crackle-volume-value', '%', (val) => {
+        config.crackleVolume = val / 100;
     });
 
     setupRangeSlider('max-particles', 'max-particles-value', '', (val) => {
@@ -1177,6 +1215,36 @@ async function triggerTestShape(shape, intensity = 1.5) {
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger test:', e);
         showToast('Failed to trigger test', 'error');
+    }
+}
+
+/**
+ * Test one complete rocket with the long synchronized crackling profile.
+ */
+async function triggerTestCrackle() {
+    try {
+        const response = await fetch('/api/webgpu-fireworks/trigger', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: 'crackle-test',
+                shape: config.defaultShape || 'burst',
+                intensity: 3.2,
+                tier: 'massive',
+                combo: 1,
+                forceRocket: true,
+                crackleEnabled: true,
+                positionMode: 'auto',
+                visualStyle: config.visualStyle || 'premium-hybrid',
+                colors: getConfiguredPreviewColors()
+            })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.error || 'Crackling test failed');
+        showToast('Complete crackling rocket triggered!', 'success');
+    } catch (error) {
+        console.error('[Fireworks Settings] Failed to trigger crackling test:', error);
+        showToast('Failed to trigger crackling rocket', 'error');
     }
 }
 

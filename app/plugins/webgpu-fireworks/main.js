@@ -199,6 +199,38 @@ class FireworksPlugin {
                         failedSounds: Math.max(0, Number(data.failedSounds) || 0),
                         lastPlayed: typeof data.lastPlayed === 'string' ? data.lastPlayed.slice(0, 100) : previous.lastPlayed || null,
                         lastAudioError: typeof data.lastAudioError === 'string' ? data.lastAudioError.slice(0, 300) : null,
+                        lastAudioProfile: typeof data.lastAudioProfile === 'string' ? data.lastAudioProfile.slice(0, 40) : previous.lastAudioProfile || null,
+                        crackleState: typeof data.crackleState === 'string' ? data.crackleState.slice(0, 40) : previous.crackleState || 'idle',
+                        activeVoices: data.activeVoices && typeof data.activeVoices === 'object'
+                            ? {
+                                launch: Math.max(0, Number(data.activeVoices.launch) || 0),
+                                bang: Math.max(0, Number(data.activeVoices.bang) || 0),
+                                crackle: Math.max(0, Number(data.activeVoices.crackle) || 0),
+                                total: Math.max(0, Number(data.activeVoices.total) ||
+                                    (Number(data.activeVoices.launch) || 0) +
+                                    (Number(data.activeVoices.bang) || 0) +
+                                    (Number(data.activeVoices.crackle) || 0))
+                            }
+                            : previous.activeVoices || { launch: 0, bang: 0, crackle: 0, total: 0 },
+                        audioEvictions: Number.isFinite(Number(data.audioEvictions))
+                            ? Math.max(0, Number(data.audioEvictions))
+                            : previous.audioEvictions || 0,
+                        missedAudioEvents: Number.isFinite(Number(data.missedAudioEvents))
+                            ? Math.max(0, Number(data.missedAudioEvents))
+                            : previous.missedAudioEvents || 0,
+                        audioPeak: data.audioPeak !== null && data.audioPeak !== undefined && Number.isFinite(Number(data.audioPeak))
+                            ? Math.max(-120, Math.min(6, Number(data.audioPeak)))
+                            : previous.audioPeak ?? null,
+                        timelineEvents: Array.isArray(data.timelineEvents)
+                            ? data.timelineEvents.slice(-32).map(event => ({
+                                effectId: typeof event?.effectId === 'string' ? event.effectId.slice(0, 100) : null,
+                                type: typeof event?.type === 'string' ? event.type.slice(0, 40) : 'unknown',
+                                plannedAt: Number.isFinite(Number(event?.plannedAt)) ? Number(event.plannedAt) : null,
+                                actualAt: Number.isFinite(Number(event?.actualAt)) ? Number(event.actualAt) : null,
+                                driftMs: Number.isFinite(Number(event?.driftMs)) ? Number(event.driftMs) : null,
+                                state: typeof event?.state === 'string' ? event.state.slice(0, 40) : null
+                            }))
+                            : previous.timelineEvents || [],
                         visualStyle: typeof data.visualStyle === 'string' ? data.visualStyle : this.config.visualStyle,
                         reason: typeof data.reason === 'string' ? data.reason.slice(0, 300) : null,
                         updatedAt: Date.now()
@@ -282,6 +314,13 @@ class FireworksPlugin {
             failedSounds: 0,
             lastPlayed: null,
             lastAudioError: null,
+            lastAudioProfile: null,
+            crackleState: 'idle',
+            activeVoices: { launch: 0, bang: 0, crackle: 0, total: 0 },
+            audioEvictions: 0,
+            missedAudioEvents: 0,
+            audioPeak: null,
+            timelineEvents: [],
             visualStyle: this.config?.visualStyle || 'premium-hybrid',
             reason: 'No active WebGPU overlay connected'
         };
@@ -424,6 +463,8 @@ class FireworksPlugin {
             rocketSound: '/plugins/webgpu-fireworks/audio/abschussgeraeusch.mp3',
             explosionSound: '/plugins/webgpu-fireworks/audio/explosion_small1.mp3',
             audioVolume: 0.7,
+            crackleFrequency: 0.5,
+            crackleVolume: 0.75,
 
             // Colors
             colorMode: 'gift', // 'gift', 'random', 'theme', 'rainbow'
@@ -1254,6 +1295,7 @@ class FireworksPlugin {
                     positionMode: 'auto',
                     particleCount: 80,
                     userAvatar: this.config.followerShowProfilePicture ? profilePictureUrl : null,
+                    avatarRocketHead: this.config.followerShowProfilePicture === true && Boolean(profilePictureUrl),
                     avatarParticleChance: 0.5, // 50% chance for avatar particles to focus on follower
                     tier: 'medium',
                     username: username,
@@ -1346,11 +1388,13 @@ class FireworksPlugin {
             giftId: options.giftId || null,
             giftImage: options.giftImage || null,
             userAvatar: options.userAvatar || null,
+            avatarRocketHead: options.avatarRocketHead === true,
             requestedParticleCount: options.requestedParticleCount || options.particleCount || null,
             tier: options.tier || 'medium',
             username: options.username || null,
             coins: options.coins || 0,
             combo: options.combo || 1,
+            forceRocket: options.forceRocket === true,
             duration: options.duration || 2000,
             reason: options.reason || 'manual',
 
@@ -1359,6 +1403,9 @@ class FireworksPlugin {
             rocketSound: this.config.rocketSound,
             explosionSound: this.config.explosionSound,
             audioVolume: this.config.audioVolume,
+            crackleFrequency: this.config.crackleFrequency,
+            crackleVolume: this.config.crackleVolume,
+            crackleEnabled: typeof options.crackleEnabled === 'boolean' ? options.crackleEnabled : undefined,
 
             // Visual settings
             trailsEnabled: this.config.trailsEnabled,
@@ -1433,7 +1480,7 @@ class FireworksPlugin {
 
             // Finale-specific settings
             burstCount,
-            burstInterval: 300,
+            burstInterval: burstCount > 1 ? Math.max(180, Math.min(500, duration / (burstCount - 1))) : 0,
             bursts,
             seed,
             shapes: this.getConfiguredShapes(),
@@ -1443,6 +1490,8 @@ class FireworksPlugin {
             // Audio
             playSound: this.config.audioEnabled,
             audioVolume: this.config.audioVolume,
+            crackleFrequency: this.config.crackleFrequency,
+            crackleVolume: this.config.crackleVolume,
             rocketSound: this.config.rocketSound,
             explosionSound: this.config.explosionSound
         };

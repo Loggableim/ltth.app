@@ -43,6 +43,8 @@ const DEFAULT_FIREWORKS_CONFIG = {
   rocketSound: '/plugins/webgpu-fireworks/audio/abschussgeraeusch.mp3',
   explosionSound: '/plugins/webgpu-fireworks/audio/explosion_small1.mp3',
   audioVolume: 0.7,
+  crackleFrequency: 0.5,
+  crackleVolume: 0.75,
   colorMode: 'gift',
   themeColors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
   goalFinaleEnabled: true,
@@ -250,6 +252,8 @@ function normalizeConfig(config = {}) {
     rocketSound: normalizeAudioPath(source.rocketSound, defaults.rocketSound),
     explosionSound: normalizeAudioPath(source.explosionSound, defaults.explosionSound),
     audioVolume: clampNumber(source.audioVolume, 0, 1, defaults.audioVolume),
+    crackleFrequency: clampNumber(source.crackleFrequency, 0, 1, defaults.crackleFrequency),
+    crackleVolume: clampNumber(source.crackleVolume, 0, 1, defaults.crackleVolume),
     colorMode: ['gift', 'random', 'theme', 'rainbow'].includes(source.colorMode) ? source.colorMode : defaults.colorMode,
     themeColors: normalizeColorArray(source.themeColors, defaults.themeColors),
     goalFinaleEnabled: normalizeBoolean(source.goalFinaleEnabled, defaults.goalFinaleEnabled),
@@ -340,7 +344,8 @@ function normalizeFireworkTrigger(options = {}, config = DEFAULT_FIREWORKS_CONFI
     duration: clampInteger(source.duration, 250, 30000, 2000),
     tier: ['small', 'medium', 'big', 'massive'].includes(source.tier) ? source.tier : 'medium',
     combo: clampInteger(source.combo, 1, 999, 1),
-    coins: clampInteger(source.coins, 0, 100000000, 0)
+    coins: clampInteger(source.coins, 0, 100000000, 0),
+    crackleEnabled: typeof source.crackleEnabled === 'boolean' ? source.crackleEnabled : undefined
   };
 }
 

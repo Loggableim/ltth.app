@@ -15,7 +15,8 @@ describe('WebGPU Fireworks native migration', () => {
 
   test('is a WebGPU-only plugin with no legacy renderer files', () => {
     expect(manifest.id).toBe('webgpu-fireworks');
-    expect(manifest.version).toBe('2.1.1');
+    expect(manifest.version).toBe('2.2.1');
+    expect(manifest.devStatus).toBe('working-beta');
     expect(manifest.features).toEqual(expect.arrayContaining([
       'webgpu-compute-simulation',
       'webgpu-indirect-rendering',
@@ -23,8 +24,8 @@ describe('WebGPU Fireworks native migration', () => {
     ]));
     expect(fs.existsSync(path.join(pluginRoot, 'gpu', 'webgl-particle-engine.js'))).toBe(false);
     expect(fs.existsSync(path.join(pluginRoot, 'gpu', 'particle-system-soa.js'))).toBe(false);
-    expect(overlaySource).toContain('webgpu-particle-engine.js?v=2.1.1-finale-crackle-3');
-    expect(settingsHtml).toContain('settings.js?v=2.1.1-color-picker-1');
+    expect(overlaySource).toContain('webgpu-particle-engine.js?v=2.2.1-avatar-head-1');
+    expect(settingsHtml).toContain('settings.js?v=2.2.1-avatar-head-1');
     expect(overlaySource).not.toContain('webgl-particle-engine');
   });
 
@@ -54,7 +55,8 @@ describe('WebGPU Fireworks native migration', () => {
     expect(rendererSource).toContain("entryPoint: 'spawnSecondary'");
     expect(rendererSource).toContain('atomicCompareExchangeWeak');
     expect(rendererSource).toContain('atomicAdd(&counters.droppedCount');
-    expect(rendererSource).toContain('}\n  return 0xffffffffu;\n}\nfn releaseParticle');
+    expect(rendererSource).toContain('var result = 0xffffffffu');
+    expect(rendererSource).toContain('return result;\n}\nfn releaseParticle');
     expect(rendererSource).toContain('drawIndirect(this.buffers.coreIndirect');
     expect(rendererSource).toContain('drawIndirect(this.buffers.trailIndirect');
   });
@@ -115,12 +117,13 @@ describe('WebGPU Fireworks native migration', () => {
   });
 
   test('orchestrates visual explosion and audio in the same CPU frame', () => {
-    const processStart = orchestrationSource.indexOf('processExplosion(explosion)');
+    const processStart = orchestrationSource.indexOf('processExplosion(explosion, plan = null');
     const processEnd = orchestrationSource.indexOf('handleFinale(data', processStart);
     const processBody = orchestrationSource.slice(processStart, processEnd);
     expect(processBody).toContain('this.renderer.spawnExplosion');
     expect(processBody).toContain('this.audio.play(explosion.sound.bang');
     expect(processBody.indexOf('this.renderer.spawnExplosion')).toBeLessThan(processBody.indexOf('this.audio.play(explosion.sound.bang'));
+    expect(orchestrationSource).toContain('this.processTimeline(now)');
     expect(orchestrationSource).not.toContain('class Particle ');
   });
 
@@ -133,21 +136,24 @@ describe('WebGPU Fireworks native migration', () => {
       'combined-whistle-tiny3',
       'combined-whistle-tiny4'
     ]) expect(orchestrationSource).toContain(sound);
-    expect(orchestrationSource).toContain('maxDuration: Math.min(flightDuration, sound.launchWindow)');
-    expect(orchestrationSource).toContain('source.stop(now + maxDuration)');
+    expect(orchestrationSource).toContain('fitLaunchToFlight(selection, flightDuration, seed)');
+    expect(orchestrationSource).toContain('maxDuration: plan.flightDuration');
+    expect(orchestrationSource).toContain('source.stop(stopAt)');
     expect(orchestrationSource).toContain('this.audio.play(explosion.sound.bang');
   });
 
   test('couples crackling audio to the dedicated visible GPU crackle window', () => {
-    const processStart = orchestrationSource.indexOf('processExplosion(explosion)');
-    const processEnd = orchestrationSource.indexOf('handleFinale(data', processStart);
+    const processStart = orchestrationSource.indexOf('processCrackle(plan, plannedAt, actualAt)');
+    const processEnd = orchestrationSource.indexOf('async handleTrigger(data', processStart);
     const processBody = orchestrationSource.slice(processStart, processEnd);
     expect(processBody).toContain('this.renderer.spawnCrackle({');
-    expect(processBody).toContain('maxDuration: crackleDuration');
+    expect(processBody).toContain('profile: plan.crackleProfile');
+    expect(processBody).toContain('pulseCount: plan.cracklePulseCount');
+    expect(processBody).toContain('maxDuration: plan.crackleDuration');
     expect(processBody).toContain('offset: this.audio.CRACKLE_OFFSETS[explosion.sound.crackle] || 0');
     expect(processBody).toContain("bus: 'crackle'");
-    expect(processBody).toContain('void this.audio.play(explosion.sound.crackle, 0.5, 2');
-    expect(processBody).not.toContain('duration * 520');
+    expect(processBody).toContain('void this.audio.play(explosion.sound.crackle, 1, 4');
+    expect(processBody).not.toContain('setTimeout');
     expect(processBody.indexOf('this.renderer.spawnCrackle({')).toBeLessThan(processBody.indexOf('this.audio.play(explosion.sound.crackle'));
     expect(rendererSource).toContain('spawnCrackle(options = {})');
     expect(rendererSource).toContain('role: 8');
@@ -158,9 +164,13 @@ describe('WebGPU Fireworks native migration', () => {
     const finaleEnd = orchestrationSource.indexOf('showGiftPopup(data)', finaleStart);
     const finaleBody = orchestrationSource.slice(finaleStart, finaleEnd);
     expect(finaleBody).toContain('forceRocket: true');
-    expect(finaleBody).toContain('crackleEnabled: intensity >= 4 ? i % 3 === 0 : intensity >= 3 ? i % 4 === 0 : false');
-    expect(orchestrationSource).toContain('const skipRocket = !forceRocket && combo >= 5');
-    expect(orchestrationSource).toContain('this.audio.choose(tier, forceRocket ? 1 : combo, instant)');
+    expect(finaleBody).toContain("type: 'finale-launch'");
+    expect(finaleBody).toContain('const baseCrackleInterval = intensity >= 4 ? 3 : intensity >= 3 ? 4 : 5');
+    expect(finaleBody).toContain('finaleDuration / (count - 1)');
+    expect(finaleBody).toContain('crackleEnabled,');
+    expect(orchestrationSource).toContain('let skipRocket = !forceRocket && combo >= 5');
+    expect(orchestrationSource).toContain('this.audio.choose(tier, forceRocket ? 1 : combo, false, {');
+    expect(orchestrationSource).toContain('if (sound.crackle && skipRocket)');
   });
 
   test('uses semantic particle sizes and incandescent directional sparks', () => {
@@ -169,9 +179,9 @@ describe('WebGPU Fireworks native migration', () => {
     expect(rendererSource).toContain('vec2f(2.6,0.42)');
     expect(rendererSource).toContain('p.rotation = atan2(p.velocity.y, p.velocity.x)');
     expect(rendererSource).toContain("color: '#fff4d6'");
-    expect(rendererSource).toContain('position.y/uniforms.height*2.0-1.0');
-    expect(rendererSource).not.toContain('1.0-position.y/uniforms.height*2.0');
-    expect(rendererSource).toContain('fn rocketCoverage(uv:vec2f,time:f32)');
+    expect(rendererSource).toContain('1.0-position.y/uniforms.height*2.0');
+    expect(rendererSource).toContain('0.5-p[index].y*0.5');
+    expect(rendererSource).toContain('fn rocketCoverage(uv:vec2f,time:f32,seed:u32)');
     expect(rendererSource).toContain('let fins=');
     expect(rendererSource).toContain('let flame=');
     expect(rendererSource).toContain('p.rotation = atan2(p.velocity.y, p.velocity.x + curveVelocity)');

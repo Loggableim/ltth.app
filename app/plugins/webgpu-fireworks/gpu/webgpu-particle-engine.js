@@ -12,6 +12,8 @@ class WebGPUParticleEngine {
         this.maxSpawnCommands = 32;
         this.maxTrailSamples = 12;
         this.trailSamples = Math.max(2, Math.min(this.maxTrailSamples, Number(options.trailSamples) || 8));
+        this.trailsEnabled = options.trailsEnabled !== false;
+        this.glowEnabled = options.glowEnabled !== false;
         this.bloomEnabled = options.bloomEnabled !== false;
         this.bloomScale = Number(options.bloomScale) || 0.5;
         this.bloomLevels = 3;
@@ -32,14 +34,21 @@ class WebGPUParticleEngine {
         this.deviceRecoveryAttempted = false;
         this.spawnQueue = [];
         this.atlasSlots = new Map();
+        this.atlasSources = new Map();
         this.nextAtlasSlot = 1; // Slot zero is the neutral paw sprite.
         this.atlasSize = 1024;
         this.atlasSlotSize = 128;
+        this.atlasGutter = 6;
+        this.atlasMipLevels = Math.floor(Math.log2(this.atlasSize)) + 1;
         this.atlasSlotsPerRow = this.atlasSize / this.atlasSlotSize;
         this.logicalWidth = canvas.width || 1920;
         this.logicalHeight = canvas.height || 1080;
         this.lastReadbackAt = 0;
         this.readbackPending = false;
+        this.fixedStepSeconds = 1 / 60;
+        this.simulationAccumulator = 0;
+        this.simulationTimeSeconds = null;
+        this.simulationStarted = false;
         this.metrics = {
             state: 'initializing',
             backend: 'webgpu',
@@ -165,7 +174,7 @@ class WebGPUParticleEngine {
             secondaryIndices: this._createBuffer('fireworks-secondary-indices', this.maxParticles * 4, U.STORAGE),
             freeIndices: this._createBuffer('fireworks-free-indices', this.maxParticles * 4, U.STORAGE | U.COPY_DST),
             counters: this._createBuffer('fireworks-counters', 16, U.STORAGE | U.COPY_SRC | U.COPY_DST),
-            commands: this._createBuffer('fireworks-spawn-commands', this.maxSpawnCommands * 96, U.STORAGE | U.COPY_DST),
+            commands: this._createBuffer('fireworks-spawn-commands', this.maxSpawnCommands * 112, U.STORAGE | U.COPY_DST),
             uniforms: this._createBuffer('fireworks-uniforms', 48, U.UNIFORM | U.COPY_DST),
             coreIndirect: this._createBuffer('fireworks-core-indirect', 16, U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC),
             trailIndirect: this._createBuffer('fireworks-trail-indirect', 16, U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC),
@@ -187,6 +196,7 @@ class WebGPUParticleEngine {
         this.atlasTexture = this.device.createTexture({
             label: 'fireworks-atlas',
             size: [this.atlasSize, this.atlasSize, 1],
+            mipLevelCount: this.atlasMipLevels,
             format: 'rgba8unorm',
             usage: T.TEXTURE_BINDING | T.COPY_DST | T.RENDER_ATTACHMENT
         });
@@ -293,14 +303,20 @@ class WebGPUParticleEngine {
         ]});
         this.postBindGroupLayout = postLayout;
         const postPipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [postLayout] });
-        const makePost = (entryPoint, format) => this.device.createRenderPipelineAsync({
+        const makePost = (entryPoint, format, blend = undefined) => this.device.createRenderPipelineAsync({
             layout: postPipelineLayout,
             vertex: { module: postModule, entryPoint: 'fullscreenVertex' },
-            fragment: { module: postModule, entryPoint, targets: [{ format }] },
+            fragment: { module: postModule, entryPoint, targets: [{ format, ...(blend ? { blend } : {}) }] },
             primitive: { topology: 'triangle-list' }
         });
         this.pipelines.extract = await makePost('brightExtract', 'rgba16float');
         this.pipelines.blur = await makePost('kawaseBlur', 'rgba16float');
+        this.pipelines.bloomCopy = await makePost('bloomCopy', 'rgba16float');
+        this.pipelines.bloomUpsample = await makePost('bloomUpsample', 'rgba16float', {
+            color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
+            alpha: { srcFactor: 'one', dstFactor: 'one', operation: 'add' }
+        });
+        this.pipelines.atlasMipmap = await makePost('atlasDownsample', 'rgba8unorm');
         this.pipelines.composite = await makePost('composite', this.format);
 
         this.computeBindGroup = this.device.createBindGroup({ layout: computeLayout, entries: [
@@ -339,13 +355,16 @@ class WebGPUParticleEngine {
             extract: make(this.sceneTexture, this.sceneTexture),
             blurA: make(this.bloomTextureA, this.sceneTexture),
             blurB: make(this.bloomTextureB, this.sceneTexture),
-            halfToQuarter: make(this.bloomTextureB, this.sceneTexture),
+            halfToQuarter: make(this.bloomTextureA, this.sceneTexture),
             quarterBlur: make(this.bloomQuarterA, this.sceneTexture),
             quarterToEighth: make(this.bloomQuarterB, this.sceneTexture),
             eighthBlur: make(this.bloomEighthA, this.sceneTexture),
+            quarterBase: make(this.bloomQuarterB, this.sceneTexture),
             eighthToQuarter: make(this.bloomEighthB, this.sceneTexture),
+            halfBase: make(this.bloomTextureA, this.sceneTexture),
             quarterToHalf: make(this.bloomQuarterA, this.sceneTexture),
-            composite: make(this.sceneTexture, this.bloomTextureA)
+            quarterDirectToHalf: make(this.bloomQuarterB, this.sceneTexture),
+            composite: make(this.sceneTexture, this.bloomTextureB)
         };
     }
 
@@ -357,25 +376,37 @@ class WebGPUParticleEngine {
     }
 
     async _initializeAtlas() {
+        this.atlasSlots.clear();
+        this.nextAtlasSlot = 1;
         const canvas = typeof OffscreenCanvas !== 'undefined'
             ? new OffscreenCanvas(this.atlasSlotSize, this.atlasSlotSize)
             : Object.assign(document.createElement('canvas'), { width: this.atlasSlotSize, height: this.atlasSlotSize });
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, this.atlasSlotSize, this.atlasSlotSize);
         ctx.fillStyle = '#ffffff';
+        const center = this.atlasSlotSize * 0.5;
         ctx.beginPath();
-        ctx.ellipse(64, 82, 34, 29, 0, 0, Math.PI * 2);
+        ctx.ellipse(center, 82, 31, 27, 0, 0, Math.PI * 2);
         ctx.fill();
-        for (const [x, y, r] of [[28, 43, 13], [50, 29, 13], [78, 29, 13], [100, 43, 13]]) {
+        for (const [x, y, r] of [[30, 44, 12], [51, 31, 12], [77, 31, 12], [98, 44, 12]]) {
             ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
         }
         this.device.queue.copyExternalImageToTexture({ source: canvas }, { texture: this.atlasTexture, origin: [0, 0] }, [this.atlasSlotSize, this.atlasSlotSize]);
         this.atlasSlots.set('shape:paw', 0);
+        for (const [key, image] of this.atlasSources) this._writeAtlasImage(key, image);
+        this._generateAtlasMipmaps();
     }
 
     async uploadImage(key, image) {
         if (!this.initialized || !key || !image) return 0;
         if (this.atlasSlots.has(key)) return this.atlasSlots.get(key) + 1;
+        this.atlasSources.set(key, image);
+        const result = this._writeAtlasImage(key, image);
+        if (result) this._generateAtlasMipmaps();
+        return result;
+    }
+
+    _writeAtlasImage(key, image) {
         const maxSlots = this.atlasSlotsPerRow * this.atlasSlotsPerRow;
         if (this.nextAtlasSlot >= maxSlots) {
             this._emitStatus('ready', { reason: 'Texture atlas full; image particle skipped' });
@@ -389,10 +420,21 @@ class WebGPUParticleEngine {
         ctx.clearRect(0, 0, this.atlasSlotSize, this.atlasSlotSize);
         const sourceWidth = Math.max(1, image.naturalWidth || image.videoWidth || image.width || 1);
         const sourceHeight = Math.max(1, image.naturalHeight || image.videoHeight || image.height || 1);
-        const scale = Math.min(this.atlasSlotSize / sourceWidth, this.atlasSlotSize / sourceHeight);
+        const contentSize = this.atlasSlotSize - this.atlasGutter * 2;
+        const isAvatar = String(key).startsWith('avatar:');
+        const scale = isAvatar
+            ? Math.max(contentSize / sourceWidth, contentSize / sourceHeight)
+            : Math.min(contentSize / sourceWidth, contentSize / sourceHeight);
         const width = sourceWidth * scale;
         const height = sourceHeight * scale;
+        if (isAvatar) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(this.atlasGutter, this.atlasGutter, contentSize, contentSize);
+            ctx.clip();
+        }
         ctx.drawImage(image, (this.atlasSlotSize - width) * 0.5, (this.atlasSlotSize - height) * 0.5, width, height);
+        if (isAvatar) ctx.restore();
         const x = (slot % this.atlasSlotsPerRow) * this.atlasSlotSize;
         const y = Math.floor(slot / this.atlasSlotsPerRow) * this.atlasSlotSize;
         this.device.queue.copyExternalImageToTexture({ source: canvas }, { texture: this.atlasTexture, origin: [x, y] }, [this.atlasSlotSize, this.atlasSlotSize]);
@@ -400,26 +442,76 @@ class WebGPUParticleEngine {
         return slot + 1;
     }
 
+    _generateAtlasMipmaps() {
+        if (!this.pipelines?.atlasMipmap || !this.postBindGroupLayout || !this.atlasTexture) return;
+        const encoder = this.device.createCommandEncoder({ label: 'fireworks-atlas-mipmaps' });
+        for (let level = 1; level < this.atlasMipLevels; level++) {
+            const sourceView = this.atlasTexture.createView({ baseMipLevel: level - 1, mipLevelCount: 1 });
+            const targetView = this.atlasTexture.createView({ baseMipLevel: level, mipLevelCount: 1 });
+            const bindGroup = this.device.createBindGroup({ layout: this.postBindGroupLayout, entries: [
+                { binding: 0, resource: sourceView },
+                { binding: 1, resource: sourceView },
+                { binding: 2, resource: this.atlasSampler },
+                { binding: 3, resource: { buffer: this.buffers.uniforms } }
+            ]});
+            const pass = encoder.beginRenderPass({ colorAttachments: [{
+                view: targetView,
+                clearValue: { r: 0, g: 0, b: 0, a: 0 },
+                loadOp: 'clear', storeOp: 'store'
+            }]});
+            pass.setPipeline(this.pipelines.atlasMipmap);
+            pass.setBindGroup(0, bindGroup);
+            pass.draw(3);
+            pass.end();
+        }
+        this.device.queue.submit([encoder.finish()]);
+    }
+
     spawnRocket(options = {}) {
         const style = this._styleId(options.style);
+        const seed = this._resolveSeed(options);
+        const effectId = this._hashValue(options.effectId ?? seed);
+        const resolutionScale = Math.max(0.75, Math.min(1.75, this.logicalHeight / 1080));
+        const rocketSize = Math.max(28, (Number(options.rocketSize) || 32) * resolutionScale);
+        const headTextureIndex = Math.max(0, Number(options.headTextureIndex) || 0);
+        const decalTextureIndex = headTextureIndex > 0 ? 0 : Math.max(0, Number(options.textureIndex) || 0);
         this._queueSpawn({
             ...options,
             kind: 1,
             count: 1,
-            shape: options.shape ?? 8,
-            size: options.shape === 'image' ? options.size : Math.max(18, (Number(options.size) || 8) * 2.4),
-            flags: this._flags({ role: 1, style, nativeColor: options.shape === 'image' }),
+            shape: 'rocket',
+            textureIndex: headTextureIndex,
+            size: rocketSize,
+            seed,
+            effectId,
+            flags: this._flags({ role: 1, style, rocketAvatarHead: headTextureIndex > 0 }),
             curve: options.curve || 0
         });
-        if (options.shape !== 'image') {
+        this._queueSpawn({
+            ...options,
+            kind: 1,
+            count: 1,
+            shape: 'rocket',
+            textureIndex: 0,
+            size: rocketSize * 0.76,
+            color: '#fff4d6',
+            seed: seed ^ 0x9e3779b9,
+            effectId,
+            flags: this._flags({ role: 2, style }),
+            curve: options.curve || 0
+        });
+        if (decalTextureIndex > 0) {
             this._queueSpawn({
                 ...options,
                 kind: 1,
                 count: 1,
-                shape: 'rocket',
-                size: Math.max(11, (Number(options.size) || 8) * 1.35),
-                color: '#fff4d6',
-                flags: this._flags({ role: 2, style }),
+                shape: 'image',
+                textureIndex: decalTextureIndex,
+                size: Math.max(16, Number(options.size) || 18) * resolutionScale,
+                color: '#ffffff',
+                seed: seed ^ 0x85ebca6b,
+                effectId,
+                flags: this._flags({ role: 6, style, nativeColor: true }) | 64,
                 curve: options.curve || 0
             });
         }
@@ -436,11 +528,15 @@ class WebGPUParticleEngine {
         const count = Math.max(minimum, Math.min(requested, maximum));
         const palette = Array.isArray(options.colors) && options.colors.length ? options.colors : ['#ffffff'];
         const style = this._styleId(options.style);
+        const seed = this._resolveSeed(options);
+        const effectId = this._hashValue(options.effectId ?? seed);
         const requestedSize = Number(options.size) || 0;
         const shapeSize = shape >= 1 && shape <= 5
             ? Math.max(requestedSize, this._shapeSize(shape, style))
             : (requestedSize || this._shapeSize(shape, style));
         let remaining = count;
+        let globalIndexBase = 0;
+        const defaultEmissionSpread = shape === 5 ? 0.2 : shape >= 1 && shape <= 4 ? 0.1 : 0.055;
         for (let i = 0; i < palette.length && remaining > 0; i++) {
             const commandsLeft = palette.length - i;
             const slice = Math.ceil(remaining / commandsLeft);
@@ -451,6 +547,12 @@ class WebGPUParticleEngine {
                 shape,
                 size: shapeSize,
                 color: palette[i],
+                seed,
+                effectId,
+                globalIndexBase,
+                globalCount: count,
+                emissionDelay: Number(options.emissionDelay) || 0,
+                emissionSpread: Number.isFinite(options.emissionSpread) ? options.emissionSpread : defaultEmissionSpread,
                 flags: this._flags({
                     role: shape === 0 ? 3 : shape === 6 ? 6 : 4,
                     style,
@@ -459,6 +561,7 @@ class WebGPUParticleEngine {
                 })
             });
             remaining -= slice;
+            globalIndexBase += slice;
         }
 
         if (shape === 0) {
@@ -473,6 +576,8 @@ class WebGPUParticleEngine {
                 gravity: 0,
                 drag: 1,
                 color: '#ffffff',
+                seed: seed ^ 0xc2b2ae35,
+                effectId,
                 flags: this._flags({ role: 2, style })
             });
             this._queueSpawn({
@@ -483,6 +588,9 @@ class WebGPUParticleEngine {
                 size: Math.max(4, shapeSize * 0.72),
                 duration: Math.max(0.45, Number(options.duration) * 0.58),
                 color: '#ffffff',
+                seed: seed ^ 0x27d4eb2f,
+                effectId,
+                emissionSpread: 0.09,
                 flags: this._flags({ role: 5, style })
             });
         }
@@ -499,6 +607,9 @@ class WebGPUParticleEngine {
                 gravity: -8,
                 drag: 0.992,
                 color: '#7c84912c',
+                seed: seed ^ 0x165667b1,
+                effectId,
+                emissionSpread: 0.14,
                 flags: this._flags({ role: 7, style })
             });
         }
@@ -506,29 +617,34 @@ class WebGPUParticleEngine {
 
     spawnCrackle(options = {}) {
         const style = this._styleId(options.style);
-        const palette = Array.isArray(options.colors) && options.colors.length
-            ? options.colors.slice(0, 2)
-            : ['#fff4b0'];
-        const duration = Math.max(0.25, Math.min(1.2, Number(options.duration) || 0.7));
-        const requested = Math.round(10 + Math.max(0.1, Number(options.intensity) || 1) * 5);
-        const count = Math.max(10, Math.min(36, requested));
-        let remaining = count;
-        for (let index = 0; index < palette.length && remaining > 0; index++) {
-            const slice = Math.ceil(remaining / (palette.length - index));
-            this._queueSpawn({
-                ...options,
-                kind: 2,
-                count: slice,
-                shape: 'sparkle',
-                size: 3.6 + style * 0.5,
-                duration,
-                color: palette[index],
-                secondary: false,
-                flags: this._flags({ role: 8, style })
-            });
-            remaining -= slice;
-        }
-        return duration;
+        const colors = Array.isArray(options.colors) && options.colors.length ? options.colors : ['#fff4b0'];
+        const profile = options.profile === 'long' ? 'long' : options.profile === 'short' ? 'short' : null;
+        const totalDuration = Math.max(0.25, Math.min(1.2, Number(options.duration) || (profile === 'long' ? 1 : 0.65)));
+        const defaultPulses = profile === 'long' || (!profile && totalDuration >= 0.85) ? 6 : 4;
+        const pulseCount = Math.max(2, Math.min(7, Math.round(Number(options.pulseCount) || defaultPulses)));
+        const splitterCount = Math.max(2, Math.min(5, Math.round(2 + Math.max(0.1, Number(options.intensity) || 1))));
+        const count = pulseCount * (splitterCount + 1);
+        const pulseLife = Math.max(0.12, Math.min(0.24, totalDuration * 0.24));
+        const seed = this._resolveSeed(options);
+        this._queueSpawn({
+            ...options,
+            kind: 2,
+            count,
+            globalCount: count,
+            shape: 'sparkle',
+            size: 3.8 + style * 0.45,
+            duration: totalDuration,
+            particleDuration: pulseLife,
+            color: colors[0],
+            seed,
+            effectId: this._hashValue(options.effectId ?? seed),
+            emissionDelay: Math.max(0, Number(options.emissionDelay) || 0),
+            emissionSpread: Math.max(0, totalDuration - pulseLife),
+            secondary: false,
+            pulseCount,
+            flags: this._flags({ role: 8, style, pulseCount })
+        });
+        return totalDuration;
     }
 
     _shapeId(shape) {
@@ -540,8 +656,25 @@ class WebGPUParticleEngine {
         return { 'premium-hybrid': 0, realistic: 1, 'stylized-neon': 2 }[style] ?? 0;
     }
 
-    _flags({ secondary = false, nativeColor = false, role = 0, style = 0 } = {}) {
-        return (nativeColor ? 1 : 0) | (secondary ? 2 : 0) | ((role & 15) << 8) | ((style & 3) << 12);
+    _flags({ secondary = false, nativeColor = false, role = 0, style = 0, pulseCount = 0, rocketAvatarHead = false } = {}) {
+        return (nativeColor ? 1 : 0) | (secondary ? 2 : 0) | ((pulseCount & 7) << 3) |
+            ((role & 15) << 8) | ((style & 3) << 12) | (rocketAvatarHead ? (1 << 14) : 0);
+    }
+
+    _hashValue(value) {
+        const text = String(value ?? '');
+        let hash = 2166136261;
+        for (let index = 0; index < text.length; index++) {
+            hash ^= text.charCodeAt(index);
+            hash = Math.imul(hash, 16777619);
+        }
+        return hash >>> 0;
+    }
+
+    _resolveSeed(options = {}) {
+        if (Number.isFinite(Number(options.seed))) return Number(options.seed) >>> 0;
+        if (options.effectId !== undefined && options.effectId !== null) return this._hashValue(options.effectId);
+        return Math.floor(Math.random() * 0xffffffff) >>> 0;
     }
 
     _shapeSize(shape, style) {
@@ -553,6 +686,7 @@ class WebGPUParticleEngine {
 
     _queueSpawn(command) {
         if (!this.initialized || this.spawnQueue.length >= this.maxSpawnCommands) return false;
+        const seed = this._resolveSeed(command);
         this.spawnQueue.push({
             origin: command.origin || { x: command.x || 0, y: command.y || 0 },
             target: command.target || command.origin || { x: command.x || 0, y: command.y || 0 },
@@ -563,14 +697,21 @@ class WebGPUParticleEngine {
             flags: command.flags || 0,
             intensity: Math.max(0.1, Number(command.intensity) || 1),
             duration: Math.max(0.05, Number(command.duration) || 1.2),
+            particleDuration: Math.max(0.05, Number(command.particleDuration) || Number(command.duration) || 1.2),
             textureIndex: Math.max(0, Number(command.textureIndex) || 0),
-            seed: command.seed || Math.floor(Math.random() * 0xffffffff),
+            seed,
+            effectId: this._hashValue(command.effectId ?? seed),
             size: Math.max(1, Number(command.size) || 6),
             gravity: Number.isFinite(command.gravity) ? command.gravity : 90,
             drag: Number.isFinite(command.drag) ? command.drag : 0.985,
             secondary: command.secondary !== false ? 1 : 0,
             wind: Number.isFinite(command.wind) ? command.wind : 0,
-            curve: Number.isFinite(command.curve) ? command.curve : 0
+            curve: Number.isFinite(command.curve) ? command.curve : 0,
+            emissionDelay: Math.max(0, Number(command.emissionDelay) || 0),
+            emissionSpread: Math.max(0, Number(command.emissionSpread) || 0),
+            globalIndexBase: Math.max(0, Math.floor(Number(command.globalIndexBase) || 0)),
+            globalCount: Math.max(1, Math.floor(Number(command.globalCount) || Number(command.count) || 1)),
+            pulseCount: Math.max(0, Math.min(7, Math.floor(Number(command.pulseCount) || 0)))
         });
         return true;
     }
@@ -606,69 +747,99 @@ class WebGPUParticleEngine {
     _uploadSpawnCommands() {
         const commands = this.spawnQueue.splice(0, this.maxSpawnCommands);
         if (!commands.length) return { count: 0, maxParticles: 0 };
-        const raw = new ArrayBuffer(commands.length * 96);
+        const raw = new ArrayBuffer(commands.length * 112);
         const f32 = new Float32Array(raw);
         const u32 = new Uint32Array(raw);
         let maxParticles = 0;
         commands.forEach((command, index) => {
-            const base = index * 24;
+            const base = index * 28;
             f32[base] = command.origin.x; f32[base + 1] = command.origin.y;
             f32[base + 2] = command.target.x; f32[base + 3] = command.target.y;
             f32.set(command.color, base + 4);
             u32[base + 8] = command.count; u32[base + 9] = command.shape;
             u32[base + 10] = command.kind; u32[base + 11] = command.flags;
-            f32[base + 12] = command.intensity; f32[base + 13] = command.duration;
+            f32[base + 12] = command.intensity; f32[base + 13] = command.particleDuration;
             u32[base + 14] = command.textureIndex; u32[base + 15] = command.seed;
             f32[base + 16] = command.size; f32[base + 17] = command.gravity;
             f32[base + 18] = command.drag; u32[base + 19] = command.secondary;
             f32[base + 20] = command.wind; f32[base + 21] = command.curve;
+            f32[base + 22] = command.emissionDelay; f32[base + 23] = command.emissionSpread;
+            u32[base + 24] = command.globalIndexBase; u32[base + 25] = command.globalCount;
+            u32[base + 26] = command.effectId; u32[base + 27] = command.pulseCount;
             maxParticles = Math.max(maxParticles, command.count);
         });
         this.device.queue.writeBuffer(this.buffers.commands, 0, raw);
         return { count: commands.length, maxParticles };
     }
 
-    render(deltaSeconds, timeSeconds = performance.now() / 1000) {
+    render(deltaSeconds, timeSeconds = performance.now() / 1000, options = {}) {
         if (!this.initialized || this.destroyed) return;
+        if (timeSeconds && typeof timeSeconds === 'object') {
+            options = timeSeconds;
+            timeSeconds = performance.now() / 1000;
+        }
+        const frameDelta = Math.min(0.05, Math.max(0.001, deltaSeconds || this.fixedStepSeconds));
+        this.simulationAccumulator = Math.min(
+            this.fixedStepSeconds * 3,
+            this.simulationAccumulator + frameDelta
+        );
         const spawn = this._uploadSpawnCommands();
-        const uniformRaw = new ArrayBuffer(48);
-        const uf = new Float32Array(uniformRaw);
-        const uu = new Uint32Array(uniformRaw);
-        uf[0] = Math.min(0.05, Math.max(0.001, deltaSeconds || 1 / 60));
-        uf[1] = timeSeconds;
-        uf[2] = this.logicalWidth;
-        uf[3] = this.logicalHeight;
-        uu[4] = this.trailSamples;
-        uf[5] = this.turbulence;
-        uu[6] = spawn.count;
-        uu[7] = this.maxTrailSamples;
-        uf[8] = this.glowScale;
-        uu[9] = this.bloomLevels;
-        this.device.queue.writeBuffer(this.buffers.uniforms, 0, uniformRaw);
+        let simulationSteps = Math.min(3, Math.floor((this.simulationAccumulator + 1e-7) / this.fixedStepSeconds));
+        if (simulationSteps === 0 && (spawn.count || !this.simulationStarted)) simulationSteps = 1;
+        if (!Number.isFinite(this.simulationTimeSeconds)) {
+            this.simulationTimeSeconds = Number(timeSeconds) || performance.now() / 1000;
+        }
 
-        const computeEncoder = this.device.createCommandEncoder({ label: 'fireworks-compute-frame' });
-        const computeDescriptor = { label: 'fireworks-compute' };
-        if (this.timestampEnabled) {
-            computeDescriptor.timestampWrites = {
-                querySet: this.timestampQuerySet,
-                beginningOfPassWriteIndex: 0,
-                endOfPassWriteIndex: 1
-            };
+        for (let step = 0; step < simulationSteps; step++) {
+            const stepSpawn = step === 0 ? spawn : { count: 0, maxParticles: 0 };
+            this.simulationTimeSeconds += this.fixedStepSeconds;
+            const uniformRaw = new ArrayBuffer(48);
+            const uf = new Float32Array(uniformRaw);
+            const uu = new Uint32Array(uniformRaw);
+            uf[0] = this.fixedStepSeconds;
+            uf[1] = this.simulationTimeSeconds;
+            uf[2] = this.logicalWidth;
+            uf[3] = this.logicalHeight;
+            uu[4] = this.trailSamples;
+            uf[5] = this.turbulence;
+            uu[6] = stepSpawn.count;
+            uu[7] = this.maxTrailSamples;
+            uf[8] = this.glowScale;
+            uu[9] = this.bloomLevels;
+            this.device.queue.writeBuffer(this.buffers.uniforms, 0, uniformRaw);
+
+            const computeEncoder = this.device.createCommandEncoder({ label: 'fireworks-compute-frame' });
+            const computeDescriptor = { label: 'fireworks-compute' };
+            if (this.timestampEnabled && step === simulationSteps - 1) {
+                computeDescriptor.timestampWrites = {
+                    querySet: this.timestampQuerySet,
+                    beginningOfPassWriteIndex: 0,
+                    endOfPassWriteIndex: 1
+                };
+            }
+            const pass = computeEncoder.beginComputePass(computeDescriptor);
+            pass.setBindGroup(0, this.computeBindGroup);
+            pass.setPipeline(this.pipelines.reset);
+            pass.dispatchWorkgroups(1);
+            if (stepSpawn.count) {
+                pass.setPipeline(this.pipelines.spawn);
+                pass.dispatchWorkgroups(Math.ceil(stepSpawn.maxParticles / 64), stepSpawn.count);
+            }
+            pass.setPipeline(this.pipelines.update);
+            pass.dispatchWorkgroups(Math.ceil(this.maxParticles / 64));
+            pass.setPipeline(this.pipelines.secondary);
+            pass.dispatchWorkgroups(Math.ceil(this.maxParticles / 64));
+            pass.end();
+            this.device.queue.submit([computeEncoder.finish()]);
         }
-        let pass = computeEncoder.beginComputePass(computeDescriptor);
-        pass.setBindGroup(0, this.computeBindGroup);
-        pass.setPipeline(this.pipelines.reset);
-        pass.dispatchWorkgroups(1);
-        if (spawn.count) {
-            pass.setPipeline(this.pipelines.spawn);
-            pass.dispatchWorkgroups(Math.ceil(spawn.maxParticles / 64), spawn.count);
+        if (simulationSteps > 0) {
+            this.simulationAccumulator = Math.max(0, this.simulationAccumulator - simulationSteps * this.fixedStepSeconds);
+            this.simulationStarted = true;
         }
-        pass.setPipeline(this.pipelines.update);
-        pass.dispatchWorkgroups(Math.ceil(this.maxParticles / 64));
-        pass.setPipeline(this.pipelines.secondary);
-        pass.dispatchWorkgroups(Math.ceil(this.maxParticles / 64));
-        pass.end();
-        this.device.queue.submit([computeEncoder.finish()]);
+
+        // Simulation and queued spawns continue even when adaptive quality
+        // skips an expensive presentation frame.
+        if (options.present === false) return;
 
         // Keep compute and indirect rendering in ordered command buffers. This
         // makes the freshly compacted indirect arguments visible consistently
@@ -679,10 +850,14 @@ class WebGPUParticleEngine {
             view: this.sceneTexture.createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store'
         }]});
         scenePass.setBindGroup(0, this.renderBindGroup);
-        scenePass.setPipeline(this.pipelines.trail);
-        scenePass.drawIndirect(this.buffers.trailIndirect, 0);
-        scenePass.setPipeline(this.pipelines.glow);
-        scenePass.drawIndirect(this.buffers.coreIndirect, 0);
+        if (this.trailsEnabled) {
+            scenePass.setPipeline(this.pipelines.trail);
+            scenePass.drawIndirect(this.buffers.trailIndirect, 0);
+        }
+        if (this.glowEnabled) {
+            scenePass.setPipeline(this.pipelines.glow);
+            scenePass.drawIndirect(this.buffers.coreIndirect, 0);
+        }
         scenePass.setPipeline(this.pipelines.core);
         scenePass.drawIndirect(this.buffers.coreIndirect, 0);
         scenePass.end();
@@ -706,14 +881,19 @@ class WebGPUParticleEngine {
                 const eighthB = encoder.beginRenderPass({ colorAttachments: [{ view: this.bloomEighthB.createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }]});
                 eighthB.setPipeline(this.pipelines.blur); eighthB.setBindGroup(0, this.postBindGroups.eighthBlur); eighthB.draw(3); eighthB.end();
                 const upQuarter = encoder.beginRenderPass({ colorAttachments: [{ view: this.bloomQuarterA.createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }]});
-                upQuarter.setPipeline(this.pipelines.blur); upQuarter.setBindGroup(0, this.postBindGroups.eighthToQuarter); upQuarter.draw(3); upQuarter.end();
+                upQuarter.setPipeline(this.pipelines.bloomCopy); upQuarter.setBindGroup(0, this.postBindGroups.quarterBase); upQuarter.draw(3);
+                upQuarter.setPipeline(this.pipelines.bloomUpsample); upQuarter.setBindGroup(0, this.postBindGroups.eighthToQuarter); upQuarter.draw(3); upQuarter.end();
             }
+            const upHalf = encoder.beginRenderPass({ colorAttachments: [{ view: this.bloomTextureB.createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }]});
+            upHalf.setPipeline(this.pipelines.bloomCopy); upHalf.setBindGroup(0, this.postBindGroups.halfBase); upHalf.draw(3);
             if (this.bloomLevels >= 2) {
-                const upHalf = encoder.beginRenderPass({ colorAttachments: [{ view: this.bloomTextureA.createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }]});
-                upHalf.setPipeline(this.pipelines.blur); upHalf.setBindGroup(0, this.postBindGroups.quarterToHalf); upHalf.draw(3); upHalf.end();
+                upHalf.setPipeline(this.pipelines.bloomUpsample);
+                upHalf.setBindGroup(0, this.bloomLevels >= 3 ? this.postBindGroups.quarterToHalf : this.postBindGroups.quarterDirectToHalf);
+                upHalf.draw(3);
             }
+            upHalf.end();
         } else {
-            const clearBloom = encoder.beginRenderPass({ colorAttachments: [{ view: this.bloomTextureA.createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }]});
+            const clearBloom = encoder.beginRenderPass({ colorAttachments: [{ view: this.bloomTextureB.createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }]});
             clearBloom.end();
         }
 
@@ -786,10 +966,14 @@ class WebGPUParticleEngine {
 
     setQuality(options = {}) {
         this.trailSamples = Math.max(2, Math.min(this.maxTrailSamples, Number(options.trailSamples) || this.trailSamples));
+        this.trailsEnabled = options.trailsEnabled !== undefined ? options.trailsEnabled !== false : this.trailsEnabled;
+        this.glowEnabled = options.glowEnabled !== undefined ? options.glowEnabled !== false : this.glowEnabled;
         this.turbulence = Number.isFinite(options.turbulence) ? options.turbulence : this.turbulence;
         this.bloomEnabled = options.bloomEnabled !== undefined ? options.bloomEnabled : this.bloomEnabled;
         this.style = ['premium-hybrid', 'realistic', 'stylized-neon'].includes(options.style) ? options.style : this.style;
-        this.glowScale = Number.isFinite(options.glowScale) ? Math.max(0.25, Math.min(1.8, options.glowScale)) : this.glowScale;
+        this.glowScale = Number.isFinite(options.glowScale) ? Math.max(0, Math.min(1.8, options.glowScale)) : this.glowScale;
+        if (options.bloomEnabled === false && options.glowEnabled === undefined) this.glowEnabled = false;
+        if (options.bloomEnabled === true && options.glowEnabled === undefined) this.glowEnabled = true;
         this.bloomLevels = !this.bloomEnabled ? 0 : this.trailSamples <= 3 ? 1 : this.trailSamples <= 5 ? 2 : 3;
         this.smokeScale = this.style === 'realistic' ? 1 : this.style === 'stylized-neon' ? 0.15 : 0.45;
     }
@@ -830,7 +1014,8 @@ struct SpawnCommand {
   count: u32, shape: u32, kind: u32, flags: u32,
   intensity: f32, duration: f32, textureIndex: u32, seed: u32,
   size: f32, gravity: f32, drag: f32, secondary: u32,
-  pad: vec4f,
+  wind: f32, curve: f32, emissionDelay: f32, emissionSpread: f32,
+  globalIndexBase: u32, globalCount: u32, effectId: u32, pulseCount: u32,
 };
 struct Counters { freeCount: atomic<u32>, activeCount: atomic<u32>, droppedCount: atomic<u32>, secondaryCount: atomic<u32> };
 struct Uniforms {
@@ -851,13 +1036,14 @@ struct Uniforms {
 
 fn hash(value: u32) -> f32 { var x = value; x = ((x >> 16u) ^ x) * 0x45d9f3bu; x = ((x >> 16u) ^ x) * 0x45d9f3bu; x = (x >> 16u) ^ x; return f32(x) / 4294967295.0; }
 fn allocateParticle() -> u32 {
+  var result = 0xffffffffu;
   loop {
     let available = atomicLoad(&counters.freeCount);
-    if (available == 0u) { atomicAdd(&counters.droppedCount, 1u); return 0xffffffffu; }
+    if (available == 0u) { atomicAdd(&counters.droppedCount, 1u); break; }
     let claim = atomicCompareExchangeWeak(&counters.freeCount, available, available - 1u);
-    if (claim.exchanged) { return freeIndices[available - 1u]; }
+    if (claim.exchanged) { result = freeIndices[available - 1u]; break; }
   }
-  return 0xffffffffu;
+  return result;
 }
 fn releaseParticle(index: u32) { let slot = atomicAdd(&counters.freeCount, 1u); freeIndices[slot] = index; }
 fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) -> vec2f {
@@ -913,38 +1099,57 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   if (gid.y >= uniforms.commandCount) { return; }
   let command = commands[gid.y]; if (gid.x >= command.count) { return; }
   let slot = allocateParticle(); if (slot == 0xffffffffu) { return; }
-  var p: Particle; p.position = command.origin; p.color = command.color; p.life = 0.0; p.maxLife = command.duration;
-  p.rotation = hash(command.seed + gid.x * 13u) * 6.2831853; p.angularVelocity = (hash(command.seed + gid.x * 29u)-0.5)*4.0;
-  p.gravity = command.gravity; p.drag = command.drag; p.shape = command.shape; p.flags = command.flags; p.seed = command.seed + gid.x;
+  let globalIndex = command.globalIndexBase + gid.x;
+  let globalCount = max(1u, command.globalCount);
+  var p: Particle; p.position = command.origin; p.color = command.color; p.life = -command.emissionDelay; p.maxLife = command.duration;
+  p.rotation = hash(command.seed + globalIndex * 13u) * 6.2831853; p.angularVelocity = (hash(command.seed + globalIndex * 29u)-0.5)*4.0;
+  p.gravity = command.gravity; p.drag = command.drag; p.shape = command.shape;
+  p.flags = command.flags | ((globalIndex & 0xffffu) << 16u); p.seed = command.seed ^ command.effectId ^ globalIndex;
   p.textureIndex = command.textureIndex; p.alive = 1u; p.size = command.size;
   if (command.kind == 1u) {
     p.velocity = (command.destination-command.origin) / command.duration;
-    p.gravity = 0.0; p.drag = 1.0; p.shape = select(8u, 6u, command.textureIndex > 0u);
+    p.gravity = 0.0; p.drag = 1.0; p.shape = command.shape;
     p.rotation = atan2(p.velocity.y, p.velocity.x);
-    p.angularVelocity = command.pad.y;
+    p.angularVelocity = command.curve;
   } else {
-    p.velocity = shapeVelocity(command.shape, gid.x, command.count, command.intensity, command.seed);
-    p.velocity.x += command.pad.x;
+    p.velocity = shapeVelocity(command.shape, globalIndex, globalCount, command.intensity, command.seed ^ command.effectId);
+    p.velocity.x += command.wind;
     let role = (command.flags >> 8u) & 15u;
+    if (command.emissionSpread > 0.0) {
+      if (role == 8u && command.pulseCount > 1u) {
+        let pulse = globalIndex % command.pulseCount;
+        let localIndex = globalIndex / command.pulseCount;
+        let pulsePhase = f32(pulse) / f32(command.pulseCount - 1u);
+        let jitter = select(hash(p.seed + 0x68bc21ebu) * 0.016, 0.0, localIndex == 0u);
+        p.life -= command.emissionSpread * pulsePhase + jitter;
+        if (localIndex == 0u) { p.flags = p.flags | 128u; p.size *= 2.25; p.velocity *= 0.08; }
+      } else {
+        p.life -= command.emissionSpread * hash(p.seed + 0x9e3779b9u);
+      }
+    }
     if (command.shape == 0u && role == 3u) {
-      p.position += p.velocity * (0.035 + hash(command.seed + gid.x * 37u) * 0.035);
-      p.size *= 0.62 + hash(command.seed + gid.x * 43u) * 0.78;
+      p.position += p.velocity * (0.035 + hash(command.seed + globalIndex * 37u) * 0.035);
+      p.size *= 0.62 + hash(command.seed + globalIndex * 43u) * 0.78;
       p.rotation = atan2(p.velocity.y, p.velocity.x);
       p.angularVelocity = 0.0;
     } else if (command.shape == 0u && role == 2u) {
       p.velocity *= 0.05;
     } else if (command.shape == 7u) {
       if (role == 8u) {
-        p.position += p.velocity * (0.025 + hash(command.seed + gid.x * 47u) * 0.08);
-        p.size *= 0.72 + hash(command.seed + gid.x * 61u) * 0.48;
+        p.position += p.velocity * (0.025 + hash(command.seed + globalIndex * 47u) * 0.08);
+        p.size *= 0.72 + hash(command.seed + globalIndex * 61u) * 0.48;
       }
       p.rotation = atan2(p.velocity.y, p.velocity.x);
       p.angularVelocity = 0.0;
     } else if (command.shape == 2u) {
-      p.position += p.velocity * (0.22 + hash(command.seed + gid.x * 41u) * 0.08);
-      p.size *= 0.82 + hash(command.seed + gid.x * 53u) * 0.36;
+      p.position += p.velocity * (0.22 + hash(command.seed + globalIndex * 41u) * 0.08);
+      p.size *= 0.82 + hash(command.seed + globalIndex * 53u) * 0.36;
     } else if (command.shape == 5u) {
       p.position += p.velocity * 0.1;
+    }
+    if ((p.flags & 2u) != 0u) {
+      let keepChance = select(0.14, 0.32, command.shape == 5u);
+      if (hash(p.seed + 0x27d4eb2fu) > keepChance) { p.flags = p.flags & 0xfffffffdu; }
     }
   }
   particles[slot] = p;
@@ -955,6 +1160,7 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   var p = particles[index]; if (p.alive == 0u) { return; }
   let previousLife = p.life;
   p.life += uniforms.dt;
+  if (p.life < 0.0) { particles[index] = p; return; }
   if (p.life >= p.maxLife) { p.alive = 0u; particles[index] = p; releaseParticle(index); return; }
   let role = (p.flags >> 8u) & 15u;
   if (role == 1u || role == 2u) {
@@ -963,16 +1169,27 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
     p.position += vec2f(p.velocity.x + curveVelocity, p.velocity.y) * uniforms.dt;
     p.rotation = atan2(p.velocity.y, p.velocity.x + curveVelocity);
   } else {
-    let noise = vec2f(hash(p.seed + u32(uniforms.time*59.0))-0.5, hash(p.seed + u32(uniforms.time*83.0))-0.5) * uniforms.turbulence * 60.0;
+    let phase = uniforms.time * (1.7 + hash(p.seed + 71u) * 2.1) + hash(p.seed + 19u) * 6.2831853;
+    var noise = vec2f(sin(phase), cos(phase * 0.83 + 1.7)) * uniforms.turbulence * 60.0;
+    if (role == 7u) { noise += vec2f(cos(phase * 0.47), -abs(sin(phase * 0.31))) * 18.0; }
     p.velocity += vec2f(noise.x, p.gravity + noise.y) * uniforms.dt;
     p.velocity *= pow(p.drag, uniforms.dt * 60.0);
     p.position += p.velocity * uniforms.dt;
     p.rotation += p.angularVelocity * uniforms.dt;
   }
-  if ((p.flags & 2u) != 0u && (p.flags & 4u) == 0u && previousLife < p.maxLife * 0.55 && p.life >= p.maxLife * 0.55) {
+  let secondaryAt = 0.48 + hash(p.seed + 0x165667b1u) * 0.2;
+  if ((p.flags & 2u) != 0u && (p.flags & 4u) == 0u && previousLife < p.maxLife * secondaryAt && p.life >= p.maxLife * secondaryAt) {
     let secondary = atomicAdd(&counters.secondaryCount, 1u);
     secondaryIndices[secondary] = index;
     p.flags = p.flags | 4u;
+  }
+  if (role == 1u && previousLife >= 0.0) {
+    let previousBucket = u32(previousLife * 15.0);
+    let currentBucket = u32(p.life * 15.0);
+    if (currentBucket != previousBucket) {
+      let exhaust = atomicAdd(&counters.secondaryCount, 1u);
+      secondaryIndices[exhaust] = index;
+    }
   }
   let historyBase = index * uniforms.maxTrailSamples;
   for (var sample = uniforms.trailSamples - 1u; sample > 0u; sample--) { history[historyBase + sample] = history[historyBase + sample - 1u]; }
@@ -986,6 +1203,35 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   let sourceCount = atomicLoad(&counters.secondaryCount);
   if (sourceNumber >= sourceCount) { return; }
   let source = particles[secondaryIndices[sourceNumber]];
+  let sourceRole = (source.flags >> 8u) & 15u;
+  let styleBits = source.flags & (3u << 12u);
+  if (sourceRole == 1u) {
+    let style = (source.flags >> 12u) & 3u;
+    let direction = normalize(source.velocity + vec2f(0.0001));
+    let normal = vec2f(-direction.y, direction.x);
+    let childCount = select(2u, 3u, style == 1u || (style == 0u && hash(source.seed + u32(source.life * 91.0)) < 0.32));
+    for (var child = 0u; child < childCount; child++) {
+      let slot = allocateParticle();
+      if (slot == 0xffffffffu) { return; }
+      var p = source;
+      let random = hash(source.seed + child * 101u + u32(source.life * 997.0));
+      p.position = source.position - direction * source.size * (0.5 + random * 0.45) + normal * (random - 0.5) * source.size * 0.28;
+      p.life = 0.0; p.seed = source.seed + child * 131u + u32(source.life * 1301.0); p.textureIndex = 0u;
+      p.rotation = atan2(-direction.y, -direction.x); p.angularVelocity = 0.0; p.alive = 1u;
+      if (child == 2u) {
+        p.shape = 9u; p.flags = styleBits | (7u << 8u); p.maxLife = 0.6 + random * 0.28;
+        p.size = source.size * 0.38; p.color = vec4f(0.26, 0.29, 0.34, 0.18); p.gravity = -8.0; p.drag = 0.986;
+        p.velocity = -direction * (12.0 + random * 16.0) + normal * (random - 0.5) * 24.0;
+      } else {
+        p.shape = 7u; p.flags = styleBits | (10u << 8u); p.maxLife = 0.24 + random * 0.22;
+        p.size = source.size * (0.09 + random * 0.08); p.color = mix(source.color, vec4f(1.0, 0.48, 0.08, 1.0), 0.62);
+        p.gravity = 72.0; p.drag = 0.955; p.velocity = -direction * (38.0 + random * 58.0) + normal * (random - 0.5) * 55.0;
+      }
+      particles[slot] = p;
+      for (var sample = 0u; sample < uniforms.maxTrailSamples; sample++) { history[slot * uniforms.maxTrailSamples + sample] = p.position; }
+    }
+    return;
+  }
   let childCount = select(3u, 2u, source.shape == 5u);
   for (var child = 0u; child < childCount; child++) {
     let slot = allocateParticle();
@@ -997,7 +1243,6 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
     p.life = 0.0;
     p.maxLife = source.maxLife * 0.42;
     p.size = source.size * 0.62;
-    let styleBits = source.flags & (3u << 12u);
     p.flags = styleBits | (5u << 8u);
     p.seed = source.seed + child * 101u;
     p.alive = 1u;
@@ -1031,26 +1276,50 @@ struct Out {
   @location(3) @interpolate(flat) textureIndex: u32,
   @location(4) fade: f32,
   @location(5) @interpolate(flat) flags: u32,
+  @location(6) normalizedLife: f32,
+  @location(7) @interpolate(flat) seed: u32,
+  @location(8) @interpolate(flat) rotation: f32,
 };
 fn quadVertex(vertex: u32) -> vec2f { let vertices = array<vec2f,6>(vec2f(-1,-1),vec2f(1,-1),vec2f(-1,1),vec2f(-1,1),vec2f(1,-1),vec2f(1,1)); return vertices[vertex]; }
-fn clip(position: vec2f) -> vec4f { return vec4f(position.x/uniforms.width*2.0-1.0, position.y/uniforms.height*2.0-1.0, 0.0, 1.0); }
+fn clip(position: vec2f) -> vec4f { return vec4f(position.x/uniforms.width*2.0-1.0, 1.0-position.y/uniforms.height*2.0, 0.0, 1.0); }
+fn fadeEnvelope(role:u32,shape:u32,t:f32,flags:u32)->f32{
+  if(shape==8u||(flags&64u)!=0u){return 1.0-smoothstep(0.9,1.0,t);}
+  if(role==2u&&shape==0u){return 1.0-smoothstep(0.0,1.0,t);}
+  if(role==7u){return smoothstep(0.0,0.16,t)*(1.0-smoothstep(0.38,1.0,t));}
+  if(role==8u){return smoothstep(0.0,0.07,t)*(1.0-smoothstep(0.32,1.0,t));}
+  if(role==10u){return pow(1.0-t,1.65);}
+  if(role==4u||shape==2u){return smoothstep(0.0,0.08,t)*(1.0-smoothstep(0.68,1.0,t));}
+  return pow(1.0-t,select(1.2,0.82,shape>=1u&&shape<=6u));
+}
 @vertex fn coreVertex(@builtin(vertex_index) vertex: u32, @builtin(instance_index) instance: u32) -> Out {
-  let p = particles[activeIndices[instance]]; let q = quadVertex(vertex); let c = cos(p.rotation); let s = sin(p.rotation);
-  let role=(p.flags>>8u)&15u;let streak=(p.shape==0u&&role==3u)||p.shape==7u;
-  let scaledQ=q*select(vec2f(1.0),vec2f(2.6,0.42),streak);
+  let p = particles[activeIndices[instance]]; let q = quadVertex(vertex); let role=(p.flags>>8u)&15u; let t=clamp(p.life/p.maxLife,0.0,1.0);
+  let rotation=select(p.rotation,0.0,p.shape==6u&&(p.flags&64u)!=0u); let c = cos(rotation); let s = sin(rotation);
+  let streak=(p.shape==0u&&role==3u)||(p.shape==7u&&(p.flags&128u)==0u);
+  var scale=select(vec2f(1.0),vec2f(2.6,0.42),streak);
+  if(p.shape==8u){scale=select(vec2f(1.42,0.64),vec2f(1.58,0.5),role==2u);}
+  if(role==7u){scale*=1.0+t*1.75;}
+  if(role==10u){scale*=max(0.32,1.0-t*0.68);}
+  if(role==4u||p.shape==2u){scale*=0.84+0.16*smoothstep(0.0,0.16,t);}
+  let scaledQ=q*scale;
   let rotated = vec2f(c*scaledQ.x-s*scaledQ.y,s*scaledQ.x+c*scaledQ.y) * p.size;
-  var out: Out; out.position=clip(p.position+rotated); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=p.textureIndex; out.flags=p.flags;
-  let normalizedLife=clamp(p.life/p.maxLife,0.0,1.0); out.fade=pow(1.0-normalizedLife,select(1.2,0.72,p.shape==9u)); return out;
+  var out: Out; out.position=clip(p.position+rotated); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=p.textureIndex; out.flags=p.flags; out.rotation=p.rotation;
+  out.normalizedLife=t; out.seed=p.seed; out.fade=fadeEnvelope(role,p.shape,t,p.flags); return out;
 }
 @vertex fn trailVertex(@builtin(vertex_index) vertex: u32, @builtin(instance_index) instance: u32) -> Out {
   let segments=max(1u,uniforms.trailSamples-1u); let particleListIndex=instance/segments; let segment=instance%segments; let index=activeIndices[particleListIndex]; let p=particles[index]; let base=index*uniforms.maxTrailSamples;
   let a=history[base+segment]; let b=history[base+segment+1u]; let direction=normalize(a-b+vec2f(0.0001)); let normal=vec2f(-direction.y,direction.x); let q=quadVertex(vertex);
   let along=mix(b,a,q.x*0.5+0.5); let width=p.size*(0.38-f32(segment)/f32(segments)*0.29);
-  var out:Out; out.position=clip(along+normal*q.y*width); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=0u; out.flags=p.flags;
-  let shapeTrail=select(0.42,0.12,p.shape>=1u&&p.shape<=5u); out.fade=(1.0-f32(segment)/f32(segments))*clamp(1.0-p.life/p.maxLife,0.0,1.0)*shapeTrail; return out;
+  var out:Out; out.position=clip(along+normal*q.y*width); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=0u; out.flags=p.flags; out.rotation=p.rotation;
+  let role=(p.flags>>8u)&15u;let t=clamp(p.life/p.maxLife,0.0,1.0);let shapeTrail=select(0.44,0.1,p.shape>=1u&&p.shape<=5u);
+  out.fade=(1.0-f32(segment)/f32(segments))*fadeEnvelope(role,p.shape,t,p.flags)*shapeTrail;out.normalizedLife=t;out.seed=p.seed;return out;
 }
 fn sdCircle(p:vec2f)->f32{return length(p-0.5)-0.42;}
-fn sdHeart(p0:vec2f)->f32{let p=(p0*2.0-1.0)*vec2f(1.08,-1.0);let x=p.x;let y=p.y-0.18;let a=x*x+y*y-0.58;return (a*a*a-x*x*y*y*y)*0.72;}
+fn sdEllipse(p:vec2f,r:vec2f)->f32{return (length(p/max(r,vec2f(0.001)))-1.0)*min(r.x,r.y);}
+fn sdHeart(p0:vec2f)->f32{
+  var p=(p0*2.0-1.0)*vec2f(1.08,-1.0);p.y-=0.08;p.x=abs(p.x);
+  if(p.x+p.y>1.0){return length(p-vec2f(0.25,0.75))-0.3535534;}
+  let a=p-vec2f(0.0,1.0);let b=p-0.5*max(p.x+p.y,0.0);return sqrt(min(dot(a,a),dot(b,b)))*sign(p.x-p.y);
+}
 fn sdStar(p0:vec2f)->f32{
   var p=(p0*2.0-1.0)*1.08; let k1=vec2f(0.809016994,-0.587785252); let k2=vec2f(-k1.x,k1.y);
   p.x=abs(p.x); p-=2.0*max(dot(k1,p),0.0)*k1; p-=2.0*max(dot(k2,p),0.0)*k2; p.x=abs(p.x); p.y-=0.82;
@@ -1059,32 +1328,78 @@ fn sdStar(p0:vec2f)->f32{
 }
 fn sdRing(p0:vec2f)->f32{return abs(length(p0-0.5)-0.315)-0.072;}
 fn sdSpiral(p0:vec2f)->f32{let p=p0-0.5;let a=atan2(p.y,p.x)+3.1415926;let r=length(p);let first=abs(r-(0.035+0.047*a));let second=abs(r-(0.035+0.047*(a+6.2831853)));return min(first,second)-0.028;}
-fn shapeDistance(uv:vec2f,shape:u32)->f32{if(shape==1u){return sdHeart(uv);}if(shape==3u){return sdStar(uv);}if(shape==4u){return sdRing(uv);}if(shape==5u){return sdSpiral(uv);}return sdCircle(uv);}
-fn rocketCoverage(uv:vec2f,time:f32)->vec2f{
-  let p=uv*2.0-1.0;let aa=0.035;
-  let body=(1.0-smoothstep(0.15,0.22,abs(p.y)))*(1.0-smoothstep(0.43,0.53,abs(p.x+0.06)));
-  let noseWidth=max(0.0,(0.9-p.x)*0.42);let nose=step(0.36,p.x)*step(p.x,0.9)*(1.0-smoothstep(noseWidth,noseWidth+aa,abs(p.y)));
-  let finBand=smoothstep(0.16,0.25,abs(p.y))*(1.0-smoothstep(0.43,0.52,abs(p.y)));let fins=step(-0.58,p.x)*step(p.x,-0.16)*finBand;
-  let flameStart=-0.94-0.06*sin(time*31.0+p.y*17.0);let flameWidth=max(0.0,(p.x-flameStart)*0.31);let flame=step(flameStart,p.x)*step(p.x,-0.48)*(1.0-smoothstep(flameWidth,flameWidth+0.08,abs(p.y)));
-  return vec2f(max(body,max(nose,fins)),flame);
+fn sdPaw(p0:vec2f)->f32{
+  let p=(p0*2.0-1.0)*vec2f(1.0,-1.0);
+  var d=sdEllipse(p-vec2f(0.0,0.24),vec2f(0.39,0.33));
+  d=min(d,sdEllipse(p-vec2f(-0.43,-0.24),vec2f(0.17,0.21)));
+  d=min(d,sdEllipse(p-vec2f(-0.15,-0.4),vec2f(0.17,0.22)));
+  d=min(d,sdEllipse(p-vec2f(0.15,-0.4),vec2f(0.17,0.22)));
+  return min(d,sdEllipse(p-vec2f(0.43,-0.24),vec2f(0.17,0.21)));
 }
-fn atlasSample(uv:vec2f,index:u32)->vec4f{let slot=f32(max(1u,index)-1u);let slots=8.0;let cell=vec2f(fract(slot/slots),floor(slot/slots)/slots);return textureSampleLevel(atlas,atlasSampler,cell+uv/slots,0.0);}
+fn shapeDistance(uv:vec2f,shape:u32)->f32{if(shape==1u){return sdHeart(uv);}if(shape==2u){return sdPaw(uv);}if(shape==3u){return sdStar(uv);}if(shape==4u){return sdRing(uv);}if(shape==5u){return sdSpiral(uv);}return sdCircle(uv);}
+fn sdCapsule(p:vec2f,a:vec2f,b:vec2f,r:f32)->f32{let pa=p-a;let ba=b-a;let h=clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0);return length(pa-ba*h)-r;}
+fn rocketCoverage(uv:vec2f,time:f32,seed:u32)->vec3f{
+  let p=uv*2.0-1.0;let aa=0.025;
+  let fuselage=1.0-smoothstep(-aa,aa,sdCapsule(p,vec2f(-0.48,0.0),vec2f(0.43,0.0),0.22));
+  let noseWidth=max(0.0,(0.94-p.x)*0.44);let nose=step(0.38,p.x)*step(p.x,0.94)*(1.0-smoothstep(noseWidth,noseWidth+aa,abs(p.y)));
+  let finWidth=max(0.0,(p.x+0.68)*0.5);let fins=step(-0.68,p.x)*step(p.x,-0.18)*smoothstep(0.16,0.25,abs(p.y))*(1.0-smoothstep(0.46,0.46+finWidth+aa,abs(p.y)));
+  let nozzle=step(-0.68,p.x)*step(p.x,-0.43)*(1.0-smoothstep(0.16,0.23,abs(p.y)));
+  let flicker=0.08*sin(time*37.0+f32(seed&255u)*0.17)+0.04*sin(time*71.0);
+  let flameStart=-0.98-flicker;let flameWidth=max(0.0,(p.x-flameStart)*0.31);let flame=step(flameStart,p.x)*step(p.x,-0.56)*(1.0-smoothstep(flameWidth,flameWidth+0.07,abs(p.y)));
+  return vec3f(max(fuselage,max(nose,fins)),nozzle,flame);
+}
+fn atlasSample(uv:vec2f,index:u32,uvDx:vec2f,uvDy:vec2f)->vec4f{let slot=f32(max(1u,index)-1u);let cell=vec2f(fract(slot/8.0),floor(slot/8.0)/8.0);let atlasScale=vec2f(116.0/1024.0);let inner=vec2f(6.0/1024.0)+uv*atlasScale;return textureSampleGrad(atlas,atlasSampler,cell+inner,uvDx*atlasScale,uvDy*atlasScale);}
+fn materialColor(base:vec3f,role:u32,style:u32,t:f32,seed:u32)->vec3f{
+  if(role==7u){return mix(vec3f(0.38,0.4,0.44),base,0.18);}
+  let whiteHot=vec3f(1.0,0.965,0.78);let ember=vec3f(1.0,0.2,0.025);
+  var color=mix(whiteHot,base,smoothstep(0.02,0.22,t));
+  if(role==3u||role==5u||role==8u||role==10u){color=mix(color,ember,smoothstep(0.68,1.0,t)*select(0.72,0.42,style==2u));}
+  if(role==4u){color=mix(whiteHot,base,smoothstep(0.0,0.13,t));}
+  let flicker=0.88+0.12*sin(uniforms.time*(21.0+f32(seed&7u))+f32(seed&255u));
+  return color*select(1.0,flicker,role==8u||role==10u);
+}
 @fragment fn particleFragment(in:Out)->@location(0) vec4f {
-  let baseDistance=shapeDistance(in.uv,in.shape);let aa=max(0.004,fwidth(baseDistance)*0.82);
-  if(in.shape==2u||in.shape==6u){let tex=atlasSample(in.uv,select(1u,in.textureIndex,in.shape==6u));let alpha=tex.a*in.fade*in.color.a;if(in.shape==6u&&(in.flags&1u)!=0u){return vec4f(tex.rgb*alpha,alpha);}return vec4f(in.color.rgb*alpha,alpha);}
-  if(in.shape==8u){let parts=rocketCoverage(in.uv,uniforms.time);let role=(in.flags>>8u)&15u;let bodyColor=select(in.color.rgb,vec3f(1.0,0.96,0.78),role==2u);let flameColor=mix(vec3f(1.0,0.18,0.02),vec3f(1.0,0.95,0.55),smoothstep(-1.0,-0.45,in.uv.x*2.0-1.0));let coverage=max(parts.x,parts.y);let rgb=mix(bodyColor,flameColor,parts.y*(1.0-parts.x));let alpha=coverage*in.fade*in.color.a;return vec4f(rgb*alpha,alpha);}
-  let d=baseDistance;var coverage=1.0-smoothstep(-aa,aa,d);
-  if(in.shape==7u){let p=abs(in.uv-0.5);coverage=1.0-smoothstep(0.18,0.42,min(max(p.x,p.y)*0.8,p.x+p.y));}
-  if(in.shape==9u){coverage=pow(1.0-smoothstep(0.05,0.5,length(in.uv-0.5)),1.8)*0.34;}
-  let alpha=coverage*in.fade*in.color.a;var rgb=in.color.rgb;
-  if(in.shape==0u||in.shape==7u||in.shape==8u){let heat=pow(max(0.0,1.0-length(in.uv-0.5)*2.0),3.0);rgb=mix(rgb,vec3f(1.0,0.94,0.72),heat*0.88);}
+  let uvDx=dpdx(in.uv);let uvDy=dpdy(in.uv);let d=shapeDistance(in.uv,in.shape);let aa=max(0.0035,fwidth(d)*0.9);
+  let role=(in.flags>>8u)&15u;let style=(in.flags>>12u)&3u;
+  if(in.shape==6u){let tex=atlasSample(in.uv,in.textureIndex,uvDx,uvDy);let alpha=tex.a*in.fade*in.color.a;if((in.flags&1u)!=0u){return vec4f(tex.rgb*alpha,alpha);}return vec4f(in.color.rgb*alpha,alpha);}
+  if(in.shape==8u){
+    let parts=rocketCoverage(in.uv,uniforms.time,in.seed);
+    let bodyColor=mix(in.color.rgb,vec3f(0.96,0.98,1.0),0.2+0.22*smoothstep(0.0,1.0,in.uv.y));
+    let flameColor=mix(vec3f(1.0,0.12,0.01),vec3f(1.0,0.98,0.7),smoothstep(-1.0,-0.42,in.uv.x*2.0-1.0));
+    var coverage=select(parts.x,max(parts.y,parts.z),role==2u);
+    var rgb=select(bodyColor,flameColor,role==2u);
+    if((in.flags&16384u)!=0u&&in.textureIndex>0u&&role==1u){
+      let local=(in.uv*2.0-1.0-vec2f(0.56,0.0))*vec2f(1.42,0.64);
+      let localDx=uvDx*2.0*vec2f(1.42,0.64);let localDy=uvDy*2.0*vec2f(1.42,0.64);
+      let c=cos(in.rotation);let s=sin(in.rotation);
+      let upright=vec2f(c*local.x-s*local.y,s*local.x+c*local.y);
+      let uprightDx=vec2f(c*localDx.x-s*localDx.y,s*localDx.x+c*localDx.y);
+      let uprightDy=vec2f(c*localDy.x-s*localDy.y,s*localDy.x+c*localDy.y);
+      let radius=0.43;let avatarUv=upright/(radius*2.0)+0.5;
+      let avatar=atlasSample(clamp(avatarUv,vec2f(0.0),vec2f(1.0)),in.textureIndex,uprightDx/(radius*2.0),uprightDy/(radius*2.0));
+      let normalized=length(upright)/radius;
+      let disc=1.0-smoothstep(0.9,0.99,normalized);
+      let outer=1.0-smoothstep(0.97,1.04,normalized);let inner=1.0-smoothstep(0.8,0.88,normalized);let rim=max(0.0,outer-inner);
+      let avatarAlpha=avatar.a*disc;
+      coverage=max(coverage,max(avatarAlpha,rim));
+      rgb=mix(rgb,avatar.rgb,avatarAlpha);
+      rgb=mix(rgb,mix(in.color.rgb,vec3f(1.0,0.96,0.78),0.58),rim*(1.0-avatarAlpha*0.45));
+    }
+    let alpha=coverage*in.fade*in.color.a;return vec4f(rgb*alpha,alpha);
+  }
+  var coverage=1.0-smoothstep(-aa,aa,d);
+  if(in.shape>=1u&&in.shape<=5u){let outlineWidth=select(0.024,0.055,style==2u);let outline=1.0-smoothstep(outlineWidth,outlineWidth+aa,abs(d));coverage=max(coverage,outline*select(0.72,1.0,style==2u));}
+  if(in.shape==7u){if((in.flags&128u)!=0u){coverage=1.0-smoothstep(0.18,0.46,length(in.uv-0.5));}else{let p=abs(in.uv-0.5);coverage=1.0-smoothstep(0.12,0.42,min(max(p.x,p.y)*0.78,p.x+p.y));}}
+  if(in.shape==9u){let radius=length(in.uv-0.5);let curl=0.08*sin(atan2(in.uv.y-0.5,in.uv.x-0.5)*5.0+uniforms.time*0.8+f32(in.seed&63u));coverage=pow(1.0-smoothstep(0.04,0.5+curl,radius),1.65)*0.31;}
+  let alpha=coverage*in.fade*in.color.a;var rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);
+  if(in.shape==0u||in.shape==7u){let heat=pow(max(0.0,1.0-length(in.uv-0.5)*2.0),3.0);rgb=mix(rgb,vec3f(1.0,0.96,0.76),heat*0.86);}
   return vec4f(rgb*alpha,alpha);
 }
 @fragment fn glowFragment(in:Out)->@location(0) vec4f {
-  var coverage=0.0;if(in.shape==2u||in.shape==6u){coverage=atlasSample(in.uv,select(1u,in.textureIndex,in.shape==6u)).a;}else if(in.shape==8u){let parts=rocketCoverage(in.uv,uniforms.time);coverage=max(parts.x*0.75,parts.y);}else{let d=shapeDistance(in.uv,in.shape);coverage=exp(-max(0.0,d)*10.0)*(1.0-smoothstep(0.12,0.62,length(in.uv-0.5)));}
-  let alpha=coverage*in.fade*in.color.a*0.2*uniforms.glowScale;return vec4f(in.color.rgb*alpha,alpha);
+  let uvDx=dpdx(in.uv);let uvDy=dpdy(in.uv);let role=(in.flags>>8u)&15u;if(role==7u){discard;}var coverage=0.0;if(in.shape==6u){coverage=atlasSample(in.uv,in.textureIndex,uvDx,uvDy).a;}else if(in.shape==8u){let parts=rocketCoverage(in.uv,uniforms.time,in.seed);coverage=max(parts.x*0.62,max(parts.y,parts.z));}else{let d=shapeDistance(in.uv,in.shape);coverage=exp(-max(0.0,d)*select(11.0,7.5,(in.flags&128u)!=0u))*(1.0-smoothstep(0.08,0.7,length(in.uv-0.5)));}
+  let style=(in.flags>>12u)&3u;let styleGlow=select(1.0,select(0.72,1.38,style==2u),style!=0u);let pulse=select(1.0,0.72+0.28*sin(uniforms.time*44.0+f32(in.seed&31u)),role==8u);let alpha=coverage*in.fade*in.color.a*0.18*uniforms.glowScale*styleGlow*pulse;let rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);return vec4f(rgb*alpha,alpha);
 }
-@fragment fn trailFragment(in:Out)->@location(0) vec4f {if((in.shape>=1u&&in.shape<=6u)||in.shape==9u){discard;}let edge=1.0-smoothstep(0.1,0.5,abs(in.uv.y-0.5));let alpha=edge*in.fade*in.color.a;return vec4f(in.color.rgb*alpha,alpha);}
+@fragment fn trailFragment(in:Out)->@location(0) vec4f {let role=(in.flags>>8u)&15u;if((in.shape>=1u&&in.shape<=6u)||in.shape==9u||role==2u||role==7u){discard;}let edge=exp(-pow(abs(in.uv.y-0.5)*3.8,2.0));let alpha=edge*in.fade*in.color.a;let style=(in.flags>>12u)&3u;let rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);return vec4f(rgb*alpha,alpha);}
 `;
     }
 
@@ -1096,10 +1411,14 @@ struct Uniforms { dt:f32,time:f32,width:f32,height:f32,trailSamples:u32,turbulen
 @group(0) @binding(2) var linearSampler:sampler;
 @group(0) @binding(3) var<uniform> uniforms:Uniforms;
 struct Out{@builtin(position) position:vec4f,@location(0) uv:vec2f};
-@vertex fn fullscreenVertex(@builtin(vertex_index) index:u32)->Out{let p=array<vec2f,3>(vec2f(-1,-1),vec2f(3,-1),vec2f(-1,3));var out:Out;out.position=vec4f(p[index],0,1);out.uv=p[index]*0.5+0.5;return out;}
+@vertex fn fullscreenVertex(@builtin(vertex_index) index:u32)->Out{let p=array<vec2f,3>(vec2f(-1,-1),vec2f(3,-1),vec2f(-1,3));var out:Out;out.position=vec4f(p[index],0,1);out.uv=vec2f(p[index].x*0.5+0.5,0.5-p[index].y*0.5);return out;}
 @fragment fn brightExtract(in:Out)->@location(0) vec4f{let color=textureSample(firstTexture,linearSampler,in.uv);let light=max(color.r,max(color.g,color.b));let weight=smoothstep(0.35,1.0,light);return vec4f(color.rgb*weight,color.a*weight);}
 @fragment fn kawaseBlur(in:Out)->@location(0) vec4f{let dim=vec2f(textureDimensions(firstTexture));let px=1.5/dim;var color=textureSample(firstTexture,linearSampler,in.uv)*0.2;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(px.x,px.y))*0.2;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(-px.x,px.y))*0.2;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(px.x,-px.y))*0.2;color+=textureSample(firstTexture,linearSampler,in.uv-vec2f(px.x,px.y))*0.2;return color;}
-@fragment fn composite(in:Out)->@location(0) vec4f{let scene=textureSample(firstTexture,linearSampler,in.uv);let bloom=textureSample(secondTexture,linearSampler,in.uv);let bloomStrength=0.58+uniforms.glowScale*0.3;let bloomAlpha=clamp(max(bloom.r,max(bloom.g,bloom.b))*0.52*uniforms.glowScale,0.0,0.82);let alpha=clamp(max(scene.a,bloomAlpha),0.0,1.0);let rgb=min(vec3f(alpha),scene.rgb+bloom.rgb*bloomStrength);return vec4f(rgb,alpha);}
+@fragment fn bloomCopy(in:Out)->@location(0) vec4f{return textureSample(firstTexture,linearSampler,in.uv);}
+@fragment fn bloomUpsample(in:Out)->@location(0) vec4f{let dim=vec2f(textureDimensions(firstTexture));let px=1.0/dim;var color=textureSample(firstTexture,linearSampler,in.uv)*0.25;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(px.x,0.0))*0.125;color+=textureSample(firstTexture,linearSampler,in.uv-vec2f(px.x,0.0))*0.125;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(0.0,px.y))*0.125;color+=textureSample(firstTexture,linearSampler,in.uv-vec2f(0.0,px.y))*0.125;color+=textureSample(firstTexture,linearSampler,in.uv+px)*0.0625;color+=textureSample(firstTexture,linearSampler,in.uv-px)*0.0625;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(px.x,-px.y))*0.0625;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(-px.x,px.y))*0.0625;return color*0.68;}
+@fragment fn atlasDownsample(in:Out)->@location(0) vec4f{let dim=vec2f(textureDimensions(firstTexture));let px=0.5/dim;let a=textureSampleLevel(firstTexture,linearSampler,in.uv+vec2f(-px.x,-px.y),0.0);let b=textureSampleLevel(firstTexture,linearSampler,in.uv+vec2f(px.x,-px.y),0.0);let c=textureSampleLevel(firstTexture,linearSampler,in.uv+vec2f(-px.x,px.y),0.0);let d=textureSampleLevel(firstTexture,linearSampler,in.uv+vec2f(px.x,px.y),0.0);let alpha=(a.a+b.a+c.a+d.a)*0.25;let premul=(a.rgb*a.a+b.rgb*b.a+c.rgb*c.a+d.rgb*d.a)*0.25;return vec4f(select(vec3f(0.0),premul/max(alpha,0.0001),alpha>0.0001),alpha);}
+fn aces(color:vec3f)->vec3f{let a=2.51;let b=0.03;let c=2.43;let d=0.59;let e=0.14;return clamp((color*(a*color+b))/(color*(c*color+d)+e),vec3f(0.0),vec3f(1.0));}
+@fragment fn composite(in:Out)->@location(0) vec4f{let scene=textureSample(firstTexture,linearSampler,in.uv);let bloom=textureSample(secondTexture,linearSampler,in.uv);let bloomStrength=0.5+uniforms.glowScale*0.24;let bloomLight=max(bloom.r,max(bloom.g,bloom.b));let bloomAlpha=clamp(bloom.a*0.42+bloomLight*0.14*uniforms.glowScale,0.0,0.68);let alpha=clamp(max(scene.a,bloomAlpha),0.0,1.0);let radiance=scene.rgb+bloom.rgb*bloomStrength;let straight=aces(radiance/max(alpha,0.001));let rgb=select(vec3f(0.0),min(vec3f(alpha),straight*alpha),alpha>0.0001);return vec4f(rgb,alpha);}
 `;
     }
 }

@@ -164,7 +164,7 @@ describe('WebGPU Fireworks quality parity', () => {
       audio.urls.set('bang', '/bang.mp3');
       expect(await audio.play('bang', 1, 3, { offset: 0.88, maxDuration: 0.8 })).toBe(true);
       expect(play).toHaveBeenCalledTimes(1);
-      expect(audio.htmlPools.get('bang')).toHaveLength(3);
+      expect(audio.htmlPools.get('bang')).toHaveLength(4);
       expect(audio.htmlPools.get('bang')[0].currentTime).toBe(0.88);
       expect(audio.getTelemetry()).toMatchObject({ audioBackend: 'html-audio', audioStatus: 'ready-html-audio', lastPlayed: 'bang' });
       audio.destroy();
@@ -176,28 +176,23 @@ describe('WebGPU Fireworks quality parity', () => {
 
   test('selects howl, whistle and crackling variants while keeping a separate synchronized bang', () => {
     const audio = new AudioManager();
-    const random = jest.spyOn(Math, 'random').mockReturnValue(0);
-    try {
-      expect(audio.choose('small', 1, false)).toMatchObject({
-        launch: 'launch-basic', bang: 'explosion-small', launchWindow: null
-      });
-      expect(audio.choose('big', 1, false)).toMatchObject({
-        launch: 'combined-whistle-normal', bang: 'explosion-big', crackle: 'crackling-medium', launchWindow: 3.12
-      });
-      expect(audio.choose('massive', 1, false)).toMatchObject({
-        launch: 'combined-crackling-bang', bang: 'explosion-huge', crackle: 'crackling-medium', launchWindow: 4.55
-      });
-      expect(audio.choose('medium', 1, false)).toMatchObject({
-        crackle: 'crackling-medium'
-      });
-      expect(audio.choose('medium', 1, true)).toMatchObject({
-        launch: null, bang: 'explosion-medium', crackle: null, launchWindow: null
-      });
-      expect(audio.useConfiguredUrl('/plugins/webgpu-fireworks/audio/abschussgeraeusch.mp3', 'launch')).toBeNull();
-      expect(audio.useConfiguredUrl('/plugins/webgpu-fireworks/audio/explosion_small1.mp3', 'bang')).toBeNull();
-    } finally {
-      random.mockRestore();
-    }
+    expect(audio.choose('small', 1, false, { seed: 1, crackleFrequency: 0.5 })).toMatchObject({
+      launch: 'launch-basic', crackle: null, crackleProfile: null, launchWindow: null
+    });
+    expect(audio.choose('big', 6, false, { seed: 99, crackleFrequency: 0.5 })).toMatchObject({
+      crackle: 'crackling-medium', crackleProfile: 'short', combo: 6
+    });
+    expect(audio.choose('massive', 1, false, { seed: 1, crackleFrequency: 0.5 })).toMatchObject({
+      launch: 'combined-crackling-bang', bang: 'explosion-huge', crackle: 'crackling-long', crackleProfile: 'long', launchWindow: 4.55
+    });
+    expect(audio.choose('medium', 1, false, { seed: 1234, crackleFrequency: 0.5 })).toMatchObject({
+      crackle: 'crackling-medium', crackleProfile: 'short'
+    });
+    expect(audio.choose('medium', 1, true, { seed: 1 })).toMatchObject({
+      launch: null, bang: 'explosion-medium', crackle: null, crackleProfile: null, launchWindow: null
+    });
+    expect(audio.useConfiguredUrl('/plugins/webgpu-fireworks/audio/abschussgeraeusch.mp3', 'launch')).toBeNull();
+    expect(audio.useConfiguredUrl('/plugins/webgpu-fireworks/audio/explosion_small1.mp3', 'bang')).toBeNull();
   });
 
   test('a launch recording with crackling always selects the matching visual and audio crackle profile', () => {
@@ -220,7 +215,7 @@ describe('WebGPU Fireworks quality parity', () => {
   test('can force or suppress a crackling rocket without leaving a crackling launch behind', () => {
     const audio = new AudioManager();
     expect(audio.applyCrackleOverride({ launch: 'combined-crackling-bang', launchWindow: 4.55, crackle: 'crackling-long' }, false))
-      .toEqual({ launch: 'launch-whistle', launchWindow: null, crackle: null });
+      .toMatchObject({ launch: 'launch-whistle', launchWindow: null, crackle: null, crackleProfile: null });
     const random = jest.spyOn(Math, 'random').mockReturnValue(0);
     try {
       expect(audio.applyCrackleOverride({ launch: 'launch-whistle', launchWindow: null, crackle: null }, true))

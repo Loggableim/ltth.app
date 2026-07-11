@@ -10,16 +10,30 @@ class AudioManager {
         this.context = null;
         this.masterGain = null;
         this.compressor = null;
+        this.busNodes = { launch: null, bang: null, crackle: null };
+        this.analyser = null;
         this.buffers = new Map();
         this.urls = new Map();
         this.loading = new Map();
         this.failed = new Set();
         this.activeVoices = [];
         this.htmlPools = new Map();
-        this.htmlPoolSize = 3;
+        this.htmlPoolSize = 4;
+        this.htmlFadeTimers = new Set();
         this.pendingPlaybacks = [];
         this.flushingPending = false;
-        this.maxVoices = 16;
+        this.maxVoices = 18;
+        this.voiceBudgets = { launch: 4, bang: 8, crackle: 6 };
+        this.limiterCeiling = 0.891250938; // -1 dBFS
+        this.evictions = 0;
+        this.missedEvents = 0;
+        this.timelineEvents = [];
+        this.audioPeak = 0;
+        this.clockOffsetMs = 0;
+        this.clockInitialized = false;
+        this.crackleVolume = 0.75;
+        this.crackleState = 'idle';
+        this.lastAudioProfile = null;
         this.enabled = true;
         this.volume = 0.7;
         this.initialized = false;
@@ -52,6 +66,29 @@ class AudioManager {
             'crackling-medium': 0.9,
             'crackling-long': 0.1
         };
+        this.CUE_MANIFEST = {
+            'launch-basic': { file: 'abschussgeraeusch.mp3', role: 'launch', trimStart: 0, usableEnd: 0.8, gain: 0.68, fadeOut: 0.06 },
+            'launch-basic2': { file: 'abschussgeraeusch2.mp3', role: 'launch', trimStart: 0, usableEnd: 0.6, gain: 0.64, fadeOut: 0.06 },
+            'launch-smooth': { file: 'woosh_abheben_nocrackling_no-bang.mp3', role: 'launch', trimStart: 0, usableEnd: 1.5, gain: 0.62, fadeOut: 0.06 },
+            'launch-smooth2': { file: 'woosh_abheben_nocrackling_no-bang2.mp3', role: 'launch', trimStart: 0, usableEnd: 1.7, gain: 0.62, fadeOut: 0.06 },
+            'launch-whistle': { file: 'woosh_abheben_mit-pfeifen_no-bang.mp3', role: 'launch', trimStart: 0, usableEnd: 1.3, gain: 0.58, fadeOut: 0.06 },
+            'combined-whistle-tiny1': { file: 'woosh_abheben_mit-pfeifen_tiny-bang.mp3', role: 'launch', trimStart: 0, usableEnd: 0.84, embeddedBangAt: 0.88, gain: 0.58, fadeOut: 0.06 },
+            'combined-whistle-tiny2': { file: 'woosh_abheben_mit-pfeifen_tiny-bang2.mp3', role: 'launch', trimStart: 0, usableEnd: 0.84, embeddedBangAt: 0.88, gain: 0.58, fadeOut: 0.06 },
+            'combined-whistle-tiny3': { file: 'woosh_abheben_mit-pfeifen_tiny-bang3.mp3', role: 'launch', trimStart: 0, usableEnd: 0.84, embeddedBangAt: 0.88, gain: 0.58, fadeOut: 0.06 },
+            'combined-whistle-tiny4': { file: 'woosh_abheben_mit-pfeifen_tiny-bang4.mp3', role: 'launch', trimStart: 0, usableEnd: 3.08, embeddedBangAt: 3.12, gain: 0.55, fadeOut: 0.06 },
+            'combined-whistle-normal': { file: 'woosh_abheben_mit-pfeifen_normal-bang.mp3', role: 'launch', trimStart: 0, usableEnd: 3.08, embeddedBangAt: 3.12, gain: 0.55, fadeOut: 0.06 },
+            'combined-crackling-bang': { file: 'woosh_abheben_crackling_bang.mp3', role: 'launch', trimStart: 0, usableEnd: 4.51, embeddedBangAt: 4.55, gain: 0.52, fadeOut: 0.06, crackleLaunch: true },
+            'explosion-small': { file: 'explosion_small1.mp3', role: 'bang', trimStart: 0, usableEnd: 0.7, gain: 0.82, fadeOut: 0.1, maxDuration: 0.7 },
+            'explosion-alt1': { file: 'explosion2.mp3', role: 'bang', trimStart: 0, usableEnd: 0.7, gain: 0.78, fadeOut: 0.1, maxDuration: 0.7 },
+            'explosion-medium': { file: 'explosion_medium.mp3', role: 'bang', trimStart: 0, usableEnd: 0.9, gain: 0.86, fadeOut: 0.1, maxDuration: 0.9 },
+            'explosion-alt2': { file: 'explosion3.mp3', role: 'bang', trimStart: 0, usableEnd: 0.9, gain: 0.82, fadeOut: 0.1, maxDuration: 0.9 },
+            'explosion-pop': { file: 'explosion%20Pop%2CSharp%2C.mp3', role: 'bang', trimStart: 0, usableEnd: 0.9, gain: 0.78, fadeOut: 0.1, maxDuration: 0.9 },
+            'explosion-big': { file: 'explosion_big.mp3', role: 'bang', trimStart: 0, usableEnd: 1.2, gain: 0.9, fadeOut: 0.1, maxDuration: 1.2 },
+            'explosion-huge': { file: 'explosion_huge.mp3', role: 'bang', trimStart: 0, usableEnd: 1.5, gain: 0.92, fadeOut: 0.1, maxDuration: 1.5 },
+            'crackling-medium': { file: 'crackling2.mp3', role: 'crackle', trimStart: 0.9, usableEnd: 1.55, gain: 0.66, fadeOut: 0.13, maxDuration: 0.65, profile: 'short' },
+            'crackling-long': { file: 'crackling.mp3', role: 'crackle', trimStart: 0.1, usableEnd: 1.1, gain: 0.62, fadeOut: 0.16, maxDuration: 1, profile: 'long' }
+        };
+        for (const cue of Object.values(this.CUE_MANIFEST)) cue.url = `/plugins/webgpu-fireworks/audio/${cue.file}`;
     }
 
     init() {
@@ -69,14 +106,28 @@ class AudioManager {
             this.context = new Context({ latencyHint: 'interactive' });
             this.masterGain = this.context.createGain();
             this.compressor = this.context.createDynamicsCompressor();
-            this.compressor.threshold.value = -12;
-            this.compressor.knee.value = 18;
-            this.compressor.ratio.value = 6;
-            this.compressor.attack.value = 0.003;
-            this.compressor.release.value = 0.22;
-            this.masterGain.gain.value = this.volume;
-            this.compressor.connect(this.masterGain);
-            this.masterGain.connect(this.context.destination);
+            this.compressor.threshold.value = -1;
+            this.compressor.knee.value = 0;
+            this.compressor.ratio.value = 20;
+            this.compressor.attack.value = 0.001;
+            this.compressor.release.value = 0.12;
+            this.masterGain.gain.value = this.volume * this.limiterCeiling;
+            for (const bus of Object.keys(this.busNodes)) {
+                this.busNodes[bus] = this.context.createGain();
+                this.busNodes[bus].gain.value = 1;
+                this.busNodes[bus].connect(this.compressor);
+            }
+            if (typeof this.context.createAnalyser === 'function') {
+                this.analyser = this.context.createAnalyser();
+                this.analyser.fftSize = 256;
+                this.compressor.connect(this.masterGain);
+                this.masterGain.connect(this.analyser);
+                this.analyser.connect(this.context.destination);
+            } else {
+                this.compressor.connect(this.masterGain);
+                this.masterGain.connect(this.context.destination);
+            }
+            this.syncClock(typeof performance !== 'undefined' ? performance.now() : Date.now());
             this.context.onstatechange = () => {
                 this.updateStatus();
                 if (this.context?.state === 'running') void this.flushPending();
@@ -99,7 +150,7 @@ class AudioManager {
             try {
                 const resume = Promise.resolve(context.resume());
                 if (userGesture) await resume;
-                else await Promise.race([resume, new Promise(resolve => setTimeout(resolve, 80))]);
+                else await Promise.race([resume, new Promise(resolve => setTimeout(resolve, 32))]);
             } catch (error) {
                 this.lastError = error.message;
             }
@@ -185,47 +236,148 @@ class AudioManager {
         return (hash >>> 0).toString(36);
     }
 
+    syncClock(performanceMs) {
+        if (!this.context) return;
+        const measured = (Number(this.context.currentTime) || 0) * 1000 - Number(performanceMs || 0);
+        this.clockOffsetMs = this.clockInitialized ? this.clockOffsetMs * 0.9 + measured * 0.1 : measured;
+        this.clockInitialized = true;
+        this.samplePeak();
+    }
+
+    performanceToAudioTime(performanceMs) {
+        if (!this.context || !Number.isFinite(Number(performanceMs))) return 0;
+        return Math.max(Number(this.context.currentTime) || 0, (Number(performanceMs) + this.clockOffsetMs) / 1000);
+    }
+
+    samplePeak() {
+        if (!this.analyser || typeof this.analyser.getFloatTimeDomainData !== 'function') return this.audioPeak;
+        const samples = new Float32Array(this.analyser.fftSize || 256);
+        this.analyser.getFloatTimeDomainData(samples);
+        let peak = 0;
+        for (const sample of samples) peak = Math.max(peak, Math.abs(sample));
+        this.audioPeak = Math.max(peak, this.audioPeak * 0.86);
+        return this.audioPeak;
+    }
+
+    recordTimelineEvent(effectId, type, plannedAt, actualAt, state = 'played') {
+        const planned = Number(plannedAt) || Number(actualAt) || (typeof performance !== 'undefined' ? performance.now() : Date.now());
+        const actual = Number(actualAt) || planned;
+        this.timelineEvents.push({
+            effectId: effectId || null,
+            type: type || 'audio',
+            plannedAt: Math.round(planned * 1000) / 1000,
+            actualAt: Math.round(actual * 1000) / 1000,
+            driftMs: Math.round((actual - planned) * 1000) / 1000,
+            state
+        });
+        if (this.timelineEvents.length > 32) this.timelineEvents.splice(0, this.timelineEvents.length - 32);
+    }
+
+    resolvePlayback(name, gain, priority, options) {
+        const cue = this.CUE_MANIFEST[name] || {};
+        const bus = ['launch', 'bang', 'crackle'].includes(options.bus) ? options.bus : (cue.role || (priority >= 3 ? 'bang' : 'launch'));
+        const offset = Math.max(0, Number(options.offset ?? cue.trimStart) || 0);
+        const playbackRate = Math.max(0.9, Math.min(1.1, Number(options.playbackRate) || 1));
+        let maxDuration = Number(options.maxDuration ?? cue.maxDuration);
+        if (cue.usableEnd !== null && cue.usableEnd !== undefined && Number.isFinite(Number(cue.usableEnd))) {
+            const usableDuration = Math.max(0.02, Number(cue.usableEnd) - offset) / playbackRate;
+            maxDuration = Number.isFinite(maxDuration) ? Math.min(maxDuration, usableDuration) : usableDuration;
+        }
+        if (cue.embeddedBangAt) {
+            const safeWindow = Math.max(0.04, cue.embeddedBangAt - offset - 0.04) / playbackRate;
+            maxDuration = Number.isFinite(maxDuration) ? Math.min(maxDuration, safeWindow) : safeWindow;
+        }
+        return {
+            cue,
+            bus,
+            offset,
+            maxDuration,
+            fadeOutDuration: Math.max(0.04, Math.min(0.18, Number(options.fadeOutDuration ?? cue.fadeOut) || (bus === 'launch' ? 0.06 : 0.1))),
+            level: Math.max(0, Math.min(2, gain * (Number(cue.gain) || 1) * (bus === 'crackle' ? this.crackleVolume : 1))),
+            playbackRate,
+            plannedAt: Number(options.plannedAt),
+            maxLatenessMs: Math.max(0, Number(options.maxLatenessMs) || (bus === 'launch' ? 250 : 100)),
+            effectId: options.effectId || null,
+            eventType: options.eventType || bus,
+            priority,
+            protectRatio: bus === 'crackle' ? 0.9 : 0
+        };
+    }
+
     async play(name, gain = 1, priority = 1, options = {}) {
         if (!this.enabled || !name) return false;
+        const playback = this.resolvePlayback(name, gain, priority, options);
+        const requestedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        if (Number.isFinite(playback.plannedAt) && requestedAt - playback.plannedAt > playback.maxLatenessMs) {
+            this.missedEvents++;
+            this.recordTimelineEvent(playback.effectId, playback.eventType, playback.plannedAt, requestedAt, 'missed-stale');
+            this.updateStatus();
+            return false;
+        }
         if (this.loading.has(name)) await this.loading.get(name);
         await this.ensureContext(false);
         const buffer = this.buffers.get(name);
         if (buffer && this.context?.state === 'running') {
-            this.makeVoiceRoom(priority);
+            const actualAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+            if (Number.isFinite(playback.plannedAt) && actualAt - playback.plannedAt > playback.maxLatenessMs) {
+                this.missedEvents++;
+                this.recordTimelineEvent(playback.effectId, playback.eventType, playback.plannedAt, actualAt, 'missed-stale');
+                this.updateStatus();
+                return false;
+            }
+            if (!this.makeVoiceRoom(playback.bus, priority)) {
+                this.missedEvents++;
+                this.recordTimelineEvent(playback.effectId, playback.eventType, playback.plannedAt || actualAt, actualAt, 'missed-voice-budget');
+                this.updateStatus();
+                return false;
+            }
             const source = this.context.createBufferSource();
             const gainNode = this.context.createGain();
-            const voice = { source, priority, startedAt: performance.now(), stopTimer: null };
+            const duration = Number.isFinite(playback.maxDuration)
+                ? playback.maxDuration
+                : Math.max(0.02, (Number(buffer.duration) - playback.offset) / playback.playbackRate);
+            const voice = {
+                source, gainNode, priority, bus: playback.bus, level: playback.level,
+                startedAt: actualAt, protectedUntil: actualAt + duration * playback.protectRatio * 1000,
+                stopTimer: null, fadeTimer: null
+            };
             source.buffer = buffer;
-            const level = Math.max(0, Math.min(2, gain));
-            gainNode.gain.value = level;
+            if (source.playbackRate) source.playbackRate.value = playback.playbackRate;
+            gainNode.gain.value = playback.level;
             source.connect(gainNode);
-            const output = options.bus === 'crackle'
-                ? (this.masterGain || this.context.destination)
-                : (this.compressor || this.context.destination);
+            const output = this.busNodes[playback.bus] || this.compressor || this.context.destination;
             gainNode.connect(output);
-            source.onended = () => { this.activeVoices = this.activeVoices.filter(item => item !== voice); };
+            source.onended = () => this.releaseVoice(voice);
             this.activeVoices.push(voice);
-            const requestedOffset = Math.max(0, Number(options.offset) || 0);
-            const offset = Math.min(requestedOffset, Math.max(0, Number(buffer.duration) - 0.02 || requestedOffset));
-            source.start(0, offset);
-            const maxDuration = Number(options.maxDuration);
-            if (Number.isFinite(maxDuration) && maxDuration > 0) {
+            this.updateDucking();
+            const offset = Math.min(playback.offset, Math.max(0, Number(buffer.duration) - 0.02 || playback.offset));
+            const startAt = Number.isFinite(playback.plannedAt) ? this.performanceToAudioTime(playback.plannedAt) : 0;
+            source.start(startAt, offset);
+            if (Number.isFinite(playback.maxDuration) && playback.maxDuration > 0) {
                 const now = Number(this.context.currentTime) || 0;
-                const fadeDuration = Math.max(0, Math.min(maxDuration, Number(options.fadeOutDuration) || 0.08));
+                const stopAt = Math.max(now, startAt || now) + playback.maxDuration;
+                const fadeDuration = Math.min(playback.maxDuration, playback.fadeOutDuration);
                 try {
-                    gainNode.gain.setValueAtTime?.(level, Math.max(now, now + maxDuration - fadeDuration));
-                    gainNode.gain.linearRampToValueAtTime?.(0, now + maxDuration);
-                    source.stop(now + maxDuration);
+                    gainNode.gain.setValueAtTime?.(playback.level, stopAt - fadeDuration);
+                    gainNode.gain.linearRampToValueAtTime?.(0, stopAt);
+                    source.stop(stopAt);
                 } catch (_) {}
             }
             this.backend = 'web-audio';
             this.lastPlayed = name;
+            if (playback.bus === 'crackle') {
+                this.crackleState = 'playing';
+                this.lastAudioProfile = playback.cue.profile || options.profile || 'short';
+            }
             this.lastError = null;
+            this.recordTimelineEvent(playback.effectId, playback.eventType, playback.plannedAt || actualAt, actualAt, 'played');
             this.updateStatus();
             return true;
         }
-        const played = await this.playHtml(name, gain, priority, options);
-        if (!played && this.urls.has(name)) this.queuePlayback(name, gain, priority, options);
+        const played = await this.playHtml(name, gain, priority, { ...options, _playback: playback });
+        if (!played && this.urls.has(name) && (!Number.isFinite(playback.plannedAt) || requestedAt - playback.plannedAt <= playback.maxLatenessMs)) {
+            this.queuePlayback(name, gain, priority, options);
+        }
         return played;
     }
 
@@ -236,38 +388,58 @@ class AudioManager {
             this.updateStatus();
             return false;
         }
+        let voice = null;
         try {
-            this.makeVoiceRoom(priority);
+            const playback = options._playback || this.resolvePlayback(name, gain, priority, options);
+            const actualAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+            if (Number.isFinite(playback.plannedAt) && actualAt - playback.plannedAt > playback.maxLatenessMs) {
+                this.missedEvents++;
+                this.recordTimelineEvent(playback.effectId, playback.eventType, playback.plannedAt, actualAt, 'missed-stale');
+                return false;
+            }
+            if (!this.makeVoiceRoom(playback.bus, priority)) {
+                this.missedEvents++;
+                this.recordTimelineEvent(playback.effectId, playback.eventType, playback.plannedAt || actualAt, actualAt, 'missed-voice-budget');
+                this.updateStatus();
+                return false;
+            }
             const element = this.getHtmlElement(name, url);
-            if (!element) return false;
-            const voice = { element, priority, startedAt: performance.now(), stopTimer: null };
-            element.preload = 'auto';
-            element.volume = Math.max(0, Math.min(1, this.volume * gain));
-            const playbackOffset = Math.max(0, Number(options.offset) || 0);
-            try { element.currentTime = playbackOffset; } catch (_) {}
-            const releaseVoice = () => {
-                if (voice.stopTimer) clearTimeout(voice.stopTimer);
-                this.activeVoices = this.activeVoices.filter(item => item !== voice);
+            if (!element) {
+                this.missedEvents++;
+                this.recordTimelineEvent(playback.effectId, playback.eventType, playback.plannedAt || actualAt, actualAt, 'missed-pool-busy');
+                return false;
+            }
+            const duration = Number.isFinite(playback.maxDuration) ? playback.maxDuration : 1;
+            voice = {
+                element, priority, bus: playback.bus, level: playback.level,
+                startedAt: actualAt, protectedUntil: actualAt + duration * playback.protectRatio * 1000,
+                stopTimer: null, fadeTimer: null
             };
-            element.onended = releaseVoice;
+            element.preload = 'auto';
+            element.playbackRate = playback.playbackRate;
+            element.volume = this.getHtmlVoiceVolume(voice);
+            const playbackOffset = playback.offset;
+            try { element.currentTime = playbackOffset; } catch (_) {}
+            element.onended = () => this.releaseVoice(voice);
             this.activeVoices.push(voice);
+            this.updateDucking();
             await element.play();
             if (playbackOffset > 0) {
                 try { element.currentTime = playbackOffset; } catch (_) {}
             }
-            const maxDuration = Number(options.maxDuration);
-            if (Number.isFinite(maxDuration) && maxDuration > 0) {
-                voice.stopTimer = setTimeout(() => {
-                    try { element.pause(); } catch (_) {}
-                    releaseVoice();
-                }, maxDuration * 1000);
-            }
+            if (Number.isFinite(playback.maxDuration) && playback.maxDuration > 0) this.scheduleHtmlFade(voice, playback.maxDuration, playback.fadeOutDuration);
             this.backend = 'html-audio';
             this.lastPlayed = name;
+            if (playback.bus === 'crackle') {
+                this.crackleState = 'playing';
+                this.lastAudioProfile = playback.cue.profile || options.profile || 'short';
+            }
             this.lastError = null;
+            this.recordTimelineEvent(playback.effectId, playback.eventType, playback.plannedAt || actualAt, actualAt, 'played-html');
             this.updateStatus();
             return true;
         } catch (error) {
+            if (voice) this.stopVoice(voice);
             this.lastError = error.message;
             this.status = 'locked';
             this.updateStatus();
@@ -291,22 +463,32 @@ class AudioManager {
     getHtmlElement(name, url) {
         this.primeHtmlPool(name, url);
         const pool = this.htmlPools.get(name) || [];
-        return pool.find(element => element.paused || element.ended) || pool[0] || null;
+        return pool.find(element => !this.activeVoices.some(voice => voice.element === element)) || null;
     }
 
     queuePlayback(name, gain, priority, options = {}) {
         const now = Date.now();
+        const bus = this.CUE_MANIFEST[name]?.role || options.bus || (priority >= 3 ? 'bang' : 'launch');
+        const deadline = Math.max(0, Number(options.maxLatenessMs) || (bus === 'launch' ? 250 : 100));
         this.pendingPlaybacks = this.pendingPlaybacks
-            .filter(item => now - item.queuedAt < 1600)
+            .filter(item => now - item.queuedAt <= item.deadline)
             .slice(-15);
-        this.pendingPlaybacks.push({ name, gain, priority, options: { ...options }, queuedAt: now });
+        this.pendingPlaybacks.push({ name, gain, priority, options: { ...options }, queuedAt: now, deadline });
     }
 
     async flushPending() {
         if (this.flushingPending || this.context?.state !== 'running' || !this.pendingPlaybacks.length) return;
         this.flushingPending = true;
         const now = Date.now();
-        const pending = this.pendingPlaybacks.splice(0).filter(item => now - item.queuedAt < 1600);
+        const pending = this.pendingPlaybacks.splice(0).filter(item => {
+            const valid = now - item.queuedAt <= item.deadline;
+            if (!valid) {
+                this.missedEvents++;
+                const actualAt = typeof performance !== 'undefined' ? performance.now() : now;
+                this.recordTimelineEvent(item.options.effectId, item.options.eventType, item.options.plannedAt || actualAt, actualAt, 'missed-locked');
+            }
+            return valid;
+        });
         try {
             for (const item of pending) await this.play(item.name, item.gain, item.priority, item.options);
         } finally {
@@ -314,76 +496,216 @@ class AudioManager {
         }
     }
 
-    makeVoiceRoom(priority) {
+    makeVoiceRoom(bus = 'bang', priority = 1) {
+        if (typeof bus === 'number') {
+            priority = bus;
+            bus = priority >= 3 ? 'bang' : 'launch';
+        }
         this.activeVoices = this.activeVoices.filter(voice => {
             const ended = voice.source?.playbackState === 3 || voice.element?.ended;
             return !ended;
         });
-        if (this.activeVoices.length < this.maxVoices) return;
-        const candidate = [...this.activeVoices]
+        const busCount = this.activeVoices.filter(voice => voice.bus === bus).length;
+        if (this.activeVoices.length < this.maxVoices && busCount < (this.voiceBudgets[bus] || this.maxVoices)) return true;
+        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        const sameBusFull = busCount >= (this.voiceBudgets[bus] || this.maxVoices);
+        const candidate = this.activeVoices
+            .filter(voice => (!sameBusFull || voice.bus === bus) && (!voice.protectedUntil || voice.protectedUntil <= now))
             .sort((left, right) => left.priority - right.priority || left.startedAt - right.startedAt)[0];
         if (candidate && candidate.priority <= priority) {
-            if (candidate.stopTimer) clearTimeout(candidate.stopTimer);
-            try { candidate.source?.stop(); } catch (_) {}
-            try { candidate.element?.pause(); } catch (_) {}
-            this.activeVoices = this.activeVoices.filter(voice => voice !== candidate);
+            this.evictions++;
+            this.stopVoice(candidate);
+            return true;
         }
+        return false;
     }
 
-    choose(tier, combo, instant) {
-        const pick = values => values[Math.floor(Math.random() * values.length)];
+    getHtmlVoiceVolume(voice) {
+        const duck = voice.bus === 'bang' && this.activeVoices.some(item => item !== voice && item.bus === 'crackle') ? 0.707 : 1;
+        const mixHeadroom = 1 / Math.sqrt(Math.max(1, this.activeVoices.length));
+        return Math.max(0, Math.min(1, this.volume * this.limiterCeiling * voice.level * duck * mixHeadroom));
+    }
+
+    scheduleHtmlFade(voice, maxDuration, fadeDuration) {
+        const fadeMs = Math.max(20, Math.min(maxDuration * 1000, fadeDuration * 1000));
+        const startDelay = Math.max(0, maxDuration * 1000 - fadeMs);
+        voice.stopTimer = setTimeout(() => {
+            const started = Date.now();
+            voice.fadeTimer = setInterval(() => {
+                const progress = Math.min(1, (Date.now() - started) / fadeMs);
+                if (voice.element) voice.element.volume = this.getHtmlVoiceVolume(voice) * (1 - progress);
+                if (progress >= 1) this.stopVoice(voice);
+            }, 16);
+            this.htmlFadeTimers.add(voice.fadeTimer);
+        }, startDelay);
+    }
+
+    updateDucking() {
+        const crackling = this.activeVoices.some(voice => voice.bus === 'crackle');
+        const now = Number(this.context?.currentTime) || 0;
+        const bangGain = crackling ? 0.707 : 1;
+        const parameter = this.busNodes.bang?.gain;
+        try {
+            parameter?.cancelScheduledValues?.(now);
+            parameter?.setTargetAtTime?.(bangGain, now, crackling ? 0.012 : 0.08);
+            if (parameter && typeof parameter.setTargetAtTime !== 'function') parameter.value = bangGain;
+        } catch (_) {
+            if (parameter) parameter.value = bangGain;
+        }
+        for (const voice of this.activeVoices) {
+            if (voice.element) voice.element.volume = this.getHtmlVoiceVolume(voice);
+        }
+        this.crackleState = crackling ? 'playing' : 'idle';
+    }
+
+    releaseVoice(voice) {
+        if (!voice) return;
+        if (voice.stopTimer) clearTimeout(voice.stopTimer);
+        if (voice.fadeTimer) {
+            clearInterval(voice.fadeTimer);
+            this.htmlFadeTimers.delete(voice.fadeTimer);
+        }
+        this.activeVoices = this.activeVoices.filter(item => item !== voice);
+        if (voice.element) {
+            voice.element.onended = null;
+            try { voice.element.currentTime = 0; } catch (_) {}
+        }
+        this.updateDucking();
+    }
+
+    stopVoice(voice) {
+        try { voice.source?.stop(); } catch (_) {}
+        try { voice.element?.pause(); } catch (_) {}
+        this.releaseVoice(voice);
+    }
+
+    createRandom(seed) {
+        if (!Number.isFinite(Number(seed))) return Math.random;
+        let state = (Number(seed) >>> 0) || 0x6d2b79f5;
+        return () => {
+            state += 0x6d2b79f5;
+            let value = state;
+            value = Math.imul(value ^ (value >>> 15), value | 1);
+            value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+            return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    choose(tier, combo, instant, options = {}) {
+        const random = this.createRandom(options.seed);
+        const pick = values => values[Math.floor(random() * values.length)];
         const withWindow = launch => ({ launch, launchWindow: this.LAUNCH_WINDOWS[launch] || null });
         if (instant) {
             return {
                 launch: null,
                 launchWindow: null,
                 bang: tier === 'massive' ? 'explosion-huge' : tier === 'big' ? 'explosion-big' : tier === 'medium' ? 'explosion-medium' : 'explosion-small',
-                crackle: null
+                crackle: null,
+                crackleProfile: null
             };
         }
-        if (combo >= 5) {
-            const launch = pick([...this.BASIC_LAUNCH, ...this.TINY_WHISTLE_LAUNCH]);
-            return { ...withWindow(launch), bang: pick(this.SMALL_BANG), crackle: null };
-        }
+        const baseRates = { small: 0, medium: 0.2, big: 0.5, massive: 0.75 };
+        const frequency = Math.max(0, Math.min(1, Number(options.crackleFrequency ?? 0.5)));
+        const rate = Math.min(1, (baseRates[tier] || 0) * frequency / 0.5);
+        const hasCrackle = random() < rate;
+        const profile = hasCrackle && (tier === 'massive' || (tier === 'big' && random() < 0.35)) ? 'long' : (hasCrackle ? 'short' : null);
+        const crackle = profile === 'long' ? 'crackling-long' : profile === 'short' ? 'crackling-medium' : null;
+        let launchPool;
+        let bangPool;
         if (tier === 'massive') {
-            const launch = Math.random() < 0.78 ? 'combined-crackling-bang' : pick(this.CINEMATIC_LAUNCH);
-            return { ...withWindow(launch), bang: 'explosion-huge', crackle: pick(this.CRACKLE) };
+            launchPool = hasCrackle ? ['combined-crackling-bang', 'combined-whistle-normal', 'launch-whistle'] : ['combined-whistle-normal', 'launch-whistle', ...this.SMOOTH_LAUNCH];
+            bangPool = ['explosion-huge'];
+        } else if (tier === 'big') {
+            launchPool = hasCrackle ? ['combined-crackling-bang', 'combined-whistle-normal', 'launch-whistle'] : ['combined-whistle-normal', 'launch-whistle', ...this.SMOOTH_LAUNCH];
+            bangPool = this.BIG_BANG;
+        } else if (tier === 'medium') {
+            launchPool = [...this.SMOOTH_LAUNCH, 'combined-whistle-normal', 'combined-whistle-tiny4'];
+            bangPool = this.MEDIUM_BANG;
+        } else {
+            launchPool = [...this.BASIC_LAUNCH, ...this.TINY_WHISTLE_LAUNCH];
+            bangPool = this.SMALL_BANG;
         }
-        if (tier === 'big') {
-            const launch = Math.random() < 0.68 ? pick(this.CINEMATIC_LAUNCH) : 'launch-whistle';
-            const crackles = launch === 'combined-crackling-bang' || Math.random() < 0.6;
-            return { ...withWindow(launch), bang: pick(this.BIG_BANG), crackle: crackles ? pick(this.CRACKLE) : null };
-        }
-        if (tier === 'medium') {
-            const launch = pick([...this.SMOOTH_LAUNCH, 'combined-whistle-normal', 'combined-whistle-tiny4']);
-            return { ...withWindow(launch), bang: pick(this.MEDIUM_BANG), crackle: Math.random() < 0.2 ? pick(this.CRACKLE) : null };
-        }
-        const launch = pick([...this.BASIC_LAUNCH, ...this.TINY_WHISTLE_LAUNCH]);
-        return { ...withWindow(launch), bang: pick(this.SMALL_BANG), crackle: null };
+        const launch = pick(launchPool);
+        return { ...withWindow(launch), bang: pick(bangPool), crackle, crackleProfile: profile, combo: Math.max(1, Number(combo) || 1) };
     }
 
-    applyCrackleOverride(selection, enabled) {
+    fitLaunchToFlight(selection, flightDuration, seed) {
+        const duration = Math.max(0.05, Number(flightDuration) || 0);
+        if (!selection?.launch || !this.CUE_MANIFEST[selection.launch]) return selection;
+        const launchNames = [
+            'launch-basic', 'launch-basic2', 'launch-whistle', 'launch-smooth', 'launch-smooth2',
+            'combined-whistle-tiny1', 'combined-whistle-tiny2', 'combined-whistle-tiny3',
+            'combined-whistle-tiny4', 'combined-whistle-normal'
+        ];
+        const describe = name => {
+            const cue = this.CUE_MANIFEST[name];
+            const sourceWindow = Number(cue?.usableEnd ?? cue?.embeddedBangAt);
+            if (!cue || !Number.isFinite(sourceWindow) || sourceWindow <= 0) return null;
+            const rawRate = sourceWindow / duration;
+            return { name, sourceWindow, rawRate, score: Math.abs(rawRate - 1) };
+        };
+        const current = describe(selection.launch);
+        if (current && current.rawRate >= 0.9 && current.rawRate <= 1.1) {
+            selection.launchWindow = current.sourceWindow;
+            return selection;
+        }
+        const candidates = launchNames.map(describe).filter(Boolean);
+        const fitting = candidates.filter(candidate => candidate.rawRate >= 0.9 && candidate.rawRate <= 1.1);
+        let chosen;
+        if (fitting.length) {
+            const bestScore = Math.min(...fitting.map(candidate => candidate.score));
+            const best = fitting.filter(candidate => candidate.score <= bestScore + 0.035);
+            chosen = best[(Number(seed) >>> 0) % best.length];
+        } else {
+            chosen = candidates.sort((left, right) => left.score - right.score)[0];
+        }
+        if (chosen) {
+            selection.launch = chosen.name;
+            selection.launchWindow = chosen.sourceWindow;
+        }
+        return selection;
+    }
+
+    applyCrackleOverride(selection, enabled, options = {}) {
         if (enabled === undefined || enabled === null) return selection;
         if (enabled === false) {
             selection.crackle = null;
+            selection.crackleProfile = null;
             if (selection.launch === 'combined-crackling-bang') {
                 selection.launch = 'launch-whistle';
                 selection.launchWindow = null;
             }
             return selection;
         }
-        if (!selection.crackle) selection.crackle = this.CRACKLE[Math.floor(Math.random() * this.CRACKLE.length)];
+        const profile = options.profile || (options.tier === 'massive' ? 'long' : selection.crackleProfile || 'short');
+        selection.crackleProfile = profile;
+        selection.crackle = profile === 'long' ? 'crackling-long' : 'crackling-medium';
         return selection;
     }
 
     getTelemetry() {
+        const activeVoices = {
+            launch: this.activeVoices.filter(voice => voice.bus === 'launch').length,
+            bang: this.activeVoices.filter(voice => voice.bus === 'bang').length,
+            crackle: this.activeVoices.filter(voice => voice.bus === 'crackle').length,
+            total: this.activeVoices.length
+        };
+        const peak = this.samplePeak();
+        const peakDbfs = Math.max(-120, Math.min(0, 20 * Math.log10(Math.max(peak, 1e-6))));
         return {
             audioStatus: this.status,
             audioBackend: this.backend,
             loadedSounds: this.buffers.size,
             failedSounds: this.failed.size,
             lastPlayed: this.lastPlayed,
-            lastAudioError: this.lastError
+            lastAudioError: this.lastError,
+            lastAudioProfile: this.lastAudioProfile,
+            crackleState: this.crackleState,
+            activeVoices,
+            audioEvictions: this.evictions,
+            missedAudioEvents: this.missedEvents,
+            audioPeak: Math.round(peakDbfs * 10) / 10,
+            timelineEvents: this.timelineEvents.slice(-32)
         };
     }
 
@@ -399,18 +721,26 @@ class AudioManager {
         this.onStatus?.(this.getTelemetry());
     }
 
-    setEnabled(enabled) { this.enabled = enabled !== false; this.updateStatus(); }
+    setEnabled(enabled) {
+        this.enabled = enabled !== false;
+        if (!this.enabled) for (const voice of [...this.activeVoices]) this.stopVoice(voice);
+        this.updateStatus();
+    }
     setVolume(value) {
         this.volume = Math.max(0, Math.min(1, Number(value) || 0));
-        if (this.masterGain) this.masterGain.gain.value = this.volume;
+        if (this.masterGain) this.masterGain.gain.value = this.volume * this.limiterCeiling;
+    }
+    setCrackleVolume(value) {
+        const numeric = Number(value);
+        this.crackleVolume = Number.isFinite(numeric) ? Math.max(0, Math.min(1, numeric)) : 0.75;
     }
     destroy() {
-        for (const voice of this.activeVoices) {
-            if (voice.stopTimer) clearTimeout(voice.stopTimer);
-            try { voice.source?.stop(); } catch (_) {}
-            try { voice.element?.pause(); } catch (_) {}
+        for (const voice of [...this.activeVoices]) {
+            this.stopVoice(voice);
         }
         this.activeVoices.length = 0;
+        for (const timer of this.htmlFadeTimers) clearInterval(timer);
+        this.htmlFadeTimers.clear();
         for (const pool of this.htmlPools.values()) {
             for (const element of pool) {
                 try { element.pause(); } catch (_) {}
@@ -425,6 +755,8 @@ class AudioManager {
         if (this.context) this.context.onstatechange = null;
         this.context?.close().catch(() => {});
         this.context = null;
+        this.busNodes = { launch: null, bang: null, crackle: null };
+        this.analyser = null;
     }
 }
 
@@ -447,13 +779,16 @@ class WebGPUFireworksEngine {
         this.fpsHistory = [];
         this.performanceMode = 'normal';
         this.skippedFrame = false;
-        this.scheduledExplosions = [];
+        this.timelineQueue = [];
+        this.effectPlans = new Map();
+        this.crackleSequence = { eligible: 0, ordinal: 0, lastCrackleOrdinal: -100 };
         this.activeShows = new Map();
         this.imageCache = new Map();
         this.isBenchmark = new URLSearchParams(window.location.search).get('benchmark') === 'true';
         this.debug = DEBUG;
         this.config = {
             renderer: 'webgpu', enabled: true, visualStyle: 'premium-hybrid', audioEnabled: true, audioVolume: 0.7,
+            crackleFrequency: 0.5, crackleVolume: 0.75,
             resolutionPreset: '1080p', orientation: 'landscape', targetFps: 60, minFps: 24,
             maxTotalParticles: 8192, trailsEnabled: true, trailLength: 8, glowEnabled: true,
             toasterMode: false, adaptiveRenderScaleEnabled: true, minRenderScale: 0.55,
@@ -498,10 +833,16 @@ class WebGPUFireworksEngine {
             maxParticles: this.config.maxTotalParticles,
             trailSamples: this.config.trailLength,
             bloomEnabled: this.config.glowEnabled,
+            trailsEnabled: this.config.trailsEnabled !== false,
+            glowEnabled: this.config.glowEnabled !== false,
             onStatus: status => this.setStatus(status)
         });
         const ready = await this.renderer.init();
         if (!ready) return false;
+        // The renderer only owns a configured WebGPU canvas after init. Resize
+        // once more so the backing texture and the logical orientation always
+        // agree on the first frame, even before the first socket config update.
+        this.resize();
         this.renderer.setLogicalSize(this.baseWidth, this.baseHeight);
         this.applyQuality();
         window.addEventListener('resize', this.resizeHandler);
@@ -536,6 +877,7 @@ class WebGPUFireworksEngine {
             this.config = { ...this.config, ...data.config, renderer: 'webgpu' };
             this.audio.setEnabled(this.config.audioEnabled);
             this.audio.setVolume(this.config.audioVolume);
+            this.audio.setCrackleVolume(this.config.crackleVolume);
             this.audio.useUrl(this.config.rocketSound, 'launch');
             this.audio.useUrl(this.config.explosionSound, 'bang');
             this.resize();
@@ -599,7 +941,15 @@ class WebGPUFireworksEngine {
     }
 
     getResolution() {
-        const sizes = { '720p': [1280, 720], '1080p': [1920, 1080], '1440p': [2560, 1440], '4k': [3840, 2160] };
+        const sizes = {
+            '360p': [640, 360],
+            '480p': [854, 480],
+            '540p': [960, 540],
+            '720p': [1280, 720],
+            '1080p': [1920, 1080],
+            '1440p': [2560, 1440],
+            '4k': [3840, 2160]
+        };
         let [width, height] = sizes[this.config.resolutionPreset] || sizes['1080p'];
         if (this.config.orientation === 'portrait') [width, height] = [height, width];
         return { width, height };
@@ -623,18 +973,190 @@ class WebGPUFireworksEngine {
         if (!this.renderer) return;
         const style = this.getStyleProfile();
         const configuredTrails = this.config.trailsEnabled === false ? 2 : Math.max(2, Math.min(12, this.config.trailLength || 8));
+        const visibility = {
+            trailsEnabled: this.config.trailsEnabled !== false,
+            glowEnabled: this.config.glowEnabled !== false
+        };
         if (this.config.toasterMode) {
-            this.renderer.setQuality({ trailSamples: Math.min(3, configuredTrails), bloomEnabled: false, turbulence: 0.04, style: style.id, glowScale: 0.5 });
+            this.renderer.setQuality({ ...visibility, trailSamples: Math.min(3, configuredTrails), bloomEnabled: false, turbulence: 0.04, style: style.id, glowScale: 0.5 });
             return;
         }
-        if (this.performanceMode === 'minimal') this.renderer.setQuality({ trailSamples: Math.min(3, configuredTrails), bloomEnabled: false, turbulence: 0.06, style: style.id, glowScale: 0.58 });
-        else if (this.performanceMode === 'reduced') this.renderer.setQuality({ trailSamples: Math.min(5, configuredTrails), bloomEnabled: this.config.glowEnabled !== false, turbulence: Math.min(style.turbulence, 0.09), style: style.id, glowScale: style.glowScale * 0.78 });
-        else this.renderer.setQuality({ trailSamples: configuredTrails, bloomEnabled: this.config.glowEnabled !== false, turbulence: style.turbulence, style: style.id, glowScale: style.glowScale });
+        if (this.performanceMode === 'minimal') this.renderer.setQuality({ ...visibility, trailSamples: Math.min(3, configuredTrails), bloomEnabled: false, turbulence: 0.06, style: style.id, glowScale: 0.58 });
+        else if (this.performanceMode === 'reduced') this.renderer.setQuality({ ...visibility, trailSamples: Math.min(5, configuredTrails), bloomEnabled: this.config.glowEnabled !== false, turbulence: Math.min(style.turbulence, 0.09), style: style.id, glowScale: style.glowScale * 0.78 });
+        else this.renderer.setQuality({ ...visibility, trailSamples: configuredTrails, bloomEnabled: this.config.glowEnabled !== false, turbulence: style.turbulence, style: style.id, glowScale: style.glowScale });
     }
 
     calculateFlightDuration(targetY) {
         const travel = Math.max(0, Math.min(1, (this.baseHeight - targetY) / this.baseHeight));
         return 0.55 + travel * 1.25;
+    }
+
+    scheduleTimeline(event) {
+        this.timelineQueue.push(event);
+        this.timelineQueue.sort((left, right) => left.due - right.due || (left.order || 0) - (right.order || 0));
+    }
+
+    processTimeline(now) {
+        this.audio.syncClock(now);
+        while (this.timelineQueue.length && this.timelineQueue[0].due <= now) {
+            const event = this.timelineQueue.shift();
+            if (event.type === 'finale-launch') {
+                void this.handleTrigger(event.payload);
+            } else if (event.type === 'launch') {
+                this.processLaunch(event.plan, event.due, now);
+            } else if (event.type === 'explode') {
+                this.processExplosion(event.plan.explosion, event.plan, event.due, now);
+            } else if (event.type === 'crackle') {
+                this.processCrackle(event.plan, event.due, now);
+            } else if (event.type === 'crackle-end') {
+                this.audio.updateDucking();
+            } else if (event.type === 'cleanup') {
+                this.activeShows.delete(event.plan.id);
+                this.effectPlans.delete(event.plan.id);
+                this.audio.updateDucking();
+            }
+        }
+    }
+
+    applyCracklePolicy(sound, data, tier, seed) {
+        const explicit = data.crackleEnabled;
+        const eligible = tier !== 'small';
+        const frequency = Math.max(0, Math.min(1, Number(data.crackleFrequency ?? this.config.crackleFrequency ?? 0.5)));
+        if (eligible) {
+            this.crackleSequence.ordinal++;
+            this.crackleSequence.eligible++;
+        }
+        if (explicit === false) return this.audio.applyCrackleOverride(sound, false, { tier, seed });
+        if (explicit === true) {
+            const forced = this.audio.applyCrackleOverride(sound, true, { tier, seed, profile: tier === 'massive' ? 'long' : undefined });
+            if (eligible) {
+                this.crackleSequence.lastCrackleOrdinal = this.crackleSequence.ordinal;
+                this.crackleSequence.eligible = 0;
+            }
+            return forced;
+        }
+        if (!eligible || frequency <= 0) return this.audio.applyCrackleOverride(sound, false, { tier, seed });
+        const hasCooldown = this.crackleSequence.ordinal - this.crackleSequence.lastCrackleOrdinal <= 2;
+        const guaranteed = this.crackleSequence.eligible >= 6;
+        if (hasCooldown && !guaranteed) return this.audio.applyCrackleOverride(sound, false, { tier, seed });
+        if (guaranteed && !sound.crackle) this.audio.applyCrackleOverride(sound, true, { tier, seed });
+        if (sound.crackle) {
+            this.crackleSequence.lastCrackleOrdinal = this.crackleSequence.ordinal;
+            this.crackleSequence.eligible = 0;
+        }
+        return sound;
+    }
+
+    createEffectPlan(explosion, launch) {
+        const createdAt = Number(launch.createdAt) || performance.now();
+        const explodeAt = createdAt + Math.max(0, Number(launch.flightDuration) || 0) * 1000;
+        const crackleProfile = explosion.sound.crackleProfile || null;
+        const crackleDuration = crackleProfile === 'long' ? 1 : crackleProfile === 'short' ? 0.65 : 0;
+        const crackleDelay = crackleProfile === 'long' ? 220 : 180;
+        return {
+            id: explosion.id,
+            seed: launch.seed,
+            createdAt,
+            launchAt: createdAt,
+            explodeAt,
+            crackleAt: crackleProfile ? explodeAt + crackleDelay : null,
+            cleanupAt: explodeAt + Math.min(6000, 1800 + explosion.intensity * 900),
+            flightDuration: launch.flightDuration,
+            launch,
+            explosion,
+            crackleProfile,
+            crackleDuration,
+            cracklePulseCount: crackleProfile === 'long' ? 6 : crackleProfile === 'short' ? 4 : 0
+        };
+    }
+
+    enqueueEffectPlan(plan) {
+        this.effectPlans.set(plan.id, plan);
+        this.activeShows.set(plan.id, plan.createdAt);
+        this.scheduleTimeline({ type: 'launch', due: plan.launchAt, order: 0, plan });
+        this.scheduleTimeline({ type: 'explode', due: plan.explodeAt, order: 1, plan });
+        if (plan.crackleAt !== null) {
+            this.audio.crackleState = 'scheduled';
+            this.audio.lastAudioProfile = plan.crackleProfile;
+            this.scheduleTimeline({ type: 'crackle', due: plan.crackleAt, order: 2, plan });
+            this.scheduleTimeline({ type: 'crackle-end', due: plan.crackleAt + plan.crackleDuration * 1000, order: 3, plan });
+        }
+        this.scheduleTimeline({ type: 'cleanup', due: plan.cleanupAt, order: 4, plan });
+    }
+
+    processLaunch(plan, plannedAt, actualAt) {
+        const { launch, explosion } = plan;
+        if (!launch.skipRocket) {
+            const avatarTexture = Number(explosion.assets.avatarTexture) || 0;
+            this.renderer.spawnRocket({
+                effectId: plan.id,
+                origin: launch.origin,
+                target: launch.target,
+                duration: plan.flightDuration,
+                color: explosion.colors[0],
+                textureIndex: explosion.avatarRocketHead ? 0 : avatarTexture,
+                headTextureIndex: explosion.avatarRocketHead ? avatarTexture : 0,
+                size: avatarTexture ? 18 : 8,
+                gravity: 0,
+                drag: 1,
+                seed: plan.seed,
+                style: explosion.visualStyle,
+                curve: ((Number(plan.seed) || 1) % 2 === 0 ? 1 : -1) * (45 + explosion.intensity * 12)
+            });
+        }
+        this.audio.recordTimelineEvent(plan.id, 'launch-visual', plannedAt, actualAt, 'rendered');
+        if (!explosion.playSound || !explosion.sound.launch || launch.skipRocket) return;
+        const cue = this.audio.CUE_MANIFEST[explosion.sound.launch] || {};
+        const sourceWindow = Number(explosion.sound.launchWindow || cue.embeddedBangAt || plan.flightDuration);
+        const playbackRate = Math.max(0.9, Math.min(1.1, sourceWindow / Math.max(0.05, plan.flightDuration)));
+        const playbackOptions = {
+            effectId: plan.id,
+            eventType: 'launch-audio',
+            plannedAt,
+            maxLatenessMs: 250,
+            bus: 'launch',
+            playbackRate,
+            // The selected cue is fitted to the flight at 0.9-1.1x. Let its
+            // final 60 ms fade land on the separately scheduled bang.
+            maxDuration: plan.flightDuration,
+            fadeOutDuration: 0.06
+        };
+        void this.audio.play(explosion.sound.launch, 0.82, 1, playbackOptions);
+    }
+
+    processCrackle(plan, plannedAt, actualAt) {
+        const explosion = plan.explosion;
+        if (!explosion.sound.crackle || !plan.crackleProfile) return;
+        this.renderer.spawnCrackle({
+            effectId: plan.id,
+            profile: plan.crackleProfile,
+            pulseCount: plan.cracklePulseCount,
+            origin: { x: explosion.x, y: explosion.y },
+            colors: explosion.colors,
+            intensity: explosion.intensity,
+            duration: plan.crackleDuration,
+            gravity: explosion.gravity * 520,
+            drag: Math.min(0.988, explosion.friction),
+            wind: explosion.wind * 280,
+            style: explosion.visualStyle
+        });
+        this.audio.recordTimelineEvent(plan.id, 'crackle-visual', plannedAt, actualAt, 'rendered');
+        if (explosion.playSound) {
+            this.audio.crackleState = 'starting';
+            void this.audio.play(explosion.sound.crackle, 1, 4, {
+                effectId: plan.id,
+                eventType: 'crackle-audio',
+                plannedAt,
+                maxLatenessMs: 100,
+                profile: plan.crackleProfile,
+                offset: this.audio.CRACKLE_OFFSETS[explosion.sound.crackle] || 0,
+                maxDuration: plan.crackleDuration,
+                fadeOutDuration: Math.min(0.16, plan.crackleDuration * 0.2),
+                bus: 'crackle'
+            }).then(played => {
+                if (!played && this.audio.crackleState === 'starting') this.audio.crackleState = 'missed';
+            });
+        } else this.audio.crackleState = 'visual-only';
     }
 
     async handleTrigger(data = {}) {
@@ -661,13 +1183,26 @@ class WebGPUFireworksEngine {
         const count = Math.max(1, Math.min(Number(data.requestedParticleCount || data.particleCount) || 50, particleLimit));
         const forceRocket = data.forceRocket === true;
         const instant = !forceRocket && combo >= 8;
-        const skipRocket = !forceRocket && combo >= 5;
-        const flightDuration = skipRocket ? 0 : this.calculateFlightDuration(targetY);
+        let skipRocket = !forceRocket && combo >= 5;
+        let flightDuration = skipRocket ? 0 : this.calculateFlightDuration(targetY);
         const assets = await this.prepareImages(data);
-        const sound = this.audio.applyCrackleOverride(
-            this.audio.choose(tier, forceRocket ? 1 : combo, instant),
-            data.crackleEnabled
-        );
+        const id = data.id || `${Date.now()}-${Math.random()}`;
+        const seed = Number.isFinite(Number(data.seed)) ? Number(data.seed) : (parseInt(this.audio.hash(id), 36) >>> 0);
+        // Choose the complete tier profile before applying the combo shortcut.
+        // If this becomes a crackling effect it must remain a real rocket.
+        let sound = this.audio.choose(tier, forceRocket ? 1 : combo, false, {
+            seed,
+            crackleFrequency: data.crackleFrequency ?? this.config.crackleFrequency
+        });
+        sound = this.applyCracklePolicy(sound, data, tier, seed);
+        if (instant && !sound.crackle) {
+            sound.launch = null;
+            sound.launchWindow = null;
+        }
+        if (sound.crackle && skipRocket) {
+            skipRocket = false;
+            flightDuration = this.calculateFlightDuration(targetY);
+        }
         const customLaunch = this.audio.useConfiguredUrl(data.rocketSound, 'launch');
         const customBang = this.audio.useConfiguredUrl(data.explosionSound, 'bang');
         if (customLaunch) {
@@ -675,29 +1210,13 @@ class WebGPUFireworksEngine {
             sound.launchWindow = null;
         }
         if (customBang) sound.bang = customBang;
-        if (data.playSound !== false && sound.launch && !skipRocket) {
-            const playbackOptions = sound.launchWindow
-                ? { maxDuration: Math.min(flightDuration, sound.launchWindow), fadeOutDuration: 0.08 }
-                : {};
-            void this.audio.play(sound.launch, 0.55, 1, playbackOptions);
+        if (!customLaunch && sound.launch && !skipRocket) {
+            sound = this.audio.fitLaunchToFlight(sound, flightDuration, seed);
         }
-
-        if (!skipRocket) {
-            this.renderer.spawnRocket({
-                origin: { x: originX, y: originY }, target: { x, y: targetY }, duration: flightDuration,
-                color: colors[0], shape: assets.avatarTexture ? 'image' : 'rocket',
-                textureIndex: assets.avatarTexture, size: assets.avatarTexture ? 18 : 8,
-                gravity: 0, drag: 1, seed: data.seed, style: visualStyle,
-                curve: ((Number(data.seed) || 1) % 2 === 0 ? 1 : -1) * (45 + intensity * 12)
-            });
-        }
-
-        const id = data.id || `${Date.now()}-${Math.random()}`;
-        this.activeShows.set(id, performance.now());
         const explosion = {
-            due: performance.now() + flightDuration * 1000,
             id, x, y: targetY, shape, intensity, count, colors, assets, visualStyle, style,
             playSound: data.playSound !== false, sound, tier,
+            avatarRocketHead: data.avatarRocketHead === true,
             username: data.username, coins: data.coins, combo, giftImage: data.giftImage,
             gravity: Number(data.gravity ?? this.config.gravity),
             friction: Number(data.friction ?? this.config.friction),
@@ -707,8 +1226,16 @@ class WebGPUFireworksEngine {
             giftPopupPosition: data.giftPopupPosition,
             despawnFadeDuration: Number(data.despawnFadeDuration ?? this.config.despawnFadeDuration)
         };
-        this.scheduledExplosions.push(explosion);
-        this.scheduledExplosions.sort((a, b) => a.due - b.due);
+        const plan = this.createEffectPlan(explosion, {
+            createdAt: performance.now(),
+            flightDuration,
+            origin: { x: originX, y: originY },
+            target: { x, y: targetY },
+            skipRocket,
+            seed
+        });
+        this.enqueueEffectPlan(plan);
+        return plan;
     }
 
     async prepareImages(data) {
@@ -738,7 +1265,7 @@ class WebGPUFireworksEngine {
         return promise;
     }
 
-    processExplosion(explosion) {
+    processExplosion(explosion, plan = null, plannedAt = performance.now(), actualAt = performance.now()) {
         const shapeSpecific = explosion.shape !== 'burst';
         let baseCount = explosion.count;
         let avatarCount = 0;
@@ -772,64 +1299,73 @@ class WebGPUFireworksEngine {
             wind: explosion.wind * 420, size: semanticSize,
             style: explosion.visualStyle
         };
-        this.renderer.spawnExplosion({ ...common, shape: explosion.shape, colors: explosion.colors, count: baseCount });
-        if (avatarCount) this.renderer.spawnExplosion({ ...common, shape: 'image', colors: ['#ffffff'], count: avatarCount, textureIndex: explosion.assets.avatarTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
-        if (giftCount) this.renderer.spawnExplosion({ ...common, shape: 'image', colors: ['#ffffff'], count: giftCount, textureIndex: explosion.assets.giftTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
-        if (explosion.playSound) void this.audio.play(explosion.sound.bang, explosion.tier === 'massive' ? 1 : 0.75, 3);
-        if (explosion.sound.crackle) {
-            const crackleDelay = explosion.tier === 'massive' ? 240 : 210;
-            const crackleDuration = explosion.tier === 'massive'
-                ? Math.min(1.05, Math.max(0.72, duration * 0.46))
-                : Math.min(0.82, Math.max(0.56, duration * 0.38));
-            setTimeout(() => {
-                this.renderer.spawnCrackle({
-                    origin: { x: explosion.x, y: explosion.y },
-                    colors: explosion.colors,
-                    intensity: explosion.intensity,
-                    duration: crackleDuration,
-                    gravity: explosion.gravity * 520,
-                    drag: Math.min(0.988, explosion.friction),
-                    wind: explosion.wind * 280,
-                    style: explosion.visualStyle
-                });
-                if (explosion.playSound) {
-                    void this.audio.play(explosion.sound.crackle, 0.5, 2, {
-                        offset: this.audio.CRACKLE_OFFSETS[explosion.sound.crackle] || 0,
-                        maxDuration: crackleDuration,
-                        fadeOutDuration: Math.min(0.18, crackleDuration * 0.24),
-                        bus: 'crackle'
-                    });
-                }
-            }, crackleDelay);
+        const effectId = plan?.id || explosion.id;
+        this.renderer.spawnExplosion({ ...common, effectId, shape: explosion.shape, colors: explosion.colors, count: baseCount });
+        if (avatarCount) this.renderer.spawnExplosion({ ...common, effectId, shape: 'image', colors: ['#ffffff'], count: avatarCount, textureIndex: explosion.assets.avatarTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
+        if (giftCount) this.renderer.spawnExplosion({ ...common, effectId, shape: 'image', colors: ['#ffffff'], count: giftCount, textureIndex: explosion.assets.giftTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
+        this.audio.recordTimelineEvent(effectId, 'explosion-visual', plannedAt, actualAt, 'rendered');
+        if (explosion.playSound) {
+            const bangDurations = { small: 0.7, medium: 0.9, big: 1.2, massive: 1.5 };
+            void this.audio.play(explosion.sound.bang, explosion.tier === 'massive' ? 1 : 0.88, 3, {
+                effectId,
+                eventType: 'bang-audio',
+                plannedAt,
+                maxLatenessMs: 100,
+                maxDuration: bangDurations[explosion.tier] || 0.9,
+                fadeOutDuration: 0.1,
+                bus: 'bang'
+            });
         }
         if (explosion.username && Number(explosion.coins) > 0) this.showGiftPopup(explosion);
-        setTimeout(() => this.activeShows.delete(explosion.id), Math.min(6000, 1800 + explosion.intensity * 900));
     }
 
     handleFinale(data = {}) {
         const intensity = Math.max(1, Math.min(5, Number(data.intensity) || 3));
         const count = Math.min(40, Math.max(1, Number(data.burstCount) || Math.round(intensity * 5)));
-        const interval = Math.max(120, Number(data.burstInterval) || 300);
+        const finaleDuration = Math.max(500, Number(data.duration) || 5000);
+        const interval = count > 1 ? Math.max(180, Math.min(500, finaleDuration / (count - 1))) : 0;
         const shapes = Array.isArray(data.shapes) && data.shapes.length ? data.shapes : ['burst'];
         const colors = Array.isArray(data.colors) && data.colors.length ? data.colors : this.config.defaultColors;
         const bursts = Array.isArray(data.bursts) ? data.bursts : [];
+        const baseSeed = Number.isFinite(Number(data.seed)) ? Number(data.seed) : Date.now();
+        const random = this.audio.createRandom(baseSeed);
+        const configuredFrequency = Math.max(0, Math.min(1, Number(data.crackleFrequency ?? this.config.crackleFrequency ?? 0.5)));
+        const frequency = data.crackleEnabled === false
+            ? 0
+            : data.crackleEnabled === true ? Math.max(0.5, configuredFrequency) : configuredFrequency;
+        const baseCrackleInterval = intensity >= 4 ? 3 : intensity >= 3 ? 4 : 5;
+        const crackleInterval = frequency > 0
+            ? Math.max(2, Math.min(12, Math.round(baseCrackleInterval * 0.5 / frequency)))
+            : Number.POSITIVE_INFINITY;
+        const seededPhase = Number.isFinite(crackleInterval)
+            ? Math.floor(random() * Math.min(crackleInterval, count))
+            : -1;
+        const startAt = performance.now();
         for (let i = 0; i < count; i++) {
             const plan = bursts[i] || {
                 position: { x: 0.16 + ((i * 0.61803398875) % 1) * 0.68, y: 0.18 + ((i * 0.38196601125) % 1) * 0.42 },
                 origin: { x: 0.08 + ((i * 0.754877666) % 1) * 0.84, y: 1.02 },
-                seed: (Number(data.seed) || Date.now()) + i * 2654435761
+                seed: baseSeed + i * 2654435761
             };
-            setTimeout(() => this.handleTrigger({
+            const crackleEnabled = frequency > 0 && (i - seededPhase) % crackleInterval === 0 && i >= seededPhase;
+            this.scheduleTimeline({
+                type: 'finale-launch',
+                due: startAt + i * interval,
+                order: i,
+                payload: {
                 id: `${data.id || 'finale'}-${i}`, shape: shapes[i % shapes.length], colors,
                 position: plan.position, origin: plan.origin, seed: plan.seed,
                 visualStyle: data.visualStyle || this.config.visualStyle,
-                intensity: intensity * (0.78 + Math.random() * 0.35), particleCount: Math.round(60 * intensity),
+                intensity: intensity * (0.78 + random() * 0.35), particleCount: Math.round(60 * intensity),
                 combo: Math.max(1, Math.round(intensity)), tier: intensity >= 4 ? 'massive' : intensity >= 3 ? 'big' : 'medium',
                 forceRocket: true,
-                crackleEnabled: intensity >= 4 ? i % 3 === 0 : intensity >= 3 ? i % 4 === 0 : false,
+                crackleEnabled,
+                crackleFrequency: frequency,
                 playSound: data.playSound !== false, rocketSound: data.rocketSound, explosionSound: data.explosionSound
-            }), i * interval);
+                }
+            });
         }
+        return { count, crackleInterval, seededPhase, frequency };
     }
 
     showGiftPopup(data) {
@@ -891,9 +1427,9 @@ class WebGPUFireworksEngine {
         const now = performance.now();
         const delta = Math.min(0.05, Math.max(0.001, (now - this.lastFrameAt) / 1000));
         this.lastFrameAt = now;
-        while (this.scheduledExplosions.length && this.scheduledExplosions[0].due <= now) this.processExplosion(this.scheduledExplosions.shift());
+        this.processTimeline(now);
         const shouldSkip = this.config.frameSkipEnabled !== false && this.performanceMode === 'minimal' && (this.skippedFrame = !this.skippedFrame);
-        if (!shouldSkip) this.renderer?.render(delta, now / 1000);
+        this.renderer?.render(delta, now / 1000, { present: !shouldSkip });
         this.frameCount++;
         if (now - this.fpsWindowAt >= 1000) {
             this.fps = Math.round(this.frameCount * 1000 / (now - this.fpsWindowAt));
@@ -930,7 +1466,8 @@ class WebGPUFireworksEngine {
         this.socket?.disconnect();
         this.renderer?.destroy();
         this.audio.destroy();
-        this.scheduledExplosions.length = 0;
+        this.timelineQueue.length = 0;
+        this.effectPlans.clear();
         this.activeShows.clear();
         this.imageCache.clear();
     }
@@ -942,22 +1479,8 @@ if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded
     window.fireworksEngineInstance = engine;
     await engine.init();
 
-    const sounds = [
-        ['abschussgeraeusch.mp3', 'launch-basic'], ['abschussgeraeusch2.mp3', 'launch-basic2'],
-        ['explosion_small1.mp3', 'explosion-small'], ['explosion_medium.mp3', 'explosion-medium'],
-        ['explosion2.mp3', 'explosion-alt1'], ['explosion3.mp3', 'explosion-alt2'],
-        ['explosion_big.mp3', 'explosion-big'], ['explosion_huge.mp3', 'explosion-huge'],
-        ['explosion%20Pop%2CSharp%2C.mp3', 'explosion-pop'], ['crackling.mp3', 'crackling-long'],
-        ['crackling2.mp3', 'crackling-medium'], ['woosh_abheben_mit-pfeifen_no-bang.mp3', 'launch-whistle'],
-        ['woosh_abheben_crackling_bang.mp3', 'combined-crackling-bang'],
-        ['woosh_abheben_mit-pfeifen_normal-bang.mp3', 'combined-whistle-normal'],
-        ['woosh_abheben_mit-pfeifen_tiny-bang.mp3', 'combined-whistle-tiny1'],
-        ['woosh_abheben_mit-pfeifen_tiny-bang2.mp3', 'combined-whistle-tiny2'],
-        ['woosh_abheben_mit-pfeifen_tiny-bang3.mp3', 'combined-whistle-tiny3'],
-        ['woosh_abheben_mit-pfeifen_tiny-bang4.mp3', 'combined-whistle-tiny4'],
-        ['woosh_abheben_nocrackling_no-bang.mp3', 'launch-smooth'], ['woosh_abheben_nocrackling_no-bang2.mp3', 'launch-smooth2']
-    ];
-    void Promise.all(sounds.map(([file, name]) => engine.audio.preload(`/plugins/webgpu-fireworks/audio/${file}`, name)))
+    const sounds = Object.entries(engine.audio.CUE_MANIFEST);
+    void Promise.all(sounds.map(([name, cue]) => engine.audio.preload(cue.url, name)))
         .then(() => engine.audio.ensureContext(false));
 
     const unlock = async () => {

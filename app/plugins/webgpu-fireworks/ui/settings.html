@@ -705,14 +705,14 @@
                 <div class="fireworks-hero-stack">
                     <div class="fireworks-status-row">
                         <span id="overview-enabled-state" class="status-chip status-chip--success">Enabled</span>
-                        <span id="overview-theme-state" class="status-chip">Theme: Night</span>
-                        <span id="overview-resolution-state" class="status-chip">1080p · Landscape</span>
-                        <span id="overview-performance-state" class="status-chip">60 FPS · 1,000 particles</span>
-                        <span id="overview-safety-state" class="status-chip">Queue off · Adaptive on</span>
+                        <span id="overview-theme-state" class="status-chip" data-i18n="generated.110280b600e8">Theme: Night</span>
+                        <span id="overview-resolution-state" class="status-chip" data-i18n="generated.469807401200">1080p · Landscape</span>
+                        <span id="overview-performance-state" class="status-chip" data-i18n="generated.ec3042c7ac5a">60 FPS · 1,000 particles</span>
+                        <span id="overview-safety-state" class="status-chip" data-i18n="generated.4330ba51d391">Queue off · Adaptive on</span>
                     </div>
                 </div>
                 <div class="fireworks-hero-actions">
-                    <button id="test-btn" class="btn-primary px-6 py-3 rounded-lg font-bold">
+                    <button id="test-btn" class="btn-primary px-6 py-3 rounded-lg font-bold" data-i18n="generated.e0cbd43dcf1a">
                         Test Firework
                     </button>
                     <button id="save-btn" class="btn-success px-6 py-3 rounded-lg font-bold" data-i18n="webgpu_fireworks.save_settings">
@@ -728,16 +728,22 @@
             <a class="inline-block mt-3 text-cyan-300 underline font-semibold" href="https://github.com/Loggableim/obs-studio-webgpu" target="_blank" rel="noopener noreferrer" data-i18n="webgpu_fireworks.get_webgpu_build">Get the required OBS WebGPU build</a>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-sm">
                 <div><span data-i18n="webgpu_fireworks.renderer">Renderer:</span> <strong id="webgpu-runtime-state">Offline</strong></div>
-                <div><span data-i18n="webgpu_fireworks.adapter">Adapter:</span> <strong id="webgpu-adapter-state">Not connected</strong></div>
+                <div><span data-i18n="webgpu_fireworks.adapter">Adapter:</span> <strong id="webgpu-adapter-state" data-i18n="generated.f0233754567e">Not connected</strong></div>
                 <div>Audio: <strong id="webgpu-audio-state">Unknown</strong></div>
-                <div><span data-i18n="webgpu_fireworks.particles">Particles:</span> <strong id="webgpu-particle-state">0 active · 0 dropped</strong></div>
+                <div><span data-i18n="webgpu_fireworks.particles">Particles:</span> <strong id="webgpu-particle-state" data-i18n="generated.3a866fee8bff">0 active · 0 dropped</strong></div>
                 <div><span data-i18n="webgpu_fireworks.audio_backend">Audio backend:</span> <strong id="webgpu-audio-backend">None</strong></div>
-                <div>Sound library: <strong id="webgpu-audio-library">0 loaded · 0 failed</strong></div>
-                <div>Last sound: <strong id="webgpu-audio-last-played">None</strong></div>
-                <div><span data-i18n="webgpu_fireworks.visual_style">Visual style:</span> <strong id="webgpu-visual-style">Premium Hybrid</strong></div>
-                <div>GPU frame: <strong id="webgpu-frame-time">—</strong></div>
+                <div><span data-i18n="generated.96ff286e76af">Sound library: </span><strong id="webgpu-audio-library" data-i18n="generated.41e897bd7c7e">0 loaded · 0 failed</strong></div>
+                <div><span data-i18n="generated.cfd6093066b1">Last sound: </span><strong id="webgpu-audio-last-played">None</strong></div>
+                <div>Crackle: <strong id="webgpu-crackle-state">IDLE</strong></div>
+                <div><span data-i18n="generated.df91ec5daa65">Audio profile: </span><strong id="webgpu-audio-profile">None</strong></div>
+                <div>Voices: <strong id="webgpu-audio-voices" data-i18n="generated.0a3f0a57a3c8">L0 / B0 / C0</strong></div>
+                <div><span data-i18n="generated.0fa015f4d84f">Audio events: </span><strong id="webgpu-audio-events" data-i18n="generated.cf0ef89f1288">0 missed / 0 evicted</strong></div>
+                <div><span data-i18n="generated.af260b9f99b8">Audio peak: </span><strong id="webgpu-audio-peak">-</strong></div>
+                <div><span data-i18n="generated.f5859661737e">Timeline sync: </span><strong id="webgpu-timeline-sync" data-i18n="generated.5af44856d10b">No events</strong></div>
+                <div><span data-i18n="webgpu_fireworks.visual_style">Visual style:</span> <strong id="webgpu-visual-style" data-i18n="generated.31b18de4e854">Premium Hybrid</strong></div>
+                <div><span data-i18n="generated.3ba2d86de03e">GPU frame: </span><strong id="webgpu-frame-time">—</strong></div>
             </div>
-            <label class="block mt-4 text-sm font-semibold" for="webgpu-origin">OBS insecure origin allowlist</label>
+            <label class="block mt-4 text-sm font-semibold" for="webgpu-origin" data-i18n="generated.6c140b18ec2c">OBS insecure origin allowlist</label>
             <div class="flex gap-2 mt-1">
                 <input id="webgpu-origin" class="flex-1 bg-black/30 rounded-lg px-3 py-2 font-mono text-sm" readonly>
                 <button id="copy-webgpu-origin" type="button" class="btn-primary px-4 rounded-lg" data-i18n="webgpu_fireworks.copy_origin">Copy origin</button>
@@ -783,7 +789,7 @@
                             <input type="number" id="min-coins" class="w-full bg-black/30 rounded-lg px-4 py-2" value="1" min="1">
                         </div>
 
-                        <button id="test-gift-btn" class="w-full btn-primary py-3 rounded-lg font-bold">
+                        <button id="test-gift-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="generated.6824e9c4d052">
                             &#x1F381; Test Gift Firework
                         </button>
                     </div>
@@ -909,8 +915,29 @@
                                 <span>100%</span>
                             </div>
                         </div>
+                        <div>
+                            <label class="block mb-2" for="crackle-frequency" data-i18n="generated.5a901fd86563">Crackling frequency</label>
+                            <input type="range" id="crackle-frequency" min="0" max="100" value="50" class="w-full">
+                            <div class="flex justify-between text-sm text-gray-400">
+                                <span>Off</span>
+                                <span id="crackle-frequency-value">50%</span>
+                                <span data-i18n="generated.26e7715bab4c">Every eligible rocket</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.345bd916f34e">Controls how often eligible Medium, Big and Massive rockets use synchronized visual and audio crackling.</p>
+                        </div>
+                        <div>
+                            <label class="block mb-2" for="crackle-volume" data-i18n="generated.ce59588a0680">Crackling volume</label>
+                            <input type="range" id="crackle-volume" min="0" max="100" value="75" class="w-full">
+                            <div class="flex justify-between text-sm text-gray-400">
+                                <span>0%</span>
+                                <span id="crackle-volume-value">75%</span>
+                                <span>100%</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.f00369646473">Relative to the master volume; the limiter still protects finale mixes.</p>
+                        </div>
                         <button id="test-audio-btn" type="button" class="w-full btn-primary py-2 rounded-lg font-bold" data-i18n="webgpu_fireworks.test_audio">Test launch + explosion audio</button>
-                        <p class="text-xs text-gray-400">OBS should report READY-WEB-AUDIO or READY-HTML-AUDIO. If it remains LOCKED, open OBS Browser Source → Interact and click once. Enable “Control audio via OBS” and make sure the source is unmuted in the OBS Audio Mixer.</p>
+                        <button id="test-crackle-btn" type="button" class="w-full btn-primary py-2 rounded-lg font-bold" data-i18n="generated.f2383639a875">Test complete crackling rocket</button>
+                        <p class="text-xs text-gray-400" data-i18n="generated.61c906afa0b0">OBS should report READY-WEB-AUDIO or READY-HTML-AUDIO. If it remains LOCKED, open OBS Browser Source → Interact and click once. Enable “Control audio via OBS” and make sure the source is unmuted in the OBS Audio Mixer.</p>
                     </div>
                 </div>
             </div>
@@ -943,29 +970,29 @@
                         <div>
                             <label class="block mb-2 text-sm" data-i18n="webgpu_fireworks.default_shape_when_random_disabled">Default Shape (when random disabled)</label>
                             <select id="default-shape" class="w-full bg-black/30 rounded-lg px-4 py-2">
-                                <option value="burst">&#x1F386; Burst</option>
-                                <option value="heart">&#x2764;&#xFE0F; Heart</option>
-                                <option value="star">&#x2B50; Star</option>
-                                <option value="ring">&#x25EF; Ring</option>
-                                <option value="spiral">&#x1F300; Spiral</option>
-                                <option value="paws">&#x1F43E; Paws</option>
+                                <option value="burst" data-i18n="generated.8108734a07f4">&#x1F386; Burst</option>
+                                <option value="heart" data-i18n="generated.121ffd026929">&#x2764;&#xFE0F; Heart</option>
+                                <option value="star" data-i18n="generated.6413129ab88a">&#x2B50; Star</option>
+                                <option value="ring" data-i18n="generated.acb359f08763">&#x25EF; Ring</option>
+                                <option value="spiral" data-i18n="generated.3e799a5ea204">&#x1F300; Spiral</option>
+                                <option value="paws" data-i18n="generated.4fde8792014d">&#x1F43E; Paws</option>
                             </select>
                         </div>
 
                         <div>
-                            <label class="block mb-2 text-sm font-semibold">Visual style</label>
+                            <label class="block mb-2 text-sm font-semibold" data-i18n="generated.fa1f56dfb53f">Visual style</label>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="visual-style-options">
                                 <button type="button" class="visual-style-card rounded-lg p-3 text-left active" data-visual-style="premium-hybrid">
-                                    <strong class="block text-cyan-200">Premium Hybrid</strong>
-                                    <span class="block text-xs text-gray-400 mt-1">Realistic launch and sparks with crisp, readable shapes.</span>
+                                    <strong class="block text-cyan-200" data-i18n="generated.aa67b069f12e">Premium Hybrid</strong>
+                                    <span class="block text-xs text-gray-400 mt-1" data-i18n="generated.13e37cd79013">Realistic launch and sparks with crisp, readable shapes.</span>
                                 </button>
                                 <button type="button" class="visual-style-card rounded-lg p-3 text-left" data-visual-style="realistic">
                                     <strong class="block text-orange-200">Realistic</strong>
-                                    <span class="block text-xs text-gray-400 mt-1">Longer trails, ember glow and subtle transparent smoke.</span>
+                                    <span class="block text-xs text-gray-400 mt-1" data-i18n="generated.24b4a5e149ea">Longer trails, ember glow and subtle transparent smoke.</span>
                                 </button>
                                 <button type="button" class="visual-style-card rounded-lg p-3 text-left" data-visual-style="stylized-neon">
-                                    <strong class="block text-fuchsia-200">Stylized Neon</strong>
-                                    <span class="block text-xs text-gray-400 mt-1">Large symbols, bold edges and stronger neon bloom.</span>
+                                    <strong class="block text-fuchsia-200" data-i18n="generated.01a878872ee0">Stylized Neon</strong>
+                                    <span class="block text-xs text-gray-400 mt-1" data-i18n="generated.a913de7fb9f8">Large symbols, bold edges and stronger neon bloom.</span>
                                 </button>
                             </div>
                         </div>
@@ -999,8 +1026,8 @@
 
                         <div class="border border-white/10 rounded-lg p-4 mt-4 space-y-3">
                             <div>
-                                <strong class="block">Gift style override</strong>
-                                <span class="text-xs text-gray-400">Override shape and visual style for one TikTok gift ID.</span>
+                                <strong class="block" data-i18n="generated.c5f0a4dd999f">Gift style override</strong>
+                                <span class="text-xs text-gray-400" data-i18n="generated.6a5b8351480d">Override shape and visual style for one TikTok gift ID.</span>
                             </div>
                             <input id="gift-style-id" type="text" maxlength="80" placeholder="Gift ID" class="w-full bg-black/30 rounded-lg px-3 py-2">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -1009,13 +1036,13 @@
                                     <option value="ring">Ring</option><option value="spiral">Spiral</option><option value="paws">Paws</option>
                                 </select>
                                 <select id="gift-style-override" class="w-full bg-black/30 rounded-lg px-3 py-2">
-                                    <option value="">Use global style</option>
-                                    <option value="premium-hybrid">Premium Hybrid</option>
+                                    <option value="" data-i18n="generated.bdae45dcdd19">Use global style</option>
+                                    <option value="premium-hybrid" data-i18n="generated.ee10b80f47a1">Premium Hybrid</option>
                                     <option value="realistic">Realistic</option>
-                                    <option value="stylized-neon">Stylized Neon</option>
+                                    <option value="stylized-neon" data-i18n="generated.327b3a7b48ae">Stylized Neon</option>
                                 </select>
                             </div>
-                            <button id="save-gift-style" type="button" class="btn-primary w-full py-2 rounded-lg font-bold">Save gift override</button>
+                            <button id="save-gift-style" type="button" class="btn-primary w-full py-2 rounded-lg font-bold" data-i18n="generated.2b2632aa234b">Save gift override</button>
                             <div id="gift-style-list" class="space-y-2 text-sm"></div>
                         </div>
                     </div>
@@ -1043,7 +1070,7 @@
                                 <input id="color-hex" type="text" value="#ff4444" maxlength="7" aria-label="Theme color hex value" class="bg-gray-700 rounded px-2 py-1 w-24 font-mono text-sm uppercase">
                                 <button id="add-color" class="color-swatch bg-gray-700 flex items-center justify-center text-xl" type="button">+</button>
                             </div>
-                            <p class="text-xs text-gray-400 mt-2">Choosing or entering a color adds it, activates Theme Colors, saves it and sends a silent preview. Click a chip to remove it; drag chips to reorder them.</p>
+                            <p class="text-xs text-gray-400 mt-2" data-i18n="generated.7c4bcba572aa">Choosing or entering a color adds it, activates Theme Colors, saves it and sends a silent preview. Click a chip to remove it; drag chips to reorder them.</p>
                             <p id="color-palette-status" class="text-xs text-cyan-300 mt-1" aria-live="polite"></p>
                         </div>
                     </div>
@@ -1097,16 +1124,16 @@
                             <div id="toaster-toggle" class="toggle-switch" data-config="toasterMode"></div>
                         </div>
 
-                        <p class="text-sm text-gray-400">Keeps WebGPU active while reducing render scale, trails, bloom and turbulence.</p>
+                        <p class="text-sm text-gray-400" data-i18n="generated.1c31a273f2a9">Keeps WebGPU active while reducing render scale, trails, bloom and turbulence.</p>
 
                         <div class="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
                             <strong class="text-orange-400" data-i18n="webgpu_fireworks.toaster_mode.changes_title">What changes:</strong>
                             <div class="mt-2 space-y-1 text-sm">
-                                <div>- <span class="text-gray-300">Renderer: WebGPU compute + WebGPU render</span></div>
-                                <div>- <span class="text-gray-300">Trails: 3 GPU history samples</span></div>
-                                <div>- <span class="text-gray-300">Bloom: Disabled</span></div>
-                                <div>- <span class="text-gray-300">Internal render scale: 65%</span></div>
-                                <div>- <span class="text-gray-300">Shape and palette contracts remain unchanged</span></div>
+                                <div>- <span class="text-gray-300" data-i18n="generated.63f517074e9b">Renderer: WebGPU compute + WebGPU render</span></div>
+                                <div>- <span class="text-gray-300" data-i18n="generated.1f9e5fa945b6">Trails: 3 GPU history samples</span></div>
+                                <div>- <span class="text-gray-300" data-i18n="generated.2bcc70d39848">Bloom: Disabled</span></div>
+                                <div>- <span class="text-gray-300" data-i18n="generated.d2fd7e04c899">Internal render scale: 65%</span></div>
+                                <div>- <span class="text-gray-300" data-i18n="generated.39e63b4c2539">Shape and palette contracts remain unchanged</span></div>
                             </div>
                         </div>
 
@@ -1125,62 +1152,62 @@
 
                     <div class="space-y-4">
                         <div>
-                            <label class="block mb-2"><strong>OBS Overlay Resolution</strong></label>
+                            <label class="block mb-2"><strong data-i18n="generated.c20611e4cdb0">OBS Overlay Resolution</strong></label>
                             <select id="resolution-preset" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="resolutionPreset">
-                                <option value="360p">360p (640x360) - Minimum</option>
-                                <option value="540p">540p (960x540) - Low</option>
-                                <option value="720p">720p (1280x720) - Medium</option>
-                                <option value="1080p" selected>1080p (1920x1080) - High (Default)</option>
-                                <option value="1440p">1440p (2560x1440) - Very High</option>
-                                <option value="4k">4K (3840x2160) - Ultra</option>
+                                <option value="360p" data-i18n="generated.dfaa505a7b97">360p (640x360) - Minimum</option>
+                                <option value="540p" data-i18n="generated.db5f27b5b016">540p (960x540) - Low</option>
+                                <option value="720p" data-i18n="generated.cdba1494803e">720p (1280x720) - Medium</option>
+                                <option value="1080p" selected data-i18n="generated.143ff1bf362f">1080p (1920x1080) - High (Default)</option>
+                                <option value="1440p" data-i18n="generated.9e14d7d00e6c">1440p (2560x1440) - Very High</option>
+                                <option value="4k" data-i18n="generated.237da1ff8dc5">4K (3840x2160) - Ultra</option>
                             </select>
-                            <p class="text-xs text-gray-400 mt-1">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.241ef6f1cf0a">
                                 Standard OBS Browser Source size. Recommended: 1080p (1920x1080).
                             </p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block mb-2"><strong>Highest Internal Render Resolution</strong></label>
+                                <label class="block mb-2"><strong data-i18n="generated.2e2cc866462f">Highest Internal Render Resolution</strong></label>
                                 <select id="internal-max-resolution" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="internalMaxResolutionPreset">
-                                    <option value="480p">480p (854x480)</option>
-                                    <option value="540p">540p (960x540)</option>
-                                    <option value="720p">720p (1280x720)</option>
-                                    <option value="1080p">1080p (1920x1080)</option>
-                                    <option value="1440p">1440p (2560x1440)</option>
-                                    <option value="4k" selected>4K (3840x2160) - Recommended</option>
+                                    <option value="480p" data-i18n="generated.0c1528a2dd39">480p (854x480)</option>
+                                    <option value="540p" data-i18n="generated.72d71172a118">540p (960x540)</option>
+                                    <option value="720p" data-i18n="generated.0b04cc95e4be">720p (1280x720)</option>
+                                    <option value="1080p" data-i18n="generated.21f59962a43d">1080p (1920x1080)</option>
+                                    <option value="1440p" data-i18n="generated.7e3e566a629e">1440p (2560x1440)</option>
+                                    <option value="4k" selected data-i18n="generated.35028a703162">4K (3840x2160) - Recommended</option>
                                 </select>
                             </div>
 
                             <div>
-                                <label class="block mb-2"><strong>Lowest Internal Render Resolution</strong></label>
+                                <label class="block mb-2"><strong data-i18n="generated.a5bd1771e358">Lowest Internal Render Resolution</strong></label>
                                 <select id="internal-min-resolution" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="internalMinResolutionPreset">
-                                    <option value="480p">480p (854x480)</option>
-                                    <option value="540p" selected>540p (960x540) - Recommended</option>
-                                    <option value="720p">720p (1280x720)</option>
-                                    <option value="1080p">1080p (1920x1080)</option>
-                                    <option value="1440p">1440p (2560x1440)</option>
-                                    <option value="4k">4K (3840x2160)</option>
+                                    <option value="480p" data-i18n="generated.0ec5f20c4de9">480p (854x480)</option>
+                                    <option value="540p" selected data-i18n="generated.51f20fe773dd">540p (960x540) - Recommended</option>
+                                    <option value="720p" data-i18n="generated.e6c00cde213e">720p (1280x720)</option>
+                                    <option value="1080p" data-i18n="generated.214a2bce4c46">1080p (1920x1080)</option>
+                                    <option value="1440p" data-i18n="generated.3f0df035ba27">1440p (2560x1440)</option>
+                                    <option value="4k" data-i18n="generated.110cf9c633d5">4K (3840x2160)</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-4">
-                            <strong class="text-emerald-400">OBS-safe Dynamic Resolution:</strong>
+                            <strong class="text-emerald-400" data-i18n="generated.fefc6558a058">OBS-safe Dynamic Resolution:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300" id="internal-resolution-info">
-                                <div>- OBS Source: <span id="obs-source-resolution">1920x1080</span></div>
-                                <div>- Internal range: <span id="internal-resolution-range">3840x2160 -> 960x540</span></div>
-                                <div>- Scaling changes only the canvas bitmap, not the OBS Browser Source size.</div>
+                                <div><span data-i18n="generated.a2f6b0755d00">- OBS Source: </span><span id="obs-source-resolution">1920x1080</span></div>
+                                <div><span data-i18n="generated.4e73973e2018">- Internal range: </span><span id="internal-resolution-range" data-i18n="generated.03131a4eb5b9">3840x2160 -> 960x540</span></div>
+                                <div data-i18n="generated.f349294f7f99">- Scaling changes only the canvas bitmap, not the OBS Browser Source size.</div>
                             </div>
                         </div>
 
                         <div>
                             <label class="block mb-2"><strong data-i18n="webgpu_fireworks.orientation">Orientation</strong></label>
                             <select id="orientation-select" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="orientation">
-                                <option value="landscape">Landscape (16:9)</option>
-                                <option value="portrait">Portrait (9:16)</option>
+                                <option value="landscape" data-i18n="generated.c600788835a9">Landscape (16:9)</option>
+                                <option value="portrait" data-i18n="generated.d833e0fc10a6">Portrait (9:16)</option>
                             </select>
-                            <p class="text-xs text-gray-400 mt-1">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.d90abe0e0db2">
                                 Choose the output format for the OBS overlay
                             </p>
                         </div>
@@ -1188,9 +1215,9 @@
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
                             <strong class="text-blue-400" data-i18n="webgpu_fireworks.toaster_mode.tip_title">Tip:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300" id="resolution-info">
-                                <div>- Current: <span id="current-resolution">1920x1080</span></div>
-                                <div>- Orientation: <span id="current-orientation">Landscape</span></div>
-                                <div>- Performance Impact: <span id="performance-impact">High</span></div>
+                                <div><span data-i18n="generated.f2f8e9f1ad2d">- Current: </span><span id="current-resolution">1920x1080</span></div>
+                                <div><span data-i18n="generated.5f44ae9ddb5d">- Orientation: </span><span id="current-orientation">Landscape</span></div>
+                                <div><span data-i18n="generated.bb1a2513465c">- Performance Impact: </span><span id="performance-impact">High</span></div>
                             </div>
                         </div>
 
@@ -1198,37 +1225,37 @@
                             <label class="block mb-2"><strong data-i18n="webgpu_fireworks.target_fps">Target FPS</strong></label>
                             <input type="range" id="target-fps" min="24" max="60" step="6" value="60" class="w-full" data-config="targetFps">
                             <div class="flex justify-between text-sm text-gray-400">
-                                <span>24 FPS</span>
-                                <span id="target-fps-value">60 FPS</span>
-                                <span>60 FPS</span>
+                                <span data-i18n="generated.c533ffacad4c">24 FPS</span>
+                                <span id="target-fps-value" data-i18n="generated.a30289f34037">60 FPS</span>
+                                <span data-i18n="generated.10a672a5e287">60 FPS</span>
                             </div>
-                            <p class="text-xs text-gray-400 mt-1">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.335447d250bd">
                                 User-selectable target FPS - system will auto-adjust quality to maintain this
                             </p>
                         </div>
 
                         <div>
-                            <label class="block mb-2"><strong>Minimum FPS (Adaptive Performance)</strong></label>
+                            <label class="block mb-2"><strong data-i18n="generated.b5f704322236">Minimum FPS (Adaptive Performance)</strong></label>
                             <input type="range" id="min-fps" min="15" max="45" step="3" value="24" class="w-full" data-config="minFps">
                             <div class="flex justify-between text-sm text-gray-400">
-                                <span>15 FPS</span>
-                                <span id="min-fps-value">24 FPS</span>
-                                <span>45 FPS</span>
+                                <span data-i18n="generated.fb92c55e8063">15 FPS</span>
+                                <span id="min-fps-value" data-i18n="generated.4c96f1aadd22">24 FPS</span>
+                                <span data-i18n="generated.2d7279c49f7e">45 FPS</span>
                             </div>
-                            <p class="text-xs text-gray-400 mt-1">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.8fb9c6d18b0d">
                                 Below this FPS, system enters minimal quality mode (can go down to 24 FPS)
                             </p>
                         </div>
 
                         <div>
-                            <label class="block mb-2"><strong>Despawn Fade Duration</strong></label>
+                            <label class="block mb-2"><strong data-i18n="generated.5bfac0b23c52">Despawn Fade Duration</strong></label>
                             <input type="range" id="despawn-fade" min="1.0" max="5.0" step="0.5" value="3.0" class="w-full" data-config="despawnFadeDuration">
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>1.0s</span>
                                 <span id="despawn-fade-value">3.0s</span>
                                 <span>5.0s</span>
                             </div>
-                            <p class="text-xs text-gray-400 mt-1">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.e856bc295a1b">
                                 How long overloaded rockets and particles fade out under pressure (longer looks smoother)
                             </p>
                         </div>
@@ -1236,10 +1263,10 @@
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
                             <strong class="text-blue-400" data-i18n="webgpu_fireworks.toaster_mode.tip_title">Tip:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300">
-                                <div>- Combo 5+: Rockets skipped, instant explosions</div>
-                                <div>- Combo 8+: Instant bursts, no rocket animation</div>
-                                <div>- Combo 10+: 50% fewer particles</div>
-                                <div>- Auto-throttling prevents system overload</div>
+                                <div data-i18n="generated.c5348ef4dc74">- Combo 5+: Rockets skipped, instant explosions</div>
+                                <div data-i18n="generated.4484f5d27c96">- Combo 8+: Instant bursts, no rocket animation</div>
+                                <div data-i18n="generated.cb7a5918e531">- Combo 10+: 50% fewer particles</div>
+                                <div data-i18n="generated.5d22aae89621">- Auto-throttling prevents system overload</div>
                             </div>
                         </div>
                     </div>
@@ -1247,7 +1274,7 @@
 
                 <!-- Queue System (Lag Prevention) -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4">&#x23F3; Queue System (Lag Prevention)</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="generated.12b5a5a4c650">&#x23F3; Queue System (Lag Prevention)</h2>
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
@@ -1255,31 +1282,31 @@
                             <div id="queue-enabled-toggle" class="toggle-switch" data-config="queueEnabled"></div>
                         </div>
 
-                        <p class="text-sm text-gray-400">
+                        <p class="text-sm text-gray-400" data-i18n="generated.42eaecbe2bd2">
                             Limit the number of fireworks per second to prevent lag during gift spam.
                             When enabled, excessive fireworks are skipped to maintain smooth performance.
                         </p>
 
                         <div>
-                            <label class="block mb-2"><strong>Max Rockets Per Second</strong></label>
+                            <label class="block mb-2"><strong data-i18n="generated.cb32366d6e02">Max Rockets Per Second</strong></label>
                             <input type="range" id="max-rockets-per-second" min="1" max="20" step="1" value="5" class="w-full" data-config="maxRocketsPerSecond">
                             <div class="flex justify-between text-sm text-gray-400">
-                                <span>1/s (Strict)</span>
+                                <span data-i18n="generated.dcdbebbb2b7c">1/s (Strict)</span>
                                 <span id="max-rockets-value">5/s</span>
-                                <span>20/s (Relaxed)</span>
+                                <span data-i18n="generated.de17bc3a0f8d">20/s (Relaxed)</span>
                             </div>
-                            <p class="text-xs text-gray-400 mt-1">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.ce1c82476489">
                                 Lower values prevent more lag but skip more fireworks during spam
                             </p>
                         </div>
 
                         <div class="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
-                            <strong class="text-yellow-400">&#x2139; Note:</strong>
+                            <strong class="text-yellow-400" data-i18n="generated.40b4921e58fa">&#x2139; Note:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300">
-                                <div>- When rate limit is reached, additional fireworks are skipped (not queued for later)</div>
-                                <div>- Recommended: 5-10 rockets/sec for balanced performance</div>
-                                <div>- Lower settings help prevent stuttering during extreme gift spam</div>
-                                <div>- Disable this feature if you prefer to see every firework regardless of performance</div>
+                                <div data-i18n="generated.55d218e282fd">- When rate limit is reached, additional fireworks are skipped (not queued for later)</div>
+                                <div data-i18n="generated.a11c16ff6bf9">- Recommended: 5-10 rockets/sec for balanced performance</div>
+                                <div data-i18n="generated.a1bd0c914941">- Lower settings help prevent stuttering during extreme gift spam</div>
+                                <div data-i18n="generated.e57456073d2b">- Disable this feature if you prefer to see every firework regardless of performance</div>
                             </div>
                         </div>
                     </div>
@@ -1380,7 +1407,7 @@
                             </p>
                         </div>
 
-                        <button id="test-avatar-btn" class="w-full btn-primary py-3 rounded-lg font-bold">
+                        <button id="test-avatar-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="generated.0c88643b1827">
                             &#x1F464; Test Avatar Firework
                         </button>
                     </div>
@@ -1388,38 +1415,38 @@
 
                 <!-- Gift Animation Text Position -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4">&#x1F4AC; Gift Animation Text</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="generated.d9181653da44">&#x1F4AC; Gift Animation Text</h2>
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label><strong>Show Gift Text</strong></label>
+                            <label><strong data-i18n="generated.b1ef0edeb7a0">Show Gift Text</strong></label>
                             <div id="gift-popup-enabled-toggle" class="toggle-switch active" data-config="giftPopupEnabled"></div>
                         </div>
 
-                        <p class="text-sm text-gray-400">
+                        <p class="text-sm text-gray-400" data-i18n="generated.de2fadfd711d">
                             Enable or disable the gift animation text that shows gifter name and coins
                         </p>
 
                         <div>
-                            <label class="block mb-2"><strong>Gift Text Position</strong></label>
+                            <label class="block mb-2"><strong data-i18n="generated.1bd81519e0c0">Gift Text Position</strong></label>
                             <select id="gift-popup-position" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="giftPopupPosition">
-                                <option value="top">Top - Centered at top of screen</option>
-                                <option value="middle">Middle - Centered in middle of screen</option>
-                                <option value="bottom">Bottom - At rocket launch position (default)</option>
-                                <option value="none">None - Hide completely</option>
+                                <option value="top" data-i18n="generated.2a28af6c087c">Top - Centered at top of screen</option>
+                                <option value="middle" data-i18n="generated.f6f1913ff886">Middle - Centered in middle of screen</option>
+                                <option value="bottom" data-i18n="generated.c79d15184aa9">Bottom - At rocket launch position (default)</option>
+                                <option value="none" data-i18n="generated.37b96da6a61d">None - Hide completely</option>
                             </select>
-                            <p class="text-xs text-gray-400 mt-1">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.6bc734ebf6b5">
                                 Choose where the gift animation text appears during fireworks
                             </p>
                         </div>
 
                         <div class="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-                            <strong class="text-green-400">&#x1F50D; Preview:</strong>
+                            <strong class="text-green-400" data-i18n="generated.6888f32b8277">&#x1F50D; Preview:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300">
-                                <div>- <strong>Top:</strong> Text appears at top-center of screen</div>
-                                <div>- <strong>Middle:</strong> Text appears in center of screen</div>
-                                <div>- <strong>Bottom:</strong> Text appears at firework launch position</div>
-                                <div>- <strong>None:</strong> No text is shown</div>
+                                <div>- <strong>Top:</strong><span data-i18n="generated.fa98082c0ac5"> Text appears at top-center of screen</span></div>
+                                <div>- <strong>Middle:</strong><span data-i18n="generated.4188587897d2"> Text appears in center of screen</span></div>
+                                <div>- <strong>Bottom:</strong><span data-i18n="generated.10fc7af66ed6"> Text appears at firework launch position</span></div>
+                                <div>- <strong>None:</strong><span data-i18n="generated.c0771edaa2f4"> No text is shown</span></div>
                             </div>
                         </div>
                     </div>
@@ -1453,16 +1480,16 @@
 
                 <!-- Follower Fireworks -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4">&#x1F465; Follower Feuerwerk</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="generated.db6bba5f0bb7">&#x1F465; Follower Feuerwerk</h2>
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label>Enable Follower Fireworks</label>
+                            <label data-i18n="generated.c7ee1559d8a6">Enable Follower Fireworks</label>
                             <div id="follower-toggle" class="toggle-switch" data-config="followerFireworksEnabled"></div>
                         </div>
 
                         <div>
-                            <label class="block mb-2">Number of Rockets per Follow</label>
+                            <label class="block mb-2" data-i18n="generated.7223c99d9831">Number of Rockets per Follow</label>
                             <input type="range" id="follower-rocket-count" min="1" max="10" step="1" value="3" class="w-full">
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>1</span>
@@ -1472,17 +1499,17 @@
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <label>Show Thank You Animation</label>
+                            <label data-i18n="generated.e39dbe203fb0">Show Thank You Animation</label>
                             <div id="follower-animation-toggle" class="toggle-switch active" data-config="followerShowAnimation"></div>
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <label>Show Profile Picture</label>
+                            <label data-i18n="generated.09d7a96ca18e">Show Profile Picture</label>
                             <div id="follower-profile-toggle" class="toggle-switch active" data-config="followerShowProfilePicture"></div>
                         </div>
 
                         <div>
-                            <label class="block mb-2">Animation Duration (seconds)</label>
+                            <label class="block mb-2" data-i18n="generated.aa4c0e44416b">Animation Duration (seconds)</label>
                             <input type="range" id="follower-animation-duration" min="1" max="10" step="0.5" value="3" class="w-full">
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>1s</span>
@@ -1492,7 +1519,7 @@
                         </div>
 
                         <div>
-                            <label class="block mb-2">Animation Delay (seconds)</label>
+                            <label class="block mb-2" data-i18n="generated.bb8d8b2a0508">Animation Delay (seconds)</label>
                             <input type="range" id="follower-animation-delay" min="0" max="10" step="0.5" value="3" class="w-full">
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>0s</span>
@@ -1502,42 +1529,42 @@
                         </div>
 
                         <div>
-                            <label class="block mb-2">Animation Position</label>
+                            <label class="block mb-2" data-i18n="generated.93aa5e35e550">Animation Position</label>
                             <select id="follower-animation-position" class="w-full bg-gray-700 text-white p-2 rounded-lg">
-                                <option value="top-left">Top Left</option>
-                                <option value="top-center">Top Center</option>
-                                <option value="top-right">Top Right</option>
+                                <option value="top-left" data-i18n="generated.02c785b8fef3">Top Left</option>
+                                <option value="top-center" data-i18n="generated.62133cdbe6a3">Top Center</option>
+                                <option value="top-right" data-i18n="generated.495cc858af3c">Top Right</option>
                                 <option value="center" selected>Center</option>
-                                <option value="bottom-left">Bottom Left</option>
-                                <option value="bottom-center">Bottom Center</option>
-                                <option value="bottom-right">Bottom Right</option>
+                                <option value="bottom-left" data-i18n="generated.29999084b9e3">Bottom Left</option>
+                                <option value="bottom-center" data-i18n="generated.68308330b949">Bottom Center</option>
+                                <option value="bottom-right" data-i18n="generated.6bf4db536d89">Bottom Right</option>
                             </select>
                         </div>
 
                         <div>
-                            <label class="block mb-2">Animation Style</label>
+                            <label class="block mb-2" data-i18n="generated.d45d9e87751d">Animation Style</label>
                             <select id="follower-animation-style" class="w-full bg-gray-700 text-white p-2 rounded-lg">
-                                <option value="gradient-purple" selected>Gradient Purple (Default)</option>
-                                <option value="gradient-blue">Gradient Blue</option>
-                                <option value="gradient-gold">Gradient Gold</option>
-                                <option value="gradient-rainbow">Gradient Rainbow</option>
+                                <option value="gradient-purple" selected data-i18n="generated.f16c3ac2407c">Gradient Purple (Default)</option>
+                                <option value="gradient-blue" data-i18n="generated.a9df6480a514">Gradient Blue</option>
+                                <option value="gradient-gold" data-i18n="generated.ecf9dde90f79">Gradient Gold</option>
+                                <option value="gradient-rainbow" data-i18n="generated.4e45cdde9e55">Gradient Rainbow</option>
                                 <option value="neon">Neon</option>
                                 <option value="minimal">Minimal</option>
                             </select>
                         </div>
 
                         <div>
-                            <label class="block mb-2">Animation Size</label>
+                            <label class="block mb-2" data-i18n="generated.56c6e1f51a7e">Animation Size</label>
                             <select id="follower-animation-size" class="w-full bg-gray-700 text-white p-2 rounded-lg">
                                 <option value="small" data-i18n="webgpu_fireworks.small">Small</option>
-                                <option value="medium" selected>Medium (Default)</option>
+                                <option value="medium" selected data-i18n="generated.f9919b478a84">Medium (Default)</option>
                                 <option value="large">Large</option>
                                 <option value="custom">Custom</option>
                             </select>
                         </div>
 
                         <div id="follower-animation-scale-container" style="display: none;">
-                            <label class="block mb-2">Custom Scale Factor</label>
+                            <label class="block mb-2" data-i18n="generated.a085d10ca0bb">Custom Scale Factor</label>
                             <input type="range" id="follower-animation-scale" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full">
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>0.5x</span>
@@ -1547,20 +1574,20 @@
                         </div>
 
                         <div>
-                            <label class="block mb-2">Entrance Animation</label>
+                            <label class="block mb-2" data-i18n="generated.055b38a3f84a">Entrance Animation</label>
                             <select id="follower-animation-entrance" class="w-full bg-gray-700 text-white p-2 rounded-lg">
-                                <option value="scale" selected>Scale (Default)</option>
-                                <option value="fade">Fade In</option>
-                                <option value="slide-up">Slide Up</option>
-                                <option value="slide-down">Slide Down</option>
-                                <option value="slide-left">Slide Left</option>
-                                <option value="slide-right">Slide Right</option>
+                                <option value="scale" selected data-i18n="generated.0e44ca9396be">Scale (Default)</option>
+                                <option value="fade" data-i18n="generated.72fb0b82ed81">Fade In</option>
+                                <option value="slide-up" data-i18n="generated.d0beb7d20695">Slide Up</option>
+                                <option value="slide-down" data-i18n="generated.fa3f5ac13dde">Slide Down</option>
+                                <option value="slide-left" data-i18n="generated.5a9230aff712">Slide Left</option>
+                                <option value="slide-right" data-i18n="generated.3edc149bc5ae">Slide Right</option>
                                 <option value="bounce">Bounce</option>
                                 <option value="rotate">Rotate</option>
                             </select>
                         </div>
 
-                        <button id="test-follower-btn" class="w-full btn-success py-3 rounded-lg font-bold">
+                        <button id="test-follower-btn" class="w-full btn-success py-3 rounded-lg font-bold" data-i18n="generated.041f0f977ba0">
                             &#x1F465; Test Follower Fireworks
                         </button>
                     </div>
@@ -1601,11 +1628,11 @@
                             <span class="text-xs bg-purple-500/20 px-2 py-1 rounded">4K</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div>Resolution: 4K (3840x2160)</div>
-                            <div>Max Particles: 3000</div>
-                            <div>Target FPS: 60</div>
-                            <div>Effects: All Enabled</div>
-                            <div>GPU: WebGPU Compute + HDR</div>
+                            <div data-i18n="generated.ace8ba073e86">Resolution: 4K (3840x2160)</div>
+                            <div data-i18n="generated.450087e3e20f">Max Particles: 3000</div>
+                            <div data-i18n="generated.ed8d328e6ce3">Target FPS: 60</div>
+                            <div data-i18n="generated.dadf6f96be99">Effects: All Enabled</div>
+                            <div data-i18n="generated.e50e8818f505">GPU: WebGPU Compute + HDR</div>
                         </div>
                         <button class="w-full mt-4 bg-purple-500 hover:bg-purple-600 py-2 rounded-lg font-bold transition" data-i18n="webgpu_fireworks.presets.apply">
                             Anwenden
@@ -1619,11 +1646,11 @@
                             <span class="text-xs bg-blue-500/20 px-2 py-1 rounded">1440p</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div>- Resolution: 1440p (2560x1440)</div>
-                            <div>- Max Particles: 2000</div>
-                            <div>- Target FPS: 60</div>
-                            <div>- Effects: All Enabled</div>
-                            <div>- GPU: WebGPU Compute + HDR</div>
+                            <div data-i18n="generated.ec460fb799dd">- Resolution: 1440p (2560x1440)</div>
+                            <div data-i18n="generated.9c37fc28eded">- Max Particles: 2000</div>
+                            <div data-i18n="generated.4400082924fc">- Target FPS: 60</div>
+                            <div data-i18n="generated.1fc7a85f532e">- Effects: All Enabled</div>
+                            <div data-i18n="generated.b52c0edb7d0d">- GPU: WebGPU Compute + HDR</div>
                         </div>
                         <button class="w-full mt-4 bg-blue-500 hover:bg-blue-600 py-2 rounded-lg font-bold transition" data-i18n="webgpu_fireworks.presets.apply">
                             Anwenden
@@ -1637,11 +1664,11 @@
                             <span class="text-xs bg-green-500/20 px-2 py-1 rounded">Empfohlen</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div>- Resolution: 1080p (1920x1080)</div>
-                            <div>- Max Particles: 1500</div>
-                            <div>- Target FPS: 60</div>
-                            <div>- Effects: All Enabled</div>
-                            <div>- GPU: WebGPU Compute + HDR</div>
+                            <div data-i18n="generated.5eae497358cf">- Resolution: 1080p (1920x1080)</div>
+                            <div data-i18n="generated.58372094239b">- Max Particles: 1500</div>
+                            <div data-i18n="generated.20847200f740">- Target FPS: 60</div>
+                            <div data-i18n="generated.20bd496dac96">- Effects: All Enabled</div>
+                            <div data-i18n="generated.c2b8162fe10b">- GPU: WebGPU Compute + HDR</div>
                         </div>
                         <button class="w-full mt-4 bg-green-500 hover:bg-green-600 py-2 rounded-lg font-bold transition" data-i18n="webgpu_fireworks.presets.apply">
                             Anwenden
@@ -1655,11 +1682,11 @@
                             <span class="text-xs bg-yellow-500/20 px-2 py-1 rounded">720p</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div>- Resolution: 720p (1280x720)</div>
-                            <div>- Max Particles: 1000</div>
-                            <div>- Target FPS: 48</div>
-                            <div>- Effects: Reduced</div>
-                            <div>- GPU: WebGPU Compute + HDR</div>
+                            <div data-i18n="generated.6bb2da45ca59">- Resolution: 720p (1280x720)</div>
+                            <div data-i18n="generated.e1cb2e8d0e6b">- Max Particles: 1000</div>
+                            <div data-i18n="generated.48174616a8e5">- Target FPS: 48</div>
+                            <div data-i18n="generated.ab83db4acff1">- Effects: Reduced</div>
+                            <div data-i18n="generated.2e44f36e85f5">- GPU: WebGPU Compute + HDR</div>
                         </div>
                         <button class="w-full mt-4 bg-yellow-500 hover:bg-yellow-600 py-2 rounded-lg font-bold transition" data-i18n="webgpu_fireworks.presets.apply">
                             Anwenden
@@ -1673,11 +1700,11 @@
                             <span class="text-xs bg-orange-500/20 px-2 py-1 rounded">540p</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div>- Resolution: 540p (960x540)</div>
-                            <div>- Max Particles: 500</div>
-                            <div>- Target FPS: 30</div>
-                            <div>- Effects: Minimal</div>
-                            <div>- GPU: WebGPU reduced quality</div>
+                            <div data-i18n="generated.3c5516a084c5">- Resolution: 540p (960x540)</div>
+                            <div data-i18n="generated.173b0c0a9935">- Max Particles: 500</div>
+                            <div data-i18n="generated.24dae47e453a">- Target FPS: 30</div>
+                            <div data-i18n="generated.5ef17c3d68b3">- Effects: Minimal</div>
+                            <div data-i18n="generated.15fd7630647d">- GPU: WebGPU reduced quality</div>
                         </div>
                         <button class="w-full mt-4 bg-orange-500 hover:bg-orange-600 py-2 rounded-lg font-bold transition" data-i18n="webgpu_fireworks.presets.apply">
                             Anwenden
@@ -1691,11 +1718,11 @@
                             <span class="text-xs bg-red-500/20 px-2 py-1 rounded">360p</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div>- Resolution: 360p (640x360)</div>
-                            <div>- Max Particles: 300</div>
-                            <div>- Target FPS: 24</div>
-                            <div>- Effects: Minimal</div>
-                            <div>- GPU: WebGPU minimum quality</div>
+                            <div data-i18n="generated.73c0e17defae">- Resolution: 360p (640x360)</div>
+                            <div data-i18n="generated.e96d9ba674ab">- Max Particles: 300</div>
+                            <div data-i18n="generated.41dc621e405e">- Target FPS: 24</div>
+                            <div data-i18n="generated.8810ebb1ead7">- Effects: Minimal</div>
+                            <div data-i18n="generated.d21771f49c19">- GPU: WebGPU minimum quality</div>
                         </div>
                         <button class="w-full mt-4 bg-red-500 hover:bg-red-600 py-2 rounded-lg font-bold transition" data-i18n="webgpu_fireworks.presets.apply">
                             Anwenden
@@ -1752,8 +1779,8 @@
                             <div id="benchmark-progress-bar" class="bg-blue-500 h-2 rounded-full transition-all" style="width: 0%"></div>
                         </div>
                         <div class="text-xs text-gray-400 text-center">
-                            <span id="benchmark-step">0</span> / <span id="benchmark-total">6</span> Tests abgeschlossen
-                        </div>
+                            <span id="benchmark-step">0</span> / <span id="benchmark-total">6</span><span data-i18n="generated.51a8544f018f"> Tests abgeschlossen
+                        </span></div>
                     </div>
                 </div>
 
@@ -1795,7 +1822,7 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/i18n-client.js"></script>
-    <script src="/plugins/webgpu-fireworks/ui/settings.js?v=2.1.1-color-picker-1"></script>
+    <script src="/plugins/webgpu-fireworks/ui/settings.js?v=2.2.1-avatar-head-1"></script>
 
 <style id="final-fireworks-night-card-contrast">
 html[data-theme="night"] .card {
