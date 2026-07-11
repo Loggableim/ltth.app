@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de" data-lang="de">
+<head data-i18n-title="webgpuLanding.title">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="OBS WebGPU für LTTH-Plugins" data-i18n="webgpuLanding.metaDescription" data-i18n-attr="content">
+  <title>OBS WebGPU für LTTH</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/site-v2.css">
+  <link rel="stylesheet" href="/css/obs-webgpu.css">
+</head>
+<body class="webgpu-page">
+  <div id="header-placeholder"></div>
+
+  <main id="main-content">
+    <section class="webgpu-hero" aria-labelledby="webgpu-title">
+      <div class="container webgpu-hero__grid">
+        <div>
+          <span class="webgpu-kicker" data-i18n="webgpuLanding.eyebrow">OBS + WebGPU</span>
+          <h1 id="webgpu-title" data-i18n="webgpuLanding.title">Mehr GPU. Mehr Live-Momente.</h1>
+          <p class="webgpu-hero__lead" data-i18n="webgpuLanding.subtitle">Nutze LTTH-Plugins mit WebGPU-Unterstützung in einer speziell abgestimmten OBS-Version von Loggableim.</p>
+          <div class="webgpu-actions">
+            <a class="webgpu-action webgpu-action--primary" href="https://github.com/Loggableim/obs-studio-webgpu/releases" target="_blank" rel="noopener noreferrer" data-i18n="webgpuLanding.primaryCta">OBS WebGPU herunterladen</a>
+            <a class="webgpu-action webgpu-action--secondary" href="/plugins.html" data-i18n="webgpuLanding.secondaryCta">Plugins ansehen</a>
+          </div>
+        </div>
+        <div class="webgpu-hero__visual" aria-label="OBS WebGPU preview" data-i18n-aria-label="webgpuLanding.badge">
+          <div class="webgpu-console" aria-hidden="true">
+            <div class="webgpu-console__bar"><span></span><span></span><span></span></div>
+            <div class="webgpu-console__title">LTTH / GPU OVERLAY PIPELINE</div>
+            <div class="webgpu-console__line"></div>
+            <div class="webgpu-console__line"></div>
+            <div class="webgpu-console__line"></div>
+            <div class="webgpu-console__stat"><span>WebGPU</span><strong>READY</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="webgpu-main">
+      <div class="container">
+        <div class="webgpu-section__intro">
+          <span class="webgpu-badge" data-i18n="webgpuLanding.badge">Offizielles OBS-WebGPU-Build</span>
+          <h2 data-i18n="webgpuLanding.sectionTitle">Für GPU-Plugins gemacht</h2>
+          <p data-i18n="webgpuLanding.sectionText">WebGPU-Plugins entlasten die CPU und bringen flüssige Partikel, Effekte und Overlays direkt in deine Szene.</p>
+        </div>
+        <div class="webgpu-section__grid">
+          <article class="webgpu-card"><div class="webgpu-card__icon" aria-hidden="true">01</div><h3 data-i18n="webgpuLanding.cardRuntimeTitle">Eigene OBS-Laufzeit</h3><p data-i18n="webgpuLanding.cardRuntimeText">Installiere das WebGPU-Build parallel zu deinem bestehenden OBS und wähle es gezielt für GPU-Overlays.</p></article>
+          <article class="webgpu-card"><div class="webgpu-card__icon" aria-hidden="true">02</div><h3 data-i18n="webgpuLanding.cardPerformanceTitle">Mehr Reserven für den Stream</h3><p data-i18n="webgpuLanding.cardPerformanceText">Instanziertes Rendering hält große Effektmengen flüssig, während dein Stream stabil bleibt.</p></article>
+          <article class="webgpu-card"><div class="webgpu-card__icon" aria-hidden="true">03</div><h3 data-i18n="webgpuLanding.cardReadyTitle">Bereit für LTTH</h3><p data-i18n="webgpuLanding.cardReadyText">WebGPU Emoji Rain, WebGPU Fireworks und weitere GPU-Effekte sind für diesen Workflow vorbereitet.</p></article>
+        </div>
+
+        <div class="webgpu-steps-wrap">
+          <h2 data-i18n="webgpuLanding.stepsTitle">In drei Schritten startklar</h2>
+          <div class="webgpu-steps">
+            <article class="webgpu-step"><span class="webgpu-step__number">01</span><h3 data-i18n="webgpuLanding.step1Title">OBS WebGPU installieren</h3><p data-i18n="webgpuLanding.step1Text">Lade den aktuellen Build aus dem offiziellen GitHub-Repository herunter.</p></article>
+            <article class="webgpu-step"><span class="webgpu-step__number">02</span><h3 data-i18n="webgpuLanding.step2Title">LTTH starten</h3><p data-i18n="webgpuLanding.step2Text">Starte LTTH und aktiviere die Plugins, die du im Live-Setup brauchst.</p></article>
+            <article class="webgpu-step"><span class="webgpu-step__number">03</span><h3 data-i18n="webgpuLanding.step3Title">Overlay in OBS einfügen</h3><p data-i18n="webgpuLanding.step3Text">Kopiere die Overlay-URL aus LTTH in deine WebGPU-OBS-Szene.</p></article>
+          </div>
+          <p class="webgpu-note" data-i18n="webgpuLanding.note">Hinweis: Das Build ist ein separates OBS-Programm und wird vom LTTH-Team des Repositories gepflegt.</p>
+        </div>
+
+        <section class="webgpu-final" aria-labelledby="webgpu-final-title">
+          <h2 id="webgpu-final-title" data-i18n="webgpuLanding.repoCta">Repository und Releases öffnen</h2>
+          <p data-i18n="webgpuLanding.note">Hinweis: Das Build ist ein separates OBS-Programm und wird vom LTTH-Team des Repositories gepflegt.</p>
+          <div class="webgpu-actions">
+            <a class="webgpu-action webgpu-action--primary" href="https://github.com/Loggableim/obs-studio-webgpu" target="_blank" rel="noopener noreferrer" data-i18n="webgpuLanding.repoCta">Repository und Releases öffnen</a>
+            <a class="webgpu-action webgpu-action--secondary" href="/plugins.html" data-i18n="webgpuLanding.pluginsCta">WebGPU-Plugins in LTTH</a>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="footer-placeholder"></div>
+  <script src="/js/main.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/layout.js?v=site-v2-20260710b"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.LTTHLayout) await LTTHLayout.init();
+      if (window.I18n) I18n.init(window.__ltthLang || 'de');
+    });
+  </script>
+</body>
+</html>

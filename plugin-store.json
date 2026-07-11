@@ -935,28 +935,58 @@
       ]
     },
     {
-      "id": "webgpu-emoji-rain",
+      "id": "emoji-rain",
       "name": {
-        "en": "Emoji Rain",
-        "de": "Emoji Regen",
-        "es": "Lluvia de emojis",
-        "fr": "Pluie d emojis"
+        "en": "EmojiRain",
+        "de": "EmojiRain",
+        "es": "EmojiRain",
+        "fr": "EmojiRain"
       },
       "description": {
-        "en": "GPU-accelerated emoji rain effect using WebGPU instanced rendering.",
-        "de": "GPU-beschleunigter Emoji-Regen-Effekt mit WebGPU Instanced Rendering.",
-        "es": "Efecto de lluvia de emojis acelerado por GPU usando renderizado instanciado WebGPU.",
-        "fr": "Effet de pluie d'émojis accéléré par GPU utilisant le rendu instancié WebGPU."
+        "en": "Compatible physics-based EmojiRain with Matter.js, custom assets, heart balloons, gift balls, presets, GCCE, Flow actions, and TikTok LIVE integration.",
+        "de": "Kompatibler physikbasierter EmojiRain mit Matter.js, eigenen Assets, Herzballons, Geschenkekugeln, Presets, GCCE, Flow Actions und TikTok-LIVE-Integration.",
+        "es": "EmojiRain compatible basado en física con Matter.js, recursos personalizados, globos de corazón, bolas de regalo, presets, GCCE, Flow Actions e integración con TikTok LIVE.",
+        "fr": "EmojiRain compatible basé sur Matter.js avec ressources personnalisées, ballons-cœurs, boules-cadeaux, préréglages, GCCE, Flow Actions et intégration TikTok LIVE."
       },
-      "version": "2.0.0",
+      "version": "2.1.0",
       "author": "Pup Cid",
       "category": "plugin",
       "channel": "open-beta",
       "badges": [
         "preinstalled"
       ],
-      "packageUrl": "https://ltth.app/plugin-store/packages/webgpu-emoji-rain-2.0.0.zip",
-      "sha256": "5032fcca008a3b158982b51f49a291524426cd88c8f15e4a558474500ff6de51",
+      "packageUrl": "https://ltth.app/plugin-store/packages/emoji-rain-2.1.0.zip",
+      "sha256": "206f6cdcc49d6009474d5a08ae7afaf1c61879b065fff84497869c6dedd6480d",
+      "pricing": {
+        "type": "free",
+        "amount": 0,
+        "currency": "EUR"
+      },
+      "screenshots": [
+        "/screenshots/features/emoji-rain.png"
+      ]
+    },
+    {
+      "id": "webgpu-emoji-rain",
+      "name": {
+        "en": "WebGPU EmojiRain",
+        "de": "WebGPU EmojiRain",
+        "es": "WebGPU EmojiRain",
+        "fr": "WebGPU EmojiRain"
+      },
+      "description": {
+        "en": "Strict native WebGPU EmojiRain with compute physics, GPU collisions, instanced sprites, HDR bloom, cinematic-neon profiles, and adaptive 1080p60 quality.",
+        "de": "Strikt nativer WebGPU EmojiRain mit Compute-Physik, GPU-Kollisionen, instanzierten Sprites, HDR-Bloom, Cinematic-Neon-Profilen und adaptiver 1080p60-Qualität.",
+        "es": "EmojiRain WebGPU nativo estricto con física de cómputo, colisiones GPU, sprites instanciados, bloom HDR, perfiles cinematográficos-neón y calidad 1080p60 adaptativa.",
+        "fr": "EmojiRain WebGPU natif strict avec physique compute, collisions GPU, sprites instanciés, bloom HDR, profils cinématiques-néon et qualité 1080p60 adaptative."
+      },
+      "version": "3.0.0",
+      "author": "Pup Cid",
+      "category": "plugin",
+      "channel": "open-beta",
+      "badges": [],
+      "packageUrl": "https://ltth.app/plugin-store/packages/webgpu-emoji-rain-3.0.0.zip",
+      "sha256": "a94c6b593da2c05f118b3cc7f7827976c858f5ba0563481ada75334e4572726a",
       "pricing": {
         "type": "free",
         "amount": 0,

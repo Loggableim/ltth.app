@@ -1,0 +1,19 @@
+{
+  "productNames": ["ltth.app", "PupCid", "TikTok", "TikTok LIVE", "OBS", "VDO.Ninja", "AnimazingPal", "Fish.audio", "Eulerstream", "TikFinity"],
+  "technicalIdentifiers": ["data-i18n", "WebSocket", "Socket.io", "OpenAI", "GPT-5", "TTS", "STT", "API", "JSON", "HTTP", "URL", "CSS", "HTML", "Node.js", "SQLite"],
+  "codeAndCommands": true,
+  "dynamicContent": ["chat", "username", "giftName", "coins", "message", "streamId", "sessionId", "error.message"],
+  "ignoredPaths": ["screenshots/mocks/", "build-src/", "plugins/openshock/src/features/pattern-editor/pattern-editor-test.html"],
+  "literalPatterns": [
+    "^Auto =",
+    "^Emojis =",
+    "^Anzahl =",
+    "^Coins = Punkte:",
+    "^Leer = Default Voice",
+    "^\\(use \\{\\{PORT\\}\\} as placeholder\\)$",
+    "^Green = TRUE path",
+    "^`?\\$\\{event\\.user\\}",
+    "^html\\[data-theme="
+  ],
+  "archiveDirectory": "docs_archive"
+}

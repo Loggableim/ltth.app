@@ -39,9 +39,13 @@
         // 1. URL param
         const urlParams = new URLSearchParams(window.location.search);
         const urlLang = urlParams.get('lang');
-        if (urlLang && SUPPORTED_LANGS.includes(urlLang)) {
-            persistLanguage(urlLang);
-            return urlLang;
+        if (urlLang) {
+            const normalizedUrlLang = urlLang.toLowerCase().split('-')[0];
+            if (SUPPORTED_LANGS.includes(normalizedUrlLang)) {
+                persistLanguage(normalizedUrlLang);
+                return normalizedUrlLang;
+            }
+            return 'en';
         }
         
         // 2. localStorage
@@ -299,13 +303,16 @@
             openMega();
         }
         function onMegaLeave() {
-            closeTimer = setTimeout(closeMega, 150);
+            // The panel is fixed to the viewport, so the pointer briefly
+            // leaves the trigger while travelling into it. Give the pointer
+            // a generous grace period instead of collapsing the menu mid-way.
+            closeTimer = setTimeout(closeMega, 650);
         }
         function onPanelEnter() {
             clearTimeout(closeTimer);
         }
         function onPanelLeave() {
-            closeTimer = setTimeout(closeMega, 150);
+            closeTimer = setTimeout(closeMega, 300);
         }
 
         function addHoverListeners() {
@@ -427,6 +434,18 @@
             applyTheme(current === 'dark' ? 'light' : 'dark');
         });
     }
+
+    function initSiteV2Styles() {
+        if (document.body.classList.contains('home-page')) return;
+        document.body.classList.add('site-v2');
+        if (document.getElementById('ltthSiteV2Styles')) return;
+
+        const link = document.createElement('link');
+        link.id = 'ltthSiteV2Styles';
+        link.rel = 'stylesheet';
+        link.href = '/css/site-v2.cssív=20260710b';
+        document.head.appendChild(link);
+    }
     
     async function init(options) {
         options = options || {};
@@ -435,6 +454,7 @@
 
         // Prevent layout shift: hide body content until header/footer are injected
         document.body.setAttribute('data-layout-loading', '');
+        initSiteV2Styles();
 
         try {
             // --- Header injection ---

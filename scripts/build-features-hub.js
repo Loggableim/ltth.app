@@ -316,7 +316,7 @@ function renderHead(lang, page, itemCount, screenshotCount, structuredDataJson) 
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/layout.css">
-  <link rel="stylesheet" href="/css/features-hub.css">
+  <link rel="stylesheet" href="/css/features-hub.cssív=pop-20260710b">
   <script>
     (function() {
       var params = new URLSearchParams(window.location.search);

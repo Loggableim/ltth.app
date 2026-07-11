@@ -1,0 +1,108 @@
+body.auth-page {
+  background:
+    radial-gradient(circle at 15% 12%, rgba(67, 215, 255, 0.25), transparent 28rem),
+    radial-gradient(circle at 84% 18%, rgba(255, 77, 155, 0.22), transparent 24rem),
+    linear-gradient(135deg, #17122d 0%, #100d22 58%, #1e3156 100%);
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+body.auth-page::before {
+  background-image: radial-gradient(rgba(255,255,255,0.18) 1.2px, transparent 1.2px);
+  background-size: 1.15rem 1.15rem;
+  content: '';
+  inset: 0;
+  mask-image: linear-gradient(90deg, rgba(0,0,0,0.54), transparent 80%);
+  opacity: 0.4;
+  pointer-events: none;
+  position: fixed;
+}
+
+body.auth-page main {
+  position: relative;
+  z-index: 1;
+}
+
+body.auth-page .hero,
+body.auth-page .panel {
+  border: 3px solid rgba(255,248,237,0.2);
+  border-radius: 1.15rem;
+  box-shadow: 8px 8px 0 rgba(11,7,29,0.42), 0 28px 80px rgba(5,4,17,0.32);
+}
+
+body.auth-page .hero {
+  background: linear-gradient(145deg, rgba(104,57,141,0.94), rgba(35,25,74,0.96));
+}
+
+body.auth-page .panel {
+  background: linear-gradient(145deg, rgba(16,24,49,0.96), rgba(13,12,34,0.96));
+}
+
+body.auth-page .auth-brand {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+  margin-bottom: 2.5rem;
+}
+
+body.auth-page .auth-brand img {
+  filter: drop-shadow(3px 3px 0 rgba(11,7,29,0.4));
+  height: 3.2rem;
+  object-fit: contain;
+  width: 3.2rem;
+}
+
+body.auth-page .auth-brand span {
+  color: #fff8ed;
+  font-size: 1.55rem;
+  font-weight: 850;
+  letter-spacing: -0.07em;
+}
+
+body.auth-page .eyebrow {
+  color: #ffd34e;
+}
+
+body.auth-page h1 {
+  letter-spacing: -0.06em;
+}
+
+body.auth-page .switcher a {
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+body.auth-page .switcher a:hover,
+body.auth-page .switcher a:focus-visible {
+  background: #ff4d9b;
+  border-color: #ff4d9b;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+body.auth-page .switcher a.active {
+  background: #ffd34e;
+  color: #251b3e;
+}
+
+body.auth-page #ltth-auth-bridge-root {
+  min-height: 420px;
+}
+
+body.auth-page .status {
+  background: rgba(6,10,28,0.72);
+  border-color: rgba(67,215,255,0.24);
+}
+
+body.auth-page .status strong {
+  color: #fff8ed;
+}
+
+@media (max-width: 820px) {
+  body.auth-page {
+    padding: 16px;
+  }
+
+  body.auth-page .hero,
+  body.auth-page .panel {
+    box-shadow: 5px 5px 0 rgba(11,7,29,0.42);
+  }
+}

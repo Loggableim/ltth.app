@@ -21,6 +21,7 @@ const SCREENSHOT_ROOT = path.join(REPO_ROOT, 'screenshots');
 const FEATURES_ROOT = path.join(SCREENSHOT_ROOT, 'features');
 const DE_SCREENSHOT_ROOT = path.join(SCREENSHOT_ROOT, 'de');
 const DE_FEATURES_ROOT = path.join(DE_SCREENSHOT_ROOT, 'features');
+const CAPTURE_MANIFEST_PATH = path.join(SCREENSHOT_ROOT, 'capture-manifest.json');
 
 const ROOT_PAGES = [
   { locale: 'en', file: '01_homepage_hero.png', page: '/index-en.html' },
@@ -119,6 +120,15 @@ async function main() {
     fs.mkdirSync(dir, { recursive: true });
   }
 
+  const versionResponse = await fetch(normalizeUrl('/version.json'));
+  if (!versionResponse.ok) {
+    throw new Error(`Could not read release metadata: HTTP ${versionResponse.status}`);
+  }
+  const version = await versionResponse.json();
+  if (!version.version) {
+    throw new Error('Release metadata does not include a version.');
+  }
+
   const browser = await puppeteer.launch({
     headless: 'new',
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
@@ -149,8 +159,17 @@ async function main() {
 
   await browser.close();
 
+  fs.writeFileSync(CAPTURE_MANIFEST_PATH, JSON.stringify({
+    version: version.version,
+    source: BASE_URL,
+    capturedAt: new Date().toISOString(),
+    viewport: VIEWPORT,
+    screenshots: targets.map(target => path.relative(REPO_ROOT, target.outputPath).replace(/\\/g, '/')),
+  }, null, 2) + '\n');
+
   console.log(`\nDone: ${passed} captured, ${failed} failed`);
   console.log(`Output root: ${SCREENSHOT_ROOT}`);
+  console.log(`Version manifest: ${CAPTURE_MANIFEST_PATH}`);
 
   if (failed > 0) {
     process.exit(1);

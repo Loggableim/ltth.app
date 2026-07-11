@@ -3,7 +3,12 @@
     'use strict';
     
     let translations = {};
-    let currentLang = 'de';
+    let currentLang = 'en';
+
+    function normalizeLang(lang) {
+        const normalized = String(lang || '').trim().toLowerCase().replace('_', '-').split('-')[0];
+        return ['de', 'en', 'es', 'fr'].includes(normalized) ? normalized : 'en';
+    }
     
     function get(key) {
         if (Object.prototype.hasOwnProperty.call(translations, key) && typeof translations[key] === 'string') {
@@ -22,17 +27,18 @@
     }
     
     async function load(lang) {
+        lang = normalizeLang(lang);
         try {
-            const response = await fetch('/locales/' + lang + '.json');
+            const response = await fetch('/locales/' + lang + '.json', { cache: 'no-cache' });
             if (!response.ok) throw new Error('HTTP ' + response.status);
             translations = await response.json();
             currentLang = lang;
             return true;
         } catch(e) {
             console.warn('i18n: Could not load locale', lang, e);
-            if (lang !== 'de') {
-                return load('de'); // fallback to German
-            }
+            // Keep supported locales isolated. Falling back to English here
+            // hides missing deployment assets and makes a partially
+            // translated page look healthy to users and QA.
             return false;
         }
     }
@@ -53,6 +59,21 @@
                 el.setAttribute('alt', value);
             }
         });
+        document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+            const key = el.getAttribute('data-i18n-aria-label');
+            const value = get(key);
+            if (value !== key) el.setAttribute('aria-label', value);
+        });
+        document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+            const key = el.getAttribute('data-i18n-aria-label');
+            const value = get(key);
+            if (value !== key) el.setAttribute('aria-label', value);
+        });
+        document.querySelectorAll('[data-i18n-title]').forEach(el => {
+            const key = el.getAttribute('data-i18n-title');
+            const value = get(key);
+            if (value !== key) el.setAttribute('title', value);
+        });
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             const value = get(key);
@@ -62,6 +83,11 @@
                 } else if (el.hasAttribute('data-i18n-attr')) {
                     const attr = el.getAttribute('data-i18n-attr');
                     el.setAttribute(attr, value);
+                } else if (el.hasAttribute('data-i18n-html')) {
+                    // A small, explicit escape hatch for trusted locale strings
+                    // that intentionally contain markup (for example the footer
+                    // credit with its styled heart).
+                    el.innerHTML = value;
                 } else if (el.children.length > 0) {
                     const textNodes = Array.from(el.childNodes).filter(node => node.nodeType === Node.TEXT_NODE);
                     const meaningfulTextNodes = textNodes.filter(node => node.textContent.trim().length > 0);

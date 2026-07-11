@@ -63,8 +63,8 @@
         "desc": "Múltiples bases de datos para diferentes configuraciones de streaming. Cambio de perfil, función de copia de seguridad y configuraciones separadas para diferentes formatos de stream."
       },
       "card10": {
-        "title": "Local con inicio de sesi?n",
-        "desc": "El n?cleo se ejecuta localmente en tu equipo. La tienda requiere una cuenta; la app local sigue separada."
+        "title": "Local con inicio de sesión",
+        "desc": "El núcleo se ejecuta localmente en tu equipo. La tienda requiere una cuenta; la app local sigue separada."
       },
       "card11": {
         "title": "Sistema de Plugins",
@@ -137,12 +137,12 @@
         "desc": "Documentación completa de la API. Rutas Express, eventos Socket.io, API de Plugins."
       },
       "feature2": {
-        "title": "C?digo propietario",
+        "title": "Código propietario",
         "desc": "Propietario, documentado y extensible."
       },
       "feature3": {
         "title": "Documentación Completa",
-        "desc": "Documentaci?n con arquitectura, documentaci?n de plugins, referencia de API, FAQ y troubleshooting."
+        "desc": "Documentaci?n con arquitectura, documentación de plugins, referencia de API, FAQ y troubleshooting."
       },
       "feature4": {
         "title": "Arquitectura Moderna",
@@ -185,7 +185,7 @@
       "title": "Comienza en 3 Pasos",
       "step1": {
         "title": "1 Descarga e Instalación",
-        "desc": "Descarga el Windows Launcher de LTTH e instala la herramienta en tu PC con Windows. Todo se configura autom?ticamente."
+        "desc": "Descarga el Windows Launcher de LTTH e instala la herramienta en tu PC con Windows. Todo se configura automáticamente."
       },
       "step2": {
         "title": "2 Conectar a TikTok",
@@ -214,7 +214,7 @@
         "desc": "Plugins preinstalados, expansibilidad ilimitada"
       },
       "free": {
-        "title": "Inicio de sesi?n",
+        "title": "Inicio de sesión",
         "desc": "La app local sigue separada; la tienda requiere una cuenta."
       }
     },
@@ -242,7 +242,7 @@
     },
     "cta": {
       "title": "¿Listo para streaming profesional en TikTok LIVE?",
-      "desc": "Descubre la suite freemium de TikTok LIVE con herramientas locales, p?ginas detalladas claras y enlaces directos a las apps.",
+      "desc": "Descubre la suite freemium de TikTok LIVE con herramientas locales, páginas detalladas claras y enlaces directos a las apps.",
       "docsCta": "Leer Documentación",
       "available": "Disponible para Windows"
     },
@@ -256,21 +256,21 @@
   },
   "features.a.36": "Descargar",
   "docs.h3.75": "TikTok Voices",
-  "faq.h3.9": "?? ?Qu? es el Windows Launcher?",
-  "faq.p.11": "El Windows Launcher es una peque?a aplicaci?n de Windows (~7 MB) que descarga, instala y mantiene LTTH actualizado autom?ticamente. Ofrece actualizaciones autom?ticas, rollback a versiones anteriores y gesti?n de versiones integrada. Todos los datos se almacenan en %LOCALAPPDATA%\\LTTH\\.",
-  "faq.p.14": "El launcher es una aplicaci?n nueva que a?n no est? firmada con c?digo. Eso es normal en aplicaciones sin firmar. Haz clic en \"M?s informaci?n\" ? \"Ejecutar de todos modos\". El archivo es seguro y la versi?n actual est? disponible en GitHub.",
-  "faq.h3.15": "?? ?LTTH es compatible con macOS o Linux?",
-  "faq.p.17": "El Windows Launcher actualmente solo est? disponible para Windows. El soporte para macOS y Linux est? previsto. LTTH funciona en todas las plataformas, pero la instalaci?n autom?tica mediante el launcher por ahora solo est? disponible en Windows.",
-  "faq.h3.18": "?? ?Qu? sistemas operativos son compatibles?",
-  "faq.p.20": "El Windows Launcher es compatible con Windows 10 y Windows 11. La instalaci?n autom?tica mediante el launcher es el m?todo recomendado para usuarios de Windows. Consulta la p?gina de descarga para m?s detalles.",
-  "faq.p.24": "Recomendado: descarga el Windows Launcher y ejec?talo. El launcher instala LTTH autom?ticamente y lo mantiene actualizado. Encontrar?s m?s detalles en la p?gina de descarga.",
+  "faq.h3.9": "?? ¿Qué es el Windows Launcher?",
+  "faq.p.11": "El Windows Launcher es una pequeña aplicación de Windows (~7 MB) que descarga, instala y mantiene LTTH actualizado automáticamente. Ofrece actualizaciones automáticas, rollback a versiones anteriores y gesti?n de versiones integrada. Todos los datos se almacenan en %LOCALAPPDATA%\\LTTH\\.",
+  "faq.p.14": "El launcher es una aplicación nueva que aún no está firmada con código. Eso es normal en aplicaciones sin firmar. Haz clic en \"M?s información\" ? \"Ejecutar de todos modos\". El archivo es seguro y la versión actual está disponible en GitHub.",
+  "faq.h3.15": "?? ¿LTTH es compatible con macOS o Linux?",
+  "faq.p.17": "El Windows Launcher actualmente solo está disponible para Windows. El soporte para macOS y Linux está previsto. LTTH funciona en todas las plataformas, pero la instalación automática mediante el launcher por ahora solo está disponible en Windows.",
+  "faq.h3.18": "?? ¿Qué sistemas operativos son compatibles?",
+  "faq.p.20": "El Windows Launcher es compatible con Windows 10 y Windows 11. La instalación automática mediante el launcher es el método recomendado para usuarios de Windows. Consulta la página de descarga para más detalles.",
+  "faq.p.24": "Recomendado: descarga el Windows Launcher y ejecútalo. El launcher instala LTTH automáticamente y lo mantiene actualizado. Encontrarás más detalles en la página de descarga.",
   "faq.a.25": "Windows Launcher",
   "faq.p.29": "Para la app local, no. Para la tienda de apps, s?. No necesitas datos de acceso para usar la app local, pero la tienda requiere una cuenta.",
-  "faq.p.48": "La app local procesa los datos en tu ordenador. La tienda de apps requiere un inicio de sesi?n, pero el uso local sigue separado.",
-  "faq.p.75": "Para la app local, no. La tienda de apps s? requiere una cuenta. La app local solo lee datos p?blicos de TikTok LIVE.",
+  "faq.p.48": "La app local procesa los datos en tu ordenador. La tienda de apps requiere un inicio de sesión, pero el uso local sigue separado.",
+  "faq.p.75": "Para la app local, no. La tienda de apps sí requiere una cuenta. La app local solo lee datos públicos de TikTok LIVE.",
   "docs.a.5": "Windows Launcher",
   "docs.h2.33": "Instalaci?n con Windows Launcher (recomendada)",
-  "docs.p.34": "Windows Launcher es el m?todo de instalaci?n m?s sencillo y recomendado para Windows:",
+  "docs.p.34": "Windows Launcher es el método de instalación más sencillo y recomendado para Windows:",
   "docs.h1.38": "Windows Launcher",
-  "docs.p.39": "Windows Launcher de LTTH es el m?todo de instalaci?n recomendado para Windows."
+  "docs.p.39": "Windows Launcher de LTTH es el método de instalación recomendado para Windows."
 }

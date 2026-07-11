@@ -1,0 +1,165 @@
+.webgpu-page {
+  --webgpu-ink: #10162d;
+  --webgpu-muted: #59617a;
+  --webgpu-panel: #fff;
+  --webgpu-blue: #2563eb;
+  --webgpu-cyan: #06b6d4;
+  --webgpu-purple: #7c3aed;
+  background: #f4f7ff;
+  color: var(--webgpu-ink);
+}
+
+.webgpu-hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(4.5rem, 10vw, 8rem) 0 clamp(4rem, 8vw, 6rem);
+  background:
+    radial-gradient(circle at 12% 18%, rgba(34, 211, 238, .28), transparent 34%),
+    radial-gradient(circle at 86% 6%, rgba(124, 58, 237, .22), transparent 33%),
+    linear-gradient(135deg, #10162d 0%, #172554 52%, #111827 100%);
+  color: #fff;
+}
+
+.webgpu-hero::after {
+  content: '';
+  position: absolute;
+  inset: auto -10% -55% 25%;
+  height: 80%;
+  background: radial-gradient(ellipse, rgba(6, 182, 212, .2), transparent 68%);
+  pointer-events: none;
+}
+
+.webgpu-hero__grid,
+.webgpu-section__grid,
+.webgpu-steps {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+
+.webgpu-hero__grid {
+  position: relative;
+  z-index: 1;
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, .95fr);
+  align-items: center;
+}
+
+.webgpu-kicker,
+.webgpu-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  border: 1px solid rgba(103, 232, 249, .35);
+  border-radius: 999px;
+  padding: .45rem .8rem;
+  color: #a5f3fc;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.webgpu-hero h1 {
+  max-width: 12ch;
+  margin: 1.2rem 0 1.25rem;
+  font-size: clamp(2.7rem, 7vw, 5.7rem);
+  line-height: .98;
+  letter-spacing: -.06em;
+}
+
+.webgpu-hero__lead {
+  max-width: 57ch;
+  margin: 0;
+  color: #dbeafe;
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  line-height: 1.65;
+}
+
+.webgpu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .8rem;
+  margin-top: 2rem;
+}
+
+.webgpu-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  border-radius: .85rem;
+  padding: .8rem 1.1rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+}
+
+.webgpu-action:hover { transform: translateY(-2px); }
+.webgpu-action:focus-visible { outline: 3px solid #67e8f9; outline-offset: 3px; }
+
+.webgpu-action--primary {
+  background: linear-gradient(135deg, #22d3ee, #2563eb);
+  color: #fff;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, .32);
+}
+
+.webgpu-action--secondary {
+  border: 1px solid rgba(191, 219, 254, .35);
+  color: #e0f2fe;
+}
+
+.webgpu-hero__visual {
+  position: relative;
+  min-height: 340px;
+  border: 1px solid rgba(165, 243, 252, .2);
+  border-radius: 1.5rem;
+  padding: 1rem;
+  background: rgba(15, 23, 42, .68);
+  box-shadow: 0 30px 80px rgba(2, 6, 23, .45);
+}
+
+.webgpu-console {
+  height: 100%;
+  min-height: 300px;
+  border: 1px solid rgba(148, 163, 184, .23);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(160deg, rgba(30, 41, 59, .95), rgba(15, 23, 42, .96));
+}
+
+.webgpu-console__bar { display: flex; gap: .4rem; margin-bottom: 1.25rem; }
+.webgpu-console__bar span { width: .65rem; height: .65rem; border-radius: 50%; background: #fb7185; }
+.webgpu-console__bar span:nth-child(2) { background: #fbbf24; }
+.webgpu-console__bar span:nth-child(3) { background: #34d399; }
+.webgpu-console__title { color: #e0f2fe; font-weight: 800; }
+.webgpu-console__line { height: .7rem; margin-top: 1rem; border-radius: 999px; background: linear-gradient(90deg, #22d3ee, rgba(34, 211, 238, .08)); }
+.webgpu-console__line:nth-of-type(2) { width: 76%; background: linear-gradient(90deg, #a78bfa, rgba(167, 139, 250, .08)); }
+.webgpu-console__line:nth-of-type(3) { width: 54%; background: linear-gradient(90deg, #34d399, rgba(52, 211, 153, .08)); }
+.webgpu-console__stat { display: flex; justify-content: space-between; margin-top: 2rem; color: #94a3b8; font-size: .84rem; }
+.webgpu-console__stat strong { color: #a5f3fc; font-size: 1.35rem; }
+
+.webgpu-main { padding: clamp(3.5rem, 8vw, 6.5rem) 0; }
+.webgpu-section__intro { max-width: 680px; margin-bottom: 2rem; }
+.webgpu-section__intro h2, .webgpu-steps-wrap h2 { margin: 0 0 .8rem; color: var(--webgpu-ink); font-size: clamp(2rem, 4vw, 3.3rem); letter-spacing: -.04em; }
+.webgpu-section__intro p { margin: 0; color: var(--webgpu-muted); font-size: 1.08rem; line-height: 1.7; }
+.webgpu-section__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.webgpu-card { border: 1px solid #dbe4f5; border-radius: 1.2rem; padding: 1.35rem; background: var(--webgpu-panel); box-shadow: 0 18px 50px rgba(30, 64, 175, .08); }
+.webgpu-card__icon { display: grid; width: 2.7rem; height: 2.7rem; place-items: center; margin-bottom: 1rem; border-radius: .8rem; background: linear-gradient(135deg, #cffafe, #ede9fe); color: #4338ca; font-weight: 900; }
+.webgpu-card h3 { margin: 0 0 .55rem; font-size: 1.15rem; }
+.webgpu-card p { margin: 0; color: var(--webgpu-muted); line-height: 1.6; }
+.webgpu-steps-wrap { margin-top: clamp(4rem, 10vw, 8rem); }
+.webgpu-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 2rem; }
+.webgpu-step { position: relative; border-top: 3px solid #67e8f9; padding-top: 1rem; }
+.webgpu-step__number { color: #2563eb; font-size: .8rem; font-weight: 900; letter-spacing: .12em; }
+.webgpu-step h3 { margin: .55rem 0 .45rem; font-size: 1.1rem; }
+.webgpu-step p { margin: 0; color: var(--webgpu-muted); line-height: 1.6; }
+.webgpu-note { margin-top: 2rem; border-left: 4px solid #8b5cf6; border-radius: .4rem; padding: 1rem 1.1rem; background: #eef2ff; color: #373f63; line-height: 1.6; }
+.webgpu-final { margin-top: 4rem; border-radius: 1.5rem; padding: clamp(2rem, 5vw, 4rem); background: linear-gradient(135deg, #172554, #312e81); color: #fff; text-align: center; }
+.webgpu-final h2 { margin: 0 0 .7rem; font-size: clamp(1.8rem, 4vw, 3rem); }
+.webgpu-final p { max-width: 600px; margin: 0 auto; color: #dbeafe; }
+.webgpu-final .webgpu-actions { justify-content: center; }
+
+@media (max-width: 820px) {
+  .webgpu-hero__grid, .webgpu-section__grid, .webgpu-steps { grid-template-columns: 1fr; }
+  .webgpu-hero__visual { min-height: 290px; }
+  .webgpu-console { min-height: 250px; }
+}

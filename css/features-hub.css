@@ -405,6 +405,26 @@
   background: rgba(18, 161, 22, 0.08);
 }
 
+/* Pop-art visual layer for the public feature catalog. */
+.features-hub {
+  background:
+    radial-gradient(circle at 8% 7%, rgba(255, 77, 155, 0.28), transparent 24%),
+    radial-gradient(circle at 92% 12%, rgba(67, 215, 255, 0.24), transparent 23%),
+    radial-gradient(circle at 74% 54%, rgba(255, 211, 78, 0.13), transparent 28%),
+    #18112f;
+}
+.features-hub .catalog-hero__copy,
+.features-hub .catalog-hero__panel,
+.features-hub .catalog-toolbar,
+.features-hub .catalog-toc,
+.features-hub .catalog-entry { border-color: rgba(255, 255, 255, 0.24); box-shadow: 5px 5px 0 rgba(11, 7, 29, 0.5); }
+.features-hub .catalog-hero__copy { background: linear-gradient(145deg, #7043cb, #382465); }.features-hub .catalog-hero__panel { background: linear-gradient(145deg, #167f9d, #224879); }
+.features-hub .catalog-eyebrow, .features-hub .catalog-section__eyebrow { background: #ffd34e; color: #24163f; }
+.features-hub .catalog-hero h1 { color: #fff8ed; text-shadow: 3px 3px 0 rgba(24, 13, 55, 0.38); }
+.features-hub .catalog-hero__lead, .features-hub .catalog-hero__panel p { color: #f1eaff; }
+.features-hub .catalog-stat { background: rgba(255, 255, 255, 0.18); border-color: rgba(255,255,255,0.28); }
+.features-hub .catalog-entry:nth-of-type(3n + 1) { border-left: 5px solid #ff5ea8; }.features-hub .catalog-entry:nth-of-type(3n + 2) { border-left: 5px solid #43d7ff; }.features-hub .catalog-entry:nth-of-type(3n) { border-left: 5px solid #ffd34e; }
+
 .features-hub .catalog-entry__description {
   margin: 0;
   color: var(--color-text-secondary);
@@ -550,4 +570,37 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* Keep the public catalog in the same friendly pop-art family as the homepage.
+   This is intentionally last because the catalog has several neutral defaults. */
+.features-hub {
+  background:
+    radial-gradient(circle at 8% 7%, rgba(255, 77, 155, 0.35), transparent 24%),
+    radial-gradient(circle at 92% 12%, rgba(67, 215, 255, 0.3), transparent 23%),
+    radial-gradient(circle at 74% 54%, rgba(255, 211, 78, 0.18), transparent 28%),
+    #18112f !important;
+}
+
+.features-hub .navbar { background: #221644 !important; border-bottom: 3px solid #ffd34e; }
+.features-hub .nav-link { color: #fff8ed; }.features-hub .nav-link:hover { background: rgba(255,255,255,0.15); }
+.features-hub .lang-dropdown-toggle, .features-hub .theme-toggle { color: #251747; background: #fff8ed; border-color: #251747; }
+
+.features-hub .catalog-hero__copy { background: linear-gradient(145deg, #7245ce, #392369) !important; border: 3px solid #251747; }
+.features-hub .catalog-hero__panel { background: linear-gradient(145deg, #1d9dbc, #3657a6) !important; border: 3px solid #251747; }
+.features-hub .catalog-toolbar, .features-hub .catalog-toc, .features-hub .catalog-entry { background: #fff8ed !important; border: 3px solid #251747; box-shadow: 5px 5px 0 rgba(37, 23, 71, 0.5); }
+.features-hub .catalog-hero h1, .features-hub .catalog-hero__lead, .features-hub .catalog-hero__panel h2, .features-hub .catalog-hero__panel p { color: #fff8ed !important; }
+.features-hub .catalog-eyebrow, .features-hub .catalog-section__eyebrow { background: #ffd34e !important; color: #251747 !important; }
+.features-hub .catalog-stat { background: rgba(255,255,255,0.18) !important; border-color: rgba(255,255,255,0.32) !important; color: #fff8ed; }
+.features-hub .catalog-stat span, .features-hub .catalog-hero__notes li { color: #fff8ed !important; }
+.features-hub .catalog-hero__notes li { background: rgba(37, 23, 71, 0.18) !important; border-color: rgba(255,255,255,0.26) !important; }
+.features-hub .catalog-entry:nth-of-type(3n + 1) { border-left-color: #ff5ea8 !important; }.features-hub .catalog-entry:nth-of-type(3n + 2) { border-left-color: #43d7ff !important; }.features-hub .catalog-entry:nth-of-type(3n) { border-left-color: #ffd34e !important; }
+.features-hub .catalog-entry h3, .features-hub .catalog-entry__description, .features-hub .catalog-entry__meta, .features-hub .catalog-section__head h2, .features-hub .catalog-section__summary { color: #251747 !important; }
+
+@media (min-width: 769px) and (max-width: 1380px) {
+  .features-hub .nav-menu > .nav-link[data-page="changelog"],
+  .features-hub .nav-menu > .nav-link[data-page="community"],
+  .features-hub .nav-menu > .nav-link[data-page="faq"],
+  .features-hub .nav-menu > .nav-link[data-page="support"],
+  .features-hub .nav-menu > .nav-link[data-page="auth"] { display: none; }
 }

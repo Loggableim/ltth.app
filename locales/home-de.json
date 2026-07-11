@@ -64,7 +64,7 @@
       },
       "card10": {
         "title": "Lokal mit Store-Login",
-        "desc": "Der Kern l?uft lokal auf deinem Computer. F?r den App Store ist ein Login erforderlich, die lokale App bleibt davon getrennt."
+        "desc": "Der Kern läuft lokal auf deinem Computer. Für den App Store ist ein Login erforderlich, die lokale App bleibt davon getrennt."
       },
       "card11": {
         "title": "Plugin-System",
@@ -131,13 +131,13 @@
     },
     "dev": {
       "title": "Für Entwickler & Power-User",
-      "subtitle": "Freemium, propriet?r, dokumentiert",
+      "subtitle": "Freemium, proprietär, dokumentiert",
       "feature1": {
         "title": "REST-API & WebSocket",
         "desc": "Vollständige API-Dokumentation. Express-Routes, Socket.io-Events, Plugin-API."
       },
       "feature2": {
-        "title": "Propriet?rer Code",
+        "title": "Proprietärer Code",
         "desc": "Propriet?r, dokumentiert und erweiterbar."
       },
       "feature3": {
@@ -215,7 +215,7 @@
       },
       "free": {
         "title": "Store-Login",
-        "desc": "Die lokale App bleibt getrennt, der App Store ben?tigt ein Konto."
+        "desc": "Die lokale App bleibt getrennt, der App Store benötigt ein Konto."
       }
     },
     "devCta": {
@@ -242,7 +242,7 @@
     },
     "cta": {
       "title": "Bereit für professionelles TikTok LIVE Streaming?",
-      "desc": "Entdecke die freemium TikTok-LIVE-Suite mit lokalen Tools, klaren Deep-Dive-Seiten und direkter F?hrung zu den Apps.",
+      "desc": "Entdecke die freemium TikTok-LIVE-Suite mit lokalen Tools, klaren Deep-Dive-Seiten und direkter Führung zu den Apps.",
       "docsCta": "Dokumentation Lesen",
       "available": "Verfügbar für Windows"
     },
@@ -256,18 +256,18 @@
   },
   "features.a.36": "Herunterladen",
   "docs.h3.75": "TikTok Voices",
-  "faq.p.14": "Der Launcher ist eine neue Anwendung, die noch nicht code-signiert ist. Das ist bei nicht signierten Anwendungen normal. Klicke ?Weitere Informationen\" ? ?Trotzdem ausf?hren\". Die Datei ist sicher und die aktuelle Version wird auf GitHub bereitgestellt.",
+  "faq.p.14": "Der Launcher ist eine neue Anwendung, die noch nicht code-signiert ist. Das ist bei nicht signierten Anwendungen normal. Klicke „Weitere Informationen\" ? „Trotzdem ausführen\". Die Datei ist sicher und die aktuelle Version wird auf GitHub bereitgestellt.",
   "docs.a.5": "Windows Launcher",
   "docs.h2.33": "Installation mit Windows Launcher (empfohlen)",
-  "docs.p.34": "Der Windows Launcher ist die einfachste und empfohlene Installationsmethode f?r Windows:",
+  "docs.p.34": "Der Windows Launcher ist die einfachste und empfohlene Installationsmethode für Windows:",
   "docs.h1.38": "Windows Launcher",
-  "docs.p.39": "Der LTTH Windows Launcher ist die empfohlene Installationsmethode f?r Windows.",
+  "docs.p.39": "Der LTTH Windows Launcher ist die empfohlene Installationsmethode für Windows.",
   "faq.h3.9": "?? Was ist der Windows Launcher?",
-  "faq.p.11": "Der Windows Launcher ist eine kleine Windows-Anwendung (~7 MB), die LTTH automatisch herunterl?dt, installiert und auf dem neuesten Stand h?lt. Er bietet automatische Updates, Rollback zu vorherigen Versionen und ein integriertes Version-Management. Alle Daten werden in %LOCALAPPDATA%\\LTTH\\ gespeichert.",
-  "faq.h3.15": "?? Gibt es LTTH f?r macOS oder Linux?",
-  "faq.p.17": "Der Windows Launcher ist derzeit nur f?r Windows verf?gbar. macOS- und Linux-Support ist in Planung. LTTH selbst l?uft auf allen Plattformen, aber die automatische Installation ?ber den Launcher gibt es vorerst nur f?r Windows.",
-  "faq.h3.18": "?? Welche Betriebssysteme werden unterst?tzt?",
-  "faq.p.20": "Der Windows Launcher unterst?tzt Windows 10 und Windows 11. Die automatische Installation ?ber den Launcher ist die empfohlene Methode f?r Windows-Nutzer. Siehe Download-Seite f?r Details.",
-  "faq.p.24": "Empfohlen: Lade den Windows Launcher herunter und f?hre ihn aus. Der Launcher installiert LTTH automatisch und h?lt es aktuell. Weitere Details findest du auf der Download-Seite.",
+  "faq.p.11": "Der Windows Launcher ist eine kleine Windows-Anwendung (~7 MB), die LTTH automatisch herunterlädt, installiert und auf dem neuesten Stand hält. Er bietet automatische Updates, Rollback zu vorherigen Versionen und ein integriertes Version-Management. Alle Daten werden in %LOCALAPPDATA%\\LTTH\\ gespeichert.",
+  "faq.h3.15": "?? Gibt es LTTH für macOS oder Linux?",
+  "faq.p.17": "Der Windows Launcher ist derzeit nur für Windows verfügbar. macOS- und Linux-Support ist in Planung. LTTH selbst läuft auf allen Plattformen, aber die automatische Installation über den Launcher gibt es vorerst nur für Windows.",
+  "faq.h3.18": "?? Welche Betriebssysteme werden unterstützt?",
+  "faq.p.20": "Der Windows Launcher unterstützt Windows 10 und Windows 11. Die automatische Installation über den Launcher ist die empfohlene Methode für Windows-Nutzer. Siehe Download-Seite für Details.",
+  "faq.p.24": "Empfohlen: Lade den Windows Launcher herunter und führe ihn aus. Der Launcher installiert LTTH automatisch und hält es aktuell. Weitere Details findest du auf der Download-Seite.",
   "faq.a.25": "Windows Launcher"
 }

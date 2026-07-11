@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Installiere PupCid's Little TikTool Helper (LTTH) mit dem Windows Launcher auf Windows oder per One-Line Installer auf macOS und Linux.">
-    <title>Download & Installieren - PupCid's Little TikTool Helper</title>
+    <title data-i18n="generated.9c7717746f0b">Download & Installieren - PupCid's Little TikTool Helper</title>
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
@@ -204,7 +204,7 @@
     </style>
 </head>
 <body>
-<a href="#main-content" class="skip-to-content">Skip to main content</a>
+<a href="#main-content" class="skip-to-content" data-i18n="features.a.1">Skip to main content</a>
 
 <section class="installer-hero" id="main-content">
     <div class="container">
@@ -252,7 +252,7 @@
                     Lade den signierten Windows Launcher direkt herunter und starte ihn. Er installiert LTTH automatisch und hält alles aktuell.
                 </p>
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: var(--space-4) 0;">
-                    <a href="/downloads/launcher.exe" class="btn btn-primary download-btn" style="flex: 1 1 260px; text-align: center;" download>
+                    <a href="/downloads/launcher.exe" class="btn btn-primary download-btn" style="flex: 1 1 260px; text-align: center;" download data-i18n="generated.a53cfd65051f">
                         Windows Launcher herunterladen
                     </a>
                 </div>
@@ -271,7 +271,7 @@
                 </p>
                 <div class="install-cmd" id="cmd-macos">
                     <button class="copy-btn" data-copy-target="cmd-macos" data-copy-text="curl -fsSL https://ltth.app/install/install.sh | bash" data-i18n="install.copy">Kopieren</button>
-                    <span class="command-text">curl -fsSL https://ltth.app/install/install.sh | bash</span>
+                    <span class="command-text" data-i18n="generated.c9d1ebd399d9">curl -fsSL https://ltth.app/install/install.sh | bash</span>
                 </div>
                 <div class="os-warning" data-i18n="install.macos.warn">
                     💡 Falls Node.js fehlt, wirst du aufgefordert, Homebrew zu installieren (https://brew.sh) — das ist eine einmalige Aktion.
@@ -288,7 +288,7 @@
                 </p>
                 <div class="install-cmd" id="cmd-linux">
                     <button class="copy-btn" data-copy-target="cmd-linux" data-copy-text="curl -fsSL https://ltth.app/install/install.sh | bash" data-i18n="install.copy">Kopieren</button>
-                    <span class="command-text">curl -fsSL https://ltth.app/install/install.sh | bash</span>
+                    <span class="command-text" data-i18n="generated.9157c1a995ac">curl -fsSL https://ltth.app/install/install.sh | bash</span>
                 </div>
                 <div class="os-warning" data-i18n="install.linux.warn">
                     💡 Das Skript nutzt sudo nur, falls Node.js über den Paketmanager installiert werden muss.
@@ -322,43 +322,43 @@
             <h2 style="margin-top: 0; margin-bottom: var(--space-2); color: #fff;">
                 Deinstallation
             </h2>
-            <p style="color: var(--color-text-secondary); margin-top: 0;">
+            <p style="color: var(--color-text-secondary); margin-top: 0;" data-i18n="generated.f9f38fb586ec">
                 Der Uninstaller entfernt die LTTH-Installation. Vor dem Loeschen der lokalen Daten und Configs fragt er, ob du sie behalten willst oder alles weg soll.
             </p>
 
             <div class="install-steps" style="margin-top: var(--space-4);">
                 <div class="install-step-mini">
-                    <h4>1. Stoppen</h4>
-                    <p>Aktive LTTH-Prozesse werden beendet, damit Dateien sauber geloescht werden koennen.</p>
+                    <h4 data-i18n="generated.3fb09a299dd9">1. Stoppen</h4>
+                    <p data-i18n="generated.0478c88a023b">Aktive LTTH-Prozesse werden beendet, damit Dateien sauber geloescht werden koennen.</p>
                 </div>
                 <div class="install-step-mini">
-                    <h4>2. Nachfragen</h4>
-                    <p>Du entscheidest im Terminal, ob die lokale LTTH-Konfiguration erhalten bleibt oder mit entfernt wird.</p>
+                    <h4 data-i18n="generated.5e535d52d364">2. Nachfragen</h4>
+                    <p data-i18n="generated.c9ece29182cd">Du entscheidest im Terminal, ob die lokale LTTH-Konfiguration erhalten bleibt oder mit entfernt wird.</p>
                 </div>
                 <div class="install-step-mini">
-                    <h4>3. Entfernen</h4>
-                    <p>Die Installation wird geloescht. Bei Bestätigung werden auch die aktiven Configs und lokalen Daten entfernt.</p>
+                    <h4 data-i18n="generated.0b254578d1f1">3. Entfernen</h4>
+                    <p data-i18n="generated.19f28bcc7cd0">Die Installation wird geloescht. Bei Bestätigung werden auch die aktiven Configs und lokalen Daten entfernt.</p>
                 </div>
             </div>
 
             <div class="install-cmd" id="cmd-uninstall-windows" style="margin-top: var(--space-5);">
-                <button class="copy-btn" data-copy-target="cmd-uninstall-windows" data-copy-text="iex ((iwr -useb https://ltth.app/install/uninstall.ps1).Content.TrimStart([char]0xFEFF))">Kopieren</button>
-                <span class="comment">Windows · PowerShell</span>
-                <span class="command-text">iex ((iwr -useb https://ltth.app/install/uninstall.ps1).Content.TrimStart([char]0xFEFF))</span>
+                <button class="copy-btn" data-copy-target="cmd-uninstall-windows" data-copy-text="iex ((iwr -useb https://ltth.app/install/uninstall.ps1).Content.TrimStart([char]0xFEFF))" data-i18n="install.copy">Kopieren</button>
+                <span class="comment" data-i18n="generated.2d02e2b2af01">Windows · PowerShell</span>
+                <span class="command-text" data-i18n="generated.ee335bfad68f">iex ((iwr -useb https://ltth.app/install/uninstall.ps1).Content.TrimStart([char]0xFEFF))</span>
             </div>
 
             <div class="install-cmd" id="cmd-uninstall-unix">
-                <button class="copy-btn" data-copy-target="cmd-uninstall-unix" data-copy-text="curl -fsSL https://ltth.app/install/uninstall.sh | bash">Kopieren</button>
-                <span class="comment">macOS · Linux · Bash</span>
-                <span class="command-text">curl -fsSL https://ltth.app/install/uninstall.sh | bash</span>
+                <button class="copy-btn" data-copy-target="cmd-uninstall-unix" data-copy-text="curl -fsSL https://ltth.app/install/uninstall.sh | bash" data-i18n="install.copy">Kopieren</button>
+                <span class="comment" data-i18n="generated.61a0718047eb">macOS · Linux · Bash</span>
+                <span class="command-text" data-i18n="generated.f1344a25818c">curl -fsSL https://ltth.app/install/uninstall.sh | bash</span>
             </div>
 
             <details style="margin-top: var(--space-4);">
-                <summary style="cursor:pointer; font-weight:600; color:#fff;">Alles inkl. Configs loeschen</summary>
-                <p style="margin-top: var(--space-2); color: var(--color-text-secondary);">
-                    Bestätige im Uninstaller mit „Ja“ oder setze <code>LTTH_REMOVE_DATA=1</code> vor dem Befehl.
-                    Mit <code>LTTH_KEEP_DATA=1</code> bleibt die Konfiguration explizit erhalten.
-                </p>
+                <summary style="cursor:pointer; font-weight:600; color:#fff;" data-i18n="generated.d66428ba7dd0">Alles inkl. Configs loeschen</summary>
+                <p style="margin-top: var(--space-2); color: var(--color-text-secondary);"><span data-i18n="generated.7b22e5989c8c">
+                    Bestätige im Uninstaller mit „Ja“ oder setze </span><code>LTTH_REMOVE_DATA=1</code><span data-i18n="generated.2366352e207d"> vor dem Befehl.
+                    Mit </span><code>LTTH_KEEP_DATA=1</code><span data-i18n="generated.4de73f440f03"> bleibt die Konfiguration explizit erhalten.
+                </span></p>
             </details>
         </div>
     </div>
@@ -372,25 +372,25 @@
             <div>
                 <h3 style="color:var(--color-primary);" data-i18n="install.req.os">🖥️ Betriebssystem</h3>
                 <ul class="requirements-list">
-                    <li>Windows 10 / 11 (1809+)</li>
-                    <li>macOS 11 Big Sur oder neuer</li>
-                    <li>Linux (Ubuntu 20.04+, Debian 11+, Fedora 36+, Arch)</li>
+                    <li data-i18n="generated.2dde2334a702">Windows 10 / 11 (1809+)</li>
+                    <li data-i18n="generated.71dd8d4beffc">macOS 11 Big Sur oder neuer</li>
+                    <li data-i18n="generated.a35fa060a254">Linux (Ubuntu 20.04+, Debian 11+, Fedora 36+, Arch)</li>
                 </ul>
             </div>
             <div>
                 <h3 style="color:var(--color-primary);" data-i18n="install.req.runtime">⚙️ Runtime</h3>
                 <ul class="requirements-list">
-                    <li>Node.js 18, 20, 22 oder 24 LTS</li>
-                    <li>Git 2.20+ (nur fuer Linux/macOS und Legacy-/Custom-Installationen)</li>
-                    <li>~500 MB freier Festplattenspeicher</li>
+                    <li data-i18n="generated.e39780be321c">Node.js 18, 20, 22 oder 24 LTS</li>
+                    <li data-i18n="generated.d68a81ea3124">Git 2.20+ (nur fuer Linux/macOS und Legacy-/Custom-Installationen)</li>
+                    <li data-i18n="generated.0381a283429c">~500 MB freier Festplattenspeicher</li>
                 </ul>
             </div>
             <div>
                 <h3 style="color:var(--color-primary);" data-i18n="install.req.hw">🧠 Hardware</h3>
                 <ul class="requirements-list">
-                    <li>1 GB RAM minimum (2 GB empfohlen)</li>
-                    <li>Dual-Core CPU</li>
-                    <li>Optional: GPU für WebGL/WebGPU-Overlays</li>
+                    <li data-i18n="generated.a941f7f345fd">1 GB RAM minimum (2 GB empfohlen)</li>
+                    <li data-i18n="generated.af1519e73e3e">Dual-Core CPU</li>
+                    <li data-i18n="generated.fb2c6423ac1c">Optional: GPU für WebGL/WebGPU-Overlays</li>
                 </ul>
             </div>
         </div>
@@ -434,6 +434,7 @@
                 <a href="/docs.html" class="btn btn-primary" data-i18n="install.cta.docs">Dokumentation</a>
                 <a href="/support.html" class="btn btn-secondary" data-i18n="install.cta.support">Support</a>
                 <a href="https://github.com/Loggableim/ltth.app/issues" class="btn btn-secondary" data-i18n="install.cta.issues">GitHub Issues</a>
+                <a href="/obs-webgpu.html" class="btn btn-secondary" data-i18n="webgpuLanding.primaryCta">OBS WebGPU herunterladen</a>
             </div>
         </div>
     </div>
@@ -441,7 +442,7 @@
 
 <script src="/js/main.js"></script>
 <script src="/js/i18n.js"></script>
-<script src="/js/layout.js"></script>
+<script src="/js/layout.js?v=site-v2-20260710b"></script>
 <script>
 /* ---------- OS-Tabs ---------- */
 (function () {

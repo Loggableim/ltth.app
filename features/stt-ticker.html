@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Live-Untertitel-Overlay für hörgeschädigte Zuschauer – Transkription in Echtzeit via Fish.audio, Deepgram Nova-2 oder ElevenLabs. Konfigurierbarer Ticker für OBS.">
-    <title>STT Ticker – Live-Untertitel-Overlay</title>
+    <title data-i18n="generated.2576e4e830bf">STT Ticker – Live-Untertitel-Overlay</title>
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x" href="/assets/apple-touch-icon.png">
@@ -20,17 +20,17 @@
     <link rel="stylesheet" href="/css/layout.css">
 </head>
 <body>
-    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+    <a href="#main-content" class="skip-to-content" data-i18n="features.a.1">Skip to main content</a>
     <main id="main-content">
         <!-- breadcrumb -->
         <section style="padding: 2rem 0 0;">
             <div class="container">
                 <nav class="breadcrumb" aria-label="Breadcrumb">
-                    <a href="/">Home</a>
+                    <a href="/" data-i18n="nav.home">Home</a>
                     <span class="breadcrumb-sep">›</span>
-                    <a href="/features/">Features</a>
+                    <a href="/features/" data-i18n="nav.features">Features</a>
                     <span class="breadcrumb-sep">›</span>
-                    <span class="breadcrumb-current">STT Ticker</span>
+                    <span class="breadcrumb-current" data-i18n="generated.1cad842001d2">STT Ticker</span>
                 </nav>
             </div>
         </section>
@@ -40,10 +40,10 @@
             <div class="container">
                 <span class="feature-hero-icon">📝</span>
                 <h1 class="feature-hero-title">Live-Untertitel-Overlay</h1>
-                <p class="feature-hero-subtitle">Transkribiere Live-Streams in Echtzeit und zeige sie als anpassbaren Ticker in OBS an. Unterstützt Fish.audio, Deepgram Nova‑2 und ElevenLabs – ideal für hörgeschädigte Zuschauer.</p>
+                <p class="feature-hero-subtitle" data-i18n="generated.8ed604d0430f">Transkribiere Live-Streams in Echtzeit und zeige sie als anpassbaren Ticker in OBS an. Unterstützt Fish.audio, Deepgram Nova‑2 und ElevenLabs – ideal für hörgeschädigte Zuschauer.</p>
                 <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
-                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
-                    <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
+                    <a href="/download.html" class="btn btn-primary btn-large" data-i18n="features.a.8">Jetzt Herunterladen</a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large" data-i18n="features.a.9">Dokumentation</a>
                 </div>
             </div>
         </section>
@@ -58,7 +58,7 @@
                              loading="lazy"
                              class="feature-screenshot"
                              onerror="this.style.display='none'" />
-                        <p class="screenshot-caption">Night Mode für den normalen Arbeitsalltag.</p>
+                        <p class="screenshot-caption" data-i18n="generated.6c18d49159df">Night Mode für den normalen Arbeitsalltag.</p>
                     </div>
                     <div class="screenshot-container">
                         <img src="/screenshots/features/stt-ticker-vision-impaired.png"
@@ -66,7 +66,7 @@
                              loading="lazy"
                              class="feature-screenshot"
                              onerror="this.style.display='none'" />
-                        <p class="screenshot-caption">Vision-Impaired Mode mit deutlich mehr Abstand und Kontrast.</p>
+                        <p class="screenshot-caption" data-i18n="generated.b999227bfd35">Vision-Impaired Mode mit deutlich mehr Abstand und Kontrast.</p>
                     </div>
                     <div class="screenshot-container">
                         <img src="/screenshots/features/stt-ticker-overlay-url.png"
@@ -74,7 +74,7 @@
                              loading="lazy"
                              class="feature-screenshot"
                              onerror="this.style.display='none'" />
-                        <p class="screenshot-caption">OBS-URL-Builder mit Design, Position, Max Lines und Font Size.</p>
+                        <p class="screenshot-caption" data-i18n="generated.35d374d38c0e">OBS-URL-Builder mit Design, Position, Max Lines und Font Size.</p>
                     </div>
                     <div class="screenshot-container">
                         <img src="/screenshots/features/stt-ticker-capture-obs-url.png"
@@ -82,7 +82,7 @@
                              loading="lazy"
                              class="feature-screenshot"
                              onerror="this.style.display='none'" />
-                        <p class="screenshot-caption">Capture-Seite mit OBS-URL-Helfer und Live-Output-Vorschau.</p>
+                        <p class="screenshot-caption" data-i18n="generated.ae7b6cc447db">Capture-Seite mit OBS-URL-Helfer und Live-Output-Vorschau.</p>
                     </div>
                 </div>
             </div>
@@ -91,27 +91,27 @@
         <!-- OBS parameter verification -->
         <section class="features-preview">
             <div class="container">
-                <h2 class="section-title">OBS-Parameter direkt im Render</h2>
-                <p style="color:var(--color-text-secondary); max-width:850px; margin:0 auto 2rem; text-align:center; line-height:1.7;">
+                <h2 class="section-title" data-i18n="generated.1976d0d4ae40">OBS-Parameter direkt im Render</h2>
+                <p style="color:var(--color-text-secondary); max-width:850px; margin:0 auto 2rem; text-align:center; line-height:1.7;"><span data-i18n="generated.278b08c4401a">
                     Die Overlay-URL uebergibt Design, Position, maximale Zeilenzahl, Schriftgroesse und Theme direkt an den OBS-Browser-Render. Getestet wurde unter anderem
-                    <code>design=dual-language</code>, <code>position=top-right</code>, <code>maxLines=2</code> und <code>fontSize=42px</code>.
+                    </span><code>design=dual-language</code>, <code>position=top-right</code>, <code>maxLines=2</code> und <code>fontSize=42px</code>.
                 </p>
                 <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1.5rem;">
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
-                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Laengeres Translation-Timeout</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;" data-i18n="generated.b8b2846e51a0">Laengeres Translation-Timeout</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;" data-i18n="generated.7b3376865dc1">
                             Ollama-Cloud-Uebersetzungen warten jetzt standardmaessig bis zu 30 Sekunden, damit kurze Netz- oder Modell-Latenzen nicht sofort als Fehler enden.
                         </p>
                     </div>
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
-                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Waehlbare Darstellungen</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;" data-i18n="generated.6cb9ef4979b4">Waehlbare Darstellungen</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;" data-i18n="generated.464eb49f3446">
                             Die Auswahl aus der Admin-UI wird in die OBS-URL geschrieben und vom Overlay-Renderer fuer Layout, Positionierung und Schriftgroesse gelesen.
                         </p>
                     </div>
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
                         <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Verifikation</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;" data-i18n="generated.078fd2a59b85">
                             Browser-Checks bestaetigten den OBS-Zielpfad, und die fokussierten Jest-Tests decken Timeout-Fallback und URL-Parameter-Rendering ab.
                         </p>
                     </div>
@@ -127,25 +127,25 @@
                     <!-- Fish.audio -->
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
                         <div style="font-size:2rem; margin-bottom:0.75rem;">🐟</div>
-                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Fish.audio (Default)</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;" data-i18n="generated.5798252d7847">Fish.audio (Default)</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;" data-i18n="generated.b2307a3ee6ae">
                             Echtzeit-Transkription mit niedriger Latenz, unterstützt deutsche und englische Sprache. API-Key erforderlich.
                         </p>
                         <div class="feature-card-tags">
-                            <span class="feature-tag">Niedrige Latenz</span>
-                            <span class="feature-tag">Deutsch & Englisch</span>
+                            <span class="feature-tag" data-i18n="generated.ca5c45a7856a">Niedrige Latenz</span>
+                            <span class="feature-tag" data-i18n="generated.df8bebd41543">Deutsch & Englisch</span>
                             <span class="feature-tag">API-Key</span>
                         </div>
                     </div>
                     <!-- Deepgram Nova-2 -->
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
                         <div style="font-size:2rem; margin-bottom:0.75rem;">⚡</div>
-                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Deepgram Nova‑2</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;" data-i18n="generated.1fc922a9ce71">Deepgram Nova‑2</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;" data-i18n="generated.3d2d11189478">
                             Hochpräzise ASR, unterstützt mehrere Sprachen, inkl. Deutsch. Schnell und zuverlässig.
                         </p>
                         <div class="feature-card-tags">
-                            <span class="feature-tag">Hohe Genauigkeit</span>
+                            <span class="feature-tag" data-i18n="generated.4ad745adaa17">Hohe Genauigkeit</span>
                             <span class="feature-tag">Mehrsprachig</span>
                             <span class="feature-tag">API-Key</span>
                         </div>
@@ -154,12 +154,12 @@
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
                         <div style="font-size:2rem; margin-bottom:0.75rem;">🎙️</div>
                         <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">ElevenLabs</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;" data-i18n="generated.10659794c626">
                             KI‑basierte Transkription mit hoher Sprachqualität, unterstützt Deutsch und Englisch.
                         </p>
                         <div class="feature-card-tags">
-                            <span class="feature-tag">KI‑Transkription</span>
-                            <span class="feature-tag">Deutsch & Englisch</span>
+                            <span class="feature-tag" data-i18n="generated.4ed9cd247521">KI‑Transkription</span>
+                            <span class="feature-tag" data-i18n="generated.89fb614e88e8">Deutsch & Englisch</span>
                             <span class="feature-tag">API-Key</span>
                         </div>
                     </div>
@@ -170,45 +170,45 @@
         <!-- Features Grid -->
         <section class="features-preview">
             <div class="container">
-                <h2 class="section-title">Hauptfunktionen im Detail</h2>
+                <h2 class="section-title" data-i18n="generated.c5fa7bbd2dbe">Hauptfunktionen im Detail</h2>
                 <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1.5rem;">
                     <!-- Voice Activity Detection -->
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
                         <div style="font-size:2rem; margin-bottom:0.75rem;">🔊</div>
-                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Voice Activity Detection (VAD)</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;" data-i18n="generated.49dcb8d71c30">Voice Activity Detection (VAD)</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;" data-i18n="generated.73e704dc0dae">
                             Automatischer Start/Stop der Transkription basierend auf RMS‑Threshold. Reduziert Stille und Hintergrundgeräusche.
                         </p>
                     </div>
                     <!-- Language Detection & Whitelist -->
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
                         <div style="font-size:2rem; margin-bottom:0.75rem;">🌐</div>
-                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Spracherkennung & Whitelist</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;" data-i18n="generated.045286cb9e6c">Spracherkennung & Whitelist</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;" data-i18n="generated.87ec40d9d568">
                             Automatische Spracherkennung mit Whitelist für Deutsch und Englisch. Unzulässige Sprachen werden ignoriert.
                         </p>
                     </div>
                     <!-- Hallucination Filter -->
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
                         <div style="font-size:2rem; margin-bottom:0.75rem;">🚫</div>
-                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Halluzinations‑Filter</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;" data-i18n="generated.c27ea888d313">Halluzinations‑Filter</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;" data-i18n="generated.42ad7efca6a7">
                             Erkennung von CJK, Thai und Arabisch, um fehlerhafte Transkriptionen zu vermeiden.
                         </p>
                     </div>
                     <!-- OBS Ticker Overlay -->
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
                         <div style="font-size:2rem; margin-bottom:0.75rem;">🖥️</div>
-                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">OBS Ticker Overlay</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;" data-i18n="generated.b399d0b2ae87">OBS Ticker Overlay</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;" data-i18n="generated.846db8e512ba">
                             Konfigurierbarer Ticker (Position, Schriftgröße, Farbe, Transparenz) über OBS‑Websocket oder Web‑Socket‑API.
                         </p>
                     </div>
                     <!-- Configurable Display -->
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
                         <div style="font-size:2rem; margin-bottom:0.75rem;">⚙️</div>
-                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Konfigurierbare Anzeige</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;" data-i18n="generated.aa51048bfa59">Konfigurierbare Anzeige</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;" data-i18n="generated.72dbb322bc54">
                             Einstellbare Zeilenlänge, Schriftart, Animationsgeschwindigkeit und mehr – alles per UI‑Konfiguration.
                         </p>
                     </div>
@@ -220,14 +220,14 @@
         <section class="features-preview" style="padding-top:2rem;">
             <div class="container">
                 <h2 class="section-title">Entwicklungsstatus</h2>
-                <p>Version 1.0.0 – working‑beta. Die Basisfunktionen sind bereits in Produktion, weitere Features folgen in kommenden Releases.</p>
+                <p data-i18n="generated.67fb911b3a7a">Version 1.0.0 – working‑beta. Die Basisfunktionen sind bereits in Produktion, weitere Features folgen in kommenden Releases.</p>
             </div>
         </section>
 
     </main>
     <footer class="site-footer">
         <div class="container">
-            <p>&copy; 2026 ltth.app – Alle Rechte vorbehalten.</p>
+            <p data-i18n="generated.6edef0d30df9">&copy; 2026 ltth.app – Alle Rechte vorbehalten.</p>
         </div>
     </footer>
 </body>

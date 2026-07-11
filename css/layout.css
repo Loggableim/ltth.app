@@ -11,6 +11,15 @@ body[data-layout-loading] > *:not(script):not(style):not(link):not(#scrollProgre
     visibility: hidden;
 }
 
+/* Shared masthead brand asset. The icon is intentionally compact so it works
+   across GitHub Pages' static routes without forcing a wide raster wordmark. */
+.navbar .logo-icon--header {
+    width: 3.25rem !important;
+    height: 3.25rem !important;
+    max-height: 3.25rem !important;
+    object-fit: contain;
+}
+
 /* ===================================
    Navigation Dropdown Styles
    =================================== */
@@ -75,6 +84,27 @@ body[data-layout-loading] > *:not(script):not(style):not(link):not(#scrollProgre
 .nav-dropdown-item:hover {
     background: rgba(18, 161, 22, 0.15);
     color: var(--color-primary, #12a116);
+}
+
+/* FAQ cards use a dark surface even on the light site shell. Keep the
+   question and link colors readable against that surface instead of inheriting
+   the darker light-theme green/gray tokens. */
+.faq-item h3 {
+    color: #b7f7c3 !important;
+}
+
+.faq-item p,
+.faq-item li {
+    color: #e8edf0 !important;
+}
+
+.faq-item a {
+    color: #8fdcff !important;
+}
+
+.faq-item:focus-within {
+    outline: 3px solid rgba(143, 220, 255, 0.75);
+    outline-offset: 3px;
 }
 
 /* ===================================
@@ -359,6 +389,99 @@ body[data-layout-loading] > *:not(script):not(style):not(link):not(#scrollProgre
     line-height: 1.7;
 }
 
+@media (min-width: 769px) and (max-width: 1380px) {
+    .nav-menu > .nav-link[data-page="changelog"],
+    .nav-menu > .nav-link[data-page="community"],
+    .nav-menu > .nav-link[data-page="faq"],
+    .nav-menu > .nav-link[data-page="support"],
+    .nav-menu > .nav-link[data-page="auth"] {
+        display: none;
+    }
+}
+
+/* Friendly pop-art treatment shared by the public feature pages. */
+.feature-hero {
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 16% 22%, rgba(255, 77, 155, 0.26), transparent 16rem),
+        radial-gradient(circle at 82% 18%, rgba(67, 215, 255, 0.24), transparent 18rem),
+        linear-gradient(135deg, #241648, #182e59);
+    border-bottom: 3px solid #ffd34e;
+}
+
+.feature-hero::before {
+    content: '';
+    position: absolute;
+    width: 15rem;
+    height: 15rem;
+    border-radius: 50%;
+    background: #ff5ea8;
+    opacity: 0.18;
+    right: 8%;
+    bottom: -8rem;
+}
+
+.feature-hero-icon {
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(4px 4px 0 rgba(23, 16, 45, 0.32));
+}
+
+.feature-hero-title {
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(90deg, #ffd34e, #ff83bf 48%, #76dcff);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+.feature-hero-subtitle {
+    position: relative;
+    z-index: 1;
+    color: #f3ecff;
+}
+
+.features-preview {
+    background: #fff6dc;
+}
+
+.features-preview .section-title,
+.features-preview .section-subtitle {
+    color: #251747;
+}
+
+.feature-card,
+.feature-card-item {
+    border: 3px solid #251747;
+    box-shadow: 5px 5px 0 rgba(37, 23, 71, 0.42);
+}
+
+.feature-card:nth-child(3n + 1),
+.feature-card-item:nth-child(3n + 1) { background: #7de2f4; }
+.feature-card:nth-child(3n + 2),
+.feature-card-item:nth-child(3n + 2) { background: #d7b0ff; }
+.feature-card:nth-child(3n),
+.feature-card-item:nth-child(3n) { background: #ffd34e; }
+
+.feature-card-title,
+.feature-card-desc,
+.feature-card-item .feature-card-title,
+.feature-card-item .feature-card-desc { color: #251747; }
+
+.feature-card:hover,
+.feature-card-item:hover {
+    transform: translate(-2px, -6px);
+    box-shadow: 9px 9px 0 rgba(37, 23, 71, 0.45);
+    border-color: #251747;
+}
+
+.cta-section {
+    background: linear-gradient(115deg, #ff5ea8, #8555ff 48%, #43d7ff);
+    border-top: 3px solid #251747;
+    border-bottom: 3px solid #251747;
+}
+
 /* ===================================
    Section dividers
    =================================== */
@@ -602,10 +725,10 @@ body[data-layout-loading] > *:not(script):not(style):not(link):not(#scrollProgre
     .nav-mega-panel::before {
         content: '';
         position: absolute;
-        top: -1rem;
+        top: -1.25rem;
         left: 0;
         width: 100%;
-        height: 1rem;
+        height: 1.25rem;
         background: transparent;
     }
 }
