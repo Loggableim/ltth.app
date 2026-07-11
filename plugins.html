@@ -641,7 +641,7 @@
             actionRow.appendChild(link);
         }
 
-        const docUrl = PLUGIN_FEATURE_PAGES[plugin.id] || PLUGIN_FEATURE_PAGES[plugin.id.replace('_', '-')];
+        const docUrl = plugin.tutorialUrl || null;
         if (docUrl) {
             const link = document.createElement('a');
             link.href = docUrl;
@@ -751,6 +751,12 @@
 
             const payload = await response.json();
             const normalized = normalizePlugins(payload.plugins || [], locale);
+            const tutorialIndexResponse = await fetch('/docs/plugins/index.json', { cache: 'no-cache' });
+            const tutorialIndex = tutorialIndexResponse.ok ? await tutorialIndexResponse.json() : [];
+            const documentedIds = new Set(tutorialIndex.map((tutorial) => tutorial.id));
+            for (const plugin of normalized) {
+                if (documentedIds.has(plugin.id)) plugin.tutorialUrl = `/docs/plugins/${plugin.id.replace('_', '-')}.html?lang=${locale}`;
+            }
 
             if (!normalized.length) {
                 if (statusEl) statusEl.textContent = getText(locale, 'noPlugins');
@@ -773,6 +779,21 @@
             renderCategory(gridEl, getText(locale, 'sourceCore'), `${core.length} ${getText(locale, 'sourceCore').toLowerCase()}`, core, locale);
             renderCategory(gridEl, getText(locale, 'sourceOfficial'), `${official.length} ${getText(locale, 'sourceOfficial').toLowerCase()}`, official, locale);
             renderCategory(gridEl, getText(locale, 'sourceCommunity'), `${community.length} ${getText(locale, 'sourceCommunity').toLowerCase()}`, community, locale);
+
+            const publishedIds = new Set(normalized.map((plugin) => plugin.id));
+            const docsOnly = tutorialIndex
+                .filter((tutorial) => !publishedIds.has(tutorial.id))
+                .map((tutorial) => ({
+                    id: tutorial.id,
+                    name: tutorial.translations?.[locale]?.title || tutorial.name,
+                    description: tutorial.translations?.[locale]?.summary || '',
+                    category: tutorial.category,
+                    version: tutorial.devStatus || 'Documentation',
+                    sourceLabel: getText(locale, 'docs'),
+                    tutorialUrl: `/docs/plugins/${tutorial.id}.html?lang=${locale}`,
+                    screenshots: tutorial.image?.[locale] ? [tutorial.image[locale]] : []
+                }));
+            renderCategory(gridEl, getText(locale, 'docs'), `${docsOnly.length} ${getText(locale, 'docs').toLowerCase()}`, docsOnly, locale);
 
             if (statusEl) {
                 statusEl.textContent = formatText(getText(locale, 'storeLoaded'), { count: String(normalized.length) });

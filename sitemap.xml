@@ -437,4 +437,376 @@
     <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/impressum.html?lang=fr"/>
   </url>
 
+<!-- GENERATED PLUGIN DOCS START -->
+  <url>
+    <loc>https://ltth.app/docs/plugins/advanced-timer.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/advanced-timer.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/advanced-timer.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/advanced-timer.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/advanced-timer.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/animazingpal.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/animazingpal.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/animazingpal.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/animazingpal.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/animazingpal.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/api-bridge.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/api-bridge.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/api-bridge.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/api-bridge.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/api-bridge.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/chatango.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/chatango.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/chatango.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/chatango.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/chatango.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/clarityhud.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/clarityhud.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/clarityhud.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/clarityhud.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/clarityhud.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/coinbattle.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/coinbattle.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/coinbattle.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/coinbattle.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/coinbattle.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/config-import.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/config-import.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/config-import.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/config-import.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/config-import.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/data-source.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/data-source.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/data-source.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/data-source.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/data-source.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/gift-catalog.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/gift-catalog.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/gift-catalog.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/gift-catalog.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/gift-catalog.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/emoji-rain.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/emoji-rain.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/emoji-rain.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/emoji-rain.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/emoji-rain.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/fireworks.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/fireworks.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/fireworks.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/fireworks.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/fireworks.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/gcce.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/gcce.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/gcce.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/gcce.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/gcce.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/openshock.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/openshock.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/openshock.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/openshock.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/openshock.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/interactive-story.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/interactive-story.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/interactive-story.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/interactive-story.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/interactive-story.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/goals.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/goals.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/goals.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/goals.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/goals.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/store-admin.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/store-admin.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/store-admin.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/store-admin.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/store-admin.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/game-engine.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/game-engine.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/game-engine.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/game-engine.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/game-engine.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/minecraft-connect.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/minecraft-connect.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/minecraft-connect.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/minecraft-connect.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/minecraft-connect.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/multicam.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/multicam.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/multicam.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/multicam.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/multicam.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/music-bot.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/music-bot.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/music-bot.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/music-bot.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/music-bot.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/osc-bridge.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/osc-bridge.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/osc-bridge.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/osc-bridge.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/osc-bridge.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/quiz-show.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/quiz-show.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/quiz-show.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/quiz-show.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/quiz-show.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/sidekick.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/sidekick.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/sidekick.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/sidekick.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/sidekick.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/soundboard.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/soundboard.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/soundboard.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/soundboard.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/soundboard.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/spotlight.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/spotlight.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/spotlight.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/spotlight.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/spotlight.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/streamalchemy.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/streamalchemy.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/streamalchemy.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/streamalchemy.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/streamalchemy.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/stt-ticker.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/stt-ticker.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/stt-ticker.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/stt-ticker.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/stt-ticker.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/talking-heads.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/talking-heads.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/talking-heads.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/talking-heads.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/talking-heads.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/tts.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/tts.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/tts.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/tts.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/tts.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/thermal-printer.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/thermal-printer.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/thermal-printer.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/thermal-printer.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/thermal-printer.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/toptier.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/toptier.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/toptier.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/toptier.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/toptier.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/vdoninja.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/vdoninja.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/vdoninja.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/vdoninja.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/vdoninja.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/milestone-leaderboard.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/milestone-leaderboard.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/milestone-leaderboard.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/milestone-leaderboard.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/milestone-leaderboard.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/flame-overlay.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/flame-overlay.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/flame-overlay.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/flame-overlay.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/flame-overlay.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/weather-control.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/weather-control.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/weather-control.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/weather-control.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/weather-control.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/webgpu-emoji-rain.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/webgpu-emoji-rain.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/webgpu-emoji-rain.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/webgpu-emoji-rain.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/webgpu-emoji-rain.html?lang=fr"/>
+  </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/webgpu-fireworks.html</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/webgpu-fireworks.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/webgpu-fireworks.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/webgpu-fireworks.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/webgpu-fireworks.html?lang=fr"/>
+  </url>
+<!-- GENERATED PLUGIN DOCS END -->
 </urlset>

@@ -1,0 +1,1186 @@
+[
+  {
+    "id": "advanced-timer",
+    "name": "Advanced Timer",
+    "category": "plugin",
+    "access": "early-version",
+    "devStatus": "early-version",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/advanced-timer/activate.png",
+      "en": "/screenshots/docs/plugins/advanced-timer/activate.png",
+      "es": "/screenshots/es/docs/plugins/advanced-timer/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/advanced-timer/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Advanced Timer",
+        "summary": "Mit Advanced Timer richtest du eine interaktive Zuschauer-Erfahrung ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Advanced Timer",
+        "summary": "Advanced Timer sets up an an interactive viewer experience. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Advanced Timer",
+        "summary": "Advanced Timer permite configurar una experiencia interactiva para espectadores. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Advanced Timer",
+        "summary": "Advanced Timer permet de configurer une expérience interactive pour les spectateurs. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "animazingpal",
+    "name": "AnimazingPal",
+    "category": "integration",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/animazingpal/activate.png",
+      "en": "/screenshots/docs/plugins/animazingpal/activate.png",
+      "es": "/screenshots/es/docs/plugins/animazingpal/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/animazingpal/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "AnimazingPal",
+        "summary": "Mit AnimazingPal richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "AnimazingPal",
+        "summary": "AnimazingPal sets up an an external integration. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "AnimazingPal",
+        "summary": "AnimazingPal permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "AnimazingPal",
+        "summary": "AnimazingPal permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "api-bridge",
+    "name": "API Bridge",
+    "category": "core",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/api-bridge/activate.png",
+      "en": "/screenshots/docs/plugins/api-bridge/activate.png",
+      "es": "/screenshots/es/docs/plugins/api-bridge/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/api-bridge/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "API Bridge",
+        "summary": "Mit API Bridge richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "API Bridge",
+        "summary": "API Bridge sets up an a system and administration workflow. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "API Bridge",
+        "summary": "API Bridge permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "API Bridge",
+        "summary": "API Bridge permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "chatango",
+    "name": "Chatango Integration",
+    "category": "plugin",
+    "access": "early-version",
+    "devStatus": "early-version",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/chatango/activate.png",
+      "en": "/screenshots/docs/plugins/chatango/activate.png",
+      "es": "/screenshots/es/docs/plugins/chatango/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/chatango/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Chatango Integration",
+        "summary": "Mit Chatango Integration richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Chatango Integration",
+        "summary": "Chatango Integration sets up an an external integration. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Chatango Integration",
+        "summary": "Chatango Integration permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Chatango Integration",
+        "summary": "Chatango Integration permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "clarityhud",
+    "name": "ClarityHUD",
+    "category": "overlay",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/clarityhud/activate.png",
+      "en": "/screenshots/docs/plugins/clarityhud/activate.png",
+      "es": "/screenshots/es/docs/plugins/clarityhud/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/clarityhud/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "ClarityHUD",
+        "summary": "Mit ClarityHUD richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "ClarityHUD",
+        "summary": "ClarityHUD sets up an an overlay and visual response. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "ClarityHUD",
+        "summary": "ClarityHUD permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "ClarityHUD",
+        "summary": "ClarityHUD permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "coinbattle",
+    "name": "CoinBattle",
+    "category": "overlay",
+    "access": "early-version",
+    "devStatus": "early-version",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/coinbattle/activate.png",
+      "en": "/screenshots/docs/plugins/coinbattle/activate.png",
+      "es": "/screenshots/es/docs/plugins/coinbattle/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/coinbattle/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "CoinBattle",
+        "summary": "Mit CoinBattle richtest du eine interaktive Zuschauer-Erfahrung ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "CoinBattle",
+        "summary": "CoinBattle sets up an an interactive viewer experience. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "CoinBattle",
+        "summary": "CoinBattle permite configurar una experiencia interactiva para espectadores. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "CoinBattle",
+        "summary": "CoinBattle permet de configurer une expérience interactive pour les spectateurs. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "config-import",
+    "name": "Config Backup & Restore",
+    "category": "utility",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/config-import/activate.png",
+      "en": "/screenshots/docs/plugins/config-import/activate.png",
+      "es": "/screenshots/es/docs/plugins/config-import/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/config-import/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Config Backup & Restore",
+        "summary": "Mit Config Backup & Restore richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Config Backup & Restore",
+        "summary": "Config Backup & Restore sets up an a system and administration workflow. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Config Backup & Restore",
+        "summary": "Config Backup & Restore permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Config Backup & Restore",
+        "summary": "Config Backup & Restore permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "data-source",
+    "name": "Data Source Manager",
+    "category": "plugin",
+    "access": "local plugin",
+    "devStatus": "available",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/data-source/activate.png",
+      "en": "/screenshots/docs/plugins/data-source/activate.png",
+      "es": "/screenshots/es/docs/plugins/data-source/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/data-source/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Data Source Manager",
+        "summary": "Mit Data Source Manager richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Data Source Manager",
+        "summary": "Data Source Manager sets up an a system and administration workflow. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Data Source Manager",
+        "summary": "Data Source Manager permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Data Source Manager",
+        "summary": "Data Source Manager permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "gift-catalog",
+    "name": "Developer Guides",
+    "category": "plugin",
+    "access": "development-beta",
+    "devStatus": "development-beta",
+    "storeAvailable": false,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/gift-catalog/activate.png",
+      "en": "/screenshots/docs/plugins/gift-catalog/activate.png",
+      "es": "/screenshots/es/docs/plugins/gift-catalog/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/gift-catalog/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Developer Guides",
+        "summary": "Mit Developer Guides richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Developer Guides",
+        "summary": "Developer Guides sets up an a system and administration workflow. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Developer Guides",
+        "summary": "Developer Guides permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Developer Guides",
+        "summary": "Developer Guides permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "emoji-rain",
+    "name": "EmojiRain",
+    "category": "plugin",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/emoji-rain/activate.png",
+      "en": "/screenshots/docs/plugins/emoji-rain/activate.png",
+      "es": "/screenshots/es/docs/plugins/emoji-rain/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/emoji-rain/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "EmojiRain",
+        "summary": "Mit EmojiRain richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "EmojiRain",
+        "summary": "EmojiRain sets up an an overlay and visual response. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "EmojiRain",
+        "summary": "EmojiRain permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "EmojiRain",
+        "summary": "EmojiRain permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "fireworks",
+    "name": "Fireworks Superplugin (Stable)",
+    "category": "plugin",
+    "access": "stable",
+    "devStatus": "stable",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/fireworks/activate.png",
+      "en": "/screenshots/docs/plugins/fireworks/activate.png",
+      "es": "/screenshots/es/docs/plugins/fireworks/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/fireworks/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Fireworks Superplugin (Stable)",
+        "summary": "Mit Fireworks Superplugin (Stable) richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Fireworks Superplugin (Stable)",
+        "summary": "Fireworks Superplugin (Stable) sets up an an overlay and visual response. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Fireworks Superplugin (Stable)",
+        "summary": "Fireworks Superplugin (Stable) permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Fireworks Superplugin (Stable)",
+        "summary": "Fireworks Superplugin (Stable) permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "gcce",
+    "name": "Global Chat Command Engine",
+    "category": "plugin",
+    "access": "development-beta",
+    "devStatus": "development-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/gcce/activate.png",
+      "en": "/screenshots/docs/plugins/gcce/activate.png",
+      "es": "/screenshots/es/docs/plugins/gcce/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/gcce/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Global Chat Command Engine",
+        "summary": "Mit Global Chat Command Engine richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Global Chat Command Engine",
+        "summary": "Global Chat Command Engine sets up an a system and administration workflow. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Global Chat Command Engine",
+        "summary": "Global Chat Command Engine permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Global Chat Command Engine",
+        "summary": "Global Chat Command Engine permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "openshock",
+    "name": "Hybridshock",
+    "category": "integration",
+    "access": "development-beta",
+    "devStatus": "development-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/openshock/activate.png",
+      "en": "/screenshots/docs/plugins/openshock/activate.png",
+      "es": "/screenshots/es/docs/plugins/openshock/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/openshock/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Hybridshock",
+        "summary": "Mit Hybridshock richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Hybridshock",
+        "summary": "Hybridshock sets up an an external integration. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Hybridshock",
+        "summary": "Hybridshock permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Hybridshock",
+        "summary": "Hybridshock permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "interactive-story",
+    "name": "Interactive Story Generator",
+    "category": "entertainment",
+    "access": "early-version",
+    "devStatus": "early-version",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/interactive-story/activate.png",
+      "en": "/screenshots/docs/plugins/interactive-story/activate.png",
+      "es": "/screenshots/es/docs/plugins/interactive-story/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/interactive-story/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Interactive Story Generator",
+        "summary": "Mit Interactive Story Generator richtest du eine interaktive Zuschauer-Erfahrung ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Interactive Story Generator",
+        "summary": "Interactive Story Generator sets up an an interactive viewer experience. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Interactive Story Generator",
+        "summary": "Interactive Story Generator permite configurar una experiencia interactiva para espectadores. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Interactive Story Generator",
+        "summary": "Interactive Story Generator permet de configurer une expérience interactive pour les spectateurs. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "goals",
+    "name": "Live Goals",
+    "category": "plugin",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/goals/activate.png",
+      "en": "/screenshots/docs/plugins/goals/activate.png",
+      "es": "/screenshots/es/docs/plugins/goals/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/goals/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Live Goals",
+        "summary": "Mit Live Goals richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Live Goals",
+        "summary": "Live Goals sets up an an overlay and visual response. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Live Goals",
+        "summary": "Live Goals permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Live Goals",
+        "summary": "Live Goals permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "store-admin",
+    "name": "LTTH App Store Admin",
+    "category": "utility",
+    "access": "admin-only",
+    "devStatus": "admin-only",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/store-admin/activate.png",
+      "en": "/screenshots/docs/plugins/store-admin/activate.png",
+      "es": "/screenshots/es/docs/plugins/store-admin/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/store-admin/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "LTTH App Store Admin",
+        "summary": "Mit LTTH App Store Admin richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "LTTH App Store Admin",
+        "summary": "LTTH App Store Admin sets up an a system and administration workflow. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "LTTH App Store Admin",
+        "summary": "LTTH App Store Admin permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "LTTH App Store Admin",
+        "summary": "LTTH App Store Admin permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "game-engine",
+    "name": "LTTH Game Engine",
+    "category": "overlay",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/game-engine/activate.png",
+      "en": "/screenshots/docs/plugins/game-engine/activate.png",
+      "es": "/screenshots/es/docs/plugins/game-engine/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/game-engine/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "LTTH Game Engine",
+        "summary": "Mit LTTH Game Engine richtest du eine interaktive Zuschauer-Erfahrung ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "LTTH Game Engine",
+        "summary": "LTTH Game Engine sets up an an interactive viewer experience. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "LTTH Game Engine",
+        "summary": "LTTH Game Engine permite configurar una experiencia interactiva para espectadores. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "LTTH Game Engine",
+        "summary": "LTTH Game Engine permet de configurer une expérience interactive pour les spectateurs. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "minecraft-connect",
+    "name": "Minecraft Connect",
+    "category": "plugin",
+    "access": "early-version",
+    "devStatus": "early-version",
+    "storeAvailable": false,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/minecraft-connect/activate.png",
+      "en": "/screenshots/docs/plugins/minecraft-connect/activate.png",
+      "es": "/screenshots/es/docs/plugins/minecraft-connect/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/minecraft-connect/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Minecraft Connect",
+        "summary": "Mit Minecraft Connect richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Minecraft Connect",
+        "summary": "Minecraft Connect sets up an an external integration. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Minecraft Connect",
+        "summary": "Minecraft Connect permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Minecraft Connect",
+        "summary": "Minecraft Connect permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "multicam",
+    "name": "Multi-Cam Switcher",
+    "category": "utility",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/multicam/activate.png",
+      "en": "/screenshots/docs/plugins/multicam/activate.png",
+      "es": "/screenshots/es/docs/plugins/multicam/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/multicam/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Multi-Cam Switcher",
+        "summary": "Mit Multi-Cam Switcher richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Multi-Cam Switcher",
+        "summary": "Multi-Cam Switcher sets up an an external integration. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Multi-Cam Switcher",
+        "summary": "Multi-Cam Switcher permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Multi-Cam Switcher",
+        "summary": "Multi-Cam Switcher permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "music-bot",
+    "name": "Music Bot",
+    "category": "integration",
+    "access": "local plugin",
+    "devStatus": "available",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/music-bot/activate.png",
+      "en": "/screenshots/docs/plugins/music-bot/activate.png",
+      "es": "/screenshots/es/docs/plugins/music-bot/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/music-bot/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Music Bot",
+        "summary": "Mit Music Bot richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Music Bot",
+        "summary": "Music Bot sets up an an external integration. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Music Bot",
+        "summary": "Music Bot permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Music Bot",
+        "summary": "Music Bot permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "osc-bridge",
+    "name": "OSC-Bridge (VRChat)",
+    "category": "plugin",
+    "access": "stable",
+    "devStatus": "stable",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/osc-bridge/activate.png",
+      "en": "/screenshots/docs/plugins/osc-bridge/activate.png",
+      "es": "/screenshots/es/docs/plugins/osc-bridge/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/osc-bridge/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "OSC-Bridge (VRChat)",
+        "summary": "Mit OSC-Bridge (VRChat) richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "OSC-Bridge (VRChat)",
+        "summary": "OSC-Bridge (VRChat) sets up an an external integration. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "OSC-Bridge (VRChat)",
+        "summary": "OSC-Bridge (VRChat) permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "OSC-Bridge (VRChat)",
+        "summary": "OSC-Bridge (VRChat) permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "quiz-show",
+    "name": "Pup Cid's Little Quiz Show Plugin",
+    "category": "module",
+    "access": "development-beta",
+    "devStatus": "development-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/quiz-show/activate.png",
+      "en": "/screenshots/docs/plugins/quiz-show/activate.png",
+      "es": "/screenshots/es/docs/plugins/quiz-show/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/quiz-show/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Pup Cid's Little Quiz Show Plugin",
+        "summary": "Mit Pup Cid's Little Quiz Show Plugin richtest du eine interaktive Zuschauer-Erfahrung ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Pup Cid's Little Quiz Show Plugin",
+        "summary": "Pup Cid's Little Quiz Show Plugin sets up an an interactive viewer experience. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Pup Cid's Little Quiz Show Plugin",
+        "summary": "Pup Cid's Little Quiz Show Plugin permite configurar una experiencia interactiva para espectadores. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Pup Cid's Little Quiz Show Plugin",
+        "summary": "Pup Cid's Little Quiz Show Plugin permet de configurer une expérience interactive pour les spectateurs. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "sidekick",
+    "name": "Sidekick",
+    "category": "tool",
+    "access": "development-beta",
+    "devStatus": "development-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/sidekick/activate.png",
+      "en": "/screenshots/docs/plugins/sidekick/activate.png",
+      "es": "/screenshots/es/docs/plugins/sidekick/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/sidekick/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Sidekick",
+        "summary": "Mit Sidekick richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Sidekick",
+        "summary": "Sidekick sets up an a system and administration workflow. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Sidekick",
+        "summary": "Sidekick permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Sidekick",
+        "summary": "Sidekick permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "soundboard",
+    "name": "Soundboard",
+    "category": "module",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/soundboard/activate.png",
+      "en": "/screenshots/docs/plugins/soundboard/activate.png",
+      "es": "/screenshots/es/docs/plugins/soundboard/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/soundboard/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Soundboard",
+        "summary": "Mit Soundboard richtest du einen Audio- und Sprachablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Soundboard",
+        "summary": "Soundboard sets up an an audio and voice workflow. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Soundboard",
+        "summary": "Soundboard permite configurar un flujo de audio y voz. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Soundboard",
+        "summary": "Soundboard permet de configurer un flux audio et vocal. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "spotlight",
+    "name": "Spotlight",
+    "category": "plugin",
+    "access": "development-beta",
+    "devStatus": "development-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/spotlight/activate.png",
+      "en": "/screenshots/docs/plugins/spotlight/activate.png",
+      "es": "/screenshots/es/docs/plugins/spotlight/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/spotlight/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Spotlight",
+        "summary": "Mit Spotlight richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Spotlight",
+        "summary": "Spotlight sets up an an overlay and visual response. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Spotlight",
+        "summary": "Spotlight permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Spotlight",
+        "summary": "Spotlight permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "streamalchemy",
+    "name": "StreamAlchemy",
+    "category": "plugin",
+    "access": "early-version",
+    "devStatus": "early-version",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/streamalchemy/activate.png",
+      "en": "/screenshots/docs/plugins/streamalchemy/activate.png",
+      "es": "/screenshots/es/docs/plugins/streamalchemy/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/streamalchemy/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "StreamAlchemy",
+        "summary": "Mit StreamAlchemy richtest du eine interaktive Zuschauer-Erfahrung ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "StreamAlchemy",
+        "summary": "StreamAlchemy sets up an an interactive viewer experience. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "StreamAlchemy",
+        "summary": "StreamAlchemy permite configurar una experiencia interactiva para espectadores. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "StreamAlchemy",
+        "summary": "StreamAlchemy permet de configurer une expérience interactive pour les spectateurs. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "stt-ticker",
+    "name": "STT Ticker",
+    "category": "tool",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/stt-ticker/activate.png",
+      "en": "/screenshots/docs/plugins/stt-ticker/activate.png",
+      "es": "/screenshots/es/docs/plugins/stt-ticker/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/stt-ticker/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "STT Ticker",
+        "summary": "Mit STT Ticker richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "STT Ticker",
+        "summary": "STT Ticker sets up an an overlay and visual response. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "STT Ticker",
+        "summary": "STT Ticker permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "STT Ticker",
+        "summary": "STT Ticker permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "talking-heads",
+    "name": "Talking Heads",
+    "category": "module",
+    "access": "early-version",
+    "devStatus": "early-version",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/talking-heads/activate.png",
+      "en": "/screenshots/docs/plugins/talking-heads/activate.png",
+      "es": "/screenshots/es/docs/plugins/talking-heads/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/talking-heads/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Talking Heads",
+        "summary": "Mit Talking Heads richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Talking Heads",
+        "summary": "Talking Heads sets up an an overlay and visual response. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Talking Heads",
+        "summary": "Talking Heads permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Talking Heads",
+        "summary": "Talking Heads permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "tts",
+    "name": "Text-to-Speech System",
+    "category": "core",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/tts/activate.png",
+      "en": "/screenshots/docs/plugins/tts/activate.png",
+      "es": "/screenshots/es/docs/plugins/tts/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/tts/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Text-to-Speech System",
+        "summary": "Mit Text-to-Speech System richtest du einen Audio- und Sprachablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Text-to-Speech System",
+        "summary": "Text-to-Speech System sets up an an audio and voice workflow. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Text-to-Speech System",
+        "summary": "Text-to-Speech System permite configurar un flujo de audio y voz. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Text-to-Speech System",
+        "summary": "Text-to-Speech System permet de configurer un flux audio et vocal. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "thermal-printer",
+    "name": "Thermal Printer",
+    "category": "plugin",
+    "access": "early-version",
+    "devStatus": "early-version",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/thermal-printer/activate.png",
+      "en": "/screenshots/docs/plugins/thermal-printer/activate.png",
+      "es": "/screenshots/es/docs/plugins/thermal-printer/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/thermal-printer/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Thermal Printer",
+        "summary": "Mit Thermal Printer richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Thermal Printer",
+        "summary": "Thermal Printer sets up an an external integration. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Thermal Printer",
+        "summary": "Thermal Printer permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Thermal Printer",
+        "summary": "Thermal Printer permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "toptier",
+    "name": "Top Tier",
+    "category": "overlay",
+    "access": "local plugin",
+    "devStatus": "available",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/toptier/activate.png",
+      "en": "/screenshots/docs/plugins/toptier/activate.png",
+      "es": "/screenshots/es/docs/plugins/toptier/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/toptier/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Top Tier",
+        "summary": "Mit Top Tier richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Top Tier",
+        "summary": "Top Tier sets up an an overlay and visual response. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Top Tier",
+        "summary": "Top Tier permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Top Tier",
+        "summary": "Top Tier permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "vdoninja",
+    "name": "VDO.Ninja Multi-Guest Manager",
+    "category": "integration",
+    "access": "early-version",
+    "devStatus": "early-version",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/vdoninja/activate.png",
+      "en": "/screenshots/docs/plugins/vdoninja/activate.png",
+      "es": "/screenshots/es/docs/plugins/vdoninja/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/vdoninja/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "VDO.Ninja Multi-Guest Manager",
+        "summary": "Mit VDO.Ninja Multi-Guest Manager richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "VDO.Ninja Multi-Guest Manager",
+        "summary": "VDO.Ninja Multi-Guest Manager sets up an an external integration. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "VDO.Ninja Multi-Guest Manager",
+        "summary": "VDO.Ninja Multi-Guest Manager permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "VDO.Ninja Multi-Guest Manager",
+        "summary": "VDO.Ninja Multi-Guest Manager permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "milestone-leaderboard",
+    "name": "Viewer XP",
+    "category": "overlay",
+    "access": "development-beta",
+    "devStatus": "development-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/milestone-leaderboard/activate.png",
+      "en": "/screenshots/docs/plugins/milestone-leaderboard/activate.png",
+      "es": "/screenshots/es/docs/plugins/milestone-leaderboard/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/milestone-leaderboard/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Viewer XP",
+        "summary": "Mit Viewer XP richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Viewer XP",
+        "summary": "Viewer XP sets up an a system and administration workflow. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Viewer XP",
+        "summary": "Viewer XP permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Viewer XP",
+        "summary": "Viewer XP permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "flame-overlay",
+    "name": "Visual FX Frame",
+    "category": "plugin",
+    "access": "early-version",
+    "devStatus": "early-version",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/flame-overlay/activate.png",
+      "en": "/screenshots/docs/plugins/flame-overlay/activate.png",
+      "es": "/screenshots/es/docs/plugins/flame-overlay/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/flame-overlay/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Visual FX Frame",
+        "summary": "Mit Visual FX Frame richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Visual FX Frame",
+        "summary": "Visual FX Frame sets up an an overlay and visual response. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Visual FX Frame",
+        "summary": "Visual FX Frame permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Visual FX Frame",
+        "summary": "Visual FX Frame permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "weather-control",
+    "name": "Weather Control",
+    "category": "plugin",
+    "access": "development-beta",
+    "devStatus": "development-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/weather-control/activate.png",
+      "en": "/screenshots/docs/plugins/weather-control/activate.png",
+      "es": "/screenshots/es/docs/plugins/weather-control/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/weather-control/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Weather Control",
+        "summary": "Mit Weather Control richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "Weather Control",
+        "summary": "Weather Control sets up an an overlay and visual response. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "Weather Control",
+        "summary": "Weather Control permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "Weather Control",
+        "summary": "Weather Control permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "webgpu-emoji-rain",
+    "name": "WebGPU EmojiRain",
+    "category": "plugin",
+    "access": "development-beta",
+    "devStatus": "development-beta",
+    "storeAvailable": true,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/webgpu-emoji-rain/activate.png",
+      "en": "/screenshots/docs/plugins/webgpu-emoji-rain/activate.png",
+      "es": "/screenshots/es/docs/plugins/webgpu-emoji-rain/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/webgpu-emoji-rain/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "WebGPU EmojiRain",
+        "summary": "Mit WebGPU EmojiRain richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "WebGPU EmojiRain",
+        "summary": "WebGPU EmojiRain sets up an an overlay and visual response. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "WebGPU EmojiRain",
+        "summary": "WebGPU EmojiRain permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "WebGPU EmojiRain",
+        "summary": "WebGPU EmojiRain permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  },
+  {
+    "id": "webgpu-fireworks",
+    "name": "WebGPU Fireworks",
+    "category": "plugin",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": false,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/webgpu-fireworks/activate.png",
+      "en": "/screenshots/docs/plugins/webgpu-fireworks/activate.png",
+      "es": "/screenshots/es/docs/plugins/webgpu-fireworks/activate.png",
+      "fr": "/screenshots/fr/docs/plugins/webgpu-fireworks/activate.png"
+    },
+    "translations": {
+      "de": {
+        "title": "WebGPU Fireworks",
+        "summary": "Mit WebGPU Fireworks richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+      },
+      "en": {
+        "title": "WebGPU Fireworks",
+        "summary": "WebGPU Fireworks sets up an an overlay and visual response. This guide safely covers activation through local testing."
+      },
+      "es": {
+        "title": "WebGPU Fireworks",
+        "summary": "WebGPU Fireworks permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+      },
+      "fr": {
+        "title": "WebGPU Fireworks",
+        "summary": "WebGPU Fireworks permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+      }
+    }
+  }
+]

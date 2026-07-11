@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-11T12:33:54.661Z",
+  "generatedAt": "2026-07-11T21:13:00.356Z",
   "locales": [
     "en",
     "de",
@@ -15,7 +15,7 @@
     {
       "label": "website",
       "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\locales",
-      "keys": 6547
+      "keys": 7634
     },
     {
       "label": "docs:app/wiki",
@@ -214,7 +214,7 @@
     {
       "label": "plugin:webgpu-emoji-rain",
       "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\webgpu-emoji-rain\\locales",
-      "keys": 369
+      "keys": 399
     },
     {
       "label": "plugin:webgpu-fireworks",

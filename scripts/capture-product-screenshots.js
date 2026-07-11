@@ -5,10 +5,12 @@ const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
 const { buildSpec, LOCALES } = require('./product-screenshot-spec');
+const { buildDocsSpec } = require('./docs-screenshot-spec');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const SCREENSHOT_ROOT = path.join(REPO_ROOT, 'screenshots');
-const MANIFEST_PATH = path.join(SCREENSHOT_ROOT, 'product-capture-manifest.json');
+const COLLECTION = process.env.SCREENSHOT_COLLECTION === 'docs' ? 'docs' : 'product';
+const MANIFEST_PATH = path.join(SCREENSHOT_ROOT, COLLECTION === 'docs' ? 'docs-capture-manifest.json' : 'product-capture-manifest.json');
 const BASE_URL = (process.env.SCREENSHOT_BASE_URL || 'http://127.0.0.1:3128').replace(/\/$/, '');
 const PORT = Number(process.env.SCREENSHOT_APP_PORT || 3128);
 const TIMEOUT_MS = Number(process.env.SCREENSHOT_TIMEOUT_MS || 60000);
@@ -37,9 +39,9 @@ function browserExecutablePath() {
 }
 
 function outputPath(asset, locale) {
-  const relative = asset.replace(/^\/screenshots\/features\//, '');
+  const relative = asset.replace(/^\/screenshots\//, '');
   const root = locale === 'en' ? SCREENSHOT_ROOT : path.join(SCREENSHOT_ROOT, locale);
-  return path.join(root, 'features', relative);
+  return path.join(root, relative);
 }
 
 function urlFor(route, locale) {
@@ -140,7 +142,7 @@ function startApp() {
 }
 
 async function capture() {
-  const fullSpec = buildSpec(REPO_ROOT);
+  const fullSpec = COLLECTION === 'docs' ? buildDocsSpec(REPO_ROOT) : buildSpec(REPO_ROOT);
   const spec = { ...fullSpec, assets: [...fullSpec.assets] };
   const limit = Number(process.env.SCREENSHOT_LIMIT || 0);
   if (limit > 0) spec.assets = spec.assets.slice(0, limit);
@@ -165,6 +167,8 @@ async function capture() {
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
+    let lastRoute = null;
+    let lastLocale = null;
     await page.setRequestInterception(true);
     page.on('request', (request) => {
       if (!rewritePluginAssetRequest(request)) request.continue();
@@ -182,7 +186,8 @@ async function capture() {
       fs.mkdirSync(path.dirname(target), { recursive: true });
       try {
         await page.setViewport({ width: asset.viewport.width, height: asset.viewport.height, deviceScaleFactor: asset.viewport.deviceScaleFactor });
-        const response = await navigateToTarget(page, asset.route, locale, TIMEOUT_MS);
+        const reuseCurrentPage = COLLECTION === 'docs' && lastRoute === asset.route && lastLocale === locale;
+        const response = reuseCurrentPage ? { status: () => 200 } : await navigateToTarget(page, asset.route, locale, TIMEOUT_MS);
         if (!response || response.status() >= 400) throw new Error(`HTTP ${response ? response.status() : 'no response'}`);
         await new Promise((resolve) => setTimeout(resolve, WAIT_AFTER_LOAD_MS));
         await page.evaluate(async (lang) => {
@@ -203,6 +208,8 @@ async function capture() {
         }, locale);
         if (state.theme !== 'cid') throw new Error(`Theme is ${state.theme || 'unset'}, expected cid`);
         await page.screenshot({ path: target, type: 'png' });
+        lastRoute = asset.route;
+        lastLocale = locale;
         outputs.push({ locale, id: asset.id, path: path.relative(REPO_ROOT, target).replace(/\\/g, '/'), route: asset.route, state });
       } catch (error) {
         failures.push({ locale, id: asset.id, route: asset.route, error: error.message });
@@ -223,6 +230,7 @@ async function capture() {
     || (requestedLocales.includes(entry.locale) && requestedIds.includes(entry.id));
   const manifest = {
     ...fullSpec,
+    collection: COLLECTION,
     sourceUrl: BASE_URL,
     capturedAt: new Date().toISOString(),
     requestedLocales,
