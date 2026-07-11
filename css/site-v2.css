@@ -299,18 +299,56 @@ body.site-v2 .feature-hero-title {
 }
 
 body.site-v2 .feature-plugin-logo {
-  background: rgba(255, 248, 237, 0.96);
-  border: 3px solid #24163f;
-  border-radius: 1rem;
-  box-shadow: 5px 5px 0 rgba(36, 22, 63, 0.58);
   display: block;
-  height: 4.75rem;
-  margin: 0 auto 1.25rem;
+  filter: drop-shadow(0 14px 24px rgba(5, 4, 17, 0.48));
+  height: 7.5rem;
+  margin: 0 auto 1.5rem;
+  max-width: min(82vw, 20rem);
   object-fit: contain;
-  padding: 0.45rem;
   position: relative;
-  width: 4.75rem;
+  width: 100%;
   z-index: 1;
+}
+
+body.site-v2 .feature-plugin-brand {
+  margin: 0 auto 1.5rem;
+  max-width: min(92vw, 42rem);
+  position: relative;
+  z-index: 1;
+}
+
+body.site-v2 .feature-plugin-brand .feature-plugin-logo {
+  height: 12rem;
+  margin: 0;
+  max-width: none;
+  object-fit: cover;
+  object-position: center 52%;
+}
+
+body.site-v2 .feature-plugin-icon {
+  border: 2px solid rgba(126, 244, 190, 0.82);
+  border-radius: 50%;
+  bottom: -1.1rem;
+  box-shadow: 0 12px 24px rgba(2, 5, 14, 0.64), 0 0 0 6px rgba(38, 30, 70, 0.72);
+  height: 5.2rem;
+  object-fit: cover;
+  object-position: center;
+  position: absolute;
+  right: 4%;
+  width: 5.2rem;
+}
+
+@media (max-width: 640px) {
+  body.site-v2 .feature-plugin-brand .feature-plugin-logo {
+    height: 8.5rem;
+  }
+
+  body.site-v2 .feature-plugin-icon {
+    bottom: -0.7rem;
+    height: 4rem;
+    right: 2%;
+    width: 4rem;
+  }
 }
 
 body.site-v2 .plugin-screenshot-grid--single > .screenshot-container:not(:first-child) {
