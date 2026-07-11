@@ -33,8 +33,6 @@
 .home-page .lang-dropdown-toggle:hover { background: rgba(245, 247, 244, 0.06); border-color: rgba(245, 247, 244, 0.25); color: var(--home-ink); }
 .home-page .lang-dropdown-arrow { height: 0.8rem; width: 0.8rem; }
 .home-page .lang-dropdown-menu { background: #171a19; border-color: var(--home-line); box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38); }
-.home-page .theme-toggle { background: transparent; border: 1px solid var(--home-line); border-radius: 0.48rem; color: var(--home-muted); height: 2.35rem; width: 2.35rem; }
-.home-page .theme-toggle:hover { background: rgba(245, 247, 244, 0.06); border-color: rgba(245, 247, 244, 0.25); color: var(--home-ink); }
 .home-page .footer { background: #0c0e0d; border-top: 1px solid var(--home-line); margin-top: 0; padding-top: 4.5rem; }
 .home-page .footer-logo { align-items: center; display: inline-flex; }
 .home-page .logo-icon--footer { display: none; }
@@ -193,7 +191,7 @@
 .home-page .nav-link:hover, .home-page .nav-link.active { background: rgba(255, 255, 255, 0.12); color: #fff; }
 .home-page .nav-menu > .nav-link[data-page="download"] { background: var(--home-pink); box-shadow: 4px 4px 0 #43226f; color: #fff; }
 .home-page .nav-menu > .nav-link[data-page="download"]:hover { background: #ff75b4; }
-.home-page .lang-dropdown-toggle, .home-page .theme-toggle { border-color: rgba(255, 255, 255, 0.3); color: #fff; }
+.home-page .lang-dropdown-toggle { border-color: rgba(255, 255, 255, 0.3); color: #fff; }
 .home-page .footer { background: #201641; border-top-color: rgba(255, 255, 255, 0.25); }
 .home-page .footer-logo::before { background: var(--home-pink); box-shadow: 4px 4px 0 var(--home-cyan); }
 .home-page .footer a:hover { color: var(--home-yellow); }

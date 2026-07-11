@@ -1,0 +1,3945 @@
+{
+  "version": "2026-07-11-cid-v1",
+  "source": "current-workspace",
+  "theme": "cid",
+  "locales": [
+    "de",
+    "en",
+    "es",
+    "fr"
+  ],
+  "viewport": {
+    "width": 1280,
+    "height": 800,
+    "deviceScaleFactor": 1
+  },
+  "assets": [
+    {
+      "id": "advanced-timer",
+      "canonical": "/screenshots/features/advanced-timer.png",
+      "route": "/advanced-timer/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "alerts",
+      "canonical": "/screenshots/features/alerts.png",
+      "route": "/dashboard.html?view=alerts",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "animazingpal",
+      "canonical": "/screenshots/features/animazingpal.png",
+      "route": "/animazingpal/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "api-bridge-admin",
+      "canonical": "/screenshots/features/api-bridge-admin.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "auto-updater",
+      "canonical": "/screenshots/features/auto-updater.png",
+      "route": "/dashboard.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "chat-commands",
+      "canonical": "/screenshots/features/chat-commands.png",
+      "route": "/dashboard.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "chatango",
+      "canonical": "/screenshots/features/chatango.png",
+      "route": "/chatango/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "clarityhud",
+      "canonical": "/screenshots/features/clarityhud.png",
+      "route": "/clarityhud/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "coinbattle",
+      "canonical": "/screenshots/features/coinbattle.png",
+      "route": "/coinbattle/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "config-import",
+      "canonical": "/screenshots/features/config-import.png",
+      "route": "/config-import/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "dashboard-main",
+      "canonical": "/screenshots/features/dashboard-main.png",
+      "route": "/dashboard.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "dashboard",
+      "canonical": "/screenshots/features/dashboard.png",
+      "route": "/dashboard.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "data-source",
+      "canonical": "/screenshots/features/data-source.png",
+      "route": "/data-source/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "emoji-rain",
+      "canonical": "/screenshots/features/emoji-rain.png",
+      "route": "/emoji-rain/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "fireworks",
+      "canonical": "/screenshots/features/fireworks.png",
+      "route": "/fireworks/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "flame-overlay-night",
+      "canonical": "/screenshots/features/flame-overlay-night.png",
+      "route": "/dashboard.html",
+      "state": "cid-accessibility-layout",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "flame-overlay-vision-impaired",
+      "canonical": "/screenshots/features/flame-overlay-vision-impaired.png",
+      "route": "/dashboard.html",
+      "state": "cid-accessibility-layout",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "flame-overlay",
+      "canonical": "/screenshots/features/flame-overlay.png",
+      "route": "/flame-overlay/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "flows-editor",
+      "canonical": "/screenshots/features/flows-editor.png",
+      "route": "/ifttt-flow-editor.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "flows",
+      "canonical": "/screenshots/features/flows.png",
+      "route": "/ifttt-flow-editor.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "game-engine",
+      "canonical": "/screenshots/features/game-engine.png",
+      "route": "/game-engine/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "gcce-hud",
+      "canonical": "/screenshots/features/gcce-hud.png",
+      "route": "/gcce/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "gcce",
+      "canonical": "/screenshots/features/gcce.png",
+      "route": "/gcce/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "gift-milestone",
+      "canonical": "/screenshots/features/gift-milestone.png",
+      "route": "/gift-milestone/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "goals-overlay",
+      "canonical": "/screenshots/features/goals-overlay.png",
+      "route": "/goals/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "goals",
+      "canonical": "/screenshots/features/goals.png",
+      "route": "/goals/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "interactive-story",
+      "canonical": "/screenshots/features/interactive-story.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "lastevent-spotlight",
+      "canonical": "/screenshots/features/lastevent-spotlight.png",
+      "route": "/plugins/spotlight/ui/main.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "lastevent",
+      "canonical": "/screenshots/features/lastevent.png",
+      "route": "/plugins/spotlight/ui/main.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "live-advanced-timer",
+      "canonical": "/screenshots/features/live-advanced-timer.png",
+      "route": "/dashboard.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 720,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "live-fireworks",
+      "canonical": "/screenshots/features/live-fireworks.png",
+      "route": "/dashboard.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 720,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "live-game-engine",
+      "canonical": "/screenshots/features/live-game-engine.png",
+      "route": "/dashboard.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 720,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "live-goals",
+      "canonical": "/screenshots/features/live-goals.png",
+      "route": "/dashboard.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 720,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "live-hybridshock",
+      "canonical": "/screenshots/features/live-hybridshock.png",
+      "route": "/dashboard.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 720,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "milestone-leaderboard",
+      "canonical": "/screenshots/features/milestone-leaderboard.png",
+      "route": "/leaderboard/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "multicam",
+      "canonical": "/screenshots/features/multicam.png",
+      "route": "/multicam/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "music-bot",
+      "canonical": "/screenshots/features/music-bot.png",
+      "route": "/plugins/music-bot/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "openshock",
+      "canonical": "/screenshots/features/openshock.png",
+      "route": "/openshock/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "osc-bridge",
+      "canonical": "/screenshots/features/osc-bridge.png",
+      "route": "/osc-bridge/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "overlays",
+      "canonical": "/screenshots/features/overlays.png",
+      "route": "/ifttt-hud.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "plugin-chatango-dashboard",
+      "canonical": "/screenshots/features/plugin-chatango-dashboard.png",
+      "route": "/chatango/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "plugin-goals",
+      "canonical": "/screenshots/features/plugin-goals.png",
+      "route": "/dashboard.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "plugin-minecraft-connect-night",
+      "canonical": "/screenshots/features/plugin-minecraft-connect-night.png",
+      "route": "/minecraft-connect/ui",
+      "state": "cid-accessibility-layout",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "plugin-minecraft-connect-vision",
+      "canonical": "/screenshots/features/plugin-minecraft-connect-vision.png",
+      "route": "/minecraft-connect/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "plugin-system",
+      "canonical": "/screenshots/features/plugin-system.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "plugins",
+      "canonical": "/screenshots/features/plugins.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "quiz-show",
+      "canonical": "/screenshots/features/quiz-show.png",
+      "route": "/quiz-show/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "security",
+      "canonical": "/screenshots/features/security.png",
+      "route": "/dashboard.html?view=settings",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "sidekick-dashboard",
+      "canonical": "/screenshots/features/sidekick-dashboard.png",
+      "route": "/sidekick/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "slot-machine",
+      "canonical": "/screenshots/features/slot-machine.png",
+      "route": "/game-engine/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "soundboard-detail",
+      "canonical": "/screenshots/features/soundboard-detail.png",
+      "route": "/soundboard/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "soundboard",
+      "canonical": "/screenshots/features/soundboard.png",
+      "route": "/soundboard/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "spotlight",
+      "canonical": "/screenshots/features/spotlight.png",
+      "route": "/spotlight/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "stream-alchemy",
+      "canonical": "/screenshots/features/stream-alchemy.png",
+      "route": "/streamalchemy/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "stt-ticker-capture-obs-url",
+      "canonical": "/screenshots/features/stt-ticker-capture-obs-url.png",
+      "route": "/stt-ticker/capture",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "stt-ticker-night",
+      "canonical": "/screenshots/features/stt-ticker-night.png",
+      "route": "/stt-ticker/ui",
+      "state": "cid-accessibility-layout",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "stt-ticker-overlay-url",
+      "canonical": "/screenshots/features/stt-ticker-overlay-url.png",
+      "route": "/stt-ticker/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "stt-ticker-vision-impaired",
+      "canonical": "/screenshots/features/stt-ticker-vision-impaired.png",
+      "route": "/stt-ticker/ui",
+      "state": "cid-accessibility-layout",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "stt-ticker",
+      "canonical": "/screenshots/features/stt-ticker.png",
+      "route": "/stt-ticker/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "talking-heads",
+      "canonical": "/screenshots/features/talking-heads.png",
+      "route": "/talking-heads/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "thermal-printer",
+      "canonical": "/screenshots/features/thermal-printer.png",
+      "route": "/thermal-printer/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "tikfinity-api",
+      "canonical": "/screenshots/features/tikfinity-api.png",
+      "route": "/dashboard.html",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "toptier",
+      "canonical": "/screenshots/features/toptier.png",
+      "route": "/toptier/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "tts-admin",
+      "canonical": "/screenshots/features/tts-admin.png",
+      "route": "/tts/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "tts-settings",
+      "canonical": "/screenshots/features/tts-settings.png",
+      "route": "/tts/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "tts",
+      "canonical": "/screenshots/features/tts.png",
+      "route": "/tts/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "vdoninja",
+      "canonical": "/screenshots/features/vdoninja.png",
+      "route": "/vdoninja/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "viewer-leaderboard",
+      "canonical": "/screenshots/features/viewer-leaderboard.png",
+      "route": "/leaderboard/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "viewer-profiles-contrast",
+      "canonical": "/screenshots/features/viewer-profiles-contrast.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": "cid-accessibility-layout",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "viewer-profiles-night",
+      "canonical": "/screenshots/features/viewer-profiles-night.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": "cid-accessibility-layout",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "viewer-profiles-vision-impaired",
+      "canonical": "/screenshots/features/viewer-profiles-vision-impaired.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": "cid-accessibility-layout",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "viewer-xp-leaderboard",
+      "canonical": "/screenshots/features/viewer-xp-leaderboard.png",
+      "route": "/viewer-xp/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "viewer-xp",
+      "canonical": "/screenshots/features/viewer-xp.png",
+      "route": "/viewer-xp/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "weather-control",
+      "canonical": "/screenshots/features/weather-control.png",
+      "route": "/weather-control/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "webgpu-emoji-rain-dashboard",
+      "canonical": "/screenshots/features/webgpu-emoji-rain-dashboard.png",
+      "route": "/webgpu-emoji-rain/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "webgpu-emoji-rain",
+      "canonical": "/screenshots/features/webgpu-emoji-rain.png",
+      "route": "/webgpu-emoji-rain/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    }
+  ],
+  "sourceUrl": "http://127.0.0.1:3128",
+  "capturedAt": "2026-07-11T19:05:37.295Z",
+  "requestedLocales": [
+    "de",
+    "en",
+    "es",
+    "fr"
+  ],
+  "outputs": [
+    {
+      "locale": "de",
+      "id": "advanced-timer",
+      "path": "screenshots/de/features/advanced-timer.png",
+      "route": "/advanced-timer/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "alerts",
+      "path": "screenshots/de/features/alerts.png",
+      "route": "/dashboard.html?view=alerts",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "animazingpal",
+      "path": "screenshots/de/features/animazingpal.png",
+      "route": "/animazingpal/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "auto-updater",
+      "path": "screenshots/de/features/auto-updater.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "chat-commands",
+      "path": "screenshots/de/features/chat-commands.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "chatango",
+      "path": "screenshots/de/features/chatango.png",
+      "route": "/chatango/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "clarityhud",
+      "path": "screenshots/de/features/clarityhud.png",
+      "route": "/clarityhud/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "coinbattle",
+      "path": "screenshots/de/features/coinbattle.png",
+      "route": "/coinbattle/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "config-import",
+      "path": "screenshots/de/features/config-import.png",
+      "route": "/config-import/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "dashboard-main",
+      "path": "screenshots/de/features/dashboard-main.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "dashboard",
+      "path": "screenshots/de/features/dashboard.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "data-source",
+      "path": "screenshots/de/features/data-source.png",
+      "route": "/data-source/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "emoji-rain",
+      "path": "screenshots/de/features/emoji-rain.png",
+      "route": "/emoji-rain/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "flame-overlay-night",
+      "path": "screenshots/de/features/flame-overlay-night.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "flame-overlay-vision-impaired",
+      "path": "screenshots/de/features/flame-overlay-vision-impaired.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "flows-editor",
+      "path": "screenshots/de/features/flows-editor.png",
+      "route": "/ifttt-flow-editor.html",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "flows",
+      "path": "screenshots/de/features/flows.png",
+      "route": "/ifttt-flow-editor.html",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "game-engine",
+      "path": "screenshots/de/features/game-engine.png",
+      "route": "/game-engine/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "gcce-hud",
+      "path": "screenshots/de/features/gcce-hud.png",
+      "route": "/gcce/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "gcce",
+      "path": "screenshots/de/features/gcce.png",
+      "route": "/gcce/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "gift-milestone",
+      "path": "screenshots/de/features/gift-milestone.png",
+      "route": "/gift-milestone/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "goals-overlay",
+      "path": "screenshots/de/features/goals-overlay.png",
+      "route": "/goals/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "goals",
+      "path": "screenshots/de/features/goals.png",
+      "route": "/goals/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "lastevent-spotlight",
+      "path": "screenshots/de/features/lastevent-spotlight.png",
+      "route": "/plugins/spotlight/ui/main.html",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "lastevent",
+      "path": "screenshots/de/features/lastevent.png",
+      "route": "/plugins/spotlight/ui/main.html",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "milestone-leaderboard",
+      "path": "screenshots/de/features/milestone-leaderboard.png",
+      "route": "/leaderboard/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "multicam",
+      "path": "screenshots/de/features/multicam.png",
+      "route": "/multicam/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "openshock",
+      "path": "screenshots/de/features/openshock.png",
+      "route": "/openshock/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "osc-bridge",
+      "path": "screenshots/de/features/osc-bridge.png",
+      "route": "/osc-bridge/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "overlays",
+      "path": "screenshots/de/features/overlays.png",
+      "route": "/ifttt-hud.html",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "plugin-chatango-dashboard",
+      "path": "screenshots/de/features/plugin-chatango-dashboard.png",
+      "route": "/chatango/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "plugin-goals",
+      "path": "screenshots/de/features/plugin-goals.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "plugin-system",
+      "path": "screenshots/de/features/plugin-system.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "plugins",
+      "path": "screenshots/de/features/plugins.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "security",
+      "path": "screenshots/de/features/security.png",
+      "route": "/dashboard.html?view=settings",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "sidekick-dashboard",
+      "path": "screenshots/de/features/sidekick-dashboard.png",
+      "route": "/sidekick/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "slot-machine",
+      "path": "screenshots/de/features/slot-machine.png",
+      "route": "/game-engine/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "soundboard-detail",
+      "path": "screenshots/de/features/soundboard-detail.png",
+      "route": "/soundboard/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "soundboard",
+      "path": "screenshots/de/features/soundboard.png",
+      "route": "/soundboard/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "spotlight",
+      "path": "screenshots/de/features/spotlight.png",
+      "route": "/spotlight/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "stream-alchemy",
+      "path": "screenshots/de/features/stream-alchemy.png",
+      "route": "/streamalchemy/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "stt-ticker-night",
+      "path": "screenshots/de/features/stt-ticker-night.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "stt-ticker-overlay-url",
+      "path": "screenshots/de/features/stt-ticker-overlay-url.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "stt-ticker-vision-impaired",
+      "path": "screenshots/de/features/stt-ticker-vision-impaired.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "stt-ticker",
+      "path": "screenshots/de/features/stt-ticker.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "talking-heads",
+      "path": "screenshots/de/features/talking-heads.png",
+      "route": "/talking-heads/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "thermal-printer",
+      "path": "screenshots/de/features/thermal-printer.png",
+      "route": "/thermal-printer/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "tikfinity-api",
+      "path": "screenshots/de/features/tikfinity-api.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "toptier",
+      "path": "screenshots/de/features/toptier.png",
+      "route": "/toptier/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "tts-admin",
+      "path": "screenshots/de/features/tts-admin.png",
+      "route": "/tts/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "tts-settings",
+      "path": "screenshots/de/features/tts-settings.png",
+      "route": "/tts/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "tts",
+      "path": "screenshots/de/features/tts.png",
+      "route": "/tts/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "vdoninja",
+      "path": "screenshots/de/features/vdoninja.png",
+      "route": "/vdoninja/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "viewer-leaderboard",
+      "path": "screenshots/de/features/viewer-leaderboard.png",
+      "route": "/leaderboard/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "viewer-xp-leaderboard",
+      "path": "screenshots/de/features/viewer-xp-leaderboard.png",
+      "route": "/viewer-xp/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "viewer-xp",
+      "path": "screenshots/de/features/viewer-xp.png",
+      "route": "/viewer-xp/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "weather-control",
+      "path": "screenshots/de/features/weather-control.png",
+      "route": "/weather-control/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "webgpu-emoji-rain-dashboard",
+      "path": "screenshots/de/features/webgpu-emoji-rain-dashboard.png",
+      "route": "/webgpu-emoji-rain/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "webgpu-emoji-rain",
+      "path": "screenshots/de/features/webgpu-emoji-rain.png",
+      "route": "/webgpu-emoji-rain/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "advanced-timer",
+      "path": "screenshots/features/advanced-timer.png",
+      "route": "/advanced-timer/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "alerts",
+      "path": "screenshots/features/alerts.png",
+      "route": "/dashboard.html?view=alerts",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "animazingpal",
+      "path": "screenshots/features/animazingpal.png",
+      "route": "/animazingpal/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "auto-updater",
+      "path": "screenshots/features/auto-updater.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "chat-commands",
+      "path": "screenshots/features/chat-commands.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "chatango",
+      "path": "screenshots/features/chatango.png",
+      "route": "/chatango/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "clarityhud",
+      "path": "screenshots/features/clarityhud.png",
+      "route": "/clarityhud/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "coinbattle",
+      "path": "screenshots/features/coinbattle.png",
+      "route": "/coinbattle/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "config-import",
+      "path": "screenshots/features/config-import.png",
+      "route": "/config-import/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "dashboard-main",
+      "path": "screenshots/features/dashboard-main.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "dashboard",
+      "path": "screenshots/features/dashboard.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "data-source",
+      "path": "screenshots/features/data-source.png",
+      "route": "/data-source/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "emoji-rain",
+      "path": "screenshots/features/emoji-rain.png",
+      "route": "/emoji-rain/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "flame-overlay-night",
+      "path": "screenshots/features/flame-overlay-night.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "flame-overlay-vision-impaired",
+      "path": "screenshots/features/flame-overlay-vision-impaired.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "flows-editor",
+      "path": "screenshots/features/flows-editor.png",
+      "route": "/ifttt-flow-editor.html",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "flows",
+      "path": "screenshots/features/flows.png",
+      "route": "/ifttt-flow-editor.html",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "game-engine",
+      "path": "screenshots/features/game-engine.png",
+      "route": "/game-engine/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "gcce-hud",
+      "path": "screenshots/features/gcce-hud.png",
+      "route": "/gcce/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "gcce",
+      "path": "screenshots/features/gcce.png",
+      "route": "/gcce/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "gift-milestone",
+      "path": "screenshots/features/gift-milestone.png",
+      "route": "/gift-milestone/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "goals-overlay",
+      "path": "screenshots/features/goals-overlay.png",
+      "route": "/goals/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "goals",
+      "path": "screenshots/features/goals.png",
+      "route": "/goals/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "lastevent-spotlight",
+      "path": "screenshots/features/lastevent-spotlight.png",
+      "route": "/plugins/spotlight/ui/main.html",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "lastevent",
+      "path": "screenshots/features/lastevent.png",
+      "route": "/plugins/spotlight/ui/main.html",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "milestone-leaderboard",
+      "path": "screenshots/features/milestone-leaderboard.png",
+      "route": "/leaderboard/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "multicam",
+      "path": "screenshots/features/multicam.png",
+      "route": "/multicam/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "openshock",
+      "path": "screenshots/features/openshock.png",
+      "route": "/openshock/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "osc-bridge",
+      "path": "screenshots/features/osc-bridge.png",
+      "route": "/osc-bridge/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "overlays",
+      "path": "screenshots/features/overlays.png",
+      "route": "/ifttt-hud.html",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "plugin-chatango-dashboard",
+      "path": "screenshots/features/plugin-chatango-dashboard.png",
+      "route": "/chatango/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "plugin-goals",
+      "path": "screenshots/features/plugin-goals.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "plugin-system",
+      "path": "screenshots/features/plugin-system.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "plugins",
+      "path": "screenshots/features/plugins.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "security",
+      "path": "screenshots/features/security.png",
+      "route": "/dashboard.html?view=settings",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "sidekick-dashboard",
+      "path": "screenshots/features/sidekick-dashboard.png",
+      "route": "/sidekick/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "slot-machine",
+      "path": "screenshots/features/slot-machine.png",
+      "route": "/game-engine/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "soundboard-detail",
+      "path": "screenshots/features/soundboard-detail.png",
+      "route": "/soundboard/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "soundboard",
+      "path": "screenshots/features/soundboard.png",
+      "route": "/soundboard/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "spotlight",
+      "path": "screenshots/features/spotlight.png",
+      "route": "/spotlight/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "stream-alchemy",
+      "path": "screenshots/features/stream-alchemy.png",
+      "route": "/streamalchemy/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "stt-ticker-night",
+      "path": "screenshots/features/stt-ticker-night.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "stt-ticker-overlay-url",
+      "path": "screenshots/features/stt-ticker-overlay-url.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "stt-ticker-vision-impaired",
+      "path": "screenshots/features/stt-ticker-vision-impaired.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "stt-ticker",
+      "path": "screenshots/features/stt-ticker.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "talking-heads",
+      "path": "screenshots/features/talking-heads.png",
+      "route": "/talking-heads/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "thermal-printer",
+      "path": "screenshots/features/thermal-printer.png",
+      "route": "/thermal-printer/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "tikfinity-api",
+      "path": "screenshots/features/tikfinity-api.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "toptier",
+      "path": "screenshots/features/toptier.png",
+      "route": "/toptier/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "tts-admin",
+      "path": "screenshots/features/tts-admin.png",
+      "route": "/tts/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "tts-settings",
+      "path": "screenshots/features/tts-settings.png",
+      "route": "/tts/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "tts",
+      "path": "screenshots/features/tts.png",
+      "route": "/tts/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "vdoninja",
+      "path": "screenshots/features/vdoninja.png",
+      "route": "/vdoninja/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "viewer-leaderboard",
+      "path": "screenshots/features/viewer-leaderboard.png",
+      "route": "/leaderboard/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "viewer-xp-leaderboard",
+      "path": "screenshots/features/viewer-xp-leaderboard.png",
+      "route": "/viewer-xp/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "viewer-xp",
+      "path": "screenshots/features/viewer-xp.png",
+      "route": "/viewer-xp/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "weather-control",
+      "path": "screenshots/features/weather-control.png",
+      "route": "/weather-control/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "webgpu-emoji-rain-dashboard",
+      "path": "screenshots/features/webgpu-emoji-rain-dashboard.png",
+      "route": "/webgpu-emoji-rain/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "webgpu-emoji-rain",
+      "path": "screenshots/features/webgpu-emoji-rain.png",
+      "route": "/webgpu-emoji-rain/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "advanced-timer",
+      "path": "screenshots/es/features/advanced-timer.png",
+      "route": "/advanced-timer/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "alerts",
+      "path": "screenshots/es/features/alerts.png",
+      "route": "/dashboard.html?view=alerts",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "animazingpal",
+      "path": "screenshots/es/features/animazingpal.png",
+      "route": "/animazingpal/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "auto-updater",
+      "path": "screenshots/es/features/auto-updater.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "chat-commands",
+      "path": "screenshots/es/features/chat-commands.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "chatango",
+      "path": "screenshots/es/features/chatango.png",
+      "route": "/chatango/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "clarityhud",
+      "path": "screenshots/es/features/clarityhud.png",
+      "route": "/clarityhud/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "coinbattle",
+      "path": "screenshots/es/features/coinbattle.png",
+      "route": "/coinbattle/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "config-import",
+      "path": "screenshots/es/features/config-import.png",
+      "route": "/config-import/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "dashboard-main",
+      "path": "screenshots/es/features/dashboard-main.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "dashboard",
+      "path": "screenshots/es/features/dashboard.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "data-source",
+      "path": "screenshots/es/features/data-source.png",
+      "route": "/data-source/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "emoji-rain",
+      "path": "screenshots/es/features/emoji-rain.png",
+      "route": "/emoji-rain/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "flame-overlay-night",
+      "path": "screenshots/es/features/flame-overlay-night.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "flame-overlay-vision-impaired",
+      "path": "screenshots/es/features/flame-overlay-vision-impaired.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "flows-editor",
+      "path": "screenshots/es/features/flows-editor.png",
+      "route": "/ifttt-flow-editor.html",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "flows",
+      "path": "screenshots/es/features/flows.png",
+      "route": "/ifttt-flow-editor.html",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "game-engine",
+      "path": "screenshots/es/features/game-engine.png",
+      "route": "/game-engine/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "gcce-hud",
+      "path": "screenshots/es/features/gcce-hud.png",
+      "route": "/gcce/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "gcce",
+      "path": "screenshots/es/features/gcce.png",
+      "route": "/gcce/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "gift-milestone",
+      "path": "screenshots/es/features/gift-milestone.png",
+      "route": "/gift-milestone/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "goals-overlay",
+      "path": "screenshots/es/features/goals-overlay.png",
+      "route": "/goals/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "goals",
+      "path": "screenshots/es/features/goals.png",
+      "route": "/goals/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "lastevent-spotlight",
+      "path": "screenshots/es/features/lastevent-spotlight.png",
+      "route": "/plugins/spotlight/ui/main.html",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "lastevent",
+      "path": "screenshots/es/features/lastevent.png",
+      "route": "/plugins/spotlight/ui/main.html",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "milestone-leaderboard",
+      "path": "screenshots/es/features/milestone-leaderboard.png",
+      "route": "/leaderboard/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "multicam",
+      "path": "screenshots/es/features/multicam.png",
+      "route": "/multicam/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "openshock",
+      "path": "screenshots/es/features/openshock.png",
+      "route": "/openshock/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "osc-bridge",
+      "path": "screenshots/es/features/osc-bridge.png",
+      "route": "/osc-bridge/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "overlays",
+      "path": "screenshots/es/features/overlays.png",
+      "route": "/ifttt-hud.html",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "plugin-chatango-dashboard",
+      "path": "screenshots/es/features/plugin-chatango-dashboard.png",
+      "route": "/chatango/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "plugin-goals",
+      "path": "screenshots/es/features/plugin-goals.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "plugin-system",
+      "path": "screenshots/es/features/plugin-system.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "plugins",
+      "path": "screenshots/es/features/plugins.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "security",
+      "path": "screenshots/es/features/security.png",
+      "route": "/dashboard.html?view=settings",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "sidekick-dashboard",
+      "path": "screenshots/es/features/sidekick-dashboard.png",
+      "route": "/sidekick/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "slot-machine",
+      "path": "screenshots/es/features/slot-machine.png",
+      "route": "/game-engine/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "soundboard-detail",
+      "path": "screenshots/es/features/soundboard-detail.png",
+      "route": "/soundboard/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "soundboard",
+      "path": "screenshots/es/features/soundboard.png",
+      "route": "/soundboard/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "spotlight",
+      "path": "screenshots/es/features/spotlight.png",
+      "route": "/spotlight/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "stream-alchemy",
+      "path": "screenshots/es/features/stream-alchemy.png",
+      "route": "/streamalchemy/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "stt-ticker-night",
+      "path": "screenshots/es/features/stt-ticker-night.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "stt-ticker-overlay-url",
+      "path": "screenshots/es/features/stt-ticker-overlay-url.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "stt-ticker-vision-impaired",
+      "path": "screenshots/es/features/stt-ticker-vision-impaired.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "stt-ticker",
+      "path": "screenshots/es/features/stt-ticker.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "talking-heads",
+      "path": "screenshots/es/features/talking-heads.png",
+      "route": "/talking-heads/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "thermal-printer",
+      "path": "screenshots/es/features/thermal-printer.png",
+      "route": "/thermal-printer/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "tikfinity-api",
+      "path": "screenshots/es/features/tikfinity-api.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "toptier",
+      "path": "screenshots/es/features/toptier.png",
+      "route": "/toptier/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "tts-admin",
+      "path": "screenshots/es/features/tts-admin.png",
+      "route": "/tts/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "tts-settings",
+      "path": "screenshots/es/features/tts-settings.png",
+      "route": "/tts/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "tts",
+      "path": "screenshots/es/features/tts.png",
+      "route": "/tts/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "vdoninja",
+      "path": "screenshots/es/features/vdoninja.png",
+      "route": "/vdoninja/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "viewer-leaderboard",
+      "path": "screenshots/es/features/viewer-leaderboard.png",
+      "route": "/leaderboard/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "viewer-xp-leaderboard",
+      "path": "screenshots/es/features/viewer-xp-leaderboard.png",
+      "route": "/viewer-xp/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "viewer-xp",
+      "path": "screenshots/es/features/viewer-xp.png",
+      "route": "/viewer-xp/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "weather-control",
+      "path": "screenshots/es/features/weather-control.png",
+      "route": "/weather-control/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "webgpu-emoji-rain-dashboard",
+      "path": "screenshots/es/features/webgpu-emoji-rain-dashboard.png",
+      "route": "/webgpu-emoji-rain/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "webgpu-emoji-rain",
+      "path": "screenshots/es/features/webgpu-emoji-rain.png",
+      "route": "/webgpu-emoji-rain/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "advanced-timer",
+      "path": "screenshots/fr/features/advanced-timer.png",
+      "route": "/advanced-timer/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "alerts",
+      "path": "screenshots/fr/features/alerts.png",
+      "route": "/dashboard.html?view=alerts",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "animazingpal",
+      "path": "screenshots/fr/features/animazingpal.png",
+      "route": "/animazingpal/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "auto-updater",
+      "path": "screenshots/fr/features/auto-updater.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "chat-commands",
+      "path": "screenshots/fr/features/chat-commands.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "chatango",
+      "path": "screenshots/fr/features/chatango.png",
+      "route": "/chatango/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "clarityhud",
+      "path": "screenshots/fr/features/clarityhud.png",
+      "route": "/clarityhud/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "coinbattle",
+      "path": "screenshots/fr/features/coinbattle.png",
+      "route": "/coinbattle/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "config-import",
+      "path": "screenshots/fr/features/config-import.png",
+      "route": "/config-import/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "dashboard-main",
+      "path": "screenshots/fr/features/dashboard-main.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "dashboard",
+      "path": "screenshots/fr/features/dashboard.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "data-source",
+      "path": "screenshots/fr/features/data-source.png",
+      "route": "/data-source/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "emoji-rain",
+      "path": "screenshots/fr/features/emoji-rain.png",
+      "route": "/emoji-rain/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "flame-overlay-night",
+      "path": "screenshots/fr/features/flame-overlay-night.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "flame-overlay-vision-impaired",
+      "path": "screenshots/fr/features/flame-overlay-vision-impaired.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "flows-editor",
+      "path": "screenshots/fr/features/flows-editor.png",
+      "route": "/ifttt-flow-editor.html",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "flows",
+      "path": "screenshots/fr/features/flows.png",
+      "route": "/ifttt-flow-editor.html",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "game-engine",
+      "path": "screenshots/fr/features/game-engine.png",
+      "route": "/game-engine/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "gcce-hud",
+      "path": "screenshots/fr/features/gcce-hud.png",
+      "route": "/gcce/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "gcce",
+      "path": "screenshots/fr/features/gcce.png",
+      "route": "/gcce/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "gift-milestone",
+      "path": "screenshots/fr/features/gift-milestone.png",
+      "route": "/gift-milestone/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "goals-overlay",
+      "path": "screenshots/fr/features/goals-overlay.png",
+      "route": "/goals/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "goals",
+      "path": "screenshots/fr/features/goals.png",
+      "route": "/goals/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "lastevent-spotlight",
+      "path": "screenshots/fr/features/lastevent-spotlight.png",
+      "route": "/plugins/spotlight/ui/main.html",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "lastevent",
+      "path": "screenshots/fr/features/lastevent.png",
+      "route": "/plugins/spotlight/ui/main.html",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "milestone-leaderboard",
+      "path": "screenshots/fr/features/milestone-leaderboard.png",
+      "route": "/leaderboard/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "multicam",
+      "path": "screenshots/fr/features/multicam.png",
+      "route": "/multicam/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "openshock",
+      "path": "screenshots/fr/features/openshock.png",
+      "route": "/openshock/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "osc-bridge",
+      "path": "screenshots/fr/features/osc-bridge.png",
+      "route": "/osc-bridge/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "overlays",
+      "path": "screenshots/fr/features/overlays.png",
+      "route": "/ifttt-hud.html",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "plugin-chatango-dashboard",
+      "path": "screenshots/fr/features/plugin-chatango-dashboard.png",
+      "route": "/chatango/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "plugin-goals",
+      "path": "screenshots/fr/features/plugin-goals.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "plugin-system",
+      "path": "screenshots/fr/features/plugin-system.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "plugins",
+      "path": "screenshots/fr/features/plugins.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "security",
+      "path": "screenshots/fr/features/security.png",
+      "route": "/dashboard.html?view=settings",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "sidekick-dashboard",
+      "path": "screenshots/fr/features/sidekick-dashboard.png",
+      "route": "/sidekick/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "slot-machine",
+      "path": "screenshots/fr/features/slot-machine.png",
+      "route": "/game-engine/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "soundboard-detail",
+      "path": "screenshots/fr/features/soundboard-detail.png",
+      "route": "/soundboard/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "soundboard",
+      "path": "screenshots/fr/features/soundboard.png",
+      "route": "/soundboard/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "spotlight",
+      "path": "screenshots/fr/features/spotlight.png",
+      "route": "/spotlight/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "stream-alchemy",
+      "path": "screenshots/fr/features/stream-alchemy.png",
+      "route": "/streamalchemy/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "stt-ticker-night",
+      "path": "screenshots/fr/features/stt-ticker-night.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "stt-ticker-overlay-url",
+      "path": "screenshots/fr/features/stt-ticker-overlay-url.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "stt-ticker-vision-impaired",
+      "path": "screenshots/fr/features/stt-ticker-vision-impaired.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "stt-ticker",
+      "path": "screenshots/fr/features/stt-ticker.png",
+      "route": "/stt-ticker/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "talking-heads",
+      "path": "screenshots/fr/features/talking-heads.png",
+      "route": "/talking-heads/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "thermal-printer",
+      "path": "screenshots/fr/features/thermal-printer.png",
+      "route": "/thermal-printer/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "tikfinity-api",
+      "path": "screenshots/fr/features/tikfinity-api.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "toptier",
+      "path": "screenshots/fr/features/toptier.png",
+      "route": "/toptier/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "tts-admin",
+      "path": "screenshots/fr/features/tts-admin.png",
+      "route": "/tts/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "tts-settings",
+      "path": "screenshots/fr/features/tts-settings.png",
+      "route": "/tts/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "tts",
+      "path": "screenshots/fr/features/tts.png",
+      "route": "/tts/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "vdoninja",
+      "path": "screenshots/fr/features/vdoninja.png",
+      "route": "/vdoninja/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "viewer-leaderboard",
+      "path": "screenshots/fr/features/viewer-leaderboard.png",
+      "route": "/leaderboard/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "viewer-xp-leaderboard",
+      "path": "screenshots/fr/features/viewer-xp-leaderboard.png",
+      "route": "/viewer-xp/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "viewer-xp",
+      "path": "screenshots/fr/features/viewer-xp.png",
+      "route": "/viewer-xp/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "weather-control",
+      "path": "screenshots/fr/features/weather-control.png",
+      "route": "/weather-control/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "webgpu-emoji-rain-dashboard",
+      "path": "screenshots/fr/features/webgpu-emoji-rain-dashboard.png",
+      "route": "/webgpu-emoji-rain/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "webgpu-emoji-rain",
+      "path": "screenshots/fr/features/webgpu-emoji-rain.png",
+      "route": "/webgpu-emoji-rain/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "fireworks",
+      "path": "screenshots/de/features/fireworks.png",
+      "route": "/fireworks/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "flame-overlay",
+      "path": "screenshots/de/features/flame-overlay.png",
+      "route": "/flame-overlay/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "music-bot",
+      "path": "screenshots/de/features/music-bot.png",
+      "route": "/plugins/music-bot/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "plugin-minecraft-connect-night",
+      "path": "screenshots/de/features/plugin-minecraft-connect-night.png",
+      "route": "/minecraft-connect/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "plugin-minecraft-connect-vision",
+      "path": "screenshots/de/features/plugin-minecraft-connect-vision.png",
+      "route": "/minecraft-connect/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "quiz-show",
+      "path": "screenshots/de/features/quiz-show.png",
+      "route": "/quiz-show/ui",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "stt-ticker-capture-obs-url",
+      "path": "screenshots/de/features/stt-ticker-capture-obs-url.png",
+      "route": "/stt-ticker/capture",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "fireworks",
+      "path": "screenshots/features/fireworks.png",
+      "route": "/fireworks/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "flame-overlay",
+      "path": "screenshots/features/flame-overlay.png",
+      "route": "/flame-overlay/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "music-bot",
+      "path": "screenshots/features/music-bot.png",
+      "route": "/plugins/music-bot/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "plugin-minecraft-connect-night",
+      "path": "screenshots/features/plugin-minecraft-connect-night.png",
+      "route": "/minecraft-connect/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "plugin-minecraft-connect-vision",
+      "path": "screenshots/features/plugin-minecraft-connect-vision.png",
+      "route": "/minecraft-connect/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "quiz-show",
+      "path": "screenshots/features/quiz-show.png",
+      "route": "/quiz-show/ui",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "stt-ticker-capture-obs-url",
+      "path": "screenshots/features/stt-ticker-capture-obs-url.png",
+      "route": "/stt-ticker/capture",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "fireworks",
+      "path": "screenshots/es/features/fireworks.png",
+      "route": "/fireworks/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "flame-overlay",
+      "path": "screenshots/es/features/flame-overlay.png",
+      "route": "/flame-overlay/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "music-bot",
+      "path": "screenshots/es/features/music-bot.png",
+      "route": "/plugins/music-bot/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "plugin-minecraft-connect-night",
+      "path": "screenshots/es/features/plugin-minecraft-connect-night.png",
+      "route": "/minecraft-connect/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "plugin-minecraft-connect-vision",
+      "path": "screenshots/es/features/plugin-minecraft-connect-vision.png",
+      "route": "/minecraft-connect/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "quiz-show",
+      "path": "screenshots/es/features/quiz-show.png",
+      "route": "/quiz-show/ui",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "stt-ticker-capture-obs-url",
+      "path": "screenshots/es/features/stt-ticker-capture-obs-url.png",
+      "route": "/stt-ticker/capture",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "fireworks",
+      "path": "screenshots/fr/features/fireworks.png",
+      "route": "/fireworks/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "flame-overlay",
+      "path": "screenshots/fr/features/flame-overlay.png",
+      "route": "/flame-overlay/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "music-bot",
+      "path": "screenshots/fr/features/music-bot.png",
+      "route": "/plugins/music-bot/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "plugin-minecraft-connect-night",
+      "path": "screenshots/fr/features/plugin-minecraft-connect-night.png",
+      "route": "/minecraft-connect/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "plugin-minecraft-connect-vision",
+      "path": "screenshots/fr/features/plugin-minecraft-connect-vision.png",
+      "route": "/minecraft-connect/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "quiz-show",
+      "path": "screenshots/fr/features/quiz-show.png",
+      "route": "/quiz-show/ui",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "stt-ticker-capture-obs-url",
+      "path": "screenshots/fr/features/stt-ticker-capture-obs-url.png",
+      "route": "/stt-ticker/capture",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "api-bridge-admin",
+      "path": "screenshots/de/features/api-bridge-admin.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "interactive-story",
+      "path": "screenshots/de/features/interactive-story.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "live-advanced-timer",
+      "path": "screenshots/de/features/live-advanced-timer.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "live-fireworks",
+      "path": "screenshots/de/features/live-fireworks.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "live-game-engine",
+      "path": "screenshots/de/features/live-game-engine.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "live-goals",
+      "path": "screenshots/de/features/live-goals.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "live-hybridshock",
+      "path": "screenshots/de/features/live-hybridshock.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "viewer-profiles-contrast",
+      "path": "screenshots/de/features/viewer-profiles-contrast.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "viewer-profiles-night",
+      "path": "screenshots/de/features/viewer-profiles-night.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "viewer-profiles-vision-impaired",
+      "path": "screenshots/de/features/viewer-profiles-vision-impaired.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "api-bridge-admin",
+      "path": "screenshots/features/api-bridge-admin.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "interactive-story",
+      "path": "screenshots/features/interactive-story.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "live-advanced-timer",
+      "path": "screenshots/features/live-advanced-timer.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "live-fireworks",
+      "path": "screenshots/features/live-fireworks.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "live-game-engine",
+      "path": "screenshots/features/live-game-engine.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "live-goals",
+      "path": "screenshots/features/live-goals.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "live-hybridshock",
+      "path": "screenshots/features/live-hybridshock.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "viewer-profiles-contrast",
+      "path": "screenshots/features/viewer-profiles-contrast.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "viewer-profiles-night",
+      "path": "screenshots/features/viewer-profiles-night.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "viewer-profiles-vision-impaired",
+      "path": "screenshots/features/viewer-profiles-vision-impaired.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "api-bridge-admin",
+      "path": "screenshots/es/features/api-bridge-admin.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "interactive-story",
+      "path": "screenshots/es/features/interactive-story.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "live-advanced-timer",
+      "path": "screenshots/es/features/live-advanced-timer.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "live-fireworks",
+      "path": "screenshots/es/features/live-fireworks.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "live-game-engine",
+      "path": "screenshots/es/features/live-game-engine.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "live-goals",
+      "path": "screenshots/es/features/live-goals.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "live-hybridshock",
+      "path": "screenshots/es/features/live-hybridshock.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "viewer-profiles-contrast",
+      "path": "screenshots/es/features/viewer-profiles-contrast.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "viewer-profiles-night",
+      "path": "screenshots/es/features/viewer-profiles-night.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "viewer-profiles-vision-impaired",
+      "path": "screenshots/es/features/viewer-profiles-vision-impaired.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "api-bridge-admin",
+      "path": "screenshots/fr/features/api-bridge-admin.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "interactive-story",
+      "path": "screenshots/fr/features/interactive-story.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "live-advanced-timer",
+      "path": "screenshots/fr/features/live-advanced-timer.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "live-fireworks",
+      "path": "screenshots/fr/features/live-fireworks.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "live-game-engine",
+      "path": "screenshots/fr/features/live-game-engine.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "live-goals",
+      "path": "screenshots/fr/features/live-goals.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "live-hybridshock",
+      "path": "screenshots/fr/features/live-hybridshock.png",
+      "route": "/dashboard.html",
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "viewer-profiles-contrast",
+      "path": "screenshots/fr/features/viewer-profiles-contrast.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "viewer-profiles-night",
+      "path": "screenshots/fr/features/viewer-profiles-night.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "viewer-profiles-vision-impaired",
+      "path": "screenshots/fr/features/viewer-profiles-vision-impaired.png",
+      "route": "/dashboard.html?view=plugins",
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid"
+      }
+    }
+  ],
+  "failures": []
+}

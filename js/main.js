@@ -7,59 +7,6 @@
     'use strict';
 
     // ===================================
-    // Theme Management
-    // ===================================
-    class ThemeManager {
-        constructor() {
-            this.theme = this.getStoredTheme() || this.getPreferredTheme();
-            this.init();
-        }
-
-        init() {
-            this.setTheme(this.theme);
-            this.setupEventListeners();
-        }
-
-        getStoredTheme() {
-            return localStorage.getItem('theme');
-        }
-
-        getPreferredTheme() {
-            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                return 'dark';
-            }
-            return 'light';
-        }
-
-        setTheme(theme) {
-            this.theme = theme;
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-        }
-
-        toggleTheme() {
-            const newTheme = this.theme === 'light' ? 'dark' : 'light';
-            this.setTheme(newTheme);
-        }
-
-        setupEventListeners() {
-            const themeToggle = document.getElementById('themeToggle');
-            if (themeToggle) {
-                if (!themeToggle.getAttribute('data-ltth-theme-init')) {
-                    themeToggle.setAttribute('data-ltth-theme-init', 'true');
-                    themeToggle.addEventListener('click', () => this.toggleTheme());
-                }
-            }
-
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-                if (!this.getStoredTheme()) {
-                    this.setTheme(e.matches ? 'dark' : 'light');
-                }
-            });
-        }
-    }
-
-    // ===================================
     // Navigation Management
     // ===================================
     class NavigationManager {
@@ -294,7 +241,6 @@
     }
 
     function init() {
-        new ThemeManager();
         new NavigationManager();
         new SmoothScroll();
         new AnimationObserver();
@@ -508,7 +454,7 @@
             initEnhanced();
         } else {
             // Defer ALL initialization until layout partials are injected so that
-            // ThemeManager, NavigationManager, BetaNoticeManager etc. can find their
+            // NavigationManager and the other managers can find their
             // DOM elements (which live inside the injected header partial).
             document.addEventListener('layoutReady', () => {
                 init();

@@ -20,6 +20,37 @@
         fr: '/features-fr.html',
     };
 
+    const SCREENSHOT_LOCALE_ROOTS = {
+        de: '/screenshots/de/features/',
+        en: '/screenshots/features/',
+        es: '/screenshots/es/features/',
+        fr: '/screenshots/fr/features/'
+    };
+
+    function localizedScreenshotUrl(value, lang) {
+        if (!value || !SCREENSHOT_LOCALE_ROOTS[lang]) return value;
+        try {
+            const url = new URL(value, window.location.origin);
+            const match = url.pathname.match(/^\/screenshots\/(?:de\/|es\/|fr\/)?features\/(.+)$/);
+            if (!match) return value;
+            url.pathname = `${SCREENSHOT_LOCALE_ROOTS[lang]}${match[1]}`;
+            return `${url.pathname}${url.search}${url.hash}`;
+        } catch (error) {
+            console.debug('layout.js: could not localize screenshot URL', error);
+            return value;
+        }
+    }
+
+    function applyScreenshotLocale(lang, root) {
+        const container = root || document;
+        container.querySelectorAll('img[src], meta[property="og:image"], meta[name="twitter:image"]').forEach((element) => {
+            const attribute = element.tagName === 'META' ? 'content' : 'src';
+            const current = element.getAttribute(attribute);
+            const localized = localizedScreenshotUrl(current, lang);
+            if (localized && localized !== current) element.setAttribute(attribute, localized);
+        });
+    }
+
     function persistLanguage(lang) {
         try {
             localStorage.setItem('ltth_lang', lang);
@@ -412,32 +443,6 @@
         });
     }
 
-    function initTheme() {
-        // Minimal theme management for pages that do not load main.js
-        const themeBtn = document.getElementById('themeToggle');
-        if (!themeBtn) return;
-        // If main.js ThemeManager already owns this button, skip
-        if (themeBtn.getAttribute('data-ltth-theme-init')) return;
-        themeBtn.setAttribute('data-ltth-theme-init', 'true');
-
-        function applyTheme(theme) {
-            document.documentElement.setAttribute('data-theme', theme);
-            try { localStorage.setItem('theme', theme); } catch(e) { console.debug('layout.js: Failed to persist theme', e); }
-        }
-        function getTheme() {
-            try { return localStorage.getItem('theme'); } catch(e) { return null; }
-        }
-        // Apply stored or preferred theme
-        const stored = getTheme();
-        const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        applyTheme(stored || preferred);
-
-        themeBtn.addEventListener('click', () => {
-            const current = document.documentElement.getAttribute('data-theme') || 'light';
-            applyTheme(current === 'dark' ? 'light' : 'dark');
-        });
-    }
-
     function initSiteV2Styles() {
         if (document.body.classList.contains('home-page')) return;
         document.body.classList.add('site-v2');
@@ -446,8 +451,86 @@
         const link = document.createElement('link');
         link.id = 'ltthSiteV2Styles';
         link.rel = 'stylesheet';
-        link.href = '/css/site-v2.cssív=20260710b';
+        link.href = '/css/site-v2.css?v=site-v2-20260711e';
         document.head.appendChild(link);
+    }
+
+    function initFeatureGuide() {
+        if (!window.location.pathname.startsWith('/features/')) return;
+        if (document.getElementById('ltthFeatureGuide')) return;
+        const script = document.createElement('script');
+        script.id = 'ltthFeatureGuide';
+        script.src = '/js/feature-enhancer.js?v=20260711a';
+        document.body.appendChild(script);
+    }
+
+    function initLegalCopy(lang) {
+        let title = document.getElementById('legal-privacy-title');
+        let copy = document.getElementById('legal-privacy-copy');
+        let review = document.getElementById('legal-review-copy');
+        if (!title || !copy || !review) {
+            const container = document.querySelector('.legal-content');
+            if (!container) return;
+            const section = document.createElement('section');
+            section.className = 'legal-section';
+            section.innerHTML = '<h2 id="legal-privacy-title"></h2><p id="legal-privacy-copy"></p><p id="legal-review-copy"></p>';
+            container.insertBefore(section, container.querySelector('.legal-back') || null);
+            title = section.querySelector('#legal-privacy-title');
+            copy = section.querySelector('#legal-privacy-copy');
+            review = section.querySelector('#legal-review-copy');
+        }
+        const text = {
+            en: ['Privacy and EU contact', 'The website processes only technical access data required for operation. The public site has no night-mode toggle, personalization tracking, or mandatory account. For GDPR requests, contact rainer@dominik.in.', 'These notes are not individual legal advice. Verify operator, VAT/company-register and editorial-responsibility details before publication.'],
+            es: ['Protección de datos y contacto UE', 'El sitio procesa únicamente datos técnicos necesarios para funcionar. No hay modo nocturno, seguimiento de personalización ni cuenta obligatoria. Para solicitudes RGPD, escribe a rainer@dominik.in.', 'Estas notas no sustituyen asesoramiento jurídico individual. Verifica los datos del operador, IVA/registro mercantil y responsabilidad editorial antes de publicar.'],
+            fr: ['Protection des données et contact UE', 'Le site traite uniquement les données techniques nécessaires à son fonctionnement. Il n’y a ni mode nuit, ni suivi de personnalisation, ni compte obligatoire. Pour les demandes RGPD, écrivez à rainer@dominik.in.', 'Ces informations ne remplacent pas un conseil juridique individuel. Vérifiez les données de l’opérateur, TVA/registre et responsabilité éditoriale avant publication.']
+        }[lang];
+        if (text) { title.textContent = text[0]; copy.textContent = text[1]; review.textContent = text[2]; }
+    }
+
+    function initCommunityCopy(lang) {
+        let section = document.getElementById('ltthCommunitySupport');
+        if (!section) return;
+        const copy = {
+            en: ['LTTH support on Discord', 'The Discord is a multistreamer server. For ltth.app support, post in the PupCid area or open a ticket. Reproducible bugs can also be filed on GitHub.', 'Open PupCid support'],
+            es: ['Soporte de LTTH en Discord', 'Discord es un servidor para multistreamers. Para recibir ayuda con ltth.app, publica en el área de PupCid o abre un ticket. Los errores reproducibles también pueden reportarse en GitHub.', 'Abrir soporte de PupCid'],
+            fr: ['Support LTTH sur Discord', 'Discord est un serveur de multistreamers. Pour le support ltth.app, écrivez dans l’espace PupCid ou ouvrez un ticket. Les bugs reproductibles peuvent aussi être signalés sur GitHub.', 'Ouvrir le support PupCid']
+        }[lang];
+        if (!copy) return;
+        if (!section.querySelector('[data-community-title]')) {
+            section = document.createElement('section');
+            section.id = 'ltthCommunitySupport';
+            section.className = 'features-preview';
+            section.innerHTML = '<div class="container"><div class="support-card"><h2 class="section-title" data-community-title></h2><p data-community-copy></p><a class="btn btn-primary" data-community-cta href="https://discord.gg/qazznedY8g" target="_blank" rel="noopener"></a></div></div>';
+            const main = document.querySelector('main');
+            if (main) main.insertBefore(section, main.firstElementChild);
+        }
+        section.querySelector('[data-community-title]').textContent = copy[0];
+        section.querySelector('[data-community-copy]').textContent = copy[1];
+        section.querySelector('[data-community-cta]').textContent = copy[2];
+    }
+
+    function initSupportPage() {
+        if (!window.location.pathname.includes('support')) return;
+        const donation = document.querySelector('[data-i18n="support.a.19"]');
+        const wrapper = donation && donation.closest('div[style*="max-width"]');
+        if (wrapper) wrapper.hidden = true;
+    }
+
+    function initDocsCopy(lang) {
+        if (!window.location.pathname.includes('docs')) return;
+        let article = document.getElementById('feature-map');
+        const copy = {
+            en: ['Feature overview and current tutorials', 'Every feature page now includes requirements, setup, configuration, testing and troubleshooting. Start with the feature overview and open the practical guide for the module you use.', 'Launcher and updates', 'The Windows launcher keeps versions separate, creates backups and supports rollback. Check the health status and logs after every update.'],
+            es: ['Resumen de funciones y tutoriales actuales', 'Cada página de funciones incluye requisitos, instalación, configuración, pruebas y solución de problemas. Empieza en el resumen de funciones y abre la guía práctica del módulo.', 'Lanzador y actualizaciones', 'El lanzador de Windows separa las versiones, crea copias de seguridad y permite rollback. Comprueba el estado y los registros después de cada actualización.'],
+            fr: ['Vue des fonctions et tutoriels actuels', 'Chaque page de fonction présente les prérequis, l’installation, la configuration, les tests et le dépannage. Commencez par la vue des fonctions puis ouvrez le guide pratique du module.', 'Lanceur et mises à jour', 'Le lanceur Windows sépare les versions, crée des sauvegardes et permet le rollback. Vérifiez l’état et les journaux après chaque mise à jour.']
+        }[lang];
+        if (!copy) return;
+        if (!article) {
+            const main = document.querySelector('.docs-content');
+            if (!main) return;
+            article = document.createElement('article'); article.id = 'feature-map'; main.appendChild(article);
+        }
+        article.innerHTML = `<h1>${copy[0]}</h1><p>${copy[1]}</p><h2>${copy[2]}</h2><p>${copy[3]}</p><p><a href="/features/">Open feature overview</a> · <a href="/features/plugin-system.html">Plugin system</a> · <a href="/features/security.html">Security</a></p>`;
     }
     
     async function init(options) {
@@ -458,6 +541,11 @@
         // Prevent layout shift: hide body content until header/footer are injected
         document.body.setAttribute('data-layout-loading', '');
         initSiteV2Styles();
+        initFeatureGuide();
+        initLegalCopy(window.__ltthLang || 'de');
+        if (window.location.pathname.includes('community')) initCommunityCopy(window.__ltthLang || 'de');
+        initSupportPage();
+        initDocsCopy(window.__ltthLang || 'de');
 
         try {
             // --- Header injection ---
@@ -525,8 +613,19 @@
             initNavbarScroll();
             initLangSwitcher(lang);
             initMegaMenu();
-            initTheme();
             setActiveNav(lang);
+
+            applyScreenshotLocale(lang);
+            if (!window.__ltthScreenshotObserver) {
+                window.__ltthScreenshotObserver = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        mutation.addedNodes.forEach((node) => {
+                            if (node.nodeType === Node.ELEMENT_NODE) applyScreenshotLocale(lang, node);
+                        });
+                    });
+                });
+                window.__ltthScreenshotObserver.observe(document.body, { childList: true, subtree: true });
+            }
 
             // Re-apply i18n translations to newly injected header/footer nodes
             if (window.I18n && typeof window.I18n.apply === 'function') {
@@ -543,5 +642,5 @@
         }
     }
     
-    window.LTTHLayout = { init, detectLanguage };
+    window.LTTHLayout = { init, detectLanguage, applyScreenshotLocale, localizedScreenshotUrl };
 })();

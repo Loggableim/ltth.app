@@ -26,6 +26,7 @@ const OG_LOCALES = {
   fr: 'fr_FR',
 };
 const LANGS = ['de', 'en', 'es', 'fr'];
+const REMOVED_FEATURE_SLUGS = new Set(['overlays', 'tikfinity-api', 'plugin-leaderboard', 'plugin-openshock']);
 const FEATURE_OVERVIEW_IMAGE = '/screenshots/features/dashboard-main.png';
 const SITE_NAME = 'ltth.app';
 const SITE_URL = 'https://ltth.app';
@@ -208,10 +209,11 @@ function buildFeatureCatalog(lang) {
     .readdirSync(FEATURES_DIR)
     .filter(file => file.endsWith('.html') && file !== 'index.html')
     .map(file => path.basename(file, '.html'));
+  const visibleSlugs = slugEntries.filter(slug => !REMOVED_FEATURE_SLUGS.has(slug));
 
   const collator = new Intl.Collator(lang, { sensitivity: 'base' });
 
-  const items = slugEntries.map((slug) => {
+  const items = visibleSlugs.map((slug) => {
     const detail = readFeatureDetail(slug);
     const storeId = catalog.storeIdBySlug[slug];
     const storeItem = storeId ? storeById.get(storeId) : null;
@@ -316,7 +318,7 @@ function renderHead(lang, page, itemCount, screenshotCount, structuredDataJson) 
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/layout.css">
-  <link rel="stylesheet" href="/css/features-hub.cssív=pop-20260710b">
+  <link rel="stylesheet" href="/css/features-hub.css?v=pop-20260711a">
   <script>
     (function() {
       var params = new URLSearchParams(window.location.search);

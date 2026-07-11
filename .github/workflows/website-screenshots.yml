@@ -1,14 +1,14 @@
-name: Capture Website Screenshots
+name: Capture Product Screenshots
 
 on:
   schedule:
-    - cron: "0 4 * * *"
+    - cron: "0 4 * * 1"
   workflow_dispatch:
     inputs:
       languages:
-        description: "Comma-separated locale codes (en,de)"
+        description: "Comma-separated locale codes (de,en,es,fr)"
         required: false
-        default: "en,de"
+        default: "de,en,es,fr"
       auto_commit:
         description: "Commit screenshots back to repository"
         required: false
@@ -17,7 +17,7 @@ on:
 
 jobs:
   capture:
-    name: Capture live website screenshots
+    name: Capture current Cid product UI
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -33,33 +33,36 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
 
-      - name: Install Puppeteer
-        run: npm install --no-save --no-package-lock puppeteer
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci --include=optional
 
-      - name: Capture website screenshots
+      - name: Install browser runtime
+        working-directory: app
+        run: npx puppeteer browsers install chrome
+
+      - name: Capture product screenshots
         env:
-          SCREENSHOT_BASE_URL: https://ltth.app
-          SCREENSHOT_LANGS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.languages || 'en,de' }}
-        run: node scripts/capture-live-screenshots.js
+          SCREENSHOT_LANGS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.languages || 'de,en,es,fr' }}
+          SCREENSHOT_START_APP: 'true'
+          LTTH_SAFE_MODE: 'false'
+          LTTH_DISABLE_TIKTOK_AUTO_RECONNECT: 'true'
+        run: node scripts/capture-product-screenshots.js
 
       - name: Upload screenshot artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ltth-website-screenshots-${{ github.run_id }}
+          name: ltth-product-screenshots-${{ github.run_id }}
           path: |
-            screenshots/01_homepage_hero.png
-            screenshots/02_features_page.png
-            screenshots/03_plugins_page.png
-            screenshots/04_download_page.png
-            screenshots/de/01_homepage_hero_de.png
-            screenshots/de/02_features_page_de.png
-            screenshots/de/03_plugins_page_de.png
-            screenshots/de/04_download_page_de.png
             screenshots/features/*.png
             screenshots/de/features/*.png
-            screenshots/capture-manifest.json
+            screenshots/es/features/*.png
+            screenshots/fr/features/*.png
+            screenshots/product-capture-manifest.json
 
       - name: Commit screenshots to repository
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.auto_commit == true
@@ -67,14 +70,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
-            screenshots/*.png \
-            screenshots/de/*.png \
             screenshots/features/*.png \
             screenshots/de/features/*.png \
-            screenshots/capture-manifest.json
+            screenshots/es/features/*.png \
+            screenshots/fr/features/*.png \
+            screenshots/product-capture-manifest.json
 
           if [ -n "$(git status --porcelain)" ]; then
-            git commit -m "chore(screenshots): refresh website screenshots"
+            git commit -m "chore(screenshots): refresh product screenshots"
             git push
           else
             echo "No screenshot changes to commit."

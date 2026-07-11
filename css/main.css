@@ -24,14 +24,6 @@
     --color-text-secondary-light: #4a4b4d;
     --color-border-light: #e0e2df;
     
-    /* Neutral Colors - Dark Mode */
-    --color-bg-dark: #0e0f10;           /* Deep Anthracite Background */
-    --color-bg-dark-alt: #111213;       /* Alternative Dark Background */
-    --color-surface-dark: #1a1b1d;      /* Dark Surface */
-    --color-text-dark: #f5f7f4;         /* Off-White Text */
-    --color-text-secondary-dark: #b5b7b4;
-    --color-border-dark: #2a2b2d;
-    
     /* Active Theme Colors (Light Mode Default) */
     --color-bg: var(--color-bg-light);
     --color-surface: var(--color-surface-light);
@@ -105,20 +97,6 @@
     --z-modal: 1050;
     --z-popover: 1060;
     --z-tooltip: 1070;
-}
-
-/* Dark Mode Theme */
-[data-theme="dark"] {
-    --color-bg: var(--color-bg-dark);
-    --color-surface: var(--color-surface-dark);
-    --color-text: var(--color-text-dark);
-    --color-text-secondary: var(--color-text-secondary-dark);
-    --color-border: var(--color-border-dark);
-    
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
 }
 
 /* ===================================
@@ -402,47 +380,6 @@ pre code {
 .nav-link.nav-cta:hover {
     background-color: var(--color-primary-dark);
     color: white;
-}
-
-.theme-toggle {
-    background: none;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: var(--space-2);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    transition: all var(--transition-fast);
-}
-
-.theme-toggle:hover {
-    background-color: var(--color-primary);
-    border-color: var(--color-primary);
-    color: white;
-}
-
-.theme-toggle svg {
-    width: 20px;
-    height: 20px;
-}
-
-.sun-icon {
-    display: block;
-}
-
-.moon-icon {
-    display: none;
-}
-
-[data-theme="dark"] .sun-icon {
-    display: none;
-}
-
-[data-theme="dark"] .moon-icon {
-    display: block;
 }
 
 /* Language Dropdown */
@@ -1267,9 +1204,6 @@ section {
     .footer,
     .btn,
     .nav-toggle,
-    .theme-toggle {
-        display: none;
-    }
 }
 
 /* ===================================
@@ -2384,26 +2318,6 @@ section {
 .sticky { position: sticky; }
 
 /* ===================================
-   Dark Mode Color Refinements
-   =================================== */
-[data-theme="dark"] {
-    color-scheme: dark;
-}
-
-[data-theme="dark"] .beta-notice {
-    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
-}
-
-[data-theme="dark"] .search-input {
-    background: var(--color-bg-dark-alt);
-}
-
-[data-theme="dark"] .loading-spinner {
-    border-color: var(--color-surface-dark);
-    border-top-color: var(--color-primary-hover);
-}
-
-/* ===================================
    Logo Showcase - Theme Aware
    =================================== */
 .logo-showcase {
@@ -2425,7 +2339,6 @@ section {
     display: block;
 }
 
-[data-theme="dark"] .showcase-logo,
 [data-theme="high-contrast"] .showcase-logo,
 [data-theme="vision-impaired"] .showcase-logo {
     filter: drop-shadow(0 0 18px rgba(18, 161, 22, 0.45));
@@ -2456,11 +2369,6 @@ section {
     margin: var(--space-8) 0;
 }
 
-[data-theme="dark"] .disclaimer-notice {
-    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
-    border-left: 4px solid #42a5f5;
-}
-
 [data-theme="high-contrast"] .disclaimer-notice {
     background: linear-gradient(135deg, #000033 0%, #000066 100%);
     border-left: 4px solid #ffff00;
@@ -2479,10 +2387,6 @@ section {
     margin-bottom: var(--space-3);
 }
 
-[data-theme="dark"] .disclaimer-icon {
-    color: #42a5f5;
-}
-
 [data-theme="high-contrast"] .disclaimer-icon {
     color: #ffff00;
 }
@@ -2494,10 +2398,6 @@ section {
     margin-bottom: var(--space-3);
 }
 
-[data-theme="dark"] .disclaimer-title {
-    color: #90caf9;
-}
-
 [data-theme="high-contrast"] .disclaimer-title {
     color: #ffff00;
 }
@@ -2506,10 +2406,6 @@ section {
     font-size: var(--text-base);
     line-height: 1.6;
     color: #1565c0;
-}
-
-[data-theme="dark"] .disclaimer-text {
-    color: #bbdefb;
 }
 
 [data-theme="high-contrast"] .disclaimer-text {

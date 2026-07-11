@@ -179,5 +179,24 @@ The root-level `screenshots/*.png` files (e.g. `01_homepage_hero.png`) are
 website-level screenshots of the marketing pages. They are separate from the
 feature-page screenshots documented above.
 
+## Current Product Capture Set (2026-07-11)
+
+The public product screenshot set is generated from the current app workspace in
+the Cid theme, with an isolated demo profile and no TikTok account connection.
+The versioned specification covers 76 public asset IDs in four locales (304
+PNG outputs):
+
+- English keeps the canonical paths under `screenshots/features/`.
+- German, Spanish, and French use `screenshots/<locale>/features/`.
+- `screenshots/product-capture-manifest.json` records the capture version,
+  route, locale, theme, output path, and failures.
+- `screenshots/contact-sheets/{de,en,es,fr}.png` provides the visual review
+  sheets for the complete locale sets.
+
+Refresh locally with `runtime/node/node.exe scripts/capture-product-screenshots.js`.
+Use `SCREENSHOT_LANGS`, `SCREENSHOT_IDS`, and `SCREENSHOT_START_APP=false` for
+targeted captures or an already-running app. Verify the complete set with
+`runtime/node/node.exe scripts/verify-public-screenshot-coverage.js`.
+
 
 

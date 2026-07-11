@@ -584,7 +584,7 @@
 
 .features-hub .navbar { background: #221644 !important; border-bottom: 3px solid #ffd34e; }
 .features-hub .nav-link { color: #fff8ed; }.features-hub .nav-link:hover { background: rgba(255,255,255,0.15); }
-.features-hub .lang-dropdown-toggle, .features-hub .theme-toggle { color: #251747; background: #fff8ed; border-color: #251747; }
+.features-hub .lang-dropdown-toggle { color: #251747; background: #fff8ed; border-color: #251747; }
 
 .features-hub .catalog-hero__copy { background: linear-gradient(145deg, #7245ce, #392369) !important; border: 3px solid #251747; }
 .features-hub .catalog-hero__panel { background: linear-gradient(145deg, #1d9dbc, #3657a6) !important; border: 3px solid #251747; }
