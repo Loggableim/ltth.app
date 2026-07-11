@@ -1,10 +1,10 @@
 {
-  "version": "1.3.26",
-  "releaseDate": "2026-07-09",
+  "version": "1.3.27",
+  "releaseDate": "2026-07-11",
   "status": "stable",
-  "downloadVersion": "1.3.26",
-  "downloadNote": "Version 1.3.26 fixes the Live Goals create modal crash so the Create New Goal button works again, while keeping the Windows launcher flow and website-backed store auth intact.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.26",
+  "downloadVersion": "1.3.27",
+  "downloadNote": "Version 1.3.27 adds quota-safe Eulerstream connection handling, explicit fallback-key consent, Emoji Rain updates, and synchronized localization and documentation refreshes.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.27",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
     "macos": "curl -fsSL https://ltth.app/install/install.sh | bash",
@@ -19,6 +19,15 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.27": {
+      "date": "2026-07-11",
+      "changes": [
+        "FIXED: Eulerstream validates LIVE only after roomInfo or a real webcast event and uses bounded reconnect attempts",
+        "IMPROVED: Shared Eulerstream fallback keys require explicit consent, wait three seconds, rotate on authentication rejection, and stop when exhausted",
+        "NEW: Emoji Rain and WebGPU Emoji Rain updates, packages, tests, and localization coverage",
+        "IMPROVED: Public release metadata and download surfaces bumped to 1.3.27"
+      ]
+    },
     "1.3.26": {
       "date": "2026-07-09",
       "changes": [

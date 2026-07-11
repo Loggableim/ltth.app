@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.27] - 2026-07-11
+
+### Added
+
+- **Emoji Rain Refresh**: Added the refreshed Emoji Rain and WebGPU Emoji Rain packages, assets, localization coverage, and regression tests.
+
+### Fixed
+
+- **Eulerstream Quota Safety**: LIVE is confirmed only after `roomInfo` or a real webcast event; reconnects are bounded and close-code aware.
+- **Eulerstream Fallback Keys**: Shared keys require explicit consent, a three-second delay, controlled rotation on key rejection, and a terminal exhaustion message.
+
+### Changed
+
+- **Localization and Documentation**: Synchronized the expanded translations, plugin locales, and localized documentation surfaces.
+
 ### Added
 
 - **Fireworks Stability Pass**: Added validated Fireworks configuration handling, sanitized trigger/finale/gift-mapping API payloads, and centralized trigger backpressure for safer OBS streaming under gift spam or low-FPS conditions.
