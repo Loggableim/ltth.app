@@ -16,6 +16,7 @@ jest.mock('ws', () => {
 
 const WebSocket = require('ws');
 const EulerstreamAdapter = require('../modules/adapters/EulerstreamAdapter');
+const TEST_API_KEY = 'c'.repeat(64);
 
 function createAdapter() {
   const db = {
@@ -23,7 +24,7 @@ function createAdapter() {
     saveStreamStats: jest.fn(),
     resetStreamStats: jest.fn(),
     setSetting: jest.fn(),
-    getSetting: jest.fn(() => null),
+    getSetting: jest.fn((key) => key === 'tiktok_euler_api_key' ? TEST_API_KEY : null),
     logEvent: jest.fn(),
     updateGiftCatalog: jest.fn(() => 0),
     getGiftCatalog: jest.fn(() => [])

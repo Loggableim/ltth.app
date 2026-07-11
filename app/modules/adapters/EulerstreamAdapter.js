@@ -4,14 +4,20 @@ const WebSocket = require('ws');
 const BaseAdapter = require('./BaseAdapter');
 const axios = require('axios');
 
-// Public fallback API key for users who don't have their own
-// SECURITY: Prefer overriding via environment variables (EULER_FALLBACK_API_KEY). The backup key (EULER_BACKUP_API_KEY) is handled separately for warnings.
-// NOTE: This fallback key is rate-limited and intended only as a temporary helperâ€”users should configure their own API key for production.
-const PUBLIC_FALLBACK_API_KEY = 'euler_M2NiZDI1MDBhZTE2YWJjYzM3NDg4OTAwZTFkNDE2MzQ1N2QyZGQ2ZDk3MWYxNWMyMjM5N2Ix';
-const FALLBACK_API_KEY = process.env.EULER_FALLBACK_API_KEY || PUBLIC_FALLBACK_API_KEY;
-
-// Euler backup key - requires special warning before connection
-const EULER_BACKUP_KEY = process.env.EULER_BACKUP_API_KEY || null;
+// Shared fallback keys are a last resort. They must never connect silently:
+// the dashboard requires an explicit confirmation before an initial use.
+const BUILTIN_FALLBACK_API_KEYS = Object.freeze([
+    'euler_MmI1NTliMGU3M2QzMzhmM2U3ZmIxMTBkZWVhZDJjZTNmZTU0MDJlNmRmNWJiMTRjM2M3OTU3',
+    'euler_M2NiZDI1MDBhZTE2YWJjYzM3NDg4OTAwZTFkNDE2MzQ1N2QyZGQ2ZDk3MWYxNWMyMjM5N2Ix',
+    'euler_OWU0NWQ5ZDYyZWIxMWI2YzkyYmM1YTViMmY2OWIzMDUxNjU2ZjQzOGY2Y2VkYzI5YmZlNWI2'
+]);
+const ENV_FALLBACK_API_KEYS = String(process.env.EULER_FALLBACK_API_KEY || '')
+    .split(/[\s,]+/)
+    .map(key => key.trim())
+    .filter(Boolean);
+const FALLBACK_API_KEYS = Object.freeze(
+    ENV_FALLBACK_API_KEYS.length > 0 ? ENV_FALLBACK_API_KEYS : BUILTIN_FALLBACK_API_KEYS
+);
 
 // Maximum number of milliseconds a gift event timestamp may be in the future before it
 // is rejected as invalid in _generateEventHash(). Prevents hash collisions from skewed clocks.
@@ -64,6 +70,10 @@ class EulerstreamAdapter extends BaseAdapter {
         this._streamSessionLifecycleHandler = null;
         this._circuitOpenUntil = 0;
         this._circuitReason = null;
+        this._fallbackKeyOrder = null;
+        this._fallbackKeyIndex = 0;
+        this._fallbackKeySessionConfirmed = false;
+        this._connectionKeySelection = null;
         this._missedPongs = 0;
 
         // Stats tracking - Load from database if available
@@ -388,6 +398,25 @@ class EulerstreamAdapter extends BaseAdapter {
             return this._connectPromise;
         }
 
+        const keyPreview = this._resolveEulerApiKey();
+        const confirmedFallbackReconnect = options.resumeConfirmedSession === true &&
+            this._fallbackKeySessionConfirmed === true;
+        if (keyPreview.usingFallback && !options.fallbackKeyConfirmed && !confirmedFallbackReconnect) {
+            throw this._createConnectionError(
+                'Fallback-Key-Bestätigung erforderlich. Bitte bestätige die Verwendung im Dashboard.',
+                'fallback_confirmation_required',
+                428,
+                {
+                    fallbackKey: true,
+                    confirmationDelayMs: EulerstreamAdapter.FALLBACK_CONFIRMATION_DELAY_MS
+                }
+            );
+        }
+
+        if (keyPreview.usingFallback && options.fallbackKeyConfirmed === true && !confirmedFallbackReconnect) {
+            this._startFallbackKeySession(keyPreview);
+        }
+
         if (this._connectPromise) {
             this.disconnect();
         }
@@ -407,7 +436,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this.connectionState = 'connecting';
         this.broadcastStatus('connecting', { username: normalizedUsername });
 
-        const promise = this._connectInternal(normalizedUsername, options, generation);
+        const promise = this._connectWithFallbackKeyRotation(normalizedUsername, options, generation);
         this._connectPromise = promise;
         promise.finally(() => {
             if (this._activeGeneration === generation) {
@@ -420,6 +449,33 @@ class EulerstreamAdapter extends BaseAdapter {
         return promise;
     }
 
+    async _connectWithFallbackKeyRotation(username, options, generation) {
+        while (generation === this._activeGeneration) {
+            try {
+                return await this._connectInternal(username, options, generation);
+            } catch (error) {
+                if (!this._shouldTryNextFallbackKey(error, generation)) {
+                    throw error;
+                }
+
+                this._fallbackKeyIndex++;
+                this._connectionKeySelection = null;
+                this._clearConnectionTimers();
+                this.ws = null;
+                this.isConnected = false;
+                this.connectionState = 'connecting';
+                this.broadcastStatus('connecting', {
+                    username,
+                    fallbackAttempt: this._fallbackKeyIndex + 1,
+                    fallbackKeyCount: this._fallbackKeyOrder.length
+                });
+                this.logger.warn(`Eulerstream fallback key rejected; trying fallback ${this._fallbackKeyIndex + 1}/${this._fallbackKeyOrder.length}`);
+            }
+        }
+
+        throw this._createConnectionError('Connection was superseded.', 'superseded', 409);
+    }
+
     async _connectInternal(username, options = {}, generation = this._activeGeneration) {
         this._clearPendingReconnectTimers();
 
@@ -428,61 +484,37 @@ class EulerstreamAdapter extends BaseAdapter {
             this.roomId = null;
             this._connectedEventEmitted = false;
 
-            // Read Eulerstream WebSocket authentication key from configuration
-            // Priority: Database setting > Environment variables > Fallback key
-            // NOTE: This can be either the Webhook Secret OR the euler_ API key
-            // Try Webhook Secret first if euler_ key doesn't work
+            // Read Eulerstream WebSocket authentication key from configuration.
+            // A fallback key can only reach this point after explicit UI consent.
             const keySelection = this._resolveEulerApiKey();
-            let apiKey = keySelection.activeKey;
-            let usingFallback = keySelection.usingFallback;
+            const apiKey = keySelection.activeKey;
+            const usingFallback = keySelection.usingFallback;
+            this._connectionKeySelection = keySelection;
             
             if (!apiKey) {
-                // Use fallback key if no user key is configured and fallback is available
-                if (FALLBACK_API_KEY) {
-                    apiKey = FALLBACK_API_KEY;
-                    usingFallback = true;
-                    this.logger.warn('âš ï¸  No personal API key configured - using fallback key');
-                    this.logger.warn('âš ï¸  This is a temporary solution. Please get your own free API key at https://www.eulerstream.com');
-                    
-                    // Emit event to show warning overlay to user
-                    if (this.io) {
-                        this.io.emit('fallback-key-warning', {
-                            message: 'Fallback API Key wird verwendet',
-                            duration: 10000 // 10 seconds
-                        });
-                    }
-                } else {
-                    const errorMsg = 'No API key configured. Please set your Eulerstream API key either:\n' +
-                        '1. In the Dashboard Settings UI, or\n' +
-                        '2. Via EULER_API_KEY environment variable.\n' +
-                        'Get your free API key at https://www.eulerstream.com';
-                    this.logger.error('âŒ ' + errorMsg);
-                    throw new Error(errorMsg);
-                }
+                const errorMsg = 'No API key configured. Please set your Eulerstream API key either:\n' +
+                    '1. In the Dashboard Settings UI, or\n' +
+                    '2. Via EULER_API_KEY environment variable.\n' +
+                    'Get your free API key at https://www.eulerstream.com';
+                this.logger.error('❌ ' + errorMsg);
+                throw new Error(errorMsg);
             }
 
             if (usingFallback) {
-                this.logger.warn('âš ï¸  No personal API key configured - using fallback key');
-                this.logger.warn('âš ï¸  This is a temporary solution. Please get your own free API key at https://www.eulerstream.com');
-
-                if (this.io) {
-                    this.io.emit('fallback-key-warning', {
-                        message: 'Fallback API Key wird verwendet',
-                        duration: 10000
-                    });
-                }
+                this.logger.warn(`⚠️  Using confirmed Eulerstream fallback key ${this._fallbackKeyIndex + 1}/${this._fallbackKeyOrder.length}`);
+                this.logger.warn('⚠️  This is a temporary solution. Please get your own free API key at https://www.eulerstream.com');
             }
              
             // Validate key format
             if (typeof apiKey !== 'string' || apiKey.trim().length < 32) {
                 const errorMsg = 'Invalid key format. The key should be at least 32 characters long.';
-                this.logger.error('âŒ ' + errorMsg);
+                this.logger.error('❌ ' + errorMsg);
                 throw new Error(errorMsg);
             }
 
-            this.logger.info(`ðŸ”„ Verbinde mit TikTok LIVE: @${username}...`);
-            this.logger.info(`âš™ï¸  Connection Mode: Eulerstream WebSocket API`);
-            this.logger.info(`ðŸ”‘ Authentication Key configured (${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)})`);
+            this.logger.info(`🔄 Verbinde mit TikTok LIVE: @${username}...`);
+            this.logger.info(`⚙️  Connection Mode: Eulerstream WebSocket API`);
+            this.logger.info(`🔑 Authentication Key configured (${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)})`);
             
             // Log key type for debugging
             if (apiKey.startsWith('euler_')) {
@@ -492,26 +524,6 @@ class EulerstreamAdapter extends BaseAdapter {
                 this.logger.info(`   Key Type: Webhook Secret (64-char hexadecimal)`);
             } else {
                 this.logger.warn(`   Key Type: Unknown format - connection may fail`);
-            }
-
-            // Check if user is using the Euler backup key
-            // Show non-dismissible warning and delay connection by 10 seconds
-            if (!usingFallback && EULER_BACKUP_KEY && apiKey === EULER_BACKUP_KEY) {
-                this.logger.warn('âš ï¸  EULER BACKUP KEY DETECTED - Connection will be delayed by 10 seconds');
-                this.logger.warn('âš ï¸  Please get your own free API key at https://www.eulerstream.com');
-                
-                // Emit event to show blocking warning overlay to user
-                if (this.io) {
-                    this.io.emit('euler-backup-key-warning', {
-                        message: 'Euler Backup Key wird verwendet',
-                        duration: 10000 // 10 seconds
-                    });
-                }
-                
-                // Wait 10 seconds before proceeding with connection
-                this.logger.info('â³ Waiting 10 seconds before establishing connection...');
-                await new Promise(resolve => setTimeout(resolve, 10000));
-                this.logger.info('âœ… Delay complete, proceeding with connection');
             }
 
             // Create WebSocket URL using Eulerstream SDK
@@ -3101,45 +3113,106 @@ class EulerstreamAdapter extends BaseAdapter {
             return normalized;
         };
 
+        const fallbackKeys = this._getFallbackKeyOrder();
         const sources = [
             {
                 key: normalizeKey(this._getDatabaseSetting('tiktok_euler_api_key')),
                 source: 'Database Setting',
-                usingFallback: false
+                usingFallback: false,
+                fallbackCandidates: []
             },
             {
                 key: normalizeKey(process.env.EULER_API_KEY),
                 source: 'Environment Variable (EULER_API_KEY)',
-                usingFallback: false
+                usingFallback: false,
+                fallbackCandidates: []
             },
             {
                 key: normalizeKey(process.env.SIGN_API_KEY),
                 source: 'Environment Variable (SIGN_API_KEY)',
-                usingFallback: false
-            },
-            {
-                key: normalizeKey(FALLBACK_API_KEY),
-                source: 'Fallback Key',
-                usingFallback: true
+                usingFallback: false,
+                fallbackCandidates: []
             }
         ];
 
         const selected = sources.find(candidate => candidate.key);
-        if (!selected) {
+        if (selected) {
+            const configuredFallback = fallbackKeys.includes(selected.key);
             return {
-                activeKey: null,
-                activeSource: null,
-                configured: false,
-                usingFallback: false
+                activeKey: selected.key,
+                activeSource: selected.source,
+                configured: true,
+                usingFallback: configuredFallback,
+                fallbackCandidates: configuredFallback ? [selected.key] : []
             };
         }
 
+        const activeKey = fallbackKeys[this._fallbackKeyIndex] || null;
         return {
-            activeKey: selected.key,
-            activeSource: selected.source,
-            configured: true,
-            usingFallback: selected.usingFallback
+            activeKey,
+            activeSource: activeKey ? 'Fallback Key' : null,
+            configured: Boolean(activeKey),
+            usingFallback: Boolean(activeKey),
+            fallbackCandidates: fallbackKeys
         };
+    }
+
+    _getFallbackKeyOrder() {
+        if (Array.isArray(this._fallbackKeyOrder) && this._fallbackKeyOrder.length > 0) {
+            return this._fallbackKeyOrder;
+        }
+
+        this._fallbackKeyOrder = this._shuffleFallbackKeys(FALLBACK_API_KEYS);
+        this._fallbackKeyIndex = 0;
+        return this._fallbackKeyOrder;
+    }
+
+    _shuffleFallbackKeys(keys) {
+        const shuffled = [...new Set(keys.filter(Boolean))];
+        for (let index = shuffled.length - 1; index > 0; index--) {
+            const randomIndex = Math.floor(Math.random() * (index + 1));
+            [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+        }
+        return shuffled;
+    }
+
+    _startFallbackKeySession(keySelection) {
+        const candidates = keySelection.fallbackCandidates?.length > 0
+            ? keySelection.fallbackCandidates
+            : FALLBACK_API_KEYS;
+        this._fallbackKeyOrder = this._shuffleFallbackKeys(candidates);
+        this._fallbackKeyIndex = 0;
+        this._fallbackKeySessionConfirmed = true;
+    }
+
+    _shouldTryNextFallbackKey(error, generation) {
+        if (generation !== this._activeGeneration || !this._connectionKeySelection?.usingFallback) {
+            return false;
+        }
+
+        const errorStatus = error?.connectionStatus;
+        const errorMessage = String(error?.message || '').toLowerCase();
+        const keyWasRejected = ['auth_error', 'configuration_error'].includes(errorStatus) ||
+            /api key|unauthori[sz]ed|forbidden|\b403\b/.test(errorMessage);
+        if (!keyWasRejected) return false;
+
+        if (this._fallbackKeyIndex + 1 < this._fallbackKeyOrder.length) {
+            return true;
+        }
+
+        const exhausted = this._createConnectionError(
+            'Alle Fallback-Keys sind erschöpft. Bitte erstelle einen eigenen Eulerstream Key: https://www.eulerstream.com',
+            'fallback_keys_exhausted',
+            error?.code || 401,
+            { fallbackKey: true }
+        );
+        this.connectionState = 'fallback_keys_exhausted';
+        this.broadcastStatus('fallback_keys_exhausted', {
+            code: exhausted.code,
+            message: exhausted.message,
+            retryable: false
+        });
+        throw exhausted;
     }
     
     /**
@@ -3216,7 +3289,7 @@ class EulerstreamAdapter extends BaseAdapter {
         
         // Get connection configuration
         const connectionConfig = {
-            enableEulerFallbacks: !!FALLBACK_API_KEY,
+            enableEulerFallbacks: FALLBACK_API_KEYS.length > 0,
             connectWithUniqueId: this.db.getSetting('tiktok_connect_with_unique_id') !== false,
             connectionTimeout: 30000
         };
@@ -3293,6 +3366,7 @@ EulerstreamAdapter.PING_INTERVAL_MS = 30000;
 EulerstreamAdapter.LIVE_VALIDATION_TIMEOUT_MS = 15000;
 EulerstreamAdapter.IDENTITY_RESOLUTION_TIMEOUT_MS = 15000;
 EulerstreamAdapter.TOO_MANY_CONNECTIONS_COOLDOWN_MS = 15 * 60 * 1000;
+EulerstreamAdapter.FALLBACK_CONFIRMATION_DELAY_MS = 3000;
 
 module.exports = EulerstreamAdapter;
 

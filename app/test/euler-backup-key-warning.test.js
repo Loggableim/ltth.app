@@ -81,7 +81,7 @@ async function finishConnect(adapter, connectPromise) {
   await connectPromise;
 }
 
-describe('Eulerstream backup key warning', () => {
+describe('Eulerstream fallback key consent', () => {
   const originalEnv = process.env;
   let adapter;
 
@@ -109,56 +109,41 @@ describe('Eulerstream backup key warning', () => {
     process.env = originalEnv;
   });
 
-  test('does not show backup warning when automatic fallback key matches backup key', async () => {
-    const EulerstreamAdapter = loadAdapterWithMockedNetwork();
+  test('requires explicit confirmation before a fallback key can open a socket', async () => {
+    const createWebSocketUrl = jest.fn(() => 'ws://eulerstream.test/socket');
+    const io = { emit: jest.fn() };
+
+    jest.resetModules();
+    const ConfirmingAdapter = loadAdapterWithMockedNetwork({ createWebSocketUrl });
+    adapter = new ConfirmingAdapter(io, createMockDb(), createMockLogger());
+
+    await expect(adapter.connect('testuser')).rejects.toMatchObject({
+      connectionStatus: 'fallback_confirmation_required',
+      confirmationDelayMs: 3000
+    });
+    expect(createWebSocketUrl).not.toHaveBeenCalled();
+  });
+
+  test('starts after explicit fallback consent and keeps normal user keys consent-free', async () => {
+    const createWebSocketUrl = jest.fn(() => 'ws://eulerstream.test/socket');
+    const EulerstreamAdapter = loadAdapterWithMockedNetwork({ createWebSocketUrl });
     const io = { emit: jest.fn() };
 
     adapter = new EulerstreamAdapter(io, createMockDb(), createMockLogger());
     adapter.fetchRoomInfo = jest.fn(async () => null);
     adapter.updateGiftCatalog = jest.fn(async () => ({ message: 'skipped' }));
 
-    const connectPromise = adapter.connect('testuser');
+    const connectPromise = adapter.connect('testuser', { fallbackKeyConfirmed: true });
     await finishConnect(adapter, connectPromise);
+    expect(createWebSocketUrl).toHaveBeenCalledTimes(1);
 
-    expect(io.emit).toHaveBeenCalledWith('fallback-key-warning', {
-      message: 'Fallback API Key wird verwendet',
-      duration: 10000
-    });
-    expect(io.emit).not.toHaveBeenCalledWith('euler-backup-key-warning', expect.any(Object));
-  });
-
-  test('shows backup warning when a configured user key is the backup key', async () => {
-    const EulerstreamAdapter = loadAdapterWithMockedNetwork();
-    const io = { emit: jest.fn() };
-    const db = createMockDb({ tiktok_euler_api_key: FALLBACK_KEY });
-
-    adapter = new EulerstreamAdapter(io, db, createMockLogger());
+    adapter.disconnect();
+    adapter = new EulerstreamAdapter(io, createMockDb({ tiktok_euler_api_key: USER_KEY }), createMockLogger());
     adapter.fetchRoomInfo = jest.fn(async () => null);
     adapter.updateGiftCatalog = jest.fn(async () => ({ message: 'skipped' }));
-
-    const connectPromise = adapter.connect('testuser');
-    await finishConnect(adapter, connectPromise);
-
-    expect(io.emit).toHaveBeenCalledWith('euler-backup-key-warning', {
-      message: 'Euler Backup Key wird verwendet',
-      duration: 10000
-    });
-  });
-
-  test('does not show backup warning for a configured non-backup user key', async () => {
-    const EulerstreamAdapter = loadAdapterWithMockedNetwork();
-    const io = { emit: jest.fn() };
-    const db = createMockDb({ tiktok_euler_api_key: USER_KEY });
-
-    adapter = new EulerstreamAdapter(io, db, createMockLogger());
-    adapter.fetchRoomInfo = jest.fn(async () => null);
-    adapter.updateGiftCatalog = jest.fn(async () => ({ message: 'skipped' }));
-
-    const connectPromise = adapter.connect('testuser');
-    await finishConnect(adapter, connectPromise);
-
-    expect(io.emit).not.toHaveBeenCalledWith('euler-backup-key-warning', expect.any(Object));
-    expect(io.emit).not.toHaveBeenCalledWith('fallback-key-warning', expect.any(Object));
+    const personalKeyConnect = adapter.connect('testuser');
+    await finishConnect(adapter, personalKeyConnect);
+    expect(createWebSocketUrl).toHaveBeenLastCalledWith(expect.objectContaining({ apiKey: USER_KEY }));
   });
 
   test('reports configured database key as non-fallback in diagnostics', () => {
@@ -211,7 +196,7 @@ describe('Eulerstream backup key warning', () => {
     }));
   });
 
-  test('uses an euler API key as the built-in fallback when no key is configured', async () => {
+  test('uses an euler API key as the built-in fallback only after consent', async () => {
     delete process.env.EULER_FALLBACK_API_KEY;
     const createWebSocketUrl = jest.fn(() => 'ws://eulerstream.test/socket');
     const EulerstreamAdapter = loadAdapterWithMockedNetwork({ createWebSocketUrl });
@@ -221,14 +206,42 @@ describe('Eulerstream backup key warning', () => {
     adapter.fetchRoomInfo = jest.fn(async () => null);
     adapter.updateGiftCatalog = jest.fn(async () => ({ message: 'skipped' }));
 
-    const connectPromise = adapter.connect('testuser');
+    const connectPromise = adapter.connect('testuser', { fallbackKeyConfirmed: true });
     await finishConnect(adapter, connectPromise);
 
     expect(createWebSocketUrl).toHaveBeenCalledWith(expect.objectContaining({
       uniqueId: 'testuser',
       apiKey: expect.stringMatching(/^euler_/)
     }));
-    expect(io.emit).toHaveBeenCalledWith('fallback-key-warning', expect.any(Object));
+    expect(io.emit).not.toHaveBeenCalledWith('fallback-key-warning', expect.any(Object));
+  });
+
+  test('tries the remaining random fallback keys after authentication failures and then stops', async () => {
+    const fallbackKeys = ['f'.repeat(64), 'e'.repeat(64), 'd'.repeat(64)];
+    process.env.EULER_FALLBACK_API_KEY = fallbackKeys.join(',');
+    jest.resetModules();
+    const createWebSocketUrl = jest.fn(() => 'ws://eulerstream.test/socket');
+    const EulerstreamAdapter = loadAdapterWithMockedNetwork({ createWebSocketUrl });
+    const io = { emit: jest.fn() };
+
+    adapter = new EulerstreamAdapter(io, createMockDb(), createMockLogger());
+    const connection = adapter.connect('testuser', { fallbackKeyConfirmed: true });
+    const exhausted = expect(connection).rejects.toMatchObject({
+      connectionStatus: 'fallback_keys_exhausted'
+    });
+
+    for (let attempt = 0; attempt < fallbackKeys.length; attempt++) {
+      const socket = adapter.ws;
+      socket.emit('open');
+      await jest.advanceTimersByTimeAsync(0);
+      socket.emit('close', 4401, 'invalid API key');
+      await jest.advanceTimersByTimeAsync(0);
+    }
+
+    await exhausted;
+    expect(createWebSocketUrl).toHaveBeenCalledTimes(fallbackKeys.length);
+    expect(new Set(createWebSocketUrl.mock.calls.map(([options]) => options.apiKey))).toEqual(new Set(fallbackKeys));
+    expect(adapter._autoReconnectTimer).toBeNull();
   });
 
   test('uses lowercase SDK v2 schema when decoding protobuf websocket frames', async () => {

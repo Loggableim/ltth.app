@@ -976,6 +976,7 @@
             case 'auth_error':
             case 'connection_error':
             case 'circuit_open':
+            case 'fallback_keys_exhausted':
                 statusBadge.classList.add('status-error');
                 if (statusIcon) statusIcon.setAttribute('data-lucide', 'alert-circle');
                 if (statusText) {

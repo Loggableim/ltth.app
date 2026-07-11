@@ -692,8 +692,9 @@ async function routeDashboardAudio(audio, data = {}) {
 }
 
 // ========== TIKTOK CONNECTION ==========
-async function connect() {
+async function connect(options = {}) {
     const username = document.getElementById('username-input').value.trim();
+    const fallbackKeyConfirmed = options.fallbackKeyConfirmed === true;
     if (!username) {
         const msg = window.i18n ? window.i18n.t('errors.invalid_username') : 'Please enter a TikTok username!';
         alert(msg);
@@ -720,7 +721,7 @@ async function connect() {
         const response = await fetch('/api/connect', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username })
+            body: JSON.stringify({ username, fallbackKeyConfirmed })
         });
 
         const result = await response.json();
@@ -753,6 +754,15 @@ async function connect() {
                 // Button state will be updated by updateConnectionStatus via socket event
             }
         } else {
+            if (result.status === 'fallback_confirmation_required' && !fallbackKeyConfirmed) {
+                const confirmed = await showFallbackKeyConsentDialog(result);
+                if (confirmed) {
+                    return connect({ fallbackKeyConfirmed: true });
+                }
+                restoreConnectButton();
+                return;
+            }
+
             if (result.status) {
                 updateConnectionStatus(result.status, result);
             } else {
@@ -884,6 +894,7 @@ function updateConnectionStatus(status, data = {}) {
         case 'configuration_error':
         case 'auth_error':
         case 'connection_error':
+        case 'fallback_keys_exhausted':
             infoEl.innerHTML = `
                 <div class="p-3 bg-red-900 bg-opacity-50 border border-red-600 rounded">
                     <div class="font-semibold text-red-300">Verbindung gestoppt</div>
@@ -4761,6 +4772,68 @@ async function loadConnectionHealth() {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(loadConnectionHealth, 1000);
 });
+
+function showFallbackKeyConsentDialog(data = {}) {
+    if (document.getElementById('fallback-key-consent-overlay')) {
+        return Promise.resolve(false);
+    }
+
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.id = 'fallback-key-consent-overlay';
+        overlay.style.cssText = `
+            position: fixed; inset: 0; z-index: 10001; display: flex;
+            align-items: center; justify-content: center; padding: 24px;
+            background: rgba(0, 0, 0, 0.86); backdrop-filter: blur(6px);
+        `;
+
+        const dialog = document.createElement('div');
+        dialog.style.cssText = `
+            width: min(620px, 100%); border: 2px solid #f59e0b; border-radius: 16px;
+            padding: 32px; background: #111827; box-shadow: 0 24px 72px rgba(0,0,0,.6);
+        `;
+        dialog.innerHTML = `
+            <div style="font-size:48px;text-align:center">&#9888;&#65039;</div>
+            <h2 style="margin:12px 0;color:#fbbf24;font-size:24px;text-align:center">Eulerstream Backup-Key</h2>
+            <p style="color:#e5e7eb;line-height:1.6">Du nutzt einen gemeinsamen Eulerstream Backup-Key. Bitte erstelle deinen eigenen Key und trage ihn in den Einstellungen ein.</p>
+            <p style="color:#9ca3af;line-height:1.6;margin-top:10px">Gemeinsame Keys sind begrenzt und k&ouml;nnen jederzeit ersch&ouml;pft sein.</p>
+            <a href="https://www.eulerstream.com" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:14px;color:#93c5fd;text-decoration:underline">Eigenen Eulerstream Key erstellen</a>
+            <div id="fallback-key-consent-countdown" style="min-height:28px;margin:22px 0 0;color:#fbbf24;font-weight:600"></div>
+            <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:24px">
+                <button type="button" id="fallback-key-consent-cancel" class="px-4 py-2 rounded bg-gray-700 text-gray-100">Abbrechen</button>
+                <button type="button" id="fallback-key-consent-confirm" class="px-4 py-2 rounded bg-amber-500 text-gray-950 font-semibold">OK, trotzdem verbinden</button>
+            </div>
+        `;
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        const cleanup = (accepted) => {
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            resolve(accepted);
+        };
+        const cancelButton = dialog.querySelector('#fallback-key-consent-cancel');
+        const confirmButton = dialog.querySelector('#fallback-key-consent-confirm');
+        const countdown = dialog.querySelector('#fallback-key-consent-countdown');
+        cancelButton.addEventListener('click', () => cleanup(false));
+        confirmButton.addEventListener('click', () => {
+            const delayMs = Number(data.confirmationDelayMs) || 3000;
+            let remaining = Math.ceil(delayMs / 1000);
+            confirmButton.disabled = true;
+            cancelButton.disabled = true;
+            confirmButton.style.opacity = '0.6';
+            countdown.textContent = `Verbindung wird in ${remaining} Sekunden gestartet ...`;
+            const interval = setInterval(() => {
+                remaining--;
+                if (remaining > 0) {
+                    countdown.textContent = `Verbindung wird in ${remaining} Sekunden gestartet ...`;
+                    return;
+                }
+                clearInterval(interval);
+                cleanup(true);
+            }, 1000);
+        });
+    });
+}
 
 // ========== FALLBACK API KEY WARNING ==========
 function showFallbackKeyWarning(data) {

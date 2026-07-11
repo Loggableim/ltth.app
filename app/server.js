@@ -1244,12 +1244,16 @@ app.post('/api/connect', authLimiter, async (req, res) => {
             pattern: /^[a-zA-Z0-9._-]+$/,
             fieldName: 'username'
         });
+        const connectionOptions = {
+            fallbackKeyConfirmed: req.body?.fallbackKeyConfirmed === true,
+            userInitiated: true
+        };
 
         // Check active profile's open DB directly (avoids WAL contention on the active DB)
         const isActiveProfileAlias = db.hasUsernameAlias(username);
         if (isActiveProfileAlias) {
             try { db.touchUsernameAlias(username); } catch (_) {}
-            const connection = await tiktok.connect(username);
+            const connection = await tiktok.connect(username, connectionOptions);
             logger.info(`✅ Connected to TikTok user: ${username} (alias of active profile "${loadedProfile}")`);
             return res.json({
                 success: true,
@@ -1324,7 +1328,7 @@ app.post('/api/connect', authLimiter, async (req, res) => {
         }
 
         // Profile already active, proceed with connection
-        const connection = await tiktok.connect(username);
+        const connection = await tiktok.connect(username, connectionOptions);
         logger.info(`✅ Connected to TikTok user: ${username}`);
 
         // Auto-register the connected username as a primary alias (idempotent)
@@ -1356,7 +1360,9 @@ app.post('/api/connect', authLimiter, async (req, res) => {
             configuration_error: 400,
             circuit_open: 429,
             validation_failed: 504,
-            identity_error: 409
+            identity_error: 409,
+            fallback_confirmation_required: 428,
+            fallback_keys_exhausted: 503
         };
         const connectionStatus = error.connectionStatus || 'error';
         res.status(statusByConnectionState[connectionStatus] || 500).json({
@@ -1366,7 +1372,9 @@ app.post('/api/connect', authLimiter, async (req, res) => {
             code: error.code || null,
             roomId: tiktok.roomId || null,
             streamIdentity: tiktok.streamIdentity || null,
-            retryAllowedAt: error.retryAllowedAt || null
+            retryAllowedAt: error.retryAllowedAt || null,
+            fallbackKey: error.fallbackKey === true,
+            confirmationDelayMs: error.confirmationDelayMs || null
         });
     }
 });
