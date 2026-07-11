@@ -7,6 +7,8 @@
 let config = {};
 let socket = null;
 let rendererStatusTimer = null;
+let paletteSaveTimer = null;
+let palettePreviewTimer = null;
 
 // Benchmark configuration constants
 const BENCHMARK_CONFIG = {
@@ -75,6 +77,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 window.addEventListener('pagehide', () => {
     if (rendererStatusTimer !== null) window.clearInterval(rendererStatusTimer);
+    if (paletteSaveTimer !== null) window.clearTimeout(paletteSaveTimer);
+    if (palettePreviewTimer !== null) window.clearTimeout(palettePreviewTimer);
 });
 
 // ============================================================================
@@ -131,6 +135,11 @@ async function loadRendererStatus() {
         const state = document.getElementById('webgpu-runtime-state');
         const adapter = document.getElementById('webgpu-adapter-state');
         const audio = document.getElementById('webgpu-audio-state');
+        const audioBackend = document.getElementById('webgpu-audio-backend');
+        const audioLibrary = document.getElementById('webgpu-audio-library');
+        const audioLastPlayed = document.getElementById('webgpu-audio-last-played');
+        const visualStyle = document.getElementById('webgpu-visual-style');
+        const frameTime = document.getElementById('webgpu-frame-time');
         const particles = document.getElementById('webgpu-particle-state');
         const reason = document.getElementById('webgpu-runtime-reason');
         if (state) {
@@ -142,10 +151,19 @@ async function loadRendererStatus() {
             adapter.textContent = info.description || info.device || info.vendor || 'Not connected';
         }
         if (audio) audio.textContent = String(renderer.audioStatus || 'unknown').toUpperCase();
+        if (audioBackend) audioBackend.textContent = String(renderer.audioBackend || 'none').toUpperCase();
+        if (audioLibrary) audioLibrary.textContent = `${Number(renderer.loadedSounds || 0)} loaded / ${Number(renderer.failedSounds || 0)} failed`;
+        if (audioLastPlayed) audioLastPlayed.textContent = renderer.lastPlayed || 'None';
+        if (visualStyle) visualStyle.textContent = formatVisualStyle(renderer.visualStyle || config.visualStyle);
+        if (frameTime) frameTime.textContent = Number.isFinite(Number(renderer.gpuFrameMs)) ? `${Number(renderer.gpuFrameMs).toFixed(2)} ms` : '-';
         if (particles) particles.textContent = `${Number(renderer.activeParticles || 0).toLocaleString()} active · ${Number(renderer.droppedParticles || 0).toLocaleString()} dropped`;
         if (reason) {
             reason.hidden = !renderer.reason || renderer.state === 'ready';
             reason.textContent = renderer.reason || '';
+        }
+        if (reason && renderer.lastAudioError) {
+            reason.hidden = false;
+            reason.textContent = renderer.lastAudioError;
         }
         if (data.requirements?.allowedOrigin) {
             const origin = document.getElementById('webgpu-origin');
@@ -195,7 +213,9 @@ async function triggerTest() {
             body: JSON.stringify({
                 shape: shape,
                 intensity: 1.5,
-                position: { x: 0.5, y: 0.5 }
+                positionMode: 'auto',
+                visualStyle: config.visualStyle || 'premium-hybrid',
+                colors: getConfiguredPreviewColors()
             })
         });
 
@@ -346,6 +366,10 @@ function updateUI() {
     if (defaultShapeSelect) {
         defaultShapeSelect.value = config.defaultShape || 'burst';
     }
+    document.querySelectorAll('[data-visual-style]').forEach(card => {
+        card.classList.toggle('active', card.dataset.visualStyle === (config.visualStyle || 'premium-hybrid'));
+    });
+    renderGiftStyleMappings();
 
     // User avatar integration
     updateToggle('avatar-toggle', config.userAvatarEnabled);
@@ -492,6 +516,14 @@ function updateToggle(id, value) {
     }
 }
 
+function formatVisualStyle(style) {
+    return {
+        'premium-hybrid': 'Premium Hybrid',
+        realistic: 'Realistic',
+        'stylized-neon': 'Stylized Neon'
+    }[style] || 'Premium Hybrid';
+}
+
 function readCurrentTheme() {
     const documentTheme = document.documentElement?.getAttribute('data-theme');
     if (documentTheme) {
@@ -549,7 +581,7 @@ function updateOverviewSummary() {
     const adaptiveEnabled = config.adaptivePerformance !== false;
 
     setChipState('overview-enabled-state', config.enabled ? 'Enabled' : 'Disabled', config.enabled);
-    setChipState('overview-theme-state', `Theme: ${theme}`);
+    setChipState('overview-theme-state', `Style: ${formatVisualStyle(config.visualStyle)} / ${theme}`);
     setChipState('overview-resolution-state', `${resolutionPreset} · ${orientation === 'portrait' ? 'Portrait' : 'Landscape'}`);
     setChipState('overview-performance-state', `${targetFps} FPS · ${maxParticles.toLocaleString()} particles`);
     setChipState('overview-safety-state', `${queueEnabled ? 'Queue on' : 'Queue off'} · ${adaptiveEnabled ? 'Adaptive on' : 'Adaptive off'}`);
@@ -711,6 +743,18 @@ function setupEventListeners() {
     document.getElementById('default-shape')?.addEventListener('change', function() {
         config.defaultShape = this.value;
     });
+
+    document.querySelectorAll('[data-visual-style]').forEach(card => {
+        card.addEventListener('click', () => {
+            config.visualStyle = card.dataset.visualStyle;
+            document.querySelectorAll('[data-visual-style]').forEach(item => item.classList.toggle('active', item === card));
+            updateOverviewSummary();
+        });
+    });
+    document.getElementById('save-gift-style')?.addEventListener('click', () => {
+        saveGiftStyleMapping().catch(error => showToast(error.message, 'error'));
+    });
+    document.getElementById('test-audio-btn')?.addEventListener('click', () => triggerTestShape('burst', 1.25));
 
     // Range sliders
     setupRangeSlider('combo-timeout', 'combo-timeout-value', 's', (val) => {
@@ -921,6 +965,8 @@ function setupEventListeners() {
     // Color mode
     document.getElementById('color-mode').addEventListener('change', function() {
         config.colorMode = this.value;
+        renderColorSwatches();
+        schedulePaletteUpdate(true);
     });
 
     // Overlay buttons
@@ -937,6 +983,7 @@ function setupEventListeners() {
     colorPicker?.addEventListener('input', () => {
         if (colorHex) colorHex.value = colorPicker.value.toUpperCase();
     });
+    colorPicker?.addEventListener('change', () => commitThemeColor(colorPicker.value));
     colorHex?.addEventListener('change', () => {
         const color = normalizeColor(colorHex.value);
         if (!color) {
@@ -945,15 +992,15 @@ function setupEventListeners() {
         }
         colorHex.value = color;
         if (colorPicker) colorPicker.value = color;
+        commitThemeColor(color);
+    });
+    colorHex?.addEventListener('keydown', event => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        commitThemeColor(colorHex.value);
     });
     document.getElementById('add-color').addEventListener('click', () => {
-        const color = normalizeColor(colorHex?.value || colorPicker?.value);
-        if (!color) return;
-        if (!config.themeColors) config.themeColors = [];
-        if (!config.themeColors.includes(color)) {
-            config.themeColors.push(color);
-            renderColorSwatches();
-        }
+        commitThemeColor(colorHex?.value || colorPicker?.value);
     });
 }
 
@@ -972,6 +1019,82 @@ function renderColorSwatches() {
     if (!container) return;
     container.querySelectorAll('.color-swatch[data-color]').forEach(swatch => swatch.remove());
     (config.themeColors || []).forEach(color => addColorSwatch(color));
+    const status = document.getElementById('color-palette-status');
+    if (status) {
+        const count = Array.isArray(config.themeColors) ? config.themeColors.length : 0;
+        status.textContent = config.colorMode === 'theme'
+            ? `Theme palette active - ${count} color${count === 1 ? '' : 's'}`
+            : `${count} theme color${count === 1 ? '' : 's'} saved - select Theme Colors to use them`;
+    }
+}
+
+function getConfiguredPreviewColors() {
+    const theme = Array.isArray(config.themeColors) && config.themeColors.length ? config.themeColors.slice(0, 12) : ['#FFFFFF'];
+    if (config.colorMode === 'random') {
+        return Array.from({ length: 3 }, () => `hsl(${Math.random() * 360}, 100%, 60%)`);
+    }
+    if (config.colorMode === 'rainbow') {
+        return Array.from({ length: 5 }, (_, index) => `hsl(${index / 5 * 360}, 100%, 55%)`);
+    }
+    return theme;
+}
+
+function commitThemeColor(value) {
+    const color = /^#[0-9A-Fa-f]{6}$/.test(value || '') ? value.toUpperCase() : null;
+    if (!color) {
+        showToast('Enter a valid six-digit hex color', 'error');
+        return false;
+    }
+    const colors = Array.isArray(config.themeColors)
+        ? config.themeColors.map(item => String(item).toUpperCase()).filter((item, index, all) => /^#[0-9A-F]{6}$/.test(item) && all.indexOf(item) === index)
+        : [];
+    if (!colors.includes(color)) {
+        if (colors.length >= 12) {
+            showToast('The theme palette supports up to 12 colors', 'error');
+            return false;
+        }
+        colors.push(color);
+    }
+    config.themeColors = colors;
+    config.colorMode = 'theme';
+    const mode = document.getElementById('color-mode');
+    if (mode) mode.value = 'theme';
+    const picker = document.getElementById('color-picker');
+    const hex = document.getElementById('color-hex');
+    if (picker) picker.value = color;
+    if (hex) hex.value = color;
+    renderColorSwatches();
+    schedulePaletteUpdate(true);
+    return true;
+}
+
+function schedulePaletteUpdate(preview = false) {
+    if (paletteSaveTimer !== null) window.clearTimeout(paletteSaveTimer);
+    paletteSaveTimer = window.setTimeout(() => {
+        paletteSaveTimer = null;
+        void saveConfig(false);
+    }, 180);
+    if (!preview) return;
+    if (palettePreviewTimer !== null) window.clearTimeout(palettePreviewTimer);
+    palettePreviewTimer = window.setTimeout(async () => {
+        palettePreviewTimer = null;
+        try {
+            await fetch('/api/webgpu-fireworks/trigger', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    shape: config.defaultShape || 'burst',
+                    intensity: 1.15,
+                    positionMode: 'auto',
+                    visualStyle: config.visualStyle || 'premium-hybrid',
+                    colors: getConfiguredPreviewColors(),
+                    playSound: false
+                })
+            });
+        } catch (error) {
+            console.warn('[WebGPU Fireworks Settings] Palette preview failed:', error.message);
+        }
+    }, 80);
 }
 
 function addColorSwatch(color) {
@@ -995,11 +1118,17 @@ function addColorSwatch(color) {
         if (from < 0 || to < 0 || from === to) return;
         colors.splice(to, 0, colors.splice(from, 1)[0]);
         renderColorSwatches();
+        schedulePaletteUpdate(true);
     });
-    swatch.title = `${color} — click to remove`;
+    swatch.title = `${color} - click to remove`;
     swatch.addEventListener('click', () => {
+        if ((config.themeColors || []).length <= 1) {
+            showToast('The theme palette needs at least one color', 'error');
+            return;
+        }
         config.themeColors = (config.themeColors || []).filter(item => item !== color);
         renderColorSwatches();
+        schedulePaletteUpdate(true);
     });
 
     container.insertBefore(swatch, addBtn);
@@ -1038,7 +1167,9 @@ async function triggerTestShape(shape, intensity = 1.5) {
             body: JSON.stringify({
                 shape: shape,
                 intensity: intensity,
-                position: { x: 0.5, y: 0.5 }
+                positionMode: 'auto',
+                visualStyle: config.visualStyle || 'premium-hybrid',
+                colors: getConfiguredPreviewColors()
             })
         });
 
@@ -1075,7 +1206,10 @@ async function triggerTestTier(tier) {
                 shape: config.defaultShape || 'burst',
                 intensity: intensities[tier],
                 particleCount: particleCounts[tier],
-                position: { x: 0.5, y: 0.5 }
+                positionMode: 'auto',
+                visualStyle: config.visualStyle || 'premium-hybrid',
+                tier,
+                colors: getConfiguredPreviewColors()
             })
         });
 
@@ -1126,7 +1260,9 @@ async function triggerTestAvatar() {
             body: JSON.stringify({
                 shape: config.defaultShape || 'burst',
                 intensity: 1.5,
-                position: { x: 0.5, y: 0.5 },
+                positionMode: 'auto',
+                visualStyle: config.visualStyle || 'premium-hybrid',
+                colors: getConfiguredPreviewColors(),
                 userAvatar: avatarUrl
             })
         });
@@ -1513,7 +1649,10 @@ async function measureFPS() {
                 body: JSON.stringify({
                     shape: 'burst',
                     intensity: 1.5,
-                    position: { x: Math.random(), y: Math.random() * 0.5 + 0.25 }
+                    positionMode: 'exact',
+                    position: { x: Math.random() * 0.76 + 0.12, y: Math.random() * 0.4 + 0.18 },
+                    origin: { x: Math.random() * 0.84 + 0.08, y: 1.04 },
+                    playSound: false
                 })
             });
         } catch (e) {
@@ -1686,4 +1825,65 @@ function loadBenchmarkResults() {
     } catch (e) {
         console.error('Failed to load benchmark results:', e);
     }
+}
+
+function renderGiftStyleMappings() {
+    const root = document.getElementById('gift-style-list');
+    if (!root) return;
+    const mappings = config.giftShapeMappings || {};
+    root.replaceChildren();
+    for (const [giftId, mapping] of Object.entries(mappings)) {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-2 bg-black/20 rounded px-3 py-2';
+        const label = document.createElement('span');
+        label.textContent = `${giftId}: ${mapping.shape || 'burst'} / ${mapping.visualStyle ? formatVisualStyle(mapping.visualStyle) : 'Global style'}`;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'text-red-300 font-bold';
+        remove.textContent = 'Remove';
+        remove.addEventListener('click', () => removeGiftStyleMapping(giftId));
+        row.append(label, remove);
+        root.appendChild(row);
+    }
+    if (!root.childElementCount) root.textContent = 'No gift-specific overrides.';
+}
+
+async function saveGiftStyleMapping() {
+    const giftId = document.getElementById('gift-style-id')?.value.trim();
+    if (!giftId) {
+        showToast('Gift ID is required', 'error');
+        return;
+    }
+    const existing = config.giftShapeMappings?.[giftId] || {};
+    const response = await fetch('/api/webgpu-fireworks/gift-mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            giftId,
+            shape: document.getElementById('gift-style-shape')?.value || existing.shape || 'burst',
+            visualStyle: document.getElementById('gift-style-override')?.value || null,
+            colors: existing.colors || null,
+            intensity: existing.intensity || 1
+        })
+    });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Gift mapping could not be saved');
+    config.giftShapeMappings = {
+        ...(config.giftShapeMappings || {}),
+        [giftId]: {
+            ...existing,
+            shape: document.getElementById('gift-style-shape')?.value || 'burst',
+            visualStyle: document.getElementById('gift-style-override')?.value || null
+        }
+    };
+    renderGiftStyleMappings();
+    showToast('Gift style override saved', 'success');
+}
+
+async function removeGiftStyleMapping(giftId) {
+    const response = await fetch(`/api/webgpu-fireworks/gift-mappings/${encodeURIComponent(giftId)}`, { method: 'DELETE' });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Gift mapping could not be removed');
+    delete config.giftShapeMappings[giftId];
+    renderGiftStyleMappings();
 }

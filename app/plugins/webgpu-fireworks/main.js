@@ -28,6 +28,9 @@ const {
     normalizeGiftMapping
 } = require('./lib/config-schema');
 const { evaluateTriggerPolicy } = require('./lib/trigger-policy');
+const { SpawnPlanner } = require('./lib/spawn-planner');
+
+const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
 
 class FireworksPlugin {
     constructor(api) {
@@ -59,6 +62,7 @@ class FireworksPlugin {
         this.activeFireworkCount = 0;
         this.activeFireworkTimers = new Map();
         this.useLegacyGiftDropGuards = false;
+        this.spawnPlanner = new SpawnPlanner();
     }
 
     async init() {
@@ -105,6 +109,7 @@ class FireworksPlugin {
 
         // Load default configuration
         this.loadConfig();
+        await this.migrateFireworksSettings();
 
         // Start random firework timer if enabled
         if (this.config.randomEnabled) {
@@ -134,8 +139,6 @@ class FireworksPlugin {
      * Register socket event handlers
      */
     registerSocketHandlers() {
-        const io = this.api.getSocketIO();
-
         // Initialize socket tracking
         if (!this.connectedSockets) {
             this.connectedSockets = new Set();
@@ -191,12 +194,32 @@ class FireworksPlugin {
                         activeParticles: Math.max(0, Number(data.activeParticles) || 0),
                         droppedParticles: Math.max(0, Number(data.droppedParticles) || 0),
                         audioStatus: typeof data.audioStatus === 'string' ? data.audioStatus : previous.audioStatus || 'unknown',
+                        audioBackend: typeof data.audioBackend === 'string' ? data.audioBackend : previous.audioBackend || 'none',
+                        loadedSounds: Math.max(0, Number(data.loadedSounds) || 0),
+                        failedSounds: Math.max(0, Number(data.failedSounds) || 0),
+                        lastPlayed: typeof data.lastPlayed === 'string' ? data.lastPlayed.slice(0, 100) : previous.lastPlayed || null,
+                        lastAudioError: typeof data.lastAudioError === 'string' ? data.lastAudioError.slice(0, 300) : null,
+                        visualStyle: typeof data.visualStyle === 'string' ? data.visualStyle : this.config.visualStyle,
                         reason: typeof data.reason === 'string' ? data.reason.slice(0, 300) : null,
                         updatedAt: Date.now()
                     });
                     if (state !== 'ready' && state !== 'initializing') {
                         this.api.log(`[WEBGPU FIREWORKS] Renderer ${state}: ${data.reason || 'no details'}`, 'warn');
                     }
+                });
+
+                socket.on('webgpu-fireworks:interactive-trigger', (data = {}) => {
+                    if (!this.config.enabled || !this.config.interactiveEnabled || !this.config.clickTriggerEnabled) return;
+                    this.triggerFirework({
+                        type: 'click',
+                        reason: 'click',
+                        positionMode: 'exact',
+                        position: data.position,
+                        shape: data.shape || this.config.defaultShape,
+                        visualStyle: data.visualStyle || this.config.visualStyle,
+                        intensity: 0.8,
+                        colors: this.resolveConfiguredColors()
+                    });
                 });
 
                 // Listen for active firework count responses
@@ -215,7 +238,7 @@ class FireworksPlugin {
             };
 
             // Listen for new connections
-            io.on('connection', this.fpsUpdateHandler);
+            this.api.registerSocketConnection(this.fpsUpdateHandler);
         }
     }
 
@@ -254,6 +277,12 @@ class FireworksPlugin {
             activeParticles: 0,
             droppedParticles: 0,
             audioStatus: 'unknown',
+            audioBackend: 'none',
+            loadedSounds: 0,
+            failedSounds: 0,
+            lastPlayed: null,
+            lastAudioError: null,
+            visualStyle: this.config?.visualStyle || 'premium-hybrid',
             reason: 'No active WebGPU overlay connected'
         };
     }
@@ -290,6 +319,55 @@ class FireworksPlugin {
     }
 
     /**
+     * Import the stable Fireworks configuration exactly once. The renderer
+     * capacity and backend settings remain WebGPU-owned.
+     */
+    async migrateFireworksSettings() {
+        const migration = this.api.getConfig('migration') || {};
+        if (Number(migration.fireworksConfigVersion) >= FIREWORKS_CONFIG_MIGRATION_VERSION) return false;
+
+        const excluded = new Set([
+            'renderer', 'gpuAcceleration', 'preserveDrawingBuffer', 'desynchronized',
+            'maxTotalParticles', 'emergencyCleanupThreshold', 'enabled'
+        ]);
+        let imported = null;
+        try {
+            const raw = this.api.getDatabase().getSetting('plugin:fireworks:settings');
+            const stableConfig = raw ? JSON.parse(raw) : null;
+            if (stableConfig && typeof stableConfig === 'object' && !Array.isArray(stableConfig)) {
+                imported = {};
+                for (const [key, value] of Object.entries(stableConfig)) {
+                    if (!excluded.has(key)) imported[key] = value;
+                }
+                for (const key of ['rocketSound', 'explosionSound']) {
+                    if (typeof imported[key] === 'string') {
+                        imported[key] = imported[key].replace('/plugins/fireworks/', '/plugins/webgpu-fireworks/');
+                    }
+                }
+                this.config = normalizeConfig({ ...this.config, ...imported, renderer: 'webgpu' });
+                this.saveConfig();
+            }
+
+            this.api.setConfig('migration', {
+                ...migration,
+                fireworksConfigVersion: FIREWORKS_CONFIG_MIGRATION_VERSION,
+                importedAt: Date.now(),
+                sourceFound: Boolean(imported)
+            });
+            this.api.log(
+                imported
+                    ? '[WEBGPU FIREWORKS] Imported compatible settings from Fireworks.'
+                    : '[WEBGPU FIREWORKS] No saved Fireworks settings found; WebGPU defaults retained.',
+                'info'
+            );
+            return Boolean(imported);
+        } catch (error) {
+            this.api.log(`[WEBGPU FIREWORKS] Settings import failed and will retry: ${error.message}`, 'warn');
+            return false;
+        }
+    }
+
+    /**
      * Load plugin configuration from database or defaults
      */
     loadConfig() {
@@ -299,6 +377,7 @@ class FireworksPlugin {
             // Global settings
             enabled: true,
             renderer: 'webgpu',
+            visualStyle: 'premium-hybrid',
             maxParticles: 1000,
             targetFps: 60,
 
@@ -569,7 +648,6 @@ class FireworksPlugin {
 
                 this.triggerFirework({
                     ...triggerOptions,
-                    position: triggerOptions.position || { x: 0.5, y: 0.7 },
                     reason: 'manual',
                     bypassEnabled: true  // Allow test triggers even when disabled
                 });
@@ -631,7 +709,7 @@ class FireworksPlugin {
         // Set gift shape mapping
         this.api.registerRoute('post', '/api/webgpu-fireworks/gift-mappings', (req, res) => {
             try {
-                const { giftId, shape, colors, intensity } = normalizeGiftMapping(req.body || {});
+                const { giftId, shape, colors, intensity, visualStyle } = normalizeGiftMapping(req.body || {});
 
                 if (!giftId) {
                     return res.status(400).json({ success: false, error: 'giftId is required' });
@@ -640,13 +718,28 @@ class FireworksPlugin {
                 this.config.giftShapeMappings[giftId] = {
                     shape: shape || 'burst',
                     colors: colors || null,
-                    intensity: intensity || 1.0
+                    intensity: intensity || 1.0,
+                    visualStyle: visualStyle || null
                 };
                 this.saveConfig();
+                this.api.emit('webgpu-fireworks:config-update', { config: this.config });
 
                 res.json({ success: true, message: 'Gift mapping updated' });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        this.api.registerRoute('delete', '/api/webgpu-fireworks/gift-mappings/:giftId', (req, res) => {
+            try {
+                const { giftId } = normalizeGiftMapping({ giftId: req.params.giftId });
+                if (!giftId) return res.status(400).json({ success: false, error: 'giftId is required' });
+                delete this.config.giftShapeMappings[giftId];
+                this.saveConfig();
+                this.api.emit('webgpu-fireworks:config-update', { config: this.config });
+                return res.json({ success: true, message: 'Gift mapping removed' });
+            } catch (error) {
+                return res.status(500).json({ success: false, error: error.message });
             }
         });
 
@@ -714,14 +807,14 @@ class FireworksPlugin {
 
         // Serve uploaded files
         const express = require('express');
-        this.api.getApp().use('/plugins/webgpu-fireworks/uploads', express.static(this.uploadDir));
+        this.api.registerMiddleware('/plugins/webgpu-fireworks/uploads', express.static(this.uploadDir));
 
         // Serve audio files
         const audioDir = path.join(__dirname, 'audio');
         if (!fs.existsSync(audioDir)) {
             fs.mkdirSync(audioDir, { recursive: true });
         }
-        this.api.getApp().use('/plugins/webgpu-fireworks/audio', express.static(audioDir));
+        this.api.registerMiddleware('/plugins/webgpu-fireworks/audio', express.static(audioDir));
 
         // Benchmark API endpoints
         this.api.registerRoute('post', '/api/webgpu-fireworks/benchmark/set-preset', (req, res) => {
@@ -893,15 +986,9 @@ class FireworksPlugin {
             shape = this.config.activeShapes[Math.floor(Math.random() * this.config.activeShapes.length)];
         }
 
-        // Determine colors
-        let colors = giftSettings.colors || null;
-        if (!colors && this.config.colorMode === 'random') {
-            colors = this.generateRandomColors(3);
-        } else if (!colors && this.config.colorMode === 'theme') {
-            colors = this.config.themeColors;
-        } else if (!colors && this.config.colorMode === 'rainbow') {
-            colors = this.generateRainbowColors(5);
-        }
+        // Determine colors through the same contract used by tests, finales,
+        // follows and random schedules. Gift mappings remain the top priority.
+        const colors = this.resolveConfiguredColors(giftSettings.colors);
 
         // User avatar integration
         // When enabled, pass user avatar to engine which will mix it with gift images
@@ -929,12 +1016,6 @@ class FireworksPlugin {
         const baseParticles = this.config.particleCount[tier] || 50;
         const particleCount = Math.round(baseParticles * finalIntensity * tierProfile.particles);
 
-        // Random position in upper portion of screen
-        const position = {
-            x: 0.2 + Math.random() * 0.6, // 20%-80% from left
-            y: 0.3 + Math.random() * 0.4  // 30%-70% from top
-        };
-
         this.api.log(
             `🎆 [FIREWORKS] Gift from ${username}: ${coins} coins (x${repeatCount}), ` +
             `Tier: ${tier}, Combo: x${comboMultiplier.toFixed(1)}, ` +
@@ -948,7 +1029,8 @@ class FireworksPlugin {
             intensity: finalIntensity,
             shape: shape,
             colors: colors,
-            position: position,
+            positionMode: 'auto',
+            visualStyle: giftSettings.visualStyle || this.config.visualStyle,
             giftId: giftId,
             giftImage: giftPictureUrl || (giftInfo ? giftInfo.image_url : null),
             userAvatar: avatarImage,
@@ -1050,6 +1132,14 @@ class FireworksPlugin {
         return colors;
     }
 
+    resolveConfiguredColors(explicitColors = null) {
+        if (Array.isArray(explicitColors) && explicitColors.length > 0) return explicitColors.slice(0, 12);
+        if (this.config.colorMode === 'random') return this.generateRandomColors(3);
+        if (this.config.colorMode === 'rainbow') return this.generateRainbowColors(5);
+        const theme = Array.isArray(this.config.themeColors) ? this.config.themeColors.filter(Boolean).slice(0, 12) : [];
+        return theme.length > 0 ? theme : ['#ffffff'];
+    }
+
     /**
      * Start the random firework interval timer
      */
@@ -1104,8 +1194,8 @@ class FireworksPlugin {
                     type: 'chat',
                     intensity: 0.5,
                     shape: 'burst',
-                    colors: this.generateRandomColors(2),
-                    position: { x: Math.random(), y: 0.5 + Math.random() * 0.3 },
+                    colors: this.resolveConfiguredColors(),
+                    positionMode: 'auto',
                     username: data.uniqueId || data.username,
                     reason: 'chat'
                 });
@@ -1151,22 +1241,17 @@ class FireworksPlugin {
         // Stagger the rockets slightly for visual effect
         for (let i = 0; i < rocketCount; i++) {
             setTimeout(() => {
-                // Random position with slight horizontal spread
-                const xPos = 0.3 + (Math.random() * 0.4); // Center area
-                const yPos = 0.3 + (Math.random() * 0.3); // Mid to upper area
-
                 // Choose a nice shape
                 const shape = shapes[Math.floor(Math.random() * shapes.length)];
 
-                // Use vibrant colors
-                const colors = this.generateRandomColors(3);
+                const colors = this.resolveConfiguredColors();
 
                 this.triggerFirework({
                     type: 'follow',
                     intensity: 1.2, // Slightly more intense than normal
                     shape: shape,
                     colors: colors,
-                    position: { x: xPos, y: yPos },
+                    positionMode: 'auto',
                     particleCount: 80,
                     userAvatar: this.config.followerShowProfilePicture ? profilePictureUrl : null,
                     avatarParticleChance: 0.5, // 50% chance for avatar particles to focus on follower
@@ -1237,14 +1322,26 @@ class FireworksPlugin {
             return;
         }
 
+        const plan = this.spawnPlanner.plan({
+            seed: options.seed,
+            orientation: this.config.orientation,
+            positionMode: options.positionMode,
+            position: options.position,
+            origin: options.origin
+        });
+
         const payload = {
             id: Date.now() + Math.random().toString(36).substring(2, 11),
             timestamp: Date.now(),
             type: options.type || 'burst',
             intensity: options.intensity || 1.0,
-            shape: options.shape || this.config.defaultShape,
-            colors: options.colors || this.config.themeColors,
-            position: options.position || { x: 0.5, y: 0.5 },
+            shape: this.config.shapesEnabled === false ? 'burst' : (options.shape || this.config.defaultShape),
+            visualStyle: options.visualStyle || this.config.visualStyle,
+            colors: this.resolveConfiguredColors(options.colors),
+            positionMode: options.positionMode,
+            position: plan.position,
+            origin: plan.origin,
+            seed: plan.seed,
             particleCount: policyDecision.particleCount || options.particleCount || 50,
             giftId: options.giftId || null,
             giftImage: options.giftImage || null,
@@ -1258,7 +1355,7 @@ class FireworksPlugin {
             reason: options.reason || 'manual',
 
             // Audio settings
-            playSound: this.config.audioEnabled,
+            playSound: options.playSound !== false && this.config.audioEnabled,
             rocketSound: this.config.rocketSound,
             explosionSound: this.config.explosionSound,
             audioVolume: this.config.audioVolume,
@@ -1268,6 +1365,10 @@ class FireworksPlugin {
             trailLength: this.config.trailLength,
             glowEnabled: this.config.glowEnabled,
             particleSizeRange: this.config.particleSizeRange,
+            gravity: this.config.gravity,
+            friction: this.config.friction,
+            windEnabled: this.config.windEnabled,
+            windStrength: this.config.windStrength,
 
             // Avatar settings
             avatarParticleChance: this.config.avatarParticleChance ?? 0.3,
@@ -1276,6 +1377,8 @@ class FireworksPlugin {
             targetFps: this.config.targetFps || 60,
             minFps: this.config.minFps || 24,
             despawnFadeDuration: this.config.despawnFadeDuration || 3.0,
+            adaptivePerformance: this.config.adaptivePerformance !== false,
+            frameSkipEnabled: this.config.frameSkipEnabled !== false,
 
             // Gift popup settings
             giftPopupEnabled: this.config.giftPopupEnabled !== false,
@@ -1312,6 +1415,13 @@ class FireworksPlugin {
         intensity = finale.intensity;
         duration = finale.duration;
 
+        const burstCount = Math.min(40, Math.round(5 * intensity));
+        const seed = Math.floor(Math.random() * 0xffffffff);
+        const bursts = this.spawnPlanner.planFinale(burstCount, {
+            seed,
+            orientation: this.config.orientation
+        });
+
         this.api.log(`🎆 [FIREWORKS] FINALE! Intensity: ${intensity}, Duration: ${duration}ms`, 'info');
 
         const payload = {
@@ -1322,14 +1432,19 @@ class FireworksPlugin {
             timestamp: Date.now(),
 
             // Finale-specific settings
-            burstCount: Math.round(5 * intensity),
+            burstCount,
             burstInterval: 300,
+            bursts,
+            seed,
             shapes: this.getConfiguredShapes(),
-            colors: this.config.themeColors,
+            colors: this.resolveConfiguredColors(),
+            visualStyle: this.config.visualStyle,
 
             // Audio
             playSound: this.config.audioEnabled,
-            audioVolume: this.config.audioVolume
+            audioVolume: this.config.audioVolume,
+            rocketSound: this.config.rocketSound,
+            explosionSound: this.config.explosionSound
         };
 
         this.api.emit('webgpu-fireworks:finale', payload);
@@ -1347,11 +1462,8 @@ class FireworksPlugin {
             type: 'random',
             intensity: intensity,
             shape: shapes[Math.floor(Math.random() * shapes.length)],
-            colors: this.generateRandomColors(3),
-            position: {
-                x: 0.15 + Math.random() * 0.7,
-                y: 0.25 + Math.random() * 0.5
-            },
+            colors: this.resolveConfiguredColors(),
+            positionMode: 'auto',
             reason: 'random',
             bypassEnabled: bypassEnabled
         });
@@ -1385,8 +1497,14 @@ class FireworksPlugin {
                 shape: {
                     type: 'select',
                     label: 'Shape',
-                    options: ['burst', 'heart', 'star', 'ring', 'spiral'],
+                    options: ['burst', 'heart', 'star', 'ring', 'spiral', 'paws'],
                     default: 'burst'
+                },
+                visualStyle: {
+                    type: 'select',
+                    label: 'Visual Style',
+                    options: ['premium-hybrid', 'realistic', 'stylized-neon'],
+                    default: 'premium-hybrid'
                 },
                 intensity: {
                     type: 'number',
@@ -1410,8 +1528,10 @@ class FireworksPlugin {
 
                 this.triggerFirework({
                     shape: params.shape,
+                    visualStyle: params.visualStyle || this.config.visualStyle,
                     intensity: params.intensity,
                     colors: colors,
+                    positionMode: 'auto',
                     reason: 'flow'
                 });
             }
@@ -1505,6 +1625,7 @@ class FireworksPlugin {
             shape: giftSettings.shape || this.config.defaultShape,
             colors: giftSettings.colors || null,
             intensity: giftSettings.intensity || 1.0,
+            visualStyle: giftSettings.visualStyle || this.config.visualStyle,
             giftId: giftId,
             giftImage: giftInfo ? giftInfo.image_url : null,
             ...options
@@ -1540,12 +1661,8 @@ class FireworksPlugin {
         this.activeFireworkTimers.clear();
         this.activeFireworkCount = 0;
 
-        // Remove socket event handler and disconnect all tracked sockets
-        if (this.fpsUpdateHandler) {
-            const io = this.api.getSocketIO();
-            io.off('connection', this.fpsUpdateHandler);
-            this.fpsUpdateHandler = null;
-        }
+        // PluginAPI owns the connection disposer and removes it on unload.
+        this.fpsUpdateHandler = null;
 
         // Clean up tracked sockets
         if (this.connectedSockets) {
@@ -1554,6 +1671,7 @@ class FireworksPlugin {
                 socket.removeAllListeners('webgpu-fireworks:register-overlay');
                 socket.removeAllListeners('webgpu-fireworks:renderer-status');
                 socket.removeAllListeners('webgpu-fireworks:active-count-response');
+                socket.removeAllListeners('webgpu-fireworks:interactive-trigger');
             });
             this.connectedSockets.clear();
         }

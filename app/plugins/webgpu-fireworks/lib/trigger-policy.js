@@ -14,7 +14,11 @@ function clampParticleCount(count, maxTotalParticles) {
 
 function evaluateTriggerPolicy({ trigger = {}, config = {}, health = {} }) {
   const maxConcurrentFireworks = Math.max(1, Math.min(20, Number(config.maxConcurrentFireworks) || 12));
-  const maxTotalParticles = Math.max(200, Math.min(3000, Number(config.maxTotalParticles) || 1400));
+  const configuredPerEffect = Math.max(1, Number(config.maxParticles) || 1000);
+  const maxTotalParticles = Math.min(
+    configuredPerEffect,
+    Math.max(512, Math.min(16384, Number(config.maxTotalParticles) || 8192))
+  );
   const minFps = Math.max(15, Math.min(60, Number(config.minFps) || 24));
   const currentFps = Number(health.currentFps) || 0;
   const activeFireworkCount = Math.max(0, Number(health.activeFireworkCount) || 0);

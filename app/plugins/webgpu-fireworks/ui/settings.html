@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGPU Fireworks - Settings</title>
+    <title data-i18n="webgpu_fireworks.page_title">WebGPU Fireworks - Settings</title>
     <link href="/css/tailwind.output.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/themes.css">
     <script>
@@ -167,6 +167,22 @@
         .shape-preview.active-shape {
             border-color: #ffd700;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .visual-style-card {
+            cursor: pointer;
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            background: rgba(15, 23, 42, 0.62);
+            transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+        }
+
+        .visual-style-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .visual-style-card.active {
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35), 0 12px 30px rgba(8, 145, 178, 0.2);
         }
 
         .color-swatch {
@@ -707,19 +723,24 @@
         </header>
 
         <section class="card rounded-xl p-5 mb-6 border border-cyan-400/60 bg-cyan-950/30" role="note">
-            <h2 class="text-lg font-bold text-cyan-200">WebGPU OBS required</h2>
-            <p class="text-sm text-cyan-50 mt-2">This plugin edition is intended exclusively for the Loggableim OBS WebGPU build. It is not supported in standard OBS.</p>
-            <a class="inline-block mt-3 text-cyan-300 underline font-semibold" href="https://github.com/Loggableim/obs-studio-webgpu" target="_blank" rel="noopener noreferrer">Get the required OBS WebGPU build</a>
+            <h2 class="text-lg font-bold text-cyan-200" data-i18n="webgpu_fireworks.webgpu_obs_required">WebGPU OBS required</h2>
+            <p class="text-sm text-cyan-50 mt-2" data-i18n="webgpu_fireworks.webgpu_obs_notice">This plugin edition is intended exclusively for the Loggableim OBS WebGPU build. It is not supported in standard OBS.</p>
+            <a class="inline-block mt-3 text-cyan-300 underline font-semibold" href="https://github.com/Loggableim/obs-studio-webgpu" target="_blank" rel="noopener noreferrer" data-i18n="webgpu_fireworks.get_webgpu_build">Get the required OBS WebGPU build</a>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-sm">
-                <div>Renderer: <strong id="webgpu-runtime-state">Offline</strong></div>
-                <div>Adapter: <strong id="webgpu-adapter-state">Not connected</strong></div>
+                <div><span data-i18n="webgpu_fireworks.renderer">Renderer:</span> <strong id="webgpu-runtime-state">Offline</strong></div>
+                <div><span data-i18n="webgpu_fireworks.adapter">Adapter:</span> <strong id="webgpu-adapter-state">Not connected</strong></div>
                 <div>Audio: <strong id="webgpu-audio-state">Unknown</strong></div>
-                <div>Particles: <strong id="webgpu-particle-state">0 active · 0 dropped</strong></div>
+                <div><span data-i18n="webgpu_fireworks.particles">Particles:</span> <strong id="webgpu-particle-state">0 active · 0 dropped</strong></div>
+                <div><span data-i18n="webgpu_fireworks.audio_backend">Audio backend:</span> <strong id="webgpu-audio-backend">None</strong></div>
+                <div>Sound library: <strong id="webgpu-audio-library">0 loaded · 0 failed</strong></div>
+                <div>Last sound: <strong id="webgpu-audio-last-played">None</strong></div>
+                <div><span data-i18n="webgpu_fireworks.visual_style">Visual style:</span> <strong id="webgpu-visual-style">Premium Hybrid</strong></div>
+                <div>GPU frame: <strong id="webgpu-frame-time">—</strong></div>
             </div>
             <label class="block mt-4 text-sm font-semibold" for="webgpu-origin">OBS insecure origin allowlist</label>
             <div class="flex gap-2 mt-1">
                 <input id="webgpu-origin" class="flex-1 bg-black/30 rounded-lg px-3 py-2 font-mono text-sm" readonly>
-                <button id="copy-webgpu-origin" type="button" class="btn-primary px-4 rounded-lg">Copy origin</button>
+                <button id="copy-webgpu-origin" type="button" class="btn-primary px-4 rounded-lg" data-i18n="webgpu_fireworks.copy_origin">Copy origin</button>
             </div>
             <p id="webgpu-runtime-reason" class="text-sm text-orange-200 mt-3" hidden></p>
         </section>
@@ -888,6 +909,8 @@
                                 <span>100%</span>
                             </div>
                         </div>
+                        <button id="test-audio-btn" type="button" class="w-full btn-primary py-2 rounded-lg font-bold" data-i18n="webgpu_fireworks.test_audio">Test launch + explosion audio</button>
+                        <p class="text-xs text-gray-400">OBS should report READY-WEB-AUDIO or READY-HTML-AUDIO. If it remains LOCKED, open OBS Browser Source → Interact and click once. Enable “Control audio via OBS” and make sure the source is unmuted in the OBS Audio Mixer.</p>
                     </div>
                 </div>
             </div>
@@ -929,6 +952,24 @@
                             </select>
                         </div>
 
+                        <div>
+                            <label class="block mb-2 text-sm font-semibold">Visual style</label>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="visual-style-options">
+                                <button type="button" class="visual-style-card rounded-lg p-3 text-left active" data-visual-style="premium-hybrid">
+                                    <strong class="block text-cyan-200">Premium Hybrid</strong>
+                                    <span class="block text-xs text-gray-400 mt-1">Realistic launch and sparks with crisp, readable shapes.</span>
+                                </button>
+                                <button type="button" class="visual-style-card rounded-lg p-3 text-left" data-visual-style="realistic">
+                                    <strong class="block text-orange-200">Realistic</strong>
+                                    <span class="block text-xs text-gray-400 mt-1">Longer trails, ember glow and subtle transparent smoke.</span>
+                                </button>
+                                <button type="button" class="visual-style-card rounded-lg p-3 text-left" data-visual-style="stylized-neon">
+                                    <strong class="block text-fuchsia-200">Stylized Neon</strong>
+                                    <span class="block text-xs text-gray-400 mt-1">Large symbols, bold edges and stronger neon bloom.</span>
+                                </button>
+                            </div>
+                        </div>
+
                         <p class="text-sm text-gray-400" data-i18n="webgpu_fireworks.active_shapes">Active shapes:</p>
                         <p id="active-shapes-list" class="text-white font-bold">burst</p>
 
@@ -955,6 +996,28 @@
                                 &#x1F3B2; Test Random
                             </button>
                         </div>
+
+                        <div class="border border-white/10 rounded-lg p-4 mt-4 space-y-3">
+                            <div>
+                                <strong class="block">Gift style override</strong>
+                                <span class="text-xs text-gray-400">Override shape and visual style for one TikTok gift ID.</span>
+                            </div>
+                            <input id="gift-style-id" type="text" maxlength="80" placeholder="Gift ID" class="w-full bg-black/30 rounded-lg px-3 py-2">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <select id="gift-style-shape" class="w-full bg-black/30 rounded-lg px-3 py-2">
+                                    <option value="burst">Burst</option><option value="heart">Heart</option><option value="star">Star</option>
+                                    <option value="ring">Ring</option><option value="spiral">Spiral</option><option value="paws">Paws</option>
+                                </select>
+                                <select id="gift-style-override" class="w-full bg-black/30 rounded-lg px-3 py-2">
+                                    <option value="">Use global style</option>
+                                    <option value="premium-hybrid">Premium Hybrid</option>
+                                    <option value="realistic">Realistic</option>
+                                    <option value="stylized-neon">Stylized Neon</option>
+                                </select>
+                            </div>
+                            <button id="save-gift-style" type="button" class="btn-primary w-full py-2 rounded-lg font-bold">Save gift override</button>
+                            <div id="gift-style-list" class="space-y-2 text-sm"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -980,7 +1043,8 @@
                                 <input id="color-hex" type="text" value="#ff4444" maxlength="7" aria-label="Theme color hex value" class="bg-gray-700 rounded px-2 py-1 w-24 font-mono text-sm uppercase">
                                 <button id="add-color" class="color-swatch bg-gray-700 flex items-center justify-center text-xl" type="button">+</button>
                             </div>
-                            <p class="text-xs text-gray-400 mt-2">Click a color to remove it. Drag colors to set the palette order.</p>
+                            <p class="text-xs text-gray-400 mt-2">Choosing or entering a color adds it, activates Theme Colors, saves it and sends a silent preview. Click a chip to remove it; drag chips to reorder them.</p>
+                            <p id="color-palette-status" class="text-xs text-cyan-300 mt-1" aria-live="polite"></p>
                         </div>
                     </div>
                 </div>
@@ -1047,7 +1111,7 @@
                         </div>
 
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                            <strong class="text-blue-400">Tip:</strong>
+                            <strong class="text-blue-400" data-i18n="webgpu_fireworks.toaster_mode.tip_title">Tip:</strong>
                             <p class="text-sm text-gray-300 mt-1" data-i18n="webgpu_fireworks.toaster_mode.tip">
                                 Use Toaster Mode if your PC slows down during fireworks or if you experience rendering issues in OBS.
                             </p>
@@ -1057,7 +1121,7 @@
 
                 <!-- Performance & Resolution Settings -->
                 <div class="card rounded-xl p-6 border-2 border-blue-500/30">
-                    <h2 class="section-title text-xl font-bold mb-4">Performance & Resolution</h2>
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="webgpu_fireworks.performance_resolution">Performance & Resolution</h2>
 
                     <div class="space-y-4">
                         <div>
@@ -1111,7 +1175,7 @@
                         </div>
 
                         <div>
-                            <label class="block mb-2"><strong>Orientation</strong></label>
+                            <label class="block mb-2"><strong data-i18n="webgpu_fireworks.orientation">Orientation</strong></label>
                             <select id="orientation-select" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="orientation">
                                 <option value="landscape">Landscape (16:9)</option>
                                 <option value="portrait">Portrait (9:16)</option>
@@ -1122,7 +1186,7 @@
                         </div>
 
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                            <strong class="text-blue-400">Tip:</strong>
+                            <strong class="text-blue-400" data-i18n="webgpu_fireworks.toaster_mode.tip_title">Tip:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300" id="resolution-info">
                                 <div>- Current: <span id="current-resolution">1920x1080</span></div>
                                 <div>- Orientation: <span id="current-orientation">Landscape</span></div>
@@ -1131,7 +1195,7 @@
                         </div>
 
                         <div>
-                            <label class="block mb-2"><strong>Target FPS</strong></label>
+                            <label class="block mb-2"><strong data-i18n="webgpu_fireworks.target_fps">Target FPS</strong></label>
                             <input type="range" id="target-fps" min="24" max="60" step="6" value="60" class="w-full" data-config="targetFps">
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>24 FPS</span>
@@ -1170,7 +1234,7 @@
                         </div>
 
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                            <strong class="text-blue-400">Tip:</strong>
+                            <strong class="text-blue-400" data-i18n="webgpu_fireworks.toaster_mode.tip_title">Tip:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300">
                                 <div>- Combo 5+: Rockets skipped, instant explosions</div>
                                 <div>- Combo 8+: Instant bursts, no rocket animation</div>
@@ -1187,7 +1251,7 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label>Enable Queue System</label>
+                            <label data-i18n="webgpu_fireworks.enable_queue">Enable Queue System</label>
                             <div id="queue-enabled-toggle" class="toggle-switch" data-config="queueEnabled"></div>
                         </div>
 
@@ -1465,7 +1529,7 @@
                         <div>
                             <label class="block mb-2">Animation Size</label>
                             <select id="follower-animation-size" class="w-full bg-gray-700 text-white p-2 rounded-lg">
-                                <option value="small">Small</option>
+                                <option value="small" data-i18n="webgpu_fireworks.small">Small</option>
                                 <option value="medium" selected>Medium (Default)</option>
                                 <option value="large">Large</option>
                                 <option value="custom">Custom</option>
@@ -1569,7 +1633,7 @@
                     <!-- Medium Preset (Default) -->
                     <div class="card rounded-xl p-6 border-2 border-green-500/30 hover:border-green-500/60 transition cursor-pointer preset-card" data-preset="medium">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xl font-bold text-green-400">Medium</h3>
+                            <h3 class="text-xl font-bold text-green-400" data-i18n="webgpu_fireworks.medium">Medium</h3>
                             <span class="text-xs bg-green-500/20 px-2 py-1 rounded">Empfohlen</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
@@ -1731,7 +1795,7 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/i18n-client.js"></script>
-    <script src="/plugins/webgpu-fireworks/ui/settings.js"></script>
+    <script src="/plugins/webgpu-fireworks/ui/settings.js?v=2.1.1-color-picker-1"></script>
 
 <style id="final-fireworks-night-card-contrast">
 html[data-theme="night"] .card {

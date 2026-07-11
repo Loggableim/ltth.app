@@ -1,4 +1,5 @@
 const ALLOWED_SHAPES = ['burst', 'heart', 'star', 'ring', 'spiral', 'paws'];
+const ALLOWED_VISUAL_STYLES = ['premium-hybrid', 'realistic', 'stylized-neon'];
 const VALID_GIFT_POPUP_POSITIONS = ['top', 'middle', 'bottom', 'none'];
 const VALID_ORIENTATIONS = ['landscape', 'portrait'];
 const VALID_RESOLUTION_PRESETS = ['360p', '480p', '540p', '720p', '1080p', '1440p', '4k'];
@@ -9,6 +10,7 @@ const VALID_FOLLOWER_ENTRANCES = ['scale', 'fade', 'slide-up', 'slide-down', 'sl
 const DEFAULT_FIREWORKS_CONFIG = {
   enabled: true,
   renderer: 'webgpu',
+  visualStyle: 'premium-hybrid',
   maxParticles: 1000,
   targetFps: 60,
   giftTriggersEnabled: true,
@@ -119,6 +121,10 @@ function normalizeShape(value, fallback = DEFAULT_FIREWORKS_CONFIG.defaultShape)
   return ALLOWED_SHAPES.includes(value) ? value : fallback;
 }
 
+function normalizeVisualStyle(value, fallback = DEFAULT_FIREWORKS_CONFIG.visualStyle) {
+  return ALLOWED_VISUAL_STYLES.includes(value) ? value : fallback;
+}
+
 function normalizeColor(value) {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
@@ -174,6 +180,20 @@ function normalizeThresholds(value) {
   return { small, medium, big, massive };
 }
 
+function normalizeAudioPath(value, fallback) {
+  if (typeof value !== 'string') return fallback;
+  const trimmed = value.trim();
+  if (trimmed.startsWith('/plugins/fireworks/audio/')) {
+    return trimmed.replace('/plugins/fireworks/audio/', '/plugins/webgpu-fireworks/audio/');
+  }
+  if (
+    trimmed.startsWith('/plugins/webgpu-fireworks/audio/') ||
+    trimmed.startsWith('/plugins/webgpu-fireworks/uploads/') ||
+    /^https:\/\//i.test(trimmed)
+  ) return trimmed;
+  return fallback;
+}
+
 function normalizePreset(value, fallback) {
   return VALID_RESOLUTION_PRESETS.includes(value) ? value : fallback;
 }
@@ -182,12 +202,16 @@ function normalizeGiftShapeMappings(value) {
   if (!isPlainObject(value)) return {};
   const mappings = {};
   for (const [giftId, mapping] of Object.entries(value)) {
-    const normalized = normalizeGiftMapping({ giftId, ...(isPlainObject(mapping) ? mapping : {}) });
+    const source = typeof mapping === 'string'
+      ? { giftId, shape: mapping }
+      : { giftId, ...(isPlainObject(mapping) ? mapping : {}) };
+    const normalized = normalizeGiftMapping(source);
     if (normalized.giftId) {
       mappings[normalized.giftId] = {
         shape: normalized.shape,
         colors: normalized.colors,
-        intensity: normalized.intensity
+        intensity: normalized.intensity,
+        visualStyle: normalized.visualStyle
       };
     }
   }
@@ -203,6 +227,7 @@ function normalizeConfig(config = {}) {
     enabled: normalizeBoolean(source.enabled, defaults.enabled),
     // This plugin has no alternate backend. Legacy cloned values migrate here.
     renderer: 'webgpu',
+    visualStyle: normalizeVisualStyle(source.visualStyle, defaults.visualStyle),
     maxParticles: clampInteger(source.maxParticles, 200, 3000, defaults.maxParticles),
     targetFps: clampInteger(source.targetFps, 24, 120, defaults.targetFps),
     giftTriggersEnabled: normalizeBoolean(source.giftTriggersEnabled, defaults.giftTriggersEnabled),
@@ -222,8 +247,8 @@ function normalizeConfig(config = {}) {
     userAvatarEnabled: normalizeBoolean(source.userAvatarEnabled, defaults.userAvatarEnabled),
     avatarParticleChance: clampNumber(source.avatarParticleChance, 0, 1, defaults.avatarParticleChance),
     audioEnabled: normalizeBoolean(source.audioEnabled, defaults.audioEnabled),
-    rocketSound: typeof source.rocketSound === 'string' ? source.rocketSound : defaults.rocketSound,
-    explosionSound: typeof source.explosionSound === 'string' ? source.explosionSound : defaults.explosionSound,
+    rocketSound: normalizeAudioPath(source.rocketSound, defaults.rocketSound),
+    explosionSound: normalizeAudioPath(source.explosionSound, defaults.explosionSound),
     audioVolume: clampNumber(source.audioVolume, 0, 1, defaults.audioVolume),
     colorMode: ['gift', 'random', 'theme', 'rainbow'].includes(source.colorMode) ? source.colorMode : defaults.colorMode,
     themeColors: normalizeColorArray(source.themeColors, defaults.themeColors),
@@ -292,6 +317,10 @@ function normalizeConfig(config = {}) {
 function normalizeFireworkTrigger(options = {}, config = DEFAULT_FIREWORKS_CONFIG) {
   const source = isPlainObject(options) ? options : {};
   const safeConfig = normalizeConfig(config);
+  const hasExplicitPosition = isPlainObject(source.position);
+  const positionMode = source.positionMode === 'exact' || source.positionMode === 'auto'
+    ? source.positionMode
+    : (hasExplicitPosition ? 'exact' : 'auto');
   return {
     ...source,
     type: typeof source.type === 'string' ? source.type.slice(0, 40) : 'burst',
@@ -300,7 +329,13 @@ function normalizeFireworkTrigger(options = {}, config = DEFAULT_FIREWORKS_CONFI
     colors: source.colors === null || source.colors === undefined
       ? null
       : normalizeColorArray(source.colors, []),
-    position: normalizePosition(source.position, { x: 0.5, y: 0.5 }),
+    positionMode,
+    position: positionMode === 'exact'
+      ? normalizePosition(source.position, { x: 0.5, y: 0.5 })
+      : null,
+    origin: isPlainObject(source.origin) ? normalizePosition(source.origin, { x: 0.5, y: 1 }) : null,
+    seed: clampInteger(source.seed, 0, 0xffffffff, Math.floor(Math.random() * 0xffffffff)),
+    visualStyle: normalizeVisualStyle(source.visualStyle, safeConfig.visualStyle),
     particleCount: clampInteger(source.particleCount, 1, safeConfig.maxTotalParticles, 50),
     duration: clampInteger(source.duration, 250, 30000, 2000),
     tier: ['small', 'medium', 'big', 'massive'].includes(source.tier) ? source.tier : 'medium',
@@ -329,12 +364,16 @@ function normalizeGiftMapping(body = {}) {
     colors: source.colors === null || source.colors === undefined
       ? null
       : normalizeColorArray(source.colors, []),
-    intensity: clampNumber(source.intensity, 0.1, 10, 1.0)
+    intensity: clampNumber(source.intensity, 0.1, 10, 1.0),
+    visualStyle: source.visualStyle === null || source.visualStyle === undefined || source.visualStyle === ''
+      ? null
+      : normalizeVisualStyle(source.visualStyle)
   };
 }
 
 module.exports = {
   ALLOWED_SHAPES,
+  ALLOWED_VISUAL_STYLES,
   DEFAULT_FIREWORKS_CONFIG,
   clampInteger,
   clampNumber,
@@ -343,5 +382,6 @@ module.exports = {
   normalizeFireworkTrigger,
   normalizeGiftMapping,
   normalizePosition,
-  normalizeShape
+  normalizeShape,
+  normalizeVisualStyle
 };

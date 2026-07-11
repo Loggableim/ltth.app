@@ -25,6 +25,7 @@
         'stt-capture': '#0ea5e9',
         'webgpu-emoji-rain': '#f59e0b',
         fireworks: '#fb7185',
+        'webgpu-fireworks': '#22d3ee',
         'flame-overlay': '#7c3aed',
         'quiz-show': '#10b981',
         'interactive-story': '#8b5cf6',

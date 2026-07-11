@@ -11,7 +11,9 @@ This edition requires the [Loggableim OBS WebGPU build](https://github.com/Logga
 - **Combo Streak System**: Consecutive gifts from the same user create bigger effects
 - **Gift Escalation**: Small → Medium → Big → Massive tiers based on coin value
 - **Native WebGPU Engine**: WGSL compute simulation, indirect rendering, SDF shapes, GPU trails and HDR bloom
-- **Custom Explosion Shapes**: Burst, Heart, Star, Ring, Spiral
+- **Custom Explosion Shapes**: Burst, Heart, Star, Ring, Spiral, Paws
+- **Three Visual Styles**: Premium Hybrid, Realistic, and Stylized Neon globally or per gift
+- **Distributed Spawn Planner**: Automatic rockets use distinct launch origins and separated explosion zones
 - **Streamer-Safe Backpressure**: Low-FPS and high-load protection prioritizes bigger gifts and finales while reducing or dropping smaller effects under pressure
 - **Validated Runtime Settings**: Config, manual triggers, finales, and gift mappings are normalized before use to avoid broken settings crashing the overlay
 
@@ -24,7 +26,8 @@ This edition requires the [Loggableim OBS WebGPU build](https://github.com/Logga
 ### Audio System
 - **Synchronized Audio**: Launch sounds perfectly timed with rocket flight
 - **Tier-Based Selection**: Different sounds for Small/Medium/Big/Massive fireworks
-- **Combined Effects**: Launch + explosion in single synchronized audio files
+- **Frame-Exact Effects**: Separate launch, bang, and crackling layers follow the visual timeline
+- **Dual Audio Backend**: WebAudio with an HTMLAudio fallback for OBS autoplay compatibility
 - **Variety & Randomization**: Multiple sound variations for each tier
 - **Adaptive Playback**: Audio adjusts based on combo level and firework type
 - **Volume Control**: Adjustable audio levels with intensity scaling
@@ -75,6 +78,7 @@ Recommended settings:
 ### Gift Mappings
 - `GET /api/webgpu-fireworks/gift-mappings` - Get gift-specific settings
 - `POST /api/webgpu-fireworks/gift-mappings` - Set gift-specific settings
+- `DELETE /api/webgpu-fireworks/gift-mappings/:giftId` - Remove gift-specific settings
 
 ### File Management
 - `POST /api/webgpu-fireworks/upload` - Upload audio/video file
@@ -88,8 +92,11 @@ Recommended settings:
   "type": "gift",
   "intensity": 1.5,
   "shape": "heart",
+  "visualStyle": "premium-hybrid",
   "colors": ["#ff0000", "#ff6600", "#ffcc00"],
-  "position": { "x": 0.5, "y": 0.5 },
+  "positionMode": "auto",
+  "origin": { "x": 0.25, "y": 1.02 },
+  "seed": 12345,
   "particleCount": 100,
   "giftImage": "https://...",
   "username": "example"
@@ -121,6 +128,14 @@ When the same user sends multiple gifts within the combo timeout:
 | Star | ⭐ | 5-pointed star |
 | Ring | ⭕ | Circular ring |
 | Spiral | 🌀 | Spiral pattern |
+
+## Visual Styles
+
+- `premium-hybrid` (default): realistic launches and sparks with crisp symbolic shapes
+- `realistic`: longer ember trails, restrained bloom, and transparent burst smoke
+- `stylized-neon`: larger symbols, bold edges, and stronger neon bloom
+
+Gift mappings may define `visualStyle`; an explicit trigger style overrides the gift mapping, which overrides the global style.
 
 ## Flow Actions
 
@@ -172,46 +187,11 @@ This ensures that even during extreme gift spam scenarios, the overlay will auto
 
 ## Audio Synchronization
 
-The fireworks plugin features an advanced audio system that synchronizes sound effects with visual animations.
+The overlay preloads and decodes all 20 valid bundled files even while its AudioContext is suspended. The launch selection now includes the complete whistle, howl, smooth-launch and crackling library from the original Fireworks plugin. Combined launch-and-bang recordings are faded and stopped before their embedded bang; the separate bang still starts in the same CPU frame as the WebGPU explosion command. Crackling is only assigned to rockets that also spawn the dedicated GPU crackle-spark pass. Sound and sparks start together and share the same short lifetime and fade-out, so crackling cannot continue after its visible effect. A compressor and voice-priority mixer keep finales audible without clipping; HTMLAudio is used only when WebAudio playback is unavailable.
 
-### Audio Categories
+The renderer status reports the active audio backend, loaded and failed files, last playback and the latest error. `LOCKED` means the browser source still requires an interaction or an OBS autoplay permission; it does not mean the files failed to load.
 
-**Combined Audio (Launch + Explosion)**
-- `woosh_abheben_crackling_bang.mp3` - Used for massive/big fireworks (4.9s, explosion at 3.2s)
-- `woosh_abheben_mit-pfeifen_normal-bang.mp3` - Used for medium fireworks (3.4s, explosion at 2.2s)
-- `woosh_abheben_mit-pfeifen_tiny-bang*.mp3` - Used for small fireworks and combos (1.8s, explosion at 1.2s)
-
-**Launch-Only Audio (Separate Explosion)**
-- `woosh_abheben_mit-pfeifen_no-bang.mp3` - Whistle launch without explosion
-- `woosh_abheben_nocrackling_no-bang*.mp3` - Smooth launch without explosion
-
-**Basic Effects**
-- `explosion.mp3` - Basic explosion sound for separate playback
-- `rocket.mp3`, `abschussgeraeusch*.mp3` - Basic launch sounds (now actively used!)
-
-### Tier-Based Audio Selection with Maximum Variety
-
-The system automatically selects appropriate audio based on firework tier with intelligent randomization:
-
-| Tier | Audio Strategy | Variety Details |
-|------|---------------|----------------|
-| **Small** (0-99 coins) | 70% combined tiny-bang, 30% basic launches | Mix of synchronized effects and separate combinations |
-| **Medium** (100-499 coins) | 40% normal-bang, 30% smooth, 30% varied | Uses all launch sound types for variety |
-| **Big** (500-999 coins) | 50% crackling-bang, 25% whistle, 25% varied | Emphasizes powerful crackling effects |
-| **Massive** (1000+ coins) | 80% crackling-bang, 20% whistle-normal | Maximum impact with occasional variety |
-| **Combo 5-7** | Random tiny-bang sounds (all 4 variants) | Fast bursts optimized for rapid fire |
-| **Combo 8+** | Explosion only (no launch) | Instant explosions for extreme combos |
-
-**All 13 audio files are now actively used** to ensure every firework has a unique sound!
-
-### How Synchronization Works
-
-1. **Combined Audio**: Launch and explosion are in one file, automatically synchronized
-2. **Separate Audio**: Launch plays immediately, explosion triggers via callback when visual explodes
-3. **Timing Calibration**: Explosion delays are calibrated based on audio file analysis
-4. **Volume Scaling**: Audio volume adjusts based on firework intensity and combo level
-
-For detailed audio documentation, see `audio/README.md`.
+Finales always keep the visible rocket ascent, even at combo levels that normally use instant explosions. Crackling rockets are deliberately spaced through the finale instead of assigning crackling to every burst. Crackling uses a dedicated post-transient audio bus so it remains audible after large bangs without extending past the matching GPU sparks.
 
 ## Troubleshooting
 
