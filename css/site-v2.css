@@ -502,3 +502,41 @@ body.site-v2 .features-preview, body.site-v2 .developer-features, body.site-v2 .
 body.site-v2 .features-preview:nth-of-type(even), body.site-v2 .content-section:nth-of-type(even) { background: #f5f7f4; }
 body.site-v2 .feature-card, body.site-v2 .plugin-card, body.site-v2 .install-card, body.site-v2 .faq-item, body.site-v2 .support-card, body.site-v2 .community-card, body.site-v2 .roadmap-item, body.site-v2 .card, body.site-v2 .screenshot-container { background: #fff; border-color: #dfe8df; box-shadow: 0 8px 20px rgba(14,15,16,.08); color: #0e0f10; }
 body.site-v2 a:not(.nav-link):not(.logo) { color: #0d7a10; }
+
+/* The public site is light-only. These selectors intentionally come last so
+   the former night-theme form and documentation rules cannot leak through. */
+body.site-v2 input,
+body.site-v2 textarea,
+body.site-v2 select {
+  background: #fff;
+  border-color: #b9c5ba;
+  color: #0e0f10;
+}
+
+body.site-v2 input::placeholder,
+body.site-v2 textarea::placeholder {
+  color: #62686d;
+  opacity: 1;
+}
+
+body.site-v2 .docs-hub__hero,
+body.site-v2 .plugin-doc-hero {
+  background: linear-gradient(135deg, #e8f7e9, #fff 66%, #f2f8ff);
+  border-color: #d5e2d6;
+}
+
+body.site-v2 .docs-plugin-card,
+body.site-v2 .docs-core-guide article,
+body.site-v2 .plugin-doc-section,
+body.site-v2 .plugin-doc-step {
+  background: #fff;
+  border-color: #d5e2d6;
+  box-shadow: 0 8px 20px rgba(14, 15, 16, 0.06);
+}
+
+body.site-v2 .docs-plugin-card p,
+body.site-v2 .docs-plugin-empty,
+body.site-v2 .plugin-doc-step p,
+body.site-v2 .plugin-doc-step figcaption {
+  color: #42464a;
+}
