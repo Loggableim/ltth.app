@@ -2318,8 +2318,11 @@ class WebGPUEmojiRainPlugin {
 
     // Serve uploaded files
     const express = require('express');
-    this.api.getApp().use('/plugins/webgpu-emoji-rain/uploads', express.static(this.uploadDir));
-    this.api.getApp().use('/uploads/webgpu-emoji-rain', express.static(this.uploadDir));
+    const registerMiddleware = typeof this.api.registerMiddleware === 'function'
+      ? this.api.registerMiddleware.bind(this.api)
+      : (routePath, handler) => this.api.getApp().use(routePath, handler);
+    registerMiddleware('/plugins/webgpu-emoji-rain/uploads', express.static(this.uploadDir));
+    registerMiddleware('/uploads/webgpu-emoji-rain', express.static(this.uploadDir));
 
     this.api.log('✅ [WebGPU Emoji Rain] All routes registered successfully', 'info');
   }

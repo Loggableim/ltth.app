@@ -638,7 +638,7 @@ class MinecraftConnectPlugin {
 
             // Stop WebSocket server
             if (this.wsServer) {
-                this.wsServer.stop();
+                await this.wsServer.stop();
             }
 
             // Clear queue
@@ -651,6 +651,9 @@ class MinecraftConnectPlugin {
         } catch (error) {
             this.api.log(`Error during shutdown: ${error.message}`, 'error');
         }
+    }
+    async destroy() {
+        await this.shutdown();
     }
 }
 

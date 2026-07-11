@@ -6,8 +6,9 @@
  */
 
 class SoundboardWebSocketTransport {
-    constructor(io) {
-        this.io = io;
+    constructor(api) {
+        this.api = api;
+        this.io = api.getSocketIO();
         this.dashboardClients = new Set(); // Track dashboard client socket IDs
         
         console.log('[SoundboardWS] WebSocket transport initialized');
@@ -20,7 +21,7 @@ class SoundboardWebSocketTransport {
      * Setup client tracking to identify dashboard clients
      */
     setupClientTracking() {
-        this.io.on('connection', (socket) => {
+        this.api.registerSocketConnection((socket) => {
             // Listen for client identification
             socket.on('soundboard:identify', (data) => {
                 if (data && data.client === 'dashboard') {

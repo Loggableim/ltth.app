@@ -2059,10 +2059,8 @@ class OpenShockPlugin {
      * Socket.IO Events registrieren
      */
     _registerSocketEvents() {
-        const io = this.api.getSocketIO();
-
         // Client requests active goals state
-        io.on('connection', (socket) => {
+        this.api.registerSocketConnection((socket) => {
             // Queue: Clear queue
             socket.on('openshock:queue:clear', async () => {
                 try {

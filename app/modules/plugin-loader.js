@@ -14,6 +14,10 @@ function parseJsonText(text) {
     return JSON.parse(value.charCodeAt(0) === 0xFEFF ? value.slice(1) : value);
 }
 
+const MUTUALLY_EXCLUSIVE_PLUGIN_GROUPS = Object.freeze([
+    Object.freeze(['fireworks', 'webgpu-fireworks'])
+]);
+
 /**
  * PluginAPI - Bereitgestellte API für Plugins
  * Ermöglicht sicheren Zugriff auf System-Funktionen
@@ -51,12 +55,15 @@ class PluginAPI {
      * @param {string} path - Route-Pfad (z.B. /api/topboard)
      * @param {function} handler - Route-Handler-Funktion
      */
-    registerRoute(method, routePath, handler) {
+    registerRoute(method, routePath, ...handlers) {
         try {
             const fullPath = routePath.startsWith('/') ? routePath : `/${routePath}`;
+            if (handlers.length === 0 || handlers.some(handler => typeof handler !== 'function')) {
+                throw new Error('At least one route handler is required');
+            }
 
             // Wrapper für Error-Handling
-            const wrappedHandler = async (req, res, next) => {
+            const wrappedHandlers = handlers.map(handler => async (req, res, next) => {
                 try {
                     const activePlugin = this.pluginLoader.plugins.get(this.pluginId);
                     if (!activePlugin || activePlugin.api !== this) {
@@ -72,20 +79,20 @@ class PluginAPI {
                         message: error.message
                     });
                 }
-            };
+            });
 
             // Register route on the plugin router (not the main app)
             // This ensures routes are matched before the 404 handler even when
             // plugins are dynamically enabled after server start
             const methodLower = method.toLowerCase();
-            const router = this.pluginLoader.getPluginRouter();
+            const router = this.pluginLoader.getPluginRouter(this.pluginId);
             
             if (!router[methodLower]) {
                 throw new Error(`Invalid HTTP method: ${method}`);
             }
 
-            router[methodLower](fullPath, wrappedHandler);
-            this.registeredRoutes.push({ method, path: fullPath });
+            router[methodLower](fullPath, ...wrappedHandlers);
+            this.registeredRoutes.push({ method, path: fullPath, router });
             this.log(`Registered route: ${method} ${fullPath}`);
 
             return true;
@@ -93,6 +100,10 @@ class PluginAPI {
             this.log(`Failed to register route: ${error.message}`, 'error');
             return false;
         }
+    }
+
+    registerMiddleware(routePath, ...handlers) {
+        return this.registerRoute('use', routePath, ...handlers);
     }
 
     /**
@@ -115,7 +126,8 @@ class PluginAPI {
                 }
             };
 
-            this.registeredSocketEvents.push({ event, callback: wrappedCallback });
+            this.registeredSocketEvents.push({ event, callback: wrappedCallback, bindings: new Map() });
+            this.pluginLoader.attachSocketEventToConnectedClients(this.pluginId, event, wrappedCallback);
             this.log(`Registered socket event: ${event}`);
 
             return true;
@@ -123,6 +135,10 @@ class PluginAPI {
             this.log(`Failed to register socket event: ${error.message}`, 'error');
             return false;
         }
+    }
+
+    registerSocketConnection(callback) {
+        return this.pluginLoader.registerPluginConnectionHandler(this.pluginId, callback);
     }
 
     /**
@@ -405,12 +421,10 @@ class PluginAPI {
      */
     unregisterAll() {
         // Socket-Events deregistrieren
-        this.registeredSocketEvents.forEach(({ event, callback }) => {
+        this.registeredSocketEvents.forEach(({ event, bindings }) => {
             try {
-                // Remove listener from all connected sockets
-                this.io.sockets.sockets.forEach(socket => {
-                    socket.removeListener(event, callback);
-                });
+                bindings.forEach((boundCallback, socket) => socket.removeListener(event, boundCallback));
+                bindings.clear();
                 this.log(`Unregistered socket event: ${event}`);
             } catch (error) {
                 this.log(`Failed to unregister socket event ${event}: ${error.message}`, 'error');
@@ -444,6 +458,9 @@ class PluginAPI {
             });
         }
 
+        this.pluginLoader.removePluginRouter(this.pluginId);
+        this.pluginLoader.unregisterPluginConnectionHandlers(this.pluginId);
+        this.registeredRoutes = [];
         this.registeredSocketEvents = [];
         this.registeredTikTokEvents = [];
         this.registeredPluginEvents.forEach(({ event, callback }) => {
@@ -506,7 +523,7 @@ class PluginAPI {
             this.backupProviderRegistered = false;
         }
 
-        this.log('All registrations cleared (except Express routes)');
+        this.log('All registrations cleared');
     }
 
     /**
@@ -656,7 +673,17 @@ class PluginLoader extends EventEmitter {
         // This router is mounted on the main app and ensures plugin routes
         // are always matched before the 404 handler, even when plugins
         // are dynamically enabled after server start
+        this.pluginRouters = new Map();
         this.pluginRouter = express.Router();
+        this.pluginRouter.use((req, res, next) => {
+            const routers = Array.from(this.pluginRouters.values());
+            let index = 0;
+            const dispatch = error => {
+                if (error || index >= routers.length) return next(error);
+                routers[index++](req, res, dispatch);
+            };
+            dispatch();
+        });
         this.app.use(this.pluginRouter);
         this.logger.info('🔌 Plugin router initialized - dynamic plugin routes will be handled correctly');
 
@@ -667,8 +694,18 @@ class PluginLoader extends EventEmitter {
      * Get the plugin router for registering routes
      * @returns {express.Router} The plugin router
      */
-    getPluginRouter() {
-        return this.pluginRouter;
+    getPluginRouter(pluginId) {
+        if (!pluginId) return this.pluginRouter;
+        let router = this.pluginRouters.get(pluginId);
+        if (!router) {
+            router = express.Router();
+            this.pluginRouters.set(pluginId, router);
+        }
+        return router;
+    }
+
+    removePluginRouter(pluginId) {
+        return this.pluginRouters.delete(pluginId);
     }
 
     /**
@@ -829,6 +866,41 @@ class PluginLoader extends EventEmitter {
         return pluginState.enabled !== undefined ? pluginState.enabled : manifest.enabled !== false;
     }
 
+    getMutuallyExclusivePluginIds(pluginId) {
+        const group = MUTUALLY_EXCLUSIVE_PLUGIN_GROUPS.find(ids => ids.includes(pluginId));
+        return group ? group.filter(id => id !== pluginId) : [];
+    }
+
+    enforceMutuallyExclusivePluginState() {
+        let changed = false;
+
+        for (const group of MUTUALLY_EXCLUSIVE_PLUGIN_GROUPS) {
+            const enabledIds = group.filter(pluginId => this.isPluginEnabledFromDisk(pluginId));
+            if (enabledIds.length <= 1) continue;
+
+            const winner = [...enabledIds].sort((left, right) => {
+                const leftEnabledAt = Number(this.state[left]?.enabledAt) || 0;
+                const rightEnabledAt = Number(this.state[right]?.enabledAt) || 0;
+                if (leftEnabledAt !== rightEnabledAt) return rightEnabledAt - leftEnabledAt;
+                return group.indexOf(left) - group.indexOf(right);
+            })[0];
+
+            for (const pluginId of enabledIds) {
+                if (pluginId === winner) continue;
+                this.state[pluginId] = {
+                    ...(this.state[pluginId] || {}),
+                    enabled: false,
+                    disabledByMutualExclusion: winner
+                };
+                changed = true;
+                this.logger.warn(`Disabled mutually exclusive plugin ${pluginId}; ${winner} remains enabled`);
+            }
+        }
+
+        if (changed) this.saveState();
+        return changed;
+    }
+
     isPluginEnabledFromDisk(pluginId) {
         try {
             const manifestPath = path.join(this.pluginsDir, pluginId, 'plugin.json');
@@ -944,6 +1016,7 @@ class PluginLoader extends EventEmitter {
                 return true;
             });
             this.pruneStalePluginState(pluginDirs);
+            this.enforceMutuallyExclusivePluginState();
 
             this.logger.info(`Found ${pluginDirs.length} plugin directories`);
 
@@ -1035,6 +1108,10 @@ class PluginLoader extends EventEmitter {
      * Lädt ein einzelnes Plugin
      */
     async loadPlugin(pluginPath) {
+        let pluginAPI = null;
+        let pluginInstance = null;
+        let manifest = null;
+        let committed = false;
         try {
             const manifestPath = path.join(pluginPath, 'plugin.json');
 
@@ -1046,7 +1123,7 @@ class PluginLoader extends EventEmitter {
 
             // Manifest laden
             const manifestData = fs.readFileSync(manifestPath, 'utf8');
-            const manifest = parseJsonText(manifestData);
+            manifest = parseJsonText(manifestData);
 
             // Validierung
             if (!manifest.id || !manifest.name || !manifest.entry) {
@@ -1076,7 +1153,9 @@ class PluginLoader extends EventEmitter {
                     enabled: false,
                     supersededBy: supersedingPluginId
                 };
-                this.saveState();
+                if (this.saveState() === false) {
+                    throw new Error('Failed to persist enabled plugin state');
+                }
                 return null;
             }
 
@@ -1101,7 +1180,7 @@ class PluginLoader extends EventEmitter {
             }
 
             // PluginAPI erstellen
-            const pluginAPI = new PluginAPI(
+            pluginAPI = new PluginAPI(
                 manifest.id,
                 pluginPath,
                 this.app,
@@ -1115,7 +1194,6 @@ class PluginLoader extends EventEmitter {
             );
 
             // Plugin instanziieren
-            let pluginInstance;
             try {
                 pluginInstance = new PluginClass(pluginAPI);
             } catch (constructError) {
@@ -1151,10 +1229,15 @@ class PluginLoader extends EventEmitter {
 
             // State aktualisieren
             this.state[manifest.id] = {
+                ...(this.state[manifest.id] || {}),
                 enabled: true,
                 loadedAt: pluginInfo.loadedAt
             };
-            this.saveState();
+            if (this.saveState() === false) {
+                throw new Error('Failed to persist loaded plugin state');
+            }
+            committed = true;
+            this.attachPluginToConnectedClients(manifest.id);
 
             // Note: TikTok event registration is handled by registerPluginTikTokEvents()
             // which is called after all plugins are loaded or when a plugin is dynamically enabled.
@@ -1165,6 +1248,19 @@ class PluginLoader extends EventEmitter {
 
             return pluginInfo;
         } catch (error) {
+            if (!committed) {
+                const rollbackErrors = [];
+                if (pluginInstance && typeof pluginInstance.destroy === 'function') {
+                    try { await pluginInstance.destroy(); } catch (destroyError) { rollbackErrors.push(destroyError); }
+                }
+                if (pluginAPI) {
+                    try { pluginAPI.unregisterAll(); } catch (cleanupError) { rollbackErrors.push(cleanupError); }
+                }
+                if (manifest) this.plugins.delete(manifest.id);
+                if (rollbackErrors.length) {
+                    this.logger.error(`Plugin load rollback encountered ${rollbackErrors.length} cleanup error(s): ${rollbackErrors.map(item => item.message).join('; ')}`);
+                }
+            }
             this.logger.error(`Failed to load plugin from ${pluginPath}: ${error.message}`);
             this.logger.error(error.stack);
             return null;
@@ -1175,39 +1271,41 @@ class PluginLoader extends EventEmitter {
      * Entlädt ein Plugin
      */
     async unloadPlugin(pluginId) {
-        try {
-            const plugin = this.plugins.get(pluginId);
-            if (!plugin) {
-                return false;
-            }
+        const plugin = this.plugins.get(pluginId);
+        if (!plugin) return false;
 
-            // Remove TikTok event listeners to prevent duplicates on reload
+        const errors = [];
+        try {
             if (this.tiktok && plugin.api.registeredTikTokEvents) {
                 for (const { event, callback } of plugin.api.registeredTikTokEvents) {
                     this.tiktok.removeListener(event, callback);
                 }
-                this.logger.debug(`Removed TikTok event listeners for plugin ${pluginId}`);
             }
-
-            // Plugin cleanup aufrufen
             if (typeof plugin.instance.destroy === 'function') {
                 await plugin.instance.destroy();
             }
-
-            // API cleanup
-            plugin.api.unregisterAll();
-
-            // Plugin entfernen
-            this.plugins.delete(pluginId);
-
-            this.logger.info(`Unloaded plugin: ${pluginId}`);
-            this.emit('plugin:unloaded', pluginId);
-
-            return true;
         } catch (error) {
-            this.logger.error(`Failed to unload plugin ${pluginId}: ${error.message}`);
+            errors.push(error);
+        } finally {
+            try {
+                const cleanupErrors = plugin.api.unregisterAll();
+                if (Array.isArray(cleanupErrors)) errors.push(...cleanupErrors);
+            } catch (cleanupError) {
+                errors.push(cleanupError);
+            }
+            // A destroyed/cleaned plugin must never remain addressable through
+            // the loader, even when its own destroy hook reported an error.
+            this.plugins.delete(pluginId);
+        }
+
+        if (errors.length) {
+            this.logger.error(`Unloaded plugin ${pluginId} with ${errors.length} cleanup error(s): ${errors.map(error => error.message).join('; ')}`);
             return false;
         }
+
+        this.logger.info(`Unloaded plugin: ${pluginId}`);
+        this.emit('plugin:unloaded', pluginId);
+        return true;
     }
 
     /**
@@ -1216,17 +1314,37 @@ class PluginLoader extends EventEmitter {
     async enablePlugin(pluginId) {
         // Store original state to rollback if needed
         const originalState = this.state[pluginId] ? { ...this.state[pluginId] } : null;
+        const mutuallyExclusivePluginIds = this.getMutuallyExclusivePluginIds(pluginId);
+        const disabledConflicts = [];
         
         try {
+            for (const conflictId of mutuallyExclusivePluginIds) {
+                if (!this.isPluginEnabledFromDisk(conflictId)) continue;
+
+                const conflictState = this.state[conflictId] ? { ...this.state[conflictId] } : null;
+                const disabled = await this.disablePlugin(conflictId);
+                if (!disabled) {
+                    throw new Error(`Could not disable mutually exclusive plugin ${conflictId}`);
+                }
+                disabledConflicts.push({ id: conflictId, state: conflictState });
+                this.logger.info(`Switched mutually exclusive plugins: ${conflictId} -> ${pluginId}`);
+            }
+
             // Set plugin state to enabled BEFORE attempting to load
             // This ensures loadPlugin() sees it as enabled and doesn't skip it
             if (!this.state[pluginId]) {
                 this.state[pluginId] = {};
             }
             this.state[pluginId].enabled = true;
+            if (mutuallyExclusivePluginIds.length > 0) {
+                this.state[pluginId].enabledAt = Date.now();
+                delete this.state[pluginId].disabledByMutualExclusion;
+            }
             
             try {
-                this.saveState();
+                if (this.saveState() === false) {
+                    throw new Error('saveState() returned false');
+                }
             } catch (saveError) {
                 // Rollback in-memory state if save fails
                 if (originalState) {
@@ -1271,13 +1389,24 @@ class PluginLoader extends EventEmitter {
             return true;
         } catch (error) {
             this.logger.error(`Failed to enable plugin ${pluginId}: ${error.message}`);
-            // Reset state to disabled since enabling failed
-            if (this.state[pluginId]) {
-                this.state[pluginId].enabled = false;
+            if (!this.state[pluginId]?.supersededBy) {
+                if (originalState) this.state[pluginId] = originalState;
+                else delete this.state[pluginId];
+            }
+            if (this.saveState() === false) {
+                this.logger.error(`Failed to restore persisted state after enabling ${pluginId} failed`);
+            }
+
+            for (const conflict of disabledConflicts) {
                 try {
+                    this.state[conflict.id] = {
+                        ...(conflict.state || {}),
+                        enabled: true
+                    };
                     this.saveState();
-                } catch (saveError) {
-                    this.logger.error(`Failed to save disabled state after error: ${saveError.message}`);
+                    await this.enablePlugin(conflict.id);
+                } catch (restoreError) {
+                    this.logger.error(`Failed to restore mutually exclusive plugin ${conflict.id}: ${restoreError.message}`);
                 }
             }
             throw error;
@@ -1287,7 +1416,7 @@ class PluginLoader extends EventEmitter {
     /**
      * Deaktiviert ein Plugin
      */
-    async disablePlugin(pluginId) {
+    async _disablePluginLegacy(pluginId) {
         try {
             // State aktualisieren
             if (!this.state[pluginId]) {
@@ -1314,7 +1443,28 @@ class PluginLoader extends EventEmitter {
     /**
      * Lädt ein Plugin neu
      */
-    async reloadPlugin(pluginId) {
+    async disablePlugin(pluginId) {
+        const safePluginId = assertPluginId(pluginId);
+        const originalState = this.state[safePluginId] ? { ...this.state[safePluginId] } : null;
+        const wasLoaded = this.plugins.has(safePluginId);
+        const pluginPath = path.join(this.pluginsDir, safePluginId);
+        try {
+            if (wasLoaded && !await this.unloadPlugin(safePluginId)) throw new Error(`Failed to unload plugin ${safePluginId}`);
+            this.state[safePluginId] = { ...(originalState || {}), enabled: false };
+            if (this.saveState() === false) throw new Error(`Failed to persist disabled state for ${safePluginId}`);
+            this.emit('plugin:disabled', safePluginId);
+            return true;
+        } catch (error) {
+            if (originalState) this.state[safePluginId] = originalState;
+            else delete this.state[safePluginId];
+            this.saveState();
+            if (wasLoaded && !this.plugins.has(safePluginId)) await this.loadPlugin(pluginPath);
+            this.logger.error(`Failed to disable plugin ${safePluginId}: ${error.message}`);
+            return false;
+        }
+    }
+
+    async _reloadPluginLegacy(pluginId) {
         try {
             const safePluginId = assertPluginId(pluginId);
             // Track Reload-Count für Memory-Leak-Warnung
@@ -1362,6 +1512,30 @@ class PluginLoader extends EventEmitter {
     /**
      * Löscht ein Plugin
      */
+    async reloadPlugin(pluginId) {
+        const safePluginId = assertPluginId(pluginId);
+        const originalState = this.state[safePluginId] ? { ...this.state[safePluginId] } : null;
+        const pluginPath = assertPathInside(this.pluginsDir, path.join(this.pluginsDir, safePluginId), 'Plugin reload path');
+        try {
+            if (!await this.unloadPlugin(safePluginId)) throw new Error(`Failed to unload plugin ${safePluginId}`);
+            const loaded = await this.loadPlugin(pluginPath);
+            if (!loaded) throw new Error(`Failed to load plugin ${safePluginId}`);
+            const reloadCount = (Number(originalState?.reloadCount) || 0) + 1;
+            this.state[safePluginId] = { ...(this.state[safePluginId] || {}), reloadCount, lastReload: new Date().toISOString(), enabled: true };
+            if (this.saveState() === false) throw new Error(`Failed to persist reloaded plugin state for ${safePluginId}`);
+            if (this.tiktok) this.registerPluginTikTokEvents(this.tiktok, safePluginId);
+            this.emit('plugin:reloaded', safePluginId);
+            return true;
+        } catch (error) {
+            if (originalState) this.state[safePluginId] = originalState;
+            else delete this.state[safePluginId];
+            this.saveState();
+            if (!this.plugins.has(safePluginId) && originalState?.enabled !== false) await this.loadPlugin(pluginPath);
+            this.logger.error(`Failed to reload plugin ${safePluginId}: ${error.message}`);
+            return false;
+        }
+    }
+
     async deletePlugin(pluginId) {
         try {
             const safePluginId = assertPluginId(pluginId);
@@ -1549,9 +1723,76 @@ class PluginLoader extends EventEmitter {
     registerPluginSocketEvents(socket) {
         for (const [id, plugin] of this.plugins.entries()) {
             for (const { event, callback } of plugin.api.registeredSocketEvents) {
-                socket.on(event, (...args) => callback(socket, ...args));
+                this.attachSocketEvent(plugin.api, socket, event, callback);
+            }
+            for (const handler of this.pluginConnectionHandlers?.get(id) || []) {
+                this.invokePluginConnectionHandler(handler, socket);
             }
         }
+    }
+
+    attachSocketEvent(api, socket, event, callback) {
+        const entry = api.registeredSocketEvents.find(item => item.event === event && item.callback === callback);
+        if (!entry || entry.bindings.has(socket)) return;
+        const boundCallback = (...args) => callback(socket, ...args);
+        socket.on(event, boundCallback);
+        entry.bindings.set(socket, boundCallback);
+    }
+
+    attachSocketEventToConnectedClients(pluginId, event, callback) {
+        const plugin = this.plugins.get(pluginId);
+        if (!plugin || !this.io?.sockets?.sockets) return;
+        this.io.sockets.sockets.forEach(socket => this.attachSocketEvent(plugin.api, socket, event, callback));
+    }
+
+    attachPluginToConnectedClients(pluginId) {
+        const plugin = this.plugins.get(pluginId);
+        if (!plugin || !this.io?.sockets?.sockets) return;
+        this.io.sockets.sockets.forEach(socket => {
+            for (const { event, callback } of plugin.api.registeredSocketEvents) {
+                this.attachSocketEvent(plugin.api, socket, event, callback);
+            }
+            for (const handler of this.pluginConnectionHandlers?.get(pluginId) || []) {
+                this.invokePluginConnectionHandler(handler, socket);
+            }
+        });
+    }
+
+    registerPluginConnectionHandler(pluginId, callback) {
+        if (typeof callback !== 'function') return false;
+        if (!this.pluginConnectionHandlers) this.pluginConnectionHandlers = new Map();
+        const handlers = this.pluginConnectionHandlers.get(pluginId) || new Set();
+        const handler = { callback, bindings: new Map() };
+        handlers.add(handler);
+        this.pluginConnectionHandlers.set(pluginId, handlers);
+        this.io?.sockets?.sockets?.forEach(socket => this.invokePluginConnectionHandler(handler, socket));
+        return true;
+    }
+
+    invokePluginConnectionHandler(handler, socket) {
+        if (handler.bindings.has(socket)) return;
+        const before = new Map((socket.eventNames?.() || []).map(event => [event, new Set(socket.listeners(event))]));
+        handler.callback(socket);
+        const bindings = [];
+        for (const event of socket.eventNames?.() || []) {
+            const previous = before.get(event) || new Set();
+            for (const listener of socket.listeners(event)) {
+                if (!previous.has(listener)) bindings.push({ event, listener });
+            }
+        }
+        handler.bindings.set(socket, bindings);
+    }
+
+    unregisterPluginConnectionHandlers(pluginId) {
+        const handlers = this.pluginConnectionHandlers?.get(pluginId);
+        if (!handlers) return false;
+        for (const handler of handlers) {
+            handler.bindings.forEach((bindings, socket) => {
+                bindings.forEach(({ event, listener }) => socket.removeListener(event, listener));
+            });
+            handler.bindings.clear();
+        }
+        return this.pluginConnectionHandlers.delete(pluginId);
     }
 
     /**

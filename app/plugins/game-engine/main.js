@@ -3335,9 +3335,19 @@ class GameEnginePlugin {
   /**
    * Register Socket.io events
    */
+  _registerSocketConnection(handler) {
+    if (typeof this.api.registerSocketConnection === 'function') {
+      return this.api.registerSocketConnection(handler);
+    }
+
+    // Compatibility for isolated legacy unit-test APIs. The runtime PluginAPI
+    // always provides the disposer-backed method above.
+    return this.io.on('connection', handler);
+  }
+
   registerSocketEvents() {
     // Streamer makes a move
-    this.io.on('connection', (socket) => {
+    this._registerSocketConnection((socket) => {
       socket.on('game-engine:streamer-move', (data) => {
         if (!this._requireSocketRole(socket, 'game-engine:streamer-move', 'admin')) return;
         this.handleStreamerMove(data);

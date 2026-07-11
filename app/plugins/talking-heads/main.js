@@ -1794,6 +1794,15 @@ class TalkingHeadsPlugin {
    * Register socket events
    * @private
    */
+  _registerSocketConnection(handler) {
+    if (typeof this.api.registerSocketConnection === 'function') {
+      return this.api.registerSocketConnection(handler);
+    }
+
+    // Compatibility for isolated legacy test APIs; production uses PluginAPI.
+    return this.io.on('connection', handler);
+  }
+
   _registerSocketEvents() {
     // Client requests animation test
     this.api.registerSocket('talkingheads:test', async (data) => {
@@ -1827,7 +1836,7 @@ class TalkingHeadsPlugin {
    */
   _registerTTSEvents() {
     // Listen for TTS events from TTS plugin
-    this.io.on('connection', (socket) => {
+    this._registerSocketConnection((socket) => {
       socket.on('tts:speaking', async (data) => {
         if (!this.config.enabled) return;
 
@@ -2049,7 +2058,7 @@ class TalkingHeadsPlugin {
    */
   _registerViewerBarEvents() {
     // Listen for new Socket.IO connections to sync state to newly connected overlays
-    this.io.on('connection', (socket) => {
+    this._registerSocketConnection((socket) => {
       socket.on('viewer-bar:request:sync', () => {
         const viewers = [];
         for (const [userId, data] of this.viewerPresence.entries()) {

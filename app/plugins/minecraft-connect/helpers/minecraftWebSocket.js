@@ -261,11 +261,7 @@ class MinecraftWebSocketServer extends EventEmitter {
     /**
      * Stop the WebSocket server
      */
-    stop() {
-        if (!this.isRunning) {
-            return;
-        }
-
+    async stop() {
         this.stopHeartbeat();
 
         // Close all connections
@@ -276,8 +272,17 @@ class MinecraftWebSocketServer extends EventEmitter {
 
         // Close server
         if (this.wss) {
-            this.wss.close(() => {
-                this.logger.info('Minecraft WebSocket server stopped');
+            const server = this.wss;
+            await new Promise(resolve => {
+                try {
+                    server.close(() => {
+                        this.logger.info('Minecraft WebSocket server stopped');
+                        resolve();
+                    });
+                } catch (error) {
+                    this.logger.warn(`Minecraft WebSocket server close failed: ${error.message}`);
+                    resolve();
+                }
             });
             this.wss = null;
         }

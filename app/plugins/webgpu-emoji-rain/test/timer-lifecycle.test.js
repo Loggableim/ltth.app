@@ -50,6 +50,10 @@ class MockAPI {
     this.routes.push({ method, routePath, handler });
   }
 
+  registerMiddleware(routePath, handler) {
+    this.routes.push({ method: 'use', routePath, handler });
+  }
+
   registerTikTokEvent() {}
   registerFlowAction() {}
 }

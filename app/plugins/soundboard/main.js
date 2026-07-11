@@ -832,8 +832,6 @@ class SoundboardPlugin {
      * Initialize the client-side preview system
      */
     initPreviewSystem() {
-        const io = this.api.getSocketIO();
-        const app = this.api.getApp();
         const apiLimiter = require('../../modules/rate-limiter').apiLimiter;
         
         // Get sounds directory path
@@ -843,11 +841,11 @@ class SoundboardPlugin {
         this.fetcher = new SoundboardFetcher();
         
         // Initialize WebSocket transport (dashboard client tracking & broadcasting)
-        this.transport = new SoundboardWebSocketTransport(io);
+        this.transport = new SoundboardWebSocketTransport(this.api);
         
         // Initialize API routes (preview endpoint with auth & validation)
         this.apiRoutes = new SoundboardApiRoutes(
-            app,
+            this.api,
             apiLimiter,
             this.fetcher,
             this.transport,

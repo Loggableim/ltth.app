@@ -4404,6 +4404,18 @@ async function gracefulShutdown(signal) {
     }, 5000);
     forceExitTimer.unref();
 
+    // Plugins own routes, sockets, timers and optional servers. Release them
+    // first and in reverse load order so dependants disappear before providers.
+    const loadedPluginIds = Array.from(pluginLoader.plugins.keys()).reverse();
+    for (const pluginId of loadedPluginIds) {
+        try {
+            const unloaded = await pluginLoader.unloadPlugin(pluginId);
+            if (!unloaded) logger.error(`Plugin ${pluginId} reported cleanup errors during shutdown`);
+        } catch (error) {
+            logger.error(`Failed to unload plugin ${pluginId} during shutdown: ${error.message}`);
+        }
+    }
+
     // TikTok-Verbindung trennen
     if (tiktok.isActive()) {
         tiktok.disconnect();

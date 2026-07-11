@@ -23,6 +23,10 @@ describe('Game Engine socket authorization', () => {
     };
     const api = {
       getSocketIO: () => io,
+      registerSocketConnection: handler => {
+        connectionHandler = handler;
+        return true;
+      },
       log: jest.fn()
     };
     const plugin = new GameEnginePlugin(api);

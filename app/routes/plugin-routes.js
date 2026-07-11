@@ -331,6 +331,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                                 version: manifest.version,
                                 author: manifest.author,
                                 type: manifest.type,
+                                logo: manifest.logo || manifest.icon || null,
                                 devStatus: manifest.devStatus, // Include development status
                                 enabled: isEnabled,
                                 loadedAt: isLoadedFromThisPath ? loadedPlugin.loadedAt : null
@@ -390,6 +391,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                     version: plugin.manifest.version,
                     author: plugin.manifest.author,
                     type: plugin.manifest.type,
+                    logo: plugin.manifest.logo || plugin.manifest.icon || null,
                     dependencies: plugin.manifest.dependencies,
                     permissions: plugin.manifest.permissions,
                     enabled: true,
@@ -575,16 +577,25 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     app.post('/api/plugins/:id/enable', limiter, async (req, res) => {
         try {
             const { id } = req.params;
-            await pluginLoader.enablePlugin(id);
+            const disabledPlugins = typeof pluginLoader.getMutuallyExclusivePluginIds === 'function'
+                ? pluginLoader.getMutuallyExclusivePluginIds(id)
+                    .filter(pluginId => pluginLoader.isPluginEnabledFromDisk(pluginId))
+                : [];
+            const success = await pluginLoader.enablePlugin(id);
+            if (!success) throw new Error(`Plugin ${id} could not be enabled`);
             
             // Notify all clients that plugins have changed
             if (io) {
+                disabledPlugins.forEach(pluginId => {
+                    io.emit('plugins:changed', { action: 'disabled', pluginId, replacedBy: id });
+                });
                 io.emit('plugins:changed', { action: 'enabled', pluginId: id });
             }
             
             res.json({
                 success: true,
-                message: `Plugin ${id} aktiviert`
+                message: `Plugin ${id} aktiviert`,
+                disabledPlugins
             });
         } catch (error) {
             logger.error(`Failed to enable plugin: ${error.message}`);
@@ -674,7 +685,9 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             // Alle Plugins entladen
             const pluginIds = Array.from(pluginLoader.plugins.keys());
             for (const id of pluginIds) {
-                await pluginLoader.unloadPlugin(id);
+                if (!await pluginLoader.unloadPlugin(id)) {
+                    throw new Error(`Plugin ${id} could not be unloaded`);
+                }
             }
 
             // Alle Plugins neu laden

@@ -8,8 +8,8 @@
 const path = require('path');
 
 class SoundboardApiRoutes {
-    constructor(app, apiLimiter, fetcher, transport, logger, soundsDir) {
-        this.app = app;
+    constructor(api, apiLimiter, fetcher, transport, logger, soundsDir) {
+        this.api = api;
         this.apiLimiter = apiLimiter;
         this.fetcher = fetcher;
         this.transport = transport;
@@ -80,7 +80,7 @@ class SoundboardApiRoutes {
          *   clientsNotified: number
          * }
          */
-        this.app.post(
+        this.api.registerRoute('post',
             '/api/soundboard/preview',
             this.apiLimiter,
             this.authenticate.bind(this),
@@ -178,7 +178,7 @@ class SoundboardApiRoutes {
          * 
          * Get status of the preview system
          */
-        this.app.get(
+        this.api.registerRoute('get',
             '/api/soundboard/preview/status',
             this.apiLimiter,
             (req, res) => {
