@@ -611,6 +611,26 @@ body[data-layout-loading] > *:not(script):not(style):not(link):not(#scrollProgre
     line-height: 1.3;
 }
 
+/* Keep the extended plugin catalogue compact so the remaining feature
+   categories stay visible instead of being pushed below the viewport. */
+@media (min-width: 769px) {
+    .mega-category--plugins {
+        grid-column: span 2;
+    }
+
+    .mega-category--plugins .mega-items {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 0.5rem;
+        row-gap: 0.1rem;
+    }
+
+    .mega-category--plugins .mega-item {
+        min-height: 38px;
+        padding: 0.35rem 0.45rem;
+    }
+}
+
 .mega-panel-footer {
     border-top: 1px solid var(--color-border);
     padding-top: 0.875rem;

@@ -276,7 +276,10 @@
             if (!isMobile()) {
                 const navbar = document.getElementById('navbar');
                 if (navbar) {
-                    panel.style.top = navbar.getBoundingClientRect().bottom + 'px';
+                    const panelTop = navbar.getBoundingClientRect().bottom;
+                    panel.style.top = panelTop + 'px';
+                    panel.style.maxHeight = Math.max(240, window.innerHeight - panelTop) + 'px';
+                    panel.style.overflowY = 'auto';
                 }
             }
         }
