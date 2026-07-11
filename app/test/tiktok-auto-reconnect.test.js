@@ -83,10 +83,9 @@ describe('TikTok Auto-Reconnect', () => {
         expect(savedUsername).toBe('previoususer');
     });
 
-    test('should have auto-reconnect enabled by default', () => {
+    test('should disable auto-reconnect for a new profile by default', () => {
         const autoReconnect = db.getSetting('tiktok_auto_reconnect');
-        // When not set, it should default to enabled (null !== 'false')
-        expect(autoReconnect !== 'false').toBe(true);
+        expect(autoReconnect).toBe('false');
     });
 
     test('should respect auto-reconnect setting when disabled', () => {
@@ -169,15 +168,15 @@ describe('TikTok Auto-Reconnect', () => {
         expect(autoReconnectEnabled).toBe(true);
     });
 
-    test('auto-reconnect should proceed when setting is not set (default)', () => {
-        db.setSetting('last_connected_username', 'testuser');
-        // Don't set tiktok_auto_reconnect at all
-
-        const autoReconnectEnabled = db.getSetting('tiktok_auto_reconnect') !== 'false';
-        const savedUsername = db.getSetting('last_connected_username');
-
-        expect(savedUsername).toBe('testuser');
-        expect(autoReconnectEnabled).toBe(true); // Default is enabled
+    test('legacy missing setting remains enabled by startup policy', () => {
+        expect(shouldAutoReconnectOnStartup({
+            autoReconnectSetting: null,
+            savedUsername: 'testuser',
+            env: {}
+        })).toEqual({
+            enabled: true,
+            reason: 'enabled'
+        });
     });
 
     test('startup auto-reconnect should be disabled in safe mode', () => {

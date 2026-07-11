@@ -10,6 +10,13 @@ class DatabaseManager {
         
         try {
             this.db = new Database(dbPath);
+
+            // A missing settings table is the reliable signal for a genuinely new
+            // profile database. Existing profiles without a persisted setting must
+            // keep their legacy defaults during upgrades.
+            this.isNewDatabase = !this.db.prepare(`
+                SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'settings'
+            `).get();
             
             // Test database integrity
             try {
@@ -33,6 +40,12 @@ class DatabaseManager {
             } else {
                 throw error;
             }
+        }
+
+        if (typeof this.isNewDatabase !== 'boolean') {
+            this.isNewDatabase = !this.db.prepare(`
+                SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'settings'
+            `).get();
         }
         
         this.initializeTables();
@@ -463,9 +476,13 @@ class DatabaseManager {
                 followers INTEGER DEFAULT 0,
                 shares INTEGER DEFAULT 0,
                 gifts INTEGER DEFAULT 0,
+                username TEXT,
+                room_id TEXT,
+                stream_start_time INTEGER,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        this.ensureStreamStatsSchema();
 
         // Username Aliases for streamer profile recognition after username change
         this.db.exec(`
@@ -945,6 +962,10 @@ class DatabaseManager {
             'hud_orientation': 'landscape'
         };
 
+        if (this.isNewDatabase) {
+            defaults.tiktok_auto_reconnect = 'false';
+        }
+
         const stmt = this.db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
         for (const [key, value] of Object.entries(defaults)) {
             stmt.run(key, value);
@@ -952,6 +973,23 @@ class DatabaseManager {
 
         // Standard HUD-Element Positionen initialisieren
         this.initializeDefaultHudElements();
+    }
+
+    ensureStreamStatsSchema() {
+        const columns = new Set(
+            this.db.prepare('PRAGMA table_info(stream_stats)').all().map(column => column.name)
+        );
+        const additions = [
+            ['username', 'TEXT'],
+            ['room_id', 'TEXT'],
+            ['stream_start_time', 'INTEGER']
+        ];
+
+        for (const [name, definition] of additions) {
+            if (!columns.has(name)) {
+                this.db.exec(`ALTER TABLE stream_stats ADD COLUMN ${name} ${definition}`);
+            }
+        }
     }
 
     initializeDefaultHudElements() {
@@ -2757,8 +2795,11 @@ class DatabaseManager {
      */
     saveStreamStats(stats) {
         const stmt = this.db.prepare(`
-            INSERT INTO stream_stats (id, viewers, likes, total_coins, followers, shares, gifts, updated_at)
-            VALUES (1, ?, ?, ?, ?, ?, ?, datetime('now'))
+            INSERT INTO stream_stats (
+                id, viewers, likes, total_coins, followers, shares, gifts,
+                username, room_id, stream_start_time, updated_at
+            )
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
             ON CONFLICT(id) DO UPDATE SET
                 viewers = excluded.viewers,
                 likes = excluded.likes,
@@ -2766,6 +2807,9 @@ class DatabaseManager {
                 followers = excluded.followers,
                 shares = excluded.shares,
                 gifts = excluded.gifts,
+                username = COALESCE(excluded.username, stream_stats.username),
+                room_id = COALESCE(excluded.room_id, stream_stats.room_id),
+                stream_start_time = COALESCE(excluded.stream_start_time, stream_stats.stream_start_time),
                 updated_at = excluded.updated_at
         `);
         
@@ -2775,7 +2819,14 @@ class DatabaseManager {
             stats.totalCoins || 0,
             stats.followers || 0,
             stats.shares || 0,
-            stats.gifts || 0
+            stats.gifts || 0,
+            stats.username || null,
+            stats.roomId || null,
+            stats.streamStartTime !== null &&
+            stats.streamStartTime !== undefined &&
+            Number.isFinite(Number(stats.streamStartTime))
+                ? Number(stats.streamStartTime)
+                : null
         );
     }
 
@@ -2798,6 +2849,13 @@ class DatabaseManager {
             followers: row.followers || 0,
             shares: row.shares || 0,
             gifts: row.gifts || 0,
+            username: row.username || null,
+            roomId: row.room_id || null,
+            streamStartTime: row.stream_start_time !== null &&
+                row.stream_start_time !== undefined &&
+                Number.isFinite(Number(row.stream_start_time))
+                ? Number(row.stream_start_time)
+                : null,
             updatedAt: row.updated_at
         };
     }
@@ -2805,10 +2863,13 @@ class DatabaseManager {
     /**
      * Reset stream statistics to zero
      */
-    resetStreamStats() {
+    resetStreamStats(session = {}) {
         const stmt = this.db.prepare(`
-            INSERT INTO stream_stats (id, viewers, likes, total_coins, followers, shares, gifts, updated_at)
-            VALUES (1, 0, 0, 0, 0, 0, 0, datetime('now'))
+            INSERT INTO stream_stats (
+                id, viewers, likes, total_coins, followers, shares, gifts,
+                username, room_id, stream_start_time, updated_at
+            )
+            VALUES (1, 0, 0, 0, 0, 0, 0, ?, ?, ?, datetime('now'))
             ON CONFLICT(id) DO UPDATE SET
                 viewers = 0,
                 likes = 0,
@@ -2816,9 +2877,20 @@ class DatabaseManager {
                 followers = 0,
                 shares = 0,
                 gifts = 0,
+                username = excluded.username,
+                room_id = excluded.room_id,
+                stream_start_time = excluded.stream_start_time,
                 updated_at = datetime('now')
         `);
-        stmt.run();
+        stmt.run(
+            session.username || null,
+            session.roomId || null,
+            session.streamStartTime !== null &&
+            session.streamStartTime !== undefined &&
+            Number.isFinite(Number(session.streamStartTime))
+                ? Number(session.streamStartTime)
+                : null
+        );
     }
 
     close() {

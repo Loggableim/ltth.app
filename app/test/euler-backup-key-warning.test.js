@@ -71,6 +71,13 @@ async function finishConnect(adapter, connectPromise) {
   await Promise.resolve();
   expect(adapter.ws).toBeTruthy();
   adapter.ws.emit('open');
+  await jest.advanceTimersByTimeAsync(0);
+  adapter.ws.emit('message', JSON.stringify({
+    messages: [{
+      type: 'roomInfo',
+      data: { roomId: '7654321', start_time: 1700000000 }
+    }]
+  }));
   await connectPromise;
 }
 
@@ -284,6 +291,7 @@ describe('Eulerstream backup key warning', () => {
     await finishConnect(adapter, connectPromise);
 
     adapter.ws.emit('message', Buffer.from([0, 1, 2, 3]));
+    await jest.advanceTimersByTimeAsync(0);
 
     expect(io.emit).toHaveBeenCalledWith('tiktok:event', {
       type: 'chat',
@@ -303,7 +311,7 @@ describe('Eulerstream backup key warning', () => {
     );
   });
 
-  test('cancels pending not-live reconnects when manually disconnecting', async () => {
+  test('does not schedule a not-live reconnect and manual disconnect keeps timers clear', async () => {
     const EulerstreamAdapter = loadAdapterWithMockedNetwork();
     const io = { emit: jest.fn() };
 

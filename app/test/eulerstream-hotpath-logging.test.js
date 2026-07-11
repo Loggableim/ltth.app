@@ -14,7 +14,10 @@ function createMockDb() {
   return {
     loadStreamStats: jest.fn(() => null),
     logEvent: jest.fn(),
-    getGift: jest.fn(() => null)
+    getGift: jest.fn(() => null),
+    resetStreamStats: jest.fn(),
+    saveStreamStats: jest.fn(),
+    setSetting: jest.fn()
   };
 }
 
@@ -31,6 +34,9 @@ function createAdapter() {
   adapter.eventEmitter = new EventEmitter();
   adapter._startHeartbeat = jest.fn();
   adapter._stopHeartbeat = jest.fn();
+  adapter._startLiveTracking = jest.fn();
+  adapter._schedulePostConnectTasks = jest.fn();
+  adapter.currentUsername = 'streamer';
 
   return { adapter, db, logger };
 }
@@ -45,6 +51,7 @@ describe('Eulerstream hotpath logging', () => {
         {
           type: 'WebcastChatMessage',
           data: {
+            common: { roomId: '7654321' },
             user: {
               uniqueId: 'viewer1',
               userId: '1'
@@ -54,6 +61,7 @@ describe('Eulerstream hotpath logging', () => {
         }
       ]
     }));
+    await new Promise(resolve => setImmediate(resolve));
 
     expect(db.logEvent).toHaveBeenCalledWith('chat', 'viewer1', expect.objectContaining({
       username: 'viewer1',

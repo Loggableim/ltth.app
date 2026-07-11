@@ -70,7 +70,8 @@ class TikTokConnector extends EventEmitter {
   _bindAdapterEvents(adapter) {
     this._eventForwarders = {};
     const events = ['gift', 'chat', 'follow', 'like', 'share', 'subscribe',
-      'join', 'emote', 'connected', 'disconnected', 'error', 'viewerChange', 'streamChanged'];
+      'join', 'emote', 'connected', 'disconnected', 'error', 'viewerChange',
+      'streamChanged'];
     events.forEach((event) => {
       const handler = (data) => this.emit(event, data);
       this._eventForwarders[event] = handler;
@@ -91,9 +92,24 @@ class TikTokConnector extends EventEmitter {
       this._unbindAdapterEvents(this._adapter);
     }
     this._adapter = this._createAdapterForSource(normalized);
+    if (typeof this._adapter.setStreamSessionLifecycleHandler === 'function') {
+      this._adapter.setStreamSessionLifecycleHandler(
+        data => this._emitAsync('streamSessionStarted', data)
+      );
+    }
     this._currentSource = normalized;
     this._bindAdapterEvents(this._adapter);
     this.logger.info(`[TikTokConnector] Active adapter: ${normalized}`);
+  }
+
+  async _emitAsync(event, data) {
+    for (const listener of this.rawListeners(event)) {
+      try {
+        await listener.call(this, data);
+      } catch (error) {
+        this.logger.error(`[TikTokConnector] Async ${event} listener failed: ${error.message}`);
+      }
+    }
   }
 
   get isConnected() {
@@ -138,6 +154,14 @@ class TikTokConnector extends EventEmitter {
     if (this._adapter) this._adapter.roomId = value;
   }
 
+  get connectionState() {
+    return this._adapter ? this._adapter.connectionState : 'idle';
+  }
+
+  get streamIdentity() {
+    return this._adapter ? this._adapter.streamIdentity : null;
+  }
+
   /**
    * Returns a stable key for the currently active live stream when the
    * active adapter can provide one. This is used by plugins that need to
@@ -147,12 +171,13 @@ class TikTokConnector extends EventEmitter {
   getCurrentStreamKey() {
     if (!this._adapter) return null;
 
-    // Eulerstream can expose a stable room ID and, as a fallback, a stream
-    // start timestamp. TikFinity does not provide a stable live-session
-    // identifier, so return null to avoid false resets on reconnects.
+    // Room ID is the only authoritative Eulerstream session identity. A start
+    // timestamp is deliberately not used because it can drift on reconnects.
     if (this._currentSource === 'eulerstream') {
-      if (this._adapter.roomId) return `room:${this._adapter.roomId}`;
-      if (this._adapter.streamStartTime) return `start:${this._adapter.streamStartTime}`;
+      if (this._adapter.streamIdentity) return this._adapter.streamIdentity;
+      if (this._adapter.roomId && this.currentUsername) {
+        return `${String(this.currentUsername).toLowerCase()}:${this._adapter.roomId}`;
+      }
     }
 
     return null;

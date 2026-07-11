@@ -38,24 +38,44 @@ class EulerstreamAdapter extends BaseAdapter {
         super(io, db, logger);
         this.ws = null;
 
-        // Auto-Reconnect configuration
+        // Explicit connection state and bounded reconnect configuration
+        this.connectionState = 'idle';
         this.autoReconnectCount = 0;
-        this.maxAutoReconnects = 50;
-        this.notLiveReconnectCount = 0;
-        this.maxNotLiveReconnects = 20;
-        this.rateLimitReconnectCount = 0;
-        this.maxRateLimitReconnects = 10;
-        this.autoReconnectResetTimeout = null;
-        this._selfHealTimer = null;
-        this._notLiveReconnectTimer = null;
-        this._rateLimitReconnectTimer = null;
+        this.reconnectDelays = [5000, 15000, 30000, 60000, 120000];
+        this.maxAutoReconnects = this.reconnectDelays.length;
         this._autoReconnectTimer = null;
         this._heartbeatReconnectTimer = null;
+        this._validationTimer = null;
+        this._identityTimer = null;
+        this._postConnectTimer = null;
+        this._connectPromise = null;
+        this._connectResolve = null;
+        this._connectReject = null;
+        this._connectUsername = null;
+        this._connectionGeneration = 0;
+        this._activeGeneration = 0;
+        this._connectionHadLive = false;
+        this._resumeConfirmedSession = false;
+        this._connectedEventEmitted = false;
+        this._manualDisconnect = false;
+        this._identityPendingBuffer = [];
+        this._maxIdentityPendingEvents = 1000;
+        this._identityResolutionInFlight = null;
+        this._streamSessionLifecycleHandler = null;
+        this._circuitOpenUntil = 0;
+        this._circuitReason = null;
         this._missedPongs = 0;
 
         // Stats tracking - Load from database if available
         const savedStats = this.db.loadStreamStats();
-        this.stats = savedStats || {
+        this.stats = savedStats ? {
+            viewers: savedStats.viewers || 0,
+            likes: savedStats.likes || 0,
+            totalCoins: savedStats.totalCoins || 0,
+            followers: savedStats.followers || 0,
+            shares: savedStats.shares || 0,
+            gifts: savedStats.gifts || 0
+        } : {
             viewers: 0,
             likes: 0,
             totalCoins: 0,
@@ -63,16 +83,25 @@ class EulerstreamAdapter extends BaseAdapter {
             shares: 0,
             gifts: 0
         };
+        this.confirmedUsername = savedStats?.username || null;
+        this.confirmedRoomId = this._normalizeRoomId(savedStats?.roomId);
+        this.streamIdentity = this.confirmedUsername && this.confirmedRoomId
+            ? this._buildStreamIdentity(this.confirmedUsername, this.confirmedRoomId)
+            : null;
 
         // Periodic stats persistence
         this.statsPersistenceInterval = null;
         this.statsPersistenceIntervalMs = 30000; // Save every 30 seconds
 
         // Stream duration tracking
-        this.streamStartTime = null;
+        this.streamStartTime = savedStats?.streamStartTime !== null &&
+            savedStats?.streamStartTime !== undefined &&
+            Number.isFinite(Number(savedStats.streamStartTime))
+            ? Number(savedStats.streamStartTime)
+            : null;
         this.durationInterval = null;
         this._earliestEventTime = null; // Track earliest event to estimate stream start
-        this._persistedStreamStart = null; // Persisted value across reconnects
+        this._persistedStreamStart = this.streamStartTime; // Persisted across same-stream reconnects
         
         // Connection attempt tracking for diagnostics
         this.connectionAttempts = [];
@@ -95,7 +124,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this.eventEmitter = null;
         
         // Room ID for API calls
-        this.roomId = null;
+        this.roomId = this.confirmedRoomId;
         
         // TikTok Webcast API configuration
         this.webcastApiConfig = {
@@ -135,6 +164,20 @@ class EulerstreamAdapter extends BaseAdapter {
         return roomId;
     }
 
+    _normalizeUsername(value) {
+        return typeof value === 'string'
+            ? value.trim().replace(/^@/, '').toLowerCase()
+            : '';
+    }
+
+    _buildStreamIdentity(username, roomId) {
+        const normalizedUsername = this._normalizeUsername(username);
+        const normalizedRoomId = this._normalizeRoomId(roomId);
+        return normalizedUsername && normalizedRoomId
+            ? `${normalizedUsername}:${normalizedRoomId}`
+            : null;
+    }
+
     _extractRoomIdFromPayload(payload) {
         if (!payload || typeof payload !== 'object') return null;
 
@@ -168,7 +211,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
         if (this.roomId !== roomId) {
             this.roomId = roomId;
-            this.logger.info(`Captured room ID from ${source}: ${this.roomId}`);
+            this.logger.debug?.(`Captured room ID from ${source}: ${this.roomId}`);
         }
 
         return this.roomId;
@@ -315,32 +358,75 @@ class EulerstreamAdapter extends BaseAdapter {
      * @param {object} options - Connection options
      */
     async connect(username, options = {}) {
-        this._clearPendingReconnectTimers();
+        const normalizedUsername = this._normalizeUsername(username);
+        if (!normalizedUsername) {
+            throw this._createConnectionError('A TikTok username is required.', 'invalid_username', 400);
+        }
 
-        // Store previous username before disconnect to detect streamer changes
-        const previousUsername = this.currentUsername;
-        
+        if (this._circuitReason === 'too_many_connections' && Date.now() < this._circuitOpenUntil) {
+            throw this._createConnectionError(
+                'Eulerstream connection cooldown is still active.',
+                'circuit_open',
+                4429,
+                { retryAllowedAt: new Date(this._circuitOpenUntil).toISOString() }
+            );
+        }
+
+        if (
+            this.isConnected &&
+            ['live', 'live_identity_pending'].includes(this.connectionState) &&
+            this._normalizeUsername(this.currentUsername) === normalizedUsername
+        ) {
+            return this._buildConnectedPayload(false, true, false);
+        }
+
+        if (
+            this._connectPromise &&
+            this._connectUsername === normalizedUsername &&
+            ['connecting', 'validating', 'live_identity_pending'].includes(this.connectionState)
+        ) {
+            return this._connectPromise;
+        }
+
+        if (this._connectPromise) {
+            this.disconnect();
+        }
         if (this.isConnected) {
-            await this.disconnect();
+            this.disconnect();
         }
 
-        // Clear persisted stream start time if connecting to a different streamer
-        if (previousUsername && previousUsername !== username) {
-            this.streamStartTime = null;
-            this._persistedStreamStart = null;
-            this._earliestEventTime = null;
-            // Reset stats when switching TikTok streamers (not user profiles)
-            // This is intentional: each TikTok stream should start with fresh stats
-            // Note: This resets both in-memory and database stats
-            this.resetStats();
-            this.sessionGifts.clear();
-            // Clear deduplication cache when switching to a different streamer
-            this.processedEvents.clear();
-            this.logger.info(`ðŸ”„ Switching from @${previousUsername} to @${username} - clearing old stream start time, stats, and event cache`);
-        }
+        this._clearPendingReconnectTimers();
+        this._clearConnectionTimers();
+        this._manualDisconnect = false;
+        this._connectUsername = normalizedUsername;
+        this._connectionHadLive = false;
+        this._resumeConfirmedSession = options.resumeConfirmedSession === true;
+        this._identityPendingBuffer = [];
+        this._activeGeneration = ++this._connectionGeneration;
+        const generation = this._activeGeneration;
+        this.connectionState = 'connecting';
+        this.broadcastStatus('connecting', { username: normalizedUsername });
+
+        const promise = this._connectInternal(normalizedUsername, options, generation);
+        this._connectPromise = promise;
+        promise.finally(() => {
+            if (this._activeGeneration === generation) {
+                this._connectPromise = null;
+                this._connectResolve = null;
+                this._connectReject = null;
+                this._connectUsername = null;
+            }
+        }).catch(() => {});
+        return promise;
+    }
+
+    async _connectInternal(username, options = {}, generation = this._activeGeneration) {
+        this._clearPendingReconnectTimers();
 
         try {
             this.currentUsername = username;
+            this.roomId = null;
+            this._connectedEventEmitted = false;
 
             // Read Eulerstream WebSocket authentication key from configuration
             // Priority: Database setting > Environment variables > Fallback key
@@ -448,7 +534,7 @@ class EulerstreamAdapter extends BaseAdapter {
             this.eventEmitter = new WebcastEventEmitter(this.ws);
 
             // Setup WebSocket event handlers
-            await this._setupWebSocketHandlers();
+            this._setupWebSocketHandlers(generation);
 
             // Wait for connection to open
             await new Promise((resolve, reject) => {
@@ -467,142 +553,66 @@ class EulerstreamAdapter extends BaseAdapter {
                 });
             });
 
-            this.isConnected = true;
-
-            // Reset auto-reconnect counter on every successful connection
-            this.autoReconnectCount = 0;
-            this.notLiveReconnectCount = 0;
-            this.rateLimitReconnectCount = 0;
-            if (this.autoReconnectResetTimeout) {
-                clearTimeout(this.autoReconnectResetTimeout);
-                this.autoReconnectResetTimeout = null;
-            }
-            if (this._selfHealTimer) {
-                clearTimeout(this._selfHealTimer);
-                this._selfHealTimer = null;
-            }
-            this.logger.info('âœ… Auto-reconnect counter reset (successful connection)');
-
-            // Initialize stream start time
-            // Note: _persistedStreamStart is always cleared on disconnect (see disconnect method)
-            // This ensures each connection detects the actual current stream start time
-            // Don't set streamStartTime to connection time immediately
-            // Wait for roomInfo or first event to get actual stream start time
-            this.streamStartTime = null;
-            this._streamTimeDetectionMethod = 'Waiting for stream data...';
-            this.logger.info(`â³ Waiting for roomInfo or first event to determine stream start time`);
-
-            // Reset stats to ensure we start fresh for this connection
-            // The actual values will be populated from roomInfo/API or accumulated from events
-            // This prevents old database values from persisting across different stream sessions
-            this.logger.info('ðŸ”„ Resetting stats to prepare for fresh stream data');
-            this.stats = {
-                viewers: 0,
-                likes: 0,
-                totalCoins: 0,
-                followers: 0,
-                shares: 0,
-                gifts: 0
-            };
-            // Don't persist reset to database yet - wait for actual data from TikTok
-            this.broadcastStats();
-
-            // Start duration tracking interval
-            if (this.durationInterval) {
-                clearInterval(this.durationInterval);
-            }
-            this.durationInterval = setInterval(() => {
-                this.broadcastStats();
-            }, 1000);
-
-            // Start periodic stats persistence interval
-            if (this.statsPersistenceInterval) {
-                clearInterval(this.statsPersistenceInterval);
-            }
-            this.statsPersistenceInterval = setInterval(() => {
-                this.db.saveStreamStats(this.stats);
-                this.logger.debug('ðŸ’¾ Stream stats persisted to database');
-            }, this.statsPersistenceIntervalMs);
-
-            // Broadcast stream time info (only if we have a valid time)
-            if (this.streamStartTime) {
-                this.io.emit('tiktok:streamTimeInfo', {
-                    streamStartTime: this.streamStartTime,
-                    streamStartISO: new Date(this.streamStartTime).toISOString(),
-                    detectionMethod: this._streamTimeDetectionMethod || 'Unknown',
-                    currentDuration: Math.floor((Date.now() - this.streamStartTime) / 1000)
-                });
+            if (generation !== this._activeGeneration) {
+                throw this._createConnectionError('Connection was superseded.', 'superseded', 409);
             }
 
-            // Broadcast success
-            this.broadcastStatus('connected', {
+            this.connectionState = 'validating';
+            this.broadcastStatus('validating', {
                 username,
-                method: 'Eulerstream WebSocket'
+                timeout: EulerstreamAdapter.LIVE_VALIDATION_TIMEOUT_MS
             });
-            
-            // Emit streamChanged event if connecting to a different streamer
-            if (previousUsername && previousUsername !== username) {
-                this.emit('streamChanged', {
-                    previousUsername,
-                    newUsername: username,
-                    timestamp: new Date().toISOString()
-                });
-                this.logger.info(`ðŸ”„ Stream changed from @${previousUsername} to @${username}`);
-            }
-            
-            // Emit connected event for IFTTT engine
-            this.emit('connected', {
-                username,
-                timestamp: new Date().toISOString()
+            this.logger.info('⏳ WebSocket transport open; waiting for roomInfo or a real webcast event');
+
+            return await new Promise((resolve, reject) => {
+                this._connectResolve = resolve;
+                this._connectReject = reject;
+                this._validationTimer = setTimeout(() => {
+                    if (generation !== this._activeGeneration || this._connectionHadLive) return;
+                    const error = this._createConnectionError(
+                        'LIVE validation timed out after 15 seconds.',
+                        'validation_failed',
+                        408
+                    );
+                    this.connectionState = 'validation_failed';
+                    this.broadcastStatus('validation_failed', {
+                        error: error.message,
+                        retryable: false
+                    });
+                    this._rejectPendingConnect(error);
+                    this._terminateActiveSocket(generation);
+                }, EulerstreamAdapter.LIVE_VALIDATION_TIMEOUT_MS);
             });
-
-            // Save last connected username
-            this.db.setSetting('last_connected_username', username);
-
-            this.logger.info(`âœ… Connected to TikTok LIVE: @${username} via Eulerstream`);
-            
-            // Fetch room info and update gift catalog from TikTok API
-            setTimeout(async () => {
-                try {
-                    await this.fetchRoomInfo();
-                } catch (error) {
-                    this.logger.warn('Could not fetch room info from TikTok API:', error.message);
-                }
-                
-                // Update gift catalog after connection
-                try {
-                    const catalogResult = await this.updateGiftCatalog();
-                    this.logger.info(`ðŸŽ ${catalogResult.message}`);
-                } catch (error) {
-                    this.logger.warn(`Could not update gift catalog: ${this._formatHttpError(error)}`);
-                }
-            }, 2000); // Wait 2 seconds after connection to fetch room info and update gift catalog
-            
-            // Log success
-            this._logConnectionAttempt(username, true, null, null);
 
         } catch (error) {
             this.isConnected = false;
 
-            // Analyze and format error
+            if (generation !== this._activeGeneration) {
+                throw error;
+            }
+
             const errorInfo = this._analyzeError(error);
 
-            this.logger.error(`âŒ Connection error:`, errorInfo.message);
+            this.logger.error(`❌ Connection error:`, errorInfo.message);
             
             if (errorInfo.suggestion) {
-                this.logger.info(`ðŸ’¡ Suggestion:`, errorInfo.suggestion);
+                this.logger.info(`💡 Suggestion:`, errorInfo.suggestion);
             }
 
             // Log failure
             this._logConnectionAttempt(username, false, errorInfo.type, errorInfo.message);
 
-            // Broadcast error
-            this.broadcastStatus('error', {
-                error: errorInfo.message,
-                type: errorInfo.type,
-                suggestion: errorInfo.suggestion
-            });
+            if (!error.connectionStatus) {
+                this.connectionState = 'connection_error';
+                this.broadcastStatus('error', {
+                    error: errorInfo.message,
+                    type: errorInfo.type,
+                    suggestion: errorInfo.suggestion
+                });
+                this._terminateActiveSocket(generation);
+            }
 
+            this._rejectPendingConnect(error);
             throw error;
         }
     }
@@ -635,7 +645,7 @@ class EulerstreamAdapter extends BaseAdapter {
      * Setup WebSocket event handlers
      * @private
      */
-    async _setupWebSocketHandlers() {
+    async _setupWebSocketHandlers(generation = this._activeGeneration) {
         if (!this.ws || !this.eventEmitter) return;
 
         // Remove any existing listeners to prevent duplicates
@@ -644,151 +654,18 @@ class EulerstreamAdapter extends BaseAdapter {
 
         // WebSocket connection events
         this.ws.on('open', () => {
-            this.logger.info('ðŸŸ¢ Eulerstream WebSocket connected');
+            if (generation !== this._activeGeneration) return;
+            this.logger.info('🟢 Eulerstream WebSocket connected');
             this._startHeartbeat();
         });
 
         this.ws.on('close', (code, reason) => {
-            this._stopHeartbeat();
-            const reasonText = Buffer.isBuffer(reason) ? reason.toString('utf-8') : (reason || '');
-            const savedUsername = this.currentUsername;
-            this.logger.info(`ðŸ”´ Eulerstream WebSocket disconnected: ${code} - ${ClientCloseCode[code] || reasonText}`);
-
-            this.isConnected = false;
-
-            // Helper: emit disconnected event for IFTTT engine and plugins
-            const emitDisconnect = (reasonOverride) => {
-                this.emit('disconnected', {
-                    username: this.currentUsername,
-                    timestamp: new Date().toISOString(),
-                    reason: reasonOverride || reasonText || ClientCloseCode[code] || 'Connection closed',
-                    code: code
-                });
-            };
-
-            // 4401 â€“ Invalid API Key â†’ no reconnect, manual fix required
-            if (code === 4401) {
-                this.logger.error('âŒ Authentication Error: The provided Eulerstream API key is invalid.');
-                this.logger.error('ðŸ’¡ Please check your API key configuration:');
-                this.logger.error('   1. Verify the API key in Dashboard Settings (tiktok_euler_api_key)');
-                this.logger.error('   2. Or check environment variable EULER_API_KEY');
-                this.logger.error('   3. Get a valid key from: https://www.eulerstream.com');
-                this.logger.error('   4. Key format should be a long alphanumeric string (64+ characters)');
-                if (reasonText) this.logger.error(`   Server message: ${reasonText}`);
-                this.broadcastStatus('auth_error', {
-                    code,
-                    message: 'Authentication failed - manual reconnect required',
-                    suggestion: 'Please check your Eulerstream API key configuration'
-                });
-                emitDisconnect('Authentication failed');
-                return;
-            }
-
-            // 4400 â€“ Invalid Options â†’ no reconnect, manual fix required
-            if (code === 4400) {
-                this.logger.error('âŒ Invalid Options: The connection parameters are incorrect.');
-                this.logger.error('ðŸ’¡ Please check the username and API key are correct.');
-                this.broadcastStatus('auth_error', {
-                    code,
-                    message: 'Invalid connection options - manual reconnect required'
-                });
-                emitDisconnect('Invalid options');
-                return;
-            }
-
-            // 4005 â€“ Stream ended normally â†’ no reconnect, broadcast stream_ended
-            if (code === 4005) {
-                this.logger.info('ðŸ Stream ended (STREAM_END). Waiting for next stream...');
-                this.broadcastStatus('stream_ended');
-                emitDisconnect('Stream ended');
-                return;
-            }
-
-            // 4404 â€“ Not live â†’ soft retry with long delay, dedicated not-live retry budget
-            if (code === 4404) {
-                this.logger.warn('âš ï¸  User Not Live: The requested TikTok user is not currently streaming.');
-                this.broadcastStatus('not_live');
-                emitDisconnect('User not live');
-
-                if (savedUsername && this.notLiveReconnectCount < this.maxNotLiveReconnects) {
-                    this.notLiveReconnectCount++;
-                    const notLiveDelay = 30000;
-                    this.logger.info(`â³ Not-live retry ${this.notLiveReconnectCount}/${this.maxNotLiveReconnects} in ${notLiveDelay / 1000}s (stream may be starting soon)...`);
-                    this._scheduleReconnectTimer('_notLiveReconnectTimer', notLiveDelay, () => {
-                        this.connect(savedUsername).catch(err => {
-                            this.logger.error(`Not-live retry ${this.notLiveReconnectCount}/${this.maxNotLiveReconnects} failed:`, err.message);
-                        });
-                    });
-                } else {
-                    this.logger.warn(`âš ï¸ Max retry attempts (${this.maxNotLiveReconnects}) reached or no username set. Manual reconnect required.`);
-                    this.broadcastStatus('max_reconnects_reached', {
-                        maxReconnects: this.maxNotLiveReconnects,
-                        message: 'User nicht live â€“ bitte manuell neu verbinden'
-                    });
-                    this._scheduleSelfHealReconnect(savedUsername);
-                }
-                return;
-            }
-
-            // 4429 â€“ Too many connections â†’ wait 30s then retry (dedicated rate-limit retry budget)
-            if (code === 4429) {
-                this.logger.warn('âš ï¸  Too many connections. Waiting 30s before retry...');
-                this.broadcastStatus('disconnected');
-                emitDisconnect('Too many connections');
-
-                if (savedUsername && this.rateLimitReconnectCount < this.maxRateLimitReconnects) {
-                    this.rateLimitReconnectCount++;
-                    this.logger.info(`â³ 4429 retry ${this.rateLimitReconnectCount}/${this.maxRateLimitReconnects} in 30s...`);
-                    this._scheduleReconnectTimer('_rateLimitReconnectTimer', 30000, () => {
-                        this.connect(savedUsername).catch(err => {
-                            this.logger.error(`4429 retry ${this.rateLimitReconnectCount}/${this.maxRateLimitReconnects} failed:`, err.message);
-                        });
-                    });
-                } else {
-                    this.logger.warn(`âš ï¸ Max retry attempts (${this.maxRateLimitReconnects}) reached or no username set. Manual reconnect required.`);
-                    this.broadcastStatus('max_reconnects_reached', {
-                        maxReconnects: this.maxRateLimitReconnects,
-                        message: 'Zu viele Verbindungen â€“ bitte manuell neu verbinden'
-                    });
-                    this._scheduleSelfHealReconnect(savedUsername);
-                }
-                return;
-            }
-
-            // All other codes (1000, 1011, 4500, unknown) â†’ standard auto-reconnect with exponential backoff
-            this.broadcastStatus('disconnected');
-            emitDisconnect();
-
-            if (this.currentUsername && this.autoReconnectCount < this.maxAutoReconnects) {
-                this.autoReconnectCount++;
-                const delay = Math.min(5000 * this.autoReconnectCount, 30000);
-                this.broadcastStatus('retrying', {
-                    error: code === 1011
-                        ? 'Eulerstream returned 1011 INTERNAL_SERVER_ERROR. Retrying automatically.'
-                        : `WebSocket closed (${code || 'unknown'}). Retrying automatically.`,
-                    delay,
-                    attempt: this.autoReconnectCount,
-                    maxRetries: this.maxAutoReconnects,
-                    username: this.currentUsername
-                });
-                this.logger.info(`ðŸ”„ Attempting auto-reconnect ${this.autoReconnectCount}/${this.maxAutoReconnects} in ${delay / 1000}s...`);
-                this._scheduleReconnectTimer('_autoReconnectTimer', delay, () => {
-                    this.connect(this.currentUsername).catch(err => {
-                        this.logger.error(`Auto-reconnect ${this.autoReconnectCount}/${this.maxAutoReconnects} failed:`, err.message);
-                    });
-                });
-            } else if (this.autoReconnectCount >= this.maxAutoReconnects) {
-                this.logger.warn(`âš ï¸ Max auto-reconnect attempts (${this.maxAutoReconnects}) reached. Manual reconnect required.`);
-                this.broadcastStatus('max_reconnects_reached', {
-                    maxReconnects: this.maxAutoReconnects,
-                    message: 'Bitte manuell neu verbinden'
-                });
-                this._scheduleSelfHealReconnect(savedUsername);
-            }
+            this._handleSocketClose(generation, code, reason);
         });
 
         this.ws.on('error', (err) => {
-            this.logger.error('âŒ WebSocket error:', err);
+            if (generation !== this._activeGeneration) return;
+            this.logger.error('❌ WebSocket error:', err);
             
             // Emit error event for IFTTT engine
             this.emit('error', {
@@ -799,14 +676,15 @@ class EulerstreamAdapter extends BaseAdapter {
         });
 
         // Handle incoming WebSocket messages
-        this.ws.on('message', (data) => {
+        this.ws.on('message', async (data) => {
             try {
+                if (generation !== this._activeGeneration) return;
                 this.isAlive = true;
                 if (this._missedPongs !== undefined) {
                     this._missedPongs = 0;
                 }
 
-                this.logger.debug?.(`ðŸ“¨ Received WebSocket message: ${typeof data}, length: ${data ? data.length : 0}`);
+                this.logger.debug?.(`📨 Received WebSocket message: ${typeof data}, length: ${data ? data.length : 0}`);
                 
                 // First, try to parse as JSON (EulerStream default format)
                 let parsedData;
@@ -839,65 +717,40 @@ class EulerstreamAdapter extends BaseAdapter {
                 const messages = this._extractEulerstreamMessages(parsedData);
                 if (messages.length > 0) {
                     parsedData.messages = messages;
-                    this.logger.debug?.(`ðŸŽ‰ Processing ${parsedData.messages.length} messages from WebSocket`);
+                    this.logger.debug?.(`🎉 Processing ${parsedData.messages.length} messages from WebSocket`);
                     for (const message of messages) {
-                        if (message.type && message.data) {
-                            this._captureRoomIdFromPayload(message.data, message.type);
-
-                            // Special handling for roomInfo event to extract stream start time
-                            if (message.type === 'roomInfo') {
-                                this.logger.info('ðŸ“‹ Received roomInfo event - extracting stream start time and stats');
-                                this.logger.info(`ðŸ“‹ roomInfo keys: ${JSON.stringify(Object.keys(message.data || {}))}`);
-                                
-                                // Extract stream start time
-                                const extractedTime = this._extractStreamStartTime(message.data);
-                                
-                                // Update stream start time if not already set or if extracted time is earlier
-                                if (!this.streamStartTime || extractedTime < this.streamStartTime) {
-                                    this.streamStartTime = extractedTime;
-                                    this._persistedStreamStart = extractedTime;
-                                    this._streamTimeDetectionMethod = 'roomInfo (from TikTok)';
-                                    
-                                    this.logger.info(`âœ… Stream start time set from roomInfo: ${new Date(this.streamStartTime).toISOString()}`);
-                                    
-                                    // Broadcast updated stream time info
-                                    this.io.emit('tiktok:streamTimeInfo', {
-                                        streamStartTime: this.streamStartTime,
-                                        streamStartISO: new Date(this.streamStartTime).toISOString(),
-                                        detectionMethod: this._streamTimeDetectionMethod,
-                                        currentDuration: Math.floor((Date.now() - this.streamStartTime) / 1000)
-                                    });
-                                }
-                                
-                                // Extract initial statistics (likes, followers, viewers, etc.)
-                                this._extractStatsFromRoomInfo(message.data);
-                                
-                                // Don't emit roomInfo as a regular event, just process it
-                                continue;
-                            }
-
-                            if (message.type === 'workerInfo') {
-                                this.logger.debug('Ignoring Eulerstream workerInfo metadata event');
-                                continue;
-                            }
-                            
-                            // Map EulerStream event types to our internal event names
-                            // EulerStream uses names like "WebcastChatMessage", we need "chat"
-                            const eventType = this._mapEulerStreamEventType(message.type);
-                            
-                            if (eventType) {
-                                this.logger.debug?.(`âœ… Emitting event: ${eventType} (from ${message.type})`);
-                                // Emit the parsed event to our event emitter
-                                this.eventEmitter.emit(eventType, message.data);
-                            } else {
-                                this.logger.warn(`âš ï¸ Unknown event type: ${message.type} - skipping`);
-                            }
-                        } else {
+                        if (!message.type || !message.data) {
                             this.logger.warn(`Message missing type or data: ${JSON.stringify(message).substring(0, 100)}`);
+                            continue;
                         }
+
+                        if (message.type === 'workerInfo') {
+                            this.logger.debug('Ignoring Eulerstream workerInfo metadata event');
+                            continue;
+                        }
+
+                        const roomId = this._captureRoomIdFromPayload(message.data, message.type) || this.roomId;
+                        const confirmation = await this._confirmLive({
+                            generation,
+                            roomId,
+                            source: message.type,
+                            payload: message.data
+                        });
+
+                        if (generation !== this._activeGeneration) return;
+                        if (confirmation.identityPending && message.type !== 'roomInfo') {
+                            if (this._identityPendingBuffer.length >= this._maxIdentityPendingEvents) {
+                                this._failIdentityResolution('Identity event buffer limit reached.');
+                                return;
+                            }
+                            this._identityPendingBuffer.push(message);
+                            continue;
+                        }
+
+                        this._dispatchEulerstreamMessage(message);
                     }
                 } else {
-                    this.logger.warn(`âš ï¸ Parsed data does not contain messages array. Keys: ${JSON.stringify(Object.keys(parsedData || {}))}`);
+                    this.logger.warn(`⚠️ Parsed data does not contain messages array. Keys: ${JSON.stringify(Object.keys(parsedData || {}))}`);
                     this.logger.warn(`Data preview: ${JSON.stringify(parsedData).substring(0, 200)}`);
                 }
             } catch (error) {
@@ -916,6 +769,339 @@ class EulerstreamAdapter extends BaseAdapter {
 
         // Setup Eulerstream event handlers
         this._registerEulerstreamEvents();
+    }
+
+    _createConnectionError(message, status, code, details = {}) {
+        const error = new Error(message);
+        error.connectionStatus = status;
+        error.code = code;
+        Object.assign(error, details);
+        return error;
+    }
+
+    _rejectPendingConnect(error) {
+        if (this._connectReject) {
+            const reject = this._connectReject;
+            this._connectReject = null;
+            this._connectResolve = null;
+            reject(error);
+        }
+    }
+
+    _resolvePendingConnect(payload) {
+        if (this._connectResolve) {
+            const resolve = this._connectResolve;
+            this._connectResolve = null;
+            this._connectReject = null;
+            resolve(payload);
+        }
+    }
+
+    _clearConnectionTimers() {
+        for (const timerName of ['_validationTimer', '_identityTimer', '_postConnectTimer']) {
+            if (this[timerName]) {
+                clearTimeout(this[timerName]);
+                this[timerName] = null;
+            }
+        }
+    }
+
+    _terminateActiveSocket(generation = this._activeGeneration) {
+        if (generation !== this._activeGeneration || !this.ws) return;
+        const socket = this.ws;
+        socket.removeAllListeners();
+        if (typeof socket.terminate === 'function') socket.terminate();
+        else if (typeof socket.close === 'function') socket.close();
+        this.ws = null;
+        this._stopHeartbeat();
+        this.isConnected = false;
+    }
+
+    _buildConnectedPayload(isNewStream, isReconnect, identityPending) {
+        return {
+            username: this.currentUsername,
+            roomId: this.roomId || null,
+            streamIdentity: this.streamIdentity || null,
+            isNewStream: identityPending ? null : !!isNewStream,
+            isReconnect: identityPending ? null : !!isReconnect,
+            identityPending: !!identityPending,
+            timestamp: new Date().toISOString(),
+            method: 'Eulerstream WebSocket'
+        };
+    }
+
+    async _confirmLive({ generation, roomId, source, payload }) {
+        if (generation !== this._activeGeneration) {
+            return { identityPending: true };
+        }
+
+        if (this._validationTimer) {
+            clearTimeout(this._validationTimer);
+            this._validationTimer = null;
+        }
+
+        this.isConnected = true;
+        this._connectionHadLive = true;
+        const normalizedRoomId = this._normalizeRoomId(roomId);
+
+        if (!normalizedRoomId) {
+            if (this.connectionState === 'live_identity_pending') {
+                return { identityPending: true };
+            }
+            this.connectionState = 'live_identity_pending';
+            const connectedPayload = this._buildConnectedPayload(false, false, true);
+            this._emitConnectedOnce(connectedPayload);
+            this.broadcastStatus('live_identity_pending', connectedPayload);
+            this._resolvePendingConnect(connectedPayload);
+            this._startIdentityResolution(generation);
+            return { identityPending: true };
+        }
+
+        const candidateIdentity = this._buildStreamIdentity(this.currentUsername, normalizedRoomId);
+        if (this.connectionState === 'live' && candidateIdentity === this.streamIdentity) {
+            return { identityPending: false, isNewStream: false, isReconnect: true };
+        }
+
+        const classification = await this._applyConfirmedStreamIdentity(
+            normalizedRoomId,
+            payload,
+            source
+        );
+        this.connectionState = 'live';
+        this.autoReconnectCount = 0;
+        this._circuitReason = null;
+        this._circuitOpenUntil = 0;
+        this._startLiveTracking();
+        this._schedulePostConnectTasks(generation);
+
+        const connectedPayload = this._buildConnectedPayload(
+            classification.isNewStream,
+            classification.isReconnect,
+            false
+        );
+        this._emitConnectedOnce(connectedPayload);
+        this.broadcastStatus('connected', connectedPayload);
+        this._resolvePendingConnect(connectedPayload);
+        this._logConnectionAttempt(this.currentUsername, true, null, null);
+        this.logger.debug?.(`Confirmed TikTok LIVE: @${this.currentUsername} (${this.streamIdentity})`);
+
+        if (this._identityPendingBuffer.length > 0) {
+            const bufferedMessages = this._identityPendingBuffer.splice(0);
+            for (const bufferedMessage of bufferedMessages) {
+                this._dispatchEulerstreamMessage(bufferedMessage);
+            }
+        }
+
+        return { identityPending: false, ...classification };
+    }
+
+    _emitConnectedOnce(payload) {
+        if (this._connectedEventEmitted) return;
+        this._connectedEventEmitted = true;
+        this.emit('connected', payload);
+    }
+
+    async _applyConfirmedStreamIdentity(roomId, payload, source) {
+        const previousIdentity = this.streamIdentity;
+        const previousUsername = this.confirmedUsername;
+        const previousRoomId = this.confirmedRoomId;
+        const nextIdentity = this._buildStreamIdentity(this.currentUsername, roomId);
+        const isReconnect = !!previousIdentity && previousIdentity === nextIdentity;
+        const isNewStream = !isReconnect;
+
+        this.roomId = roomId;
+        this.confirmedRoomId = roomId;
+        this.confirmedUsername = this.currentUsername;
+        this.streamIdentity = nextIdentity;
+
+        if (isNewStream) {
+            const extractedStart = this._extractStreamStartTime(payload || {});
+            this.streamStartTime = Number.isFinite(extractedStart) ? extractedStart : null;
+            this._persistedStreamStart = this.streamStartTime;
+            this._earliestEventTime = null;
+            this.stats = {
+                viewers: 0,
+                likes: 0,
+                totalCoins: 0,
+                followers: 0,
+                shares: 0,
+                gifts: 0
+            };
+            this.processedEvents.clear();
+            this._giftDedupeMap.clear();
+            this.sessionGifts.clear();
+            this.db.resetStreamStats({
+                username: this.confirmedUsername,
+                roomId: this.confirmedRoomId,
+                streamStartTime: this.streamStartTime
+            });
+
+            const sessionPayload = {
+                username: this.confirmedUsername,
+                roomId: this.confirmedRoomId,
+                streamIdentity: this.streamIdentity,
+                previousUsername,
+                previousRoomId,
+                previousStreamIdentity: previousIdentity,
+                source,
+                timestamp: new Date().toISOString()
+            };
+            this.emit('streamSessionStarted', sessionPayload);
+            if (this._streamSessionLifecycleHandler) {
+                await this._streamSessionLifecycleHandler(sessionPayload);
+            }
+            this.emit('streamChanged', {
+                ...sessionPayload,
+                newUsername: this.confirmedUsername,
+                newRoomId: this.confirmedRoomId,
+                newStreamIdentity: this.streamIdentity
+            });
+            this.broadcastStats();
+        } else if (!this.streamStartTime && this._persistedStreamStart) {
+            this.streamStartTime = this._persistedStreamStart;
+        }
+
+        this.db.setSetting('last_connected_username', this.confirmedUsername);
+        this._persistStreamStats();
+        return { isNewStream, isReconnect };
+    }
+
+    setStreamSessionLifecycleHandler(handler) {
+        this._streamSessionLifecycleHandler = typeof handler === 'function' ? handler : null;
+    }
+
+    _startIdentityResolution(generation) {
+        if (!this._identityTimer) {
+            this._identityTimer = setTimeout(() => {
+                if (generation === this._activeGeneration && !this.roomId) {
+                    this._failIdentityResolution('Could not resolve a room ID within 15 seconds.');
+                }
+            }, EulerstreamAdapter.IDENTITY_RESOLUTION_TIMEOUT_MS);
+        }
+
+        if (!this._identityResolutionInFlight) {
+            this._identityResolutionInFlight = Promise.resolve()
+                .then(() => this.fetchRoomId(this.currentUsername))
+                .then(roomId => {
+                    if (generation !== this._activeGeneration) return;
+                    const normalizedRoomId = this._normalizeRoomId(roomId);
+                    if (normalizedRoomId) {
+                        if (this._identityTimer) {
+                            clearTimeout(this._identityTimer);
+                            this._identityTimer = null;
+                        }
+                        return this._confirmLive({
+                            generation,
+                            roomId: normalizedRoomId,
+                            source: 'room-id-resolution',
+                            payload: {}
+                        });
+                    }
+                })
+                .catch(error => {
+                    this.logger.warn(`Room ID resolution failed: ${error.message}`);
+                })
+                .finally(() => {
+                    this._identityResolutionInFlight = null;
+                });
+        }
+    }
+
+    _failIdentityResolution(message) {
+        this._identityPendingBuffer = [];
+        this.connectionState = 'identity_error';
+        this.broadcastStatus('identity_error', {
+            error: message,
+            retryable: false
+        });
+        this.emit('disconnected', {
+            username: this.currentUsername,
+            roomId: null,
+            streamIdentity: null,
+            timestamp: new Date().toISOString(),
+            reason: message,
+            code: 'IDENTITY_ERROR',
+            wasLive: true,
+            isTransient: false
+        });
+        this._terminateActiveSocket();
+    }
+
+    _dispatchEulerstreamMessage(message) {
+        if (!message || !message.type || !message.data) return;
+        if (message.type === 'roomInfo') {
+            this.logger.info('📋 Received roomInfo event - extracting stream start time and stats');
+            const extractedTime = this._extractStreamStartTime(message.data);
+            if (!this.streamStartTime || extractedTime < this.streamStartTime) {
+                this.streamStartTime = extractedTime;
+                this._persistedStreamStart = extractedTime;
+                this._streamTimeDetectionMethod = 'roomInfo (from TikTok)';
+            }
+            this._extractStatsFromRoomInfo(message.data);
+            this._persistStreamStats();
+            return;
+        }
+
+        const eventType = this._mapEulerStreamEventType(message.type);
+        if (eventType) {
+            this.logger.debug?.(`✅ Emitting event: ${eventType} (from ${message.type})`);
+            this.eventEmitter.emit(eventType, message.data);
+        } else {
+            this.logger.warn(`⚠️ Unknown event type: ${message.type} - skipping`);
+        }
+    }
+
+    _startLiveTracking() {
+        if (!this.durationInterval) {
+            this.durationInterval = setInterval(() => this.broadcastStats(), 1000);
+        }
+        if (!this.statsPersistenceInterval) {
+            this.statsPersistenceInterval = setInterval(() => {
+                this._persistStreamStats();
+                this.logger.debug('💾 Stream stats persisted to database');
+            }, this.statsPersistenceIntervalMs);
+        }
+    }
+
+    _pauseLiveTracking() {
+        if (this.durationInterval) {
+            clearInterval(this.durationInterval);
+            this.durationInterval = null;
+        }
+        if (this.statsPersistenceInterval) {
+            clearInterval(this.statsPersistenceInterval);
+            this.statsPersistenceInterval = null;
+        }
+        if (this.confirmedRoomId) this._persistStreamStats();
+    }
+
+    _persistStreamStats() {
+        this.db.saveStreamStats({
+            ...this.stats,
+            username: this.confirmedUsername,
+            roomId: this.confirmedRoomId,
+            streamStartTime: this.streamStartTime
+        });
+    }
+
+    _schedulePostConnectTasks(generation) {
+        if (this._postConnectTimer) return;
+        this._postConnectTimer = setTimeout(async () => {
+            this._postConnectTimer = null;
+            if (generation !== this._activeGeneration || this.connectionState !== 'live') return;
+            try {
+                await this.fetchRoomInfo();
+            } catch (error) {
+                this.logger.warn('Could not fetch room info from TikTok API:', error.message);
+            }
+            if (generation !== this._activeGeneration || this.connectionState !== 'live') return;
+            try {
+                const catalogResult = await this.updateGiftCatalog();
+                this.logger.info(`🎁 ${catalogResult.message}`);
+            } catch (error) {
+                this.logger.warn(`Could not update gift catalog: ${this._formatHttpError(error)}`);
+            }
+        }, 2000);
     }
 
     _extractEulerstreamMessages(parsedData) {
@@ -2190,10 +2376,157 @@ class EulerstreamAdapter extends BaseAdapter {
         }, delay);
     }
 
+    _handleSocketClose(generation, code, reason) {
+        if (generation !== this._activeGeneration || this._manualDisconnect) return;
+
+        const reasonText = Buffer.isBuffer(reason) ? reason.toString('utf-8') : String(reason || '');
+        const savedUsername = this.currentUsername;
+        const wasLive = this._connectionHadLive;
+        const mayReconnect = wasLive || this._resumeConfirmedSession;
+        this.logger.info(`🔴 Eulerstream WebSocket disconnected: ${code} - ${ClientCloseCode[code] || reasonText}`);
+        this._stopHeartbeat();
+        this._clearConnectionTimers();
+        this._pauseLiveTracking();
+        this.ws = null;
+        this.isConnected = false;
+
+        const emitDisconnect = (disconnectReason, isTransient = false) => {
+            if (!this._connectedEventEmitted) return;
+            this.emit('disconnected', {
+                username: savedUsername,
+                roomId: this.confirmedRoomId,
+                streamIdentity: this.streamIdentity,
+                timestamp: new Date().toISOString(),
+                reason: disconnectReason || reasonText || ClientCloseCode[code] || 'Connection closed',
+                code,
+                wasLive,
+                isTransient
+            });
+        };
+
+        let error;
+        if (code === 4404) {
+            this.connectionState = 'offline';
+            error = this._createConnectionError('The TikTok user is not currently live.', 'offline', code);
+            this.broadcastStatus('offline', { code, message: error.message, retryable: false });
+            emitDisconnect('User not live');
+        } else if (code === 4005) {
+            this.connectionState = 'stream_ended';
+            error = this._createConnectionError('The TikTok LIVE stream has ended.', 'stream_ended', code);
+            this.broadcastStatus('stream_ended', { code, message: error.message, retryable: false });
+            emitDisconnect('Stream ended');
+        } else if (code === 4401) {
+            this.connectionState = 'auth_error';
+            error = this._createConnectionError('Eulerstream authentication failed.', 'auth_error', code);
+            this.broadcastStatus('auth_error', {
+                code,
+                message: error.message,
+                suggestion: 'Please check the configured Eulerstream API key.',
+                retryable: false
+            });
+            emitDisconnect('Authentication failed');
+        } else if (code === 4400) {
+            this.connectionState = 'configuration_error';
+            error = this._createConnectionError('Eulerstream rejected the connection options.', 'configuration_error', code);
+            this.broadcastStatus('configuration_error', { code, message: error.message, retryable: false });
+            emitDisconnect('Invalid connection options');
+        } else if (code === 4429) {
+            const retryAfterMs = Math.max(
+                EulerstreamAdapter.TOO_MANY_CONNECTIONS_COOLDOWN_MS,
+                this._parseRetryAfterMs(reasonText)
+            );
+            this._circuitOpenUntil = Date.now() + retryAfterMs;
+            this._circuitReason = 'too_many_connections';
+            this.connectionState = 'circuit_open';
+            const retryAllowedAt = new Date(this._circuitOpenUntil).toISOString();
+            error = this._createConnectionError(
+                'Eulerstream reports too many concurrent connections.',
+                'circuit_open',
+                code,
+                { retryAllowedAt }
+            );
+            this.broadcastStatus('circuit_open', {
+                code,
+                reason: this._circuitReason,
+                message: error.message,
+                retryAllowedAt,
+                retryable: false
+            });
+            emitDisconnect('Too many connections');
+        } else if ([1006, 1011, 4500].includes(code) && mayReconnect) {
+            error = this._createConnectionError('The LIVE connection was interrupted.', 'retry_wait', code);
+            emitDisconnect(error.message, true);
+            this._scheduleBoundedReconnect(savedUsername, code);
+        } else {
+            this.connectionState = code === 1000 ? 'disconnected' : 'connection_error';
+            error = this._createConnectionError(
+                code === 1000 ? 'The connection closed normally.' : 'The connection closed before LIVE was confirmed.',
+                this.connectionState,
+                code
+            );
+            this.broadcastStatus(this.connectionState, { code, message: error.message, retryable: false });
+            emitDisconnect(error.message);
+        }
+
+        this._rejectPendingConnect(error);
+    }
+
+    _parseRetryAfterMs(reasonText) {
+        if (!reasonText) return 0;
+        try {
+            const parsed = JSON.parse(reasonText);
+            const rawValue = parsed.retryAfterMs ?? parsed.retry_after_ms ?? parsed.retryAfter ?? parsed.retry_after;
+            const value = Number(rawValue);
+            if (Number.isFinite(value) && value > 0) {
+                return /Ms$|_ms$/.test(Object.keys(parsed).find(key => parsed[key] === rawValue) || '')
+                    ? value
+                    : value * 1000;
+            }
+        } catch (_) {}
+
+        const match = reasonText.match(/retry[^0-9]*(\d+)\s*(ms|milliseconds?|s|sec|seconds?|m|min|minutes?)?/i);
+        if (!match) return 0;
+        const value = Number(match[1]);
+        const unit = (match[2] || 's').toLowerCase();
+        if (unit.startsWith('ms')) return value;
+        if (unit.startsWith('m') && !unit.startsWith('ms')) return value * 60 * 1000;
+        return value * 1000;
+    }
+
+    _scheduleBoundedReconnect(username, code) {
+        if (!username || this.autoReconnectCount >= this.reconnectDelays.length) {
+            this.connectionState = 'circuit_open';
+            this._circuitReason = 'retries_exhausted';
+            this.broadcastStatus('circuit_open', {
+                code,
+                reason: this._circuitReason,
+                message: 'Automatic reconnect attempts are exhausted. Please retry manually.',
+                retryable: false
+            });
+            return;
+        }
+
+        const delay = this.reconnectDelays[this.autoReconnectCount];
+        this.autoReconnectCount++;
+        this.connectionState = 'retry_wait';
+        this.broadcastStatus('retrying', {
+            code,
+            error: `WebSocket closed (${code}). Retrying automatically.`,
+            delay,
+            attempt: this.autoReconnectCount,
+            maxRetries: this.reconnectDelays.length,
+            username
+        });
+        this.logger.info(`🔄 Reconnect ${this.autoReconnectCount}/${this.reconnectDelays.length} in ${delay / 1000}s...`);
+        this._scheduleReconnectTimer('_autoReconnectTimer', delay, () => {
+            this.connect(username, { resumeConfirmedSession: true }).catch(err => {
+                this.logger.error(`Reconnect ${this.autoReconnectCount}/${this.reconnectDelays.length} failed:`, err.message);
+            });
+        });
+    }
+
     _clearPendingReconnectTimers() {
         for (const timerName of [
-            '_notLiveReconnectTimer',
-            '_rateLimitReconnectTimer',
             '_autoReconnectTimer',
             '_heartbeatReconnectTimer'
         ]) {
@@ -2202,28 +2535,6 @@ class EulerstreamAdapter extends BaseAdapter {
                 this[timerName] = null;
             }
         }
-    }
-
-    _scheduleSelfHealReconnect(savedUsername) {
-        if (!savedUsername) {
-            return;
-        }
-
-        if (this._selfHealTimer) {
-            clearTimeout(this._selfHealTimer);
-        }
-
-        const healDelay = 5 * 60 * 1000;
-        this._selfHealTimer = setTimeout(() => {
-            this._selfHealTimer = null;
-            this.logger.info('ðŸ”„ Self-heal: resetting reconnect counter after max-reached, retrying...');
-            this.autoReconnectCount = 0;
-            this.notLiveReconnectCount = 0;
-            this.rateLimitReconnectCount = 0;
-            this.connect(savedUsername).catch(err => {
-                this.logger.error('Self-heal reconnect failed:', err.message);
-            });
-        }, healDelay);
     }
 
     /**
@@ -2260,49 +2571,15 @@ class EulerstreamAdapter extends BaseAdapter {
                     }
                     return;
                 }
-                this.logger.warn('âš ï¸ WebSocket heartbeat timeout (2 consecutive misses) - forcing reconnect...');
+                this.logger.warn('⚠️ WebSocket heartbeat timeout (2 consecutive misses) - forcing reconnect...');
                 this._stopHeartbeat();
-
-                // Save username before nulling out state
-                const savedUsername = this.currentUsername;
-
-                // Remove ALL listeners BEFORE terminate() so the 'close' event does NOT
-                // trigger the auto-reconnect handler in _setupWebSocketHandlers().
-                // Without this, terminate() â†’ close(1006) â†’ reconnect-loop (~60s rhythm).
+                const generation = this._activeGeneration;
                 if (this.ws) {
                     this.ws.removeAllListeners();
                     this.ws.terminate();
                     this.ws = null;
                 }
-                this.isConnected = false;
-
-                // Emit disconnected event for IFTTT engine and plugins
-                this.emit('disconnected', {
-                    username: savedUsername,
-                    timestamp: new Date().toISOString(),
-                    reason: 'Heartbeat timeout',
-                    code: 1006
-                });
-                this.broadcastStatus('disconnected');
-
-                // Controlled reconnect using the same counter as other reconnects
-                if (savedUsername && this.autoReconnectCount < this.maxAutoReconnects) {
-                    this.autoReconnectCount++;
-                    const delay = Math.min(5000 * this.autoReconnectCount, 30000);
-                    this.logger.info(`ðŸ”„ Heartbeat reconnect ${this.autoReconnectCount}/${this.maxAutoReconnects} in ${delay / 1000}s...`);
-                    this._scheduleReconnectTimer('_heartbeatReconnectTimer', delay, () => {
-                        this.connect(savedUsername).catch(err => {
-                            this.logger.error(`Heartbeat reconnect ${this.autoReconnectCount}/${this.maxAutoReconnects} failed:`, err.message);
-                        });
-                    });
-                } else {
-                    this.logger.warn(`âš ï¸ Max auto-reconnect attempts (${this.maxAutoReconnects}) reached after heartbeat timeout. Manual reconnect required.`);
-                    this.broadcastStatus('max_reconnects_reached', {
-                        maxReconnects: this.maxAutoReconnects,
-                        message: 'Heartbeat-Timeout â€“ bitte manuell neu verbinden'
-                    });
-                    this._scheduleSelfHealReconnect(savedUsername);
-                }
+                this._handleSocketClose(generation, 1006, 'Heartbeat timeout');
                 return;
             }
 
@@ -2334,12 +2611,17 @@ class EulerstreamAdapter extends BaseAdapter {
     }
 
     disconnect() {
+        this._manualDisconnect = true;
+        this._activeGeneration = ++this._connectionGeneration;
         this._stopHeartbeat();
         this._clearPendingReconnectTimers();
-        if (this._selfHealTimer) {
-            clearTimeout(this._selfHealTimer);
-            this._selfHealTimer = null;
-        }
+        this._clearConnectionTimers();
+        this._pauseLiveTracking();
+        this._identityPendingBuffer = [];
+        this._identityResolutionInFlight = null;
+        this._rejectPendingConnect(
+            this._createConnectionError('Connection cancelled manually.', 'disconnected', 1000)
+        );
         if (this.ws) {
             this.ws.removeAllListeners();
             if (typeof this.ws.close === 'function') {
@@ -2352,62 +2634,10 @@ class EulerstreamAdapter extends BaseAdapter {
             this.eventEmitter = null;
         }
         this.isConnected = false;
-        
-        const previousUsername = this.currentUsername;
+        this.connectionState = 'disconnected';
         this.currentUsername = null;
-
-        // Clear duration tracking interval but preserve stream start time
-        if (this.durationInterval) {
-            clearInterval(this.durationInterval);
-            this.durationInterval = null;
-        }
-        
-        // Stop periodic stats persistence and save final state
-        if (this.statsPersistenceInterval) {
-            clearInterval(this.statsPersistenceInterval);
-            this.statsPersistenceInterval = null;
-        }
-        
-        // Save final stats before resetting in-memory stats
-        // This preserves stats in database even when in-memory is reset
-        this.db.saveStreamStats(this.stats);
-        this.logger.info('ðŸ’¾ Final stream stats saved to database');
-        
-        // BUGFIX: Always clear stream start time on disconnect
-        // This ensures each new stream starts with its actual stream start time,
-        // not a persisted time from a previous stream
-        // Previously, _persistedStreamStart was kept if previousUsername existed,
-        // causing reconnections to the same streamer to use old stream times
-        this.streamStartTime = null;
-        this._persistedStreamStart = null;
-        this._earliestEventTime = null;
-        this.logger.info('ðŸ”„ Cleared stream start time - will detect fresh on next connection');
-
-        // DON'T clear event deduplication cache on disconnect if we have a previousUsername
-        // This prevents duplicate gift displays when reconnecting to the same stream
-        // The cache will naturally expire old events (60-second window)
-        // Only clear if no previousUsername (complete shutdown scenario)
-        if (!previousUsername) {
-            this.processedEvents.clear();
-            this._giftDedupeMap.clear();
-            this.logger.info('ðŸ§¹ Event deduplication cache cleared (no previous username)');
-        } else {
-            this.logger.info('ðŸ’¾ Event deduplication cache preserved for potential reconnection to @' + previousUsername);
-        }
-
-        // Reset in-memory stats to zero (but database keeps the saved values)
-        // This is intentional: in-memory is cleared for display, but database preserves history
-        this.stats = {
-            viewers: 0,
-            likes: 0,
-            totalCoins: 0,
-            followers: 0,
-            shares: 0,
-            gifts: 0
-        };
-        this.broadcastStats();
         this.broadcastStatus('disconnected');
-        this.logger.info('âš« Disconnected from TikTok LIVE');
+        this.logger.info('⚫ Disconnected from TikTok LIVE; confirmed session state preserved');
     }
 
     /**
@@ -2580,7 +2810,11 @@ class EulerstreamAdapter extends BaseAdapter {
             gifts: 0
         };
         // Persist reset to database
-        this.db.resetStreamStats();
+        this.db.resetStreamStats({
+            username: this.confirmedUsername,
+            roomId: this.confirmedRoomId,
+            streamStartTime: this.streamStartTime
+        });
         this.broadcastStats();
     }
 
@@ -2995,9 +3229,15 @@ class EulerstreamAdapter extends BaseAdapter {
             connectionConfig: connectionConfig,
             connection: {
                 isConnected: this.isConnected,
+                state: this.connectionState,
                 currentUsername: this.currentUsername,
+                roomId: this.roomId,
+                streamIdentity: this.streamIdentity,
                 autoReconnectCount: this.autoReconnectCount,
                 maxAutoReconnects: this.maxAutoReconnects,
+                retryAllowedAt: this._circuitOpenUntil > Date.now()
+                    ? new Date(this._circuitOpenUntil).toISOString()
+                    : null,
                 method: 'Eulerstream WebSocket API'
             },
             configuration: {
@@ -3012,15 +3252,16 @@ class EulerstreamAdapter extends BaseAdapter {
         const recentFailures = this.connectionAttempts.filter(a => !a.success).length;
         const keyInfo = this.getEulerApiKeyInfo();
         
-        let status = 'healthy';
-        let message = 'Connection ready';
-        
-        if (!this.isConnected && this.currentUsername && this.autoReconnectCount > 0) {
+        let status = this.connectionState === 'live' ? 'healthy' : this.connectionState;
+        let message = this.connectionState === 'live' ? 'LIVE connection confirmed' : 'Not connected';
+
+        if (this.connectionState === 'retry_wait') {
             status = 'reconnecting';
-            message = `Retry ${this.autoReconnectCount}/${this.maxAutoReconnects} in progress`;
-        } else if (!this.isConnected && this.currentUsername) {
-            status = 'disconnected';
-            message = 'Not connected';
+            message = `Retry ${this.autoReconnectCount}/${this.maxAutoReconnects} scheduled`;
+        } else if (this.connectionState === 'circuit_open') {
+            message = this._circuitReason === 'too_many_connections'
+                ? 'Too many connections; manual retry is temporarily locked'
+                : 'Automatic reconnect attempts exhausted';
         } else if (recentFailures >= 5) {
             status = 'critical';
             message = 'Repeated connection errors';
@@ -3033,9 +3274,15 @@ class EulerstreamAdapter extends BaseAdapter {
             status,
             message,
             isConnected: this.isConnected,
+            connectionState: this.connectionState,
             currentUsername: this.currentUsername,
+            roomId: this.roomId,
+            streamIdentity: this.streamIdentity,
             recentAttempts: this.connectionAttempts.slice(0, 5),
             autoReconnectCount: this.autoReconnectCount,
+            retryAllowedAt: this._circuitOpenUntil > Date.now()
+                ? new Date(this._circuitOpenUntil).toISOString()
+                : null,
             eulerKeyConfigured: keyInfo.configured,
             eulerKeySource: keyInfo.activeSource || 'Not configured'
         };
@@ -3043,6 +3290,9 @@ class EulerstreamAdapter extends BaseAdapter {
 }
 
 EulerstreamAdapter.PING_INTERVAL_MS = 30000;
+EulerstreamAdapter.LIVE_VALIDATION_TIMEOUT_MS = 15000;
+EulerstreamAdapter.IDENTITY_RESOLUTION_TIMEOUT_MS = 15000;
+EulerstreamAdapter.TOO_MANY_CONNECTIONS_COOLDOWN_MS = 15 * 60 * 1000;
 
 module.exports = EulerstreamAdapter;
 

@@ -288,11 +288,14 @@ class TopTierPlugin {
       this.scoreEngine.handleChatEvent(data);
     });
 
-    this.api.registerTikTokEvent('connected', (data) => {
+    this.api.registerTikTokEvent('connected', () => {
       this.decayScheduler.setConnected(true);
+    });
+
+    this.api.registerTikTokEvent('streamSessionStarted', (data) => {
       const streamUsername = (data && data.username) || null;
       const config = this.api.getConfig('toptier_config') || {};
-      const streamKey = this._getCurrentStreamKey();
+      const streamKey = (data && data.streamIdentity) || this._getCurrentStreamKey();
       const isNewStream = this.sessionManager.handleConnect(streamUsername, streamKey);
 
       if (!isNewStream && streamKey && !this.sessionManager.getCurrentStreamKey()) {

@@ -753,12 +753,15 @@ async function connect() {
                 // Button state will be updated by updateConnectionStatus via socket event
             }
         } else {
-            const errorMsg = window.i18n
-                ? window.i18n.t('errors.connection_failed') + ': ' + result.error
-                : 'Connection failed: ' + result.error;
-            alert(errorMsg);
-            // Restore connect button on failure
-            restoreConnectButton();
+            if (result.status) {
+                updateConnectionStatus(result.status, result);
+            } else {
+                const errorMsg = window.i18n
+                    ? window.i18n.t('errors.connection_failed') + ': ' + result.error
+                    : 'Connection failed: ' + result.error;
+                alert(errorMsg);
+                restoreConnectButton();
+            }
         }
     } catch (error) {
         console.error('Connection error:', error);
@@ -819,6 +822,24 @@ function updateConnectionStatus(status, data = {}) {
     }
 
     switch (status) {
+        case 'connecting':
+            infoEl.innerHTML = '<div class="text-blue-300 text-sm">Verbindung wird aufgebaut...</div>';
+            connectBtn.disabled = true;
+            disconnectBtn.disabled = false;
+            break;
+
+        case 'validating':
+            infoEl.innerHTML = '<div class="text-blue-300 text-sm">Verbindung offen – LIVE-Status wird bestätigt...</div>';
+            connectBtn.disabled = true;
+            disconnectBtn.disabled = false;
+            break;
+
+        case 'live_identity_pending':
+            infoEl.innerHTML = '<div class="text-yellow-300 text-sm">LIVE bestätigt – Stream-ID wird ermittelt...</div>';
+            connectBtn.disabled = true;
+            disconnectBtn.disabled = false;
+            break;
+
         case 'connected':
             const connectedMsg = window.i18n
                 ? window.i18n.t('dashboard.connected') + ' @' + data.username
@@ -846,6 +867,55 @@ function updateConnectionStatus(status, data = {}) {
                 debugPanel.style.display = 'none';
             }
             break;
+
+        case 'offline':
+            infoEl.innerHTML = `
+                <div class="p-3 bg-gray-800 border border-gray-600 rounded">
+                    <div class="font-semibold text-gray-200">Stream ist derzeit offline</div>
+                    <div class="text-sm text-gray-400 mt-1">Es werden keine automatischen Eulerstream-Anfragen gesendet.</div>
+                </div>
+            `;
+            restoreConnectButton();
+            disconnectBtn.disabled = true;
+            break;
+
+        case 'validation_failed':
+        case 'identity_error':
+        case 'configuration_error':
+        case 'auth_error':
+        case 'connection_error':
+            infoEl.innerHTML = `
+                <div class="p-3 bg-red-900 bg-opacity-50 border border-red-600 rounded">
+                    <div class="font-semibold text-red-300">Verbindung gestoppt</div>
+                    <div class="text-sm text-red-200 mt-1">${data.error || data.message || 'Der LIVE-Stream konnte nicht bestätigt werden.'}</div>
+                </div>
+            `;
+            restoreConnectButton();
+            disconnectBtn.disabled = true;
+            break;
+
+        case 'circuit_open': {
+            const retryAllowedAt = data.retryAllowedAt ? new Date(data.retryAllowedAt) : null;
+            const waitMs = retryAllowedAt ? Math.max(0, retryAllowedAt.getTime() - Date.now()) : 0;
+            const waitText = retryAllowedAt && waitMs > 0
+                ? `Manueller Versuch möglich ab ${retryAllowedAt.toLocaleTimeString()}.`
+                : 'Automatische Versuche wurden gestoppt. Manuelles Prüfen ist möglich.';
+            infoEl.innerHTML = `
+                <div class="p-3 bg-yellow-900 bg-opacity-50 border border-yellow-600 rounded">
+                    <div class="font-semibold text-yellow-300">Reconnect-Schutz aktiv</div>
+                    <div class="text-sm text-yellow-200 mt-1">${data.message || 'Weitere automatische Anfragen wurden gestoppt.'}</div>
+                    <div class="text-xs text-yellow-400 mt-2">${waitText}</div>
+                </div>
+            `;
+            if (waitMs > 0) {
+                connectBtn.disabled = true;
+                setTimeout(() => restoreConnectButton(), waitMs);
+            } else {
+                restoreConnectButton();
+            }
+            disconnectBtn.disabled = true;
+            break;
+        }
 
         case 'retrying':
             infoEl.innerHTML = `

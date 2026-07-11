@@ -665,10 +665,9 @@ class SpotlightPlugin {
       await this.handleEvent('superfan', 'subscriber', data);
     });
 
-    // Reset session data when a new TikTok connection is established
-    // This ensures overlays don't show events from the previous stream
-    this.api.registerTikTokEvent('connected', async () => {
-      this.api.log('New TikTok connection detected - resetting overlay session data');
+    // A transport reconnect within the same room must preserve overlay state.
+    this.api.registerTikTokEvent('streamSessionStarted', async () => {
+      this.api.log('New TikTok stream session detected - resetting overlay session data');
       await this.resetSession();
     });
 

@@ -940,31 +940,51 @@
 
         switch (status) {
             case 'connected':
+            case 'live_identity_pending':
                 statusBadge.classList.add('status-connected');
-                if (statusIcon) statusIcon.setAttribute('data-lucide', 'check-circle');
+                if (statusIcon) statusIcon.setAttribute('data-lucide', status === 'connected' ? 'check-circle' : 'loader-circle');
                 if (statusText) {
-                    statusText.setAttribute('data-i18n', 'dashboard.connected');
-                    statusText.textContent = getTranslation('dashboard.connected', 'Connected');
+                    statusText.removeAttribute('data-i18n');
+                    statusText.textContent = status === 'connected'
+                        ? getTranslation('dashboard.connected', 'Connected')
+                        : 'LIVE – Stream-ID wird ermittelt';
                 }
                 break;
 
             case 'disconnected':
+            case 'offline':
+            case 'stream_ended':
                 statusBadge.classList.add('status-disconnected');
                 if (statusIcon) statusIcon.setAttribute('data-lucide', 'circle');
                 if (statusText) {
-                    statusText.setAttribute('data-i18n', 'dashboard.disconnected');
-                    statusText.textContent = getTranslation('dashboard.disconnected', 'Disconnected');
+                    statusText.removeAttribute('data-i18n');
+                    statusText.textContent = status === 'offline'
+                        ? 'Offline'
+                        : status === 'stream_ended'
+                            ? 'Stream beendet'
+                            : getTranslation('dashboard.disconnected', 'Disconnected');
                 }
                 break;
 
             case 'error':
             case 'retrying':
+            case 'connecting':
+            case 'validating':
+            case 'validation_failed':
+            case 'identity_error':
+            case 'configuration_error':
+            case 'auth_error':
+            case 'connection_error':
+            case 'circuit_open':
                 statusBadge.classList.add('status-error');
                 if (statusIcon) statusIcon.setAttribute('data-lucide', 'alert-circle');
                 if (statusText) {
                     if (status === 'retrying') {
                         statusText.setAttribute('data-i18n', 'dashboard.retrying');
                         statusText.textContent = `${getTranslation('dashboard.retrying', 'Retrying')} (${data.attempt}/${data.maxRetries})`;
+                    } else if (status === 'connecting' || status === 'validating') {
+                        statusText.removeAttribute('data-i18n');
+                        statusText.textContent = status === 'connecting' ? 'Connecting' : 'Validating LIVE';
                     } else {
                         statusText.setAttribute('data-i18n', 'common.error');
                         statusText.textContent = getTranslation('common.error', 'Error');

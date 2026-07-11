@@ -1249,9 +1249,14 @@ app.post('/api/connect', authLimiter, async (req, res) => {
         const isActiveProfileAlias = db.hasUsernameAlias(username);
         if (isActiveProfileAlias) {
             try { db.touchUsernameAlias(username); } catch (_) {}
-            await tiktok.connect(username);
+            const connection = await tiktok.connect(username);
             logger.info(`✅ Connected to TikTok user: ${username} (alias of active profile "${loadedProfile}")`);
-            return res.json({ success: true, profileSwitched: false });
+            return res.json({
+                success: true,
+                profileSwitched: false,
+                status: connection.identityPending ? 'live_identity_pending' : 'connected',
+                ...connection
+            });
         }
 
         // Check if any other profile has this username as an alias
@@ -1319,7 +1324,7 @@ app.post('/api/connect', authLimiter, async (req, res) => {
         }
 
         // Profile already active, proceed with connection
-        await tiktok.connect(username);
+        const connection = await tiktok.connect(username);
         logger.info(`✅ Connected to TikTok user: ${username}`);
 
         // Auto-register the connected username as a primary alias (idempotent)
@@ -1332,14 +1337,37 @@ app.post('/api/connect', authLimiter, async (req, res) => {
             }
         } catch (_) {}
 
-        res.json({ success: true, profileSwitched: false });
+        res.json({
+            success: true,
+            profileSwitched: false,
+            status: connection.identityPending ? 'live_identity_pending' : 'connected',
+            ...connection
+        });
     } catch (error) {
         if (error instanceof ValidationError) {
             logger.warn(`Invalid connection attempt: ${error.message}`);
             return res.status(400).json({ success: false, error: error.message });
         }
         logger.error('Connection error:', error);
-        res.status(500).json({ success: false, error: error.message });
+        const statusByConnectionState = {
+            offline: 409,
+            stream_ended: 409,
+            auth_error: 401,
+            configuration_error: 400,
+            circuit_open: 429,
+            validation_failed: 504,
+            identity_error: 409
+        };
+        const connectionStatus = error.connectionStatus || 'error';
+        res.status(statusByConnectionState[connectionStatus] || 500).json({
+            success: false,
+            status: connectionStatus,
+            error: error.message,
+            code: error.code || null,
+            roomId: tiktok.roomId || null,
+            streamIdentity: tiktok.streamIdentity || null,
+            retryAllowedAt: error.retryAllowedAt || null
+        });
     }
 });
 
@@ -3256,8 +3284,11 @@ io.on('connection', (socket) => {
     // This ensures the UI reflects the correct status even after page refresh
     if (tiktok.isActive()) {
         socket.emit('tiktok:status', {
-            status: 'connected',
-            username: tiktok.currentUsername
+            status: tiktok.connectionState === 'live' ? 'connected' : tiktok.connectionState,
+            username: tiktok.currentUsername,
+            roomId: tiktok.roomId || null,
+            streamIdentity: tiktok.streamIdentity || null,
+            identityPending: tiktok.connectionState === 'live_identity_pending'
         });
         // Also send current stats if connected
         socket.emit('tiktok:stats', {
@@ -3272,7 +3303,10 @@ io.on('connection', (socket) => {
         });
     } else {
         socket.emit('tiktok:status', {
-            status: 'disconnected'
+            status: tiktok.connectionState || 'disconnected',
+            username: tiktok.currentUsername || null,
+            roomId: tiktok.roomId || null,
+            streamIdentity: tiktok.streamIdentity || null
         });
     }
 
@@ -3526,7 +3560,14 @@ tiktok.on('like', async (data) => {
 
 // Connected Event (System)
 tiktok.on('connected', async (data) => {
-    debugLogger.log('system', 'TikTok connected', { username: data.username });
+    debugLogger.log('system', 'TikTok LIVE confirmed', {
+        username: data.username,
+        roomId: data.roomId,
+        streamIdentity: data.streamIdentity,
+        isNewStream: data.isNewStream,
+        isReconnect: data.isReconnect,
+        identityPending: data.identityPending
+    });
     await iftttEngine.processEvent('system:connected', data);
 
     // Re-register all plugin TikTok event handlers after every (re-)connect.
@@ -3555,9 +3596,9 @@ tiktok.on('viewerChange', async (data) => {
     await iftttEngine.processEvent('tiktok:viewerChange', data);
 });
 
-// Stream Changed Event - Reset goals and leaderboard session stats when connecting to different stream
-tiktok.on('streamChanged', async (data) => {
-    logger.info(`🔄 Stream changed from @${data.previousUsername} to @${data.newUsername} - resetting session data`);
+// A confirmed room-ID change is the only event allowed to reset stream sessions.
+tiktok.on('streamSessionStarted', async (data) => {
+    logger.info(`🔄 New stream session confirmed: ${data.streamIdentity} - resetting session data`);
     
     // Reset all goals to 0 (new stream session)
     try {
@@ -3575,14 +3616,14 @@ tiktok.on('streamChanged', async (data) => {
         logger.error('Error resetting leaderboard session stats:', error);
     }
     
-    // Broadcast to clients that stream has changed
-    io.emit('stream:changed', {
-        previousUsername: data.previousUsername,
-        newUsername: data.newUsername,
-        timestamp: data.timestamp
-    });
-    
-    debugLogger.log('system', 'Stream changed - session data reset', data);
+    io.emit('stream:session-started', data);
+    debugLogger.log('system', 'New stream session - session data reset', data);
+    await iftttEngine.processEvent('system:streamSessionStarted', data);
+});
+
+// Backward-compatible notification for consumers that observe stream changes.
+tiktok.on('streamChanged', async (data) => {
+    io.emit('stream:changed', data);
     await iftttEngine.processEvent('system:streamChanged', data);
 });
 

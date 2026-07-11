@@ -4751,9 +4751,9 @@ class AnimazingPalPlugin {
 
   registerTikTokEvents() {
 
-    // TikTok connected event - set streamer ID for per-streamer memory
+    // Only a confirmed new room advances per-stream session counters.
 
-    this.api.registerTikTokEvent('connected', (data) => {
+    this.api.registerTikTokEvent('streamSessionStarted', (data) => {
 
       if (data && data.roomId) {
 

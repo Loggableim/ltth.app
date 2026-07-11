@@ -50,8 +50,8 @@ class GoalsEventHandlers {
             }, SYNC_DELAY_ON_CONNECT_MS));
         });
 
-        // Listen for TikTok disconnection to reset goals with doubled/incremented targets
-        this.api.registerTikTokEvent('disconnected', () => {
+        // Session data resets only after a different room ID is confirmed.
+        this.api.registerTikTokEvent('streamSessionStarted', () => {
             this.resetGoalsOnStreamEnd();
         });
 
