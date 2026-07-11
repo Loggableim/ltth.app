@@ -753,7 +753,7 @@
   "faq.p.11": "Der Windows Launcher ist eine kleine Windows-Anwendung (~7 MB), die LTTH automatisch herunterlädt, installiert und auf dem neuesten Stand hält. Er bietet automatische Updates, Rollback zu vorherigen Versionen und ein integriertes Version-Management. Alle Daten werden in %LOCALAPPDATA%\\LTTH\\ gespeichert.",
   "faq.h3.12": "Warum erscheint eine SmartScreen-Warnung?",
   "faq.span.13": "⚠️",
-  "faq.p.14": "Der Launcher ist eine neue Anwendung, die noch nicht code-signiert ist. Das ist bei nicht signierten Anwendungen normal. Klicke „Weitere Informationen“ → „Trotzdem ausführen“. Die Datei ist sicher und die aktuelle Version wird auf GitHub bereitgestellt.",
+  "faq.p.14": "Der Windows Launcher ist code-signiert. SmartScreen kann bei neuen oder wenig verbreiteten Releases dennoch eine Reputationswarnung anzeigen. Prüfe Herausgeber und Download-Adresse; nutze ausschließlich die offizielle LTTH-Download-Seite oder GitHub Releases.",
   "faq.h3.15": "Gibt es LTTH für macOS oder Linux?",
   "faq.span.16": "🍎",
   "faq.p.17": "Der Windows Launcher ist derzeit nur für Windows verfügbar. macOS- und Linux-Support ist in Planung. LTTH selbst läuft auf allen Plattformen, aber die automatische Installation über den Launcher gibt es vorerst nur für Windows.",
@@ -980,7 +980,7 @@
     },
     "p": {
       "11": "Der Windows Launcher ist eine kleine Windows-Anwendung, die LTTH automatisch herunterlädt, installiert und auf dem neuesten Stand hält. Er bietet automatische Updates, Rollback zu vorherigen Versionen und ein integriertes Version-Management. Alle Daten werden in %LOCALAPPDATA%\\LTTH\\ gespeichert.",
-      "14": "Der Windows Launcher ist eine neue Anwendung, die noch nicht code-signiert ist. Das ist normal für Open-Source-Projekte. Klicke „Weitere Informationen\" ? „Trotzdem ausführen\". Die Datei ist sicher und der Quellcode ist auf GitHub einsehbar.",
+      "14": "Der Windows Launcher ist code-signiert. SmartScreen kann bei neuen oder wenig verbreiteten Releases dennoch eine Reputationswarnung anzeigen. Prüfe Herausgeber und Download-Adresse; nutze ausschließlich die offizielle LTTH-Download-Seite oder GitHub Releases.",
       "17": "Der Windows Launcher ist derzeit nur für Windows verfügbar. macOS- und Linux-Support für den Launcher ist in Planung. LTTH selbst läuft auf allen Plattformen, aber die automatische Installation über den Launcher gibt es vorerst nur für Windows.",
       "20": "Der Windows Launcher unterstützt Windows 10 und Windows 11. Die automatische Installation über den Launcher ist die empfohlene Methode für Windows-Nutzer. Siehe Download-Seite für Details.",
       "24": "Empfohlen: Lade den Windows Launcher herunter und führe ihn aus. Der Launcher installiert LTTH automatisch und hält es aktuell. Weitere Details findest du auf der Download-Seite.",
