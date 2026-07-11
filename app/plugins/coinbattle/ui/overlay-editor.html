@@ -1,3 +1,4 @@
+<script src="/js/i18n-client.js"></script>
 <style id="coinbattle-overlay-editor-theme-safety">
   .config-subsection {
     background: var(--color-bg-card, #ffffff);
@@ -79,54 +80,54 @@
 </style>
 <!-- CoinBattle Overlay Editor -->
 <div class="config-subsection">
-  <h3>🎨 Overlay Editor</h3>
-  <div class="help-text" style="margin-bottom: 15px;">
+  <h3 data-i18n="generated.e7516cf779cb">🎨 Overlay Editor</h3>
+  <div class="help-text" style="margin-bottom: 15px;" data-i18n="generated.fbb14b24cdd9">
     Positioniere alle Overlay-Elemente für verschiedene Auflösungen. Nutze das Grid-System (wie Schiffe versenken) für präzise Platzierung.
   </div>
 
   <!-- Layout Management -->
   <div class="form-group">
-    <label>Gespeicherte Layouts</label>
+    <label data-i18n="generated.c35a2bcfd751">Gespeicherte Layouts</label>
     <div class="button-group" style="margin-bottom: 10px;">
       <select id="overlayLayoutSelect" class="form-control" style="width: 250px; display: inline-block;">
-        <option value="default_1920x1080">Standard 1920x1080</option>
-        <option value="default_1280x720">Standard 1280x720</option>
-        <option value="default_2560x1440">Standard 2560x1440</option>
+        <option value="default_1920x1080" data-i18n="generated.56f93e47dcd7">Standard 1920x1080</option>
+        <option value="default_1280x720" data-i18n="generated.2393108e0b53">Standard 1280x720</option>
+        <option value="default_2560x1440" data-i18n="generated.bfa00bb6b2bc">Standard 2560x1440</option>
         <!-- Custom layouts will be added dynamically -->
       </select>
-      <button id="newOverlayLayoutBtn" class="btn btn-primary btn-sm">➕ Neues Layout</button>
-      <button id="duplicateLayoutBtn" class="btn btn-secondary btn-sm">📋 Duplizieren</button>
-      <button id="deleteLayoutBtn" class="btn btn-danger btn-sm">🗑️ Löschen</button>
+      <button id="newOverlayLayoutBtn" class="btn btn-primary btn-sm" data-i18n="generated.185f5f071b32">➕ Neues Layout</button>
+      <button id="duplicateLayoutBtn" class="btn btn-secondary btn-sm" data-i18n="generated.56d1e0638a58">📋 Duplizieren</button>
+      <button id="deleteLayoutBtn" class="btn btn-danger btn-sm" data-i18n="generated.ad66fb088210">🗑️ Löschen</button>
     </div>
   </div>
 
   <!-- Layout Settings -->
   <div id="layoutSettingsPanel" class="panel" style="margin-bottom: 20px;">
     <div class="panel-header">
-      <h4>Layout Einstellungen</h4>
+      <h4 data-i18n="generated.2a2b729d96e8">Layout Einstellungen</h4>
     </div>
     <div class="panel-body">
       <div class="form-grid-2col">
         <div class="form-group">
-          <label>Layout Name</label>
+          <label data-i18n="generated.ea3f335f8fe2">Layout Name</label>
           <input type="text" id="overlayLayoutName" class="form-control" placeholder="Mein Custom Layout">
         </div>
         <div class="form-group">
-          <label>Auflösung</label>
+          <label data-i18n="generated.f78a09735f7b">Auflösung</label>
           <select id="overlayResolution" class="form-control">
-            <option value="1920x1080">1920x1080 (Full HD)</option>
-            <option value="1280x720">1280x720 (HD)</option>
-            <option value="2560x1440">2560x1440 (2K)</option>
-            <option value="3840x2160">3840x2160 (4K)</option>
+            <option value="1920x1080" data-i18n="generated.e0f1495a726d">1920x1080 (Full HD)</option>
+            <option value="1280x720" data-i18n="generated.ef4ce2419407">1280x720 (HD)</option>
+            <option value="2560x1440" data-i18n="generated.3a34110ee714">2560x1440 (2K)</option>
+            <option value="3840x2160" data-i18n="generated.a185b0c55df3">3840x2160 (4K)</option>
             <option value="custom">Benutzerdefiniert</option>
           </select>
         </div>
         <div class="form-group" id="customWidthGroup" style="display: none;">
-          <label>Breite (px)</label>
+          <label data-i18n="generated.de2499b9305e">Breite (px)</label>
           <input type="number" id="overlayWidth" class="form-control" value="1920" min="800" max="3840">
         </div>
         <div class="form-group" id="customHeightGroup" style="display: none;">
-          <label>Höhe (px)</label>
+          <label data-i18n="generated.95aa06c49c56">Höhe (px)</label>
           <input type="number" id="overlayHeight" class="form-control" value="1080" min="600" max="2160">
         </div>
       </div>
@@ -135,13 +136,13 @@
 
   <!-- Grid-Based Element Positioning -->
   <div class="help-text" style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 12px; margin: 15px 0; border-radius: 4px;">
-    <strong>💡 Grid-System (wie Schiffe versenken):</strong><br>
-    • <strong>Spalte (X):</strong> A-Z (horizontal von links nach rechts)<br>
-    • <strong>Zeile (Y):</strong> 1-20 (vertikal von oben nach unten)<br>
-    • <strong>Größe:</strong> Vordefinierte Größen für konsistentes Layout<br>
-    • <strong>Sichtbarkeit:</strong> Ein/Aus schalten mit Checkbox<br>
+    <strong data-i18n="generated.286402ab9a4f">💡 Grid-System (wie Schiffe versenken):</strong><br>
+    • <strong data-i18n="generated.6cb0e9fbdbe4">Spalte (X):</strong><span data-i18n="generated.d60fc6955da5"> A-Z (horizontal von links nach rechts)</span><br>
+    • <strong data-i18n="generated.f4d145960914">Zeile (Y):</strong><span data-i18n="generated.83b3332c504b"> 1-20 (vertikal von oben nach unten)</span><br>
+    • <strong data-i18n="generated.8b09b736fdb0">Größe:</strong><span data-i18n="generated.ee8590d83213"> Vordefinierte Größen für konsistentes Layout</span><br>
+    • <strong>Sichtbarkeit:</strong><span data-i18n="generated.48f351306371"> Ein/Aus schalten mit Checkbox</span><br><span data-i18n="generated.2be029f9cf85">
     • Beispiel: "C-5" = Spalte C, Zeile 5
-  </div>
+  </span></div>
 
   <!-- Elements Configuration Table -->
   <div class="grid-config-table">
@@ -149,16 +150,16 @@
       <thead>
         <tr>
           <th>Element</th>
-          <th>Spalte (X)</th>
-          <th>Zeile (Y)</th>
-          <th>Größe</th>
+          <th data-i18n="generated.9c6e96c9ed1d">Spalte (X)</th>
+          <th data-i18n="generated.9bcccb68deae">Zeile (Y)</th>
+          <th data-i18n="generated.49d22167f8dc">Größe</th>
           <th>Sichtbar</th>
         </tr>
       </thead>
       <tbody>
         <!-- Solo Mode Leaderboard -->
         <tr data-element="leaderboard_solo">
-          <td><strong>🏆 Leaderboard (Solo)</strong></td>
+          <td><strong data-i18n="generated.a63bef508fa0">🏆 Leaderboard (Solo)</strong></td>
           <td>
             <select class="grid-column" data-element="leaderboard_solo">
               <option value="A">A</option>
@@ -188,10 +189,10 @@
           </td>
           <td>
             <select class="grid-size" data-element="leaderboard_solo">
-              <option value="small">Klein (400x500)</option>
-              <option value="medium" selected>Mittel (600x700)</option>
-              <option value="large">Groß (800x900)</option>
-              <option value="xlarge">Extra Groß (1000x1100)</option>
+              <option value="small" data-i18n="generated.7c4ec443ac52">Klein (400x500)</option>
+              <option value="medium" selected data-i18n="generated.19307e91d7b9">Mittel (600x700)</option>
+              <option value="large" data-i18n="generated.f3e5e9cea25b">Groß (800x900)</option>
+              <option value="xlarge" data-i18n="generated.c1dbd3e3dddb">Extra Groß (1000x1100)</option>
             </select>
           </td>
           <td>
@@ -201,7 +202,7 @@
 
         <!-- Team Red -->
         <tr data-element="team_red">
-          <td><strong>🔴 Team 1 (Anpassbar)</strong></td>
+          <td><strong data-i18n="generated.858bc6db55e3">🔴 Team 1 (Anpassbar)</strong></td>
           <td>
             <select class="grid-column" data-element="team_red">
               <option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option><option value="$c">$c</option>
@@ -212,10 +213,10 @@
           </td>
           <td>
             <select class="grid-size" data-element="team_red">
-              <option value="small">Klein (350x400)</option>
-              <option value="medium" selected>Mittel (500x600)</option>
-              <option value="large">Groß (700x800)</option>
-              <option value="xlarge">Extra Groß (900x1000)</option>
+              <option value="small" data-i18n="generated.513b1ec9d7d6">Klein (350x400)</option>
+              <option value="medium" selected data-i18n="generated.80cc49470c74">Mittel (500x600)</option>
+              <option value="large" data-i18n="generated.b153dfa6eb28">Groß (700x800)</option>
+              <option value="xlarge" data-i18n="generated.4f3545bb9f88">Extra Groß (900x1000)</option>
             </select>
           </td>
           <td>
@@ -225,7 +226,7 @@
 
         <!-- Team Blue -->
         <tr data-element="team_blue">
-          <td><strong>🔵 Team 2 (Anpassbar)</strong></td>
+          <td><strong data-i18n="generated.2aceaaee0900">🔵 Team 2 (Anpassbar)</strong></td>
           <td>
             <select class="grid-column" data-element="team_blue">
               <option value="A">A</option>
@@ -255,10 +256,10 @@
           </td>
           <td>
             <select class="grid-size" data-element="team_blue">
-              <option value="small">Klein (350x400)</option>
-              <option value="medium" selected>Mittel (500x600)</option>
-              <option value="large">Groß (700x800)</option>
-              <option value="xlarge">Extra Groß (900x1000)</option>
+              <option value="small" data-i18n="generated.529749d52a76">Klein (350x400)</option>
+              <option value="medium" selected data-i18n="generated.dde43b0cfb63">Mittel (500x600)</option>
+              <option value="large" data-i18n="generated.c472e4f39ad2">Groß (700x800)</option>
+              <option value="xlarge" data-i18n="generated.4de63eeb69d7">Extra Groß (900x1000)</option>
             </select>
           </td>
           <td>
@@ -268,7 +269,7 @@
 
         <!-- Timer -->
         <tr data-element="timer">
-          <td><strong>⏱️ Timer</strong></td>
+          <td><strong data-i18n="generated.075981872c47">⏱️ Timer</strong></td>
           <td>
             <select class="grid-column" data-element="timer">
               <option value="A">A</option>
@@ -298,10 +299,10 @@
           </td>
           <td>
             <select class="grid-size" data-element="timer">
-              <option value="small">Klein (150x150)</option>
-              <option value="medium" selected>Mittel (200x200)</option>
-              <option value="large">Groß (250x250)</option>
-              <option value="xlarge">Extra Groß (300x300)</option>
+              <option value="small" data-i18n="generated.72e0556339ee">Klein (150x150)</option>
+              <option value="medium" selected data-i18n="generated.1ec4ef6f7b93">Mittel (200x200)</option>
+              <option value="large" data-i18n="generated.9a9e43332858">Groß (250x250)</option>
+              <option value="xlarge" data-i18n="generated.3b58340032ea">Extra Groß (300x300)</option>
             </select>
           </td>
           <td>
@@ -311,7 +312,7 @@
 
         <!-- Match Info -->
         <tr data-element="match_info">
-          <td><strong>ℹ️ Match Info</strong></td>
+          <td><strong data-i18n="generated.3bc82ea6baa7">ℹ️ Match Info</strong></td>
           <td>
             <select class="grid-column" data-element="match_info">
               <option value="A">A</option>
@@ -341,10 +342,10 @@
           </td>
           <td>
             <select class="grid-size" data-element="match_info">
-              <option value="small" selected>Klein (300x80)</option>
-              <option value="medium">Mittel (400x100)</option>
-              <option value="large">Groß (500x120)</option>
-              <option value="xlarge">Extra Groß (600x150)</option>
+              <option value="small" selected data-i18n="generated.91dcd05c21e7">Klein (300x80)</option>
+              <option value="medium" data-i18n="generated.4eeece34b5c4">Mittel (400x100)</option>
+              <option value="large" data-i18n="generated.840df0aba5ce">Groß (500x120)</option>
+              <option value="xlarge" data-i18n="generated.6e9ce4b245bb">Extra Groß (600x150)</option>
             </select>
           </td>
           <td>
@@ -354,7 +355,7 @@
 
         <!-- KOTH King Badge -->
         <tr data-element="koth_king">
-          <td><strong>👑 KOTH King Badge</strong></td>
+          <td><strong data-i18n="generated.21d0370bc195">👑 KOTH King Badge</strong></td>
           <td>
             <select class="grid-column" data-element="koth_king">
               <option value="A" selected>A</option>
@@ -384,10 +385,10 @@
           </td>
           <td>
             <select class="grid-size" data-element="koth_king">
-              <option value="small" selected>Klein (200x100)</option>
-              <option value="medium">Mittel (300x150)</option>
-              <option value="large">Groß (400x200)</option>
-              <option value="xlarge">Extra Groß (500x250)</option>
+              <option value="small" selected data-i18n="generated.b6c0eb5ac3aa">Klein (200x100)</option>
+              <option value="medium" data-i18n="generated.78a14d7852a9">Mittel (300x150)</option>
+              <option value="large" data-i18n="generated.ecbca3237ca7">Groß (400x200)</option>
+              <option value="xlarge" data-i18n="generated.514c118fee40">Extra Groß (500x250)</option>
             </select>
           </td>
           <td>
@@ -397,7 +398,7 @@
 
         <!-- Challenge Notification -->
         <tr data-element="challenge_notification">
-          <td><strong>🤝 Challenge Benachrichtigung</strong></td>
+          <td><strong data-i18n="generated.07d6e59af17c">🤝 Challenge Benachrichtigung</strong></td>
           <td>
             <select class="grid-column" data-element="challenge_notification">
               <option value="A">A</option>
@@ -427,10 +428,10 @@
           </td>
           <td>
             <select class="grid-size" data-element="challenge_notification">
-              <option value="small">Klein (400x150)</option>
-              <option value="medium" selected>Mittel (600x200)</option>
-              <option value="large">Groß (800x250)</option>
-              <option value="xlarge">Extra Groß (1000x300)</option>
+              <option value="small" data-i18n="generated.b926a36853a4">Klein (400x150)</option>
+              <option value="medium" selected data-i18n="generated.cf155952d86f">Mittel (600x200)</option>
+              <option value="large" data-i18n="generated.cd6146d435f1">Groß (800x250)</option>
+              <option value="xlarge" data-i18n="generated.aeea525e31b3">Extra Groß (1000x300)</option>
             </select>
           </td>
           <td>
@@ -443,8 +444,8 @@
 
   <!-- Visual Grid Preview -->
   <div class="help-text" style="margin-top: 20px; margin-bottom: 10px;">
-    <strong>📊 Visuelle Vorschau:</strong> Die unten gezeigte Vorschau zeigt die Elemente in ihrer Position im Grid.
-  </div>
+    <strong data-i18n="generated.987b5f55f0df">📊 Visuelle Vorschau:</strong><span data-i18n="generated.e88d59389c38"> Die unten gezeigte Vorschau zeigt die Elemente in ihrer Position im Grid.
+  </span></div>
   <div class="grid-visual-preview" id="coinbattleGridPreview" style="position: relative; width: 100%; height: 600px; background: #1a1a2e; border: 2px solid #3b82f6; border-radius: 8px; overflow: hidden;">
     <div class="grid-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
       <!-- Grid lines will be added dynamically -->
@@ -455,10 +456,10 @@
   </div>
 
   <div class="button-group" style="margin-top: 15px;">
-    <button id="saveOverlayLayoutBtn" class="btn btn-primary">💾 Layout Speichern</button>
-    <button id="exportLayoutBtn" class="btn btn-secondary">📤 Exportieren</button>
-    <button id="importLayoutBtn" class="btn btn-secondary">📥 Importieren</button>
-    <button id="resetLayoutBtn" class="btn btn-danger">🔄 Auf Standard zurücksetzen</button>
+    <button id="saveOverlayLayoutBtn" class="btn btn-primary" data-i18n="generated.fb51c71342a5">💾 Layout Speichern</button>
+    <button id="exportLayoutBtn" class="btn btn-secondary" data-i18n="generated.b84a2dcde8c7">📤 Exportieren</button>
+    <button id="importLayoutBtn" class="btn btn-secondary" data-i18n="generated.955b83cadb76">📥 Importieren</button>
+    <button id="resetLayoutBtn" class="btn btn-danger" data-i18n="generated.9215651ba29a">🔄 Auf Standard zurücksetzen</button>
   </div>
   <div id="overlayLayoutMessage" class="message hidden"></div>
 </div>

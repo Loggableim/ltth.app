@@ -48,16 +48,19 @@ function createStore(tempDir, registry, options = {}) {
   });
 }
 
-async function createPluginPackage(tempDir, id, version) {
+async function createPluginPackage(tempDir, id, version, options = {}) {
   const packageRoot = path.join(tempDir, `${id}-package`);
   const zipPath = path.join(tempDir, `${id}-${version}.zip`);
+  fs.rmSync(packageRoot, { recursive: true, force: true });
   fs.mkdirSync(packageRoot, { recursive: true });
-  fs.writeFileSync(path.join(packageRoot, 'index.js'), `module.exports = class ${id.replace(/-/g, '')}Plugin {};\n`);
+  if (options.includeEntry !== false) {
+    fs.writeFileSync(path.join(packageRoot, 'index.js'), `module.exports = class ${id.replace(/-/g, '')}Plugin {};\n`);
+  }
   fs.writeFileSync(path.join(packageRoot, 'plugin.json'), JSON.stringify({
-    id,
+    id: options.manifestId || id,
     name: id,
     version,
-    entry: 'index.js',
+    entry: options.entry || 'index.js',
     enabled: true
   }, null, 2));
 
@@ -66,6 +69,15 @@ async function createPluginPackage(tempDir, id, version) {
     zipPath,
     sha256: crypto.createHash('sha256').update(fs.readFileSync(zipPath)).digest('hex')
   };
+}
+
+function createInstallFetch(zipPath, plugin) {
+  return jest.fn(async (url) => {
+    if (String(url).endsWith('.zip')) {
+      return { ok: true, status: 200, arrayBuffer: async () => fs.readFileSync(zipPath) };
+    }
+    return { ok: true, status: 200, json: async () => ({ schemaVersion: 1, plugins: [plugin] }) };
+  });
 }
 
 describe('PluginStore', () => {
@@ -272,8 +284,108 @@ describe('PluginStore', () => {
     assert.strictEqual(manifest.version, '1.0.0');
   });
 
+  it('updates v1 to v2 only after staging has fully validated the package', async () => {
+    writePlugin(tempDir, 'tts', '1.0.0');
+    const { zipPath, sha256 } = await createPluginPackage(tempDir, 'tts', '2.0.0');
+    const plugin = { id: 'tts', name: { en: 'TTS' }, description: { en: 'Speech' }, version: '2.0.0', packageUrl: 'https://example.com/tts.zip', sha256 };
+    const store = createStore(tempDir, {}, {
+      fetchImpl: createInstallFetch(zipPath, plugin),
+      pluginLoader: { state: { tts: { enabled: true, custom: 'keep' } } }
+    });
+
+    const installed = await store.installPlugin('official', 'tts');
+    const manifest = JSON.parse(fs.readFileSync(path.join(tempDir, 'tts', 'plugin.json'), 'utf8'));
+    assert.strictEqual(installed.version, '2.0.0');
+    assert.strictEqual(manifest.version, '2.0.0');
+    assert.deepStrictEqual(store.pluginLoader.state.tts, { enabled: true, custom: 'keep' });
+    assert.strictEqual(fs.readdirSync(tempDir).some(name => name.startsWith('.store-transaction-')), false);
+  });
+
+  it('uses the tested Windows lock fallback without losing the previous version', async () => {
+    writePlugin(tempDir, 'tts', '1.0.0');
+    const { zipPath, sha256 } = await createPluginPackage(tempDir, 'tts', '2.0.0');
+    const plugin = { id: 'tts', name: { en: 'TTS' }, description: { en: 'Speech' }, version: '2.0.0', packageUrl: 'https://example.com/tts.zip', sha256 };
+    const targetDir = path.join(tempDir, 'tts');
+    const rename = jest.fn((from, to) => {
+      if (from === targetDir) throw Object.assign(new Error('locked'), { code: 'EPERM' });
+      fs.renameSync(from, to);
+    });
+    const store = createStore(tempDir, {}, {
+      fetchImpl: createInstallFetch(zipPath, plugin),
+      storeOptions: { fileOps: { rename }, isWindowsLockError: error => error.code === 'EPERM' }
+    });
+
+    await store.installPlugin('official', 'tts');
+    const manifest = JSON.parse(fs.readFileSync(path.join(targetDir, 'plugin.json'), 'utf8'));
+    assert.strictEqual(manifest.version, '2.0.0');
+    assert.strictEqual(rename.mock.calls.some(([from]) => from === targetDir), true);
+  });
+
+  it('rejects checksum, manifest-id and missing-entry failures before touching v1', async () => {
+    writePlugin(tempDir, 'tts', '1.0.0');
+    const cases = [
+      { options: {}, override: { sha256: '0'.repeat(64) }, expected: /checksum mismatch/ },
+      { options: { manifestId: 'soundboard' }, expected: /id mismatch/ },
+      { options: { includeEntry: false }, expected: /entry file not found/ }
+    ];
+
+    for (const testCase of cases) {
+      const { zipPath, sha256 } = await createPluginPackage(tempDir, 'tts', '2.0.0', testCase.options);
+      const plugin = { id: 'tts', name: { en: 'TTS' }, description: { en: 'Speech' }, version: '2.0.0', packageUrl: 'https://example.com/tts.zip', sha256, ...testCase.override };
+      const store = createStore(tempDir, {}, { fetchImpl: createInstallFetch(zipPath, plugin) });
+      await assert.rejects(() => store.installPlugin('official', 'tts'), testCase.expected);
+      const manifest = JSON.parse(fs.readFileSync(path.join(tempDir, 'tts', 'plugin.json'), 'utf8'));
+      assert.strictEqual(manifest.version, '1.0.0');
+      assert.strictEqual(fs.readdirSync(tempDir).some(name => name.startsWith('.store-transaction-')), false);
+    }
+  });
+
+  it('rolls files and state back when rename, saveState or loading v2 fails', async () => {
+    for (const failure of ['rename', 'save', 'load']) {
+      const caseDir = path.join(tempDir, failure);
+      fs.mkdirSync(caseDir, { recursive: true });
+      writePlugin(caseDir, 'tts', '1.0.0');
+      const { zipPath, sha256 } = await createPluginPackage(caseDir, 'tts', '2.0.0');
+      const plugin = { id: 'tts', name: { en: 'TTS' }, description: { en: 'Speech' }, version: '2.0.0', packageUrl: 'https://example.com/tts.zip', sha256 };
+      const saveState = jest.fn(() => failure === 'save' ? false : true);
+      const fileOps = failure === 'rename'
+        ? { rename: jest.fn((from, to) => { if (from.endsWith('staged')) throw Object.assign(new Error('rename failed'), { code: 'EXDEV' }); fs.renameSync(from, to); }) }
+        : undefined;
+      const store = createStore(caseDir, {}, {
+        fetchImpl: createInstallFetch(zipPath, plugin),
+        pluginLoader: {
+          state: { tts: { enabled: true, token: 'v1' } },
+          plugins: new Map([['tts', {}]]),
+          unloadPlugin: jest.fn(async () => true),
+          loadPlugin: jest.fn(async () => failure === 'load' ? null : { id: 'tts' }),
+          saveState
+        },
+        storeOptions: { fileOps }
+      });
+
+      await assert.rejects(() => store.installPlugin('official', 'tts'), /transaction failed/);
+      const manifest = JSON.parse(fs.readFileSync(path.join(caseDir, 'tts', 'plugin.json'), 'utf8'));
+      assert.strictEqual(manifest.version, '1.0.0');
+      assert.deepStrictEqual(store.pluginLoader.state.tts, { enabled: true, token: 'v1' });
+      assert.strictEqual(fs.readdirSync(caseDir).some(name => name.startsWith('.store-transaction-')), false);
+    }
+  });
+
+  it('leaves no half-installed plugin after a fresh-install copy failure', async () => {
+    const { zipPath, sha256 } = await createPluginPackage(tempDir, 'tts', '1.0.0');
+    const plugin = { id: 'tts', name: { en: 'TTS' }, description: { en: 'Speech' }, version: '1.0.0', packageUrl: 'https://example.com/tts.zip', sha256 };
+    const store = createStore(tempDir, {}, {
+      fetchImpl: createInstallFetch(zipPath, plugin),
+      storeOptions: { fileOps: { copyDirectory: jest.fn(() => { throw new Error('copy failed'); }) } }
+    });
+
+    await assert.rejects(() => store.installPlugin('official', 'tts'), /copy failed/);
+    assert.strictEqual(fs.existsSync(path.join(tempDir, 'tts')), false);
+    assert.strictEqual(fs.readdirSync(tempDir).some(name => name.startsWith('.store-transaction-')), false);
+  });
+
   it('falls back to bundled plugin manifests when the official registry is unavailable', async () => {
-    writePlugin(tempDir, 'webgpu-emoji-rain', '2.0.0');
+    writePlugin(tempDir, 'webgpu-emoji-rain', '3.0.0');
     const store = createStore(tempDir, { schemaVersion: 1, plugins: [] });
     store.fetchImpl = jest.fn(async () => ({
       ok: false,
@@ -286,7 +398,7 @@ describe('PluginStore', () => {
 
     assert.strictEqual(result.errors.length, 0);
     assert.strictEqual(result.notices[0].fallback, 'bundled');
-    assert.strictEqual(emojiRain.name, 'Emoji Regen');
+    assert.strictEqual(emojiRain.name, 'WebGPU EmojiRain');
     assert.strictEqual(emojiRain.installed, true);
     assert(emojiRain.packageUrl.startsWith('https://ltth.app/plugin-store/packages/'));
     assert.deepStrictEqual(emojiRain.pricing, { type: 'free', amount: 0, currency: 'EUR' });

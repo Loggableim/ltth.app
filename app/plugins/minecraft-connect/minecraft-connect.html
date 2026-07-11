@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minecraft Connect</title>
+    <title data-i18n="minecraft_connect.title">Minecraft Connect</title>
     <link rel="stylesheet" href="/plugins/minecraft-connect/minecraft-connect.css?v=3">
     <link rel="stylesheet" href="/css/themes.css">
     <style>
@@ -184,20 +184,21 @@
             } catch (error) {}
         })();
     </script>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
     <div class="minecraft-connect-container">
         <header class="mc-hero">
             <div class="mc-hero-copy">
                 <img class="mc-hero-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
-                <p class="mc-kicker">Minecraft Connect</p>
-                <p class="mc-hero-subtitle">A LTTH control surface for TikTok to Minecraft automation, powered by the existing bridge, queue, and mapping engine.</p>
+                <p class="mc-kicker" data-i18n="minecraft_connect.title">Minecraft Connect</p>
+                <p class="mc-hero-subtitle" data-i18n="generated.603290612d0a">A LTTH control surface for TikTok to Minecraft automation, powered by the existing bridge, queue, and mapping engine.</p>
                 <div class="mc-status-row">
                     <div class="mc-status-indicator">
                         <div class="mc-status-dot" id="statusDot"></div>
-                        <span id="statusText">Disconnected</span>
+                        <span id="statusText" data-i18n="minecraft_connect.status.disconnected">Disconnected</span>
                     </div>
-                    <span class="mc-status-meta" id="connectionMeta">Waiting for dashboard state</span>
+                    <span class="mc-status-meta" id="connectionMeta" data-i18n="generated.cd43b24799ad">Waiting for dashboard state</span>
                 </div>
             </div>
             <div class="mc-hero-panel">
@@ -205,21 +206,21 @@
                     <button class="mc-theme-chip" data-theme-option="day">Day</button>
                     <button class="mc-theme-chip" data-theme-option="night">Night</button>
                     <button class="mc-theme-chip" data-theme-option="cid">Cid</button>
-                    <button class="mc-theme-chip" data-theme-option="contrast">High Contrast</button>
-                    <button class="mc-theme-chip" data-theme-option="vision-impaired">Vision Impaired</button>
+                    <button class="mc-theme-chip" data-theme-option="contrast" data-i18n="generated.de938d329c5f">High Contrast</button>
+                    <button class="mc-theme-chip" data-theme-option="vision-impaired" data-i18n="generated.ddbfc319d87b">Vision Impaired</button>
                 </div>
                 <button class="mc-btn mc-btn-secondary" id="refreshDashboardBtn">Refresh</button>
-                <button class="mc-btn mc-btn-primary" id="testActionBtn">Test Action</button>
+                <button class="mc-btn mc-btn-primary" id="testActionBtn" data-i18n="minecraft_connect.actions.test">Test Action</button>
             </div>
         </header>
 
         <div class="mc-metrics-grid">
             <article class="mc-metric-card">
-                <span class="mc-metric-label">Total Events</span>
+                <span class="mc-metric-label" data-i18n="minecraft_connect.settings.stats.total_events">Total Events</span>
                 <strong class="mc-metric-value" id="statTotalEvents">0</strong>
             </article>
             <article class="mc-metric-card">
-                <span class="mc-metric-label">Total Actions</span>
+                <span class="mc-metric-label" data-i18n="minecraft_connect.settings.stats.total_actions">Total Actions</span>
                 <strong class="mc-metric-value" id="statTotalActions">0</strong>
             </article>
             <article class="mc-metric-card">
@@ -227,15 +228,15 @@
                 <strong class="mc-metric-value" id="statQueueSize">0</strong>
             </article>
             <article class="mc-metric-card">
-                <span class="mc-metric-label">Available Actions</span>
+                <span class="mc-metric-label" data-i18n="minecraft_connect.tabs.actions">Available Actions</span>
                 <strong class="mc-metric-value" id="statAvailableActions">0</strong>
             </article>
         </div>
 
         <nav class="mc-tabs">
             <button class="mc-tab active" data-tab="commands">Commands</button>
-            <button class="mc-tab" data-tab="chat">Chat</button>
-            <button class="mc-tab" data-tab="giftbars">Gift bars</button>
+            <button class="mc-tab" data-tab="chat" data-i18n="minecraft_connect.mappings.triggers.chat">Chat</button>
+            <button class="mc-tab" data-tab="giftbars" data-i18n="generated.f809c3b05425">Gift bars</button>
             <button class="mc-tab" data-tab="setup">Setup</button>
         </nav>
 
@@ -245,34 +246,34 @@
                     <div class="mc-panel-header">
                         <div>
                             <h2>Commands</h2>
-                            <p>Console commands and mapped actions triggered by TikTok events.</p>
+                            <p data-i18n="generated.b8244bd6d4c9">Console commands and mapped actions triggered by TikTok events.</p>
                         </div>
-                        <button class="mc-btn mc-btn-primary" id="addCommandBtn">Add command</button>
+                        <button class="mc-btn mc-btn-primary" id="addCommandBtn" data-i18n="generated.ca4072263309">Add command</button>
                     </div>
 
                     <div class="mc-commands-grid">
                         <div class="mc-card">
                             <div class="mc-card-head">
-                                <h3>Your commands</h3>
-                                <span class="mc-card-note">Mapped through the existing action engine</span>
+                                <h3 data-i18n="generated.987f24623084">Your commands</h3>
+                                <span class="mc-card-note" data-i18n="generated.3061fbbd5df1">Mapped through the existing action engine</span>
                             </div>
                             <div class="mc-command-list" id="mappingsList">
                                 <div class="mc-empty-state">
-                                    <p>No commands yet.</p>
-                                    <p class="mc-text-muted">Add a command to map a TikTok event to a Minecraft action.</p>
+                                    <p data-i18n="generated.add917801afd">No commands yet.</p>
+                                    <p class="mc-text-muted" data-i18n="generated.7544ff66734a">Add a command to map a TikTok event to a Minecraft action.</p>
                                 </div>
                             </div>
                         </div>
 
                         <div class="mc-card">
                             <div class="mc-card-head">
-                                <h3>Available actions</h3>
-                                <span class="mc-card-note">Pulled from the Minecraft mod</span>
+                                <h3 data-i18n="generated.4a7187ab9d12">Available actions</h3>
+                                <span class="mc-card-note" data-i18n="generated.1a29c2abbc9c">Pulled from the Minecraft mod</span>
                             </div>
                             <div class="mc-action-grid" id="actionsList">
                                 <div class="mc-empty-state">
-                                    <p>No Minecraft connection detected.</p>
-                                    <p class="mc-text-muted">Install and run the Fabric mod to see available actions.</p>
+                                    <p data-i18n="minecraft_connect.actions.empty">No Minecraft connection detected.</p>
+                                    <p class="mc-text-muted" data-i18n="generated.d52e84e07948">Install and run the Fabric mod to see available actions.</p>
                                 </div>
                             </div>
                         </div>
@@ -282,52 +283,52 @@
                 <section id="chat-tab" class="mc-tab-panel">
                     <div class="mc-panel-header">
                         <div>
-                            <h2>Chat</h2>
-                            <p>Relay TikTok chat into Minecraft and filter what gets passed through.</p>
+                            <h2 data-i18n="minecraft_connect.mappings.triggers.chat">Chat</h2>
+                            <p data-i18n="generated.dd2cec616727">Relay TikTok chat into Minecraft and filter what gets passed through.</p>
                         </div>
-                        <button class="mc-btn mc-btn-primary" id="saveChatBtn">Save chat</button>
+                        <button class="mc-btn mc-btn-primary" id="saveChatBtn" data-i18n="generated.9ba051aa3392">Save chat</button>
                     </div>
 
                     <div class="mc-grid-two">
                         <div class="mc-card">
                             <div class="mc-card-head">
-                                <h3>Relay settings</h3>
+                                <h3 data-i18n="generated.af2d595cd5fa">Relay settings</h3>
                             </div>
                             <div class="mc-form-group">
                                 <label class="mc-checkbox-label">
-                                    <input type="checkbox" id="chatEnabled">
+                                    <input type="checkbox" id="chatEnabled"><span data-i18n="generated.8a5f7cdf9a22">
                                     Enable chat relay
-                                </label>
+                                </span></label>
                             </div>
                             <div class="mc-form-group">
-                                <label for="chatMode">Relay mode</label>
+                                <label for="chatMode" data-i18n="generated.1bb9bf2efb20">Relay mode</label>
                                 <select id="chatMode" class="mc-input">
-                                    <option value="relay">Relay into Minecraft chat</option>
-                                    <option value="filter">Filter only</option>
-                                    <option value="overlay">Overlay only</option>
+                                    <option value="relay" data-i18n="generated.6d253492f930">Relay into Minecraft chat</option>
+                                    <option value="filter" data-i18n="generated.fc652d07e5b3">Filter only</option>
+                                    <option value="overlay" data-i18n="generated.cfb8b063b54d">Overlay only</option>
                                 </select>
                             </div>
                             <div class="mc-form-group">
-                                <label for="chatRelayTargets">Relay targets</label>
+                                <label for="chatRelayTargets" data-i18n="generated.675f6242e521">Relay targets</label>
                                 <input type="text" id="chatRelayTargets" class="mc-input" placeholder="minecraft, overlay">
-                                <small>Comma-separated targets for relayed messages.</small>
+                                <small data-i18n="generated.daeb777004e0">Comma-separated targets for relayed messages.</small>
                             </div>
                             <div class="mc-form-group">
-                                <label for="chatFilters">Chat filters</label>
+                                <label for="chatFilters" data-i18n="generated.0b1489c54f3a">Chat filters</label>
                                 <input type="text" id="chatFilters" class="mc-input" placeholder="spam, links, caps">
-                                <small>Comma-separated filter keywords.</small>
+                                <small data-i18n="generated.c839c6a27529">Comma-separated filter keywords.</small>
                             </div>
                         </div>
 
                         <div class="mc-card">
                             <div class="mc-card-head">
-                                <h3>Live chat feed</h3>
-                                <span class="mc-card-note">Recent chat events from TikTok</span>
+                                <h3 data-i18n="generated.160ec7fb74f5">Live chat feed</h3>
+                                <span class="mc-card-note" data-i18n="generated.caa455252c1b">Recent chat events from TikTok</span>
                             </div>
                             <div class="mc-feed" id="chatFeed">
                                 <div class="mc-empty-state">
-                                    <p>No chat yet.</p>
-                                    <p class="mc-text-muted">Chat events will appear here when viewers send messages.</p>
+                                    <p data-i18n="generated.1fb776020daa">No chat yet.</p>
+                                    <p class="mc-text-muted" data-i18n="generated.6553a068d0b6">Chat events will appear here when viewers send messages.</p>
                                 </div>
                             </div>
                         </div>
@@ -337,42 +338,42 @@
                 <section id="giftbars-tab" class="mc-tab-panel">
                     <div class="mc-panel-header">
                         <div>
-                            <h2>Gift bars</h2>
-                            <p>Track goal bars and let viewer gifts drive progress.</p>
+                            <h2 data-i18n="generated.ff55ecb47e4d">Gift bars</h2>
+                            <p data-i18n="generated.bf6e71389e27">Track goal bars and let viewer gifts drive progress.</p>
                         </div>
                         <div class="mc-inline-actions">
-                            <button class="mc-btn mc-btn-secondary" id="addGiftGoalBtn">Add goal</button>
-                            <button class="mc-btn mc-btn-primary" id="saveGiftBarsBtn">Save gift bars</button>
+                            <button class="mc-btn mc-btn-secondary" id="addGiftGoalBtn" data-i18n="generated.354eeec07ef2">Add goal</button>
+                            <button class="mc-btn mc-btn-primary" id="saveGiftBarsBtn" data-i18n="generated.f29375ffcd69">Save gift bars</button>
                         </div>
                     </div>
 
                     <div class="mc-grid-two">
                         <div class="mc-card">
                             <div class="mc-card-head">
-                                <h3>Goal editor</h3>
+                                <h3 data-i18n="generated.a56465ce3d55">Goal editor</h3>
                             </div>
                             <div class="mc-form-group">
                                 <label class="mc-checkbox-label">
-                                    <input type="checkbox" id="giftBarsEnabled">
+                                    <input type="checkbox" id="giftBarsEnabled"><span data-i18n="generated.da6933284be9">
                                     Enable gift bars
-                                </label>
+                                </span></label>
                             </div>
                             <div id="giftGoalsList"></div>
                             <div class="mc-empty-state mc-empty-state-inline" id="giftGoalsEmpty">
-                                <p>No goals configured.</p>
-                                <p class="mc-text-muted">Add a goal to show an LTTH gift bar.</p>
+                                <p data-i18n="generated.c1855d690a91">No goals configured.</p>
+                                <p class="mc-text-muted" data-i18n="generated.7fc55813e8c6">Add a goal to show an LTTH gift bar.</p>
                             </div>
                         </div>
 
                         <div class="mc-card">
                             <div class="mc-card-head">
-                                <h3>Gift bar preview</h3>
-                                <span class="mc-card-note">Uses the current goal values</span>
+                                <h3 data-i18n="generated.ac0650c47928">Gift bar preview</h3>
+                                <span class="mc-card-note" data-i18n="generated.cd017a4d6288">Uses the current goal values</span>
                             </div>
                             <div class="mc-goal-preview" id="giftBarPreview">
                                 <div class="mc-empty-state">
-                                    <p>No gift bar preview yet.</p>
-                                    <p class="mc-text-muted">Create at least one goal to see a preview.</p>
+                                    <p data-i18n="generated.0310defa6e21">No gift bar preview yet.</p>
+                                    <p class="mc-text-muted" data-i18n="generated.99fd0a5cd779">Create at least one goal to see a preview.</p>
                                 </div>
                             </div>
                         </div>
@@ -383,27 +384,27 @@
                     <div class="mc-panel-header">
                         <div>
                             <h2>Setup</h2>
-                            <p>Connection, safety, overlay, and theme controls live here.</p>
+                            <p data-i18n="generated.16251a96e37c">Connection, safety, overlay, and theme controls live here.</p>
                         </div>
-                        <button class="mc-btn mc-btn-primary" id="saveSetupBtn">Save setup</button>
+                        <button class="mc-btn mc-btn-primary" id="saveSetupBtn" data-i18n="generated.3022e56e9b03">Save setup</button>
                     </div>
 
                     <div class="mc-grid-two">
                         <div class="mc-card">
                             <div class="mc-card-head">
                                 <h3>Connection</h3>
-                                <span class="mc-card-note">Bridge and mod status</span>
+                                <span class="mc-card-note" data-i18n="generated.a9fb9ef3e8d0">Bridge and mod status</span>
                             </div>
                             <div class="mc-form-group">
-                                <label>WebSocket host</label>
+                                <label data-i18n="generated.5a5da473384d">WebSocket host</label>
                                 <input type="text" id="wsHost" class="mc-input" value="localhost">
                             </div>
                             <div class="mc-form-group">
-                                <label>WebSocket port</label>
+                                <label data-i18n="generated.591025c59b3a">WebSocket port</label>
                                 <input type="number" id="wsPort" class="mc-input" min="1024" max="65535" value="25560">
                             </div>
                             <div class="mc-form-group">
-                                <label>Heartbeat interval (ms)</label>
+                                <label data-i18n="generated.fb0b4f89a6b1">Heartbeat interval (ms)</label>
                                 <input type="number" id="wsHeartbeat" class="mc-input" min="5000" max="120000" value="30000">
                             </div>
                             <div class="mc-status-stack" id="setupChecklist"></div>
@@ -411,41 +412,41 @@
 
                         <div class="mc-card">
                             <div class="mc-card-head">
-                                <h3>Safety and overlay</h3>
-                                <span class="mc-card-note">Rate limits and on-stream feedback</span>
+                                <h3 data-i18n="generated.9a4300764b0c">Safety and overlay</h3>
+                                <span class="mc-card-note" data-i18n="generated.93e15a53cd58">Rate limits and on-stream feedback</span>
                             </div>
                             <div class="mc-form-group">
-                                <label>Max actions per minute</label>
+                                <label data-i18n="generated.5b331aaccb21">Max actions per minute</label>
                                 <input type="number" id="maxActionsPerMin" class="mc-input" min="1" max="100" value="30">
                             </div>
                             <div class="mc-form-group">
-                                <label>Command cooldown (ms)</label>
+                                <label data-i18n="generated.bcaf6885aeba">Command cooldown (ms)</label>
                                 <input type="number" id="commandCooldown" class="mc-input" min="0" max="10000" value="1000">
                             </div>
                             <div class="mc-form-group">
-                                <label>Max queue size</label>
+                                <label data-i18n="generated.86bf2ee8c800">Max queue size</label>
                                 <input type="number" id="maxQueueSize" class="mc-input" min="10" max="500" value="100">
                             </div>
                             <div class="mc-form-group">
                                 <label class="mc-checkbox-label">
-                                    <input type="checkbox" id="overlayEnabled" checked>
+                                    <input type="checkbox" id="overlayEnabled" checked><span data-i18n="generated.8c68913aff94">
                                     Enable overlay
-                                </label>
+                                </span></label>
                             </div>
                             <div class="mc-form-group">
                                 <label class="mc-checkbox-label">
-                                    <input type="checkbox" id="overlayShowUsername" checked>
+                                    <input type="checkbox" id="overlayShowUsername" checked><span data-i18n="generated.783bb95a186e">
                                     Show username
-                                </label>
+                                </span></label>
                             </div>
                             <div class="mc-form-group">
                                 <label class="mc-checkbox-label">
-                                    <input type="checkbox" id="overlayShowAction" checked>
+                                    <input type="checkbox" id="overlayShowAction" checked><span data-i18n="generated.70150403cec5">
                                     Show action name
-                                </label>
+                                </span></label>
                             </div>
                             <div class="mc-form-group">
-                                <label>Animation duration (ms)</label>
+                                <label data-i18n="generated.d1f18fa2cafe">Animation duration (ms)</label>
                                 <input type="number" id="overlayDuration" class="mc-input" min="1000" max="10000" value="3000">
                             </div>
                             <div class="mc-theme-picker">
@@ -454,8 +455,8 @@
                                     <button class="mc-theme-chip" data-theme-option="day">Day</button>
                                     <button class="mc-theme-chip" data-theme-option="night">Night</button>
                                     <button class="mc-theme-chip" data-theme-option="cid">Cid</button>
-                                    <button class="mc-theme-chip" data-theme-option="contrast">High Contrast</button>
-                                    <button class="mc-theme-chip" data-theme-option="vision-impaired">Vision Impaired</button>
+                                    <button class="mc-theme-chip" data-theme-option="contrast" data-i18n="generated.a7aa11997356">High Contrast</button>
+                                    <button class="mc-theme-chip" data-theme-option="vision-impaired" data-i18n="generated.7f56612be16f">Vision Impaired</button>
                                 </div>
                             </div>
                         </div>
@@ -468,40 +469,40 @@
     <div id="mappingModal" class="mc-modal">
         <div class="mc-modal-content">
             <div class="mc-modal-header">
-                <h3 id="modalTitle">Add Command</h3>
+                <h3 id="modalTitle" data-i18n="generated.7cc3b04acbb7">Add Command</h3>
                 <button class="mc-modal-close" id="modalClose">&times;</button>
             </div>
             <div class="mc-modal-body">
                 <div class="mc-form-group">
-                    <label>TikTok event trigger</label>
+                    <label data-i18n="generated.0ba3d80040db">TikTok event trigger</label>
                     <select id="mappingTrigger" class="mc-input">
-                        <option value="">Select trigger...</option>
-                        <option value="gift">Gift</option>
-                        <option value="follow">Follow</option>
-                        <option value="like">Like</option>
-                        <option value="share">Share</option>
-                        <option value="chat">Chat</option>
-                        <option value="subscribe">Subscribe</option>
+                        <option value="" data-i18n="generated.e965a3ca346e">Select trigger...</option>
+                        <option value="gift" data-i18n="minecraft_connect.mappings.triggers.gift">Gift</option>
+                        <option value="follow" data-i18n="minecraft_connect.mappings.triggers.follow">Follow</option>
+                        <option value="like" data-i18n="minecraft_connect.mappings.triggers.like">Like</option>
+                        <option value="share" data-i18n="minecraft_connect.mappings.triggers.share">Share</option>
+                        <option value="chat" data-i18n="minecraft_connect.mappings.triggers.chat">Chat</option>
+                        <option value="subscribe" data-i18n="minecraft_connect.mappings.triggers.subscribe">Subscribe</option>
                     </select>
                 </div>
 
                 <div class="mc-form-group">
-                    <label>Conditions (optional)</label>
+                    <label data-i18n="minecraft_connect.mappings.conditions">Conditions (optional)</label>
                     <div id="conditionsList"></div>
-                    <button class="mc-btn mc-btn-secondary mc-btn-small" id="addConditionBtn">Add Condition</button>
+                    <button class="mc-btn mc-btn-secondary mc-btn-small" id="addConditionBtn" data-i18n="minecraft_connect.mappings.add_condition">Add Condition</button>
                 </div>
 
                 <div class="mc-form-group">
-                    <label>Minecraft action</label>
+                    <label data-i18n="generated.ea57fa20d0ef">Minecraft action</label>
                     <select id="mappingAction" class="mc-input">
-                        <option value="">Select action...</option>
+                        <option value="" data-i18n="generated.bf2ef13ca638">Select action...</option>
                     </select>
                 </div>
 
                 <div class="mc-form-group" id="parametersGroup" style="display: none;">
-                    <label>Parameters</label>
+                    <label data-i18n="minecraft_connect.mappings.parameters">Parameters</label>
                     <div id="parametersList"></div>
-                    <small class="mc-text-muted">Use placeholders like {uniqueId}, {giftName}, {giftCount}, {comment} for dynamic values.</small>
+                    <small class="mc-text-muted" data-i18n="generated.5da914211a55">Use placeholders like {uniqueId}, {giftName}, {giftCount}, {comment} for dynamic values.</small>
                 </div>
 
                 <div class="mc-form-group">
@@ -512,8 +513,8 @@
                 </div>
             </div>
             <div class="mc-modal-footer">
-                <button class="mc-btn mc-btn-secondary" id="modalCancel">Cancel</button>
-                <button class="mc-btn mc-btn-primary" id="modalSave">Save</button>
+                <button class="mc-btn mc-btn-secondary" id="modalCancel" data-i18n="minecraft_connect.modal.cancel">Cancel</button>
+                <button class="mc-btn mc-btn-primary" id="modalSave" data-i18n="minecraft_connect.modal.save">Save</button>
             </div>
         </div>
     </div>

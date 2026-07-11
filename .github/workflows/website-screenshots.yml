@@ -59,6 +59,7 @@ jobs:
             screenshots/de/04_download_page_de.png
             screenshots/features/*.png
             screenshots/de/features/*.png
+            screenshots/capture-manifest.json
 
       - name: Commit screenshots to repository
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.auto_commit == true
@@ -70,7 +71,7 @@ jobs:
             screenshots/de/*.png \
             screenshots/features/*.png \
             screenshots/de/features/*.png \
-            screenshots/de/features/*.png
+            screenshots/capture-manifest.json
 
           if [ -n "$(git status --porcelain)" ]; then
             git commit -m "chore(screenshots): refresh website screenshots"

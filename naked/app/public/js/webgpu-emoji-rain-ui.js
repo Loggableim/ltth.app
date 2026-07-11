@@ -152,7 +152,7 @@ function updateUI() {
         document.getElementById('gift_max_emojis').value = config.gift_max_emojis;
 
         // Herzballons
-        console.log('ðŸŽ¨ [EMOJI RAIN UI] Setting Herzballons configuration...');
+        console.log('🎨 [EMOJI RAIN UI] Setting Herzballons configuration...');
         document.getElementById('heart_balloons_enabled').checked = config.heart_balloons_enabled !== false;
         document.getElementById('heart_balloon_like_divisor').value = config.heart_balloon_like_divisor || 1;
         document.getElementById('heart_balloon_min_hearts').value = config.heart_balloon_min_hearts || 1;

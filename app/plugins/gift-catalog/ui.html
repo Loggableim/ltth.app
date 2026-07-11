@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Developer Guides</title>
+  <title data-i18n="generated.2b50b83ebf2e">Developer Guides</title>
   <link rel="stylesheet" href="/css/themes.css">
   <script>
     (function () {
@@ -618,23 +618,24 @@
       }
     }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
   <main class="gc-preview">
     <section class="gc-card">
       <div class="gc-title-wrap">
         <div>
-          <h1>Developer Guides</h1>
-          <p class="gc-description">
+          <h1 data-i18n="generated.090041c66636">Developer Guides</h1>
+          <p class="gc-description" data-i18n="generated.aa3a2aaa78ec">
             Start point for developer-oriented TikTok integration guides.
           </p>
         </div>
         <span id="connection-state" class="gc-status">
           <span class="gc-dot"></span>
-          <span>Disconnected</span>
+          <span data-i18n="gift_catalog.ui.status.disconnected">Disconnected</span>
         </span>
       </div>
-      <p id="connection-message" class="gc-description">
+      <p id="connection-message" class="gc-description" data-i18n="generated.ad028690bc65">
         Endpoints are tested live against:
         /api/gift-catalog-manager/config,
         /api/gift-catalog-manager/refresh
@@ -644,18 +645,18 @@
     </section>
 
     <div class="gc-tabs" id="guide-tabs">
-      <button class="gc-tab active" data-tab="gift-catalog" type="button">Gift Catalog Guide</button>
-      <button class="gc-tab" data-tab="future-guides" type="button" disabled>Future Guides</button>
+      <button class="gc-tab active" data-tab="gift-catalog" type="button" data-i18n="generated.55c805eb66f8">Gift Catalog Guide</button>
+      <button class="gc-tab" data-tab="future-guides" type="button" disabled data-i18n="generated.cdc86084f3cb">Future Guides</button>
     </div>
 
     <section class="gc-panel active" data-tab-panel="gift-catalog">
       <div class="gc-grid">
       <section class="gc-card">
           <div class="gc-card-header">
-            <h2>Region and language defaults</h2>
+            <h2 data-i18n="generated.618c8f3eff7d">Region and language defaults</h2>
             <span class="gc-step">1</span>
           </div>
-          <p>Store defaults used by refresh and inspect how locale/region affects names.</p>
+          <p data-i18n="generated.4c3b6050f1c3">Store defaults used by refresh and inspect how locale/region affects names.</p>
           <form id="config-form">
             <div class="gc-row">
               <div class="gc-field">
@@ -677,7 +678,7 @@
                 <input id="priority-region" class="gc-input" placeholder="DE or empty" />
               </div>
               <div class="gc-field">
-                <label>Region quick set</label>
+                <label data-i18n="generated.d13980d35000">Region quick set</label>
                 <div class="gc-flag-row">
                   <button class="gc-region-pill" id="region-auto" type="button" data-region="">AUTO</button>
                   <button class="gc-region-pill" type="button" data-region="DE">DE</button>
@@ -693,11 +694,11 @@
                 <input id="tz-name" class="gc-input" placeholder="Europe/Berlin" />
               </div>
               <div class="gc-field">
-                <label for="locales">locales (comma separated)</label>
+                <label for="locales" data-i18n="generated.e5a491ae919a">locales (comma separated)</label>
                 <input id="locales" class="gc-input" placeholder="en,de,es,fr" />
               </div>
               <div class="gc-field">
-                <label>Locale quick-picks</label>
+                <label data-i18n="generated.d203262a2e67">Locale quick-picks</label>
                 <div class="gc-flag-row" id="locale-quick-picks">
                   <button class="gc-flag-btn" type="button" data-locale="en" data-region="" data-source="config"><span class="gc-flag-chip" data-locale="en"></span><span>EN</span></button>
                   <button class="gc-flag-btn" type="button" data-locale="de" data-region="DE" data-source="config"><span class="gc-flag-chip" data-locale="de"></span><span>DE</span></button>
@@ -708,8 +709,8 @@
             </div>
           </form>
           <div class="gc-actions">
-            <button id="load-config">Load saved config</button>
-            <button id="save-config" class="btn-secondary">Save as default</button>
+            <button id="load-config" data-i18n="generated.0d8478dfda78">Load saved config</button>
+            <button id="save-config" class="btn-secondary" data-i18n="generated.9cd4adc9315c">Save as default</button>
             <button id="preset-de" class="btn-secondary">DE</button>
             <button id="preset-us" class="btn-secondary">US</button>
             <button id="preset-jp" class="btn-secondary">JP</button>
@@ -719,52 +720,52 @@
 
         <section class="gc-card">
           <div class="gc-card-header">
-            <h2>Refresh demo calls</h2>
+            <h2 data-i18n="generated.a360e4d45829">Refresh demo calls</h2>
             <span class="gc-step">2</span>
           </div>
-          <p>Send custom payloads to validate region/language behavior from another plugin endpoint.</p>
+          <p data-i18n="generated.709a97912045">Send custom payloads to validate region/language behavior from another plugin endpoint.</p>
 
           <div class="gc-endpoint">
             <span class="method">POST</span>
             <code>/api/gift-catalog-manager/refresh</code>
-            <button id="refresh-current" class="gc-copy-btn btn-secondary" type="button">Use saved config</button>
+            <button id="refresh-current" class="gc-copy-btn btn-secondary" type="button" data-i18n="generated.e09d5ea34faf">Use saved config</button>
           </div>
 
           <div class="gc-endpoint">
             <span class="method">POST</span>
             <code>/api/gift-catalog-manager/refresh</code>
-            <button id="refresh-custom" class="gc-copy-btn btn-secondary" type="button">Use current form</button>
+            <button id="refresh-custom" class="gc-copy-btn btn-secondary" type="button" data-i18n="generated.f0d5aa6b9063">Use current form</button>
           </div>
 
           <div class="gc-endpoint">
             <span class="method">POST</span>
             <code>/api/gift-catalog/update</code>
-            <button id="refresh-core" class="gc-copy-btn btn-secondary" type="button">Legacy server endpoint</button>
+            <button id="refresh-core" class="gc-copy-btn btn-secondary" type="button" data-i18n="generated.f45f73b101c2">Legacy server endpoint</button>
           </div>
 
-          <div class="gc-info">
+          <div class="gc-info" data-i18n="generated.045279acf2be">
             The backend can call refresh with parameters. The demo below sends a request with a custom locale bundle and shows the returned payload.
           </div>
           <div class="gc-actions">
-            <button id="run-refresh-form">Run current form</button>
-            <button id="run-refresh-default" class="btn-secondary">Run defaults</button>
-            <button id="run-refresh-core" class="btn-secondary">Run core update</button>
-            <button id="run-refresh-all" class="btn-secondary">Run all configured locales</button>
+            <button id="run-refresh-form" data-i18n="generated.65ef653e54a9">Run current form</button>
+            <button id="run-refresh-default" class="btn-secondary" data-i18n="generated.adf3d7b7e3d3">Run defaults</button>
+            <button id="run-refresh-core" class="btn-secondary" data-i18n="generated.9e4409d6e6af">Run core update</button>
+            <button id="run-refresh-all" class="btn-secondary" data-i18n="generated.1b54395d0b16">Run all configured locales</button>
           </div>
           <pre id="refresh-output" class="gc-result">No refresh call executed yet.</pre>
         </section>
 
         <section class="gc-card">
           <div class="gc-card-header">
-            <h2>Catalog readout</h2>
+            <h2 data-i18n="generated.5539b098d017">Catalog readout</h2>
             <span class="gc-step">3</span>
           </div>
-          <p>Inspect current catalog payload from the shared endpoint used by existing plugins.</p>
+          <p data-i18n="generated.701f9c884e07">Inspect current catalog payload from the shared endpoint used by existing plugins.</p>
           <div class="gc-row">
             <div class="gc-field">
               <label for="catalog-locale">Locale</label>
               <select id="catalog-locale" class="gc-select">
-                <option value="">Default names</option>
+                <option value="" data-i18n="generated.4a17e55c3099">Default names</option>
                 <option value="en">en</option>
                 <option value="de">de</option>
                 <option value="es">es</option>
@@ -772,7 +773,7 @@
               </select>
             </div>
             <div class="gc-field">
-              <label for="catalog-region">Region override</label>
+              <label for="catalog-region" data-i18n="generated.c2f5d9985cd1">Region override</label>
               <select id="catalog-region" class="gc-select">
                 <option value="">(none)</option>
                 <option value="DE">DE</option>
@@ -782,7 +783,7 @@
               </select>
             </div>
             <div class="gc-field">
-                <label>Locale quick-picks</label>
+                <label data-i18n="generated.013e431e8d0a">Locale quick-picks</label>
                 <div class="gc-flag-row" id="catalog-locale-quick">
                   <button class="gc-flag-btn" type="button" data-locale="en" data-source="catalog"><span class="gc-flag-chip" data-locale="en"></span><span>EN</span></button>
                   <button class="gc-flag-btn" type="button" data-locale="de" data-source="catalog"><span class="gc-flag-chip" data-locale="de"></span><span>DE</span></button>
@@ -791,7 +792,7 @@
                 </div>
             </div>
             <div class="gc-field">
-              <label>Region quick-picks</label>
+              <label data-i18n="generated.5ce50f1b86aa">Region quick-picks</label>
               <div class="gc-flag-row" id="catalog-region-quick">
                 <button class="gc-region-pill" type="button" data-region="">AUTO</button>
                 <button class="gc-region-pill" type="button" data-region="DE">DE</button>
@@ -801,10 +802,10 @@
               </div>
             </div>
           <div class="gc-actions">
-            <button id="load-catalog-manager">Load /api/gift-catalog-manager/catalog</button>
-            <button id="load-catalog-legacy" class="btn-secondary">Load /api/gift-catalog</button>
-            <button id="load-catalog-sample" class="btn-secondary">Load 1st 10 sample gifts</button>
-            <button id="load-catalog-all" class="btn-secondary">Load all locales</button>
+            <button id="load-catalog-manager" data-i18n="generated.ebd5c6586b61">Load /api/gift-catalog-manager/catalog</button>
+            <button id="load-catalog-legacy" class="btn-secondary" data-i18n="generated.5b04a074817f">Load /api/gift-catalog</button>
+            <button id="load-catalog-sample" class="btn-secondary" data-i18n="generated.40375f93143b">Load 1st 10 sample gifts</button>
+            <button id="load-catalog-all" class="btn-secondary" data-i18n="generated.a756f1db2186">Load all locales</button>
           </div>
           <pre id="catalog-output" class="gc-result">No catalog loaded yet.</pre>
         </section>
@@ -812,17 +813,17 @@
 
         <section class="gc-card">
           <div class="gc-card-header">
-            <h2>Demo integrations</h2>
+            <h2 data-i18n="generated.2913754c07a9">Demo integrations</h2>
             <span class="gc-step">4</span>
           </div>
-          <p>These controls intentionally mirror the kinds of embeds you requested: dropdown, list and scroll area.</p>
+          <p data-i18n="generated.8ebfed403ce5">These controls intentionally mirror the kinds of embeds you requested: dropdown, list and scroll area.</p>
 
           <div class="gc-row-2">
             <div class="gc-field">
-              <label for="demo-list-source">List data source</label>
+              <label for="demo-list-source" data-i18n="generated.a1377cfa5570">List data source</label>
               <select id="demo-list-source" class="gc-select">
-                <option value="static">Static demo data</option>
-                <option value="live">Live /api/gift-catalog-manager/catalog</option>
+                <option value="static" data-i18n="generated.baf26245d7e2">Static demo data</option>
+                <option value="live" data-i18n="generated.41d71a8efece">Live /api/gift-catalog-manager/catalog</option>
             </select>
           </div>
           <div class="gc-field">
@@ -841,7 +842,7 @@
               </div>
             </div>
               <div class="gc-field">
-                <label for="demo-region">Region override</label>
+                <label for="demo-region" data-i18n="generated.5954551f9195">Region override</label>
                 <select id="demo-region" class="gc-select">
                   <option value="">AUTO</option>
                   <option value="DE">DE</option>
@@ -862,38 +863,38 @@
           <div class="gc-endpoint preview">
             <span class="method">GET</span>
             <code id="demo-endpoint-preview">/api/gift-catalog-manager/catalog</code>
-            <button class="gc-copy-btn btn-secondary" id="copy-demo-endpoint" type="button">Copy endpoint</button>
+            <button class="gc-copy-btn btn-secondary" id="copy-demo-endpoint" type="button" data-i18n="generated.7dfc749e79f2">Copy endpoint</button>
           </div>
 
         <div class="gc-actions">
-          <button id="demo-refresh-list" class="btn-secondary" type="button">Render demo list</button>
-          <button id="demo-shuffle-list" class="btn-secondary" type="button">Shuffle order</button>
-          <button id="demo-reset-list" class="btn-secondary" type="button">Reset list</button>
+          <button id="demo-refresh-list" class="btn-secondary" type="button" data-i18n="generated.990b555b17d3">Render demo list</button>
+          <button id="demo-shuffle-list" class="btn-secondary" type="button" data-i18n="generated.7c3991633428">Shuffle order</button>
+          <button id="demo-reset-list" class="btn-secondary" type="button" data-i18n="generated.21ce1e3ac4e1">Reset list</button>
         </div>
 
         <div class="gc-scroll-area" id="demo-scroll-area">
           <ul id="demo-list" class="gc-demo-list">
             <li class="gc-demo-list-item">
-              <span>Loading demo entries…</span>
-              <span class="gc-demo-list-item-meta">No source selected</span>
+              <span data-i18n="generated.26bf8c18ec18">Loading demo entries…</span>
+              <span class="gc-demo-list-item-meta" data-i18n="generated.89fd8ceda928">No source selected</span>
             </li>
           </ul>
         </div>
-        <p id="demo-list-status" class="gc-info" style="margin-top: 8px;">Select a source and render.</p>
+        <p id="demo-list-status" class="gc-info" style="margin-top: 8px;" data-i18n="generated.2820a91b9725">Select a source and render.</p>
       </section>
 
       <section class="gc-card">
         <div class="gc-card-header">
-          <h2>Implementation demos (copy-ready)</h2>
+          <h2 data-i18n="generated.624db90ff515">Implementation demos (copy-ready)</h2>
           <span class="gc-step">5</span>
         </div>
-        <p>Use these snippets in other plugins; adjust route base to your preferred pattern.</p>
+        <p data-i18n="generated.6b1fadb306c8">Use these snippets in other plugins; adjust route base to your preferred pattern.</p>
 
         <div class="gc-row-2">
           <div class="gc-snippet">
-            <div class="gc-snippet-caption">
+            <div class="gc-snippet-caption"><span data-i18n="generated.47b19ea53d30">
               Frontend plugin request
-              <button class="gc-copy-btn btn-secondary" data-copy="snippet-frontend">Copy</button>
+              </span><button class="gc-copy-btn btn-secondary" data-copy="snippet-frontend">Copy</button>
             </div>
             <pre id="snippet-frontend">const payload = {
   app_language: 'de-DE',
@@ -916,9 +917,9 @@ if (!data.success) throw new Error(data.error || 'refresh failed');
           </div>
 
           <div class="gc-snippet">
-            <div class="gc-snippet-caption">
+            <div class="gc-snippet-caption"><span data-i18n="generated.ab6f0ca3d74e">
               Shared catalog consumer
-              <button class="gc-copy-btn btn-secondary" data-copy="snippet-consumer">Copy</button>
+              </span><button class="gc-copy-btn btn-secondary" data-copy="snippet-consumer">Copy</button>
             </div>
             <pre id="snippet-consumer">const response = await fetch('/api/gift-catalog-manager/catalog?locales=de,fr');
 const payload = await response.json();
@@ -939,9 +940,9 @@ if (payload.success && Array.isArray(payload.catalog)) {
           </div>
 
           <div class="gc-snippet">
-            <div class="gc-snippet-caption">
+            <div class="gc-snippet-caption"><span data-i18n="generated.1b786ffb7c44">
               Backend route fallback
-              <button class="gc-copy-btn btn-secondary" data-copy="snippet-backend">Copy</button>
+              </span><button class="gc-copy-btn btn-secondary" data-copy="snippet-backend">Copy</button>
             </div>
             <pre id="snippet-backend">this.api.registerRoute('POST', '/my-plugin/gifts/refresh', async (req, res) => {
   const options = req.body || {};
@@ -957,9 +958,9 @@ if (payload.success && Array.isArray(payload.catalog)) {
           </div>
 
           <div class="gc-snippet">
-            <div class="gc-snippet-caption">
+            <div class="gc-snippet-caption"><span data-i18n="generated.fd18b1a5e422">
               Language map utility
-              <button class="gc-copy-btn btn-secondary" data-copy="snippet-map">Copy</button>
+              </span><button class="gc-copy-btn btn-secondary" data-copy="snippet-map">Copy</button>
             </div>
             <pre id="snippet-map">const localeMap = {
   en: { app: 'en-US', browser: 'en', webcast: 'en' },
@@ -974,14 +975,14 @@ function resolveGiftLocale(locale) {
         </div>
       </section>
 
-        <p class="gc-footer">Developer preview created for internal plugin integration checks and demo-driven implementation planning.</p>
-        <p class="gc-note">Region + Locale controls are intentionally centralized so downstream plugins consume one pattern and one API contract.</p>
+        <p class="gc-footer" data-i18n="generated.2c0fe71d2520">Developer preview created for internal plugin integration checks and demo-driven implementation planning.</p>
+        <p class="gc-note" data-i18n="generated.dad9394cf75c">Region + Locale controls are intentionally centralized so downstream plugins consume one pattern and one API contract.</p>
       </section>
 
       <section class="gc-panel" data-tab-panel="future-guides">
         <section class="gc-card">
-          <h2>Coming Guides</h2>
-          <p class="gc-panel-placeholder">
+          <h2 data-i18n="generated.50f60a7c3fb3">Coming Guides</h2>
+          <p class="gc-panel-placeholder" data-i18n="generated.85a0d3b3bf51">
             Placeholder for future developer guides.
             Use this tab as the anchor for additional guide surfaces.
           </p>

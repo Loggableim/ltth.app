@@ -16,9 +16,10 @@ describe('Wiki route regressions', () => {
       .expect(200);
 
     expect(response.body.languageAnchor).toBe('espanol');
-    expect(response.body.html).toContain('f\u00fcr professionelles');
+    expect(response.body.html).toContain('para transmisiones profesionales');
     expect(response.body.html).toContain('id="espanol"');
     expect(response.body.html).toContain('Espa\u00f1ol');
+    expect(response.body.html).not.toContain('English');
     expect(response.body.html).not.toMatch(/(?:\u00C3.|\u00C2.|\u00E2\u20AC|\u00E2\u0153|\u00E2\u0161|\u00F0\u0178|\uFFFD)/);
   });
 

@@ -1,15 +1,15 @@
 ﻿# LTTH One-Line Installer
 
-PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl â€” auf Windows, macOS und Linux.
+PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl — auf Windows, macOS und Linux.
 
 ## Schnellstart
 
 | Betriebssystem | Befehl |
 |---|---|
-| ðŸªŸ Windows (PowerShell) | `$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))` |
-| ðŸŽ macOS (Terminal)     | `curl -fsSL https://ltth.app/install/install.sh \| bash` |
-| ðŸ§ Linux (Bash)         | `curl -fsSL https://ltth.app/install/install.sh \| bash` |
-| ðŸŒ Beliebiges OS (Node) | `curl -fsSL https://ltth.app/install/install.js \| node` |
+| 🪟 Windows (PowerShell) | `$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))` |
+| 🍎 macOS (Terminal)     | `curl -fsSL https://ltth.app/install/install.sh \| bash` |
+| 🐧 Linux (Bash)         | `curl -fsSL https://ltth.app/install/install.sh \| bash` |
+| 🌐 Beliebiges OS (Node) | `curl -fsSL https://ltth.app/install/install.js \| node` |
 
 ## Was passiert?
 
@@ -35,14 +35,14 @@ Hinweis fuer Windows: Der PowerShell-Installer uebergibt die Node/npm-Arbeit an 
 |---|---|---|
 | `LTTH_VERSION` | `latest` | Zu installierende Version (z.B. `v1.3.21`) |
 | `LTTH_DIR` | `~/.local/share/ltth` / `%LOCALAPPDATA%\LTTH` | Installationsverzeichnis |
-| `LTTH_PORT` | `3000` | HTTP-Port fÃ¼rs Dashboard |
-| `LTTH_NO_BROWSER` | `0` | Browser nach Start nicht Ã¶ffnen (`1` = aus) |
+| `LTTH_PORT` | `3000` | HTTP-Port fürs Dashboard |
+| `LTTH_NO_BROWSER` | `0` | Browser nach Start nicht öffnen (`1` = aus) |
 | `LTTH_QUIET` | `0` | Reduzierte Ausgabe (`1` = still) |
-| `LTTH_REPO_BRANCH` | `main` | Git-Branch fÃ¼r Legacy- oder Custom-Launcher-Downloads |
+| `LTTH_REPO_BRANCH` | `main` | Git-Branch für Legacy- oder Custom-Launcher-Downloads |
 | `LTTH_REPO_OWNER` | `Loggableim` | GitHub-Owner |
 | `LTTH_REPO_NAME` | `ltth.app` | GitHub-Repo-Name |
 
-Der Installer liest `version.json` standardmÃ¤ÃŸig aus `main`. FÃ¼r Legacy- oder Experiment-Branches kannst du `LTTH_REPO_BRANCH` explizit Ã¼berschreiben.
+Der Installer liest `version.json` standardmäßig aus `main`. Für Legacy- oder Experiment-Branches kannst du `LTTH_REPO_BRANCH` explizit überschreiben.
 
 ### Beispiele
 
@@ -92,26 +92,26 @@ Der Uninstaller fragt vor dem Loeschen der lokalen Daten und Configs nach. Stand
 | Variable | Bedeutung |
 |---|---|
 | `LTTH_REMOVE_DATA=1` | Loescht die aktive LTTH-Konfiguration zusaetzlich ohne Rueckfrage |
-| `LTTH_KEEP_DATA=1` | BehÃ¤lt lokale Daten und Configs explizit bei |
+| `LTTH_KEEP_DATA=1` | Behält lokale Daten und Configs explizit bei |
 
 ## Sicherheit
 
 - Alle Skripte nutzen `set -euo pipefail` (Bash) bzw. `$ErrorActionPreference = 'Stop'` (PowerShell) und brechen bei Fehlern sofort ab.
-- Skripte signieren sich selbst nicht â€” vertraue dem TLS-Zertifikat von `ltth.app`.
-- Bei Windows: SmartScreen-Warnung mit "Weitere Informationen â†’ Trotzdem ausfÃ¼hren" bestÃ¤tigen.
-- Der Node.js-Installer (`install.js`) benÃ¶tigt eine bereits installierte Node-Version.
+- Skripte signieren sich selbst nicht — vertraue dem TLS-Zertifikat von `ltth.app`.
+- Bei Windows: SmartScreen-Warnung mit "Weitere Informationen → Trotzdem ausführen" bestätigen.
+- Der Node.js-Installer (`install.js`) benötigt eine bereits installierte Node-Version.
 - Git ist fuer den offiziellen Windows-Pfad nicht mehr erforderlich, bleibt aber fuer Legacy-/Custom-Installationen relevant.
 
-## Source-Ãœbersicht
+## Source-Übersicht
 
 | Datei | Plattform | Interpreter |
 |---|---|---|
 | `install.sh` | Linux + macOS | Bash >= 4.0 |
 | `install.ps1` | Windows | PowerShell >= 5.0 |
-| `install.js` | PlattformunabhÃ¤ngig | Node.js 18/20/22/24 LTS |
+| `install.js` | Plattformunabhängig | Node.js 18/20/22/24 LTS |
 | `uninstall.sh` | Linux + macOS | Bash >= 4.0 |
 | `uninstall.ps1` | Windows | PowerShell >= 5.0 |
 
 ## Lizenz
 
-CC-BY-NC-4.0 â€” siehe https://ltth.app/impressum.html
+CC-BY-NC-4.0 — siehe https://ltth.app/impressum.html

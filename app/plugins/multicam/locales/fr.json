@@ -73,5 +73,32 @@
       "save": "Enregistrer les Paramètres",
       "reset": "Reset to Defaults"
     }
+  },
+  "generated": {
+    "d98d9459e2c2": "Multi-Cam Switcher - Geschenkekatalog",
+    "7b2142ad925b": "🎥 Multi-Cam Switcher — Geschenkekatalog",
+    "538ca4e2a0e1": "Current Scene:",
+    "ac273c3d705c": "Szene wählen...",
+    "e88178498f7d": "🎁 Geschenkekatalog — Kamerazuordnung",
+    "7e1444f0507b": "Wähle für jedes Geschenk die OBS-Szene (Kamera), die automatisch geschaltet werden soll. Geschenke ohne Zuordnung werden ignoriert. Änderungen werden mit \"Speichern\" übernommen.",
+    "85146024a5cf": "Alle Geschenke",
+    "d8e461082e5c": "Nur zugeordnete",
+    "1cb8a372e53e": "Nur nicht zugeordnete",
+    "311e65a5d89e": "Klein (1-99 Coins)",
+    "fd5f62f0c30d": "Mittel (100-999 Coins)",
+    "9bd6e6407dba": "Groß (1000-9999 Coins)",
+    "d4f79ba6f6fd": "Whale (10.000+ Coins)",
+    "cc273318efc2": "Alle Kameras",
+    "3624bd31b43b": "Coins (absteigend)",
+    "f5548d2b2de7": "Coins (aufsteigend)",
+    "195a855060f9": "Name (A-Z)",
+    "db2f31ac9333": "Zugeordnete zuerst",
+    "4b9db5cda62b": "Lade Geschenkekatalog...",
+    "ec57b5b6e58c": "Änderungen —",
+    "f92f14727eb0": "Geschenke zugeordnet",
+    "fe2c68cf499a": "💾 Zuordnungen speichern",
+    "fa72100a3307": "↺ Zurücksetzen",
+    "190b9b430d8c": "Aktivitäts-Log",
+    "165d311ede4f": "Warte auf Events..."
   }
 }

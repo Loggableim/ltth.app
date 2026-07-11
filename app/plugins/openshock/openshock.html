@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HybridShock Control Panel</title>
+    <title data-i18n="generated.0a8facb3ac86">HybridShock Control Panel</title>
     <link rel="icon" type="image/png" href="/plugins/openshock/assets/branding/hybridshock-icon.png">
     <link rel="apple-touch-icon" href="/plugins/openshock/assets/branding/hybridshock-icon.png">
     <link rel="stylesheet" href="/openshock/openshock.css">
@@ -183,19 +183,20 @@
             -webkit-text-fill-color: #030603;
         }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header>
             <div>
-                <h1>HybridShock Control Panel</h1>
-                <p class="text-muted header-subtitle">TikTok Live Integration mit HybridShock</p>
+                <h1 data-i18n="generated.c1b3b2f519ec">HybridShock Control Panel</h1>
+                <p class="text-muted header-subtitle" data-i18n="generated.de2f405fe419">TikTok Live Integration mit HybridShock</p>
             </div>
             <div id="connection-status">
                 <div class="status-badge status-disconnected">
                     <span class="status-dot"></span>
-                    <span>Getrennt</span>
+                    <span data-i18n="openshock.status.disconnected">Getrennt</span>
                 </div>
             </div>
         </header>
@@ -203,8 +204,8 @@
         <!-- Tabs Navigation -->
         <div class="tabs">
             <button class="tab-button active" data-tab="dashboard">Dashboard</button>
-            <button class="tab-button" data-tab="mapper">Event Mapper</button>
-            <button class="tab-button" data-tab="gifts">Gift Catalog</button>
+            <button class="tab-button" data-tab="mapper" data-i18n="generated.7497f2ed648b">Event Mapper</button>
+            <button class="tab-button" data-tab="gifts" data-i18n="generated.24cef6b32ce0">Gift Catalog</button>
             <button class="tab-button" data-tab="safety">Safety</button>
             <button class="tab-button" data-tab="patterns">Patterns</button>
             <button class="tab-button" data-tab="advanced">Advanced</button>
@@ -215,11 +216,11 @@
             <!-- Connection Status Card -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Connection Status</h2>
+                    <h2 class="card-title" data-i18n="generated.50abd187e0ae">Connection Status</h2>
                 </div>
                 <div class="grid-3">
                     <div class="stat-card">
-                        <div class="stat-label">API Status</div>
+                        <div class="stat-label" data-i18n="generated.7a10e0760fed">API Status</div>
                         <div class="stat-value" id="apiStatus">⚫</div>
                     </div>
                     <div class="stat-card">
@@ -236,21 +237,21 @@
             <!-- Test Shock Function -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">⚡ Test Shock Function</h2>
+                    <h2 class="card-title" data-i18n="generated.0b743ea8a880">⚡ Test Shock Function</h2>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Select Device for Test</label>
+                    <label class="form-label" data-i18n="generated.87cec8ed11f7">Select Device for Test</label>
                     <select class="form-input" id="testShockDevice">
-                        <option value="">-- Select a device --</option>
+                        <option value="" data-i18n="generated.d56430f79e4c">-- Select a device --</option>
                     </select>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-warning btn-lg" id="testShockButton" disabled>
+                    <button class="btn btn-warning btn-lg" id="testShockButton" disabled data-i18n="generated.c97c76b08849">
                         ⚡ Test Shock (1s, 100%)
                     </button>
                 </div>
                 <p class="text-muted mt-2">
-                    <small>⚠️ This will send a 1-second shock at 100% intensity to the selected device.</small>
+                    <small data-i18n="generated.d24f0207f7bd">⚠️ This will send a 1-second shock at 100% intensity to the selected device.</small>
                 </p>
             </div>
 
@@ -258,10 +259,10 @@
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">Devices</h2>
-                    <button class="btn btn-primary btn-sm" id="refreshDevices">🔄 Refresh</button>
+                    <button class="btn btn-primary btn-sm" id="refreshDevices" data-i18n="generated.1146c3b68a5f">🔄 Refresh</button>
                 </div>
                 <div id="devicesList">
-                    <p class="text-muted text-center">No devices found. Configure API key first.</p>
+                    <p class="text-muted text-center" data-i18n="generated.f7b70d5da2bf">No devices found. Configure API key first.</p>
                 </div>
             </div>
 
@@ -269,11 +270,11 @@
                 <!-- Live Queue Status -->
                 <div class="card">
                     <div class="card-header">
-                        <h2 class="card-title">Live Queue</h2>
+                        <h2 class="card-title" data-i18n="generated.42ce3ffd70d6">Live Queue</h2>
                     </div>
                     <div class="grid-3">
                         <div class="stat-card">
-                            <div class="stat-label">Queue Length</div>
+                            <div class="stat-label" data-i18n="generated.94d9daba9383">Queue Length</div>
                             <div class="stat-value" id="queueLength">0</div>
                         </div>
                         <div class="stat-card">
@@ -291,15 +292,15 @@
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">Statistics</h2>
-                        <button class="btn btn-secondary btn-sm" id="resetStats">🔄 Reset</button>
+                        <button class="btn btn-secondary btn-sm" id="resetStats" data-i18n="generated.0374733379b1">🔄 Reset</button>
                     </div>
                     <div class="grid-3">
                         <div class="stat-card">
-                            <div class="stat-label">Total Commands</div>
+                            <div class="stat-label" data-i18n="generated.80bf2aaa7e3c">Total Commands</div>
                             <div class="stat-value" id="totalCommands">0</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label">Success Rate</div>
+                            <div class="stat-label" data-i18n="generated.e93fd7df530d">Success Rate</div>
                             <div class="stat-value" id="successRate">0%</div>
                         </div>
                         <div class="stat-card">
@@ -313,14 +314,14 @@
             <!-- Recent Commands Log -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Recent Commands</h2>
+                    <h2 class="card-title" data-i18n="generated.2f1c0bfa22db">Recent Commands</h2>
                     <div class="btn-group">
-                        <button class="btn btn-secondary btn-sm" id="clearLog">🗑️ Clear</button>
-                        <button class="btn btn-secondary btn-sm" id="exportLog">📥 Export</button>
+                        <button class="btn btn-secondary btn-sm" id="clearLog" data-i18n="generated.5a84c3a84337">🗑️ Clear</button>
+                        <button class="btn btn-secondary btn-sm" id="exportLog" data-i18n="generated.14376ca2affb">📥 Export</button>
                     </div>
                 </div>
                 <div class="log-container" id="commandLog">
-                    <p class="text-muted text-center">No commands executed yet.</p>
+                    <p class="text-muted text-center" data-i18n="generated.4dd4483e3f42">No commands executed yet.</p>
                 </div>
             </div>
         </div>
@@ -329,15 +330,15 @@
         <div id="mapper" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Event Mappings</h2>
+                    <h2 class="card-title" data-i18n="generated.94f0d543d2b1">Event Mappings</h2>
                     <div class="btn-group">
-                        <button class="btn btn-success" id="addMapping">➕ Add Mapping</button>
-                        <button class="btn btn-secondary" id="importMappings">📥 Import</button>
-                        <button class="btn btn-secondary" id="exportMappings">📤 Export</button>
+                        <button class="btn btn-success" id="addMapping" data-i18n="generated.d048afef8930">➕ Add Mapping</button>
+                        <button class="btn btn-secondary" id="importMappings" data-i18n="generated.828b7c98a119">📥 Import</button>
+                        <button class="btn btn-secondary" id="exportMappings" data-i18n="generated.b20a59620b9b">📤 Export</button>
                     </div>
                 </div>
                 <div id="mappingsList">
-                    <p class="text-muted text-center">No mappings configured. Click "Add Mapping" to create one.</p>
+                    <p class="text-muted text-center" data-i18n="generated.e7507ff807b4">No mappings configured. Click "Add Mapping" to create one.</p>
                 </div>
             </div>
         </div>
@@ -346,15 +347,15 @@
         <div id="gifts" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">🎁 TikTok Gift Catalog</h2>
+                    <h2 class="card-title" data-i18n="generated.d45cd3a41893">🎁 TikTok Gift Catalog</h2>
                     <div class="btn-group">
-                        <button class="btn btn-primary" id="refreshGiftCatalog">🔄 Refresh Catalog</button>
+                        <button class="btn btn-primary" id="refreshGiftCatalog" data-i18n="generated.949a69f8161a">🔄 Refresh Catalog</button>
                     </div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Below are all available TikTok gifts. You can create Event Mappings to trigger shock patterns when specific gifts are received.</p>
+                    <p class="text-muted" data-i18n="generated.654ef1f68167">Below are all available TikTok gifts. You can create Event Mappings to trigger shock patterns when specific gifts are received.</p>
                     <div id="giftCatalogList">
-                        <p class="text-center text-muted">Loading gift catalog...</p>
+                        <p class="text-center text-muted" data-i18n="generated.e4e8a53d128a">Loading gift catalog...</p>
                     </div>
                 </div>
             </div>
@@ -365,53 +366,53 @@
             <!-- Global Limits -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Global Safety Limits</h2>
+                    <h2 class="card-title" data-i18n="generated.37dd03eedbb4">Global Safety Limits</h2>
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
                         <div class="slider-label">
-                            <span class="form-label">Max Intensity</span>
+                            <span class="form-label" data-i18n="generated.b87bae204fb9">Max Intensity</span>
                             <span class="slider-value" id="globalMaxIntensityValue">100</span>
                         </div>
                         <input type="range" id="globalMaxIntensity" min="1" max="100" value="100">
                     </div>
                     <div class="form-group">
                         <div class="slider-label">
-                            <span class="form-label">Max Duration (ms)</span>
+                            <span class="form-label" data-i18n="generated.646026695635">Max Duration (ms)</span>
                             <span class="slider-value" id="globalMaxDurationValue">30000</span>
                         </div>
                         <input type="range" id="globalMaxDuration" min="300" max="30000" step="100" value="30000">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Max Commands per Minute</label>
+                        <label class="form-label" data-i18n="generated.51b8952cbde4">Max Commands per Minute</label>
                         <input type="number" class="form-input" id="globalMaxCommandsPerMin" value="60" min="1" max="600">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Cooldown between Commands (ms)</label>
+                        <label class="form-label" data-i18n="generated.3d1f985c5e4c">Cooldown between Commands (ms)</label>
                         <input type="number" class="form-input" id="globalCooldown" value="1000" min="0" step="100">
                     </div>
                 </div>
-                <button class="btn btn-primary" id="saveGlobalLimits">💾 Save Global Limits</button>
+                <button class="btn btn-primary" id="saveGlobalLimits" data-i18n="generated.08b25c34185f">💾 Save Global Limits</button>
             </div>
 
             <!-- Device Limits -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Per-Device Limits</h2>
+                    <h2 class="card-title" data-i18n="generated.43e147d71452">Per-Device Limits</h2>
                 </div>
                 <table class="table">
                     <thead>
                         <tr>
                             <th>Device</th>
-                            <th>Max Intensity</th>
-                            <th>Max Duration (ms)</th>
-                            <th>Cooldown (ms)</th>
+                            <th data-i18n="generated.d2706030913e">Max Intensity</th>
+                            <th data-i18n="generated.c8bb60858c28">Max Duration (ms)</th>
+                            <th data-i18n="generated.a77d48692a3c">Cooldown (ms)</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="deviceLimitsTable">
                         <tr>
-                            <td colspan="5" class="text-center text-muted">No devices configured</td>
+                            <td colspan="5" class="text-center text-muted" data-i18n="generated.c7d1ae971a26">No devices configured</td>
                         </tr>
                     </tbody>
                 </table>
@@ -420,39 +421,39 @@
             <!-- User Limits -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">User Restrictions</h2>
+                    <h2 class="card-title" data-i18n="generated.2755112589f2">User Restrictions</h2>
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label">Min Follower Age (days)</label>
+                        <label class="form-label" data-i18n="generated.16fad70e343c">Min Follower Age (days)</label>
                         <input type="number" class="form-input" id="minFollowerAge" value="0" min="0">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Max Commands per User (per session)</label>
+                        <label class="form-label" data-i18n="generated.2f57a30cae81">Max Commands per User (per session)</label>
                         <input type="number" class="form-input" id="maxCommandsPerUser" value="10" min="1">
                     </div>
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label">Whitelist (usernames, comma separated)</label>
+                        <label class="form-label" data-i18n="generated.673b8bca51e2">Whitelist (usernames, comma separated)</label>
                         <input type="text" class="form-input" id="whitelist" placeholder="user1, user2, user3">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Blacklist (usernames, comma separated)</label>
+                        <label class="form-label" data-i18n="generated.98e35314a793">Blacklist (usernames, comma separated)</label>
                         <input type="text" class="form-input" id="blacklist" placeholder="baduser1, baduser2">
                     </div>
                 </div>
-                <button class="btn btn-primary" id="saveUserLimits">💾 Save User Limits</button>
+                <button class="btn btn-primary" id="saveUserLimits" data-i18n="generated.fd1c793333bc">💾 Save User Limits</button>
             </div>
 
             <!-- Emergency Stop -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Emergency Controls</h2>
+                    <h2 class="card-title" data-i18n="generated.c1b38daf5245">Emergency Controls</h2>
                 </div>
                 <div class="text-center">
-                    <button class="btn btn-danger btn-lg" id="emergencyStop">🛑 EMERGENCY STOP</button>
-                    <p class="text-muted mt-2">Immediately stops all commands and pauses the queue</p>
+                    <button class="btn btn-danger btn-lg" id="emergencyStop" data-i18n="generated.30ce046d33fc">🛑 EMERGENCY STOP</button>
+                    <p class="text-muted mt-2" data-i18n="generated.4ef8140b2ad0">Immediately stops all commands and pauses the queue</p>
                     <div id="emergencyStatus" class="mt-2"></div>
                 </div>
             </div>
@@ -462,17 +463,17 @@
         <div id="patterns" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Shock Patterns</h2>
+                    <h2 class="card-title" data-i18n="generated.a0325f7ba4ea">Shock Patterns</h2>
                     <div class="btn-group">
-                        <button class="btn btn-success" id="addPattern">➕ Add Pattern</button>
-                        <button class="btn btn-secondary" id="importPatterns">📥 Import</button>
-                        <button class="btn btn-secondary" id="exportPatterns">📤 Export</button>
+                        <button class="btn btn-success" id="addPattern" data-i18n="generated.725699343589">➕ Add Pattern</button>
+                        <button class="btn btn-secondary" id="importPatterns" data-i18n="generated.79c92538e750">📥 Import</button>
+                        <button class="btn btn-secondary" id="exportPatterns" data-i18n="generated.ad0221af0741">📤 Export</button>
                     </div>
                 </div>
 
                 <!-- Preset Patterns -->
                 <div class="mb-3">
-                    <h3 class="pattern-section-title">Preset Patterns</h3>
+                    <h3 class="pattern-section-title" data-i18n="generated.2573e27347fb">Preset Patterns</h3>
                     <div class="grid-3" id="presetPatternsList">
                         <!-- Preset patterns will be rendered here -->
                     </div>
@@ -480,9 +481,9 @@
 
                 <!-- Custom Patterns -->
                 <div>
-                    <h3 class="pattern-section-title">Custom Patterns</h3>
+                    <h3 class="pattern-section-title" data-i18n="generated.575ace13a27a">Custom Patterns</h3>
                     <div class="grid-3" id="customPatternsList">
-                        <p class="text-muted text-center">No custom patterns created yet.</p>
+                        <p class="text-muted text-center" data-i18n="generated.01e87883a5d8">No custom patterns created yet.</p>
                     </div>
                 </div>
             </div>
@@ -490,13 +491,13 @@
             <!-- Curve Generator -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Pattern Curve Generator</h2>
+                    <h2 class="card-title" data-i18n="generated.cd99972cc746">Pattern Curve Generator</h2>
                 </div>
-                <p class="text-muted mb-3">
+                <p class="text-muted mb-3" data-i18n="generated.511c44b24eeb">
                     Create custom patterns by drawing intensity curves over time. Each action type (shock, vibrate, beep) has a unique color for easy identification.
                 </p>
                 <div class="btn-group">
-                    <button class="btn btn-primary btn-lg" id="openCurveEditor">🎨 Open Visual Curve Editor</button>
+                    <button class="btn btn-primary btn-lg" id="openCurveEditor" data-i18n="generated.510e2850b88a">🎨 Open Visual Curve Editor</button>
                 </div>
             </div>
         </div>
@@ -506,38 +507,38 @@
             <!-- API Settings -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">HybridShock Provider Settings</h2>
+                    <h2 class="card-title" data-i18n="generated.53fa8e94b130">HybridShock Provider Settings</h2>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">API Key</label>
+                    <label class="form-label" data-i18n="generated.95dd2efa8c1e">API Key</label>
                     <input type="password" class="form-input" id="apiKey" placeholder="Enter your OpenShock API key">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Base URL</label>
+                    <label class="form-label" data-i18n="generated.5ae748c6a3c4">Base URL</label>
                     <input type="text" class="form-input" id="baseUrl" value="https://api.openshock.app" placeholder="https://api.openshock.app">
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-primary" id="saveApiSettings">💾 Save Settings</button>
-                    <button class="btn btn-secondary" id="testConnection">🔌 Test Connection</button>
+                    <button class="btn btn-primary" id="saveApiSettings" data-i18n="generated.a4e83ca60b16">💾 Save Settings</button>
+                    <button class="btn btn-secondary" id="testConnection" data-i18n="generated.385036b2b65e">🔌 Test Connection</button>
                 </div>
             </div>
 
             <!-- Queue Management -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Queue Management</h2>
+                    <h2 class="card-title" data-i18n="generated.bd3db156feae">Queue Management</h2>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-warning" id="pauseQueue">⏸️ Pause Queue</button>
-                    <button class="btn btn-success" id="resumeQueue">▶️ Resume Queue</button>
-                    <button class="btn btn-danger" id="clearQueue">🗑️ Clear Queue</button>
+                    <button class="btn btn-warning" id="pauseQueue" data-i18n="generated.cc6c9c299fb0">⏸️ Pause Queue</button>
+                    <button class="btn btn-success" id="resumeQueue" data-i18n="generated.021d487a2445">▶️ Resume Queue</button>
+                    <button class="btn btn-danger" id="clearQueue" data-i18n="generated.14cd04acaa17">🗑️ Clear Queue</button>
                 </div>
             </div>
 
             <!-- Debug Log -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Debug Log</h2>
+                    <h2 class="card-title" data-i18n="generated.0c59e731b62d">Debug Log</h2>
                     <div class="btn-group">
                         <select class="form-select form-select-auto" id="logFilter">
                             <option value="all">All</option>
@@ -545,19 +546,19 @@
                             <option value="warning">Warning</option>
                             <option value="error">Error</option>
                         </select>
-                        <button class="btn btn-secondary btn-sm" id="clearDebugLog">🗑️ Clear</button>
-                        <button class="btn btn-secondary btn-sm" id="exportDebugLog">📥 Export</button>
+                        <button class="btn btn-secondary btn-sm" id="clearDebugLog" data-i18n="generated.8b3fc9f91938">🗑️ Clear</button>
+                        <button class="btn btn-secondary btn-sm" id="exportDebugLog" data-i18n="generated.b3a6c3567ed1">📥 Export</button>
                     </div>
                 </div>
                 <div class="log-container" id="debugLog">
-                    <p class="text-muted text-center">Debug log is empty.</p>
+                    <p class="text-muted text-center" data-i18n="generated.2c45f54ca512">Debug log is empty.</p>
                 </div>
             </div>
 
             <!-- Detailed Statistics -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Detailed Statistics</h2>
+                    <h2 class="card-title" data-i18n="generated.49211090cf17">Detailed Statistics</h2>
                 </div>
                 <table class="table">
                     <thead>
@@ -568,27 +569,27 @@
                     </thead>
                     <tbody id="detailedStatsTable">
                         <tr>
-                            <td>Total Events Received</td>
+                            <td data-i18n="generated.ed2cb59693ed">Total Events Received</td>
                             <td id="statTotalEvents">0</td>
                         </tr>
                         <tr>
-                            <td>Total Commands Sent</td>
+                            <td data-i18n="generated.8939bd24b573">Total Commands Sent</td>
                             <td id="statTotalCommands">0</td>
                         </tr>
                         <tr>
-                            <td>Successful Commands</td>
+                            <td data-i18n="generated.a3e4cc39ec97">Successful Commands</td>
                             <td id="statSuccessfulCommands">0</td>
                         </tr>
                         <tr>
-                            <td>Failed Commands</td>
+                            <td data-i18n="generated.5e7f07b6584b">Failed Commands</td>
                             <td id="statFailedCommands">0</td>
                         </tr>
                         <tr>
-                            <td>Average Response Time</td>
+                            <td data-i18n="generated.00d582018e39">Average Response Time</td>
                             <td id="statAvgResponseTime">0ms</td>
                         </tr>
                         <tr>
-                            <td>Commands in Queue</td>
+                            <td data-i18n="generated.e472f9c9965b">Commands in Queue</td>
                             <td id="statQueueSize">0</td>
                         </tr>
                     </tbody>
@@ -601,12 +602,12 @@
     <div id="mappingModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="mappingModalTitle">Add Event Mapping</h2>
+                <h2 class="modal-title" id="mappingModalTitle" data-i18n="generated.2ffd10b10721">Add Event Mapping</h2>
                 <button class="modal-close" id="closeMappingModal">×</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Mapping Name</label>
+                    <label class="form-label" data-i18n="generated.eeb68f8f9739">Mapping Name</label>
                     <input type="text" class="form-input" id="mappingName" placeholder="e.g., Rose Gift Shock">
                 </div>
 
@@ -618,10 +619,10 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Event Type</label>
+                    <label class="form-label" data-i18n="generated.9e7f8b140c3d">Event Type</label>
                     <select class="form-select" id="mappingEventType">
                         <option value="gift">Gift</option>
-                        <option value="chat">Chat Message</option>
+                        <option value="chat" data-i18n="generated.48d15d020d3d">Chat Message</option>
                         <option value="follow">Follow</option>
                         <option value="share">Share</option>
                         <option value="like">Like</option>
@@ -632,26 +633,26 @@
                 <!-- Conditions (dynamic based on event type) -->
                 <div id="mappingConditions">
                     <div class="form-group" id="conditionGift">
-                        <label class="form-label">Gift Name</label>
+                        <label class="form-label" data-i18n="generated.c4bb30509b4a">Gift Name</label>
                         <select class="form-select" id="mappingGiftNameSelect">
-                            <option value="">All Gifts</option>
+                            <option value="" data-i18n="generated.926d3a249db8">All Gifts</option>
                         </select>
-                        <small class="form-help-text">Or enter custom name below:</small>
+                        <small class="form-help-text" data-i18n="generated.0ee0bdbf961e">Or enter custom name below:</small>
                         <input type="text" class="form-input" id="mappingGiftName" placeholder="e.g., Rose, TikTok (leave empty to use selection above)">
                     </div>
                     <div class="form-group" id="conditionMinCoins">
-                        <label class="form-label">Min Coins</label>
+                        <label class="form-label" data-i18n="generated.31a19c4d22d0">Min Coins</label>
                         <input type="number" class="form-input" id="mappingMinCoins" value="0" min="0">
                     </div>
                     <div class="form-group hidden" id="conditionMessagePattern">
-                        <label class="form-label">Message Pattern (regex)</label>
+                        <label class="form-label" data-i18n="generated.f62c86c7e114">Message Pattern (regex)</label>
                         <input type="text" class="form-input" id="mappingMessagePattern" placeholder="e.g., ^!shock">
                     </div>
                 </div>
 
                 <!-- Action Configuration -->
                 <div class="form-group">
-                    <label class="form-label">Action Type</label>
+                    <label class="form-label" data-i18n="generated.eba4b38b28b6">Action Type</label>
                     <select class="form-select" id="mappingActionType">
                         <option value="shock">Shock</option>
                         <option value="vibrate">Vibrate</option>
@@ -662,7 +663,7 @@
                 <div class="form-group">
                     <label class="form-label">Device</label>
                     <select class="form-select" id="mappingDevice">
-                        <option value="">Select Device...</option>
+                        <option value="" data-i18n="generated.8bbce00090f3">Select Device...</option>
                     </select>
                 </div>
 
@@ -676,17 +677,17 @@
 
                 <div class="form-group">
                     <div class="slider-label">
-                        <span class="form-label">Duration (ms)</span>
+                        <span class="form-label" data-i18n="openshock.triggers.duration">Duration (ms)</span>
                         <span class="slider-value" id="mappingDurationValue">1000</span>
                     </div>
                     <input type="range" id="mappingDuration" min="300" max="30000" step="100" value="1000">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Pattern (optional)</label>
+                    <label class="form-label" data-i18n="generated.6a2ba9886e73">Pattern (optional)</label>
                     <div class="pattern-selector-group">
                         <select class="form-select" id="mappingPattern">
-                            <option value="">None (Single pulse)</option>
+                            <option value="" data-i18n="generated.2be0f2d2d61a">None (Single pulse)</option>
                         </select>
                         <button type="button" class="btn btn-sm btn-secondary" id="createPatternFromMapping" title="Create new pattern">
                             ➕
@@ -697,7 +698,7 @@
                     </div>
                     <div id="mappingPatternPreview" class="pattern-preview-box" style="display: none;">
                         <div class="pattern-preview-header">
-                            <strong>Pattern Steps:</strong>
+                            <strong data-i18n="generated.db1cce1b1481">Pattern Steps:</strong>
                         </div>
                         <div id="mappingPatternSteps" class="pattern-steps-list">
                         </div>
@@ -707,15 +708,15 @@
                 <!-- Cooldowns -->
                 <div class="grid-3">
                     <div class="form-group">
-                        <label class="form-label">Global Cooldown (ms)</label>
+                        <label class="form-label" data-i18n="generated.75fcab023915">Global Cooldown (ms)</label>
                         <input type="number" class="form-input" id="mappingGlobalCooldown" value="0" min="0" step="100">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Per-Device Cooldown (ms)</label>
+                        <label class="form-label" data-i18n="generated.feb2d557881d">Per-Device Cooldown (ms)</label>
                         <input type="number" class="form-input" id="mappingDeviceCooldown" value="0" min="0" step="100">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Per-User Cooldown (ms)</label>
+                        <label class="form-label" data-i18n="generated.fc647ef76ff4">Per-User Cooldown (ms)</label>
                         <input type="number" class="form-input" id="mappingUserCooldown" value="0" min="0" step="100">
                     </div>
                 </div>
@@ -723,18 +724,18 @@
                 <!-- Safety Overrides -->
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label">Max Intensity Override</label>
+                        <label class="form-label" data-i18n="generated.69487764dfd1">Max Intensity Override</label>
                         <input type="number" class="form-input" id="mappingMaxIntensity" value="100" min="1" max="100">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Max Duration Override (ms)</label>
+                        <label class="form-label" data-i18n="generated.fd3663b677b0">Max Duration Override (ms)</label>
                         <input type="number" class="form-input" id="mappingMaxDuration" value="30000" min="300" step="100">
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" id="saveMappingBtn">💾 Save Mapping</button>
-                <button class="btn btn-secondary" id="cancelMappingBtn">❌ Cancel</button>
+                <button class="btn btn-primary" id="saveMappingBtn" data-i18n="generated.97546ab0e22a">💾 Save Mapping</button>
+                <button class="btn btn-secondary" id="cancelMappingBtn" data-i18n="generated.0c842d94b1a8">❌ Cancel</button>
             </div>
         </div>
     </div>
@@ -743,12 +744,12 @@
     <div id="patternModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="patternModalTitle">Add Pattern</h2>
+                <h2 class="modal-title" id="patternModalTitle" data-i18n="generated.77a169314421">Add Pattern</h2>
                 <button class="modal-close" id="closePatternModal">×</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Pattern Name</label>
+                    <label class="form-label" data-i18n="generated.cba3f301caa2">Pattern Name</label>
                     <input type="text" class="form-input" id="patternName" placeholder="e.g., Escalating Shock">
                 </div>
 
@@ -762,17 +763,17 @@
                     <div class="step-list" id="patternSteps">
                         <!-- Steps will be rendered here -->
                     </div>
-                    <button class="btn btn-secondary btn-sm mt-2" id="addPatternStep">➕ Add Step</button>
+                    <button class="btn btn-secondary btn-sm mt-2" id="addPatternStep" data-i18n="generated.9e4de081c3b9">➕ Add Step</button>
                 </div>
 
                 <!-- Step Form (for adding/editing) -->
                 <div class="card mt-3 step-form-hidden" id="stepForm">
                     <div class="card-header">
-                        <h3 class="modal-title-small">Step Configuration</h3>
+                        <h3 class="modal-title-small" data-i18n="generated.2050da5e864e">Step Configuration</h3>
                     </div>
                     <div class="modal-body-padding">
                         <div class="form-group">
-                            <label class="form-label">Action Type</label>
+                            <label class="form-label" data-i18n="generated.2f0db1b81667">Action Type</label>
                             <select class="form-select" id="stepType">
                                 <option value="shock">Shock</option>
                                 <option value="vibrate">Vibrate</option>
@@ -788,27 +789,27 @@
                             <input type="range" id="stepIntensity" min="1" max="100" value="50">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Duration (ms)</label>
+                            <label class="form-label" data-i18n="openshock.triggers.duration">Duration (ms)</label>
                             <input type="number" class="form-input" id="stepDuration" value="500" min="100" step="100">
                         </div>
                         <div class="btn-group">
-                            <button class="btn btn-primary btn-sm" id="saveStep">💾 Save Step</button>
-                            <button class="btn btn-secondary btn-sm" id="cancelStep">❌ Cancel</button>
+                            <button class="btn btn-primary btn-sm" id="saveStep" data-i18n="generated.83f8b0d8cbaf">💾 Save Step</button>
+                            <button class="btn btn-secondary btn-sm" id="cancelStep" data-i18n="generated.9f2aff923bb2">❌ Cancel</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Preview Timeline -->
                 <div class="form-group mt-3">
-                    <label class="form-label">Pattern Preview</label>
+                    <label class="form-label" data-i18n="generated.826888b04eb1">Pattern Preview</label>
                     <div class="pattern-timeline" id="patternPreview">
-                        <p class="text-muted text-center pattern-timeline-text">Add steps to see preview</p>
+                        <p class="text-muted text-center pattern-timeline-text" data-i18n="generated.2732105d6dba">Add steps to see preview</p>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" id="savePatternBtn">💾 Save Pattern</button>
-                <button class="btn btn-secondary" id="cancelPatternBtn">❌ Cancel</button>
+                <button class="btn btn-primary" id="savePatternBtn" data-i18n="generated.ed27bc9ae535">💾 Save Pattern</button>
+                <button class="btn btn-secondary" id="cancelPatternBtn" data-i18n="generated.73dee4d0489f">❌ Cancel</button>
             </div>
         </div>
     </div>
@@ -817,24 +818,24 @@
     <div id="curveEditorModal" class="modal">
         <div class="modal-content modal-content-large">
             <div class="modal-header">
-                <h2 class="modal-title">🎨 Visual Pattern Curve Editor</h2>
+                <h2 class="modal-title" data-i18n="generated.f59667f6867a">🎨 Visual Pattern Curve Editor</h2>
                 <button class="modal-close" id="closeCurveEditor">×</button>
             </div>
             <div class="modal-body">
                 <!-- Action Type Selector -->
                 <div class="form-group">
-                    <label class="form-label">Action Type</label>
+                    <label class="form-label" data-i18n="generated.a9bbdda57bf4">Action Type</label>
                     <div class="btn-group">
-                        <button class="btn btn-action active" data-action="shock">⚡ Shock</button>
-                        <button class="btn btn-action" data-action="vibrate">📳 Vibrate</button>
-                        <button class="btn btn-action" data-action="sound">🔔 Beep</button>
+                        <button class="btn btn-action active" data-action="shock" data-i18n="generated.04cd7c543597">⚡ Shock</button>
+                        <button class="btn btn-action" data-action="vibrate" data-i18n="generated.f3321f2f3bc4">📳 Vibrate</button>
+                        <button class="btn btn-action" data-action="sound" data-i18n="generated.a8e65bc2bf4b">🔔 Beep</button>
                     </div>
-                    <p class="text-muted form-help-text">Select the action type for your pattern. The color will change based on your selection.</p>
+                    <p class="text-muted form-help-text" data-i18n="generated.127e5214735b">Select the action type for your pattern. The color will change based on your selection.</p>
                 </div>
 
                 <!-- Canvas -->
                 <div class="form-group">
-                    <label class="form-label">Draw Your Pattern</label>
+                    <label class="form-label" data-i18n="generated.c33cb6a9070e">Draw Your Pattern</label>
                     <div class="curve-canvas-container">
                         <canvas id="curveCanvas"></canvas>
                         <div class="curve-info">
@@ -842,27 +843,27 @@
                             <span>Time: <strong id="currentTime">0</strong>ms</span>
                         </div>
                     </div>
-                    <p class="text-muted form-help-text">Click and drag on the canvas to draw your intensity curve over time.</p>
+                    <p class="text-muted form-help-text" data-i18n="generated.d54ab0071bb8">Click and drag on the canvas to draw your intensity curve over time.</p>
                 </div>
 
                 <!-- Controls Row 1 -->
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label">Pattern Name</label>
+                        <label class="form-label" data-i18n="generated.119c872760d5">Pattern Name</label>
                         <input type="text" class="form-input" id="curvePatternName" placeholder="My Custom Pattern">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Template Curves</label>
+                        <label class="form-label" data-i18n="generated.fa7020b100ee">Template Curves</label>
                         <select class="form-select" id="curveTemplate">
-                            <option value="custom">Custom (Draw your own)</option>
-                            <option value="linear-up">Linear Ramp Up</option>
-                            <option value="linear-down">Linear Ramp Down</option>
-                            <option value="exponential-up">Exponential Ramp Up</option>
-                            <option value="exponential-down">Exponential Ramp Down</option>
-                            <option value="sine">Sine Wave</option>
-                            <option value="pulse">Pulse Wave</option>
-                            <option value="sawtooth">Sawtooth Wave</option>
-                            <option value="triangle">Triangle Wave</option>
+                            <option value="custom" data-i18n="generated.cb26afd502b8">Custom (Draw your own)</option>
+                            <option value="linear-up" data-i18n="generated.ed6cae6519db">Linear Ramp Up</option>
+                            <option value="linear-down" data-i18n="generated.a10fcea4d914">Linear Ramp Down</option>
+                            <option value="exponential-up" data-i18n="generated.bc9a817db6f1">Exponential Ramp Up</option>
+                            <option value="exponential-down" data-i18n="generated.969a0ded735e">Exponential Ramp Down</option>
+                            <option value="sine" data-i18n="generated.4b1c125d49c1">Sine Wave</option>
+                            <option value="pulse" data-i18n="generated.c9548548281a">Pulse Wave</option>
+                            <option value="sawtooth" data-i18n="generated.25f972f6f578">Sawtooth Wave</option>
+                            <option value="triangle" data-i18n="generated.b87c24b8aa43">Triangle Wave</option>
                         </select>
                     </div>
                 </div>
@@ -871,14 +872,14 @@
                 <div class="grid-2">
                     <div class="form-group">
                         <div class="slider-label">
-                            <span class="form-label">Min Intensity</span>
+                            <span class="form-label" data-i18n="generated.dbea560fde13">Min Intensity</span>
                             <span class="slider-value" id="minIntensityValue">10%</span>
                         </div>
                         <input type="range" id="minIntensity" min="0" max="100" value="10" step="5">
                     </div>
                     <div class="form-group">
                         <div class="slider-label">
-                            <span class="form-label">Max Intensity</span>
+                            <span class="form-label" data-i18n="generated.abab1703c80b">Max Intensity</span>
                             <span class="slider-value" id="maxIntensityValue">80%</span>
                         </div>
                         <input type="range" id="maxIntensity" min="0" max="100" value="80" step="5">
@@ -889,21 +890,21 @@
                 <div class="grid-3">
                     <div class="form-group">
                         <div class="slider-label">
-                            <span class="form-label">Step Duration</span>
+                            <span class="form-label" data-i18n="generated.111f2090f3cd">Step Duration</span>
                             <span class="slider-value" id="stepDurationValue">500ms</span>
                         </div>
                         <input type="range" id="stepDurationSlider" min="100" max="2000" value="500" step="50">
                     </div>
                     <div class="form-group">
                         <div class="slider-label">
-                            <span class="form-label">Step Delay</span>
+                            <span class="form-label" data-i18n="generated.2429ff7a4be1">Step Delay</span>
                             <span class="slider-value" id="stepDelayValue">100ms</span>
                         </div>
                         <input type="range" id="stepDelaySlider" min="0" max="1000" value="100" step="50">
                     </div>
                     <div class="form-group">
                         <div class="slider-label">
-                            <span class="form-label">Resolution (Steps)</span>
+                            <span class="form-label" data-i18n="generated.f8d5ee9f90c5">Resolution (Steps)</span>
                             <span class="slider-value" id="resolutionValue">20</span>
                         </div>
                         <input type="range" id="resolutionSlider" min="5" max="50" value="20" step="1">
@@ -912,15 +913,15 @@
 
                 <!-- Action Buttons -->
                 <div class="btn-group mb-3">
-                    <button class="btn btn-secondary" id="applyTemplate">📋 Apply Template</button>
-                    <button class="btn btn-secondary" id="clearCanvas">🗑️ Clear Canvas</button>
-                    <button class="btn btn-secondary" id="undoStep">↩️ Undo</button>
+                    <button class="btn btn-secondary" id="applyTemplate" data-i18n="generated.dd9ea4833273">📋 Apply Template</button>
+                    <button class="btn btn-secondary" id="clearCanvas" data-i18n="generated.38c951b533ce">🗑️ Clear Canvas</button>
+                    <button class="btn btn-secondary" id="undoStep" data-i18n="generated.39102954e212">↩️ Undo</button>
                 </div>
 
                 <!-- Preview Stats -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="modal-title-small">Pattern Statistics</h3>
+                        <h3 class="modal-title-small" data-i18n="generated.7b5cdf0f9ba1">Pattern Statistics</h3>
                     </div>
                     <div class="grid-4">
                         <div class="stat-card">
@@ -928,15 +929,15 @@
                             <div class="stat-value" id="stepCount">0</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label">Total Duration</div>
+                            <div class="stat-label" data-i18n="generated.6574adacbf5b">Total Duration</div>
                             <div class="stat-value" id="totalDuration">0ms</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label">Avg Intensity</div>
+                            <div class="stat-label" data-i18n="generated.dd5d13efe0a1">Avg Intensity</div>
                             <div class="stat-value" id="avgIntensity">0%</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label">Peak Intensity</div>
+                            <div class="stat-label" data-i18n="generated.fc5c00806bff">Peak Intensity</div>
                             <div class="stat-value" id="peakIntensity">0%</div>
                         </div>
                     </div>
@@ -944,16 +945,16 @@
 
                 <!-- Timeline Preview -->
                 <div class="form-group mt-3">
-                    <label class="form-label">Timeline Preview</label>
+                    <label class="form-label" data-i18n="generated.67eb0743371e">Timeline Preview</label>
                     <div id="curveTimelinePreview" class="pattern-timeline">
-                        <div class="timeline-empty">Draw on the canvas above to create your pattern</div>
+                        <div class="timeline-empty" data-i18n="generated.8d5a494e8c85">Draw on the canvas above to create your pattern</div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" id="saveCurvePattern">💾 Save Pattern</button>
-                <button class="btn btn-info" id="previewCurvePattern">👁️ Preview</button>
-                <button class="btn btn-secondary" id="cancelCurveEditor">❌ Cancel</button>
+                <button class="btn btn-primary" id="saveCurvePattern" data-i18n="generated.c884a0b3dd2e">💾 Save Pattern</button>
+                <button class="btn btn-info" id="previewCurvePattern" data-i18n="generated.3fec9fddcf27">👁️ Preview</button>
+                <button class="btn btn-secondary" id="cancelCurveEditor" data-i18n="generated.b99eec30967d">❌ Cancel</button>
             </div>
         </div>
     </div>

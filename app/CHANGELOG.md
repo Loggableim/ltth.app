@@ -11,16 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Fireworks Stability Pass**: Added validated configuration handling, sanitized trigger/finale/gift-mapping payloads, and centralized backpressure for safer OBS streaming during gift spam or low-FPS conditions.
 - **Weather Control Integration Coverage**: Added real Express and Socket.IO lifecycle tests for admin authentication, live overlay configuration sync, main-switch behavior, state sanitization, timer cleanup, and shutdown persistence.
+- **Game Engine 1.3.1**: Server-authoritative Plinko results, a streamer-review-only OpenShock flow, and a refreshed open-beta store package.
 
 ### Fixed
 
+- **Fireworks 2.0.1 Runtime Contract**: Restored persistent Paws, renderer, Toaster, trails, glow, and particle-limit settings; connected WebGL2/Canvas selection before context creation; and made adaptive quality respect saved visual preferences.
+- **Fireworks Telemetry and Cleanup**: Isolated benchmark FPS from live OBS backpressure, made benchmark cancellation immediate, and cleanly releases animation, socket, audio, and WebGL resources.
 - **Weather Control Runtime Sync**: Open OBS overlays now reload every runtime-facing configuration change, including quality, audio, layers, limits, and permanent-effect settings.
 - **Weather Control Main Switch**: Disabling the plugin now stops active effects and blocks HTTP, sequence, IFTTT, permanent-effect, and gamification triggers.
 - **Weather Control Security and Lifecycle**: Protected plugin mutations with LTTH admin authentication, removed the API key from public configuration responses, sanitized overlay state, and cleaned up socket listeners and timers on unload.
+- **Game Engine Security**: Role-gated Socket.IO mutations, removed SVG slot uploads, transactional config migrations, and DOM-only rendering for live viewer/win data.
 
 ### Changed
 
 - **Fireworks Plugin**: Removed the obsolete `fireworks-dev` Bossfight variant from the app. Stable `fireworks` is now the maintained Fireworks plugin.
+- **Game Engine Queues**: Retired Plinko and Wheel legacy queues in favor of the unified queue.
 
 ## [1.3.8] - 2026-07-03
 
@@ -106,7 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Slot Machine: Design theme presets** – Six colour presets (Classic, Ocean, Fire,
   Neon, Monochrome, Retro) selectable via a dropdown in the Design card.
 - **Slot Machine: Symbol image upload** – Each symbol can now have a user-uploaded image.
-  Images uploaded via `POST /api/game-engine/slot/symbol-image/upload` (PNG/JPEG/GIF/WebP/SVG,
+  Images uploaded via `POST /api/game-engine/slot/symbol-image/upload` (PNG/JPEG/GIF/WebP,
   max 2 MB) and served from `/game-engine/slot-images/:machineId/:filename`.
 - **Slot Machine: Media tab integration** – Slot Machine added to the media-game selector
   in the Media/Sounds tab for centralized sound management.

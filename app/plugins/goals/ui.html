@@ -1321,7 +1321,7 @@
 
             <div class="workspace-copy">
                 <div class="workspace-kicker">
-                    <span>Live Goal Studio</span>
+                    <span data-i18n="generated.24fe8311d65e">Live Goal Studio</span>
                 </div>
                 <h1 data-i18n="goals.page_title">Live Goals</h1>
                 <p data-i18n="goals.page_description">Verwalte Live-Ziele, Overlay-URLs und Rotationen zentral. Positioniere sie direkt in OBS.</p>
@@ -1332,7 +1332,7 @@
                     <span class="workspace-action-pill__icon" id="goals-window-action-icon" aria-hidden="true">
                         <i data-lucide="external-link"></i>
                     </span>
-                    <span class="workspace-action-pill__label" id="goals-window-action-label">Open in New Tab</span>
+                    <span class="workspace-action-pill__label" id="goals-window-action-label" data-i18n="generated.d1555449c763">Open in New Tab</span>
                 </a>
             </div>
 
@@ -1341,7 +1341,7 @@
                     <span class="status-pill__dot"></span>
                     <span>Connected</span>
                 </div>
-                <div class="status-pill status-pill--accent" id="goals-theme-pill">Theme: night</div>
+                <div class="status-pill status-pill--accent" id="goals-theme-pill" data-i18n="generated.328484aca29c">Theme: night</div>
             </div>
 
             <div class="sidebar-tabs">
@@ -1355,12 +1355,12 @@
 
             <div class="sidebar-actions">
                 <button class="btn btn-primary" id="create-goal-btn" data-i18n="goals.create_button" style="display: none; width: 100%;">+ Create New Goal</button>
-                <button class="btn btn-primary" id="create-multigoal-btn" style="display: none; width: 100%;">+ Create MultiGoal</button>
+                <button class="btn btn-primary" id="create-multigoal-btn" style="display: none; width: 100%;" data-i18n="generated.1025e58a65db">+ Create MultiGoal</button>
             </div>
 
             <div class="sidebar-tip">
-                <span class="sidebar-tip__title">Overlay workflow</span>
-                <div class="sidebar-tip__text">
+                <span class="sidebar-tip__title" data-i18n="generated.54376c3f88e2">Overlay workflow</span>
+                <div class="sidebar-tip__text" data-i18n="generated.114053a66f55">
                     Create the goal in the active tab, copy the overlay URL, and place it in OBS. All controls stay available here.
                 </div>
             </div>
@@ -1375,11 +1375,11 @@
                 <div class="section-header">
                     <div class="section-header__copy">
                         <h2>Goals</h2>
-                        <p>Single goals with dedicated overlay URLs, inline controls and real-time progress tracking.</p>
+                        <p data-i18n="generated.6558095be7c8">Single goals with dedicated overlay URLs, inline controls and real-time progress tracking.</p>
                     </div>
                     <div class="section-header__badge" id="goals-section-badge">
                         <span class="status-pill__dot"></span>
-                        <span>Ready for OBS</span>
+                        <span data-i18n="generated.688e50c1fcea">Ready for OBS</span>
                     </div>
                 </div>
 
@@ -1387,7 +1387,7 @@
                     <div class="empty-state">
                         <div class="empty-state-icon">🎯</div>
                         <div class="empty-state-text" data-i18n="goals.empty_state">No goals created yet</div>
-                        <div class="empty-state-copy">Create a goal, choose a template, and copy the overlay URL into OBS. The layout stays responsive and theme-aware.</div>
+                        <div class="empty-state-copy" data-i18n="generated.c783457b4fab">Create a goal, choose a template, and copy the overlay URL into OBS. The layout stays responsive and theme-aware.</div>
                         <button class="btn btn-primary" id="create-first-goal-initial-btn" data-i18n="goals.create_first">Create Your First Goal</button>
                     </div>
                 </div>
@@ -1397,20 +1397,20 @@
                 <div class="section-header">
                     <div class="section-header__copy">
                         <h2>MultiGoals</h2>
-                        <p>Rotate through multiple goals with smooth WebGL transitions and a compact control surface.</p>
+                        <p data-i18n="generated.860602f582c7">Rotate through multiple goals with smooth WebGL transitions and a compact control surface.</p>
                     </div>
                     <div class="section-header__badge">
                         <span class="status-pill__dot"></span>
-                        <span>Rotation sets</span>
+                        <span data-i18n="generated.2237ef9f7aea">Rotation sets</span>
                     </div>
                 </div>
 
                 <div id="multigoals-container" class="multigoal-grid">
                     <div class="empty-state">
                         <div class="empty-state-icon">🔄</div>
-                        <div class="empty-state-text">No multigoals created yet</div>
-                        <div class="empty-state-copy">Build a rotation set from at least two goals and keep the overlay presentation smooth in widescreen scenes.</div>
-                        <button class="btn btn-primary" id="create-first-multigoal-btn">Create Your First MultiGoal</button>
+                        <div class="empty-state-text" data-i18n="generated.1e0db7a23f46">No multigoals created yet</div>
+                        <div class="empty-state-copy" data-i18n="generated.e38171d7cb49">Build a rotation set from at least two goals and keep the overlay presentation smooth in widescreen scenes.</div>
+                        <button class="btn btn-primary" id="create-first-multigoal-btn" data-i18n="generated.2623ac7ba4f2">Create Your First MultiGoal</button>
                     </div>
                 </div>
             </div>
@@ -1425,12 +1425,12 @@
                 <!-- Live Preview Section - Moved to top -->
                 <div class="preview-section">
                     <div class="preview-label">
-                        <span>???</span>
+                        <span>👁️</span>
                         <span data-i18n="goals.modal.preview_title">Vorschau</span>
                     </div>
                     <div class="preview-container" id="goal-preview-container">
                         <div id="goal-preview-frame" class="preview-frame">
-                            <div class="preview-loading">Select a template to see preview...</div>
+                            <div class="preview-loading" data-i18n="generated.4f6dc071d05c">Select a template to see preview...</div>
                         </div>
                     </div>
                 </div>
@@ -1521,8 +1521,8 @@
                     <label class="checkbox-row">
                         <input type="checkbox" id="goal-firework-enabled">
                         <span>
-                            <span class="checkbox-title">Feuerwerk-Finale bei Zielerreichung</span>
-                            <span class="form-help">Startet im Fireworks Plugin ein finales Feuerwerk, sobald dieses Live-Ziel erreicht wurde.</span>
+                            <span class="checkbox-title" data-i18n="generated.84f5e8c1f086">Feuerwerk-Finale bei Zielerreichung</span>
+                            <span class="form-help" data-i18n="generated.56bd48bc7fdc">Startet im Fireworks Plugin ein finales Feuerwerk, sobald dieses Live-Ziel erreicht wurde.</span>
                         </span>
                     </label>
                 </div>
@@ -1530,12 +1530,12 @@
                 <div id="goal-firework-options" style="display: none;">
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Feuerwerk-Intensität</label>
+                            <label class="form-label" data-i18n="generated.6c5cf7aa7dc9">Feuerwerk-Intensität</label>
                             <input type="number" class="form-input" id="goal-firework-intensity" value="3" min="1" max="10" step="0.5">
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Feuerwerk-Dauer (Sekunden)</label>
+                            <label class="form-label" data-i18n="generated.c57a6ef10158">Feuerwerk-Dauer (Sekunden)</label>
                             <input type="number" class="form-input" id="goal-firework-duration" value="5" min="1" max="30" step="0.5">
                         </div>
                     </div>
@@ -1543,14 +1543,14 @@
                         <label class="checkbox-row">
                             <input type="checkbox" id="goal-firework-progress-enabled" checked>
                             <span>
-                                <span class="checkbox-title">Progress-Milestones als Feuerwerk</span>
-                                <span class="form-help">Startet bei 25, 50 und 75 Prozent kleinere Feuerwerke.</span>
+                                <span class="checkbox-title" data-i18n="generated.73b377cc4ee1">Progress-Milestones als Feuerwerk</span>
+                                <span class="form-help" data-i18n="generated.32df160658fa">Startet bei 25, 50 und 75 Prozent kleinere Feuerwerke.</span>
                             </span>
                         </label>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Progress-Milestones (%)</label>
+                        <label class="form-label" data-i18n="generated.26fb0075f798">Progress-Milestones (%)</label>
                         <input type="text" class="form-input" id="goal-firework-progress-milestones" value="25,50,75" placeholder="25,50,75">
                     </div>
                 </div>
@@ -1591,11 +1591,11 @@
                                 <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">System</option>
                                 <option value="'Arial', sans-serif">Arial</option>
                                 <option value="'Helvetica', sans-serif">Helvetica</option>
-                                <option value="'Times New Roman', serif">Times New Roman</option>
-                                <option value="'Courier New', monospace">Courier New</option>
+                                <option value="'Times New Roman', serif" data-i18n="generated.4fcb0f5d5b76">Times New Roman</option>
+                                <option value="'Courier New', monospace" data-i18n="generated.deaa8815f6b2">Courier New</option>
                                 <option value="'Georgia', serif">Georgia</option>
                                 <option value="'Verdana', sans-serif">Verdana</option>
-                                <option value="'Comic Sans MS', cursive">Comic Sans</option>
+                                <option value="'Comic Sans MS', cursive" data-i18n="generated.8d0a1d115ffc">Comic Sans</option>
                             </select>
                         </div>
 
@@ -1629,56 +1629,56 @@
     <!-- MultiGoal Create/Edit Modal -->
     <div id="multigoal-modal" class="modal">
         <div class="modal-content" tabindex="-1">
-            <div class="modal-header">Create MultiGoal</div>
+            <div class="modal-header" data-i18n="generated.f4e57f0c945a">Create MultiGoal</div>
             <form id="multigoal-form">
                 <div class="form-group">
-                    <label class="form-label">MultiGoal Name</label>
+                    <label class="form-label" data-i18n="generated.ee7a37b30580">MultiGoal Name</label>
                     <input type="text" class="form-input" id="multigoal-name" placeholder="e.g., Rotating Goals" required>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Rotation Interval (seconds)</label>
+                        <label class="form-label" data-i18n="generated.276bb7b12d37">Rotation Interval (seconds)</label>
                         <input type="number" class="form-input" id="multigoal-interval" value="5" min="1" max="60" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">WebGL Animation</label>
+                        <label class="form-label" data-i18n="generated.f5d45f5ba5d7">WebGL Animation</label>
                         <select class="form-select" id="multigoal-animation" required>
-                            <option value="slide">Slide Transition</option>
-                            <option value="fade">Fade Transition</option>
-                            <option value="cube">Cube Rotation</option>
-                            <option value="wave">Wave Distortion</option>
-                            <option value="particle">Particle Transition</option>
+                            <option value="slide" data-i18n="generated.56b5d2e81678">Slide Transition</option>
+                            <option value="fade" data-i18n="generated.9c7596f2973d">Fade Transition</option>
+                            <option value="cube" data-i18n="generated.fd44548cc7b0">Cube Rotation</option>
+                            <option value="wave" data-i18n="generated.fb15f0f0b8d2">Wave Distortion</option>
+                            <option value="particle" data-i18n="generated.1669be692796">Particle Transition</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Overlay Width (px)</label>
+                        <label class="form-label" data-i18n="goals.modal.width_label">Overlay Width (px)</label>
                         <input type="number" class="form-input" id="multigoal-width" value="500" min="100" max="3840" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Overlay Height (px)</label>
+                        <label class="form-label" data-i18n="goals.modal.height_label">Overlay Height (px)</label>
                         <input type="number" class="form-input" id="multigoal-height" value="100" min="50" max="2160" required>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Select Goals to Include</label>
+                    <label class="form-label" data-i18n="generated.cdd87eaf38ed">Select Goals to Include</label>
                     <div id="multigoal-goals-selector" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 8px; padding: 12px;">
-                        <div style="color: var(--color-text-muted); text-align: center; padding: 20px;">
+                        <div style="color: var(--color-text-muted); text-align: center; padding: 20px;" data-i18n="generated.dfe92d40e31c">
                             Loading goals...
                         </div>
                     </div>
-                    <div style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 8px;">
+                    <div style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 8px;" data-i18n="generated.d5fe038d2e5c">
                         Select at least 2 goals for the multigoal rotation
                     </div>
                 </div>
 
                 <div style="display: flex; gap: 12px; margin-top: 24px;">
-                    <button type="submit" class="btn btn-success" style="flex: 1;">Save MultiGoal</button>
-                    <button type="button" class="btn btn-secondary" id="cancel-multigoal-btn" style="flex: 1;">Cancel</button>
+                    <button type="submit" class="btn btn-success" style="flex: 1;" data-i18n="generated.01ffc5eb2e3e">Save MultiGoal</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-multigoal-btn" style="flex: 1;" data-i18n="goals.modal.cancel_button">Cancel</button>
                 </div>
             </form>
         </div>

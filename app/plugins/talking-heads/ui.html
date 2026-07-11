@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Talking Heads - AI Avatar Animation</title>
+    <title data-i18n="talking_heads_ui.title">Talking Heads - AI Avatar Animation</title>
     <link rel="stylesheet" href="/css/tailwind.output.css">
     <link rel="stylesheet" href="/css/themes.css">
     <script>
@@ -733,18 +733,18 @@
             </div>
             
             <div id="apiKeyWarning" class="alert alert-warning" style="display: none;">
-                <strong>Warning: No API key configured!</strong><br>
-                Configure the correct key for the selected engine:<br>
-                - <strong>OpenAI</strong>: Dashboard &gt; Settings &gt; OpenAI API Configuration<br>
-                - <strong>SiliconFlow</strong>: Dashboard &gt; Settings &gt; TTS API Keys &gt; SiliconFlow API Key<br>
-                <small>The API key is managed centrally and shared with other plugins.</small>
+                <strong data-i18n="generated.90e3211bd7ca">Warning: No API key configured!</strong><br><span data-i18n="generated.16ab21395f4b">
+                Configure the correct key for the selected engine:</span><br>
+                - <strong>OpenAI</strong><span data-i18n="generated.09f793399eb6">: Dashboard &gt; Settings &gt; OpenAI API Configuration</span><br>
+                - <strong>SiliconFlow</strong><span data-i18n="generated.f9a735b6182b">: Dashboard &gt; Settings &gt; TTS API Keys &gt; SiliconFlow API Key</span><br>
+                <small data-i18n="generated.e5ee04411e4c">The API key is managed centrally and shared with other plugins.</small>
             </div>
             
             <div class="alert alert-info">
-                <strong>Info: Image generation</strong><br>
-                The plugin supports <strong>OpenAI (DALL-E 3)</strong> and <strong>SiliconFlow (FLUX.1)</strong>.
+                <strong data-i18n="generated.ec8296c6f237">Info: Image generation</strong><br><span data-i18n="generated.d6ea6f324388">
+                The plugin supports </span><strong data-i18n="talking_heads_ui.options.provider_openai">OpenAI (DALL-E 3)</strong> and <strong data-i18n="talking_heads_ui.options.provider_siliconflow">SiliconFlow (FLUX.1)</strong><span data-i18n="generated.1caf74ab8cc2">.
                 Store the API key in the global settings and select your preferred engine here.
-            </div>
+            </span></div>
         </div>
 
         <!-- Style Selection -->
@@ -794,10 +794,10 @@
             
             <div class="flex gap-4 mt-4">
                 <button class="btn btn-secondary" type="button" id="testPermissionsBtn">
-                    <i data-lucide="shield-check" class="inline-block w-4 h-4 mr-2"></i>
+                    <i data-lucide="shield-check" class="inline-block w-4 h-4 mr-2"></i><span data-i18n="generated.948bc33658f5">
                     Berechtigungen testen
-                </button>
-                <div class="form-help flex items-center">
+                </span></button>
+                <div class="form-help flex items-center" data-i18n="generated.076caba74fa7">
                     Testet die aktuellen Berechtigungs-Einstellungen mit verschiedenen User-Typen
                 </div>
             </div>
@@ -829,39 +829,39 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="form-group">
-                    <label class="form-label">Spawn Animation</label>
+                    <label class="form-label" data-i18n="generated.280dcf4c4247">Spawn Animation</label>
                     <select id="spawnAnimationMode" class="form-select">
-                        <option value="standard">Standard WebGL Spawn</option>
-                        <option value="custom">Benutzerdefinierte MP4/GIF</option>
+                        <option value="standard" data-i18n="generated.4575bd14c735">Standard WebGL Spawn</option>
+                        <option value="custom" data-i18n="generated.52f951da6d17">Benutzerdefinierte MP4/GIF</option>
                     </select>
-                    <div class="form-help">Wird automatisch beim ersten Avatar abgespielt.</div>
+                    <div class="form-help" data-i18n="generated.9b4c2dab676e">Wird automatisch beim ersten Avatar abgespielt.</div>
                 </div>
                 <div class="form-group" id="customSpawnWrapper" style="display: none;">
-                    <label class="form-label">Custom Animation URL (MP4 oder GIF)</label>
+                    <label class="form-label" data-i18n="generated.d3c9da5727d6">Custom Animation URL (MP4 oder GIF)</label>
                     <input type="text" id="spawnAnimationUrl" class="form-input" placeholder="https://example.com/spawn.mp4">
-                    <div class="form-help">MP4 kann Audio enthalten, GIF wird stumm abgespielt.</div>
+                    <div class="form-help" data-i18n="generated.1a1ecd891cda">MP4 kann Audio enthalten, GIF wird stumm abgespielt.</div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="form-group">
-                    <label class="form-label">Spawn Audio Lautstärke</label>
+                    <label class="form-label" data-i18n="generated.62ba9cb0be77">Spawn Audio Lautstärke</label>
                     <input type="number" id="spawnAnimationVolume" class="form-input" min="0" max="1" step="0.05" value="0.8">
-                    <div class="form-help">Nur relevant für MP4 mit Audio.</div>
+                    <div class="form-help" data-i18n="generated.e4816c0cc4f1">Nur relevant für MP4 mit Audio.</div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">OBS HUD URL</label>
+                    <label class="form-label" data-i18n="generated.92846cc06f3d">OBS HUD URL</label>
                     <div class="flex gap-2">
                         <input type="text" id="obsHudUrl" class="form-input" readonly>
                         <button class="btn btn-secondary" type="button" id="copyObsHudUrlBtn">Copy</button>
                     </div>
-                    <div class="form-help">1920x1080 HUD mit WebGL Spawn Animation.</div>
+                    <div class="form-help" data-i18n="generated.fb83eaf6e4ba">1920x1080 HUD mit WebGL Spawn Animation.</div>
                 </div>
                 <div class="form-group">
                     <label class="toggle-switch">
                         <input type="checkbox" id="obsHudEnabled">
                         <span class="toggle-slider"></span>
-                        <span class="toggle-label">OBS HUD aktivieren</span>
+                        <span class="toggle-label" data-i18n="generated.9a79a5ded266">OBS HUD aktivieren</span>
                     </label>
                 </div>
             </div>
@@ -879,27 +879,27 @@
         <div class="config-section">
             <div class="section-title">
                 <i data-lucide="volume-2"></i>
-                <span>Talking Head & TTS Preview</span>
+                <span data-i18n="generated.4897fc0b0d16">Talking Head & TTS Preview</span>
             </div>
             <div class="form-group">
                 <label class="form-label">Vorschau-Text</label>
                 <input type="text" id="previewTtsText" class="form-input" placeholder="Hallo! Das ist ein Talking Heads Test.">
-                <div class="form-help">Spielt die lokale TTS Engine ab und zeigt gleichzeitig das Talking Head im OBS HUD.</div>
+                <div class="form-help" data-i18n="generated.ae4170056223">Spielt die lokale TTS Engine ab und zeigt gleichzeitig das Talking Head im OBS HUD.</div>
             </div>
             <div class="flex gap-4">
                 <button class="btn btn-secondary" type="button" id="previewTtsBtn">
-                    <i data-lucide="play-circle" class="inline-block w-4 h-4 mr-2"></i>
+                    <i data-lucide="play-circle" class="inline-block w-4 h-4 mr-2"></i><span data-i18n="generated.fc078e297392">
                     Vorschau abspielen
-                </button>
+                </span></button>
                 <button class="btn btn-secondary" type="button" id="testAnimationBtn">
-                    <i data-lucide="activity" class="inline-block w-4 h-4 mr-2"></i>
+                    <i data-lucide="activity" class="inline-block w-4 h-4 mr-2"></i><span data-i18n="generated.cb359a0c4d6c">
                     Nur Animation testen
-                </button>
+                </span></button>
             </div>
             <div class="form-help text-xs mt-2">
-                <strong>Hinweis:</strong> "Nur Animation testen" zeigt die Mundbewegungen ohne TTS Audio. 
+                <strong>Hinweis:</strong><span data-i18n="generated.b11097c16f02"> "Nur Animation testen" zeigt die Mundbewegungen ohne TTS Audio. 
                 Öffnen Sie die Browser-Konsole im OBS HUD für detaillierte Logs.
-            </div>
+            </span></div>
         </div>
 
         <!-- Cache Management -->
@@ -948,25 +948,25 @@
         <div class="config-section">
             <div class="section-title">
                 <i data-lucide="copy"></i>
-                <span>Manuelle Sprite-Zuweisung</span>
+                <span data-i18n="generated.502616810a3f">Manuelle Sprite-Zuweisung</span>
             </div>
-            <div class="form-help" style="margin-bottom: 16px;">
+            <div class="form-help" style="margin-bottom: 16px;" data-i18n="generated.e72dfc3a7670">
                 Weise einem User die Sprites eines anderen Users zu, ohne neu zu generieren.
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div class="form-group">
-                    <label class="form-label">Ziel-User (erhält Sprites)</label>
+                    <label class="form-label" data-i18n="generated.ae54ca2eb51c">Ziel-User (erhält Sprites)</label>
                     <input type="text" id="targetUserSearch" class="form-input" placeholder="User-ID oder Username eingeben...">
-                    <div class="form-help">Der User, der die Sprites erhalten soll</div>
+                    <div class="form-help" data-i18n="generated.6cc105d63cb0">Der User, der die Sprites erhalten soll</div>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Quell-Avatar (Sprite-Vorlage)</label>
+                    <label class="form-label" data-i18n="generated.ef97a1e2a8f0">Quell-Avatar (Sprite-Vorlage)</label>
                     <select id="sourceAvatarSelect" class="form-select">
-                        <option value="">-- Bitte Avatar wählen --</option>
+                        <option value="" data-i18n="generated.3c7956195a82">-- Bitte Avatar wählen --</option>
                     </select>
-                    <div class="form-help">Avatar, dessen Sprites kopiert werden</div>
+                    <div class="form-help" data-i18n="generated.834f9748137c">Avatar, dessen Sprites kopiert werden</div>
                 </div>
             </div>
             
@@ -987,9 +987,9 @@
             
             <div>
                 <button class="btn btn-primary" id="assignSpriteBtn" disabled>
-                    <i data-lucide="check-circle" class="inline-block w-4 h-4 mr-2"></i>
+                    <i data-lucide="check-circle" class="inline-block w-4 h-4 mr-2"></i><span data-i18n="generated.991ede764ecd">
                     Sprites zuweisen
-                </button>
+                </span></button>
             </div>
         </div>
 
@@ -997,36 +997,36 @@
         <div class="config-section">
             <div class="section-title">
                 <i data-lucide="user-plus"></i>
-                <span>User-Zuweisung für Talking Heads</span>
+                <span data-i18n="generated.d94033173008">User-Zuweisung für Talking Heads</span>
             </div>
-            <div class="form-help" style="margin-bottom: 10px;">
+            <div class="form-help" style="margin-bottom: 10px;" data-i18n="generated.45f0731e7e13">
                 Wähle einen User aus dem Stream aus und generiere einen Talking Head basierend auf Profilbild und Username.
                 Bei verfügbarem OpenAI API-Key wird das Profilbild automatisch analysiert.
             </div>
             
             <div class="flex gap-4 mb-4">
                 <button class="btn btn-secondary" id="loadUsersBtn">
-                    <i data-lucide="refresh-cw" class="inline-block w-4 h-4 mr-2"></i>
+                    <i data-lucide="refresh-cw" class="inline-block w-4 h-4 mr-2"></i><span data-i18n="generated.277bf658ece7">
                     User aus Stream laden
-                </button>
+                </span></button>
                 <div class="form-help flex items-center">
-                    <span id="userCountLabel">Keine User geladen</span>
+                    <span id="userCountLabel" data-i18n="generated.9155dc227d5e">Keine User geladen</span>
                 </div>
             </div>
 
             <div id="userListContainer" style="display: none;">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div class="form-group">
-                        <label class="form-label">User suchen</label>
+                        <label class="form-label" data-i18n="generated.3738f6bd36fe">User suchen</label>
                         <input type="text" id="userSearchInput" class="form-input" placeholder="Username eingeben...">
                     </div>
                     <div class="form-group">
                         <label class="form-label">User-Filter</label>
                         <select id="userFilterSelect" class="form-select">
-                            <option value="active" selected>Nur aktiver Livestream (Standard)</option>
-                            <option value="all">Alle User (global)</option>
+                            <option value="active" selected data-i18n="generated.b6f44250d6bb">Nur aktiver Livestream (Standard)</option>
+                            <option value="all" data-i18n="generated.ad834270264b">Alle User (global)</option>
                         </select>
-                        <div class="form-help">Standard: Nur User die aktuell zusehen. Offline User via Suchfeld finden.</div>
+                        <div class="form-help" data-i18n="generated.797e1054d2e3">Standard: Nur User die aktuell zusehen. Offline User via Suchfeld finden.</div>
                     </div>
                 </div>
                 
@@ -1040,9 +1040,9 @@
         <div class="config-section">
             <div class="section-title">
                 <i data-lucide="users"></i>
-                <span>Generierte Talking Heads</span>
+                <span data-i18n="generated.b50e1e1593ce">Generierte Talking Heads</span>
             </div>
-            <div class="form-help" style="margin-bottom: 10px;">Alle generierten Avatare werden hier angezeigt. Klicke auf einen Avatar, um die Standard-Idle Ansicht zu sehen.</div>
+            <div class="form-help" style="margin-bottom: 10px;" data-i18n="generated.736427183022">Alle generierten Avatare werden hier angezeigt. Klicke auf einen Avatar, um die Standard-Idle Ansicht zu sehen.</div>
             <div id="avatarList" class="style-grid avatar-grid">
                 <!-- Populated by JavaScript -->
             </div>
@@ -1075,16 +1075,16 @@
                 <label class="toggle-switch">
                     <input type="checkbox" id="autoRefreshLogs" checked>
                     <span class="toggle-slider"></span>
-                    <span style="margin-left: 8px; font-size: 0.875rem;">Auto-Refresh (5s)</span>
+                    <span style="margin-left: 8px; font-size: 0.875rem;" data-i18n="generated.de9cc45995e6">Auto-Refresh (5s)</span>
                 </label>
                 <button class="btn btn-secondary" id="refreshLogsBtn" style="padding: 6px 12px;">
                     <i data-lucide="refresh-cw" class="inline-block w-4 h-4 mr-1"></i>
                     Aktualisieren
                 </button>
                 <button class="btn btn-secondary" id="clearLogsBtn" style="padding: 6px 12px;">
-                    <i data-lucide="trash-2" class="inline-block w-4 h-4 mr-1"></i>
+                    <i data-lucide="trash-2" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.875a1d766a4e">
                     Logs leeren
-                </button>
+                </span></button>
             </div>
             
             <!-- Debug Log Output -->
@@ -1106,38 +1106,38 @@
         <div class="config-section" id="manualSpritesSection">
             <div class="section-title">
                 <i data-lucide="upload"></i>
-                <span>Manuelle Sprites</span>
+                <span data-i18n="generated.84626002368b">Manuelle Sprites</span>
             </div>
 
             <!-- Sprite Mode Selector -->
             <div class="form-group">
                 <label class="form-label">Sprite-Modus</label>
                 <select class="form-select" id="spriteModeSelect">
-                    <option value="auto">Auto (nur KI-Generierung)</option>
-                    <option value="manual">Manuell (nur eigene Sprites)</option>
-                    <option value="hybrid">Hybrid (Manuell bevorzugt, KI als Fallback)</option>
+                    <option value="auto" data-i18n="generated.458ef71971af">Auto (nur KI-Generierung)</option>
+                    <option value="manual" data-i18n="generated.f04bf2064f45">Manuell (nur eigene Sprites)</option>
+                    <option value="hybrid" data-i18n="generated.4bf55974fb10">Hybrid (Manuell bevorzugt, KI als Fallback)</option>
                 </select>
-                <div class="form-help">Bestimmt, wie Sprites für Viewer ausgewählt werden.</div>
+                <div class="form-help" data-i18n="generated.24e6faaa0eb4">Bestimmt, wie Sprites für Viewer ausgewählt werden.</div>
             </div>
 
             <div class="form-group" id="manualFallbackGroup" style="display:none;">
                 <label class="toggle-switch">
                     <input type="checkbox" id="manualFallbackToggle">
                     <span class="toggle-slider"></span>
-                    <span class="toggle-label">KI-Fallback bei fehlendem manuellem Set</span>
+                    <span class="toggle-label" data-i18n="generated.91643e304227">KI-Fallback bei fehlendem manuellem Set</span>
                 </label>
             </div>
 
             <div class="form-group" id="defaultManualSetGroup" style="display:none;">
-                <label class="form-label">Standard-Sprite-Set (für alle ohne eigenes)</label>
+                <label class="form-label" data-i18n="generated.3077279be5b6">Standard-Sprite-Set (für alle ohne eigenes)</label>
                 <select class="form-select" id="defaultManualSetSelect">
-                    <option value="">-- Kein Standard --</option>
+                    <option value="" data-i18n="generated.a3d5be26cf35">-- Kein Standard --</option>
                 </select>
             </div>
 
             <!-- Upload Zone -->
             <div class="form-group">
-                <label class="form-label">Neues Sprite-Set hochladen</label>
+                <label class="form-label" data-i18n="generated.58e08675516c">Neues Sprite-Set hochladen</label>
                 <input type="text" class="form-input" id="manualSetNameInput" placeholder="Set-Name (z.B. MeinAvatar)" style="margin-bottom:8px;">
 
                 <div id="manualUploadDropZone" style="
@@ -1153,7 +1153,7 @@
                    ondragleave="this.style.borderColor='var(--color-border)';"
                    ondrop="window.handleManualDropZoneDrop(event)">
                     <i data-lucide="upload-cloud" style="width:32px;height:32px;margin:0 auto 8px;display:block;"></i>
-                    <div style="font-size:0.875rem;">5 PNGs hier ablegen oder klicken zum Auswählen</div>
+                    <div style="font-size:0.875rem;" data-i18n="generated.1e666f95cec1">5 PNGs hier ablegen oder klicken zum Auswählen</div>
                     <div style="font-size:0.75rem;margin-top:4px;">Dateinamen: <code>idle_neutral.png, blink.png, speak_closed.png, speak_mid.png, speak_open.png</code></div>
                     <input type="file" id="manualSpriteFilesInput" accept=".png" multiple style="display:none;">
                 </div>
@@ -1161,19 +1161,19 @@
                 <div style="text-align:center;font-size:0.75rem;color:var(--color-text-secondary);margin-bottom:8px;">oder</div>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <input type="file" id="manualZipInput" accept=".zip" style="flex:1;" class="form-input">
-                    <span style="font-size:0.75rem;color:var(--color-text-secondary);">ZIP mit den 5 Frames hochladen</span>
+                    <span style="font-size:0.75rem;color:var(--color-text-secondary);" data-i18n="generated.58760ac6d59c">ZIP mit den 5 Frames hochladen</span>
                 </div>
 
                 <button class="btn btn-primary" id="uploadManualSetBtn" style="margin-top:12px;">
-                    <i data-lucide="upload" class="inline-block w-4 h-4 mr-1"></i>
+                    <i data-lucide="upload" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.977e78508047">
                     Set hochladen
-                </button>
+                </span></button>
                 <div id="manualUploadStatus" style="margin-top:8px;font-size:0.8rem;"></div>
             </div>
 
             <!-- Uploaded Sets List -->
             <div class="form-group">
-                <label class="form-label">Vorhandene Sprite-Sets</label>
+                <label class="form-label" data-i18n="generated.0e375e20b7fd">Vorhandene Sprite-Sets</label>
                 <div id="manualSetsList" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;">
                     <!-- Populated by JS -->
                 </div>
@@ -1181,18 +1181,18 @@
 
             <!-- User Assignment -->
             <div class="form-group">
-                <label class="form-label">Sprite-Set einem User zuweisen</label>
+                <label class="form-label" data-i18n="generated.f81ec9f3c766">Sprite-Set einem User zuweisen</label>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
                     <div style="flex:1;min-width:160px;">
                         <label class="form-label" style="font-size:0.75rem;">User</label>
                         <select class="form-select" id="manualAssignUserSelect">
-                            <option value="">-- User wählen --</option>
+                            <option value="" data-i18n="generated.3a991a72f4f7">-- User wählen --</option>
                         </select>
                     </div>
                     <div style="flex:1;min-width:160px;">
                         <label class="form-label" style="font-size:0.75rem;">Sprite-Set</label>
                         <select class="form-select" id="manualAssignSetSelect">
-                            <option value="">-- Set wählen --</option>
+                            <option value="" data-i18n="generated.ca85da6b56da">-- Set wählen --</option>
                         </select>
                     </div>
                     <button class="btn btn-success" id="manualAssignBtn">
@@ -1208,20 +1208,20 @@
         <div class="config-section" id="viewerBarSection">
             <div class="section-title">
                 <i data-lucide="layout-dashboard"></i>
-                <span>Viewer Rotator Bar</span>
+                <span data-i18n="generated.be2f5b8417e0">Viewer Rotator Bar</span>
             </div>
 
             <div class="form-group">
                 <label class="toggle-switch">
                     <input type="checkbox" id="viewerBarEnabledToggle">
                     <span class="toggle-slider"></span>
-                    <span class="toggle-label">Viewer Bar aktivieren</span>
+                    <span class="toggle-label" data-i18n="generated.9f323d840805">Viewer Bar aktivieren</span>
                 </label>
             </div>
 
             <!-- OBS URL -->
             <div class="form-group" id="viewerBarUrlGroup">
-                <label class="form-label">OBS Browser Source URL</label>
+                <label class="form-label" data-i18n="generated.8c87e6e3ab6a">OBS Browser Source URL</label>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <input type="text" class="form-input" id="viewerBarUrlDisplay" readonly style="flex:1;font-family:monospace;font-size:0.8rem;">
                     <button class="btn btn-secondary" id="copyViewerBarUrlBtn" style="padding:8px 12px;" title="URL kopieren">
@@ -1237,13 +1237,13 @@
 
             <!-- Avatar Size -->
             <div class="form-group">
-                <label class="form-label">Avatar-Größe: <span id="avatarSizeValue">64</span>px</label>
+                <label class="form-label"><span data-i18n="generated.a2d71a061c0f">Avatar-Größe: </span><span id="avatarSizeValue">64</span>px</label>
                 <input type="range" id="viewerBarAvatarSize" min="32" max="128" value="64" class="form-input" style="padding:0;">
             </div>
 
             <!-- Scroll Speed -->
             <div class="form-group">
-                <label class="form-label">Scroll-Geschwindigkeit: <span id="scrollSpeedValue">30</span> px/s (0 = kein Scroll)</label>
+                <label class="form-label">Scroll-Geschwindigkeit: <span id="scrollSpeedValue">30</span><span data-i18n="generated.66eca4a03edd"> px/s (0 = kein Scroll)</span></label>
                 <input type="range" id="viewerBarScrollSpeed" min="0" max="100" value="30" class="form-input" style="padding:0;">
             </div>
 
@@ -1251,20 +1251,20 @@
             <div class="form-group">
                 <label class="form-label">Scroll-Richtung</label>
                 <select class="form-select" id="viewerBarScrollDirection">
-                    <option value="left">Links (Standard)</option>
+                    <option value="left" data-i18n="generated.713be25ef463">Links (Standard)</option>
                     <option value="right">Rechts</option>
                 </select>
             </div>
 
             <!-- Pop-up Duration -->
             <div class="form-group">
-                <label class="form-label">Pop-Up Dauer: <span id="popUpDurationValue">5</span>s</label>
+                <label class="form-label"><span data-i18n="generated.e90e2187a4b2">Pop-Up Dauer: </span><span id="popUpDurationValue">5</span>s</label>
                 <input type="range" id="viewerBarPopUpDuration" min="2" max="15" value="5" class="form-input" style="padding:0;">
             </div>
 
             <!-- Max Viewers -->
             <div class="form-group">
-                <label class="form-label">Max. sichtbare Viewer</label>
+                <label class="form-label" data-i18n="generated.bbb50c8f7aff">Max. sichtbare Viewer</label>
                 <input type="number" class="form-input" id="viewerBarMaxViewers" min="1" max="50" value="20" style="width:100px;">
             </div>
 
@@ -1273,7 +1273,7 @@
                 <label class="toggle-switch">
                     <input type="checkbox" id="viewerBarShowChatBubble" checked>
                     <span class="toggle-slider"></span>
-                    <span class="toggle-label">Chat-Bubble anzeigen</span>
+                    <span class="toggle-label" data-i18n="generated.9e0c1cf458a0">Chat-Bubble anzeigen</span>
                 </label>
             </div>
 
@@ -1282,7 +1282,7 @@
                 <label class="toggle-switch">
                     <input type="checkbox" id="viewerBarShowUsername" checked>
                     <span class="toggle-slider"></span>
-                    <span class="toggle-label">Benutzername anzeigen</span>
+                    <span class="toggle-label" data-i18n="generated.9b910e200938">Benutzername anzeigen</span>
                 </label>
             </div>
 
@@ -1291,7 +1291,7 @@
                 <label class="toggle-switch">
                     <input type="checkbox" id="viewerBarIdleBlink" checked>
                     <span class="toggle-slider"></span>
-                    <span class="toggle-label">Idle Blink-Animation</span>
+                    <span class="toggle-label" data-i18n="generated.aa5bb30cc025">Idle Blink-Animation</span>
                 </label>
             </div>
 
@@ -1300,7 +1300,7 @@
                 <label class="toggle-switch">
                     <input type="checkbox" id="viewerBarPauseOnSpeak" checked>
                     <span class="toggle-slider"></span>
-                    <span class="toggle-label">Scroll pausieren wenn Viewer spricht</span>
+                    <span class="toggle-label" data-i18n="generated.3d1d3be59c65">Scroll pausieren wenn Viewer spricht</span>
                 </label>
             </div>
 
@@ -1308,14 +1308,14 @@
             <div class="form-group">
                 <label class="form-label">Bar-Hintergrundfarbe</label>
                 <input type="text" class="form-input" id="viewerBarBackground" value="rgba(0,0,0,0.3)" placeholder="rgba(0,0,0,0.3)" style="width:250px;">
-                <div class="form-help">CSS Farbe (z.B. rgba(0,0,0,0.5) oder #1a1a1a)</div>
+                <div class="form-help" data-i18n="generated.b237544986d8">CSS Farbe (z.B. rgba(0,0,0,0.5) oder #1a1a1a)</div>
             </div>
 
             <!-- Save Bar Config -->
             <button class="btn btn-success" id="saveViewerBarConfigBtn" style="margin-top:8px;">
-                <i data-lucide="save" class="inline-block w-4 h-4 mr-1"></i>
+                <i data-lucide="save" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.dca5ffc282b0">
                 Viewer Bar Konfiguration speichern
-            </button>
+            </span></button>
             <div id="viewerBarSaveStatus" style="margin-top:8px;font-size:0.8rem;"></div>
         </div>
 

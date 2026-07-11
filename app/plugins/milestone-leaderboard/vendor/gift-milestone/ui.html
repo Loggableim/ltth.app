@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gift Milestone Celebration - TikTok Stream Tool</title>
+    <title data-i18n="generated.75f0c2ff3557">Gift Milestone Celebration - TikTok Stream Tool</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function () {
@@ -908,21 +908,22 @@
         }
 
 </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>🎯 Gift Milestone Celebration</h1>
-        <p class="subtitle">Verfolge pro Benutzer, wie viele Coins ausgegeben wurden - streamübergreifend gespeichert</p>
+        <h1 data-i18n="generated.bc81528d836a">🎯 Gift Milestone Celebration</h1>
+        <p class="subtitle" data-i18n="gift_milestone.subtitle">Verfolge pro Benutzer, wie viele Coins ausgegeben wurden - streamübergreifend gespeichert</p>
 
         <div class="nav-buttons">
-            <a href="/" class="nav-button" target="_blank">🏠 Dashboard</a>
-            <a href="/gift-milestone/overlay" class="nav-button" target="_blank">👁️ Overlay öffnen</a>
+            <a href="/" class="nav-button" target="_blank" data-i18n="generated.a2e4da05c4a8">🏠 Dashboard</a>
+            <a href="/gift-milestone/overlay" class="nav-button" target="_blank" data-i18n="generated.99571bdb9c54">👁️ Overlay öffnen</a>
         </div>
 
         <!-- Enable/Disable Toggle -->
         <div class="section">
             <div class="toggle-container">
-                <span style="font-size: 1.2em; font-weight: 600;">Plugin Status:</span>
+                <span style="font-size: 1.2em; font-weight: 600;" data-i18n="generated.9e67085f5464">Plugin Status:</span>
                 <label class="toggle-switch">
                     <input type="checkbox" id="enableToggle">
                     <span class="slider"></span>
@@ -933,26 +934,26 @@
 
         <!-- Tier Management -->
         <div class="section">
-            <h2>🏆 Meilenstein-Stufen (Tiers)</h2>
-            <p class="help-text" style="margin-bottom: 15px;">
+            <h2 data-i18n="generated.37e2d63eb7bf">🏆 Meilenstein-Stufen (Tiers)</h2>
+            <p class="help-text" style="margin-bottom: 15px;" data-i18n="gift_milestone.tiers.description">
                 Definiere benutzerdefinierte Meilenstein-Stufen. Wenn Benutzer diese Coin-Schwellenwerte erreichen, wird eine Celebration ausgelöst.
             </p>
             
             <div id="tiersList"></div>
             
-            <button class="upload-button" id="addTierButton" style="margin-top: 15px;">➕ Neue Stufe hinzufügen</button>
+            <button class="upload-button" id="addTierButton" style="margin-top: 15px;" data-i18n="generated.5a5330a0a8a0">➕ Neue Stufe hinzufügen</button>
         </div>
 
         <!-- User Statistics -->
         <div class="section">
-            <h2>👥 Benutzer-Statistiken</h2>
-            <p class="help-text" style="margin-bottom: 15px;">
+            <h2 data-i18n="generated.d7bffb64c8a3">👥 Benutzer-Statistiken</h2>
+            <p class="help-text" style="margin-bottom: 15px;" data-i18n="gift_milestone.users.description">
                 Zeigt an, welche Benutzer wie viele Coins ausgegeben haben (streamübergreifend). Die Zählung wird NICHT bei jedem Stream zurückgesetzt.
             </p>
             
             <div style="text-align: center; margin-bottom: 15px;">
-                <button class="test-button" id="refreshUsersButton">🔄 Aktualisieren</button>
-                <button class="reset-button" id="resetAllUsersButton">🗑️ Alle Benutzer zurücksetzen</button>
+                <button class="test-button" id="refreshUsersButton" data-i18n="generated.f332759daa84">🔄 Aktualisieren</button>
+                <button class="reset-button" id="resetAllUsersButton" data-i18n="generated.4245d028df3b">🗑️ Alle Benutzer zurücksetzen</button>
             </div>
             
             <div id="userStatsList" style="max-height: 400px; overflow-y: auto;"></div>
@@ -960,32 +961,32 @@
 
         <!-- Configuration -->
         <div class="section">
-            <h2>⚙️ Konfiguration</h2>
-            <p class="help-text" style="margin-bottom: 15px;">
+            <h2 data-i18n="generated.64f3f8e9ae9f">⚙️ Konfiguration</h2>
+            <p class="help-text" style="margin-bottom: 15px;" data-i18n="gift_milestone.config.description">
                 Globale Einstellungen für Meilenstein-Celebrations. Die Standard-Medien werden verwendet, wenn eine Stufe keine eigenen Medien hat.
             </p>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="playbackMode">Wiedergabe-Modus</label>
+                    <label for="playbackMode" data-i18n="gift_milestone.config.playback_mode">Wiedergabe-Modus</label>
                     <select id="playbackMode">
-                        <option value="exclusive">Exklusiv (pausiert andere Alerts)</option>
-                        <option value="parallel">Parallel (läuft gleichzeitig)</option>
+                        <option value="exclusive" data-i18n="gift_milestone.config.playback_exclusive">Exklusiv (pausiert andere Alerts)</option>
+                        <option value="parallel" data-i18n="gift_milestone.config.playback_parallel">Parallel (läuft gleichzeitig)</option>
                     </select>
-                    <div class="help-text">Exklusiv pausiert TTS und andere Alerts während der Animation</div>
+                    <div class="help-text" data-i18n="generated.8a16a257e35e">Exklusiv pausiert TTS und andere Alerts während der Animation</div>
                 </div>
                 <div class="form-group">
-                    <label for="audioVolume">Audio-Lautstärke (%)</label>
+                    <label for="audioVolume" data-i18n="gift_milestone.config.audio_volume">Audio-Lautstärke (%)</label>
                     <input type="number" id="audioVolume" min="0" max="100" value="80">
-                    <div class="help-text">Lautstärke für Milestone-Audio (0-100%)</div>
+                    <div class="help-text" data-i18n="generated.4ca2db967cdf">Lautstärke für Milestone-Audio (0-100%)</div>
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="animationDuration">Animation-Dauer (ms)</label>
+                    <label for="animationDuration" data-i18n="gift_milestone.config.animation_duration">Animation-Dauer (ms)</label>
                     <input type="number" id="animationDuration" min="0" step="1000" value="0">
-                    <div class="help-text">0 = Automatisch (Medienlänge), sonst Timeout in Millisekunden</div>
+                    <div class="help-text" data-i18n="generated.260c34a80a12">0 = Automatisch (Medienlänge), sonst Timeout in Millisekunden</div>
                 </div>
             </div>
 
@@ -998,44 +999,44 @@
 
         <!-- Media Upload -->
         <div class="section">
-            <h2>🎬 Medien hochladen</h2>
+            <h2 data-i18n="generated.3d8f57c7aa81">🎬 Medien hochladen</h2>
 
             <div class="upload-section">
-                <h3>🖼️ GIF/Bild Animation</h3>
+                <h3 data-i18n="generated.9acf0ba66263">🖼️ GIF/Bild Animation</h3>
                 <input type="file" id="gifInput" class="file-input" accept=".gif,.png,.jpg,.jpeg,.webp">
-                <button class="upload-button" id="select-gif-btn">📁 GIF auswählen</button>
-                <button class="delete-button" id="deleteGif" style="display: none;">🗑️ Löschen</button>
+                <button class="upload-button" id="select-gif-btn" data-i18n="generated.87543a2beb53">📁 GIF auswählen</button>
+                <button class="delete-button" id="deleteGif" style="display: none;" data-i18n="generated.5935acd70d1e">🗑️ Löschen</button>
                 <div class="file-preview" id="gifPreview" style="display: none;"></div>
             </div>
 
             <div class="upload-section">
-                <h3>🎥 Video Animation</h3>
+                <h3 data-i18n="generated.36f3eae44840">🎥 Video Animation</h3>
                 <input type="file" id="videoInput" class="file-input" accept=".mp4,.webm,.mov,.avi">
-                <button class="upload-button" id="select-video-btn">📁 Video auswählen</button>
-                <button class="delete-button" id="deleteVideo" style="display: none;">🗑️ Löschen</button>
+                <button class="upload-button" id="select-video-btn" data-i18n="generated.8c12a504f50c">📁 Video auswählen</button>
+                <button class="delete-button" id="deleteVideo" style="display: none;" data-i18n="generated.62b010ef79ab">🗑️ Löschen</button>
                 <div class="file-preview" id="videoPreview" style="display: none;"></div>
             </div>
 
             <div class="upload-section">
-                <h3>🔊 Audio</h3>
+                <h3 data-i18n="generated.cb4be76c4f19">🔊 Audio</h3>
                 <input type="file" id="audioInput" class="file-input" accept=".mp3,.wav,.ogg,.m4a">
-                <button class="upload-button" id="select-audio-btn">📁 Audio auswählen</button>
-                <button class="delete-button" id="deleteAudio" style="display: none;">🗑️ Löschen</button>
+                <button class="upload-button" id="select-audio-btn" data-i18n="generated.1f7feb19dba5">📁 Audio auswählen</button>
+                <button class="delete-button" id="deleteAudio" style="display: none;" data-i18n="generated.dcad08d92419">🗑️ Löschen</button>
                 <div class="file-preview" id="audioPreview" style="display: none;"></div>
             </div>
         </div>
 
         <!-- Actions -->
         <div class="section">
-            <h2>🎮 Aktionen</h2>
+            <h2 data-i18n="generated.cf6bf585c175">🎮 Aktionen</h2>
             <div style="text-align: center;">
-                <button class="test-button" id="testButton">🧪 Celebration testen</button>
+                <button class="test-button" id="testButton" data-i18n="generated.f35b3d78805b">🧪 Celebration testen</button>
             </div>
         </div>
 
         <!-- Save Button -->
         <div class="section">
-            <button class="save-button" id="saveButton">💾 Konfiguration speichern</button>
+            <button class="save-button" id="saveButton" data-i18n="generated.55665f99ec35">💾 Konfiguration speichern</button>
         </div>
     </div>
 
@@ -1045,52 +1046,52 @@
     <!-- Tier Edit Modal -->
     <div class="modal" id="tierModal">
         <div class="modal-content">
-            <div class="modal-header" id="tierModalTitle">Neue Stufe hinzufügen</div>
+            <div class="modal-header" id="tierModalTitle" data-i18n="gift_milestone.tiers.add">Neue Stufe hinzufügen</div>
             <div class="form-group">
-                <label for="tierName">Stufen-Name</label>
+                <label for="tierName" data-i18n="gift_milestone.tiers.name">Stufen-Name</label>
                 <input type="text" id="tierName" placeholder="z.B. Bronze, Silber, Gold...">
             </div>
             <div class="form-group">
-                <label for="tierLevel">Stufen-Level (Reihenfolge)</label>
+                <label for="tierLevel" data-i18n="gift_milestone.tiers.level">Stufen-Level (Reihenfolge)</label>
                 <input type="number" id="tierLevel" min="1" value="1">
-                <div class="help-text">Niedrigere Werte werden zuerst erreicht</div>
+                <div class="help-text" data-i18n="generated.750e898be3b5">Niedrigere Werte werden zuerst erreicht</div>
             </div>
             <div class="form-group">
-                <label for="tierThreshold">Coin-Schwellenwert</label>
+                <label for="tierThreshold" data-i18n="gift_milestone.tiers.threshold">Coin-Schwellenwert</label>
                 <input type="number" id="tierThreshold" min="100" step="100" value="1000">
-                <div class="help-text">Anzahl der Coins, die benötigt werden, um diese Stufe zu erreichen</div>
+                <div class="help-text" data-i18n="generated.818d6ce0a915">Anzahl der Coins, die benötigt werden, um diese Stufe zu erreichen</div>
             </div>
             <div class="form-group">
                 <label>
-                    <input type="checkbox" id="tierEnabled" checked>
+                    <input type="checkbox" id="tierEnabled" checked><span data-i18n="generated.d1ad05a55939">
                     Stufe aktiviert
-                </label>
+                </span></label>
             </div>
             
             <div class="upload-section">
-                <h3>🖼️ Stufen-spezifisches GIF (optional)</h3>
+                <h3 data-i18n="generated.db98b15fee91">🖼️ Stufen-spezifisches GIF (optional)</h3>
                 <input type="file" id="tierGifInput" class="file-input" accept=".gif,.png,.jpg,.jpeg,.webp">
-                <button class="upload-button" id="select-tier-gif-btn">📁 GIF auswählen</button>
+                <button class="upload-button" id="select-tier-gif-btn" data-i18n="generated.f047fa10828c">📁 GIF auswählen</button>
                 <div class="file-preview" id="tierGifPreview" style="display: none;"></div>
             </div>
 
             <div class="upload-section">
-                <h3>🎥 Stufen-spezifisches Video (optional)</h3>
+                <h3 data-i18n="generated.1651f81b92b2">🎥 Stufen-spezifisches Video (optional)</h3>
                 <input type="file" id="tierVideoInput" class="file-input" accept=".mp4,.webm,.mov,.avi">
-                <button class="upload-button" id="select-tier-video-btn">📁 Video auswählen</button>
+                <button class="upload-button" id="select-tier-video-btn" data-i18n="generated.25c9c56de2a5">📁 Video auswählen</button>
                 <div class="file-preview" id="tierVideoPreview" style="display: none;"></div>
             </div>
 
             <div class="upload-section">
-                <h3>🔊 Stufen-spezifisches Audio (optional)</h3>
+                <h3 data-i18n="generated.106237c28e6b">🔊 Stufen-spezifisches Audio (optional)</h3>
                 <input type="file" id="tierAudioInput" class="file-input" accept=".mp3,.wav,.ogg,.m4a">
-                <button class="upload-button" id="select-tier-audio-btn">📁 Audio auswählen</button>
+                <button class="upload-button" id="select-tier-audio-btn" data-i18n="generated.a5272f12d770">📁 Audio auswählen</button>
                 <div class="file-preview" id="tierAudioPreview" style="display: none;"></div>
             </div>
 
             <div class="modal-buttons">
-                <button class="save-button" id="saveTierButton">💾 Speichern</button>
-                <button class="reset-button" id="cancelTierButton">âŒ Abbrechen</button>
+                <button class="save-button" id="saveTierButton" data-i18n="generated.0174fc0accdb">💾 Speichern</button>
+                <button class="reset-button" id="cancelTierButton" data-i18n="generated.7763c1fbb331">❌ Abbrechen</button>
             </div>
         </div>
     </div>

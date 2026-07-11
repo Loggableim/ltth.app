@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Fireworks 2.0.1 Runtime Contract**: Restored persistent Paws, renderer, Toaster, trails, glow, and particle-limit settings; corrected real WebGL2/Canvas selection, adaptive quality, benchmark telemetry, and renderer cleanup.
 - **ClarityHUD XSS Security**: Added `escapeAttr()` helper function; all template literal values in input fields are now properly escaped to prevent XSS injection attacks.
 - **ClarityHUD UI**: `.source-badge` text color changed from `color-text-inverse` to `color-text-primary` for better contrast across themes.
 

@@ -1,6 +1,6 @@
 // ============================================
 // Quiz Show Overlay - Professional HUD System
-// Vollst‰ndig konfigurierbar mit Drag & Drop
+// Vollst√§ndig konfigurierbar mit Drag & Drop
 // ============================================
 
 (function() {
@@ -165,7 +165,7 @@
             const stored = localStorage.getItem('dashboard-theme');
             if (stored) appTheme = stored;
         } catch (e) {
-            // localStorage not available (OBS Browser Source sandbox) ó use default
+            // localStorage not available (OBS Browser Source sandbox) ‚Äî use default
             appTheme = 'night';
         }
         
@@ -353,7 +353,7 @@
     }
 
     function applyElementPositions() {
-        // If a custom layout is active, skip Drag&Drop positions ó the layout CSS variables take precedence
+        // If a custom layout is active, skip Drag&Drop positions ‚Äî the layout CSS variables take precedence
         const overlay = document.getElementById('overlay-container');
         if (overlay && overlay.hasAttribute('data-custom-layout')) {
             return;
@@ -1391,9 +1391,9 @@
 
         errorOverlay.innerHTML = `
             <div class="error-content" style="transform: scale(0); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);">
-                <div style="font-size: 3em; margin-bottom: 15px;">†</div>
+                <div style="font-size: 3em; margin-bottom: 15px;">‚ùì</div>
                 <h2 style="font-size: 2em; margin-bottom: 10px; font-weight: bold;">${escapeHtml(message)}</h2>
-                <p style="font-size: 1.2em; opacity: 0.9;">Bitte f¸gen Sie neue Fragen hinzu und starten Sie erneut.</p>
+                <p style="font-size: 1.2em; opacity: 0.9;">Bitte f√ºgen Sie neue Fragen hinzu und starten Sie erneut.</p>
             </div>
         `;
 

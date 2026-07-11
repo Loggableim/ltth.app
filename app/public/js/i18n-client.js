@@ -37,10 +37,11 @@ class I18nClient {
         // Check URL parameter first (?lang=) — overrides localStorage
         const urlParams = new URLSearchParams(window.location.search);
         const urlLocale = urlParams.get('lang');
-        const savedLocale = urlLocale || localStorage.getItem('app_locale') || this.defaultLocale;
+        const savedLocale = this.normalizeLocale(urlLocale || localStorage.getItem('app_locale') || this.defaultLocale);
         
-        // Load the default locale first so missing keys can fall back to stable
-        // English strings instead of rendering raw i18n keys.
+        // Load English as the baseline for the initial boot, but keep a
+        // supported language isolated so missing keys cannot borrow English
+        // silently during a language switch.
         await this.loadTranslations(this.defaultLocale);
         if (savedLocale !== this.defaultLocale) {
             await this.loadTranslations(savedLocale);
@@ -55,6 +56,7 @@ class I18nClient {
      * Load translations from server
      */
     async loadTranslations(locale) {
+        locale = this.normalizeLocale(locale);
         try {
             const response = await fetch(`/api/i18n/translations/${locale}`);
             if (!response.ok) {
@@ -64,6 +66,9 @@ class I18nClient {
             const data = await response.json();
             this.translations[locale] = data;
             this.currentLocale = locale;
+            if (document && document.documentElement) {
+                document.documentElement.lang = locale;
+            }
             
             // Save to localStorage
             localStorage.setItem('app_locale', locale);
@@ -73,11 +78,9 @@ class I18nClient {
         } catch (error) {
             console.error(`❌ [i18n] Failed to load translations for ${locale}:`, error);
             
-            // Fallback to default locale if not already trying it
-            if (locale !== this.defaultLocale) {
-                console.log(`[i18n] Falling back to ${this.defaultLocale}`);
-                return this.loadTranslations(this.defaultLocale);
-            }
+            // Do not silently replace a supported language with English. A
+            // missing locale is a deployment error and must stay visible to
+            // QA instead of making a partially translated UI look healthy.
             return false;
         }
     }
@@ -86,6 +89,7 @@ class I18nClient {
      * Change language and reload translations
      */
     async changeLanguage(locale) {
+        locale = this.normalizeLocale(locale);
         console.log(`[i18n] changeLanguage called: ${this.currentLocale} -> ${locale}`);
         
         if (this.currentLocale === locale) {
@@ -150,18 +154,9 @@ class I18nClient {
             if (translation && typeof translation === 'object' && k in translation) {
                 translation = translation[k];
             } else {
-                // Fallback to default locale
-                if (this.currentLocale !== this.defaultLocale && this.translations[this.defaultLocale]) {
-                    translation = this.translations[this.defaultLocale];
-                    for (const fallbackKey of keys) {
-                        if (translation && typeof translation === 'object' && fallbackKey in translation) {
-                            translation = translation[fallbackKey];
-                        } else {
-                            return key;
-                        }
-                    }
-                    break;
-                }
+                // Supported locales must not silently borrow another language.
+                // updateDOM preserves the original label when this key is not
+                // present, making missing translations visible to QA.
                 return key;
             }
         }
@@ -204,6 +199,7 @@ class I18nClient {
      * Change the current locale
      */
     async setLocale(locale) {
+        locale = this.normalizeLocale(locale);
         if (locale === this.currentLocale) {
             return true;
         }
@@ -233,6 +229,11 @@ class I18nClient {
      */
     getLocale() {
         return this.currentLocale;
+    }
+
+    normalizeLocale(locale) {
+        const normalized = String(locale || '').trim().toLowerCase().replace('_', '-').split('-')[0];
+        return ['en', 'de', 'es', 'fr'].includes(normalized) ? normalized : this.defaultLocale;
     }
 
     /**
@@ -325,6 +326,24 @@ class I18nClient {
             }
         });
 
+        // Plugin UIs historically used data-i18n-key. Keep that attribute
+        // compatible with the central data-i18n contract so overlays and
+        // settings pages do not need a second translation runtime.
+        document.querySelectorAll('[data-i18n-key]').forEach(element => {
+            if (element.hasAttribute('data-i18n')) return;
+            const key = element.getAttribute('data-i18n-key');
+            const translation = this.t(key);
+            if (translation === key) return;
+            const isHtml = element.getAttribute('data-i18n-html') === 'true';
+            if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                element.placeholder = translation;
+            } else if (isHtml) {
+                element.innerHTML = translation;
+            } else {
+                element.textContent = translation;
+            }
+        });
+
         // Update elements with data-i18n-title attribute (for tooltips)
         document.querySelectorAll('[data-i18n-title]').forEach(element => {
             const key = element.getAttribute('data-i18n-title');
@@ -333,6 +352,23 @@ class I18nClient {
                 return element.getAttribute('title') || '';
             });
             element.title = translation === key ? fallback : translation;
+        });
+
+        // Accessible names and form hints are translated independently from
+        // visible text so keyboard and assistive-technology users follow the
+        // active language as well.
+        document.querySelectorAll('[data-i18n-aria-label]').forEach(element => {
+            const key = element.getAttribute('data-i18n-aria-label');
+            const translation = this.t(key);
+            const fallback = this.getStableFallback(element, 'data-i18n-aria-label-fallback', () => element.getAttribute('aria-label') || '');
+            element.setAttribute('aria-label', translation === key ? fallback : translation);
+        });
+
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+            const key = element.getAttribute('data-i18n-placeholder');
+            const translation = this.t(key);
+            const fallback = this.getStableFallback(element, 'data-i18n-placeholder-fallback', () => element.getAttribute('placeholder') || '');
+            element.setAttribute('placeholder', translation === key ? fallback : translation);
         });
 
         // Update elements with data-i18n-html attribute (for HTML content)

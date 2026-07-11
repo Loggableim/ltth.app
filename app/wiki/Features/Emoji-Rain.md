@@ -1,6 +1,6 @@
 # Emoji Rain – Feature-Dokumentation
 
-> **Beschreibung:** Physikbasierter Emoji-Regen-Effekt für TikTok-LIVE-Streams – entweder als GPU-beschleunigte WebGPU-Version oder als Canvas/Matter.js-Fallback-Version.
+> **Beschreibung:** Zwei getrennte EmojiRain-Editionen für TikTok LIVE: das kompatible Matter.js-Plugin und die strikt native WebGPU-Ausgabe.
 
 ---
 
@@ -25,25 +25,31 @@ Es gibt zwei Varianten:
 
 | Variante | Plugin | Technologie | Status |
 |----------|--------|-------------|--------|
-| **WebGPU Emoji Rain** | `webgpu-emoji-rain` | WebGPU (GPU-beschleunigt) | 🔴 Early Beta |
-| **Emoji Rain v2.0** | `emoji-rain` | Canvas + Matter.js (CPU) | 🟢 Alpha |
+| **WebGPU EmojiRain 3.0** | `webgpu-emoji-rain` | WebGPU Compute + instanzierte GPU-Sprites | 🟣 Development Beta |
+| **EmojiRain 2.1** | `emoji-rain` | Matter.js + DOM-Sprites | 🟢 Working Beta |
 
-Beide Varianten sind unabhängig voneinander und können gleichzeitig installiert sein. Für beste Performance wird die WebGPU-Version empfohlen, sofern ein kompatibler Browser/GPU vorhanden ist.
+Beide Varianten können installiert sein, aber nie gleichzeitig aktiv werden. Beim Aktivieren einer Edition deaktiviert LTTH die andere atomar. WebGPU hat keinen internen Canvas-Fallback; ohne WebGPU zeigt das Overlay eine Diagnose und verweist auf den manuellen Wechsel zu EmojiRain.
 
 ---
 
 ## Versionen
 
-### WebGPU Emoji Rain (Empfohlen)
+### WebGPU EmojiRain 3.0
 
-**Plugin-ID:** `webgpu-emoji-rain`  
-**Version:** 2.0.0  
-**Status:** 🔴 Early Beta
+**Plugin-ID:** `webgpu-emoji-rain`
+**Version:** 3.0.0
+**Status:** 🟣 Development Beta
 
-GPU-beschleunigtes Rendering mit WebGPU Instanced Drawing. Ideal für leistungsstarke Setups mit modernem Browser.
+Strikt nativer Renderer mit Compute-Physik, GPU-Kollisionen, aktiver Partikelkompaktierung, indirekten Draws, Texture-Atlas, HDR-Bloom und transparenter OBS-Komposition.
 
 **Features:**
-- 🚀 WebGPU-beschleunigtes Rendering (10× schneller als Canvas)
+- 🚀 GPU-Compute-Physik und instanziertes Rendering ohne Matter.js-Fallback
+- 🎨 Hybrid-, Cinematic- und Neon-Profil mit adaptiver 1080p60-Qualität
+- 🧩 Vollständige Renderer-Parität: Custom Images, User-Mappings, Toaster-, Farb-, Rainbow- und Pixelmodus
+- 🎈 Herz- und Profilballons mit Wind, Schnur, konfigurierbarer Pop-Höhe und GPU-Fragmenten
+- 🎁 Gläserne Geschenkekugeln sowie eigene Materialien für Sticker, Likes, Follows, Shares, Subscribes und SuperFans
+- ✨ GPU-Impact-Funken, Soft Shadows, Trails und dreistufige HDR-Bloom-Pyramide
+- 📊 Echte GPU-Timestamp-Telemetrie, sichere Hot-Config, atomare freie Slots und kontrolliertes Dropping
 - 🎨 Konfigurierbare Emoji-Sets und Custom-Image-Uploads (PNG/JPG/GIF/WebP/SVG)
 - 👤 Benutzer-spezifische Emoji-Mappings
 - 🎁 TikTok-Event-Integration (Gift, Like, Follow, Share, Subscribe)
@@ -52,11 +58,11 @@ GPU-beschleunigtes Rendering mit WebGPU Instanced Drawing. Ideal für leistungss
 - 📺 OBS-HUD-Overlay (1920×1080 Fixed)
 - 💾 Persistenter Speicher (Update-sicher)
 
-### Emoji Rain v2.0 (Canvas-Version)
+### EmojiRain 2.1 (kompatible Edition)
 
-**Plugin-ID:** `emoji-rain`  
-**Version:** 2.0.0  
-**Status:** 🟢 Alpha
+**Plugin-ID:** `emoji-rain`
+**Version:** 2.1.0
+**Status:** 🟢 Working Beta
 
 Physikbasierte Canvas-Version mit Matter.js-Engine. Funktioniert in allen modernen Browsern ohne WebGPU-Unterstützung.
 

@@ -8954,9 +8954,9 @@ class AnimazingPalPlugin {
 
         ? `Ausgabe gesetzt: ${animazeOutputDeviceLabel}.`
 
-        : 'Kein explizites Animaze-Ausgabeger?t gesetzt; Browser/Windows-Default wird genutzt.',
+        : 'Kein explizites Animaze-Ausgabegerät gesetzt; Browser/Windows-Default wird genutzt.',
 
-      hasOutputDevice ? null : 'CABLE Input im Animaze-Routing ausw?hlen.'
+      hasOutputDevice ? null : 'CABLE Input im Animaze-Routing auswählen.'
 
     );
 
@@ -8968,7 +8968,7 @@ class AnimazingPalPlugin {
 
         outputDeviceAvailable ? 'ok' : 'error',
 
-        'Animaze-Ausgabe-Ger?t',
+        'Animaze-Ausgabe-Gerät',
 
         outputDeviceAvailable
 
@@ -8976,7 +8976,7 @@ class AnimazingPalPlugin {
 
           : `Das gespeicherte Animaze-Ausgabe-Device ist im Browser nicht verfügbar (${animazeOutputDeviceLabel}). Audio würde auf Standardausgabe fallen und Animaze nicht erreichen.`,
 
-        outputDeviceAvailable ? null : 'In der Standalone-UI Animaze-Ausgabe erneut freigeben und CABLE Input pr?fen.'
+        outputDeviceAvailable ? null : 'In der Standalone-UI Animaze-Ausgabe erneut freigeben und CABLE Input prüfen.'
 
       );
 
@@ -8992,7 +8992,7 @@ class AnimazingPalPlugin {
 
       hasOutputDevice && !sinkSupported
 
-        ? 'Browser kann das konfigurierte Animaze-Ausgabeger?t nicht direkt ansteuern.'
+        ? 'Browser kann das konfigurierte Animaze-Ausgabegerät nicht direkt ansteuern.'
 
         : (audioUnlocked ? 'Audio ist freigeschaltet.' : 'Audio ist noch nicht per User-Klick freigeschaltet.'),
 
@@ -9024,7 +9024,7 @@ class AnimazingPalPlugin {
 
       playbackHasError || playbackNeedsRoutingProof
 
-        ? 'Audioger?t erneut freigeben, Sprachtest ausf?hren und Preflight wiederholen.'
+        ? 'Audiogerät erneut freigeben, Sprachtest ausführen und Preflight wiederholen.'
 
         : null
 
@@ -9891,7 +9891,7 @@ class AnimazingPalPlugin {
       const displayName = String(data.nickname || username || '').trim() || username;
       const fallbackTemplate = speechLanguage === 'en'
         ? `Thanks for following, ${displayName}!`
-        : `Danke f?r den Follow, ${displayName}!`;
+        : `Danke für den Follow, ${displayName}!`;
       const fallbackMessage = this._formatLiveHostMessage(fallbackTemplate);
 
       if (fallbackMessage) {

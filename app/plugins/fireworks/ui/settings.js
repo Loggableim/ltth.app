@@ -244,6 +244,7 @@ function updateUI() {
     
     // Color mode
     document.getElementById('color-mode').value = config.colorMode || 'gift';
+    renderColorSwatches();
     
     // Visual effects
     updateToggle('trails-toggle', config.trailsEnabled);
@@ -880,13 +881,28 @@ function setupEventListeners() {
         });
     });
     
-    // Add color button
+    const colorPicker = document.getElementById('color-picker');
+    const colorHex = document.getElementById('color-hex');
+    const normalizeColor = (value) => /^#[0-9A-Fa-f]{6}$/.test(value || '') ? value.toUpperCase() : null;
+    colorPicker?.addEventListener('input', () => {
+        if (colorHex) colorHex.value = colorPicker.value.toUpperCase();
+    });
+    colorHex?.addEventListener('change', () => {
+        const color = normalizeColor(colorHex.value);
+        if (!color) {
+            colorHex.value = colorPicker?.value?.toUpperCase() || '#FF4444';
+            return;
+        }
+        colorHex.value = color;
+        if (colorPicker) colorPicker.value = color;
+    });
     document.getElementById('add-color').addEventListener('click', () => {
-        const color = prompt('Enter hex color (e.g., #ff0000):');
-        if (color && /^#[0-9A-Fa-f]{6}$/.test(color)) {
-            if (!config.themeColors) config.themeColors = [];
+        const color = normalizeColor(colorHex?.value || colorPicker?.value);
+        if (!color) return;
+        if (!config.themeColors) config.themeColors = [];
+        if (!config.themeColors.includes(color)) {
             config.themeColors.push(color);
-            addColorSwatch(color);
+            renderColorSwatches();
         }
     });
 }
@@ -901,6 +917,13 @@ function setupRangeSlider(sliderId, valueId, suffix, callback) {
     });
 }
 
+function renderColorSwatches() {
+    const container = document.getElementById('color-swatches');
+    if (!container) return;
+    container.querySelectorAll('.color-swatch[data-color]').forEach(swatch => swatch.remove());
+    (config.themeColors || []).forEach(color => addColorSwatch(color));
+}
+
 function addColorSwatch(color) {
     const container = document.getElementById('color-swatches');
     const addBtn = document.getElementById('add-color');
@@ -909,6 +932,25 @@ function addColorSwatch(color) {
     swatch.className = 'color-swatch';
     swatch.style.background = color;
     swatch.dataset.color = color;
+    swatch.title = `${color} - click to remove`;
+    swatch.draggable = true;
+    swatch.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', color));
+    swatch.addEventListener('dragover', event => event.preventDefault());
+    swatch.addEventListener('drop', event => {
+        event.preventDefault();
+        const source = event.dataTransfer.getData('text/plain');
+        const colors = config.themeColors || [];
+        const from = colors.indexOf(source);
+        const to = colors.indexOf(color);
+        if (from < 0 || to < 0 || from === to) return;
+        colors.splice(to, 0, colors.splice(from, 1)[0]);
+        renderColorSwatches();
+    });
+    swatch.title = `${color} — click to remove`;
+    swatch.addEventListener('click', () => {
+        config.themeColors = (config.themeColors || []).filter(item => item !== color);
+        renderColorSwatches();
+    });
     
     container.insertBefore(swatch, addBtn);
 }

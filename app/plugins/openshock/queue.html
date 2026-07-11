@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Openshock Queue</title>
+    <title data-i18n="generated.9f2688a97e65">Openshock Queue</title>
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/openshock/openshock.css">
     <script>
@@ -578,6 +578,7 @@
         }
     </style>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
     <div class="queue-container">
@@ -585,7 +586,7 @@
         <div class="queue-header">
             <div class="queue-stats">
                 <div class="stat-item">
-                    <div class="stat-label">In Queue</div>
+                    <div class="stat-label" data-i18n="generated.4b193db89ef5">In Queue</div>
                     <div class="stat-value" id="queueLength">0</div>
                 </div>
                 <div class="stat-item">
@@ -593,11 +594,11 @@
                     <div class="stat-value" id="processingCount">0</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-label">Total Processed</div>
+                    <div class="stat-label" data-i18n="generated.0574963502a2">Total Processed</div>
                     <div class="stat-value" id="totalProcessed">0</div>
                 </div>
             </div>
-            <button class="btn-clear" id="btnClearQueue" onclick="clearQueue()">
+            <button class="btn-clear" id="btnClearQueue" onclick="clearQueue()" data-i18n="generated.c5cb48cd471a">
                 🗑️ Queue leeren
             </button>
         </div>
@@ -607,7 +608,7 @@
 
         <!-- Pending queue items -->
         <div id="queue-section">
-            <div class="section-title">⏳ Wartende Shocks</div>
+            <div class="section-title" data-i18n="generated.debbbf6ca025">⏳ Wartende Shocks</div>
             <div id="queue-list"></div>
         </div>
     </div>

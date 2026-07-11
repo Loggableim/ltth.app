@@ -1530,7 +1530,7 @@ class OpenShockPlugin {
         const executionId = `pattern-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
         this.api.log(`[Pattern Execution] Starting pattern "${pattern.name}" (ID: ${pattern.id}) on device "${device.name}" (ID: ${device.id})`, 'info');
-        this.api.log(`[Pattern Execution] Pattern has ${pattern.steps?.length || 0} steps`, 'info');
+        this.api.log(`[Pattern Execution] Pattern has ${pattern.stepsí.length || 0} steps`, 'info');
 
         // Execution tracken
         this.activePatternExecutions.set(executionId, {

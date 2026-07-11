@@ -4,36 +4,37 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leaderboard Overlay</title>
+    <title data-i18n="generated.49a1acfba44e">Leaderboard Overlay</title>
     <link rel="stylesheet" href="/leaderboard/style.css">
     <link rel="stylesheet" href="/leaderboard/theme.css" id="theme-stylesheet">
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
     <div class="container">
         <!-- Tab Navigation -->
         <div class="tabs">
             <button class="tab-btn active" data-tab="session">
-                <span class="tab-icon">🔥</span>
+                <span class="tab-icon">🔥</span><span data-i18n="generated.41a848c49a5e">
                 Current Session
-            </button>
+            </span></button>
             <button class="tab-btn" data-tab="alltime">
-                <span class="tab-icon">👑</span>
+                <span class="tab-icon">👑</span><span data-i18n="generated.d72001e47255">
                 All Time Champions
-            </button>
+            </span></button>
         </div>
 
         <!-- Session Leaderboard -->
         <div class="leaderboard-panel active" id="session-panel">
             <div class="panel-header">
-                <h2>🔥 Current Session Top Gifters</h2>
-                <div class="session-info" id="session-info">
-                    Session started: <span id="session-start-time">-</span>
+                <h2 data-i18n="generated.024d7cf4839d">🔥 Current Session Top Gifters</h2>
+                <div class="session-info" id="session-info"><span data-i18n="generated.2771098ed0de">
+                    Session started: </span><span id="session-start-time">-</span>
                 </div>
             </div>
             <div class="leaderboard-list" id="session-list">
                 <div class="empty-state">
                     <div class="empty-icon">🎁</div>
-                    <p>Waiting for gifts...</p>
+                    <p data-i18n="generated.e4ba8f7d8039">Waiting for gifts...</p>
                 </div>
             </div>
         </div>
@@ -41,12 +42,12 @@
         <!-- All-Time Leaderboard -->
         <div class="leaderboard-panel" id="alltime-panel">
             <div class="panel-header">
-                <h2>👑 All Time Champions</h2>
+                <h2 data-i18n="generated.1e4e595cf350">👑 All Time Champions</h2>
             </div>
             <div class="leaderboard-list" id="alltime-list">
                 <div class="empty-state">
                     <div class="empty-icon">🏆</div>
-                    <p>No champions yet...</p>
+                    <p data-i18n="generated.3a68619ca41e">No champions yet...</p>
                 </div>
             </div>
         </div>

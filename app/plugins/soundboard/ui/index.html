@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soundboard Configuration</title>
+    <title data-i18n="generated.2eef0b16226e">Soundboard Configuration</title>
     <link rel="stylesheet" href="/css/tailwind.output.css">
     <link rel="stylesheet" href="/css/navigation.css">
     <link rel="stylesheet" href="/css/themes.css">
@@ -1727,6 +1727,7 @@
             border: 3px solid #facc15 !important;
             -webkit-text-fill-color: #fff !important;
         }</style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
     <!-- Standalone Header -->
@@ -1735,11 +1736,11 @@
             <img class="standalone-logo" data-brand-logo src="/soundboard-logo.png" alt="LTTH Soundboard">
         </div>
         <div class="standalone-actions">
-            <div class="soundboard-save-state" id="soundboard-save-state">Workspace ready</div>
+            <div class="soundboard-save-state" id="soundboard-save-state" data-i18n="generated.a8ec3fd3e52c">Workspace ready</div>
             <button class="btn btn-primary btn-lg standalone-save-btn" type="button" data-save-proxy>
-                <i data-lucide="save"></i>
+                <i data-lucide="save"></i><span data-i18n="generated.67b43609c179">
                 Save Settings
-            </button>
+            </span></button>
         </div>
     </div>
 
@@ -1754,19 +1755,19 @@
                     </button>
                     <button class="soundboard-nav-btn" type="button" data-soundboard-view="gift-mapping">
                         <i data-lucide="gift"></i>
-                        <span class="soundboard-nav-label">Gift Mapping</span>
+                        <span class="soundboard-nav-label" data-i18n="generated.e8521a8bd498">Gift Mapping</span>
                     </button>
                     <button class="soundboard-nav-btn" type="button" data-soundboard-view="event-sounds">
                         <i data-lucide="zap"></i>
-                        <span class="soundboard-nav-label">Event Sounds</span>
+                        <span class="soundboard-nav-label" data-i18n="generated.97acaeee5117">Event Sounds</span>
                     </button>
                     <button class="soundboard-nav-btn" type="button" data-soundboard-view="obs-overlay">
                         <i data-lucide="monitor"></i>
-                        <span class="soundboard-nav-label">OBS Overlay</span>
+                        <span class="soundboard-nav-label" data-i18n="generated.0c5c080770af">OBS Overlay</span>
                     </button>
                     <button class="soundboard-nav-btn" type="button" data-soundboard-view="advanced-tools">
                         <i data-lucide="wrench"></i>
-                        <span class="soundboard-nav-label">Advanced Tools</span>
+                        <span class="soundboard-nav-label" data-i18n="generated.2be6fb9aefc7">Advanced Tools</span>
                     </button>
                 </nav>
             </aside>
@@ -1776,36 +1777,36 @@
                     <div class="workspace-header">
                         <div>
                             <h2><i data-lucide="layout-dashboard"></i> Overview</h2>
-                            <p class="workspace-subtitle">Status, quick actions, and the shortest path to the common soundboard tasks.</p>
+                            <p class="workspace-subtitle" data-i18n="generated.0bac3652c080">Status, quick actions, and the shortest path to the common soundboard tasks.</p>
                         </div>
                     </div>
                     <div class="overview-grid">
                         <button class="workspace-card overview-metric workspace-jump" type="button" data-soundboard-view="gift-mapping">
-                            <span class="metric-label">Configured gifts</span>
+                            <span class="metric-label" data-i18n="generated.6181a9710c06">Configured gifts</span>
                             <span class="metric-value" id="overview-gift-count">0</span>
-                            <span class="workspace-subtitle">Open gift mapping</span>
+                            <span class="workspace-subtitle" data-i18n="generated.7e68406e4269">Open gift mapping</span>
                         </button>
                         <button class="workspace-card overview-metric workspace-jump" type="button" data-soundboard-view="event-sounds">
-                            <span class="metric-label">Soundboard</span>
+                            <span class="metric-label" data-i18n="soundboard.title">Soundboard</span>
                             <span class="metric-value" id="overview-enabled-state">Unknown</span>
-                            <span class="workspace-subtitle">Open event settings</span>
+                            <span class="workspace-subtitle" data-i18n="generated.e542b7ffe363">Open event settings</span>
                         </button>
                         <button class="workspace-card overview-metric workspace-jump" type="button" data-soundboard-view="obs-overlay">
-                            <span class="metric-label">OBS Overlay</span>
+                            <span class="metric-label" data-i18n="generated.941a39a263b8">OBS Overlay</span>
                             <span class="metric-value" id="overview-obs-state">Ready</span>
-                            <span class="workspace-subtitle">Copy URL and tune layout</span>
+                            <span class="workspace-subtitle" data-i18n="generated.6fc35b00bac8">Copy URL and tune layout</span>
                         </button>
                         <button class="workspace-card overview-metric workspace-jump" type="button" data-soundboard-view="library-search">
                             <span class="metric-label">Library</span>
-                            <span class="metric-value">Sounds + GIFs</span>
-                            <span class="workspace-subtitle">Search MyInstants and GIFs</span>
+                            <span class="metric-value" data-i18n="generated.54eefe4adcab">Sounds + GIFs</span>
+                            <span class="workspace-subtitle" data-i18n="generated.094cf3f6c6f3">Search MyInstants and GIFs</span>
                         </button>
                     </div>
                     <div class="workspace-card" style="margin-top: 16px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
                             <div>
-                                <h3>Recommended gift mappings</h3>
-                                <p class="workspace-subtitle">Frequently dropped gifts that do not have dedicated audio yet.</p>
+                                <h3 data-i18n="generated.a9208528388a">Recommended gift mappings</h3>
+                                <p class="workspace-subtitle" data-i18n="generated.3b11cc83eb07">Frequently dropped gifts that do not have dedicated audio yet.</p>
                             </div>
                             <button id="refresh-gift-recommendations-btn" class="btn btn-sm btn-ghost" type="button">
                                 <i data-lucide="refresh-cw"></i>
@@ -1813,17 +1814,17 @@
                             </button>
                         </div>
                         <div id="gift-recommendations-list" class="gift-recommendations-list">
-                            <div class="text-gray-400 text-sm">Loading recommendations...</div>
+                            <div class="text-gray-400 text-sm" data-i18n="generated.3a2ed4b0fe9a">Loading recommendations...</div>
                         </div>
                     </div>
                 </section>
         <!-- OBS Overlay Section - PROMINENT -->
         <section class="obs-overlay-section workspace-panel" data-workspace-panel="obs-overlay">
             <h3>
-                <i data-lucide="monitor"></i>
+                <i data-lucide="monitor"></i><span data-i18n="generated.59f283e4aca1">
                 OBS Animation Overlay
-            </h3>
-            <p style="color: var(--color-text-secondary); margin-bottom: 12px;">
+            </span></h3>
+            <p style="color: var(--color-text-secondary); margin-bottom: 12px;" data-i18n="generated.d644977ec7cc">
                 Add this URL as a Browser Source in OBS to display MP4/GIF animations when gifts are received or events occur.
                 Recommended size: 1920x1080, transparent background.
             </p>
@@ -1842,44 +1843,44 @@
                 <div style="display: flex; align-items: flex-start; gap: 8px;">
                     <i data-lucide="info" style="color: #3b82f6; width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0;"></i>
                     <span style="font-size: 0.85rem; color: var(--color-text-secondary);">
-                        <strong>How to use:</strong> In OBS, add a Browser Source -> paste this URL -> preview it in the canvas.
+                        <strong data-i18n="generated.d45681cf472b">How to use:</strong><span data-i18n="generated.cb39044159be"> In OBS, add a Browser Source -> paste this URL -> preview it in the canvas.
                         Animations will play automatically when configured gifts are received.
-                    </span>
+                    </span></span>
                 </div>
             </div>
             <div class="form-grid overlay-layout-grid">
                 <div class="form-group">
-                    <label>X Position (%)</label>
+                    <label data-i18n="generated.c7bf1d2fa922">X Position (%)</label>
                     <input type="number" id="soundboard-animation-x" min="0" max="100" value="50" class="form-input">
                 </div>
                 <div class="form-group">
-                    <label>Y Position (%)</label>
+                    <label data-i18n="generated.92fb41770447">Y Position (%)</label>
                     <input type="number" id="soundboard-animation-y" min="0" max="100" value="50" class="form-input">
                 </div>
                 <div class="form-group">
-                    <label>Width (vw)</label>
+                    <label data-i18n="generated.78518dceb45c">Width (vw)</label>
                     <input type="number" id="soundboard-animation-width" min="5" max="100" value="45" class="form-input">
                 </div>
                 <div class="form-group">
-                    <label>Height (vh)</label>
+                    <label data-i18n="generated.26244a7abddd">Height (vh)</label>
                     <input type="number" id="soundboard-animation-height" min="5" max="100" value="45" class="form-input">
                 </div>
                 <div class="form-group">
                     <label>Anchor</label>
                     <select id="soundboard-animation-anchor" class="form-select">
                         <option value="center">Center</option>
-                        <option value="top-left">Top Left</option>
+                        <option value="top-left" data-i18n="generated.49c230e6a91d">Top Left</option>
                         <option value="top">Top</option>
-                        <option value="top-right">Top Right</option>
+                        <option value="top-right" data-i18n="generated.2edc03236b32">Top Right</option>
                         <option value="left">Left</option>
                         <option value="right">Right</option>
-                        <option value="bottom-left">Bottom Left</option>
+                        <option value="bottom-left" data-i18n="generated.3f6c38ea77f7">Bottom Left</option>
                         <option value="bottom">Bottom</option>
-                        <option value="bottom-right">Bottom Right</option>
+                        <option value="bottom-right" data-i18n="generated.303accb5d9fd">Bottom Right</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>GIF/Image Seconds</label>
+                    <label data-i18n="generated.fec5476dea5a">GIF/Image Seconds</label>
                     <input type="number" id="soundboard-animation-duration" min="1" max="30" value="5" class="form-input">
                 </div>
                 <div class="form-group">
@@ -1893,9 +1894,9 @@
             </div>
             <div class="overlay-layout-actions">
                 <button id="test-focused-animation-btn" class="btn btn-sm btn-ghost">
-                    <i data-lucide="play"></i>
+                    <i data-lucide="play"></i><span data-i18n="generated.08a46af43e04">
                     Test selected animation in OBS
-                </button>
+                </span></button>
             </div>
         </section>
 
@@ -1903,9 +1904,9 @@
         <section class="collapsible-section workspace-panel" data-workspace-panel="overview">
             <div class="collapsible-header active" data-target="playback-settings-content">
                 <h3>
-                    <i data-lucide="settings"></i>
+                    <i data-lucide="settings"></i><span data-i18n="generated.10a6053a1998">
                     Playback Settings
-                </h3>
+                </span></h3>
                 <i data-lucide="chevron-down" class="collapsible-toggle"></i>
             </div>
             <div id="playback-settings-content" class="collapsible-content active">
@@ -1913,37 +1914,37 @@
                     <div class="form-group">
                         <label class="checkbox-label" style="margin-bottom: 16px;">
                             <input type="checkbox" id="soundboard-enabled" checked>
-                            <span style="font-weight: 600;">Enable Soundboard</span>
+                            <span style="font-weight: 600;" data-i18n="soundboard.config.enabled">Enable Soundboard</span>
                         </label>
                     </div>
                     <div class="form-group">
-                        <label>Audio Playback Target</label>
+                        <label data-i18n="soundboard.config.audio_target">Audio Playback Target</label>
                         <select id="soundboard-audio-target" class="form-select">
-                            <option value="dashboard">Dashboard Only</option>
-                            <option value="obs_overlay">OBS Overlay Only</option>
-                            <option value="both" selected>Both (Dashboard + OBS Overlay)</option>
+                            <option value="dashboard" data-i18n="soundboard.config.audio_target_dashboard">Dashboard Only</option>
+                            <option value="obs_overlay" data-i18n="soundboard.config.audio_target_obs">OBS Overlay Only</option>
+                            <option value="both" selected data-i18n="generated.41314d71bdde">Both (Dashboard + OBS Overlay)</option>
                         </select>
                         <small style="color: var(--color-text-secondary); font-size: 0.8rem; margin-top: 4px; display: block;">
-                            <strong>Dashboard:</strong> Audio plays directly in your browser (recommended if OBS audio not working).<br>
-                            <strong>OBS Overlay:</strong> Audio plays in the OBS browser source.<br>
-                            <strong>Both:</strong> Audio plays in both locations.
-                        </small>
+                            <strong>Dashboard:</strong><span data-i18n="generated.09c84cde7a0a"> Audio plays directly in your browser (recommended if OBS audio not working).</span><br>
+                            <strong data-i18n="generated.435d37012c36">OBS Overlay:</strong><span data-i18n="generated.a7722d4f3d07"> Audio plays in the OBS browser source.</span><br>
+                            <strong>Both:</strong><span data-i18n="generated.b738523863b7"> Audio plays in both locations.
+                        </span></small>
                     </div>
                     <div class="form-group">
-                        <label>Play Mode</label>
+                        <label data-i18n="generated.b2ef252a0c7f">Play Mode</label>
                         <select id="soundboard-play-mode" class="form-select">
-                            <option value="overlap">Overlap (play immediately)</option>
-                            <option value="queue-all">Queue All (global sequential)</option>
-                            <option value="queue-per-gift">Queue Per Gift (same gift types queue)</option>
+                            <option value="overlap" data-i18n="generated.e37ef31f290a">Overlap (play immediately)</option>
+                            <option value="queue-all" data-i18n="generated.92e7a6f44542">Queue All (global sequential)</option>
+                            <option value="queue-per-gift" data-i18n="generated.d13ed28bda96">Queue Per Gift (same gift types queue)</option>
                         </select>
-                        <small style="color: var(--color-text-secondary); font-size: 0.8rem; margin-top: 4px; display: block;">
-                            Overlap: All sounds play immediately.<br>
-                            Queue All: All sounds play one after another.<br>
+                        <small style="color: var(--color-text-secondary); font-size: 0.8rem; margin-top: 4px; display: block;"><span data-i18n="generated.6b9597fbd920">
+                            Overlap: All sounds play immediately.</span><br><span data-i18n="generated.a47d83fc7f1e">
+                            Queue All: All sounds play one after another.</span><br><span data-i18n="generated.aed56eeb6aa9">
                             Queue Per Gift: Same gift types wait, different gifts can play simultaneously.
-                        </small>
+                        </span></small>
                     </div>
                     <div class="form-group">
-                        <label>Max Queue Length</label>
+                        <label data-i18n="generated.2d42ba9adb2c">Max Queue Length</label>
                         <input type="number" id="soundboard-max-queue" min="1" max="50" value="10" class="form-input">
                     </div>
                 </div>
@@ -1954,13 +1955,13 @@
         <section class="collapsible-section workspace-panel" data-workspace-panel="event-sounds">
             <div class="collapsible-header active" data-target="event-sounds-content">
                 <h3>
-                    <i data-lucide="zap"></i>
+                    <i data-lucide="zap"></i><span data-i18n="generated.98963dc17078">
                     Event Sounds & Animations
-                </h3>
+                </span></h3>
                 <i data-lucide="chevron-down" class="collapsible-toggle"></i>
             </div>
             <div id="event-sounds-content" class="collapsible-content active">
-                <p style="color: var(--color-text-secondary); margin-bottom: 16px; font-size: 0.9rem;">
+                <p style="color: var(--color-text-secondary); margin-bottom: 16px; font-size: 0.9rem;" data-i18n="generated.d58c43f134e3">
                     Configure sounds and MP4/GIF animations for TikTok events. Animations will display in the OBS overlay above.
                 </p>
                 
@@ -1990,8 +1991,8 @@
                         </div>
                         <div class="animation-section">
                             <div class="section-label">
-                                <i data-lucide="video"></i> Animation (MP4/GIF)
-                            </div>
+                                <i data-lucide="video"></i><span data-i18n="generated.4ebf80692d8c"> Animation (MP4/GIF)
+                            </span></div>
                             <div class="inline-controls">
                                 <input type="text" id="soundboard-follow-animation-url" placeholder="Animation URL" class="form-input">
                                 <select id="soundboard-follow-animation-type" class="form-select">
@@ -2014,7 +2015,7 @@
                     <div class="event-sound-card">
                         <div class="event-header">
                             <i data-lucide="crown" style="color: #f59e0b;"></i>
-                            <h4>Subscribe (Super Fan)</h4>
+                            <h4 data-i18n="generated.b800050af24b">Subscribe (Super Fan)</h4>
                             <button data-test-sound="subscribe" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Subscribe sound">
                                 <i data-lucide="play"></i>
                             </button>
@@ -2035,8 +2036,8 @@
                         </div>
                         <div class="animation-section">
                             <div class="section-label">
-                                <i data-lucide="video"></i> Animation (MP4/GIF)
-                            </div>
+                                <i data-lucide="video"></i><span data-i18n="generated.83138c3afc3f"> Animation (MP4/GIF)
+                            </span></div>
                             <div class="inline-controls">
                                 <input type="text" id="soundboard-subscribe-animation-url" placeholder="Animation URL" class="form-input">
                                 <select id="soundboard-subscribe-animation-type" class="form-select">
@@ -2080,8 +2081,8 @@
                         </div>
                         <div class="animation-section">
                             <div class="section-label">
-                                <i data-lucide="video"></i> Animation (MP4/GIF)
-                            </div>
+                                <i data-lucide="video"></i><span data-i18n="generated.63a0da00767a"> Animation (MP4/GIF)
+                            </span></div>
                             <div class="inline-controls">
                                 <input type="text" id="soundboard-share-animation-url" placeholder="Animation URL" class="form-input">
                                 <select id="soundboard-share-animation-type" class="form-select">
@@ -2104,15 +2105,15 @@
                     <div class="event-sound-card">
                         <div class="event-header">
                             <i data-lucide="gift" style="color: #ec4899;"></i>
-                            <h4>Default Gift Sound</h4>
+                            <h4 data-i18n="generated.137e71fdc88b">Default Gift Sound</h4>
                             <button data-test-sound="gift" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Gift sound">
                                 <i data-lucide="play"></i>
                             </button>
                         </div>
                         <div class="sound-section">
                             <div class="section-label">
-                                <i data-lucide="volume-2"></i> Sound (fallback for unconfigured gifts)
-                            </div>
+                                <i data-lucide="volume-2"></i><span data-i18n="generated.67c19225241a"> Sound (fallback for unconfigured gifts)
+                            </span></div>
                             <div class="inline-controls">
                                 <input type="text" id="soundboard-gift-url" placeholder="Sound URL (MP3)" class="form-input">
                             </div>
@@ -2125,8 +2126,8 @@
                         </div>
                         <div class="animation-section">
                             <div class="section-label">
-                                <i data-lucide="video"></i> Animation (fallback)
-                            </div>
+                                <i data-lucide="video"></i><span data-i18n="generated.8652f82885a7"> Animation (fallback)
+                            </span></div>
                             <div class="inline-controls">
                                 <input type="text" id="soundboard-gift-animation-url" placeholder="Animation URL" class="form-input">
                                 <select id="soundboard-gift-animation-type" class="form-select">
@@ -2144,16 +2145,16 @@
                             </div>
                         </div>
                         <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin-top: 8px;">
-                            <i data-lucide="info" style="width: 14px; height: 14px; display: inline; vertical-align: middle;"></i>
+                            <i data-lucide="info" style="width: 14px; height: 14px; display: inline; vertical-align: middle;"></i><span data-i18n="generated.542c44ab17e7">
                             For gift-specific sounds and animations, use the "Gift-Specific Sounds" section below.
-                        </p>
+                        </span></p>
                     </div>
 
                     <!-- Like Threshold -->
                     <div class="event-sound-card">
                         <div class="event-header">
                             <i data-lucide="heart" style="color: #ef4444;"></i>
-                            <h4>Like Threshold</h4>
+                            <h4 data-i18n="generated.9c128b09fe65">Like Threshold</h4>
                             <button data-test-sound="like" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Like sound">
                                 <i data-lucide="play"></i>
                             </button>
@@ -2174,8 +2175,8 @@
                         </div>
                         <div class="animation-section">
                             <div class="section-label">
-                                <i data-lucide="video"></i> Animation (MP4/GIF)
-                            </div>
+                                <i data-lucide="video"></i><span data-i18n="generated.5a98592bd5b7"> Animation (MP4/GIF)
+                            </span></div>
                             <div class="inline-controls">
                                 <input type="text" id="soundboard-like-animation-url" placeholder="Animation URL" class="form-input">
                                 <select id="soundboard-like-animation-type" class="form-select">
@@ -2194,11 +2195,11 @@
                         </div>
                         <div style="display: flex; gap: 12px; margin-top: 12px;">
                             <div class="form-group" style="flex: 1;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary);">Threshold (likes)</label>
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary);" data-i18n="generated.38a30db7c19f">Threshold (likes)</label>
                                 <input type="number" id="soundboard-like-threshold" min="0" value="0" placeholder="0 = disabled" class="form-input">
                             </div>
                             <div class="form-group" style="flex: 1;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary);">Time Window (s)</label>
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary);" data-i18n="generated.e4c85da1883a">Time Window (s)</label>
                                 <input type="number" id="soundboard-like-window" min="1" value="10" class="form-input">
                             </div>
                         </div>
@@ -2211,9 +2212,9 @@
         <section class="collapsible-section workspace-panel gift-workspace-panel" data-workspace-panel="gift-mapping">
             <div class="collapsible-header active" data-target="gift-sounds-content">
                 <h3>
-                    <i data-lucide="gift"></i>
+                    <i data-lucide="gift"></i><span data-i18n="generated.3a82dd224fc4">
                     Gift-Specific Sounds & Animations
-                </h3>
+                </span></h3>
                 <i data-lucide="chevron-down" class="collapsible-toggle"></i>
             </div>
             <div id="gift-sounds-content" class="collapsible-content active">
@@ -2221,11 +2222,11 @@
             <!-- Gift Catalog Browser -->
             <div class="gift-catalog">
                 <div class="gift-catalog-header">
-                    <h4>Available Gifts from Stream</h4>
+                    <h4 data-i18n="generated.1a8366f9488a">Available Gifts from Stream</h4>
                     <button id="refresh-catalog-btn" class="btn btn-sm btn-primary">
-                        <i data-lucide="refresh-cw" id="refresh-icon"></i>
+                        <i data-lucide="refresh-cw" id="refresh-icon"></i><span data-i18n="generated.d57ef9f28bdd">
                         Refresh Catalog
-                    </button>
+                    </span></button>
                 </div>
                 <div class="gift-catalog-search" style="display: flex; gap: 8px; align-items: center; margin-top: 10px;">
                     <i data-lucide="search" style="width: 16px; height: 16px; color: var(--color-text-secondary); flex-shrink: 0;"></i>
@@ -2239,9 +2240,9 @@
             <!-- MyInstants Search -->
             <div class="myinstants-search">
                 <h4>
-                    <i data-lucide="search"></i>
+                    <i data-lucide="search"></i><span data-i18n="generated.b70a45478fff">
                     Search MyInstants
-                </h4>
+                </span></h4>
                 <div class="search-box">
                     <input type="text" id="myinstants-search-input" placeholder="Search for sound effects..." class="form-input">
                     <button id="myinstants-search-btn" class="btn btn-primary">
@@ -2255,9 +2256,9 @@
             <!-- GIF Search -->
             <div class="gif-search">
                 <h4>
-                    <i data-lucide="image"></i>
+                    <i data-lucide="image"></i><span data-i18n="generated.dd3889ed04ed">
                     Search GIFs
-                </h4>
+                </span></h4>
                 <div class="search-box">
                     <input type="text" id="gif-search-input" placeholder="Search for GIF animations..." class="form-input">
                     <button id="gif-search-btn" class="btn btn-primary">
@@ -2272,9 +2273,9 @@
             <!-- Add Gift Sound -->
             <div class="add-gift-sound">
                 <h4>
-                    <i data-lucide="plus-circle"></i>
+                    <i data-lucide="plus-circle"></i><span data-i18n="generated.73c182c486d8">
                     Add/Edit Gift Sound
-                </h4>
+                </span></h4>
                 <div class="form-grid">
                     <input type="number" id="new-gift-id" placeholder="Gift ID" readonly class="form-input">
                     <input type="text" id="new-gift-label" placeholder="Label" readonly class="form-input">
@@ -2284,7 +2285,7 @@
                 <div class="form-grid">
                     <input type="text" id="new-gift-animation-url" placeholder="Animation URL (optional)" class="form-input">
                     <select id="new-gift-animation-type" class="form-select">
-                        <option value="none">No Animation</option>
+                        <option value="none" data-i18n="generated.7e00e0aa7425">No Animation</option>
                         <option value="image">Image</option>
                         <option value="video">Video</option>
                         <option value="gif">GIF</option>
@@ -2293,9 +2294,9 @@
                 </div>
                 <div class="form-actions">
                     <button id="add-gift-sound-btn" class="btn btn-primary">
-                        <i data-lucide="plus"></i>
+                        <i data-lucide="plus"></i><span data-i18n="generated.821e34f196de">
                         Add/Update Gift Sound
-                    </button>
+                    </span></button>
                     <button id="clear-gift-form-btn" class="btn btn-ghost">Clear</button>
                 </div>
             </div>
@@ -2303,8 +2304,8 @@
             <div class="workspace-card gift-library-card">
                 <div class="workspace-header" style="margin-bottom: 0; padding-bottom: 12px;">
                     <div>
-                        <h2><i data-lucide="search"></i> Library Search</h2>
-                        <p class="workspace-subtitle">Search MyInstants and GIFs without leaving the gift mapping workspace.</p>
+                        <h2><i data-lucide="search"></i><span data-i18n="generated.77b92a9d0f08"> Library Search</span></h2>
+                        <p class="workspace-subtitle" data-i18n="generated.a0b0fdffc57f">Search MyInstants and GIFs without leaving the gift mapping workspace.</p>
                     </div>
                 </div>
                 <div class="library-grid" style="margin-top: 4px;">
@@ -2314,9 +2315,9 @@
                 <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 12px; margin-top: 12px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <i data-lucide="info" style="color: #3b82f6; width: 18px; height: 18px; flex-shrink: 0;"></i>
-                        <span style="font-size: 0.85rem; line-height: 1.4;">
-                            Search for sounds by keyword or browse by category. Click <strong>Preview</strong> to test a sound, or <strong>Use</strong> to bind it to a gift.
-                        </span>
+                        <span style="font-size: 0.85rem; line-height: 1.4;"><span data-i18n="generated.0b85661400eb">
+                            Search for sounds by keyword or browse by category. Click </span><strong>Preview</strong><span data-i18n="generated.62b034a08433"> to test a sound, or </span><strong>Use</strong><span data-i18n="generated.1f17a20125c8"> to bind it to a gift.
+                        </span></span>
                     </div>
                 </div>
                 <div class="search-filters" style="margin-top: 12px;">
@@ -2337,7 +2338,7 @@
                     </button>
                 </div>
                 <div id="advanced-search-results" class="myinstants-results" style="margin-top: 12px;">
-                    <div class="text-gray-400 text-sm text-center py-4">
+                    <div class="text-gray-400 text-sm text-center py-4" data-i18n="generated.9a0af4c44b4c">
                         Search for sounds or browse trending sounds to get started
                     </div>
                 </div>
@@ -2349,7 +2350,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 12px; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <i data-lucide="download" style="color: var(--color-accent-primary); width: 20px; height: 20px;"></i>
-                        <span style="font-weight: 600; color: var(--color-text-primary);">Audio-Animationen Verwaltung</span>
+                        <span style="font-weight: 600; color: var(--color-text-primary);" data-i18n="generated.b74c1fbd579b">Audio-Animationen Verwaltung</span>
                     </div>
                     <div style="display: flex; gap: 8px;">
                         <button id="export-animations-btn" class="btn btn-sm btn-ghost">
@@ -2373,20 +2374,20 @@
                         </button>
                     </div>
                     <div class="gift-list-summary">
-                        <span id="gift-sounds-result-count">0 / 0 gifts</span>
-                        <span id="gift-sounds-result-hint">Click a column to sort. Type to filter the list.</span>
+                        <span id="gift-sounds-result-count" data-i18n="generated.87a4332ffb6d">0 / 0 gifts</span>
+                        <span id="gift-sounds-result-hint" data-i18n="generated.6b5da97d0a59">Click a column to sort. Type to filter the list.</span>
                     </div>
                 </div>
 
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="giftId"><span>Gift ID</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="giftId"><span data-i18n="generated.6c2e68b32cee">Gift ID</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
                             <th><button type="button" class="gift-sort-header" data-gift-sort-key="label"><span>Label</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
                             <th><button type="button" class="gift-sort-header" data-gift-sort-key="mp3Url"><span>Sound</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
-                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="volume"><span>Volume</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="volume"><span data-i18n="soundboard.sounds.volume">Volume</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
                             <th><button type="button" class="gift-sort-header" data-gift-sort-key="animation"><span>Animation</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
-                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="animationVolume"><span>Anim. Vol.</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="animationVolume"><span data-i18n="generated.512d4c719b92">Anim. Vol.</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -2400,15 +2401,15 @@
                 <section class="workspace-panel" data-workspace-panel="advanced-tools">
                     <div class="workspace-header">
                         <div>
-                            <h2><i data-lucide="wrench"></i> Advanced Tools</h2>
-                            <p class="workspace-subtitle">Diagnostics, import/export, and low-frequency maintenance tools.</p>
+                            <h2><i data-lucide="wrench"></i><span data-i18n="generated.0f9f0c7c2a51"> Advanced Tools</span></h2>
+                            <p class="workspace-subtitle" data-i18n="generated.0805321e8589">Diagnostics, import/export, and low-frequency maintenance tools.</p>
                         </div>
                     </div>
                     <div class="tools-grid">
                         <div class="workspace-section-stack">
                             <div class="workspace-card">
                                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-                                    <h3>Audio Diagnostics</h3>
+                                    <h3 data-i18n="generated.07e848c2c657">Audio Diagnostics</h3>
                                     <button id="minimize-audio-test-btn" class="btn btn-sm btn-ghost" type="button" title="Collapse section">
                                         <i data-lucide="chevron-up"></i>
                                     </button>
@@ -2416,7 +2417,7 @@
                                 <div id="audio-test-content" class="workspace-section-stack" style="margin-top: 12px;">
                                     <div class="settings-grid">
                                         <div class="workspace-card">
-                                            <span class="metric-label">Audio Context</span>
+                                            <span class="metric-label" data-i18n="generated.7c176edbc266">Audio Context</span>
                                             <div id="audio-context-status" class="metric-value">Unknown</div>
                                         </div>
                                         <div class="workspace-card">
@@ -2424,26 +2425,26 @@
                                             <div id="autoplay-status" class="metric-value">Checking...</div>
                                         </div>
                                         <div class="workspace-card">
-                                            <span class="metric-label">Active Sounds</span>
+                                            <span class="metric-label" data-i18n="generated.0157c4cc4326">Active Sounds</span>
                                             <div id="active-sounds-count" class="metric-value">0</div>
                                         </div>
                                     </div>
                                     <div class="quick-actions">
                                         <button id="enable-audio-btn" class="btn btn-primary" type="button">
-                                            <i data-lucide="volume-2"></i>
+                                            <i data-lucide="volume-2"></i><span data-i18n="generated.833033bef0e7">
                                             Enable Audio Permissions
-                                        </button>
+                                        </span></button>
                                         <button id="test-audio-btn" class="btn btn-ghost" type="button">
-                                            <i data-lucide="play"></i>
+                                            <i data-lucide="play"></i><span data-i18n="generated.be4457ae9111">
                                             Test Audio
-                                        </button>
+                                        </span></button>
                                         <button id="clear-audio-log-btn" class="btn btn-ghost" type="button">
-                                            <i data-lucide="trash-2"></i>
+                                            <i data-lucide="trash-2"></i><span data-i18n="generated.57ba9e13b597">
                                             Clear Log
-                                        </button>
+                                        </span></button>
                                         <label class="checkbox-label">
                                             <input type="checkbox" id="verbose-logging">
-                                            <span>Verbose logging</span>
+                                            <span data-i18n="generated.cdc35dc78625">Verbose logging</span>
                                         </label>
                                     </div>
                                     <div id="audio-test-player" style="display: none;">
@@ -2452,7 +2453,7 @@
                                         </audio>
                                     </div>
                                     <div id="audio-debug-log" class="audio-debug-log">
-                                        <div style="color: #60a5fa;">Audio system ready. Waiting for events...</div>
+                                        <div style="color: #60a5fa;" data-i18n="generated.50b699b82b29">Audio system ready. Waiting for events...</div>
                                     </div>
                                 </div>
                             </div>
@@ -2460,7 +2461,7 @@
                         <div class="workspace-section-stack">
                             <div class="workspace-card">
                                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-                                    <h3>Manual Config Import / Export</h3>
+                                    <h3 data-i18n="generated.f7de70e986aa">Manual Config Import / Export</h3>
                                     <button id="minimize-config-import-export-btn" class="btn btn-sm btn-ghost" type="button" title="Collapse section">
                                         <i data-lucide="chevron-up"></i>
                                     </button>
@@ -2469,13 +2470,13 @@
                                     <textarea id="config-import-export-textarea" class="form-input" rows="16" placeholder="Load or paste exported soundboard animation JSON here."></textarea>
                                     <div class="quick-actions">
                                         <button id="load-config-to-textarea-btn" class="btn btn-ghost" type="button">
-                                            <i data-lucide="download"></i>
+                                            <i data-lucide="download"></i><span data-i18n="generated.1bd416d9ccaf">
                                             Load Config
-                                        </button>
+                                        </span></button>
                                         <button id="import-config-from-textarea-btn" class="btn btn-primary" type="button">
-                                            <i data-lucide="upload"></i>
+                                            <i data-lucide="upload"></i><span data-i18n="generated.aa77879469bb">
                                             Import Text
-                                        </button>
+                                        </span></button>
                                         <button id="copy-config-textarea-btn" class="btn btn-ghost" type="button">
                                             <i data-lucide="copy"></i>
                                             Copy
@@ -2500,16 +2501,16 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>
-                    <i data-lucide="gift"></i>
+                    <i data-lucide="gift"></i><span data-i18n="generated.49ce977c6ce6">
                     Select Gift for Sound
-                </h3>
+                </span></h3>
                 <button class="modal-close" id="close-gift-modal" type="button" aria-label="Close gift catalog modal" title="Close gift catalog modal">
                     <i data-lucide="x" style="width: 24px; height: 24px;"></i>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="selected-sound-info">
-                    <h4>Selected Sound:</h4>
+                    <h4 data-i18n="generated.f128f0f089e8">Selected Sound:</h4>
                     <div class="selected-sound-name" id="selected-sound-name">-</div>
                 </div>
                 <div class="gift-catalog-search" style="display: flex; gap: 8px; align-items: center; margin: 12px 0 14px;">
@@ -2519,7 +2520,7 @@
                 </div>
                 <div id="modal-gift-search-summary" style="color: var(--color-text-secondary); font-size: 0.85rem; margin-bottom: 10px;"></div>
                 <div class="gift-grid" id="modal-gift-grid">
-                    <div class="text-gray-400 text-sm text-center py-8">Loading gifts...</div>
+                    <div class="text-gray-400 text-sm text-center py-8" data-i18n="generated.d05498bb1348">Loading gifts...</div>
                 </div>
             </div>
         </div>

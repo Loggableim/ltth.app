@@ -379,7 +379,7 @@ class Launcher {
     }
 
     rebuildNativeModules() {
-        this.log.info('FÃ¼hre "npm rebuild better-sqlite3" aus...');
+        this.log.info('Führe "npm rebuild better-sqlite3" aus...');
         return execSync('npm rebuild better-sqlite3', {
             cwd: this.projectRoot,
             stdio: ['pipe', 'pipe', 'pipe'],
@@ -392,7 +392,7 @@ class Launcher {
     }
 
     async checkNativeModules() {
-        this.log.info('PrÃ¼fe native Node-Module...');
+        this.log.info('Prüfe native Node-Module...');
         try {
             const output = this.verifyNativeModules();
             this.log.success(`Native Module OK: ${output}`);

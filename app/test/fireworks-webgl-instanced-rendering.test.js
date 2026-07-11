@@ -44,8 +44,11 @@ describe('Fireworks WebGL Instanced Rendering', () => {
             expect(webglCode).toContain('outColor');
         });
 
-        test('should implement additive blending', () => {
-            expect(webglCode).toContain('gl.blendFunc(gl.SRC_ALPHA, gl.ONE)');
+        test('should implement additive glow and alpha-preserving core passes', () => {
+            expect(webglCode).toContain('u_pass');
+            expect(webglCode).toContain('u_particleScale');
+            expect(webglCode).toContain('gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE)');
+            expect(webglCode).toContain('gl.ONE_MINUS_SRC_ALPHA');
         });
 
         test('should use instanced rendering', () => {
@@ -55,6 +58,8 @@ describe('Fireworks WebGL Instanced Rendering', () => {
 
         test('should have updateParticles method', () => {
             expect(webglCode).toContain('updateParticles(fireworks)');
+            expect(webglCode).toContain('trailParticleCount');
+            expect(webglCode).toContain('particle.trail');
         });
 
         test('should have render method', () => {
@@ -87,7 +92,8 @@ describe('Fireworks WebGL Instanced Rendering', () => {
         });
 
         test('should force Canvas 2D in toaster mode', () => {
-            expect(engineCode).toContain('this.config.toasterMode || this.config.gpuAcceleration === false');
+            expect(engineCode).toContain('this.config.toasterMode ||');
+            expect(engineCode).toContain('this.config.gpuAcceleration === false');
             expect(engineCode).toContain("rendererMode = 'canvas'");
         });
 
@@ -99,6 +105,12 @@ describe('Fireworks WebGL Instanced Rendering', () => {
         test('should have Canvas 2D fallback', () => {
             expect(engineCode).toContain('falling back to Canvas 2D');
             expect(engineCode).toContain('Using Canvas 2D fallback');
+        });
+
+        test('should fall back to Canvas after a WebGL context loss', () => {
+            expect(engineCode).toContain('handleWebGLContextLost(event)');
+            expect(engineCode).toContain("'webglcontextlost'");
+            expect(engineCode).toContain("fireworks:renderer-fallback");
         });
 
         test('should have renderWebGL method', () => {

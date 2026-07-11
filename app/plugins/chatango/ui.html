@@ -365,66 +365,64 @@
         <div class="brand-card">
             <div class="page-brand">
             </div>
-            <p>Chatango settings stay aligned with the active LTTH theme so the panel blends with the rest of the app across day, night, contrast, vision-impaired, and Cid modes.</p>
+            <p data-i18n="chatango.page_description">Chatango settings stay aligned with the active LTTH theme so the panel blends with the rest of the app across day, night, contrast, vision-impaired, and Cid modes.</p>
         </div>
 
         <!-- Status Card -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">ðŸ’¬ Chatango Integration</h2>
+                <h2 class="card-title">💬 <span data-i18n="chatango.integration_title">Chatango Integration</span></h2>
                 <div class="status-indicator" id="status-indicator">
                     <span class="status-dot"></span>
-                    <span id="status-text">Active</span>
+                    <span id="status-text" data-i18n="chatango.status_active">Active</span>
                 </div>
             </div>
 
             <div class="info-box">
-                <h4>About Chatango Integration</h4>
-                <p>This plugin provides Chatango chat room integration for your stream. Configure your chat room settings, 
-                   theme appearance, and widget options. The chat will automatically sync with your application's theme 
-                   (day/night/high contrast mode).</p>
+                <h4 data-i18n="chatango.about_title">About Chatango Integration</h4>
+                <p data-i18n="chatango.about_text">This plugin provides Chatango chat room integration for your stream. Configure your chat room settings, theme appearance, and widget options. The chat will automatically sync with your application's theme (day/night/high contrast mode).</p>
             </div>
         </div>
 
         <!-- Configuration Card -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">Configuration</h2>
+                <h2 class="card-title" data-i18n="chatango.configuration">Configuration</h2>
             </div>
 
             <form id="config-form">
                 <div class="form-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enabled" name="enabled">
-                        <label for="enabled">Enable Chatango Integration</label>
+                        <label for="enabled" data-i18n="chatango.enable">Enable Chatango Integration</label>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="roomHandle">Chatango Room Handle</label>
-                    <input type="text" class="form-control" id="roomHandle" name="roomHandle" placeholder="your-room-name">
-                    <div class="help-text">The name of your Chatango room (e.g., "pupcidsltth")</div>
+                    <label for="roomHandle" data-i18n="chatango.room_handle">Chatango Room Handle</label>
+                    <input type="text" class="form-control" id="roomHandle" name="roomHandle" placeholder="your-room-name" data-i18n-placeholder="chatango.room_handle_placeholder">
+                    <div class="help-text" data-i18n="chatango.room_handle_example">The name of your Chatango room (e.g., "pupcidsltth")</div>
                 </div>
 
-                <h4 class="section-title">Appearance</h4>
+                <h4 class="section-title" data-i18n="chatango.appearance">Appearance</h4>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="theme">Theme</label>
+                        <label for="theme" data-i18n="chatango.theme">Theme</label>
                         <select class="form-control" id="theme" name="theme">
-                            <option value="night">Night (Dark)</option>
-                            <option value="day">Day (Light)</option>
-                            <option value="contrast">High Contrast</option>
+                            <option value="night" data-i18n="chatango.theme_night">Night (Dark)</option>
+                            <option value="day" data-i18n="chatango.theme_day">Day (Light)</option>
+                            <option value="contrast" data-i18n="chatango.theme_contrast">High Contrast</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="fontSize">Font Size</label>
+                        <label for="fontSize" data-i18n="chatango.font_size">Font Size</label>
                         <select class="form-control" id="fontSize" name="fontSize">
-                            <option value="8">Small (8px)</option>
-                            <option value="10">Normal (10px)</option>
-                            <option value="12">Large (12px)</option>
-                            <option value="14">Extra Large (14px)</option>
+                            <option value="8" data-i18n="chatango.font_small">Small (8px)</option>
+                            <option value="10" data-i18n="chatango.font_normal">Normal (10px)</option>
+                            <option value="12" data-i18n="chatango.font_large">Large (12px)</option>
+                            <option value="14" data-i18n="chatango.font_xl">Extra Large (14px)</option>
                         </select>
                     </div>
                 </div>
@@ -433,75 +431,75 @@
                     <div class="form-group">
                         <div class="checkbox-group">
                             <input type="checkbox" id="allowPM" name="allowPM">
-                            <label for="allowPM">Allow Private Messages</label>
+                            <label for="allowPM" data-i18n="chatango.allow_pm">Allow Private Messages</label>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <div class="checkbox-group">
                             <input type="checkbox" id="showTicker" name="showTicker">
-                            <label for="showTicker">Show Message Ticker</label>
+                            <label for="showTicker" data-i18n="chatango.show_ticker">Show Message Ticker</label>
                         </div>
                     </div>
                 </div>
 
-                <h4 class="section-title">Dashboard Embed</h4>
+                <h4 class="section-title" data-i18n="chatango.dashboard_embed">Dashboard Embed</h4>
 
                 <div class="form-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="dashboardEnabled" name="dashboardEnabled">
-                        <label for="dashboardEnabled">Enable Dashboard Chat Panel</label>
+                        <label for="dashboardEnabled" data-i18n="chatango.dashboard_enabled">Enable Dashboard Chat Panel</label>
                     </div>
-                    <div class="help-text">Show Chatango in the dashboard shoutbox area</div>
+                    <div class="help-text" data-i18n="chatango.dashboard_help">Show Chatango in the dashboard shoutbox area</div>
                 </div>
 
-                <h4 class="section-title">Floating Widget</h4>
+                <h4 class="section-title" data-i18n="chatango.floating_widget">Floating Widget</h4>
 
                 <div class="form-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="widgetEnabled" name="widgetEnabled">
-                        <label for="widgetEnabled">Enable Floating Widget</label>
+                        <label for="widgetEnabled" data-i18n="chatango.widget_enabled">Enable Floating Widget</label>
                     </div>
-                    <div class="help-text">Show a collapsible Chatango widget on pages</div>
+                    <div class="help-text" data-i18n="chatango.widget_help">Show a collapsible Chatango widget on pages</div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="widgetPosition">Widget Position</label>
+                        <label for="widgetPosition" data-i18n="chatango.widget_position">Widget Position</label>
                         <select class="form-control" id="widgetPosition" name="widgetPosition">
-                            <option value="br">Bottom Right</option>
-                            <option value="bl">Bottom Left</option>
-                            <option value="tr">Top Right</option>
-                            <option value="tl">Top Left</option>
+                            <option value="br" data-i18n="chatango.position_br">Bottom Right</option>
+                            <option value="bl" data-i18n="chatango.position_bl">Bottom Left</option>
+                            <option value="tr" data-i18n="chatango.position_tr">Top Right</option>
+                            <option value="tl" data-i18n="chatango.position_tl">Top Left</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="widgetWidth">Widget Width (px)</label>
+                        <label for="widgetWidth" data-i18n="chatango.widget_width">Widget Width (px)</label>
                         <input type="number" class="form-control" id="widgetWidth" name="widgetWidth" min="150" max="500" value="200">
                     </div>
 
                     <div class="form-group">
-                        <label for="widgetHeight">Widget Height (px)</label>
+                        <label for="widgetHeight" data-i18n="chatango.widget_height">Widget Height (px)</label>
                         <input type="number" class="form-control" id="widgetHeight" name="widgetHeight" min="200" max="600" value="300">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="collapsedWidth">Collapsed Width (px)</label>
+                        <label for="collapsedWidth" data-i18n="chatango.collapsed_width">Collapsed Width (px)</label>
                         <input type="number" class="form-control" id="collapsedWidth" name="collapsedWidth" min="50" max="200" value="75">
                     </div>
 
                     <div class="form-group">
-                        <label for="collapsedHeight">Collapsed Height (px)</label>
+                        <label for="collapsedHeight" data-i18n="chatango.collapsed_height">Collapsed Height (px)</label>
                         <input type="number" class="form-control" id="collapsedHeight" name="collapsedHeight" min="20" max="100" value="30">
                     </div>
                 </div>
 
                 <div class="btn-group">
-                    <button type="submit" class="btn btn-primary">Save Configuration</button>
-                    <button type="button" class="btn btn-secondary" id="btn-preview">Preview Embed</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="chatango.save_config">Save Configuration</button>
+                    <button type="button" class="btn btn-secondary" id="btn-preview" data-i18n="chatango.preview">Preview Embed</button>
                 </div>
             </form>
         </div>
@@ -509,45 +507,54 @@
         <!-- Embed Code Card -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">Embed Code</h2>
+                <h2 class="card-title" data-i18n="chatango.embed_code">Embed Code</h2>
             </div>
 
             <div class="info-box">
-                <h4>Using Embed Codes</h4>
-                <p>Copy these embed codes to use Chatango on external pages or OBS browser sources. 
-                   The dashboard and widget embeds are automatically managed by this plugin.</p>
+                <h4 data-i18n="chatango.embed_code">Using Embed Codes</h4>
+                <p data-i18n="chatango.embed_help">Copy these embed codes to use Chatango on external pages or OBS browser sources. The dashboard and widget embeds are automatically managed by this plugin.</p>
             </div>
 
-            <h4 class="section-title">Dashboard Embed</h4>
-            <div class="code-block" id="dashboard-embed-code">Loading...</div>
-            <button class="btn btn-secondary copy-btn" id="copy-dashboard-btn">ðŸ“‹ Copy Code</button>
+            <h4 class="section-title" data-i18n="chatango.dashboard_embed">Dashboard Embed</h4>
+            <div class="code-block" id="dashboard-embed-code" data-i18n="chatango.loading">Loading...</div>
+            <button class="btn btn-secondary copy-btn" id="copy-dashboard-btn" data-i18n="chatango.copy_code">📋 Copy Code</button>
 
-            <h4 class="section-title">Widget Embed</h4>
-            <div class="code-block" id="widget-embed-code">Loading...</div>
-            <button class="btn btn-secondary copy-btn" id="copy-widget-btn">ðŸ“‹ Copy Code</button>
+            <h4 class="section-title" data-i18n="chatango.floating_widget">Widget Embed</h4>
+            <div class="code-block" id="widget-embed-code" data-i18n="chatango.loading">Loading...</div>
+            <button class="btn btn-secondary copy-btn" id="copy-widget-btn" data-i18n="chatango.copy_code">📋 Copy Code</button>
         </div>
 
         <!-- Preview Card -->
         <div class="card" id="preview-card" style="display: none;">
             <div class="card-header">
-                <h2 class="card-title">Live Preview</h2>
-                <button class="btn btn-secondary" id="close-preview-btn">Close Preview</button>
+                <h2 class="card-title" data-i18n="chatango.live_preview">Live Preview</h2>
+                <button class="btn btn-secondary" id="close-preview-btn" data-i18n="chatango.close_preview">Close Preview</button>
             </div>
 
             <div class="embed-preview" id="embed-preview">
-                <span>Preview will appear here</span>
+                <span data-i18n="chatango.preview_placeholder">Preview will appear here</span>
             </div>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/i18n-client.js"></script>
     <script src="/js/theme-manager.js"></script>
     <script>
         const socket = io();
         let currentConfig = {};
 
+        function t(key, params = {}) {
+            return window.i18n && window.i18n.initialized ? window.i18n.t(`chatango.${key}`, params) : key;
+        }
+
+        if (window.i18n) {
+            window.i18n.onLanguageChange(() => updateStatus(currentConfig.enabled));
+        }
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.i18n?.ready) await window.i18n.ready;
             loadConfig();
             setupEventListeners();
         });
@@ -640,13 +647,13 @@
                     currentConfig = data.config;
                     updateStatus(currentConfig.enabled);
                     updateEmbedCodes();
-                    showNotification('Configuration saved successfully!', 'success');
+                    showNotification(t('config_saved'), 'success');
                 } else {
-                    showNotification('Failed to save configuration: ' + data.error, 'error');
+                    showNotification(t('notification_save_failed_detail', { error: data.error }), 'error');
                 }
             } catch (error) {
                 console.error('Failed to save config:', error);
-                showNotification('Failed to save configuration', 'error');
+                showNotification(t('notification_save_failed'), 'error');
             }
         }
 
@@ -656,10 +663,10 @@
 
             if (enabled) {
                 indicator.className = 'status-indicator active';
-                statusText.textContent = 'Active';
+                statusText.textContent = t('status_active');
             } else {
                 indicator.className = 'status-indicator inactive';
-                statusText.textContent = 'Disabled';
+                statusText.textContent = t('status_disabled');
             }
         }
 
@@ -716,9 +723,9 @@
             const code = document.getElementById(elementId).textContent;
             
             navigator.clipboard.writeText(code).then(() => {
-                showNotification('Embed code copied to clipboard!', 'success');
+                showNotification(t('copied'), 'success');
             }).catch(() => {
-                showNotification('Failed to copy embed code', 'error');
+                showNotification(t('notification_copy_failed'), 'error');
             });
         }
 
@@ -739,11 +746,12 @@
             wrapper.style.color = 'var(--color-text-muted)';
 
             const warning = document.createElement('p');
-            warning.textContent = 'âš ï¸ Live preview requires the Chatango embed script to load.';
+            warning.textContent = '⚠️ Live preview requires the Chatango embed script to load.';
+            warning.textContent = t('preview_warning');
             wrapper.appendChild(warning);
 
             const instructions = document.createElement('p');
-            instructions.textContent = 'Save your configuration and refresh the dashboard to see changes.';
+            instructions.textContent = t('preview_instructions');
             wrapper.appendChild(instructions);
 
             const details = document.createElement('p');
@@ -752,9 +760,9 @@
             roomLabel.textContent = config.roomHandle || '';
             const themeLabel = document.createElement('strong');
             themeLabel.textContent = theme || '';
-            details.append('Room: ');
+            details.append(`${t('preview_room')} `);
             details.appendChild(roomLabel);
-            details.append(' | Theme: ');
+            details.append(` | ${t('preview_theme')} `);
             details.appendChild(themeLabel);
             wrapper.appendChild(details);
 

@@ -70,7 +70,7 @@
         "desc": "Múltiples bases de datos para diferentes configuraciones de streaming. Cambio de perfil, función de copia de seguridad y configuraciones separadas para diferentes formatos de stream."
       },
       "card10": {
-        "title": "Local con inicio de sesi?n",
+        "title": "Local con inicio de sesión",
         "desc": "El n?cleo se ejecuta localmente en tu equipo. La tienda requiere una cuenta; la app local sigue separada."
       },
       "card11": {
@@ -225,7 +225,7 @@
         "desc": "Plugins preinstalados, expansibilidad ilimitada"
       },
       "free": {
-        "title": "Inicio de sesi?n",
+        "title": "Inicio de sesión",
         "desc": "La app local sigue separada; la tienda requiere una cuenta."
       }
     },
@@ -744,7 +744,7 @@
   "faq.p.11": "El Windows Launcher es una peque?a aplicaci?n de Windows (~7 MB) que descarga, instala y mantiene LTTH actualizado autom?ticamente. Ofrece actualizaciones autom?ticas, rollback a versiones anteriores y gesti?n de versiones integrada. Todos los datos se almacenan en %LOCALAPPDATA%\\LTTH\\.",
   "faq.h3.12": "⚠️Warum erscheint eine SmartScreen-Warnung?",
   "faq.span.13": "⚠️",
-  "faq.p.14": "El launcher es una aplicaci?n nueva que a?n no est? firmada con c?digo. Eso es normal en aplicaciones sin firmar. Haz clic en \"M?s informaci?n\" ? \"Ejecutar de todos modos\". El archivo es seguro y la versi?n actual est? disponible en GitHub.",
+  "faq.p.14": "El launcher es una aplicaci?n nueva que a?n no est? firmada con c?digo. Eso es normal en aplicaciones sin firmar. Haz clic en \"M?s información\" ? \"Ejecutar de todos modos\". El archivo es seguro y la versi?n actual est? disponible en GitHub.",
   "faq.h3.15": "?? ?LTTH es compatible con macOS o Linux?",
   "faq.span.16": "🍎",
   "faq.p.17": "El Windows Launcher actualmente solo est? disponible para Windows. El soporte para macOS y Linux est? previsto. LTTH funciona en todas las plataformas, pero la instalaci?n autom?tica mediante el launcher por ahora solo est? disponible en Windows.",
@@ -778,7 +778,7 @@
   "faq.p.45": "Der Launcher bringt alle erforderlichen Komponenten mit. Du musst dich um nichts kümmern.",
   "faq.h3.46": "🔒Werden meine Daten in die Cloud hochgeladen?",
   "faq.span.47": "🔒",
-  "faq.p.48": "La app local procesa los datos en tu ordenador. La tienda de apps requiere un inicio de sesi?n, pero el uso local sigue separado.",
+  "faq.p.48": "La app local procesa los datos en tu ordenador. La tienda de apps requiere un inicio de sesión, pero el uso local sigue separado.",
   "faq.h2.49": "🔧 Problemlösung",
   "faq.h3.50": "❌TikTok-Verbindung schlägt fehl - was tun?",
   "faq.span.51": "❌",
@@ -991,9 +991,9 @@
     },
     "a": {
       "1": "Saltar al contenido principal",
-      "21": "P?gina de descarga",
+      "21": "Página de descarga",
       "25": "Windows Launcher",
-      "26": "P?gina de descarga",
+      "26": "Página de descarga",
       "33": "GitHub"
     },
     "h2": {
@@ -1006,7 +1006,7 @@
       "15": "?LTTH est? disponible para macOS o Linux?",
       "18": "?Qu? sistemas operativos son compatibles?",
       "22": "?C?mo instalo la herramienta?",
-      "27": "?Debo introducir credenciales de inicio de sesi?n?",
+      "27": "?Debo introducir credenciales de inicio de sesión?",
       "30": "?Qu? significa \"versi?n beta\"? ?La herramienta es estable?",
       "34": "?C?mo puedo contribuir a la comunidad?",
       "39": "?La herramienta funciona con OBS?",
@@ -1015,14 +1015,14 @@
     },
     "p": {
       "11": "Windows Launcher es una peque?a app de Windows que descarga, instala y mantiene LTTH actualizado autom?ticamente. Ofrece actualizaciones autom?ticas, rollback a versiones anteriores y gesti?n de versiones integrada. Todos los datos se almacenan en %LOCALAPPDATA%\\LTTH\\.",
-      "14": "Windows Launcher es una app nueva que todav?a no est? firmada con c?digo. Eso es normal en proyectos de c?digo abierto. Haz clic en \"M?s informaci?n\" ? \"Ejecutar de todas formas\". El archivo es seguro y el c?digo fuente est? disponible en GitHub.",
+      "14": "Windows Launcher es una app nueva que todav?a no est? firmada con c?digo. Eso es normal en proyectos de c?digo abierto. Haz clic en \"M?s información\" ? \"Ejecutar de todas formas\". El archivo es seguro y el c?digo fuente est? disponible en GitHub.",
       "17": "Windows Launcher actualmente solo est? disponible para Windows. El soporte para macOS y Linux est? en planificaci?n. LTTH en s? funciona en todas las plataformas, pero la instalaci?n autom?tica mediante el launcher por ahora solo est? disponible en Windows.",
       "20": "Windows Launcher es compatible con Windows 10 y Windows 11. La instalaci?n autom?tica mediante el launcher es el m?todo recomendado para usuarios de Windows. Consulta la p?gina de descarga para m?s detalles.",
       "24": "Recomendado: descarga Windows Launcher y ejec?talo. El launcher instala LTTH autom?ticamente y lo mantiene actualizado. Encontrar?s m?s detalles en la p?gina de descarga.",
-      "29": "Para la app local, no; para la tienda de apps, s?. Para el uso local solo necesitas tu nombre de usuario de TikTok (sin @). La tienda de apps requiere inicio de sesi?n/cuenta. La herramienta solo lee datos p?blicos del LIVE stream.",
-      "32": "?S?, la herramienta est? lista para producci?n y funciona completamente! \"Beta\" significa que se est?n desarrollando activamente nuevas funciones y estamos recopilando feedback. Todas las funciones principales (TTS, alertas, soundboard, plugins, integraci?n OBS) funcionan de forma fiable. Pueden aparecer errores ocasionales - rep?rtalos en GitHub y los arreglaremos r?pido!",
+      "29": "Para la app local, no; para la tienda de apps, s?. Para el uso local solo necesitas tu nombre de usuario de TikTok (sin @). La tienda de apps requiere inicio de sesión/cuenta. La herramienta solo lee datos p?blicos del LIVE stream.",
+      "32": "?S?, la herramienta est? lista para producci?n y funciona completamente! \"Beta\" significa que se est?n desarrollando activamente nuevas funciones y estamos recopilando feedback. Todas las funciones principales (TTS, alertas, soundboard, plugins, integración OBS) funcionan de forma fiable. Pueden aparecer errores ocasionales - rep?rtalos en GitHub y los arreglaremos r?pido!",
       "45": "El launcher incluye todos los componentes necesarios. No tienes que preocuparte por nada.",
-      "48": "La app local procesa tus datos en tu ordenador. La tienda de apps requiere inicio de sesi?n, pero el uso local sigue separado. Se planea sincronizaci?n opcional en la nube para configuraciones (opt-in con control total)."
+      "48": "La app local procesa tus datos en tu ordenador. La tienda de apps requiere inicio de sesión, pero el uso local sigue separado. Se planea sincronizaci?n opcional en la nube para configuraciones (opt-in con control total)."
     }
   },
   "features": {

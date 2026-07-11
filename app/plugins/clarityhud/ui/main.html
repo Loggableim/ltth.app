@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>ClarityHUD Dashboard</title>
+  <title data-i18n="clarityhud.dashboard.title">ClarityHUD Dashboard</title>
   <link rel="stylesheet" href="/css/themes.css">
     <script>
     (function () {
@@ -1104,18 +1104,19 @@
       color: var(--source-text, var(--color-text-primary));
     }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
     <div class="container">
     <div class="header">
       <div class="header-copy">
-        <h1>ClarityHUD Dashboard <span id="plugin-version" style="font-size: 12px; opacity: 0.6;">v1.1.0</span></h1>
-        <p>Ultra-minimalistic, VR-optimized, and accessible HUD overlays for TikTok Live</p>
+        <h1><span data-i18n="generated.9e12b7592f0c">ClarityHUD Dashboard </span><span id="plugin-version" style="font-size: 12px; opacity: 0.6;">v1.1.0</span></h1>
+        <p data-i18n="clarityhud.dashboard.subtitle">Ultra-minimalistic, VR-optimized, and accessible HUD overlays for TikTok Live</p>
         <div class="profile-toolbar">
-          <button class="btn btn-info" data-action="export-profile">Export Profile</button>
-          <button class="btn btn-info" data-action="import-profile">Import Profile</button>
-          <button class="btn btn-primary" data-action="open-setup-wizard">Setup Wizard</button>
-          <button class="btn btn-secondary" data-action="save-custom-preset">Save Preset</button>
+          <button class="btn btn-info" data-action="export-profile" data-i18n="generated.36c2168789e4">Export Profile</button>
+          <button class="btn btn-info" data-action="import-profile" data-i18n="generated.c74a0fa98c81">Import Profile</button>
+          <button class="btn btn-primary" data-action="open-setup-wizard" data-i18n="generated.4eac0a37c0d6">Setup Wizard</button>
+          <button class="btn btn-secondary" data-action="save-custom-preset" data-i18n="generated.16e7ef11522e">Save Preset</button>
           <input type="file" id="profile-import-input" accept="application/json,.json" hidden>
         </div>
       </div>
@@ -1128,8 +1129,8 @@
       <!-- Chat HUD Section -->
       <div class="hud-section">
         <div class="hud-header">
-          <h2>Chat HUD</h2>
-          <p>Minimalistic chat-only overlay with clean typography</p>
+          <h2 data-i18n="clarityhud.chat_hud.title">Chat HUD</h2>
+          <p data-i18n="clarityhud.chat_hud.description">Minimalistic chat-only overlay with clean typography</p>
         </div>
         <div class="hud-content">
           <div class="preview-container">
@@ -1137,7 +1138,7 @@
           </div>
 
           <div class="url-section">
-            <div class="url-label">Overlay URL</div>
+            <div class="url-label" data-i18n="clarityhud.labels.overlay_url">Overlay URL</div>
             <div class="url-display">
               <div class="url-text" id="chat-url">Loading...</div>
               <button class="btn btn-info btn-icon" data-action="copy-url" data-type="chat" title="Copy URL">Copy</button>
@@ -1145,9 +1146,9 @@
           </div>
 
           <div class="button-group">
-            <button class="btn btn-primary" data-action="open-settings" data-type="chat">Settings</button>
-            <button class="btn btn-success" data-action="test-event" data-type="chat">Test Event</button>
-            <button class="btn btn-secondary" data-action="refresh-preview" data-type="chat">Refresh Preview</button>
+            <button class="btn btn-primary" data-action="open-settings" data-type="chat" data-i18n="clarityhud.buttons.settings">Settings</button>
+            <button class="btn btn-success" data-action="test-event" data-type="chat" data-i18n="clarityhud.buttons.test_event">Test Event</button>
+            <button class="btn btn-secondary" data-action="refresh-preview" data-type="chat" data-i18n="clarityhud.buttons.refresh_preview">Refresh Preview</button>
           </div>
         </div>
       </div>
@@ -1155,8 +1156,8 @@
       <!-- Full Activity HUD Section -->
       <div class="hud-section">
         <div class="hud-header">
-          <h2>Full Activity HUD</h2>
-          <p>Complete activity feed with layout modes and animations</p>
+          <h2 data-i18n="clarityhud.full_hud.title">Full Activity HUD</h2>
+          <p data-i18n="clarityhud.full_hud.description">Complete activity feed with layout modes and animations</p>
         </div>
         <div class="hud-content">
           <div class="preview-container">
@@ -1164,7 +1165,7 @@
           </div>
 
           <div class="url-section">
-            <div class="url-label">Overlay URL</div>
+            <div class="url-label" data-i18n="clarityhud.labels.overlay_url">Overlay URL</div>
             <div class="url-display">
               <div class="url-text" id="full-url">Loading...</div>
               <button class="btn btn-info btn-icon" data-action="copy-url" data-type="full" title="Copy URL">Copy</button>
@@ -1172,9 +1173,9 @@
           </div>
 
           <div class="button-group">
-            <button class="btn btn-primary" data-action="open-settings" data-type="full">Settings</button>
-            <button class="btn btn-success" data-action="test-event" data-type="full">Test Event</button>
-            <button class="btn btn-secondary" data-action="refresh-preview" data-type="full">Refresh Preview</button>
+            <button class="btn btn-primary" data-action="open-settings" data-type="full" data-i18n="clarityhud.buttons.settings">Settings</button>
+            <button class="btn btn-success" data-action="test-event" data-type="full" data-i18n="clarityhud.buttons.test_event">Test Event</button>
+            <button class="btn btn-secondary" data-action="refresh-preview" data-type="full" data-i18n="clarityhud.buttons.refresh_preview">Refresh Preview</button>
           </div>
         </div>
       </div>
@@ -1182,8 +1183,8 @@
       <!-- Multi-Stream HUD Section -->
       <div class="hud-section">
         <div class="hud-header">
-          <h2>Multi-Stream HUD</h2>
-          <p>Display up to 3 additional TikTok streams alongside your primary stream</p>
+          <h2 data-i18n="clarityhud.multi_hud.title">Multi-Stream HUD</h2>
+          <p data-i18n="generated.e000a5fc9248">Display up to 3 additional TikTok streams alongside your primary stream</p>
         </div>
         <div class="hud-content">
           <div class="preview-container">
@@ -1191,7 +1192,7 @@
           </div>
 
           <div class="url-section">
-            <div class="url-label">Overlay URL</div>
+            <div class="url-label" data-i18n="clarityhud.labels.overlay_url">Overlay URL</div>
             <div class="url-display">
               <div class="url-text" id="multi-url">Loading...</div>
               <button class="btn btn-info btn-icon" data-action="copy-url" data-type="multi" title="Copy URL">Copy</button>
@@ -1199,13 +1200,13 @@
           </div>
 
           <div id="multi-status" class="status-list">
-            <div class="status-item"><span>Multi-stream status</span><span>Loading...</span></div>
+            <div class="status-item"><span data-i18n="generated.71d79253542c">Multi-stream status</span><span>Loading...</span></div>
           </div>
 
           <div class="button-group">
-            <button class="btn btn-primary" data-action="open-settings" data-type="multi">Settings</button>
-            <button class="btn btn-success" data-action="test-event" data-type="multi">Test Event</button>
-            <button class="btn btn-secondary" data-action="refresh-preview" data-type="multi">Refresh Preview</button>
+            <button class="btn btn-primary" data-action="open-settings" data-type="multi" data-i18n="clarityhud.buttons.settings">Settings</button>
+            <button class="btn btn-success" data-action="test-event" data-type="multi" data-i18n="clarityhud.buttons.test_event">Test Event</button>
+            <button class="btn btn-secondary" data-action="refresh-preview" data-type="multi" data-i18n="clarityhud.buttons.refresh_preview">Refresh Preview</button>
           </div>
         </div>
       </div>
@@ -1213,8 +1214,8 @@
       <!-- Stream Overlay Section -->
       <div class="hud-section">
         <div class="hud-header">
-          <h2>Stream Overlay</h2>
-          <p>OBS overlay for alerts, highlights, and ticker content</p>
+          <h2 data-i18n="generated.be53abcfbf2a">Stream Overlay</h2>
+          <p data-i18n="generated.f32b942ca380">OBS overlay for alerts, highlights, and ticker content</p>
         </div>
         <div class="hud-content">
           <div class="preview-container">
@@ -1222,7 +1223,7 @@
           </div>
 
           <div class="url-section">
-            <div class="url-label">Overlay URL</div>
+            <div class="url-label" data-i18n="clarityhud.labels.overlay_url">Overlay URL</div>
             <div class="url-display">
               <div class="url-text" id="stream-url">Loading...</div>
               <button class="btn btn-info btn-icon" data-action="copy-url" data-type="stream" title="Copy URL">Copy</button>
@@ -1230,9 +1231,9 @@
           </div>
 
           <div class="button-group">
-            <button class="btn btn-primary" data-action="open-settings" data-type="stream">Settings</button>
-            <button class="btn btn-success" data-action="test-event" data-type="stream">Test All</button>
-            <button class="btn btn-secondary" data-action="refresh-preview" data-type="stream">Refresh Preview</button>
+            <button class="btn btn-primary" data-action="open-settings" data-type="stream" data-i18n="clarityhud.buttons.settings">Settings</button>
+            <button class="btn btn-success" data-action="test-event" data-type="stream" data-i18n="generated.b4c21204fc2f">Test All</button>
+            <button class="btn btn-secondary" data-action="refresh-preview" data-type="stream" data-i18n="clarityhud.buttons.refresh_preview">Refresh Preview</button>
           </div>
         </div>
       </div>
@@ -1255,15 +1256,15 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-warning" id="reset-defaults-btn">
+        <button class="btn btn-warning" id="reset-defaults-btn" data-i18n="clarityhud.buttons.reset_defaults">
           Reset to Defaults
         </button>
         <div style="flex: 1;"></div>
-        <button class="btn btn-secondary" id="cancel-settings-btn">
+        <button class="btn btn-secondary" id="cancel-settings-btn" data-i18n="clarityhud.buttons.cancel">
           Cancel
         </button>
         <button class="btn btn-primary" id="save-settings-btn">
-          <span class="save-text">Save Settings</span>
+          <span class="save-text" data-i18n="clarityhud.buttons.save">Save Settings</span>
         </button>
       </div>
     </div>
@@ -1279,13 +1280,13 @@
   <div id="setup-wizard-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Setup Wizard</h2>
+        <h2 data-i18n="generated.58d4e1473481">Setup Wizard</h2>
         <span class="close" id="close-setup-wizard">&times;</span>
       </div>
       <div class="wizard-options">
-        <button class="preset-btn" data-wizard-preset="vrchat-readable">VRChat Readable</button>
-        <button class="preset-btn" data-wizard-preset="obs-clean">OBS Clean</button>
-        <button class="preset-btn" data-wizard-preset="high-activity">High Activity</button>
+        <button class="preset-btn" data-wizard-preset="vrchat-readable" data-i18n="generated.fba38e80390a">VRChat Readable</button>
+        <button class="preset-btn" data-wizard-preset="obs-clean" data-i18n="generated.a5fa513989d0">OBS Clean</button>
+        <button class="preset-btn" data-wizard-preset="high-activity" data-i18n="generated.55c7d85f8fee">High Activity</button>
       </div>
     </div>
   </div>

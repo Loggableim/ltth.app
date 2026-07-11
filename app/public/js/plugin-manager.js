@@ -728,12 +728,13 @@ class PluginManager {
         const category = this.getStorePluginCategoryLabel(plugin);
         const iconText = this.getStorePluginInitials(plugin);
         const accent = this.getStorePluginAccent(plugin);
+        const logo = this.getPluginLogo(plugin);
 
         return `
             <button type="button" class="plugin-store-card" data-store-card="true" data-source-id="${this.escapeHtml(plugin.sourceId || '')}" data-plugin-id="${this.escapeHtml(plugin.id || '')}" style="text-align: left; width: 100%; min-height: ${compact ? '170px' : '220px'}; display: flex; flex-direction: column; gap: 0.85rem; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 8px; padding: ${compact ? '0.9rem' : '1rem'}; cursor: pointer; color: inherit; transition: border-color 0.2s, transform 0.2s;">
                 <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
-                    <div style="width: 52px; height: 52px; flex: 0 0 52px; border-radius: 12px; background: ${accent.background}; border: 1px solid ${accent.border}; display: flex; align-items: center; justify-content: center; color: ${accent.color}; font-weight: 800; font-size: 1rem;">
-                        ${this.escapeHtml(iconText)}
+                    <div class="plugin-manager-logo" style="width: 52px; height: 52px; flex: 0 0 52px; border-radius: 12px; background: ${accent.background}; border: 1px solid ${accent.border}; display: flex; align-items: center; justify-content: center; color: ${accent.color}; font-weight: 800; font-size: 1rem; overflow: hidden;">
+                        ${logo ? `<img src="${this.escapeHtml(logo)}" alt="${this.escapeHtml(plugin.name || plugin.id)} logo" loading="lazy" style="width: 100%; height: 100%; object-fit: contain; padding: 6px;" onerror="this.remove(); this.parentElement.textContent='${this.escapeHtml(iconText)}';">` : this.escapeHtml(iconText)}
                     </div>
                     <div style="min-width: 0; flex: 1;">
                         <div style="color: var(--color-text-primary); font-weight: 800; font-size: 1rem; line-height: 1.2; margin-bottom: 0.35rem; overflow-wrap: anywhere;">${this.escapeHtml(plugin.name || plugin.id)}</div>
@@ -1243,6 +1244,7 @@ class PluginManager {
         const devStatusBackground = this.getDevStatusBackground(plugin.devStatus);
 
         const typeIcon = this.getTypeIcon(plugin.type);
+        const logo = this.getPluginLogo(plugin);
         const typeBadge = plugin.type
             ? `<span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; font-size: 0.7rem; color: #60a5fa;">${typeIcon} ${this.escapeHtml(plugin.type)}</span>`
             : '';
@@ -1288,7 +1290,7 @@ class PluginManager {
                     <!-- Plugin Icon -->
                     <div style="flex-shrink: 0;">
                         <div style="width: 64px; height: 64px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%); border: 2px solid rgba(59, 130, 246, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="package" style="width: 32px; height: 32px; color: #60a5fa;"></i>
+                            ${logo ? `<img src="${this.escapeHtml(logo)}" alt="${this.escapeHtml(plugin.name || plugin.id)} logo" loading="lazy" style="width: 100%; height: 100%; object-fit: contain; padding: 8px;" onerror="this.replaceWith(Object.assign(document.createElement('i'), {className: 'plugin-logo-fallback', textContent: '${this.escapeHtml(this.getPluginInitials(plugin))}'}));">` : `<span class="plugin-logo-fallback">${this.escapeHtml(this.getPluginInitials(plugin))}</span>`}
                         </div>
                     </div>
 
@@ -1345,6 +1347,56 @@ class PluginManager {
             'utility': '🔧'
         };
         return icons[type] || '📦';
+    }
+
+    getPluginInitials(plugin) {
+        const source = String(plugin?.name || plugin?.id || 'LTTH').trim();
+        const words = source.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+        return (words.length > 1 ? words.slice(0, 2).map(word => word[0]) : [source.slice(0, 2)]).join('').toUpperCase();
+    }
+
+    getPluginLogo(plugin) {
+        const id = String(plugin?.id || '').trim();
+        const overrides = {
+            'advanced-timer': '/plugins/advanced-timer/assets/advanced-timer-icon.png',
+            'clarityhud': '/plugins/clarityhud/assets/clarity-icon.png',
+            'coinbattle': '/plugins/coinbattle/assets/coinbattle-icon.png',
+            'fireworks': '/plugins/fireworks/assets/fireworks-icon.png',
+            'flame-overlay': '/plugins/flame-overlay/assets/branding/visual-fx-frame-icon.png',
+            'game-engine': '/plugins/game-engine/assets/branding/ltth-game-engine-icon.png',
+            'goals': '/plugins/goals/assets/live-goals-icon.png',
+            'interactive-story': '/plugins/interactive-story/assets/interactive-story-icon.png',
+            'milestone-leaderboard': '/plugins/milestone-leaderboard/assets/viewer-xp-icon.png',
+            'music-bot': '/plugins/music-bot/assets/soundbot.png',
+            'openshock': '/plugins/openshock/assets/branding/hybridshock-icon.png',
+            'quiz-show': '/plugins/quiz-show/assets/quiz-show-icon.png',
+            'spotlight': '/plugins/spotlight/assets/spotlight-icon.png',
+            'toptier': '/plugins/toptier/assets/toptier-icon.png',
+            'multicam': '/multicam-icon.png',
+            'osc-bridge': '/osc-bridge-icon.png',
+            'soundboard': '/soundboard-icon.png',
+            'stt-ticker': '/sttlogo.png',
+            'tts': '/ltthttsicon.png',
+            'weather-control': '/weather-control-icon.png',
+            'emoji-rain': '/plugins/emoji-rain/assets/sidebar-icon.png',
+            'webgpu-emoji-rain': '/plugins/webgpu-emoji-rain/assets/sidebar-icon.png',
+            'webgpu-fireworks': '/plugins/webgpu-fireworks/assets/fireworks-icon.png'
+        };
+        const raw = typeof plugin?.logo === 'string' ? plugin.logo.trim() : '';
+        if (raw) {
+            if (/^(https?:)?\/\//i.test(raw) || raw.startsWith('data:')) return raw;
+            if (raw.startsWith('/plugins/')) return raw;
+            // Plugin manifests may point to an app-public asset (for example
+            // /soundboard-logo.png). Keep that root path intact; prefixing it
+            // with /plugins would make the browser request a non-existent URL.
+            if (/^\/(?:soundboard|ltthtts|ltthicon|ltthappicon|multicam|osc-bridge|weather-control|sttlogo)/i.test(raw)) {
+                return raw;
+            }
+            if (id && raw.startsWith(`/${id}/`)) return `/plugins${raw}`;
+            if (id && raw.startsWith('/')) return `/plugins/${id}${raw}`;
+            if (id) return `/plugins/${id}/${raw.replace(/^\.\//, '')}`;
+        }
+        return overrides[id] || '';
     }
 
     /**

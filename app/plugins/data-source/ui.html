@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Datenquellen-Manager</title>
+    <title data-i18n="data_source.plugin.name">Datenquellen-Manager</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         /* Datenquellen theme bridge */
@@ -344,31 +344,32 @@
             min-height: 44px;
         }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
     <div class="container">
         <!-- Source Selection Card -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">🔌 Datenquellen-Manager</h2>
+                <h2 class="card-title" data-i18n="generated.b47a69f1d841">🔌 Datenquellen-Manager</h2>
                 <span class="status-badge eulerstream" id="status-badge">Eulerstream</span>
             </div>
 
             <div class="info-box">
-                <strong>Hinweis:</strong> Die Änderung wird beim <strong>nächsten Verbinden</strong> aktiv.
+                <strong>Hinweis:</strong><span data-i18n="generated.129f6225610c"> Die Änderung wird beim </span><strong data-i18n="generated.2ccbd9cb162e">nächsten Verbinden</strong><span data-i18n="generated.32d1296c7fb8"> aktiv.
                 Ein laufender Stream wird nicht unterbrochen.
-            </div>
+            </span></div>
 
             <div class="source-grid">
                 <div class="source-card active" id="card-eulerstream" data-source="eulerstream">
                     <span class="source-icon">⚡</span>
                     <h3>Eulerstream</h3>
-                    <p>Direkte WebSocket-Verbindung zu TikTok über Eulerstream SDK. Benötigt API-Key.</p>
+                    <p data-i18n="generated.b1594359082e">Direkte WebSocket-Verbindung zu TikTok über Eulerstream SDK. Benötigt API-Key.</p>
                 </div>
                 <div class="source-card" id="card-tikfinity" data-source="tikfinity">
                     <span class="source-icon">🔗</span>
                     <h3>TikFinity</h3>
-                    <p>Verbindung über die TikFinity Desktop App (lokaler WebSocket). TikFinity muss laufen.</p>
+                    <p data-i18n="generated.f4c4c00a4e5e">Verbindung über die TikFinity Desktop App (lokaler WebSocket). TikFinity muss laufen.</p>
                 </div>
             </div>
         </div>
@@ -376,21 +377,21 @@
         <!-- TikFinity Settings Card -->
         <div class="card" id="tikfinity-settings-card" style="display: none;">
             <div class="card-header">
-                <h2 class="card-title">⚙️ TikFinity Einstellungen</h2>
+                <h2 class="card-title" data-i18n="generated.34c7dfc0d5d0">⚙️ TikFinity Einstellungen</h2>
             </div>
 
-            <div class="warning-box">
-                ⚠️ Stelle sicher, dass die <strong>TikFinity Desktop App</strong> läuft und mit deinem
+            <div class="warning-box"><span data-i18n="generated.d8781ae2bc2b">
+                ⚠️ Stelle sicher, dass die </span><strong data-i18n="generated.cfa0c4c5b1ff">TikFinity Desktop App</strong><span data-i18n="generated.29bc64103728"> läuft und mit deinem
                 TikTok-Account verbunden ist, bevor du dich verbindest.
-            </div>
+            </span></div>
 
             <div class="form-group">
-                <label>WebSocket Port</label>
+                <label data-i18n="generated.273b0f615627">WebSocket Port</label>
                 <input type="number" class="form-control" id="tikfinity-port" value="21213"
                        min="1" max="65535" placeholder="21213">
             </div>
 
-            <button class="btn btn-primary" id="btn-save-tikfinity">💾 Einstellungen speichern</button>
+            <button class="btn btn-primary" id="btn-save-tikfinity" data-i18n="generated.ffe3ff0db820">💾 Einstellungen speichern</button>
         </div>
     </div>
 

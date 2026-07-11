@@ -497,7 +497,7 @@ function renderPatternList() {
                 <div class="pattern-body">
                     ${pattern.description ? `<p class="pattern-description">${escapeHtml(pattern.description)}</p>` : ''}
                     <div class="pattern-info">
-                        <span>📊 ${pattern.steps?.length || 0} steps</span>
+                        <span>📊 ${pattern.stepsí.length || 0} steps</span>
                         <span>⏱️ ${formatDuration(calculatePatternDuration(pattern.steps || []))}</span>
                     </div>
                 </div>
@@ -538,7 +538,7 @@ function renderPatternList() {
                 <div class="pattern-body">
                     ${pattern.description ? `<p class="pattern-description">${escapeHtml(pattern.description)}</p>` : ''}
                     <div class="pattern-info">
-                        <span>📊 ${pattern.steps?.length || 0} steps</span>
+                        <span>📊 ${pattern.stepsí.length || 0} steps</span>
                         <span>⏱️ ${formatDuration(calculatePatternDuration(pattern.steps || []))}</span>
                     </div>
                 </div>
@@ -2389,7 +2389,7 @@ function initializeEventDelegation() {
 // ====================================================================
 
 async function resetStats() {
-    if (!await confirmAction('Reset all statistics?')) {
+    if (!await confirmAction('Reset all statisticsí')) {
         return;
     }
     

@@ -5,11 +5,19 @@ on:
   push:
     paths:
       - 'app/**'
+      - 'locales/**'
+      - 'docs/**'
+      - 'infos/**'
+      - 'scripts/**'
       - 'package.json'
       - '.github/workflows/backend-ci.yml'
   pull_request:
     paths:
       - 'app/**'
+      - 'locales/**'
+      - 'docs/**'
+      - 'infos/**'
+      - 'scripts/**'
       - 'package.json'
       - '.github/workflows/backend-ci.yml'
 
@@ -45,6 +53,13 @@ jobs:
       - name: Run tests
         working-directory: ./app
         run: npm test
+
+      - name: Validate four-language translation contract
+        working-directory: ./app
+        run: npm run i18n:check
+
+      - name: Scan the OBS WebGPU landing page for unkeyed visible literals
+        run: npm run i18n:literals:strict
 
       - name: Build CSS
         working-directory: ./app

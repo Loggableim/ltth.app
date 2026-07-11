@@ -1,0 +1,95 @@
+/* Clerk/store presentation layer. Auth behavior remains in clerk-store-auth.js. */
+:root {
+  --ltth-store-purple: #8755ff;
+  --ltth-store-pink: #ff4d9b;
+  --ltth-store-cyan: #43d7ff;
+  --ltth-store-yellow: #ffd34e;
+  --ltth-store-ink: #fff8ed;
+}
+
+.plugin-store-auth-root {
+  background:
+    radial-gradient(circle at 14% 18%, rgba(67, 215, 255, 0.26), transparent 32%),
+    radial-gradient(circle at 86% 14%, rgba(255, 77, 155, 0.24), transparent 30%),
+    rgba(13, 10, 35, 0.9);
+  backdrop-filter: blur(22px);
+}
+
+.plugin-store-auth-card {
+  background: linear-gradient(145deg, rgba(45, 27, 93, 0.98), rgba(14, 18, 43, 0.98));
+  border: 2px solid rgba(255, 248, 237, 0.24);
+  border-radius: 1rem;
+  box-shadow: 8px 8px 0 rgba(11, 7, 29, 0.45), 0 28px 80px rgba(0, 0, 0, 0.42);
+}
+
+.plugin-store-auth-card__eyebrow {
+  background: var(--ltth-store-pink);
+  border: 0;
+  color: #fff;
+}
+
+.plugin-store-auth-card h3 {
+  color: var(--ltth-store-ink);
+}
+
+.plugin-store-auth-card p {
+  color: #d8d0e9;
+}
+
+.plugin-store-auth-card code {
+  background: rgba(7, 9, 24, 0.7);
+  border-color: rgba(67, 215, 255, 0.26);
+  color: #dff8ff;
+}
+
+.plugin-store-auth-card .btn-primary,
+.plugin-store-auth-card .btn-primary:hover {
+  background: var(--ltth-store-yellow);
+  border-color: #24163f;
+  box-shadow: 4px 4px 0 #6c3fa8;
+  color: #251b3e;
+}
+
+.plugin-store-auth-card .btn-ghost {
+  border-color: rgba(255, 255, 255, 0.28);
+  color: var(--ltth-store-ink);
+}
+
+.plugin-store-account-menu {
+  align-items: center;
+}
+
+.plugin-store-account-menu > * {
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  border-radius: 999px !important;
+}
+
+.plugin-store-mode-row,
+.plugin-store-toolbar,
+.plugin-store-collection {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.plugin-mode-btn,
+.plugin-filter-btn {
+  border-radius: 0.6rem !important;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.plugin-mode-btn.active,
+.plugin-filter-btn.active {
+  background: var(--ltth-store-pink) !important;
+  border-color: var(--ltth-store-pink) !important;
+  color: #fff !important;
+}
+
+.plugin-mode-btn:hover,
+.plugin-filter-btn:hover {
+  border-color: var(--ltth-store-cyan) !important;
+  transform: translateY(-1px);
+}
+
+.plugin-store-search:focus {
+  border-color: var(--ltth-store-cyan) !important;
+  box-shadow: 0 0 0 3px rgba(67, 215, 255, 0.18) !important;
+}

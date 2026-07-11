@@ -134,8 +134,6 @@ class FireworksPlugin {
      * Register socket event handlers
      */
     registerSocketHandlers() {
-        const io = this.api.getSocketIO();
-        
         // Initialize socket tracking
         if (!this.connectedSockets) {
             this.connectedSockets = new Set();
@@ -175,6 +173,17 @@ class FireworksPlugin {
                     });
                     this.currentFps = this.getOverlayFps(false).fps;
                 });
+
+                socket.on('fireworks:renderer-fallback', (data = {}) => {
+                    const previous = this.overlayTelemetry.get(socket.id) || {};
+                    this.overlayTelemetry.set(socket.id, {
+                        ...previous,
+                        renderer: data.to || 'canvas',
+                        fallbackReason: data.reason || 'unknown',
+                        updatedAt: Date.now()
+                    });
+                    this.api.log(`[FIREWORKS] Overlay renderer fallback: ${data.from || 'webgl'} -> ${data.to || 'canvas'} (${data.reason || 'unknown'})`, 'warn');
+                });
                 
                 // Listen for active firework count responses
                 socket.on('fireworks:active-count-response', (data) => {
@@ -192,7 +201,7 @@ class FireworksPlugin {
             };
             
             // Listen for new connections
-            io.on('connection', this.fpsUpdateHandler);
+            this.api.registerSocketConnection(this.fpsUpdateHandler);
         }
     }
 
@@ -301,8 +310,8 @@ class FireworksPlugin {
             
             // Audio
             audioEnabled: true,
-            rocketSound: '/assets/audio/sound1.mp3', // Using demo folder audio
-            explosionSound: '/assets/audio/sound2.mp3', // Using demo folder audio
+            rocketSound: '/plugins/fireworks/audio/abschussgeraeusch.mp3',
+            explosionSound: '/plugins/fireworks/audio/explosion_small1.mp3',
             audioVolume: 0.7,
             
             // Colors
@@ -669,14 +678,14 @@ class FireworksPlugin {
 
         // Serve uploaded files
         const express = require('express');
-        this.api.getApp().use('/plugins/fireworks/uploads', express.static(this.uploadDir));
+        this.api.registerMiddleware('/plugins/fireworks/uploads', express.static(this.uploadDir));
 
         // Serve audio files
         const audioDir = path.join(__dirname, 'audio');
         if (!fs.existsSync(audioDir)) {
             fs.mkdirSync(audioDir, { recursive: true });
         }
-        this.api.getApp().use('/plugins/fireworks/audio', express.static(audioDir));
+        this.api.registerMiddleware('/plugins/fireworks/audio', express.static(audioDir));
 
         // Benchmark API endpoints
         this.api.registerRoute('post', '/api/fireworks/benchmark/set-preset', (req, res) => {
@@ -874,8 +883,15 @@ class FireworksPlugin {
         const finalIntensity = baseIntensity * tierMultiplier * comboMultiplier;
 
         // Calculate particle count
+        const tierProfiles = {
+            small: { particles: 0.8, combo: 1 },
+            medium: { particles: 1.0, combo: 1 },
+            big: { particles: 1.45, combo: 2 },
+            massive: { particles: 2.0, combo: 3 }
+        };
+        const tierProfile = tierProfiles[tier] || tierProfiles.medium;
         const baseParticles = this.config.particleCount[tier] || 50;
-        const particleCount = Math.round(baseParticles * finalIntensity);
+        const particleCount = Math.round(baseParticles * finalIntensity * tierProfile.particles);
 
         // Random position in upper portion of screen
         const position = {
@@ -904,7 +920,7 @@ class FireworksPlugin {
             tier: tier,
             username: username,
             coins: effectiveCoins,
-            combo: this.comboState.get(userId) || 1,
+            combo: Math.max(this.comboState.get(userId) || 1, tierProfile.combo),
             requestedParticleCount: particleCount,
             reason: 'gift'
         });
@@ -1272,7 +1288,7 @@ class FireworksPlugin {
             // Finale-specific settings
             burstCount: Math.round(5 * intensity),
             burstInterval: 300,
-            shapes: ['burst', 'heart', 'star', 'ring', 'spiral'],
+            shapes: this.getConfiguredShapes(),
             colors: this.config.themeColors,
             
             // Audio
@@ -1287,7 +1303,7 @@ class FireworksPlugin {
      * Trigger random firework
      */
     triggerRandomFirework(bypassEnabled = false) {
-        const shapes = ['burst', 'heart', 'star', 'ring', 'spiral'];
+        const shapes = this.getConfiguredShapes();
         const intensity = this.config.randomMinIntensity + 
             Math.random() * (this.config.randomMaxIntensity - this.config.randomMinIntensity);
 
@@ -1303,6 +1319,15 @@ class FireworksPlugin {
             reason: 'random',
             bypassEnabled: bypassEnabled
         });
+    }
+
+    getConfiguredShapes() {
+        const activeShapes = Array.isArray(this.config.activeShapes) && this.config.activeShapes.length > 0
+            ? this.config.activeShapes
+            : ['burst'];
+        return this.config.randomShapeEnabled
+            ? activeShapes
+            : [this.config.defaultShape || activeShapes[0] || 'burst'];
     }
 
     /**
@@ -1479,12 +1504,8 @@ class FireworksPlugin {
         this.activeFireworkTimers.clear();
         this.activeFireworkCount = 0;
         
-        // Remove socket event handler and disconnect all tracked sockets
-        if (this.fpsUpdateHandler) {
-            const io = this.api.getSocketIO();
-            io.off('connection', this.fpsUpdateHandler);
-            this.fpsUpdateHandler = null;
-        }
+        // PluginAPI owns the connection disposer and removes it on unload.
+        this.fpsUpdateHandler = null;
         
         // Clean up tracked sockets
         if (this.connectedSockets) {

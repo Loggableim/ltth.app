@@ -216,6 +216,15 @@ function updateUI() {
 
         // TikTok visual effects overlay settings
         document.getElementById('visual_mode').value = config.visual_mode || 'premium_stage';
+        document.getElementById('renderer_profile').value = config.renderer_profile || 'hybrid';
+        document.getElementById('quality_preset').value = config.quality_preset || 'auto';
+        document.getElementById('effect_intensity').value = config.effect_intensity ?? 72;
+        document.getElementById('effect_intensity-value').textContent = config.effect_intensity ?? 72;
+        document.getElementById('adaptive_quality').checked = config.adaptive_quality !== false;
+        document.getElementById('enable_bloom').checked = config.enable_bloom !== false;
+        document.getElementById('enable_trails').checked = config.enable_trails !== false;
+        document.getElementById('enable_soft_shadows').checked = config.enable_soft_shadows !== false;
+        document.getElementById('gpu_collisions_enabled').checked = config.gpu_collisions_enabled !== false;
 
         // Toaster mode
         console.log('?? [EMOJI RAIN UI] Setting toaster mode:', config.toaster_mode);
@@ -430,14 +439,46 @@ function setSummaryText(id, value) {
     }
 }
 
+function synchronizeTargetFps(sourceId) {
+    const source = document.getElementById(sourceId);
+    if (!source) return;
+
+    ['target_fps', 'target_fps_optimization'].forEach(id => {
+        const target = document.getElementById(id);
+        if (target && target !== source) target.value = source.value;
+    });
+}
+
+function getSynchronizedTargetFps() {
+    const primary = document.getElementById('target_fps');
+    const parsed = parseInt(primary?.value, 10);
+    const targetFps = Number.isFinite(parsed) ? Math.min(120, Math.max(30, parsed)) : 60;
+
+    ['target_fps', 'target_fps_optimization'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.value = String(targetFps);
+    });
+
+    return targetFps;
+}
+
 // Save configuration
 async function saveConfig() {
     const imageUrlsText = document.getElementById('image_urls').value;
     const imageUrls = imageUrlsText.split('\n').map(url => url.trim()).filter(url => url);
+    const targetFps = getSynchronizedTargetFps();
 
     const newConfig = {
         enabled: document.getElementById('enabled-toggle').checked,
         visual_mode: document.getElementById('visual_mode').value,
+        renderer_profile: document.getElementById('renderer_profile').value,
+        quality_preset: document.getElementById('quality_preset').value,
+        effect_intensity: parseInt(document.getElementById('effect_intensity').value),
+        adaptive_quality: document.getElementById('adaptive_quality').checked,
+        enable_bloom: document.getElementById('enable_bloom').checked,
+        enable_trails: document.getElementById('enable_trails').checked,
+        enable_soft_shadows: document.getElementById('enable_soft_shadows').checked,
+        gpu_collisions_enabled: document.getElementById('gpu_collisions_enabled').checked,
         pupcid_defaults_version: 1,
         // Toaster mode (Low-End PC Mode)
         toaster_mode: document.getElementById('toaster_mode').checked,
@@ -448,7 +489,7 @@ async function saveConfig() {
         enable_glow: document.getElementById('enable_glow').checked,
         enable_particles: document.getElementById('enable_particles').checked,
         enable_depth: document.getElementById('enable_depth').checked,
-        target_fps: parseInt(document.getElementById('target_fps').value),
+        target_fps: targetFps,
         emoji_set: document.getElementById('emoji_set').value.split(',').map(e => e.trim()).filter(e => e),
         use_custom_images: document.getElementById('use_custom_images').checked,
         image_urls: imageUrls,
@@ -563,7 +604,7 @@ let testEmojiRainInProgress = false;
 async function testEmojiRain() {
     // Prevent rapid clicks by checking if a test is already in progress
     if (testEmojiRainInProgress) {
-        showNotification('Bitte warten, Test l�uft bereits...', true);
+        showNotification('Bitte warten, Test läuft bereits...', true);
         return;
     }
 
@@ -760,7 +801,7 @@ async function uploadImages() {
     const files = fileInput.files;
 
     if (files.length === 0) {
-        showNotification('Bitte w�hle mindestens eine Datei aus', true);
+        showNotification('Bitte wähle mindestens eine Datei aus', true);
         return;
     }
 
@@ -847,8 +888,8 @@ async function loadUploadedImages() {
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'delete-btn';
                 deleteBtn.setAttribute('data-filename', img.filename);
-                deleteBtn.title = 'L�schen';
-                deleteBtn.textContent = '�';
+                deleteBtn.title = 'Löschen';
+                deleteBtn.textContent = '×';
 
                 item.appendChild(imgEl);
                 item.appendChild(deleteBtn);
@@ -871,7 +912,7 @@ async function loadUploadedImages() {
 
 // Delete image
 async function deleteImage(filename) {
-    if (!confirm(`Bild "${filename}" wirklich l�schen?`)) {
+    if (!confirm(`Bild "${filename}" wirklich löschen?`)) {
         return;
     }
 
@@ -883,7 +924,7 @@ async function deleteImage(filename) {
         const data = await response.json();
 
         if (data.success) {
-            showNotification('Bild gel�scht!');
+            showNotification('Bild gelöscht!');
 
             // Remove URL from textarea
             const currentUrls = document.getElementById('image_urls').value.split('\n');
@@ -898,10 +939,10 @@ async function deleteImage(filename) {
             // Reload image list
             await loadUploadedImages();
         } else {
-            showNotification('Fehler beim L�schen: ' + data.error, true);
+            showNotification('Fehler beim Löschen: ' + data.error, true);
         }
     } catch (error) {
-        showNotification('Netzwerkfehler beim L�schen', true);
+        showNotification('Netzwerkfehler beim Löschen', true);
         console.error(error);
     }
 }
@@ -967,7 +1008,7 @@ function renderUserEmojiMappings() {
         const emojiSpan = document.createElement('span');
         // Check if using profile picture marker
         if (emoji === '{{profilePicture}}') {
-            emojiSpan.textContent = '??? Profilbild';
+            emojiSpan.textContent = '🖼️ Profilbild';
             emojiSpan.style.fontSize = '1em';
             emojiSpan.style.fontStyle = 'italic';
         } else {
@@ -980,7 +1021,7 @@ function renderUserEmojiMappings() {
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'danger';
-        deleteBtn.textContent = '??? L�schen';
+        deleteBtn.textContent = '× Löschen';
         deleteBtn.style.padding = '5px 10px';
         deleteBtn.style.fontSize = '0.9em';
         deleteBtn.addEventListener('click', () => deleteUserMapping(username));
@@ -1017,7 +1058,7 @@ async function addUserMapping() {
 
 // Delete user emoji mapping
 async function deleteUserMapping(username) {
-    if (!confirm(`Zuordnung f�r "${username}" wirklich l�schen?`)) {
+    if (!confirm(`Zuordnung für "${username}" wirklich löschen?`)) {
         return;
     }
 
@@ -1050,28 +1091,197 @@ async function saveUserEmojiMappings() {
 
 // ========== PERFORMANCE MONITORING ==========
 
-// Update performance display (called from socket updates or polling)
-function updatePerformanceDisplay(fps, activeEmojis, mode) {
+const RENDERER_STATE_KEYS = {
+    offline: 'state_offline',
+    initializing: 'state_initializing',
+    ready: 'state_ready',
+    unsupported: 'state_unsupported',
+    error: 'state_error',
+    'device-lost': 'state_device_lost',
+    recovering: 'state_recovering'
+};
+
+const RENDERER_PROFILE_KEYS = {
+    hybrid: 'profile_hybrid',
+    cinematic: 'profile_cinematic',
+    neon: 'profile_neon'
+};
+
+const RENDERER_QUALITY_KEYS = {
+    auto: 'quality_auto',
+    performance: 'quality_performance',
+    balanced: 'quality_balanced',
+    high: 'quality_high'
+};
+
+function translatePerformance(key, fallback, params = {}) {
+    const fullKey = `webgpu_emoji_rain.performance.${key}`;
+    const translated = window.i18n?.t?.(fullKey, params);
+    return translated && translated !== fullKey ? translated : fallback;
+}
+
+function finiteMetric(...values) {
+    for (const value of values) {
+        const number = Number(value);
+        if (Number.isFinite(number)) return number;
+    }
+    return null;
+}
+
+function formatMetricNumber(value, digits = 0) {
+    const locale = document.documentElement.lang || undefined;
+    return value === null ? '--' : value.toLocaleString(locale, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+    });
+}
+
+function formatFrameTime(value) {
+    return value === null ? '--' : `${formatMetricNumber(value, 2)} ms`;
+}
+
+function formatAdapter(adapter) {
+    if (!adapter) return '--';
+    if (typeof adapter === 'string') return adapter;
+
+    const values = [adapter.description, adapter.vendor, adapter.architecture, adapter.device]
+        .filter(value => value && String(value).toLowerCase() !== 'unknown')
+        .map(String);
+    return [...new Set(values)].join(' · ') || '--';
+}
+
+function formatResolution(metrics) {
+    const resolution = metrics.resolution || metrics.outputResolution;
+    if (typeof resolution === 'string' && resolution.trim()) return resolution.replace(/\s*x\s*/i, ' × ');
+    if (resolution && typeof resolution === 'object') {
+        const width = finiteMetric(resolution.width);
+        const height = finiteMetric(resolution.height);
+        if (width !== null && height !== null) return `${Math.round(width)} × ${Math.round(height)}`;
+    }
+
+    const width = finiteMetric(metrics.renderWidth, metrics.width);
+    const height = finiteMetric(metrics.renderHeight, metrics.height);
+    return width !== null && height !== null ? `${Math.round(width)} × ${Math.round(height)}` : '--';
+}
+
+function formatAtlasOccupancy(metrics) {
+    const entries = finiteMetric(metrics.atlasEntries, metrics.atlasUsed);
+    const capacity = finiteMetric(metrics.atlasCapacity, metrics.atlasSlots);
+    let occupancy = finiteMetric(metrics.atlasOccupancy, metrics.atlasUtilization);
+
+    if (occupancy !== null && occupancy <= 1) occupancy *= 100;
+    if (occupancy === null && entries !== null && capacity && capacity > 0) occupancy = entries / capacity * 100;
+
+    if (entries !== null && capacity !== null) {
+        const percentage = occupancy === null ? '' : ` (${formatMetricNumber(occupancy, 1)}%)`;
+        return `${formatMetricNumber(entries)} / ${formatMetricNumber(capacity)}${percentage}`;
+    }
+    if (occupancy !== null) return `${formatMetricNumber(occupancy, 1)}%`;
+    return entries === null ? '--' : formatMetricNumber(entries);
+}
+
+function setRendererMetric(id, value, title = value) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    element.textContent = value;
+    element.title = title;
+}
+
+function setLocalizedRendererMetric(id, value, translationKeys) {
+    const element = document.getElementById(id);
+    if (!element) return;
+
+    const normalized = value ? String(value).toLowerCase() : '';
+    const translationKey = translationKeys[normalized];
+    if (translationKey) {
+        element.setAttribute('data-i18n', `webgpu_emoji_rain.performance.${translationKey}`);
+    } else {
+        element.removeAttribute('data-i18n');
+    }
+    setRendererMetric(id, formatLocalizedToken(value, translationKeys));
+}
+
+function formatLocalizedToken(value, translationKeys) {
+    if (!value) return '--';
+    const normalized = String(value).toLowerCase();
+    const translationKey = translationKeys[normalized];
+    if (!translationKey) return String(value).replace(/[-_]/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+    return translatePerformance(translationKey, String(value).replace(/[-_]/g, ' '));
+}
+
+// Update performance display from a complete renderer metrics object.
+function updatePerformanceDisplay(payload = {}) {
+    const metrics = payload?.renderer || payload?.metrics || payload || {};
+    const fps = finiteMetric(metrics.fps);
+    const activeParticles = finiteMetric(metrics.activeParticles, metrics.activeEmojis);
+    const droppedParticles = finiteMetric(metrics.droppedParticles, metrics.droppedEmojis);
+    const queuedParticles = finiteMetric(metrics.queuedParticles, metrics.queuedEmojis, metrics.queueDepth, metrics.spawnQueueDepth);
+    const gpuFrameTime = finiteMetric(metrics.gpuFrameTimeMs, metrics.gpuFrameMs, metrics.gpuTimeMs);
+    const cpuFrameTime = finiteMetric(metrics.cpuFrameTimeMs, metrics.frameTimeMs);
+    const particleBudget = finiteMetric(metrics.particleBudget, metrics.maxParticles, metrics.particleCapacity, metrics.budget);
+    const renderScale = finiteMetric(metrics.renderScale, metrics.render_scale);
+    const state = String(metrics.state || metrics.rendererState || 'offline').toLowerCase().replace(/_/g, '-');
+    const profile = metrics.profile || metrics.rendererProfile || metrics.renderer_profile;
+    const quality = metrics.quality || metrics.qualityPreset || metrics.quality_preset;
+
     const fpsDisplay = document.getElementById('current-fps-display');
     const emojisDisplay = document.getElementById('active-emojis-display');
     const modeDisplay = document.getElementById('performance-mode-display');
 
-    if (fpsDisplay) fpsDisplay.textContent = fps || '--';
-    if (emojisDisplay) emojisDisplay.textContent = activeEmojis || '--';
+    if (fpsDisplay) fpsDisplay.textContent = formatMetricNumber(fps);
+    if (emojisDisplay) emojisDisplay.textContent = formatMetricNumber(activeParticles);
     if (modeDisplay) {
-        modeDisplay.textContent = mode || 'Normal';
-        // Color based on mode
-        if (mode === 'minimal') {
-            modeDisplay.style.color = '#f44336';
-        } else if (mode === 'reduced') {
-            modeDisplay.style.color = '#ff9800';
-        } else {
-            modeDisplay.style.color = '#4CAF50';
-        }
+        modeDisplay.textContent = formatLocalizedToken(quality || profile, RENDERER_QUALITY_KEYS);
     }
 
-    setSummaryText('hero-performance', `${fps || '--'} FPS`);
-    setSummaryText('hero-performance-detail', `${activeEmojis || '--'} aktive Emojis · ${mode || 'Normal'}`);
+    const activeText = formatMetricNumber(activeParticles);
+    const droppedText = formatMetricNumber(droppedParticles);
+    const queuedText = formatMetricNumber(queuedParticles);
+    setSummaryText('hero-performance', `${formatMetricNumber(fps)} FPS`);
+    const summaryParams = { active: activeText, dropped: droppedText, queued: queuedText };
+    const summaryDetail = document.getElementById('hero-performance-detail');
+    if (summaryDetail) {
+        summaryDetail.setAttribute('data-i18n', 'webgpu_emoji_rain.performance.summary_particles');
+        summaryDetail.setAttribute('data-i18n-params', JSON.stringify(summaryParams));
+    }
+    setSummaryText('hero-performance-detail', translatePerformance(
+        'summary_particles',
+        `${activeText} active · ${droppedText} dropped · ${queuedText} queued`,
+        summaryParams
+    ));
+
+    const stateElement = document.getElementById('renderer-state');
+    if (stateElement) {
+        const stateKey = RENDERER_STATE_KEYS[state] || 'state_unknown';
+        stateElement.dataset.state = state;
+        stateElement.setAttribute('data-i18n', `webgpu_emoji_rain.performance.${stateKey}`);
+        stateElement.textContent = translatePerformance(stateKey, state.replace(/-/g, ' '));
+    }
+
+    const adapter = formatAdapter(metrics.adapter || metrics.adapterInfo);
+    setRendererMetric('renderer-adapter', adapter);
+    setRendererMetric('renderer-resolution', formatResolution(metrics));
+    setRendererMetric('renderer-gpu-frame-time', formatFrameTime(gpuFrameTime));
+    setRendererMetric('renderer-cpu-frame-time', formatFrameTime(cpuFrameTime));
+    setRendererMetric('renderer-active-particles', activeText);
+    setRendererMetric('renderer-dropped-particles', droppedText);
+    setRendererMetric('renderer-queued-particles', queuedText);
+    setRendererMetric('renderer-atlas-occupancy', formatAtlasOccupancy(metrics));
+    setRendererMetric('renderer-particle-budget', formatMetricNumber(particleBudget));
+    setLocalizedRendererMetric('renderer-profile', profile, RENDERER_PROFILE_KEYS);
+    setLocalizedRendererMetric('renderer-quality', quality, RENDERER_QUALITY_KEYS);
+    setRendererMetric('renderer-render-scale', renderScale === null ? '--' : `${formatMetricNumber(renderScale, 2)}×`);
+}
+
+async function loadRendererStatus() {
+    try {
+        const response = await fetch('/api/webgpu-emoji-rain/status', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.success && data.renderer) updatePerformanceDisplay(data.renderer);
+    } catch (error) {
+        console.warn('[WebGPU EmojiRain] Renderer status unavailable:', error.message);
+    }
 }
 
 // ========== INITIALIZATION ==========
@@ -1083,6 +1293,7 @@ function initializeEmojiRainUI() {
     loadConfig();
     loadUploadedImages();
     loadUserEmojiMappings();
+    loadRendererStatus();
 
     console.log('? [EMOJI RAIN UI] Initialization started');
 
@@ -1096,6 +1307,12 @@ function initializeEmojiRainUI() {
 
     // Visual mode selector
     document.getElementById('visual_mode').addEventListener('change', applyVisualModePreset);
+    document.getElementById('effect_intensity').addEventListener('input', event => {
+        document.getElementById('effect_intensity-value').textContent = event.target.value;
+    });
+    ['target_fps', 'target_fps_optimization'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', () => synchronizeTargetFps(id));
+    });
 
     // Upload images button
     document.getElementById('upload-images-btn').addEventListener('click', uploadImages);
@@ -1146,7 +1363,7 @@ function initializeEmojiRainUI() {
 
     // Setup socket listener for performance updates
     socket.on('webgpu-emoji-rain:performance-update', (data) => {
-        updatePerformanceDisplay(data.fps, data.activeEmojis, data.mode);
+        updatePerformanceDisplay(data);
     });
 }
 

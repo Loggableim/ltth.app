@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Chat Command Engine - Configuration</title>
+    <title data-i18n="generated.6e7630e4e274">Global Chat Command Engine - Configuration</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function () {
@@ -1026,89 +1026,90 @@
             -webkit-text-fill-color: #030603;
         }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 Global Chat Command Engine</h1>
-            <p>Universal chat command interpreter and framework for all plugins</p>
+            <h1 data-i18n="generated.3b4dcadd2295">🎯 Global Chat Command Engine</h1>
+            <p data-i18n="gcce.subtitle">Universal chat command interpreter and framework for all plugins</p>
         </div>
 
         <div id="message-container"></div>
 
         <!-- Navigation Tabs -->
         <div class="nav-tabs">
-            <button class="nav-tab active" data-tab="dashboard">📊 Dashboard</button>
-            <button class="nav-tab" data-tab="commands">⚡ Commands</button>
-            <button class="nav-tab" data-tab="monitoring">📈 Monitoring</button>
-            <button class="nav-tab" data-tab="hud">🎨 HUD Overlay</button>
-            <button class="nav-tab" data-tab="config">⚙️ Configuration</button>
+            <button class="nav-tab active" data-tab="dashboard" data-i18n="generated.58df16b518a2">📊 Dashboard</button>
+            <button class="nav-tab" data-tab="commands" data-i18n="generated.2182bdf72a21">⚡ Commands</button>
+            <button class="nav-tab" data-tab="monitoring" data-i18n="generated.942ecf895232">📈 Monitoring</button>
+            <button class="nav-tab" data-tab="hud" data-i18n="generated.dc2caabbad2c">🎨 HUD Overlay</button>
+            <button class="nav-tab" data-tab="config" data-i18n="generated.29814694a8d8">⚙️ Configuration</button>
         </div>
 
         <!-- Dashboard Tab -->
         <div id="tab-dashboard" class="tab-content active">
             <!-- Quick Actions -->
             <div class="card">
-                <div class="card-title">🚀 Quick Actions</div>
+                <div class="card-title" data-i18n="generated.2143123c3df9">🚀 Quick Actions</div>
                 <div class="quick-actions">
                     <button class="action-btn" id="btn-refresh-stats">
-                        <span>🔄</span> Refresh Stats
-                    </button>
+                        <span>🔄</span><span data-i18n="generated.c71b56d1ee8f"> Refresh Stats
+                    </span></button>
                     <button class="action-btn" id="btn-clear-cache">
-                        <span>🗑️</span> Clear Caches
-                    </button>
+                        <span>🗑️</span><span data-i18n="generated.010ba6deddfa"> Clear Caches
+                    </span></button>
                     <button class="action-btn" id="btn-export-audit">
-                        <span>📥</span> Export Audit Log
-                    </button>
+                        <span>📥</span><span data-i18n="generated.26adf4b3b53b"> Export Audit Log
+                    </span></button>
                     <button class="action-btn" id="btn-view-history">
-                        <span>📜</span> View History
-                    </button>
+                        <span>📜</span><span data-i18n="generated.63f8adae5a9c"> View History
+                    </span></button>
                 </div>
             </div>
 
             <!-- Enhanced Statistics Grid -->
             <div class="card">
-                <div class="card-title">📊 Live Statistics</div>
+                <div class="card-title" data-i18n="generated.3c6661eed135">📊 Live Statistics</div>
                 <div class="stats-grid" id="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-label">Total Commands</div>
+                        <div class="stat-label" data-i18n="gcce.statistics.total_commands">Total Commands</div>
                         <div class="stat-value" id="stat-total-commands">-</div>
-                        <div class="metric-trend up" id="trend-commands">↑ Live</div>
+                        <div class="metric-trend up" id="trend-commands" data-i18n="generated.8610052f9a8b">↑ Live</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Enabled Commands</div>
+                        <div class="stat-label" data-i18n="gcce.statistics.enabled_commands">Enabled Commands</div>
                         <div class="stat-value" id="stat-enabled-commands">-</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Commands Executed</div>
+                        <div class="stat-label" data-i18n="generated.0141969e311e">Commands Executed</div>
                         <div class="stat-value" id="stat-executed">-</div>
                         <div class="metric-trend up" id="trend-executed">+0</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Success Rate</div>
+                        <div class="stat-label" data-i18n="generated.e38db76bdf69">Success Rate</div>
                         <div class="stat-value" id="stat-success-rate">-</div>
                         <div class="progress-bar">
                             <div class="progress-fill" id="progress-success" style="width: 0%"></div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Cache Hit Rate</div>
+                        <div class="stat-label" data-i18n="generated.ea51d84f9d7f">Cache Hit Rate</div>
                         <div class="stat-value" id="stat-cache-hit">-</div>
                         <div class="progress-bar">
                             <div class="progress-fill" id="progress-cache" style="width: 0%"></div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Active Users</div>
+                        <div class="stat-label" data-i18n="generated.755193245f81">Active Users</div>
                         <div class="stat-value" id="stat-active-users">-</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Event Reduction</div>
+                        <div class="stat-label" data-i18n="generated.4fae5fda4336">Event Reduction</div>
                         <div class="stat-value" id="stat-event-reduction">-</div>
-                        <div class="metric-trend down" id="trend-events">↓ Optimized</div>
+                        <div class="metric-trend down" id="trend-events" data-i18n="generated.21753a40ce25">↓ Optimized</div>
                     </div>
                     <div class="stat-card">
-                    <div class="stat-label">Registered Plugins</div>
+                    <div class="stat-label" data-i18n="gcce.statistics.registered_plugins">Registered Plugins</div>
                     <div class="stat-value" id="stat-plugins">-</div>
                 </div>
             </div>
@@ -1116,59 +1117,59 @@
 
         <!-- Configuration -->
         <div class="card">
-            <div class="card-title">⚙️ Configuration</div>
+            <div class="card-title" data-i18n="generated.1df5f14e13fb">⚙️ Configuration</div>
             <form id="config-form">
                 <div class="config-group">
-                    <label class="config-label" for="command-prefix">Command Prefix</label>
-                    <div class="config-description">Prefix used to identify chat commands (e.g., "!" for !help)</div>
+                    <label class="config-label" for="command-prefix" data-i18n="gcce.config.command_prefix">Command Prefix</label>
+                    <div class="config-description" data-i18n="gcce.config.command_prefix_desc">Prefix used to identify chat commands (e.g., "!" for !help)</div>
                     <input type="text" id="command-prefix" name="commandPrefix" maxlength="5" value="!">
                 </div>
 
                 <div class="config-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-built-in" name="enableBuiltInCommands" checked>
-                        <label class="config-label" for="enable-built-in" style="margin: 0;">Enable Built-in Commands</label>
+                        <label class="config-label" for="enable-built-in" style="margin: 0;" data-i18n="gcce.config.enable_built_in">Enable Built-in Commands</label>
                     </div>
-                    <div class="config-description">Enable default commands like !help, !commands, etc.</div>
+                    <div class="config-description" data-i18n="gcce.config.enable_built_in_desc">Enable default commands like !help, !commands, etc.</div>
                 </div>
 
                 <div class="config-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-overlay" name="enableOverlayMessages" checked>
-                        <label class="config-label" for="enable-overlay" style="margin: 0;">Enable Overlay Messages</label>
+                        <label class="config-label" for="enable-overlay" style="margin: 0;" data-i18n="gcce.config.enable_overlay">Enable Overlay Messages</label>
                     </div>
-                    <div class="config-description">Show command responses on stream overlays</div>
+                    <div class="config-description" data-i18n="gcce.config.enable_overlay_desc">Show command responses on stream overlays</div>
                 </div>
 
                 <div class="config-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-help" name="enableHelpCommand" checked>
-                        <label class="config-label" for="enable-help" style="margin: 0;">Enable Help Command</label>
+                        <label class="config-label" for="enable-help" style="margin: 0;" data-i18n="gcce.config.enable_help">Enable Help Command</label>
                     </div>
-                    <div class="config-description">Allow users to use !help command</div>
+                    <div class="config-description" data-i18n="gcce.config.enable_help_desc">Allow users to use !help command</div>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Save Configuration</button>
+                <button type="submit" class="btn btn-primary" data-i18n="gcce.config.save">Save Configuration</button>
             </form>
         </div>
 
         <!-- Registered Commands -->
         <div class="card">
-            <div class="card-title">📝 Registered Commands</div>
-            <div id="commands-container" class="loading">Loading commands...</div>
+            <div class="card-title" data-i18n="generated.546ec6dbcd07">📝 Registered Commands</div>
+            <div id="commands-container" class="loading" data-i18n="gcce.commands.loading">Loading commands...</div>
         </div>
     </div>
 
     <!-- Commands Tab -->
     <div id="tab-commands" class="tab-content">
         <div class="card">
-            <div class="card-title">⚡ All Commands</div>
+            <div class="card-title" data-i18n="generated.16775436cf12">⚡ All Commands</div>
             
             <!-- Filter Bar -->
             <div class="filter-bar">
                 <input type="text" id="cmd-filter-search" class="filter-input" placeholder="Search commands...">
                 <select id="cmd-filter-category" class="filter-input">
-                    <option value="">All Categories</option>
+                    <option value="" data-i18n="generated.820b9501a918">All Categories</option>
                     <option value="System">System</option>
                     <option value="Information">Information</option>
                     <option value="HUD">HUD</option>
@@ -1177,20 +1178,20 @@
                     <option value="Utility">Utility</option>
                 </select>
                 <select id="cmd-filter-permission" class="filter-input">
-                    <option value="">All Permissions</option>
-                    <option value="all">All Viewers</option>
+                    <option value="" data-i18n="generated.f19226692d07">All Permissions</option>
+                    <option value="all" data-i18n="generated.e32ad6c0c6f0">All Viewers</option>
                     <option value="subscriber">Subscribers</option>
                     <option value="moderator">Moderators</option>
-                    <option value="owner">Owner Only</option>
+                    <option value="owner" data-i18n="generated.71d743b98f88">Owner Only</option>
                 </select>
                 <select id="cmd-filter-status" class="filter-input">
-                    <option value="">All Status</option>
-                    <option value="enabled">Enabled Only</option>
-                    <option value="disabled">Disabled Only</option>
+                    <option value="" data-i18n="generated.dc5037a5554c">All Status</option>
+                    <option value="enabled" data-i18n="generated.6386183bde10">Enabled Only</option>
+                    <option value="disabled" data-i18n="generated.20109c035a3c">Disabled Only</option>
                 </select>
             </div>
             
-            <div id="all-commands-container" class="loading">Loading commands...</div>
+            <div id="all-commands-container" class="loading" data-i18n="gcce.commands.loading">Loading commands...</div>
         </div>
     </div>
 
@@ -1198,30 +1199,30 @@
     <div id="tab-monitoring" class="tab-content">
         <!-- Real-time Command Log -->
         <div class="card">
-            <div class="card-title">📊 Real-time Command Execution Log</div>
+            <div class="card-title" data-i18n="generated.830e01a0a2e5">📊 Real-time Command Execution Log</div>
             <div class="filter-bar">
                 <input type="text" id="log-filter-user" class="filter-input" placeholder="Filter by username...">
                 <select id="log-filter-status" class="filter-input">
-                    <option value="">All Statuses</option>
-                    <option value="success">Success Only</option>
-                    <option value="failed">Failed Only</option>
+                    <option value="" data-i18n="generated.91345e1d5bb9">All Statuses</option>
+                    <option value="success" data-i18n="generated.e9eb98f1a99c">Success Only</option>
+                    <option value="failed" data-i18n="generated.9b98d44579ce">Failed Only</option>
                 </select>
-                <button class="btn btn-sm" id="btn-clear-logs">🗑️ Clear Logs</button>
+                <button class="btn btn-sm" id="btn-clear-logs" data-i18n="generated.445f07373d1f">🗑️ Clear Logs</button>
             </div>
             <div class="realtime-log" id="realtime-log">
                 <div class="log-entry">
                     <span class="log-timestamp">--:--:--</span>
-                    <span class="log-user">Waiting for commands...</span>
+                    <span class="log-user" data-i18n="generated.d292e16ee88b">Waiting for commands...</span>
                 </div>
             </div>
         </div>
 
         <!-- Performance Metrics -->
         <div class="card">
-            <div class="card-title">⚡ Performance Metrics</div>
+            <div class="card-title" data-i18n="generated.19d41868b7e0">⚡ Performance Metrics</div>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label">Avg Execution Time</div>
+                    <div class="stat-label" data-i18n="generated.c4f506833512">Avg Execution Time</div>
                     <div class="stat-value" id="monitor-avg-time">0ms</div>
                     <div class="metric-trend" id="monitor-time-trend">Calculating...</div>
                 </div>
@@ -1231,14 +1232,14 @@
                     <div class="metric-trend up" id="monitor-rate-trend">Live</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Error Rate</div>
+                    <div class="stat-label" data-i18n="generated.e00a15cc4a81">Error Rate</div>
                     <div class="stat-value" id="monitor-error-rate">0%</div>
                     <div class="progress-bar">
                         <div class="progress-fill" id="monitor-error-progress" style="width: 0%; background: #ef4444;"></div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Peak Load</div>
+                    <div class="stat-label" data-i18n="generated.cdbc39722f49">Peak Load</div>
                     <div class="stat-value" id="monitor-peak">0</div>
                     <div class="metric-trend" id="monitor-peak-time">--:--</div>
                 </div>
@@ -1247,22 +1248,22 @@
 
         <!-- System Health -->
         <div class="card">
-            <div class="card-title">🏥 System Health</div>
+            <div class="card-title" data-i18n="generated.3bb9d8b0835b">🏥 System Health</div>
             <div class="grid-2">
                 <div>
                     <div class="config-group">
-                        <div class="stat-label">Cache Performance</div>
+                        <div class="stat-label" data-i18n="generated.8fc47cccaabf">Cache Performance</div>
                         <div id="health-cache-status">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                <span>User Data Cache:</span>
+                                <span data-i18n="generated.035c7f95ce01">User Data Cache:</span>
                                 <span id="health-user-cache">--</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                <span>Command Cache:</span>
+                                <span data-i18n="generated.798c8992e7de">Command Cache:</span>
                                 <span id="health-cmd-cache">--</span>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
-                                <span>Permission Cache:</span>
+                                <span data-i18n="generated.213dcacea7f7">Permission Cache:</span>
                                 <span id="health-perm-cache">--</span>
                             </div>
                         </div>
@@ -1270,18 +1271,18 @@
                 </div>
                 <div>
                     <div class="config-group">
-                        <div class="stat-label">Rate Limiter Status</div>
+                        <div class="stat-label" data-i18n="generated.eb9bf1fe58a1">Rate Limiter Status</div>
                         <div id="health-ratelimit-status">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                <span>Active Limiters:</span>
+                                <span data-i18n="generated.ceb5d2323137">Active Limiters:</span>
                                 <span id="health-active-limiters">--</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                <span>Blocked Requests:</span>
+                                <span data-i18n="generated.af10e1d6511d">Blocked Requests:</span>
                                 <span id="health-blocked">--</span>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
-                                <span>Cooldowns Active:</span>
+                                <span data-i18n="generated.87fbe57d870c">Cooldowns Active:</span>
                                 <span id="health-cooldowns">--</span>
                             </div>
                         </div>
@@ -1292,16 +1293,16 @@
 
         <!-- Top Commands Chart -->
         <div class="card">
-            <div class="card-title">📈 Most Used Commands (Last Hour)</div>
+            <div class="card-title" data-i18n="generated.1cf6864d5b73">📈 Most Used Commands (Last Hour)</div>
             <div id="top-commands-chart">
                 <table class="commands-table">
                     <thead>
                         <tr>
                             <th>Rank</th>
-                            <th>Command</th>
+                            <th data-i18n="gcce.commands.table.command">Command</th>
                             <th>Executions</th>
-                            <th>Success Rate</th>
-                            <th>Avg Time</th>
+                            <th data-i18n="generated.952eb04b0af7">Success Rate</th>
+                            <th data-i18n="generated.9d71442c9906">Avg Time</th>
                         </tr>
                     </thead>
                     <tbody id="top-commands-body">
@@ -1316,147 +1317,147 @@
         <div id="tab-hud" class="tab-content">
             <!-- HUD Configuration -->
             <div class="card">
-                <div class="card-title">🎨 HUD Overlay Configuration</div>
+                <div class="card-title" data-i18n="generated.9c9abc4bb359">🎨 HUD Overlay Configuration</div>
                 
             <div class="config-group">
-                <label class="config-label">Overlay URL for OBS</label>
-                <div class="config-description">
+                <label class="config-label" data-i18n="generated.ff25df16a9b7">Overlay URL for OBS</label>
+                <div class="config-description"><span data-i18n="generated.3290b62bcebd">
                     Add this URL as a Browser Source in OBS:
-                    <code id="hud-overlay-url">http://localhost:3000/plugins/gcce/overlay-hud</code>
-                    <button class="btn-sm" id="btn-copy-overlay-url">📋 Copy</button>
+                    </span><code id="hud-overlay-url">http://localhost:3000/plugins/gcce/overlay-hud</code>
+                    <button class="btn-sm" id="btn-copy-overlay-url" data-i18n="generated.6b1c9c55a4fd">📋 Copy</button>
                 </div>
             </div>
 
             <div class="config-group">
-                <label class="config-label">Enable HUD Commands</label>
+                <label class="config-label" data-i18n="generated.020abb43c38b">Enable HUD Commands</label>
                 <div class="checkbox-group">
                     <input type="checkbox" id="hud-enabled" onchange="updateHUDConfig()">
-                    <label for="hud-enabled">Allow HUD display commands</label>
+                    <label for="hud-enabled" data-i18n="generated.5bdf2cc8afe5">Allow HUD display commands</label>
                 </div>
             </div>
 
             <div class="config-group">
-                <label class="config-label">Text Display Permission</label>
+                <label class="config-label" data-i18n="generated.326359838069">Text Display Permission</label>
                 <select id="hud-perm-text" onchange="updateHUDConfig()">
-                    <option value="all">All Viewers</option>
+                    <option value="all" data-i18n="generated.af719f614534">All Viewers</option>
                     <option value="subscriber">Subscribers</option>
                     <option value="moderator">Moderators</option>
-                    <option value="broadcaster">Broadcaster Only</option>
+                    <option value="broadcaster" data-i18n="generated.682fa1b33ad6">Broadcaster Only</option>
                 </select>
             </div>
 
             <div class="config-group">
-                <label class="config-label">Image Display Permission</label>
+                <label class="config-label" data-i18n="generated.f2384d318b70">Image Display Permission</label>
                 <select id="hud-perm-image" onchange="updateHUDConfig()">
-                    <option value="all">All Viewers</option>
+                    <option value="all" data-i18n="generated.325ce39aa109">All Viewers</option>
                     <option value="subscriber">Subscribers</option>
                     <option value="moderator">Moderators</option>
-                    <option value="broadcaster">Broadcaster Only</option>
+                    <option value="broadcaster" data-i18n="generated.20a61965fff7">Broadcaster Only</option>
                 </select>
             </div>
 
             <div class="config-group">
-                <label class="config-label">Default Text Duration (seconds)</label>
+                <label class="config-label" data-i18n="generated.917125da7cbc">Default Text Duration (seconds)</label>
                 <input type="number" id="hud-text-duration" min="3" max="60" value="10" onchange="updateHUDConfig()">
             </div>
 
             <div class="config-group">
-                <label class="config-label">Default Image Duration (seconds)</label>
+                <label class="config-label" data-i18n="generated.a48fbd08586d">Default Image Duration (seconds)</label>
                 <input type="number" id="hud-image-duration" min="3" max="60" value="10" onchange="updateHUDConfig()">
             </div>
 
             <div class="config-group">
-                <label class="config-label">Default Position</label>
+                <label class="config-label" data-i18n="generated.9e87c8441ad7">Default Position</label>
                 <select id="hud-position" onchange="updateHUDConfig()">
-                    <option value="top-left">Top Left</option>
-                    <option value="top-center">Top Center</option>
-                    <option value="top-right">Top Right</option>
-                    <option value="center-left">Center Left</option>
+                    <option value="top-left" data-i18n="generated.c9790bfd9f7c">Top Left</option>
+                    <option value="top-center" data-i18n="generated.df7b39d741bc">Top Center</option>
+                    <option value="top-right" data-i18n="generated.14a19937dff5">Top Right</option>
+                    <option value="center-left" data-i18n="generated.bda0aab6167e">Center Left</option>
                     <option value="center">Center</option>
-                    <option value="center-right">Center Right</option>
-                    <option value="bottom-left">Bottom Left</option>
-                    <option value="bottom-center">Bottom Center</option>
-                    <option value="bottom-right">Bottom Right</option>
+                    <option value="center-right" data-i18n="generated.b63864f344f7">Center Right</option>
+                    <option value="bottom-left" data-i18n="generated.f7a4e7c6bf32">Bottom Left</option>
+                    <option value="bottom-center" data-i18n="generated.3ad7ba0f0314">Bottom Center</option>
+                    <option value="bottom-right" data-i18n="generated.f7c567fe9275">Bottom Right</option>
                 </select>
             </div>
         </div>
 
         <!-- Custom Media -->
         <div class="card">
-            <div class="card-title">🎞️ Custom Media via Chat</div>
-            <p class="config-description">Allow viewers to trigger your GIF/MP4 snippets with custom chat commands like <code>!hype</code>, <code>/wave</code>, or <code>!dance</code>. Supported: .gif, .mp4, .webm.</p>
+            <div class="card-title" data-i18n="generated.ad343b5d2e6e">🎞️ Custom Media via Chat</div>
+            <p class="config-description"><span data-i18n="generated.034401a34604">Allow viewers to trigger your GIF/MP4 snippets with custom chat commands like </span><code>!hype</code>, <code>/wave</code><span data-i18n="generated.3cdd4cf6b60d">, or </span><code>!dance</code><span data-i18n="generated.3590eb80d474">. Supported: .gif, .mp4, .webm.</span></p>
             <div class="grid-2">
                 <div>
                     <div class="config-group">
-                        <label class="config-label">Media Name</label>
+                        <label class="config-label" data-i18n="generated.4feab9a1737d">Media Name</label>
                         <input type="text" id="media-label" placeholder="e.g. hype" maxlength="50">
                     </div>
                     <div class="config-group">
-                        <label class="config-label">Media URL</label>
+                        <label class="config-label" data-i18n="generated.f9b702949686">Media URL</label>
                         <input type="text" id="media-url" placeholder="https://...gif or mp4">
                     </div>
                     <div class="config-group">
-                        <label class="config-label">Chat Command (optional)</label>
+                        <label class="config-label" data-i18n="generated.11b2898ab85b">Chat Command (optional)</label>
                         <input type="text" id="media-command" placeholder="e.g. !hype or /wave" maxlength="50">
-                        <small class="config-description">If empty, use /hudmedia &lt;name&gt;</small>
+                        <small class="config-description" data-i18n="generated.b01b7f1e4137">If empty, use /hudmedia &lt;name&gt;</small>
                     </div>
                 </div>
                 <div>
                     <div class="config-group">
-                        <label class="config-label">Default Duration (s)</label>
+                        <label class="config-label" data-i18n="generated.436cf0b52d36">Default Duration (s)</label>
                         <input type="number" id="media-duration" min="3" max="60" value="10">
                     </div>
                     <div class="config-group">
-                        <label class="config-label">Detected Type</label>
-                        <div id="media-type-preview" class="config-description">GIF/MP4 automatically detected</div>
+                        <label class="config-label" data-i18n="generated.172fe49c6989">Detected Type</label>
+                        <div id="media-type-preview" class="config-description" data-i18n="generated.e07db5fd873a">GIF/MP4 automatically detected</div>
                     </div>
                 </div>
             </div>
             <div class="quick-actions">
-                <button class="btn btn-primary btn-sm" id="btn-add-media">➕ Add Media</button>
-                <button class="btn btn-primary btn-sm" id="btn-save-media">💾 Save Library</button>
-                <button class="btn btn-primary btn-sm" id="btn-test-media">🧪 Test /hudmedia</button>
+                <button class="btn btn-primary btn-sm" id="btn-add-media" data-i18n="generated.2a2bf4577b62">➕ Add Media</button>
+                <button class="btn btn-primary btn-sm" id="btn-save-media" data-i18n="generated.e9abd880e33d">💾 Save Library</button>
+                <button class="btn btn-primary btn-sm" id="btn-test-media" data-i18n="generated.765cada9e7b4">🧪 Test /hudmedia</button>
             </div>
-            <div id="hud-media-list" class="loading">Loading media library...</div>
+            <div id="hud-media-list" class="loading" data-i18n="generated.a55603c8a630">Loading media library...</div>
         </div>
 
         <!-- Gift Rotator -->
         <div class="card">
-            <div class="card-title">🎁 Gift HUD Rotator</div>
-            <p class="config-description">Select gifts from the TikTok gift catalog, add headline & info, choose a template/font/color, and rotate them on your OBS HUD. You can also add custom media (images/videos) alongside gifts.</p>
+            <div class="card-title" data-i18n="generated.b6751b677989">🎁 Gift HUD Rotator</div>
+            <p class="config-description" data-i18n="generated.7317fcdaac81">Select gifts from the TikTok gift catalog, add headline & info, choose a template/font/color, and rotate them on your OBS HUD. You can also add custom media (images/videos) alongside gifts.</p>
             <div class="grid-2">
                 <div>
                     <div class="checkbox-group">
                         <input type="checkbox" id="rotator-enabled">
-                        <label for="rotator-enabled" class="config-label" style="margin:0;">Enable Gift Rotator</label>
+                        <label for="rotator-enabled" class="config-label" style="margin:0;" data-i18n="generated.16f9695b8708">Enable Gift Rotator</label>
                     </div>
                     <div class="config-group">
-                        <label class="config-label">Rotation Interval (s)</label>
+                        <label class="config-label" data-i18n="generated.ff53fd3996da">Rotation Interval (s)</label>
                         <input type="number" id="rotator-interval" min="3" max="60" value="10">
                     </div>
                     
                     <!-- Entry Type Selector -->
                     <div class="config-group">
-                        <label class="config-label">Entry Type</label>
+                        <label class="config-label" data-i18n="generated.754f3e9f4c62">Entry Type</label>
                         <div class="grid-2">
-                            <button class="btn btn-primary btn-sm" id="btn-select-gift-mode" style="font-size:0.9rem;">🎁 TikTok Gift</button>
-                            <button class="btn btn-secondary btn-sm" id="btn-select-media-mode" style="font-size:0.9rem;">📁 Custom Media</button>
+                            <button class="btn btn-primary btn-sm" id="btn-select-gift-mode" style="font-size:0.9rem;" data-i18n="generated.50b19498e5df">🎁 TikTok Gift</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-select-media-mode" style="font-size:0.9rem;" data-i18n="generated.c689ed94b7c8">📁 Custom Media</button>
                         </div>
                     </div>
                     
                     <!-- Gift Selection (default) -->
                     <div class="config-group" id="gift-selection-section">
-                        <label class="config-label">Gift Selection</label>
+                        <label class="config-label" data-i18n="generated.0424f7bccd20">Gift Selection</label>
                         <div class="gift-catalog-header">
-                            <div id="gift-catalog-status" class="config-description">Catalog not loaded</div>
-                            <button class="btn btn-primary btn-sm" id="btn-load-gift-catalog">🔄 Load Gift Catalog</button>
+                            <div id="gift-catalog-status" class="config-description" data-i18n="generated.96bfd43e708a">Catalog not loaded</div>
+                            <button class="btn btn-primary btn-sm" id="btn-load-gift-catalog" data-i18n="generated.390c2f7c073d">🔄 Load Gift Catalog</button>
                         </div>
                         <input type="text" id="gift-catalog-search" class="gift-catalog-search" placeholder="Search gifts by name or ID...">
                         <div id="gift-catalog-grid" class="gift-catalog-grid"></div>
                         <div id="selected-gift-preview" class="selected-gift-preview">
                             <img id="selected-gift-preview-img" src="" alt="Gift">
                             <div class="selected-gift-info">
-                                <div class="selected-gift-name" id="selected-gift-preview-name">No gift selected</div>
+                                <div class="selected-gift-name" id="selected-gift-preview-name" data-i18n="generated.4fd521ddd031">No gift selected</div>
                                 <div class="selected-gift-id" id="selected-gift-preview-id"></div>
                             </div>
                         </div>
@@ -1464,21 +1465,21 @@
                     
                     <!-- Custom Media Section (hidden by default) -->
                     <div class="config-group" id="media-selection-section" style="display:none;">
-                        <label class="config-label">Custom Media</label>
+                        <label class="config-label" data-i18n="generated.9df0ad746883">Custom Media</label>
                         <div style="margin-bottom:12px;">
-                            <div class="config-description" style="margin-bottom:8px;">Upload File (PNG, JPEG, GIF, MP4)</div>
+                            <div class="config-description" style="margin-bottom:8px;" data-i18n="generated.03cbb239f9f6">Upload File (PNG, JPEG, GIF, MP4)</div>
                             <input type="file" id="media-upload-input" accept="image/png,image/jpeg,image/gif,video/mp4" style="margin-bottom:8px;">
-                            <button class="btn btn-primary btn-sm" id="btn-upload-media">📤 Upload</button>
+                            <button class="btn btn-primary btn-sm" id="btn-upload-media" data-i18n="generated.1b8c288c441e">📤 Upload</button>
                         </div>
                         <div style="margin-bottom:12px;">
-                            <div class="config-description" style="margin-bottom:8px;">Or External URL</div>
+                            <div class="config-description" style="margin-bottom:8px;" data-i18n="generated.96e091038e3b">Or External URL</div>
                             <input type="text" id="media-url-input" placeholder="https://example.com/image.gif">
-                            <button class="btn btn-secondary btn-sm" id="btn-use-media-url" style="margin-top:4px;">🔗 Use URL</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-use-media-url" style="margin-top:4px;" data-i18n="generated.15694b5e09d3">🔗 Use URL</button>
                         </div>
                         <div id="selected-media-preview" class="selected-gift-preview" style="display:none;">
                             <div id="selected-media-preview-content"></div>
                             <div class="selected-gift-info">
-                                <div class="selected-gift-name" id="selected-media-preview-name">Media selected</div>
+                                <div class="selected-gift-name" id="selected-media-preview-name" data-i18n="generated.ac70a6b2b894">Media selected</div>
                                 <div class="selected-gift-id" id="selected-media-preview-type"></div>
                             </div>
                         </div>
@@ -1490,7 +1491,7 @@
                         <input type="text" id="rotator-title" placeholder="e.g. Star Gifter">
                     </div>
                     <div class="config-group">
-                        <label class="config-label">Info Text (optional)</label>
+                        <label class="config-label" data-i18n="generated.152414937fdd">Info Text (optional)</label>
                         <input type="text" id="rotator-info" placeholder="Short message to show on HUD">
                     </div>
                     <div class="config-group">
@@ -1502,12 +1503,12 @@
                                     <option value="card">Card</option>
                                     <option value="banner">Banner</option>
                                     <option value="minimal">Minimal</option>
-                                    <option value="modern">Modern Glass</option>
-                                    <option value="neon">Neon Glow</option>
+                                    <option value="modern" data-i18n="generated.67037a412bcf">Modern Glass</option>
+                                    <option value="neon" data-i18n="generated.d4806a13b343">Neon Glow</option>
                                     <option value="elegant">Elegant</option>
                                     <option value="bold">Bold</option>
                                     <option value="compact">Compact</option>
-                                    <option value="wide">Wide Banner</option>
+                                    <option value="wide" data-i18n="generated.0a3d9e250e21">Wide Banner</option>
                                     <option value="gradient">Gradient</option>
                                 </select>
                             </div>
@@ -1525,16 +1526,16 @@
                         </div>
                     </div>
                     <div class="config-group">
-                        <label class="config-label">Transition Animation</label>
+                        <label class="config-label" data-i18n="generated.e7685be2c39e">Transition Animation</label>
                         <select id="rotator-animation">
                             <option value="fade">Fade</option>
-                            <option value="slide-left">Slide from Left</option>
-                            <option value="slide-right">Slide from Right</option>
-                            <option value="slide-up">Slide from Bottom</option>
-                            <option value="slide-down">Slide from Top</option>
-                            <option value="zoom">Zoom In</option>
+                            <option value="slide-left" data-i18n="generated.c5f09e4906f0">Slide from Left</option>
+                            <option value="slide-right" data-i18n="generated.a3f2b35f25ac">Slide from Right</option>
+                            <option value="slide-up" data-i18n="generated.20369d76fe2e">Slide from Bottom</option>
+                            <option value="slide-down" data-i18n="generated.ef1d7e29932a">Slide from Top</option>
+                            <option value="zoom" data-i18n="generated.dbe940a4176d">Zoom In</option>
                             <option value="flip">Flip</option>
-                            <option value="rotate">Rotate In</option>
+                            <option value="rotate" data-i18n="generated.e83e8f2610dc">Rotate In</option>
                             <option value="bounce">Bounce</option>
                             <option value="swing">Swing</option>
                         </select>
@@ -1557,30 +1558,30 @@
                 </div>
             </div>
             <div class="quick-actions">
-                <button class="btn btn-primary btn-sm" id="btn-add-rotator">➕ Add to Rotator</button>
-                <button class="btn btn-primary btn-sm" id="btn-save-rotator">💾 Save Rotator</button>
+                <button class="btn btn-primary btn-sm" id="btn-add-rotator" data-i18n="generated.1d7ac5994922">➕ Add to Rotator</button>
+                <button class="btn btn-primary btn-sm" id="btn-save-rotator" data-i18n="generated.b965605b27d5">💾 Save Rotator</button>
             </div>
-            <div id="rotator-entries" class="loading">No entries yet</div>
+            <div id="rotator-entries" class="loading" data-i18n="generated.fcb5062b16aa">No entries yet</div>
         </div>
 
         <!-- HUD Statistics -->
         <div class="card">
-            <div class="card-title">📊 HUD Statistics</div>
+            <div class="card-title" data-i18n="generated.7e9396548434">📊 HUD Statistics</div>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label">Total Displayed</div>
+                    <div class="stat-label" data-i18n="generated.a7341eb14917">Total Displayed</div>
                     <div class="stat-value" id="hud-stat-total">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Active Elements</div>
+                    <div class="stat-label" data-i18n="generated.7e524daa53df">Active Elements</div>
                     <div class="stat-value" id="hud-stat-active">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Most Used Position</div>
+                    <div class="stat-label" data-i18n="generated.269197cd99c9">Most Used Position</div>
                     <div class="stat-value" id="hud-stat-position">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Avg Duration</div>
+                    <div class="stat-label" data-i18n="generated.e45a29677faf">Avg Duration</div>
                     <div class="stat-value" id="hud-stat-duration">0s</div>
                 </div>
             </div>
@@ -1588,36 +1589,36 @@
 
         <!-- Active HUD Elements -->
         <div class="card">
-            <div class="card-title">🎬 Active Elements</div>
+            <div class="card-title" data-i18n="generated.90a2b80aa08f">🎬 Active Elements</div>
             <div id="hud-active-elements">
-                <p>No active HUD elements</p>
+                <p data-i18n="generated.55e33b1fbca1">No active HUD elements</p>
             </div>
-            <button class="btn btn-primary" id="btn-clear-hud" style="margin-top: 16px;">Clear All</button>
+            <button class="btn btn-primary" id="btn-clear-hud" style="margin-top: 16px;" data-i18n="generated.5f870eef405c">Clear All</button>
         </div>
 
         <!-- Test HUD -->
         <div class="card">
-            <div class="card-title">🧪 Test HUD Display</div>
+            <div class="card-title" data-i18n="generated.919aaf3bf820">🧪 Test HUD Display</div>
             <div class="config-group">
-                <label class="config-label">Test Text</label>
+                <label class="config-label" data-i18n="generated.19951b232049">Test Text</label>
                 <input type="text" id="hud-test-text" placeholder="Enter test text" value="Hello from HUD!">
-                <button class="btn btn-primary" id="btn-test-hud-text" style="margin-top: 8px;">Display Text</button>
+                <button class="btn btn-primary" id="btn-test-hud-text" style="margin-top: 8px;" data-i18n="generated.1c28a9b16274">Display Text</button>
             </div>
             <div class="config-group">
-                <label class="config-label">Test Image URL</label>
+                <label class="config-label" data-i18n="generated.de8e87499d37">Test Image URL</label>
                 <input type="text" id="hud-test-image" placeholder="Enter image URL">
-                <button class="btn btn-primary" id="btn-test-hud-image" style="margin-top: 8px;">Display Image</button>
+                <button class="btn btn-primary" id="btn-test-hud-image" style="margin-top: 8px;" data-i18n="generated.6c44caf6a58c">Display Image</button>
             </div>
         </div>
 
         <!-- Available Commands -->
         <div class="card">
-            <div class="card-title">💬 Available Commands</div>
+            <div class="card-title" data-i18n="generated.adcc50c14fa7">💬 Available Commands</div>
             <ul>
-                 <li><code>/hudtext [duration] &lt;text&gt;</code> - Display text on overlay</li>
-                 <li><code>/hudimage [duration] &lt;url&gt;</code> - Display image on overlay</li>
-                <li><code>/hudmedia [duration] &lt;name|url&gt;</code> - Display custom GIF/MP4 from your media library</li>
-                 <li><code>/hudclear</code> - Clear all HUD elements (moderator)</li>
+                 <li><code>/hudtext [duration] &lt;text&gt;</code><span data-i18n="generated.fc6543e74714"> - Display text on overlay</span></li>
+                 <li><code>/hudimage [duration] &lt;url&gt;</code><span data-i18n="generated.8659645e5234"> - Display image on overlay</span></li>
+                <li><code>/hudmedia [duration] &lt;name|url&gt;</code><span data-i18n="generated.1490efb36880"> - Display custom GIF/MP4 from your media library</span></li>
+                 <li><code>/hudclear</code><span data-i18n="generated.84fa50bacd54"> - Clear all HUD elements (moderator)</span></li>
              </ul>
          </div>
      </div>
@@ -1626,42 +1627,42 @@
     <div id="tab-config" class="tab-content">
         <!-- Advanced Configuration -->
         <div class="card">
-            <div class="card-title">⚙️ Advanced GCCE Configuration</div>
+            <div class="card-title" data-i18n="generated.58b755ab85d5">⚙️ Advanced GCCE Configuration</div>
             <form id="advanced-config-form">
                 <div class="grid-2">
                     <div class="config-group">
-                        <label class="config-label" for="rate-limit-global">Global Rate Limit (commands/minute)</label>
-                        <div class="config-description">Maximum commands per minute across all users</div>
+                        <label class="config-label" for="rate-limit-global" data-i18n="generated.974177b9bfa9">Global Rate Limit (commands/minute)</label>
+                        <div class="config-description" data-i18n="generated.fc18e7d70e14">Maximum commands per minute across all users</div>
                         <input type="number" id="rate-limit-global" min="1" max="1000" value="100">
                     </div>
 
                     <div class="config-group">
-                        <label class="config-label" for="rate-limit-user">User Rate Limit (commands/minute)</label>
-                        <div class="config-description">Maximum commands per minute per user</div>
+                        <label class="config-label" for="rate-limit-user" data-i18n="generated.02cbded7440b">User Rate Limit (commands/minute)</label>
+                        <div class="config-description" data-i18n="generated.0820edafad55">Maximum commands per minute per user</div>
                         <input type="number" id="rate-limit-user" min="1" max="100" value="10">
                     </div>
 
                     <div class="config-group">
-                        <label class="config-label" for="cache-ttl">User Cache TTL (seconds)</label>
-                        <div class="config-description">How long to cache user data</div>
+                        <label class="config-label" for="cache-ttl" data-i18n="generated.9b58d5995d8b">User Cache TTL (seconds)</label>
+                        <div class="config-description" data-i18n="generated.40975bef3b8b">How long to cache user data</div>
                         <input type="number" id="cache-ttl" min="60" max="3600" value="300">
                     </div>
 
                     <div class="config-group">
-                        <label class="config-label" for="audit-max">Audit Log Max Entries</label>
-                        <div class="config-description">Maximum number of audit log entries to keep</div>
+                        <label class="config-label" for="audit-max" data-i18n="generated.0979a497d60b">Audit Log Max Entries</label>
+                        <div class="config-description" data-i18n="generated.586edfe655a3">Maximum number of audit log entries to keep</div>
                         <input type="number" id="audit-max" min="1000" max="100000" value="10000">
                     </div>
 
                     <div class="config-group">
-                        <label class="config-label" for="history-max">History Max Entries</label>
-                        <div class="config-description">Maximum number of history entries to keep</div>
+                        <label class="config-label" for="history-max" data-i18n="generated.225f0a05f7ae">History Max Entries</label>
+                        <div class="config-description" data-i18n="generated.0fc33d10b74a">Maximum number of history entries to keep</div>
                         <input type="number" id="history-max" min="50" max="1000" value="100">
                     </div>
 
                     <div class="config-group">
-                        <label class="config-label" for="batch-interval">Socket Batch Interval (ms)</label>
-                        <div class="config-description">Interval for batching socket events</div>
+                        <label class="config-label" for="batch-interval" data-i18n="generated.c37918fb4a86">Socket Batch Interval (ms)</label>
+                        <div class="config-description" data-i18n="generated.6932c4cfa7aa">Interval for batching socket events</div>
                         <input type="number" id="batch-interval" min="10" max="500" value="50">
                     </div>
                 </div>
@@ -1669,72 +1670,72 @@
                 <div class="config-group" style="margin-top: 24px;">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-autocomplete" checked>
-                        <label class="config-label" for="enable-autocomplete" style="margin: 0;">Enable Command Auto-Complete</label>
+                        <label class="config-label" for="enable-autocomplete" style="margin: 0;" data-i18n="generated.2182c5e23876">Enable Command Auto-Complete</label>
                     </div>
-                    <div class="config-description">Allow users to get command suggestions</div>
+                    <div class="config-description" data-i18n="generated.0c33877257d9">Allow users to get command suggestions</div>
                 </div>
 
                 <div class="config-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-macros" checked>
-                        <label class="config-label" for="enable-macros" style="margin: 0;">Enable Command Macros</label>
+                        <label class="config-label" for="enable-macros" style="margin: 0;" data-i18n="generated.fa4cfe59b296">Enable Command Macros</label>
                     </div>
-                    <div class="config-description">Allow execution of command macros (sequences)</div>
+                    <div class="config-description" data-i18n="generated.6b2c7d7b2276">Allow execution of command macros (sequences)</div>
                 </div>
 
                 <div class="config-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-scheduler" checked>
-                        <label class="config-label" for="enable-scheduler" style="margin: 0;">Enable Command Scheduler</label>
+                        <label class="config-label" for="enable-scheduler" style="margin: 0;" data-i18n="generated.3752f4575a96">Enable Command Scheduler</label>
                     </div>
-                    <div class="config-description">Allow scheduled command execution</div>
+                    <div class="config-description" data-i18n="generated.c05e86c74b1e">Allow scheduled command execution</div>
                 </div>
 
                 <div class="config-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-pipeline" checked>
-                        <label class="config-label" for="enable-pipeline" style="margin: 0;">Enable Command Pipelines</label>
+                        <label class="config-label" for="enable-pipeline" style="margin: 0;" data-i18n="generated.35c0d506c605">Enable Command Pipelines</label>
                     </div>
-                    <div class="config-description">Allow chaining multiple commands together</div>
+                    <div class="config-description" data-i18n="generated.b0ddebf6fb5e">Allow chaining multiple commands together</div>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="margin-top: 16px;">💾 Save Advanced Configuration</button>
+                <button type="submit" class="btn btn-primary" style="margin-top: 16px;" data-i18n="generated.abdcf076163b">💾 Save Advanced Configuration</button>
             </form>
         </div>
 
         <!-- Debug & Diagnostics -->
         <div class="card">
-            <div class="card-title">🔧 Debug & Diagnostics</div>
+            <div class="card-title" data-i18n="generated.e6d18de86957">🔧 Debug & Diagnostics</div>
             <div class="quick-actions">
                 <button class="action-btn" id="btn-test-command">
-                    <span>🧪</span> Test Command
-                </button>
+                    <span>🧪</span><span data-i18n="generated.1045a2abd241"> Test Command
+                </span></button>
                 <button class="action-btn" id="btn-validate-commands">
-                    <span>✅</span> Validate All Commands
-                </button>
+                    <span>✅</span><span data-i18n="generated.daa01490c0cc"> Validate All Commands
+                </span></button>
                 <button class="action-btn" id="btn-rebuild-indexes">
-                    <span>🔨</span> Rebuild Indexes
-                </button>
+                    <span>🔨</span><span data-i18n="generated.4d967539f8f7"> Rebuild Indexes
+                </span></button>
                 <button class="action-btn" id="btn-system-info">
-                    <span>ℹ️</span> System Info
-                </button>
+                    <span data-i18n="generated.21f9cc89d526">ℹ️</span><span data-i18n="generated.2e23eee822c5"> System Info
+                </span></button>
             </div>
         </div>
 
         <!-- Import/Export -->
         <div class="card">
-            <div class="card-title">📦 Import/Export</div>
+            <div class="card-title" data-i18n="generated.b764b6af7920">📦 Import/Export</div>
             <div class="grid-2">
                 <div class="config-group">
-                    <label class="config-label">Export Commands</label>
-                    <div class="config-description">Export all command definitions to JSON</div>
-                    <button class="btn btn-primary btn-sm" id="btn-export-commands">📥 Export Commands</button>
+                    <label class="config-label" data-i18n="generated.cf92fed59ec0">Export Commands</label>
+                    <div class="config-description" data-i18n="generated.3e1a31c25bf4">Export all command definitions to JSON</div>
+                    <button class="btn btn-primary btn-sm" id="btn-export-commands" data-i18n="generated.abba7f8c4154">📥 Export Commands</button>
                 </div>
                 <div class="config-group">
-                    <label class="config-label">Import Commands</label>
-                    <div class="config-description">Import command definitions from JSON</div>
+                    <label class="config-label" data-i18n="generated.47de2a43d422">Import Commands</label>
+                    <div class="config-description" data-i18n="generated.dc54a87a9ffa">Import command definitions from JSON</div>
                     <input type="file" id="import-commands-file" accept=".json" style="display: none;">
-                    <button class="btn btn-primary btn-sm" id="btn-import-commands">📤 Import Commands</button>
+                    <button class="btn btn-primary btn-sm" id="btn-import-commands" data-i18n="generated.1db4c1f1cc5a">📤 Import Commands</button>
                 </div>
             </div>
         </div>

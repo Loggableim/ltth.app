@@ -49,5 +49,22 @@
       "test_error": "Error sending test print",
       "printer_not_running": "Printer service not running"
     }
+  },
+  "generated": {
+    "3ee1fddf1259": "Thermal Printer - Configuration",
+    "997d134acc58": "Back to Dashboard",
+    "a58f2ec5003c": "Connection Status",
+    "6f939fcb088e": "Printer Connection",
+    "edf570ac77a7": "e.g., 0x04b8 for Epson (leave empty for auto-detect)",
+    "b9540ba89dfd": "e.g., 0x0e15 for TM-T20 (leave empty for auto-detect)",
+    "9dc827bdc32c": "Event Filters",
+    "cfc7e4a32810": "Minimum Coins to Print (Gifts)",
+    "0666dd4875b1": "Only print gifts with at least this many coins (saves paper)",
+    "6d8f13193ca0": "GB18030 (Default)",
+    "a9fe613c5931": "Advanced Settings",
+    "cf2a7e073163": "Delay between print jobs (prevents overloading)",
+    "9627d567d91a": "Test Print",
+    "89e7397c6e4b": "Save Configuration",
+    "1551e3bcfd2e": "Typical: 48 for 80mm paper, 32 for 58mm paper"
   }
 }

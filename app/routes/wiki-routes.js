@@ -107,6 +107,48 @@ const WIKI_STRUCTURE = {
     ]
 };
 
+const WIKI_LABELS = {
+    en: {
+        sections: {
+            'getting-started': 'Getting Started', plugins: 'Plugins', features: 'Features',
+            'overlays-streaming': 'Overlays & Streaming', developer: 'Developer Documentation', legal: 'Legal'
+        },
+        pages: {
+            home: 'Home', 'wiki-index': 'Wiki Index', 'snapshot-status': 'Snapshot Status',
+            'getting-started': 'Getting Started', installation: 'Installation & Setup', configuration: 'Configuration', faq: 'FAQ & Troubleshooting',
+            'plugin-overview': 'Plugin System', 'plugin-list': 'Plugin List', vdoninja: 'VDO.Ninja Multi-Guest',
+            'webgpu-engine': 'WebGPU Engine', gcce: 'GCCE', 'emoji-rain': 'Emoji Rain', 'cloud-sync': 'Cloud Sync',
+            'overlays-alerts': 'Overlays & Alerts', 'advanced-features': 'Advanced Features', alerts: 'Alert System', flows: 'Automation Flows',
+            architecture: 'Architecture', 'developer-guide': 'Developer Guide', 'api-reference': 'API Reference',
+            'terms-of-service': 'Terms of Service', 'privacy-policy': 'Privacy Policy'
+        }
+    },
+    de: {
+        sections: { 'getting-started': 'Erste Schritte', plugins: 'Plugins', features: 'Funktionen', 'overlays-streaming': 'Overlays & Streaming', developer: 'Entwicklerdokumentation', legal: 'Rechtliches' },
+        pages: { home: 'Startseite', 'wiki-index': 'Wiki-Index', 'snapshot-status': 'Snapshot-Status', 'getting-started': 'Erste Schritte', installation: 'Installation & Einrichtung', configuration: 'Konfiguration', faq: 'FAQ & Fehlerbehebung', 'plugin-overview': 'Plugin-System', 'plugin-list': 'Plugin-Liste', vdoninja: 'VDO.Ninja Multi-Gast', 'webgpu-engine': 'WebGPU-Engine', gcce: 'GCCE', 'emoji-rain': 'Emoji-Regen', 'cloud-sync': 'Cloud-Synchronisierung', 'overlays-alerts': 'Overlays & Alerts', 'advanced-features': 'Erweiterte Funktionen', alerts: 'Alert-System', flows: 'Automatisierungs-Flows', architecture: 'Architektur', 'developer-guide': 'Entwicklerleitfaden', 'api-reference': 'API-Referenz', 'terms-of-service': 'Nutzungsbedingungen', 'privacy-policy': 'Datenschutzerklärung' }
+    },
+    es: {
+        sections: { 'getting-started': 'Primeros pasos', plugins: 'Plugins', features: 'Funciones', 'overlays-streaming': 'Overlays y streaming', developer: 'Documentación para desarrolladores', legal: 'Legal' },
+        pages: { home: 'Inicio', 'wiki-index': 'Índice de la wiki', 'snapshot-status': 'Estado del snapshot', 'getting-started': 'Primeros pasos', installation: 'Instalación y configuración', configuration: 'Configuración', faq: 'FAQ y solución de problemas', 'plugin-overview': 'Sistema de plugins', 'plugin-list': 'Lista de plugins', vdoninja: 'VDO.Ninja multiinvitado', 'webgpu-engine': 'Motor WebGPU', gcce: 'GCCE', 'emoji-rain': 'Lluvia de emojis', 'cloud-sync': 'Sincronización en la nube', 'overlays-alerts': 'Overlays y alertas', 'advanced-features': 'Funciones avanzadas', alerts: 'Sistema de alertas', flows: 'Flujos de automatización', architecture: 'Arquitectura', 'developer-guide': 'Guía del desarrollador', 'api-reference': 'Referencia de API', 'terms-of-service': 'Términos del servicio', 'privacy-policy': 'Política de privacidad' }
+    },
+    fr: {
+        sections: { 'getting-started': 'Prise en main', plugins: 'Plugins', features: 'Fonctionnalités', 'overlays-streaming': 'Overlays et streaming', developer: 'Documentation développeur', legal: 'Juridique' },
+        pages: { home: 'Accueil', 'wiki-index': 'Index du wiki', 'snapshot-status': 'État du snapshot', 'getting-started': 'Prise en main', installation: 'Installation et configuration', configuration: 'Configuration', faq: 'FAQ et dépannage', 'plugin-overview': 'Système de plugins', 'plugin-list': 'Liste des plugins', vdoninja: 'VDO.Ninja multi-invités', 'webgpu-engine': 'Moteur WebGPU', gcce: 'GCCE', 'emoji-rain': 'Pluie d’emojis', 'cloud-sync': 'Synchronisation cloud', 'overlays-alerts': 'Overlays et alertes', 'advanced-features': 'Fonctionnalités avancées', alerts: 'Système d’alertes', flows: 'Flux d’automatisation', architecture: 'Architecture', 'developer-guide': 'Guide développeur', 'api-reference': 'Référence API', 'terms-of-service': 'Conditions d’utilisation', 'privacy-policy': 'Politique de confidentialité' }
+    }
+};
+
+function getLocalizedWikiStructure(locale) {
+    const labels = WIKI_LABELS[locale] || WIKI_LABELS.en;
+    return {
+        ...WIKI_STRUCTURE,
+        sections: WIKI_STRUCTURE.sections.map(section => ({
+            ...section,
+            title: labels.sections[section.id] || section.title,
+            pages: section.pages.map(page => ({ ...page, title: labels.pages[page.id] || page.title }))
+        }))
+    };
+}
+
 // Helper function to find page info by ID
 function findPageById(pageId) {
     for (const section of WIKI_STRUCTURE.sections) {
@@ -271,13 +313,63 @@ function normalizeAnchor(anchor) {
     return slugifyHeading(decodedAnchor);
 }
 
+const WIKI_LANGUAGE_HEADINGS = {
+    en: ['english', 'english version'],
+    de: ['deutsch', 'deutsche version'],
+    es: ['español', 'espanol', 'versión en español'],
+    fr: ['français', 'francais', 'version française']
+};
+
+function normalizeLanguageHeading(value) {
+    return repairMojibake(String(value || ''))
+        .toLowerCase()
+        .replace(/[🇬🇧🇩🇪🇪🇸🇫🇷]/gu, '')
+        .replace(/[^a-záéíóúüñçàâæœ\s-]/gi, ' ')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function selectMarkdownLanguage(markdown, locale) {
+    const normalizedLocale = ['en', 'de', 'es', 'fr'].includes(locale) ? locale : 'en';
+    const lines = String(markdown || '').split('\n');
+    const sections = [];
+    lines.forEach((line, index) => {
+        const match = line.match(/^##\s+(.+?)\r?$/);
+        if (!match) return;
+        const heading = normalizeLanguageHeading(match[1]);
+        const isLanguageSection = Object.values(WIKI_LANGUAGE_HEADINGS)
+            .flat()
+            .map(candidate => candidate.normalize('NFKD').replace(/[\u0300-\u036f]/g, ''))
+            .some(candidate => heading === candidate || heading.startsWith(`${candidate} `) || heading.startsWith(candidate.slice(0, 4)));
+        if (isLanguageSection) sections.push({ index, heading });
+    });
+
+    if (!sections.length) {
+        return { markdown: normalizedLocale === 'en' ? markdown : null, source: normalizedLocale === 'en' ? 'single-language' : null };
+    }
+
+    const candidates = WIKI_LANGUAGE_HEADINGS[normalizedLocale].map(candidate => candidate.normalize('NFKD').replace(/[\u0300-\u036f]/g, ''));
+    const selected = sections.find(section => candidates.some(candidate => section.heading === candidate || section.heading.startsWith(`${candidate} `) || section.heading.startsWith(candidate.slice(0, 4))));
+    if (!selected) return { markdown: null, source: null };
+
+    const sectionPosition = sections.indexOf(selected);
+    const end = sectionPosition >= 0 && sections[sectionPosition + 1]
+        ? sections[sectionPosition + 1].index
+        : lines.length;
+    const selectedLines = lines.slice(selected.index, end);
+    selectedLines[0] = selectedLines[0].replace(/^##\s+/, '# ');
+    return { markdown: selectedLines.join('\n').trim(), source: 'embedded-section' };
+}
+
 // Helper function to extract table of contents from markdown
 function extractTOC(markdown) {
     const headings = [];
     const lines = markdown.split('\n');
     
     lines.forEach(line => {
-        const match = line.match(/^(#{1,6})\s+(.+)$/);
+        const match = line.match(/^(#{1,6})\s+(.+?)\r?$/);
         if (match) {
             const level = match[1].length;
             const text = stripMarkdownInline(match[2]);
@@ -319,7 +411,8 @@ function extractTOC(markdown) {
 
 // GET /api/wiki/structure - Get wiki navigation structure
 router.get('/structure', (req, res) => {
-    res.json(WIKI_STRUCTURE);
+    const requested = String(req.query.lang || 'en').toLowerCase().split('-')[0];
+    res.json(getLocalizedWikiStructure(['en', 'de', 'es', 'fr'].includes(requested) ? requested : 'en'));
 });
 
 // GET /api/wiki/page/:pageId - Get rendered wiki page
@@ -334,9 +427,18 @@ router.get('/page/:pageId', async (req, res) => {
         }
         
         const { page, section } = pageInfo;
+        const requestedLocale = ['en', 'de', 'es', 'fr'].includes(String(lang || '').toLowerCase())
+            ? String(lang).toLowerCase()
+            : 'en';
+        const localizedStructure = getLocalizedWikiStructure(requestedLocale);
+        const localizedSection = localizedStructure.sections.find(item => item.id === section.id) || section;
+        const localizedPage = localizedSection.pages.find(item => item.id === page.id) || page;
         
-        // Try to read the file
-        let filePath = path.join(WIKI_BASE_PATH, page.file);
+        // Prefer the mirrored language tree. Legacy pages that still contain
+        // four embedded sections are handled below as a compatibility path.
+        let filePath = path.join(WIKI_BASE_PATH, requestedLocale, page.file);
+        let explicitLanguageFile = await fileExists(filePath);
+        if (!explicitLanguageFile) filePath = path.join(WIKI_BASE_PATH, page.file);
         
         // If file doesn't exist in wiki folder, try plugins folder
         if (!await fileExists(filePath)) {
@@ -345,26 +447,39 @@ router.get('/page/:pageId', async (req, res) => {
         
         if (!await fileExists(filePath)) {
             // Create placeholder content for missing files
-            const placeholderContent = createPlaceholderContent(page.title);
+            const placeholderContent = createPlaceholderContent(localizedPage.title);
             const markdownParser = await initMarked();
             const html = sanitizeHtml(markdownParser(placeholderContent));
             
             return res.json({
                 id: page.id,
-                title: page.title,
+                title: localizedPage.title,
                 html,
                 toc: [],
                 breadcrumb: [
-                    { id: 'home', title: 'Home' },
-                    { id: section.id, title: section.title },
-                    { id: page.id, title: page.title }
+                    { id: 'home', title: localizedStructure.sections[0].pages[0].title },
+                    { id: section.id, title: localizedSection.title },
+                    { id: page.id, title: localizedPage.title }
                 ],
                 lastUpdated: new Date().toISOString()
             });
         }
         
-        // Read and process the file
-        const markdown = repairMojibake(await fs.readFile(filePath, 'utf-8'));
+        // Read and process the file. Some legacy pages contain four embedded
+        // language sections; serve only the requested section instead of
+        // returning every language in one document.
+        const rawMarkdown = repairMojibake(await fs.readFile(filePath, 'utf-8'));
+        const selectedVariant = explicitLanguageFile
+            ? { markdown: rawMarkdown, source: 'language-file' }
+            : selectMarkdownLanguage(rawMarkdown, requestedLocale);
+        if (!selectedVariant.markdown) {
+            return res.status(404).json({
+                error: 'Wiki translation not found',
+                id: page.id,
+                locale: requestedLocale
+            });
+        }
+        const markdown = selectedVariant.markdown;
         
         let processedMarkdown = markdown;
         const toc = extractTOC(markdown);
@@ -422,9 +537,9 @@ router.get('/page/:pageId', async (req, res) => {
         
         // Build breadcrumb
         const breadcrumb = [
-            { id: 'home', title: 'Home' },
-            { id: section.id, title: section.title },
-            { id: page.id, title: page.title }
+            { id: 'home', title: localizedStructure.sections[0].pages[0].title },
+            { id: section.id, title: localizedSection.title },
+            { id: page.id, title: localizedPage.title }
         ];
         
         // Get file stats for last updated
@@ -432,13 +547,14 @@ router.get('/page/:pageId', async (req, res) => {
         
         res.json({
             id: page.id,
-            title: page.title,
+            title: localizedPage.title,
             html,
             toc,
             breadcrumb,
             lastUpdated: stats.mtime.toISOString(),
-            preferredLanguage: lang || 'en', // Include language preference in response
-            languageAnchor: getLanguageAnchor(lang) // Get anchor for scrolling
+            preferredLanguage: requestedLocale,
+            languageSource: selectedVariant.source,
+            languageAnchor: getLanguageAnchor(requestedLocale)
         });
         
     } catch (error) {
@@ -451,6 +567,10 @@ router.get('/page/:pageId', async (req, res) => {
 router.get('/search', async (req, res) => {
     try {
         const { q } = req.query;
+        const requestedLocale = ['en', 'de', 'es', 'fr'].includes(String(req.query.lang || '').toLowerCase())
+            ? String(req.query.lang).toLowerCase()
+            : 'en';
+        const localizedStructure = getLocalizedWikiStructure(requestedLocale);
         
         if (!q || q.length < 2) {
             return res.json([]);
@@ -460,7 +580,7 @@ router.get('/search', async (req, res) => {
         const results = [];
         
         // Search through all pages
-        for (const section of WIKI_STRUCTURE.sections) {
+        for (const section of localizedStructure.sections) {
             for (const page of section.pages) {
                 // Check title match
                 if (page.title.toLowerCase().includes(query)) {
@@ -476,13 +596,20 @@ router.get('/search', async (req, res) => {
                 
                 // Try to search in content
                 try {
-                    let filePath = path.join(WIKI_BASE_PATH, page.file);
+                        let filePath = path.join(WIKI_BASE_PATH, requestedLocale, page.file);
+                        const explicitLanguageFile = await fileExists(filePath);
+                        if (!explicitLanguageFile) filePath = path.join(WIKI_BASE_PATH, page.file);
                     if (!await fileExists(filePath)) {
                         filePath = path.join(__dirname, '..', page.file);
                     }
                     
                     if (await fileExists(filePath)) {
-                        const content = repairMojibake(await fs.readFile(filePath, 'utf-8'));
+                        const rawContent = repairMojibake(await fs.readFile(filePath, 'utf-8'));
+                        const selected = explicitLanguageFile
+                            ? { markdown: rawContent, source: 'language-file' }
+                            : selectMarkdownLanguage(rawContent, requestedLocale);
+                        if (!selected.markdown) continue;
+                        const content = selected.markdown;
                         const contentLower = content.toLowerCase();
                         
                         if (contentLower.includes(query)) {

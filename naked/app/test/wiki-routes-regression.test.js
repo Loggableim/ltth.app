@@ -20,7 +20,7 @@ describe('Wiki route regressions', () => {
     expect(response.body.html).toContain('für professionelles');
     expect(response.body.html).toContain('id="espanol"');
     expect(response.body.html).toContain('Español');
-    expect(response.body.html).not.toMatch(/(?:Ã.|Â.|â€|âœ|âš|ðŸ|�)/);
+    expect(response.body.html).not.toMatch(/(?:�.|�.|�|�|�|�|�)/);
   });
 
   test('normalizes markdown wiki link anchors to rendered heading ids', async () => {
@@ -30,7 +30,7 @@ describe('Wiki route regressions', () => {
 
     expect(response.body.html).toContain('href="#wiki:plugin-list::espanol"');
     expect(response.body.html).not.toContain('href="#wiki:plugin-list::español"');
-    expect(response.body.html).not.toContain('href="#wiki:plugin-list::espaÃ');
+    expect(response.body.html).not.toContain('href="#wiki:plugin-list::espa�');
   });
 
   test('navigation exposes current snapshot documentation', async () => {

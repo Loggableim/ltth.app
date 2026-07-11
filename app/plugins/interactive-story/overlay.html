@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Interactive Story - OBS Overlay</title>
+  <title data-i18n="generated.cbd85e7514b8">Interactive Story - OBS Overlay</title>
   <script>
     (function () {
       const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
@@ -727,6 +727,7 @@
       color: #fff7cc;
     }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
   <div id="storyOverlay">
@@ -749,11 +750,11 @@
 
   <!-- Voting Overlay -->
   <div id="votingOverlay" class="draggable" data-element="voting">
-    <div class="voting-header">
+    <div class="voting-header" data-i18n="generated.eaca07ac1f70">
       Vote Now! Type your choice in chat
     </div>
     <div class="choice-container" id="choiceContainer"></div>
-    <div class="timer-display" id="timerDisplay">Time Remaining: --</div>
+    <div class="timer-display" id="timerDisplay" data-i18n="generated.e7eb75276728">Time Remaining: --</div>
   </div>
 
   <!-- Generating Overlay -->
@@ -763,12 +764,12 @@
       <img id="generatingImage" alt="Generating animation">
       <video id="generatingVideo" loop muted playsinline></video>
     </div>
-    <div class="generating-text">Generating next chapter...</div>
+    <div class="generating-text" data-i18n="generated.fac6e6fa6110">Generating next chapter...</div>
   </div>
 
   <!-- Results Overlay -->
   <div id="resultsOverlay">
-    <div class="results-title">Winner!</div>
+    <div class="results-title" data-i18n="generated.14016c28bca9">Winner!</div>
     <div class="results-choice" id="winningChoice"></div>
   </div>
 

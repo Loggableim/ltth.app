@@ -1,12 +1,12 @@
 ﻿# Architektur
 
-[â† Konfiguration](Konfiguration) | [â†’ Entwickler-Leitfaden](Entwickler-Leitfaden)
+[← Konfiguration](Konfiguration) | [→ Entwickler-Leitfaden](Entwickler-Leitfaden)
 
 ---
 
-## ðŸ“‘ Inhaltsverzeichnis
+## 📑 Inhaltsverzeichnis
 
-1. [SystemÃ¼bersicht](#systemÃ¼bersicht)
+1. [Systemübersicht](#systemübersicht)
 2. [Architektur-Diagramm](#architektur-diagramm)
 3. [Verzeichnisstruktur](#verzeichnisstruktur)
 4. [Backend-Module](#backend-module)
@@ -19,78 +19,78 @@
 
 ---
 
-## ðŸ—ï¸ SystemÃ¼bersicht
+## 🏗️ Systemübersicht
 
 **Pup Cids Little TikTool Helper** ist eine **Event-Driven Microservice-Architektur** basierend auf Node.js, Express und Socket.io.
 
 ### Kern-Komponenten
 
 ```
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                     FRONTEND LAYER                          â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”                            â”‚
-â”‚  â”‚  Dashboard   â”‚ OBS Overlay  â”‚                            â”‚
-â”‚  â”‚ (Bootstrap)  â”‚ (Transparent)â”‚                            â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜                            â”‚
-â”‚         â”‚              â”‚                  â”‚                 â”‚
-â”‚         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜                 â”‚
-â”‚                        â”‚                                    â”‚
-â”‚                        â–¼                                    â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”   â”‚
-â”‚  â”‚          REAL-TIME LAYER (Socket.io)                â”‚   â”‚
-â”‚  â”‚   WebSocket Events, Pub/Sub, Broadcast              â”‚   â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   â”‚
-â”‚                        â”‚                                    â”‚
+┌─────────────────────────────────────────────────────────────┐
+│                     FRONTEND LAYER                          │
+│  ┌──────────────┬──────────────┐                            │
+│  │  Dashboard   │ OBS Overlay  │                            │
+│  │ (Bootstrap)  │ (Transparent)│                            │
+│  â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜                            │
+│         │              │                  │                 │
+│         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜                 │
+│                        │                                    │
+│                        ▼                                    │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │          REAL-TIME LAYER (Socket.io)                │   │
+│  │   WebSocket Events, Pub/Sub, Broadcast              │   │
+│  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   │
+│                        │                                    │
 â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                         â”‚
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                        â–¼                                    â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”   â”‚
-â”‚  â”‚           EXPRESS REST API LAYER                    â”‚   â”‚
-â”‚  â”‚   Routes, Middleware, Error Handling                â”‚   â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   â”‚
-â”‚                        â”‚                                    â”‚
-â”‚                        â–¼                                    â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”   â”‚
-â”‚  â”‚              BUSINESS LOGIC LAYER                   â”‚   â”‚
-â”‚  â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚   â”‚
-â”‚  â”‚  â”‚ Database â”‚ TikTok   â”‚ Alerts   â”‚ Flows        â”‚ â”‚   â”‚
-â”‚  â”‚  â”‚ Manager  â”‚ Connectorâ”‚ Manager  â”‚ Engine       â”‚ â”‚   â”‚
-â”‚  â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚   â”‚
-â”‚  â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚   â”‚
-â”‚  â”‚  â”‚ Goals    â”‚ TTS      â”‚ Soundbrd â”‚ Leaderboard  â”‚ â”‚   â”‚
-â”‚  â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚   â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   â”‚
-â”‚                        â”‚                                    â”‚
-â”‚                        â–¼                                    â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”   â”‚
-â”‚  â”‚           PLUGIN SYSTEM LAYER                       â”‚   â”‚
-â”‚  â”‚   Plugin Loader, Plugin API, Hot-Loading            â”‚   â”‚
-â”‚  â”‚   â”Œâ”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”‚   â”‚
-â”‚  â”‚   â”‚ TTS   â”‚ Multi- â”‚ OSC     â”‚ VDO.Ninja        â”‚  â”‚   â”‚
-â”‚  â”‚   â”‚ Pluginâ”‚ Cam    â”‚ Bridge  â”‚ Plugin           â”‚  â”‚   â”‚
-â”‚  â”‚   â””â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â”‚   â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   â”‚
-â”‚                        â”‚                                    â”‚
+                         │
+┌────────────────────────┼────────────────────────────────────┐
+│                        ▼                                    │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │           EXPRESS REST API LAYER                    │   │
+│  │   Routes, Middleware, Error Handling                │   │
+│  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   │
+│                        │                                    │
+│                        ▼                                    │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              BUSINESS LOGIC LAYER                   │   │
+│  │  ┌──────────┬──────────┬──────────┬──────────────┐ │   │
+│  │  │ Database │ TikTok   │ Alerts   │ Flows        │ │   │
+│  │  │ Manager  │ Connector│ Manager  │ Engine       │ │   │
+│  │  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ │   │
+│  │  ┌──────────┬──────────┬──────────┬──────────────┐ │   │
+│  │  │ Goals    │ TTS      │ Soundbrd │ Leaderboard  │ │   │
+│  │  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ │   │
+│  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   │
+│                        │                                    │
+│                        ▼                                    │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │           PLUGIN SYSTEM LAYER                       │   │
+│  │   Plugin Loader, Plugin API, Hot-Loading            │   │
+│  │   ┌───────┬────────┬─────────┬──────────────────┐  │   │
+│  │   │ TTS   │ Multi- │ OSC     │ VDO.Ninja        │  │   │
+│  │   │ Plugin│ Cam    │ Bridge  │ Plugin           │  │   │
+│  │   â””â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  │   │
+│  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   │
+│                        │                                    │
 â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                         â”‚
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                        â–¼                                    â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”   â”‚
-â”‚  â”‚            DATA PERSISTENCE LAYER                   â”‚   â”‚
-â”‚  â”‚   SQLite (WAL Mode), File System, IndexedDB         â”‚   â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   â”‚
+                         │
+┌────────────────────────┼────────────────────────────────────┐
+│                        ▼                                    │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │            DATA PERSISTENCE LAYER                   │   │
+│  │   SQLite (WAL Mode), File System, IndexedDB         │   │
+│  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   │
 â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ### Technologie-Entscheidungen
 
-| Komponente | Technologie | BegrÃ¼ndung |
+| Komponente | Technologie | Begründung |
 |------------|-------------|------------|
-| **Runtime** | Node.js 18-23 | Async I/O, groÃŸe Ecosystem, Cross-Platform |
-| **Web Framework** | Express 4 | Lightweight, flexible, groÃŸe Community |
+| **Runtime** | Node.js 18-23 | Async I/O, große Ecosystem, Cross-Platform |
+| **Web Framework** | Express 4 | Lightweight, flexible, große Community |
 | **Real-time** | Socket.io 4 | WebSocket + Fallbacks, Room-Support |
-| **Datenbank** | SQLite (better-sqlite3) | Embedded, keine externe DB, WAL-Mode fÃ¼r Performance |
+| **Datenbank** | SQLite (better-sqlite3) | Embedded, keine externe DB, WAL-Mode für Performance |
 | **TikTok-Integration** | tiktok-live-connector | Community-Library, stabil, aktiv maintained |
 | **OBS-Integration** | obs-websocket-js 5 | Offizieller Client, OBS WebSocket v5 |
 | **OSC-Protokoll** | osc 2.4 | VRChat-Standard, stabil |
@@ -98,52 +98,52 @@
 
 ---
 
-## ðŸ“Š Architektur-Diagramm
+## 📊 Architektur-Diagramm
 
 ### High-Level-Architektur
 
 ```
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                      EXTERNAL SERVICES                        â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚
-â”‚  â”‚ TikTok   â”‚ OBS Studio   â”‚ VRChat       â”‚ MyInstants    â”‚ â”‚
-â”‚  â”‚ LIVE API â”‚ WebSocket v5 â”‚ OSC Protocol â”‚ Sound Library â”‚ â”‚
-â”‚  â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚
-â”‚       â”‚            â”‚              â”‚              â”‚           â”‚
+┌──────────────────────────────────────────────────────────────┐
+│                      EXTERNAL SERVICES                        │
+│  ┌──────────┬──────────────┬──────────────┬───────────────┐ │
+│  │ TikTok   │ OBS Studio   │ VRChat       │ MyInstants    │ │
+│  │ LIVE API │ WebSocket v5 │ OSC Protocol │ Sound Library │ │
+│  â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜ │
+│       │            │              │              │           │
 â””â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-        â”‚            â”‚              â”‚              â”‚
-        â–¼            â–¼              â–¼              â–¼
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                    INTEGRATION LAYER                          â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”‚
-â”‚  â”‚ modules/ â”‚ modules/     â”‚ plugins/     â”‚ modules/      â”‚  â”‚
-â”‚  â”‚ tiktok.jsâ”‚ obs-         â”‚ osc-bridge/  â”‚ soundboard.js â”‚  â”‚
-â”‚  â”‚          â”‚ websocket.js â”‚ main.js      â”‚               â”‚  â”‚
-â”‚  â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â”‚
-â”‚       â”‚            â”‚              â”‚              â”‚            â”‚
+        │            │              │              │
+        ▼            ▼              ▼              ▼
+┌───────────────────────────────────────────────────────────────┐
+│                    INTEGRATION LAYER                          │
+│  ┌──────────┬──────────────┬──────────────┬───────────────┐  │
+│  │ modules/ │ modules/     │ plugins/     │ modules/      │  │
+│  │ tiktok.js│ obs-         │ osc-bridge/  │ soundboard.js │  │
+│  │          │ websocket.js │ main.js      │               │  │
+│  â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜  │
+│       │            │              │              │            │
 â””â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-        â”‚            â”‚              â”‚              â”‚
+        │            │              │              │
         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                            â”‚
-                            â–¼
-        â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-        â”‚       EVENT BUS (server.js)           â”‚
-        â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”‚
-        â”‚  â”‚ TikTok Event Emitter            â”‚  â”‚
-        â”‚  â”‚ â€¢ gift, chat, follow, etc.      â”‚  â”‚
-        â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â”‚
-        â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”‚
-        â”‚  â”‚ Socket.io Event Broker          â”‚  â”‚
-        â”‚  â”‚ â€¢ Rooms, Broadcast, Pub/Sub     â”‚  â”‚
-        â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â”‚
+                            │
+                            ▼
+        ┌───────────────────────────────────────┐
+        │       EVENT BUS (server.js)           │
+        │  ┌─────────────────────────────────┐  │
+        │  │ TikTok Event Emitter            │  │
+        │  │ • gift, chat, follow, etc.      │  │
+        │  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  │
+        │  ┌─────────────────────────────────┐  │
+        │  │ Socket.io Event Broker          │  │
+        │  │ • Rooms, Broadcast, Pub/Sub     │  │
+        │  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  │
         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                            â”‚
-        â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-        â”‚                   â”‚                   â”‚
-        â–¼                   â–¼                   â–¼
-   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”      â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”     â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-   â”‚ Clients â”‚      â”‚ Plugins     â”‚     â”‚ Core Modules â”‚
-   â”‚ (Front) â”‚      â”‚ (subscribe) â”‚     â”‚ (subscribe)  â”‚
+                            │
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+        ▼                   ▼                   ▼
+   ┌─────────┐      ┌─────────────┐     ┌──────────────┐
+   │ Clients │      │ Plugins     │     │ Core Modules │
+   │ (Front) │      │ (subscribe) │     │ (subscribe)  │
    â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜      â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜     â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
@@ -151,141 +151,141 @@
 
 ```
 1. TikTok LIVE Stream
-   â”‚
-   â–¼
+   │
+   ▼
 2. TikTok Connector (modules/tiktok.js)
-   â”‚ - EmpfÃ¤ngt Gift-Event via tiktok-live-connector
-   â”‚ - Parst Event-Daten
-   â”‚
-   â–¼
+   │ - Empfängt Gift-Event via tiktok-live-connector
+   │ - Parst Event-Daten
+   │
+   ▼
 3. Event Emitter (server.js)
-   â”‚ - Emit 'tiktok:gift' Event
-   â”‚
-   â–¼
+   │ - Emit 'tiktok:gift' Event
+   │
+   ▼
 4. Event-Listener
-   â”œâ”€â–º Flow-Engine (modules/flows.js)
-   â”‚   â”‚ - PrÃ¼ft Trigger-Conditions
-   â”‚   â”‚ - FÃ¼hrt Actions aus (TTS, Alert, OSC)
-   â”‚   â”‚
-   â”œâ”€â–º Alert-Manager (modules/alerts.js)
-   â”‚   â”‚ - Erstellt Alert-Object
-   â”‚   â”‚ - Emit 'alert:new' Socket.io-Event
-   â”‚   â”‚
-   â”œâ”€â–º Goal-Manager (modules/goals.js)
-   â”‚   â”‚ - Inkrementiert Coins-Goal
-   â”‚   â”‚ - Emit 'goal:update' Socket.io-Event
-   â”‚   â”‚
-   â”œâ”€â–º Soundboard (plugins/soundboard/)
-   â”‚   â”‚ - Mapped Gift zu Sound
-   â”‚   â”‚ - Emit 'soundboard:play' Socket.io-Event
-   â”‚   â”‚
-   â”œâ”€â–º Leaderboard (modules/leaderboard.js)
-   â”‚   â”‚ - Update Top Gifters
-   â”‚   â”‚ - Emit 'topboard:update' Socket.io-Event
-   â”‚   â”‚
-   â””â”€â–º Custom Plugins (plugins/*/main.js)
-       â”‚ - Registrierte TikTok-Event-Callbacks
-       â”‚
-       â–¼
+   ├─► Flow-Engine (modules/flows.js)
+   │   │ - Prüft Trigger-Conditions
+   │   │ - Führt Actions aus (TTS, Alert, OSC)
+   │   │
+   ├─► Alert-Manager (modules/alerts.js)
+   │   │ - Erstellt Alert-Object
+   │   │ - Emit 'alert:new' Socket.io-Event
+   │   │
+   ├─► Goal-Manager (modules/goals.js)
+   │   │ - Inkrementiert Coins-Goal
+   │   │ - Emit 'goal:update' Socket.io-Event
+   │   │
+   ├─► Soundboard (plugins/soundboard/)
+   │   │ - Mapped Gift zu Sound
+   │   │ - Emit 'soundboard:play' Socket.io-Event
+   │   │
+   ├─► Leaderboard (modules/leaderboard.js)
+   │   │ - Update Top Gifters
+   │   │ - Emit 'topboard:update' Socket.io-Event
+   │   │
+   └─► Custom Plugins (plugins/*/main.js)
+       │ - Registrierte TikTok-Event-Callbacks
+       │
+       ▼
 5. Socket.io Broadcast
-   â”‚ - Sendet Events an alle verbundenen Clients
-   â”‚
-   â–¼
+   │ - Sendet Events an alle verbundenen Clients
+   │
+   ▼
 6. Frontend (public/dashboard.html, public/overlay.html)
-   â”‚ - EmpfÃ¤ngt Socket.io-Events
-   â”‚ - Rendert Alerts, aktualisiert Goals, etc.
+   │ - Empfängt Socket.io-Events
+   │ - Rendert Alerts, aktualisiert Goals, etc.
 ```
 
 ---
 
-## ðŸ“ Verzeichnisstruktur
+## 📁 Verzeichnisstruktur
 
 ```
 ltth.app/
-â”‚
-â”œâ”€â”€ server.js                     # Haupt-Server (1500+ Zeilen)
-â”‚                                 # Express-App, Socket.io, Event-Bus
-â”‚
-â”œâ”€â”€ launch.js                     # Platform-agnostischer Launcher
-â”œâ”€â”€ start.sh                      # Linux/macOS Launcher-Script
-â”œâ”€â”€ start.bat                     # Windows Launcher-Script
-â”œâ”€â”€ package.json                  # NPM Dependencies & Scripts
-â”‚
-â”œâ”€â”€ modules/                      # Backend-Module (10.000+ LOC)
-â”‚   â”œâ”€â”€ database.js              # SQLite-Manager (WAL Mode, Batching)
-â”‚   â”œâ”€â”€ tiktok.js                # TikTok LIVE Connector Integration
-â”‚   â”œâ”€â”€ tts.js                   # Text-to-Speech Engine (Legacy, jetzt Plugin)
-â”‚   â”œâ”€â”€ alerts.js                # Alert-Manager
-â”‚   â”œâ”€â”€ flows.js                 # Flow-Engine (Event-Automation)
-â”‚   â”œâ”€â”€ soundboard.js            # Soundboard-Manager (MyInstants)
-â”‚   â”œâ”€â”€ goals.js                 # Goal-Tracking System
-â”‚   â”œâ”€â”€ user-profiles.js         # Multi-User-Profile-Management
-â”‚   â”œâ”€â”€ vdoninja.js              # VDO.Ninja Integration (Legacy, jetzt Plugin)
-â”‚   â”œâ”€â”€ obs-websocket.js         # OBS WebSocket v5 Client
-â”‚   â”œâ”€â”€ subscription-tiers.js    # Subscription Tier Management
-â”‚   â”œâ”€â”€ leaderboard.js           # Leaderboard-System
-â”‚   â”œâ”€â”€ logger.js                # Winston Logger (Console + Rotating Files)
-â”‚   â”œâ”€â”€ rate-limiter.js          # Express Rate Limiting
-â”‚   â”œâ”€â”€ i18n.js                  # Internationalisierung (DE/EN)
-â”‚   â”œâ”€â”€ plugin-loader.js         # Plugin-System Loader (545 Zeilen)
-â”‚   â”œâ”€â”€ update-manager.js        # Git/ZIP Update-System (532 Zeilen)
-â”‚   â”œâ”€â”€ launcher.js              # Launcher-Logik
-â”‚   â”œâ”€â”€ tty-logger.js            # TTY-sicheres Logging
-â”‚   â”œâ”€â”€ template-engine.js       # Template-Renderer (Platzhalter)
-â”‚   â”œâ”€â”€ validators.js            # Input-Validierung (498 Zeilen)
-â”‚   â”œâ”€â”€ error-handler.js         # Zentrales Error-Handling
-â”‚   â””â”€â”€ swagger-config.js        # Swagger API-Dokumentation
-â”‚
-â”œâ”€â”€ plugins/                      # Plugin-System (7 Plugins)
-â”‚   â”œâ”€â”€ topboard/                # Top Gifters, Streaks, Donors
-â”‚   â”‚   â”œâ”€â”€ plugin.json          # Plugin-Metadata
-â”‚   â”‚   â””â”€â”€ main.js              # Plugin-Klasse
-â”‚   â”œâ”€â”€ tts/                     # TTS-Engine als Plugin
-â”‚   â”œâ”€â”€ vdoninja/                # VDO.Ninja Manager als Plugin
-â”‚   â”œâ”€â”€ multicam/                # Multi-Cam Switcher (OBS)
-â”‚   â”œâ”€â”€ osc-bridge/              # OSC-Bridge fÃ¼r VRChat
-â”‚   â”œâ”€â”€ soundboard/              # Soundboard-Plugin
-â”‚   â””â”€â”€ emoji-rain/              # Emoji Rain Effekt
-â”‚
-â”œâ”€â”€ routes/                       # Express Route-Module
-â”‚   â””â”€â”€ plugin-routes.js         # Plugin-Manager API (484 Zeilen)
-â”‚
-â”œâ”€â”€ public/                       # Frontend (HTML/CSS/JS)
-â”‚   â”œâ”€â”€ dashboard.html           # Haupt-Dashboard (Bootstrap 5)
-â”‚   â”œâ”€â”€ overlay.html             # OBS Browser Source Overlay
-â”‚   â”œâ”€â”€ soundboard.html          # Soundboard UI
-â”‚   â”œâ”€â”€ hud-config.html          # HUD-Konfigurator
-â”‚   â”œâ”€â”€ leaderboard-overlay.html # Leaderboard Overlay
-â”‚   â”œâ”€â”€ minigames-overlay.html   # Minigames Overlay
-â”‚   â””â”€â”€ js/
-â”‚       â”œâ”€â”€ dashboard.js         # Dashboard-Logik
-â”‚       â”œâ”€â”€ plugin-manager.js    # Plugin-Manager Frontend (372 Zeilen)
-â”‚       â”œâ”€â”€ update-checker.js    # Update-Checker Frontend (270 Zeilen)
-â”‚       â”œâ”€â”€ vdoninja-dashboard.js# VDO.Ninja Frontend
-â”‚       â”œâ”€â”€ theme-manager.js     # Theme-Switcher (Dark/Light)
-â”‚       â”œâ”€â”€ audio-settings.js    # Audio-Konfiguration
-â”‚       â”œâ”€â”€ keyboard-nav.js      # Keyboard-Navigation
-â”‚       â”œâ”€â”€ virtual-scroller.js  # Virtual Scrolling (Performance)
-â”‚       â”œâ”€â”€ sound-worker.js      # Sound-Playback Worker
-â”‚       â””â”€â”€ indexeddb-cache.js   # IndexedDB Caching
-â”‚
-â”œâ”€â”€ user_configs/                 # User-Profile Datenbanken (gitignored)
-â”‚   â”œâ”€â”€ .active_profile          # Aktives Profil (Textdatei)
-â”‚   â””â”€â”€ <profile>/
-â”‚       â””â”€â”€ database.db          # SQLite-Datenbank
-â”‚
-â”œâ”€â”€ user_data/                    # User-Daten (gitignored)
-â”‚   â””â”€â”€ flow_logs/               # Flow-Engine Log-Dateien
-â”‚
-â”œâ”€â”€ locales/                      # Internationalisierung
-â”‚   â”œâ”€â”€ de.json                  # Deutsche Ãœbersetzungen
-â”‚   â””â”€â”€ en.json                  # Englische Ãœbersetzungen
-â”‚
-â””â”€â”€ docs/                         # Dokumentation
-    â””â”€â”€ ...
+│
+├── server.js                     # Haupt-Server (1500+ Zeilen)
+│                                 # Express-App, Socket.io, Event-Bus
+│
+├── launch.js                     # Platform-agnostischer Launcher
+├── start.sh                      # Linux/macOS Launcher-Script
+├── start.bat                     # Windows Launcher-Script
+├── package.json                  # NPM Dependencies & Scripts
+│
+├── modules/                      # Backend-Module (10.000+ LOC)
+│   ├── database.js              # SQLite-Manager (WAL Mode, Batching)
+│   ├── tiktok.js                # TikTok LIVE Connector Integration
+│   ├── tts.js                   # Text-to-Speech Engine (Legacy, jetzt Plugin)
+│   ├── alerts.js                # Alert-Manager
+│   ├── flows.js                 # Flow-Engine (Event-Automation)
+│   ├── soundboard.js            # Soundboard-Manager (MyInstants)
+│   ├── goals.js                 # Goal-Tracking System
+│   ├── user-profiles.js         # Multi-User-Profile-Management
+│   ├── vdoninja.js              # VDO.Ninja Integration (Legacy, jetzt Plugin)
+│   ├── obs-websocket.js         # OBS WebSocket v5 Client
+│   ├── subscription-tiers.js    # Subscription Tier Management
+│   ├── leaderboard.js           # Leaderboard-System
+│   ├── logger.js                # Winston Logger (Console + Rotating Files)
+│   ├── rate-limiter.js          # Express Rate Limiting
+│   ├── i18n.js                  # Internationalisierung (DE/EN)
+│   ├── plugin-loader.js         # Plugin-System Loader (545 Zeilen)
+│   ├── update-manager.js        # Git/ZIP Update-System (532 Zeilen)
+│   ├── launcher.js              # Launcher-Logik
+│   ├── tty-logger.js            # TTY-sicheres Logging
+│   ├── template-engine.js       # Template-Renderer (Platzhalter)
+│   ├── validators.js            # Input-Validierung (498 Zeilen)
+│   ├── error-handler.js         # Zentrales Error-Handling
+│   └── swagger-config.js        # Swagger API-Dokumentation
+│
+├── plugins/                      # Plugin-System (7 Plugins)
+│   ├── topboard/                # Top Gifters, Streaks, Donors
+│   │   ├── plugin.json          # Plugin-Metadata
+│   │   └── main.js              # Plugin-Klasse
+│   ├── tts/                     # TTS-Engine als Plugin
+│   ├── vdoninja/                # VDO.Ninja Manager als Plugin
+│   ├── multicam/                # Multi-Cam Switcher (OBS)
+│   ├── osc-bridge/              # OSC-Bridge für VRChat
+│   ├── soundboard/              # Soundboard-Plugin
+│   └── emoji-rain/              # Emoji Rain Effekt
+│
+├── routes/                       # Express Route-Module
+│   └── plugin-routes.js         # Plugin-Manager API (484 Zeilen)
+│
+├── public/                       # Frontend (HTML/CSS/JS)
+│   ├── dashboard.html           # Haupt-Dashboard (Bootstrap 5)
+│   ├── overlay.html             # OBS Browser Source Overlay
+│   ├── soundboard.html          # Soundboard UI
+│   ├── hud-config.html          # HUD-Konfigurator
+│   ├── leaderboard-overlay.html # Leaderboard Overlay
+│   ├── minigames-overlay.html   # Minigames Overlay
+│   └── js/
+│       ├── dashboard.js         # Dashboard-Logik
+│       ├── plugin-manager.js    # Plugin-Manager Frontend (372 Zeilen)
+│       ├── update-checker.js    # Update-Checker Frontend (270 Zeilen)
+│       ├── vdoninja-dashboard.js# VDO.Ninja Frontend
+│       ├── theme-manager.js     # Theme-Switcher (Dark/Light)
+│       ├── audio-settings.js    # Audio-Konfiguration
+│       ├── keyboard-nav.js      # Keyboard-Navigation
+│       ├── virtual-scroller.js  # Virtual Scrolling (Performance)
+│       ├── sound-worker.js      # Sound-Playback Worker
+│       └── indexeddb-cache.js   # IndexedDB Caching
+│
+├── user_configs/                 # User-Profile Datenbanken (gitignored)
+│   ├── .active_profile          # Aktives Profil (Textdatei)
+│   └── <profile>/
+│       └── database.db          # SQLite-Datenbank
+│
+├── user_data/                    # User-Daten (gitignored)
+│   └── flow_logs/               # Flow-Engine Log-Dateien
+│
+├── locales/                      # Internationalisierung
+│   ├── de.json                  # Deutsche Übersetzungen
+│   └── en.json                  # Englische Übersetzungen
+│
+└── docs/                         # Dokumentation
+    └── ...
 ```
 
-### DateigrÃ¶ÃŸen (LOC = Lines of Code)
+### Dateigrößen (LOC = Lines of Code)
 
 | Datei | LOC | Beschreibung |
 |-------|-----|--------------|
@@ -302,7 +302,7 @@ ltth.app/
 
 ---
 
-## âš™ï¸ Backend-Module
+## ⚙️ Backend-Module
 
 ### 1. server.js (Haupt-Server)
 
@@ -313,7 +313,7 @@ ltth.app/
 - Socket.io-Server initialisieren
 - Plugin-Loader starten
 - TikTok-Connector initialisieren
-- Event-Routing (TikTok â†’ Plugins â†’ Clients)
+- Event-Routing (TikTok → Plugins → Clients)
 - REST-API-Endpunkte registrieren
 - Error-Handling
 
@@ -362,11 +362,11 @@ server.listen(PORT, () => {
 **Zweck:** SQLite-Datenbank-Management mit WAL-Mode
 
 **Features:**
-- WAL-Mode (Write-Ahead Logging) fÃ¼r Performance
-- Prepared Statements fÃ¼r SQL-Injection-Schutz
-- Batch-Writes fÃ¼r bessere Performance
+- WAL-Mode (Write-Ahead Logging) für Performance
+- Prepared Statements für SQL-Injection-Schutz
+- Batch-Writes für bessere Performance
 - Transaction-Support
-- Auto-Migration bei Schema-Ã„nderungen
+- Auto-Migration bei Schema-Änderungen
 
 **API:**
 ```javascript
@@ -427,7 +427,7 @@ stmt.run(eventType, JSON.stringify(data));
 - `share` - Stream geteilt
 - `like` - Likes erhalten
 - `subscribe` - Neuer Subscriber
-- `roomUser` - User betritt/verlÃ¤sst Stream
+- `roomUser` - User betritt/verlässt Stream
 - `streamEnd` - Stream beendet
 
 **Code-Beispiel:**
@@ -464,9 +464,9 @@ class TikTokConnector {
 
 **Ablauf:**
 1. TikTok-Event empfangen
-2. Alle aktivierten Flows prÃ¼fen
+2. Alle aktivierten Flows prüfen
 3. Trigger-Condition evaluieren
-4. Bei Match: Actions sequenziell ausfÃ¼hren
+4. Bei Match: Actions sequenziell ausführen
 5. Logging in `user_data/flow_logs/`
 
 **Condition-Evaluierung:**
@@ -490,7 +490,7 @@ evaluateCondition(event, condition) {
 }
 ```
 
-**Action-AusfÃ¼hrung:**
+**Action-Ausführung:**
 ```javascript
 async executeActions(actions, eventData) {
     for (const action of actions) {
@@ -529,8 +529,8 @@ async executeAction(action, eventData) {
 
 **Ablauf:**
 1. Scanne `plugins/`-Verzeichnis
-2. Lade `plugin.json` fÃ¼r Metadata
-3. PrÃ¼fe `enabled`-Status
+2. Lade `plugin.json` für Metadata
+3. Prüfe `enabled`-Status
 4. Instanziiere Plugin-Klasse
 5. Rufe `init()` auf
 6. Registriere Routes, Socket.io-Events, TikTok-Events
@@ -588,7 +588,7 @@ Weitere Details: [[Plugin-Dokumentation]]
 
 ---
 
-## ðŸŽ¨ Frontend-Komponenten
+## 🎨 Frontend-Komponenten
 
 ### 1. Dashboard (public/dashboard.html)
 
@@ -611,7 +611,7 @@ socket.on('tiktok:connected', (data) => {
 });
 
 socket.on('tiktok:gift', (data) => {
-    addEventToLog(`ðŸŽ ${data.username} sent ${data.giftName} x${data.count}`);
+    addEventToLog(`🎁 ${data.username} sent ${data.giftName} x${data.count}`);
 });
 
 socket.on('alert:new', (data) => {
@@ -621,7 +621,7 @@ socket.on('alert:new', (data) => {
 
 ### 2. OBS-Overlay (public/overlay.html)
 
-**Zweck:** Transparentes Full-HD-Overlay fÃ¼r OBS Studio
+**Zweck:** Transparentes Full-HD-Overlay für OBS Studio
 
 **Features:**
 - Alert-Anzeige (Gift, Follow, Subscribe)
@@ -678,7 +678,7 @@ socket.on('alert:new', (data) => {
 - Plugin-Liste mit Status (enabled/disabled)
 - Plugin aktivieren/deaktivieren
 - Plugin hochladen (ZIP)
-- Plugin lÃ¶schen
+- Plugin löschen
 - Plugin-Konfiguration bearbeiten
 
 **UI-Komponenten:**
@@ -696,18 +696,18 @@ socket.on('alert:new', (data) => {
 
 ---
 
-## ðŸ”Œ Plugin-System
+## 🔌 Plugin-System
 
-Siehe [[Plugin-Dokumentation]] fÃ¼r vollstÃ¤ndige Details.
+Siehe [[Plugin-Dokumentation]] für vollständige Details.
 
-**Kurz-Ãœbersicht:**
+**Kurz-Übersicht:**
 
 ```
 plugins/<plugin-id>/
-â”œâ”€â”€ plugin.json       # Metadata (id, name, version, entry, enabled)
-â”œâ”€â”€ main.js           # Plugin-Klasse mit init() und destroy()
-â”œâ”€â”€ ui.html           # Optional: Admin-UI
-â””â”€â”€ assets/           # Optional: CSS, JS, Images
+├── plugin.json       # Metadata (id, name, version, entry, enabled)
+├── main.js           # Plugin-Klasse mit init() und destroy()
+├── ui.html           # Optional: Admin-UI
+└── assets/           # Optional: CSS, JS, Images
 ```
 
 **Plugin-Lifecycle:**
@@ -717,32 +717,32 @@ plugins/<plugin-id>/
 
 ---
 
-## ðŸ”„ Datenfluss
+## 🔄 Datenfluss
 
 ### TikTok-Event-Flow
 
 ```
 TikTok LIVE
-    â”‚
-    â–¼
+    │
+    ▼
 tiktok-live-connector (NPM-Library)
-    â”‚
-    â–¼
+    │
+    ▼
 modules/tiktok.js (Event-Parsing)
-    â”‚
-    â–¼
+    │
+    ▼
 server.js (Event-Bus)
-    â”‚
-    â”œâ”€â–º modules/flows.js (Flow-Engine)
-    â”œâ”€â–º modules/alerts.js (Alert-Manager)
-    â”œâ”€â–º modules/goals.js (Goal-Manager)
-    â”œâ”€â–º modules/leaderboard.js (Leaderboard)
-    â”œâ”€â–º plugins/*/main.js (Plugin-Callbacks)
-    â”‚
-    â–¼
+    │
+    ├─► modules/flows.js (Flow-Engine)
+    ├─► modules/alerts.js (Alert-Manager)
+    ├─► modules/goals.js (Goal-Manager)
+    ├─► modules/leaderboard.js (Leaderboard)
+    ├─► plugins/*/main.js (Plugin-Callbacks)
+    │
+    ▼
 Socket.io Broadcast
-    â”‚
-    â–¼
+    │
+    ▼
 Frontend-Clients (Dashboard, Overlay)
 ```
 
@@ -750,35 +750,35 @@ Frontend-Clients (Dashboard, Overlay)
 
 ```
 HTTP Request (Client)
-    â”‚
-    â–¼
+    │
+    ▼
 Express Middleware (CORS, Rate-Limiting, Body-Parser)
-    â”‚
-    â–¼
+    │
+    ▼
 Route-Handler (app.get/post/put/delete)
-    â”‚
-    â–¼
+    │
+    ▼
 Validation (modules/validators.js)
-    â”‚
-    â–¼
+    │
+    ▼
 Business Logic (modules/*.js)
-    â”‚
-    â–¼
+    │
+    ▼
 Database (modules/database.js)
-    â”‚
-    â–¼
+    │
+    ▼
 Response (JSON)
 ```
 
 ---
 
-## ðŸ—„ï¸ Datenbank-Schema
+## 🗄️ Datenbank-Schema
 
 ### SQLite-Datenbank
 
 **Datei:** `user_configs/<profile>/database.db`
 
-**WAL-Mode:** Aktiviert fÃ¼r bessere Performance
+**WAL-Mode:** Aktiviert für bessere Performance
 
 **Tabellen:**
 
@@ -862,7 +862,7 @@ CREATE TABLE events (
 
 ---
 
-## ðŸŒ Externe Integrationen
+## 🌐 Externe Integrationen
 
 ### 1. TikTok LIVE API
 
@@ -870,7 +870,7 @@ CREATE TABLE events (
 
 **Protokoll:** WebSocket (via TikTok WebCast)
 
-**Authentication:** Keine (Ã¶ffentliche LIVE-Streams)
+**Authentication:** Keine (öffentliche LIVE-Streams)
 
 **Endpoint:** `wss://webcast.tiktok.com/webcast/im/fetch/`
 
@@ -950,7 +950,7 @@ udpPort.send({
 
 ---
 
-## âš¡ Performance & Skalierung
+## ⚡ Performance & Skalierung
 
 ### Optimierungen
 
@@ -959,7 +959,7 @@ udpPort.send({
 db.pragma('journal_mode = WAL');
 db.pragma('synchronous = NORMAL');
 ```
-- Concurrent Reads wÃ¤hrend Writes
+- Concurrent Reads während Writes
 - Bessere Performance
 
 **2. Batch-Writes:**
@@ -987,7 +987,7 @@ io.to('goal:likes').emit('goal:update', data);
 **5. IndexedDB-Caching (Frontend):**
 ```javascript
 // public/js/indexeddb-cache.js
-// Cache fÃ¼r Gift-Katalog, Sounds
+// Cache für Gift-Katalog, Sounds
 ```
 
 ### Skalierungs-Limits
@@ -1001,7 +1001,7 @@ io.to('goal:likes').emit('goal:update', data);
 
 ---
 
-## ðŸ”— Weitere Informationen
+## 🔗 Weitere Informationen
 
 - **[[Plugin-Dokumentation]]** - Plugin-System im Detail
 - **[[API-Reference]]** - REST-API und WebSocket-Events
@@ -1009,7 +1009,7 @@ io.to('goal:likes').emit('goal:update', data);
 
 ---
 
-[â† Konfiguration](Konfiguration) | [â†’ Entwickler-Leitfaden](Entwickler-Leitfaden)
+[← Konfiguration](Konfiguration) | [→ Entwickler-Leitfaden](Entwickler-Leitfaden)
 
 ---
 

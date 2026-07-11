@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Connect4 Overlay - LTTH Game Engine</title>
+  <title data-i18n="generated.0d7e26638c6e">Connect4 Overlay - LTTH Game Engine</title>
   <script>
     (function () {
       const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
@@ -591,6 +591,7 @@
       font-size: 18px;
     }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
   <!-- Celebration overlay for confetti -->
@@ -598,28 +599,28 @@
 
   <!-- Challenge Screen -->
   <div id="challenge-screen">
-    <div class="challenge-title">NEW CHALLENGER!</div>
-    <div class="challenge-question">Accept Challenge?</div>
+    <div class="challenge-title" data-i18n="generated.3fef6a540c58">NEW CHALLENGER!</div>
+    <div class="challenge-question" data-i18n="generated.85677aa338ac">Accept Challenge?</div>
     <div id="challenger-name" style="font-size: 24px; color: #64B5F6; margin-bottom: 20px;"></div>
     <div class="challenge-gift">
       <div id="challenge-gift-container"></div>
     </div>
-    <div class="challenge-info">Send this gift to start:</div>
+    <div class="challenge-info" data-i18n="generated.6d00e248c01e">Send this gift to start:</div>
     <div id="gift-name" style="font-size: 20px; color: #FFC107; margin-top: 10px;"></div>
     <div id="challenge-timer" class="challenge-timer"></div>
   </div>
 
   <!-- Leaderboard Screen -->
   <div id="leaderboard-screen">
-    <div class="leaderboard-title">🏆 Leaderboard 🏆</div>
+    <div class="leaderboard-title" data-i18n="generated.58fdc344b6e5">🏆 Leaderboard 🏆</div>
     <div id="leaderboard-type" class="leaderboard-type"></div>
     <div id="leaderboard-content"></div>
   </div>
 
   <div id="game-container">
     <div id="game-header">
-      <div id="game-title">Vier Gewinnt / Connect4</div>
-      <div id="game-status">Warte auf Spiel...</div>
+      <div id="game-title" data-i18n="generated.02892b91f14a">Vier Gewinnt / Connect4</div>
+      <div id="game-status" data-i18n="generated.ec3ee76acb5e">Warte auf Spiel...</div>
     </div>
 
     <div id="game-board">
@@ -638,11 +639,11 @@
     <div id="game-info">
       <div class="player-info" id="player1-info">
         <span class="player-color" id="player1-color"></span>
-        <span id="player1-name">Player 1</span>
+        <span id="player1-name" data-i18n="game_engine.display_texts.connect4.label_player1">Player 1</span>
       </div>
       <div class="player-info" id="player2-info">
         <span class="player-color" id="player2-color"></span>
-        <span id="player2-name">Player 2</span>
+        <span id="player2-name" data-i18n="game_engine.display_texts.connect4.label_player2">Player 2</span>
       </div>
     </div>
   </div>
@@ -654,16 +655,16 @@
 
   <!-- Test Mode Controls -->
   <div id="test-mode-controls" style="display: none; position: fixed; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.9); padding: 20px; border-radius: 10px; z-index: 10000; color: white; font-family: Arial, sans-serif;">
-    <h3 style="margin: 0 0 15px 0; color: #4CAF50;">🧪 Test Mode</h3>
+    <h3 style="margin: 0 0 15px 0; color: #4CAF50;" data-i18n="generated.1ae978191cf9">🧪 Test Mode</h3>
     <div style="margin-bottom: 10px;">
-      <button id="test-start-game" style="width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; margin-bottom: 5px;">Start Test Game</button>
+      <button id="test-start-game" style="width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; margin-bottom: 5px;" data-i18n="generated.6f8231152530">Start Test Game</button>
     </div>
     <div id="test-game-controls" style="display: none;">
       <div style="margin-bottom: 10px;">
-        <strong>Current Player: <span id="test-current-player">1</span></strong>
+        <strong><span data-i18n="generated.64d2cf1a81b5">Current Player: </span><span id="test-current-player">1</span></strong>
       </div>
       <div style="margin-bottom: 10px;">
-        <label style="display: block; margin-bottom: 5px; font-size: 12px;">Drop Piece in Column:</label>
+        <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="generated.5a40c44f2989">Drop Piece in Column:</label>
         <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">
           <button class="test-column-btn" data-column="A" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">A</button>
           <button class="test-column-btn" data-column="B" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">B</button>
@@ -675,7 +676,7 @@
         </div>
       </div>
       <div>
-        <button id="test-end-game" style="width: 100%; padding: 10px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">End Test Game</button>
+        <button id="test-end-game" style="width: 100%; padding: 10px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;" data-i18n="generated.b50098161c26">End Test Game</button>
       </div>
     </div>
   </div>

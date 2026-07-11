@@ -1,0 +1,43 @@
+{
+  "id": "emoji-rain",
+  "name": "EmojiRain",
+  "version": "2.1.0",
+  "description": "Physics-based EmojiRain using Matter.js and DOM sprites. Includes custom emoji sets, user mappings, uploads, SuperFan bursts, heart balloons, gift balls, presets, GCCE commands, Flow actions, and TikTok LIVE integration.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "logo": "/plugins/emoji-rain/assets/sidebar-logo-wide.png",
+  "enabled": true,
+  "devStatus": "working-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "file-upload"
+  ],
+  "dependencies": [],
+  "features": [
+    "matter-physics",
+    "canvas-overlay",
+    "custom-emoji-sets",
+    "user-mappings",
+    "file-upload",
+    "superfan-burst",
+    "heart-balloons",
+    "flow-integration",
+    "obs-hud-support",
+    "database-config",
+    "localization",
+    "gift-triggered",
+    "like-triggered",
+    "follow-triggered",
+    "share-triggered",
+    "persistent-storage"
+  ],
+  "descriptions": {
+    "en": "Physics-based EmojiRain with Matter.js, custom assets, heart balloons, gift balls, presets, and TikTok LIVE integration.",
+    "de": "Physikbasierter EmojiRain mit Matter.js, eigenen Assets, Herzballons, Geschenkekugeln, Presets und TikTok-LIVE-Integration.",
+    "es": "EmojiRain basado en física con Matter.js, recursos personalizados, globos de corazón, bolas de regalo, presets e integración con TikTok LIVE.",
+    "fr": "EmojiRain basé sur la physique avec Matter.js, ressources personnalisées, ballons-cœurs, boules-cadeaux, préréglages et intégration TikTok LIVE."
+  }
+}

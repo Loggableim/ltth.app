@@ -537,7 +537,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 // }
             });
 
-            this.logger.info(`ðŸ”§ Connecting to Eulerstream WebSocket...`);
+            this.logger.info(`🔧 Connecting to Eulerstream WebSocket...`);
 
             // Create WebSocket connection
             this.ws = new WebSocket(wsUrl);
@@ -1190,14 +1190,14 @@ class EulerstreamAdapter extends BaseAdapter {
                 if (timestamp > minTime && timestamp <= now) {
                     if (!this._earliestEventTime || timestamp < this._earliestEventTime) {
                         this._earliestEventTime = timestamp;
-                        this.logger.info(`ðŸ• Updated earliest event time: ${new Date(timestamp).toISOString()}`);
+                        this.logger.info(`🕐 Updated earliest event time: ${new Date(timestamp).toISOString()}`);
                         
                         // If we don't have a stream start time yet, use earliest event
                         if (!this.streamStartTime) {
                             this.streamStartTime = this._earliestEventTime;
                             this._persistedStreamStart = this.streamStartTime;
                             this._streamTimeDetectionMethod = 'First Event Timestamp';
-                            this.logger.info(`ðŸ“… Set stream start time from earliest event: ${new Date(this.streamStartTime).toISOString()}`);
+                            this.logger.info(`📅 Set stream start time from earliest event: ${new Date(this.streamStartTime).toISOString()}`);
                             
                             // Broadcast updated stream time info
                             this.io.emit('tiktok:streamTimeInfo', {
@@ -1295,7 +1295,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 }
 
                 if (this._giftDedupeMap.has(dedupeKey)) {
-                    this.logger.info(`ðŸ”• [GIFT DEDUP] Connector-level duplicate blocked: ${dedupeKey}`);
+                    this.logger.info(`🔕 [GIFT DEDUP] Connector-level duplicate blocked: ${dedupeKey}`);
                     return;
                 }
                 this._giftDedupeMap.set(dedupeKey, nowMs);
@@ -1327,7 +1327,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     // Save to database immediately
                     try {
                         this.db.updateGiftCatalog([normalizedGift]);
-                        this.logger.info(`âœ… [GIFT CATALOG] Added gift to catalog: ${normalizedGift.name} (ID: ${normalizedGift.id})`);
+                        this.logger.info(`✅ [GIFT CATALOG] Added gift to catalog: ${normalizedGift.name} (ID: ${normalizedGift.id})`);
                         
                         // Emit event to notify frontend of new gift in catalog
                         this.io.emit('gift-catalog:updated', {
@@ -1365,7 +1365,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 coins = diamondCount * repeatCount;
             }
 
-            this.logger.info(`ðŸŽ [GIFT] ${giftData.giftName}: diamondCount=${diamondCount}, repeatCount=${repeatCount}, coins=${coins}, giftType=${giftData.giftType}, repeatEnd=${giftData.repeatEnd}`);
+            this.logger.info(`🎁 [GIFT] ${giftData.giftName}: diamondCount=${diamondCount}, repeatCount=${repeatCount}, coins=${coins}, giftType=${giftData.giftType}, repeatEnd=${giftData.repeatEnd}`);
             
             // Log raw gift data for debugging duplicate detection
             this.logger.debug(`[GIFT RAW] createTime: ${data.createTime}, timestamp: ${data.timestamp}, giftName: ${giftData.giftName}, repeatCount: ${repeatCount}`);
@@ -1413,7 +1413,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     timestamp: data.createTime || data.timestamp || new Date().toISOString()
                 };
 
-                this.logger.info(`âœ… [GIFT COUNTED] Total coins now: ${this.stats.totalCoins}`);
+                this.logger.info(`✅ [GIFT COUNTED] Total coins now: ${this.stats.totalCoins}`);
 
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('gift', eventData)) {
@@ -1421,7 +1421,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 }
                 this.broadcastStats();
             } else {
-                this.logger.info(`â³ [STREAK RUNNING] ${giftData.giftName || 'Unknown Gift'} x${repeatCount} (${coins} coins, not counted yet)`);
+                this.logger.info(`⏳ [STREAK RUNNING] ${giftData.giftName || 'Unknown Gift'} x${repeatCount} (${coins} coins, not counted yet)`);
             }
         });
 
@@ -1474,7 +1474,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     timestamp: new Date().toISOString()
                 };
 
-                this.logger.info(`ðŸ‘¤ [FOLLOW] New follower: ${eventData.username || eventData.nickname}`);
+                this.logger.info(`👤 [FOLLOW] New follower: ${eventData.username || eventData.nickname}`);
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('follow', eventData)) {
                     this.db.logEvent('follow', eventData.username, eventData);
@@ -1496,7 +1496,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     timestamp: new Date().toISOString()
                 };
 
-                this.logger.info(`ðŸ“¢ [SHARE] User shared stream: ${eventData.username || eventData.nickname}`);
+                this.logger.info(`📢 [SHARE] User shared stream: ${eventData.username || eventData.nickname}`);
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('share', eventData)) {
                     this.db.logEvent('share', eventData.username, eventData);
@@ -1556,12 +1556,12 @@ class EulerstreamAdapter extends BaseAdapter {
 
             const likeCount = data.likeCount || data.count || data.like_count || 1;
 
-            this.logger.debug?.(`ðŸ’— [LIKE EVENT] likeCount=${likeCount}, totalLikes=${totalLikes}`);
+            this.logger.debug?.(`💗 [LIKE EVENT] likeCount=${likeCount}, totalLikes=${totalLikes}`);
 
             // If totalLikes found, use it directly (Eulerstream API provides actual total like count)
             if (totalLikes !== null) {
                 this.stats.likes = totalLikes;
-                this.logger.debug?.(`ðŸ’— [LIKE EVENT] Set totalLikes: ${this.stats.likes}`);
+                this.logger.debug?.(`💗 [LIKE EVENT] Set totalLikes: ${this.stats.likes}`);
             } else {
                 // Fallback: increment based on likeCount (individual event count, not in tens)
                 // Note: likeCount represents individual likes in this event (typically 1), not cumulative
@@ -1641,7 +1641,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 timestamp: new Date().toISOString()
             };
 
-            this.logger.debug?.(`ðŸ‘‹ User joined: ${userData.username || userData.nickname}`);
+            this.logger.debug?.(`👋 User joined: ${userData.username || userData.nickname}`);
             
             // Only log to database if event was not a duplicate
             if (this.handleEvent('join', eventData)) {
@@ -1670,7 +1670,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 timestamp: new Date().toISOString()
             };
 
-            this.logger.info(`ðŸŽ­ Sticker sent: ${emoteData.emoteName || emoteData.emoteId} by ${userData.username || userData.nickname}`);
+            this.logger.info(`🎭 Sticker sent: ${emoteData.emoteName || emoteData.emoteId} by ${userData.username || userData.nickname}`);
             
             // Only log to database if event was not a duplicate
             if (this.handleEvent('emote', eventData)) {
@@ -1822,7 +1822,7 @@ class EulerstreamAdapter extends BaseAdapter {
         };
 
         if (!extractedData.username && !extractedData.nickname) {
-            this.logger.warn('âš ï¸ No user data found in event. Event structure:', {
+            this.logger.warn('⚠️ No user data found in event. Event structure:', {
                 hasUser: !!data.user,
                 hasUniqueId: !!data.uniqueId,
                 hasUsername: !!data.username,
@@ -1919,17 +1919,17 @@ class EulerstreamAdapter extends BaseAdapter {
         // Extract giftType using nullish coalescing (??) to preserve 0 as a valid value.
         // Using || would skip 0 (non-streakable) and incorrectly fall through to the next candidate.
         // Field precedence (first defined value wins):
-        //   gift.giftType         â€“ Eulerstream v1: nested in data.giftDetails.giftType (gift = giftDetails)
-        //   gift.gift_type        â€“ snake_case nested variant
-        //   gift.type             â€“ short alias used in older Eulerstream payloads
-        //   data.giftType         â€“ top-level field from Eulerstream v2+ and TikTok-Live-Connector
-        //   data.gift_type        â€“ snake_case top-level variant
-        //   data.gift?.type       â€“ direct reference when data.gift is the payload root
+        //   gift.giftType         – Eulerstream v1: nested in data.giftDetails.giftType (gift = giftDetails)
+        //   gift.gift_type        – snake_case nested variant
+        //   gift.type             – short alias used in older Eulerstream payloads
+        //   data.giftType         – top-level field from Eulerstream v2+ and TikTok-Live-Connector
+        //   data.gift_type        – snake_case top-level variant
+        //   data.gift?.type       – direct reference when data.gift is the payload root
         const giftType = gift.giftType ?? gift.gift_type ?? gift.type ?? data.giftType ?? data.gift_type ?? data.gift?.type ?? 0;
 
         // Determine if streak/combo has ended.
         // If the repeatEnd field is absent AND giftType === 1 (streakable), default to false
-        // (the streak is still running â€” this is a mid-animation Popup event).
+        // (the streak is still running — this is a mid-animation Popup event).
         // If the repeatEnd field is absent AND giftType !== 1 (non-streakable / unknown),
         // default to true (treat it as a completed single-send gift).
         const hasRepeatEnd = data.repeatEnd !== undefined || data.repeat_end !== undefined;
@@ -1950,7 +1950,7 @@ class EulerstreamAdapter extends BaseAdapter {
         };
 
         if (!extractedData.giftName && !extractedData.giftId) {
-            this.logger.warn('âš ï¸ No gift data found in event. Event structure:', {
+            this.logger.warn('⚠️ No gift data found in event. Event structure:', {
                 hasGiftDetails: !!data.giftDetails,
                 hasGift: !!data.gift,
                 hasGiftInfo: !!data.giftInfo,
@@ -1997,7 +1997,7 @@ class EulerstreamAdapter extends BaseAdapter {
         };
 
         if (!extractedData.emoteName && !extractedData.emoteId) {
-            this.logger.warn('âš ï¸ No emote data found in event. Event structure:', {
+            this.logger.warn('⚠️ No emote data found in event. Event structure:', {
                 hasEmote: !!data.emote,
                 hasEmoteInfo: !!data.emoteInfo,
                 hasEmoteName: !!(data.emoteName || data.name),
@@ -2071,7 +2071,7 @@ class EulerstreamAdapter extends BaseAdapter {
             if (!isNaN(duration) && duration > 0) {
                 timestamp = Date.now() - (duration * 1000);
                 detectionMethod = 'duration (calculated)';
-                this.logger.info(`ðŸ“Š Calculated stream start from duration: ${duration}s ago`);
+                this.logger.info(`📊 Calculated stream start from duration: ${duration}s ago`);
             }
         }
         
@@ -2086,12 +2086,12 @@ class EulerstreamAdapter extends BaseAdapter {
 
         // If no timestamp found, try earliest event time or fallback to now
         if (timestamp === null || timestamp === undefined) {
-            this.logger.warn(`âš ï¸ No stream start time found in roomInfo. Available keys: ${JSON.stringify(Object.keys(roomInfo))}`);
+            this.logger.warn(`⚠️ No stream start time found in roomInfo. Available keys: ${JSON.stringify(Object.keys(roomInfo))}`);
             if (this._earliestEventTime) {
-                this.logger.info(`ðŸ“… Using earliest event time as fallback: ${new Date(this._earliestEventTime).toISOString()}`);
+                this.logger.info(`📅 Using earliest event time as fallback: ${new Date(this._earliestEventTime).toISOString()}`);
                 return this._earliestEventTime;
             }
-            this.logger.warn(`âš ï¸ No earliest event time available. Using current time as fallback.`);
+            this.logger.warn(`⚠️ No earliest event time available. Using current time as fallback.`);
             return Date.now();
         }
 
@@ -2102,7 +2102,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
         // Validate timestamp is a number
         if (isNaN(timestamp) || timestamp <= 0) {
-            this.logger.warn(`âš ï¸ Invalid timestamp value: ${timestamp} (from ${detectionMethod})`);
+            this.logger.warn(`⚠️ Invalid timestamp value: ${timestamp} (from ${detectionMethod})`);
             if (this._earliestEventTime) {
                 return this._earliestEventTime;
             }
@@ -2121,14 +2121,14 @@ class EulerstreamAdapter extends BaseAdapter {
         const minTime = new Date('2020-01-01').getTime();
         
         if (timestamp > now || timestamp < minTime) {
-            this.logger.warn(`âš ï¸ Invalid timestamp detected: ${timestamp} (${new Date(timestamp).toISOString()}) from ${detectionMethod}. Using fallback.`);
+            this.logger.warn(`⚠️ Invalid timestamp detected: ${timestamp} (${new Date(timestamp).toISOString()}) from ${detectionMethod}. Using fallback.`);
             if (this._earliestEventTime) {
                 return this._earliestEventTime;
             }
             return Date.now();
         }
 
-        this.logger.info(`âœ… Extracted stream start time from ${detectionMethod}: ${new Date(timestamp).toISOString()}`);
+        this.logger.info(`✅ Extracted stream start time from ${detectionMethod}: ${new Date(timestamp).toISOString()}`);
         return timestamp;
     }
 
@@ -2149,7 +2149,7 @@ class EulerstreamAdapter extends BaseAdapter {
             const value = roomInfo[field] || roomInfo.room?.[field] || roomInfo.stats?.[field];
             if (typeof value === 'number' && value >= 0) {
                 this.stats.viewers = value;
-                this.logger.info(`ðŸ“Š Extracted viewer count from roomInfo.${field}: ${value}`);
+                this.logger.info(`📊 Extracted viewer count from roomInfo.${field}: ${value}`);
                 statsUpdated = true;
                 break;
             }
@@ -2162,7 +2162,7 @@ class EulerstreamAdapter extends BaseAdapter {
             if (typeof value === 'number' && value >= 0) {
                 // Use actual like count directly (Eulerstream API provides actual total)
                 this.stats.likes = value;
-                this.logger.info(`ðŸ“Š Extracted like count from roomInfo.${field}: ${value}`);
+                this.logger.info(`📊 Extracted like count from roomInfo.${field}: ${value}`);
                 statsUpdated = true;
                 break;
             }
@@ -2174,7 +2174,7 @@ class EulerstreamAdapter extends BaseAdapter {
             const value = roomInfo[field] || roomInfo.owner?.[field] || roomInfo.room?.owner?.[field] || roomInfo.stats?.[field];
             if (typeof value === 'number' && value >= 0) {
                 this.stats.followers = value;
-                this.logger.info(`ðŸ“Š Extracted follower count from roomInfo.${field}: ${value}`);
+                this.logger.info(`📊 Extracted follower count from roomInfo.${field}: ${value}`);
                 statsUpdated = true;
                 break;
             }
@@ -2186,7 +2186,7 @@ class EulerstreamAdapter extends BaseAdapter {
             const value = roomInfo[field] || roomInfo.room?.[field] || roomInfo.stats?.[field];
             if (typeof value === 'number' && value >= 0) {
                 this.stats.totalCoins = value;
-                this.logger.info(`ðŸ“Š Extracted coin count from roomInfo.${field}: ${value}`);
+                this.logger.info(`📊 Extracted coin count from roomInfo.${field}: ${value}`);
                 statsUpdated = true;
                 break;
             }
@@ -2198,7 +2198,7 @@ class EulerstreamAdapter extends BaseAdapter {
             const value = roomInfo[field] || roomInfo.room?.[field] || roomInfo.stats?.[field];
             if (typeof value === 'number' && value >= 0) {
                 this.stats.gifts = value;
-                this.logger.info(`ðŸ“Š Extracted gift count from roomInfo.${field}: ${value}`);
+                this.logger.info(`📊 Extracted gift count from roomInfo.${field}: ${value}`);
                 statsUpdated = true;
                 break;
             }
@@ -2206,12 +2206,12 @@ class EulerstreamAdapter extends BaseAdapter {
 
         // Log roomInfo structure for debugging if no stats were found
         if (!statsUpdated) {
-            this.logger.info(`ðŸ“Š No initial stats found in roomInfo. Available top-level keys: ${JSON.stringify(Object.keys(roomInfo))}`);
+            this.logger.info(`📊 No initial stats found in roomInfo. Available top-level keys: ${JSON.stringify(Object.keys(roomInfo))}`);
             if (roomInfo.room) {
-                this.logger.info(`ðŸ“Š Available room keys: ${JSON.stringify(Object.keys(roomInfo.room))}`);
+                this.logger.info(`📊 Available room keys: ${JSON.stringify(Object.keys(roomInfo.room))}`);
             }
             if (roomInfo.stats) {
-                this.logger.info(`ðŸ“Š Available stats keys: ${JSON.stringify(Object.keys(roomInfo.stats))}`);
+                this.logger.info(`📊 Available stats keys: ${JSON.stringify(Object.keys(roomInfo.stats))}`);
             }
         } else {
             // Broadcast updated stats
@@ -2231,7 +2231,7 @@ class EulerstreamAdapter extends BaseAdapter {
             errorMessage.includes('blocked by TikTok')) {
             return {
                 type: 'BLOCKED_BY_TIKTOK',
-                message: 'MÃ¶glicherweise von TikTok blockiert. SIGI_STATE konnte nicht extrahiert werden.',
+                message: 'Möglicherweise von TikTok blockiert. SIGI_STATE konnte nicht extrahiert werden.',
                 suggestion: 'NICHT SOFORT ERNEUT VERSUCHEN - Warte mindestens 30-60 Minuten bevor du es erneut versuchst.',
                 retryable: false
             };
@@ -2242,8 +2242,8 @@ class EulerstreamAdapter extends BaseAdapter {
             (errorMessage.includes('Sign Error') || errorMessage.includes('API Key is invalid'))) {
             return {
                 type: 'SIGN_API_INVALID_KEY',
-                message: 'Sign API Fehler 401 - Der API-SchlÃ¼ssel ist ungÃ¼ltig',
-                suggestion: 'PrÃ¼fe deinen Eulerstream API-SchlÃ¼ssel auf https://www.eulerstream.com',
+                message: 'Sign API Fehler 401 - Der API-Schlüssel ist ungültig',
+                suggestion: 'Prüfe deinen Eulerstream API-Schlüssel auf https://www.eulerstream.com',
                 retryable: false
             };
         }
@@ -2252,7 +2252,7 @@ class EulerstreamAdapter extends BaseAdapter {
         if (errorMessage.includes('504')) {
             return {
                 type: 'SIGN_API_GATEWAY_TIMEOUT',
-                message: '504 Gateway Timeout - Eulerstream Sign API ist Ã¼berlastet oder nicht erreichbar',
+                message: '504 Gateway Timeout - Eulerstream Sign API ist überlastet oder nicht erreichbar',
                 suggestion: 'Warte 2-5 Minuten und versuche es dann erneut',
                 retryable: true
             };
@@ -2273,7 +2273,7 @@ class EulerstreamAdapter extends BaseAdapter {
             return {
                 type: 'ROOM_NOT_FOUND',
                 message: 'Raum-ID konnte nicht abgerufen werden - Benutzer existiert nicht oder ist nicht live',
-                suggestion: 'PrÃ¼fe ob der Benutzername korrekt ist und der Benutzer gerade live ist',
+                suggestion: 'Prüfe ob der Benutzername korrekt ist und der Benutzer gerade live ist',
                 retryable: false
             };
         }
@@ -2301,7 +2301,7 @@ class EulerstreamAdapter extends BaseAdapter {
             return {
                 type: 'CONNECTION_TIMEOUT',
                 message: 'Verbindungs-Timeout - Server hat nicht rechtzeitig geantwortet',
-                suggestion: 'PrÃ¼fe deine Internetverbindung. Falls das Problem weiterhin besteht, kÃ¶nnte der Eulerstream-Server langsam oder nicht erreichbar sein',
+                suggestion: 'Prüfe deine Internetverbindung. Falls das Problem weiterhin besteht, könnte der Eulerstream-Server langsam oder nicht erreichbar sein',
                 retryable: true
             };
         }
@@ -2561,7 +2561,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this._onPong = () => {
             this.isAlive = true;
             this._missedPongs = 0;
-            this.logger.debug('ðŸ’“ WebSocket Pong received');
+            this.logger.debug('💓 WebSocket Pong received');
         };
         this.ws.on('pong', this._onPong);
 
@@ -2574,7 +2574,7 @@ class EulerstreamAdapter extends BaseAdapter {
             if (this.isAlive === false) {
                 this._missedPongs = (this._missedPongs || 0) + 1;
                 if (this._missedPongs < 2) {
-                    this.logger.warn(`âš ï¸ No pong received (miss ${this._missedPongs}/2) - keeping connection alive for now`);
+                    this.logger.warn(`⚠️ No pong received (miss ${this._missedPongs}/2) - keeping connection alive for now`);
                     this.isAlive = false;
                     try {
                         this.ws.ping();
@@ -2599,7 +2599,7 @@ class EulerstreamAdapter extends BaseAdapter {
             this.isAlive = false;
             try {
                 this.ws.ping();
-                this.logger.debug('â†—ï¸ WebSocket Ping sent');
+                this.logger.debug('↗️ WebSocket Ping sent');
             } catch (err) {
                 this.logger.error('Error sending WebSocket ping:', err.message);
             }
@@ -2684,7 +2684,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 // but allow legitimate streak updates.
                 // Prefer createTime from TikTok for more reliable deduplication.
                 // TikTok sends duplicate events (popup + chat) with identical createTime.
-                // IMPORTANT: Never fall back to new Date().toISOString() here â€“ that value
+                // IMPORTANT: Never fall back to new Date().toISOString() here – that value
                 // is always unique and would defeat deduplication entirely.
                 {
                     const rawTime = data.createTime;
@@ -2755,7 +2755,7 @@ class EulerstreamAdapter extends BaseAdapter {
         }
         
         if (this.processedEvents.has(eventHash)) {
-            this.logger.info(`ðŸ”„ [DUPLICATE BLOCKED] ${eventType} event already processed: ${eventHash}`);
+            this.logger.info(`🔄 [DUPLICATE BLOCKED] ${eventType} event already processed: ${eventHash}`);
             return true;
         }
         
@@ -2772,7 +2772,7 @@ class EulerstreamAdapter extends BaseAdapter {
     handleEvent(eventType, data) {
         // Check for duplicate events
         if (this._isDuplicateEvent(eventType, data)) {
-            this.logger.info(`âš ï¸  Duplicate ${eventType} event ignored`);
+            this.logger.info(`⚠️  Duplicate ${eventType} event ignored`);
             return false; // Return false to indicate event was not processed
         }
 
@@ -2847,7 +2847,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
     clearDeduplicationCache() {
         this.processedEvents.clear();
-        this.logger.info('ðŸ§¹ Event deduplication cache manually cleared');
+        this.logger.info('🧹 Event deduplication cache manually cleared');
     }
 
     /**
@@ -2861,7 +2861,7 @@ class EulerstreamAdapter extends BaseAdapter {
         }
         
         try {
-            this.logger.info(`ðŸ“¡ Fetching room ID for @${targetUsername}...`);
+            this.logger.info(`📡 Fetching room ID for @${targetUsername}...`);
             
             const response = await axios.get(`https://www.tiktok.com/@${targetUsername}/live`, {
                 timeout: 10000,
@@ -2878,7 +2878,7 @@ class EulerstreamAdapter extends BaseAdapter {
             const roomIdMatch = html.match(/"roomId":"(\d+)"/);
             if (roomIdMatch && roomIdMatch[1]) {
                 this.roomId = roomIdMatch[1];
-                this.logger.info(`âœ… Found room ID: ${this.roomId}`);
+                this.logger.info(`✅ Found room ID: ${this.roomId}`);
                 return this.roomId;
             }
             
@@ -2886,11 +2886,11 @@ class EulerstreamAdapter extends BaseAdapter {
             const altMatch = html.match(/room_id=(\d+)/);
             if (altMatch && altMatch[1]) {
                 this.roomId = altMatch[1];
-                this.logger.info(`âœ… Found room ID: ${this.roomId}`);
+                this.logger.info(`✅ Found room ID: ${this.roomId}`);
                 return this.roomId;
             }
             
-            this.logger.warn('âš ï¸  Could not extract room ID from page - user may not be live');
+            this.logger.warn('⚠️  Could not extract room ID from page - user may not be live');
             return null;
             
         } catch (error) {
@@ -2905,7 +2905,7 @@ class EulerstreamAdapter extends BaseAdapter {
      */
     async fetchRoomInfo() {
         if (!this.roomId) {
-            this.logger.warn('âš ï¸  Room ID not available, attempting to fetch...');
+            this.logger.warn('⚠️  Room ID not available, attempting to fetch...');
             await this.fetchRoomId();
             if (!this.roomId) {
                 return null;
@@ -2913,7 +2913,7 @@ class EulerstreamAdapter extends BaseAdapter {
         }
         
         try {
-            this.logger.info('ðŸ“‹ Fetching room info from TikTok Webcast API...');
+            this.logger.info('📋 Fetching room info from TikTok Webcast API...');
             
             const params = new URLSearchParams(this._getGiftListParams());
             
@@ -2931,7 +2931,7 @@ class EulerstreamAdapter extends BaseAdapter {
             if (response.data && response.data.data) {
                 const roomData = response.data.data;
                 this._captureRoomIdFromPayload(roomData, 'room/info API');
-                this.logger.info('âœ… Room info fetched successfully');
+                this.logger.info('✅ Room info fetched successfully');
                 
                 // Extract and set stream start time
                 if (roomData.create_time || roomData.start_time) {
@@ -2942,7 +2942,7 @@ class EulerstreamAdapter extends BaseAdapter {
                         this._persistedStreamStart = timestamp;
                         this._streamTimeDetectionMethod = 'TikTok Webcast API (room/info)';
                         
-                        this.logger.info(`âœ… Stream start time from API: ${new Date(this.streamStartTime).toISOString()}`);
+                        this.logger.info(`✅ Stream start time from API: ${new Date(this.streamStartTime).toISOString()}`);
                         
                         // Broadcast updated stream time info
                         if (this.io) {
@@ -3006,7 +3006,7 @@ class EulerstreamAdapter extends BaseAdapter {
         };
 
         try {
-            this.logger.info('ðŸŽ Fetching gift catalog from TikTok Webcast API...');
+            this.logger.info('🎁 Fetching gift catalog from TikTok Webcast API...');
 
             const url = `${requestMeta.endpoint}?${serializedRequestParams}`;
 

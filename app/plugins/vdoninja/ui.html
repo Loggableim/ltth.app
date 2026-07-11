@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VDO.Ninja Multi-Guest Manager</title>
+    <title data-i18n="vdoninja.title">VDO.Ninja Multi-Guest Manager</title>
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/css/tailwind.output.css">
     <script>
@@ -943,22 +943,23 @@
             opacity: 1 !important;
         }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <div class="header-title">
                 <h1>
-                    <span class="status-indicator status-inactive" id="statusIndicator"></span>
+                    <span class="status-indicator status-inactive" id="statusIndicator"></span><span data-i18n="generated.d081e00afbcf">
                     VDO.Ninja Multi-Guest Manager
-                </h1>
+                </span></h1>
             </div>
         </div>
 
         <!-- Room Management Card -->
         <div class="card">
             <div class="card-header">
-                <h3>🏠 Room Management</h3>
+                <h3 data-i18n="generated.a0883beb6e88">🏠 Room Management</h3>
             </div>
             <div class="card-body">
                 <div id="roomSection">
@@ -966,15 +967,15 @@
                     <div id="createRoomForm">
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">Room Name</label>
+                                <label class="form-label" data-i18n="vdoninja.room.name">Room Name</label>
                                 <input type="text" id="roomNameInput" class="form-input" placeholder="My TikTok Stream">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Max Guests</label>
+                                <label class="form-label" data-i18n="vdoninja.room.max_guests">Max Guests</label>
                                 <input type="number" id="maxGuestsInput" class="form-input" value="6" min="1" max="12">
                             </div>
                         </div>
-                        <button id="createRoomBtn" class="btn btn-primary">
+                        <button id="createRoomBtn" class="btn btn-primary" data-i18n="generated.1e29b6441cac">
                             ✨ Create Room
                         </button>
                     </div>
@@ -983,30 +984,30 @@
                     <div id="activeRoomInfo" style="display: none;">
                         <div class="room-info">
                             <div class="room-info-row">
-                                <span class="room-info-label">Room Name:</span>
+                                <span class="room-info-label" data-i18n="vdoninja.room.info.name">Room Name:</span>
                                 <span id="activeRoomName" class="room-info-value">-</span>
                             </div>
                             <div class="room-info-row">
-                                <span class="room-info-label">Director URL (for OBS):</span>
+                                <span class="room-info-label" data-i18n="vdoninja.room.info.director_url">Director URL (for OBS):</span>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     <span id="directorUrl" class="room-info-value">-</span>
-                                    <button class="copy-btn" data-copy-target="directorUrl">📋 Copy</button>
+                                    <button class="copy-btn" data-copy-target="directorUrl" data-i18n="generated.831d1e1f4481">📋 Copy</button>
                                 </div>
                             </div>
                             <div class="room-info-row">
-                                <span class="room-info-label">Guest Invite URL:</span>
+                                <span class="room-info-label" data-i18n="vdoninja.room.info.guest_invite_url">Guest Invite URL:</span>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     <span id="guestInviteUrl" class="room-info-value">-</span>
-                                    <button class="copy-btn" data-copy-target="guestInviteUrl">📋 Copy</button>
+                                    <button class="copy-btn" data-copy-target="guestInviteUrl" data-i18n="generated.6f19e7e95e85">📋 Copy</button>
                                 </div>
                             </div>
                             <div class="room-info-row">
-                                <span class="room-info-label">Connected Guests:</span>
+                                <span class="room-info-label" data-i18n="vdoninja.room.info.connected_guests">Connected Guests:</span>
                                 <span id="guestCount">0 / 6</span>
                             </div>
                         </div>
                         <div style="margin-top: 1rem;">
-                            <button id="closeRoomBtn" class="btn btn-danger">
+                            <button id="closeRoomBtn" class="btn btn-danger" data-i18n="generated.4b1ae3a117fa">
                                 🔒 Close Room
                             </button>
                         </div>
@@ -1014,8 +1015,8 @@
                         <!-- Director URL Control Room Iframe -->
                         <div id="directorIframeContainer" class="director-iframe-container" style="display: none;">
                             <div class="director-iframe-header">
-                                <h4>🎬 Director Control Room</h4>
-                                <button id="toggleIframeBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.75rem;">
+                                <h4 data-i18n="generated.02fb6db844bf">🎬 Director Control Room</h4>
+                                <button id="toggleIframeBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.75rem;" data-i18n="generated.8ff7af16d066">
                                     ▼ Hide
                                 </button>
                             </div>
@@ -1031,12 +1032,12 @@
         <!-- Guest Controls Card -->
         <div class="card">
             <div class="card-header">
-                <h3>👥 Guest Controls</h3>
+                <h3 data-i18n="generated.a8df44552b01">👥 Guest Controls</h3>
                 <div style="display: flex; gap: 0.5rem;">
-                    <button id="muteAllBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;">
+                    <button id="muteAllBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;" data-i18n="generated.ea39a5d4b54d">
                         🔇 Mute All
                     </button>
-                    <button id="unmuteAllBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;">
+                    <button id="unmuteAllBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;" data-i18n="generated.d4d59077a105">
                         🔊 Unmute All
                     </button>
                 </div>
@@ -1045,8 +1046,8 @@
                 <div id="guestsContainer">
                     <div class="empty-state">
                         <div class="empty-state-icon">👤</div>
-                        <p>No guests connected yet</p>
-                        <p style="font-size: 0.875rem; margin-top: 0.5rem;">Share the Guest Invite URL to add guests to your room</p>
+                        <p data-i18n="vdoninja.guests.empty">No guests connected yet</p>
+                        <p style="font-size: 0.875rem; margin-top: 0.5rem;" data-i18n="vdoninja.guests.empty_hint">Share the Guest Invite URL to add guests to your room</p>
                     </div>
                 </div>
             </div>
@@ -1055,7 +1056,7 @@
         <!-- Layout Management Card -->
         <div class="card">
             <div class="card-header">
-                <h3>🎨 Layout Presets</h3>
+                <h3 data-i18n="generated.97c55d691b89">🎨 Layout Presets</h3>
             </div>
             <div class="card-body">
                 <div class="layout-grid">
@@ -1066,7 +1067,7 @@
                             <div class="layout-cell"></div>
                             <div class="layout-cell"></div>
                         </div>
-                        <div>Grid 2x2</div>
+                        <div data-i18n="vdoninja.layout.grid_2x2">Grid 2x2</div>
                     </div>
                     <div class="layout-btn" data-layout="Grid 3x2">
                         <div class="layout-preview grid-3x2">
@@ -1077,13 +1078,13 @@
                             <div class="layout-cell"></div>
                             <div class="layout-cell"></div>
                         </div>
-                        <div>Grid 3x2</div>
+                        <div data-i18n="vdoninja.layout.grid_3x2">Grid 3x2</div>
                     </div>
                     <div class="layout-btn" data-layout="Solo">
                         <div class="layout-preview solo">
                             <div class="layout-cell"></div>
                         </div>
-                        <div>Solo</div>
+                        <div data-i18n="vdoninja.layout.solo">Solo</div>
                     </div>
                 </div>
             </div>
@@ -1091,12 +1092,12 @@
 
         <!-- Info Alert -->
         <div class="alert alert-info">
-            <strong>ℹ️ Quick Guide:</strong><br>
-            1. Create a room to get started<br>
-            2. Add the Director URL to OBS as a Browser Source (1920x1080)<br>
-            3. Share the Guest Invite URL with your guests<br>
+            <strong data-i18n="generated.423559c1f4d6">ℹ️ Quick Guide:</strong><br><span data-i18n="generated.baea64c042a7">
+            1. Create a room to get started</span><br><span data-i18n="generated.d5272065ec30">
+            2. Add the Director URL to OBS as a Browser Source (1920x1080)</span><br><span data-i18n="generated.0b7bbf03784f">
+            3. Share the Guest Invite URL with your guests</span><br><span data-i18n="generated.16b01a352138">
             4. Control guests in real-time from this dashboard
-        </div>
+        </span></div>
     </div>
 
     <script>

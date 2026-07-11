@@ -61,5 +61,24 @@
       "copied": "In die Zwischenablage kopiert!",
       "error": "Ein Fehler ist aufgetreten"
     }
+  },
+  "generated": {
+    "d081e00afbcf": "VDO.Ninja Multi-Gast-Manager",
+    "a0883beb6e88": "🏠 Room Management",
+    "1e29b6441cac": "✨ Create Room",
+    "831d1e1f4481": "📋 Copy",
+    "6f19e7e95e85": "📋 Copy",
+    "4b1ae3a117fa": "🔒 Close Room",
+    "02fb6db844bf": "🎬 Director Control Room",
+    "8ff7af16d066": "▼ Hide",
+    "a8df44552b01": "👥 Guest Controls",
+    "ea39a5d4b54d": "🔇 Mute All",
+    "d4d59077a105": "🔊 Unmute All",
+    "97c55d691b89": "🎨 Layout Presets",
+    "423559c1f4d6": "ℹ️ Quick Guide:",
+    "baea64c042a7": "1. Erstelle einen Raum, um zu beginnen",
+    "d5272065ec30": "2. Füge die Regisseur-URL als Browser-Quelle in OBS hinzu (1920x1080)",
+    "0b7bbf03784f": "3. Teile die Gast-Einladungs-URL mit deinen Gästen",
+    "16b01a352138": "4. Steuere Gäste in Echtzeit von diesem Dashboard"
   }
 }

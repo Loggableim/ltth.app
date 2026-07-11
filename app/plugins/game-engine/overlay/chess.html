@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LTTH Chess Overlay</title>
+  <title data-i18n="generated.0b78b46d8b79">LTTH Chess Overlay</title>
   <style>
     * {
       margin: 0;
@@ -382,26 +382,27 @@
       font-size: 12px;
     }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
   <!-- Test Mode Controls -->
   <div id="test-mode-controls">
-    <h3>🧪 Test Mode</h3>
+    <h3 data-i18n="generated.63a73efb6bc9">🧪 Test Mode</h3>
     <div id="test-start-section">
-      <label>Player 1 Name:</label>
+      <label data-i18n="generated.87cb239fd89b">Player 1 Name:</label>
       <input type="text" id="test-player1-name" value="White Player">
-      <label>Player 2 Name:</label>
+      <label data-i18n="generated.880f608c9add">Player 2 Name:</label>
       <input type="text" id="test-player2-name" value="Black Player">
-      <button class="btn-start" id="test-start-chess">♟️ Start Chess Game</button>
+      <button class="btn-start" id="test-start-chess" data-i18n="generated.19a7dc6ab1f5">♟️ Start Chess Game</button>
     </div>
     <div id="test-move-section" style="display: none;">
       <div style="margin-bottom: 10px;">
-        <strong>Current Turn: <span id="test-current-turn">White</span></strong>
+        <strong><span data-i18n="generated.50ac5ed28d43">Current Turn: </span><span id="test-current-turn" data-i18n="game_engine.display_texts.chess.label_white">White</span></strong>
       </div>
-      <label>Move (e.g., e4, Nf3):</label>
+      <label data-i18n="generated.95dd4c8a9d3c">Move (e.g., e4, Nf3):</label>
       <input type="text" id="test-move-input" placeholder="Enter move">
-      <button class="btn-start" id="test-make-move">Make Move</button>
-      <button class="btn-danger" id="test-end-chess">End Game</button>
+      <button class="btn-start" id="test-make-move" data-i18n="generated.6a961032097a">Make Move</button>
+      <button class="btn-danger" id="test-end-chess" data-i18n="generated.73bc45849a5d">End Game</button>
     </div>
   </div>
 
@@ -415,14 +416,14 @@
         <div id="side-panel">
           <!-- Black player (top) -->
           <div class="player-card black" id="black-player">
-            <div class="player-name black" id="black-name">Black Player</div>
+            <div class="player-name black" id="black-name" data-i18n="generated.bbcf9374797f">Black Player</div>
             <div class="timer" id="black-timer">5:00</div>
             <div class="captured-pieces" id="black-captured"></div>
           </div>
 
           <!-- White player (bottom) -->
           <div class="player-card white" id="white-player">
-            <div class="player-name white" id="white-name">White Player</div>
+            <div class="player-name white" id="white-name" data-i18n="generated.0e75d404b49a">White Player</div>
             <div class="timer" id="white-timer">5:00</div>
             <div class="captured-pieces" id="white-captured"></div>
           </div>
@@ -433,7 +434,7 @@
 
   <div id="game-over-overlay">
     <div class="game-over-content">
-      <div class="game-over-title" id="game-over-title">Game Over!</div>
+      <div class="game-over-title" id="game-over-title" data-i18n="generated.6610c32d4805">Game Over!</div>
       <div class="winner-name" id="winner-name"></div>
       <div class="game-over-reason" id="game-over-reason"></div>
     </div>

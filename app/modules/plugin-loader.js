@@ -15,7 +15,8 @@ function parseJsonText(text) {
 }
 
 const MUTUALLY_EXCLUSIVE_PLUGIN_GROUPS = Object.freeze([
-    Object.freeze(['fireworks', 'webgpu-fireworks'])
+    Object.freeze(['fireworks', 'webgpu-fireworks']),
+    Object.freeze(['emoji-rain', 'webgpu-emoji-rain'])
 ]);
 
 /**
@@ -894,6 +895,7 @@ class PluginLoader extends EventEmitter {
                 };
                 changed = true;
                 this.logger.warn(`Disabled mutually exclusive plugin ${pluginId}; ${winner} remains enabled`);
+                this.emit('plugin:disabled', pluginId);
             }
         }
 

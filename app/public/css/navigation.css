@@ -897,10 +897,12 @@ html:is(
     filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.28));
 }
 
+.sidebar-item[data-view="emoji-rain"],
 .sidebar-item[data-view="webgpu-emoji-rain"] {
     gap: 0.52rem;
 }
 
+.sidebar-item[data-view="emoji-rain"] .sidebar-plugin-icon-emoji-rain,
 .sidebar-item[data-view="webgpu-emoji-rain"] .sidebar-plugin-icon-webgpu-emoji-rain {
     width: 26px;
     height: 26px;

@@ -153,7 +153,7 @@
       },
       "feature3": {
         "title": "Documentation Complète",
-        "desc": "Documentation avec architecture, docs des plugins, r?f?rence API, FAQ et d?pannage."
+        "desc": "Documentation avec architecture, docs des plugins, r?fürence API, FAQ et d?pannage."
       },
       "feature4": {
         "title": "Architecture Moderne",
@@ -253,7 +253,7 @@
     },
     "cta": {
       "title": "Prêt pour du streaming TikTok LIVE professionnel ?",
-      "desc": "D?couvrez la suite freemium TikTok LIVE avec des outils locaux, des pages d?taill?es claires et des liens directs vers les apps.",
+      "desc": "D?couvrez la suite freemium TikTok LIVE avec des outils locaux, des pages détaillées claires et des liens directs vers les apps.",
       "docsCta": "Lire la Documentation",
       "available": "Disponible pour Windows"
     }
@@ -382,7 +382,7 @@
   "features.span.33": "🎰",
   "features.h2.34": "Bereit loszulegen?",
   "features.p.35": "Découvrez ltth.app et commencez avec l’application freemium.",
-  "features.a.36": "T?l?charger",
+  "features.a.36": "Télécharger",
   "features.a.37": "🚀 Launcher ansehen",
   "docs.a.1": "Skip to main content",
   "docs.h3.2": "Erste Schritte",
@@ -741,14 +741,14 @@
   "faq.p.8": "ltth.app est un produit freemium. Le tarif de lancement est de 5 €/mois ou 1,50 €/mois avec facturation annuelle jusqu’au 1er octobre 2026. Ensuite, les prix seront de 10 €/mois ou 99 €/an. Toute personne qui s’abonne avant le changement conserve l’ancien tarif tant que l’abonnement reste actif.",
   "faq.h3.9": "Qu'est-ce que le Windows Launcher ?",
   "faq.span.10": "",
-  "faq.p.11": "Le Windows Launcher est une petite application Windows (~7 MB) qui t?l?charge, installe et maintient LTTH ? jour automatiquement. Il propose des mises ? jour automatiques, le retour aux versions pr?c?dentes et une gestion de version int?gr?e. Toutes les donn?es sont stock?es dans %LOCALAPPDATA%\\LTTH\\.",
+  "faq.p.11": "Le Windows Launcher est une petite application Windows (~7 MB) qui t?l?charge, installe et maintient LTTH ? jour automatiquement. Il propose des mises ? jour automatiques, le retour aux versions précédentes et une gestion de version intégrée. Toutes les donn?es sont stockées dans %LOCALAPPDATA%\\LTTH\\.",
   "faq.h3.12": "⚠️Warum erscheint eine SmartScreen-Warnung?",
   "faq.span.13": "⚠️",
   "faq.p.14": "Le launcher est une nouvelle application qui n?est pas encore sign?e. C?est normal pour les applications non sign?es. Cliquez sur \"Plus d?informations\" ? \"Ex?cuter quand m?me\". Le fichier est s?r et la version actuelle est disponible sur GitHub.",
   "faq.h3.15": "?? LTTH prend-il en charge macOS ou Linux ?",
   "faq.span.16": "🍎",
-  "faq.p.17": "Le Windows Launcher est actuellement disponible uniquement pour Windows. La prise en charge de macOS et Linux est pr?vue. LTTH fonctionne sur toutes les plateformes, mais l?installation automatique via le launcher n?est pour l?instant disponible que sous Windows.",
-  "faq.h3.18": "?? Quels syst?mes d?exploitation sont pris en charge ?",
+  "faq.p.17": "Le Windows Launcher est actuellement disponible uniquement pour Windows. La prise en charge de macOS et Linux est pr?vue. LTTH fonctionne sur toutes les plateformes, mais l’installation automatique via le launcher n?est pour l?instant disponible que sous Windows.",
+  "faq.h3.18": "?? Quels systèmes d?exploitation sont pris en charge ?",
   "faq.span.19": "💻",
   "faq.p.20": "Le Windows Launcher prend en charge Windows 10 et Windows 11. L?installation automatique via le launcher est la m?thode recommand?e pour les utilisateurs Windows. Consultez la page de t?l?chargement pour plus de d?tails.",
   "faq.a.21": "Download-Seite",
@@ -759,7 +759,7 @@
   "faq.a.26": "Download-Seite",
   "faq.h3.27": "🔑 Ai-je besoin d’un compte ?",
   "faq.span.28": "🔑",
-  "faq.p.29": "Pour l?application locale, non. Pour la boutique d?apps, oui. Vous n?avez pas besoin d?identifiants pour l?utilisation locale, mais la boutique n?cessite un compte.",
+  "faq.p.29": "Pour l?application locale, non. Pour la boutique d?apps, oui. Vous n?avez pas besoin d?identifiants pour l’utilisation locale, mais la boutique n?cessite un compte.",
   "faq.h3.30": "🚀Was bedeutet \"Beta-Version\"? Ist das Tool stabil?",
   "faq.span.31": "🚀",
   "faq.p.32": "Ja, das Tool ist produktionsreif und voll funktionsfähig!\"Beta\" bedeutet, dass aktiv neue Features entwickelt werden und wir Feedback sammeln. Alle Hauptfunktionen (TTS, Alerts, Soundboard, Plugins, OBS-Integration) funktionieren zuverlässig. Gelegentliche Bugs können auftreten - melde sie einfach aufGitHubund wir beheben sie schnell!",
@@ -778,7 +778,7 @@
   "faq.p.45": "Der Launcher bringt alle erforderlichen Komponenten mit. Du musst dich um nichts kümmern.",
   "faq.h3.46": "🔒Werden meine Daten in die Cloud hochgeladen?",
   "faq.span.47": "🔒",
-  "faq.p.48": "L?application locale traite les donn?es sur votre ordinateur. La boutique d?apps n?cessite une connexion, mais l?utilisation locale reste s?par?e.",
+  "faq.p.48": "L?application locale traite les donn?es sur votre ordinateur. La boutique d?apps n?cessite une connexion, mais l’utilisation locale reste s?par?e.",
   "faq.h2.49": "🔧 Problemlösung",
   "faq.h3.50": "❌TikTok-Verbindung schlägt fehl - was tun?",
   "faq.span.51": "❌",
@@ -1004,7 +1004,7 @@
       "6": "PupCid's Little TikTool Helper est-il gratuit ?",
       "9": "?? Qu'est-ce que le Windows Launcher ?",
       "15": "LTTH est-il disponible pour macOS ou Linux ?",
-      "18": "Quels syst?mes d'exploitation sont pris en charge ?",
+      "18": "Quels systèmes d'exploitation sont pris en charge ?",
       "22": "Comment installer l'outil ?",
       "27": "Dois-je saisir des identifiants de connexion ?",
       "30": "Que signifie \"version b?ta\" ? L'outil est-il stable ?",
@@ -1014,9 +1014,9 @@
       "46": "Mes donn?es sont-elles envoy?es dans le cloud ?"
     },
     "p": {
-      "11": "Le Windows Launcher est une petite application Windows qui t?l?charge, installe et maintient LTTH ? jour automatiquement. Il propose des mises ? jour automatiques, le retour aux versions pr?c?dentes et une gestion de version int?gr?e. Toutes les donn?es sont stock?es dans %LOCALAPPDATA%\\LTTH\\.",
+      "11": "Le Windows Launcher est une petite application Windows qui t?l?charge, installe et maintient LTTH ? jour automatiquement. Il propose des mises ? jour automatiques, le retour aux versions précédentes et une gestion de version intégrée. Toutes les donn?es sont stockées dans %LOCALAPPDATA%\\LTTH\\.",
       "14": "Le Windows Launcher est une nouvelle application qui n'est pas encore sign?e. C'est normal pour les applications non sign?es. Cliquez sur \"Plus d'informations\" ? \"Ex?cuter quand m?me\". Le fichier est s?r et la version actuelle est disponible sur GitHub.",
-      "17": "Le Windows Launcher est actuellement disponible uniquement pour Windows. La prise en charge de macOS et Linux pour le launcher est pr?vue. LTTH lui-m?me fonctionne sur toutes les plateformes, mais l'installation automatique via le launcher n'est pour l'instant disponible que sous Windows.",
+      "17": "Le Windows Launcher est actuellement disponible uniquement pour Windows. La prise en charge de macOS et Linux pour le launcher est pr?vue. LTTH lui-même fonctionne sur toutes les plateformes, mais l'installation automatique via le launcher n'est pour l'instant disponible que sous Windows.",
       "20": "Le Windows Launcher prend en charge Windows 10 et Windows 11. L'installation automatique via le launcher est la m?thode recommand?e pour les utilisateurs Windows. Consultez la page de t?l?chargement pour plus de d?tails.",
       "24": "Recommand? : t?l?chargez le Windows Launcher et ex?cutez-le. Le launcher installe LTTH automatiquement et le maintient ? jour. Vous trouverez plus de d?tails sur la page de t?l?chargement.",
       "29": "Pour l'application locale, non ; pour la boutique d'apps, oui. Pour l'utilisation locale, seul votre nom d'utilisateur TikTok (sans @) est n?cessaire. La boutique d'apps n?cessite une connexion/un compte. L'outil ne lit que des donn?es LIVE publiques.",

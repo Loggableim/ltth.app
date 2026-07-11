@@ -13,7 +13,7 @@
         connect-src 'self';
         media-src 'self';
     ">
-    <title>IFTTT Flow Editor - TikTool Helper</title>
+    <title data-i18n="generated.12cd0ad07fe9">IFTTT Flow Editor - TikTool Helper</title>
     <link rel="stylesheet" href="/css/tailwind.output.css">
     <script>
         (function () {
@@ -636,12 +636,13 @@
                 linear-gradient(90deg, rgba(74, 222, 128, 0.12) 1px, transparent 1px);
         }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
     <div class="editor-container">
         <!-- Left Sidebar: Components -->
         <div class="sidebar">
-            <h2 style="margin: 0 0 24px 0; font-size: 18px; font-weight: 700;">IFTTT Components</h2>
+            <h2 style="margin: 0 0 24px 0; font-size: 18px; font-weight: 700;" data-i18n="generated.d1687b0c9c80">IFTTT Components</h2>
             
             <div class="component-category">
                 <div class="category-title">Triggers</div>
@@ -649,12 +650,12 @@
             </div>
 
             <div class="component-category">
-                <div class="category-title">Conditions</div>
+                <div class="category-title" data-i18n="flows.conditions">Conditions</div>
                 <div id="condition-list"></div>
             </div>
 
             <div class="component-category">
-                <div class="category-title">Actions</div>
+                <div class="category-title" data-i18n="flows.actions">Actions</div>
                 <div id="action-list"></div>
             </div>
         </div>
@@ -663,13 +664,13 @@
         <div class="canvas" id="canvas">
             <div class="toolbar">
                 <button class="btn" id="save-flow-btn">
-                    <span>💾 Save Flow</span>
+                    <span data-i18n="generated.864a2bcdf43f">💾 Save Flow</span>
                 </button>
                 <button class="btn btn-secondary" id="test-flow-btn">
-                    <span>🧪 Test Flow</span>
+                    <span data-i18n="generated.62eb289325bc">🧪 Test Flow</span>
                 </button>
                 <button class="btn btn-secondary" id="clear-canvas-btn">
-                    <span>🗑️ Clear Canvas</span>
+                    <span data-i18n="generated.b2a72f753154">🗑️ Clear Canvas</span>
                 </button>
                 <div style="flex: 1"></div>
                 <button class="btn btn-secondary" id="zoom-out-btn">−</button>
@@ -685,17 +686,17 @@
         <!-- Right Sidebar: Properties & Monitor -->
         <div class="properties">
             <div class="property-section">
-                <div class="section-title">Flow Properties</div>
+                <div class="section-title" data-i18n="flows.flow_properties">Flow Properties</div>
                 <div class="form-group">
-                    <label class="form-label">Flow Name</label>
+                    <label class="form-label" data-i18n="flows.name">Flow Name</label>
                     <input type="text" class="form-input" id="flow-name-input" placeholder="My Awesome Flow">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Description</label>
+                    <label class="form-label" data-i18n="common.description">Description</label>
                     <textarea class="form-textarea" id="flow-description-input" placeholder="What does this flow do?"></textarea>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Cooldown (seconds)</label>
+                    <label class="form-label" data-i18n="generated.a731d76b8b46">Cooldown (seconds)</label>
                     <input type="number" class="form-input" id="flow-cooldown-input" min="0" max="3600" value="0">
                 </div>
                 <div class="form-group">
@@ -709,42 +710,42 @@
                 <div class="form-group">
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                         <input type="checkbox" id="flow-enabled-input" checked>
-                        <span class="form-label" style="margin: 0;">Enabled</span>
+                        <span class="form-label" style="margin: 0;" data-i18n="plugins.enabled">Enabled</span>
                     </label>
                 </div>
             </div>
 
             <div class="property-section" id="node-properties" style="display: none;">
-                <div class="section-title">Selected Node</div>
+                <div class="section-title" data-i18n="common.selected_node">Selected Node</div>
                 <div id="node-properties-content"></div>
             </div>
 
             <div class="property-section">
-                <div class="section-title">Statistics</div>
+                <div class="section-title" data-i18n="tts.admin_panel.tabs.stats">Statistics</div>
                 <div class="stats-grid" id="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-label">Total Flows</div>
+                        <div class="stat-label" data-i18n="generated.1b30125ee92a">Total Flows</div>
                         <div class="stat-value" id="stat-total-flows">0</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Active Flows</div>
+                        <div class="stat-label" data-i18n="flows.active_flows">Active Flows</div>
                         <div class="stat-value" id="stat-active-flows">0</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Executions</div>
+                        <div class="stat-label" data-i18n="flows.executions">Executions</div>
                         <div class="stat-value" id="stat-executions">0</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Success Rate</div>
+                        <div class="stat-label" data-i18n="generated.354c29ce214c">Success Rate</div>
                         <div class="stat-value" id="stat-success-rate">100%</div>
                     </div>
                 </div>
             </div>
 
             <div class="property-section">
-                <div class="section-title">Execution Monitor</div>
+                <div class="section-title" data-i18n="flows.execution_monitor">Execution Monitor</div>
                 <div class="execution-log" id="execution-log">
-                    <div class="log-entry log-info">Waiting for events...</div>
+                    <div class="log-entry log-info" data-i18n="multicam.log.waiting">Waiting for events...</div>
                 </div>
             </div>
         </div>
@@ -753,21 +754,21 @@
     <!-- Help Panel -->
     <button class="help-toggle" id="help-toggle">?</button>
     <div class="help-panel hidden" id="help-panel">
-        <h3>💡 How to Build Flows</h3>
+        <h3 data-i18n="generated.b4e177f2e864">💡 How to Build Flows</h3>
         <ul>
-            <li><strong>Drag & Drop:</strong> Drag components from the left sidebar onto the canvas</li>
-            <li><strong>Connect Nodes:</strong> Click on an output port (circle on the right), then click on an input port to create a connection</li>
-            <li><strong>Delete Connection:</strong> Click on a connection line to remove it</li>
-            <li><strong>Move Nodes:</strong> Click and drag nodes to reposition them (snaps to grid)</li>
-            <li><strong>Configure:</strong> Click on a node to view and edit its properties</li>
-            <li><strong>Color Coding:</strong> Green = TRUE path, Red = FALSE path, Blue = Default</li>
+            <li><strong data-i18n="generated.2a4b3ba2f276">Drag & Drop:</strong><span data-i18n="generated.71d25992ada1"> Drag components from the left sidebar onto the canvas</span></li>
+            <li><strong data-i18n="generated.a9617378c7cb">Connect Nodes:</strong><span data-i18n="generated.012cb8566e6b"> Click on an output port (circle on the right), then click on an input port to create a connection</span></li>
+            <li><strong data-i18n="generated.fcee267e6d1e">Delete Connection:</strong><span data-i18n="generated.77e2561058d8"> Click on a connection line to remove it</span></li>
+            <li><strong data-i18n="generated.c982b2ce5abe">Move Nodes:</strong><span data-i18n="generated.cbffeeec6e61"> Click and drag nodes to reposition them (snaps to grid)</span></li>
+            <li><strong>Configure:</strong><span data-i18n="generated.04bcb2c7f52b"> Click on a node to view and edit its properties</span></li>
+            <li><strong data-i18n="generated.335dea8db3e3">Color Coding:</strong> Green = TRUE path, Red = FALSE path, Blue = Default</li>
         </ul>
-        <h3 style="margin-top: 16px;">🖼️ OBS Overlay für Bilder/Videos</h3>
+        <h3 style="margin-top: 16px;" data-i18n="generated.c5240bed3243">🖼️ OBS Overlay für Bilder/Videos</h3>
         <ul>
-            <li><strong>IFTTT HUD:</strong> <a href="/ifttt-hud.html" target="_blank" style="color: #3b82f6;">/ifttt-hud.html</a></li>
-            <li>Füge diese URL als Browser-Quelle in OBS hinzu (1920x1080 empfohlen)</li>
-            <li>Nutze <em>Show Image Overlay</em>, <em>Show Video/MP4 Overlay</em> oder <em>Show Text Overlay</em> Aktionen</li>
-            <li><strong>Debug-Modus:</strong> <a href="/ifttt-hud.html?debug=true" target="_blank" style="color: #3b82f6;">/ifttt-hud.html?debug=true</a></li>
+            <li><strong data-i18n="generated.8cd5ad95742f">IFTTT HUD:</strong> <a href="/ifttt-hud.html" target="_blank" style="color: #3b82f6;">/ifttt-hud.html</a></li>
+            <li data-i18n="generated.128b05a9cae8">Füge diese URL als Browser-Quelle in OBS hinzu (1920x1080 empfohlen)</li>
+            <li>Nutze <em data-i18n="generated.d489613d7597">Show Image Overlay</em>, <em data-i18n="generated.335f6b5048a5">Show Video/MP4 Overlay</em> oder <em data-i18n="generated.bb92744891ac">Show Text Overlay</em> Aktionen</li>
+            <li><strong data-i18n="tts.admin_panel.debug.debug_mode">Debug-Modus:</strong> <a href="/ifttt-hud.html?debug=true" target="_blank" style="color: #3b82f6;">/ifttt-hud.html?debug=true</a></li>
         </ul>
     </div>
 

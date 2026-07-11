@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Viewer XP Admin Panel</title>
+  <title data-i18n="generated.826d39d274c1">Viewer XP Admin Panel</title>
   <link rel="stylesheet" href="/css/themes.css">
   <link href="/css/vendor/bootstrap.min.css" rel="stylesheet">
   <style>
@@ -115,13 +115,14 @@
       transition: width 0.3s ease;
     }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
   <div class="container-fluid py-4">
     <div class="row mb-4">
       <div class="col">
-        <h1>🎮 Viewer XP - Admin Panel</h1>
-        <p class="text-muted">Manage viewer experience, levels, and rewards</p>
+        <h1 data-i18n="generated.417deec46bba">🎮 Viewer XP - Admin Panel</h1>
+        <p class="text-muted" data-i18n="generated.249710ed5793">Manage viewer experience, levels, and rewards</p>
       </div>
     </div>
 
@@ -130,25 +131,25 @@
       <div class="col-md-3">
         <div class="card stat-card">
           <div class="stat-value" id="totalViewers">-</div>
-          <div class="stat-label">Total Viewers</div>
+          <div class="stat-label" data-i18n="generated.5af9629342a9">Total Viewers</div>
         </div>
       </div>
       <div class="col-md-3">
         <div class="card stat-card">
           <div class="stat-value" id="totalXP">-</div>
-          <div class="stat-label">Total XP Earned</div>
+          <div class="stat-label" data-i18n="generated.e552f507b544">Total XP Earned</div>
         </div>
       </div>
       <div class="col-md-3">
         <div class="card stat-card">
           <div class="stat-value" id="avgLevel">-</div>
-          <div class="stat-label">Average Level</div>
+          <div class="stat-label" data-i18n="generated.505225ece4c2">Average Level</div>
         </div>
       </div>
       <div class="col-md-3">
         <div class="card stat-card">
           <div class="stat-value" id="activeToday">-</div>
-          <div class="stat-label">Active Today</div>
+          <div class="stat-label" data-i18n="generated.9977573a253f">Active Today</div>
         </div>
       </div>
     </div>
@@ -156,27 +157,27 @@
     <!-- Tabs -->
     <ul class="nav nav-tabs mb-3" id="adminTabs" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="leaderboard-tab" data-bs-toggle="tab" data-bs-target="#leaderboard" type="button">
+        <button class="nav-link active" id="leaderboard-tab" data-bs-toggle="tab" data-bs-target="#leaderboard" type="button" data-i18n="generated.d722c94a0e0f">
           🏆 Leaderboard
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button">
+        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" data-i18n="generated.aa6d5363d403">
           ⚙️ XP Settings
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="level-config-tab" data-bs-toggle="tab" data-bs-target="#level-config" type="button">
+        <button class="nav-link" id="level-config-tab" data-bs-toggle="tab" data-bs-target="#level-config" type="button" data-i18n="generated.ad576cdfe39c">
           📊 Level Configuration
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual" type="button">
+        <button class="nav-link" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual" type="button" data-i18n="generated.c9e9973377d7">
           🎁 Manual Award
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="import-export-tab" data-bs-toggle="tab" data-bs-target="#import-export" type="button">
+        <button class="nav-link" id="import-export-tab" data-bs-toggle="tab" data-bs-target="#import-export" type="button" data-i18n="generated.790b7282281b">
           💾 Import/Export
         </button>
       </li>
@@ -186,13 +187,13 @@
       <!-- Leaderboard Tab -->
       <div class="tab-pane fade show active" id="leaderboard" role="tabpanel">
         <div class="card">
-          <div class="card-header">
+          <div class="card-header"><span data-i18n="generated.efcdc99ce90b">
             Top Viewers
-            <div class="float-end">
+            </span><div class="float-end">
               <select class="form-select form-select-sm d-inline-block w-auto" id="leaderboardFilter">
-                <option value="">All Time</option>
-                <option value="7">Last 7 Days</option>
-                <option value="30">Last 30 Days</option>
+                <option value="" data-i18n="generated.25e128ada1f8">All Time</option>
+                <option value="7" data-i18n="generated.3db453114e9a">Last 7 Days</option>
+                <option value="30" data-i18n="generated.fe519a6f6bb8">Last 30 Days</option>
               </select>
             </div>
           </div>
@@ -207,7 +208,7 @@
                     <th>Title</th>
                     <th>XP</th>
                     <th>Progress</th>
-                    <th>Actions</th>
+                    <th data-i18n="gift_milestone.actions.title">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="leaderboardTable">
@@ -222,17 +223,17 @@
       <!-- Settings Tab -->
       <div class="tab-pane fade" id="settings" role="tabpanel">
         <div class="card">
-          <div class="card-header">XP Action Configuration</div>
+          <div class="card-header" data-i18n="generated.e5e1630b039b">XP Action Configuration</div>
           <div class="card-body">
             <div class="table-responsive">
               <table class="table table-dark table-striped">
                 <thead>
                   <tr>
-                    <th>Action Type</th>
-                    <th>XP Amount</th>
-                    <th>Cooldown (seconds)</th>
+                    <th data-i18n="generated.bf29e1d3c273">Action Type</th>
+                    <th data-i18n="generated.fa8fc68c1c6f">XP Amount</th>
+                    <th data-i18n="generated.1b8ed02f778f">Cooldown (seconds)</th>
                     <th>Enabled</th>
-                    <th>Actions</th>
+                    <th data-i18n="gift_milestone.actions.title">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="actionsTable">
@@ -244,36 +245,36 @@
         </div>
 
         <div class="card">
-          <div class="card-header">General Settings</div>
+          <div class="card-header" data-i18n="generated.afab589694d9">General Settings</div>
           <div class="card-body">
             <form id="generalSettingsForm">
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3 form-check">
                     <input type="checkbox" class="form-check-input" id="enableDailyBonus">
-                    <label class="form-check-label" for="enableDailyBonus">Enable Daily Bonus</label>
+                    <label class="form-check-label" for="enableDailyBonus" data-i18n="generated.1b9e083247bf">Enable Daily Bonus</label>
                   </div>
                   <div class="mb-3 form-check">
                     <input type="checkbox" class="form-check-input" id="enableStreaks">
-                    <label class="form-check-label" for="enableStreaks">Enable Streaks</label>
+                    <label class="form-check-label" for="enableStreaks" data-i18n="generated.55a55f2e5593">Enable Streaks</label>
                   </div>
                   <div class="mb-3 form-check">
                     <input type="checkbox" class="form-check-input" id="enableWatchTime">
-                    <label class="form-check-label" for="enableWatchTime">Enable Watch Time XP</label>
+                    <label class="form-check-label" for="enableWatchTime" data-i18n="generated.acfa781baf86">Enable Watch Time XP</label>
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label for="watchTimeInterval" class="form-label">Watch Time Interval (minutes)</label>
+                    <label for="watchTimeInterval" class="form-label" data-i18n="generated.34bd6b6cdea3">Watch Time Interval (minutes)</label>
                     <input type="number" class="form-control" id="watchTimeInterval" min="1" max="60">
                   </div>
                   <div class="mb-3 form-check">
                     <input type="checkbox" class="form-check-input" id="announceLevelUps">
-                    <label class="form-check-label" for="announceLevelUps">Announce Level Ups</label>
+                    <label class="form-check-label" for="announceLevelUps" data-i18n="generated.3c49fa04b77b">Announce Level Ups</label>
                   </div>
                 </div>
               </div>
-              <button type="submit" class="btn btn-primary">Save Settings</button>
+              <button type="submit" class="btn btn-primary" data-i18n="generated.7ea130942de6">Save Settings</button>
             </form>
           </div>
         </div>
@@ -282,33 +283,33 @@
       <!-- Level Configuration Tab -->
       <div class="tab-pane fade" id="level-config" role="tabpanel">
         <div class="card mb-3">
-          <div class="card-header">Level System Type</div>
+          <div class="card-header" data-i18n="generated.05a381733770">Level System Type</div>
           <div class="card-body">
             <form id="levelSystemForm">
               <div class="mb-3">
-                <label for="levelType" class="form-label">Progression Type</label>
+                <label for="levelType" class="form-label" data-i18n="generated.c1117ff3a54f">Progression Type</label>
                 <select class="form-select" id="levelType">
-                  <option value="exponential">Exponential (Default - Gets harder each level)</option>
-                  <option value="linear">Linear (Same XP increase per level)</option>
-                  <option value="logarithmic">Logarithmic (Moderate increase)</option>
-                  <option value="custom">Custom (Define each level individually)</option>
+                  <option value="exponential" data-i18n="generated.2f2eb7972deb">Exponential (Default - Gets harder each level)</option>
+                  <option value="linear" data-i18n="generated.2e403a6e22c6">Linear (Same XP increase per level)</option>
+                  <option value="logarithmic" data-i18n="generated.a0e703ccf8be">Logarithmic (Moderate increase)</option>
+                  <option value="custom" data-i18n="generated.c0a7a1b6f51a">Custom (Define each level individually)</option>
                 </select>
-                <small class="form-text text-muted">Choose how XP requirements scale with levels</small>
+                <small class="form-text text-muted" data-i18n="generated.d1fec3d4b4c5">Choose how XP requirements scale with levels</small>
               </div>
 
               <div id="linearSettings" style="display:none;">
                 <div class="mb-3">
-                  <label for="xpPerLevel" class="form-label">XP Per Level</label>
+                  <label for="xpPerLevel" class="form-label" data-i18n="generated.8f9985e6f3d3">XP Per Level</label>
                   <input type="number" class="form-control" id="xpPerLevel" min="100" step="100" value="1000">
-                  <small class="form-text text-muted">Each level requires this many XP (e.g., Level 2 = 1000 XP, Level 3 = 2000 XP)</small>
+                  <small class="form-text text-muted" data-i18n="generated.a8aaed06f865">Each level requires this many XP (e.g., Level 2 = 1000 XP, Level 3 = 2000 XP)</small>
                 </div>
               </div>
 
               <div id="exponentialSettings" style="display:none;">
                 <div class="mb-3">
-                  <label for="baseXP" class="form-label">Base XP Multiplier</label>
+                  <label for="baseXP" class="form-label" data-i18n="generated.871e0663617f">Base XP Multiplier</label>
                   <input type="number" class="form-control" id="baseXP" min="10" step="10" value="100">
-                  <small class="form-text text-muted">Base value for exponential formula (Level^2 * BaseXP)</small>
+                  <small class="form-text text-muted" data-i18n="generated.014f11151604">Base value for exponential formula (Level^2 * BaseXP)</small>
                 </div>
               </div>
 
@@ -316,26 +317,26 @@
                 <div class="mb-3">
                   <label for="logMultiplier" class="form-label">Multiplier</label>
                   <input type="number" class="form-control" id="logMultiplier" min="100" step="50" value="500">
-                  <small class="form-text text-muted">Scaling factor for logarithmic growth</small>
+                  <small class="form-text text-muted" data-i18n="generated.7b6092d5e688">Scaling factor for logarithmic growth</small>
                 </div>
               </div>
 
               <div class="mb-3">
-                <label for="maxLevel" class="form-label">Maximum Level</label>
+                <label for="maxLevel" class="form-label" data-i18n="generated.588536777f5e">Maximum Level</label>
                 <input type="number" class="form-control" id="maxLevel" min="10" max="200" value="50">
               </div>
 
-              <button type="button" class="btn btn-success me-2" id="generateLevels">Generate Level Configuration</button>
-              <button type="button" class="btn btn-primary" id="applyLevelConfig">Apply Configuration</button>
+              <button type="button" class="btn btn-success me-2" id="generateLevels" data-i18n="generated.a9c707695221">Generate Level Configuration</button>
+              <button type="button" class="btn btn-primary" id="applyLevelConfig" data-i18n="generated.3f3c8faabb7b">Apply Configuration</button>
             </form>
           </div>
         </div>
 
         <div class="card" id="customLevelCard" style="display:none;">
-          <div class="card-header">
+          <div class="card-header"><span data-i18n="generated.d26c7c409e62">
             Custom Level Configuration
-            <span class="float-end">
-              <button class="btn btn-sm btn-success" id="addLevelRow">+ Add Level</button>
+            </span><span class="float-end">
+              <button class="btn btn-sm btn-success" id="addLevelRow" data-i18n="generated.25fd4f3c2e05">+ Add Level</button>
             </span>
           </div>
           <div class="card-body">
@@ -344,10 +345,10 @@
                 <thead style="position: sticky; top: 0; background: var(--color-bg-secondary); z-index: 10;">
                   <tr>
                     <th style="width: 80px;">Level</th>
-                    <th>XP Required</th>
-                    <th>Custom Title (Optional)</th>
-                    <th>Custom Color (Optional)</th>
-                    <th style="width: 100px;">Actions</th>
+                    <th data-i18n="generated.1555a6642cb5">XP Required</th>
+                    <th data-i18n="generated.0a4dd2fd3a05">Custom Title (Optional)</th>
+                    <th data-i18n="generated.7ccdf93c1b5c">Custom Color (Optional)</th>
+                    <th style="width: 100px;" data-i18n="gift_milestone.actions.title">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="customLevelsTable">
@@ -359,20 +360,20 @@
         </div>
 
         <div class="card mt-3">
-          <div class="card-header">Level Preview</div>
+          <div class="card-header" data-i18n="generated.3923ae35d143">Level Preview</div>
           <div class="card-body">
             <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
               <table class="table table-dark table-striped table-sm">
                 <thead style="position: sticky; top: 0; background: var(--color-bg-secondary); z-index: 10;">
                   <tr>
                     <th>Level</th>
-                    <th>Total XP Required</th>
-                    <th>XP from Previous Level</th>
+                    <th data-i18n="generated.3885980033f6">Total XP Required</th>
+                    <th data-i18n="generated.648fb535725e">XP from Previous Level</th>
                     <th>Preview</th>
                   </tr>
                 </thead>
                 <tbody id="levelPreviewTable">
-                  <tr><td colspan="4" class="text-center">Click "Generate Level Configuration" to preview</td></tr>
+                  <tr><td colspan="4" class="text-center" data-i18n="generated.8173d0da58f8">Click "Generate Level Configuration" to preview</td></tr>
                 </tbody>
               </table>
             </div>
@@ -383,7 +384,7 @@
       <!-- Manual Award Tab -->
       <div class="tab-pane fade" id="manual" role="tabpanel">
         <div class="card">
-          <div class="card-header">Award XP Manually</div>
+          <div class="card-header" data-i18n="generated.12b27cbe02e6">Award XP Manually</div>
           <div class="card-body">
             <form id="manualAwardForm">
               <div class="mb-3">
@@ -391,14 +392,14 @@
                 <input type="text" class="form-control" id="awardUsername" required>
               </div>
               <div class="mb-3">
-                <label for="awardAmount" class="form-label">XP Amount</label>
+                <label for="awardAmount" class="form-label" data-i18n="generated.76523908531b">XP Amount</label>
                 <input type="number" class="form-control" id="awardAmount" min="1" required>
               </div>
               <div class="mb-3">
-                <label for="awardReason" class="form-label">Reason (optional)</label>
+                <label for="awardReason" class="form-label" data-i18n="generated.a83f4f56d810">Reason (optional)</label>
                 <input type="text" class="form-control" id="awardReason">
               </div>
-              <button type="submit" class="btn btn-primary">Award XP</button>
+              <button type="submit" class="btn btn-primary" data-i18n="generated.a6873629b526">Award XP</button>
             </form>
           </div>
         </div>
@@ -409,11 +410,11 @@
         <div class="row">
           <div class="col-md-6">
             <div class="card">
-              <div class="card-header">📤 Export Data</div>
+              <div class="card-header" data-i18n="generated.e2d2f13b71b4">📤 Export Data</div>
               <div class="card-body">
-                <p>Export all viewer XP data including profiles, transactions, level configuration, and settings.</p>
+                <p data-i18n="generated.e6985f219a22">Export all viewer XP data including profiles, transactions, level configuration, and settings.</p>
                 <button type="button" class="btn btn-primary" id="exportDataBtn">
-                  <span>Download Export File</span>
+                  <span data-i18n="generated.8941993bdaf7">Download Export File</span>
                 </button>
                 <div class="mt-3" id="exportStatus"></div>
               </div>
@@ -422,32 +423,32 @@
           
           <div class="col-md-6">
             <div class="card">
-              <div class="card-header">📥 Import Data</div>
+              <div class="card-header" data-i18n="generated.413316671eaf">📥 Import Data</div>
               <div class="card-body">
-                <p>Import viewer XP data from a previously exported file. This will merge with existing data.</p>
+                <p data-i18n="generated.3cf5ff21549e">Import viewer XP data from a previously exported file. This will merge with existing data.</p>
                 <div class="mb-3">
                   <input type="file" class="form-control" id="importFile" accept=".json">
                 </div>
                 <button type="button" class="btn btn-warning" id="importDataBtn">
-                  <span>Import Data</span>
+                  <span data-i18n="generated.ff64dfbdf178">Import Data</span>
                 </button>
                 <div class="mt-3" id="importStatus"></div>
                 <div class="alert alert-warning mt-3" role="alert">
-                  <strong>Warning:</strong> Importing data will replace existing viewer profiles with the same username.
-                </div>
+                  <strong>Warning:</strong><span data-i18n="generated.034652fb5360"> Importing data will replace existing viewer profiles with the same username.
+                </span></div>
               </div>
             </div>
           </div>
         </div>
 
         <div class="card mt-3">
-          <div class="card-header">📊 Viewer History</div>
+          <div class="card-header" data-i18n="generated.02ca8b105ed9">📊 Viewer History</div>
           <div class="card-body">
             <div class="mb-3">
               <label for="historyUsername" class="form-label">Username</label>
               <div class="input-group">
                 <input type="text" class="form-control" id="historyUsername" placeholder="Enter username">
-                <button class="btn btn-primary" id="loadHistoryBtn">Load History</button>
+                <button class="btn btn-primary" id="loadHistoryBtn" data-i18n="generated.179c15bb1cf2">Load History</button>
               </div>
             </div>
             <div id="historyContainer" style="display:none;">
@@ -456,8 +457,8 @@
                   <thead style="position: sticky; top: 0; background: var(--color-bg-secondary); z-index: 10;">
                     <tr>
                       <th>Date/Time</th>
-                      <th>Action Type</th>
-                      <th>XP Amount</th>
+                      <th data-i18n="generated.da4603bf0091">Action Type</th>
+                      <th data-i18n="generated.14baf2358e0a">XP Amount</th>
                       <th>Details</th>
                     </tr>
                   </thead>
@@ -477,7 +478,7 @@
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Viewer Details</h5>
+          <h5 class="modal-title" data-i18n="generated.5082c71fce57">Viewer Details</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body" id="viewerModalBody">

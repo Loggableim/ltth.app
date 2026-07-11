@@ -20,6 +20,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const crypto = require('crypto');
+const { createDefaultWebGPUConfig, normalizeWebGPUConfig } = require('./lib/webgpu-config');
 
 class WebGPUEmojiRainPlugin {
   constructor(api) {
@@ -27,7 +28,9 @@ class WebGPUEmojiRainPlugin {
     this.io = api.getSocketIO();
 
     // Use persistent storage in user profile directory (survives updates)
-    const pluginDataDir = api.getPluginDataDir();
+    // v3 is intentionally isolated from the obsolete renderer's persisted
+    // files. The old data remains untouched and is adopted by EmojiRain.
+    const pluginDataDir = path.join(api.getPluginDataDir(), 'v3');
     this.uploadDir = path.join(pluginDataDir, 'uploads');
     this.userMappingsPath = path.join(pluginDataDir, 'users.json');
     this.presetsPath = path.join(pluginDataDir, 'presets.json');
@@ -35,7 +38,8 @@ class WebGPUEmojiRainPlugin {
     // Also define user_configs path for user-editable configs (survives updates)
     const configPathManager = api.getConfigPathManager();
     const persistentUserConfigsDir = configPathManager.getUserConfigsDir();
-    this.userConfigMappingsPath = path.join(persistentUserConfigsDir, 'webgpu-emoji-rain', 'users.json');
+    this.userConfigMappingsPath = path.join(persistentUserConfigsDir, 'webgpu-emoji-rain', 'v3', 'users.json');
+    this.runtimeConfig = null;
     
     this.upload = null;
     
@@ -74,14 +78,28 @@ class WebGPUEmojiRainPlugin {
       paused: false,
       theme: 'default',
       opacity: 1.0,
-      speed: 1.0
+      speed: 1.0,
+      boundingBox: { x: 0, y: 0, width: 1, height: 1 }
+    };
+    this.rendererMetrics = {
+      backend: 'webgpu',
+      state: 'offline',
+      fps: 0,
+      frameTimeMs: 0,
+      activeParticles: 0,
+      droppedParticles: 0,
+      atlasEntries: 0,
+      resolution: null,
+      adapter: null
     };
     
     // Batch spawn queue for performance
     this.spawnQueue = [];
     this.spawnBatchSize = 10;
+    this.maxSpawnQueueSize = 1000;
     this.spawnBatchInterval = null;
     this.globalTriggerResetInterval = null;
+    this.durationIntervals = new Set();
     
     // Debug mode
     this.debugMode = false;
@@ -111,8 +129,8 @@ class WebGPUEmojiRainPlugin {
     // Ensure plugin data directory exists
     this.api.ensurePluginDataDir();
 
-    // Migrate old data if it exists
-    await this.migrateOldData();
+    // WebGPU EmojiRain v3 deliberately starts from its own defaults.
+    this.runtimeConfig = this.loadRuntimeConfig();
 
     // Create upload directory
     if (!fs.existsSync(this.uploadDir)) {
@@ -136,6 +154,7 @@ class WebGPUEmojiRainPlugin {
     // Register routes
     this.api.log('🛣️ [WebGPU Emoji Rain] Registering routes...', 'debug');
     this.registerRoutes();
+    this.registerRendererTelemetry();
 
     // Register TikTok event handlers
     this.api.log('🎯 [WebGPU Emoji Rain] Registering TikTok event handlers...', 'debug');
@@ -158,6 +177,49 @@ class WebGPUEmojiRainPlugin {
     }, this.globalTriggerWindow);
 
     this.api.log('✅ [WebGPU Emoji Rain] Plugin initialized successfully with GCCE integration', 'info');
+  }
+
+  loadRuntimeConfig() {
+    const stored = typeof this.api.getConfig === 'function'
+      ? this.api.getConfig('v3-config')
+      : this.api.getDatabase?.().getEmojiRainConfig?.() || null;
+    const normalized = normalizeWebGPUConfig(stored || createDefaultWebGPUConfig());
+    if (!stored && typeof this.api.setConfig === 'function') this.api.setConfig('v3-config', normalized);
+    return normalized;
+  }
+
+  getRuntimeConfig() {
+    if (!this.runtimeConfig) this.runtimeConfig = this.loadRuntimeConfig();
+    return { ...this.runtimeConfig };
+  }
+
+  updateRuntimeConfig(config = {}, enabled = null) {
+    const next = normalizeWebGPUConfig({
+      ...this.getRuntimeConfig(),
+      ...(config && typeof config === 'object' ? config : {}),
+      ...(enabled === null ? {} : { enabled: Boolean(enabled) })
+    });
+    this.runtimeConfig = next;
+    if (typeof this.api.setConfig === 'function') this.api.setConfig('v3-config', next);
+    return { ...next };
+  }
+
+  toggleRuntimeEnabled(enabled) {
+    return this.updateRuntimeConfig({}, Boolean(enabled));
+  }
+
+  registerRendererTelemetry() {
+    if (typeof this.api.registerSocket !== 'function') return;
+    this.api.registerSocket('webgpu-emoji-rain:renderer-metrics', (socket, metrics = {}) => {
+      if (!metrics || typeof metrics !== 'object') return;
+      this.rendererMetrics = {
+        ...this.rendererMetrics,
+        ...metrics,
+        backend: 'webgpu',
+        receivedAt: Date.now()
+      };
+      this.api.emit('webgpu-emoji-rain:performance-update', this.rendererMetrics);
+    });
   }
 
   /**
@@ -278,11 +340,20 @@ class WebGPUEmojiRainPlugin {
     this.api.emit(eventName, spawnData);
   }
 
+  queueOverlaySpawn(spawnData) {
+    if (this.spawnQueue.length >= this.maxSpawnQueueSize) {
+      this.spawnQueue.shift();
+      this.metrics.droppedEvents++;
+    }
+    this.spawnQueue.push(spawnData);
+  }
+
   /**
    * Start spawn batch processor for performance optimization
    */
   startSpawnBatchProcessor() {
     this.spawnBatchInterval = setInterval(() => {
+      if (this.overlayState.paused) return;
       if (this.spawnQueue.length > 0) {
         const batch = this.spawnQueue.splice(0, this.spawnBatchSize);
         batch.forEach(spawnData => {
@@ -422,7 +493,7 @@ class WebGPUEmojiRainPlugin {
    */
   
   async handleRainCommand(args, context) {
-    const config = this.api.getDatabase().getEmojiRainConfig();
+    const config = this.getRuntimeConfig();
     
     if (!config.enabled) {
       return {
@@ -484,7 +555,7 @@ class WebGPUEmojiRainPlugin {
   }
 
   async handleEmojiCommand(args, context) {
-    const config = this.api.getDatabase().getEmojiRainConfig();
+    const config = this.getRuntimeConfig();
     
     if (!config.enabled) {
       return {
@@ -537,7 +608,7 @@ class WebGPUEmojiRainPlugin {
   }
 
   async handleBeansCommand(args, context) {
-    const config = this.api.getDatabase().getEmojiRainConfig();
+    const config = this.getRuntimeConfig();
     
     if (!config.enabled) {
       return {
@@ -578,7 +649,7 @@ class WebGPUEmojiRainPlugin {
   }
 
   async handleStormCommand(args, context) {
-    const config = this.api.getDatabase().getEmojiRainConfig();
+    const config = this.getRuntimeConfig();
     
     if (!config.enabled) {
       return {
@@ -620,7 +691,7 @@ class WebGPUEmojiRainPlugin {
   }
 
   async handleHeartBalloonsCommand(args, context) {
-    const config = this.api.getDatabase().getEmojiRainConfig();
+    const config = this.getRuntimeConfig();
 
     if (!config.enabled || config.heart_balloons_enabled === false) {
       return {
@@ -938,7 +1009,7 @@ class WebGPUEmojiRainPlugin {
   }
 
   triggerGiftBall(params = {}) {
-    const config = this.api.getDatabase().getEmojiRainConfig();
+    const config = this.getRuntimeConfig();
 
     if (!config.enabled || config.gift_balls_enabled !== true) {
       return null;
@@ -976,7 +1047,7 @@ class WebGPUEmojiRainPlugin {
 
     if (this.overlayState.paused) {
       this.debugLog('Overlay paused, queueing gift ball');
-      this.spawnQueue.push(spawnData);
+      this.queueOverlaySpawn(spawnData);
       return spawnData;
     }
 
@@ -987,7 +1058,7 @@ class WebGPUEmojiRainPlugin {
   }
 
   triggerHeartBalloons(params = {}) {
-    const config = this.api.getDatabase().getEmojiRainConfig();
+    const config = this.getRuntimeConfig();
 
     if (!config.enabled || config.heart_balloons_enabled === false) {
       return null;
@@ -1020,7 +1091,7 @@ class WebGPUEmojiRainPlugin {
 
     if (this.overlayState.paused) {
       this.debugLog('Overlay paused, queueing heart balloons');
-      this.spawnQueue.push(spawnData);
+      this.queueOverlaySpawn(spawnData);
       return spawnData;
     }
 
@@ -1084,7 +1155,7 @@ class WebGPUEmojiRainPlugin {
    * Trigger emoji rain (centralized method)
    */
   triggerEmojiRain(params) {
-    const config = this.api.getDatabase().getEmojiRainConfig();
+    const config = this.getRuntimeConfig();
 
     if (!config.enabled) {
       return;
@@ -1125,7 +1196,7 @@ class WebGPUEmojiRainPlugin {
     // Check if paused
     if (this.overlayState.paused) {
       this.debugLog('Overlay paused, queueing spawn');
-      this.spawnQueue.push(spawnData);
+      this.queueOverlaySpawn(spawnData);
       return spawnData;
     }
 
@@ -1148,14 +1219,18 @@ class WebGPUEmojiRainPlugin {
         batchCount++;
         if (batchCount >= batches) {
           clearInterval(interval);
+          this.durationIntervals.delete(interval);
           return;
         }
 
-        this.emitOverlaySpawn({
+        const repeatedSpawn = {
           ...spawnData,
           x: Math.random()
-        });
+        };
+        if (this.overlayState.paused) this.queueOverlaySpawn(repeatedSpawn);
+        else this.emitOverlaySpawn(repeatedSpawn);
       }, 500);
+      this.durationIntervals.add(interval);
     }
 
     this.debugLog(`Emoji rain triggered: ${spawnData.count}x ${spawnData.emoji} (reason: ${params.reason})`);
@@ -1402,9 +1477,8 @@ class WebGPUEmojiRainPlugin {
     this.api.registerRoute('get', '/api/webgpu-emoji-rain/config', (req, res) => {
       try {
         this.api.log('📥 [WebGPU Emoji Rain] GET /api/webgpu-emoji-rain/config', 'debug');
-        const db = this.api.getDatabase();
-        const config = db.getEmojiRainConfig();
-        this.api.log(`📥 [WebGPU Emoji Rain] Config retrieved from DB`, 'debug');
+        const config = this.getRuntimeConfig();
+        this.api.log('📥 [WebGPU Emoji Rain] v3 config retrieved', 'debug');
         res.json({ success: true, config });
       } catch (error) {
         this.api.log(`❌ [WebGPU Emoji Rain] Error getting config: ${error.message}`, 'error');
@@ -1421,12 +1495,11 @@ class WebGPUEmojiRainPlugin {
       }
 
       try {
-        const db = this.api.getDatabase();
-        db.updateEmojiRainConfig(config, enabled !== undefined ? enabled : null);
+        const updatedConfig = this.updateRuntimeConfig(config, enabled !== undefined ? enabled : null);
         this.api.log('🌧️ WebGPU Emoji rain configuration updated', 'info');
 
         // Notify overlays about config change
-        this.api.emit('webgpu-emoji-rain:config-update', { config, enabled });
+        this.api.emit('webgpu-emoji-rain:config-update', { config: updatedConfig, enabled: updatedConfig.enabled });
 
         res.json({ success: true, message: 'Emoji rain configuration updated' });
       } catch (error) {
@@ -1438,9 +1511,8 @@ class WebGPUEmojiRainPlugin {
     // Get emoji rain status
     this.api.registerRoute('get', '/api/webgpu-emoji-rain/status', (req, res) => {
       try {
-        const db = this.api.getDatabase();
-        const config = db.getEmojiRainConfig();
-        res.json({ success: true, enabled: config.enabled });
+        const config = this.getRuntimeConfig();
+        res.json({ success: true, enabled: config.enabled, renderer: this.rendererMetrics });
       } catch (error) {
         this.api.log(`Error getting emoji rain status: ${error.message}`, 'error');
         res.status(500).json({ success: false, error: error.message });
@@ -1456,8 +1528,7 @@ class WebGPUEmojiRainPlugin {
       }
 
       try {
-        const db = this.api.getDatabase();
-        db.toggleEmojiRain(enabled);
+        this.toggleRuntimeEnabled(enabled);
         this.api.log(`🌧️ WebGPU Emoji rain ${enabled ? 'enabled' : 'disabled'}`, 'info');
 
         // Notify overlays about toggle
@@ -1476,7 +1547,7 @@ class WebGPUEmojiRainPlugin {
 
       try {
         const db = this.api.getDatabase();
-        const config = db.getEmojiRainConfig();
+        const config = this.getRuntimeConfig();
 
         if (!config.enabled) {
           return res.status(400).json({ success: false, error: 'Emoji rain is disabled' });
@@ -1508,7 +1579,7 @@ class WebGPUEmojiRainPlugin {
     this.api.registerRoute('post', '/api/webgpu-emoji-rain/test-heart-balloons', (req, res) => {
       try {
         const { count, username, profilePictureUrl } = req.body || {};
-        const config = this.api.getDatabase().getEmojiRainConfig();
+        const config = this.getRuntimeConfig();
 
         if (!config.enabled) {
           return res.status(400).json({ success: false, error: 'Emoji rain is disabled' });
@@ -1537,7 +1608,7 @@ class WebGPUEmojiRainPlugin {
     this.api.registerRoute('post', '/api/webgpu-emoji-rain/test-gift-ball', (req, res) => {
       try {
         const { giftName, giftImageUrl, price, username } = req.body || {};
-        const config = this.api.getDatabase().getEmojiRainConfig();
+        const config = this.getRuntimeConfig();
 
         if (!config.enabled) {
           return res.status(400).json({ success: false, error: 'Emoji rain is disabled' });
@@ -1842,7 +1913,7 @@ class WebGPUEmojiRainPlugin {
       try {
         const { emoji, count, duration, intensity, x, y, username, burst, spawnAreaPreset } = req.body;
 
-        const config = this.api.getDatabase().getEmojiRainConfig();
+        const config = this.getRuntimeConfig();
 
         if (!config.enabled) {
           return res.status(400).json({ success: false, error: 'Emoji rain is disabled' });
@@ -1902,7 +1973,7 @@ class WebGPUEmojiRainPlugin {
     this.api.registerRoute('post', '/api/webgpu-emoji-rain/herzballons', (req, res) => {
       try {
         const { count, username, profilePictureUrl, x } = req.body || {};
-        const config = this.api.getDatabase().getEmojiRainConfig();
+        const config = this.getRuntimeConfig();
 
         if (!config.enabled) {
           return res.status(400).json({ success: false, error: 'Emoji rain is disabled' });
@@ -2065,7 +2136,7 @@ class WebGPUEmojiRainPlugin {
     // Trigger preset
     this.api.registerRoute('post', '/api/webgpu-emoji-rain/presets/:id/trigger', (req, res) => {
       try {
-        const config = this.api.getDatabase().getEmojiRainConfig();
+        const config = this.getRuntimeConfig();
         
         if (!config.enabled) {
           return res.status(400).json({ success: false, error: 'Emoji rain is disabled' });
@@ -2220,6 +2291,7 @@ class WebGPUEmojiRainPlugin {
           width: parseFloat(width) || 1,
           height: parseFloat(height) || 1
         };
+        this.overlayState.boundingBox = boundingBox;
         
         this.api.emit('webgpu-emoji-rain:bounding-box', { boundingBox });
         
@@ -2257,6 +2329,7 @@ class WebGPUEmojiRainPlugin {
             state: this.overlayState,
             queuedSpawns: this.spawnQueue.length
           },
+          renderer: this.rendererMetrics,
           antiSpam: {
             globalTriggerCount: this.globalTriggerCount,
             maxTriggers: this.globalMaxTriggers,
@@ -2370,13 +2443,23 @@ class WebGPUEmojiRainPlugin {
    */
   spawnEmojiRain(reason, data, count = null, emoji = null) {
     try {
-      const config = this.api.getDatabase().getEmojiRainConfig();
+      const config = this.getRuntimeConfig();
 
       if (!config.enabled) {
         return;
       }
 
       const username = data.uniqueId || data.username || 'Unknown';
+
+      // One shared flood gate must run before gift-ball, heart-balloon, or
+      // regular-rain side effects. Previously the special renderers bypassed
+      // the counter because they were emitted before this check.
+      if (this.globalTriggerCount >= this.globalMaxTriggers) {
+        this.metrics.droppedEvents++;
+        this.debugLog(`Dropped event from ${username}: global flood gate`);
+        return;
+      }
+      this.globalTriggerCount++;
 
       if (reason === 'gift' && config.gift_balls_enabled === true) {
         this.triggerGiftBall({
@@ -2411,14 +2494,6 @@ class WebGPUEmojiRainPlugin {
         });
       }
       
-      // Check anti-spam (less strict for events than commands)
-      const now = Date.now();
-      if (this.globalTriggerCount >= this.globalMaxTriggers) {
-        this.metrics.droppedEvents++;
-        this.debugLog(`Dropped event from ${username}: global flood gate`);
-        return;
-      }
-
       // Log event data for debugging
       this.debugLog(`Event received: ${reason} from ${username}`);
 
@@ -2497,7 +2572,7 @@ class WebGPUEmojiRainPlugin {
    */
   handleStickerEvent(data) {
     try {
-      const config = this.api.getDatabase().getEmojiRainConfig();
+      const config = this.getRuntimeConfig();
 
       // Check if sticker feature is enabled
       if (!config.enabled || !config.sticker_enabled) {
@@ -2519,9 +2594,9 @@ class WebGPUEmojiRainPlugin {
       const isSuperFan = teamMemberLevel >= 1;
 
       // Determine cooldown time based on user type
-      const cooldownTime = isSuperFan ? 
-        (config.sticker_superfan_cooldown_ms || 5000) : 
-        (config.sticker_user_cooldown_ms || 10000);
+      const cooldownTime = isSuperFan
+        ? (config.sticker_superfan_cooldown_ms ?? 5000)
+        : (config.sticker_user_cooldown_ms ?? 10000);
 
       // Check user-specific cooldown
       const lastTrigger = this.userCooldowns.get(`sticker:${username}`);
@@ -2531,9 +2606,9 @@ class WebGPUEmojiRainPlugin {
       }
 
       // Calculate sticker count based on fan level
-      const baseCount = config.sticker_base_count || 5;
-      const fanLevelMultiplier = config.sticker_fan_level_multiplier || 3;
-      const maxCount = config.sticker_max_count || 30;
+      const baseCount = config.sticker_base_count ?? 5;
+      const fanLevelMultiplier = config.sticker_fan_level_multiplier ?? 3;
+      const maxCount = config.sticker_max_count ?? 30;
       
       let count = baseCount + (teamMemberLevel * fanLevelMultiplier);
       count = Math.min(count, maxCount);
@@ -2824,6 +2899,11 @@ class WebGPUEmojiRainPlugin {
       clearInterval(this.globalTriggerResetInterval);
       this.globalTriggerResetInterval = null;
     }
+
+    for (const interval of this.durationIntervals) clearInterval(interval);
+    this.durationIntervals.clear();
+    this.spawnQueue.length = 0;
+    this.userCooldowns.clear();
     
     // Unregister GCCE commands
     if (this.gcce) {

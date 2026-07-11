@@ -1,0 +1,32 @@
+{
+  "api_bridge": {
+    "plugin": {
+      "name": "API-Bridge",
+      "description": "Steuert LTTH über HTTP- und WebSocket-APIs aus externen Anwendungen."
+    },
+    "ui": {
+      "title": "API Bridge",
+      "actions": {
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "refresh": "Aktualisieren",
+        "close": "Schließen",
+        "test": "Testen",
+        "clear": "Leeren"
+      },
+      "status": {
+        "ready": "Bereit",
+        "loading": "Wird geladen …",
+        "connected": "Verbunden",
+        "disconnected": "Getrennt",
+        "error": "Fehler"
+      },
+      "messages": {
+        "saved": "Einstellungen gespeichert.",
+        "failed": "Einstellungen konnten nicht gespeichert werden.",
+        "noData": "Keine Daten verfügbar.",
+        "confirm": "Bist du sicher?"
+      }
+    }
+  }
+}

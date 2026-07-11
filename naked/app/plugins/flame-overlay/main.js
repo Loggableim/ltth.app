@@ -318,7 +318,7 @@ class FlameOverlayPlugin {
                 const gifts = source();
                 if (Array.isArray(gifts)) return gifts;
             } catch (error) {
-                this.api.log(`âš ï¸ [FLAME OVERLAY] Gift catalog source failed: ${error.message}`, 'debug');
+                this.api.log(`⚠️ [FLAME OVERLAY] Gift catalog source failed: ${error.message}`, 'debug');
             }
         }
 
@@ -462,7 +462,7 @@ class FlameOverlayPlugin {
             try {
                 res.json({ success: true, gifts: this.getGiftCatalog() });
             } catch (error) {
-                this.api.log(`âŒ [FLAME OVERLAY] Error loading gift catalog: ${error.message}`, 'error');
+                this.api.log(`❌ [FLAME OVERLAY] Error loading gift catalog: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });
@@ -567,7 +567,7 @@ class FlameOverlayPlugin {
                 }
                 res.json(result);
             } catch (error) {
-                this.api.log(`âŒ [FLAME OVERLAY] Feature test error: ${error.message}`, 'error');
+                this.api.log(`❌ [FLAME OVERLAY] Feature test error: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });
@@ -578,7 +578,7 @@ class FlameOverlayPlugin {
                 this.clearActiveTriggers();
                 res.json({ success: true, message: 'Active triggers cleared' });
             } catch (error) {
-                this.api.log(`âŒ [FLAME OVERLAY] Clear trigger error: ${error.message}`, 'error');
+                this.api.log(`❌ [FLAME OVERLAY] Clear trigger error: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });

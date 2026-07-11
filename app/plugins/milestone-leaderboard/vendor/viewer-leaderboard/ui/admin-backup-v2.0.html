@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎮 Viewer XP - Admin Panel</title>
+  <title data-i18n="generated.7aeeee392be5">🎮 Viewer XP - Admin Panel</title>
   <link rel="stylesheet" href="/css/themes.css">
   <link href="/css/vendor/bootstrap.min.css" rel="stylesheet">
   <style>
@@ -721,15 +721,16 @@
       color: var(--color-text-secondary);
     }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
   <div class="app-container">
     <!-- Sidebar Navigation -->
     <div class="sidebar">
-      <div class="sidebar-logo">
+      <div class="sidebar-logo" data-i18n="generated.e04ba06bb644">
         🎮 XP System
       </div>
-      <div class="sidebar-subtitle">Viewer Gamification & Leaderboards</div>
+      <div class="sidebar-subtitle" data-i18n="generated.f74b332d62fc">Viewer Gamification & Leaderboards</div>
 
       <nav>
         <div class="nav-section">
@@ -745,26 +746,26 @@
         </div>
 
         <div class="nav-section">
-          <div class="nav-section-title">OBS Overlays</div>
+          <div class="nav-section-title" data-i18n="generated.a01441b42fb5">OBS Overlays</div>
           <a href="#" class="nav-item" data-page="obs-panel">
             <span class="nav-icon">🎬</span>
-            <span>OBS Panel</span>
+            <span data-i18n="generated.2bb88d8eeb5a">OBS Panel</span>
           </a>
           <a href="#" class="nav-item" data-page="overlay-preview">
             <span class="nav-icon">👁️</span>
-            <span>Live Preview</span>
+            <span data-i18n="generated.c9fde269719c">Live Preview</span>
           </a>
         </div>
 
         <div class="nav-section">
-          <div class="nav-section-title">Configuration</div>
+          <div class="nav-section-title" data-i18n="gift_milestone.config.title">Configuration</div>
           <a href="#" class="nav-item" data-page="xp-settings">
             <span class="nav-icon">⚙️</span>
-            <span>XP Settings</span>
+            <span data-i18n="generated.2371df5da2b9">XP Settings</span>
           </a>
           <a href="#" class="nav-item" data-page="level-config">
             <span class="nav-icon">📈</span>
-            <span>Level Config</span>
+            <span data-i18n="generated.be36a803b091">Level Config</span>
           </a>
         </div>
 
@@ -772,11 +773,11 @@
           <div class="nav-section-title">Management</div>
           <a href="#" class="nav-item" data-page="manual-award">
             <span class="nav-icon">🎁</span>
-            <span>Manual Award</span>
+            <span data-i18n="generated.2de33b33ae05">Manual Award</span>
           </a>
           <a href="#" class="nav-item" data-page="spin-settings">
             <span class="nav-icon">🎰</span>
-            <span>Spin Wheel</span>
+            <span data-i18n="generated.d62bfa82d227">Spin Wheel</span>
           </a>
           <a href="#" class="nav-item" data-page="import-export">
             <span class="nav-icon">💾</span>
@@ -791,8 +792,8 @@
       <!-- Dashboard Page -->
       <div id="page-dashboard" class="tab-content active">
         <div class="page-header">
-          <h1 class="page-title">📊 Dashboard</h1>
-          <p class="page-description">Overview of viewer engagement and XP statistics</p>
+          <h1 class="page-title" data-i18n="generated.d64a60d29bf2">📊 Dashboard</h1>
+          <p class="page-description" data-i18n="generated.c913c25f5824">Overview of viewer engagement and XP statistics</p>
         </div>
 
         <!-- Statistics Cards -->
@@ -802,8 +803,8 @@
               <span class="stat-card-icon">👥</span>
             </div>
             <div class="stat-card-value" id="totalViewers">-</div>
-            <div class="stat-card-label">Total Viewers</div>
-            <div class="stat-card-change positive" id="viewersChange" style="display:none;">
+            <div class="stat-card-label" data-i18n="generated.52c55781c276">Total Viewers</div>
+            <div class="stat-card-change positive" id="viewersChange" style="display:none;" data-i18n="generated.b38e32a8806d">
               +0 this week
             </div>
           </div>
@@ -813,7 +814,7 @@
               <span class="stat-card-icon">⭐</span>
             </div>
             <div class="stat-card-value" id="totalXP">-</div>
-            <div class="stat-card-label">Total XP Earned</div>
+            <div class="stat-card-label" data-i18n="generated.53695af697fc">Total XP Earned</div>
           </div>
 
           <div class="stat-card">
@@ -821,7 +822,7 @@
               <span class="stat-card-icon">📊</span>
             </div>
             <div class="stat-card-value" id="avgLevel">-</div>
-            <div class="stat-card-label">Average Level</div>
+            <div class="stat-card-label" data-i18n="generated.9e2cecfb8ba7">Average Level</div>
           </div>
 
           <div class="stat-card">
@@ -829,27 +830,27 @@
               <span class="stat-card-icon">🔥</span>
             </div>
             <div class="stat-card-value" id="activeToday">-</div>
-            <div class="stat-card-label">Active Today</div>
+            <div class="stat-card-label" data-i18n="generated.6d1f9fd486d7">Active Today</div>
           </div>
         </div>
 
         <!-- Quick Actions -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">⚡</span>Quick Actions</span>
+            <span><span class="card-header-icon">⚡</span><span data-i18n="generated.fc6a34a25ce5">Quick Actions</span></span>
           </div>
           <div class="card-body">
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-              <button class="btn btn-primary" data-action="navigateTo" data-arg="manual-award">
+              <button class="btn btn-primary" data-action="navigateTo" data-arg="manual-award" data-i18n="generated.c5aa132d58a4">
                 🎁 Award XP
               </button>
-              <button class="btn btn-success" data-action="navigateTo" data-arg="obs-panel">
+              <button class="btn btn-success" data-action="navigateTo" data-arg="obs-panel" data-i18n="generated.bbbbbb596702">
                 🎬 Setup OBS Overlays
               </button>
-              <button class="btn btn-secondary" data-action="navigateTo" data-arg="import-export">
+              <button class="btn btn-secondary" data-action="navigateTo" data-arg="import-export" data-i18n="generated.9c765062cdf8">
                 💾 Export Data
               </button>
-              <button class="btn btn-secondary" data-action="refreshData">
+              <button class="btn btn-secondary" data-action="refreshData" data-i18n="generated.8c72f2a2a36f">
                 🔄 Refresh Stats
               </button>
             </div>
@@ -859,21 +860,21 @@
         <!-- Recent Activity -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">📈</span>Recent Activity</span>
+            <span><span class="card-header-icon">📈</span><span data-i18n="generated.655d5afc570d">Recent Activity</span></span>
             <select class="form-select" style="width: auto; padding: 6px 12px; font-size: 0.875rem;" id="activityFilter">
-              <option value="all">All Activity</option>
-              <option value="chat">Chat Messages</option>
+              <option value="all" data-i18n="generated.1d5854a282ce">All Activity</option>
+              <option value="chat" data-i18n="generated.d1cc1b9c36e0">Chat Messages</option>
               <option value="gift">Gifts</option>
               <option value="follow">Follows</option>
-              <option value="level_up">Level Ups</option>
+              <option value="level_up" data-i18n="generated.bc059025db53">Level Ups</option>
             </select>
           </div>
           <div class="card-body">
             <div id="recentActivityContainer">
               <div class="empty-state">
                 <div class="empty-state-icon">📊</div>
-                <div class="empty-state-text">No recent activity</div>
-                <div class="empty-state-description">Activity will appear here as viewers interact</div>
+                <div class="empty-state-text" data-i18n="generated.42ae85be552b">No recent activity</div>
+                <div class="empty-state-description" data-i18n="generated.99943e9319f7">Activity will appear here as viewers interact</div>
               </div>
             </div>
           </div>
@@ -883,20 +884,20 @@
       <!-- Leaderboard Page -->
       <div id="page-leaderboard" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">🏆 Leaderboard</h1>
-          <p class="page-description">Top viewers ranked by XP and engagement</p>
+          <h1 class="page-title" data-i18n="generated.6cd7a865686d">🏆 Leaderboard</h1>
+          <p class="page-description" data-i18n="generated.35b5fd06543c">Top viewers ranked by XP and engagement</p>
         </div>
 
         <div class="card">
           <div class="card-header">
-            <span>Top Viewers</span>
+            <span data-i18n="generated.5c42a940fafb">Top Viewers</span>
             <div style="display: flex; gap: 12px; align-items: center;">
               <select class="form-select" style="width: auto; padding: 6px 12px; font-size: 0.875rem;" id="leaderboardFilter">
-                <option value="">All Time</option>
-                <option value="7">Last 7 Days</option>
-                <option value="30">Last 30 Days</option>
+                <option value="" data-i18n="generated.cf4cc9b44cb3">All Time</option>
+                <option value="7" data-i18n="generated.f24986b4a9bf">Last 7 Days</option>
+                <option value="30" data-i18n="generated.0b0bffbb8238">Last 30 Days</option>
               </select>
-              <button class="btn btn-sm btn-secondary" data-action="refreshLeaderboard">
+              <button class="btn btn-sm btn-secondary" data-action="refreshLeaderboard" data-i18n="generated.7ae31763da41">
                 🔄 Refresh
               </button>
             </div>
@@ -916,7 +917,7 @@
                     <th>Title</th>
                     <th>XP</th>
                     <th>Progress</th>
-                    <th>Actions</th>
+                    <th data-i18n="gift_milestone.actions.title">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="leaderboardTable">
@@ -924,7 +925,7 @@
                     <td colspan="7">
                       <div class="empty-state">
                         <div class="empty-state-icon">🏆</div>
-                        <div class="empty-state-text">Loading leaderboard...</div>
+                        <div class="empty-state-text" data-i18n="generated.225685ea55fb">Loading leaderboard...</div>
                       </div>
                     </td>
                   </tr>
@@ -938,41 +939,41 @@
       <!-- OBS Panel Page -->
       <div id="page-obs-panel" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">🎬 OBS Overlay Panel</h1>
-          <p class="page-description">Setup and manage OBS Browser Source overlays</p>
+          <h1 class="page-title" data-i18n="generated.45b7f4a53c6b">🎬 OBS Overlay Panel</h1>
+          <p class="page-description" data-i18n="generated.870f7d215395">Setup and manage OBS Browser Source overlays</p>
         </div>
 
         <div class="alert alert-info">
           <span>💡</span>
           <div>
-            <strong>Quick Setup:</strong> Copy the URL below and add it as a Browser Source in OBS Studio. 
+            <strong data-i18n="generated.36fc025c6044">Quick Setup:</strong><span data-i18n="generated.aec88960871f"> Copy the URL below and add it as a Browser Source in OBS Studio. 
             Set width to 1920 and height according to your needs. Check "Shutdown source when not visible" for better performance.
-          </div>
+          </span></div>
         </div>
 
         <!-- XP Bar Overlay -->
         <div class="overlay-card">
-          <div class="overlay-card-title">
+          <div class="overlay-card-title" data-i18n="generated.757391f4169a">
             ⭐ XP Bar Overlay
           </div>
-          <p class="form-text" style="margin-bottom: 12px;">
+          <p class="form-text" style="margin-bottom: 12px;" data-i18n="generated.0940f42dd0a2">
             Displays real-time XP progress with animated level-ups and badges. Perfect for showing individual viewer progress.
           </p>
           
           <div class="overlay-url-box">
             <span class="url-text" id="xpBarUrl">http://localhost:3000/overlay/viewer-xp/xp-bar</span>
-            <button class="btn btn-sm btn-primary copy-btn" data-action="copyToClipboard" data-arg="xpBarUrl">
+            <button class="btn btn-sm btn-primary copy-btn" data-action="copyToClipboard" data-arg="xpBarUrl" data-i18n="generated.f1567012f8a0">
               📋 Copy
             </button>
           </div>
 
           <div class="overlay-settings">
             <div class="form-group">
-              <label class="form-label">Auto-Hide After (ms)</label>
+              <label class="form-label" data-i18n="generated.db7377570e29">Auto-Hide After (ms)</label>
               <input type="number" class="form-control" id="xpBarDuration" value="5000" min="1000" step="1000">
             </div>
             <div class="form-group">
-              <label class="form-label">Show Profile Picture</label>
+              <label class="form-label" data-i18n="generated.c155d97e7377">Show Profile Picture</label>
               <select class="form-select" id="xpBarShowPic">
                 <option value="true">Yes</option>
                 <option value="false">No</option>
@@ -981,10 +982,10 @@
           </div>
 
           <div style="display: flex; gap: 12px; margin-top: 16px;">
-            <button class="btn btn-sm btn-success" data-action="updateOverlayUrl" data-arg="xpBar">
+            <button class="btn btn-sm btn-success" data-action="updateOverlayUrl" data-arg="xpBar" data-i18n="generated.9433ce263f1b">
               ✅ Update URL
             </button>
-            <button class="btn btn-sm btn-secondary" data-action="testOverlay" data-arg="xp-bar">
+            <button class="btn btn-sm btn-secondary" data-action="testOverlay" data-arg="xp-bar" data-i18n="generated.0f14a9ce53dc">
               👁️ Test Overlay
             </button>
           </div>
@@ -992,39 +993,39 @@
 
         <!-- Leaderboard Overlay -->
         <div class="overlay-card">
-          <div class="overlay-card-title">
+          <div class="overlay-card-title" data-i18n="generated.33cdc5728f32">
             🏆 Leaderboard Overlay
           </div>
-          <p class="form-text" style="margin-bottom: 12px;">
+          <p class="form-text" style="margin-bottom: 12px;" data-i18n="generated.22d7656270e2">
             Shows top viewers ranked by XP. Combines session and all-time stats with smooth animations.
           </p>
           
           <div class="overlay-url-box">
             <span class="url-text" id="leaderboardOverlayUrl">http://localhost:3000/overlay/viewer-xp/leaderboard</span>
-            <button class="btn btn-sm btn-primary copy-btn" data-action="copyToClipboard" data-arg="leaderboardOverlayUrl">
+            <button class="btn btn-sm btn-primary copy-btn" data-action="copyToClipboard" data-arg="leaderboardOverlayUrl" data-i18n="generated.4f6bea8291e8">
               📋 Copy
             </button>
           </div>
 
             <div class="overlay-settings">
               <div class="form-group">
-                <label class="form-label">Number of Entries</label>
+                <label class="form-label" data-i18n="generated.23f9eebc0afe">Number of Entries</label>
                 <input type="number" class="form-control" id="leaderboardLimit" value="10" min="3" max="50">
               </div>
             <div class="form-group">
-              <label class="form-label">Time Period</label>
+              <label class="form-label" data-i18n="generated.ca2a1d07f1c8">Time Period</label>
               <select class="form-select" id="leaderboardDays">
-                <option value="">All Time</option>
-                <option value="7">Last 7 Days</option>
-                <option value="30">Last 30 Days</option>
+                <option value="" data-i18n="generated.1c6d53a20deb">All Time</option>
+                <option value="7" data-i18n="generated.5f5e35e5e381">Last 7 Days</option>
+                <option value="30" data-i18n="generated.164181f027be">Last 30 Days</option>
               </select>
             </div>
             <div class="form-group">
-                <label class="form-label">Refresh Interval (ms)</label>
+                <label class="form-label" data-i18n="generated.a4975f091f1d">Refresh Interval (ms)</label>
                 <input type="number" class="form-control" id="leaderboardRefresh" value="30000" min="5000" step="5000">
               </div>
               <div class="form-group">
-                <label class="form-label">Design Theme</label>
+                <label class="form-label" data-i18n="generated.c91a5cb7e749">Design Theme</label>
                 <select class="form-select" id="leaderboardTheme">
                   <option value="">Standard</option>
                   <option value="minimal">Minimal</option>
@@ -1032,20 +1033,20 @@
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label">Accent Color</label>
+                <label class="form-label" data-i18n="generated.ac72c6f15342">Accent Color</label>
                 <input type="color" class="form-control" id="leaderboardAccent" value="#ffd700">
               </div>
               <div class="form-group">
-                <label class="form-label">Font Family</label>
+                <label class="form-label" data-i18n="generated.923ce83ff04b">Font Family</label>
                 <input type="text" class="form-control" id="leaderboardFont" placeholder="e.g. 'Inter', sans-serif">
               </div>
             </div>
 
           <div style="display: flex; gap: 12px; margin-top: 16px;">
-            <button class="btn btn-sm btn-success" data-action="updateOverlayUrl" data-arg="leaderboard">
+            <button class="btn btn-sm btn-success" data-action="updateOverlayUrl" data-arg="leaderboard" data-i18n="generated.bd1c0c93c756">
               ✅ Update URL
             </button>
-            <button class="btn btn-sm btn-secondary" data-action="testOverlay" data-arg="leaderboard">
+            <button class="btn btn-sm btn-secondary" data-action="testOverlay" data-arg="leaderboard" data-i18n="generated.8c4eab1e7dd4">
               👁️ Test Overlay
             </button>
           </div>
@@ -1053,44 +1054,44 @@
 
         <!-- Level-Up Animation Overlay -->
         <div class="overlay-card">
-          <div class="overlay-card-title">
+          <div class="overlay-card-title" data-i18n="generated.009b7ad51f20">
             🎉 Level-Up Animation Overlay
           </div>
-          <p class="form-text" style="margin-bottom: 12px;">
+          <p class="form-text" style="margin-bottom: 12px;" data-i18n="generated.0b33b48e0369">
             Celebration animation when viewers level up. Shows confetti, new level, and unlocked rewards.
           </p>
           
           <div class="overlay-url-box">
             <span class="url-text" id="levelUpUrl">http://localhost:3000/overlay/viewer-xp/level-up</span>
-            <button class="btn btn-sm btn-primary copy-btn" data-action="copyToClipboard" data-arg="levelUpUrl">
+            <button class="btn btn-sm btn-primary copy-btn" data-action="copyToClipboard" data-arg="levelUpUrl" data-i18n="generated.bf103e4fa481">
               📋 Copy
             </button>
           </div>
 
             <div class="overlay-settings">
               <div class="form-group">
-                <label class="form-label">Animation Duration (ms)</label>
+                <label class="form-label" data-i18n="gift_milestone.config.animation_duration">Animation Duration (ms)</label>
                 <input type="number" class="form-control" id="levelUpDuration" value="5000" min="2000" step="1000">
               </div>
               <div class="form-group">
-                <label class="form-label">Enable Sound</label>
+                <label class="form-label" data-i18n="generated.c01f143276d1">Enable Sound</label>
                 <select class="form-select" id="levelUpSound">
                   <option value="true">Yes</option>
                   <option value="false">No</option>
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label">Show Animation From Level</label>
+                <label class="form-label" data-i18n="generated.8fff46f555e0">Show Animation From Level</label>
                 <input type="number" class="form-control" id="levelUpMinLevel" value="1" min="1" step="1">
-                <small class="form-text">Hide frequent low-level spam by setting a minimum level.</small>
+                <small class="form-text" data-i18n="generated.4a765ae45000">Hide frequent low-level spam by setting a minimum level.</small>
               </div>
             </div>
 
           <div style="display: flex; gap: 12px; margin-top: 16px;">
-            <button class="btn btn-sm btn-success" data-action="updateOverlayUrl" data-arg="levelUp">
+            <button class="btn btn-sm btn-success" data-action="updateOverlayUrl" data-arg="levelUp" data-i18n="generated.59ab295f5cec">
               ✅ Update URL
             </button>
-            <button class="btn btn-sm btn-secondary" data-action="testOverlay" data-arg="level-up">
+            <button class="btn btn-sm btn-secondary" data-action="testOverlay" data-arg="level-up" data-i18n="generated.803626a9a991">
               👁️ Test Overlay
             </button>
           </div>
@@ -1099,26 +1100,26 @@
         <!-- OBS Setup Guide -->
         <div class="card">
           <div class="card-header">
-            <span class="card-header-icon">📖</span> OBS Setup Guide
-          </div>
+            <span class="card-header-icon">📖</span><span data-i18n="generated.ed57029043c9"> OBS Setup Guide
+          </span></div>
           <div class="card-body">
             <ol style="line-height: 1.8; color: var(--color-text-secondary);">
-              <li>Open OBS Studio</li>
-              <li>Click the <strong>+</strong> button in the Sources panel</li>
-              <li>Select <strong>Browser</strong> from the list</li>
-              <li>Give it a name (e.g., "XP Bar", "Leaderboard")</li>
-              <li>Paste the URL from above into the <strong>URL</strong> field</li>
-              <li>Set <strong>Width</strong> to 1920 and <strong>Height</strong> according to your overlay needs</li>
-              <li>Check <strong>"Shutdown source when not visible"</strong> for better performance</li>
-              <li>Click <strong>OK</strong> to add the overlay to your scene</li>
-              <li>Resize and position as needed in your scene</li>
+              <li data-i18n="generated.ce81b8636947">Open OBS Studio</li>
+              <li><span data-i18n="generated.f14beba60e11">Click the </span><strong>+</strong><span data-i18n="generated.90d9c3eeb49f"> button in the Sources panel</span></li>
+              <li>Select <strong>Browser</strong><span data-i18n="generated.65b3b1e50330"> from the list</span></li>
+              <li data-i18n="generated.9abb103cbe68">Give it a name (e.g., "XP Bar", "Leaderboard")</li>
+              <li><span data-i18n="generated.0f8abd2a78e5">Paste the URL from above into the </span><strong>URL</strong> field</li>
+              <li>Set <strong>Width</strong><span data-i18n="generated.219175409f6e"> to 1920 and </span><strong>Height</strong><span data-i18n="generated.3143d2140cdc"> according to your overlay needs</span></li>
+              <li>Check <strong data-i18n="generated.3813c13ad4f2">"Shutdown source when not visible"</strong><span data-i18n="generated.4d320f10fc80"> for better performance</span></li>
+              <li>Click <strong>OK</strong><span data-i18n="generated.e5cafc88a235"> to add the overlay to your scene</span></li>
+              <li data-i18n="generated.057de95e9af6">Resize and position as needed in your scene</li>
             </ol>
             <div class="alert alert-warning" style="margin-top: 16px;">
               <span>⚠️</span>
               <div>
-                <strong>Important:</strong> The overlays require an active connection to the server. 
+                <strong>Important:</strong><span data-i18n="generated.346d4c48db24"> The overlays require an active connection to the server. 
                 Make sure the server is running before starting your stream.
-              </div>
+              </span></div>
             </div>
           </div>
         </div>
@@ -1127,55 +1128,55 @@
       <!-- Additional pages will be loaded here -->
       <div id="page-overlay-preview" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">👁️ Live Preview</h1>
-          <p class="page-description">Preview how overlays look before adding them to OBS</p>
+          <h1 class="page-title" data-i18n="generated.a54d739ad899">👁️ Live Preview</h1>
+          <p class="page-description" data-i18n="generated.a80fb659b268">Preview how overlays look before adding them to OBS</p>
         </div>
 
         <!-- Overlay Selection -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">🎨</span>Select Overlay</span>
+            <span><span class="card-header-icon">🎨</span><span data-i18n="generated.d30118e99b32">Select Overlay</span></span>
           </div>
           <div class="card-body">
             <div class="form-group" style="max-width: 800px;">
-              <label class="form-label">Choose Overlay to Preview</label>
+              <label class="form-label" data-i18n="generated.a8ec745014b0">Choose Overlay to Preview</label>
               <select class="form-control" id="overlaySelect" onchange="loadOverlayPreview()">
-                <option value="">-- Select an Overlay --</option>
-                <option value="xp-bar">XP Bar - Shows current viewer's XP progress</option>
-                <option value="leaderboard">Leaderboard - Top viewers ranking</option>
-                <option value="level-up">Level Up - Level up celebration animation</option>
-                <option value="user-profile">User Profile - Detailed viewer stats card</option>
+                <option value="" data-i18n="generated.1fdcfcdb1a01">-- Select an Overlay --</option>
+                <option value="xp-bar" data-i18n="generated.e2eb6477052a">XP Bar - Shows current viewer's XP progress</option>
+                <option value="leaderboard" data-i18n="generated.2167f26e330d">Leaderboard - Top viewers ranking</option>
+                <option value="level-up" data-i18n="generated.d4ca060f9c74">Level Up - Level up celebration animation</option>
+                <option value="user-profile" data-i18n="generated.529031c6038e">User Profile - Detailed viewer stats card</option>
               </select>
             </div>
 
             <div class="form-group" style="max-width: 480px; margin-top: 16px;">
-              <label class="form-label">Preview Scale</label>
+              <label class="form-label" data-i18n="generated.009eed607ad5">Preview Scale</label>
               <select class="form-control" id="previewScale" onchange="updatePreviewScale()">
-                <option value="0.5">50% (Small)</option>
-                <option value="0.75">75% (Medium)</option>
-                <option value="1" selected>100% (Full Size)</option>
+                <option value="0.5" data-i18n="generated.cbb22a1c7de0">50% (Small)</option>
+                <option value="0.75" data-i18n="generated.384dff029b76">75% (Medium)</option>
+                <option value="1" selected data-i18n="generated.bdbd1caf6744">100% (Full Size)</option>
               </select>
             </div>
 
             <div style="margin-top: 16px;">
-              <button class="btn btn-success" data-action="refreshPreview">
+              <button class="btn btn-success" data-action="refreshPreview" data-i18n="generated.763b3de716ef">
                 🔄 Refresh Preview
               </button>
-              <button class="btn btn-secondary" data-action="copyOverlayURL">
+              <button class="btn btn-secondary" data-action="copyOverlayURL" data-i18n="generated.70c7d2c85a0a">
                 📋 Copy OBS URL
               </button>
             </div>
 
             <div id="overlayURL" style="margin-top: 12px; display: none;">
-              <label class="form-label">OBS Browser Source URL:</label>
+              <label class="form-label" data-i18n="generated.dd50146fbd63">OBS Browser Source URL:</label>
               <div style="display: flex; gap: 8px; align-items: center;">
                 <input type="text" class="form-control" id="overlayURLInput" readonly 
                   style="font-family: monospace; font-size: 0.9rem;">
-                <button class="btn btn-sm btn-secondary" data-action="copyToClipboard" data-source-id="overlayURLInput">
+                <button class="btn btn-sm btn-secondary" data-action="copyToClipboard" data-source-id="overlayURLInput" data-i18n="generated.ba1739a0ae06">
                   📋 Copy
                 </button>
               </div>
-              <small class="form-text">Add this URL as a Browser Source in OBS</small>
+              <small class="form-text" data-i18n="generated.28e0933c886c">Add this URL as a Browser Source in OBS</small>
             </div>
           </div>
         </div>
@@ -1183,7 +1184,7 @@
         <!-- Preview Container -->
         <div class="card" id="previewCard" style="display: none;">
           <div class="card-header">
-            <span><span class="card-header-icon">👁️</span>Live Preview</span>
+            <span><span class="card-header-icon">👁️</span><span data-i18n="generated.ebc50fd94aa9">Live Preview</span></span>
           </div>
           <div class="card-body" style="background: #1a1a1a; min-height: 400px; display: flex; align-items: center; justify-content: center;">
             <div id="previewContainer" style="width: 100%; height: 100%; position: relative; transform-origin: top left;">
@@ -1195,25 +1196,25 @@
         <!-- Test Controls -->
         <div class="card" id="testControls" style="display: none;">
           <div class="card-header">
-            <span><span class="card-header-icon">🎮</span>Test Controls</span>
+            <span><span class="card-header-icon">🎮</span><span data-i18n="generated.c6ded8fbc4bd">Test Controls</span></span>
           </div>
           <div class="card-body">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-              <button class="btn btn-primary" data-action="testLevelUp">
+              <button class="btn btn-primary" data-action="testLevelUp" data-i18n="generated.a7422e4b65d9">
                 ⬆️ Test Level Up
               </button>
-              <button class="btn btn-primary" data-action="testXPGain">
+              <button class="btn btn-primary" data-action="testXPGain" data-i18n="generated.6a844c0efbb1">
                 ⭐ Test XP Gain
               </button>
-              <button class="btn btn-primary" data-action="refreshLeaderboardPreview">
+              <button class="btn btn-primary" data-action="refreshLeaderboardPreview" data-i18n="generated.b5626f1a59a5">
                 📊 Refresh Leaderboard
               </button>
-              <button class="btn btn-primary" data-action="testUserProfile">
+              <button class="btn btn-primary" data-action="testUserProfile" data-i18n="generated.fefc708c73c4">
                 👤 Test User Profile
               </button>
             </div>
             <div style="margin-top: 16px;">
-              <label class="form-label">Test Username</label>
+              <label class="form-label" data-i18n="generated.a0b330778e81">Test Username</label>
               <input type="text" class="form-control" id="testUsername" placeholder="Enter username for testing" 
                 style="max-width: 480px;">
             </div>
@@ -1223,25 +1224,25 @@
 
       <div id="page-xp-settings" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">⚙️ XP Settings</h1>
-          <p class="page-description">Configure XP rewards for viewer actions</p>
+          <h1 class="page-title" data-i18n="generated.01cd2eb379bf">⚙️ XP Settings</h1>
+          <p class="page-description" data-i18n="generated.e610d2bc858e">Configure XP rewards for viewer actions</p>
         </div>
 
         <!-- XP Actions Configuration -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">⚡</span>XP Action Configuration</span>
+            <span><span class="card-header-icon">⚡</span><span data-i18n="generated.bcc502fa4650">XP Action Configuration</span></span>
           </div>
           <div class="card-body">
             <div class="table-responsive">
               <table class="modern-table">
                 <thead>
                   <tr>
-                    <th>Action Type</th>
-                    <th>XP Amount</th>
-                    <th>Cooldown (seconds)</th>
+                    <th data-i18n="generated.9763ab574763">Action Type</th>
+                    <th data-i18n="generated.0ee04eee3f7b">XP Amount</th>
+                    <th data-i18n="generated.6588b8708bd4">Cooldown (seconds)</th>
                     <th>Enabled</th>
-                    <th>Actions</th>
+                    <th data-i18n="gift_milestone.actions.title">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="actionsTable">
@@ -1249,7 +1250,7 @@
                     <td colspan="5">
                       <div class="empty-state">
                         <div class="empty-state-icon">⚙️</div>
-                        <div class="empty-state-text">Loading actions...</div>
+                        <div class="empty-state-text" data-i18n="generated.3e5c0f5ab80d">Loading actions...</div>
                       </div>
                     </td>
                   </tr>
@@ -1262,7 +1263,7 @@
         <!-- General Settings -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">🎛️</span>General Settings</span>
+            <span><span class="card-header-icon">🎛️</span><span data-i18n="generated.4df2aa828d87">General Settings</span></span>
           </div>
           <div class="card-body">
             <form id="generalSettingsForm">
@@ -1271,50 +1272,50 @@
                   <div class="form-check">
                     <input type="checkbox" class="form-check-input" id="enableDailyBonus" checked>
                     <label class="form-check-label" for="enableDailyBonus">
-                      <strong>Enable Daily Bonus</strong>
-                      <div class="form-text">Award XP to viewers on their first visit each day</div>
+                      <strong data-i18n="generated.c25ca1f50e63">Enable Daily Bonus</strong>
+                      <div class="form-text" data-i18n="generated.0ff266ae1746">Award XP to viewers on their first visit each day</div>
                     </label>
                   </div>
                   
                   <div class="form-check" style="margin-top: 16px;">
                     <input type="checkbox" class="form-check-input" id="enableStreaks" checked>
                     <label class="form-check-label" for="enableStreaks">
-                      <strong>Enable Streaks</strong>
-                      <div class="form-text">Reward viewers for consecutive daily visits</div>
+                      <strong data-i18n="generated.40ba48bedce7">Enable Streaks</strong>
+                      <div class="form-text" data-i18n="generated.392e6c1c6783">Reward viewers for consecutive daily visits</div>
                     </label>
                   </div>
                   
                   <div class="form-check" style="margin-top: 16px;">
                     <input type="checkbox" class="form-check-input" id="enableWatchTime" checked>
                     <label class="form-check-label" for="enableWatchTime">
-                      <strong>Enable Watch Time XP</strong>
-                      <div class="form-text">Award XP based on viewing duration</div>
+                      <strong data-i18n="generated.7282ec1c84f7">Enable Watch Time XP</strong>
+                      <div class="form-text" data-i18n="generated.dbf529db7052">Award XP based on viewing duration</div>
                     </label>
                   </div>
                 </div>
 
                 <div>
                   <div class="form-group">
-                    <label class="form-label">Watch Time Interval (minutes)</label>
+                    <label class="form-label" data-i18n="generated.49263f7709a3">Watch Time Interval (minutes)</label>
                     <input type="number" class="form-control" id="watchTimeInterval" min="1" max="60" value="5">
-                    <small class="form-text">Award XP every X minutes of watching</small>
+                    <small class="form-text" data-i18n="generated.c70fd4379674">Award XP every X minutes of watching</small>
                   </div>
                   
                   <div class="form-check" style="margin-top: 16px;">
                     <input type="checkbox" class="form-check-input" id="announceLevelUps" checked>
                     <label class="form-check-label" for="announceLevelUps">
-                      <strong>Announce Level Ups</strong>
-                      <div class="form-text">Show notifications when viewers level up</div>
+                      <strong data-i18n="generated.55c6ebab12ff">Announce Level Ups</strong>
+                      <div class="form-text" data-i18n="generated.6c7edb83d9c2">Show notifications when viewers level up</div>
                     </label>
                   </div>
                 </div>
               </div>
 
               <div style="margin-top: 24px;">
-                <button type="submit" class="btn btn-success">
+                <button type="submit" class="btn btn-success" data-i18n="generated.4ca135dd888e">
                   💾 Save Settings
                 </button>
-                <button type="button" class="btn btn-secondary" data-action="resetSettings">
+                <button type="button" class="btn btn-secondary" data-action="resetSettings" data-i18n="generated.bb7a0d06f5ba">
                   🔄 Reset to Defaults
                 </button>
               </div>
@@ -1325,14 +1326,14 @@
 
       <div id="page-level-config" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">📈 Level Configuration</h1>
-          <p class="page-description">Customize level progression and rewards</p>
+          <h1 class="page-title" data-i18n="generated.afde824fb7c3">📈 Level Configuration</h1>
+          <p class="page-description" data-i18n="generated.90d10f8e9755">Customize level progression and rewards</p>
         </div>
 
         <!-- Progression Type Selection -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">⚙️</span>Progression Type</span>
+            <span><span class="card-header-icon">⚙️</span><span data-i18n="generated.6eba574196bb">Progression Type</span></span>
           </div>
           <div class="card-body">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
@@ -1341,7 +1342,7 @@
                   value="exponential" checked onchange="updateLevelTypeSettings()">
                 <label class="form-check-label" for="levelTypeExponential">
                   <strong>Exponential</strong>
-                  <div class="form-text">XP required increases exponentially (Level 1: 0 XP, Level 2: 100 XP, Level 3: 400 XP, Level 4: 900 XP)</div>
+                  <div class="form-text" data-i18n="generated.0d797c4c660d">XP required increases exponentially (Level 1: 0 XP, Level 2: 100 XP, Level 3: 400 XP, Level 4: 900 XP)</div>
                 </label>
               </div>
               
@@ -1350,7 +1351,7 @@
                   value="linear" onchange="updateLevelTypeSettings()">
                 <label class="form-check-label" for="levelTypeLinear">
                   <strong>Linear</strong>
-                  <div class="form-text">Fixed XP per level (e.g., 1000 XP per level)</div>
+                  <div class="form-text" data-i18n="generated.979b5b0dce01">Fixed XP per level (e.g., 1000 XP per level)</div>
                 </label>
               </div>
               
@@ -1359,21 +1360,21 @@
                   value="custom" onchange="updateLevelTypeSettings()">
                 <label class="form-check-label" for="levelTypeCustom">
                   <strong>Custom</strong>
-                  <div class="form-text">Define custom XP requirements for each level</div>
+                  <div class="form-text" data-i18n="generated.d528ab0eff8d">Define custom XP requirements for each level</div>
                 </label>
               </div>
             </div>
 
             <div id="linearSettings" style="display: none; margin-top: 16px; width: min(100%, 560px); max-width: none;">
               <div class="form-group">
-                <label class="form-label">XP Per Level</label>
+                <label class="form-label" data-i18n="generated.420cd1ad2d32">XP Per Level</label>
                 <input type="number" class="form-control" id="xpPerLevel" value="1000" min="100">
-                <small class="form-text">XP required to advance one level</small>
+                <small class="form-text" data-i18n="generated.021471587d87">XP required to advance one level</small>
               </div>
             </div>
 
             <div style="margin-top: 16px;">
-              <button class="btn btn-success" data-action="saveLevelTypeSettings">
+              <button class="btn btn-success" data-action="saveLevelTypeSettings" data-i18n="generated.227715829111">
                 💾 Save Progression Settings
               </button>
             </div>
@@ -1383,51 +1384,51 @@
         <!-- Level Generator -->
         <div class="card" id="levelGeneratorCard">
           <div class="card-header">
-            <span><span class="card-header-icon">🔧</span>Level Generator</span>
+            <span><span class="card-header-icon">🔧</span><span data-i18n="generated.25dba3c3cade">Level Generator</span></span>
           </div>
           <div class="card-body">
-            <p style="margin-bottom: 16px;">Generate custom level configurations with automatic rewards</p>
+            <p style="margin-bottom: 16px;" data-i18n="generated.73075ec1db3e">Generate custom level configurations with automatic rewards</p>
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
               <div class="form-group">
-                <label class="form-label">Number of Levels</label>
+                <label class="form-label" data-i18n="generated.ca18d7a54d7d">Number of Levels</label>
                 <input type="number" class="form-control" id="genLevelCount" value="100" min="10" max="999">
               </div>
               
               <div class="form-group">
-                <label class="form-label">Starting XP</label>
+                <label class="form-label" data-i18n="generated.0fe9efc02ae4">Starting XP</label>
                 <input type="number" class="form-control" id="genStartXP" value="100" min="0">
               </div>
               
               <div class="form-group">
-                <label class="form-label">Growth Rate</label>
+                <label class="form-label" data-i18n="generated.d1595b33ce1d">Growth Rate</label>
                 <select class="form-control" id="genGrowthRate">
-                  <option value="slow">Slow (1.1x per level)</option>
-                  <option value="medium" selected>Medium (1.2x per level)</option>
-                  <option value="fast">Fast (1.5x per level)</option>
-                  <option value="extreme">Extreme (2.0x per level)</option>
+                  <option value="slow" data-i18n="generated.a4460a982b93">Slow (1.1x per level)</option>
+                  <option value="medium" selected data-i18n="generated.fcbd559a5eaf">Medium (1.2x per level)</option>
+                  <option value="fast" data-i18n="generated.4ce6c00ff3fa">Fast (1.5x per level)</option>
+                  <option value="extreme" data-i18n="generated.9e31cf3db4a4">Extreme (2.0x per level)</option>
                 </select>
               </div>
             </div>
 
             <div style="margin-top: 16px;">
-              <button class="btn btn-primary" data-action="generateLevelConfigs">
+              <button class="btn btn-primary" data-action="generateLevelConfigs" data-i18n="generated.4111f90e73e8">
                 🎲 Generate Levels
               </button>
-              <button class="btn btn-secondary" data-action="previewLevelProgression">
+              <button class="btn btn-secondary" data-action="previewLevelProgression" data-i18n="generated.f0fbc53b40a0">
                 📊 Preview Progression
               </button>
             </div>
 
             <div id="levelProgressionPreview" style="display: none; margin-top: 16px; max-height: 300px; overflow-y: auto;">
-              <h4 style="font-size: 1rem; margin-bottom: 12px;">Progression Preview</h4>
+              <h4 style="font-size: 1rem; margin-bottom: 12px;" data-i18n="generated.94300f1799b4">Progression Preview</h4>
               <div class="table-responsive">
                 <table class="modern-table" style="font-size: 0.85rem;">
                   <thead>
                     <tr>
                       <th>Level</th>
-                      <th>Total XP Required</th>
-                      <th>XP for Next Level</th>
+                      <th data-i18n="generated.a0b9a205ffb9">Total XP Required</th>
+                      <th data-i18n="generated.3fcafdb62c5e">XP for Next Level</th>
                       <th>Growth</th>
                     </tr>
                   </thead>
@@ -1442,14 +1443,14 @@
         <!-- Level Rewards Configuration -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">🎁</span>Level Rewards</span>
+            <span><span class="card-header-icon">🎁</span><span data-i18n="generated.01a384ccb94f">Level Rewards</span></span>
           </div>
           <div class="card-body">
             <div style="margin-bottom: 16px;">
-              <button class="btn btn-primary" data-action="addLevelReward">
+              <button class="btn btn-primary" data-action="addLevelReward" data-i18n="generated.e1694691f4c4">
                 ➕ Add Reward Tier
               </button>
-              <button class="btn btn-secondary" data-action="loadLevelRewards">
+              <button class="btn btn-secondary" data-action="loadLevelRewards" data-i18n="generated.ae519f829e29">
                 🔄 Refresh
               </button>
             </div>
@@ -1460,10 +1461,10 @@
                   <tr>
                     <th>Level</th>
                     <th>Title/Badge</th>
-                    <th>Name Color</th>
-                    <th>Custom Emote</th>
+                    <th data-i18n="generated.dacb4de3bab9">Name Color</th>
+                    <th data-i18n="generated.f2106893f6b0">Custom Emote</th>
                     <th>Announcement</th>
-                    <th>Actions</th>
+                    <th data-i18n="gift_milestone.actions.title">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="levelRewardsTable">
@@ -1471,8 +1472,8 @@
                     <td colspan="6">
                       <div class="empty-state">
                         <div class="empty-state-icon">🎁</div>
-                        <div class="empty-state-text">No rewards configured yet</div>
-                        <div class="empty-state-description">Add milestone rewards for reaching specific levels</div>
+                        <div class="empty-state-text" data-i18n="generated.dbe9ac75df60">No rewards configured yet</div>
+                        <div class="empty-state-description" data-i18n="generated.79e2583f0b40">Add milestone rewards for reaching specific levels</div>
                       </div>
                     </td>
                   </tr>
@@ -1485,14 +1486,14 @@
         <!-- Current Level Distribution -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">📊</span>Level Distribution</span>
+            <span><span class="card-header-icon">📊</span><span data-i18n="generated.411d91c286e3">Level Distribution</span></span>
           </div>
           <div class="card-body">
             <div id="levelDistributionChart" style="min-height: 200px;">
               <div class="empty-state">
                 <div class="empty-state-icon">📊</div>
-                <div class="empty-state-text">Level distribution chart</div>
-                <div class="empty-state-description">Shows how many viewers are at each level range</div>
+                <div class="empty-state-text" data-i18n="generated.5711e1b79276">Level distribution chart</div>
+                <div class="empty-state-description" data-i18n="generated.f1782e56f3be">Shows how many viewers are at each level range</div>
               </div>
             </div>
           </div>
@@ -1501,48 +1502,48 @@
 
       <div id="page-manual-award" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">🎁 Manual Award</h1>
-          <p class="page-description">Manually award XP to viewers for special events or achievements</p>
+          <h1 class="page-title" data-i18n="generated.f8b767518d08">🎁 Manual Award</h1>
+          <p class="page-description" data-i18n="generated.4d741e40ded2">Manually award XP to viewers for special events or achievements</p>
         </div>
 
         <div class="card" style="max-width: 1440px; width: min(98vw, 1440px);">
           <div class="card-header">
-            <span><span class="card-header-icon">🎁</span>Award XP</span>
+            <span><span class="card-header-icon">🎁</span><span data-i18n="generated.f9731d6c64d3">Award XP</span></span>
           </div>
           <div class="card-body">
             <div class="alert alert-info">
               <span>💡</span>
               <div>
-                <strong>Tip:</strong> Use this to reward viewers for special contributions, milestones, or community events.
+                <strong>Tip:</strong><span data-i18n="generated.9ca1a06b5a82"> Use this to reward viewers for special contributions, milestones, or community events.
                 The XP will be added immediately and a level-up animation will trigger if they reach a new level.
-              </div>
+              </span></div>
             </div>
 
             <form id="manualAwardForm">
               <div class="form-group">
-                <label class="form-label">Username *</label>
+                <label class="form-label" data-i18n="generated.771cdce063c4">Username *</label>
                 <input type="text" class="form-control" id="awardUsername" placeholder="Enter viewer username" list="viewerSuggestions" autocomplete="off" required>
                 <datalist id="viewerSuggestions"></datalist>
-                <small class="form-text">The TikTok username of the viewer to award XP</small>
+                <small class="form-text" data-i18n="generated.c636d5c1bb88">The TikTok username of the viewer to award XP</small>
               </div>
 
               <div class="form-group">
-                <label class="form-label">XP Amount *</label>
+                <label class="form-label" data-i18n="generated.3c008f1d87ab">XP Amount *</label>
                 <input type="number" class="form-control" id="awardAmount" min="1" placeholder="100" required>
-                <small class="form-text">Amount of XP to award (minimum: 1)</small>
+                <small class="form-text" data-i18n="generated.6c7ba9aa5669">Amount of XP to award (minimum: 1)</small>
               </div>
 
               <div class="form-group">
-                <label class="form-label">Reason (Optional)</label>
+                <label class="form-label" data-i18n="generated.ab806a8ff3ca">Reason (Optional)</label>
                 <textarea class="form-control" id="awardReason" rows="3" placeholder="e.g., Winner of community event, Milestone celebration, etc."></textarea>
-                <small class="form-text">Optional note about why this XP was awarded (for your records)</small>
+                <small class="form-text" data-i18n="generated.8a0583c1b852">Optional note about why this XP was awarded (for your records)</small>
               </div>
 
               <div style="display: flex; gap: 12px;">
-                <button type="submit" class="btn btn-success">
+                <button type="submit" class="btn btn-success" data-i18n="generated.6b03aa42067b">
                   ✅ Award XP
                 </button>
-                <button type="button" class="btn btn-secondary" data-action="clearAwardForm">
+                <button type="button" class="btn btn-secondary" data-action="clearAwardForm" data-i18n="generated.5a97a4a26060">
                   🔄 Clear Form
                 </button>
               </div>
@@ -1555,7 +1556,7 @@
         <!-- Recent Manual Awards -->
         <div class="card" style="margin-top: 24px;">
           <div class="card-header">
-            <span><span class="card-header-icon">📜</span>Recent Manual Awards</span>
+            <span><span class="card-header-icon">📜</span><span data-i18n="generated.12ed51057aff">Recent Manual Awards</span></span>
           </div>
           <div class="card-body">
             <div class="table-responsive">
@@ -1564,7 +1565,7 @@
                   <tr>
                     <th>Date/Time</th>
                     <th>Username</th>
-                    <th>XP Amount</th>
+                    <th data-i18n="generated.f1a351c802ef">XP Amount</th>
                     <th>Reason</th>
                   </tr>
                 </thead>
@@ -1573,8 +1574,8 @@
                     <td colspan="4">
                       <div class="empty-state">
                         <div class="empty-state-icon">📜</div>
-                        <div class="empty-state-text">No manual awards yet</div>
-                        <div class="empty-state-description">Recent manual XP awards will appear here</div>
+                        <div class="empty-state-text" data-i18n="generated.a8a70b64b7db">No manual awards yet</div>
+                        <div class="empty-state-description" data-i18n="generated.6d87b3c99723">Recent manual XP awards will appear here</div>
                       </div>
                     </td>
                   </tr>
@@ -1588,68 +1589,68 @@
       <!-- Spin Wheel Settings Page -->
       <div id="page-spin-settings" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">🎰 Spin Wheel Settings</h1>
-          <p class="page-description">Configure the lucky wheel game for viewers</p>
+          <h1 class="page-title" data-i18n="generated.6455ea0c938d">🎰 Spin Wheel Settings</h1>
+          <p class="page-description" data-i18n="generated.f0d97a4af5e3">Configure the lucky wheel game for viewers</p>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr; gap: 24px;">
           <!-- Spin Configuration -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">⚙️</span>Wheel Configuration</span>
+              <span><span class="card-header-icon">⚙️</span><span data-i18n="generated.712fb7358e11">Wheel Configuration</span></span>
             </div>
             <div class="card-body">
               <form id="spinConfigForm">
                 <div class="form-group">
                   <label class="form-label">
-                    <input type="checkbox" id="spinEnabled"> Enable Spin Wheel
-                  </label>
-                  <small class="form-text">Allow viewers to use the /spin command</small>
+                    <input type="checkbox" id="spinEnabled"><span data-i18n="generated.ac23180e6213"> Enable Spin Wheel
+                  </span></label>
+                  <small class="form-text" data-i18n="generated.8e819e26d813">Allow viewers to use the /spin command</small>
                 </div>
 
                 <div class="form-row">
                   <div class="form-group">
-                    <label class="form-label">Minimum Bet (XP)</label>
+                    <label class="form-label" data-i18n="generated.655c95910cdd">Minimum Bet (XP)</label>
                     <input type="number" class="form-control" id="spinMinBet" min="1" placeholder="100">
-                    <small class="form-text">Smallest amount viewers can bet</small>
+                    <small class="form-text" data-i18n="generated.b85545f7166d">Smallest amount viewers can bet</small>
                   </div>
 
                   <div class="form-group">
-                    <label class="form-label">Maximum Bet (XP)</label>
+                    <label class="form-label" data-i18n="generated.1795c9c7b81f">Maximum Bet (XP)</label>
                     <input type="number" class="form-control" id="spinMaxBet" min="1" placeholder="50000">
-                    <small class="form-text">Largest amount viewers can bet</small>
+                    <small class="form-text" data-i18n="generated.a7c394acb4b9">Largest amount viewers can bet</small>
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">Number of Fields</label>
+                  <label class="form-label" data-i18n="generated.48799dba8faf">Number of Fields</label>
                   <input type="number" class="form-control" id="spinNumFields" min="4" max="16" value="8">
-                  <small class="form-text">How many segments on the wheel (4-16)</small>
+                  <small class="form-text" data-i18n="generated.b5f1af7187eb">How many segments on the wheel (4-16)</small>
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">Field Values (XP)</label>
-                  <small class="form-text" style="display: block; margin-bottom: 8px;">
+                  <label class="form-label" data-i18n="generated.3f79aadad06c">Field Values (XP)</label>
+                  <small class="form-text" style="display: block; margin-bottom: 8px;" data-i18n="generated.cbe6e39bcd00">
                     Enter XP values for each field (positive = win, negative = lose). One per line.
                   </small>
                   <textarea class="form-control" id="spinFieldValues" rows="8" placeholder="5000&#10;-2000&#10;1000&#10;-5000&#10;2000&#10;-1000&#10;10000&#10;-3000"></textarea>
-                  <small class="form-text">Tip: Use large positive values for jackpots, negative values for risk</small>
+                  <small class="form-text" data-i18n="generated.5e86c206a126">Tip: Use large positive values for jackpots, negative values for risk</small>
                 </div>
 
                 <div class="alert alert-info">
                   <span>💡</span>
                   <div>
-                    <strong>How it works:</strong><br>
-                    • Viewers bet XP using /spin &lt;amount&gt;<br>
-                    • They spin the wheel and land on a random field<br>
-                    • Positive fields = win that amount of XP<br>
-                    • Negative fields = lose that amount of XP (plus their bet)<br>
-                    • Example: Bet 5000, land on +10000 = net gain +5000 XP<br>
+                    <strong data-i18n="generated.cf23abcaa44e">How it works:</strong><br><span data-i18n="generated.56d95507d427">
+                    • Viewers bet XP using /spin &lt;amount&gt;</span><br><span data-i18n="generated.38fec241953e">
+                    • They spin the wheel and land on a random field</span><br><span data-i18n="generated.58fe80e8c6b8">
+                    • Positive fields = win that amount of XP</span><br><span data-i18n="generated.6d92bd791be6">
+                    • Negative fields = lose that amount of XP (plus their bet)</span><br><span data-i18n="generated.7752839cae6c">
+                    • Example: Bet 5000, land on +10000 = net gain +5000 XP</span><br><span data-i18n="generated.ce9326e518cb">
                     • Example: Bet 5000, land on -2000 = net loss -7000 XP
-                  </div>
+                  </span></div>
                 </div>
 
-                <button type="submit" class="btn btn-primary" id="saveSpinConfigBtn">
+                <button type="submit" class="btn btn-primary" id="saveSpinConfigBtn" data-i18n="generated.cd9edb1a2b5b">
                   💾 Save Spin Configuration
                 </button>
               </form>
@@ -1659,14 +1660,14 @@
           <!-- Wheel Preview -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">👁️</span>Wheel Preview</span>
+              <span><span class="card-header-icon">👁️</span><span data-i18n="generated.36c4b0aaa3d1">Wheel Preview</span></span>
             </div>
             <div class="card-body">
               <div id="wheelPreviewContainer" style="text-align: center; padding: 20px;">
                 <div style="display: inline-block; position: relative;">
                   <canvas id="wheelPreviewCanvas" width="300" height="300" style="border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"></canvas>
                 </div>
-                <p style="margin-top: 16px; color: var(--color-text-secondary);">
+                <p style="margin-top: 16px; color: var(--color-text-secondary);" data-i18n="generated.b008b3553788">
                   Preview updates automatically when you change field values
                 </p>
               </div>
@@ -1676,8 +1677,8 @@
           <!-- Spin History -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">📊</span>Recent Spins</span>
-              <button type="button" class="btn btn-secondary" id="refreshSpinHistoryBtn">
+              <span><span class="card-header-icon">📊</span><span data-i18n="generated.e53d30700aeb">Recent Spins</span></span>
+              <button type="button" class="btn btn-secondary" id="refreshSpinHistoryBtn" data-i18n="generated.84bebd5fd5d6">
                 🔄 Refresh
               </button>
             </div>
@@ -1685,8 +1686,8 @@
               <div id="spinHistoryContainer">
                 <div class="empty-state">
                   <div class="empty-state-icon">🎰</div>
-                  <div class="empty-state-text">No spin history yet</div>
-                  <div class="empty-state-description">Spins will appear here once viewers start playing</div>
+                  <div class="empty-state-text" data-i18n="generated.ee5271d6726a">No spin history yet</div>
+                  <div class="empty-state-description" data-i18n="generated.cbe5f158fad3">Spins will appear here once viewers start playing</div>
                 </div>
               </div>
             </div>
@@ -1700,27 +1701,27 @@
             <div class="card-body">
               <div id="spinStatsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
                 <div class="stat-box">
-                  <div class="stat-label">Total Spins</div>
+                  <div class="stat-label" data-i18n="generated.08ec7e028f64">Total Spins</div>
                   <div class="stat-value" id="statTotalSpins">0</div>
                 </div>
                 <div class="stat-box">
-                  <div class="stat-label">Total Wins</div>
+                  <div class="stat-label" data-i18n="generated.0d0fdb43997d">Total Wins</div>
                   <div class="stat-value" id="statWins">0</div>
                 </div>
                 <div class="stat-box">
-                  <div class="stat-label">Total Losses</div>
+                  <div class="stat-label" data-i18n="generated.69587779d195">Total Losses</div>
                   <div class="stat-value" id="statLosses">0</div>
                 </div>
                 <div class="stat-box">
-                  <div class="stat-label">Net XP Change</div>
+                  <div class="stat-label" data-i18n="generated.77a51de6072a">Net XP Change</div>
                   <div class="stat-value" id="statNetChange">0</div>
                 </div>
                 <div class="stat-box">
-                  <div class="stat-label">Biggest Win</div>
+                  <div class="stat-label" data-i18n="generated.c73fcd5902c2">Biggest Win</div>
                   <div class="stat-value" id="statBiggestWin">0</div>
                 </div>
                 <div class="stat-box">
-                  <div class="stat-label">Biggest Loss</div>
+                  <div class="stat-label" data-i18n="generated.230f4247a708">Biggest Loss</div>
                   <div class="stat-value" id="statBiggestLoss">0</div>
                 </div>
               </div>
@@ -1731,18 +1732,18 @@
 
       <div id="page-import-export" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">💾 Import/Export</h1>
-          <p class="page-description">Backup and restore viewer data</p>
+          <h1 class="page-title" data-i18n="generated.afb2116c07f1">💾 Import/Export</h1>
+          <p class="page-description" data-i18n="generated.b36e3fa4c420">Backup and restore viewer data</p>
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px;">
           <!-- Export Section -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">📤</span>Export Data</span>
+              <span><span class="card-header-icon">📤</span><span data-i18n="generated.2bd654d32abf">Export Data</span></span>
             </div>
             <div class="card-body">
-              <p style="color: var(--color-text-secondary); margin-bottom: 16px;">
+              <p style="color: var(--color-text-secondary); margin-bottom: 16px;" data-i18n="generated.6197b5149f6f">
                 Export all viewer XP data including profiles, transactions, and configuration settings.
                 This creates a JSON backup file you can use to restore data later.
               </p>
@@ -1750,17 +1751,17 @@
               <div class="alert alert-info">
                 <span>💡</span>
                 <div>
-                  <strong>What's included:</strong>
+                  <strong data-i18n="generated.b074cf1457c6">What's included:</strong>
                   <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
-                    <li>All viewer profiles and XP data</li>
-                    <li>Transaction history</li>
-                    <li>Level configuration</li>
-                    <li>XP action settings</li>
+                    <li data-i18n="generated.ac265aebbf98">All viewer profiles and XP data</li>
+                    <li data-i18n="generated.3ec7ddcaee03">Transaction history</li>
+                    <li data-i18n="generated.afaa37e85845">Level configuration</li>
+                    <li data-i18n="generated.c5ddce306678">XP action settings</li>
                   </ul>
                 </div>
               </div>
 
-              <button type="button" class="btn btn-success" id="exportDataBtn" data-action="exportData">
+              <button type="button" class="btn btn-success" id="exportDataBtn" data-action="exportData" data-i18n="generated.992db2bfe679">
                 📥 Download Export File
               </button>
               <div id="exportStatus" style="margin-top: 16px;"></div>
@@ -1770,10 +1771,10 @@
           <!-- Import Section -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">📥</span>Import Data</span>
+              <span><span class="card-header-icon">📥</span><span data-i18n="generated.942dadcede96">Import Data</span></span>
             </div>
             <div class="card-body">
-              <p style="color: var(--color-text-secondary); margin-bottom: 16px;">
+              <p style="color: var(--color-text-secondary); margin-bottom: 16px;" data-i18n="generated.90aab367b06b">
                 Import viewer XP data from a previously exported file. 
                 Existing data will be merged with imported data.
               </p>
@@ -1781,18 +1782,18 @@
               <div class="alert alert-warning">
                 <span>⚠️</span>
                 <div>
-                  <strong>Warning:</strong> Importing data will update existing viewer profiles with the same username.
+                  <strong>Warning:</strong><span data-i18n="generated.9f42a7a9124a"> Importing data will update existing viewer profiles with the same username.
                   Make sure to back up your current data before importing.
-                </div>
+                </span></div>
               </div>
 
               <div class="form-group">
-                <label class="form-label">Select Export File</label>
+                <label class="form-label" data-i18n="generated.1c4c9fdf0767">Select Export File</label>
                 <input type="file" class="form-control" id="importFile" accept=".json">
-                <small class="form-text">Choose a JSON file exported from this system</small>
+                <small class="form-text" data-i18n="generated.89532f32927a">Choose a JSON file exported from this system</small>
               </div>
 
-              <button type="button" class="btn btn-warning" id="importDataBtn" data-action="importData">
+              <button type="button" class="btn btn-warning" id="importDataBtn" data-action="importData" data-i18n="generated.6a55201fd9ea">
                 📤 Import Data
               </button>
               <div id="importStatus" style="margin-top: 16px;"></div>
@@ -1803,30 +1804,30 @@
         <!-- Viewer History Lookup -->
         <div class="card" style="margin-top: 24px;">
           <div class="card-header">
-            <span><span class="card-header-icon">📊</span>Viewer XP History</span>
+            <span><span class="card-header-icon">📊</span><span data-i18n="generated.50883d0bed6a">Viewer XP History</span></span>
           </div>
           <div class="card-body">
             <div class="form-group" style="max-width: 800px;">
-              <label class="form-label">Search Viewer</label>
+              <label class="form-label" data-i18n="generated.09ef681db1e9">Search Viewer</label>
               <div style="display: flex; gap: 12px;">
                 <input type="text" class="form-control" id="historyUsername" placeholder="Enter username">
-                <button class="btn btn-primary" data-action="loadViewerHistory" style="white-space: nowrap;">
+                <button class="btn btn-primary" data-action="loadViewerHistory" style="white-space: nowrap;" data-i18n="generated.750015b7e908">
                   🔍 Load History
                 </button>
               </div>
             </div>
 
             <div id="historyContainer" style="display:none; margin-top: 24px;">
-              <h3 style="font-size: 1.125rem; margin-bottom: 16px;">
-                Transaction History for <strong id="historyViewerName"></strong>
+              <h3 style="font-size: 1.125rem; margin-bottom: 16px;"><span data-i18n="generated.c40acb565d16">
+                Transaction History for </span><strong id="historyViewerName"></strong>
               </h3>
               <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                 <table class="modern-table">
                   <thead>
                     <tr>
                       <th>Date/Time</th>
-                      <th>Action Type</th>
-                      <th>XP Amount</th>
+                      <th data-i18n="generated.221fc73a9f2a">Action Type</th>
+                      <th data-i18n="generated.84ddb3a12ca7">XP Amount</th>
                       <th>Details</th>
                     </tr>
                   </thead>

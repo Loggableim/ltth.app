@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>XP Event Ticker</title>
+  <title data-i18n="generated.ef2aaeeb7359">XP Event Ticker</title>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     (function () {
@@ -370,36 +370,37 @@
       color: #fff7cc;
     }
   </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
   <div class="ticker-container">
     <div class="ticker-header">
       <span class="ticker-icon">⭐</span>
-      <span>Live XP Events</span>
+      <span data-i18n="generated.ee1281f9ee19">Live XP Events</span>
       <span class="connection-status" id="connectionStatus">Connecting...</span>
     </div>
     <div class="events-list" id="eventsList">
-      <div class="empty-message">Waiting for events...</div>
+      <div class="empty-message" data-i18n="generated.11288244685d">Waiting for events...</div>
     </div>
   </div>
 
   <!-- Settings Panel (hidden in production, visible in preview) -->
   <div class="settings-panel" id="settingsPanel" style="display: none;">
-    <h3 style="margin-bottom: 10px;">Overlay Settings</h3>
-    <label>Max Events:</label>
+    <h3 style="margin-bottom: 10px;" data-i18n="generated.af68d8063f8b">Overlay Settings</h3>
+    <label data-i18n="generated.b93eab7541ca">Max Events:</label>
     <input type="number" id="maxEvents" value="10" min="5" max="50">
     
-    <label>Animation Duration (ms):</label>
+    <label data-i18n="generated.5334b4891a95">Animation Duration (ms):</label>
     <input type="number" id="animDuration" value="300" min="100" max="1000">
     
-    <label>Auto Scroll:</label>
+    <label data-i18n="generated.1e72f167f8ca">Auto Scroll:</label>
     <select id="autoScroll">
       <option value="true">Enabled</option>
       <option value="false">Disabled</option>
     </select>
     
-    <button onclick="applySettings()">Apply Settings</button>
-    <button onclick="toggleSettings()">Hide Settings</button>
+    <button onclick="applySettings()" data-i18n="generated.bcee833ca29f">Apply Settings</button>
+    <button onclick="toggleSettings()" data-i18n="generated.2352893bb6a2">Hide Settings</button>
   </div>
 
   <script>

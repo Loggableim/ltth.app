@@ -345,7 +345,19 @@
                 console.log(`[Load Quick Action States] Flows button set to: ${flowsBtn.getAttribute('data-state')}`);
             }
 
-            // Load WebGPU Emoji Rain state from plugin
+            // Load the active EmojiRain edition state from its plugin-local API.
+            try {
+                const emojiRainResponse = await fetch('/api/emoji-rain/status');
+                const emojiRainData = await emojiRainResponse.json();
+                const emojiRainBtn = document.getElementById('quick-emoji-rain-btn');
+                if (emojiRainData.success) {
+                    setButtonState(emojiRainBtn, emojiRainData.enabled !== false ? 'on' : 'off');
+                }
+            } catch (error) {
+                console.log('EmojiRain status not available');
+            }
+
+            // Load WebGPU EmojiRain state from plugin
             try {
                 const webgpuEmojiRainResponse = await fetch('/api/webgpu-emoji-rain/status');
                 const webgpuEmojiRainData = await webgpuEmojiRainResponse.json();
@@ -413,6 +425,11 @@
 
                 case 'webgpu-emoji-rain':
                     endpoint = '/api/webgpu-emoji-rain/toggle';
+                    body = { enabled };
+                    break;
+
+                case 'emoji-rain':
+                    endpoint = '/api/emoji-rain/toggle';
                     body = { enabled };
                     break;
 

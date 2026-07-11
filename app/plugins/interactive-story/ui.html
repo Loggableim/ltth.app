@@ -8,7 +8,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Interactive Story Generator - Admin Panel</title>
+  <title data-i18n="generated.a1b2af44f7e9">Interactive Story Generator - Admin Panel</title>
 
   <link rel="stylesheet" href="/css/themes.css">
 
@@ -3330,10 +3330,10 @@
     <section class="hero-banner">
       <div class="hero-copy">
         <div class="hero-heading-row">
-          <h1>Interactive Story</h1>
-          <span class="hero-state-badge" id="storyStateBadge">Bereit</span>
+          <h1 data-i18n="generated.52e86ea9d0f7">Interactive Story</h1>
+          <span class="hero-state-badge" id="storyStateBadge" data-i18n="interactive_story.ui.status.ready">Bereit</span>
         </div>
-        <p class="hero-subtitle">AI-generierte Stories mit Chat-Voting, Bildern, TTS und OBS-Overlay.</p>
+        <p class="hero-subtitle" data-i18n="generated.cd4a53d194b4">AI-generierte Stories mit Chat-Voting, Bildern, TTS und OBS-Overlay.</p>
       </div>
       <div class="hero-actions">
         <button class="btn btn-secondary hero-overlay-btn" id="heroOpenOverlayBtn" data-i18n-key="cards.overlay.open">Open Overlay</button>
@@ -3355,8 +3355,8 @@
       <div class="card-body">
 
         <div class="live-state" id="liveStateCard">
-          <div class="live-state__title" id="liveStateTitle">Generation bereit</div>
-          <div class="live-state__meta" id="liveStateMeta">OpenAI • DALL-E • System TTS</div>
+          <div class="live-state__title" id="liveStateTitle" data-i18n="generated.a401ef97c61a">Generation bereit</div>
+          <div class="live-state__meta" id="liveStateMeta" data-i18n="generated.c27bea89c798">OpenAI • DALL-E • System TTS</div>
         </div>
 
         <div class="status-grid">
@@ -3423,7 +3423,7 @@
 
         <div class="quick-start-card">
 
-          <h4>Quick Start</h4>
+          <h4 data-i18n="generated.1bdf8be28255">Quick Start</h4>
 
           <div class="quick-start-steps">
 
@@ -3433,9 +3433,9 @@
 
               <div class="step-content">
 
-                <strong>Configure API</strong>
+                <strong data-i18n="generated.ed043dd57e30">Configure API</strong>
 
-                <small>Set your OpenAI, OpenRouter, Ollama, or SiliconFlow API key in Settings</small>
+                <small data-i18n="generated.31380e59f941">Set your OpenAI, OpenRouter, Ollama, or SiliconFlow API key in Settings</small>
 
               </div>
 
@@ -3447,9 +3447,9 @@
 
               <div class="step-content">
 
-                <strong>Test Connection</strong>
+                <strong data-i18n="generated.e814051051f1">Test Connection</strong>
 
-                <small>Use the Test API Key button below</small>
+                <small data-i18n="generated.1155ab5ac9e4">Use the Test API Key button below</small>
 
               </div>
 
@@ -3461,9 +3461,9 @@
 
               <div class="step-content">
 
-                <strong>Add OBS Overlay</strong>
+                <strong data-i18n="generated.accf3a66c7ef">Add OBS Overlay</strong>
 
-                <small>Copy the overlay URL to OBS Browser Source</small>
+                <small data-i18n="generated.caaef34e55a2">Copy the overlay URL to OBS Browser Source</small>
 
               </div>
 
@@ -3475,9 +3475,9 @@
 
               <div class="step-content">
 
-                <strong>Start Story!</strong>
+                <strong data-i18n="generated.107fabb11bc9">Start Story!</strong>
 
-                <small>Select a theme and click Start Story</small>
+                <small data-i18n="generated.24cc9e6b54aa">Select a theme and click Start Story</small>
 
               </div>
 
@@ -3497,7 +3497,7 @@
 
             <div class="config-section-header" onclick="toggleConfigSection(this)">
 
-              <h5>API Configuration</h5>
+              <h5 data-i18n="generated.7e2a5ef9f127">API Configuration</h5>
 
               <span class="config-section-toggle">?</span>
 
@@ -3545,11 +3545,11 @@
 
                   <select class="form-select" id="llmProvider">
 
-                    <option value="openai">OpenAI (GPT)</option>
+                    <option value="openai" data-i18n="generated.f5ac0f4d5417">OpenAI (GPT)</option>
 
-                    <option value="openrouter">OpenRouter (Free Router)</option>
+                    <option value="openrouter" data-i18n="generated.84df4e5c6b62">OpenRouter (Free Router)</option>
 
-                    <option value="ollama">Ollama Cloud / Local</option>
+                    <option value="ollama" data-i18n="generated.eea7521b7673">Ollama Cloud / Local</option>
 
                     <option value="siliconflow">SiliconFlow</option>
 
@@ -3565,7 +3565,7 @@
 
                   <select class="form-select" id="imageProvider">
 
-                    <option value="openai">OpenAI (DALL-E)</option>
+                    <option value="openai" data-i18n="generated.3a573b230507">OpenAI (DALL-E)</option>
 
                     <option value="siliconflow">SiliconFlow</option>
 
@@ -3579,7 +3579,7 @@
 
                   <select class="form-select" id="ttsProvider">
 
-                    <option value="system">System TTS (LTTH TTS Plugin)</option>
+                    <option value="system" data-i18n="generated.649acde5c84f">System TTS (LTTH TTS Plugin)</option>
 
                   </select>
 
@@ -3599,13 +3599,13 @@
 
                   <input type="password" class="form-control" id="openRouterApiKey" placeholder="sk-or-...">
 
-                  <small class="form-text text-muted">Required for OpenRouter. Use <code>openrouter/free</code> for zero-cost routing.</small>
+                  <small class="form-text text-muted"><span data-i18n="generated.7e3139fed066">Required for OpenRouter. Use </span><code>openrouter/free</code><span data-i18n="generated.4b383feb6dab"> for zero-cost routing.</span></small>
 
                 </div>
 
                 <div class="mb-3" id="openRouterBaseUrlGroup" style="display: none;">
 
-                  <label class="form-label">OpenRouter Base URL</label>
+                  <label class="form-label" data-i18n="generated.e886d56872a7">OpenRouter Base URL</label>
 
                   <input type="text" class="form-control" id="openRouterBaseUrl" placeholder="https://openrouter.ai/api/v1">
 
@@ -3617,7 +3617,7 @@
 
                   <input type="text" class="form-control" id="ollamaBaseUrl" placeholder="https://ollama.com/api/v1">
 
-                  <small class="form-text text-muted">Use your cloud endpoint or a local instance such as <code>http://127.0.0.1:11434/v1</code>.</small>
+                  <small class="form-text text-muted"><span data-i18n="generated.825b1d0439ba">Use your cloud endpoint or a local instance such as </span><code>http://127.0.0.1:11434/v1</code>.</small>
 
                 </div>
 
@@ -3627,7 +3627,7 @@
 
                   <input type="password" class="form-control" id="ollamaApiKey" placeholder="Optional for local Ollama">
 
-                  <small class="form-text text-muted">Leave empty for local Ollama; required only for some cloud deployments.</small>
+                  <small class="form-text text-muted" data-i18n="generated.01b471825da4">Leave empty for local Ollama; required only for some cloud deployments.</small>
 
                 </div>
 
@@ -3645,13 +3645,13 @@
 
                   <select class="form-select" id="openaiModel">
 
-                    <option value="gpt-4o-mini">GPT-4o Mini (Cost-effective)</option>
+                    <option value="gpt-4o-mini" data-i18n="generated.04aacc047e4f">GPT-4o Mini (Cost-effective)</option>
 
-                    <option value="gpt-4o">GPT-4o (Multimodal)</option>
+                    <option value="gpt-4o" data-i18n="generated.65aa00e6fbcd">GPT-4o (Multimodal)</option>
 
-                    <option value="gpt-4-turbo">GPT-4 Turbo (Fast)</option>
+                    <option value="gpt-4-turbo" data-i18n="generated.e0d711d24ce0">GPT-4 Turbo (Fast)</option>
 
-                    <option value="o1">o1 (Reasoning)</option>
+                    <option value="o1" data-i18n="generated.8f74151bab95">o1 (Reasoning)</option>
 
                   </select>
 
@@ -3663,11 +3663,11 @@
 
                   <select class="form-select" id="openRouterModel">
 
-                    <option value="openrouter/free">OpenRouter Free Router (Recommended)</option>
+                    <option value="openrouter/free" data-i18n="generated.3b012884487f">OpenRouter Free Router (Recommended)</option>
 
-                    <option value="meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 3B Instruct (Free)</option>
+                    <option value="meta-llama/llama-3.2-3b-instruct:free" data-i18n="generated.4964e63958f2">Llama 3.2 3B Instruct (Free)</option>
 
-                    <option value="google/gemma-2-9b-it:free">Gemma 2 9B IT (Free)</option>
+                    <option value="google/gemma-2-9b-it:free" data-i18n="generated.7805b30d1370">Gemma 2 9B IT (Free)</option>
 
                   </select>
 
@@ -3701,11 +3701,11 @@
 
                   <select class="form-select" id="defaultModel">
 
-                    <option value="deepseek">DeepSeek V3</option>
+                    <option value="deepseek" data-i18n="generated.47a2330fd488">DeepSeek V3</option>
 
-                    <option value="qwen">Qwen 2.5-7B</option>
+                    <option value="qwen" data-i18n="generated.b76f522b0956">Qwen 2.5-7B</option>
 
-                    <option value="llama">Meta-Llama 3.1-8B</option>
+                    <option value="llama" data-i18n="generated.8cc2ce8bbcc0">Meta-Llama 3.1-8B</option>
 
                   </select>
 
@@ -3717,9 +3717,9 @@
 
                   <select class="form-select" id="openaiImageModel">
 
-                    <option value="dall-e-3">DALL-E 3 (High Quality)</option>
+                    <option value="dall-e-3" data-i18n="generated.9bed1402f8b1">DALL-E 3 (High Quality)</option>
 
-                    <option value="dall-e-2">DALL-E 2 (Cost-efficient)</option>
+                    <option value="dall-e-2" data-i18n="generated.7f84e674b40b">DALL-E 2 (Cost-efficient)</option>
 
                   </select>
 
@@ -3731,9 +3731,9 @@
 
                   <select class="form-select" id="defaultImageModel">
 
-                    <option value="flux-schnell">FLUX.1 Schnell</option>
+                    <option value="flux-schnell" data-i18n="generated.40c1641ec1b1">FLUX.1 Schnell</option>
 
-                    <option value="z-image-turbo">Z-Image Turbo</option>
+                    <option value="z-image-turbo" data-i18n="generated.b58ce8a42e99">Z-Image Turbo</option>
 
                   </select>
 
@@ -3753,7 +3753,7 @@
 
             <div class="config-section-header" onclick="toggleConfigSection(this)">
 
-              <h5>TTS Voice Configuration</h5>
+              <h5 data-i18n="generated.bba9b85ad2d3">TTS Voice Configuration</h5>
 
               <span class="config-section-toggle">?</span>
 
@@ -3765,23 +3765,23 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label">TTS Engine</label>
+                  <label class="form-label" data-i18n="generated.53e89570d558">TTS Engine</label>
 
                   <select class="form-select" id="ttsEngine">
 
-                    <option value="openai">OpenAI TTS</option>
+                    <option value="openai" data-i18n="generated.9b5473981254">OpenAI TTS</option>
 
-                    <option value="tiktok">TikTok TTS (Free)</option>
+                    <option value="tiktok" data-i18n="generated.6e6f12194f15">TikTok TTS (Free)</option>
 
-                    <option value="google">Google Cloud TTS</option>
+                    <option value="google" data-i18n="generated.fb74f0810152">Google Cloud TTS</option>
 
-                    <option value="elevenlabs">ElevenLabs TTS</option>
+                    <option value="elevenlabs" data-i18n="generated.3082fdd3be9c">ElevenLabs TTS</option>
 
-                    <option value="speechify">Speechify TTS</option>
+                    <option value="speechify" data-i18n="generated.15d3c1e07d8f">Speechify TTS</option>
 
-                    <option value="siliconflow">SiliconFlow TTS</option>
+                    <option value="siliconflow" data-i18n="generated.e9c5d0b9bfd1">SiliconFlow TTS</option>
 
-                    <option value="fishaudio">Fish.audio TTS</option>
+                    <option value="fishaudio" data-i18n="generated.029339e0cc7f">Fish.audio TTS</option>
 
                   </select>
 
@@ -3797,17 +3797,17 @@
 
                     <optgroup label="OpenAI TTS" id="openaiVoices">
 
-                      <option value="alloy">Alloy (Neutral)</option>
+                      <option value="alloy" data-i18n="generated.2d652e746bb6">Alloy (Neutral)</option>
 
-                      <option value="echo">Echo (Male)</option>
+                      <option value="echo" data-i18n="generated.4f4086e3d53b">Echo (Male)</option>
 
-                      <option value="fable">Fable (British)</option>
+                      <option value="fable" data-i18n="generated.3133d4a43d09">Fable (British)</option>
 
-                      <option value="onyx">Onyx (Deep Male)</option>
+                      <option value="onyx" data-i18n="generated.a5a2a1a934be">Onyx (Deep Male)</option>
 
-                      <option value="nova">Nova (Female)</option>
+                      <option value="nova" data-i18n="generated.ff9685a02494">Nova (Female)</option>
 
-                      <option value="shimmer">Shimmer (Soft Female)</option>
+                      <option value="shimmer" data-i18n="generated.b2d7bc66965c">Shimmer (Soft Female)</option>
 
                     </optgroup>
 
@@ -3817,13 +3817,13 @@
 
                     <optgroup label="TikTok TTS" id="tiktokVoices" style="display: none;">
 
-                      <option value="en_us_001">English US - Female</option>
+                      <option value="en_us_001" data-i18n="generated.c05e43bf13fa">English US - Female</option>
 
-                      <option value="en_us_002">English US - Male</option>
+                      <option value="en_us_002" data-i18n="generated.8631fcfb6b5f">English US - Male</option>
 
-                      <option value="en_us_009">English US - Storyteller</option>
+                      <option value="en_us_009" data-i18n="generated.2573c6e81131">English US - Storyteller</option>
 
-                      <option value="en_us_010">English US - Narrator</option>
+                      <option value="en_us_010" data-i18n="generated.7110adbf7589">English US - Narrator</option>
 
                     </optgroup>
 
@@ -3833,17 +3833,17 @@
 
                     <optgroup label="Google Cloud TTS" id="googleVoices" style="display: none;">
 
-                      <option value="en-US-Neural2-A">US English - Female (Neural)</option>
+                      <option value="en-US-Neural2-A" data-i18n="generated.98f1cccd6566">US English - Female (Neural)</option>
 
-                      <option value="en-US-Neural2-D">US English - Male (Neural)</option>
+                      <option value="en-US-Neural2-D" data-i18n="generated.66da175afb4e">US English - Male (Neural)</option>
 
-                      <option value="en-GB-Neural2-A">UK English - Female (Neural)</option>
+                      <option value="en-GB-Neural2-A" data-i18n="generated.d6c313a5c587">UK English - Female (Neural)</option>
 
-                      <option value="en-GB-Neural2-B">UK English - Male (Neural)</option>
+                      <option value="en-GB-Neural2-B" data-i18n="generated.4ed84edf883a">UK English - Male (Neural)</option>
 
-                      <option value="de-DE-Neural2-A">German - Female (Neural)</option>
+                      <option value="de-DE-Neural2-A" data-i18n="generated.cc34056cd6ad">German - Female (Neural)</option>
 
-                      <option value="de-DE-Neural2-B">German - Male (Neural)</option>
+                      <option value="de-DE-Neural2-B" data-i18n="generated.05269784654a">German - Male (Neural)</option>
 
                     </optgroup>
 
@@ -3853,13 +3853,13 @@
 
                     <optgroup label="ElevenLabs TTS" id="elevenlabsVoices" style="display: none;">
 
-                      <option value="adam">Adam (Deep Male)</option>
+                      <option value="adam" data-i18n="generated.02aba148f1ff">Adam (Deep Male)</option>
 
-                      <option value="bella">Bella (Soft Female)</option>
+                      <option value="bella" data-i18n="generated.665ade8e202a">Bella (Soft Female)</option>
 
-                      <option value="josh">Josh (Deep Male 2)</option>
+                      <option value="josh" data-i18n="generated.c83080238bb5">Josh (Deep Male 2)</option>
 
-                      <option value="rachel">Rachel (Calm Female)</option>
+                      <option value="rachel" data-i18n="generated.8cde68fa07f2">Rachel (Calm Female)</option>
 
                     </optgroup>
 
@@ -3869,7 +3869,7 @@
 
                     <optgroup label="Speechify TTS" id="speechifyVoices" style="display: none;">
 
-                      <option value="henry">Henry (Deep Male)</option>
+                      <option value="henry" data-i18n="generated.808ada43b054">Henry (Deep Male)</option>
 
                       <option value="mrbeast">MrBeast</option>
 
@@ -3881,11 +3881,11 @@
 
                     <optgroup label="SiliconFlow/FishSpeech" id="siliconflowVoices" style="display: none;">
 
-                      <option value="narrator">Narrator (Default)</option>
+                      <option value="narrator" data-i18n="generated.a91d021d3137">Narrator (Default)</option>
 
-                      <option value="male">Male Voice</option>
+                      <option value="male" data-i18n="generated.a2d82b8e1fd1">Male Voice</option>
 
-                      <option value="female">Female Voice</option>
+                      <option value="female" data-i18n="generated.51129df3ccba">Female Voice</option>
 
                     </optgroup>
 
@@ -3907,7 +3907,7 @@
 
                 </label>
 
-                <small class="d-block text-muted">Automatically narrate chapters with TTS. Disable for self-reading mode.</small>
+                <small class="d-block text-muted" data-i18n="generated.db350c384b5c">Automatically narrate chapters with TTS. Disable for self-reading mode.</small>
 
               </div>
 
@@ -3923,7 +3923,7 @@
 
             <div class="config-section-header" onclick="toggleConfigSection(this)">
 
-              <h5>Story & Voting Settings</h5>
+              <h5 data-i18n="generated.1ac1ac6f6949">Story & Voting Settings</h5>
 
               <span class="config-section-toggle">?</span>
 
@@ -3939,17 +3939,17 @@
 
                   <select class="form-select" id="storyLanguage">
 
-                    <option value="German">Deutsch (German)</option>
+                    <option value="German" data-i18n="generated.2971eec1aa11">Deutsch (German)</option>
 
                     <option value="English">English</option>
 
-                    <option value="Spanish">EspaÃ±ol (Spanish)</option>
+                    <option value="Spanish" data-i18n="generated.7ec0985be6b4">Español (Spanish)</option>
 
-                    <option value="French">FranÃ§ais (French)</option>
+                    <option value="French" data-i18n="generated.1862b6b8cbb6">Français (French)</option>
 
-                    <option value="Italian">Italiano (Italian)</option>
+                    <option value="Italian" data-i18n="generated.7e2062c6bc35">Italiano (Italian)</option>
 
-                    <option value="Portuguese">PortuguÃªs (Portuguese)</option>
+                    <option value="Portuguese" data-i18n="generated.c69af446cb6b">Português (Portuguese)</option>
 
                   </select>
 
@@ -3961,7 +3961,7 @@
 
                   <input type="number" class="form-control" id="maxChapters" min="3" max="20" value="5">
 
-                  <small class="text-muted">Story ends after this many chapters</small>
+                  <small class="text-muted" data-i18n="generated.e211f2477a93">Story ends after this many chapters</small>
 
                 </div>
 
@@ -3993,15 +3993,15 @@
 
                   <select class="form-select" id="voteKeywordPattern">
 
-                    <option value="!letter">!a, !b, !c, !d</option>
+                    <option value="!letter" data-i18n="generated.c2f6f1e497ea">!a, !b, !c, !d</option>
 
-                    <option value="letter">A, B, C, D</option>
+                    <option value="letter" data-i18n="generated.819d8cf94eb3">A, B, C, D</option>
 
                     <option value="number">1, 2, 3, 4</option>
 
-                    <option value="antwort">Antwort 1, 2, 3...</option>
+                    <option value="antwort" data-i18n="generated.89f3a7b5dc97">Antwort 1, 2, 3...</option>
 
-                    <option value="answer">Answer 1, 2, 3...</option>
+                    <option value="answer" data-i18n="generated.aa293e75edde">Answer 1, 2, 3...</option>
 
                   </select>
 
@@ -4047,7 +4047,7 @@
 
             <div class="config-section-header" onclick="toggleConfigSection(this)">
 
-              <h5>Overlay Customization</h5>
+              <h5 data-i18n="generated.3fb9bc61c045">Overlay Customization</h5>
 
               <span class="config-section-toggle">?</span>
 
@@ -4063,9 +4063,9 @@
 
                   <select class="form-select" id="overlayOrientation">
 
-                    <option value="landscape">Landscape (Horizontal)</option>
+                    <option value="landscape" data-i18n="generated.29571e114170">Landscape (Horizontal)</option>
 
-                    <option value="portrait">Portrait (Vertical)</option>
+                    <option value="portrait" data-i18n="generated.7c273ac8f883">Portrait (Vertical)</option>
 
                   </select>
 
@@ -4077,13 +4077,13 @@
 
                   <select class="form-select" id="overlayResolution">
 
-                    <option value="1920x1080">1920x1080 (Full HD)</option>
+                    <option value="1920x1080" data-i18n="generated.43d4a8527573">1920x1080 (Full HD)</option>
 
-                    <option value="1280x720">1280x720 (HD)</option>
+                    <option value="1280x720" data-i18n="generated.42f0640f6964">1280x720 (HD)</option>
 
-                    <option value="2560x1440">2560x1440 (2K)</option>
+                    <option value="2560x1440" data-i18n="generated.df0f2c8f9ea8">2560x1440 (2K)</option>
 
-                    <option value="1080x1920">1080x1920 (Portrait Full HD)</option>
+                    <option value="1080x1920" data-i18n="generated.d793368bad58">1080x1920 (Portrait Full HD)</option>
 
                   </select>
 
@@ -4095,11 +4095,11 @@
 
                   <select class="form-select" id="overlayDisplayMode">
 
-                    <option value="full">Full Chapter</option>
+                    <option value="full" data-i18n="generated.ea1d905e14aa">Full Chapter</option>
 
                     <option value="sentence">Sentence-by-Sentence</option>
 
-                    <option value="scroll">Star Wars Scroll (TTS Synced)</option>
+                    <option value="scroll" data-i18n="generated.87f29c42e928">Star Wars Scroll (TTS Synced)</option>
 
                   </select>
 
@@ -4117,13 +4117,13 @@
 
                   <select class="form-select" id="overlayFontFamily">
 
-                    <option value="Segoe UI, Tahoma, Geneva, Verdana, sans-serif">Segoe UI (Default)</option>
+                    <option value="Segoe UI, Tahoma, Geneva, Verdana, sans-serif" data-i18n="generated.6f80fce071f8">Segoe UI (Default)</option>
 
                     <option value="Arial, Helvetica, sans-serif">Arial</option>
 
                     <option value="Georgia, serif">Georgia</option>
 
-                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="'Times New Roman', serif" data-i18n="generated.28faa17d5b1c">Times New Roman</option>
 
                   </select>
 
@@ -4169,7 +4169,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label">Voting Highlight Color</label>
+                  <label class="form-label" data-i18n="generated.71bd88c22907">Voting Highlight Color</label>
 
                   <input type="color" class="form-control" id="overlayVotingColor" value="#e94560">
 
@@ -4181,15 +4181,15 @@
 
               <div class="mb-3">
 
-                <label class="form-label">Background Gradient</label>
+                <label class="form-label" data-i18n="generated.c7608ae8ea31">Background Gradient</label>
 
                 <select class="form-select" id="overlayBackgroundGradient">
 
-                  <option value="linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.95) 100%)">Dark Bottom Fade (Default)</option>
+                  <option value="linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.95) 100%)" data-i18n="generated.65df3c784eef">Dark Bottom Fade (Default)</option>
 
-                  <option value="linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.95) 100%)">Dark Full</option>
+                  <option value="linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.95) 100%)" data-i18n="generated.efc3ff39bfff">Dark Full</option>
 
-                  <option value="linear-gradient(135deg, rgba(15,52,96,0.5) 0%, rgba(0,0,0,0.9) 100%)">Blue Gradient</option>
+                  <option value="linear-gradient(135deg, rgba(15,52,96,0.5) 0%, rgba(0,0,0,0.9) 100%)" data-i18n="generated.a059d3c6732c">Blue Gradient</option>
 
                   <option value="rgba(0,0,0,0)">Transparent</option>
 
@@ -4209,7 +4209,7 @@
 
             <div class="config-section-header" onclick="toggleConfigSection(this)">
 
-              <h5>Timing Configuration</h5>
+              <h5 data-i18n="generated.3dfd2d7950f7">Timing Configuration</h5>
 
               <span class="config-section-toggle">?</span>
 
@@ -4221,17 +4221,17 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label">Title Image Preview (seconds)</label>
+                  <label class="form-label" data-i18n="generated.a933cabdff59">Title Image Preview (seconds)</label>
 
                   <input type="number" class="form-control" id="titlePreviewDelay" min="1" max="30" step="0.5" value="5">
 
-                  <small class="text-muted">Time to show title image before narration</small>
+                  <small class="text-muted" data-i18n="generated.c5fccb27926f">Time to show title image before narration</small>
 
                 </div>
 
                 <div class="mb-3">
 
-                  <label class="form-label">Min Title Read Time (seconds)</label>
+                  <label class="form-label" data-i18n="generated.eff3c45dc07c">Min Title Read Time (seconds)</label>
 
                   <input type="number" class="form-control" id="minTitleReadTime" min="0.5" max="10" step="0.5" value="3">
 
@@ -4239,7 +4239,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label">Content Start Buffer (seconds)</label>
+                  <label class="form-label" data-i18n="generated.014913db1c84">Content Start Buffer (seconds)</label>
 
                   <input type="number" class="form-control" id="contentStartBuffer" min="0" max="5" step="0.1" value="0.5">
 
@@ -4253,7 +4253,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label">Voting Results Display (seconds)</label>
+                  <label class="form-label" data-i18n="generated.95835fcd6cab">Voting Results Display (seconds)</label>
 
                   <input type="number" class="form-control" id="votingResultsDuration" min="2" max="30" step="0.5" value="5">
 
@@ -4261,7 +4261,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label">Chapter Transition Delay (seconds)</label>
+                  <label class="form-label" data-i18n="generated.fc222fff67ac">Chapter Transition Delay (seconds)</label>
 
                   <input type="number" class="form-control" id="chapterTransitionDelay" min="0" max="5" step="0.1" value="1">
 
@@ -4269,7 +4269,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label">Final Chapter Auto-End (seconds)</label>
+                  <label class="form-label" data-i18n="generated.bc5fc2035b86">Final Chapter Auto-End (seconds)</label>
 
                   <input type="number" class="form-control" id="finalChapterDelay" min="3" max="60" step="1" value="5">
 
@@ -4283,13 +4283,13 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label">Generating Animation</label>
+                  <label class="form-label" data-i18n="generated.55efa9c2d451">Generating Animation</label>
 
                   <select class="form-select" id="generatingAnimationMode">
 
-                    <option value="default">Default Spinner</option>
+                    <option value="default" data-i18n="generated.18e456111d7d">Default Spinner</option>
 
-                    <option value="custom">Custom GIF/MP4</option>
+                    <option value="custom" data-i18n="generated.ddd177c3899c">Custom GIF/MP4</option>
 
                   </select>
 
@@ -4297,7 +4297,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label">Custom Animation URL</label>
+                  <label class="form-label" data-i18n="generated.dae6b0728282">Custom Animation URL</label>
 
                   <input type="text" class="form-control" id="generatingAnimationUrl" placeholder="https://example.com/loop.mp4">
 
@@ -4317,7 +4317,7 @@
 
             <div class="config-section-header" onclick="toggleConfigSection(this)">
 
-              <h5>Advanced Settings</h5>
+              <h5 data-i18n="generated.710993ac0285">Advanced Settings</h5>
 
               <span class="config-section-toggle">?</span>
 
@@ -4337,7 +4337,7 @@
 
                   </label>
 
-                  <small class="d-block text-muted">Admin chooses path (no live chat)</small>
+                  <small class="d-block text-muted" data-i18n="generated.3a7dbd165bfb">Admin chooses path (no live chat)</small>
 
                 </div>
 
@@ -4351,7 +4351,7 @@
 
                   </label>
 
-                  <small class="d-block text-muted">Manually advance each round</small>
+                  <small class="d-block text-muted" data-i18n="generated.3b1b01326c4a">Manually advance each round</small>
 
                 </div>
 
@@ -4383,7 +4383,7 @@
 
                   </label>
 
-                  <small class="d-block text-muted">Enable detailed logging & API diagnostics</small>
+                  <small class="d-block text-muted" data-i18n="generated.1a8c8050568f">Enable detailed logging & API diagnostics</small>
 
                 </div>
 
@@ -4397,7 +4397,7 @@
 
                   </label>
 
-                  <small class="d-block text-muted">Show detailed API requests (debug only)</small>
+                  <small class="d-block text-muted" data-i18n="generated.10929f86673a">Show detailed API requests (debug only)</small>
 
                 </div>
 
@@ -4501,29 +4501,29 @@
 
           <div class="mt-3">
 
-            <h6 class="mb-2">Test Overlay Display</h6>
+            <h6 class="mb-2" data-i18n="generated.2e63a2f80e08">Test Overlay Display</h6>
 
             <div class="d-flex gap-2 flex-wrap">
 
-              <button class="btn btn-sm btn-outline-primary" id="testTitlePreviewBtn">
+              <button class="btn btn-sm btn-outline-primary" id="testTitlePreviewBtn" data-i18n="generated.0fe1a1b10d58">
 
                 Test Title Display
 
               </button>
 
-              <button class="btn btn-sm btn-outline-primary" id="testChapterPreviewBtn">
+              <button class="btn btn-sm btn-outline-primary" id="testChapterPreviewBtn" data-i18n="generated.7c3abc59ac16">
 
                 Test Chapter Display
 
               </button>
 
-              <button class="btn btn-sm btn-outline-primary" id="testChoicesPreviewBtn">
+              <button class="btn btn-sm btn-outline-primary" id="testChoicesPreviewBtn" data-i18n="generated.31636d3f2448">
 
                 Test Voting Choices
 
               </button>
 
-              <button class="btn btn-sm btn-outline-danger" id="clearOverlayPreviewBtn">
+              <button class="btn btn-sm btn-outline-danger" id="clearOverlayPreviewBtn" data-i18n="generated.868512bc4495">
 
                 Clear Overlay
 
@@ -4531,7 +4531,7 @@
 
             </div>
 
-            <small class="text-muted d-block mt-2">
+            <small class="text-muted d-block mt-2" data-i18n="generated.060ecfce739e">
 
               These buttons send test data to the overlay for preview purposes
 

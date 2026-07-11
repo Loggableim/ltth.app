@@ -292,16 +292,16 @@ class LanguageDetector {
             'fr': 'Français',
             'it': 'Italiano',
             'pt': 'Português',
-            'ja': '???',
-            'ko': '???',
-            'zh': '??',
-            'ru': '???????',
-            'ar': '???????',
+            'ja': '日本語',
+            'ko': '한국어',
+            'zh': '中文',
+            'ru': 'Русский',
+            'ar': 'العربية',
             'tr': 'Türkçe',
             'nl': 'Nederlands',
             'pl': 'Polski',
-            'th': '???????',
-            'vi': 'Ti?ng Vi?t',
+            'th': 'ไทย',
+            'vi': 'Tiếng Việt',
             'id': 'Bahasa Indonesia'
         };
 

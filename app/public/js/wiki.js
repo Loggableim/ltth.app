@@ -66,16 +66,17 @@
         isInitialized = true;
 
         try {
+            // Resolve language before loading navigation so labels, search and
+            // the first page all use the same language variant.
+            currentLanguage = getPreferredLanguage();
+            document.documentElement.lang = currentLanguage;
+
             // Load wiki structure
-            const response = await fetch(`${WIKI_API_BASE}/structure`);
+            const response = await fetch(`${WIKI_API_BASE}/structure?lang=${encodeURIComponent(currentLanguage)}`);
             if (!response.ok) throw new Error('Failed to load wiki structure');
             
             wikiStructure = await response.json();
             log.info('Structure loaded', wikiStructure);
-
-            // Resolve language before the first page request so standalone and dashboard
-            // views load the expected language section immediately.
-            currentLanguage = getPreferredLanguage();
 
             // Build navigation
             buildNavigation();
@@ -182,6 +183,16 @@
 
     // ========== LANGUAGE PREFERENCE ==========
     function getPreferredLanguage() {
+        const urlLanguage = new URLSearchParams(window.location.search).get('lang');
+        if (urlLanguage) {
+            const normalizedUrlLanguage = urlLanguage.toLowerCase().split('-')[0];
+            if (SUPPORTED_LANGUAGES.includes(normalizedUrlLanguage)) {
+                localStorage.setItem('wiki-language', normalizedUrlLanguage);
+                return normalizedUrlLanguage;
+            }
+            return 'en';
+        }
+
         // Check localStorage first
         const stored = localStorage.getItem('wiki-language');
         if (stored && SUPPORTED_LANGUAGES.includes(stored)) {
@@ -202,10 +213,23 @@
         if (SUPPORTED_LANGUAGES.includes(lang)) {
             currentLanguage = lang;
             localStorage.setItem('wiki-language', lang);
-            // Reload current page with new language
-            loadPage(currentPage);
+            document.documentElement.lang = lang;
+            // Reload navigation and the current page with the same language
+            // variant; otherwise the article would change while breadcrumbs
+            // and search labels stayed in the previous language.
+            loadLocalizedStructure().then(() => loadPage(currentPage)).catch(error => {
+                log.error('Failed to switch wiki language', { error: error.message });
+            });
             updateWikiTabActionButton();
         }
+    }
+
+    async function loadLocalizedStructure() {
+        const response = await fetch(`${WIKI_API_BASE}/structure?lang=${encodeURIComponent(currentLanguage)}`);
+        if (!response.ok) throw new Error('Failed to load localized wiki structure');
+        wikiStructure = await response.json();
+        buildNavigation();
+        setupSearch();
     }
 
     // ========== URL HASH NAVIGATION ==========
@@ -549,6 +573,8 @@
     function setupSearch() {
         const searchInput = document.getElementById('wiki-search');
         if (!searchInput) return;
+        if (searchInput.dataset.wikiSearchBound === 'true') return;
+        searchInput.dataset.wikiSearchBound = 'true';
 
         // Use single event listener with debouncing
         searchInput.addEventListener('input', (e) => {
@@ -559,12 +585,13 @@
         });
 
         // Close search results when clicking outside
-        document.addEventListener('click', (e) => {
-            const searchContainer = e.target.closest('.wiki-search-container');
-            if (!searchContainer) {
-                hideSearchResults();
-            }
-        });
+        if (document.body.dataset.wikiSearchDismissBound !== 'true') {
+            document.body.dataset.wikiSearchDismissBound = 'true';
+            document.addEventListener('click', (e) => {
+                const searchContainer = e.target.closest('.wiki-search-container');
+                if (!searchContainer) hideSearchResults();
+            });
+        }
     }
 
     async function performSearch(query) {
@@ -577,7 +604,7 @@
         log.info(`Searching for: ${query}`);
 
         try {
-            const response = await fetch(`${WIKI_API_BASE}/search?q=${encodeURIComponent(query)}`);
+            const response = await fetch(`${WIKI_API_BASE}/search?q=${encodeURIComponent(query)}&lang=${encodeURIComponent(currentLanguage)}`);
             if (!response.ok) throw new Error('Search failed');
 
             const results = await response.json();

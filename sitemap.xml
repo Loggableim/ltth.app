@@ -304,6 +304,19 @@
     <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/plugins.html?lang=fr"/>
   </url>
 
+  <!-- OBS WebGPU -->
+  <url>
+    <loc>https://ltth.app/obs-webgpu.html</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/obs-webgpu.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/obs-webgpu.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/obs-webgpu.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/obs-webgpu.html?lang=fr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ltth.app/obs-webgpu.html"/>
+  </url>
+
   <!-- Docs -->
   <url>
     <loc>https://ltth.app/docs.html</loc>

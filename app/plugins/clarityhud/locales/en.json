@@ -105,5 +105,34 @@
       "stream_connected": "Stream {number} connected: @{username}",
       "stream_failed": "Failed to connect stream {number}: {error}"
     }
+  },
+  "generated": {
+    "1781e7310045": "ClarityHUD - Chat Overlay",
+    "2e8939eb4a79": "ClarityHUD - Full Activity Overlay",
+    "da1e5de37cd3": "Connecting to ClarityHUD...",
+    "b0d5b6675d63": "ClarityHUD - Multi-Stream Overlay",
+    "5b7c903d082d": "ClarityHUD - Stream Overlay",
+    "3e994df72ef4": "🔴 LIVE",
+    "9e12b7592f0c": "ClarityHUD Dashboard",
+    "36c2168789e4": "Export Profile",
+    "c74a0fa98c81": "Import Profile",
+    "4eac0a37c0d6": "Setup Wizard",
+    "16e7ef11522e": "Save Preset",
+    "e000a5fc9248": "Display up to 3 additional TikTok streams alongside your primary stream",
+    "71d79253542c": "Multi-stream status",
+    "be53abcfbf2a": "Stream Overlay",
+    "f32b942ca380": "OBS overlay for alerts, highlights, and ticker content",
+    "b4c21204fc2f": "Test All",
+    "58d4e1473481": "Setup Wizard",
+    "fba38e80390a": "VRChat Readable",
+    "a5fa513989d0": "OBS Clean",
+    "55c7d85f8fee": "High Activity",
+    "55c53de68491": "Status: Initializing...",
+    "7981cb1e56eb": "Socket: Disconnected",
+    "e8b6f6acfc0e": "Events: 0",
+    "00ded6d6cdd0": "Status: Initializing...",
+    "d3461bd67a01": "Socket: Disconnected",
+    "6d90312b5cfb": "Events: 0",
+    "52388687bda1": "Streams: 0"
   }
 }

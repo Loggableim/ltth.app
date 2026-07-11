@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="generated.70e4dcf50f83">EmojiRain Overlay - TikTok Stream Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* Force GPU rendering */
+            will-change: transform;
+            transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+            isolation: isolate;
+        }
+
+        body[data-visual-mode="premium_stage"]::before,
+        body[data-visual-mode="premium_stage"]::after,
+        #canvas-container::before,
+        #canvas-container::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        body[data-visual-mode="premium_stage"]::before {
+            background:
+                radial-gradient(circle at 50% 18%, rgba(255, 214, 138, 0.14), transparent 30%),
+                radial-gradient(circle at 18% 78%, rgba(104, 160, 255, 0.09), transparent 24%),
+                radial-gradient(circle at 82% 80%, rgba(255, 112, 170, 0.08), transparent 22%);
+            filter: blur(10px);
+            opacity: 0.9;
+        }
+
+        body[data-visual-mode="premium_stage"]::after {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 28%, rgba(255, 255, 255, 0.02) 72%, transparent);
+            opacity: 0.65;
+            mix-blend-mode: screen;
+        }
+
+        body[data-visual-mode="premium_stage"] #canvas-container::before {
+            background:
+                radial-gradient(circle at 50% 12%, rgba(255, 230, 170, 0.16), transparent 24%),
+                radial-gradient(circle at 50% 72%, rgba(86, 133, 255, 0.08), transparent 34%);
+            filter: blur(20px);
+            opacity: 0.8;
+        }
+
+        body[data-visual-mode="premium_stage"] #canvas-container::after {
+            background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.05) 50%, transparent 65%);
+            opacity: 0.55;
+            mix-blend-mode: screen;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            /* Force GPU rendering for canvas */
+            will-change: transform;
+            transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+        }
+
+        .emoji-sprite {
+            position: absolute;
+            font-size: 48px;
+            pointer-events: none;
+            user-select: none;
+            transform-origin: center;
+            transition: opacity 0.24s ease, filter 0.24s ease;
+            /* Hardware acceleration */
+            transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+            text-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+        }
+
+        .emoji-sprite[data-layer="background"] {
+            opacity: 0.74;
+        }
+
+        .emoji-sprite[data-layer="mid"] {
+            opacity: 0.92;
+        }
+
+        .emoji-sprite[data-layer="foreground"] {
+            opacity: 1;
+        }
+
+        .emoji-sprite[data-emphasis="gift"],
+        .emoji-sprite[data-emphasis="superfan"] {
+            text-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+        }
+
+        .emoji-sprite[data-emphasis="sticker"] {
+            text-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .particle-trail {
+            mix-blend-mode: screen;
+        }
+
+        .emoji-sprite.fading {
+            opacity: 0;
+        }
+
+        .gift-ball {
+            border-radius: 18px;
+        }
+
+        .heart-balloon {
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22), 0 0 28px rgba(255, 120, 170, 0.16);
+        }
+
+        /* Bubble Blop Animation - using scale only to preserve position/rotation */
+        @keyframes bubbleBlop {
+            0% {
+                scale: 1;
+            }
+            50% {
+                scale: 1.5;
+            }
+            100% {
+                scale: 1;
+            }
+        }
+
+        /* Custom image support */
+        .emoji-sprite img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        /* Toaster Mode - Performance optimizations for low-end PCs */
+        body.toaster-mode .emoji-sprite {
+            /* Disable expensive transitions */
+            transition: none !important;
+            /* Disable filters */
+            filter: none !important;
+            /* Disable animations */
+            animation: none !important;
+        }
+
+        body.toaster-mode .emoji-sprite.fading {
+            /* Simple opacity change without transition */
+            opacity: 0;
+        }
+
+        /* Debug info (optional) */
+        #debug-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+    <script src="/js/i18n-client.js"></script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div id="debug-info"></div>
+
+    <!-- Matter.js (local) -->
+    <script src="/js/matter.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- Use enhanced engine -->
+    <script src="/js/emoji-rain-engine.js?v=heart-balloons-pop-3"></script>
+</body>
+</html>

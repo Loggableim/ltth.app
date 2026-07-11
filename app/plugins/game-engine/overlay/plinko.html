@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plinko - LTTH Game Engine</title>
+  <title data-i18n="generated.998c0cbff13f">Plinko - LTTH Game Engine</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <style>
@@ -305,6 +305,7 @@
       color: #f44336;
     }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
   <div id="canvas-container"></div>
@@ -312,7 +313,7 @@
 
   <!-- Leaderboard Container -->
   <div id="leaderboard-container">
-    <div id="leaderboard-title">🏆 Plinko Leaderboard 🏆</div>
+    <div id="leaderboard-title" data-i18n="generated.5b705f8642aa">🏆 Plinko Leaderboard 🏆</div>
     <ul id="leaderboard-list">
       <!-- Leaderboard items will be populated dynamically -->
     </ul>
@@ -320,21 +321,21 @@
 
   <!-- Test Mode Controls -->
   <div id="test-mode-controls">
-    <h3>🧪 Test Mode</h3>
+    <h3 data-i18n="generated.5d60585216d3">🧪 Test Mode</h3>
     <div>
-      <label style="display: block; margin-bottom: 5px; font-size: 12px;">Bet Amount (XP):</label>
+      <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="generated.f19647378b96">Bet Amount (XP):</label>
       <input type="number" id="test-bet-amount" value="100" min="10" max="1000" step="10">
     </div>
     <div>
-      <label style="display: block; margin-bottom: 5px; font-size: 12px;">Player Name:</label>
+      <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="generated.d808b6e60641">Player Name:</label>
       <input type="text" id="test-player-name" value="TestPlayer">
     </div>
     <div>
-      <label style="display: block; margin-bottom: 5px; font-size: 12px;">Ball Count:</label>
+      <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="generated.4557e311710a">Ball Count:</label>
       <input type="number" id="test-ball-count" value="1" min="1" max="10">
     </div>
-    <button class="btn-start" id="test-drop-ball">🎰 Drop Ball</button>
-    <button class="btn-start" id="test-show-leaderboard" style="background: #2196F3;">📊 Show Leaderboard</button>
+    <button class="btn-start" id="test-drop-ball" data-i18n="generated.ed2cbff06a62">🎰 Drop Ball</button>
+    <button class="btn-start" id="test-show-leaderboard" style="background: #2196F3;" data-i18n="generated.db8b6b41c7f9">📊 Show Leaderboard</button>
   </div>
 
   <script>

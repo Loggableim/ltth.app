@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leaderboard - Configuration</title>
+    <title data-i18n="generated.7ff2518a6cc2">Leaderboard - Configuration</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function () {
@@ -721,6 +721,7 @@
             -webkit-text-fill-color: #030603;
         }
     </style>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
     <div class="container">
@@ -735,19 +736,19 @@
             <div class="card-title">Statistics</div>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label">Session Gifters</div>
+                    <div class="stat-label" data-i18n="generated.6e0d44fb9a7a">Session Gifters</div>
                     <div class="stat-value" id="stat-session-gifters">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">All-Time Gifters</div>
+                    <div class="stat-label" data-i18n="generated.16638bac42a3">All-Time Gifters</div>
                     <div class="stat-value" id="stat-alltime-gifters">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Session Total Coins</div>
+                    <div class="stat-label" data-i18n="generated.3e7d22c3b923">Session Total Coins</div>
                     <div class="stat-value" id="stat-session-coins">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">All-Time Total Coins</div>
+                    <div class="stat-label" data-i18n="generated.b45b5a988258">All-Time Total Coins</div>
                     <div class="stat-value" id="stat-alltime-coins">0</div>
                 </div>
             </div>
@@ -755,7 +756,7 @@
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab-btn active" data-tab="session">Current Session</button>
+            <button class="tab-btn active" data-tab="session" data-i18n="generated.b7e7b3e84158">Current Session</button>
             <button class="tab-btn" data-tab="alltime">All-Time</button>
             <button class="tab-btn" data-tab="settings">Settings</button>
         </div>
@@ -763,10 +764,10 @@
         <!-- Session Tab -->
         <div class="tab-panel active" id="session-tab">
             <div class="card">
-                <div class="card-title">
+                <div class="card-title"><span data-i18n="generated.87c59321e8ce">
                     Current Session Leaderboard
-                    <div style="margin-left: auto;">
-                        <button class="btn btn-secondary" id="reset-session-btn">Reset Session</button>
+                    </span><div style="margin-left: auto;">
+                        <button class="btn btn-secondary" id="reset-session-btn" data-i18n="generated.0db3520321ad">Reset Session</button>
                     </div>
                 </div>
                 <div id="session-start-info" style="margin-bottom: 16px; color: var(--color-text-secondary);"></div>
@@ -776,14 +777,14 @@
                             <th>Rank</th>
                             <th>User</th>
                             <th>Coins</th>
-                            <th>Gifts Count</th>
+                            <th data-i18n="generated.a96e266b4fd2">Gifts Count</th>
                         </tr>
                     </thead>
                     <tbody id="session-leaderboard">
                         <tr>
                             <td colspan="4" class="empty-state">
                                 <div class="empty-icon">🎁</div>
-                                <p>Waiting for gifts in this session...</p>
+                                <p data-i18n="generated.6a63ef971aca">Waiting for gifts in this session...</p>
                             </td>
                         </tr>
                     </tbody>
@@ -794,21 +795,21 @@
         <!-- All-Time Tab -->
         <div class="tab-panel" id="alltime-tab">
             <div class="card">
-                <div class="card-title">All-Time Champions</div>
+                <div class="card-title" data-i18n="generated.2e0522d2739a">All-Time Champions</div>
                 <table class="leaderboard-table">
                     <thead>
                         <tr>
                             <th>Rank</th>
                             <th>User</th>
-                            <th>Total Coins</th>
-                            <th>Total Gifts</th>
+                            <th data-i18n="gift_milestone.users.total_coins">Total Coins</th>
+                            <th data-i18n="generated.e328ca812369">Total Gifts</th>
                         </tr>
                     </thead>
                     <tbody id="alltime-leaderboard">
                         <tr>
                             <td colspan="4" class="empty-state">
                                 <div class="empty-icon">🏆</div>
-                                <p>No champions yet...</p>
+                                <p data-i18n="generated.819b9c2d8eb4">No champions yet...</p>
                             </td>
                         </tr>
                     </tbody>
@@ -819,55 +820,55 @@
         <!-- Settings Tab -->
         <div class="tab-panel" id="settings-tab">
             <div class="card">
-                <div class="card-title">Leaderboard Settings</div>
+                <div class="card-title" data-i18n="generated.2a35cf8552b6">Leaderboard Settings</div>
                 <form id="config-form">
                     <div class="form-group">
-                        <label class="form-label" for="display-limit">Display Limit</label>
+                        <label class="form-label" for="display-limit" data-i18n="generated.b8dd82331243">Display Limit</label>
                         <input type="number" class="form-input" id="display-limit" name="displayLimit" min="1" max="50" value="10">
-                        <small style="color: var(--color-text-secondary);">Number of top users to display on overlay</small>
+                        <small style="color: var(--color-text-secondary);" data-i18n="generated.8656649b4164">Number of top users to display on overlay</small>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="min-coins">Minimum Coins</label>
+                        <label class="form-label" for="min-coins" data-i18n="generated.35caa5727509">Minimum Coins</label>
                         <input type="number" class="form-input" id="min-coins" name="minCoins" min="0" value="0">
-                        <small style="color: var(--color-text-secondary);">Minimum coins required to appear on leaderboard</small>
+                        <small style="color: var(--color-text-secondary);" data-i18n="generated.f309697f9bb1">Minimum coins required to appear on leaderboard</small>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="theme-select">Overlay Theme</label>
+                        <label class="form-label" for="theme-select" data-i18n="generated.5552497f9507">Overlay Theme</label>
                         <select class="form-input" id="theme-select" name="theme">
-                            <option value="neon">Neon/Cyberpunk (Cyan & Magenta)</option>
-                            <option value="elegant">Elegant/Minimalist (Clean White)</option>
-                            <option value="gaming">Gaming/Esports (Red & Orange)</option>
-                            <option value="royal">Royal/Crown (Purple & Gold)</option>
-                            <option value="gradient">Modern Gradient (Blue & Teal)</option>
+                            <option value="neon" data-i18n="generated.88bc74d9ca3c">Neon/Cyberpunk (Cyan & Magenta)</option>
+                            <option value="elegant" data-i18n="generated.e331be554fc0">Elegant/Minimalist (Clean White)</option>
+                            <option value="gaming" data-i18n="generated.ee1b8a754cbc">Gaming/Esports (Red & Orange)</option>
+                            <option value="royal" data-i18n="generated.06bcb68d5aa9">Royal/Crown (Purple & Gold)</option>
+                            <option value="gradient" data-i18n="generated.53e6a87f7942">Modern Gradient (Blue & Teal)</option>
                         </select>
-                        <small style="color: var(--color-text-secondary);">Choose the visual style for your overlay</small>
+                        <small style="color: var(--color-text-secondary);" data-i18n="generated.05bcaa012c1c">Choose the visual style for your overlay</small>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">
-                            <input type="checkbox" id="show-animations" name="showAnimations" checked>
+                            <input type="checkbox" id="show-animations" name="showAnimations" checked><span data-i18n="generated.6a8ed21cb11a">
                             Enable Overtake Animations
-                        </label>
-                        <small style="color: var(--color-text-secondary);">Show special effects when someone moves up in rank</small>
+                        </span></label>
+                        <small style="color: var(--color-text-secondary);" data-i18n="generated.d0d47c2afca3">Show special effects when someone moves up in rank</small>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Overlay URL</label>
+                        <label class="form-label" data-i18n="gift_milestone.overlay.url">Overlay URL</label>
                         <input type="text" class="form-input" id="overlay-url" readonly>
-                        <small style="color: var(--color-text-secondary);">Use this URL in OBS Browser Source</small>
+                        <small style="color: var(--color-text-secondary);" data-i18n="generated.231f6fade902">Use this URL in OBS Browser Source</small>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Preview URL (Test Mode with Mock Data)</label>
+                        <label class="form-label" data-i18n="generated.aaf8768e24cc">Preview URL (Test Mode with Mock Data)</label>
                         <input type="text" class="form-input" id="preview-url" readonly>
-                        <small style="color: var(--color-text-secondary);">Use this URL to preview different themes with test data</small>
+                        <small style="color: var(--color-text-secondary);" data-i18n="generated.8d76a6863af1">Use this URL to preview different themes with test data</small>
                     </div>
 
                     <div style="display: flex; gap: 10px;">
-                        <button type="submit" class="btn btn-primary">Save Settings</button>
-                        <button type="button" class="btn btn-secondary" id="preview-btn">Preview Overlay</button>
+                        <button type="submit" class="btn btn-primary" data-i18n="generated.654d70299d44">Save Settings</button>
+                        <button type="button" class="btn btn-secondary" id="preview-btn" data-i18n="generated.5d8f28ca3d94">Preview Overlay</button>
                     </div>
                 </form>
             </div>

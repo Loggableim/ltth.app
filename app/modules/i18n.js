@@ -25,6 +25,11 @@ class I18n {
     this.loadTranslations();
   }
 
+  normalizeLocale(locale) {
+    const normalized = String(locale || '').trim().toLowerCase().replace('_', '-').split('-')[0];
+    return this.supportedLocales.includes(normalized) ? normalized : this.defaultLocale;
+  }
+
   /**
    * Load all translation files
    */
@@ -56,7 +61,13 @@ class I18n {
   }
 
   /**
-   * Load translations from all plugins, skipping disabled ones.
+   * Load translations from all plugins.
+   *
+   * Locale files are part of the public UI contract even when a plugin is
+   * disabled by default: its settings/help page can still be opened directly
+   * (and the plugin may be enabled later).  Keeping those namespaces in the
+   * translation payload prevents a supported-language page from silently
+   * rendering English labels just because the plugin is currently inactive.
    */
   loadPluginTranslations() {
     const pluginsDir = path.join(__dirname, '..', 'plugins');
@@ -65,41 +76,10 @@ class I18n {
       return;
     }
 
-    // Load legacy plugins_state.json as a best-effort runtime override check
-    let pluginsState = {};
-    const legacyStateFile = path.join(pluginsDir, 'plugins_state.json');
-    if (fs.existsSync(legacyStateFile)) {
-      try {
-        pluginsState = readJsonFile(legacyStateFile);
-      } catch (error) {
-        console.error('Failed to read plugins_state.json:', error.message);
-      }
-    }
-
     try {
       const plugins = fs.readdirSync(pluginsDir);
 
       for (const plugin of plugins) {
-        // Read plugin.json to determine enabled status
-        const pluginManifestPath = path.join(pluginsDir, plugin, 'plugin.json');
-        let manifest = null;
-        if (fs.existsSync(pluginManifestPath)) {
-          try {
-            manifest = readJsonFile(pluginManifestPath);
-          } catch (error) {
-            console.error(`Failed to read plugin.json for plugin ${plugin}:`, error.message);
-          }
-        }
-
-        if (manifest) {
-          const pluginState = pluginsState[manifest.id] || {};
-          const isEnabled = pluginState.enabled !== undefined ? pluginState.enabled : manifest.enabled !== false;
-          if (!isEnabled) {
-            console.debug(`⏭️ Skipped translations for disabled plugin: ${manifest.id}`);
-            continue;
-          }
-        }
-
         const pluginLocalesDir = path.join(pluginsDir, plugin, 'locales');
 
         if (fs.existsSync(pluginLocalesDir)) {
@@ -167,8 +147,9 @@ class I18n {
    * Set current locale
    */
   setLocale(locale) {
-    if (this.translations[locale]) {
-      this.currentLocale = locale;
+    const normalized = this.normalizeLocale(locale);
+    if (this.translations[normalized]) {
+      this.currentLocale = normalized;
       return true;
     }
     return false;
@@ -188,7 +169,7 @@ class I18n {
    * @param {string} locale - Optional locale override
    */
   t(key, params = {}, locale = null) {
-    const targetLocale = locale || this.currentLocale;
+    const targetLocale = this.normalizeLocale(locale || this.currentLocale);
     const keys = key.split('.');
 
     let translation = this.translations[targetLocale];
@@ -198,17 +179,10 @@ class I18n {
       if (translation && typeof translation === 'object' && k in translation) {
         translation = translation[k];
       } else {
-        // Fallback to default locale
-        translation = this.translations[this.defaultLocale];
-        for (const fallbackKey of keys) {
-          if (translation && typeof translation === 'object' && fallbackKey in translation) {
-            translation = translation[fallbackKey];
-          } else {
-            // Return key if not found
-            return key;
-          }
-        }
-        break;
+        // Supported locales must not silently borrow another language. The
+        // caller can decide how to render a missing key (usually the original
+        // DOM label); returning the key keeps the omission observable.
+        return key;
       }
     }
 
@@ -242,7 +216,7 @@ class I18n {
    * Get all translations for a locale
    */
   getAllTranslations(locale = null) {
-    const targetLocale = locale || this.currentLocale;
+    const targetLocale = this.normalizeLocale(locale || this.currentLocale);
     return this.translations[targetLocale] || {};
   }
 
@@ -259,7 +233,8 @@ class I18n {
    */
   init(req, res, next) {
     // Get locale from query, header, or default
-    const locale = req.query.lang || req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'en';
+    const requested = req.query.lang || req.headers['accept-language']?.split(',')[0] || 'en';
+    const locale = globalI18n.normalizeLocale(requested);
 
     // Attach i18n to request
     req.i18n = globalI18n;

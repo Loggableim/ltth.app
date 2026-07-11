@@ -1,11 +1,14 @@
-# Emoji Rain Plugin - Enhanced Edition
+# WebGPU EmojiRain 3.0
 
-GPU-beschleunigter Emoji-Partikel-Effekt für LTTH mit WebGPU instanziertem Rendering, vollständig integriert mit der Global Chat Command Engine (GCCE).
+Strikt nativer WebGPU-Emoji-Partikel-Effekt für LTTH mit Compute-Physik, GPU-Kollisionen, instanzierten Sprites, HDR-Bloom und transparenter OBS-Komposition.
 
 ## ✨ Features
 
 ### Core Features
-- **GPU-beschleunigtes Rendering**: WebGPU mit instanziertem Rendering für maximale Performance
+- **Native WebGPU-Pipeline**: Compute-Physik, GPU-Spawn-Commands, freie Slot-Allokation, aktive Kompaktierung, indirekte Draws und Texture-Atlas ohne Matter.js-Fallback
+- **Vollständige Renderer-Parität**: Custom Images, Farb-/Rainbow-/Pixelmodus, Toastermodus, Event-Materialien, Profilbilder, Heart-Pop und gläserne Geschenkekugeln
+- **GPU-Telemetrie**: Timestamp Queries, echte GPU-Framezeit, Budget-, Queue-, Atlas- und Drop-Metriken
+- **Adaptive Grafik**: Hybrid, Cinematic und Neon mit HDR-Bloom, Trails, Soft Shadows und kontrollierter Qualitätsreduktion
 - **GCCE-Integration**: Vollständige Chat-Command-Unterstützung
 - **Preset-System**: Konfigurierbare Vorlagen für schnellen Zugriff
 - **Anti-Spam & Rate Limiting**: Globale und benutzerspezifische Cooldowns
@@ -18,13 +21,13 @@ GPU-beschleunigter Emoji-Partikel-Effekt für LTTH mit WebGPU instanziertem Rend
 - **Upload-Validierung**: SVG-Sanitization, MIME-Type-Checks, Per-User-Limits
 - **Overlay-Steuerung**: Pause/Resume/Clear, Theme, Opacity, Speed, Bounding Box
 - **Bulk User Mappings**: Import/Export von Benutzer-Emoji-Zuordnungen
-- **Flow Actions**: 4 neue Flow-Aktionen (Trigger, Preset, Burst, Clear)
+- **Flow Actions**: 5 Aktionen für Trigger, Presets, Burst, Herzballons und Clear
 
 ### Integration
 - **TikTok Events**: Gift, Like, Follow, Share, Subscribe, Sticker mit Skalierung
 - **Flow System**: Automation mit erweiterten Aktionen
 - **OBS**: Separate High-Quality OBS HUD Overlay (1920x1080)
-- **Localization**: Deutsch und Englisch
+- **Localization**: Deutsch, Englisch, Spanisch und Französisch
 
 ## 🎭 Sticker Rain Feature
 

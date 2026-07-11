@@ -24,6 +24,8 @@ class WebGLParticleEngine {
         this.locations = {};
         this.particleData = null;
         this.particleCount = 0;
+        this.coreParticleCount = 0;
+        this.trailParticleCount = 0;
         this.maxParticles = 10000;
         if (Number.isFinite(options.maxParticles) && options.maxParticles > 0) {
             this.maxParticles = options.maxParticles;
@@ -39,6 +41,8 @@ class WebGLParticleEngine {
         this.pendingAtlasUploads = [];
         this.pendingAtlasKeys = new Set();
         this.maxAtlasUploadsPerFrame = options.maxAtlasUploadsPerFrame || 1;
+        this.trailStride = options.trailStride || 2;
+        this.glowScale = options.glowScale || 2.4;
 
         // ── Texture Atlas ──────────────────────────────────────────────
         this.atlasSize = 1024;
@@ -50,6 +54,9 @@ class WebGLParticleEngine {
         this.slotUsage = new Map(); // key (image src string) → slotIndex
         this.SLOT_HEART = 0;
         this.SLOT_PAW = 1;
+        this.SLOT_STAR = 2;
+        this.SLOT_RING = 3;
+        this.SLOT_SPIRAL = 4;
         // 9 floats per particle: x, y, size, alpha, hue, sat, bright, rotation, textureIndex
         this.FLOATS_PER_PARTICLE = 9;
         this.STRIDE_BYTES = this.FLOATS_PER_PARTICLE * 4;
@@ -105,6 +112,7 @@ class WebGLParticleEngine {
                 uniform vec2 u_resolution;
                 uniform float u_slotsPerRow;
                 uniform float u_slotSize; // 1.0 / u_slotsPerRow
+                uniform float u_particleScale;
 
                 // HSB to RGB conversion
                 vec3 hsb2rgb(float h, float s, float b) {
@@ -140,7 +148,7 @@ class WebGLParticleEngine {
                     mat2 rotation = mat2(c, -s, s, c);
 
                     // Scale quad by particle size and rotate
-                    vec2 scaledPos = rotation * (a_position * a_size);
+                    vec2 scaledPos = rotation * (a_position * a_size * u_particleScale);
 
                     // Translate to particle position
                     vec2 worldPos = a_particlePos + scaledPos;
@@ -167,6 +175,7 @@ class WebGLParticleEngine {
                 in vec2 v_texCoord;
 
                 uniform sampler2D u_atlas;
+                uniform float u_pass;
 
                 out vec4 outColor;
 
@@ -179,7 +188,7 @@ class WebGLParticleEngine {
                         finalAlpha *= texColor.a;
                         // Modulate texture RGB with particle color for tinting
                         vec3 tinted = texColor.rgb * v_color.rgb;
-                        // Boost brightness for glow effect
+                        if (u_pass < 0.5) finalAlpha *= 0.22;
                         outColor = vec4(tinted, finalAlpha);
                     } else {
                         // ── Procedural circle particle ──
@@ -188,7 +197,9 @@ class WebGLParticleEngine {
                         // Create soft-edge circle with glow
                         float alpha = 0.0;
 
-                        if (dist < 0.3) {
+                        if (u_pass < 0.5) {
+                            alpha = smoothstep(1.0, 0.0, dist) * 0.34;
+                        } else if (dist < 0.3) {
                             // Bright core
                             alpha = 1.0;
                         } else if (dist < 0.7) {
@@ -242,7 +253,9 @@ class WebGLParticleEngine {
                 u_resolution: gl.getUniformLocation(this.program, 'u_resolution'),
                 u_atlas: gl.getUniformLocation(this.program, 'u_atlas'),
                 u_slotsPerRow: gl.getUniformLocation(this.program, 'u_slotsPerRow'),
-                u_slotSize: gl.getUniformLocation(this.program, 'u_slotSize')
+                u_slotSize: gl.getUniformLocation(this.program, 'u_slotSize'),
+                u_pass: gl.getUniformLocation(this.program, 'u_pass'),
+                u_particleScale: gl.getUniformLocation(this.program, 'u_particleScale')
             };
 
             // Create quad geometry (2 triangles = 1 quad)
@@ -317,7 +330,10 @@ class WebGLParticleEngine {
             gl.enable(gl.BLEND);
             if (this.alphaPreservingBlend) {
                 gl.blendFuncSeparate(
-                    gl.ONE, gl.ONE_MINUS_SRC_ALPHA,
+                    // The fragment shader outputs straight (not premultiplied)
+                    // RGB values. Using ONE here made low-alpha particles look
+                    // fully bright and caused shape layers to smear together.
+                    gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA,
                     gl.ONE, gl.ONE_MINUS_SRC_ALPHA
                 );
             } else {
@@ -363,13 +379,16 @@ class WebGLParticleEngine {
 
         // Initialize free slots (skip 0=heart and 1=paw which are pre-allocated)
         this.freeSlots = [];
-        for (let i = this.maxSlots - 1; i >= 2; i--) {
+        for (let i = this.maxSlots - 1; i >= 5; i--) {
             this.freeSlots.push(i);
         }
 
         // Pre-render heart and paw emoji into atlas
-        this._renderEmojiToSlot(this.SLOT_HEART, '❤');
-        this._renderEmojiToSlot(this.SLOT_PAW, '🐾');
+        this._renderShapeToSlot(this.SLOT_HEART, 'heart');
+        this._renderShapeToSlot(this.SLOT_PAW, 'paw');
+        this._renderShapeToSlot(this.SLOT_STAR, 'star');
+        this._renderShapeToSlot(this.SLOT_RING, 'ring');
+        this._renderShapeToSlot(this.SLOT_SPIRAL, 'spiral');
 
         if (typeof console !== 'undefined' && console.log) {
             console.log(`[WebGL] Atlas initialized: ${this.maxSlots} slots (${this.slotsPerRow}x${this.slotsPerRow}), ${this.freeSlots.length} free`);
@@ -381,7 +400,7 @@ class WebGLParticleEngine {
      * @param {number} slotIndex - Atlas slot index
      * @param {string} emoji - Single emoji character
      */
-    _renderEmojiToSlot(slotIndex, emoji) {
+    _renderShapeToSlot(slotIndex, shape) {
         const gl = this.gl;
         const size = this.slotSize;
         const row = Math.floor(slotIndex / this.slotsPerRow);
@@ -393,11 +412,55 @@ class WebGLParticleEngine {
         const ctx = canvas.getContext('2d');
 
         // White emoji on transparent background — tinted by shader
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
         ctx.fillStyle = '#ffffff';
-        ctx.font = `${size * 0.75}px Arial, sans-serif`;
-        ctx.fillText(emoji, size / 2, size / 2);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineJoin = 'round';
+        const center = size / 2;
+
+        if (shape === 'heart') {
+            ctx.beginPath();
+            ctx.moveTo(center, size * 0.86);
+            ctx.bezierCurveTo(size * 0.10, size * 0.60, size * 0.18, size * 0.18, center, size * 0.34);
+            ctx.bezierCurveTo(size * 0.82, size * 0.18, size * 0.90, size * 0.60, center, size * 0.86);
+            ctx.fill();
+        } else if (shape === 'paw') {
+            ctx.beginPath();
+            ctx.ellipse(center, size * 0.64, size * 0.27, size * 0.23, 0, 0, Math.PI * 2);
+            ctx.fill();
+            const toes = [[0.25, 0.33], [0.42, 0.22], [0.58, 0.22], [0.75, 0.33]];
+            for (const [x, y] of toes) {
+                ctx.beginPath();
+                ctx.arc(size * x, size * y, size * 0.105, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else if (shape === 'star') {
+            ctx.beginPath();
+            for (let i = 0; i < 10; i++) {
+                const angle = -Math.PI / 2 + i * Math.PI / 5;
+                const radius = i % 2 === 0 ? size * 0.42 : size * 0.18;
+                const x = center + Math.cos(angle) * radius;
+                const y = center + Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+        } else if (shape === 'ring') {
+            ctx.lineWidth = size * 0.16;
+            ctx.beginPath();
+            ctx.arc(center, center, size * 0.31, 0, Math.PI * 2);
+            ctx.stroke();
+        } else if (shape === 'spiral') {
+            ctx.lineWidth = size * 0.11;
+            ctx.beginPath();
+            for (let i = 0; i <= 48; i++) {
+                const t = i / 48 * Math.PI * 4.5;
+                const radius = size * (0.035 + 0.035 * t);
+                const x = center + Math.cos(t) * radius;
+                const y = center + Math.sin(t) * radius;
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.atlasTexture);
@@ -425,7 +488,9 @@ class WebGLParticleEngine {
         }
         const slot = this.freeSlots.pop();
         this.slotUsage.set(key, slot);
-        return slot;
+        // Attribute value 0 means a procedural circle; atlas slots are offset
+        // by one in the vertex shader.
+        return slot + 1;
     }
 
     /**
@@ -486,7 +551,8 @@ class WebGLParticleEngine {
             this.pendingAtlasKeys.add(key);
         }
 
-        return slot;
+        // Particle attribute 0 means the procedural circle; atlas slot N maps to N + 1.
+        return slot + 1;
     }
 
     processAtlasUploads() {
@@ -550,7 +616,7 @@ class WebGLParticleEngine {
         for (const firework of fireworks) {
             if (!firework) continue;
 
-            if (firework.rocket && this.shouldRenderParticle(firework.rocket)) {
+            if (!firework.exploded && firework.rocket && this.shouldRenderParticle(firework.rocket)) {
                 index = this.writeParticle(index, firework.rocket);
             }
 
@@ -573,6 +639,34 @@ class WebGLParticleEngine {
             if (index >= this.maxParticles) break;
         }
 
+        this.coreParticleCount = index;
+
+        // Add historical positions as low-cost GPU afterimages. This keeps the
+        // physics model unchanged while rendering trails in the same instanced
+        // WebGL batch as the particles.
+        for (const firework of fireworks) {
+            if (!firework || index >= this.maxParticles) continue;
+            const renderables = [];
+            if (firework.rocket) renderables.push(firework.rocket);
+            renderables.push(...(firework.particles || []), ...(firework.secondaryExplosions || []));
+            for (const particle of renderables) {
+                if (index >= this.maxParticles || !particle || !Array.isArray(particle.trail)) break;
+                for (let i = 0; i < particle.trail.length - 1 && index < this.maxParticles; i += this.trailStride) {
+                    const point = particle.trail[i];
+                    if (!point || (point.alpha || 0) <= 0.01) continue;
+                    index = this.writeParticle(index, {
+                        ...particle,
+                        x: point.x,
+                        y: point.y,
+                        size: Math.max(1, particle.size * (0.38 + i / Math.max(1, particle.trail.length) * 0.32)),
+                        alpha: particle.alpha * point.alpha * 0.34,
+                        textureIndex: 0
+                    });
+                }
+            }
+        }
+
+        this.trailParticleCount = index - this.coreParticleCount;
         this.particleCount = index;
         this.lastUploadFloatCount = 0;
     }
@@ -641,11 +735,13 @@ class WebGLParticleEngine {
         this.logicalWidth = logicalWidth;
         this.logicalHeight = logicalHeight;
         this.processAtlasUploads();
-        if (this.particleCount === 0) return;
 
-        // Clear canvas with transparent background
+        // Clear every frame, including empty ones. Skipping this when no
+        // particles are alive leaves the previous WebGL frame on the canvas
+        // and makes following explosion shapes smear into each other.
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
+        if (this.particleCount === 0) return;
 
         // Use shader program
         gl.useProgram(this.program);
@@ -664,8 +760,21 @@ class WebGLParticleEngine {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.particles);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.getActiveUploadView());
 
-        // Bind VAO and draw
+        // Additive glow/bloom pass. The same instanced data is rendered at a
+        // larger scale before the crisp core pass, avoiding a Canvas overlay.
         gl.bindVertexArray(this.vao);
+        gl.uniform1f(this.locations.u_pass, 0.0);
+        gl.uniform1f(this.locations.u_particleScale, this.glowScale);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE);
+        gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, this.particleCount);
+
+        // Crisp alpha-preserving OBS composition pass.
+        gl.uniform1f(this.locations.u_pass, 1.0);
+        gl.uniform1f(this.locations.u_particleScale, 1.0);
+        gl.blendFuncSeparate(
+            gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA,
+            gl.ONE, gl.ONE_MINUS_SRC_ALPHA
+        );
         gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, this.particleCount);
         gl.bindVertexArray(null);
     }

@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/css/profile-manager.css">
     <link rel="stylesheet" href="/css/profile-management-ui.css">
+    <link rel="stylesheet" href="/css/store-v2.css?v=20260710">
     <script>
         (function () {
             const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
@@ -205,6 +206,18 @@
         /* Plugin Manager Modern Styles - Theme-Aware */
         .plugin-card {
             transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .plugin-logo-fallback {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            color: #dbeafe;
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
         }
         
         .plugin-card:hover {
@@ -2439,7 +2452,10 @@
                     <button class="sidebar-quick-icon" id="sidebar-quick-flows" data-action="flows" title="Toggle Flows">
                         <i data-lucide="git-branch"></i>
                     </button>
-                    <button class="sidebar-quick-icon" id="sidebar-quick-webgpu-emoji-rain" data-action="webgpu-emoji-rain" data-plugin="webgpu-emoji-rain" title="Toggle Emoji Rain">
+                    <button class="sidebar-quick-icon" id="sidebar-quick-emoji-rain" data-action="emoji-rain" data-plugin="emoji-rain" title="Toggle EmojiRain">
+                        <img src="/plugins/emoji-rain/assets/sidebar-icon.png" alt="" class="sidebar-quick-plugin-icon" aria-hidden="true">
+                    </button>
+                    <button class="sidebar-quick-icon" id="sidebar-quick-webgpu-emoji-rain" data-action="webgpu-emoji-rain" data-plugin="webgpu-emoji-rain" title="Toggle WebGPU EmojiRain">
                         <img src="/plugins/webgpu-emoji-rain/assets/sidebar-icon.png" alt="" class="sidebar-quick-plugin-icon" aria-hidden="true">
                     </button>
                     <button class="sidebar-quick-icon" id="sidebar-quick-osc-bridge" data-action="osc-bridge" data-plugin="osc-bridge" title="Toggle OSC-Bridge">
@@ -2541,9 +2557,13 @@
                         <i class="sidebar-category-toggle" data-lucide="chevron-down"></i>
                     </div>
                     <div class="sidebar-category-items">
-                        <a href="#" class="sidebar-item" data-view="webgpu-emoji-rain" data-plugin="webgpu-emoji-rain" data-tooltip="Emoji Rain">
+                        <a href="#" class="sidebar-item" data-view="emoji-rain" data-plugin="emoji-rain" data-tooltip="EmojiRain">
+                            <img src="/plugins/emoji-rain/assets/sidebar-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-emoji-rain" aria-hidden="true">
+                            <span class="sidebar-item-text">EmojiRain</span>
+                        </a>
+                        <a href="#" class="sidebar-item" data-view="webgpu-emoji-rain" data-plugin="webgpu-emoji-rain" data-tooltip="WebGPU EmojiRain">
                             <img src="/plugins/webgpu-emoji-rain/assets/sidebar-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-webgpu-emoji-rain" aria-hidden="true">
-                            <span class="sidebar-item-text" data-i18n="navigation.webgpu_emoji_rain">Emoji Rain</span>
+                            <span class="sidebar-item-text" data-i18n="navigation.webgpu_emoji_rain">WebGPU EmojiRain</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="fireworks" data-plugin="fireworks" data-tooltip="Fireworks">
                             <img class="sidebar-plugin-icon" src="/plugins/fireworks/assets/fireworks-icon.png" alt="" aria-hidden="true">
@@ -2597,7 +2617,7 @@
                         </a>
                         <a href="#" class="sidebar-item" data-view="gift-catalog" data-plugin="gift-catalog" data-tooltip="Developer Guides">
                             <i data-lucide="database"></i>
-                            <span class="sidebar-item-text">Developer Guides</span>
+                            <span class="sidebar-item-text" data-i18n="navigation.developer_guides">Developer Guides</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="toptier" data-plugin="toptier" data-tooltip="Top Tier Leaderboard">
                             <img src="/plugins/toptier/assets/toptier-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-toptier" aria-hidden="true">
@@ -2692,7 +2712,7 @@
                 <!-- Drag region for moving frameless window -->
                 <div class="topbar-drag-region"></div>
                 <div class="topbar-left">
-                    <div class="topbar-brand" aria-label="Pup Cid's Little TikTool Helper">
+                    <div class="topbar-brand" aria-label="Pup Cid's Little TikTool Helper" data-i18n-aria-label="app.name">
                         <img src="/ltthicon.png" alt="LTTH.app logo" class="topbar-logo-image">
                     </div>
                 </div>
@@ -2705,7 +2725,7 @@
                     </div>
                     <!-- Language Switcher with Flags -->
                     <div class="topbar-language-switcher">
-                        <select id="topbar-language-selector" class="topbar-language-select" aria-label="Select Language">
+                        <select id="topbar-language-selector" class="topbar-language-select" aria-label="Select Language" data-i18n-aria-label="settings.language">
                             <option value="en">🇬🇧 EN</option>
                             <option value="de">🇩🇪 DE</option>
                             <option value="es">🇪🇸 ES</option>
@@ -2797,7 +2817,7 @@
                                     </div>
                                     <div style="margin-bottom: 1.5rem;">
                                         <label style="display: block; margin-bottom: 0.5rem; color: var(--color-text-primary); font-weight: 600;">
-                                            tt-target-idc: <span style="font-size: 0.8rem; color: var(--color-text-muted);">(Optional)</span>
+                                            tt-target-idc: <span style="font-size: 0.8rem; color: var(--color-text-muted);" data-i18n="dashboard.optional">(Optional)</span>
                                         </label>
                                         <input type="text" id="import-tttargetidc-input" placeholder="Optional: z.B. useast2a" style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-bg-primary); color: var(--color-text-primary); font-family: monospace; font-size: 0.9rem;">
                                     </div>
@@ -2843,7 +2863,7 @@
                                 <div><strong data-i18n="dashboard.current_duration">Current Duration:</strong> <span id="debug-stream-duration">--</span></div>
                                 <div><strong data-i18n="dashboard.detection_method">Detection Method:</strong> <span id="debug-detection-method">--</span></div>
                                 <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--color-border);">
-                                    <em>This panel shows how the stream start time was detected. If it shows "Connection Time" instead of a roomInfo field, the API may not be providing stream start time.</em>
+                                    <em data-i18n="dashboard.panel_stream_time_explanation">This panel shows how the stream start time was detected. If it shows "Connection Time" instead of a roomInfo field, the API may not be providing stream start time.</em>
                                 </div>
                             </div>
                         </div>
@@ -2891,9 +2911,13 @@
                                 <i data-lucide="git-branch"></i>
                                 <span data-i18n="dashboard.quick_action.flows">Automation Flows</span>
                             </button>
-                            <button class="quick-action-btn" id="quick-webgpu-emoji-rain-btn" data-action="webgpu-emoji-rain" data-state="off" data-plugin="webgpu-emoji-rain">
+                            <button class="quick-action-btn" id="quick-emoji-rain-btn" data-action="emoji-rain" data-state="off" data-plugin="emoji-rain">
                                 <i data-lucide="zap"></i>
-                                <span data-i18n="dashboard.quick_action.emoji_rain">Emoji Rain</span>
+                                <span data-i18n="dashboard.quick_action.emoji_rain">EmojiRain</span>
+                            </button>
+                            <button class="quick-action-btn" id="quick-webgpu-emoji-rain-btn" data-action="webgpu-emoji-rain" data-state="off" data-plugin="webgpu-emoji-rain">
+                                <i data-lucide="sparkles"></i>
+                                <span data-i18n="generated.88fbaad98d41">WebGPU EmojiRain</span>
                             </button>
                             <button class="quick-action-btn" id="quick-osc-bridge-btn" data-action="osc-bridge" data-state="off" data-plugin="osc-bridge">
                                 <i data-lucide="gamepad-2"></i>
@@ -2955,7 +2979,7 @@
                                     <i data-lucide="star"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <div class="stat-label">Followers</div>
+                                    <div class="stat-label" data-i18n="dashboard.stats.followers">Followers</div>
                                     <div class="stat-value" id="stat-followers">0</div>
                                 </div>
                             </div>
@@ -2964,7 +2988,7 @@
                                     <i data-lucide="gift"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <div class="stat-label">Gifts</div>
+                                    <div class="stat-label" data-i18n="dashboard.stats.gifts">Gifts</div>
                                     <div class="stat-value" id="stat-gifts">0</div>
                                 </div>
                             </div>
@@ -2979,7 +3003,7 @@
                     <section class="dashboard-section shoutbox-section" data-plugin="chatango">
                         <h2 class="section-title">
                             <i data-lucide="message-square"></i>
-                            <span>Community Chat</span>
+                            <span data-i18n="dashboard.community_chat">Community Chat</span>
                         </h2>
                         <div class="shoutbox-container" id="chatango-embed-container">
                             <!-- Chatango embed will be loaded dynamically by chatango-theme-adapter.js -->
@@ -2995,7 +3019,7 @@
                         <div class="updates-header">
                             <h2 class="section-title">
                                 <i data-lucide="sparkles"></i>
-                                Release Notes & Updates
+                                <span data-i18n="dashboard.release_notes">Release Notes &amp; Updates</span>
                             </h2>
                             <button id="dismiss-updates-btn" class="btn btn-sm btn-ghost">
                                 <i data-lucide="x"></i>
@@ -3005,13 +3029,13 @@
                         <div class="updates-content" id="updates-content">
                             <div class="loading-indicator">
                                 <i data-lucide="loader"></i>
-                                <span>Lade aktuelle Release Notes...</span>
+                                <span data-i18n="dashboard.loading_release_notes">Lade aktuelle Release Notes…</span>
                             </div>
                         </div>
                         <button id="show-more-changelog-btn" class="btn btn-sm btn-ghost" style="margin-top: 1rem; display: none;">
-                            <i data-lucide="chevron-down"></i>
+                            <i data-lucide="chevron-down"></i><span data-i18n="generated.7d34d9288d8f">
                             Ältere Releases anzeigen
-                        </button>
+                        </span></button>
                     </section>
 
                         </div>
@@ -3020,7 +3044,7 @@
                     <section class="dashboard-section shortcuts-section dashboard-tools-row">
                         <h2 class="section-title">
                             <i data-lucide="grid-3x3"></i>
-                            Tools & Plugins
+                            <span data-i18n="dashboard.tools_plugins">Tools &amp; Plugins</span>
                         </h2>
                         <div class="shortcuts-grid" id="shortcuts-grid">
                             <!-- Will be dynamically populated -->
@@ -3035,9 +3059,9 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <i data-lucide="activity"></i>
+                                <i data-lucide="activity"></i><span data-i18n="generated.5d861dccee1f">
                                 Live Event Log
-                            </h2>
+                            </span></h2>
                             <button id="clear-events-btn" class="btn btn-sm btn-ghost">
                                 <i data-lucide="trash-2"></i>
                                 Clear
@@ -3058,7 +3082,7 @@
                             </div>
                             <div class="stats-bar-item stats-bar-clickable" data-panel="chat" tabindex="0" role="button" aria-pressed="false">
                                 <i data-lucide="message-circle"></i>
-                                <span class="stats-bar-label">Chat</span>
+                                <span class="stats-bar-label" data-i18n="dashboard.chat">Chat</span>
                                 <span class="stats-bar-value" id="event-stats-chat">0</span>
                             </div>
                             <div class="stats-bar-item stats-bar-clickable" data-panel="likes" tabindex="0" role="button" aria-pressed="false">
@@ -3078,7 +3102,7 @@
                             </div>
                             <div class="stats-bar-item stats-bar-clickable" data-panel="subscribers" tabindex="0" role="button" aria-pressed="false">
                                 <i data-lucide="crown"></i>
-                                <span class="stats-bar-label">Subscribers</span>
+                                <span class="stats-bar-label" data-i18n="dashboard.subscribers">Subscribers</span>
                                 <span class="stats-bar-value" id="event-stats-subscribers">0</span>
                             </div>
                             <div class="stats-bar-item stats-bar-clickable" data-panel="gifts" tabindex="0" role="button" aria-pressed="false">
@@ -3094,15 +3118,15 @@
                             <div id="stats-panel-viewers" class="stats-detail-panel" data-panel="viewers" style="display: none;">
                                 <div class="stats-panel-header">
                                     <h3><i data-lucide="users"></i> <span data-i18n="dashboard.stats.viewers">Viewers</span></h3>
-                                    <button class="stats-panel-close" aria-label="Close panel"><i data-lucide="x"></i></button>
+                                    <button class="stats-panel-close" aria-label="Close panel" data-i18n-aria-label="common.close"><i data-lucide="x"></i></button>
                                 </div>
                                 <div class="stats-panel-content">
                                     <div class="stats-panel-summary">
                                         <span class="stats-panel-count" id="panel-viewers-count">0</span>
-                                        <span class="stats-panel-label">currently watching</span>
+                                        <span class="stats-panel-label" data-i18n="dashboard.currently_watching">currently watching</span>
                                     </div>
                                     <div class="stats-panel-list" id="viewers-list">
-                                        <p class="stats-panel-empty">No viewers tracked yet</p>
+                                        <p class="stats-panel-empty" data-i18n="dashboard.no_viewers">No viewers tracked yet</p>
                                     </div>
                                 </div>
                             </div>
@@ -3111,15 +3135,15 @@
                             <div id="stats-panel-chat" class="stats-detail-panel" data-panel="chat" style="display: none;">
                                 <div class="stats-panel-header">
                                     <h3><i data-lucide="message-circle"></i> Chat</h3>
-                                    <button class="stats-panel-close" aria-label="Close panel"><i data-lucide="x"></i></button>
+                                    <button class="stats-panel-close" aria-label="Close panel" data-i18n-aria-label="common.close"><i data-lucide="x"></i></button>
                                 </div>
                                 <div class="stats-panel-content">
                                     <div class="stats-panel-summary">
                                         <span class="stats-panel-count" id="panel-chat-count">0</span>
-                                        <span class="stats-panel-label">messages</span>
+                                        <span class="stats-panel-label" data-i18n="dashboard.messages">messages</span>
                                     </div>
                                     <div class="stats-panel-list" id="chat-list">
-                                        <p class="stats-panel-empty">No chat messages yet</p>
+                                        <p class="stats-panel-empty" data-i18n="dashboard.no_messages">No chat messages yet</p>
                                     </div>
                                 </div>
                             </div>
@@ -3128,15 +3152,15 @@
                             <div id="stats-panel-likes" class="stats-detail-panel" data-panel="likes" style="display: none;">
                                 <div class="stats-panel-header">
                                     <h3><i data-lucide="heart"></i> <span data-i18n="dashboard.stats.likes">Likes</span></h3>
-                                    <button class="stats-panel-close" aria-label="Close panel"><i data-lucide="x"></i></button>
+                                    <button class="stats-panel-close" aria-label="Close panel" data-i18n-aria-label="common.close"><i data-lucide="x"></i></button>
                                 </div>
                                 <div class="stats-panel-content">
                                     <div class="stats-panel-summary">
                                         <span class="stats-panel-count" id="panel-likes-count">0</span>
-                                        <span class="stats-panel-label">total likes</span>
+                                        <span class="stats-panel-label" data-i18n="dashboard.total_likes">total likes</span>
                                     </div>
                                     <div class="stats-panel-list" id="likes-list">
-                                        <p class="stats-panel-empty">No likes yet</p>
+                                        <p class="stats-panel-empty" data-i18n="dashboard.no_likes">No likes yet</p>
                                     </div>
                                 </div>
                             </div>
@@ -3145,15 +3169,15 @@
                             <div id="stats-panel-coins" class="stats-detail-panel" data-panel="coins" style="display: none;">
                                 <div class="stats-panel-header">
                                     <h3><i data-lucide="coins"></i> <span data-i18n="dashboard.stats.coins">Coins</span></h3>
-                                    <button class="stats-panel-close" aria-label="Close panel"><i data-lucide="x"></i></button>
+                                    <button class="stats-panel-close" aria-label="Close panel" data-i18n-aria-label="common.close"><i data-lucide="x"></i></button>
                                 </div>
                                 <div class="stats-panel-content">
                                     <div class="stats-panel-summary">
                                         <span class="stats-panel-count" id="panel-coins-count">0</span>
-                                        <span class="stats-panel-label">total coins</span>
+                                        <span class="stats-panel-label" data-i18n="dashboard.total_coins">total coins</span>
                                     </div>
                                     <div class="stats-panel-list" id="coins-list">
-                                        <p class="stats-panel-empty">No coin gifts yet</p>
+                                        <p class="stats-panel-empty" data-i18n="dashboard.no_coins">No coin gifts yet</p>
                                     </div>
                                 </div>
                             </div>
@@ -3162,15 +3186,15 @@
                             <div id="stats-panel-followers" class="stats-detail-panel" data-panel="followers" style="display: none;">
                                 <div class="stats-panel-header">
                                     <h3><i data-lucide="star"></i> <span data-i18n="dashboard.stats.followers">Followers</span></h3>
-                                    <button class="stats-panel-close" aria-label="Close panel"><i data-lucide="x"></i></button>
+                                    <button class="stats-panel-close" aria-label="Close panel" data-i18n-aria-label="common.close"><i data-lucide="x"></i></button>
                                 </div>
                                 <div class="stats-panel-content">
                                     <div class="stats-panel-summary">
                                         <span class="stats-panel-count" id="panel-followers-count">0</span>
-                                        <span class="stats-panel-label">new followers</span>
+                                        <span class="stats-panel-label" data-i18n="dashboard.new_followers">new followers</span>
                                     </div>
                                     <div class="stats-panel-list" id="followers-list">
-                                        <p class="stats-panel-empty">No followers yet</p>
+                                        <p class="stats-panel-empty" data-i18n="dashboard.no_followers">No followers yet</p>
                                     </div>
                                 </div>
                             </div>
@@ -3178,16 +3202,16 @@
                             <!-- Subscribers Panel -->
                             <div id="stats-panel-subscribers" class="stats-detail-panel" data-panel="subscribers" style="display: none;">
                                 <div class="stats-panel-header">
-                                    <h3><i data-lucide="crown"></i> Subscribers / Superfans</h3>
-                                    <button class="stats-panel-close" aria-label="Close panel"><i data-lucide="x"></i></button>
+                                    <h3><i data-lucide="crown"></i><span data-i18n="generated.8f58244d3cbf"> Subscribers / Superfans</span></h3>
+                                    <button class="stats-panel-close" aria-label="Close panel" data-i18n-aria-label="common.close"><i data-lucide="x"></i></button>
                                 </div>
                                 <div class="stats-panel-content">
                                     <div class="stats-panel-summary">
                                         <span class="stats-panel-count" id="panel-subscribers-count">0</span>
-                                        <span class="stats-panel-label">subscribers</span>
+                                        <span class="stats-panel-label" data-i18n="dashboard.subscribers">subscribers</span>
                                     </div>
                                     <div class="stats-panel-list" id="subscribers-list">
-                                        <p class="stats-panel-empty">No subscribers yet</p>
+                                        <p class="stats-panel-empty" data-i18n="dashboard.no_subscribers">No subscribers yet</p>
                                     </div>
                                 </div>
                             </div>
@@ -3196,15 +3220,15 @@
                             <div id="stats-panel-gifts" class="stats-detail-panel" data-panel="gifts" style="display: none;">
                                 <div class="stats-panel-header">
                                     <h3><i data-lucide="gift"></i> <span data-i18n="dashboard.stats.gifts">Gifts</span></h3>
-                                    <button class="stats-panel-close" aria-label="Close panel"><i data-lucide="x"></i></button>
+                                    <button class="stats-panel-close" aria-label="Close panel" data-i18n-aria-label="common.close"><i data-lucide="x"></i></button>
                                 </div>
                                 <div class="stats-panel-content">
                                     <div class="stats-panel-summary">
                                         <span class="stats-panel-count" id="panel-gifts-count">0</span>
-                                        <span class="stats-panel-label">gifts received</span>
+                                        <span class="stats-panel-label" data-i18n="dashboard.gifts_received">gifts received</span>
                                     </div>
                                     <div class="stats-panel-list" id="gifts-list">
-                                        <p class="stats-panel-empty">No gifts yet</p>
+                                        <p class="stats-panel-empty" data-i18n="dashboard.no_gifts">No gifts yet</p>
                                     </div>
                                 </div>
                             </div>
@@ -3214,10 +3238,10 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Time</th>
-                                        <th>Type</th>
-                                        <th>User</th>
-                                        <th>Details</th>
+                                        <th data-i18n="dashboard.event_time">Time</th>
+                                        <th data-i18n="dashboard.event_type">Type</th>
+                                        <th data-i18n="dashboard.event_user">User</th>
+                                        <th data-i18n="dashboard.event_details">Details</th>
                                     </tr>
                                 </thead>
                                 <tbody id="event-log"></tbody>
@@ -3231,22 +3255,22 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <img src="/flows-icon.png" alt="" class="view-brand-icon" aria-hidden="true">
+                                <img src="/flows-icon.png" alt="" class="view-brand-icon" aria-hidden="true"><span data-i18n="generated.981e87cffc5b">
                                 IFTTT Automation Flows
-                            </h2>
+                            </span></h2>
                             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                                 <a href="/ifttt-flow-editor.html" target="_blank" class="btn btn-primary">
-                                    <i data-lucide="edit"></i>
+                                    <i data-lucide="edit"></i><span data-i18n="generated.89c4b363c646">
                                     Visual Flow Editor
-                                </a>
-                                <button id="open-wizard-btn" class="btn btn-primary">
+                                </span></a>
+                                <button id="open-wizard-btn" class="btn btn-primary" data-i18n="generated.78cebb083dd8">
                                     🧙 Wizard
                                 </button>
                                 <button id="add-flow-btn" class="btn btn-ghost">
-                                    <i data-lucide="plus"></i>
+                                    <i data-lucide="plus"></i><span data-i18n="generated.f1706e995e86">
                                     Quick Create
-                                </button>
-                                <button id="import-flow-btn" class="btn btn-ghost" title="Flow aus JSON importieren">
+                                </span></button>
+                                <button id="import-flow-btn" class="btn btn-ghost" title="Flow aus JSON importieren" data-i18n="generated.98974b42cfcd">
                                     📥 Import
                                 </button>
                                 <input type="file" id="import-flow-file" accept=".json" style="display:none;">
@@ -3255,32 +3279,32 @@
 
                         <div class="bg-gray-700 rounded-lg p-3 mb-3 flex items-center justify-between gap-3 flex-wrap">
                             <div>
-                                <strong>Automation Engine</strong>
-                                <p class="text-sm text-gray-400" style="margin:4px 0 0 0;">Globaler Schalter fuer alle Flows und Timer-Trigger.</p>
+                                <strong data-i18n="dashboard.automation_engine">Automation Engine</strong>
+                                <p class="text-sm text-gray-400" style="margin:4px 0 0 0;" data-i18n="dashboard.automation_engine_desc">Globaler Schalter für alle Flows und Timer-Trigger.</p>
                             </div>
                             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                                 <input type="checkbox" id="flows-global-enabled" style="width:18px;height:18px;">
-                                <span id="flows-global-enabled-label">Aktiv</span>
+                                <span id="flows-global-enabled-label" data-i18n="dashboard.active">Aktiv</span>
                             </label>
                         </div>
 
                         <!-- Bulk actions bar (shown when flows are selected) -->
                         <div id="flows-bulk-bar" style="display:none;" class="bg-gray-700 rounded-lg p-3 mb-3 flex items-center gap-3 flex-wrap">
                             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                                <input type="checkbox" id="flows-select-all" style="width:15px;height:15px;">
+                                <input type="checkbox" id="flows-select-all" style="width:15px;height:15px;"><span data-i18n="generated.e0e6b2c997cd">
                                 Alle auswählen
-                            </label>
+                            </span></label>
                             <span id="flows-selected-count" class="text-gray-400 text-sm"></span>
-                            <button id="bulk-enable-flows-btn" class="btn btn-ghost text-sm">✅ Aktivieren</button>
-                            <button id="bulk-disable-flows-btn" class="btn btn-ghost text-sm">⏸️ Deaktivieren</button>
+                            <button id="bulk-enable-flows-btn" class="btn btn-ghost text-sm" data-i18n="generated.5a8388f71915">✅ Aktivieren</button>
+                            <button id="bulk-disable-flows-btn" class="btn btn-ghost text-sm" data-i18n="generated.7772df69abc1">⏸️ Deaktivieren</button>
                         </div>
 
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <i data-lucide="zap" style="color: var(--color-accent-primary); width: 24px; height: 24px;"></i>
                                 <div>
-                                    <strong style="color: var(--color-accent-primary);">New: Visual IFTTT Flow Editor</strong>
-                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--color-text-secondary);">
+                                    <strong style="color: var(--color-accent-primary);" data-i18n="dashboard.visual_flow_editor">New: Visual IFTTT Flow Editor</strong>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--color-text-secondary);" data-i18n="generated.a0c0718eb8d3">
                                         Create powerful automation flows with drag-and-drop interface. Supports triggers, conditions, actions, and real-time monitoring.
                                     </p>
                                 </div>
@@ -3313,13 +3337,13 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <i data-lucide="user-circle-2"></i>
+                                <i data-lucide="user-circle-2"></i><span data-i18n="generated.03fe6a66b7b9">
                                 Talking Heads - AI Avatar Animation
-                            </h2>
+                            </span></h2>
                             <a href="/plugins/talking-heads/ui.html" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
+                                <i data-lucide="external-link"></i><span data-i18n="generated.7bb7f814d8d6">
                                 Open in New Tab
-                            </a>
+                            </span></a>
                         </div>
                         <div class="iframe-container">
                             <iframe data-src="/plugins/talking-heads/ui.html" title="Talking Heads Configuration"></iframe>
@@ -3354,11 +3378,20 @@
                     </section>
                 </div>
 
-                <!-- View: Emoji Rain -->
+                <!-- View: EmojiRain -->
+                <div id="view-emoji-rain" class="content-view" data-plugin="emoji-rain">
+                    <section class="view-section">
+                        <div class="iframe-container">
+                            <iframe data-src="/emoji-rain/ui" title="EmojiRain Configuration"></iframe>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- View: WebGPU EmojiRain -->
                 <div id="view-webgpu-emoji-rain" class="content-view" data-plugin="webgpu-emoji-rain">
                     <section class="view-section">
                         <div class="iframe-container">
-                            <iframe data-src="/webgpu-emoji-rain/ui" title="Emoji Rain Configuration"></iframe>
+                            <iframe data-src="/webgpu-emoji-rain/ui" title="WebGPU EmojiRain Configuration"></iframe>
                         </div>
                     </section>
                 </div>
@@ -3395,13 +3428,13 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <i data-lucide="gift"></i>
+                                <i data-lucide="gift"></i><span data-i18n="generated.50750686b420">
                                 Gift Milestone Celebration
-                            </h2>
+                            </span></h2>
                             <a href="/gift-milestone/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
+                                <i data-lucide="external-link"></i><span data-i18n="generated.cc2a5cc25c08">
                                 Open in New Tab
-                            </a>
+                            </span></a>
                         </div>
                         <div class="iframe-container">
                             <iframe data-src="/gift-milestone/ui" title="Gift Milestone Configuration"></iframe>
@@ -3490,9 +3523,9 @@
                                 <span data-i18n="navigation.viewer_profiles">Viewer Profiles</span>
                             </h2>
                             <a href="/viewer-profiles/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
+                                <i data-lucide="external-link"></i><span data-i18n="generated.f1b48f99a083">
                                 Open in New Tab
-                            </a>
+                            </span></a>
                         </div>
                         <div class="iframe-container">
                             <iframe data-src="/viewer-profiles/ui" title="Viewer Profiles"></iframe>
@@ -3590,9 +3623,9 @@
                                 <span data-i18n="navigation.config_import">Config Import</span>
                             </h2>
                             <a href="/config-import/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
+                                <i data-lucide="external-link"></i><span data-i18n="generated.cce39fa33a40">
                                 Open in New Tab
-                            </a>
+                            </span></a>
                         </div>
                         <div class="iframe-container">
                             <iframe data-src="/config-import/ui" title="Config Import"></iframe>
@@ -3633,13 +3666,13 @@
                         <div class="view-header">
                             <div style="display: flex; gap: 12px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end;">
                                 <button id="upload-plugin-btn" class="btn btn-primary">
-                                    <i data-lucide="upload"></i>
+                                    <i data-lucide="upload"></i><span data-i18n="generated.3578a4d44b95">
                                     Upload Plugin (ZIP)
-                                </button>
+                                </span></button>
                                 <button id="reload-plugins-btn" class="btn btn-ghost">
-                                    <i data-lucide="refresh-cw"></i>
+                                    <i data-lucide="refresh-cw"></i><span data-i18n="generated.2b797c8b2280">
                                     Reload All
-                                </button>
+                                </span></button>
                             </div>
                         </div>
                         <div id="plugin-store-hero" class="plugin-store-hero-slot"></div>
@@ -3652,7 +3685,7 @@
                                     <i data-lucide="check-circle"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <div class="stat-label">Active Plugins</div>
+                                    <div class="stat-label" data-i18n="dashboard.active_plugins">Active Plugins</div>
                                     <div class="stat-value" id="stat-active-plugins">0</div>
                                 </div>
                             </div>
@@ -3661,7 +3694,7 @@
                                     <i data-lucide="pause-circle"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <div class="stat-label">Inactive Plugins</div>
+                                    <div class="stat-label" data-i18n="dashboard.inactive_plugins">Inactive Plugins</div>
                                     <div class="stat-value" id="stat-inactive-plugins">0</div>
                                 </div>
                             </div>
@@ -3670,7 +3703,7 @@
                                     <i data-lucide="package"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <div class="stat-label">Total Plugins</div>
+                                    <div class="stat-label" data-i18n="dashboard.total_plugins">Total Plugins</div>
                                     <div class="stat-value" id="stat-total-plugins">0</div>
                                 </div>
                             </div>
@@ -3720,37 +3753,37 @@
                                     </button>
                                 </div>
                                 <div class="plugin-store-toolbar__status-filters">
-                                    <span style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 500;">Dev Status:</span>
+                                    <span style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 500;" data-i18n="dashboard.dev_status">Dev Status:</span>
                                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: var(--color-accent-primary);">
                                         <input type="checkbox" class="dev-status-filter" data-status="stable" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-accent-primary);">
-                                        <span>Stable</span>
+                                        <span data-i18n="dashboard.stable">Stable</span>
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: var(--color-accent-success);">
                                         <input type="checkbox" class="dev-status-filter" data-status="working-beta" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-accent-success);">
-                                        <span>Working Beta</span>
+                                        <span data-i18n="dashboard.working_beta">Working Beta</span>
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: var(--color-accent-warning);">
                                         <input type="checkbox" class="dev-status-filter" data-status="development-beta" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-accent-warning);">
-                                        <span>Development Beta</span>
+                                        <span data-i18n="dashboard.development_beta">Development Beta</span>
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: var(--color-accent-danger);">
                                         <input type="checkbox" class="dev-status-filter" data-status="early-version" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-accent-danger);">
-                                        <span>Early Version</span>
+                                        <span data-i18n="dashboard.early_version">Early Version</span>
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: var(--color-text-muted);">
                                         <input type="checkbox" class="dev-status-filter" data-status="non-working-beta" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-text-muted);">
-                                        <span>Non-working Beta</span>
+                                        <span data-i18n="dashboard.non_working_beta">Non-working Beta</span>
                                     </label>
                                 </div>
                                 <select id="plugin-sort" class="plugin-store-sort-select">
-                                    <option value="name">Sort by Name</option>
-                                    <option value="status">Sort by Status</option>
-                                    <option value="type">Sort by Type</option>
-                                    <option value="author">Sort by Author</option>
+                                    <option value="name" data-i18n="dashboard.sort_name">Sort by Name</option>
+                                    <option value="status" data-i18n="dashboard.sort_status">Sort by Status</option>
+                                    <option value="type" data-i18n="dashboard.sort_type">Sort by Type</option>
+                                    <option value="author" data-i18n="dashboard.sort_author">Sort by Author</option>
                                 </select>
                                 <button id="compact-mode-toggle" class="plugin-store-compact-toggle">
                                     <i data-lucide="layout-list" style="width: 16px; height: 16px;"></i>
-                                    <span>Compact</span>
+                                    <span data-i18n="dashboard.compact">Compact</span>
                                 </button>
                             </div>
                             <div id="plugin-store-category-chips" class="plugin-store-chip-row plugin-store-chip-row--categories" style="display: none;"></div>
@@ -3843,9 +3876,9 @@
                                     <div class="form-group">
                                         <button type="button" id="show-live-event-log" class="btn btn-secondary inline-flex items-center gap-2" aria-pressed="false" data-state="disabled">
                                             <i data-lucide="eye"></i>
-                                            <span id="show-live-event-log-label">Enable Live Event Log</span>
+                                            <span id="show-live-event-log-label" data-i18n="settings.enable_live_event_log">Enable Live Event Log</span>
                                         </button>
-                                        <p class="text-xs text-gray-500 mt-2 ml-1">Debug only. Hidden from the navigation by default.</p>
+                                        <p class="text-xs text-gray-500 mt-2 ml-1" data-i18n="settings.debug_only">Debug only. Hidden from the navigation by default.</p>
                                     </div>
                                     <div class="form-group">
                                         <label class="checkbox-label">
@@ -3876,31 +3909,31 @@
                                     <select id="language-selector" class="form-input">
                                         <option value="en">English</option>
                                         <option value="de">Deutsch</option>
-                                        <option value="es">Español</option>
-                                        <option value="fr">Français</option>
+                                        <option value="es" data-i18n="generated.c407ba13315e">Español</option>
+                                        <option value="fr" data-i18n="generated.4a4626eb06ab">Français</option>
                                     </select>
                                 </div>
                                 <div class="mt-2 text-sm text-gray-400">
                                     <i data-lucide="info" class="inline-block w-4 h-4 mr-1"></i>
-                                    <span>Language changes apply immediately</span>
+                                    <span data-i18n="settings.language_apply_immediately">Language changes apply immediately</span>
                                 </div>
                             </div>
 
                             <!-- Auto-Start Settings -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="power"></i>
+                                    <i data-lucide="power"></i><span data-i18n="generated.39ad7f1e9f5c">
                                     Auto-Start on System Boot
-                                </h3>
+                                </span></h3>
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <div class="grid grid-cols-2 gap-4 text-sm mb-4">
                                         <div>
-                                            <span class="text-gray-400">Platform:</span>
+                                            <span class="text-gray-400" data-i18n="settings.platform">Platform:</span>
                                             <span id="autostart-platform-name" class="ml-2">-</span>
                                         </div>
                                         <div>
-                                            <span class="text-gray-400">Status:</span>
-                                            <span id="autostart-status" class="ml-2">Checking...</span>
+                                            <span class="text-gray-400" data-i18n="settings.status">Status:</span>
+                                            <span id="autostart-status" class="ml-2" data-i18n="settings.checking">Checking…</span>
                                         </div>
                                     </div>
                                     <div class="form-group">
@@ -3915,10 +3948,10 @@
                             <!-- TikTok Data Source Selection -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="radio"></i>
+                                    <i data-lucide="radio"></i><span data-i18n="generated.566861b3923a">
                                     TikTok Datenquelle
-                                </h3>
-                                <p class="text-sm text-gray-400 mb-4">
+                                </span></h3>
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.6ee7ce39864c">
                                     Wähle die Datenquelle für TikTok LIVE Events. Die Änderung wird beim nächsten Verbinden aktiv.
                                 </p>
 
@@ -3927,15 +3960,15 @@
                                         <label class="flex items-center gap-2 cursor-pointer px-4 py-3 rounded-lg border border-gray-600 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-500/10 transition-all" id="datasource-label-eulerstream">
                                             <input type="radio" name="tiktok-data-source" value="eulerstream" id="datasource-eulerstream" checked class="accent-blue-500">
                                             <div>
-                                                <span class="font-medium">⚡ Eulerstream</span>
-                                                <p class="text-xs text-gray-400 mt-0.5">Direkte WebSocket-Verbindung über Eulerstream SDK</p>
+                                                <span class="font-medium" data-i18n="settings.eulerstream_title">⚡ Eulerstream</span>
+                                                <p class="text-xs text-gray-400 mt-0.5" data-i18n="settings.eulerstream_desc">Direkte WebSocket-Verbindung über das Eulerstream-SDK</p>
                                             </div>
                                         </label>
                                         <label class="flex items-center gap-2 cursor-pointer px-4 py-3 rounded-lg border border-gray-600 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-500/10 transition-all" id="datasource-label-tikfinity">
                                             <input type="radio" name="tiktok-data-source" value="tikfinity" id="datasource-tikfinity" class="accent-purple-500">
                                             <div>
-                                                <span class="font-medium">🔗 TikFinity</span>
-                                                <p class="text-xs text-gray-400 mt-0.5">Verbindung über TikFinity Desktop App (lokaler WebSocket)</p>
+                                                <span class="font-medium" data-i18n="settings.tikfinity_title">🔗 TikFinity</span>
+                                                <p class="text-xs text-gray-400 mt-0.5" data-i18n="settings.tikfinity_desc">Verbindung über die TikFinity-Desktop-App (lokaler WebSocket)</p>
                                             </div>
                                         </label>
                                     </div>
@@ -3947,35 +3980,35 @@
                                         <div class="flex items-start gap-2">
                                             <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0"></i>
                                             <div class="text-sm">
-                                                <p class="text-yellow-400 font-medium mb-1">
+                                                <p class="text-yellow-400 font-medium mb-1" data-i18n="generated.6a028f6bcffe">
                                                     TikFinity Desktop App erforderlich
                                                 </p>
-                                                <p class="text-gray-400 text-xs">
+                                                <p class="text-gray-400 text-xs" data-i18n="generated.38610ef8fc38">
                                                     Stelle sicher, dass die TikFinity Desktop App läuft und mit deinem TikTok-Account verbunden ist.
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="form-group">
-                                        <label>WebSocket Port</label>
+                                        <label data-i18n="settings.websocket_port">WebSocket Port</label>
                                         <input type="number" id="tikfinity-ws-port" class="form-input" value="21213" min="1" max="65535" placeholder="21213">
-                                        <p class="text-xs text-gray-500 mt-1">Standard: 21213. Nur ändern wenn in TikFinity ein anderer Port konfiguriert ist.</p>
+                                        <p class="text-xs text-gray-500 mt-1" data-i18n="settings.websocket_hint">Standard: 21213. Nur ändern, wenn TikFinity einen anderen Port verwendet.</p>
                                     </div>
                                     <button id="save-tikfinity-settings" class="btn btn-primary">
-                                        <i data-lucide="save"></i>
+                                        <i data-lucide="save"></i><span data-i18n="generated.c4ad901f6dad">
                                         TikFinity Einstellungen speichern
-                                    </button>
+                                    </span></button>
                                 </div>
                             </div>
 
                             <!-- EulerStream API Credentials -->
                             <div class="settings-card" id="eulerstream-settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="key"></i>
+                                    <i data-lucide="key"></i><span data-i18n="generated.af53fe5d0e63">
                                     EulerStream API Key
-                                </h3>
-                                <p class="text-sm text-gray-400 mb-4">
-                                    EulerStream API key for TikTok connection. Get your free API key at <a href="https://www.eulerstream.com" target="_blank" class="text-blue-400 hover:text-blue-300">eulerstream.com</a>.
+                                </span></h3>
+                                <p class="text-sm text-gray-400 mb-4"><span data-i18n="generated.7bfa638528a6">
+                                    EulerStream API key for TikTok connection. Get your free API key at </span><a href="https://www.eulerstream.com" target="_blank" class="text-blue-400 hover:text-blue-300">eulerstream.com</a>.
                                 </p>
                                 
                                 <!-- Storage Location Info Banner -->
@@ -3983,10 +4016,10 @@
                                     <div class="flex items-start gap-2">
                                         <i data-lucide="shield-check" class="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0"></i>
                                         <div class="text-sm">
-                                            <p class="text-green-400 font-medium mb-1">
+                                            <p class="text-green-400 font-medium mb-1" data-i18n="generated.22301b14ee9b">
                                                 API-Schlüssel wird persistent gespeichert
                                             </p>
-                                            <p class="text-gray-400 text-xs">
+                                            <p class="text-gray-400 text-xs" data-i18n="generated.96cbc7974d21">
                                                 Der EulerStream API-Schlüssel wird sicher gespeichert und bleibt bei Updates erhalten.
                                             </p>
                                         </div>
@@ -3994,30 +4027,30 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label>API Key</label>
+                                    <label data-i18n="settings.api_key">API Key</label>
                                     <input type="text" id="tiktok-euler-api-key" class="form-input" placeholder="euler_... or Webhook Secret (64-char hex)">
-                                    <p class="text-xs text-gray-500 mt-1">Starts with "euler_" or 64-character hexadecimal Webhook Secret</p>
+                                    <p class="text-xs text-gray-500 mt-1" data-i18n="generated.dd8bec4de049">Starts with "euler_" or 64-character hexadecimal Webhook Secret</p>
                                 </div>
                                 <div class="form-group">
                                     <label class="flex items-center cursor-pointer">
                                         <input type="checkbox" id="tiktok-auto-reconnect" class="mr-2" checked>
-                                        <span>Automatisch beim Start verbinden</span>
+                                        <span data-i18n="settings.auto_connect_stream">Automatisch beim Start verbinden</span>
                                     </label>
-                                    <p class="text-xs text-gray-500 mt-1">Wenn aktiviert, verbindet sich die Software automatisch beim Start mit dem zuletzt verbundenen Stream</p>
+                                    <p class="text-xs text-gray-500 mt-1" data-i18n="generated.ed4ce2ee2279">Wenn aktiviert, verbindet sich die Software automatisch beim Start mit dem zuletzt verbundenen Stream</p>
                                 </div>
                                 <button id="save-tiktok-credentials" class="btn btn-primary">
-                                    <i data-lucide="save"></i>
+                                    <i data-lucide="save"></i><span data-i18n="generated.66734d9dd260">
                                     Save API Key
-                                </button>
+                                </span></button>
                             </div>
 
                             <!-- API Keys Configuration -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="key-round"></i>
+                                    <i data-lucide="key-round"></i><span data-i18n="generated.2a193d900d7b">
                                     API Keys
-                                </h3>
-                                <p class="text-sm text-gray-400 mb-4">
+                                </span></h3>
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.5e29a40a9f5b">
                                     Zentrale Verwaltung aller API-Schlüssel. Nur Dienste mit gültigem Key können genutzt werden.
                                 </p>
                                 
@@ -4026,10 +4059,10 @@
                                     <div class="flex items-start gap-2">
                                         <i data-lucide="shield-check" class="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0"></i>
                                         <div class="text-sm">
-                                            <p class="text-green-400 font-medium mb-1">
+                                            <p class="text-green-400 font-medium mb-1" data-i18n="generated.35a7eeea6fed">
                                                 Alle API-Schlüssel werden persistent gespeichert
                                             </p>
-                                            <p class="text-gray-400 text-xs">
+                                            <p class="text-gray-400 text-xs" data-i18n="generated.4fa7fa9b3456">
                                                 Ihre API-Schlüssel überleben Updates und werden sicher außerhalb des Anwendungsverzeichnisses gespeichert.
                                             </p>
                                         </div>
@@ -4039,118 +4072,118 @@
                                 <div class="space-y-4">
                                     <!-- Google Cloud TTS -->
                                     <div class="form-group">
-                                        <label>Google Cloud TTS API Key</label>
+                                        <label data-i18n="generated.9ea87e69e595">Google Cloud TTS API Key</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-google-api-key" class="form-input" placeholder="Enter Google Cloud API key...">
                                             <button type="button" id="toggle-tts-google-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            Get your API key from <a href="https://console.cloud.google.com" target="_blank" class="text-blue-400 hover:text-blue-300">Google Cloud Console</a>. Enable the Cloud Text-to-Speech API.
-                                        </p>
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.e1d76bce5cf5">
+                                            Get your API key from </span><a href="https://console.cloud.google.com" target="_blank" class="text-blue-400 hover:text-blue-300" data-i18n="generated.116c14cfa308">Google Cloud Console</a><span data-i18n="generated.e202a0414105">. Enable the Cloud Text-to-Speech API.
+                                        </span></p>
                                     </div>
 
                                     <!-- Speechify TTS -->
                                     <div class="form-group">
-                                        <label>Speechify API Key</label>
+                                        <label data-i18n="generated.2cdeff3fbe7d">Speechify API Key</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-speechify-api-key" class="form-input" placeholder="Enter Speechify API key...">
                                             <button type="button" id="toggle-tts-speechify-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            Get from <a href="https://speechify.com/api" target="_blank" class="text-blue-400 hover:text-blue-300">speechify.com/api</a>. $10 per 1M characters. 1000+ voices.
-                                        </p>
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.e0d0d3406354">
+                                            Get from </span><a href="https://speechify.com/api" target="_blank" class="text-blue-400 hover:text-blue-300">speechify.com/api</a><span data-i18n="generated.7cbdaf343e86">. $10 per 1M characters. 1000+ voices.
+                                        </span></p>
                                     </div>
 
                                     <!-- ElevenLabs TTS -->
                                     <div class="form-group">
-                                        <label>ElevenLabs API Key</label>
+                                        <label data-i18n="generated.50cb8a71cab6">ElevenLabs API Key</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-elevenlabs-api-key" class="form-input" placeholder="Enter ElevenLabs API key...">
                                             <button type="button" id="toggle-tts-elevenlabs-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            Get from <a href="https://elevenlabs.io/docs/quickstart" target="_blank" class="text-blue-400 hover:text-blue-300">elevenlabs.io</a>. Ultra-realistic AI voices.
-                                        </p>
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.69e75f2c4322">
+                                            Get from </span><a href="https://elevenlabs.io/docs/quickstart" target="_blank" class="text-blue-400 hover:text-blue-300">elevenlabs.io</a><span data-i18n="generated.205568e80ca3">. Ultra-realistic AI voices.
+                                        </span></p>
                                     </div>
 
                                     <!-- OpenAI TTS -->
                                     <div class="form-group">
-                                        <label>OpenAI TTS API Key</label>
+                                        <label data-i18n="generated.1caeef8a0c9d">OpenAI TTS API Key</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-openai-api-key" class="form-input" placeholder="Enter OpenAI API key...">
                                             <button type="button" id="toggle-tts-openai-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            Get from <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-400 hover:text-blue-300">OpenAI Platform</a>. TTS-1 and TTS-1-HD models.
-                                        </p>
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.adbe981cdf8b">
+                                            Get from </span><a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-400 hover:text-blue-300" data-i18n="generated.b4851fea1451">OpenAI Platform</a><span data-i18n="generated.277b33b9d116">. TTS-1 and TTS-1-HD models.
+                                        </span></p>
                                     </div>
 
                                     <!-- Fish.audio TTS (Official API) -->
                                     <div class="form-group">
-                                        <label>Fish.audio API Key</label>
+                                        <label data-i18n="generated.163ee4cfddb5">Fish.audio API Key</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-fishaudio-api-key" class="form-input" placeholder="Enter Fish.audio API key...">
                                             <button type="button" id="toggle-tts-fishaudio-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1">
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.7ccb015c7fae">
                                             Uses the official Fish.audio API (Fish Speech) with the S1 model. Get your key at
-                                            <a href="https://docs.fish.audio/developer-guide/getting-started/quickstart" target="_blank" class="text-blue-400 hover:text-blue-300">Fish.audio Quickstart</a>.
+                                            </span><a href="https://docs.fish.audio/developer-guide/getting-started/quickstart" target="_blank" class="text-blue-400 hover:text-blue-300" data-i18n="generated.61fae76464b1">Fish.audio Quickstart</a>.
                                         </p>
                                     </div>
 
                                     <!-- SiliconFlow API (Fish Speech TTS + StreamAlchemy) -->
                                     <div class="form-group">
-                                        <label>SiliconFlow API Key</label>
+                                        <label data-i18n="generated.24a367aad929">SiliconFlow API Key</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-fishspeech-api-key" class="form-input" placeholder="Enter SiliconFlow API key...">
                                             <button type="button" id="toggle-tts-fishspeech-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            Get from <a href="https://siliconflow.cn" target="_blank" class="text-blue-400 hover:text-blue-300">SiliconFlow</a>. Used for Fish Speech 1.5 TTS and StreamAlchemy FLUX.1-schnell image generation.
-                                        </p>
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.df8bc50883f3">
+                                            Get from </span><a href="https://siliconflow.cn" target="_blank" class="text-blue-400 hover:text-blue-300" data-i18n="talking_heads_ui.providers.siliconflow">SiliconFlow</a><span data-i18n="generated.f9378fda6bbf">. Used for Fish Speech 1.5 TTS and StreamAlchemy FLUX.1-schnell image generation.
+                                        </span></p>
                                     </div>
 
                                     <!-- Ollama Cloud API (STT Ticker Translation) -->
                                     <div class="form-group">
-                                        <label>Ollama Cloud API Key (STT Ticker Übersetzung)</label>
+                                        <label data-i18n="generated.7baf717093e9">Ollama Cloud API Key (STT Ticker Übersetzung)</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-ollama-api-key" class="form-input" placeholder="Enter Ollama Cloud API key...">
                                             <button type="button" id="toggle-tts-ollama-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            Wird vom <strong>STT Ticker Plugin</strong> für die Echtzeit-Übersetzung von Transkripten genutzt. Get your key at <a href="https://ollama.cloud" target="_blank" class="text-blue-400 hover:text-blue-300">ollama.cloud</a>.
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.9715438968ae">
+                                            Wird vom </span><strong data-i18n="generated.bad4e593c5c0">STT Ticker Plugin</strong><span data-i18n="generated.b1fbd95403b3"> für die Echtzeit-Übersetzung von Transkripten genutzt. Get your key at </span><a href="https://ollama.cloud" target="_blank" class="text-blue-400 hover:text-blue-300">ollama.cloud</a>.
                                         </p>
                                     </div>
                                 </div>
 
                                 <button id="save-tts-api-keys" class="btn btn-primary mt-4">
-                                    <i data-lucide="save"></i>
+                                    <i data-lucide="save"></i><span data-i18n="generated.2c4a6a9fe474">
                                     Save API Keys
-                                </button>
+                                </span></button>
                             </div>
 
                             <!-- OpenAI API Configuration -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="brain"></i>
+                                    <i data-lucide="brain"></i><span data-i18n="generated.dd4c8ec025ae">
                                     OpenAI API Configuration
-                                </h3>
-                                <p class="text-sm text-gray-400 mb-4">
-                                    Configure your OpenAI API key for AI-powered features like quiz question generation. Get your API key at <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-400 hover:text-blue-300">platform.openai.com</a>.
+                                </span></h3>
+                                <p class="text-sm text-gray-400 mb-4"><span data-i18n="generated.23584ef30f24">
+                                    Configure your OpenAI API key for AI-powered features like quiz question generation. Get your API key at </span><a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-400 hover:text-blue-300">platform.openai.com</a>.
                                 </p>
                                 
                                 <!-- Storage Location Info Banner -->
@@ -4159,52 +4192,52 @@
                                         <i data-lucide="shield-check" class="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0"></i>
                                         <div class="text-sm">
                                             <p class="text-green-400 font-medium mb-1">
-                                                <span id="openai-key-status">API-Schlüssel wird persistent gespeichert</span>
+                                                <span id="openai-key-status" data-i18n="generated.aea3df423143">API-Schlüssel wird persistent gespeichert</span>
                                             </p>
-                                            <p class="text-gray-400 text-xs">
-                                                Ihre API-Schlüssel werden außerhalb des Anwendungsverzeichnisses gespeichert und bleiben bei Updates erhalten. Speicherort: <span id="openai-key-storage-path" class="font-mono text-blue-300">wird geladen...</span>
+                                            <p class="text-gray-400 text-xs"><span data-i18n="generated.64c1174a63fe">
+                                                Ihre API-Schlüssel werden außerhalb des Anwendungsverzeichnisses gespeichert und bleiben bei Updates erhalten. Speicherort: </span><span id="openai-key-storage-path" class="font-mono text-blue-300" data-i18n="generated.28bfd8d4dfdf">wird geladen...</span>
                                             </p>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="form-group">
-                                    <label>API Key</label>
+                                    <label data-i18n="settings.api_key">API Key</label>
                                     <input type="password" id="openai-api-key" class="form-input" placeholder="sk-...">
-                                    <p class="text-xs text-gray-500 mt-1" id="openai-key-hint">API-Schlüssel eingeben...</p>
+                                    <p class="text-xs text-gray-500 mt-1" id="openai-key-hint" data-i18n="generated.85cba3c5d3fe">API-Schlüssel eingeben...</p>
                                 </div>
                                 <div class="form-group">
                                     <label>Model</label>
                                     <select id="openai-model" class="form-input">
-                                        <option value="gpt-5-mini">GPT-5 Mini (Recommended)</option>
-                                        <option value="gpt-5-nano">GPT-5 Nano</option>
-                                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                        <option value="gpt-5-mini" data-i18n="generated.41aa76e2a3b9">GPT-5 Mini (Recommended)</option>
+                                        <option value="gpt-5-nano" data-i18n="generated.fface9b17554">GPT-5 Nano</option>
+                                        <option value="gpt-4o-mini" data-i18n="generated.083c0a67e043">GPT-4o Mini</option>
                                         <option value="gpt-4o">GPT-4o</option>
-                                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                        <option value="gpt-4-turbo" data-i18n="generated.bb7eff28641c">GPT-4 Turbo</option>
+                                        <option value="gpt-3.5-turbo" data-i18n="generated.e8083f5f3a3e">GPT-3.5 Turbo</option>
                                     </select>
                                 </div>
                                 <button id="save-openai-credentials" class="btn btn-primary">
-                                    <i data-lucide="save"></i>
+                                    <i data-lucide="save"></i><span data-i18n="generated.be276db5418d">
                                     Save OpenAI Configuration
-                                </button>
+                                </span></button>
                             </div>
 
                             <!-- User Profiles -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="users"></i>
+                                    <i data-lucide="users"></i><span data-i18n="generated.1de62e0c996b">
                                     User Profiles
-                                </h3>
-                                <p class="text-sm text-gray-400 mb-4">
+                                </span></h3>
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.edce14c65d61">
                                     Switch between different configurations for different streaming setups.
                                 </p>
                                 <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
                                     <div style="display: flex; align-items: center; gap: 12px;">
-                                        <span style="font-weight: 600;">Active Profile:</span>
+                                        <span style="font-weight: 600;" data-i18n="generated.770ef591d741">Active Profile:</span>
                                         <span id="active-profile-display" style="color: #60a5fa;">default</span>
                                     </div>
-                                    <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 8px;">
+                                    <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 8px;" data-i18n="generated.dfeb103c4a36">
                                         ⚠️ Profile changes require application restart
                                     </p>
                                 </div>
@@ -4212,15 +4245,15 @@
                                 <!-- Profile restart behavior -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
-                                        <i data-lucide="rotate-cw" class="inline-block w-4 h-4"></i>
+                                        <i data-lucide="rotate-cw" class="inline-block w-4 h-4"></i><span data-i18n="generated.6fec4c1038ce">
                                         Auto-Restart bei Profilwechsel
-                                    </h4>
+                                    </span></h4>
                                     <div class="form-group mb-3">
                                         <label class="checkbox-label">
                                             <input type="checkbox" id="profile-auto-restart-toggle" checked disabled>
-                                            <span>Profilwechsel starten die Anwendung automatisch neu</span>
+                                            <span data-i18n="generated.c062ea341179">Profilwechsel starten die Anwendung automatisch neu</span>
                                         </label>
-                                        <p class="text-xs text-gray-400 mt-2">
+                                        <p class="text-xs text-gray-400 mt-2" data-i18n="generated.5699b3a6ffb1">
                                             Ein Seiten-Reload reicht nicht aus, weil Datenbank und Plugins beim Serverstart mit dem aktiven Profil geladen werden.
                                         </p>
                                     </div>
@@ -4228,15 +4261,15 @@
                                 
                                 <!-- Profile Search and Filter -->
                                 <div class="form-group mb-4">
-                                    <label>Search & Filter Profiles</label>
+                                    <label data-i18n="generated.6dcc620e0907">Search & Filter Profiles</label>
                                     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                                         <input type="text" id="profile-search-input" placeholder="Search profiles..." class="form-input" style="flex: 1;">
                                     </div>
                                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                                         <button id="filter-recent-btn" class="btn btn-ghost btn-sm profile-filter-btn" data-filter="recent" title="Show last 10 recently modified profiles">
-                                            <i data-lucide="clock"></i>
+                                            <i data-lucide="clock"></i><span data-i18n="generated.bddcda4daa4c">
                                             Recent (10)
-                                        </button>
+                                        </span></button>
                                         <button id="filter-all-btn" class="btn btn-ghost btn-sm profile-filter-btn active" data-filter="all" title="Show all profiles">
                                             <i data-lucide="list"></i>
                                             All
@@ -4248,7 +4281,7 @@
                                     <!-- Profiles will be loaded dynamically -->
                                 </div>
                                 <div class="form-group">
-                                    <label>Create New Profile</label>
+                                    <label data-i18n="profile.create_profile">Create New Profile</label>
                                     <div style="display: flex; gap: 8px;">
                                         <input type="text" id="new-profile-username" placeholder="Profile Name" class="form-input">
                                         <button id="create-profile-btn" class="btn btn-primary">
@@ -4262,17 +4295,17 @@
                             <!-- Username Aliases -->
                             <div class="settings-card mt-4" id="username-aliases-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="at-sign"></i>
+                                    <i data-lucide="at-sign"></i><span data-i18n="generated.417f1b986bd5">
                                     TikTok Benutzernamen (Aliases)
-                                </h3>
-                                <p class="text-sm text-gray-400 mb-4">
+                                </span></h3>
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.7066ed2cf070">
                                     Hinterlege alle TikTok-Usernamen, die zu diesem Profil gehören.
                                     Das Tool erkennt das Profil auch nach einer Namensänderung automatisch.
                                 </p>
 
                                 <!-- Alias List -->
                                 <div id="alias-list" class="space-y-2 mb-4">
-                                    <p class="text-gray-500 text-sm" id="alias-list-empty">Keine Usernamen hinterlegt. Das Profil wird beim nächsten Verbinden automatisch eingetragen.</p>
+                                    <p class="text-gray-500 text-sm" id="alias-list-empty" data-i18n="generated.1472e5b3b934">Keine Usernamen hinterlegt. Das Profil wird beim nächsten Verbinden automatisch eingetragen.</p>
                                 </div>
 
                                 <!-- Add Alias Form -->
@@ -4296,12 +4329,12 @@
                                         >
                                     </div>
                                     <button id="add-alias-btn" class="btn btn-primary flex-shrink-0">
-                                        <i data-lucide="plus"></i>
+                                        <i data-lucide="plus"></i><span data-i18n="generated.5555dfc941c0">
                                         Hinzufügen
-                                    </button>
+                                    </span></button>
                                 </div>
 
-                                <p class="text-xs text-gray-500 mt-2">
+                                <p class="text-xs text-gray-500 mt-2" data-i18n="generated.034f9a90e13c">
                                     ⭐ = Aktueller Hauptname &nbsp;|&nbsp;
                                     Klicke auf ⭐ um einen Namen als Haupt-Username zu setzen &nbsp;|&nbsp;
                                     Das Profil wird beim Verbinden automatisch erkannt wenn einer dieser Namen verwendet wird.
@@ -4311,10 +4344,10 @@
                             <!-- Config Path Management -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="folder-open"></i>
+                                    <i data-lucide="folder-open"></i><span data-i18n="generated.431a354b5c1b">
                                     Configuration Storage Location
-                                </h3>
-                                <p class="text-sm text-gray-400 mb-4">
+                                </span></h3>
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.7db79027403f">
                                     Configure where your settings, profiles, and user data are stored. By default, configs are stored outside the application folder to survive updates.
                                 </p>
                                 
@@ -4322,19 +4355,19 @@
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <div class="space-y-2 text-sm">
                                         <div>
-                                            <span class="text-gray-400">Platform:</span>
+                                            <span class="text-gray-400" data-i18n="settings.platform">Platform:</span>
                                             <span id="config-path-platform" class="ml-2 font-mono">-</span>
                                         </div>
                                         <div>
-                                            <span class="text-gray-400">Default Location:</span>
+                                            <span class="text-gray-400" data-i18n="generated.f98ac0a7c36a">Default Location:</span>
                                             <span id="config-path-default" class="ml-2 font-mono text-xs">-</span>
                                         </div>
                                         <div>
-                                            <span class="text-gray-400">Active Location:</span>
+                                            <span class="text-gray-400" data-i18n="generated.b7709d6b5377">Active Location:</span>
                                             <span id="config-path-active" class="ml-2 font-mono text-xs font-semibold text-blue-400">-</span>
                                         </div>
                                         <div>
-                                            <span class="text-gray-400">Using Custom Path:</span>
+                                            <span class="text-gray-400" data-i18n="generated.69a1fd696c39">Using Custom Path:</span>
                                             <span id="config-path-is-custom" class="ml-2">-</span>
                                         </div>
                                     </div>
@@ -4368,114 +4401,114 @@
                             <!-- Profile Management Tools -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="users"></i>
+                                    <i data-lucide="users"></i><span data-i18n="generated.02486a61f7ec">
                                     Profile Management Tools
-                                    <span class="profile-help-icon" data-tooltip="Tools to verify profile integrity, check migration status, and manage profiles" title="Tools to verify profile integrity, check migration status, and manage profiles">
+                                    </span><span class="profile-help-icon" data-tooltip="Tools to verify profile integrity, check migration status, and manage profiles" title="Tools to verify profile integrity, check migration status, and manage profiles">
                             <img src="/plugins/quiz-show/assets/quiz-show-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-quiz-show">
                                     </span>
                                 </h3>
-                                <p class="text-sm text-gray-400 mb-4">
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.e68264ef9515">
                                     Verify profile integrity, check for old data that needs migration, and access profile system documentation.
                                 </p>
 
                                 <!-- Profile Integrity Checker -->
                                 <div class="profile-management-section">
                                     <h4 class="text-lg font-semibold mb-3 flex items-center gap-2">
-                                        <i data-lucide="shield-check"></i>
+                                        <i data-lucide="shield-check"></i><span data-i18n="generated.59bbb1ee1166">
                                         Profile Integrity Verification
-                                    </h4>
-                                    <p class="text-sm text-gray-400 mb-3">
+                                    </span></h4>
+                                    <p class="text-sm text-gray-400 mb-3" data-i18n="generated.72f1ecc18d5e">
                                         Check the integrity of all profile database files and detect any potential issues.
                                     </p>
                                     <button id="check-profile-integrity-btn" class="btn btn-primary mb-4">
-                                        <i data-lucide="check-circle"></i>
+                                        <i data-lucide="check-circle"></i><span data-i18n="generated.2ccb9fe6a4bb">
                                         Check Profile Integrity
-                                    </button>
+                                    </span></button>
                                     <div id="profile-integrity-results"></div>
                                 </div>
 
                                 <!-- Migration Status Checker -->
                                 <div class="profile-management-section mt-6">
                                     <h4 class="text-lg font-semibold mb-3 flex items-center gap-2">
-                                        <i data-lucide="move"></i>
+                                        <i data-lucide="move"></i><span data-i18n="generated.48274bfee381">
                                         Migration Status
-                                    </h4>
-                                    <p class="text-sm text-gray-400 mb-3">
+                                    </span></h4>
+                                    <p class="text-sm text-gray-400 mb-3" data-i18n="generated.756d6f46ca9f">
                                         Check for old database files or orphaned plugin data that may need to be migrated to the current storage location.
                                     </p>
                                     <button id="check-migration-status-btn" class="btn btn-primary mb-4">
-                                        <i data-lucide="search"></i>
+                                        <i data-lucide="search"></i><span data-i18n="generated.d1186241c3a8">
                                         Check Migration Status
-                                    </button>
+                                    </span></button>
                                     <div id="migration-status-results"></div>
                                 </div>
 
                                 <!-- Documentation Links -->
                                 <div class="profile-management-section mt-6">
                                     <h4 class="text-lg font-semibold mb-3 flex items-center gap-2">
-                                        <i data-lucide="book-open"></i>
+                                        <i data-lucide="book-open"></i><span data-i18n="generated.4f9232091d83">
                                         Profile System Documentation
-                                    </h4>
-                                    <p class="text-sm text-gray-400 mb-3">
+                                    </span></h4>
+                                    <p class="text-sm text-gray-400 mb-3" data-i18n="generated.ea1d0404ab6f">
                                         Learn more about how the profile system works and troubleshoot common issues.
                                     </p>
                                     <div class="profile-doc-links">
                                         <a href="docs/STREAMER_PROFILE_SYSTEM_DE.md" target="_blank" class="profile-doc-link">
-                                            <i data-lucide="book"></i>
+                                            <i data-lucide="book"></i><span data-i18n="generated.4d3e2538a9d5">
                                             User Guide (German)
-                                        </a>
+                                        </span></a>
                                         <a href="VIEWER_XP_PROFILE_SYSTEM_ANALYSIS.md" target="_blank" class="profile-doc-link">
-                                            <i data-lucide="file-text"></i>
+                                            <i data-lucide="file-text"></i><span data-i18n="generated.5055a2624458">
                                             Technical Analysis
-                                        </a>
+                                        </span></a>
                                         <a href="PROFILE_SYSTEM_UX_VISUAL_GUIDE.md" target="_blank" class="profile-doc-link">
-                                            <i data-lucide="image"></i>
+                                            <i data-lucide="image"></i><span data-i18n="generated.77d34c1c5fe7">
                                             Visual Guide
-                                        </a>
+                                        </span></a>
                                     </div>
                                 </div>
 
                                 <!-- FAQ Section -->
                                 <div class="profile-management-section mt-6">
                                     <h4 class="text-lg font-semibold mb-3 flex items-center gap-2">
-                                        <i data-lucide="help-circle"></i>
+                                        <i data-lucide="help-circle"></i><span data-i18n="generated.7d8594673948">
                                         Frequently Asked Questions
-                                    </h4>
+                                    </span></h4>
                                     <div class="space-y-3">
                                         <details class="faq-item">
                                             <summary class="faq-question">
-                                                <i data-lucide="chevron-right"></i>
+                                                <i data-lucide="chevron-right"></i><span data-i18n="generated.f0f4cd854718">
                                                 Why do I need to restart after switching profiles?
-                                            </summary>
+                                            </span></summary>
                                             <div class="faq-answer">
-                                                <p>The profile system loads your database and settings once at startup. When you switch profiles, the new profile information is saved, but the application continues using the old profile's database until you restart. This prevents data corruption and ensures a clean transition.</p>
+                                                <p data-i18n="generated.686f28c0894a">The profile system loads your database and settings once at startup. When you switch profiles, the new profile information is saved, but the application continues using the old profile's database until you restart. This prevents data corruption and ensures a clean transition.</p>
                                             </div>
                                         </details>
                                         <details class="faq-item">
                                             <summary class="faq-question">
-                                                <i data-lucide="chevron-right"></i>
+                                                <i data-lucide="chevron-right"></i><span data-i18n="generated.8d0da9d7af57">
                                                 Will my viewer XP data persist after updates?
-                                            </summary>
+                                            </span></summary>
                                             <div class="faq-answer">
-                                                <p><span data-i18n="dashboard.profile_data_note_prefix">Yes! All profile data is stored in a persistent location outside the application directory.</span> <strong>On Windows:</strong> <code>%LOCALAPPDATA%\ltth.app\user_configs\</code>. <span data-i18n="dashboard.profile_data_note_suffix">This location survives all application updates.</span></p>
+                                                <p><span data-i18n="dashboard.profile_data_note_prefix">Yes! All profile data is stored in a persistent location outside the application directory.</span> <strong data-i18n="generated.3c85db3dd328">On Windows:</strong> <code>%LOCALAPPDATA%\ltth.app\user_configs\</code>. <span data-i18n="dashboard.profile_data_note_suffix">This location survives all application updates.</span></p>
                                             </div>
                                         </details>
                                         <details class="faq-item">
                                             <summary class="faq-question">
-                                                <i data-lucide="chevron-right"></i>
+                                                <i data-lucide="chevron-right"></i><span data-i18n="generated.72908ba6fdd5">
                                                 Is viewer XP data shared between profiles?
-                                            </summary>
+                                            </span></summary>
                                             <div class="faq-answer">
-                                                <p>No! Each profile has its own completely independent database file. Viewer "alice" in profile "streamer1" is completely separate from viewer "alice" in profile "streamer2". They each have their own XP, levels, and badges.</p>
+                                                <p data-i18n="generated.999cb1d2bd47">No! Each profile has its own completely independent database file. Viewer "alice" in profile "streamer1" is completely separate from viewer "alice" in profile "streamer2". They each have their own XP, levels, and badges.</p>
                                             </div>
                                         </details>
                                         <details class="faq-item">
                                             <summary class="faq-question">
-                                                <i data-lucide="chevron-right"></i>
+                                                <i data-lucide="chevron-right"></i><span data-i18n="generated.b30bf7d03730">
                                                 Can I enable auto-restart after profile switch?
-                                            </summary>
+                                            </span></summary>
                                             <div class="faq-answer">
-                                                <p>Yes! In the <strong>User Profiles</strong> section above, you can enable the <strong>"Auto-Restart on Profile Switch"</strong> checkbox. When enabled, the application will automatically restart 5 seconds after switching profiles, with a countdown you can cancel if needed.</p>
+                                                <p><span data-i18n="generated.8d03c84f9572">Yes! In the </span><strong data-i18n="profile.title">User Profiles</strong><span data-i18n="generated.a4a0e939d624"> section above, you can enable the </span><strong data-i18n="generated.d3999f01e4cc">"Auto-Restart on Profile Switch"</strong><span data-i18n="generated.3ea6b762aa9a"> checkbox. When enabled, the application will automatically restart 5 seconds after switching profiles, with a countdown you can cancel if needed.</span></p>
                                             </div>
                                         </details>
                                     </div>
@@ -4495,28 +4528,28 @@
                                 <!-- System Info -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="cpu" class="inline-block w-4 h-4 mr-1"></i>
+                                        <i data-lucide="cpu" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.2759036520a0">
                                         System Information
-                                    </h4>
+                                    </span></h4>
                                     <div class="space-y-2 text-sm" id="system-diagnostics-info">
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400">Platform:</span>
-                                            <span id="diag-platform" class="font-mono">Loading...</span>
+                                            <span class="text-gray-400" data-i18n="settings.platform">Platform:</span>
+                                            <span id="diag-platform" class="font-mono" data-i18n="common.loading">Loading...</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400">Node.js Version:</span>
+                                            <span class="text-gray-400" data-i18n="generated.ab782998eda5">Node.js Version:</span>
                                             <span id="diag-node-version" class="font-mono">-</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400">Electron Version:</span>
-                                            <span id="diag-electron-version" class="font-mono">N/A (Browser)</span>
+                                            <span class="text-gray-400" data-i18n="generated.172ec312b4be">Electron Version:</span>
+                                            <span id="diag-electron-version" class="font-mono" data-i18n="generated.6d6ee934ffcc">N/A (Browser)</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400">Chrome Version:</span>
+                                            <span class="text-gray-400" data-i18n="generated.622063a7fd1d">Chrome Version:</span>
                                             <span id="diag-chrome-version" class="font-mono">-</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400">Memory Usage:</span>
+                                            <span class="text-gray-400" data-i18n="generated.92d9992fb97a">Memory Usage:</span>
                                             <span id="diag-memory" class="font-mono">-</span>
                                         </div>
                                     </div>
@@ -4525,24 +4558,24 @@
                                 <!-- GPU Info -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="monitor" class="inline-block w-4 h-4 mr-1"></i>
+                                        <i data-lucide="monitor" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.4bcd7089e1f6">
                                         GPU & Rendering
-                                    </h4>
+                                    </span></h4>
                                     <div class="space-y-2 text-sm" id="gpu-diagnostics-info">
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400">GPU Renderer:</span>
+                                            <span class="text-gray-400" data-i18n="generated.f4104ae2dd44">GPU Renderer:</span>
                                             <span id="diag-gpu-renderer" class="font-mono text-xs">-</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400">GPU Vendor:</span>
+                                            <span class="text-gray-400" data-i18n="generated.102fabd44cfd">GPU Vendor:</span>
                                             <span id="diag-gpu-vendor" class="font-mono">-</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400">WebGL Support:</span>
+                                            <span class="text-gray-400" data-i18n="generated.9845d2085c4d">WebGL Support:</span>
                                             <span id="diag-webgl" class="font-mono">-</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400">Hardware Acceleration:</span>
+                                            <span class="text-gray-400" data-i18n="generated.1767e601f228">Hardware Acceleration:</span>
                                             <span id="diag-hw-accel" class="font-mono">-</span>
                                         </div>
                                     </div>
@@ -4551,30 +4584,30 @@
                                 <!-- Logging Controls -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="scroll-text" class="inline-block w-4 h-4 mr-1"></i>
+                                        <i data-lucide="scroll-text" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.0dc63a340f6b">
                                         Logging Settings
-                                    </h4>
+                                    </span></h4>
                                     <div class="space-y-3">
                                         <div class="form-group mb-2">
                                             <label class="checkbox-label">
                                                 <input type="checkbox" id="diag-logging-enabled" checked>
                                                 <span data-i18n="settings.enable_logging">Enable Comprehensive Logging</span>
                                             </label>
-                                            <p class="text-xs text-gray-500 ml-6">Logs all plugin activities, errors, and system events</p>
+                                            <p class="text-xs text-gray-500 ml-6" data-i18n="generated.5757633f273b">Logs all plugin activities, errors, and system events</p>
                                         </div>
                                         <div class="form-group mb-2">
                                             <label class="checkbox-label">
                                                 <input type="checkbox" id="diag-console-logging" checked>
-                                                <span>Log to Browser Console</span>
+                                                <span data-i18n="generated.05107633c63f">Log to Browser Console</span>
                                             </label>
                                         </div>
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400">Log Level</label>
+                                            <label class="text-sm text-gray-400" data-i18n="generated.3721256c3e16">Log Level</label>
                                             <select id="diag-log-level" class="form-input mt-1" style="max-width: 200px;">
-                                                <option value="error">Error Only</option>
-                                                <option value="warn">Warnings & Errors</option>
-                                                <option value="info" selected>Info (Recommended)</option>
-                                                <option value="debug">Debug (Verbose)</option>
+                                                <option value="error" data-i18n="generated.c98242df4378">Error Only</option>
+                                                <option value="warn" data-i18n="generated.1e37f3c71226">Warnings & Errors</option>
+                                                <option value="info" selected data-i18n="generated.9fedd6a7c0ad">Info (Recommended)</option>
+                                                <option value="debug" data-i18n="generated.c1e3f0145722">Debug (Verbose)</option>
                                             </select>
                                         </div>
                                     </div>
@@ -4584,9 +4617,9 @@
                                 <div class="bg-gray-800 rounded-lg p-4 mb-4">
                                     <div class="flex justify-between items-center mb-3">
                                         <h4 class="text-sm font-semibold text-gray-300">
-                                            <i data-lucide="terminal" class="inline-block w-4 h-4 mr-1"></i>
+                                            <i data-lucide="terminal" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.47a05f70284d">
                                             Live Log Viewer
-                                        </h4>
+                                        </span></h4>
                                         <div class="flex gap-2">
                                             <button id="diag-clear-logs" class="btn btn-ghost btn-sm">
                                                 <i data-lucide="trash-2"></i>
@@ -4603,24 +4636,24 @@
                                         </div>
                                     </div>
                                     <div id="diag-log-container" class="bg-gray-900 rounded p-3 font-mono text-xs overflow-y-auto" style="height: 200px; max-height: 300px;">
-                                        <div class="text-gray-500">Logs will appear here...</div>
+                                        <div class="text-gray-500" data-i18n="generated.e033894ed9fd">Logs will appear here...</div>
                                     </div>
                                 </div>
 
                                 <!-- Quick Actions -->
                                 <div class="flex flex-wrap gap-2">
                                     <button id="diag-refresh-btn" class="btn btn-primary btn-sm">
-                                        <i data-lucide="refresh-cw"></i>
+                                        <i data-lucide="refresh-cw"></i><span data-i18n="generated.b90201a8d285">
                                         Refresh Diagnostics
-                                    </button>
+                                    </span></button>
                                     <button id="diag-test-gpu" class="btn btn-ghost btn-sm">
-                                        <i data-lucide="monitor"></i>
+                                        <i data-lucide="monitor"></i><span data-i18n="generated.d31a811454c8">
                                         Test GPU
-                                    </button>
+                                    </span></button>
                                     <button id="diag-check-plugins" class="btn btn-ghost btn-sm">
-                                        <i data-lucide="puzzle"></i>
+                                        <i data-lucide="puzzle"></i><span data-i18n="generated.0635c5155495">
                                         Check Plugins
-                                    </button>
+                                    </span></button>
                                 </div>
                             </div>
 
@@ -4628,9 +4661,9 @@
                             <div class="settings-card">
                                 <h3 class="card-title">
                                     <i data-lucide="network"></i>
-                                    <span>Network Access</span>
+                                    <span data-i18n="generated.c7f01b22c169">Network Access</span>
                                 </h3>
-                                <p class="text-sm text-gray-400 mb-4">
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.bbcdcc60dd5d">
                                     Control how the server is accessible. Default is local-only (127.0.0.1).
                                     You can allow LAN access, configure tunnels, or set up custom domains.
                                 </p>
@@ -4643,8 +4676,8 @@
                                     <div class="flex items-start gap-2">
                                         <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5"></i>
                                         <div class="text-sm">
-                                            <p class="text-yellow-400 font-medium mb-1">Security Warning</p>
-                                            <p class="text-gray-300 text-xs">The server is accessible outside of localhost. Make sure your firewall is configured appropriately.</p>
+                                            <p class="text-yellow-400 font-medium mb-1" data-i18n="generated.962878e7fb85">Security Warning</p>
+                                            <p class="text-gray-300 text-xs" data-i18n="generated.e905e8673006">The server is accessible outside of localhost. Make sure your firewall is configured appropriately.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -4652,55 +4685,55 @@
                                 <!-- Bind Mode -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="server" class="inline-block w-4 h-4 mr-1"></i>
+                                        <i data-lucide="server" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.fe6d3f95fad0">
                                         Bind Mode
-                                    </h4>
+                                    </span></h4>
                                     <div class="form-group mb-3">
-                                        <label class="text-sm text-gray-400">Access Mode</label>
+                                        <label class="text-sm text-gray-400" data-i18n="generated.eef448589d9a">Access Mode</label>
                                         <select id="network-bind-mode" class="form-input mt-1">
-                                            <option value="local">Local Only (127.0.0.1) – most secure</option>
-                                            <option value="select">Select Interfaces – choose specific network adapters</option>
-                                            <option value="all">All Interfaces (0.0.0.0) – full LAN access</option>
-                                            <option value="custom">Custom IP – bind to a specific IP address</option>
+                                            <option value="local" data-i18n="generated.7561a6dddc0f">Local Only (127.0.0.1) – most secure</option>
+                                            <option value="select" data-i18n="generated.f1f34325453f">Select Interfaces – choose specific network adapters</option>
+                                            <option value="all" data-i18n="generated.1d7b5fc3062f">All Interfaces (0.0.0.0) – full LAN access</option>
+                                            <option value="custom" data-i18n="generated.c9a79408cd09">Custom IP – bind to a specific IP address</option>
                                         </select>
-                                        <p class="text-xs text-gray-500 mt-1">⚠ Changing bind mode requires a server restart to take effect.</p>
+                                        <p class="text-xs text-gray-500 mt-1" data-i18n="generated.6b7578716b44">⚠ Changing bind mode requires a server restart to take effect.</p>
                                     </div>
 
                                     <!-- Select Interfaces group -->
                                     <div id="network-select-ifaces-group" style="display:none;">
-                                        <label class="text-sm text-gray-400 mb-2 block">Select Interfaces</label>
+                                        <label class="text-sm text-gray-400 mb-2 block" data-i18n="generated.542cb3cddb81">Select Interfaces</label>
                                         <div id="network-iface-list" class="bg-gray-800 rounded p-2 max-h-40 overflow-y-auto">
-                                            <p class="text-sm text-gray-500">Loading interfaces…</p>
+                                            <p class="text-sm text-gray-500" data-i18n="generated.52976b1eb5a6">Loading interfaces…</p>
                                         </div>
                                     </div>
 
                                     <!-- Custom IP group -->
                                     <div id="network-custom-address-group" style="display:none;" class="mt-3">
-                                        <label class="text-sm text-gray-400 mb-1 block">Custom Bind Address</label>
+                                        <label class="text-sm text-gray-400 mb-1 block" data-i18n="generated.9fb6fd28d8c3">Custom Bind Address</label>
                                         <div class="flex gap-2">
                                             <select id="network-custom-address-select" class="form-input flex-1">
-                                                <option value="">Loading…</option>
+                                                <option value="" data-i18n="generated.30007b87b534">Loading…</option>
                                             </select>
                                         </div>
                                         <input type="text" id="network-custom-address" class="form-input mt-2" placeholder="e.g. 192.168.1.100">
-                                        <p class="text-xs text-gray-500 mt-1">Select from list above or enter manually.</p>
+                                        <p class="text-xs text-gray-500 mt-1" data-i18n="generated.44cb761e9898">Select from list above or enter manually.</p>
                                     </div>
                                 </div>
 
                                 <!-- Tunnel Section -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="globe" class="inline-block w-4 h-4 mr-1"></i>
+                                        <i data-lucide="globe" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.a89d5b35a0a2">
                                         Tunnel / Remote Access
-                                    </h4>
-                                    <p class="text-xs text-gray-400 mb-3">
+                                    </span></h4>
+                                    <p class="text-xs text-gray-400 mb-3" data-i18n="generated.70d81defc91f">
                                         Use a tunnel to make the dashboard accessible from the internet without port-forwarding.
                                     </p>
 
                                     <div class="flex items-center gap-4 mb-3">
                                         <div class="flex items-center gap-2">
-                                            <span class="text-xs text-gray-400">Status:</span>
-                                            <span id="network-tunnel-status" class="text-sm text-gray-400">Inactive</span>
+                                            <span class="text-xs text-gray-400" data-i18n="settings.status">Status:</span>
+                                            <span id="network-tunnel-status" class="text-sm text-gray-400" data-i18n="common.inactive">Inactive</span>
                                         </div>
                                         <div class="flex gap-2">
                                             <button id="network-tunnel-start-btn" class="btn btn-primary btn-sm">
@@ -4724,28 +4757,28 @@
                                     <div class="form-group mb-3">
                                         <label class="text-sm text-gray-400">Provider</label>
                                         <select id="network-tunnel-provider" class="form-input mt-1">
-                                            <option value="cloudflare">Cloudflare (cloudflared)</option>
+                                            <option value="cloudflare" data-i18n="generated.4229e866b673">Cloudflare (cloudflared)</option>
                                             <option value="ngrok">ngrok</option>
-                                            <option value="localtunnel">localtunnel (npx)</option>
-                                            <option value="custom">Custom Command</option>
+                                            <option value="localtunnel" data-i18n="generated.7f0acf05b3fe">localtunnel (npx)</option>
+                                            <option value="custom" data-i18n="generated.517f0f54e482">Custom Command</option>
                                         </select>
                                     </div>
 
                                     <div class="form-group mb-2">
                                         <label class="checkbox-label">
                                             <input type="checkbox" id="network-tunnel-autostart">
-                                            <span class="text-sm">Auto-start tunnel on server start</span>
+                                            <span class="text-sm" data-i18n="generated.004bd36fa65c">Auto-start tunnel on server start</span>
                                         </label>
                                     </div>
 
                                     <!-- Cloudflare Config -->
                                     <div id="tunnel-config-cloudflare" style="display:none;">
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400">cloudflared binary path <span class="text-gray-500">(default: cloudflared)</span></label>
+                                            <label class="text-sm text-gray-400"><span data-i18n="generated.6453342ace73">cloudflared binary path </span><span class="text-gray-500" data-i18n="generated.db37ae3478c4">(default: cloudflared)</span></label>
                                             <input type="text" id="network-tunnel-binary" class="form-input mt-1" placeholder="cloudflared">
                                         </div>
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400">Named tunnel <span class="text-gray-500">(optional – leave empty for quick tunnel)</span></label>
+                                            <label class="text-sm text-gray-400"><span data-i18n="generated.26a888a0fc0d">Named tunnel </span><span class="text-gray-500" data-i18n="generated.d9b25be25833">(optional – leave empty for quick tunnel)</span></label>
                                             <input type="text" id="network-tunnel-named" class="form-input mt-1" placeholder="my-tunnel-name">
                                         </div>
                                     </div>
@@ -4753,11 +4786,11 @@
                                     <!-- ngrok Config -->
                                     <div id="tunnel-config-ngrok" style="display:none;">
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400">Auth Token <span class="text-gray-500">(optional)</span></label>
+                                            <label class="text-sm text-gray-400"><span data-i18n="generated.db3e80676857">Auth Token </span><span class="text-gray-500">(optional)</span></label>
                                             <input type="password" id="network-tunnel-ngrok-token" class="form-input mt-1" placeholder="ngrok auth token">
                                         </div>
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400">Subdomain <span class="text-gray-500">(paid plans)</span></label>
+                                            <label class="text-sm text-gray-400">Subdomain <span class="text-gray-500" data-i18n="generated.329d3a774ecc">(paid plans)</span></label>
                                             <input type="text" id="network-tunnel-subdomain" class="form-input mt-1" placeholder="my-stream">
                                         </div>
                                         <div class="form-group mb-2">
@@ -4779,7 +4812,7 @@
                                         <div class="form-group mb-2">
                                             <label class="text-sm text-gray-400">Command <span class="text-gray-500">(use {{PORT}} as placeholder)</span></label>
                                             <input type="text" id="network-tunnel-custom-command" class="form-input mt-1" placeholder="mytunnel --port {{PORT}}">
-                                            <p class="text-xs text-gray-500 mt-1">The command's stdout/stderr will be scanned for any https:// URL.</p>
+                                            <p class="text-xs text-gray-500 mt-1" data-i18n="generated.341e7a50bebe">The command's stdout/stderr will be scanned for any https:// URL.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -4787,14 +4820,14 @@
                                 <!-- External URLs -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="link" class="inline-block w-4 h-4 mr-1"></i>
+                                        <i data-lucide="link" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.fecea62e886a">
                                         External URLs / Reverse Proxy
-                                    </h4>
-                                    <p class="text-xs text-gray-400 mb-3">
+                                    </span></h4>
+                                    <p class="text-xs text-gray-400 mb-3" data-i18n="generated.f2411564f311">
                                         Add custom domains or reverse proxy URLs to the CORS whitelist so that browsers served via these domains can connect.
                                     </p>
                                     <div id="network-external-url-list" class="mb-3">
-                                        <p class="text-sm text-gray-500">Loading…</p>
+                                        <p class="text-sm text-gray-500" data-i18n="generated.cc5d39422c2c">Loading…</p>
                                     </div>
                                     <div class="flex gap-2">
                                         <input type="text" id="network-external-url-input" class="form-input flex-1" placeholder="https://my-stream.example.com">
@@ -4807,44 +4840,44 @@
                                 <!-- Active Access URLs -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="monitor" class="inline-block w-4 h-4 mr-1"></i>
+                                        <i data-lucide="monitor" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.45a60980da83">
                                         Active Access URLs
-                                    </h4>
+                                    </span></h4>
                                     <div id="network-access-urls">
-                                        <p class="text-sm text-gray-500">Loading…</p>
+                                        <p class="text-sm text-gray-500" data-i18n="generated.76b9a0adf11e">Loading…</p>
                                     </div>
                                 </div>
 
                                 <button id="network-save-btn" class="btn btn-primary">
-                                    <i data-lucide="save"></i>
+                                    <i data-lucide="save"></i><span data-i18n="generated.2ef01710998b">
                                     Save Network Settings
-                                </button>
-                                <p class="text-xs text-gray-500 mt-2">Note: Bind mode changes require a server restart to take effect. Tunnel and external URL changes are applied immediately.</p>
+                                </span></button>
+                                <p class="text-xs text-gray-500 mt-2" data-i18n="generated.a8b359088b74">Note: Bind mode changes require a server restart to take effect. Tunnel and external URL changes are applied immediately.</p>
                             </div>
 
                             <!-- About & Disclaimer -->
                             <div class="settings-card">
                                 <h3 class="card-title">
                                     <i data-lucide="info"></i>
-                                    <span>Über die App / About</span>
+                                    <span data-i18n="generated.b358b85a04bd">Über die App / About</span>
                                 </h3>
                                 <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
-                                    <h4 class="text-lg font-semibold mb-2">LTTH.app (LTTH)</h4>
-                                    <p class="text-sm text-gray-300 mb-3">
+                                    <h4 class="text-lg font-semibold mb-2" data-i18n="generated.938ba8f5d42c">LTTH.app (LTTH)</h4>
+                                    <p class="text-sm text-gray-300 mb-3" data-i18n="generated.af5e87f23292">
                                         Professional TikTok-compatible LIVE streaming tool for creators
                                     </p>
                                     <div class="text-xs text-gray-400">
                                         <div class="flex items-start gap-2 mb-2">
                                             <i data-lucide="code" class="inline-block w-4 h-4 mt-0.5 flex-shrink-0"></i>
-                                            <span>Open Source unter CC BY-NC 4.0 Lizenz</span>
+                                            <span data-i18n="generated.b409f1e3bdfb">Open Source unter CC BY-NC 4.0 Lizenz</span>
                                         </div>
                                         <div class="flex items-start gap-2 mb-2">
                                             <i data-lucide="shield-check" class="inline-block w-4 h-4 mt-0.5 flex-shrink-0"></i>
-                                            <span>100% lokal - keine Datensammlung</span>
+                                            <span data-i18n="generated.5ee98d1a4043">100% lokal - keine Datensammlung</span>
                                         </div>
                                         <div class="flex items-start gap-2">
                                             <i data-lucide="github" class="inline-block w-4 h-4 mt-0.5 flex-shrink-0"></i>
-                                            <span>Made with ❤️ by PupCid & Claude AI</span>
+                                            <span data-i18n="generated.aec573f5f023">Made with ❤️ by PupCid & Claude AI</span>
                                         </div>
                                     </div>
                                 </div>
@@ -4853,15 +4886,15 @@
                                     <div class="flex items-start gap-3">
                                         <i data-lucide="alert-triangle" class="inline-block w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5"></i>
                                         <div>
-                                            <h4 class="text-sm font-semibold text-yellow-300 mb-2">Wichtiger Hinweis / Important Notice</h4>
+                                            <h4 class="text-sm font-semibold text-yellow-300 mb-2" data-i18n="generated.d199488a60e5">Wichtiger Hinweis / Important Notice</h4>
                                             <p class="text-xs text-gray-300 mb-2">
-                                                <strong>LTTH ist ein unabhängiges Analyse- und Creator-Tool.</strong>
+                                                <strong data-i18n="generated.afd80eb1f345">LTTH ist ein unabhängiges Analyse- und Creator-Tool.</strong><span data-i18n="generated.035663d5b479">
                                                 Es besteht keine geschäftliche, partnerschaftliche oder technische Verbindung zu TikTok oder ByteDance.
-                                            </p>
+                                            </span></p>
                                             <p class="text-xs text-gray-300">
-                                                <strong>This product is not an official TikTok product and is not supported, sponsored, or authorized by TikTok or ByteDance.</strong> 
+                                                <strong data-i18n="generated.1289b7447136">This product is not an official TikTok product and is not supported, sponsored, or authorized by TikTok or ByteDance.</strong><span data-i18n="generated.85540e332346"> 
                                                 All trademarks and logos belong to their respective owners.
-                                            </p>
+                                            </span></p>
                                         </div>
                                     </div>
                                 </div>
@@ -4876,53 +4909,53 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">
-                    <i data-lucide="git-branch"></i>
+                    <i data-lucide="git-branch"></i><span data-i18n="generated.614418b7022b">
                     Create Automation Flow
-                </h3>
+                </span></h3>
                 <button id="flow-modal-close" class="modal-close">
                     <i data-lucide="x"></i>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="flow-name">Flow Name</label>
+                    <label for="flow-name" data-i18n="flows.name">Flow Name</label>
                     <input type="text" id="flow-name" placeholder="e.g., Thank you for big gifts" class="form-input">
                 </div>
                 <div class="form-group">
-                    <label for="flow-trigger-type">Trigger Event</label>
+                    <label for="flow-trigger-type" data-i18n="generated.f1494a384a5b">Trigger Event</label>
                     <select id="flow-trigger-type" class="form-select">
-                        <option value="tiktok:gift">🎁 Gift Received</option>
-                        <option value="tiktok:follow">⭐ New Follow</option>
-                        <option value="tiktok:subscribe">🌟 New Subscribe</option>
-                        <option value="tiktok:share">🔄 Stream Shared</option>
-                        <option value="tiktok:like">❤️ Likes</option>
-                        <option value="tiktok:chat">💬 Chat Message</option>
+                        <option value="tiktok:gift" data-i18n="generated.5cca4c331944">🎁 Gift Received</option>
+                        <option value="tiktok:follow" data-i18n="generated.5b2f25df32a7">⭐ New Follow</option>
+                        <option value="tiktok:subscribe" data-i18n="generated.8c47cd2eda55">🌟 New Subscribe</option>
+                        <option value="tiktok:share" data-i18n="generated.75ddcff55874">🔄 Stream Shared</option>
+                        <option value="tiktok:like" data-i18n="generated.3d0b8a4297f5">❤️ Likes</option>
+                        <option value="tiktok:chat" data-i18n="generated.0983e1b764a4">💬 Chat Message</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="flow-action-type">Action Type</label>
+                    <label for="flow-action-type" data-i18n="generated.1450bad819cd">Action Type</label>
                     <select id="flow-action-type" class="form-select">
-                        <option value="alert:show">🔔 Show Alert</option>
-                        <option value="webhook:send">🌐 Webhook (HTTP Request)</option>
+                        <option value="alert:show" data-i18n="generated.edd840e39943">🔔 Show Alert</option>
+                        <option value="webhook:send" data-i18n="generated.2cf8d75f0e2e">🌐 Webhook (HTTP Request)</option>
                     </select>
                 </div>
                 <div id="alert-settings" class="form-group">
-                    <label for="flow-action-text">Alert Text (supports variables)</label>
+                    <label for="flow-action-text" data-i18n="generated.ec26f6acb8f2">Alert Text (supports variables)</label>
                     <textarea id="flow-action-text" placeholder="e.g., Thank you {username} for {giftName}!" class="form-textarea"></textarea>
-                    <p class="form-help">Available variables: {username}, {giftName}, {coins}, {message}</p>
+                    <p class="form-help" data-i18n="generated.cb18c5f5e27f">Available variables: {username}, {giftName}, {coins}, {message}</p>
                 </div>
                 <div id="webhook-settings" class="form-group" style="display: none;">
-                    <label for="flow-webhook-url">Webhook URL</label>
+                    <label for="flow-webhook-url" data-i18n="generated.002dfeab6d9b">Webhook URL</label>
                     <input type="text" id="flow-webhook-url" placeholder="https://webhook.site/..." class="form-input">
-                    <p class="form-help">Allowed domains: webhook.site, discord.com, zapier.com, ifttt.com, make.com</p>
+                    <p class="form-help" data-i18n="generated.02180b11f68a">Allowed domains: webhook.site, discord.com, zapier.com, ifttt.com, make.com</p>
                 </div>
             </div>
             <div class="modal-footer">
                 <button id="flow-modal-save-btn" class="btn btn-primary">
-                    <i data-lucide="check"></i>
+                    <i data-lucide="check"></i><span data-i18n="generated.7df9a2a96b69">
                     Create Flow
-                </button>
-                <button id="flow-modal-cancel-btn" class="btn btn-ghost">Cancel</button>
+                </span></button>
+                <button id="flow-modal-cancel-btn" class="btn btn-ghost" data-i18n="dashboard.cancel">Cancel</button>
             </div>
         </div>
     </div>
@@ -4931,7 +4964,7 @@
     <div id="flow-wizard-modal" class="modal">
         <div class="modal-content" style="width:min(96vw,1120px);max-width:none;max-height:90vh;display:flex;flex-direction:column;">
             <div class="modal-header" style="flex-shrink:0;">
-                <h3 class="modal-title">
+                <h3 class="modal-title" data-i18n="generated.f0a2d0c53550">
                     🧙 Flow Wizard
                 </h3>
                 <button id="flow-wizard-close-btn" class="modal-close">
@@ -4954,7 +4987,7 @@
     <div id="flow-presets-modal" class="modal">
         <div class="modal-content" style="width:min(96vw,1120px);max-width:none;max-height:90vh;display:flex;flex-direction:column;">
             <div class="modal-header" style="flex-shrink:0;">
-                <h3 class="modal-title">
+                <h3 class="modal-title" data-i18n="generated.b03df3e97417">
                     📦 Flow Presets / Vorlagen
                 </h3>
                 <button id="flow-presets-close-btn" class="modal-close">
@@ -4962,7 +4995,7 @@
                 </button>
             </div>
             <div class="modal-body" style="flex:1;overflow-y:auto;">
-                <p class="text-gray-400 mb-4">Starte mit einer vorgefertigten Vorlage oder passe sie im Wizard an.</p>
+                <p class="text-gray-400 mb-4" data-i18n="generated.c0ac8272b723">Starte mit einer vorgefertigten Vorlage oder passe sie im Wizard an.</p>
                 <div id="flow-presets-list" class="wizard-presets-grid"></div>
             </div>
         </div>

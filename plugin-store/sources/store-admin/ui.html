@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LTTH App Store Admin</title>
+  <title data-i18n="generated.cdb7e4af5cda">LTTH App Store Admin</title>
   <style>
     :root {
       --bg: #10151f;
@@ -134,13 +134,13 @@
 </head>
 <body>
   <main>
-    <h1>LTTH App Store Admin</h1>
-    <p>Manage beta licenses and closed-beta plugin access for Clerk users.</p>
+    <h1 data-i18n="generated.784570a5dbe7">LTTH App Store Admin</h1>
+    <p data-i18n="generated.6b3dd8431525">Manage beta licenses and closed-beta plugin access for Clerk users.</p>
 
     <section class="toolbar">
       <input id="search" type="search" placeholder="Search by email or username" value="loggableim@gmail.com">
-      <button id="searchBtn" type="button">Search users</button>
-      <button id="meBtn" class="secondary" type="button">Check admin session</button>
+      <button id="searchBtn" type="button" data-i18n="generated.618f890766e3">Search users</button>
+      <button id="meBtn" class="secondary" type="button" data-i18n="generated.884d6defdb65">Check admin session</button>
     </section>
 
     <div id="status" class="status"></div>
@@ -149,8 +149,8 @@
       <article class="card">
         <div class="user-head">
           <div>
-            <h2>Store Health</h2>
-            <p>Local App Store telemetry and install health.</p>
+            <h2 data-i18n="generated.e26d89d43bc4">Store Health</h2>
+            <p data-i18n="generated.3273e2d8dbdd">Local App Store telemetry and install health.</p>
           </div>
           <button id="refreshHealthBtn" class="secondary" type="button">Refresh</button>
         </div>
@@ -159,8 +159,8 @@
       <article class="card">
         <div class="user-head">
           <div>
-            <h2>Latest Feedback</h2>
-            <p>Recent reviews submitted through the App Store drawer.</p>
+            <h2 data-i18n="generated.16be928cd7c8">Latest Feedback</h2>
+            <p data-i18n="generated.fd38590093b2">Recent reviews submitted through the App Store drawer.</p>
           </div>
           <button id="refreshFeedbackBtn" class="secondary" type="button">Refresh</button>
         </div>
@@ -287,7 +287,7 @@
     async function searchUsers() {
       const query = encodeURIComponent(searchEl.value.trim());
       setStatus('Loading users...');
-      const data = await apiFetch(`/api/store-admin/users?q=${query}`);
+      const data = await apiFetch(`/api/store-admin/usersíq=${query}`);
       renderUsers(data.users || []);
       setStatus(`${data.users.length} user(s) loaded.`);
     }

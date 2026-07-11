@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wiki & Documentation - PupCid's Little TikTool Helper</title>
+    <title data-i18n="generated.26583f8f0a76">Wiki & Documentation - PupCid's Little TikTool Helper</title>
     <link rel="stylesheet" href="/css/tailwind.output.css">
     <link rel="stylesheet" href="/css/wiki.css">
     <style>
@@ -104,23 +104,24 @@
         }
     </style>
     <script src="/js/lucide.min.js"></script>
+    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
     <div class="wiki-standalone-container">
         <!-- Header -->
         <header class="wiki-standalone-header">
             <h1>
-                <i data-lucide="book-open"></i>
+                <i data-lucide="book-open"></i><span data-i18n="generated.b4626815027a">
                 Wiki & Documentation
-            </h1>
+            </span></h1>
             <!-- Language Selector -->
             <div class="language-selector" style="margin-left: auto; display: flex; gap: 0.5rem; align-items: center;">
                 <i data-lucide="globe" style="width: 18px; height: 18px;"></i>
                 <select id="wiki-language-selector" style="background: var(--color-bg-tertiary); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer;">
-                    <option value="en">🇬🇧 English</option>
-                    <option value="de">🇩🇪 Deutsch</option>
-                    <option value="es">🇪🇸 Español</option>
-                    <option value="fr">🇫🇷 Français</option>
+                    <option value="en" data-i18n="generated.8697b941e95e">🇬🇧 English</option>
+                    <option value="de" data-i18n="generated.7b776bcda400">🇩🇪 Deutsch</option>
+                    <option value="es" data-i18n="generated.9f4c35368d71">🇪🇸 Español</option>
+                    <option value="fr" data-i18n="generated.078376394c9c">🇫🇷 Français</option>
                 </select>
             </div>
         </header>
@@ -162,7 +163,7 @@
                         <!-- Article content will be loaded by wiki.js -->
                         <div class="wiki-loading">
                             <i data-lucide="loader"></i>
-                            <span>Loading documentation...</span>
+                            <span data-i18n="wiki.loading">Loading documentation...</span>
                         </div>
                     </div>
                 </main>

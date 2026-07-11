@@ -3,6 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { extract } = require('zip-lib');
+const yauzl = require('yauzl');
 const {
   assertPluginId,
   assertPathInside,
@@ -22,7 +23,7 @@ const PREINSTALLED_PLUGIN_IDS = new Set([
   'soundboard',
   'toptier',
   'tts',
-  'webgpu-emoji-rain'
+  'emoji-rain'
 ]);
 
 function normalizeLocale(locale = 'en') {
@@ -106,6 +107,46 @@ function copyDirectory(sourceDir, targetDir) {
   }
 }
 
+function cloneJson(value) {
+  return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+}
+
+function isWindowsLockError(error) {
+  return process.platform === 'win32' && ['EPERM', 'EACCES', 'EBUSY'].includes(error?.code);
+}
+
+function validateZipEntryPath(fileName) {
+  const raw = String(fileName || '');
+  const normalized = raw.replace(/\\/g, '/');
+  if (!normalized || normalized.startsWith('/') || /^[a-zA-Z]:\//.test(normalized)) {
+    throw new Error(`Unsafe ZIP entry path: ${raw}`);
+  }
+
+  if (normalized.split('/').some(segment => segment === '..')) {
+    throw new Error(`Unsafe ZIP entry path: ${raw}`);
+  }
+}
+
+function validateZipPaths(zipPath) {
+  return new Promise((resolve, reject) => {
+    yauzl.open(zipPath, { lazyEntries: true }, (openError, zipFile) => {
+      if (openError) return reject(new Error(`Invalid plugin ZIP: ${openError.message}`));
+      zipFile.on('error', error => reject(new Error(`Invalid plugin ZIP: ${error.message}`)));
+      zipFile.on('entry', entry => {
+        try {
+          validateZipEntryPath(entry.fileName);
+          zipFile.readEntry();
+        } catch (error) {
+          zipFile.close();
+          reject(error);
+        }
+      });
+      zipFile.on('end', resolve);
+      zipFile.readEntry();
+    });
+  });
+}
+
 function findManifestRoot(extractedDir) {
   const rootManifest = path.join(extractedDir, 'plugin.json');
   if (fs.existsSync(rootManifest)) {
@@ -145,6 +186,15 @@ class PluginStore {
     this.cache = new Map();
     this.stateFile = options.stateFile || this.getDefaultStateFile();
     this.state = readJsonFile(this.stateFile, { communityEnabled: false, sources: [] });
+    this.fileOps = {
+      copyDirectory,
+      rename: fs.renameSync,
+      remove: (targetPath) => fs.rmSync(targetPath, { recursive: true, force: true }),
+      exists: fs.existsSync,
+      mkdir: (targetPath) => fs.mkdirSync(targetPath, { recursive: true }),
+      ...(options.fileOps || {})
+    };
+    this.isWindowsLockError = options.isWindowsLockError || isWindowsLockError;
   }
 
   getDefaultStateFile() {
@@ -308,9 +358,11 @@ class PluginStore {
         const id = assertPluginId(manifest.id);
         plugins.push({
           id,
-          name: id === 'webgpu-emoji-rain'
-            ? { en: 'Emoji Rain', de: 'Emoji Regen', es: 'Lluvia de emojis', fr: 'Pluie d emojis' }
-            : { en: manifest.name || id },
+          name: id === 'emoji-rain'
+            ? { en: 'EmojiRain', de: 'EmojiRain', es: 'EmojiRain', fr: 'EmojiRain' }
+            : id === 'webgpu-emoji-rain'
+              ? { en: 'WebGPU EmojiRain', de: 'WebGPU EmojiRain', es: 'WebGPU EmojiRain', fr: 'WebGPU EmojiRain' }
+              : { en: manifest.name || id },
           description: manifest.descriptions || { en: manifest.description || '' },
           version: manifest.version || '0.0.0',
           author: manifest.author || '',
@@ -400,6 +452,14 @@ class PluginStore {
       minLtthVersion: plugin.minLtthVersion || null,
       catalogOnly: plugin.catalogOnly === true,
       packageUrl: plugin.packageUrl || '',
+      sha256: plugin.sha256 || '',
+      quality: plugin.quality ? {
+        ...plugin.quality,
+        badges: [...new Set([...(plugin.badges || []), ...(plugin.quality.badges || [])])]
+      } : undefined,
+      requirements: plugin.requirements || undefined,
+      changelog: Array.isArray(plugin.changelog) ? plugin.changelog : undefined,
+      support: plugin.support || undefined,
       screenshots: Array.isArray(plugin.screenshots) ? plugin.screenshots : []
     };
   }
@@ -509,7 +569,7 @@ class PluginStore {
     return zipPath;
   }
 
-  validateExtractedPackage(pluginDir, expectedPluginId) {
+  validateExtractedPackage(pluginDir, expectedPluginId, expectedVersion) {
     const manifestPath = path.join(pluginDir, 'plugin.json');
     const manifest = parseJsonText(fs.readFileSync(manifestPath, 'utf8'));
 
@@ -527,7 +587,60 @@ class PluginStore {
       throw new Error(`Plugin entry file not found: ${manifest.entry}`);
     }
 
+    if (!manifest.version || !String(manifest.version).trim()) {
+      throw new Error('Invalid plugin.json: version is required');
+    }
+
+    if (!expectedVersion || String(manifest.version) !== String(expectedVersion)) {
+      throw new Error(`Plugin version mismatch: expected ${expectedVersion || '(missing)'}, got ${manifest.version}`);
+    }
+
     return manifest;
+  }
+
+  savePluginLoaderState() {
+    if (typeof this.pluginLoader.saveState !== 'function') return;
+    const result = this.pluginLoader.saveState();
+    if (result === false) throw new Error('Plugin loader state persistence returned false');
+  }
+
+  promoteStagedPlugin(stagedDir, targetDir, backupDir) {
+    const targetExists = this.fileOps.exists(targetDir);
+    if (targetExists) {
+      try {
+        this.fileOps.rename(targetDir, backupDir);
+      } catch (error) {
+        if (!this.isWindowsLockError(error)) throw error;
+        this.logger.warn?.(`Plugin-store rename locked; using Windows copy fallback: ${error.message}`);
+        this.fileOps.copyDirectory(targetDir, backupDir);
+        this.fileOps.remove(targetDir);
+      }
+    }
+
+    try {
+      this.fileOps.rename(stagedDir, targetDir);
+    } catch (error) {
+      if (!this.isWindowsLockError(error)) throw error;
+      this.logger.warn?.(`Plugin-store promotion rename locked; using Windows copy fallback: ${error.message}`);
+      this.fileOps.copyDirectory(stagedDir, targetDir);
+      this.fileOps.remove(stagedDir);
+    }
+
+    return targetExists;
+  }
+
+  restorePluginDirectory(targetDir, backupDir, hadExistingPlugin) {
+    if (this.fileOps.exists(targetDir)) this.fileOps.remove(targetDir);
+    if (!hadExistingPlugin) return;
+
+    try {
+      this.fileOps.rename(backupDir, targetDir);
+    } catch (error) {
+      if (!this.isWindowsLockError(error)) throw error;
+      this.logger.warn?.(`Plugin-store rollback rename locked; using Windows copy fallback: ${error.message}`);
+      this.fileOps.copyDirectory(backupDir, targetDir);
+      this.fileOps.remove(backupDir);
+    }
   }
 
   async installPlugin(sourceId, pluginId) {
@@ -535,31 +648,52 @@ class PluginStore {
     const { plugin } = await this.findPlugin(sourceId, safePluginId);
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-plugin-store-'));
     const extractDir = path.join(tempDir, 'extract');
+    const transactionDir = path.join(this.pluginLoader.pluginsDir, `.store-transaction-${safePluginId}-${crypto.randomUUID()}`);
+    const stagedDir = path.join(transactionDir, 'staged');
+    const backupDir = path.join(transactionDir, 'backup');
+    const targetDir = assertPathInside(
+      this.pluginLoader.pluginsDir,
+      path.join(this.pluginLoader.pluginsDir, safePluginId),
+      'Plugin install path'
+    );
+    const previousState = cloneJson(this.pluginLoader.state?.[safePluginId]);
+    const previousLoaderState = cloneJson(this.pluginLoader.state || {});
+    const wasLoaded = this.pluginLoader.plugins?.has(safePluginId) === true;
+    let hadExistingPlugin = false;
+    let switched = false;
 
     try {
       fs.mkdirSync(extractDir, { recursive: true });
       const zipPath = await this.downloadPackage(plugin, tempDir);
+      await validateZipPaths(zipPath);
       await extract(zipPath, extractDir);
       const packageRoot = findManifestRoot(extractDir);
-      const manifest = this.validateExtractedPackage(packageRoot, safePluginId);
-      const targetDir = assertPathInside(
-        this.pluginLoader.pluginsDir,
-        path.join(this.pluginLoader.pluginsDir, safePluginId),
-        'Plugin install path'
-      );
+      const manifest = this.validateExtractedPackage(packageRoot, safePluginId, plugin.version);
 
-      if (fs.existsSync(targetDir)) {
-        await this.pluginLoader.unloadPlugin(safePluginId);
-        fs.rmSync(targetDir, { recursive: true, force: true });
+      this.fileOps.mkdir(transactionDir);
+      this.fileOps.copyDirectory(packageRoot, stagedDir);
+      this.validateExtractedPackage(stagedDir, safePluginId, plugin.version);
+
+      if (wasLoaded && !await this.pluginLoader.unloadPlugin(safePluginId)) {
+        throw new Error(`Failed to unload existing plugin ${safePluginId}`);
       }
 
-      copyDirectory(packageRoot, targetDir);
+      hadExistingPlugin = this.fileOps.exists(targetDir);
+      switched = true;
+      this.promoteStagedPlugin(stagedDir, targetDir, backupDir);
 
-      if (!this.pluginLoader.state[safePluginId]) {
-        this.pluginLoader.state[safePluginId] = {};
+      if (!this.pluginLoader.state) this.pluginLoader.state = {};
+      if (previousState === undefined) {
+        this.pluginLoader.state[safePluginId] = { enabled: false };
+      } else {
+        this.pluginLoader.state[safePluginId] = cloneJson(previousState);
       }
-      this.pluginLoader.state[safePluginId].enabled = false;
-      this.pluginLoader.saveState?.();
+      this.savePluginLoaderState();
+
+      if (wasLoaded) {
+        const loaded = await this.pluginLoader.loadPlugin(targetDir);
+        if (!loaded) throw new Error(`Failed to initialize updated plugin ${safePluginId}`);
+      }
 
       return {
         id: manifest.id,
@@ -567,8 +701,38 @@ class PluginStore {
         version: manifest.version || plugin.version || '0.0.0',
         enabled: false
       };
+    } catch (primaryError) {
+      if (!switched) throw primaryError;
+
+      const rollbackErrors = [];
+      try {
+        this.restorePluginDirectory(targetDir, backupDir, hadExistingPlugin);
+      } catch (rollbackError) {
+        rollbackErrors.push(`files: ${rollbackError.message}`);
+      }
+
+      try {
+        this.pluginLoader.state = cloneJson(previousLoaderState);
+        this.savePluginLoaderState();
+      } catch (rollbackError) {
+        rollbackErrors.push(`state: ${rollbackError.message}`);
+      }
+
+      if (wasLoaded && hadExistingPlugin) {
+        try {
+          const restored = await this.pluginLoader.loadPlugin(targetDir);
+          if (!restored) throw new Error('loader returned no plugin');
+        } catch (rollbackError) {
+          rollbackErrors.push(`runtime: ${rollbackError.message}`);
+        }
+      }
+
+      const rollbackMessage = rollbackErrors.length ? `; rollback failed (${rollbackErrors.join('; ')})` : '';
+      this.logger.error?.(`Plugin store transaction failed for ${safePluginId}: ${primaryError.message}${rollbackMessage}`);
+      throw new Error(`Plugin store transaction failed: ${primaryError.message}${rollbackMessage}`);
     } finally {
-      fs.rmSync(tempDir, { recursive: true, force: true });
+      try { this.fileOps.remove(transactionDir); } catch (cleanupError) { this.logger.warn?.(`Failed to clean plugin transaction directory: ${cleanupError.message}`); }
+      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (cleanupError) { this.logger.warn?.(`Failed to clean plugin download directory: ${cleanupError.message}`); }
     }
   }
 }

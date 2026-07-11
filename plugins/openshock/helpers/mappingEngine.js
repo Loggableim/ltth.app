@@ -569,7 +569,7 @@ class MappingEngine {
     }
 
     // Validate conditions regex if present
-    if (mapping.conditions?.messagePattern) {
+    if (mapping.conditionsí.messagePattern) {
       try {
         new RegExp(mapping.conditions.messagePattern);
       } catch (error) {

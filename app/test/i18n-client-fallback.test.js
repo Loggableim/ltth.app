@@ -61,4 +61,23 @@ describe('i18n client fallback rendering', () => {
 
     expect(window.document.getElementById('custom-label').textContent).toBe('Translated Title');
   });
+
+  test('does not silently replace a supported locale when its request fails', async () => {
+    const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+      url: 'https://ltth.app/?lang=en',
+      runScripts: 'outside-only'
+    });
+    const { window } = dom;
+    loadI18nClient(window);
+    window.fetch = jest.fn().mockResolvedValue({ ok: false, statusText: 'Not Found' });
+
+    const i18n = new window.__I18nClient();
+    i18n.initialized = true;
+    i18n.currentLocale = 'en';
+    i18n.defaultLocale = 'en';
+
+    await expect(i18n.loadTranslations('de')).resolves.toBe(false);
+    expect(i18n.currentLocale).toBe('en');
+    expect(window.fetch).toHaveBeenCalledTimes(1);
+  });
 });

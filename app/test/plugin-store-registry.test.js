@@ -82,7 +82,7 @@ describe('Official plugin store registry', () => {
       'soundboard',
       'toptier',
       'tts',
-      'webgpu-emoji-rain',
+      'emoji-rain',
       'gcce',
       'api-bridge',
       'clarityhud'

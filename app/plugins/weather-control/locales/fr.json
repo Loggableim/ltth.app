@@ -66,5 +66,182 @@
       "set_weather": "Definir la meteo",
       "clear_weather": "Effacer tous les effets"
     }
+  },
+  "header": {
+    "title": "Title",
+    "back": "Back"
+  },
+  "stats": {
+    "effects": "Effects",
+    "active": "Active",
+    "events": "Events",
+    "connection": "Connection"
+  },
+  "cards": {
+    "preview": {
+      "title": "Title"
+    },
+    "main": {
+      "title": "Title",
+      "enable": "Enable",
+      "use_global": "Use global",
+      "rate_limit": "Rate limit",
+      "overlay_url": "Overlay url"
+    },
+    "chat": {
+      "title": "Title",
+      "info": "Info",
+      "enable": "Enable",
+      "enable_help": "Enable help",
+      "require_permission": "Require permission",
+      "require_permission_help": "Require permission help",
+      "allow_intensity": "Allow intensity",
+      "allow_intensity_help": "Allow intensity help",
+      "allow_duration": "Allow duration",
+      "allow_duration_help": "Allow duration help",
+      "command_names_title": "Command names title",
+      "command_weather": "Command weather",
+      "command_weather_placeholder": "Command weather placeholder",
+      "command_weather_help": "Command weather help",
+      "command_list": "Command list",
+      "command_list_placeholder": "Command list placeholder",
+      "command_list_help": "Command list help",
+      "command_stop": "Command stop",
+      "command_stop_placeholder": "Command stop placeholder",
+      "command_stop_help": "Command stop help",
+      "command_usage_title": "Command usage title",
+      "command_usage_weather": "Command usage weather",
+      "command_usage_list": "Command usage list",
+      "command_usage_stop": "Command usage stop"
+    },
+    "permissions": {
+      "title": "Title",
+      "enable": "Enable",
+      "allow_all": "Allow all",
+      "followers": "Followers",
+      "superfans": "Superfans",
+      "subscribers": "Subscribers",
+      "team_members": "Team members",
+      "min_team_level": "Min team level",
+      "top_gifters": "Top gifters",
+      "min_points": "Min points"
+    },
+    "effects": {
+      "title": "Title"
+    },
+    "tools": {
+      "title": "Outils de contrôle météo",
+      "search": "Rechercher des effets",
+      "category": "Catégorie d’effet",
+      "preset": "Préréglage d’effet",
+      "sequence_name": "Nom de la séquence",
+      "sequence_steps": "Étapes de séquence (JSON)"
+    },
+    "audio": {
+      "enable": "Activer l’audio météo"
+    },
+    "active": {
+      "title": "Effets météo actifs"
+    },
+    "triggers": {
+      "title": "Déclencheurs d’événements"
+    },
+    "gifts": {
+      "title": "Title",
+      "description": "Description",
+      "load_prompt": "Load prompt",
+      "effect_label": "Effect label"
+    }
+  },
+  "buttons": {
+    "preview_on": "Preview on",
+    "test_rain": "Test rain",
+    "stop_all": "Stop all",
+    "copy": "Copy",
+    "load_catalog": "Load catalog",
+    "update_catalog": "Update catalog",
+    "refresh_mappings": "Refresh mappings",
+    "save_config": "Save config"
+  },
+  "preview": {
+    "fps": "Fps",
+    "avg_fps": "Avg fps",
+    "particles": "Particles",
+    "active_effects": "Active effects",
+    "warning": "Warning"
+  },
+  "settings": {
+    "quality_preset": "Quality preset",
+    "adaptive_quality": "Adaptive quality"
+  },
+  "effects": {
+    "names": {
+      "rain": "Rain",
+      "snow": "Snow",
+      "storm": "Storm",
+      "fog": "Fog",
+      "thunder": "Thunder",
+      "sunbeam": "Sunbeam",
+      "glitchclouds": "Glitchclouds",
+      "aurora": "Aurora",
+      "fireflies": "Fireflies",
+      "meteors": "Meteors",
+      "sakura": "Sakura",
+      "embers": "Embers",
+      "heatwave": "Heatwave"
+    },
+    "intensity": "Intensité",
+    "duration_ms": "Duration ms",
+    "permanent_label": "Permanent label",
+    "permanent_help": "Permanent help",
+    "test_button": "Test button",
+    "fog_color": "Fog color",
+    "sunbeam_colortemp": "Sunbeam colortemp"
+  },
+  "generated": {
+    "ebecd84294ad": "Weather Control Overlay",
+    "c2a7b3dab075": "Community Weather",
+    "b9976ecf33bd": "Weather Control - Modern Configuration",
+    "5b8291333b02": "Low – 100 max particles",
+    "dfde99875009": "Medium – 300",
+    "abfcee528a81": "High – 500",
+    "144c7c55e9af": "Ultra – 800",
+    "779a6397dae4": "Weather Gamification",
+    "6853c5bde0e1": "Enable Gamification",
+    "72e61906e575": "Show Overlay Meter",
+    "8ea4bc4451a6": "Show Overlay Quest",
+    "7d7ae0979abb": "Show Overlay Streak",
+    "e359fbc2d418": "Show Reward Feed",
+    "4a787846dc25": "Community Meter Carry Over",
+    "40aee244f1c5": "Community Meter Max",
+    "c5f462e99353": "Streak Window (ms)",
+    "f3db218bd5d8": "Streak Bonus Threshold",
+    "b8a3e3b28d66": "Reward Cooldown (ms)",
+    "ca68901ede4e": "Quest Pool JSON",
+    "4b97935cdb6a": "Reward Thresholds JSON",
+    "d94c529cd4f2": "Next Reward",
+    "ac9596f9df11": "Refresh State",
+    "4742ae4bf532": "Reset Progress",
+    "ef362803179d": "Default White",
+    "e8e2379da7c7": "Toxic Green",
+    "b5f1e6becb05": "Blood Red",
+    "328b83a7d103": "Ice Blue",
+    "6763ce3e7cc0": "Golden Mist",
+    "1b0f2846af67": "Golden Hour",
+    "04de1683bf29": "Cool Moonlight",
+    "e35e6a41f776": "Glitch Sub-Effects",
+    "ad9a30566ea3": "RGB Shift",
+    "2fa0d6e6b752": "Static Noise",
+    "42e3f0101616": "Digital Blocks",
+    "ce591d0c7bf0": "Chromatic Aberration",
+    "61b4759dd15b": "Glitch Intensity Multiplier",
+    "e10c5bafc836": "All categories",
+    "45f33640e68e": "Apply Preset",
+    "e14eab67c856": "Export Config",
+    "2322a56f9001": "Import Config",
+    "46d034cc1cc8": "Trigger Sequence",
+    "ae87ba8c9442": "[ {\"action\":\"fog\",\"delay\":0,\"intensity\":0.35,\"duration\":8000}, {\"action\":\"rain\",\"delay\":2000,\"intensity\":0.55,\"duration\":10000}, {\"action\":\"thunder\",\"delay\":5500,\"intensity\":0.8,\"duration\":5000} ]",
+    "274f3f25b9a5": "Audio Volume",
+    "c0ebdbd71309": "No active effects reported by the overlay yet."
   }
 }

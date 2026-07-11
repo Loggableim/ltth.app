@@ -520,7 +520,7 @@ class Launcher {
             this.log.warn(error.stderr || error.message);
 
             if (this.isMissingNativeBindingError(error)) {
-                this.log.warn('Native Module oder AbhÃ¤ngigkeiten fehlen. Repariere Dependencies...');
+                this.log.warn('Native Module oder Abhängigkeiten fehlen. Repariere Dependencies...');
                 await this.installDependencies();
                 try {
                     const verifyOutput = this.verifyNativeModules();
