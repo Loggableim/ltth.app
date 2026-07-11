@@ -20,6 +20,12 @@ body[data-layout-loading] > *:not(script):not(style):not(link):not(#scrollProgre
     object-fit: contain;
 }
 
+/* Translation updates replace the text node before the version span and trim
+   its trailing whitespace. Keep the release label readable in every locale. */
+#betaVersion {
+    margin-left: 0.22em;
+}
+
 /* ===================================
    Navigation Dropdown Styles
    =================================== */
