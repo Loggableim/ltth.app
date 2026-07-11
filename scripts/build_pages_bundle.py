@@ -35,6 +35,7 @@ ROOT_DIRS = [
     "css",
     "auth",
     "downloads",
+    "docs",
     "features",
     "install",
     "js",
