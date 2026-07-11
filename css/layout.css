@@ -92,24 +92,23 @@ body[data-layout-loading] > *:not(script):not(style):not(link):not(#scrollProgre
     color: var(--color-primary, #12a116);
 }
 
-/* FAQ cards use a dark surface even on the light site shell. Keep the
-   question and link colors readable against that surface instead of inheriting
-   the darker light-theme green/gray tokens. */
+/* FAQ cards are light surfaces on the public site. Keep each text role
+   readable even though legacy pages still set colors inline. */
 .faq-item h3 {
-    color: #b7f7c3 !important;
+    color: #0d7a10 !important;
 }
 
 .faq-item p,
 .faq-item li {
-    color: #e8edf0 !important;
+    color: #42464a !important;
 }
 
 .faq-item a {
-    color: #8fdcff !important;
+    color: #0d7a10 !important;
 }
 
 .faq-item:focus-within {
-    outline: 3px solid rgba(143, 220, 255, 0.75);
+    outline: 3px solid rgba(18, 161, 22, 0.5);
     outline-offset: 3px;
 }
 
