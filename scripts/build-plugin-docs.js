@@ -16,6 +16,7 @@ function put(locales, name, values) { for (const locale of LOCALES) locales[loca
 
 function buildLocales(catalog) {
   const values = Object.fromEntries(LOCALES.map((locale) => [locale, {}]));
+  put(values, 'docs.hub.metaTitle', { de: 'LTTH Dokumentation und Plugin-Tutorials', en: 'LTTH documentation and plugin tutorials', es: 'Documentación y tutoriales de plugins de LTTH', fr: 'Documentation et tutoriels de plugins LTTH' });
   put(values, 'docs.hub.title', { de: 'Plugin-Tutorials', en: 'Plugin tutorials', es: 'Tutoriales de plugins', fr: 'Tutoriels des plugins' });
   put(values, 'docs.hub.intro', { de: 'Wähle ein Plugin und folge jeder bebilderten Aktion von der Aktivierung bis zum sicheren Test.', en: 'Choose a plugin and follow every illustrated action from activation through safe testing.', es: 'Elige un plugin y sigue cada acción ilustrada desde la activación hasta la prueba segura.', fr: 'Choisissez un plugin et suivez chaque action illustrée, de l’activation au test sécurisé.' });
   put(values, 'docs.hub.search', { de: 'Plugin-Tutorial suchen…', en: 'Search plugin tutorials…', es: 'Buscar tutoriales de plugins…', fr: 'Rechercher des tutoriels de plugins…' });

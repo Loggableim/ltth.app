@@ -7987,5 +7987,6 @@
   "docs.plugin.webgpu-fireworks.steps.configure.expected": "The change is saved and can be reviewed.",
   "docs.plugin.webgpu-fireworks.steps.verify.title": "Run a controlled test",
   "docs.plugin.webgpu-fireworks.steps.verify.body": "Use the built-in test or a local preview. Confirm the expected result before using the workflow in a LIVE stream.",
-  "docs.plugin.webgpu-fireworks.steps.verify.expected": "The preview or test shows the expected result."
+  "docs.plugin.webgpu-fireworks.steps.verify.expected": "The preview or test shows the expected result.",
+  "docs.hub.metaTitle": "LTTH documentation and plugin tutorials"
 }

@@ -7987,5 +7987,6 @@
   "docs.plugin.webgpu-fireworks.steps.configure.expected": "La modification est enregistrée et peut être contrôlée.",
   "docs.plugin.webgpu-fireworks.steps.verify.title": "Tester de manière contrôlée",
   "docs.plugin.webgpu-fireworks.steps.verify.body": "Lancez le test intégré ou un aperçu local. Confirmez le résultat avant d’utiliser le flux pendant un LIVE.",
-  "docs.plugin.webgpu-fireworks.steps.verify.expected": "Le test ou l’aperçu affiche le résultat attendu."
+  "docs.plugin.webgpu-fireworks.steps.verify.expected": "Le test ou l’aperçu affiche le résultat attendu.",
+  "docs.hub.metaTitle": "Documentation et tutoriels de plugins LTTH"
 }

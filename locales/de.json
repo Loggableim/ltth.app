@@ -7917,5 +7917,6 @@
   "docs.plugin.webgpu-fireworks.steps.configure.expected": "Die Änderung ist gespeichert und jederzeit nachvollziehbar.",
   "docs.plugin.webgpu-fireworks.steps.verify.title": "Kontrolliert testen",
   "docs.plugin.webgpu-fireworks.steps.verify.body": "Führe den eingebauten Test oder eine lokale Vorschau aus. Prüfe das erwartete Ergebnis, bevor du den Ablauf im LIVE-Stream verwendest.",
-  "docs.plugin.webgpu-fireworks.steps.verify.expected": "Die Vorschau bzw. der Test zeigt das erwartete Ergebnis."
+  "docs.plugin.webgpu-fireworks.steps.verify.expected": "Die Vorschau bzw. der Test zeigt das erwartete Ergebnis.",
+  "docs.hub.metaTitle": "LTTH Dokumentation und Plugin-Tutorials"
 }

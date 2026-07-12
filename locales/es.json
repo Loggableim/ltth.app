@@ -7987,5 +7987,6 @@
   "docs.plugin.webgpu-fireworks.steps.configure.expected": "El cambio queda guardado y puede revisarse.",
   "docs.plugin.webgpu-fireworks.steps.verify.title": "Realizar una prueba controlada",
   "docs.plugin.webgpu-fireworks.steps.verify.body": "Usa la prueba integrada o una vista previa local. Confirma el resultado antes de usar el flujo en un directo.",
-  "docs.plugin.webgpu-fireworks.steps.verify.expected": "La prueba o vista previa muestra el resultado esperado."
+  "docs.plugin.webgpu-fireworks.steps.verify.expected": "La prueba o vista previa muestra el resultado esperado.",
+  "docs.hub.metaTitle": "Documentación y tutoriales de plugins de LTTH"
 }

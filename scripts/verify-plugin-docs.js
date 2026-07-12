@@ -28,6 +28,12 @@ for (const tutorial of catalog) {
 }
 const pluginsPage = fs.readFileSync(path.join(ROOT, 'plugins.html'), 'utf8');
 if (!pluginsPage.includes('/docs/plugins/')) errors.push('plugins.html does not link to the tutorial URL pattern');
+const docsHub = fs.readFileSync(path.join(ROOT, 'docs.html'), 'utf8');
+if (!/<title\s+data-i18n="docs\.hub\.metaTitle">/.test(docsHub)) errors.push('docs.html title must be localized through docs.hub.metaTitle');
+for (const locale of LOCALES) {
+  const values = JSON.parse(fs.readFileSync(path.join(ROOT, 'locales', `${locale}.json`), 'utf8'));
+  if (!values['docs.hub.metaTitle']) errors.push(`Missing ${locale} docs hub browser title`);
+}
 const docsScript = fs.readFileSync(path.join(ROOT, 'js', 'docs.js'), 'utf8');
 if (!docsScript.includes('accessLabels')) errors.push('Docs hub does not localize access labels');
 if (!docsScript.includes("tool: 'Werkzeuge'")) errors.push('Docs hub does not localize the German tool category');
