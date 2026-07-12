@@ -136,6 +136,27 @@ describe('Music Bot core features', () => {
     expect(commands).toContainEqual(['set_property', 'volume', 80]);
   });
 
+  test('keeps music ducked until the matching TTS playback ends', async () => {
+    const engine = new PlaybackEngine({
+      defaultVolume: 50,
+      ducking: {
+        enabled: true,
+        targetVolumePercent: 40,
+        fadeOutMs: 0,
+        fadeInMs: 0
+      }
+    }, { log: jest.fn() });
+    engine.process = { exitCode: null };
+    engine._sendCommand = jest.fn(async () => {});
+
+    await engine.setVolume(80);
+    await engine.beginDucking();
+    expect(engine.volume).toBe(32);
+
+    await engine.endDucking();
+    expect(engine.volume).toBe(80);
+  });
+
   test('builds loudnorm filter when normalization is enabled', async () => {
     const engine = new PlaybackEngine({
       defaultVolume: 50,
@@ -259,6 +280,33 @@ describe('Music Bot core features', () => {
 
     child.once.mock.calls[0][1]();
     expect(engine._shuttingDown).toBe(false);
+  });
+
+  test('restarts an unresponsive MPV process without discarding the active track', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const track = { id: 'keep-playing', title: 'Keep Playing' };
+    let closeHandler;
+    const child = {
+      exitCode: null,
+      kill: jest.fn(),
+      once: jest.fn((event, handler) => {
+        if (event === 'close') closeHandler = handler;
+      })
+    };
+
+    engine.process = child;
+    engine.socket = { destroy: jest.fn() };
+    engine.nowPlaying = track;
+    engine.state = 'playing';
+
+    const restart = engine.restart();
+
+    expect(child.kill).toHaveBeenCalledWith('SIGTERM');
+    expect(engine.getNowPlaying()).toEqual(track);
+    closeHandler();
+    await expect(restart).resolves.toEqual(track);
+    expect(engine.process).toBeNull();
+    expect(engine.getState()).toBe('idle');
   });
 
   test('waits for MPV acknowledgement before considering a command applied', async () => {

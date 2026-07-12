@@ -28,6 +28,7 @@ class PlaybackEngine extends EventEmitter {
     this._shuttingDown = false;
     this._duckActiveCount = 0;
     this._duckReleaseTimer = null;
+    this._timedDuckActive = false;
     this._crossfadeOutgoingTrack = null;
     this._pendingCommands = new Map();
     this._nextCommandId = 1;
@@ -143,32 +144,44 @@ class PlaybackEngine extends EventEmitter {
         : (Number.isFinite(configHold) ? configHold : 1000),
       0
     );
-    this._duckActiveCount += 1;
+    if (!this._timedDuckActive) {
+      this._timedDuckActive = true;
+      await this.beginDucking();
+    }
     if (this._duckReleaseTimer) {
       clearTimeout(this._duckReleaseTimer);
-      this._duckReleaseTimer = null;
-    }
-
-    if (this._duckActiveCount === 1) {
-      const target = this._getEffectiveVolume();
-      const cfgFadeOut = Number(duckingConfig.fadeOutMs);
-      const fadeOutMs = Math.max(Number.isFinite(cfgFadeOut) ? cfgFadeOut : 250, 0);
-      await this._fadeVolume(this.volume, target, fadeOutMs, true);
     }
 
     this._duckReleaseTimer = setTimeout(async () => {
       try {
         this._duckReleaseTimer = null;
-        this._duckActiveCount = Math.max(this._duckActiveCount - 1, 0);
-        if (this._duckActiveCount === 0) {
-          const cfgFadeIn = Number(duckingConfig.fadeInMs);
-          const fadeInMs = Math.max(Number.isFinite(cfgFadeIn) ? cfgFadeIn : 700, 0);
-          await this._fadeVolume(this.volume, this._getEffectiveVolume(), fadeInMs, true);
-        }
+        this._timedDuckActive = false;
+        await this.endDucking();
       } catch (error) {
         this.emit('error', error);
       }
     }, holdMs);
+  }
+
+  async beginDucking() {
+    const duckingConfig = this.config?.ducking || {};
+    if (!duckingConfig.enabled) return;
+    this._duckActiveCount += 1;
+    if (this._duckActiveCount !== 1) return;
+    const target = this._getEffectiveVolume();
+    const cfgFadeOut = Number(duckingConfig.fadeOutMs);
+    const fadeOutMs = Math.max(Number.isFinite(cfgFadeOut) ? cfgFadeOut : 250, 0);
+    await this._fadeVolume(this.volume, target, fadeOutMs, true);
+  }
+
+  async endDucking() {
+    const duckingConfig = this.config?.ducking || {};
+    if (!duckingConfig.enabled || this._duckActiveCount === 0) return;
+    this._duckActiveCount = Math.max(this._duckActiveCount - 1, 0);
+    if (this._duckActiveCount !== 0) return;
+    const cfgFadeIn = Number(duckingConfig.fadeInMs);
+    const fadeInMs = Math.max(Number.isFinite(cfgFadeIn) ? cfgFadeIn : 700, 0);
+    await this._fadeVolume(this.volume, this._getEffectiveVolume(), fadeInMs, true);
   }
 
   _clampRange(value, min, max, fallback) {
@@ -205,7 +218,45 @@ class PlaybackEngine extends EventEmitter {
     this.state = 'idle';
     this._restartAttempts = 0;
     this._duckActiveCount = 0;
+    this._timedDuckActive = false;
     this.volume = this.masterVolume;
+  }
+
+  async restart() {
+    const currentTrack = this.nowPlaying;
+    const child = this.process;
+    this._shuttingDown = true;
+    if (this.socket) {
+      this.socket.destroy();
+      this.socket = null;
+    }
+    this._rejectPendingCommands(new Error('mpv playback engine is restarting'));
+
+    try {
+      if (child && (child.exitCode === null || child.exitCode === undefined)) {
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('mpv did not stop for restart'));
+          }, 5000);
+          child.once('close', () => {
+            clearTimeout(timeout);
+            resolve();
+          });
+          child.kill('SIGTERM');
+        });
+      }
+      if (this.process === child) {
+        this.process = null;
+      }
+      if (this.ipcPath && fs.existsSync(this.ipcPath)) {
+        fs.unlinkSync(this.ipcPath);
+      }
+      this.state = 'idle';
+      this._crossfadeOutgoingTrack = null;
+      return currentTrack;
+    } finally {
+      this._shuttingDown = false;
+    }
   }
 
   getNowPlaying() {
@@ -242,7 +293,7 @@ class PlaybackEngine extends EventEmitter {
 
   async getPosition() {
     if (!this.socket || this.state !== 'playing') return 0;
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const requestId = Date.now();
       const handler = (chunk) => {
         try {
@@ -260,10 +311,15 @@ class PlaybackEngine extends EventEmitter {
       };
       const timeout = setTimeout(() => {
         this.socket.removeListener('data', handler);
-        resolve(0);
+        reject(new Error('mpv did not acknowledge command: get_property'));
       }, 500);
       this.socket.on('data', handler);
-      this.socket.write(`${JSON.stringify({ command: ['get_property', 'time-pos'], request_id: requestId })}\n`);
+      this.socket.write(`${JSON.stringify({ command: ['get_property', 'time-pos'], request_id: requestId })}\n`, (error) => {
+        if (!error) return;
+        clearTimeout(timeout);
+        this.socket.removeListener('data', handler);
+        reject(error);
+      });
     });
   }
 

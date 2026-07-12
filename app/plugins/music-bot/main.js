@@ -172,6 +172,8 @@ class MusicBotPlugin extends EventEmitter {
     this.playbackSyncTimer = null;
     this.crossfadeTimer = null;
     this._mpvRestartAttempts = 0;
+    this._playbackSyncFailures = 0;
+    this._recoveringPlayback = false;
     this._pendingTrackAdvance = null;
     this._pendingSkipAdvance = null;
 
@@ -192,6 +194,7 @@ class MusicBotPlugin extends EventEmitter {
     this._fallbackIndex = 0;
     this._ioEmitOriginal = null;
     this._ttsDuckingHandlers = null;
+    this._activeTtsDucks = new Set();
     this._mpvInstallStatus = {
       state: 'idle',
       message: '',
@@ -1418,11 +1421,24 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   _registerDuckingHooks() {
-    const ttsStarted = async () => {
+    const ttsStarted = async (payload = {}) => {
       try {
-        await this.playbackEngine?.triggerDucking();
+        const id = payload?.id;
+        if (id && this._activeTtsDucks.has(id)) return;
+        if (id) this._activeTtsDucks.add(id);
+        await this.playbackEngine?.beginDucking();
       } catch (error) {
         this.api.log(`[music-bot] TTS ducking failed: ${error.message}`, 'error');
+      }
+    };
+    const ttsEnded = async (payload = {}) => {
+      try {
+        const id = payload?.id;
+        if (id && !this._activeTtsDucks.has(id)) return;
+        if (id) this._activeTtsDucks.delete(id);
+        await this.playbackEngine?.endDucking();
+      } catch (error) {
+        this.api.log(`[music-bot] TTS ducking release failed: ${error.message}`, 'error');
       }
     };
     const alertShown = async () => {
@@ -1433,9 +1449,10 @@ class MusicBotPlugin extends EventEmitter {
       }
     };
 
-    this._ttsDuckingHandlers = { ttsStarted, alertShown };
+    this._ttsDuckingHandlers = { ttsStarted, ttsEnded, alertShown };
     if (this.api.pluginLoader?.on) {
       this.api.pluginLoader.on('tts:playback:started', ttsStarted);
+      this.api.pluginLoader.on('tts:playback:ended', ttsEnded);
     } else {
       this.api.log('[music-bot] pluginLoader unavailable: TTS ducking listener not registered', 'warn');
     }
@@ -1455,11 +1472,15 @@ class MusicBotPlugin extends EventEmitter {
     if (this._ttsDuckingHandlers?.ttsStarted) {
       this.api.pluginLoader?.removeListener?.('tts:playback:started', this._ttsDuckingHandlers.ttsStarted);
     }
+    if (this._ttsDuckingHandlers?.ttsEnded) {
+      this.api.pluginLoader?.removeListener?.('tts:playback:ended', this._ttsDuckingHandlers.ttsEnded);
+    }
     if (this._ioEmitOriginal && this.io) {
       this.io.emit = this._ioEmitOriginal;
     }
     this._ioEmitOriginal = null;
     this._ttsDuckingHandlers = null;
+    this._activeTtsDucks.clear();
   }
 
   // ---------- Command handling ----------
@@ -1863,7 +1884,9 @@ class MusicBotPlugin extends EventEmitter {
       if (this._isMpvUnavailableError(error)) {
         return this._handlePlaybackUnavailable(next, error);
       }
+      this.queueManager.returnToFront?.(next);
       this._emitError(error.message);
+      this._emitQueue();
       setImmediate(() => this._playNextFromQueue(retries + 1));
       return { success: false, error: error.message };
     }
@@ -2338,8 +2361,15 @@ class MusicBotPlugin extends EventEmitter {
       let position = 0;
       try {
         position = await this.playbackEngine.getPosition();
-      } catch (_) {
+        this._playbackSyncFailures = 0;
+      } catch (error) {
         position = nowPlaying.startedAt ? Math.max(0, Math.floor((Date.now() - nowPlaying.startedAt) / 1000)) : 0;
+        this._playbackSyncFailures += 1;
+        if (this._playbackSyncFailures >= 2) {
+          Promise.resolve(this._recoverStalledPlayback(nowPlaying, error)).catch((recoveryError) => {
+            this.api.log(`[music-bot] MPV recovery failed: ${recoveryError.message}`, 'error');
+          });
+        }
       }
       this.api.emit('musicbot:playback-sync', {
         title: nowPlaying.title,
@@ -2353,6 +2383,28 @@ class MusicBotPlugin extends EventEmitter {
         state: this.playbackEngine.getState()
       });
     }, 5000);
+  }
+
+  async _recoverStalledPlayback(track, error) {
+    if (this._recoveringPlayback || !track || !this.playbackEngine) return;
+    const current = this.playbackEngine.getNowPlaying?.();
+    if (!current || current.id !== track.id) return;
+
+    this._recoveringPlayback = true;
+    this._playbackSyncFailures = 0;
+    this._stopPlaybackSync();
+    this.api.log(`[music-bot] MPV IPC stalled while playing "${track.title}"; restarting the player`, 'warn');
+    try {
+      await this.playbackEngine.restart();
+      const retainedTrack = this.playbackEngine.getNowPlaying?.();
+      if (!retainedTrack || retainedTrack.id !== track.id) return;
+      await this.playbackEngine.play(track);
+    } catch (restartError) {
+      this._emitError(`MPV-Wiedergabe konnte nicht wiederhergestellt werden: ${restartError.message}`);
+      throw restartError;
+    } finally {
+      this._recoveringPlayback = false;
+    }
   }
 
   _stopPlaybackSync() {

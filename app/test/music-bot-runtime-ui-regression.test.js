@@ -183,6 +183,66 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin.playbackEngine.play).not.toHaveBeenCalled();
   });
 
+  test('restarts only the stalled player and resumes the active track without advancing the queue', async () => {
+    const current = { id: 'current', title: 'Current Song', url: 'https://example.test/current.mp3' };
+    const { plugin } = createPluginWithQueue([{ id: 'requested', title: 'Requested Song' }]);
+    plugin.playbackEngine = {
+      getNowPlaying: jest.fn(() => current),
+      restart: jest.fn(async () => current),
+      play: jest.fn(async () => {})
+    };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._startPlaybackSync = jest.fn();
+    plugin._skipCurrent = jest.fn();
+    plugin._playNextFromQueue = jest.fn();
+
+    await plugin._recoverStalledPlayback(current, new Error('mpv did not acknowledge command: get_property'));
+
+    expect(plugin.playbackEngine.restart).toHaveBeenCalledTimes(1);
+    expect(plugin.playbackEngine.play).toHaveBeenCalledWith(current);
+    expect(plugin.queueManager.shiftNext).not.toHaveBeenCalled();
+    expect(plugin._skipCurrent).not.toHaveBeenCalled();
+    expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
+  });
+
+  test('returns a requested song to the front when MPV rejects its start command', async () => {
+    const queued = [{ id: 'requested', title: 'Requested Song', url: 'https://example.test/requested.mp3' }];
+    const { plugin } = createPluginWithQueue(queued);
+    plugin._mpvAvailable = true;
+    plugin.playbackEngine.play = jest.fn(async () => {
+      throw new Error('mpv did not acknowledge command: set_property');
+    });
+    plugin._emitError = jest.fn();
+    plugin._emitQueue = jest.fn();
+
+    const result = await plugin._playNextFromQueue();
+
+    expect(result.success).toBe(false);
+    expect(plugin.queueManager.returnToFront).toHaveBeenCalledWith(expect.objectContaining({ id: 'requested' }));
+    expect(queued).toHaveLength(1);
+    expect(queued[0].id).toBe('requested');
+  });
+
+  test('keeps music ducked for the full TTS playback and ignores duplicate start events', async () => {
+    const { EventEmitter } = require('events');
+    const { plugin } = createPluginWithQueue([]);
+    plugin.api.pluginLoader = new EventEmitter();
+    plugin.playbackEngine = {
+      beginDucking: jest.fn(async () => {}),
+      endDucking: jest.fn(async () => {}),
+      triggerDucking: jest.fn(async () => {})
+    };
+
+    plugin._registerDuckingHooks();
+    await plugin._ttsDuckingHandlers.ttsStarted({ id: 'tts-1' });
+    await plugin._ttsDuckingHandlers.ttsStarted({ id: 'tts-1' });
+    await plugin._ttsDuckingHandlers.ttsEnded({ id: 'tts-1' });
+
+    expect(plugin.playbackEngine.beginDucking).toHaveBeenCalledTimes(1);
+    expect(plugin.playbackEngine.endDucking).toHaveBeenCalledTimes(1);
+    expect(plugin.playbackEngine.triggerDucking).not.toHaveBeenCalled();
+  });
+
   test('resolver config updates keep the bundled yt-dlp path for the default setting', () => {
     const bundledPath = require('youtube-dl-exec').constants.YOUTUBE_DL_PATH;
     const resolver = new MusicResolver({ ytdlpPath: 'custom-yt-dlp' }, { log: jest.fn() });
