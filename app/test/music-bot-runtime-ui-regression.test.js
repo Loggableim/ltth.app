@@ -554,6 +554,7 @@ describe('Music Bot runtime and UI regressions', () => {
     const candidates = await plugin._getMpvPathCandidates('mpv');
 
     expect(candidates).toContain('C:\\ProgramData\\chocolatey\\lib\\mpvio.install\\tools\\mpv.exe');
+    expect(candidates[0]).toBe('C:\\ProgramData\\chocolatey\\lib\\mpvio.install\\tools\\mpv.exe');
   });
 
   windowsTest('uses mpvio.install for the Chocolatey mpv installer command', async () => {

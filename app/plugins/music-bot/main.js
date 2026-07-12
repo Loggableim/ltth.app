@@ -437,11 +437,13 @@ class MusicBotPlugin extends EventEmitter {
       if (!candidate || candidates.includes(candidate)) return;
       candidates.push(candidate);
     };
+    const configuredPath = configuredMpvPath || 'mpv';
+    const preferDirectWindowsBinary = process.platform === 'win32'
+      && String(configuredPath).trim().toLowerCase() === 'mpv';
 
-    add(configuredMpvPath || 'mpv');
-
-    const resolvedMpv = await this._resolveExecutable('mpv');
-    add(resolvedMpv);
+    if (!preferDirectWindowsBinary) {
+      add(configuredPath);
+    }
 
     if (process.platform === 'win32') {
       const chocolateyRoot = process.env.ChocolateyInstall || 'C:\\ProgramData\\chocolatey';
@@ -450,14 +452,6 @@ class MusicBotPlugin extends EventEmitter {
       const localAppData = process.env.LOCALAPPDATA || '';
       const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
       const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
-      [
-        path.join(chocolateyRoot, 'bin', 'mpv.exe'),
-        path.join(userProfile, 'scoop', 'shims', 'mpv.exe'),
-        'C:\\ProgramData\\scoop\\shims\\mpv.exe',
-        path.join(programFiles, 'mpv', 'mpv.exe'),
-        path.join(programFilesX86, 'mpv', 'mpv.exe')
-      ].forEach(add);
-
       try {
         const entries = await fsp.readdir(chocolateyLibDir, { withFileTypes: true });
         for (const entry of entries) {
@@ -476,6 +470,14 @@ class MusicBotPlugin extends EventEmitter {
         // Chocolatey may not be installed, or the lib directory may not exist yet.
       }
 
+      [
+        path.join(chocolateyRoot, 'bin', 'mpv.exe'),
+        path.join(userProfile, 'scoop', 'shims', 'mpv.exe'),
+        'C:\\ProgramData\\scoop\\shims\\mpv.exe',
+        path.join(programFiles, 'mpv', 'mpv.exe'),
+        path.join(programFilesX86, 'mpv', 'mpv.exe')
+      ].forEach(add);
+
       const wingetPackagesDir = path.join(localAppData, 'Microsoft', 'WinGet', 'Packages');
       try {
         const entries = await fsp.readdir(wingetPackagesDir, { withFileTypes: true });
@@ -486,6 +488,10 @@ class MusicBotPlugin extends EventEmitter {
         // WinGet is not installed or has not installed mpv for this user.
       }
     }
+
+    add(configuredPath);
+    const resolvedMpv = await this._resolveExecutable('mpv');
+    add(resolvedMpv);
 
     return candidates;
   }

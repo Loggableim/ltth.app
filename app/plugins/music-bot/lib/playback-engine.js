@@ -188,9 +188,15 @@ class PlaybackEngine extends EventEmitter {
       this.socket = null;
     }
     this._rejectPendingCommands(new Error('mpv playback engine was shut down'));
-    if (this.process) {
-      this.process.kill('SIGTERM');
-      this.process = null;
+    const process = this.process;
+    this.process = null;
+    if (process && (process.exitCode === null || process.exitCode === undefined)) {
+      process.once('close', () => {
+        this._shuttingDown = false;
+      });
+      process.kill('SIGTERM');
+    } else {
+      this._shuttingDown = false;
     }
     if (this.ipcPath && fs.existsSync(this.ipcPath)) {
       fs.unlinkSync(this.ipcPath);
@@ -198,7 +204,6 @@ class PlaybackEngine extends EventEmitter {
     this.nowPlaying = null;
     this.state = 'idle';
     this._restartAttempts = 0;
-    this._shuttingDown = false;
     this._duckActiveCount = 0;
     this.volume = this.masterVolume;
   }
@@ -277,7 +282,7 @@ class PlaybackEngine extends EventEmitter {
       `--audio-device=${this.config.audioDevice || 'auto'}`
     ];
 
-    this.process = spawn(this.config.mpvPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    this.process = spawn(this._getMpvExecutablePath(), args, { stdio: ['ignore', 'pipe', 'pipe'] });
     this._shuttingDown = false;
     this._restartAttempts = 0;
 
@@ -312,6 +317,14 @@ class PlaybackEngine extends EventEmitter {
     });
 
     await this._connectSocket();
+  }
+
+  _getMpvExecutablePath() {
+    const configuredPath = String(this.config.mpvPath || 'mpv').trim() || 'mpv';
+    if (process.platform !== 'win32' || path.extname(configuredPath)) {
+      return configuredPath;
+    }
+    return `${configuredPath}.exe`;
   }
 
   async _connectSocket() {

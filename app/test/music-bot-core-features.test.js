@@ -237,6 +237,30 @@ describe('Music Bot core features', () => {
     expect(maxInFlight).toBe(1);
   });
 
+  test('starts the MPV executable directly instead of the Windows command wrapper', () => {
+    const engine = new PlaybackEngine({ mpvPath: 'mpv', defaultVolume: 50 }, { log: jest.fn() });
+
+    expect(engine._getMpvExecutablePath()).toBe(process.platform === 'win32' ? 'mpv.exe' : 'mpv');
+  });
+
+  test('keeps shutdown protection active until the MPV child closes', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const child = {
+      kill: jest.fn(),
+      once: jest.fn()
+    };
+    engine.process = child;
+
+    await engine.shutdown();
+
+    expect(child.once).toHaveBeenCalledWith('close', expect.any(Function));
+    expect(child.kill).toHaveBeenCalledWith('SIGTERM');
+    expect(engine._shuttingDown).toBe(true);
+
+    child.once.mock.calls[0][1]();
+    expect(engine._shuttingDown).toBe(false);
+  });
+
   test('waits for MPV acknowledgement before considering a command applied', async () => {
     const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
     engine.socket = {
