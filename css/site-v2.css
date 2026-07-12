@@ -451,6 +451,24 @@ body.site-v2 code {
     border-color: rgba(255, 255, 255, 0.2);
   }
 
+  body.site-v2 .nav-menu .nav-link,
+  body.site-v2 .nav-menu .lang-dropdown-toggle {
+    color: #fff !important;
+  }
+
+  body.site-v2 .nav-menu .nav-link:hover,
+  body.site-v2 .nav-menu .nav-link:focus-visible,
+  body.site-v2 .nav-menu .nav-link.active,
+  body.site-v2 .nav-menu .lang-dropdown-toggle:hover,
+  body.site-v2 .nav-menu .lang-dropdown-toggle:focus-visible {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff !important;
+  }
+
+  body.site-v2 .nav-menu .lang-dropdown-toggle {
+    border-color: rgba(255, 255, 255, 0.55);
+  }
+
   body.site-v2 .hero-title,
   body.site-v2 .hero h1 {
     font-size: clamp(2.4rem, 12vw, 4rem);

@@ -16,6 +16,12 @@ if (!/body\.site-v2 \.beta-notice a:hover[^}]*color:\s*#fff\s*!important/i.test(
 if (!/body\.site-v2 \.beta-close[^}]*color:\s*#fff/i.test(css)) {
   errors.push('Beta notice close button must remain visible on the dark announcement background.');
 }
+if (!/@media \(max-width: 768px\)[\s\S]*?body\.site-v2 \.nav-menu \.nav-link[^}]*color:\s*#fff\s*!important/i.test(css)) {
+  errors.push('Mobile site-v2 navigation links must use white text on the dark drawer.');
+}
+if (!/@media \(max-width: 768px\)[\s\S]*?body\.site-v2 \.nav-menu \.lang-dropdown-toggle[^}]*color:\s*#fff\s*!important/i.test(css)) {
+  errors.push('Mobile site-v2 language control must use white text on the dark drawer.');
+}
 
 if (errors.length) {
   console.error(errors.join('\n'));
