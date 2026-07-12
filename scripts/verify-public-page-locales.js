@@ -41,6 +41,7 @@ const structuralChecks = [
   ['faq.html', /<h3[^>]*data-i18n="faq\.h3\.101"/, 'required', 'must localize the tutorial follow-up question'],
   ['faq.html', /<h3[^>]*data-i18n="faq\.h3\.103"/, 'required', 'must localize the support follow-up question']
   ,['roadmap.html', /<p[^>]*data-i18n="roadmap\.p\.6"/, 'required', 'must localize the current project status']
+  ,['launcher.html', /v1\.4\.0|v1\.3\.3|~12 MB|5 Tabs/, 'forbidden', 'must not advertise stale launcher versions, size, or tab count']
 ];
 for (const [file, pattern, mode, reason] of structuralChecks) {
   const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
