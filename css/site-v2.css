@@ -503,6 +503,28 @@ body.site-v2 .features-preview:nth-of-type(even), body.site-v2 .content-section:
 body.site-v2 .feature-card, body.site-v2 .plugin-card, body.site-v2 .install-card, body.site-v2 .faq-item, body.site-v2 .support-card, body.site-v2 .community-card, body.site-v2 .roadmap-item, body.site-v2 .card, body.site-v2 .screenshot-container { background: #fff; border-color: #dfe8df; box-shadow: 0 8px 20px rgba(14,15,16,.08); color: #0e0f10; }
 body.site-v2 a:not(.nav-link):not(.logo) { color: #0d7a10; }
 
+/* This banner intentionally remains dark while the public site is light.
+   Exempt its interactive controls from the generic green-link rule above. */
+body.site-v2 .beta-notice a {
+  color: #fff !important;
+  font-weight: 700;
+  text-decoration-color: #f8dc72;
+}
+body.site-v2 .beta-notice a:hover,
+body.site-v2 .beta-notice a:focus-visible {
+  color: #fff !important;
+  text-decoration-color: #fff;
+}
+body.site-v2 .beta-close,
+body.site-v2 .beta-close svg {
+  color: #fff;
+}
+body.site-v2 .beta-close {
+  background: rgba(255, 255, 255, .16);
+  border: 1px solid rgba(255, 255, 255, .5);
+}
+body.site-v2 .beta-close:hover { background: rgba(255, 255, 255, .28); }
+
 /* The public site is light-only. These selectors intentionally come last so
    the former night-theme form and documentation rules cannot leak through. */
 body.site-v2 input,
