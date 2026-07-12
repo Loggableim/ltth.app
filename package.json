@@ -11,6 +11,7 @@
     "build:css": "cd app && npm run build:css",
     "test": "cd app && npm test",
     "i18n:check": "cd app && npm run i18n:check",
+    "website:locales:check": "node scripts/verify-public-page-locales.js",
     "docs:i18n": "node scripts/generate-documentation-locales.js && node scripts/rewire-documentation-links.js",
     "docs:encoding": "node scripts/repair-documentation-encoding.js && npm run docs:i18n",
     "docs:plugins:build": "node scripts/build-plugin-docs.js",
