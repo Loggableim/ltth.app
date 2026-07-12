@@ -15,6 +15,16 @@ try {
 } catch (_e) {
   // youtube-dl-exec not installed — fallback to system yt-dlp
 }
+[
+  './lib/command-parser',
+  './lib/queue-manager',
+  './lib/music-resolver',
+  './lib/playback-engine',
+  './lib/ban-list',
+  './lib/auto-dj'
+].forEach((modulePath) => {
+  delete require.cache[require.resolve(modulePath)];
+});
 const CommandParser = require('./lib/command-parser');
 const QueueManager = require('./lib/queue-manager');
 const MusicResolver = require('./lib/music-resolver');
