@@ -243,6 +243,38 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin.playbackEngine.triggerDucking).not.toHaveBeenCalled();
   });
 
+  test('does not emit a stale playback sync after the active track changes', async () => {
+    const firstTrack = { id: 'first', title: 'First Song', startedAt: Date.now(), duration: 180 };
+    const secondTrack = { id: 'second', title: 'Second Song', startedAt: Date.now(), duration: 180 };
+    const { plugin, api } = createPluginWithQueue([]);
+    let activeTrack = firstTrack;
+    let resolvePosition;
+    let syncCallback;
+    const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation((callback) => {
+      syncCallback = callback;
+      return 123;
+    });
+
+    plugin.playbackEngine = {
+      getNowPlaying: jest.fn(() => activeTrack),
+      getPosition: jest.fn(() => new Promise((resolve) => { resolvePosition = resolve; })),
+      getState: jest.fn(() => 'playing')
+    };
+
+    try {
+      plugin._startPlaybackSync();
+      const pendingSync = syncCallback();
+      activeTrack = secondTrack;
+      resolvePosition(5);
+      await pendingSync;
+
+      expect(api.emit).not.toHaveBeenCalledWith('musicbot:playback-sync', expect.anything());
+    } finally {
+      plugin._stopPlaybackSync();
+      setIntervalSpy.mockRestore();
+    }
+  });
+
   test('resolver config updates keep the bundled yt-dlp path for the default setting', () => {
     const bundledPath = require('youtube-dl-exec').constants.YOUTUBE_DL_PATH;
     const resolver = new MusicResolver({ ytdlpPath: 'custom-yt-dlp' }, { log: jest.fn() });
