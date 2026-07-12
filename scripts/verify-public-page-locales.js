@@ -9,7 +9,7 @@ const pages = {
   roadmap: ['roadmap.hero.title', 'roadmap.hero.description', 'roadmap.h2.5', 'roadmap.h2.7', 'roadmap.p.10', 'roadmap.h3.11', 'roadmap.p.12', 'roadmap.a.13'],
   thanks: ['thank-you.hero.title', 'thank-you.hero.description', 'thank-you.h2.5', 'thank-you.h3.10', 'thank-you.a.11', 'thank-you.a.14'],
   support: ['support-the-developement.hero.title', 'support-the-developement.hero.description', 'support-the-developement.h2.5', 'support-the-developement.h3.7', 'support-the-developement.a.13', 'support.h2.17', 'support.p.18', 'support.a.19'],
-  faq: ['faq.h2.5', 'faq.h2.38', 'faq.h2.49', 'faq.h2.61', 'faq.h2.72', 'faq.h2.84', 'faq.p.32', 'faq.p.41', 'faq.p.45', 'faq.p.52', 'faq.p.56', 'faq.p.60', 'faq.p.64', 'faq.p.68', 'faq.p.71']
+  faq: ['faq.h2.5', 'faq.h2.38', 'faq.h2.49', 'faq.h2.61', 'faq.h2.72', 'faq.h2.84', 'faq.p.32', 'faq.p.41', 'faq.p.45', 'faq.p.52', 'faq.p.56', 'faq.p.60', 'faq.p.64', 'faq.p.68', 'faq.p.71', 'faq.p.78', 'faq.p.82', 'faq.p.87', 'faq.p.90', 'faq.p.93', 'faq.p.95']
 };
 const errors = [];
 for (const locale of ['en', 'es', 'fr']) {
