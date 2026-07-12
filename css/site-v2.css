@@ -538,5 +538,78 @@ body.site-v2 .docs-plugin-card p,
 body.site-v2 .docs-plugin-empty,
 body.site-v2 .plugin-doc-step p,
 body.site-v2 .plugin-doc-step figcaption {
+               color: #42464a;
+             }
+
+/* Public plugin catalog: compact enough to browse, readable without loading the
+   full tutorial image for every plugin, and usable before its interactive data
+   refresh has finished. */
+body.site-v2 .plugin-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 1rem;
+}
+
+body.site-v2 .plugin-catalog-list > h3 {
+  margin: 2.5rem 0 .45rem;
+}
+
+body.site-v2 .plugin-catalog-list > .section-subtitle {
+  margin: 0 0 1.25rem;
+}
+
+body.site-v2 .plugin-catalog-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 16rem;
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid #d5e2d6;
+  border-radius: 1rem;
+  box-shadow: 0 8px 20px rgba(14, 15, 16, 0.06);
+}
+
+body.site-v2 .plugin-catalog-card .feature-icon {
+  width: 4.25rem;
+  height: 4.25rem;
+  margin-bottom: .9rem;
+}
+
+body.site-v2 .plugin-catalog-card h3 {
+  margin: 0 0 .55rem;
+  font-size: 1.15rem;
+  line-height: 1.25;
+}
+
+body.site-v2 .plugin-catalog-card p {
+  margin: 0;
   color: #42464a;
+  line-height: 1.55;
+}
+
+body.site-v2 .plugin-catalog-card > a,
+body.site-v2 .plugin-catalog-card .btn {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+body.site-v2 .plugin-catalog-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  margin: .95rem 0;
+}
+
+body.site-v2 .plugin-catalog-card__meta span {
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  background: #e8f7e9;
+  color: #176b1a;
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  body.site-v2 .plugin-catalog-grid { grid-template-columns: 1fr; }
+  body.site-v2 .plugin-catalog-card { min-height: 0; }
 }

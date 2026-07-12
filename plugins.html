@@ -37,31 +37,61 @@
         </div>
     </section>
 
-    <!-- Plugin Manager Screenshot -->
-    <section class="features-preview" style="padding-top: 2rem;">
-        <div class="container">
-            <div class="screenshot-container" style="text-align: center; margin-bottom: 3rem;">
-                <img src="/screenshots/features/plugins.png" alt="Plugin Manager Interface" 
-                     style="max-width: 100%; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);" />
-            </div>
-        </div>
-    </section>
-
-        <!-- Plugin Store Overview (Dynamisch aus plugin-store.json) -->
+    <!-- Plugin Store Overview (Dynamisch aus plugin-store.json) -->
     <section class="features-preview">
         <div class="container">
             <div style="border-left: 4px solid var(--color-primary); padding-left: 1rem; margin-bottom: 2rem;">
                 <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 0.5rem;" data-text-key="storeBadge" data-i18n="generated.5e8655c8a004">PLUGIN STORE</span>
                 <h2 class="section-title" style="margin-bottom: 0.5rem;" data-text-key="storeTitle" data-i18n="generated.74f436a57ce5">Offizieller Plugin-Katalog</h2>
-                <p class="section-subtitle" id="plugin-store-status" data-text-key="storeLoading" data-i18n="generated.1ded3b527aec">Der neue LTTH Plugin Store wird geladen...</p>
+                <p class="section-subtitle" id="plugin-store-status" data-text-key="storeLoading">Der neue LTTH Plugin Store wird geladen...</p>
             </div>
 
             <div id="plugin-store-empty" style="display: none; margin-bottom: 1.5rem; color: var(--color-text-muted);" data-i18n="generated.8242998689fa">Der Store ist aktuell nicht erreichbar. Bitte versuche es später erneut.</div>
-            <div id="plugin-store-grid"></div>
+            <div id="plugin-store-grid" class="plugin-catalog-list" aria-live="polite">
+                <!-- Kept in the HTML deliberately: the catalog remains useful before JavaScript,
+                     during a slow store request, and for crawlers. The localized client catalog
+                     replaces these compact cards once the registry is available. -->
+                <div class="plugin-catalog-grid" data-static-plugin-catalog>
+                <article class="plugin-catalog-card" data-plugin-id="advanced-timer"><h3>Advanced Timer</h3><p>Timer und Stream-Automatisierung.</p><a href="/docs/plugins/advanced-timer.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="animazingpal"><h3>AnimazingPal</h3><p>VTuber-Avatar-Steuerung für Live-Events.</p><a href="/docs/plugins/animazingpal.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="api-bridge"><h3>API Bridge</h3><p>HTTP- und WebSocket-Integration.</p><a href="/docs/plugins/api-bridge.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="chatango"><h3>Chatango Integration</h3><p>Chat-Widgets und Automatisierung.</p><a href="/docs/plugins/chatango.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="clarityhud"><h3>ClarityHUD</h3><p>Barrierefreie HUD-Overlays.</p><a href="/docs/plugins/clarityhud.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="coinbattle"><h3>CoinBattle</h3><p>Interaktives Live-Battle-Overlay.</p><a href="/docs/plugins/coinbattle.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="config-import"><h3>Config Backup &amp; Restore</h3><p>Sicherung und Wiederherstellung.</p><a href="/docs/plugins/config-import.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="data-source"><h3>Data Source Manager</h3><p>TikTok-Datenquelle auswählen.</p><a href="/docs/plugins/data-source.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="fireworks"><h3>Fireworks</h3><p>GPU-beschleunigte Feuerwerkseffekte.</p><a href="/docs/plugins/fireworks.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="flame-overlay"><h3>Visual FX Frame</h3><p>WebGL-Effekte für OBS.</p><a href="/docs/plugins/flame-overlay.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="game-engine"><h3>LTTH Game Engine</h3><p>Interaktive Spiele für Live-Streams.</p><a href="/docs/plugins/game-engine.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="gcce"><h3>Global Chat Command Engine</h3><p>Chat-Befehle zentral verwalten.</p><a href="/docs/plugins/gcce.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="goals"><h3>Live Goals</h3><p>Ziele und Live-Overlays.</p><a href="/docs/plugins/goals.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="interactive-story"><h3>Interactive Story Generator</h3><p>KI-gestützte Geschichten mit Chat-Voting.</p><a href="/docs/plugins/interactive-story.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="spotlight"><h3>Spotlight</h3><p>Live-Overlays für wichtige Events.</p><a href="/docs/plugins/spotlight.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="milestone-leaderboard"><h3>Milestone Leaderboard</h3><p>Meilensteine, Rangliste und Viewer-XP.</p><a href="/docs/plugins/milestone-leaderboard.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="multicam"><h3>Multi-Cam Switcher</h3><p>OBS-Szenen per Event wechseln.</p><a href="/docs/plugins/multicam.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="music-bot"><h3>Music Bot</h3><p>Musikwünsche aus dem Chat.</p><a href="/docs/plugins/music-bot.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="openshock"><h3>Hybridshock</h3><p>Haptische Event-Workflows.</p><a href="/docs/plugins/openshock.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="osc-bridge"><h3>OSC-Bridge</h3><p>VRChat- und OSC-Integration.</p><a href="/docs/plugins/osc-bridge.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="quiz-show"><h3>Quiz Show</h3><p>Interaktive Quizshow für TikTok LIVE.</p><a href="/docs/plugins/quiz-show.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="sidekick"><h3>Sidekick</h3><p>Intelligenter Stream-Assistent.</p><a href="/docs/plugins/sidekick.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="soundboard"><h3>Soundboard</h3><p>Sounds für Geschenke und Events.</p><a href="/docs/plugins/soundboard.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="streamalchemy"><h3>StreamAlchemy</h3><p>Geschenke in RPG-Items verwandeln.</p><a href="/docs/plugins/streamalchemy.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="store-admin"><h3>LTTH App Store Admin</h3><p>Store- und Beta-Freigaben verwalten.</p><a href="/docs/plugins/store-admin.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="stt-ticker"><h3>STT Ticker</h3><p>Live-Untertitel für OBS.</p><a href="/docs/plugins/stt-ticker.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="talking-heads"><h3>Talking Heads</h3><p>Animierte KI-Avatare.</p><a href="/docs/plugins/talking-heads.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="thermal-printer"><h3>Thermal Printer</h3><p>Live-Ereignisse physisch drucken.</p><a href="/docs/plugins/thermal-printer.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="toptier"><h3>Top Tier</h3><p>Live Like- und Gift-Rangliste.</p><a href="/docs/plugins/toptier.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="tts"><h3>Text-to-Speech System</h3><p>Mehrere TTS-Engines und Warteschlangen.</p><a href="/docs/plugins/tts.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="vdoninja"><h3>VDO.Ninja Multi-Guest Manager</h3><p>Multi-Gast-Streaming.</p><a href="/docs/plugins/vdoninja.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="weather-control"><h3>Weather Control</h3><p>Wettereffekte für Stream-Overlays.</p><a href="/docs/plugins/weather-control.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="emoji-rain"><h3>EmojiRain</h3><p>Physikbasierter Emoji-Regen.</p><a href="/docs/plugins/emoji-rain.html">Zur Anleitung</a></article>
+                <article class="plugin-catalog-card" data-plugin-id="webgpu-emoji-rain"><h3>WebGPU EmojiRain</h3><p>GPU-beschleunigter Emoji-Regen.</p><a href="/docs/plugins/webgpu-emoji-rain.html">Zur Anleitung</a></article>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Plugin Screenshots Showcase -->
+    <template data-legacy-plugin-showcase>
     <section class="features-preview" style="background: var(--color-bg);">
         <div class="container">
             <h2 class="section-title" data-i18n="generated.ac7ddc7ca270">Plugin-Benutzeroberflächen</h2>
@@ -136,6 +166,8 @@
             </div>
         </div>
     </section>
+
+    </template>
 
     <!-- Plugin System Features -->
     <section class="developer-features">
@@ -267,7 +299,11 @@
             docs: 'Dokumentation',
             download: 'Paket herunterladen',
             installHint: 'Direkter Paket-Download aus dem LTTH-Store.',
-            noPlugins: 'Zurzeit sind keine Plugins im Katalog.'
+            noPlugins: 'Zurzeit sind keine Plugins im Katalog.',
+            countCore: '{count} Kern-Plugins',
+            countOfficial: '{count} offizielle LTTH-Plugins',
+            countCommunity: '{count} Community-Plugins',
+            countDocs: '{count} Anleitungen'
         },
         en: {
             storeBadge: 'PLUGIN STORE',
@@ -284,7 +320,11 @@
             docs: 'Documentation',
             download: 'Download Package',
             installHint: 'Download plugin package from the LTTH Store.',
-            noPlugins: 'No plugins are currently published.'
+            noPlugins: 'No plugins are currently published.',
+            countCore: '{count} core plugins',
+            countOfficial: '{count} official LTTH plugins',
+            countCommunity: '{count} community plugins',
+            countDocs: '{count} guides'
         },
         es: {
             storeBadge: 'TIENDA DE PLUGINS',
@@ -301,7 +341,11 @@
             docs: 'Documentación',
             download: 'Descargar paquete',
             installHint: 'Descarga el paquete del plugin desde la tienda LTTH.',
-            noPlugins: 'No hay plugins publicados actualmente.'
+            noPlugins: 'No hay plugins publicados actualmente.',
+            countCore: '{count} plugins principales',
+            countOfficial: '{count} plugins oficiales de LTTH',
+            countCommunity: '{count} plugins de la comunidad',
+            countDocs: '{count} guías'
         },
         fr: {
             storeBadge: 'BOUTIQUE DE PLUGINS',
@@ -318,7 +362,11 @@
             docs: 'Documentation',
             download: 'Télécharger le package',
             installHint: 'Téléchargez le package du plugin depuis la boutique LTTH.',
-            noPlugins: 'Aucun plugin n\'est publié actuellement.'
+            noPlugins: 'Aucun plugin n\'est publié actuellement.',
+            countCore: '{count} plugins principaux',
+            countOfficial: '{count} plugins LTTH officiels',
+            countCommunity: '{count} plugins communautaires',
+            countDocs: '{count} guides'
         }
     };
 
@@ -553,7 +601,8 @@
 
         function createCard(plugin, locale) {
         const card = document.createElement('article');
-        card.className = 'feature-card';
+        card.className = 'plugin-catalog-card';
+        card.dataset.pluginId = plugin.id;
 
         const icon = document.createElement('div');
         icon.className = 'feature-icon';
@@ -610,25 +659,6 @@
         actionRow.style.gap = '8px';
         actionRow.style.flexWrap = 'wrap';
 
-        const screenshotList = Array.isArray(plugin.screenshots) ? plugin.screenshots : [];
-        if (screenshotList.length > 0) {
-            const screenshot = document.createElement('div');
-            screenshot.style.marginTop = 'var(--space-4)';
-
-            const screenshotImage = document.createElement('img');
-            screenshotImage.src = screenshotList[0];
-            screenshotImage.alt = plugin.name || plugin.id;
-            screenshotImage.loading = 'lazy';
-            screenshotImage.style.width = '100%';
-            screenshotImage.style.maxWidth = '620px';
-            screenshotImage.style.borderRadius = 'var(--radius-md)';
-            screenshotImage.style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
-            screenshotImage.style.display = 'block';
-            screenshot.appendChild(screenshotImage);
-
-            card.appendChild(screenshot);
-        }
-
         if (plugin.packageUrl) {
             const link = document.createElement('a');
             link.href = plugin.packageUrl;
@@ -684,7 +714,7 @@
         hint.textContent = subtitle;
 
         const grid = document.createElement('div');
-        grid.className = 'features-grid';
+        grid.className = 'plugin-catalog-grid';
 
         for (const plugin of plugins) {
             grid.appendChild(createCard(plugin, locale));
@@ -742,6 +772,7 @@
         if (statusEl) {
             statusEl.textContent = getText(locale, 'storeLoading');
         }
+        if (gridEl) gridEl.setAttribute('aria-busy', 'true');
 
         try {
             const response = await fetch(`/plugin-store.json?ts=${Date.now()}`);
@@ -775,10 +806,10 @@
             official.sort((a, b) => a.name.localeCompare(b.name));
             community.sort((a, b) => a.name.localeCompare(b.name));
 
-            gridEl.innerHTML = '';
-            renderCategory(gridEl, getText(locale, 'sourceCore'), `${core.length} ${getText(locale, 'sourceCore').toLowerCase()}`, core, locale);
-            renderCategory(gridEl, getText(locale, 'sourceOfficial'), `${official.length} ${getText(locale, 'sourceOfficial').toLowerCase()}`, official, locale);
-            renderCategory(gridEl, getText(locale, 'sourceCommunity'), `${community.length} ${getText(locale, 'sourceCommunity').toLowerCase()}`, community, locale);
+            gridEl.replaceChildren();
+            renderCategory(gridEl, getText(locale, 'sourceCore'), formatText(getText(locale, 'countCore'), { count: String(core.length) }), core, locale);
+            renderCategory(gridEl, getText(locale, 'sourceOfficial'), formatText(getText(locale, 'countOfficial'), { count: String(official.length) }), official, locale);
+            renderCategory(gridEl, getText(locale, 'sourceCommunity'), formatText(getText(locale, 'countCommunity'), { count: String(community.length) }), community, locale);
 
             const publishedIds = new Set(normalized.map((plugin) => plugin.id));
             const docsOnly = tutorialIndex
@@ -793,7 +824,7 @@
                     tutorialUrl: `/docs/plugins/${tutorial.id}.html?lang=${locale}`,
                     screenshots: tutorial.image?.[locale] ? [tutorial.image[locale]] : []
                 }));
-            renderCategory(gridEl, getText(locale, 'docs'), `${docsOnly.length} ${getText(locale, 'docs').toLowerCase()}`, docsOnly, locale);
+            renderCategory(gridEl, getText(locale, 'docs'), formatText(getText(locale, 'countDocs'), { count: String(docsOnly.length) }), docsOnly, locale);
 
             if (statusEl) {
                 statusEl.textContent = formatText(getText(locale, 'storeLoaded'), { count: String(normalized.length) });
@@ -804,6 +835,8 @@
                 emptyEl.style.display = 'block';
                 emptyEl.textContent = getText(locale, 'storeError');
             }
+        } finally {
+            if (gridEl) gridEl.setAttribute('aria-busy', 'false');
         }
     }
 
@@ -818,10 +851,10 @@
                 console.debug('plugins.html: Could not persist query language selection', error);
             }
         }
+        const catalog = renderPluginStore(locale);
         if (window.LTTHLayout) await LTTHLayout.init();
         if (window.I18n) await I18n.init(window.__ltthLang || DEFAULT_LOCALE);
-
-        await renderPluginStore(locale);
+        await catalog;
     });
     </script>
 </body>
