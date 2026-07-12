@@ -18,6 +18,7 @@
     "docs:plugins:check": "node scripts/verify-plugin-docs.js",
     "website:plugins:check": "node scripts/verify-plugin-catalog.js",
     "website:contrast:check": "node scripts/verify-site-contrast.js",
+    "website:features:locales:check": "node scripts/verify-feature-hub-locales.js",
     "docs:screenshots": "set SCREENSHOT_COLLECTION=docs&& node scripts/capture-product-screenshots.js",
     "docs:screenshots:check": "node scripts/verify-docs-screenshot-coverage.js",
     "website:encoding": "node scripts/repair-website-encoding.js && node scripts/repair-website-replacement-chars.js",

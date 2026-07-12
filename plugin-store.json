@@ -215,7 +215,10 @@
         "en": "Data Source Manager"
       },
       "description": {
-        "en": "Wähle zwischen Eulerstream und TikFinity als TikTok-Datenquelle."
+        "en": "Choose Eulerstream or TikFinity as the data source for TikTok LIVE events.",
+        "de": "Wähle Eulerstream oder TikFinity als Datenquelle für TikTok-LIVE-Events.",
+        "es": "Elige Eulerstream o TikFinity como fuente de datos para los eventos de TikTok LIVE.",
+        "fr": "Choisissez Eulerstream ou TikFinity comme source de données pour les événements TikTok LIVE."
       },
       "version": "1.0.0",
       "author": "PupCid",
@@ -498,7 +501,10 @@
         "en": "Music Bot"
       },
       "description": {
-        "en": "Viewer-controlled music bot for TikTok LIVE streams. Chat commands to request, skip, and manage songs via YouTube/SoundCloud."
+        "en": "Viewer-controlled music bot for TikTok LIVE streams. Chat commands let viewers request, skip, and manage songs via YouTube or SoundCloud.",
+        "de": "Zuschauer-gesteuerter Musikbot für TikTok-LIVE-Streams. Chat-Befehle ermöglichen Musikwünsche, Überspringen und Verwaltung von Titeln über YouTube oder SoundCloud.",
+        "es": "Bot de música controlado por la audiencia para directos de TikTok LIVE. Los comandos del chat permiten pedir, saltar y gestionar canciones mediante YouTube o SoundCloud.",
+        "fr": "Bot musical contrôlé par les spectateurs pour les directs TikTok LIVE. Les commandes du chat permettent de demander, passer et gérer des titres via YouTube ou SoundCloud."
       },
       "version": "1.2.0",
       "author": "PupCid",
@@ -740,7 +746,9 @@
       },
       "description": {
         "en": "Live caption overlay for hearing-impaired viewers. Transcribes host speech via Fish.audio ASR and displays it as a configurable ticker in OBS.",
-        "de": "Live-Untertitel-Overlay für hörgeschädigte Zuschauer. Transkribiert Host-Sprache via Fish.audio ASR und zeigt sie als konfigurierbaren Ticker in OBS an."
+        "de": "Live-Untertitel-Overlay für hörgeschädigte Zuschauer. Transkribiert die Sprache des Hosts via Fish.audio ASR und zeigt sie als konfigurierbaren Ticker in OBS an.",
+        "es": "Overlay de subtítulos en directo para espectadores con discapacidad auditiva. Transcribe la voz del anfitrión mediante Fish.audio ASR y la muestra como un ticker configurable en OBS.",
+        "fr": "Overlay de sous-titres en direct pour les spectateurs malentendants. Il transcrit la voix de l’hôte avec Fish.audio ASR et l’affiche dans OBS sous forme de bandeau configurable."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -768,7 +776,9 @@
       },
       "description": {
         "en": "AI-generated 2D avatars with synchronized animations for TikTok users speaking via TTS. Features role-based activation, multiple style templates, and OBS integration.",
-        "de": "KI-generierte 2D-Avatare mit synchronisierten Animationen für TikTok-Nutzer, die per TTS sprechen. Mit rollenbasierter Aktivierung, mehreren Stil-Vorlagen und OBS-Integration."
+        "de": "KI-generierte 2D-Avatare mit synchronisierten Animationen für TikTok-Nutzer, die per TTS sprechen. Mit rollenbasierter Aktivierung, mehreren Stil-Vorlagen und OBS-Integration.",
+        "es": "Avatares 2D generados por IA con animaciones sincronizadas para usuarios de TikTok que hablan mediante TTS. Incluye activación por roles, varias plantillas de estilo e integración con OBS.",
+        "fr": "Avatars 2D générés par IA avec des animations synchronisées pour les utilisateurs TikTok qui parlent via TTS. Comprend une activation par rôle, plusieurs modèles de style et une intégration OBS."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -824,7 +834,10 @@
         "en": "Top Tier"
       },
       "description": {
-        "en": "Live Like & Gift Leaderboard mit Decay-Mechanik, Rang-Animationen, Combined-View und Overlay-Varianten für Hochformat und Querformat."
+        "en": "Live leaderboard for likes and gifts with decay logic, rank animations, a combined view, and overlay variants for portrait and landscape streams.",
+        "de": "Live-Rangliste für Likes und Geschenke mit Decay-Mechanik, Rang-Animationen, kombinierter Ansicht und Overlay-Varianten für Hochformat und Querformat.",
+        "es": "Clasificación en directo de likes y regalos con lógica de decaimiento, animaciones de rango, vista combinada y variantes de overlay para transmisiones verticales y horizontales.",
+        "fr": "Classement en direct des likes et cadeaux avec logique de décroissance, animations de rang, vue combinée et variantes d’overlay pour les streams verticaux et horizontaux."
       },
       "version": "2.0.0",
       "author": "PupCid",

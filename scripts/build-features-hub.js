@@ -542,7 +542,7 @@ function renderPage(lang, page, catalogData) {
     });
   </script>
 </body>
-</html>`;
+</html>`.replace(/[\t ]+(?=\n)/g, '');
 }
 
 function writePage(lang) {
