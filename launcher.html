@@ -40,7 +40,7 @@
             <div class="container">
                 <span class="feature-hero-icon">🚀</span>
                 <h1 class="feature-hero-title" data-i18n="generated.a4b479500a56">Standalone Launcher &amp; Installer</h1>
-                <p class="feature-hero-subtitle" data-i18n="generated.6b75f2d2d178">Ein Klick. Alles installiert. Der LTTH Launcher richtet Node.js, npm, yt-dlp und die gesamte App vollautomatisch ein – damit du sofort loslegen kannst.</p>
+                <p class="feature-hero-subtitle" data-i18n="generated.6b75f2d2d178">Der LTTH Launcher unterstützt die lokale Installation, prüft Voraussetzungen und hilft bei sicheren Updates.</p>
                 <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; margin-bottom:1.5rem;">
                     <a href="/download.html" class="btn btn-primary btn-large" data-i18n="generated.4696a94b716b">🚀 Launcher Herunterladen</a>
                     <a href="/docs.html" class="btn btn-secondary btn-large" data-i18n="features.a.9">Dokumentation</a>
@@ -95,9 +95,6 @@
                             </span></div>
                             <div style="background:rgba(18,161,22,0.1); border:1px solid rgba(18,161,22,0.2); border-radius:0.5rem; padding:0.6rem 0.9rem; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem;">
                                 <span style="color:var(--color-primary);">✓</span><span data-i18n="generated.055cc68b9272"> Port 3000 verfügbar
-                            </span></div>
-                            <div style="background:rgba(18,161,22,0.1); border:1px solid rgba(18,161,22,0.2); border-radius:0.5rem; padding:0.6rem 0.9rem; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem;">
-                                <span style="color:var(--color-primary);">✓</span><span data-i18n="generated.c7bf1e1ba916"> yt-dlp installiert
                             </span></div>
                         </div>
                     </div>
@@ -168,71 +165,6 @@
         </section>
 
         <div class="section-divider"></div>
-
-        <!-- auto-install features -->
-        <section class="features-preview">
-            <div class="container">
-                <h2 class="section-title" data-i18n="generated.7e366bb3d137">Automatische Installation</h2>
-                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1.5rem;">
-
-                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.5rem; text-align:center;">
-                        <div style="font-size:2rem; margin-bottom:0.75rem;">🟩</div>
-                        <h3 style="font-weight:700; margin-bottom:0.5rem;">Node.js</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.875rem; line-height:1.6;" data-i18n="generated.07732357c353">Automatischer Download und Installation der aktuellen LTS-Version. Vorhandene Installationen werden erkannt und genutzt.</p>
-                    </div>
-
-                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.5rem; text-align:center;">
-                        <div style="font-size:2rem; margin-bottom:0.75rem;">📦</div>
-                        <h3 style="font-weight:700; margin-bottom:0.5rem;" data-i18n="generated.4ad71f93e13b">npm Install</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.875rem; line-height:1.6;" data-i18n="generated.5af09b161875">Alle Node.js-Abhängigkeiten werden automatisch installiert. Fortschritts-Monitoring mit Echtzeit-Statusanzeige im Launcher-GUI.</p>
-                    </div>
-
-                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.5rem; text-align:center;">
-                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎬</div>
-                        <h3 style="font-weight:700; margin-bottom:0.5rem;">yt-dlp</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.875rem; line-height:1.6;" data-i18n="generated.c1262a523f1b">yt-dlp für Medien-Downloads wird automatisch heruntergeladen und konfiguriert. Automatische Updates bei neuen yt-dlp-Versionen.</p>
-                    </div>
-
-                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.5rem; text-align:center;">
-                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔍</div>
-                        <h3 style="font-weight:700; margin-bottom:0.5rem;" data-i18n="generated.f292a3b49bff">Preflight Checks</h3>
-                        <p style="color:var(--color-text-secondary); font-size:0.875rem; line-height:1.6;" data-i18n="generated.470463f96d11">Vor dem Start werden Node.js-Version, npm-Verfügbarkeit, Port-3000-Freiheit und yt-dlp-Funktionalität automatisch geprüft.</p>
-                    </div>
-
-                </div>
-            </div>
-        </section>
-
-        <div class="section-divider"></div>
-
-        <!-- auto update -->
-        <section class="features-preview">
-            <div class="container">
-                <h2 class="section-title" data-i18n="generated.717680ea600f">Auto-Update System</h2>
-                <div style="max-width:700px; margin:0 auto; text-align:center;">
-                    <p style="color:var(--color-text-secondary); font-size:1.05rem; line-height:1.8; margin-bottom:2rem;" data-i18n="generated.4915356cf88f">
-                        Der Launcher prüft beim Start automatisch auf neue LTTH-Versionen. Updates werden im Hintergrund heruntergeladen und mit einem Klick installiert – ohne Datenverlust und ohne Neuinstallation.
-                    </p>
-                    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; text-align:center;">
-                        <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:0.75rem; padding:1.25rem;">
-                            <div style="font-size:1.5rem; margin-bottom:0.5rem;">🔍</div>
-                            <div style="font-weight:600; font-size:0.9rem;" data-i18n="generated.36e7465f5781">Prüfen</div>
-                            <div style="color:var(--color-text-secondary); font-size:0.8rem; margin-top:0.25rem;" data-i18n="generated.8db1a9bb5563">Beim Start automatisch</div>
-                        </div>
-                        <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:0.75rem; padding:1.25rem;">
-                            <div style="font-size:1.5rem; margin-bottom:0.5rem;">⬇️</div>
-                            <div style="font-weight:600; font-size:0.9rem;" data-i18n="features.cta.download">Herunterladen</div>
-                            <div style="color:var(--color-text-secondary); font-size:0.8rem; margin-top:0.25rem;" data-i18n="generated.f6b18d5859f3">Im Hintergrund</div>
-                        </div>
-                        <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:0.75rem; padding:1.25rem;">
-                            <div style="font-size:1.5rem; margin-bottom:0.5rem;">✅</div>
-                            <div style="font-weight:600; font-size:0.9rem;">Installieren</div>
-                            <div style="color:var(--color-text-secondary); font-size:0.8rem; margin-top:0.25rem;">Ein-Klick-Update</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <!-- version info -->
         <section style="padding: 2rem 0;">
