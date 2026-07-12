@@ -9,6 +9,7 @@ const pages = {
   roadmap: ['roadmap.hero.title', 'roadmap.hero.description', 'roadmap.h2.5', 'roadmap.h2.7', 'roadmap.p.10', 'roadmap.h3.11', 'roadmap.p.12', 'roadmap.a.13'],
   thanks: ['thank-you.hero.title', 'thank-you.hero.description', 'thank-you.h2.5', 'thank-you.h3.10', 'thank-you.a.11', 'thank-you.a.14'],
   support: ['support-the-developement.hero.title', 'support-the-developement.hero.description', 'support-the-developement.h2.5', 'support-the-developement.h3.7', 'support-the-developement.a.13']
+  ,faq: ['faq.h2.5', 'faq.h2.38', 'faq.h2.49', 'faq.h2.61', 'faq.h2.72', 'faq.h2.84']
 };
 const errors = [];
 for (const locale of ['en', 'es', 'fr']) {
