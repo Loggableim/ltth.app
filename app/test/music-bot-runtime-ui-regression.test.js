@@ -60,6 +60,7 @@ function bootMusicBotUi(options = {}) {
     completed: false,
     completedAt: null
   };
+  const socketHandlers = {};
   const html = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/ui.html'), 'utf8');
   const js = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/assets/ui.js'), 'utf8');
   const fetchMock = jest.fn(async (url, options = {}) => {
@@ -135,14 +136,19 @@ function bootMusicBotUi(options = {}) {
     url: 'http://localhost:3000/plugins/music-bot/ui',
     runScripts: 'dangerously',
     beforeParse(window) {
-      window.io = () => ({ on: jest.fn(), emit: jest.fn() });
+      window.io = () => ({
+        on: jest.fn((event, handler) => {
+          socketHandlers[event] = handler;
+        }),
+        emit: jest.fn()
+      });
       window.fetch = fetchMock;
       window.open = jest.fn();
       window.navigator.clipboard = { writeText: jest.fn(async () => {}) };
     }
   });
   dom.window.eval(js);
-  return { dom, fetchMock };
+  return { dom, fetchMock, socketHandlers };
 }
 
 describe('Music Bot runtime and UI regressions', () => {
@@ -319,6 +325,60 @@ describe('Music Bot runtime and UI regressions', () => {
     }));
   });
 
+  test('surfaces an MPV playback error without advancing Auto-DJ to the next song', async () => {
+    const failedTrack = { id: 'failed-track', title: 'Failed Track', requestedBy: 'AutoDJ' };
+    const { plugin, api } = createPluginWithQueue([]);
+    const playbackEngine = new (require('events'))();
+    playbackEngine.getNowPlaying = jest.fn(() => null);
+    plugin.playbackEngine = playbackEngine;
+    plugin.queueManager = {
+      addToHistory: jest.fn(),
+      removeSkipImmunity: jest.fn(),
+      resetVoteSkips: jest.fn()
+    };
+    plugin.autoDJ = { markPlaybackFailed: jest.fn() };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._clearCrossfadeTimer = jest.fn();
+    plugin._playNextFromQueue = jest.fn(async () => ({ success: true }));
+    plugin._emitPlaybackStopped = jest.fn();
+    plugin._registerPlaybackEvents();
+
+    playbackEngine.emit('track-end', {
+      track: failedTrack,
+      reason: 'error',
+      error: 'Failed to open stream'
+    });
+    await Promise.resolve();
+
+    expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
+    expect(plugin.queueManager.addToHistory).not.toHaveBeenCalled();
+    expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledWith(expect.any(Error));
+    expect(api.emit).toHaveBeenCalledWith('musicbot:error', expect.objectContaining({
+      message: expect.stringContaining('Failed to open stream')
+    }));
+  });
+
+  test('uses a playing YouTube track as the Auto-DJ random seed', () => {
+    const { plugin } = createPluginWithQueue([]);
+    const playbackEngine = new (require('events'))();
+    plugin.playbackEngine = playbackEngine;
+    plugin.queueManager = {
+      markPlaying: jest.fn(),
+      resetVoteSkips: jest.fn()
+    };
+    plugin.autoDJ = { setPlaybackSeed: jest.fn() };
+    plugin._emitNowPlaying = jest.fn();
+    plugin._startPlaybackSync = jest.fn();
+    plugin._scheduleCrossfadeTransition = jest.fn();
+    plugin._schedulePreCache = jest.fn();
+    plugin._registerPlaybackEvents();
+    const track = { id: 'active-track', title: 'Active title', youtubeId: 'active-video' };
+
+    playbackEngine.emit('track-start', track);
+
+    expect(plugin.autoDJ.setPlaybackSeed).toHaveBeenCalledWith(track);
+  });
+
   test('shows a loading state immediately while a skip waits for the next track', async () => {
     let resolveSkip;
     const { dom } = bootMusicBotUi({
@@ -367,6 +427,31 @@ describe('Music Bot runtime and UI regressions', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(state.textContent).toBe('Paused');
+  });
+
+  test('identifies both songs when moving a queue item', async () => {
+    const { dom, fetchMock, socketHandlers } = bootMusicBotUi();
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    socketHandlers['musicbot:queue-update']({
+      queue: [
+        { id: 'first-song', title: 'First Song', requestedBy: 'viewer' },
+        { id: 'second-song', title: 'Second Song', requestedBy: 'viewer' }
+      ],
+      length: 2
+    });
+
+    const moveUp = dom.window.document.querySelector('[data-queue-action="move-up"][data-idx="1"]');
+    moveUp.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const reorderRequest = fetchMock.mock.calls.find(([url, options]) =>
+      String(url).endsWith('/queue/reorder') && options.method === 'POST'
+    );
+    expect(JSON.parse(reorderRequest[1].body)).toMatchObject({
+      sourceSongId: 'second-song',
+      targetSongId: 'first-song'
+    });
   });
 
   test('UI exposes mpv path configuration and persists it to playback config', async () => {

@@ -247,6 +247,43 @@ describe('music-bot POST /api/plugins/music-bot/config', () => {
 });
 
 describe('music-bot Auto-DJ routes', () => {
+  test('queues a viewer request behind an active track without skipping it', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    plugin.config = {
+      ...plugin.config,
+      playback: { ...plugin.config.playback, autoPlay: true },
+      monetization: { ...plugin.config.monetization, likeGateEnabled: false, payToPlayEnabled: false }
+    };
+    plugin.banList = {
+      isUserBanned: jest.fn(() => ({ banned: false })),
+      isUrlBanned: jest.fn(() => ({ banned: false })),
+      isKeywordBanned: jest.fn(() => ({ banned: false })),
+      isChannelBanned: jest.fn(() => ({ banned: false }))
+    };
+    plugin.musicResolver = {
+      resolve: jest.fn(async () => ({
+        success: true,
+        song: { id: 'requested-song', title: 'I Need a Hero', url: 'https://example.test/hero.mp3' }
+      }))
+    };
+    plugin.queueManager = { addSong: jest.fn(() => ({ success: true, song: { id: 'requested-song' }, position: 1 })) };
+    plugin.autoDJ = { onSongRequested: jest.fn() };
+    plugin.playbackEngine = { isPlaying: jest.fn(() => true) };
+    plugin._schedulePreCache = jest.fn();
+    plugin._emitSongAdded = jest.fn();
+    plugin._emitChatResponse = jest.fn();
+    plugin._emitToast = jest.fn();
+    plugin._skipCurrent = jest.fn();
+    plugin._playNextFromQueue = jest.fn();
+
+    await plugin._handleRequest('I Need a Hero', 'viewer');
+
+    expect(plugin.queueManager.addSong).toHaveBeenCalledTimes(1);
+    expect(plugin._skipCurrent).not.toHaveBeenCalled();
+    expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
+  });
+
   test('starts Auto-DJ immediately when it is enabled while the player and queue are idle', async () => {
     const api = createApi();
     const plugin = new MusicBotPlugin(api);
@@ -293,6 +330,104 @@ describe('music-bot Auto-DJ routes', () => {
       success: true,
       track: selected
     }));
+  });
+
+  test('starts the selected song by ID when its rendered queue index is stale', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    const selected = { id: 'queued-song', title: 'Queued Song' };
+    plugin.queueManager = {
+      reorderSong: jest.fn(() => ({ success: true })),
+      getQueue: jest.fn(() => [{ id: 'new-first-song', title: 'New First Song' }, selected])
+    };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => null) };
+    plugin._playNextFromQueue = jest.fn(async () => ({ success: true, song: selected }));
+    plugin._emitQueue = jest.fn();
+    plugin._registerRoutes();
+
+    const handler = api.handlers['POST:/api/plugins/music-bot/queue/:index/play'];
+    const res = createResponseMock();
+    await handler({ params: { index: '3' }, body: { songId: selected.id } }, res);
+
+    expect(plugin.queueManager.reorderSong).toHaveBeenCalledWith(1, 0);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      track: selected
+    }));
+  });
+
+  test('treats a stale Queue Play click for the current track as already playing', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    const current = { id: 'requested-song', title: 'I Need a Hero' };
+    plugin.queueManager = {
+      reorderSong: jest.fn(() => ({ success: false, error: 'Invalid source position' })),
+      getQueue: jest.fn(() => [])
+    };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => current) };
+    plugin._emitQueue = jest.fn();
+    plugin._registerRoutes();
+
+    const handler = api.handlers['POST:/api/plugins/music-bot/queue/:index/play'];
+    const res = createResponseMock();
+    await handler({ params: { index: '0' }, body: { songId: current.id } }, res);
+
+    expect(plugin.queueManager.reorderSong).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      track: current,
+      alreadyPlaying: true
+    }));
+  });
+
+  test('returns a stale Queue Play response when the selected ID is absent', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    plugin.queueManager = {
+      reorderSong: jest.fn(() => ({ success: false, error: 'Invalid source position' })),
+      getQueue: jest.fn(() => [])
+    };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => null) };
+    plugin._emitQueue = jest.fn();
+    plugin._registerRoutes();
+
+    const handler = api.handlers['POST:/api/plugins/music-bot/queue/:index/play'];
+    const res = createResponseMock();
+    await handler({ params: { index: '0' }, body: { songId: 'removed-song' } }, res);
+
+    expect(plugin.queueManager.reorderSong).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      staleQueue: true
+    }));
+  });
+
+  test('reorders songs by ID when rendered queue indices are stale', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    const source = { id: 'second-song', title: 'Second Song' };
+    const target = { id: 'first-song', title: 'First Song' };
+    plugin.queueManager = {
+      reorderSong: jest.fn(() => ({ success: true })),
+      getQueue: jest.fn(() => [target, source])
+    };
+    plugin._emitQueue = jest.fn();
+    plugin._registerRoutes();
+
+    const handler = api.handlers['POST:/api/plugins/music-bot/queue/reorder'];
+    const res = createResponseMock();
+    await handler({
+      body: {
+        fromIndex: 4,
+        toIndex: 3,
+        sourceSongId: source.id,
+        targetSongId: target.id
+      }
+    }, res);
+
+    expect(plugin.queueManager.reorderSong).toHaveBeenCalledWith(1, 0);
+    expect(res.json).toHaveBeenCalledWith({ success: true });
   });
 
   test('uses resume as a recovery action when a queue is waiting without a current track', async () => {

@@ -187,6 +187,56 @@ describe('Music Bot core features', () => {
     expect(engine.getState()).toBe('idle');
   });
 
+  test('reports an MPV end-file error instead of treating it as a completed song', () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const trackEnd = jest.fn();
+    engine.on('track-end', trackEnd);
+    engine.nowPlaying = { id: 'failed-track', title: 'Failed Track' };
+    engine.state = 'playing';
+
+    engine._handleMessage(JSON.stringify({
+      event: 'end-file',
+      reason: 'error',
+      error: 'Failed to open stream'
+    }));
+
+    expect(trackEnd).toHaveBeenCalledWith(expect.objectContaining({
+      track: expect.objectContaining({ id: 'failed-track' }),
+      reason: 'error',
+      error: 'Failed to open stream'
+    }));
+  });
+
+  test('ignores an unrequested MPV stop event so it cannot advance the queue', () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const trackEnd = jest.fn();
+    engine.on('track-end', trackEnd);
+    engine.nowPlaying = { id: 'active-track', title: 'Active Track' };
+    engine.state = 'playing';
+
+    engine._handleMessage(JSON.stringify({ event: 'end-file', reason: 'stop', playlist_entry_id: 42 }));
+
+    expect(trackEnd).not.toHaveBeenCalled();
+    expect(engine.getNowPlaying()).toEqual({ id: 'active-track', title: 'Active Track' });
+    expect(engine.getState()).toBe('playing');
+  });
+
+  test('serializes MPV volume commands during a fade', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    let inFlight = 0;
+    let maxInFlight = 0;
+    engine._sendCommand = jest.fn(async () => {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 75));
+      inFlight -= 1;
+    });
+
+    await engine._fadeVolume(50, 0, 150, false);
+
+    expect(maxInFlight).toBe(1);
+  });
+
   test('waits for MPV acknowledgement before considering a command applied', async () => {
     const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
     engine.socket = {
@@ -318,6 +368,59 @@ describe('Music Bot core features', () => {
 
     expect(result.song.title).toBe('Matching radio title');
     expect(resolver.resolvePlaylistEntry).toHaveBeenCalledWith(radioUrl, 2);
+  });
+
+  test('uses the currently playing YouTube title as the random Auto-DJ seed', async () => {
+    const resolver = {
+      resolvePlaylistEntry: jest.fn(async () => ({
+        success: true,
+        song: { title: 'Related title', youtubeId: 'related-video' }
+      }))
+    };
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'random' }, resolver, createDbMock(), { log: jest.fn() });
+
+    autoDJ.setPlaybackSeed({ title: 'Active title', youtubeId: 'active-video' });
+    const result = await autoDJ.getNextSong();
+
+    expect(result.song.title).toBe('Related title');
+    expect(resolver.resolvePlaylistEntry).toHaveBeenCalledWith(
+      'https://www.youtube.com/watch?v=active-video&list=RDactive-video',
+      2
+    );
+  });
+
+  test('starts random Auto-DJ from the newest YouTube history title without an active seed', async () => {
+    const historySeed = {
+      youtubeId: 'history-seed',
+      title: 'History seed',
+      artist: 'History artist',
+      url: 'https://www.youtube.com/watch?v=history-seed',
+      duration: 180,
+      source: 'youtube',
+      thumbnail: 'https://example.test/seed.jpg'
+    };
+    const db = {
+      prepare: jest.fn(() => ({
+        get: jest.fn(() => historySeed),
+        all: jest.fn(() => [])
+      }))
+    };
+    const resolver = {
+      resolvePlaylistEntry: jest.fn(async () => ({
+        success: true,
+        song: { title: 'Related title', youtubeId: 'related-video' }
+      }))
+    };
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'random' }, resolver, db, { log: jest.fn() });
+
+    const result = await autoDJ.getNextSong(true);
+
+    expect(result.song.title).toBe('Related title');
+    expect(autoDJ.getStatus().lastPlaylistTrack.title).toBe('History seed');
+    expect(resolver.resolvePlaylistEntry).toHaveBeenCalledWith(
+      'https://www.youtube.com/watch?v=history-seed&list=RDhistory-seed',
+      2
+    );
   });
 
   test('skips recently played titles when choosing playlist-radio suggestions', async () => {

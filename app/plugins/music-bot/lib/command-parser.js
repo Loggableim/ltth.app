@@ -47,16 +47,26 @@ class CommandParser {
   }
 
   _resolveCommand(key) {
+    const normalizedKey = this._normalizeCommandKey(key);
     const entries = Object.entries(this.config.commands);
     for (const [type, value] of entries) {
-      if (value === key) return type;
+      if (this._normalizeCommandKey(value) === normalizedKey) return type;
     }
 
     for (const [type, value] of entries) {
       const aliases = this.config.commandAliases?.[type] || [];
-      if (aliases.includes(key)) return type;
+      if (aliases.some((alias) => this._normalizeCommandKey(alias) === normalizedKey)) return type;
     }
     return null;
+  }
+
+  _normalizeCommandKey(value) {
+    const key = String(value || '').trim().toLowerCase();
+    const prefix = String(this.config.commandPrefix || '').trim();
+    if (prefix && key.startsWith(prefix.toLowerCase())) {
+      return key.slice(prefix.length).trim();
+    }
+    return key;
   }
 
   _buildCommandPayload(type, args, requiredPermission) {

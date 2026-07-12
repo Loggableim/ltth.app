@@ -166,6 +166,7 @@
   let progressCurrentPos = 0;
   let progressDuration = 0;
   let draggedQueueIndex = null;
+  let draggedQueueSongId = null;
   let giftCatalogTargetField = null;
   let giftCatalogEntries = [];
   let giftCatalogFilter = '';
@@ -1231,7 +1232,10 @@
           : '<span class="queue-thumb-placeholder">🎵</span>';
         const dur = item.duration ? ` • ${formatDuration(item.duration)}` : '';
         const giftBadge = item.isGiftRequest ? ' <span class="gift-badge">🎁</span>' : '';
-        return `<div class="item queue-item" draggable="true" data-queue-index="${idx}">
+        const songId = escapeHtml(item.id || '');
+        const previousSongId = escapeHtml(queue[idx - 1]?.id || '');
+        const nextSongId = escapeHtml(queue[idx + 1]?.id || '');
+        return `<div class="item queue-item" draggable="true" data-queue-index="${idx}" data-song-id="${songId}">
           <span class="queue-pos">#${idx + 1}</span>
           ${thumb}
           <div class="queue-info">
@@ -1239,9 +1243,9 @@
             <span class="queue-meta">${escapeHtml(item.requestedBy || 'Viewer')}${dur}</span>
           </div>
           <div class="queue-actions">
-            <button class="btn primary small" data-queue-action="play" data-idx="${idx}" title="Jetzt spielen">▶</button>
-            <button class="btn ghost small" data-queue-action="move-up" data-idx="${idx}" title="Nach oben" ${idx === 0 ? 'disabled' : ''}>↑</button>
-            <button class="btn ghost small" data-queue-action="move-down" data-idx="${idx}" title="Nach unten" ${idx === queue.length - 1 ? 'disabled' : ''}>↓</button>
+            <button class="btn primary small" data-queue-action="play" data-idx="${idx}" data-song-id="${songId}" title="Jetzt spielen">▶</button>
+            <button class="btn ghost small" data-queue-action="move-up" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${previousSongId}" title="Nach oben" ${idx === 0 ? 'disabled' : ''}>↑</button>
+            <button class="btn ghost small" data-queue-action="move-down" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${nextSongId}" title="Nach unten" ${idx === queue.length - 1 ? 'disabled' : ''}>↓</button>
             <button class="btn danger small" data-queue-action="remove" data-idx="${idx}" title="Entfernen">✕</button>
           </div>
         </div>`;
@@ -1261,12 +1265,17 @@
     const item = event.target.closest('.queue-item');
     const action = btn?.dataset.queueAction || (item ? 'play' : null);
     const idx = Number(btn?.dataset.idx ?? item?.dataset.queueIndex);
+    const songId = btn?.dataset.songId || item?.dataset.songId;
     if (!action || btn?.disabled || !Number.isFinite(idx)) return;
     if (action === 'play') {
-      const result = await post(`/queue/${idx}/play`);
+      const result = await post(`/queue/${idx}/play`, { songId });
       if (result?.success && result.track) {
         renderNowPlaying(result.track);
-        showToast('success', 'Queue', `Spielt jetzt: ${result.track.title || 'Ausgewählter Titel'}`);
+        if (result.alreadyPlaying) {
+          showToast('info', 'Queue', `Läuft bereits: ${result.track.title || 'Ausgewählter Titel'}`);
+        } else {
+          showToast('success', 'Queue', `Spielt jetzt: ${result.track.title || 'Ausgewählter Titel'}`);
+        }
       } else if (!result?.success) {
         showToast('warn', 'Queue', result?.error || 'Titel konnte nicht gestartet werden.');
       }
@@ -1275,11 +1284,18 @@
     }
     if (action === 'move-up' || action === 'move-down') {
       const toIndex = action === 'move-up' ? idx - 1 : idx + 1;
-      const result = await post('/queue/reorder', { fromIndex: idx, toIndex });
+      const result = await post('/queue/reorder', {
+        fromIndex: idx,
+        toIndex,
+        sourceSongId: songId,
+        targetSongId: btn.dataset.targetSongId
+      });
       if (result?.success) {
         showToast('success', 'Queue', 'Reihenfolge aktualisiert.');
-        await renderQueueFromServer();
+      } else {
+        showToast('warn', 'Queue', result?.error || 'Queue wurde aktualisiert. Bitte versuche es erneut.');
       }
+      await renderQueueFromServer();
       return;
     }
     if (action === 'remove') {
@@ -1293,6 +1309,7 @@
     const item = event.target.closest('.queue-item');
     if (!item) return;
     draggedQueueIndex = Number(item.dataset.queueIndex);
+    draggedQueueSongId = item.dataset.songId || null;
     item.classList.add('dragging');
   });
 
@@ -1301,6 +1318,7 @@
     if (item) item.classList.remove('dragging');
     queueListEl.querySelectorAll('.queue-item.drop-target').forEach((el) => el.classList.remove('drop-target'));
     draggedQueueIndex = null;
+    draggedQueueSongId = null;
   });
 
   queueListEl?.addEventListener('dragover', (event) => {
@@ -1318,9 +1336,18 @@
     const toIndex = Number(item.dataset.queueIndex);
     item.classList.remove('drop-target');
     if (!Number.isFinite(toIndex) || toIndex === draggedQueueIndex) return;
-    await post('/queue/reorder', { fromIndex: draggedQueueIndex, toIndex });
+    const result = await post('/queue/reorder', {
+      fromIndex: draggedQueueIndex,
+      toIndex,
+      sourceSongId: draggedQueueSongId,
+      targetSongId: item.dataset.songId
+    });
     await renderQueueFromServer();
-    showToast('success', 'Queue', `Track #${draggedQueueIndex + 1} wurde an Position #${toIndex + 1} verschoben.`);
+    if (result?.success) {
+      showToast('success', 'Queue', `Track #${draggedQueueIndex + 1} wurde an Position #${toIndex + 1} verschoben.`);
+    } else {
+      showToast('warn', 'Queue', result?.error || 'Queue wurde aktualisiert. Bitte versuche es erneut.');
+    }
   });
 
   function startProgressTimer() {

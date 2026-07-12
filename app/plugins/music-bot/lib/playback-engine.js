@@ -32,6 +32,7 @@ class PlaybackEngine extends EventEmitter {
     this._pendingCommands = new Map();
     this._nextCommandId = 1;
     this._skipInProgress = false;
+    this._volumeCommandQueue = Promise.resolve();
   }
 
   async play(track) {
@@ -69,7 +70,7 @@ class PlaybackEngine extends EventEmitter {
       try {
         await this._fadeVolume(currentVolume, 0, halfFadeMs, true);
         await this._sendCommand(['loadfile', playbackUrl, 'replace']);
-        await this._sendCommand(['set_property', 'volume', 0], { waitForResponse: true });
+        await this._setMpvVolume(0);
 
         this.nowPlaying = newTrackPayload;
         this.state = 'playing';
@@ -126,7 +127,7 @@ class PlaybackEngine extends EventEmitter {
     const effectiveVolume = this._getEffectiveVolume();
     this.volume = effectiveVolume;
     if (!this.process) return;
-    await this._sendCommand(['set_property', 'volume', effectiveVolume], { waitForResponse: true });
+    await this._setMpvVolume(effectiveVolume);
     this.emit('volume-changed', effectiveVolume);
   }
 
@@ -377,6 +378,13 @@ class PlaybackEngine extends EventEmitter {
     this._pendingCommands.clear();
   }
 
+  _setMpvVolume(volume) {
+    const send = () => this._sendCommand(['set_property', 'volume', volume], { waitForResponse: true });
+    const result = this._volumeCommandQueue.then(send, send);
+    this._volumeCommandQueue = result.catch(() => {});
+    return result;
+  }
+
   _clampVolume(volume) {
     const num = Number(volume);
     if (!Number.isFinite(num)) {
@@ -432,7 +440,7 @@ class PlaybackEngine extends EventEmitter {
     const duration = Math.max(durationMs, 0);
     if (duration === 0 || from === to) {
       this.volume = to;
-      await this._sendCommand(['set_property', 'volume', to], { waitForResponse: true });
+      await this._setMpvVolume(to);
       if (emitVolumeEvent) {
         this.emit('volume-changed', to);
       }
@@ -445,7 +453,7 @@ class PlaybackEngine extends EventEmitter {
     let currentStep = 0;
     let currentVolume = from;
 
-    await this._sendCommand(['set_property', 'volume', from], { waitForResponse: true });
+    await this._setMpvVolume(from);
 
     await new Promise((resolve) => {
       this._fadeTimer = setInterval(async () => {
@@ -456,7 +464,7 @@ class PlaybackEngine extends EventEmitter {
             currentVolume = to;
           }
           this.volume = currentVolume;
-          await this._sendCommand(['set_property', 'volume', currentVolume], { waitForResponse: true });
+          await this._setMpvVolume(currentVolume);
           if (emitVolumeEvent) {
             this.emit('volume-changed', currentVolume);
           }
@@ -538,12 +546,24 @@ class PlaybackEngine extends EventEmitter {
         }
         const outgoingTrack = this._crossfadeOutgoingTrack;
         const endedTrack = outgoingTrack || this.nowPlaying;
-        const reason = outgoingTrack ? 'crossfade' : 'ended';
+        const mpvReason = String(msg.reason || 'unknown');
+        // `loadfile ... replace` emits a stop for the outgoing playlist entry.
+        // It is not a completed song and must not trigger another queue advance.
+        if (!outgoingTrack && mpvReason === 'stop') {
+          return;
+        }
+        const isPlaybackError = mpvReason === 'error';
+        const reason = outgoingTrack ? 'crossfade' : (isPlaybackError ? 'error' : 'ended');
         this._crossfadeOutgoingTrack = null;
         if (!outgoingTrack) {
           this.state = 'idle';
         }
-        this.emit('track-end', { track: endedTrack, reason });
+        const trackEnd = { track: endedTrack, reason };
+        if (isPlaybackError) {
+          trackEnd.mpvReason = mpvReason;
+          trackEnd.error = msg.error || msg.file_error || 'MPV could not play this stream';
+        }
+        this.emit('track-end', trackEnd);
         if (this.nowPlaying?.id === endedTrack?.id) {
           this.nowPlaying = null;
         }

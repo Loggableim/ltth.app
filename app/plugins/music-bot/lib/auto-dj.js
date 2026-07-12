@@ -112,6 +112,12 @@ class AutoDJ {
     this._setResult('playing', `Spielt: ${track?.title || 'Unbekannter Titel'}`);
   }
 
+  setPlaybackSeed(track) {
+    if (!track?.youtubeId) return false;
+    this.lastPlaylistTrack = { ...track };
+    return true;
+  }
+
   markPlaybackFailed(error) {
     this._setResult('error', `Wiedergabe fehlgeschlagen: ${error?.message || error || 'Unbekannter Fehler'}`);
   }
@@ -193,6 +199,9 @@ class AutoDJ {
   }
 
   async _pickRelatedToLastPlaylistTrack() {
+    if (!this.lastPlaylistTrack?.youtubeId) {
+      this._seedRandomModeFromHistory();
+    }
     const seed = this.lastPlaylistTrack;
     if (!seed?.youtubeId || !this.musicResolver.resolvePlaylistEntry) {
       this._setResult('no-playlist-context', 'Es fehlt ein zuletzt gespielter Playlist-Titel als Stilvorlage.');
@@ -226,6 +235,22 @@ class AutoDJ {
 
     this.relatedTrackIndices.set(radioUrl, playlistItem);
     return fallback;
+  }
+
+  _seedRandomModeFromHistory() {
+    try {
+      const seed = this.db.prepare(
+        `SELECT youtubeId, title, artist, url, duration, source, thumbnail
+         FROM plugin_music_bot_history
+         WHERE youtubeId IS NOT NULL AND TRIM(youtubeId) != '' AND COALESCE(skipped, 0) = 0
+         ORDER BY finishedAt DESC
+         LIMIT 1`
+      ).get();
+      return this.setPlaybackSeed(seed);
+    } catch (error) {
+      this.api.log?.(`[music-bot] AutoDJ history seed lookup failed: ${error.message}`, 'warn');
+      return false;
+    }
   }
 
   async _pickFromHistory() {

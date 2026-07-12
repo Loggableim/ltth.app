@@ -857,6 +857,7 @@ class MusicBotPlugin extends EventEmitter {
     this.playbackEngine.on('track-start', (track) => {
       this.queueManager.markPlaying(track);
       this.queueManager.resetVoteSkips();
+      this.autoDJ?.setPlaybackSeed?.(track);
       this._emitNowPlaying(track);
       this._mpvRestartAttempts = 0;
       this._startPlaybackSync();
@@ -867,6 +868,16 @@ class MusicBotPlugin extends EventEmitter {
     this.playbackEngine.on('track-end', (info) => {
       if (info.reason !== 'crossfade') {
         this._clearCrossfadeTimer();
+      }
+      if (info.reason === 'error') {
+        const detail = info.error || `MPV end-file reason: ${info.mpvReason || 'unknown'}`;
+        const message = `MPV konnte "${info.track?.title || 'den Titel'}" nicht abspielen: ${detail}`;
+        this.api.log(`[music-bot] ${message}`, 'error');
+        this.autoDJ?.markPlaybackFailed?.(new Error(message));
+        this._stopPlaybackSync();
+        this._emitError(message);
+        this._emitPlaybackStopped();
+        return;
       }
       this.queueManager.addToHistory(info.track, info.reason === 'skip');
       if (info.track?.requestedBy) {
@@ -1201,12 +1212,19 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/queue/reorder', async (req, res) => {
-      const { fromIndex, toIndex } = req.body || {};
+      const { fromIndex, toIndex, sourceSongId, targetSongId } = req.body || {};
       if (typeof fromIndex !== 'number' || typeof toIndex !== 'number') {
         res.status(400).json({ success: false, error: 'fromIndex and toIndex are required' });
         return;
       }
-      const result = this.queueManager.reorderSong(fromIndex, toIndex);
+      const queue = this.queueManager.getQueue();
+      const currentFromIndex = typeof sourceSongId === 'string'
+        ? queue.findIndex((song) => song.id === sourceSongId)
+        : fromIndex;
+      const currentToIndex = typeof targetSongId === 'string'
+        ? queue.findIndex((song) => song.id === targetSongId)
+        : toIndex;
+      const result = this.queueManager.reorderSong(currentFromIndex, currentToIndex);
       if (result.success) {
         this._emitQueue();
       }
@@ -1220,13 +1238,30 @@ class MusicBotPlugin extends EventEmitter {
         return;
       }
 
-      const moved = this.queueManager.reorderSong(index, 0);
+      const songId = typeof req.body?.songId === 'string' ? req.body.songId.trim() : '';
+      const queue = this.queueManager.getQueue();
+      const current = this.playbackEngine.getNowPlaying();
+      const currentIndex = songId
+        ? queue.findIndex((song) => song.id === songId)
+        : index;
+      if (songId && currentIndex === -1) {
+        if (current?.id === songId) {
+          res.json({ success: true, track: current, alreadyPlaying: true });
+          return;
+        }
+        res.status(409).json({
+          success: false,
+          staleQueue: true,
+          error: 'Der ausgewählte Titel ist nicht mehr in der Queue.'
+        });
+        return;
+      }
+      const moved = this.queueManager.reorderSong(currentIndex, 0);
       if (!moved.success) {
         res.status(400).json(moved);
         return;
       }
 
-      const current = this.playbackEngine.getNowPlaying();
       const result = current
         ? await this._skipCurrent('queue-play')
         : await this._playNextFromQueue();
