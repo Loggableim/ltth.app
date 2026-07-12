@@ -56,6 +56,29 @@ const PROFILES = {
   system: ['api-bridge', 'config-import', 'data-source', 'gcce', 'gift-catalog', 'milestone-leaderboard', 'sidekick', 'store-admin']
 };
 
+const CATEGORY_LABELS = {
+  core: { de: 'Kern', en: 'Core', es: 'Núcleo', fr: 'Cœur' },
+  plugin: { de: 'Plugin', en: 'Plugin', es: 'Plugin', fr: 'Plugin' },
+  overlay: { de: 'Overlay', en: 'Overlay', es: 'Overlay', fr: 'Overlay' },
+  module: { de: 'Modul', en: 'Module', es: 'Módulo', fr: 'Module' },
+  tool: { de: 'Werkzeug', en: 'Tool', es: 'Herramienta', fr: 'Outil' },
+  utility: { de: 'Werkzeug', en: 'Utility', es: 'Herramienta', fr: 'Utilitaire' },
+  entertainment: { de: 'Unterhaltung', en: 'Entertainment', es: 'Entretenimiento', fr: 'Divertissement' },
+  integration: { de: 'Integration', en: 'Integration', es: 'Integración', fr: 'Intégration' }
+};
+
+const ACCESS_LABELS = {
+  'early-version': { de: 'Frühe Version', en: 'Early version', es: 'Versión preliminar', fr: 'Version préliminaire' },
+  'working-beta': { de: 'Funktionsfähige Beta', en: 'Working beta', es: 'Beta funcional', fr: 'Bêta fonctionnelle' },
+  'development-beta': { de: 'Entwicklungs-Beta', en: 'Development beta', es: 'Beta de desarrollo', fr: 'Bêta de développement' },
+  'local plugin': { de: 'Lokales Plugin', en: 'Local plugin', es: 'Plugin local', fr: 'Plugin local' },
+  stable: { de: 'Stabil', en: 'Stable', es: 'Estable', fr: 'Stable' },
+  'admin-only': { de: 'Nur für Administrierende', en: 'Admin only', es: 'Solo administradores', fr: 'Administrateurs uniquement' }
+};
+
+function localizedCategory(category, locale) { return CATEGORY_LABELS[category]?.[locale] || category; }
+function localizedAccess(access, locale) { return ACCESS_LABELS[access]?.[locale] || access; }
+
 function profileFor(id) {
   return Object.entries(PROFILES).find(([, ids]) => ids.includes(id))?.[0] || 'system';
 }
@@ -128,6 +151,11 @@ function localized(profile, name, category, access) {
   };
 }
 
+function localizeRequirements(copy, access) {
+  for (const locale of LOCALES) copy[locale].requirements = copy[locale].requirements.replace(access, localizedAccess(access, locale));
+  return copy;
+}
+
 function buildCatalog(repoRoot) {
   const store = readStore(repoRoot);
   const manifests = readManifests(repoRoot);
@@ -146,16 +174,16 @@ function buildCatalog(repoRoot) {
       profile,
       storeAvailable: Boolean(storeItem),
       routes: ROUTES[manifest.id] || Array(4).fill('/dashboard.html?view=plugins'),
-      localized: localized(profile, name, storeItem?.category || manifest.category || 'plugin', access),
+      localized: localizeRequirements(localized(profile, name, storeItem?.category || manifest.category || 'plugin', access), access),
       steps
     };
   });
   const admin = store.get('store-admin');
   tutorials.push({
     id: 'store-admin', name: displayName(admin?.name, 'Store Admin'), category: admin?.category || 'utility', access: admin?.accessType || 'admin-only', devStatus: 'admin-only', profile: 'system', storeAvailable: true,
-    routes: ROUTES['store-admin'], localized: localized('system', displayName(admin?.name, 'Store Admin'), admin?.category || 'utility', admin?.accessType || 'admin-only'), steps: tutorialSteps('system', displayName(admin?.name, 'Store Admin'))
+    routes: ROUTES['store-admin'], localized: localizeRequirements(localized('system', displayName(admin?.name, 'Store Admin'), admin?.category || 'utility', admin?.accessType || 'admin-only'), admin?.accessType || 'admin-only'), steps: tutorialSteps('system', displayName(admin?.name, 'Store Admin'))
   });
   return tutorials.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-module.exports = { LOCALES, buildCatalog };
+module.exports = { LOCALES, buildCatalog, localizedAccess, localizedCategory };

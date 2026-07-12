@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { LOCALES, buildCatalog } = require('./plugin-tutorial-catalog');
+const { LOCALES, buildCatalog, localizedAccess, localizedCategory } = require('./plugin-tutorial-catalog');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'docs', 'plugins');
@@ -36,7 +36,7 @@ function buildLocales(catalog) {
     put(values, key(tutorial.id, 'summary'), Object.fromEntries(LOCALES.map((locale) => [locale, local[locale].summary])));
     put(values, key(tutorial.id, 'requirements'), Object.fromEntries(LOCALES.map((locale) => [locale, local[locale].requirements])));
     put(values, key(tutorial.id, 'troubleshooting'), Object.fromEntries(LOCALES.map((locale) => [locale, local[locale].trouble])));
-    put(values, key(tutorial.id, 'status'), Object.fromEntries(LOCALES.map((locale) => [locale, `${tutorial.category} · ${tutorial.access}`])));
+    put(values, key(tutorial.id, 'status'), Object.fromEntries(LOCALES.map((locale) => [locale, `${localizedCategory(tutorial.category, locale)} · ${localizedAccess(tutorial.access, locale)}`])));
     for (const [index, [stepId, copy]] of Object.entries(Object.entries(tutorial.steps))) {
       const ordinal = Number(index) + 1;
       put(values, key(tutorial.id, `steps.${stepId}.title`), Object.fromEntries(LOCALES.map((locale) => [locale, copy[locale][stepId][0]])));

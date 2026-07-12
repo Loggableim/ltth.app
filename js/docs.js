@@ -3,10 +3,16 @@
 
   const indexUrl = '/docs/plugins/index.json';
   const categoryLabels = {
-    de: { core: 'Kern', plugin: 'Plugins', overlay: 'Overlays', integration: 'Integrationen', utility: 'Werkzeuge', entertainment: 'Unterhaltung', module: 'Module', tool: 'Tools', system: 'System' },
+    de: { core: 'Kern', plugin: 'Plugins', overlay: 'Overlays', integration: 'Integrationen', utility: 'Werkzeuge', entertainment: 'Unterhaltung', module: 'Module', tool: 'Werkzeuge', system: 'System' },
     en: { core: 'Core', plugin: 'Plugins', overlay: 'Overlays', integration: 'Integrations', utility: 'Utilities', entertainment: 'Entertainment', module: 'Modules', tool: 'Tools', system: 'System' },
     es: { core: 'Núcleo', plugin: 'Plugins', overlay: 'Overlays', integration: 'Integraciones', utility: 'Utilidades', entertainment: 'Entretenimiento', module: 'Módulos', tool: 'Herramientas', system: 'Sistema' },
     fr: { core: 'Cœur', plugin: 'Plugins', overlay: 'Overlays', integration: 'Intégrations', utility: 'Utilitaires', entertainment: 'Divertissement', module: 'Modules', tool: 'Outils', system: 'Système' }
+  };
+  const accessLabels = {
+    de: { 'early-version': 'Frühe Version', 'working-beta': 'Funktionsfähige Beta', 'development-beta': 'Entwicklungs-Beta', 'local plugin': 'Lokales Plugin', stable: 'Stabil', 'admin-only': 'Nur für Administrierende' },
+    en: { 'early-version': 'Early version', 'working-beta': 'Working beta', 'development-beta': 'Development beta', 'local plugin': 'Local plugin', stable: 'Stable', 'admin-only': 'Admin only' },
+    es: { 'early-version': 'Versión preliminar', 'working-beta': 'Beta funcional', 'development-beta': 'Beta de desarrollo', 'local plugin': 'Plugin local', stable: 'Estable', 'admin-only': 'Solo administradores' },
+    fr: { 'early-version': 'Version préliminaire', 'working-beta': 'Bêta fonctionnelle', 'development-beta': 'Bêta de développement', 'local plugin': 'Plugin local', stable: 'Stable', 'admin-only': 'Administrateurs uniquement' }
   };
 
   function locale() {
@@ -25,7 +31,9 @@
     const normalized = query.trim().toLocaleLowerCase(lang);
     const visible = catalog.filter((plugin) => {
       const copy = plugin.translations[lang] || plugin.translations.de;
-      return (!activeCategory || plugin.category === activeCategory) && `${plugin.name} ${copy.title} ${copy.summary} ${plugin.category} ${plugin.access}`.toLocaleLowerCase(lang).includes(normalized);
+      const category = (categoryLabels[lang] || categoryLabels.en)[plugin.category] || plugin.category;
+      const access = (accessLabels[lang] || accessLabels.en)[plugin.access] || plugin.access;
+      return (!activeCategory || plugin.category === activeCategory) && `${plugin.name} ${copy.title} ${copy.summary} ${category} ${access}`.toLocaleLowerCase(lang).includes(normalized);
     });
     grid.replaceChildren(...visible.map((plugin) => {
       const copy = plugin.translations[lang] || plugin.translations.de;
@@ -42,7 +50,7 @@
       const figure = document.createElement('figure'); figure.append(image);
       const heading = document.createElement('h2'); heading.textContent = copy.title;
       const summary = document.createElement('p'); summary.textContent = copy.summary;
-      const meta = document.createElement('p'); meta.className = 'docs-plugin-card__meta'; meta.textContent = `${(categoryLabels[lang] || categoryLabels.en)[plugin.category] || plugin.category} · ${plugin.access}`;
+      const meta = document.createElement('p'); meta.className = 'docs-plugin-card__meta'; meta.textContent = `${(categoryLabels[lang] || categoryLabels.en)[plugin.category] || plugin.category} · ${(accessLabels[lang] || accessLabels.en)[plugin.access] || plugin.access}`;
       const link = document.createElement('a'); link.className = 'btn btn-primary'; link.href = `/docs/plugins/${plugin.id}.html?lang=${lang}`; link.textContent = text('docs.hub.open', 'Open tutorial');
       card.append(figure, heading, summary, meta, link);
       return card;
