@@ -857,7 +857,7 @@
   "faq.p.102": "Auf jeder Feature-Seite gibt es einen Praxisleitfaden mit Voraussetzungen, Einrichtung, Konfiguration, Test und Troubleshooting. Die Übersicht ist unter <a href=\"/features/\" style=\"color: var(--color-primary); text-decoration: underline;\">/features/</a> verfügbar.",
   "faq.h3.103": "Wie melde ich Support-Probleme?",
   "faq.p.104": "Für LTTH-Support poste bitte im PupCid-Bereich des Multistreamer-Discords oder eröffne ein Ticket. Für reproduzierbare Bugs kannst du zusätzlich ein GitHub-Issue mit sicheren Logs und klaren Schritten erstellen.",
-  "support.a.1": "Skip to main content",
+  "support.a.1": "Zum Inhalt springen",
   "support.hero.title": "Get ",
   "support.span.3": "Support",
   "support.hero.description": "Brauchst du Hilfe? Wir sind für dich da.",

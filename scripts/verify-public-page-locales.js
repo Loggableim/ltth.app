@@ -18,10 +18,10 @@ const pages = {
 };
 const errors = [];
 const expectedValues = {
-  de: { 'thank-you.a.1': 'Zum Inhalt springen', 'support-the-developement.a.1': 'Zum Inhalt springen' },
-  en: { 'thank-you.a.1': 'Skip to main content', 'support-the-developement.a.1': 'Skip to main content' },
-  es: { 'thank-you.a.1': 'Ir al contenido principal', 'support-the-developement.a.1': 'Ir al contenido principal' },
-  fr: { 'thank-you.a.1': 'Aller au contenu principal', 'support-the-developement.a.1': 'Aller au contenu principal' }
+  de: { 'thank-you.a.1': 'Zum Inhalt springen', 'support-the-developement.a.1': 'Zum Inhalt springen', 'support.a.1': 'Zum Inhalt springen' },
+  en: { 'thank-you.a.1': 'Skip to main content', 'support-the-developement.a.1': 'Skip to main content', 'support.a.1': 'Skip to main content' },
+  es: { 'thank-you.a.1': 'Ir al contenido principal', 'support-the-developement.a.1': 'Ir al contenido principal', 'support.a.1': 'Ir al contenido principal' },
+  fr: { 'thank-you.a.1': 'Aller au contenu principal', 'support-the-developement.a.1': 'Aller au contenu principal', 'support.a.1': 'Aller au contenu principal' }
 };
 for (const [locale, expectations] of Object.entries(expectedValues)) {
   const values = locale === 'de' ? de : JSON.parse(fs.readFileSync(path.join(ROOT, 'locales', `${locale}.json`), 'utf8'));

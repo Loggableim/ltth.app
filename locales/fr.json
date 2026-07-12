@@ -860,7 +860,7 @@
   "faq.p.102": "Chaque page de fonctionnalité propose désormais un guide pratique avec les prérequis, la configuration, les tests et le dépannage. L’aperçu est disponible sur <a href=\"/features/\" style=\"color: var(--color-primary); text-decoration: underline;\">/features/</a>.",
   "faq.h3.103": "Comment signaler un problème d’assistance ?",
   "faq.p.104": "Pour l’assistance LTTH, publiez dans la section PupCid du Discord Multistreamer ou ouvrez un ticket. Pour les bugs reproductibles, vous pouvez aussi créer une issue GitHub avec des journaux sûrs et des étapes claires.",
-  "support.a.1": "Skip to main content",
+  "support.a.1": "Aller au contenu principal",
   "support.hero.title": "Obtenir ",
   "support.span.3": "Support",
   "support.hero.description": "Besoin d'aide ? Nous sommes là pour vous aider.",

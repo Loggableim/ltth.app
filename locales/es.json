@@ -860,7 +860,7 @@
   "faq.p.102": "Cada página de funciones incluye ahora una guía práctica con requisitos, configuración, pruebas y solución de problemas. El resumen está disponible en <a href=\"/features/\" style=\"color: var(--color-primary); text-decoration: underline;\">/features/</a>.",
   "faq.h3.103": "¿Cómo informo de problemas de soporte?",
   "faq.p.104": "Para obtener soporte de LTTH, publica en la sección PupCid del Discord de Multistreamer o abre un ticket. Para errores reproducibles, también puedes crear una incidencia de GitHub con registros seguros y pasos claros.",
-  "support.a.1": "Skip to main content",
+  "support.a.1": "Ir al contenido principal",
   "support.hero.title": "Obtén ",
   "support.span.3": "Support",
   "support.hero.description": "¿Necesitas ayuda? Estamos aquí para ayudarte.",
