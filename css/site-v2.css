@@ -475,16 +475,6 @@ body.site-v2 code {
   }
 }
 
-@media (min-width: 769px) and (max-width: 1380px) {
-  body.site-v2 .nav-menu > .nav-link[data-page="changelog"],
-  body.site-v2 .nav-menu > .nav-link[data-page="community"],
-  body.site-v2 .nav-menu > .nav-link[data-page="faq"],
-  body.site-v2 .nav-menu > .nav-link[data-page="support"],
-  body.site-v2 .nav-menu > .nav-link[data-page="auth"] {
-    display: none;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   body.site-v2 *,
   body.site-v2 *::before,

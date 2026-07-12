@@ -22,6 +22,9 @@ if (!/@media \(max-width: 768px\)[\s\S]*?body\.site-v2 \.nav-menu \.nav-link[^}]
 if (!/@media \(max-width: 768px\)[\s\S]*?body\.site-v2 \.nav-menu \.lang-dropdown-toggle[^}]*color:\s*#fff\s*!important/i.test(css)) {
   errors.push('Mobile site-v2 language control must use white text on the dark drawer.');
 }
+if (/\.nav-menu > \.nav-link\[data-page="(?:changelog|community|faq|support|auth)"\][\s\S]*?display:\s*none/.test(css)) {
+  errors.push('Tablet navigation must not hide primary destinations without a replacement control.');
+}
 
 if (errors.length) {
   console.error(errors.join('\n'));

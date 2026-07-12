@@ -677,11 +677,3 @@
 .features-hub .catalog-hero__panel > * { position: relative; z-index: 1; }
 .features-hub .beta-notice { background: #eff9f0; border-bottom: 1px solid #cfe7d2; color: #1d4425; }
 .features-hub .beta-notice a { color: #0d7a10 !important; }
-
-@media (min-width: 769px) and (max-width: 1380px) {
-  .features-hub .nav-menu > .nav-link[data-page="changelog"],
-  .features-hub .nav-menu > .nav-link[data-page="community"],
-  .features-hub .nav-menu > .nav-link[data-page="faq"],
-  .features-hub .nav-menu > .nav-link[data-page="support"],
-  .features-hub .nav-menu > .nav-link[data-page="auth"] { display: none; }
-}
