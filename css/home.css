@@ -476,3 +476,11 @@
 @media (prefers-reduced-motion: reduce) {
   .home-rotator-card, .home-rotator-control, .home-rotator-dots button { transition: none; }
 }
+
+@media (max-width: 767px) {
+  .home-hero { padding-top: 2.5rem; }
+  .home-hero h1 { font-size: clamp(2.75rem, 14vw, 3.75rem); }
+  .home-showcase-art { box-shadow: 4px 4px 0 var(--home-pink), 8px 8px 0 var(--home-cyan); }
+  .home-platform-list { gap: 0.4rem; }
+  .home-final-cta__inner { gap: 1.25rem; }
+}

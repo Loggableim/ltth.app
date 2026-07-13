@@ -270,7 +270,9 @@
       "or": " or ",
       "suggestFeatures": "Suggest Features",
       "viewRoadmap": "View Roadmap →",
-      "close": "Close beta notice"
+      "close": "Close beta notice",
+      "compact": "Version 1.3.27 - Updates & feedback",
+      "toggle": "Show or hide version update and feedback"
     }
   },
   "nav": {
@@ -278,6 +280,7 @@
     "home": "Home",
     "features": "Features",
     "featuresHref": "/features-en.html",
+    "featuresMenu": "Open or close Features menu",
     "mega": {
       "ai": "🧠 AI & Intelligence",
       "animazingpal": "AnimazingPal",

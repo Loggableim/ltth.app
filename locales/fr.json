@@ -270,7 +270,9 @@
       "or": " ou ",
       "suggestFeatures": "Suggérer des Fonctionnalités",
       "viewRoadmap": "Voir la Feuille de Route →",
-      "close": "Fermer l'avis beta"
+      "close": "Fermer l'avis beta",
+      "compact": "Version 1.3.27 - nouveautés et retours",
+      "toggle": "Afficher ou masquer la mise à jour et les retours"
     }
   },
   "nav": {
@@ -278,6 +280,7 @@
     "home": "Accueil",
     "features": "Fonctionnalités",
     "featuresHref": "/features-fr.html",
+    "featuresMenu": "Ouvrir ou fermer le menu des fonctionnalités",
     "mega": {
       "ai": "🧠 IA & Intelligence",
       "animazingpal": "AnimazingPal",
