@@ -13,7 +13,10 @@
     bridgeToken: '',
     account: null,
     storeMode: 'store',
-    listeners: []
+    listeners: [],
+    autoRestoreAttempted: false,
+    signedOutExplicitly: false,
+    navigate: null
   };
 
   function emitChange() {
@@ -86,6 +89,14 @@
     const shouldShow = visible && state.storeMode !== 'installed';
     root.style.display = shouldShow ? 'flex' : 'none';
     root.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+  }
+
+  function navigate(url) {
+    if (typeof state.navigate === 'function') {
+      return state.navigate(url);
+    }
+
+    return window.location.assign(url);
   }
 
   function setStoreMode(mode) {
@@ -344,7 +355,11 @@
     }
   }
 
-  function beginBridgeAuth(mode = 'sign-up') {
+  function beginBridgeAuth(mode = 'sign-up', options = {}) {
+    if (!options.automatic) {
+      state.signedOutExplicitly = false;
+    }
+
     const bridgeState = createBridgeState();
     const callbackUrl = getCallbackUrl();
     const nextUrl = window.location.href;
@@ -358,10 +373,11 @@
     bridgeUrl.searchParams.set('return_to', callbackUrl);
     bridgeUrl.searchParams.set('next', nextUrl);
 
-    window.location.href = bridgeUrl.toString();
+    return navigate(bridgeUrl.toString());
   }
 
   async function clearBridgeSession(shouldRender = true) {
+    state.signedOutExplicitly = true;
     clearStoredBridgeToken();
     state.bridgeToken = '';
     state.account = null;
@@ -417,6 +433,11 @@
     if (state.config && !state.config.clerkEnabled) {
       renderSetupRequired(state.config);
     } else {
+      if (!state.signedOutExplicitly && !state.autoRestoreAttempted) {
+        state.autoRestoreAttempted = true;
+        beginBridgeAuth('sign-in', { automatic: true });
+        return false;
+      }
       renderSignedOut();
     }
     return false;
@@ -467,9 +488,14 @@
     setSplashVisible(false);
   }
 
+  function configureForTest(options = {}) {
+    state.navigate = typeof options.navigate === 'function' ? options.navigate : null;
+  }
+
   const api = {
     beginBridgeAuth,
     clearBridgeSession,
+    configureForTest,
     config: state.config,
     get account() {
       return state.account;

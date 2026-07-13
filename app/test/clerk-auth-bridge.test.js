@@ -224,7 +224,85 @@ describe('Clerk auth bridge', () => {
     assert.strictEqual(accountUrl.pathname, '/auth/');
     assert.strictEqual(accountUrl.searchParams.get('redirect_url'), null);
   });
+
+  it('starts exactly one automatic bridge restoration when local restoration fails', async () => {
+    const { window, redirects } = createStoreAuthDom();
+    window.fetch = async (url) => {
+      if (url === '/api/plugin-store/config') {
+        return jsonResponse({
+          success: true,
+          clerkEnabled: true,
+          publishableKey: 'pk_test_public',
+          authBridgeUrl: 'https://ltth.app/auth/',
+          authCallbackPath: '/auth/clerk/callback.html'
+        });
+      }
+
+      return jsonResponse({ success: false, code: 'AUTH_REQUIRED' }, 401);
+    };
+
+    window.eval(readAppFile('public', 'js', 'clerk-store-auth.js'));
+    window.StoreAuth.configureForTest({
+      navigate: (url) => redirects.push(url)
+    });
+    await window.StoreAuth.init();
+    await window.StoreAuth.requireAuth();
+    await window.StoreAuth.requireAuth();
+
+    assert.strictEqual(redirects.length, 1);
+    const bridgeUrl = new URL(redirects[0]);
+    assert.strictEqual(bridgeUrl.origin, 'https://ltth.app');
+    assert.strictEqual(bridgeUrl.searchParams.get('mode'), 'sign-in');
+    assert.strictEqual(bridgeUrl.searchParams.get('return_to'), 'http://127.0.0.1:3000/auth/clerk/callback.html');
+  });
+
+  it('keeps manual sign-in available after explicit sign-out', async () => {
+    const { window, redirects } = createStoreAuthDom();
+    window.fetch = async (url, options = {}) => {
+      if (url === '/api/plugin-store/config') {
+        return jsonResponse({
+          success: true,
+          clerkEnabled: true,
+          publishableKey: 'pk_test_public',
+          authBridgeUrl: 'https://ltth.app/auth/'
+        });
+      }
+
+      if (url === '/api/plugin-store/account') {
+        return jsonResponse({
+          success: true,
+          account: { authenticated: true, userId: 'user_123', license: {}, access: {} }
+        });
+      }
+
+      if (url === '/api/plugin-store/session' && options.method === 'DELETE') {
+        return jsonResponse({ success: true });
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    };
+
+    window.eval(readAppFile('public', 'js', 'clerk-store-auth.js'));
+    window.StoreAuth.configureForTest({ navigate: (url) => redirects.push(url) });
+    await window.StoreAuth.init();
+    await window.StoreAuth.signOut();
+
+    assert.strictEqual(redirects.length, 0);
+    assert(window.document.querySelector('[data-store-auth-mode="sign-in"]'));
+  });
 });
+
+function createStoreAuthDom() {
+  const dom = new JSDOM(`<!doctype html>
+    <div id="plugin-store-auth-root"></div>
+    <div id="plugin-store-account-menu"></div>
+  `, {
+    url: 'http://127.0.0.1:3000/dashboard.html#plugins',
+    runScripts: 'outside-only'
+  });
+
+  return { window: dom.window, redirects: [] };
+}
 
 function readRootFile(...segments) {
   return fs.readFileSync(path.join(repoRoot, ...segments), 'utf8');
