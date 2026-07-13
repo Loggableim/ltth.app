@@ -2,37 +2,38 @@
   "visual_fx_frame_webgpu": {
     "plugin": {
       "name": "Visual FX Frame WEBGPU",
-      "description": "Native WebGPU effects with live triggers, presets and transparent OBS output."
+      "description": "Native WebGPU-Effekte mit Live-Triggern, Presets und transparentem OBS-Output."
     },
     "ui": {
       "title": "Visual FX Frame WEBGPU",
       "actions": {
-        "save": "Save",
-        "cancel": "Cancel",
-        "refresh": "Refresh",
-        "close": "Close",
-        "test": "Test",
-        "clear": "Clear"
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "refresh": "Aktualisieren",
+        "close": "Schließen",
+        "test": "Testen",
+        "clear": "Leeren"
       },
       "status": {
-        "ready": "Ready",
-        "loading": "Loading…",
-        "connected": "Connected",
-        "disconnected": "Disconnected",
-        "error": "Error"
+        "ready": "Bereit",
+        "loading": "Wird geladen …",
+        "connected": "Verbunden",
+        "disconnected": "Getrennt",
+        "error": "Fehler"
       },
       "messages": {
-        "saved": "Settings saved.",
-        "failed": "Could not save settings.",
-        "noData": "No data available.",
-        "confirm": "Are you sure?"
+        "saved": "Einstellungen gespeichert.",
+        "failed": "Einstellungen konnten nicht gespeichert werden.",
+        "noData": "Keine Daten verfügbar.",
+        "confirm": "Bist du sicher?"
       }
     },
     "webgpu": {
-      "visualStyle": "Visual style",
-      "runtime": "Runtime",
-      "adapter": "Graphics adapter",
-      "import": "Import Visual FX Frame"
+      "visualStyle": "Visueller Stil",
+      "runtime": "Laufzeit",
+      "adapter": "Grafikadapter",
+      "import": "Visual FX Frame importieren",
+      "variants": { "inferno": "Inferno-Schmiede", "neon": "Neon-Puls", "storm": "Sturmportal" }
     }
   },
   "generated": {

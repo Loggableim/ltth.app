@@ -18,6 +18,8 @@
   const EFFECT_IDS = Object.freeze({ flames: 0, particles: 1, energy: 2, lightning: 3 });
   const STYLE_IDS = Object.freeze({ realistic: 0, neon: 1, hybrid: 2 });
   const FRAME_MODE_IDS = Object.freeze({ bottom: 0, top: 1, sides: 2, all: 3 });
+  const FRAME_STYLE_IDS = Object.freeze({ classic: 0, organic: 1, double: 2, segmented: 3, portal: 4 });
+  const PULSE_PATTERN_IDS = Object.freeze({ breathe: 0, heartbeat: 1, ripple: 2 });
 
   class WebGPUVisualFxEngine {
     constructor(canvas, options = {}) {
@@ -27,17 +29,30 @@
         renderer: 'webgpu',
         effectType: 'flames',
         visualStyle: 'hybrid',
+        visualVariant: 'custom',
         qualityMode: 'obs-safe',
         frameMode: 'bottom',
+        frameStyle: 'classic',
         frameThickness: 150,
+        frameGap: 10,
+        segmentCount: 18,
         framePositions: [{ x: 0, y: 0, width: 100, height: 100 }],
         flameColor: '#ff6600',
+        secondaryColor: '#ffd36a',
         backgroundTint: '#000000',
         flameIntensity: 1.3,
         flameSpeed: 0.5,
         bloomIntensity: 0.78,
         bloomThreshold: 0.58,
         coreWhiteness: 0.66,
+        pulseEnabled: false,
+        pulsePattern: 'breathe',
+        pulseAmount: 0.16,
+        pulseSpeed: 1,
+        edgeFeather: 0.46,
+        frameCurve: 0.1,
+        frameNoiseAmount: 0.12,
+        flameBrightness: 0.38,
         ...options.config
       };
       this.adapter = null;
@@ -118,7 +133,7 @@
         simulateField: this._createBindGroup(this.pipelines.simulateField, [[0, this.buffers.uniforms], [1, this.buffers.field]]),
         updateParticles: this._createBindGroup(this.pipelines.updateParticles, [[0, this.buffers.uniforms], [2, this.buffers.particles]]),
         buildLightning: this._createBindGroup(this.pipelines.buildLightning, [[0, this.buffers.uniforms], [3, this.buffers.lightning]]),
-        scene: this._createBindGroup(this.pipelines.scene, [[0, this.buffers.uniforms], [1, this.buffers.field]]),
+        scene: this._createBindGroup(this.pipelines.scene, [[0, this.buffers.uniforms], [1, this.buffers.field], [3, this.buffers.lightning]]),
         particles: this._createBindGroup(this.pipelines.particles, [[0, this.buffers.uniforms], [2, this.buffers.particles]])
       };
       this.post = new dependencies.HDRPostProcessor(this.device, this.format, this.resources);
@@ -280,7 +295,8 @@
       const color = this._hex(this.config.flameColor, [1, 0.4, 0, 1]);
       const background = this._hex(this.config.backgroundTint, [0, 0, 0, 0]);
       const pulse = Math.min(2, this.activeTriggers.reduce((sum, trigger) => sum + (Number(trigger.intensityBoost ?? trigger.amount ?? trigger.intensity) || 0.25), 0));
-      const bytes = new ArrayBuffer(144);
+      const secondaryColor = this._hex(this.config.secondaryColor, [1, 0.83, 0.42, 1]);
+      const bytes = new ArrayBuffer(192);
       const view = new DataView(bytes);
       const f32 = (offset, value) => view.setFloat32(offset, Number(value) || 0, true);
       const u32 = (offset, value) => view.setUint32(offset, Math.max(0, Number(value) || 0), true);
@@ -298,6 +314,18 @@
       u32(112, state.maxParticles); u32(116, state.lightningBranches);
       u32(120, state.bloomLevels); u32(124, this.activeTriggers.length);
       f32(128, Math.max(0, Math.min(1, Number(this.config.coreWhiteness) || 0)));
+      f32(132, this.config.pulseEnabled ? Math.max(0, Math.min(1, Number(this.config.pulseAmount) || 0)) : 0);
+      f32(136, Math.max(0.1, Number(this.config.pulseSpeed) || 1));
+      f32(140, FRAME_STYLE_IDS[this.config.frameStyle] ?? 0);
+      secondaryColor.forEach((value, index) => f32(144 + index * 4, value));
+      f32(160, Math.max(0, Math.min(100, Number(this.config.frameGap) || 0)));
+      f32(164, Math.max(4, Math.min(64, Number(this.config.segmentCount) || 18)));
+      f32(168, Math.max(0, Math.min(1, Number(this.config.edgeFeather) || 0)));
+      f32(172, Math.max(0, Math.min(1, Number(this.config.frameNoiseAmount) || 0)));
+      f32(176, PULSE_PATTERN_IDS[this.config.pulsePattern] ?? 0);
+      f32(180, Math.max(0, Math.min(1, Number(this.config.frameCurve) || 0)));
+      f32(184, Math.max(0, Math.min(2, Number(this.config.flameBrightness) || 0)));
+      f32(188, 0);
       this.device.queue.writeBuffer(this.buffers.uniforms, 0, bytes);
     }
 

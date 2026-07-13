@@ -36,8 +36,10 @@ fn luminance(color: vec3f) -> f32 { return dot(color, vec3f(0.2126, 0.7152, 0.07
   let scene = textureSample(sourceTexture, sourceSampler, input.uv);
   let bloom = textureSample(bloomTexture, sourceSampler, input.uv);
   let premultiplied = vec4f(scene.rgb + bloom.rgb * post.intensity, max(scene.a, bloom.a));
-  let mapped = premultiplied.rgb / (premultiplied.rgb + vec3f(1.0));
-  return vec4f(mapped, premultiplied.a);
+  let safeAlpha = max(premultiplied.a, 0.00001);
+  let straightColor = premultiplied.rgb / safeAlpha;
+  let mapped = straightColor / (straightColor + vec3f(1.0));
+  return vec4f(mapped * premultiplied.a, premultiplied.a);
 }
 `;
 

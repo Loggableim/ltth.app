@@ -1,7 +1,7 @@
 const {
   AdaptiveQualityController,
   QUALITY_PROFILES
-} = require('../plugins/visual-fx-frame-webgpu/renderer/adaptive-quality');
+} = require('../../plugin-store/sources/visual-fx-frame-webgpu/renderer/adaptive-quality');
 
 describe('Visual FX Frame WEBGPU adaptive quality', () => {
   test('exposes the approved profile budgets', () => {
