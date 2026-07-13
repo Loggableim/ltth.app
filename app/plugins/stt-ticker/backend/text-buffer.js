@@ -247,42 +247,32 @@ class TextBuffer {
     const colors = multiCfg.colors || {};
     const maxLines = this.config.maxLines || 2;
 
-    // Original-Text (defaultLanguage) sammeln
-    const defaultSegs = segmentOutputs
-      .filter(s => s.language === defaultLang || s.language === 'unknown' || !s.language)
-      .slice(-maxLines);
-    const defaultText = defaultSegs.map(s => s.cleaned || s.text).join(' ');
+    // Jede konfigurierte Sprache erhält entweder ihren Originaltext oder die
+    // zugehörige Übersetzung. Dadurch bleibt ein als Englisch erkanntes
+    // Segment sichtbar, auch wenn Deutsch die Standardzeile ist.
+    const languages = Array.from(new Set([defaultLang, ...outputLangs]));
+    const lines = languages.map(lang => {
+      const sourceSegments = segmentOutputs
+        .filter(segment => segment.language === lang || (
+          lang === defaultLang && (segment.language === 'unknown' || !segment.language)
+        ))
+        .slice(-maxLines);
+      const sourceText = sourceSegments.map(segment => segment.text).join(' ');
 
-    // Zeilen bauen: Zeile 0 = Original, Zeile 1..N = Übersetzungen
-    const lines = [];
-
-    // Zeile 0: Original
-    lines.push({
-      language: defaultLang,
-      text: defaultText,
-      color: colors[defaultLang] || '#FFFFFF',
-      type: 'original'
-    });
-
-    // Zeilen 1..N: Übersetzungen
-    for (const lang of outputLangs) {
-      if (lang === defaultLang) continue; // nicht doppelt
-
-      // Übersetzung aus den Segmenten holen
-      let transText = '';
-      for (const seg of segmentOutputs) {
-        if (seg.translations && seg.translations[lang]) {
-          transText = seg.translations[lang].text;
+      let translatedText = '';
+      for (const segment of segmentOutputs) {
+        if (segment.translations?.[lang]?.text) {
+          translatedText = segment.translations[lang].text;
         }
       }
 
-      lines.push({
+      return {
         language: lang,
-        text: transText || '',
-        color: colors[lang] || '#FFD700',
-        type: 'translation'
-      });
-    }
+        text: sourceText || translatedText,
+        color: colors[lang] || (lang === defaultLang ? '#FFFFFF' : '#FFD700'),
+        type: lang === defaultLang ? 'original' : 'translation'
+      };
+    });
 
     return {
       enabled: true,

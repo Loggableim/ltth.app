@@ -1,14 +1,13 @@
 ﻿/**
  * STT Ticker - Translator
  *
- * Übersetzt transkribierten Text via Ollama Cloud API (OpenAI-kompatibel).
+ * Übersetzt transkribierten Text via Ollama Cloud API.
  * Optionales Feature - nur aktiv wenn translation.enabled=true und apiKey gesetzt.
  *
- * API: POST https://api.ollama.cloud/v1/chat/completions
- * (OpenAI-kompatibler Endpoint)
+ * API: POST https://ollama.com/api/chat
  */
 
-const OLLAMA_BASE_URL = 'https://api.ollama.cloud/v1';
+const OLLAMA_BASE_URL = 'https://ollama.com/api';
 
 // Bekannte Sprachen für die UI
 const LANGUAGES = [
@@ -178,7 +177,12 @@ class Translator {
     }
 
     const sourceLang = options.sourceLanguage || cfg.sourceLanguage || 'auto';
-    const outputLangs = Array.isArray(options.outputLanguages) ? options.outputLanguages : [];
+    const requestedOutputLangs = Array.isArray(options.outputLanguages) ? options.outputLanguages : [];
+    const defaultLanguage = this.config.multiLanguage?.defaultLanguage;
+    const outputLangs = Array.from(new Set([
+      defaultLanguage,
+      ...requestedOutputLangs
+    ].filter(Boolean)));
     if (outputLangs.length === 0) {
       return { translated: false, translations: {} };
     }
@@ -241,23 +245,25 @@ class Translator {
   }
 
   /**
-   * Ruft die Ollama Cloud API auf (OpenAI-kompatibel).
+   * Ruft die native Ollama Cloud API auf.
    */
   async _callOllama(systemPrompt, text, cfg) {
     const axios = require('axios');
     const timeoutMs = Number(cfg.timeoutMs) > 0 ? Number(cfg.timeoutMs) : 30000;
 
     const response = await axios.post(
-      `${OLLAMA_BASE_URL}/chat/completions`,
+      `${OLLAMA_BASE_URL}/chat`,
       {
         model: cfg.model || 'deepseek-v4-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: text }
         ],
-        temperature: 0.1,
-        max_tokens: Math.min(Math.ceil(text.length * 1.5), 2000),
-        stream: false
+        stream: false,
+        think: false,
+        options: {
+          temperature: 0.1
+        }
       },
       {
         headers: {
@@ -268,11 +274,11 @@ class Translator {
       }
     );
 
-    if (!response.data?.choices?.[0]?.message?.content) {
+    if (!response.data?.message?.content) {
       throw new Error('Empty response from Ollama Cloud');
     }
 
-    return response.data.choices[0].message.content.trim();
+    return response.data.message.content.trim();
   }
 
   /**
@@ -285,15 +291,15 @@ class Translator {
 
     try {
       const axios = require('axios');
-      const response = await axios.get(`${OLLAMA_BASE_URL}/models`, {
+      const response = await axios.get(`${OLLAMA_BASE_URL}/tags`, {
         headers: { 'Authorization': `Bearer ${key}` },
         timeout: 10000
       });
 
-      if (response.data?.data && Array.isArray(response.data.data)) {
-        return response.data.data
-          .filter(m => m.id && !m.id.includes('embed'))
-          .map(m => ({ id: m.id, name: m.id }));
+      if (response.data?.models && Array.isArray(response.data.models)) {
+        return response.data.models
+          .filter(model => model.name && !model.name.includes('embed'))
+          .map(model => ({ id: model.name, name: model.name }));
       }
       return this._defaultModels();
     } catch (error) {
@@ -304,14 +310,10 @@ class Translator {
 
   _defaultModels() {
     return [
-      { id: 'nemotron-3-nano', name: 'Nemotron 3 Nano' },
       { id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash' },
-      { id: 'deepseek-v4', name: 'DeepSeek V4' },
-      { id: 'qwen2.5-14b-instruct', name: 'Qwen 2.5 14B' },
-      { id: 'qwen2.5-72b-instruct', name: 'Qwen 2.5 72B' },
-      { id: 'llama-3.3-70b-instruct', name: 'Llama 3.3 70B' },
-      { id: 'mistral-large-2', name: 'Mistral Large 2' },
-      { id: 'gemma-2-27b-it', name: 'Gemma 2 27B' }
+      { id: 'gpt-oss:20b', name: 'GPT-OSS 20B' },
+      { id: 'gemma3:4b', name: 'Gemma 3 4B' },
+      { id: 'nemotron-3-nano:30b', name: 'Nemotron 3 Nano 30B' },
     ];
   }
 

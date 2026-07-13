@@ -11,9 +11,7 @@ describe('STT Ticker translator timeout', () => {
   test('uses the raised default timeout when no translation timeout is configured', async () => {
     axios.post.mockResolvedValueOnce({
       data: {
-        choices: [
-          { message: { content: 'Hello world' } }
-        ]
+        message: { content: 'Hello world' }
       }
     });
 
@@ -22,7 +20,7 @@ describe('STT Ticker translator timeout', () => {
       translation: {
         enabled: true,
         apiKey: 'ollama-secret',
-        model: 'nemotron-3-nano'
+        model: 'deepseek-v4-flash'
       }
     }, logger);
 
@@ -39,9 +37,7 @@ describe('STT Ticker translator timeout', () => {
   test('respects an explicitly configured translation timeout', async () => {
     axios.post.mockResolvedValueOnce({
       data: {
-        choices: [
-          { message: { content: 'Bonjour' } }
-        ]
+        message: { content: 'Bonjour' }
       }
     });
 
@@ -50,7 +46,7 @@ describe('STT Ticker translator timeout', () => {
       translation: {
         enabled: true,
         apiKey: 'ollama-secret',
-        model: 'nemotron-3-nano',
+        model: 'deepseek-v4-flash',
         timeoutMs: 45000
       }
     }, logger);

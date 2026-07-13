@@ -4,6 +4,17 @@
  * Default settings and configuration management.
  */
 
+const DEFAULT_TRANSLATION_MODEL = 'deepseek-v4-flash';
+const LEGACY_TRANSLATION_MODELS = new Set([
+  'nemotron-3-nano',
+  'deepseek-v4',
+  'qwen2.5-14b-instruct',
+  'qwen2.5-72b-instruct',
+  'llama-3.3-70b-instruct',
+  'mistral-large-2',
+  'gemma-2-27b-it'
+]);
+
 const DEFAULT_CONFIG = {
   // Master enable
   enabled: true,
@@ -105,7 +116,7 @@ const DEFAULT_CONFIG = {
   translation: {
     enabled: false,
     apiKey: '',                 // wird persistent in Plugin-Config gespeichert
-    model: 'nemotron-3-nano',  // default model for translation
+    model: DEFAULT_TRANSLATION_MODEL,
     timeoutMs: 30000,           // Ollama Cloud request timeout (in ms)
     targetLanguage: 'en',
     sourceLanguage: 'auto',     // 'auto' = Heuristik erkennt Quellsprache
@@ -157,6 +168,9 @@ class ConfigManager {
       const stored = this.api.getConfig('config');
       if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
         this.config = this._deepMerge(this._cloneDefaults(), stored);
+        if (this._migrateLegacyTranslationModel()) {
+          this.save();
+        }
       } else {
         this.config = this._cloneDefaults();
         this.save();
@@ -215,6 +229,14 @@ class ConfigManager {
 
   _cloneDefaults() {
     return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  }
+
+  _migrateLegacyTranslationModel() {
+    const model = this.config?.translation?.model;
+    if (!LEGACY_TRANSLATION_MODELS.has(model)) return false;
+
+    this.config.translation.model = DEFAULT_TRANSLATION_MODEL;
+    return true;
   }
 }
 
