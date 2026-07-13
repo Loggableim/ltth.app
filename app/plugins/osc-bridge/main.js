@@ -1690,15 +1690,38 @@ class OSCBridgePlugin {
         return success;
     }
 
+    getVRCEmoteControllerPath() {
+        const parameters = this.oscQueryClient?.parameters;
+        if (!parameters) return null;
+
+        return [
+            '/avatar/parameters/Go/VRCEmote',
+            '/avatar/parameters/VRCEmote'
+        ].find(path => parameters.has(path)) || null;
+    }
+
+    hasAvatarParameter(paramName) {
+        return Boolean(this.oscQueryClient?.parameters?.has(`/avatar/parameters/${paramName}`));
+    }
+
     wave(duration = 2000) {
+        if (!this.hasAvatarParameter('Wave') && this.getVRCEmoteControllerPath()) {
+            return this.triggerEmote(0, duration);
+        }
         return this.triggerAvatarParameter('Wave', 1, duration);
     }
 
     celebrate(duration = 3000) {
+        if (!this.hasAvatarParameter('Celebrate') && this.getVRCEmoteControllerPath()) {
+            return this.triggerEmote(3, duration);
+        }
         return this.triggerAvatarParameter('Celebrate', 1, duration);
     }
 
     dance(duration = 5000) {
+        if (!this.hasAvatarParameter('DanceTrigger') && this.getVRCEmoteControllerPath()) {
+            return this.triggerEmote(4, duration);
+        }
         return this.triggerAvatarParameter('DanceTrigger', 1, duration);
     }
 
@@ -1711,10 +1734,16 @@ class OSCBridgePlugin {
     }
 
     triggerEmote(slotNumber, duration = 2000) {
-        if (slotNumber >= 0 && slotNumber <= 7) {
+        if (slotNumber < 0 || slotNumber > 7) return false;
+
+        const legacyPath = `/avatar/parameters/EmoteSlot${slotNumber}`;
+        const controllerPath = this.getVRCEmoteControllerPath();
+        if (this.oscQueryClient?.parameters?.has(legacyPath) || !controllerPath) {
             return this.triggerAvatarParameter(`EmoteSlot${slotNumber}`, 1, duration);
         }
-        return false;
+
+        const controllerName = controllerPath.replace('/avatar/parameters/', '');
+        return this.triggerAvatarParameter(controllerName, slotNumber + 1, duration);
     }
 
     // GoGo Loco Helper Methods
@@ -2736,8 +2765,11 @@ class OSCBridgePlugin {
             SpeedMultiplier: '/avatar/parameters/SpeedMultiplier'
         };
 
+        const vrcEmoteControllerPath = this.getVRCEmoteControllerPath();
+        const vrcEmoteFallbackActions = new Set(['Wave', 'Celebrate', 'Dance']);
         for (const [name, path] of Object.entries(standardParams)) {
-            actions.standard[name] = this.oscQueryClient.parameters.has(path);
+            actions.standard[name] = this.oscQueryClient.parameters.has(path)
+                || (Boolean(vrcEmoteControllerPath) && vrcEmoteFallbackActions.has(name));
         }
 
         // Check for GoGo Loco parameters
@@ -2745,15 +2777,21 @@ class OSCBridgePlugin {
             actions.gogoloco[name] = this.oscQueryClient.parameters.has(path);
         }
 
-        // Check for emote slots (0-7)
+        // Check for legacy emote slots or VRChat's native VRCEmote controller.
         for (let i = 0; i < 8; i++) {
             const path = `/avatar/parameters/EmoteSlot${i}`;
-            actions.emotes[`Emote${i}`] = this.oscQueryClient.parameters.has(path);
+            actions.emotes[`Emote${i}`] = this.oscQueryClient.parameters.has(path)
+                || Boolean(vrcEmoteControllerPath);
         }
 
         // Get custom parameters (everything under /avatar/parameters/ that's not standard or GoGo Loco)
         const allParams = this.oscQueryClient.getAllParameters();
-        const standardPaths = new Set([...Object.values(standardParams), ...Object.values(gogoLocoParams)]);
+        const standardPaths = new Set([
+            ...Object.values(standardParams),
+            ...Object.values(gogoLocoParams),
+            '/avatar/parameters/Go/VRCEmote',
+            '/avatar/parameters/VRCEmote'
+        ]);
 
         for (const param of allParams) {
             if (param.path.startsWith('/avatar/parameters/') &&

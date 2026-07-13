@@ -45,6 +45,35 @@ describe('OSC-Bridge avatar capability profiles', () => {
     expect(api.setConfig).toHaveBeenCalledWith('config', plugin.config);
   });
 
+  test('recognizes GoGo Loco VRCEmote as the native eight-slot emote controller', () => {
+    plugin.oscQueryClient = {
+      parameters: new Map([['/avatar/parameters/Go/VRCEmote', { value: 0 }]]),
+      getAllParameters: jest.fn(() => [])
+    };
+    plugin.send = jest.fn(() => true);
+
+    const actions = plugin.getAvailableActions();
+    const success = plugin.triggerEmote(5, 0);
+
+    expect(actions.standard).toEqual(expect.objectContaining({
+      Wave: true,
+      Celebrate: true,
+      Dance: true
+    }));
+    expect(actions.emotes).toEqual({
+      Emote0: true,
+      Emote1: true,
+      Emote2: true,
+      Emote3: true,
+      Emote4: true,
+      Emote5: true,
+      Emote6: true,
+      Emote7: true
+    });
+    expect(success).toBe(true);
+    expect(plugin.send).toHaveBeenCalledWith('/avatar/parameters/Go/VRCEmote', 6);
+  });
+
   test('activates and refreshes the profile when the watcher reports an avatar change', async () => {
     const watcher = jest.fn();
     plugin.oscQueryClient = {
