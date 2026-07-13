@@ -15,8 +15,8 @@ const guides = buildGuides(ROOT);
 assert.deepStrictEqual(LOCALES, ['de', 'en', 'es', 'fr']);
 assert.ok(!source.includes('function stepCopy('), 'step copy must not be selected from a shared index-based template');
 assert.ok(!source.includes('function buildSteps('), 'capture steps must not be built from a shared index-based template');
+assert.ok(!source.includes('return `#${stepId}`;'), 'capture selectors must come from verified UI anchors, not generated step ids');
 assert.strictEqual(guides.length, manifests.length + 1, 'every manifest plus Store Admin needs one guide');
-assert.ok(guides.some((guide) => guide.id === 'visual-fx-frame-webgpu'), 'Visual FX Frame WEBGPU needs a guide');
 const workflowSignatures = new Set();
 const SAFE_ACTION_TYPES = new Set([
   'open-plugin-manager',

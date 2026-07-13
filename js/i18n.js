@@ -121,6 +121,18 @@
             const title = get(titleKey);
             if (title !== titleKey) document.title = title;
         }
+        // Generated plugin tutorials keep one canonical URL while their
+        // localized browser metadata follows the visible guide language.
+        const pluginSummary = document.querySelector('.plugin-doc-hero > [data-i18n$=".summary"]');
+        const pluginTitle = document.querySelector('.plugin-doc-hero h1');
+        if (pluginSummary) {
+            const description = document.querySelector('meta[name="description"]');
+            const ogDescription = document.querySelector('meta[property="og:description"]');
+            const ogTitle = document.querySelector('meta[property="og:title"]');
+            if (description) description.setAttribute('content', pluginSummary.textContent.trim());
+            if (ogDescription) ogDescription.setAttribute('content', pluginSummary.textContent.trim());
+            if (ogTitle && pluginTitle) ogTitle.setAttribute('content', `${pluginTitle.textContent.trim()} – LTTH Docs`);
+        }
         document.dispatchEvent(new CustomEvent('i18nApplied', { detail: { lang: currentLang } }));
     }
     

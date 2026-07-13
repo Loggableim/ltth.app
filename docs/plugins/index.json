@@ -5,93 +5,105 @@
     "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/advanced-timer/activate.png",
-      "en": "/screenshots/docs/plugins/advanced-timer/activate.png",
-      "es": "/screenshots/es/docs/plugins/advanced-timer/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/advanced-timer/activate.png"
+      "de": "/screenshots/de/docs/plugins/advanced-timer/timer-card.png",
+      "en": "/screenshots/docs/plugins/advanced-timer/timer-card.png",
+      "es": "/screenshots/es/docs/plugins/advanced-timer/timer-card.png",
+      "fr": "/screenshots/fr/docs/plugins/advanced-timer/timer-card.png"
     },
     "translations": {
       "de": {
         "title": "Advanced Timer",
-        "summary": "Mit Advanced Timer richtest du eine interaktive Zuschauer-Erfahrung ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Advanced Timer richtet Timerdauer, Startsignal und Ablaufregeln ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "der Countdown startet mit deinen Demo-Werten"
       },
       "en": {
         "title": "Advanced Timer",
-        "summary": "Advanced Timer sets up an an interactive viewer experience. This guide safely covers activation through local testing."
+        "summary": "Advanced Timer configures timer duration, start signal, and flow rules with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the countdown starts with your demo values"
       },
       "es": {
         "title": "Advanced Timer",
-        "summary": "Advanced Timer permite configurar una experiencia interactiva para espectadores. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Advanced Timer configura duración, señal de inicio y reglas de flujo del temporizador mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la cuenta atrás inicia con los valores de demostración"
       },
       "fr": {
         "title": "Advanced Timer",
-        "summary": "Advanced Timer permet de configurer une expérience interactive pour les spectateurs. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Advanced Timer configure durée, signal de départ et règles du minuteur avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "le compte à rebours démarre avec vos valeurs de démonstration"
       }
     }
   },
   {
     "id": "animazingpal",
     "name": "AnimazingPal",
-    "category": "integration",
+    "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/animazingpal/activate.png",
-      "en": "/screenshots/docs/plugins/animazingpal/activate.png",
-      "es": "/screenshots/es/docs/plugins/animazingpal/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/animazingpal/activate.png"
+      "de": "/screenshots/de/docs/plugins/animazingpal/avatar-card.png",
+      "en": "/screenshots/docs/plugins/animazingpal/avatar-card.png",
+      "es": "/screenshots/es/docs/plugins/animazingpal/avatar-card.png",
+      "fr": "/screenshots/fr/docs/plugins/animazingpal/avatar-card.png"
     },
     "translations": {
       "de": {
         "title": "AnimazingPal",
-        "summary": "Mit AnimazingPal richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "AnimazingPal richtet Avatar- und Ereigniszuordnung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Zuordnung wird gespeichert, ohne einen externen Dienst zu kontaktieren"
       },
       "en": {
         "title": "AnimazingPal",
-        "summary": "AnimazingPal sets up an an external integration. This guide safely covers activation through local testing."
+        "summary": "AnimazingPal configures avatar and event mapping with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the mapping is saved without contacting an external service"
       },
       "es": {
         "title": "AnimazingPal",
-        "summary": "AnimazingPal permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "AnimazingPal configura asignación de avatar y eventos mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la asignación se guarda sin contactar un servicio externo"
       },
       "fr": {
         "title": "AnimazingPal",
-        "summary": "AnimazingPal permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "AnimazingPal configure mappage d’avatar et d’événements avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "le mappage est enregistré sans contacter de service externe"
       }
     }
   },
   {
     "id": "api-bridge",
     "name": "API Bridge",
-    "category": "core",
+    "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/api-bridge/activate.png",
-      "en": "/screenshots/docs/plugins/api-bridge/activate.png",
-      "es": "/screenshots/es/docs/plugins/api-bridge/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/api-bridge/activate.png"
+      "de": "/screenshots/de/docs/plugins/api-bridge/bridge-info.png",
+      "en": "/screenshots/docs/plugins/api-bridge/bridge-info.png",
+      "es": "/screenshots/es/docs/plugins/api-bridge/bridge-info.png",
+      "fr": "/screenshots/fr/docs/plugins/api-bridge/bridge-info.png"
     },
     "translations": {
       "de": {
         "title": "API Bridge",
-        "summary": "Mit API Bridge richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "API Bridge richtet lokale Aktionen, Ereignisse und die API-Bridge ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Antwort beschreibt die verfügbare Bridge, ohne eine Aktion auszuführen"
       },
       "en": {
         "title": "API Bridge",
-        "summary": "API Bridge sets up an a system and administration workflow. This guide safely covers activation through local testing."
+        "summary": "API Bridge configures local actions, events, and the API bridge with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the response describes the available bridge without executing an action"
       },
       "es": {
         "title": "API Bridge",
-        "summary": "API Bridge permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "API Bridge configura acciones locales, eventos y la API Bridge mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la respuesta describe el puente disponible sin ejecutar una acción"
       },
       "fr": {
         "title": "API Bridge",
-        "summary": "API Bridge permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "API Bridge configure actions locales, événements et l’API Bridge avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la réponse décrit le bridge disponible sans exécuter d’action"
       }
     }
   },
@@ -101,157 +113,177 @@
     "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/chatango/activate.png",
-      "en": "/screenshots/docs/plugins/chatango/activate.png",
-      "es": "/screenshots/es/docs/plugins/chatango/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/chatango/activate.png"
+      "de": "/screenshots/de/docs/plugins/chatango/chatango-card.png",
+      "en": "/screenshots/docs/plugins/chatango/chatango-card.png",
+      "es": "/screenshots/es/docs/plugins/chatango/chatango-card.png",
+      "fr": "/screenshots/fr/docs/plugins/chatango/chatango-card.png"
     },
     "translations": {
       "de": {
         "title": "Chatango Integration",
-        "summary": "Mit Chatango Integration richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Chatango Integration richtet Raumname, Widget-Position und Chat-Thema ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "das Widget zeigt die gewählte Position ohne einen externen Chat zu öffnen"
       },
       "en": {
         "title": "Chatango Integration",
-        "summary": "Chatango Integration sets up an an external integration. This guide safely covers activation through local testing."
+        "summary": "Chatango Integration configures room name, widget position, and chat theme with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the widget shows the chosen position without opening an external chat"
       },
       "es": {
         "title": "Chatango Integration",
-        "summary": "Chatango Integration permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Chatango Integration configura nombre de sala, posición del widget y tema del chat mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "el widget muestra la posición elegida sin abrir un chat externo"
       },
       "fr": {
         "title": "Chatango Integration",
-        "summary": "Chatango Integration permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Chatango Integration configure nom de salon, position du widget et thème du chat avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "le widget montre la position choisie sans ouvrir de chat externe"
       }
     }
   },
   {
     "id": "clarityhud",
     "name": "ClarityHUD",
-    "category": "overlay",
+    "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/clarityhud/activate.png",
-      "en": "/screenshots/docs/plugins/clarityhud/activate.png",
-      "es": "/screenshots/es/docs/plugins/clarityhud/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/clarityhud/activate.png"
+      "de": "/screenshots/de/docs/plugins/clarityhud/hud-card.png",
+      "en": "/screenshots/docs/plugins/clarityhud/hud-card.png",
+      "es": "/screenshots/es/docs/plugins/clarityhud/hud-card.png",
+      "fr": "/screenshots/fr/docs/plugins/clarityhud/hud-card.png"
     },
     "translations": {
       "de": {
         "title": "ClarityHUD",
-        "summary": "Mit ClarityHUD richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "ClarityHUD richtet HUD-Module, Chatbereich und Stream-Overlay ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die gewählten HUD-Bereiche sind in der Vorschau sichtbar"
       },
       "en": {
         "title": "ClarityHUD",
-        "summary": "ClarityHUD sets up an an overlay and visual response. This guide safely covers activation through local testing."
+        "summary": "ClarityHUD configures HUD modules, chat area, and stream overlay with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the selected HUD sections are visible in preview"
       },
       "es": {
         "title": "ClarityHUD",
-        "summary": "ClarityHUD permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "ClarityHUD configura módulos HUD, área de chat y overlay de stream mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "las áreas HUD seleccionadas son visibles en la vista previa"
       },
       "fr": {
         "title": "ClarityHUD",
-        "summary": "ClarityHUD permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "ClarityHUD configure modules HUD, zone de chat et overlay de stream avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "les zones HUD sélectionnées sont visibles dans l’aperçu"
       }
     }
   },
   {
     "id": "coinbattle",
     "name": "CoinBattle",
-    "category": "overlay",
+    "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/coinbattle/activate.png",
-      "en": "/screenshots/docs/plugins/coinbattle/activate.png",
-      "es": "/screenshots/es/docs/plugins/coinbattle/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/coinbattle/activate.png"
+      "de": "/screenshots/de/docs/plugins/coinbattle/coinbattle-card.png",
+      "en": "/screenshots/docs/plugins/coinbattle/coinbattle-card.png",
+      "es": "/screenshots/es/docs/plugins/coinbattle/coinbattle-card.png",
+      "fr": "/screenshots/fr/docs/plugins/coinbattle/coinbattle-card.png"
     },
     "translations": {
       "de": {
         "title": "CoinBattle",
-        "summary": "Mit CoinBattle richtest du eine interaktive Zuschauer-Erfahrung ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "CoinBattle richtet Münzwerte, Kampfmodus und Match-Start ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Spielansicht zeigt ein gestartetes Demo-Match ohne LIVE-Ereignis"
       },
       "en": {
         "title": "CoinBattle",
-        "summary": "CoinBattle sets up an an interactive viewer experience. This guide safely covers activation through local testing."
+        "summary": "CoinBattle configures coin values, battle mode, and match start with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the game view shows a started demo match without a LIVE event"
       },
       "es": {
         "title": "CoinBattle",
-        "summary": "CoinBattle permite configurar una experiencia interactiva para espectadores. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "CoinBattle configura valores de monedas, modo de batalla e inicio de partida mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la vista de juego muestra una partida demo iniciada sin evento LIVE"
       },
       "fr": {
         "title": "CoinBattle",
-        "summary": "CoinBattle permet de configurer une expérience interactive pour les spectateurs. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "CoinBattle configure valeurs des pièces, mode de combat et démarrage du match avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la vue de jeu montre un match démo démarré sans événement LIVE"
       }
     }
   },
   {
     "id": "config-import",
     "name": "Config Backup & Restore",
-    "category": "utility",
+    "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/config-import/activate.png",
-      "en": "/screenshots/docs/plugins/config-import/activate.png",
-      "es": "/screenshots/es/docs/plugins/config-import/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/config-import/activate.png"
+      "de": "/screenshots/de/docs/plugins/config-import/backup-card.png",
+      "en": "/screenshots/docs/plugins/config-import/backup-card.png",
+      "es": "/screenshots/es/docs/plugins/config-import/backup-card.png",
+      "fr": "/screenshots/fr/docs/plugins/config-import/backup-card.png"
     },
     "translations": {
       "de": {
         "title": "Config Backup & Restore",
-        "summary": "Mit Config Backup & Restore richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Config Backup & Restore richtet Backup-Datei, Export und Wiederherstellungsprüfung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "eine Testdatei wird erzeugt, ohne dein Produktivprofil zu überschreiben"
       },
       "en": {
         "title": "Config Backup & Restore",
-        "summary": "Config Backup & Restore sets up an a system and administration workflow. This guide safely covers activation through local testing."
+        "summary": "Config Backup & Restore configures backup file, export, and restore check with a safe local check instead of a LIVE trigger.",
+        "firstResult": "a test file is created without overwriting your production profile"
       },
       "es": {
         "title": "Config Backup & Restore",
-        "summary": "Config Backup & Restore permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Config Backup & Restore configura archivo de copia, exportación y comprobación de restauración mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "se crea un archivo de prueba sin sobrescribir tu perfil de producción"
       },
       "fr": {
         "title": "Config Backup & Restore",
-        "summary": "Config Backup & Restore permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Config Backup & Restore configure fichier de sauvegarde, export et contrôle de restauration avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "un fichier de test est créé sans écraser votre profil de production"
       }
     }
   },
   {
     "id": "data-source",
     "name": "Data Source Manager",
-    "category": "plugin",
-    "access": "local plugin",
+    "category": "system",
+    "access": "available",
     "devStatus": "available",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/data-source/activate.png",
-      "en": "/screenshots/docs/plugins/data-source/activate.png",
-      "es": "/screenshots/es/docs/plugins/data-source/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/data-source/activate.png"
+      "de": "/screenshots/de/docs/plugins/data-source/source-card.png",
+      "en": "/screenshots/docs/plugins/data-source/source-card.png",
+      "es": "/screenshots/es/docs/plugins/data-source/source-card.png",
+      "fr": "/screenshots/fr/docs/plugins/data-source/source-card.png"
     },
     "translations": {
       "de": {
         "title": "Data Source Manager",
-        "summary": "Mit Data Source Manager richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Data Source Manager richtet Datenquelle, Feldzuordnung und Aktualisierungsintervall ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Vorschau zeigt die Testfelder, ohne einen Fremdserver anzufragen"
       },
       "en": {
         "title": "Data Source Manager",
-        "summary": "Data Source Manager sets up an a system and administration workflow. This guide safely covers activation through local testing."
+        "summary": "Data Source Manager configures data source, field mapping, and refresh interval with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the preview shows test fields without requesting an external server"
       },
       "es": {
         "title": "Data Source Manager",
-        "summary": "Data Source Manager permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Data Source Manager configura fuente de datos, asignación de campos e intervalo de actualización mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la vista previa muestra campos de prueba sin consultar un servidor externo"
       },
       "fr": {
         "title": "Data Source Manager",
-        "summary": "Data Source Manager permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Data Source Manager configure source de données, mappage des champs et intervalle de mise à jour avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "l’aperçu affiche les champs de test sans interroger de serveur externe"
       }
     }
   },
@@ -263,27 +295,31 @@
     "devStatus": "development-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/gift-catalog/activate.png",
-      "en": "/screenshots/docs/plugins/gift-catalog/activate.png",
-      "es": "/screenshots/es/docs/plugins/gift-catalog/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/gift-catalog/activate.png"
+      "de": "/screenshots/de/docs/plugins/gift-catalog/catalog-card.png",
+      "en": "/screenshots/docs/plugins/gift-catalog/catalog-card.png",
+      "es": "/screenshots/es/docs/plugins/gift-catalog/catalog-card.png",
+      "fr": "/screenshots/fr/docs/plugins/gift-catalog/catalog-card.png"
     },
     "translations": {
       "de": {
         "title": "Developer Guides",
-        "summary": "Mit Developer Guides richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Developer Guides richtet Geschenkkatalog, Coinschwelle und Beispielzuordnung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die gefilterte Geschenkauswahl wird angezeigt, ohne LIVE-Daten zu laden"
       },
       "en": {
         "title": "Developer Guides",
-        "summary": "Developer Guides sets up an a system and administration workflow. This guide safely covers activation through local testing."
+        "summary": "Developer Guides configures gift catalog, coin threshold, and sample mapping with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the filtered gift selection is shown without loading LIVE data"
       },
       "es": {
         "title": "Developer Guides",
-        "summary": "Developer Guides permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Developer Guides configura catálogo de regalos, umbral de monedas y asignación de ejemplo mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la selección filtrada se muestra sin cargar datos LIVE"
       },
       "fr": {
         "title": "Developer Guides",
-        "summary": "Developer Guides permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Developer Guides configure catalogue de cadeaux, seuil de pièces et mappage d’exemple avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la sélection filtrée est affichée sans charger de données LIVE"
       }
     }
   },
@@ -293,29 +329,33 @@
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/emoji-rain/activate.png",
-      "en": "/screenshots/docs/plugins/emoji-rain/activate.png",
-      "es": "/screenshots/es/docs/plugins/emoji-rain/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/emoji-rain/activate.png"
+      "de": "/screenshots/de/docs/plugins/emoji-rain/emoji-card.png",
+      "en": "/screenshots/docs/plugins/emoji-rain/emoji-card.png",
+      "es": "/screenshots/es/docs/plugins/emoji-rain/emoji-card.png",
+      "fr": "/screenshots/fr/docs/plugins/emoji-rain/emoji-card.png"
     },
     "translations": {
       "de": {
         "title": "EmojiRain",
-        "summary": "Mit EmojiRain richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "EmojiRain richtet Emoji-Preset, Spawn-Regeln und Geschenkzuordnung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "Emojis erscheinen in der Vorschau, ohne TikTok LIVE zu verbinden"
       },
       "en": {
         "title": "EmojiRain",
-        "summary": "EmojiRain sets up an an overlay and visual response. This guide safely covers activation through local testing."
+        "summary": "EmojiRain configures emoji preset, spawn rules, and gift mapping with a safe local check instead of a LIVE trigger.",
+        "firstResult": "emojis appear in preview without connecting TikTok LIVE"
       },
       "es": {
         "title": "EmojiRain",
-        "summary": "EmojiRain permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "EmojiRain configura preajuste de emoji, reglas de aparición y asignación de regalos mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "los emojis aparecen en la vista previa sin conectar TikTok LIVE"
       },
       "fr": {
         "title": "EmojiRain",
-        "summary": "EmojiRain permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "EmojiRain configure préréglage emoji, règles d’apparition et mappage des cadeaux avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "les emojis apparaissent dans l’aperçu sans connecter TikTok LIVE"
       }
     }
   },
@@ -325,29 +365,33 @@
     "category": "plugin",
     "access": "stable",
     "devStatus": "stable",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/fireworks/activate.png",
-      "en": "/screenshots/docs/plugins/fireworks/activate.png",
-      "es": "/screenshots/es/docs/plugins/fireworks/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/fireworks/activate.png"
+      "de": "/screenshots/de/docs/plugins/fireworks/fireworks-card.png",
+      "en": "/screenshots/docs/plugins/fireworks/fireworks-card.png",
+      "es": "/screenshots/es/docs/plugins/fireworks/fireworks-card.png",
+      "fr": "/screenshots/fr/docs/plugins/fireworks/fireworks-card.png"
     },
     "translations": {
       "de": {
         "title": "Fireworks Superplugin (Stable)",
-        "summary": "Mit Fireworks Superplugin (Stable) richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Fireworks Superplugin (Stable) richtet Effektprofil, Auslöser und Audio-Lautstärke ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "das Feuerwerk erscheint in der lokalen Overlay-Vorschau"
       },
       "en": {
         "title": "Fireworks Superplugin (Stable)",
-        "summary": "Fireworks Superplugin (Stable) sets up an an overlay and visual response. This guide safely covers activation through local testing."
+        "summary": "Fireworks Superplugin (Stable) configures effect profile, trigger, and audio volume with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the fireworks appear in the local overlay preview"
       },
       "es": {
         "title": "Fireworks Superplugin (Stable)",
-        "summary": "Fireworks Superplugin (Stable) permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Fireworks Superplugin (Stable) configura perfil de efecto, disparador y volumen de audio mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "los fuegos artificiales aparecen en la vista previa local"
       },
       "fr": {
         "title": "Fireworks Superplugin (Stable)",
-        "summary": "Fireworks Superplugin (Stable) permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Fireworks Superplugin (Stable) configure profil d’effet, déclencheur et volume audio avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "les feux d’artifice apparaissent dans l’aperçu local"
       }
     }
   },
@@ -357,93 +401,105 @@
     "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/gcce/activate.png",
-      "en": "/screenshots/docs/plugins/gcce/activate.png",
-      "es": "/screenshots/es/docs/plugins/gcce/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/gcce/activate.png"
+      "de": "/screenshots/de/docs/plugins/gcce/command-card.png",
+      "en": "/screenshots/docs/plugins/gcce/command-card.png",
+      "es": "/screenshots/es/docs/plugins/gcce/command-card.png",
+      "fr": "/screenshots/fr/docs/plugins/gcce/command-card.png"
     },
     "translations": {
       "de": {
         "title": "Global Chat Command Engine",
-        "summary": "Mit Global Chat Command Engine richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Global Chat Command Engine richtet Befehl, Berechtigung und Chat-Antwort ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "der Befehl wird validiert, ohne eine LIVE-Chatnachricht zu senden"
       },
       "en": {
         "title": "Global Chat Command Engine",
-        "summary": "Global Chat Command Engine sets up an a system and administration workflow. This guide safely covers activation through local testing."
+        "summary": "Global Chat Command Engine configures command, permission, and chat response with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the command is validated without sending a LIVE chat message"
       },
       "es": {
         "title": "Global Chat Command Engine",
-        "summary": "Global Chat Command Engine permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Global Chat Command Engine configura comando, permiso y respuesta de chat mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "el comando se valida sin enviar un mensaje de chat LIVE"
       },
       "fr": {
         "title": "Global Chat Command Engine",
-        "summary": "Global Chat Command Engine permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Global Chat Command Engine configure commande, autorisation et réponse de chat avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la commande est validée sans envoyer de message de chat LIVE"
       }
     }
   },
   {
     "id": "openshock",
     "name": "Hybridshock",
-    "category": "integration",
+    "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/openshock/activate.png",
-      "en": "/screenshots/docs/plugins/openshock/activate.png",
-      "es": "/screenshots/es/docs/plugins/openshock/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/openshock/activate.png"
+      "de": "/screenshots/de/docs/plugins/openshock/safety-card.png",
+      "en": "/screenshots/docs/plugins/openshock/safety-card.png",
+      "es": "/screenshots/es/docs/plugins/openshock/safety-card.png",
+      "fr": "/screenshots/fr/docs/plugins/openshock/safety-card.png"
     },
     "translations": {
       "de": {
         "title": "Hybridshock",
-        "summary": "Mit Hybridshock richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Hybridshock richtet Sicherheitslimit, Queue und Gerätezuordnung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "der Ablauf wird als Simulation angezeigt und löst keine Haptik aus"
       },
       "en": {
         "title": "Hybridshock",
-        "summary": "Hybridshock sets up an an external integration. This guide safely covers activation through local testing."
+        "summary": "Hybridshock configures safety limit, queue, and device mapping with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the flow is shown as a simulation and triggers no haptics"
       },
       "es": {
         "title": "Hybridshock",
-        "summary": "Hybridshock permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Hybridshock configura límite de seguridad, cola y asignación de dispositivo mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "el flujo se muestra como simulación y no activa háptica"
       },
       "fr": {
         "title": "Hybridshock",
-        "summary": "Hybridshock permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Hybridshock configure limite de sécurité, file et mappage d’appareil avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "le flux est affiché comme simulation et ne déclenche aucune haptique"
       }
     }
   },
   {
     "id": "interactive-story",
     "name": "Interactive Story Generator",
-    "category": "entertainment",
+    "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/interactive-story/activate.png",
-      "en": "/screenshots/docs/plugins/interactive-story/activate.png",
-      "es": "/screenshots/es/docs/plugins/interactive-story/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/interactive-story/activate.png"
+      "de": "/screenshots/de/docs/plugins/interactive-story/story-card.png",
+      "en": "/screenshots/docs/plugins/interactive-story/story-card.png",
+      "es": "/screenshots/es/docs/plugins/interactive-story/story-card.png",
+      "fr": "/screenshots/fr/docs/plugins/interactive-story/story-card.png"
     },
     "translations": {
       "de": {
         "title": "Interactive Story Generator",
-        "summary": "Mit Interactive Story Generator richtest du eine interaktive Zuschauer-Erfahrung ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Interactive Story Generator richtet Geschichtenmodus, Abstimmung und Modelloption ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Abstimmungsoberfläche reagiert, ohne einen externen Modellaufruf auszuführen"
       },
       "en": {
         "title": "Interactive Story Generator",
-        "summary": "Interactive Story Generator sets up an an interactive viewer experience. This guide safely covers activation through local testing."
+        "summary": "Interactive Story Generator configures story mode, voting, and model option with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the voting UI responds without an external model request"
       },
       "es": {
         "title": "Interactive Story Generator",
-        "summary": "Interactive Story Generator permite configurar una experiencia interactiva para espectadores. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Interactive Story Generator configura modo de historia, votación y opción de modelo mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la interfaz de votación responde sin solicitar un modelo externo"
       },
       "fr": {
         "title": "Interactive Story Generator",
-        "summary": "Interactive Story Generator permet de configurer une expérience interactive pour les spectateurs. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Interactive Story Generator configure mode histoire, vote et option de modèle avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "l’interface de vote répond sans appel de modèle externe"
       }
     }
   },
@@ -453,29 +509,33 @@
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/goals/activate.png",
-      "en": "/screenshots/docs/plugins/goals/activate.png",
-      "es": "/screenshots/es/docs/plugins/goals/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/goals/activate.png"
+      "de": "/screenshots/de/docs/plugins/goals/goals-card.png",
+      "en": "/screenshots/docs/plugins/goals/goals-card.png",
+      "es": "/screenshots/es/docs/plugins/goals/goals-card.png",
+      "fr": "/screenshots/fr/docs/plugins/goals/goals-card.png"
     },
     "translations": {
       "de": {
         "title": "Live Goals",
-        "summary": "Mit Live Goals richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Live Goals richtet Zielwert, Fortschrittsanzeige und Reset-Regel ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Fortschrittsanzeige ändert sich nur im Testprofil"
       },
       "en": {
         "title": "Live Goals",
-        "summary": "Live Goals sets up an an overlay and visual response. This guide safely covers activation through local testing."
+        "summary": "Live Goals configures goal value, progress display, and reset rule with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the progress display changes only in the test profile"
       },
       "es": {
         "title": "Live Goals",
-        "summary": "Live Goals permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Live Goals configura valor de objetivo, visualización de progreso y regla de reinicio mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la visualización de progreso cambia solo en el perfil de prueba"
       },
       "fr": {
         "title": "Live Goals",
-        "summary": "Live Goals permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Live Goals configure valeur d’objectif, affichage de progression et règle de remise à zéro avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "l’affichage de progression change uniquement dans le profil de test"
       }
     }
   },
@@ -483,63 +543,71 @@
     "id": "store-admin",
     "name": "LTTH App Store Admin",
     "category": "utility",
-    "access": "admin-only",
-    "devStatus": "admin-only",
+    "access": "available",
+    "devStatus": "available",
     "storeAvailable": true,
     "image": {
-      "de": "/screenshots/de/docs/plugins/store-admin/activate.png",
-      "en": "/screenshots/docs/plugins/store-admin/activate.png",
-      "es": "/screenshots/es/docs/plugins/store-admin/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/store-admin/activate.png"
+      "de": "/screenshots/de/docs/plugins/store-admin/store-card.png",
+      "en": "/screenshots/docs/plugins/store-admin/store-card.png",
+      "es": "/screenshots/es/docs/plugins/store-admin/store-card.png",
+      "fr": "/screenshots/fr/docs/plugins/store-admin/store-card.png"
     },
     "translations": {
       "de": {
         "title": "LTTH App Store Admin",
-        "summary": "Mit LTTH App Store Admin richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "LTTH App Store Admin richtet Store-Ansicht, Quellenfreigabe und Paketstatus ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "der Store zeigt den sicheren Standardzustand; keine Quelle wird aktiviert"
       },
       "en": {
         "title": "LTTH App Store Admin",
-        "summary": "LTTH App Store Admin sets up an a system and administration workflow. This guide safely covers activation through local testing."
+        "summary": "LTTH App Store Admin configures store view, source approval, and package status with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the store shows the safe default state; no source is enabled"
       },
       "es": {
         "title": "LTTH App Store Admin",
-        "summary": "LTTH App Store Admin permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "LTTH App Store Admin configura vista de tienda, aprobación de fuentes y estado de paquetes mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la tienda muestra el estado seguro predeterminado; no se activa ninguna fuente"
       },
       "fr": {
         "title": "LTTH App Store Admin",
-        "summary": "LTTH App Store Admin permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "LTTH App Store Admin configure vue du store, approbation des sources et état des paquets avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "le store affiche l’état sûr par défaut ; aucune source n’est activée"
       }
     }
   },
   {
     "id": "game-engine",
     "name": "LTTH Game Engine",
-    "category": "overlay",
+    "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/game-engine/activate.png",
-      "en": "/screenshots/docs/plugins/game-engine/activate.png",
-      "es": "/screenshots/es/docs/plugins/game-engine/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/game-engine/activate.png"
+      "de": "/screenshots/de/docs/plugins/game-engine/engine-card.png",
+      "en": "/screenshots/docs/plugins/game-engine/engine-card.png",
+      "es": "/screenshots/es/docs/plugins/game-engine/engine-card.png",
+      "fr": "/screenshots/fr/docs/plugins/game-engine/engine-card.png"
     },
     "translations": {
       "de": {
         "title": "LTTH Game Engine",
-        "summary": "Mit LTTH Game Engine richtest du eine interaktive Zuschauer-Erfahrung ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "LTTH Game Engine richtet Spielmodus, Queue und Geschenk- oder Chat-Trigger ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Testqueue wird abgearbeitet und die Spielansicht aktualisiert sich"
       },
       "en": {
         "title": "LTTH Game Engine",
-        "summary": "LTTH Game Engine sets up an an interactive viewer experience. This guide safely covers activation through local testing."
+        "summary": "LTTH Game Engine configures game mode, queue, and gift or chat trigger with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the test queue is processed and the game view updates"
       },
       "es": {
         "title": "LTTH Game Engine",
-        "summary": "LTTH Game Engine permite configurar una experiencia interactiva para espectadores. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "LTTH Game Engine configura modo de juego, cola y disparador de regalo o chat mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la cola de prueba se procesa y la vista del juego se actualiza"
       },
       "fr": {
         "title": "LTTH Game Engine",
-        "summary": "LTTH Game Engine permet de configurer une expérience interactive pour les spectateurs. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "LTTH Game Engine configure mode de jeu, file et déclencheur cadeau ou chat avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la file de test est traitée et la vue de jeu se met à jour"
       }
     }
   },
@@ -551,91 +619,103 @@
     "devStatus": "early-version",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/minecraft-connect/activate.png",
-      "en": "/screenshots/docs/plugins/minecraft-connect/activate.png",
-      "es": "/screenshots/es/docs/plugins/minecraft-connect/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/minecraft-connect/activate.png"
+      "de": "/screenshots/de/docs/plugins/minecraft-connect/minecraft-card.png",
+      "en": "/screenshots/docs/plugins/minecraft-connect/minecraft-card.png",
+      "es": "/screenshots/es/docs/plugins/minecraft-connect/minecraft-card.png",
+      "fr": "/screenshots/fr/docs/plugins/minecraft-connect/minecraft-card.png"
     },
     "translations": {
       "de": {
         "title": "Minecraft Connect",
-        "summary": "Mit Minecraft Connect richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Minecraft Connect richtet Serveradresse, Ereignisbindung und Nachrichtenformat ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Konfiguration wird geprüft, ohne einen Minecraft-Server zu kontaktieren"
       },
       "en": {
         "title": "Minecraft Connect",
-        "summary": "Minecraft Connect sets up an an external integration. This guide safely covers activation through local testing."
+        "summary": "Minecraft Connect configures server address, event binding, and message format with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the configuration is checked without contacting a Minecraft server"
       },
       "es": {
         "title": "Minecraft Connect",
-        "summary": "Minecraft Connect permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Minecraft Connect configura dirección del servidor, enlace de eventos y formato de mensaje mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la configuración se comprueba sin contactar un servidor de Minecraft"
       },
       "fr": {
         "title": "Minecraft Connect",
-        "summary": "Minecraft Connect permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Minecraft Connect configure adresse serveur, liaison d’événements et format de message avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la configuration est contrôlée sans contacter de serveur Minecraft"
       }
     }
   },
   {
     "id": "multicam",
     "name": "Multi-Cam Switcher",
-    "category": "utility",
+    "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/multicam/activate.png",
-      "en": "/screenshots/docs/plugins/multicam/activate.png",
-      "es": "/screenshots/es/docs/plugins/multicam/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/multicam/activate.png"
+      "de": "/screenshots/de/docs/plugins/multicam/multicam-card.png",
+      "en": "/screenshots/docs/plugins/multicam/multicam-card.png",
+      "es": "/screenshots/es/docs/plugins/multicam/multicam-card.png",
+      "fr": "/screenshots/fr/docs/plugins/multicam/multicam-card.png"
     },
     "translations": {
       "de": {
         "title": "Multi-Cam Switcher",
-        "summary": "Mit Multi-Cam Switcher richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Multi-Cam Switcher richtet Kameraquelle, Szenenregel und Umschaltbedingung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Regel wird gespeichert, ohne OBS zu schalten"
       },
       "en": {
         "title": "Multi-Cam Switcher",
-        "summary": "Multi-Cam Switcher sets up an an external integration. This guide safely covers activation through local testing."
+        "summary": "Multi-Cam Switcher configures camera source, scene rule, and switch condition with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the rule is saved without switching OBS"
       },
       "es": {
         "title": "Multi-Cam Switcher",
-        "summary": "Multi-Cam Switcher permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Multi-Cam Switcher configura fuente de cámara, regla de escena y condición de cambio mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la regla se guarda sin cambiar OBS"
       },
       "fr": {
         "title": "Multi-Cam Switcher",
-        "summary": "Multi-Cam Switcher permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Multi-Cam Switcher configure source caméra, règle de scène et condition de bascule avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la règle est enregistrée sans basculer OBS"
       }
     }
   },
   {
     "id": "music-bot",
     "name": "Music Bot",
-    "category": "integration",
-    "access": "local plugin",
+    "category": "plugin",
+    "access": "available",
     "devStatus": "available",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/music-bot/activate.png",
-      "en": "/screenshots/docs/plugins/music-bot/activate.png",
-      "es": "/screenshots/es/docs/plugins/music-bot/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/music-bot/activate.png"
+      "de": "/screenshots/de/docs/plugins/music-bot/music-card.png",
+      "en": "/screenshots/docs/plugins/music-bot/music-card.png",
+      "es": "/screenshots/es/docs/plugins/music-bot/music-card.png",
+      "fr": "/screenshots/fr/docs/plugins/music-bot/music-card.png"
     },
     "translations": {
       "de": {
         "title": "Music Bot",
-        "summary": "Mit Music Bot richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Music Bot richtet MPV-Pfad, Anfragequeue und Moderationsregel ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Queue zeigt den Eintrag; es startet keine externe Suche und keine Wiedergabe"
       },
       "en": {
         "title": "Music Bot",
-        "summary": "Music Bot sets up an an external integration. This guide safely covers activation through local testing."
+        "summary": "Music Bot configures MPV path, request queue, and moderation rule with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the queue shows the entry; no external search or playback starts"
       },
       "es": {
         "title": "Music Bot",
-        "summary": "Music Bot permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Music Bot configura ruta de MPV, cola de solicitudes y regla de moderación mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la cola muestra la entrada; no inicia búsqueda externa ni reproducción"
       },
       "fr": {
         "title": "Music Bot",
-        "summary": "Music Bot permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Music Bot configure chemin MPV, file de demandes et règle de modération avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la file affiche l’entrée ; aucune recherche externe ni lecture ne démarre"
       }
     }
   },
@@ -645,125 +725,141 @@
     "category": "plugin",
     "access": "stable",
     "devStatus": "stable",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/osc-bridge/activate.png",
-      "en": "/screenshots/docs/plugins/osc-bridge/activate.png",
-      "es": "/screenshots/es/docs/plugins/osc-bridge/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/osc-bridge/activate.png"
+      "de": "/screenshots/de/docs/plugins/osc-bridge/osc-card.png",
+      "en": "/screenshots/docs/plugins/osc-bridge/osc-card.png",
+      "es": "/screenshots/es/docs/plugins/osc-bridge/osc-card.png",
+      "fr": "/screenshots/fr/docs/plugins/osc-bridge/osc-card.png"
     },
     "translations": {
       "de": {
         "title": "OSC-Bridge (VRChat)",
-        "summary": "Mit OSC-Bridge (VRChat) richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "OSC-Bridge (VRChat) richtet Loopback-Adresse, UDP-Port und Nachrichtentyp ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Eingaben bleiben auf 127.0.0.1 und es wird kein VRChat-Client gesteuert"
       },
       "en": {
         "title": "OSC-Bridge (VRChat)",
-        "summary": "OSC-Bridge (VRChat) sets up an an external integration. This guide safely covers activation through local testing."
+        "summary": "OSC-Bridge (VRChat) configures loopback address, UDP port, and message type with a safe local check instead of a LIVE trigger.",
+        "firstResult": "inputs remain on 127.0.0.1 and no VRChat client is controlled"
       },
       "es": {
         "title": "OSC-Bridge (VRChat)",
-        "summary": "OSC-Bridge (VRChat) permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "OSC-Bridge (VRChat) configura dirección loopback, puerto UDP y tipo de mensaje mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "las entradas permanecen en 127.0.0.1 y no se controla ningún cliente VRChat"
       },
       "fr": {
         "title": "OSC-Bridge (VRChat)",
-        "summary": "OSC-Bridge (VRChat) permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "OSC-Bridge (VRChat) configure adresse loopback, port UDP et type de message avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "les entrées restent sur 127.0.0.1 et aucun client VRChat n’est contrôlé"
       }
     }
   },
   {
     "id": "quiz-show",
     "name": "Pup Cid's Little Quiz Show Plugin",
-    "category": "module",
+    "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/quiz-show/activate.png",
-      "en": "/screenshots/docs/plugins/quiz-show/activate.png",
-      "es": "/screenshots/es/docs/plugins/quiz-show/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/quiz-show/activate.png"
+      "de": "/screenshots/de/docs/plugins/quiz-show/quiz-card.png",
+      "en": "/screenshots/docs/plugins/quiz-show/quiz-card.png",
+      "es": "/screenshots/es/docs/plugins/quiz-show/quiz-card.png",
+      "fr": "/screenshots/fr/docs/plugins/quiz-show/quiz-card.png"
     },
     "translations": {
       "de": {
         "title": "Pup Cid's Little Quiz Show Plugin",
-        "summary": "Mit Pup Cid's Little Quiz Show Plugin richtest du eine interaktive Zuschauer-Erfahrung ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Pup Cid's Little Quiz Show Plugin richtet Fragenpool, Antwortzeit und Punktelogik ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Spielansicht zeigt die Frage ohne LIVE-Chatinteraktion"
       },
       "en": {
         "title": "Pup Cid's Little Quiz Show Plugin",
-        "summary": "Pup Cid's Little Quiz Show Plugin sets up an an interactive viewer experience. This guide safely covers activation through local testing."
+        "summary": "Pup Cid's Little Quiz Show Plugin configures question pool, answer time, and scoring logic with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the game view shows the question without LIVE chat interaction"
       },
       "es": {
         "title": "Pup Cid's Little Quiz Show Plugin",
-        "summary": "Pup Cid's Little Quiz Show Plugin permite configurar una experiencia interactiva para espectadores. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Pup Cid's Little Quiz Show Plugin configura banco de preguntas, tiempo de respuesta y lógica de puntuación mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la vista de juego muestra la pregunta sin interacción de chat LIVE"
       },
       "fr": {
         "title": "Pup Cid's Little Quiz Show Plugin",
-        "summary": "Pup Cid's Little Quiz Show Plugin permet de configurer une expérience interactive pour les spectateurs. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Pup Cid's Little Quiz Show Plugin configure banque de questions, temps de réponse et logique de score avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la vue de jeu affiche la question sans interaction de chat LIVE"
       }
     }
   },
   {
     "id": "sidekick",
     "name": "Sidekick",
-    "category": "tool",
+    "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/sidekick/activate.png",
-      "en": "/screenshots/docs/plugins/sidekick/activate.png",
-      "es": "/screenshots/es/docs/plugins/sidekick/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/sidekick/activate.png"
+      "de": "/screenshots/de/docs/plugins/sidekick/sidekick-card.png",
+      "en": "/screenshots/docs/plugins/sidekick/sidekick-card.png",
+      "es": "/screenshots/es/docs/plugins/sidekick/sidekick-card.png",
+      "fr": "/screenshots/fr/docs/plugins/sidekick/sidekick-card.png"
     },
     "translations": {
       "de": {
         "title": "Sidekick",
-        "summary": "Mit Sidekick richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Sidekick richtet Assistentenmodus, Kontextquelle und Antwortkanal ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die UI bestätigt die Konfiguration, ohne einen externen Dienst anzurufen"
       },
       "en": {
         "title": "Sidekick",
-        "summary": "Sidekick sets up an a system and administration workflow. This guide safely covers activation through local testing."
+        "summary": "Sidekick configures assistant mode, context source, and response channel with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the UI confirms the configuration without calling an external service"
       },
       "es": {
         "title": "Sidekick",
-        "summary": "Sidekick permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Sidekick configura modo asistente, fuente de contexto y canal de respuesta mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la UI confirma la configuración sin llamar a un servicio externo"
       },
       "fr": {
         "title": "Sidekick",
-        "summary": "Sidekick permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Sidekick configure mode assistant, source de contexte et canal de réponse avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "l’UI confirme la configuration sans appeler de service externe"
       }
     }
   },
   {
     "id": "soundboard",
     "name": "Soundboard",
-    "category": "module",
+    "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/soundboard/activate.png",
-      "en": "/screenshots/docs/plugins/soundboard/activate.png",
-      "es": "/screenshots/es/docs/plugins/soundboard/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/soundboard/activate.png"
+      "de": "/screenshots/de/docs/plugins/soundboard/soundboard-card.png",
+      "en": "/screenshots/docs/plugins/soundboard/soundboard-card.png",
+      "es": "/screenshots/es/docs/plugins/soundboard/soundboard-card.png",
+      "fr": "/screenshots/fr/docs/plugins/soundboard/soundboard-card.png"
     },
     "translations": {
       "de": {
         "title": "Soundboard",
-        "summary": "Mit Soundboard richtest du einen Audio- und Sprachablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Soundboard richtet Sound-Slot, Lautstärke und Ereigniszuordnung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Zuordnung wird sichtbar, ohne Audio auszugeben"
       },
       "en": {
         "title": "Soundboard",
-        "summary": "Soundboard sets up an an audio and voice workflow. This guide safely covers activation through local testing."
+        "summary": "Soundboard configures sound slot, volume, and event mapping with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the mapping becomes visible without audio output"
       },
       "es": {
         "title": "Soundboard",
-        "summary": "Soundboard permite configurar un flujo de audio y voz. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Soundboard configura ranura de sonido, volumen y asignación de evento mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la asignación se hace visible sin emitir audio"
       },
       "fr": {
         "title": "Soundboard",
-        "summary": "Soundboard permet de configurer un flux audio et vocal. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Soundboard configure slot sonore, volume et mappage d’événement avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "le mappage devient visible sans sortie audio"
       }
     }
   },
@@ -773,29 +869,33 @@
     "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/spotlight/activate.png",
-      "en": "/screenshots/docs/plugins/spotlight/activate.png",
-      "es": "/screenshots/es/docs/plugins/spotlight/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/spotlight/activate.png"
+      "de": "/screenshots/de/docs/plugins/spotlight/spotlight-card.png",
+      "en": "/screenshots/docs/plugins/spotlight/spotlight-card.png",
+      "es": "/screenshots/es/docs/plugins/spotlight/spotlight-card.png",
+      "fr": "/screenshots/fr/docs/plugins/spotlight/spotlight-card.png"
     },
     "translations": {
       "de": {
         "title": "Spotlight",
-        "summary": "Mit Spotlight richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Spotlight richtet Ereignistyp, Anzeigedauer und Spotlight-Stil ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Spotlight-Karte wird in der Vorschau gerendert"
       },
       "en": {
         "title": "Spotlight",
-        "summary": "Spotlight sets up an an overlay and visual response. This guide safely covers activation through local testing."
+        "summary": "Spotlight configures event type, display duration, and spotlight style with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the spotlight card is rendered in preview"
       },
       "es": {
         "title": "Spotlight",
-        "summary": "Spotlight permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Spotlight configura tipo de evento, duración de visualización y estilo Spotlight mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la tarjeta Spotlight se renderiza en la vista previa"
       },
       "fr": {
         "title": "Spotlight",
-        "summary": "Spotlight permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Spotlight configure type d’événement, durée d’affichage et style Spotlight avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la carte Spotlight est rendue dans l’aperçu"
       }
     }
   },
@@ -805,125 +905,141 @@
     "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/streamalchemy/activate.png",
-      "en": "/screenshots/docs/plugins/streamalchemy/activate.png",
-      "es": "/screenshots/es/docs/plugins/streamalchemy/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/streamalchemy/activate.png"
+      "de": "/screenshots/de/docs/plugins/streamalchemy/alchemy-card.png",
+      "en": "/screenshots/docs/plugins/streamalchemy/alchemy-card.png",
+      "es": "/screenshots/es/docs/plugins/streamalchemy/alchemy-card.png",
+      "fr": "/screenshots/fr/docs/plugins/streamalchemy/alchemy-card.png"
     },
     "translations": {
       "de": {
         "title": "StreamAlchemy",
-        "summary": "Mit StreamAlchemy richtest du eine interaktive Zuschauer-Erfahrung ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "StreamAlchemy richtet Automationsregel, Auslöser und Aktionskette ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Regel protokolliert den Trockenlauf, ohne LIVE-Aktionen auszuführen"
       },
       "en": {
         "title": "StreamAlchemy",
-        "summary": "StreamAlchemy sets up an an interactive viewer experience. This guide safely covers activation through local testing."
+        "summary": "StreamAlchemy configures automation rule, trigger, and action chain with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the rule logs the dry run without executing LIVE actions"
       },
       "es": {
         "title": "StreamAlchemy",
-        "summary": "StreamAlchemy permite configurar una experiencia interactiva para espectadores. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "StreamAlchemy configura regla de automatización, disparador y cadena de acciones mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la regla registra la ejecución en seco sin realizar acciones LIVE"
       },
       "fr": {
         "title": "StreamAlchemy",
-        "summary": "StreamAlchemy permet de configurer une expérience interactive pour les spectateurs. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "StreamAlchemy configure règle d’automatisation, déclencheur et chaîne d’actions avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la règle journalise l’essai à blanc sans exécuter d’actions LIVE"
       }
     }
   },
   {
     "id": "stt-ticker",
     "name": "STT Ticker",
-    "category": "tool",
+    "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/stt-ticker/activate.png",
-      "en": "/screenshots/docs/plugins/stt-ticker/activate.png",
-      "es": "/screenshots/es/docs/plugins/stt-ticker/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/stt-ticker/activate.png"
+      "de": "/screenshots/de/docs/plugins/stt-ticker/ticker-card.png",
+      "en": "/screenshots/docs/plugins/stt-ticker/ticker-card.png",
+      "es": "/screenshots/es/docs/plugins/stt-ticker/ticker-card.png",
+      "fr": "/screenshots/fr/docs/plugins/stt-ticker/ticker-card.png"
     },
     "translations": {
       "de": {
         "title": "STT Ticker",
-        "summary": "Mit STT Ticker richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "STT Ticker richtet Sprache, Untertitelmodus und Textstil ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "der Satz erscheint im Ticker ohne Mikrofonaufnahme"
       },
       "en": {
         "title": "STT Ticker",
-        "summary": "STT Ticker sets up an an overlay and visual response. This guide safely covers activation through local testing."
+        "summary": "STT Ticker configures language, subtitle mode, and text style with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the sentence appears in the ticker without microphone capture"
       },
       "es": {
         "title": "STT Ticker",
-        "summary": "STT Ticker permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "STT Ticker configura idioma, modo de subtítulos y estilo de texto mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la frase aparece en el ticker sin captura de micrófono"
       },
       "fr": {
         "title": "STT Ticker",
-        "summary": "STT Ticker permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "STT Ticker configure langue, mode de sous-titres et style de texte avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la phrase apparaît dans le ticker sans capture micro"
       }
     }
   },
   {
     "id": "talking-heads",
     "name": "Talking Heads",
-    "category": "module",
+    "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/talking-heads/activate.png",
-      "en": "/screenshots/docs/plugins/talking-heads/activate.png",
-      "es": "/screenshots/es/docs/plugins/talking-heads/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/talking-heads/activate.png"
+      "de": "/screenshots/de/docs/plugins/talking-heads/heads-card.png",
+      "en": "/screenshots/docs/plugins/talking-heads/heads-card.png",
+      "es": "/screenshots/es/docs/plugins/talking-heads/heads-card.png",
+      "fr": "/screenshots/fr/docs/plugins/talking-heads/heads-card.png"
     },
     "translations": {
       "de": {
         "title": "Talking Heads",
-        "summary": "Mit Talking Heads richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Talking Heads richtet Charakter, Sprachereignis und Lippenbewegung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "der Charakter reagiert in der Vorschau ohne TTS-Provider"
       },
       "en": {
         "title": "Talking Heads",
-        "summary": "Talking Heads sets up an an overlay and visual response. This guide safely covers activation through local testing."
+        "summary": "Talking Heads configures character, speech event, and lip movement with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the character reacts in preview without a TTS provider"
       },
       "es": {
         "title": "Talking Heads",
-        "summary": "Talking Heads permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Talking Heads configura personaje, evento de voz y movimiento de labios mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "el personaje reacciona en la vista previa sin proveedor TTS"
       },
       "fr": {
         "title": "Talking Heads",
-        "summary": "Talking Heads permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Talking Heads configure personnage, événement vocal et mouvement des lèvres avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "le personnage réagit dans l’aperçu sans fournisseur TTS"
       }
     }
   },
   {
     "id": "tts",
     "name": "Text-to-Speech System",
-    "category": "core",
+    "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/tts/activate.png",
-      "en": "/screenshots/docs/plugins/tts/activate.png",
-      "es": "/screenshots/es/docs/plugins/tts/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/tts/activate.png"
+      "de": "/screenshots/de/docs/plugins/tts/tts-card.png",
+      "en": "/screenshots/docs/plugins/tts/tts-card.png",
+      "es": "/screenshots/es/docs/plugins/tts/tts-card.png",
+      "fr": "/screenshots/fr/docs/plugins/tts/tts-card.png"
     },
     "translations": {
       "de": {
         "title": "Text-to-Speech System",
-        "summary": "Mit Text-to-Speech System richtest du einen Audio- und Sprachablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Text-to-Speech System richtet Stimme, Warteschlange und Moderationsfilter ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Vorschau validiert Text und Stimme, ohne Audio auszugeben"
       },
       "en": {
         "title": "Text-to-Speech System",
-        "summary": "Text-to-Speech System sets up an an audio and voice workflow. This guide safely covers activation through local testing."
+        "summary": "Text-to-Speech System configures voice, queue, and moderation filter with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the preview validates text and voice without audio output"
       },
       "es": {
         "title": "Text-to-Speech System",
-        "summary": "Text-to-Speech System permite configurar un flujo de audio y voz. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Text-to-Speech System configura voz, cola y filtro de moderación mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la vista previa valida texto y voz sin emitir audio"
       },
       "fr": {
         "title": "Text-to-Speech System",
-        "summary": "Text-to-Speech System permet de configurer un flux audio et vocal. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Text-to-Speech System configure voix, file et filtre de modération avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "l’aperçu valide le texte et la voix sans sortie audio"
       }
     }
   },
@@ -933,125 +1049,141 @@
     "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/thermal-printer/activate.png",
-      "en": "/screenshots/docs/plugins/thermal-printer/activate.png",
-      "es": "/screenshots/es/docs/plugins/thermal-printer/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/thermal-printer/activate.png"
+      "de": "/screenshots/de/docs/plugins/thermal-printer/printer-card.png",
+      "en": "/screenshots/docs/plugins/thermal-printer/printer-card.png",
+      "es": "/screenshots/es/docs/plugins/thermal-printer/printer-card.png",
+      "fr": "/screenshots/fr/docs/plugins/thermal-printer/printer-card.png"
     },
     "translations": {
       "de": {
         "title": "Thermal Printer",
-        "summary": "Mit Thermal Printer richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Thermal Printer richtet Druckerprofil, Zeichensatz und Warteschlange ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "ein Testeintrag bleibt in der Queue; es wird nichts gedruckt"
       },
       "en": {
         "title": "Thermal Printer",
-        "summary": "Thermal Printer sets up an an external integration. This guide safely covers activation through local testing."
+        "summary": "Thermal Printer configures printer profile, character set, and queue with a safe local check instead of a LIVE trigger.",
+        "firstResult": "a test item remains in the queue; nothing is printed"
       },
       "es": {
         "title": "Thermal Printer",
-        "summary": "Thermal Printer permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Thermal Printer configura perfil de impresora, juego de caracteres y cola mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "una entrada de prueba permanece en la cola; no se imprime nada"
       },
       "fr": {
         "title": "Thermal Printer",
-        "summary": "Thermal Printer permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Thermal Printer configure profil d’imprimante, jeu de caractères et file avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "une entrée de test reste dans la file ; rien n’est imprimé"
       }
     }
   },
   {
     "id": "toptier",
     "name": "Top Tier",
-    "category": "overlay",
-    "access": "local plugin",
+    "category": "plugin",
+    "access": "available",
     "devStatus": "available",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/toptier/activate.png",
-      "en": "/screenshots/docs/plugins/toptier/activate.png",
-      "es": "/screenshots/es/docs/plugins/toptier/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/toptier/activate.png"
+      "de": "/screenshots/de/docs/plugins/toptier/tier-card.png",
+      "en": "/screenshots/docs/plugins/toptier/tier-card.png",
+      "es": "/screenshots/es/docs/plugins/toptier/tier-card.png",
+      "fr": "/screenshots/fr/docs/plugins/toptier/tier-card.png"
     },
     "translations": {
       "de": {
         "title": "Top Tier",
-        "summary": "Mit Top Tier richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Top Tier richtet Ranking-Regel, Schwelle und Anzeigestil ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Top-Tier-Karte zeigt den Demo-Rang in der Vorschau"
       },
       "en": {
         "title": "Top Tier",
-        "summary": "Top Tier sets up an an overlay and visual response. This guide safely covers activation through local testing."
+        "summary": "Top Tier configures ranking rule, threshold, and display style with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the Top Tier card shows the demo rank in preview"
       },
       "es": {
         "title": "Top Tier",
-        "summary": "Top Tier permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Top Tier configura regla de ranking, umbral y estilo de visualización mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la tarjeta Top Tier muestra el rango demo en la vista previa"
       },
       "fr": {
         "title": "Top Tier",
-        "summary": "Top Tier permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Top Tier configure règle de classement, seuil et style d’affichage avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la carte Top Tier affiche le rang démo dans l’aperçu"
       }
     }
   },
   {
     "id": "vdoninja",
     "name": "VDO.Ninja Multi-Guest Manager",
-    "category": "integration",
+    "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/vdoninja/activate.png",
-      "en": "/screenshots/docs/plugins/vdoninja/activate.png",
-      "es": "/screenshots/es/docs/plugins/vdoninja/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/vdoninja/activate.png"
+      "de": "/screenshots/de/docs/plugins/vdoninja/ninja-card.png",
+      "en": "/screenshots/docs/plugins/vdoninja/ninja-card.png",
+      "es": "/screenshots/es/docs/plugins/vdoninja/ninja-card.png",
+      "fr": "/screenshots/fr/docs/plugins/vdoninja/ninja-card.png"
     },
     "translations": {
       "de": {
         "title": "VDO.Ninja Multi-Guest Manager",
-        "summary": "Mit VDO.Ninja Multi-Guest Manager richtest du eine externe Integration ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "VDO.Ninja Multi-Guest Manager richtet Raumname, Gastlayout und Browserquelle ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die Browser-Quelle ist vorbereitet, ohne einen Gast zu verbinden"
       },
       "en": {
         "title": "VDO.Ninja Multi-Guest Manager",
-        "summary": "VDO.Ninja Multi-Guest Manager sets up an an external integration. This guide safely covers activation through local testing."
+        "summary": "VDO.Ninja Multi-Guest Manager configures room name, guest layout, and browser source with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the browser source is prepared without connecting a guest"
       },
       "es": {
         "title": "VDO.Ninja Multi-Guest Manager",
-        "summary": "VDO.Ninja Multi-Guest Manager permite configurar una integración externa. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "VDO.Ninja Multi-Guest Manager configura nombre de sala, diseño de invitados y fuente de navegador mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la fuente de navegador está preparada sin conectar un invitado"
       },
       "fr": {
         "title": "VDO.Ninja Multi-Guest Manager",
-        "summary": "VDO.Ninja Multi-Guest Manager permet de configurer une intégration externe. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "VDO.Ninja Multi-Guest Manager configure nom de salle, disposition des invités et source navigateur avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "la source navigateur est préparée sans connecter d’invité"
       }
     }
   },
   {
     "id": "milestone-leaderboard",
     "name": "Viewer XP",
-    "category": "overlay",
+    "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/milestone-leaderboard/activate.png",
-      "en": "/screenshots/docs/plugins/milestone-leaderboard/activate.png",
-      "es": "/screenshots/es/docs/plugins/milestone-leaderboard/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/milestone-leaderboard/activate.png"
+      "de": "/screenshots/de/docs/plugins/milestone-leaderboard/xp-card.png",
+      "en": "/screenshots/docs/plugins/milestone-leaderboard/xp-card.png",
+      "es": "/screenshots/es/docs/plugins/milestone-leaderboard/xp-card.png",
+      "fr": "/screenshots/fr/docs/plugins/milestone-leaderboard/xp-card.png"
     },
     "translations": {
       "de": {
         "title": "Viewer XP",
-        "summary": "Mit Viewer XP richtest du einen System- und Verwaltungsablauf ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Viewer XP richtet XP-Regeln, Meilenstein und Ranglistenanzeige ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "ein Demonutzer erscheint in der Ranglisten-Vorschau"
       },
       "en": {
         "title": "Viewer XP",
-        "summary": "Viewer XP sets up an a system and administration workflow. This guide safely covers activation through local testing."
+        "summary": "Viewer XP configures XP rules, milestone, and leaderboard display with a safe local check instead of a LIVE trigger.",
+        "firstResult": "a demo user appears in the leaderboard preview"
       },
       "es": {
         "title": "Viewer XP",
-        "summary": "Viewer XP permite configurar un flujo de sistema y administración. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Viewer XP configura reglas de XP, hito y visualización de clasificación mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "un usuario demo aparece en la vista previa de clasificación"
       },
       "fr": {
         "title": "Viewer XP",
-        "summary": "Viewer XP permet de configurer un flux système et administration. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Viewer XP configure règles XP, jalon et affichage du classement avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "un utilisateur démo apparaît dans l’aperçu du classement"
       }
     }
   },
@@ -1061,29 +1193,33 @@
     "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/flame-overlay/activate.png",
-      "en": "/screenshots/docs/plugins/flame-overlay/activate.png",
-      "es": "/screenshots/es/docs/plugins/flame-overlay/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/flame-overlay/activate.png"
+      "de": "/screenshots/de/docs/plugins/flame-overlay/frame-card.png",
+      "en": "/screenshots/docs/plugins/flame-overlay/frame-card.png",
+      "es": "/screenshots/es/docs/plugins/flame-overlay/frame-card.png",
+      "fr": "/screenshots/fr/docs/plugins/flame-overlay/frame-card.png"
     },
     "translations": {
       "de": {
         "title": "Visual FX Frame",
-        "summary": "Mit Visual FX Frame richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Visual FX Frame richtet Rahmenstil, Intensität und Farbvorgabe ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "der Rahmen ist sichtbar, ohne eine LIVE-Szene zu verändern"
       },
       "en": {
         "title": "Visual FX Frame",
-        "summary": "Visual FX Frame sets up an an overlay and visual response. This guide safely covers activation through local testing."
+        "summary": "Visual FX Frame configures frame style, intensity, and color preset with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the frame is visible without changing a LIVE scene"
       },
       "es": {
         "title": "Visual FX Frame",
-        "summary": "Visual FX Frame permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Visual FX Frame configura estilo de marco, intensidad y preajuste de color mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "el marco es visible sin cambiar una escena LIVE"
       },
       "fr": {
         "title": "Visual FX Frame",
-        "summary": "Visual FX Frame permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Visual FX Frame configure style de cadre, intensité et préréglage de couleur avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "le cadre est visible sans modifier une scène LIVE"
       }
     }
   },
@@ -1093,29 +1229,33 @@
     "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/weather-control/activate.png",
-      "en": "/screenshots/docs/plugins/weather-control/activate.png",
-      "es": "/screenshots/es/docs/plugins/weather-control/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/weather-control/activate.png"
+      "de": "/screenshots/de/docs/plugins/weather-control/weather-card.png",
+      "en": "/screenshots/docs/plugins/weather-control/weather-card.png",
+      "es": "/screenshots/es/docs/plugins/weather-control/weather-card.png",
+      "fr": "/screenshots/fr/docs/plugins/weather-control/weather-card.png"
     },
     "translations": {
       "de": {
         "title": "Weather Control",
-        "summary": "Mit Weather Control richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "Weather Control richtet Wettereffect, Intensität und Lebenszyklus ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "der Effekt startet und endet in der Vorschau ohne LIVE-Szene"
       },
       "en": {
         "title": "Weather Control",
-        "summary": "Weather Control sets up an an overlay and visual response. This guide safely covers activation through local testing."
+        "summary": "Weather Control configures weather effect, intensity, and lifecycle with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the effect starts and ends in preview without a LIVE scene"
       },
       "es": {
         "title": "Weather Control",
-        "summary": "Weather Control permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "Weather Control configura efecto meteorológico, intensidad y ciclo de vida mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "el efecto inicia y termina en la vista previa sin escena LIVE"
       },
       "fr": {
         "title": "Weather Control",
-        "summary": "Weather Control permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "Weather Control configure effet météo, intensité et cycle de vie avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "l’effet commence et finit dans l’aperçu sans scène LIVE"
       }
     }
   },
@@ -1125,29 +1265,33 @@
     "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": true,
+    "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/webgpu-emoji-rain/activate.png",
-      "en": "/screenshots/docs/plugins/webgpu-emoji-rain/activate.png",
-      "es": "/screenshots/es/docs/plugins/webgpu-emoji-rain/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/webgpu-emoji-rain/activate.png"
+      "de": "/screenshots/de/docs/plugins/webgpu-emoji-rain/gpu-rain-card.png",
+      "en": "/screenshots/docs/plugins/webgpu-emoji-rain/gpu-rain-card.png",
+      "es": "/screenshots/es/docs/plugins/webgpu-emoji-rain/gpu-rain-card.png",
+      "fr": "/screenshots/fr/docs/plugins/webgpu-emoji-rain/gpu-rain-card.png"
     },
     "translations": {
       "de": {
         "title": "WebGPU EmojiRain",
-        "summary": "Mit WebGPU EmojiRain richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "WebGPU EmojiRain richtet WebGPU-Preset, Assets und Geschenkregel ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "die GPU-Vorschau zeigt Emojis und meldet keinen LIVE-Kontakt"
       },
       "en": {
         "title": "WebGPU EmojiRain",
-        "summary": "WebGPU EmojiRain sets up an an overlay and visual response. This guide safely covers activation through local testing."
+        "summary": "WebGPU EmojiRain configures WebGPU preset, assets, and gift rule with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the GPU preview shows emojis and reports no LIVE connection"
       },
       "es": {
         "title": "WebGPU EmojiRain",
-        "summary": "WebGPU EmojiRain permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "WebGPU EmojiRain configura preajuste WebGPU, recursos y regla de regalo mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "la vista previa GPU muestra emojis y no informa conexión LIVE"
       },
       "fr": {
         "title": "WebGPU EmojiRain",
-        "summary": "WebGPU EmojiRain permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "WebGPU EmojiRain configure préréglage WebGPU, assets et règle de cadeau avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "l’aperçu GPU montre des emojis et n’indique aucune connexion LIVE"
       }
     }
   },
@@ -1159,27 +1303,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/webgpu-fireworks/activate.png",
-      "en": "/screenshots/docs/plugins/webgpu-fireworks/activate.png",
-      "es": "/screenshots/es/docs/plugins/webgpu-fireworks/activate.png",
-      "fr": "/screenshots/fr/docs/plugins/webgpu-fireworks/activate.png"
+      "de": "/screenshots/de/docs/plugins/webgpu-fireworks/gpu-fireworks-card.png",
+      "en": "/screenshots/docs/plugins/webgpu-fireworks/gpu-fireworks-card.png",
+      "es": "/screenshots/es/docs/plugins/webgpu-fireworks/gpu-fireworks-card.png",
+      "fr": "/screenshots/fr/docs/plugins/webgpu-fireworks/gpu-fireworks-card.png"
     },
     "translations": {
       "de": {
         "title": "WebGPU Fireworks",
-        "summary": "Mit WebGPU Fireworks richtest du ein Overlay mit visueller Reaktion ein. Diese Anleitung führt sicher von Aktivierung bis zum lokalen Test."
+        "summary": "WebGPU Fireworks richtet WebGPU-Qualität, Auslöser und Performance-Grenze ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "das WebGPU-Feuerwerk wird gerendert, ohne TikTok LIVE zu verbinden"
       },
       "en": {
         "title": "WebGPU Fireworks",
-        "summary": "WebGPU Fireworks sets up an an overlay and visual response. This guide safely covers activation through local testing."
+        "summary": "WebGPU Fireworks configures WebGPU quality, trigger, and performance limit with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the WebGPU fireworks render without connecting TikTok LIVE"
       },
       "es": {
         "title": "WebGPU Fireworks",
-        "summary": "WebGPU Fireworks permite configurar un overlay y una respuesta visual. Esta guía cubre de forma segura la activación y la prueba local."
+        "summary": "WebGPU Fireworks configura calidad WebGPU, disparador y límite de rendimiento mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "los fuegos WebGPU se renderizan sin conectar TikTok LIVE"
       },
       "fr": {
         "title": "WebGPU Fireworks",
-        "summary": "WebGPU Fireworks permet de configurer un overlay et une réponse visuelle. Ce guide couvre en sécurité l’activation et le test local."
+        "summary": "WebGPU Fireworks configure qualité WebGPU, déclencheur et limite de performance avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "les feux WebGPU sont rendus sans connecter TikTok LIVE"
       }
     }
   }

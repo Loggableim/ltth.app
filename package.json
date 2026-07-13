@@ -15,6 +15,7 @@
     "docs:i18n": "node scripts/generate-documentation-locales.js && node scripts/rewire-documentation-links.js",
     "docs:encoding": "node scripts/repair-documentation-encoding.js && npm run docs:i18n",
     "docs:plugins:build": "node scripts/build-plugin-docs.js",
+    "docs:plugins:source:check": "node scripts/verify-plugin-tutorial-source.js && node scripts/verify-plugin-tutorial-anchors.js && node scripts/verify-docs-screenshot-spec.js",
     "docs:plugins:check": "node scripts/verify-plugin-docs.js",
     "website:plugins:check": "node scripts/verify-plugin-catalog.js",
     "website:contrast:check": "node scripts/verify-site-contrast.js",
