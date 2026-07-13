@@ -445,7 +445,7 @@ body.site-v2 code {
   color: #e8dcff;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   body.site-v2 .nav-menu {
     background: #17122d;
     border-color: rgba(255, 255, 255, 0.2);
@@ -642,4 +642,18 @@ body.site-v2 .plugin-catalog-card__meta span {
 @media (max-width: 640px) {
   body.site-v2 .plugin-catalog-grid { grid-template-columns: 1fr; }
   body.site-v2 .plugin-catalog-card { min-height: 0; }
+}
+
+@media (max-width: 767px) {
+  body.site-v2 .nav-menu {
+    background: #fff;
+    border-color: #cfdacf;
+  }
+
+  body.site-v2 .nav-menu .nav-link,
+  body.site-v2 .nav-menu .lang-dropdown-toggle,
+  body.site-v2 .nav-menu .nav-mega-toggle,
+  body.site-v2 .nav-menu .mega-item {
+    color: #0e0f10 !important;
+  }
 }

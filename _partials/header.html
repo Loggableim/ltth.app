@@ -1,7 +1,13 @@
 <header id="site-header">
 <section class="beta-notice" id="betaNotice">
     <div class="container">
-        <div class="beta-content">
+        <button class="beta-banner-toggle" id="betaBannerToggle" type="button" aria-controls="betaBannerContent" aria-expanded="false" data-i18n-aria-label="beta.notice.toggle">
+            <span data-i18n="beta.notice.compact">Version 1.3.27 · Neuigkeiten &amp; Feedback</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+            </svg>
+        </button>
+        <div class="beta-content" id="betaBannerContent">
             <div class="beta-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
@@ -43,13 +49,15 @@
                 
                 <!-- Features Mega Menu -->
                 <div class="nav-mega" id="featuresMega">
-                    <a href="/features/" class="nav-link nav-mega-toggle" data-page="features" aria-haspopup="true" aria-expanded="false" data-i18n="nav.features" data-i18n-href="nav.featuresHref">
-                        Features
+                    <div class="nav-mega-heading">
+                        <a href="/features/" class="nav-link" data-page="features" data-i18n="nav.features" data-i18n-href="nav.featuresHref">Features</a>
+                        <button class="nav-mega-toggle" id="featuresMenuToggle" type="button" aria-controls="featuresMegaPanel" aria-expanded="false" data-i18n-aria-label="nav.featuresMenu">
                         <svg class="nav-mega-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" aria-hidden="true">
                             <polyline points="6 9 12 15 18 9"/>
                         </svg>
-                    </a>
-                    <div class="nav-mega-panel" role="region" aria-label="Features Menu">
+                        </button>
+                    </div>
+                    <div class="nav-mega-panel" id="featuresMegaPanel" role="region" aria-label="Features Menu">
                         <div class="mega-panel-inner">
                             <div class="mega-grid">
                                 <div class="mega-category">

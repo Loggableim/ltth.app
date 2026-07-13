@@ -189,24 +189,47 @@
     function initHamburger() {
         const toggle = document.getElementById('navToggle');
         const menu = document.getElementById('navMenu');
-        if (!toggle || !menu) return;
+        const header = document.getElementById('site-header');
+        if (!toggle || !menu || !header) return;
 
         // Prevent double-binding if layout.js already initialised this toggle
         if (toggle.getAttribute('data-ltth-burger-init')) return;
         toggle.setAttribute('data-ltth-burger-init', 'true');
 
+        const syncHeaderHeight = () => {
+            document.documentElement.style.setProperty('--site-header-height', `${Math.ceil(header.getBoundingClientRect().height)}px`);
+        };
+        const closeMegaMenu = () => {
+            const mega = document.getElementById('featuresMega');
+            const megaToggle = document.getElementById('featuresMenuToggle');
+            if (mega) mega.classList.remove('open');
+            if (megaToggle) megaToggle.setAttribute('aria-expanded', 'false');
+        };
+        const focusableMenuItems = () => Array.from(menu.querySelectorAll('a[href], button:not([disabled])'));
+
+        syncHeaderHeight();
+        if (window.ResizeObserver) {
+            new ResizeObserver(syncHeaderHeight).observe(header);
+        } else {
+            window.addEventListener('resize', syncHeaderHeight, { passive: true });
+        }
+
         function openMenu() {
+            syncHeaderHeight();
             // Toggle both .open (layout.css) and .active (main.css) for compatibility
             menu.classList.add('open', 'active');
             toggle.classList.add('open', 'active');
             toggle.setAttribute('aria-expanded', 'true');
-            document.body.style.overflow = 'hidden';
+            document.body.classList.add('site-menu-open');
+            focusableMenuItems()[0]?.focus();
         }
-        function closeMenu() {
+        function closeMenu({ returnFocus = false } = {}) {
             menu.classList.remove('open', 'active');
             toggle.classList.remove('open', 'active');
             toggle.setAttribute('aria-expanded', 'false');
-            document.body.style.overflow = '';
+            document.body.classList.remove('site-menu-open');
+            closeMegaMenu();
+            if (returnFocus) toggle.focus();
         }
 
         toggle.addEventListener('click', (e) => {
@@ -218,19 +241,38 @@
         document.addEventListener('click', (e) => {
             if (menu.classList.contains('open') &&
                 !toggle.contains(e.target) && !menu.contains(e.target)) {
-                closeMenu();
+                closeMenu({ returnFocus: true });
             }
         });
         // Close on Escape key
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && menu.classList.contains('open')) closeMenu();
+            if (!menu.classList.contains('open')) return;
+            if (e.key === 'Escape') {
+                closeMenu({ returnFocus: true });
+                return;
+            }
+            if (e.key !== 'Tab') return;
+            const items = focusableMenuItems();
+            if (!items.length) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
         });
         // Close menu when a nav-link is clicked on mobile
         menu.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', () => {
-                if (window.innerWidth <= 768) closeMenu();
+                if (window.innerWidth <= 767) closeMenu();
             });
         });
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768 && menu.classList.contains('open')) closeMenu();
+        }, { passive: true });
     }
     
     function initScrollProgress() {
@@ -297,7 +339,7 @@
         const panel = mega.querySelector('.nav-mega-panel');
         if (!toggle || !panel) return;
 
-        const isMobile = () => window.innerWidth <= 768;
+        const isMobile = () => window.innerWidth <= 767;
 
         function openMega() {
             mega.classList.add('open');
@@ -427,16 +469,35 @@
     function initBetaNotice() {
         const notice = document.getElementById('betaNotice');
         const closeBtn = document.getElementById('betaClose');
-        if (!notice || !closeBtn) return;
+        const toggle = document.getElementById('betaBannerToggle');
+        const content = document.getElementById('betaBannerContent');
+        if (!notice || !closeBtn || !toggle || !content) return;
         // If already owned by BetaNoticeManager (main.js), skip
         if (closeBtn.getAttribute('data-ltth-beta-init')) return;
         closeBtn.setAttribute('data-ltth-beta-init', 'true');
+        const media = window.matchMedia('(max-width: 767px)');
+        const setCompactState = (expanded) => {
+            if (!media.matches) {
+                content.hidden = false;
+                toggle.setAttribute('aria-expanded', 'true');
+                return;
+            }
+            content.hidden = !expanded;
+            toggle.setAttribute('aria-expanded', String(expanded));
+        };
+        const updateForViewport = () => setCompactState(false);
+
         try {
             if (localStorage.getItem('ltth_beta_closed') === '1') {
                 notice.style.display = 'none';
                 return;
             }
         } catch(e) {}
+        updateForViewport();
+        toggle.addEventListener('click', () => {
+            setCompactState(toggle.getAttribute('aria-expanded') !== 'true');
+        });
+        media.addEventListener?.('change', updateForViewport);
         closeBtn.addEventListener('click', () => {
             notice.style.display = 'none';
             try { localStorage.setItem('ltth_beta_closed', '1'); } catch(e) {}
@@ -451,7 +512,7 @@
         const link = document.createElement('link');
         link.id = 'ltthSiteV2Styles';
         link.rel = 'stylesheet';
-        link.href = '/css/site-v2.css?v=site-v2-20260712a';
+        link.href = '/css/site-v2.css?v=mobile-20260713d';
         document.head.appendChild(link);
     }
 
