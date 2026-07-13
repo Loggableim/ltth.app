@@ -18,7 +18,10 @@
   const EFFECT_IDS = Object.freeze({ flames: 0, particles: 1, energy: 2, lightning: 3 });
   const STYLE_IDS = Object.freeze({ realistic: 0, neon: 1, hybrid: 2 });
   const FRAME_MODE_IDS = Object.freeze({ bottom: 0, top: 1, sides: 2, all: 3 });
-  const FRAME_STYLE_IDS = Object.freeze({ classic: 0, organic: 1, double: 2, segmented: 3, portal: 4 });
+  const FRAME_STYLE_IDS = Object.freeze({
+    classic: 0, organic: 1, double: 2, segmented: 3, portal: 4,
+    'solar-forge': 5, 'prism-reactor': 6, 'arcane-bloom': 7, 'tempest-rift': 8, 'quantum-circuit': 9
+  });
   const PULSE_PATTERN_IDS = Object.freeze({ breathe: 0, heartbeat: 1, ripple: 2 });
 
   class WebGPUVisualFxEngine {
@@ -53,6 +56,13 @@
         frameCurve: 0.1,
         frameNoiseAmount: 0.12,
         flameBrightness: 0.38,
+        designControls: {
+          'solar-forge': { emberFlow: 0.72, moltenCrust: 0.64 },
+          'prism-reactor': { refraction: 0.68, sweepSpeed: 0.55 },
+          'arcane-bloom': { runeDensity: 0.62, orbitSpeed: 0.5 },
+          'tempest-rift': { arcCount: 0.58, riftTurbulence: 0.6 },
+          'quantum-circuit': { traceDensity: 0.6, hudSweep: 0.5 }
+        },
         ...options.config
       };
       this.adapter = null;
@@ -296,7 +306,7 @@
       const background = this._hex(this.config.backgroundTint, [0, 0, 0, 0]);
       const pulse = Math.min(2, this.activeTriggers.reduce((sum, trigger) => sum + (Number(trigger.intensityBoost ?? trigger.amount ?? trigger.intensity) || 0.25), 0));
       const secondaryColor = this._hex(this.config.secondaryColor, [1, 0.83, 0.42, 1]);
-      const bytes = new ArrayBuffer(192);
+      const bytes = new ArrayBuffer(208);
       const view = new DataView(bytes);
       const f32 = (offset, value) => view.setFloat32(offset, Number(value) || 0, true);
       const u32 = (offset, value) => view.setUint32(offset, Math.max(0, Number(value) || 0), true);
@@ -326,6 +336,11 @@
       f32(180, Math.max(0, Math.min(1, Number(this.config.frameCurve) || 0)));
       f32(184, Math.max(0, Math.min(2, Number(this.config.flameBrightness) || 0)));
       f32(188, 0);
+      const design = this.config.designControls?.[this.config.frameStyle] || {};
+      f32(192, Math.max(0, Math.min(1, Number(Object.values(design)[0]) || 0)));
+      f32(196, Math.max(0, Math.min(1, Number(Object.values(design)[1]) || 0)));
+      f32(200, FRAME_STYLE_IDS[this.config.frameStyle] ?? 0);
+      f32(204, 0);
       this.device.queue.writeBuffer(this.buffers.uniforms, 0, bytes);
     }
 

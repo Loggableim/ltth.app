@@ -31,6 +31,31 @@ describe('Visual FX Frame WEBGPU native renderer', () => {
     ]) expect(library.scene).toContain(contract);
   });
 
+  test('defines distinct premium material functions driven by perimeter coordinates and design controls', () => {
+    const shaders = requirePlugin('renderer/effect-pipelines');
+    const library = shaders.createShaderLibrary();
+
+    for (const contract of [
+      'FRAME_STYLE_SOLAR_FORGE', 'FRAME_STYLE_PRISM_REACTOR', 'FRAME_STYLE_ARCANE_BLOOM',
+      'FRAME_STYLE_TEMPEST_RIFT', 'FRAME_STYLE_QUANTUM_CIRCUIT', 'fn framePerimeter',
+      'fn materialSolarForge', 'fn materialPrismReactor', 'fn materialArcaneBloom',
+      'fn materialTempestRift', 'fn materialQuantumCircuit', 'uniforms.designControls'
+    ]) expect(library.scene).toContain(contract);
+  });
+
+  test('applies the active gift and stream-event pulse to every premium material path', () => {
+    const shaders = requirePlugin('renderer/effect-pipelines');
+    const library = shaders.createShaderLibrary();
+
+    expect(library.scene).toContain('fn eventReactiveEnergy');
+    expect(library.scene).toContain('uniforms.triggerPulse');
+    expect(library.scene).toContain('energy = eventReactiveEnergy(energy, perimeter)');
+    for (const material of [
+      'materialSolarForge', 'materialPrismReactor', 'materialArcaneBloom',
+      'materialTempestRift', 'materialQuantumCircuit'
+    ]) expect(library.scene).toContain(material);
+  });
+
   test('uses storage simulation, indirect draws, and HDR post-processing', () => {
     const engineSource = read('webgpu-effects-engine.js');
     const resourceSource = read('gpu-resources.js');
@@ -154,7 +179,7 @@ describe('Visual FX Frame WEBGPU native renderer', () => {
     engine._writeUniforms(1000, 1 / 60);
     const bytes = writeBuffer.mock.calls.at(-1)[2];
     const view = new DataView(bytes);
-    expect(bytes.byteLength).toBe(192);
+    expect(bytes.byteLength).toBe(208);
     expect(view.getFloat32(132, true)).toBeCloseTo(0.34);
     expect(view.getFloat32(136, true)).toBeCloseTo(0.9);
     expect(view.getFloat32(140, true)).toBe(4);
@@ -164,6 +189,27 @@ describe('Visual FX Frame WEBGPU native renderer', () => {
     expect(view.getFloat32(160, true)).toBe(12);
     expect(view.getFloat32(164, true)).toBe(24);
     expect(view.getFloat32(176, true)).toBe(1);
+  });
+
+  test('packs the active premium design controls into an aligned GPU uniform block', () => {
+    const WebGPUVisualFxEngine = requirePlugin('renderer/webgpu-effects-engine');
+    const writeBuffer = jest.fn();
+    const engine = new WebGPUVisualFxEngine({ width: 1920, height: 1080 }, {
+      config: {
+        frameStyle: 'tempest-rift',
+        designControls: { 'tempest-rift': { arcCount: 0.82, riftTurbulence: 0.37 } }
+      }
+    });
+    engine.device = { queue: { writeBuffer } };
+    engine.buffers = { uniforms: {} };
+
+    engine._writeUniforms(1000, 1 / 60);
+    const bytes = writeBuffer.mock.calls.at(-1)[2];
+    const view = new DataView(bytes);
+    expect(bytes.byteLength).toBe(208);
+    expect(view.getFloat32(192, true)).toBeCloseTo(0.82);
+    expect(view.getFloat32(196, true)).toBeCloseTo(0.37);
+    expect(view.getFloat32(200, true)).toBe(8);
   });
 
   test('tone maps straight color before restoring premultiplied alpha', () => {

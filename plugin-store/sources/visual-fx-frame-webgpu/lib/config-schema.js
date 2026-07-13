@@ -4,7 +4,10 @@ const VISUAL_STYLES = Object.freeze(['realistic', 'neon', 'hybrid']);
 const EFFECT_TYPES = Object.freeze(['flames', 'particles', 'energy', 'lightning']);
 const QUALITY_MODES = Object.freeze(['low-load', 'obs-safe', 'max-quality']);
 const FRAME_MODES = Object.freeze(['bottom', 'top', 'sides', 'all']);
-const FRAME_STYLES = Object.freeze(['classic', 'organic', 'double', 'segmented', 'portal']);
+const FRAME_STYLES = Object.freeze([
+  'classic', 'organic', 'double', 'segmented', 'portal',
+  'solar-forge', 'prism-reactor', 'arcane-bloom', 'tempest-rift', 'quantum-circuit'
+]);
 const PULSE_PATTERNS = Object.freeze(['breathe', 'heartbeat', 'ripple']);
 const VISUAL_VARIANTS = Object.freeze(['custom', 'inferno-forge', 'neon-pulse', 'storm-portal']);
 
@@ -27,6 +30,19 @@ function clamp(value, min, max, fallback) {
 function color(value, fallback) {
   const normalized = String(value || '').toLowerCase();
   return /^#[0-9a-f]{6}$/.test(normalized) ? normalized : fallback;
+}
+
+function normalizeDesignControls(value) {
+  const source = value && typeof value === 'object' ? value : {};
+  const defaults = DEFAULT_WEBGPU_CONFIG.designControls;
+  const result = {};
+  for (const [style, controls] of Object.entries(defaults)) {
+    result[style] = {};
+    for (const [key, fallback] of Object.entries(controls)) {
+      result[style][key] = clamp(source?.[style]?.[key], 0, 1, fallback);
+    }
+  }
+  return result;
 }
 
 function normalizeFramePositions(value) {
@@ -57,8 +73,9 @@ function normalizeConfig(source = {}) {
   result.segmentCount = Math.round(clamp(source.segmentCount, 4, 64, DEFAULT_WEBGPU_CONFIG.segmentCount));
   result.flameColor = color(source.flameColor, DEFAULT_WEBGPU_CONFIG.flameColor);
   result.secondaryColor = color(source.secondaryColor, DEFAULT_WEBGPU_CONFIG.secondaryColor);
+  result.designControls = normalizeDesignControls(source.designControls);
   result.framePositions = normalizeFramePositions(source.framePositions);
-  result.visualProfileVersion = 5;
+  result.visualProfileVersion = 6;
   return result;
 }
 
@@ -89,5 +106,6 @@ module.exports = {
   QUALITY_MODES,
   VISUAL_STYLES,
   normalizeConfig,
+  normalizeDesignControls,
   normalizeImportedFlameConfig
 };

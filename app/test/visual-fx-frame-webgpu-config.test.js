@@ -11,7 +11,7 @@ describe('Visual FX Frame WEBGPU configuration', () => {
       visualStyle: 'hybrid',
       qualityMode: 'obs-safe',
       visualVariant: 'custom',
-      visualProfileVersion: 5
+      visualProfileVersion: 6
     });
     expect(DEFAULT_WEBGPU_CONFIG.renderer).toBe('webgpu');
   });
@@ -22,6 +22,36 @@ describe('Visual FX Frame WEBGPU configuration', () => {
 
   test.each(['classic', 'organic', 'double', 'segmented', 'portal'])('accepts the %s frame style', frameStyle => {
     expect(normalizeConfig({ frameStyle }).frameStyle).toBe(frameStyle);
+  });
+
+  test.each(['solar-forge', 'prism-reactor', 'arcane-bloom', 'tempest-rift', 'quantum-circuit'])(
+    'accepts the premium %s frame style',
+    frameStyle => {
+      expect(normalizeConfig({ frameStyle }).frameStyle).toBe(frameStyle);
+    }
+  );
+
+  test('migrates design controls to bounded defaults without changing the existing look', () => {
+    const migrated = normalizeConfig({
+      visualProfileVersion: 6,
+      frameStyle: 'portal',
+      visualVariant: 'custom',
+      designControls: {
+        'solar-forge': { emberFlow: 2, moltenCrust: -1 },
+        'tempest-rift': { arcCount: 0.82, riftTurbulence: 'invalid' }
+      }
+    });
+
+    expect(migrated).toMatchObject({
+      frameStyle: 'portal',
+      visualVariant: 'custom',
+      visualProfileVersion: 6,
+      designControls: {
+        'solar-forge': { emberFlow: 1, moltenCrust: 0 },
+        'tempest-rift': { arcCount: 0.82, riftTurbulence: 0.6 },
+        'quantum-circuit': { traceDensity: 0.6, hudSweep: 0.5 }
+      }
+    });
   });
 
   test.each(['breathe', 'heartbeat', 'ripple'])('accepts the %s pulse pattern', pulsePattern => {
@@ -38,7 +68,7 @@ describe('Visual FX Frame WEBGPU configuration', () => {
       flameColor: '#123456'
     })).toMatchObject({
       visualVariant: 'custom',
-      visualProfileVersion: 5,
+      visualProfileVersion: 6,
       frameThickness: 5,
       frameGap: 100,
       segmentCount: 4,
@@ -65,7 +95,7 @@ describe('Visual FX Frame WEBGPU configuration', () => {
       renderer: 'webgpu',
       visualStyle: 'hybrid',
       visualVariant: 'custom',
-      visualProfileVersion: 5
+      visualProfileVersion: 6
     });
     expect(imported).not.toHaveProperty('unknownSecret');
   });

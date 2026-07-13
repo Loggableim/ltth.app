@@ -19,6 +19,13 @@ const VISUAL_FX_DEFAULT_CONFIG = Object.freeze({
   frameThickness: 150,
   frameGap: 10,
   segmentCount: 18,
+  designControls: {
+    'solar-forge': { emberFlow: 0.72, moltenCrust: 0.64 },
+    'prism-reactor': { refraction: 0.68, sweepSpeed: 0.55 },
+    'arcane-bloom': { runeDensity: 0.62, orbitSpeed: 0.5 },
+    'tempest-rift': { arcCount: 0.58, riftTurbulence: 0.6 },
+    'quantum-circuit': { traceDensity: 0.6, hudSweep: 0.5 }
+  },
   framePositions: [{ x: 0, y: 0, width: 100, height: 100 }],
   flameColor: '#ff6600',
   secondaryColor: '#ffd36a',
@@ -63,7 +70,7 @@ const VISUAL_FX_DEFAULT_CONFIG = Object.freeze({
   smokeIntensity: 0.18,
   smokeSpeed: 0.22,
   smokeColor: '#2d2623',
-  visualProfileVersion: 5
+  visualProfileVersion: 6
 });
 
 if (typeof window !== 'undefined') {

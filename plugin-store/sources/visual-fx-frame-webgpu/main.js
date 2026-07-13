@@ -164,7 +164,10 @@ const CONFIG_ENUMS = {
     'custom'
   ]),
   frameMode: new Set(['bottom', 'top', 'sides', 'all']),
-  frameStyle: new Set(['classic', 'organic', 'double', 'segmented', 'portal']),
+  frameStyle: new Set([
+    'classic', 'organic', 'double', 'segmented', 'portal',
+    'solar-forge', 'prism-reactor', 'arcane-bloom', 'tempest-rift', 'quantum-circuit'
+  ]),
   pulsePattern: new Set(['breathe', 'heartbeat', 'ripple']),
   animationEasing: new Set(['linear', 'sine', 'quad', 'elastic']),
   qualityMode: new Set(['obs-safe', 'max-quality', 'low-load']),
@@ -292,7 +295,14 @@ class VisualFxFrameWebGPUPlugin {
     }
 
     applyVisualUpgradeDefaults(savedConfig) {
-        if (!savedConfig || Number(savedConfig.visualProfileVersion) >= 5) return;
+        if (!savedConfig || Number(savedConfig.visualProfileVersion) >= 6) return;
+
+        if (Number(savedConfig.visualProfileVersion) >= 5) {
+            this.config.designControls = this.cloneConfig(this.defaultConfig.designControls);
+            this.config.visualProfileVersion = 6;
+            this.saveConfig();
+            return;
+        }
 
         if (Number(savedConfig.visualProfileVersion) >= 4) {
             this.config.visualVariant = 'custom';
@@ -345,7 +355,7 @@ class VisualFxFrameWebGPUPlugin {
             ? savedConfig.visualStyle
             : 'hybrid';
         this.config.visualVariant = 'custom';
-        this.config.visualProfileVersion = 5;
+        this.config.visualProfileVersion = 6;
         this.saveConfig();
     }
 
@@ -660,6 +670,15 @@ class VisualFxFrameWebGPUPlugin {
                 continue;
             }
 
+            if (key === 'designControls') {
+                if (!this.isPlainObject(rawValue)) {
+                    if (strict) errors.push('designControls must be an object');
+                    continue;
+                }
+                value.designControls = this.normalizeDesignControls(rawValue, baseConfig.designControls);
+                continue;
+            }
+
             if (typeof baseConfig[key] === 'string') {
                 if (typeof rawValue === 'string') {
                     value[key] = rawValue;
@@ -673,6 +692,17 @@ class VisualFxFrameWebGPUPlugin {
         }
 
         return { value, errors };
+    }
+
+    normalizeDesignControls(rawControls, fallbackControls) {
+        const result = {};
+        for (const [style, defaults] of Object.entries(fallbackControls || {})) {
+            result[style] = {};
+            for (const [name, fallback] of Object.entries(defaults)) {
+                result[style][name] = this.clampNumber(rawControls?.[style]?.[name], { min: 0, max: 1 }, fallback);
+            }
+        }
+        return result;
     }
 
     normalizeTriggerRules(rules, options = {}) {

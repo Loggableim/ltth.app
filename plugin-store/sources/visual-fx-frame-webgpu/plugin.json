@@ -1,8 +1,8 @@
 {
   "id": "visual-fx-frame-webgpu",
   "name": "Visual FX Frame WEBGPU",
-  "version": "1.1.0",
-  "description": "Native WebGPU edition of Visual FX Frame with compute-driven effects, HDR bloom, adaptive quality, real-time preview, TikTok LIVE triggers, presets and flow integration.",
+  "version": "1.2.0",
+  "description": "Native WebGPU edition of Visual FX Frame with premium procedural materials, HDR bloom, adaptive quality, real-time preview, TikTok LIVE triggers, presets and flow integration.",
   "author": "Pup Cid",
   "entry": "main.js",
   "enabled": false,
@@ -23,6 +23,7 @@
     "adaptive-quality",
     "subscriber-beta",
     "visual-variants",
+    "premium-frame-designs",
     "realistic-neon-hybrid-styles",
     "obs-transparent-overlay",
     "real-time-preview",

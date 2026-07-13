@@ -11,7 +11,7 @@ describe('Visual FX Frame WEBGPU plugin contract', () => {
     expect(manifest).toMatchObject({
       id: 'visual-fx-frame-webgpu',
       name: 'Visual FX Frame WEBGPU',
-      version: '1.1.0',
+      version: '1.2.0',
       enabled: false,
       devStatus: 'working-beta'
     });
@@ -21,7 +21,8 @@ describe('Visual FX Frame WEBGPU plugin contract', () => {
       'hdr-bloom-pipeline',
       'adaptive-quality',
       'subscriber-beta',
-      'visual-variants'
+      'visual-variants',
+      'premium-frame-designs'
     ]));
   });
 

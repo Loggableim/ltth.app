@@ -1766,13 +1766,44 @@
             <div class="form-group">
                 <label for="frameStyle">Rahmenstil:</label>
                 <select id="frameStyle">
-                    <option value="classic">Classic</option><option value="organic">Organic</option>
-                    <option value="double">Double</option><option value="segmented">Segmented</option>
-                    <option value="portal">Portal</option>
+                    <optgroup label="Basis">
+                        <option value="classic">Classic</option><option value="organic">Organic</option>
+                        <option value="double">Double</option><option value="segmented">Segmented</option>
+                        <option value="portal">Portal</option>
+                    </optgroup>
+                    <optgroup id="premiumFrameStyles" label="Premium VFX">
+                        <option value="solar-forge">Solar Forge</option>
+                        <option value="prism-reactor">Prism Reactor</option>
+                        <option value="arcane-bloom">Arcane Bloom</option>
+                        <option value="tempest-rift">Tempest Rift</option>
+                        <option value="quantum-circuit">Quantum Circuit</option>
+                    </optgroup>
                 </select>
             </div>
             <div class="form-group"><label for="frameGap">Rahmenabstand: <span id="frameGapValue" class="slider-value">10 px</span></label><input type="range" id="frameGap" min="0" max="100" value="10" step="1"></div>
             <div class="form-group"><label for="segmentCount">Segmente: <span id="segmentCountValue" class="slider-value">18</span></label><input type="range" id="segmentCount" min="4" max="64" value="18" step="1"></div>
+            <div id="premiumDesignControls" aria-live="polite">
+                <div class="form-group premium-design-panel" data-frame-design="solar-forge" hidden>
+                    <label for="designControl-emberFlow">Glutfluss <span id="designControl-emberFlowValue" class="slider-value">0.72</span></label><input id="designControl-emberFlow" type="range" min="0" max="1" step="0.01" value="0.72">
+                    <label for="designControl-moltenCrust">Schmelzkruste <span id="designControl-moltenCrustValue" class="slider-value">0.64</span></label><input id="designControl-moltenCrust" type="range" min="0" max="1" step="0.01" value="0.64">
+                </div>
+                <div class="form-group premium-design-panel" data-frame-design="prism-reactor" hidden>
+                    <label for="designControl-refraction">Brechungsstärke <span id="designControl-refractionValue" class="slider-value">0.68</span></label><input id="designControl-refraction" type="range" min="0" max="1" step="0.01" value="0.68">
+                    <label for="designControl-sweepSpeed">Sweep-Geschwindigkeit <span id="designControl-sweepSpeedValue" class="slider-value">0.55</span></label><input id="designControl-sweepSpeed" type="range" min="0" max="1" step="0.01" value="0.55">
+                </div>
+                <div class="form-group premium-design-panel" data-frame-design="arcane-bloom" hidden>
+                    <label for="designControl-runeDensity">Runendichte <span id="designControl-runeDensityValue" class="slider-value">0.62</span></label><input id="designControl-runeDensity" type="range" min="0" max="1" step="0.01" value="0.62">
+                    <label for="designControl-orbitSpeed">Orbit-Tempo <span id="designControl-orbitSpeedValue" class="slider-value">0.50</span></label><input id="designControl-orbitSpeed" type="range" min="0" max="1" step="0.01" value="0.50">
+                </div>
+                <div class="form-group premium-design-panel" data-frame-design="tempest-rift" hidden>
+                    <label for="designControl-arcCount">Bogenanzahl <span id="designControl-arcCountValue" class="slider-value">0.58</span></label><input id="designControl-arcCount" type="range" min="0" max="1" step="0.01" value="0.58">
+                    <label for="designControl-riftTurbulence">Riss-Turbulenz <span id="designControl-riftTurbulenceValue" class="slider-value">0.60</span></label><input id="designControl-riftTurbulence" type="range" min="0" max="1" step="0.01" value="0.60">
+                </div>
+                <div class="form-group premium-design-panel" data-frame-design="quantum-circuit" hidden>
+                    <label for="designControl-traceDensity">Leiterbahndichte <span id="designControl-traceDensityValue" class="slider-value">0.60</span></label><input id="designControl-traceDensity" type="range" min="0" max="1" step="0.01" value="0.60">
+                    <label for="designControl-hudSweep">HUD-Sweep <span id="designControl-hudSweepValue" class="slider-value">0.50</span></label><input id="designControl-hudSweep" type="range" min="0" max="1" step="0.01" value="0.50">
+                </div>
+            </div>
 
             <div class="form-group">
                 <div class="checkbox-group">
@@ -2302,12 +2333,37 @@
         const CUSTOM_RESOLUTION_INPUTS = ['customWidth', 'customHeight'];
         let currentVisualVariant = 'custom';
         let applyingVisualPreset = false;
+        const DESIGN_CONTROL_META = {
+            'solar-forge': ['emberFlow', 'moltenCrust'],
+            'prism-reactor': ['refraction', 'sweepSpeed'],
+            'arcane-bloom': ['runeDensity', 'orbitSpeed'],
+            'tempest-rift': ['arcCount', 'riftTurbulence'],
+            'quantum-circuit': ['traceDensity', 'hudSweep']
+        };
 
         function markVisualVariantCustom() {
             if (applyingVisualPreset) return;
             currentVisualVariant = 'custom';
             document.querySelectorAll('.visual-preset-btn').forEach(button => button.classList.remove('active'));
             document.getElementById('profileMetric').textContent = 'CUSTOM';
+        }
+
+        function collectDesignControls() {
+            const controls = {};
+            for (const [style, keys] of Object.entries(DESIGN_CONTROL_META)) {
+                controls[style] = {};
+                for (const key of keys) {
+                    controls[style][key] = Math.max(0, Math.min(1, parseFloat(document.getElementById(`designControl-${key}`).value) || 0));
+                }
+            }
+            return controls;
+        }
+
+        function updateDesignControlVisibility() {
+            const activeStyle = document.getElementById('frameStyle').value;
+            document.querySelectorAll('.premium-design-panel').forEach(panel => {
+                panel.hidden = panel.dataset.frameDesign !== activeStyle;
+            });
         }
 
         function getNumberInputValue(id, fallback) {
@@ -3190,6 +3246,7 @@
                 frameThickness: parseFloat(document.getElementById('frameThickness').value),
                 frameGap: parseFloat(document.getElementById('frameGap').value),
                 segmentCount: parseInt(document.getElementById('segmentCount').value),
+                designControls: collectDesignControls(),
                 maskOnlyEdges: document.getElementById('maskOnlyEdges').checked,
                 flameColor: document.getElementById('flameColor').value,
                 secondaryColor: document.getElementById('secondaryColor').value,
@@ -3273,6 +3330,7 @@
             if (element) {
                 element.addEventListener('change', () => {
                     markVisualVariantCustom();
+                    if (id === 'frameStyle') updateDesignControlVisibility();
                     if (previewActive && !applyingVisualPreset) {
                         debouncedSaveConfig();
                     }
@@ -3329,6 +3387,14 @@
                     document.getElementById('frameGapValue').textContent = `${config.frameGap ?? 10} px`;
                     document.getElementById('segmentCount').value = config.segmentCount ?? 18;
                     document.getElementById('segmentCountValue').textContent = config.segmentCount ?? 18;
+                    for (const [style, keys] of Object.entries(DESIGN_CONTROL_META)) {
+                        for (const key of keys) {
+                            const value = config.designControls?.[style]?.[key] ?? window.VISUAL_FX_DEFAULT_CONFIG.designControls[style][key];
+                            document.getElementById(`designControl-${key}`).value = value;
+                            document.getElementById(`designControl-${key}Value`).textContent = Number(value).toFixed(2);
+                        }
+                    }
+                    updateDesignControlVisibility();
                     document.getElementById('maskOnlyEdges').checked = config.maskOnlyEdges !== false;
 
                     // Appearance

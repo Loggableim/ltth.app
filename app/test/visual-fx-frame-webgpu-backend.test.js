@@ -54,6 +54,19 @@ function createHarness() {
 }
 
 describe('Visual FX Frame WEBGPU backend integration', () => {
+  test('keeps a visual trigger route for every supported live event type', () => {
+    const { plugin } = createHarness();
+    const triggerEvents = new Set(
+      Object.values(plugin.getRuntimeConfig().triggerRules)
+        .filter(rule => rule.enabled)
+        .map(rule => rule.event)
+    );
+
+    for (const event of ['gift', 'follow', 'like', 'share', 'chat', 'subscribe']) {
+      expect(triggerEvents).toContain(event);
+    }
+  });
+
   test('returns a normalized, reportable legacy import preview', () => {
     const { routes } = createHarness();
     const response = createResponse();
@@ -71,7 +84,7 @@ describe('Visual FX Frame WEBGPU backend integration', () => {
         qualityMode: 'max-quality',
         flameColor: '#abcdef',
         triggerCooldown: 3456,
-        visualProfileVersion: 5
+        visualProfileVersion: 6
       })
     }));
     const payload = response.json.mock.calls[0][0];

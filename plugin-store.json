@@ -1018,19 +1018,19 @@
         "fr": "Visual FX Frame WEBGPU"
       },
       "description": {
-        "en": "Subscriber beta with native WebGPU frame materials, dual-color flames, pulse waves and three cinematic variants.",
-        "de": "Subscriber-Beta mit nativen WebGPU-Rahmenmaterialien, zweifarbigen Flammen, Pulswellen und drei cineastischen Varianten.",
-        "es": "Beta para suscriptores con marcos WebGPU nativos, llamas de dos colores, ondas de pulso y tres variantes cinematográficas.",
-        "fr": "Bêta abonnés avec cadres WebGPU natifs, flammes bicolores, ondes pulsées et trois variantes cinématiques."
+        "en": "Subscriber beta with ten native WebGPU frame materials, dual-color flames, pulse waves and five premium procedural designs.",
+        "de": "Subscriber-Beta mit zehn nativen WebGPU-Rahmenmaterialien, zweifarbigen Flammen, Pulswellen und fünf Premium-Designs.",
+        "es": "Beta para suscriptores con diez materiales de marco WebGPU nativos, llamas bicolores, ondas de pulso y cinco diseños premium.",
+        "fr": "Bêta abonnés avec dix matériaux de cadre WebGPU natifs, flammes bicolores, ondes pulsées et cinq designs premium."
       },
-      "version": "1.1.0",
+      "version": "1.2.0",
       "author": "Pup Cid",
       "category": "overlay",
       "channel": "open-beta",
       "badges": ["subscriber-only"],
       "access": { "type": "subscriber" },
-      "packageUrl": "https://ltth.app/plugin-store/packages/visual-fx-frame-webgpu-1.1.0.zip",
-      "sha256": "d5178904f137e861a47d4030456a1c7d7afecc47d45bde7c54fdd078b494b380",
+      "packageUrl": "https://ltth.app/plugin-store/packages/visual-fx-frame-webgpu-1.2.0.zip",
+      "sha256": "3a1dfd59447057022eeb2216258a2d1ce146e07fcf6013e22582b9e865f5ca37",
       "pricing": { "type": "free", "amount": 0, "currency": "EUR" },
       "screenshots": []
     }

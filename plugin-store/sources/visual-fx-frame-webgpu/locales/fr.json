@@ -33,7 +33,8 @@
       "runtime": "Exécution",
       "adapter": "Adaptateur graphique",
       "import": "Importer Visual FX Frame",
-      "variants": { "inferno": "Forge infernale", "neon": "Impulsion néon", "storm": "Portail d'orage" }
+      "variants": { "inferno": "Forge infernale", "neon": "Impulsion néon", "storm": "Portail d'orage" },
+      "frameDesigns": { "solarForge": "Forge solaire", "prismReactor": "Réacteur prisme", "arcaneBloom": "Floraison arcane", "tempestRift": "Faille de tempête", "quantumCircuit": "Circuit quantique" }
     }
   },
   "generated": {

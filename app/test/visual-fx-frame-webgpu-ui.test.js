@@ -45,6 +45,20 @@ describe('Visual FX Frame WEBGPU Control Room', () => {
     }
   });
 
+  test('groups the five premium designs and reveals two contextual controls for the active style', () => {
+    expect(settings).toContain('id="premiumFrameStyles"');
+    for (const frameStyle of ['solar-forge', 'prism-reactor', 'arcane-bloom', 'tempest-rift', 'quantum-circuit']) {
+      expect(settings).toContain(`value="${frameStyle}"`);
+      expect(settings).toContain(`data-frame-design="${frameStyle}"`);
+    }
+    for (const control of [
+      'emberFlow', 'moltenCrust', 'refraction', 'sweepSpeed', 'runeDensity',
+      'orbitSpeed', 'arcCount', 'riftTurbulence', 'traceDensity', 'hudSweep'
+    ]) expect(settings).toContain(`id="designControl-${control}"`);
+    expect(settings).toContain('function updateDesignControlVisibility()');
+    expect(settings).toContain('designControls: collectDesignControls()');
+  });
+
   test('keeps variant application preview-only and marks manual edits custom', () => {
     const applyBody = settings.match(/function applyVisualPreset\(name\) \{([\s\S]*?)\n        \}/)?.[1] || '';
     expect(applyBody).not.toContain('debouncedSaveConfig');
@@ -77,6 +91,13 @@ describe('Visual FX Frame WEBGPU Control Room', () => {
         adapter: expect.any(String),
         import: expect.any(String),
         variants: expect.any(Object)
+      });
+      expect(messages.visual_fx_frame_webgpu.webgpu.frameDesigns).toMatchObject({
+        solarForge: expect.any(String),
+        prismReactor: expect.any(String),
+        arcaneBloom: expect.any(String),
+        tempestRift: expect.any(String),
+        quantumCircuit: expect.any(String)
       });
     }
   });

@@ -26,6 +26,7 @@ struct Uniforms {
   secondaryColor: vec4f,
   frameFx: vec4f,
   pulseFx: vec4f,
+  designControls: vec4f,
 };
 
 struct Particle {
@@ -143,6 +144,11 @@ const FRAME_STYLE_ORGANIC: u32 = 1u;
 const FRAME_STYLE_DOUBLE: u32 = 2u;
 const FRAME_STYLE_SEGMENTED: u32 = 3u;
 const FRAME_STYLE_PORTAL: u32 = 4u;
+const FRAME_STYLE_SOLAR_FORGE: u32 = 5u;
+const FRAME_STYLE_PRISM_REACTOR: u32 = 6u;
+const FRAME_STYLE_ARCANE_BLOOM: u32 = 7u;
+const FRAME_STYLE_TEMPEST_RIFT: u32 = 8u;
+const FRAME_STYLE_QUANTUM_CIRCUIT: u32 = 9u;
 
 struct VertexOut { @builtin(position) position: vec4f, @location(0) uv: vec2f };
 
@@ -157,6 +163,16 @@ struct VertexOut { @builtin(position) position: vec4f, @location(0) uv: vec2f };
 fn sdBox(point: vec2f, center: vec2f, halfSize: vec2f) -> f32 {
   let offset = abs(point - center) - halfSize;
   return length(max(offset, vec2f(0.0))) + min(max(offset.x, offset.y), 0.0);
+}
+
+fn framePerimeter(uv: vec2f) -> f32 {
+  let rect = uniforms.frameRect;
+  let local = clamp((uv - rect.xy) / max(rect.zw, vec2f(0.0001)), vec2f(0.0), vec2f(1.0));
+  let edge = min(min(local.x, 1.0 - local.x), min(local.y, 1.0 - local.y));
+  if (edge == local.y) { return local.x * 0.25; }
+  if (edge == 1.0 - local.x) { return 0.25 + local.y * 0.25; }
+  if (edge == 1.0 - local.y) { return 0.5 + (1.0 - local.x) * 0.25; }
+  return 0.75 + (1.0 - local.y) * 0.25;
 }
 
 fn pulseWave(uv: vec2f) -> f32 {
@@ -180,7 +196,7 @@ fn sdFrame(uv: vec2f) -> f32 {
   let inner = sdBox(uv, rectCenter, max(vec2f(0.001), uniforms.frameRect.zw * 0.5 - px));
   var frame = max(outer, -inner);
   let frameStyle = u32(uniforms.material.w);
-  if (frameStyle == FRAME_STYLE_ORGANIC || frameStyle == FRAME_STYLE_PORTAL) {
+  if (frameStyle == FRAME_STYLE_ORGANIC || frameStyle == FRAME_STYLE_PORTAL || frameStyle == FRAME_STYLE_SOLAR_FORGE || frameStyle == FRAME_STYLE_ARCANE_BLOOM || frameStyle == FRAME_STYLE_TEMPEST_RIFT) {
     let warped = domainWarp(uv * (5.0 + uniforms.pulseFx.y * 5.0), uniforms.time);
     frame += (noise2(warped * 3.0) - 0.5) * px * (0.8 + uniforms.frameFx.w * 2.4);
   }
@@ -196,7 +212,7 @@ fn sdFrame(uv: vec2f) -> f32 {
 
 fn framePattern(uv: vec2f) -> f32 {
   let style = u32(uniforms.material.w);
-  if (style != FRAME_STYLE_SEGMENTED && style != FRAME_STYLE_PORTAL) { return 1.0; }
+  if (style != FRAME_STYLE_SEGMENTED && style != FRAME_STYLE_PORTAL && style != FRAME_STYLE_QUANTUM_CIRCUIT && style != FRAME_STYLE_PRISM_REACTOR) { return 1.0; }
   let count = max(4.0, uniforms.frameFx.y);
   let perimeter = (uv.x + uv.y * 1.17) * count;
   let gate = smoothstep(0.08, 0.2, min(fract(perimeter), 1.0 - fract(perimeter)));
@@ -204,6 +220,54 @@ fn framePattern(uv: vec2f) -> f32 {
     return max(gate, pow(abs(sin(perimeter * 0.5 - uniforms.time * 2.0)), 12.0));
   }
   return gate;
+}
+
+fn materialSolarForge(base: vec3f, energy: f32, perimeter: f32) -> vec3f {
+  let warped = domainWarp(vec2f(perimeter * 7.0, uniforms.time * (0.35 + uniforms.designControls.x)), uniforms.time);
+  let cracks = pow(noise2(warped * (7.0 + uniforms.designControls.y * 9.0)), 3.0);
+  let ember = 0.5 + 0.5 * sin(perimeter * 44.0 - uniforms.time * (3.0 + uniforms.designControls.x * 8.0));
+  return mix(mix(base * vec3f(1.45, 0.34, 0.06), uniforms.secondaryColor.rgb, clamp(cracks + energy * 0.45, 0.0, 1.0)), vec3f(1.0, 0.83, 0.42), ember * energy * 0.55);
+}
+
+fn materialPrismReactor(base: vec3f, energy: f32, perimeter: f32) -> vec3f {
+  let facets = abs(fract(perimeter * (8.0 + uniforms.designControls.x * 24.0)) - 0.5) * 2.0;
+  let sweep = smoothstep(0.78, 1.0, sin(perimeter * 6.2831853 - uniforms.time * (1.0 + uniforms.designControls.y * 9.0)) * 0.5 + 0.5);
+  let prism = mix(base, uniforms.secondaryColor.rgb, clamp(1.0 - facets + sweep, 0.0, 1.0));
+  return prism * (1.0 + energy * 0.9 + sweep * 0.55);
+}
+
+fn materialArcaneBloom(base: vec3f, energy: f32, perimeter: f32) -> vec3f {
+  let orbit = 0.5 + 0.5 * sin(perimeter * (18.0 + uniforms.designControls.x * 40.0) + uniforms.time * (1.0 + uniforms.designControls.y * 6.0));
+  let rune = pow(abs(sin(perimeter * (11.0 + uniforms.designControls.x * 25.0) - uniforms.time)), 16.0);
+  return mix(base, uniforms.secondaryColor.rgb, clamp(orbit * 0.55 + rune, 0.0, 1.0)) * (1.0 + energy * 0.65 + rune);
+}
+
+fn materialTempestRift(base: vec3f, energy: f32, perimeter: f32) -> vec3f {
+  let arcs = pow(abs(sin(perimeter * (16.0 + uniforms.designControls.x * 54.0) + uniforms.time * 13.0)), 10.0);
+  let rift = noise2(domainWarp(vec2f(perimeter * 9.0, uniforms.time * 0.55), uniforms.time) * (4.0 + uniforms.designControls.y * 8.0));
+  return mix(base, uniforms.secondaryColor.rgb, clamp(arcs + rift * 0.5, 0.0, 1.0)) * (1.0 + energy + arcs * 1.2);
+}
+
+fn materialQuantumCircuit(base: vec3f, energy: f32, perimeter: f32) -> vec3f {
+  let density = 6.0 + uniforms.designControls.x * 48.0;
+  let trace = step(0.68, fract(perimeter * density));
+  let sweep = smoothstep(0.86, 1.0, sin(perimeter * 6.2831853 - uniforms.time * (2.0 + uniforms.designControls.y * 12.0)) * 0.5 + 0.5);
+  return mix(base * 0.5, uniforms.secondaryColor.rgb, clamp(trace + sweep, 0.0, 1.0)) * (1.0 + energy * 0.7 + sweep);
+}
+
+fn eventReactiveEnergy(energy: f32, perimeter: f32) -> f32 {
+  let eventWave = 0.5 + 0.5 * sin(perimeter * 31.41593 - uniforms.time * 18.0);
+  return energy * (1.0 + uniforms.triggerPulse * (0.55 + eventWave * 0.9));
+}
+
+fn materialPremium(base: vec3f, energy: f32, perimeter: f32) -> vec3f {
+  let style = u32(uniforms.material.w);
+  if (style == FRAME_STYLE_SOLAR_FORGE) { return materialSolarForge(base, energy, perimeter); }
+  if (style == FRAME_STYLE_PRISM_REACTOR) { return materialPrismReactor(base, energy, perimeter); }
+  if (style == FRAME_STYLE_ARCANE_BLOOM) { return materialArcaneBloom(base, energy, perimeter); }
+  if (style == FRAME_STYLE_TEMPEST_RIFT) { return materialTempestRift(base, energy, perimeter); }
+  if (style == FRAME_STYLE_QUANTUM_CIRCUIT) { return materialQuantumCircuit(base, energy, perimeter); }
+  return base;
 }
 
 fn styleColor(base: vec3f, energy: f32, uv: vec2f) -> vec3f {
@@ -245,9 +309,11 @@ fn styleColor(base: vec3f, energy: f32, uv: vec2f) -> vec3f {
   } else {
     energy = mask * (0.16 + sample.w * 0.22);
   }
-  energy *= uniforms.intensity * (1.0 + uniforms.triggerPulse);
+  energy *= uniforms.intensity;
   energy *= 1.0 + pulseWave(uv);
-  let color = styleColor(uniforms.color.rgb, clamp(energy, 0.0, 1.0), uv);
+  let perimeter = framePerimeter(uv);
+  energy = eventReactiveEnergy(energy, perimeter);
+  let color = materialPremium(styleColor(uniforms.color.rgb, clamp(energy, 0.0, 1.0), uv), energy, perimeter);
   let alpha = clamp(mask * (0.35 + energy), 0.0, 1.0);
   return vec4f(color * alpha * (1.0 + energy * 1.8), alpha);
 }

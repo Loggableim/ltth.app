@@ -26,7 +26,7 @@
       const buffers = {
         uniforms: this.createBuffer(
           'visual-fx-uniforms',
-          192,
+          208,
           GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         ),
         field: this.createBuffer(
