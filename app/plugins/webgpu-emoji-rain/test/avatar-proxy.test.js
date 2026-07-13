@@ -43,6 +43,17 @@ describe('WebGPU EmojiRain avatar proxy', () => {
     expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://p16-sign-va.tiktokcdn.com/avatar.webp', expect.objectContaining({ redirect: 'manual' }));
   });
 
+  test('retrieves the current TikTok EU avatar CDN host', async () => {
+    const finalResponse = response(200);
+    global.fetch = jest.fn().mockResolvedValue(finalResponse);
+
+    await expect(fetchAllowedAvatar('https://p16-common-sign.tiktokcdn-eu.com/avatar.webp')).resolves.toBe(finalResponse);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://p16-common-sign.tiktokcdn-eu.com/avatar.webp',
+      expect.objectContaining({ redirect: 'manual' })
+    );
+  });
+
   test('rejects non-TikTok avatar hosts before requesting them', async () => {
     global.fetch = jest.fn();
 

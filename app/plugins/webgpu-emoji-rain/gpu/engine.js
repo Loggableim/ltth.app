@@ -253,9 +253,14 @@
     }
 
     const reason = `${data.reason || ''} ${data.source || ''}`.toLowerCase();
+    const isLiveEvent = String(data.source || '').toLowerCase().startsWith('event:');
     const explicitSticker = data.stickerImageUrl || data.emoteImageUrl || data.image_url;
     if (explicitSticker || reason.includes('sticker') || reason.includes('emote')) {
       return { asset: explicitSticker || data.emoji || '✨', fallback: '✨', isProfile: false };
+    }
+
+    if (isLiveEvent && profilePictureUrl) {
+      return { asset: profilePictureAsset(profilePictureUrl), fallback: '👤', isProfile: true };
     }
 
     const explicitGift = data.giftImageUrl || data.giftPictureUrl || data.imageUrl;

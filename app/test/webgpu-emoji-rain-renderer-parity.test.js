@@ -247,6 +247,25 @@ describe('WebGPU EmojiRain renderer parity', () => {
     }));
   });
 
+  test('automatically renders a live-event profile picture when no user mapping exists', async () => {
+    const { renderer, socketHandlers } = await loadAdapter();
+
+    socketHandlers['webgpu-emoji-rain:spawn']({
+      emoji: '💙',
+      username: 'live-viewer',
+      profilePictureUrl: 'https://p16-common-sign.tiktokcdn-eu.com/live-viewer.webp',
+      reason: 'follow',
+      source: 'event:follow',
+      count: 1
+    });
+    await flushAsyncWork();
+
+    expect(renderer.spawn).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'profile',
+      asset: '/api/webgpu-emoji-rain/avatar?url=https%3A%2F%2Fp16-common-sign.tiktokcdn-eu.com%2Flive-viewer.webp'
+    }));
+  });
+
   test('heart balloons use every-fifth profile placement, spread and pop physics payloads', async () => {
     const { renderer, socketHandlers } = await loadAdapter();
 

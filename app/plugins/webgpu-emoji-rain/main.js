@@ -21,6 +21,7 @@ const fs = require('fs');
 const multer = require('multer');
 const crypto = require('crypto');
 const { createDefaultWebGPUConfig, normalizeWebGPUConfig } = require('./lib/webgpu-config');
+delete require.cache[require.resolve('./lib/avatar-proxy')];
 const { MAX_BYTES: AVATAR_PROXY_MAX_BYTES, fetchAllowedAvatar } = require('./lib/avatar-proxy');
 
 class WebGPUEmojiRainPlugin {

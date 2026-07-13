@@ -5,6 +5,7 @@ const net = require('net');
 const ALLOWED_HOST_SUFFIXES = [
   'tiktokcdn.com',
   'tiktokcdn-us.com',
+  'tiktokcdn-eu.com',
   'bytegoofy.com',
   'tiktok.com',
   'muscdn.com',
