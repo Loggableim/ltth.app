@@ -23,6 +23,9 @@ struct Uniforms {
   frameRect: vec4f,
   budgets: vec4u,
   material: vec4f,
+  secondaryColor: vec4f,
+  frameFx: vec4f,
+  pulseFx: vec4f,
 };
 
 struct Particle {
@@ -65,6 +68,12 @@ fn curlNoise(point: vec2f) -> vec2f {
   let dx = noise2(point + vec2f(epsilon, 0.0)) - noise2(point - vec2f(epsilon, 0.0));
   let dy = noise2(point + vec2f(0.0, epsilon)) - noise2(point - vec2f(0.0, epsilon));
   return normalize(vec2f(dy, -dx) + vec2f(0.0001));
+}
+
+fn domainWarp(point: vec2f, time: f32) -> vec2f {
+  let first = vec2f(noise2(point * 1.7 + time * 0.11), noise2(point.yx * 2.1 - time * 0.09));
+  let second = vec2f(noise2(point * 3.9 + first * 2.4), noise2(point.yx * 4.3 - first * 1.8));
+  return point + (first - 0.5) * 0.22 + (second - 0.5) * 0.08;
 }
 `;
 
@@ -129,6 +138,11 @@ const EFFECT_LIGHTNING: u32 = 3u;
 const STYLE_REALISTIC: u32 = 0u;
 const STYLE_NEON: u32 = 1u;
 const STYLE_HYBRID: u32 = 2u;
+const FRAME_STYLE_CLASSIC: u32 = 0u;
+const FRAME_STYLE_ORGANIC: u32 = 1u;
+const FRAME_STYLE_DOUBLE: u32 = 2u;
+const FRAME_STYLE_SEGMENTED: u32 = 3u;
+const FRAME_STYLE_PORTAL: u32 = 4u;
 
 struct VertexOut { @builtin(position) position: vec4f, @location(0) uv: vec2f };
 
@@ -145,26 +159,63 @@ fn sdBox(point: vec2f, center: vec2f, halfSize: vec2f) -> f32 {
   return length(max(offset, vec2f(0.0))) + min(max(offset.x, offset.y), 0.0);
 }
 
+fn pulseWave(uv: vec2f) -> f32 {
+  let phase = uniforms.time * max(0.1, uniforms.material.z) * 6.2831853;
+  if (u32(uniforms.pulseFx.x) == 1u) {
+    let beat = pow(max(0.0, sin(phase)), 12.0);
+    let echo = pow(max(0.0, sin(phase * 2.0 - 1.1)), 18.0) * 0.55;
+    return uniforms.material.y * max(beat, echo);
+  }
+  if (u32(uniforms.pulseFx.x) == 2u) {
+    return uniforms.material.y * (0.5 + 0.5 * sin(phase + (uv.x + uv.y) * 18.0));
+  }
+  return uniforms.material.y * (0.5 + 0.5 * sin(phase));
+}
+
 fn sdFrame(uv: vec2f) -> f32 {
   let rectCenter = uniforms.frameRect.xy + uniforms.frameRect.zw * 0.5;
   let outer = sdBox(uv, rectCenter, uniforms.frameRect.zw * 0.5);
-  let px = uniforms.frameThickness / max(uniforms.resolution.x, uniforms.resolution.y);
+  let pulse = pulseWave(uv);
+  let px = uniforms.frameThickness * (1.0 + pulse * 0.35) / max(uniforms.resolution.x, uniforms.resolution.y);
   let inner = sdBox(uv, rectCenter, max(vec2f(0.001), uniforms.frameRect.zw * 0.5 - px));
   var frame = max(outer, -inner);
+  let frameStyle = u32(uniforms.material.w);
+  if (frameStyle == FRAME_STYLE_ORGANIC || frameStyle == FRAME_STYLE_PORTAL) {
+    let warped = domainWarp(uv * (5.0 + uniforms.pulseFx.y * 5.0), uniforms.time);
+    frame += (noise2(warped * 3.0) - 0.5) * px * (0.8 + uniforms.frameFx.w * 2.4);
+  }
+  if (frameStyle == FRAME_STYLE_DOUBLE) {
+    let gap = uniforms.frameFx.x / max(uniforms.resolution.x, uniforms.resolution.y);
+    frame = min(frame, abs(frame + gap + px * 0.35) - px * 0.22);
+  }
   if (uniforms.frameMode == 0u) { frame = max(frame, rectCenter.y - uv.y); }
   if (uniforms.frameMode == 1u) { frame = max(frame, uv.y - rectCenter.y); }
   if (uniforms.frameMode == 2u) { frame = max(frame, abs(uv.y - rectCenter.y) - uniforms.frameRect.w * 0.42); }
   return frame;
 }
 
-fn styleColor(base: vec3f, energy: f32) -> vec3f {
-  var material = base;
+fn framePattern(uv: vec2f) -> f32 {
+  let style = u32(uniforms.material.w);
+  if (style != FRAME_STYLE_SEGMENTED && style != FRAME_STYLE_PORTAL) { return 1.0; }
+  let count = max(4.0, uniforms.frameFx.y);
+  let perimeter = (uv.x + uv.y * 1.17) * count;
+  let gate = smoothstep(0.08, 0.2, min(fract(perimeter), 1.0 - fract(perimeter)));
+  if (style == FRAME_STYLE_PORTAL) {
+    return max(gate, pow(abs(sin(perimeter * 0.5 - uniforms.time * 2.0)), 12.0));
+  }
+  return gate;
+}
+
+fn styleColor(base: vec3f, energy: f32, uv: vec2f) -> vec3f {
+  let travel = 0.5 + 0.5 * sin((uv.x + uv.y) * 14.0 - uniforms.time * 2.2);
+  let palette = mix(base, uniforms.secondaryColor.rgb, clamp(energy * 0.55 + travel * 0.22, 0.0, 1.0));
+  var material = palette;
   if (uniforms.style == STYLE_REALISTIC) {
-    material = base * vec3f(1.15, 0.58, 0.18);
+    material = palette * vec3f(1.15, 0.72, 0.42);
   } else if (uniforms.style == STYLE_NEON) {
-    material = mix(base, base.brg * 1.45 + base * vec3f(0.08, 0.15, 0.32), 0.48) * (1.1 + energy);
+    material = mix(palette, palette.brg * 1.45 + palette * vec3f(0.08, 0.15, 0.32), 0.48) * (1.1 + energy);
   } else {
-    material = mix(base * vec3f(1.1, 0.72, 0.35), base.brg * 1.35, 0.32) * (1.0 + energy * 0.65);
+    material = mix(palette * vec3f(1.1, 0.82, 0.55), palette.brg * 1.35, 0.32) * (1.0 + energy * 0.65);
   }
   let hotCore = clamp(uniforms.material.x, 0.0, 1.0) * pow(clamp(energy, 0.0, 1.0), 3.0);
   return mix(material, vec3f(1.0, 0.95, 0.82), hotCore);
@@ -173,24 +224,30 @@ fn styleColor(base: vec3f, energy: f32) -> vec3f {
 @fragment fn sceneFragment(input: VertexOut) -> @location(0) vec4f {
   let uv = input.uv;
   let distanceToFrame = sdFrame(uv);
-  let mask = 1.0 - smoothstep(-0.004, 0.012, distanceToFrame);
+  let feather = 0.002 + uniforms.frameFx.z * 0.018;
+  let mask = (1.0 - smoothstep(-feather, feather, distanceToFrame)) * framePattern(uv);
   if (mask <= 0.0001) { discard; }
   let grid = vec2u(clamp(uv * uniforms.fieldResolution, vec2f(0.0), uniforms.fieldResolution - 1.0));
   let fieldIndex = grid.y * u32(uniforms.fieldResolution.x) + grid.x;
   let sample = field[min(fieldIndex, arrayLength(&field) - 1u)];
   var energy = sample.z * mask;
   if (uniforms.effect == EFFECT_FLAMES) {
-    energy *= 0.75 + 0.55 * noise2(uv * 18.0 + sample.xy * 3.0 - vec2f(0.0, uniforms.time));
+    let warped = domainWarp(uv * 9.0 + sample.xy * 2.4 - vec2f(0.0, uniforms.time * uniforms.speed), uniforms.time);
+    let lick = noise2(warped * 2.0) * 0.65 + noise2(warped * 4.7 + vec2f(0.0, uniforms.time)) * 0.35;
+    energy *= 0.55 + lick * 0.95;
   } else if (uniforms.effect == EFFECT_ENERGY) {
     energy = mask * (0.45 + 0.55 * abs(sin(distanceToFrame * 220.0 - uniforms.time * uniforms.speed * 7.0 + sample.x * 4.0)));
   } else if (uniforms.effect == EFFECT_LIGHTNING) {
+    let arcData = lightning[min(fieldIndex % max(1u, uniforms.budgets.y), arrayLength(&lightning) - 1u)];
     let arc = abs(sin((uv.x + uv.y + sample.x * 0.14) * 82.0 + floor(uniforms.time * 16.0)));
-    energy = mask * pow(arc, 18.0) * 2.8 + mask * 0.12;
+    let secondaryArc = pow(abs(sin((uv.x - uv.y + arcData.z) * 57.0 - uniforms.time * 21.0)), 28.0);
+    energy = mask * (pow(arc, 18.0) * 2.8 + secondaryArc * 1.7 + 0.1);
   } else {
     energy = mask * (0.16 + sample.w * 0.22);
   }
   energy *= uniforms.intensity * (1.0 + uniforms.triggerPulse);
-  let color = styleColor(uniforms.color.rgb, clamp(energy, 0.0, 1.0));
+  energy *= 1.0 + pulseWave(uv);
+  let color = styleColor(uniforms.color.rgb, clamp(energy, 0.0, 1.0), uv);
   let alpha = clamp(mask * (0.35 + energy), 0.0, 1.0);
   return vec4f(color * alpha * (1.0 + energy * 1.8), alpha);
 }

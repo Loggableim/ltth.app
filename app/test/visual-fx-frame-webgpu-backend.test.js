@@ -1,4 +1,4 @@
-const VisualFxFrameWebGPUPlugin = require('../plugins/visual-fx-frame-webgpu/main');
+const VisualFxFrameWebGPUPlugin = require('../../plugin-store/sources/visual-fx-frame-webgpu/main');
 
 function createResponse() {
   const response = {
@@ -71,7 +71,7 @@ describe('Visual FX Frame WEBGPU backend integration', () => {
         qualityMode: 'max-quality',
         flameColor: '#abcdef',
         triggerCooldown: 3456,
-        visualProfileVersion: 4
+        visualProfileVersion: 5
       })
     }));
     const payload = response.json.mock.calls[0][0];

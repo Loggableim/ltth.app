@@ -32,7 +32,8 @@
       "visualStyle": "Style visuel",
       "runtime": "Exécution",
       "adapter": "Adaptateur graphique",
-      "import": "Importer Visual FX Frame"
+      "import": "Importer Visual FX Frame",
+      "variants": { "inferno": "Forge infernale", "neon": "Impulsion néon", "storm": "Portail d'orage" }
     }
   },
   "generated": {

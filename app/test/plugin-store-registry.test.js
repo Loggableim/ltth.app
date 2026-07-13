@@ -96,7 +96,8 @@ describe('Official plugin store registry', () => {
       'sidekick',
       'streamalchemy',
       'talking-heads',
-      'vdoninja'
+      'vdoninja',
+      'visual-fx-frame-webgpu'
     ];
 
     for (const id of preinstalledIds) {

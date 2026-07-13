@@ -222,6 +222,52 @@ describe('Clerk store auth', () => {
     assert.deepStrictEqual(response.account.access.closedBetaPlugins, ['store-admin']);
   });
 
+  it('maps a signed paid Clerk Billing plan to subscriber access', async () => {
+    const { loadStoreEntitlements } = require('../modules/clerk-store-auth');
+    const result = await loadStoreEntitlements('user_paid', {
+      sessionClaims: { pla: 'u:premium', fea: 'u:premium_plugins,u:priority_support' }
+    });
+
+    assert.strictEqual(result.license.active, true);
+    assert.strictEqual(result.license.plan, 'premium');
+    assert.strictEqual(result.license.source, 'clerk-billing');
+    assert.deepStrictEqual(result.access.groups, ['subscriber']);
+    assert.deepStrictEqual(result.access.features, ['premium_plugins', 'priority_support']);
+  });
+
+  it('maps a signed free Clerk Billing plan without subscriber access', async () => {
+    const { loadStoreEntitlements } = require('../modules/clerk-store-auth');
+    const result = await loadStoreEntitlements('user_free', {
+      sessionClaims: { pla: 'u:free', fea: '' }
+    });
+
+    assert.strictEqual(result.license.plan, 'free');
+    assert.strictEqual(result.license.source, 'clerk-billing');
+    assert.strictEqual(result.access.groups.includes('subscriber'), false);
+  });
+
+  it('merges admin and closed-beta metadata into paid Billing access', async () => {
+    const { loadStoreEntitlements } = require('../modules/clerk-store-auth');
+    const result = await loadStoreEntitlements('user_admin', {
+      sessionClaims: { pla: 'u:premium' },
+      clerkClient: {
+        users: {
+          getUser: async () => ({
+            privateMetadata: {
+              ltthAccess: {
+                groups: ['admin', 'closed-beta'],
+                closedBetaPlugins: ['sidekick']
+              }
+            }
+          })
+        }
+      }
+    });
+
+    assert.deepStrictEqual(result.access.groups, ['subscriber', 'admin', 'closed-beta']);
+    assert.deepStrictEqual(result.access.closedBetaPlugins, ['sidekick']);
+  });
+
   it('sets the local store session cookie from a verified token', () => {
     const {
       setStoreSessionCookie,

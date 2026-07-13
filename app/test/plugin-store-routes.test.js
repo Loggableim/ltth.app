@@ -10,7 +10,7 @@ const request = require('supertest');
 
 const { setupPluginRoutes } = require('../routes/plugin-routes');
 
-function createAuthFixture() {
+function createAuthFixture(claimOverrides = {}) {
   const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048
   });
@@ -19,7 +19,8 @@ function createAuthFixture() {
   const token = jwt.sign({
     sub: 'user_123',
     sid: 'sess_123',
-    azp: 'http://127.0.0.1:3000'
+    azp: 'http://127.0.0.1:3000',
+    ...claimOverrides
   }, privateKey.export({ type: 'pkcs8', format: 'pem' }), {
     algorithm: 'RS256',
     expiresIn: '1h'
@@ -28,7 +29,7 @@ function createAuthFixture() {
   return { publicPem, token };
 }
 
-function createTestApp(pluginsDir, envOverrides = {}) {
+function createTestApp(pluginsDir, envOverrides = {}, options = {}) {
   const app = express();
   app.use(express.json());
 
@@ -50,7 +51,7 @@ function createTestApp(pluginsDir, envOverrides = {}) {
     registerPluginTikTokEvents: jest.fn()
   };
 
-  const authFixture = createAuthFixture();
+  const authFixture = createAuthFixture(options.claimOverrides);
   const env = {
     CLERK_PUBLISHABLE_KEY: 'pk_test_public',
     CLERK_JWT_KEY: authFixture.publicPem,
@@ -59,7 +60,8 @@ function createTestApp(pluginsDir, envOverrides = {}) {
   };
 
   setupPluginRoutes(app, pluginLoader, (req, res, next) => next(), (req, res, next) => next(), logger, null, null, {
-    env
+    env,
+    pluginStore: options.pluginStore
   });
 
   return { app, logger, pluginLoader, authFixture, env };
@@ -189,4 +191,52 @@ describe('Plugin store routes', () => {
     assert.strictEqual(response.body.license.active, true);
     assert.strictEqual(response.body.license.plan, 'beta-free');
   });
+
+  it('allows a paid Billing plan to install a subscriber-only plugin', async () => {
+    const { app, authFixture } = createTestApp(tempDir, {}, {
+      claimOverrides: { pla: 'u:premium' },
+      pluginStore: createSubscriberPluginStore()
+    });
+
+    const response = await request(app)
+      .post('/api/plugin-store/official/premium-plugin/install')
+      .set('Authorization', `Bearer ${authFixture.token}`)
+      .set('Origin', 'http://127.0.0.1:3000')
+      .expect(200);
+
+    assert.strictEqual(response.body.plugin.id, 'premium-plugin');
+  });
+
+  it('rejects a free Billing plan for a subscriber-only plugin', async () => {
+    const { app, authFixture } = createTestApp(tempDir, {}, {
+      claimOverrides: { pla: 'u:free' },
+      pluginStore: createSubscriberPluginStore()
+    });
+
+    const response = await request(app)
+      .post('/api/plugin-store/official/premium-plugin/install')
+      .set('Authorization', `Bearer ${authFixture.token}`)
+      .set('Origin', 'http://127.0.0.1:3000')
+      .expect(403);
+
+    assert.strictEqual(response.body.code, 'SUBSCRIBER_ACCESS_REQUIRED');
+  });
 });
+
+function createSubscriberPluginStore() {
+  const plugin = {
+    id: 'premium-plugin',
+    name: { en: 'Premium Plugin' },
+    description: { en: 'Subscriber access only' },
+    version: '1.0.0',
+    access: { type: 'subscriber' }
+  };
+  const source = { id: 'official', name: 'Official LTTH Store' };
+
+  return {
+    findPlugin: jest.fn(async () => ({ source, plugin })),
+    normalizeStorePlugin: jest.fn(() => plugin),
+    getInstalledPlugins: jest.fn(() => new Map()),
+    installPlugin: jest.fn(async () => ({ id: plugin.id, version: plugin.version }))
+  };
+}

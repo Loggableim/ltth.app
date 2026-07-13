@@ -150,6 +150,7 @@ const KNOWN_EVENTS = new Set(['gift', 'follow', 'like', 'share', 'chat', 'subscr
 const CONFIG_ENUMS = {
   renderer: new Set(['webgpu']),
   visualStyle: new Set(['realistic', 'neon', 'hybrid']),
+  visualVariant: new Set(['custom', 'inferno-forge', 'neon-pulse', 'storm-portal']),
   effectType: KNOWN_EFFECTS,
   resolutionPreset: new Set([
     'tiktok-portrait',
@@ -163,6 +164,8 @@ const CONFIG_ENUMS = {
     'custom'
   ]),
   frameMode: new Set(['bottom', 'top', 'sides', 'all']),
+  frameStyle: new Set(['classic', 'organic', 'double', 'segmented', 'portal']),
+  pulsePattern: new Set(['breathe', 'heartbeat', 'ripple']),
   animationEasing: new Set(['linear', 'sine', 'quad', 'elastic']),
   qualityMode: new Set(['obs-safe', 'max-quality', 'low-load']),
   triggerPreset: new Set([...Object.keys(TRIGGER_PRESETS), 'custom'])
@@ -170,7 +173,9 @@ const CONFIG_ENUMS = {
 const NUMERIC_CONFIG_RANGES = {
   customWidth: { min: 160, max: 7680, integer: true },
   customHeight: { min: 160, max: 7680, integer: true },
-  frameThickness: { min: 1, max: 2000, integer: true },
+  frameThickness: { min: 5, max: 500, integer: true },
+  frameGap: { min: 0, max: 100 },
+  segmentCount: { min: 4, max: 64, integer: true },
   backgroundTintOpacity: { min: 0, max: 1 },
   flameSpeed: { min: 0, max: 5 },
   flameIntensity: { min: 0, max: 5 },
@@ -287,7 +292,14 @@ class VisualFxFrameWebGPUPlugin {
     }
 
     applyVisualUpgradeDefaults(savedConfig) {
-        if (!savedConfig || Number(savedConfig.visualProfileVersion) >= 4) return;
+        if (!savedConfig || Number(savedConfig.visualProfileVersion) >= 5) return;
+
+        if (Number(savedConfig.visualProfileVersion) >= 4) {
+            this.config.visualVariant = 'custom';
+            this.config.visualProfileVersion = 5;
+            this.saveConfig();
+            return;
+        }
 
         const upgrades = {
             flameIntensity: { from: [1.3], to: this.defaultConfig.flameIntensity },
@@ -332,7 +344,8 @@ class VisualFxFrameWebGPUPlugin {
         this.config.visualStyle = CONFIG_ENUMS.visualStyle.has(savedConfig.visualStyle)
             ? savedConfig.visualStyle
             : 'hybrid';
-        this.config.visualProfileVersion = 4;
+        this.config.visualVariant = 'custom';
+        this.config.visualProfileVersion = 5;
         this.saveConfig();
     }
 

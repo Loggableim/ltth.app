@@ -1574,10 +1574,9 @@
                     </select>
                 </div>
                 <div class="preset-strip">
-                    <button class="visual-preset-btn" type="button" data-visual-preset="cinematic-hdr" data-i18n="generated.8e32c206bd62">Base Layer</button>
-                    <button class="visual-preset-btn" type="button" data-visual-preset="neon-heat" data-i18n="generated.39a7ed5cd1dc">Accent Layer</button>
-                    <button class="visual-preset-btn" type="button" data-visual-preset="clean-broadcast" data-i18n="generated.2e93a23366ab">Broadcast Safe</button>
-                    <button class="visual-preset-btn" type="button" data-visual-preset="low-load" data-i18n="generated.31131be5f7b5">Low Load</button>
+                    <button class="visual-preset-btn" type="button" data-visual-preset="inferno-forge" data-i18n="visual_fx_frame_webgpu.webgpu.variants.inferno">Inferno Forge</button>
+                    <button class="visual-preset-btn" type="button" data-visual-preset="neon-pulse" data-i18n="visual_fx_frame_webgpu.webgpu.variants.neon">Neon Pulse</button>
+                    <button class="visual-preset-btn" type="button" data-visual-preset="storm-portal" data-i18n="visual_fx_frame_webgpu.webgpu.variants.storm">Storm Portal</button>
                 </div>
                 <div class="control-room-metrics">
                     <div class="metric"><span class="metric-label">Profile</span><span class="metric-value" id="profileMetric">HDR</span></div>
@@ -1761,8 +1760,19 @@
 
             <div class="form-group">
                 <label for="frameThickness">Rahmenbreite: <span class="slider-value" id="frameThicknessValue" data-i18n="generated.879767286397">150 px</span></label>
-                <input type="range" id="frameThickness" min="50" max="500" value="150" step="10">
+                <input type="range" id="frameThickness" min="5" max="500" value="150" step="5">
             </div>
+
+            <div class="form-group">
+                <label for="frameStyle">Rahmenstil:</label>
+                <select id="frameStyle">
+                    <option value="classic">Classic</option><option value="organic">Organic</option>
+                    <option value="double">Double</option><option value="segmented">Segmented</option>
+                    <option value="portal">Portal</option>
+                </select>
+            </div>
+            <div class="form-group"><label for="frameGap">Rahmenabstand: <span id="frameGapValue" class="slider-value">10 px</span></label><input type="range" id="frameGap" min="0" max="100" value="10" step="1"></div>
+            <div class="form-group"><label for="segmentCount">Segmente: <span id="segmentCountValue" class="slider-value">18</span></label><input type="range" id="segmentCount" min="4" max="64" value="18" step="1"></div>
 
             <div class="form-group">
                 <div class="checkbox-group">
@@ -1780,6 +1790,7 @@
                 <label for="flameColor">Akzentfarbe:</label>
                 <input type="color" id="flameColor" value="#ff6600">
             </div>
+            <div class="form-group"><label for="secondaryColor">Sekundärfarbe:</label><input type="color" id="secondaryColor" value="#ffd36a"></div>
 
             <div class="form-group">
                 <label for="backgroundTint" data-i18n="generated.ddcd0f4db57a">Hintergrund Tint:</label>
@@ -1934,6 +1945,7 @@
                 <label for="pulseSpeed">Puls-Geschwindigkeit: <span class="slider-value" id="pulseSpeedValue">1.0</span></label>
                 <input type="range" id="pulseSpeed" min="0.1" max="3" value="1" step="0.1">
             </div>
+            <div class="form-group"><label for="pulsePattern">Puls-Muster:</label><select id="pulsePattern"><option value="breathe">Breathe</option><option value="heartbeat">Heartbeat</option><option value="ripple">Ripple</option></select></div>
         </div>
 
         <!-- Bloom Section -->
@@ -2282,12 +2294,21 @@
             '4k-portrait': { width: 2160, height: 3840 },
             '4k-landscape': { width: 3840, height: 2160 }
         };
-        const REALTIME_UPDATE_ELEMENTS = ['effectType', 'frameMode', 'flameColor', 'backgroundTint',
+        const REALTIME_UPDATE_ELEMENTS = ['effectType', 'frameMode', 'frameStyle', 'flameColor', 'secondaryColor', 'backgroundTint',
                                           'enableGlow', 'enableAdditiveBlend', 'maskOnlyEdges', 'highDPI',
                                           'useHighQualityTextures', 'detailScaleAuto', 'animationEasing',
-                                          'pulseEnabled', 'bloomEnabled', 'layersEnabled', 'smokeEnabled', 'smokeColor',
+                                          'pulseEnabled', 'pulsePattern', 'bloomEnabled', 'layersEnabled', 'smokeEnabled', 'smokeColor',
                                           'qualityMode', 'sparkEnabled', 'heatDistortionEnabled'];
         const CUSTOM_RESOLUTION_INPUTS = ['customWidth', 'customHeight'];
+        let currentVisualVariant = 'custom';
+        let applyingVisualPreset = false;
+
+        function markVisualVariantCustom() {
+            if (applyingVisualPreset) return;
+            currentVisualVariant = 'custom';
+            document.querySelectorAll('.visual-preset-btn').forEach(button => button.classList.remove('active'));
+            document.getElementById('profileMetric').textContent = 'CUSTOM';
+        }
 
         function getNumberInputValue(id, fallback) {
             const value = parseInt(document.getElementById(id).value, 10);
@@ -2306,84 +2327,9 @@
         }
 
         const VISUAL_PRESETS = {
-            'cinematic-hdr': {
-                qualityMode: 'obs-safe',
-                flameColor: '#ff6600',
-                flameIntensity: 1.22,
-                flameBrightness: 0.4,
-                noiseOctaves: 9,
-                edgeFeather: 0.52,
-                frameCurve: 0.14,
-                frameNoiseAmount: 0.18,
-                bloomEnabled: true,
-                bloomIntensity: 0.92,
-                bloomThreshold: 0.52,
-                bloomRadius: 4,
-                depthIntensity: 0.72,
-                sparkEnabled: true,
-                sparkDensity: 0.56,
-                heatDistortionEnabled: true,
-                heatDistortionStrength: 0.24,
-                cinematicContrast: 1.16,
-                coreWhiteness: 0.68,
-                emberTrailAmount: 0.32,
-                smokeEnabled: true,
-                smokeIntensity: 0.36,
-                smokeSpeed: 0.24,
-                smokeColor: '#2d2623'
-            },
-            'neon-heat': {
-                qualityMode: 'max-quality',
-                flameColor: '#ff2bd6',
-                flameIntensity: 1.75,
-                flameBrightness: 0.58,
-                bloomEnabled: true,
-                bloomIntensity: 1.25,
-                chromaticAberration: 0.01,
-                sparkDensity: 1.1,
-                heatDistortionStrength: 0.42,
-                cinematicContrast: 1.32,
-                coreWhiteness: 0.82,
-                emberTrailAmount: 0.58
-            },
-            'clean-broadcast': {
-                qualityMode: 'obs-safe',
-                flameColor: '#ff7a1a',
-                flameIntensity: 0.98,
-                flameBrightness: 0.33,
-                edgeFeather: 0.44,
-                bloomEnabled: true,
-                bloomIntensity: 0.62,
-                bloomThreshold: 0.6,
-                bloomRadius: 3,
-                sparkDensity: 0.22,
-                heatDistortionStrength: 0.08,
-                cinematicContrast: 1.04,
-                coreWhiteness: 0.44,
-                emberTrailAmount: 0.14,
-                smokeEnabled: false,
-                smokeIntensity: 0.12,
-                filmGrain: 0.008,
-                layerCount: 2,
-                layerParallax: 0.16
-            },
-            'low-load': {
-                qualityMode: 'low-load',
-                flameIntensity: 0.92,
-                flameBrightness: 0.3,
-                noiseOctaves: 5,
-                bloomEnabled: false,
-                bloomRadius: 2,
-                layersEnabled: false,
-                sparkEnabled: false,
-                sparkDensity: 0.1,
-                heatDistortionEnabled: false,
-                heatDistortionStrength: 0.04,
-                smokeEnabled: false,
-                smokeIntensity: 0,
-                filmGrain: 0.004,
-                chromaticAberration: 0.001
-            }
+            'inferno-forge': { visualVariant: 'inferno-forge', visualStyle: 'realistic', effectType: 'flames', qualityMode: 'obs-safe', frameStyle: 'organic', frameThickness: 30, frameGap: 6, segmentCount: 18, flameColor: '#ff4d00', secondaryColor: '#ffd36a', flameIntensity: 1.65, flameSpeed: 0.8, flameBrightness: 0.48, pulseEnabled: true, pulsePattern: 'breathe', pulseAmount: 0.16, pulseSpeed: 0.7, edgeFeather: 0.32, frameNoiseAmount: 0.32, bloomEnabled: true, bloomIntensity: 0.85, sparkEnabled: true, sparkDensity: 0.72, smokeEnabled: true, smokeIntensity: 0.28, coreWhiteness: 0.18 },
+            'neon-pulse': { visualVariant: 'neon-pulse', visualStyle: 'neon', effectType: 'energy', qualityMode: 'max-quality', frameStyle: 'double', frameThickness: 14, frameGap: 12, segmentCount: 20, flameColor: '#00e5ff', secondaryColor: '#ff2bd6', flameIntensity: 1.35, flameSpeed: 1.1, flameBrightness: 0.55, pulseEnabled: true, pulsePattern: 'ripple', pulseAmount: 0.42, pulseSpeed: 1.4, edgeFeather: 0.24, frameNoiseAmount: 0.08, bloomEnabled: true, bloomIntensity: 1.1, chromaticAberration: 0.008, coreWhiteness: 0.24 },
+            'storm-portal': { visualVariant: 'storm-portal', visualStyle: 'hybrid', effectType: 'lightning', qualityMode: 'obs-safe', frameStyle: 'portal', frameThickness: 10, frameGap: 6, segmentCount: 24, flameColor: '#6aa8ff', secondaryColor: '#d59cff', flameIntensity: 1.5, flameSpeed: 0.9, flameBrightness: 0.52, pulseEnabled: true, pulsePattern: 'heartbeat', pulseAmount: 0.34, pulseSpeed: 0.9, edgeFeather: 0.28, frameNoiseAmount: 0.22, bloomEnabled: true, bloomIntensity: 1.0, sparkEnabled: true, sparkDensity: 0.45, heatDistortionStrength: 0.08, coreWhiteness: 0.32 }
         };
 
         function setFieldValue(id, value) {
@@ -2401,20 +2347,21 @@
         function applyVisualPreset(name) {
             const preset = VISUAL_PRESETS[name];
             if (!preset) return;
+            applyingVisualPreset = true;
             for (const [key, value] of Object.entries(preset)) {
                 setFieldValue(key, value);
             }
+            applyingVisualPreset = false;
+            currentVisualVariant = name;
             const profileLabels = {
-                'cinematic-hdr': 'HDR',
-                'neon-heat': 'ACCENT',
-                'clean-broadcast': 'SAFE',
-                'low-load': 'LOW'
+                'inferno-forge': 'INFERNO',
+                'neon-pulse': 'NEON',
+                'storm-portal': 'STORM'
             };
             document.getElementById('profileMetric').textContent = profileLabels[name] || 'HDR';
             document.querySelectorAll('.visual-preset-btn').forEach(button => {
                 button.classList.toggle('active', button.dataset.visualPreset === name);
             });
-            if (previewActive) debouncedSaveConfig();
         }
 
         function activateTab(name) {
@@ -3167,6 +3114,7 @@
         // Update slider value displays and trigger real-time updates
         document.querySelectorAll('input[type="range"]').forEach(slider => {
             slider.addEventListener('input', (e) => {
+                markVisualVariantCustom();
                 const valueSpan = document.getElementById(e.target.id + 'Value');
                 if (valueSpan) {
                     let value = e.target.value;
@@ -3186,7 +3134,7 @@
                 }
 
                 // Auto-update preview in real-time
-                if (previewActive) {
+                if (previewActive && !applyingVisualPreset) {
                     debouncedSaveConfig();
                 }
             });
@@ -3233,13 +3181,18 @@
                 effectType: document.getElementById('effectType').value,
                 qualityMode: document.getElementById('qualityMode').value,
                 visualStyle: document.getElementById('visualStyle').value,
+                visualVariant: currentVisualVariant,
                 resolutionPreset: document.getElementById('resolutionPreset').value,
                 customWidth: parseInt(document.getElementById('customWidth').value),
                 customHeight: parseInt(document.getElementById('customHeight').value),
                 frameMode: document.getElementById('frameMode').value,
+                frameStyle: document.getElementById('frameStyle').value,
                 frameThickness: parseFloat(document.getElementById('frameThickness').value),
+                frameGap: parseFloat(document.getElementById('frameGap').value),
+                segmentCount: parseInt(document.getElementById('segmentCount').value),
                 maskOnlyEdges: document.getElementById('maskOnlyEdges').checked,
                 flameColor: document.getElementById('flameColor').value,
+                secondaryColor: document.getElementById('secondaryColor').value,
                 backgroundTint: document.getElementById('backgroundTint').value,
                 backgroundTintOpacity: parseFloat(document.getElementById('backgroundTintOpacity').value),
                 flameSpeed: parseFloat(document.getElementById('flameSpeed').value),
@@ -3261,6 +3214,7 @@
                 // Animation Advanced
                 animationEasing: document.getElementById('animationEasing').value,
                 pulseEnabled: document.getElementById('pulseEnabled').checked,
+                pulsePattern: document.getElementById('pulsePattern').value,
                 pulseAmount: parseFloat(document.getElementById('pulseAmount').value),
                 pulseSpeed: parseFloat(document.getElementById('pulseSpeed').value),
                 // Bloom
@@ -3318,7 +3272,8 @@
             const element = document.getElementById(id);
             if (element) {
                 element.addEventListener('change', () => {
-                    if (previewActive) {
+                    markVisualVariantCustom();
+                    if (previewActive && !applyingVisualPreset) {
                         debouncedSaveConfig();
                     }
                 });
@@ -3354,6 +3309,10 @@
                     document.getElementById('effectType').value = config.effectType || 'flames';
                     document.getElementById('qualityMode').value = config.qualityMode || 'obs-safe';
                     document.getElementById('visualStyle').value = config.visualStyle || 'hybrid';
+                    currentVisualVariant = config.visualVariant || 'custom';
+                    document.querySelectorAll('.visual-preset-btn').forEach(button => {
+                        button.classList.toggle('active', button.dataset.visualPreset === currentVisualVariant);
+                    });
                     document.getElementById('qualityMetric').textContent = (config.qualityMode || 'obs-safe') === 'max-quality' ? 'MAX' : ((config.qualityMode || 'obs-safe') === 'low-load' ? 'LOW' : 'OBS');
 
                     // Resolution
@@ -3363,12 +3322,18 @@
 
                     // Frame
                     document.getElementById('frameMode').value = config.frameMode || 'bottom';
+                    document.getElementById('frameStyle').value = config.frameStyle || 'classic';
                     document.getElementById('frameThickness').value = config.frameThickness || 150;
                     document.getElementById('frameThicknessValue').textContent = (config.frameThickness || 150) + ' px';
+                    document.getElementById('frameGap').value = config.frameGap ?? 10;
+                    document.getElementById('frameGapValue').textContent = `${config.frameGap ?? 10} px`;
+                    document.getElementById('segmentCount').value = config.segmentCount ?? 18;
+                    document.getElementById('segmentCountValue').textContent = config.segmentCount ?? 18;
                     document.getElementById('maskOnlyEdges').checked = config.maskOnlyEdges !== false;
 
                     // Appearance
                     document.getElementById('flameColor').value = config.flameColor || '#ff6600';
+                    document.getElementById('secondaryColor').value = config.secondaryColor || '#ffd36a';
                     document.getElementById('backgroundTint').value = config.backgroundTint || '#000000';
                     document.getElementById('backgroundTintOpacity').value = config.backgroundTintOpacity || 0;
                     document.getElementById('backgroundTintOpacityValue').textContent = config.backgroundTintOpacity || 0;
@@ -3406,6 +3371,7 @@
                     // Animation Advanced
                     document.getElementById('animationEasing').value = config.animationEasing || 'linear';
                     document.getElementById('pulseEnabled').checked = config.pulseEnabled || false;
+                    document.getElementById('pulsePattern').value = config.pulsePattern || 'breathe';
                     document.getElementById('pulseAmount').value = config.pulseAmount !== undefined ? config.pulseAmount : 0.2;
                     document.getElementById('pulseAmountValue').textContent = (config.pulseAmount !== undefined ? config.pulseAmount : 0.2).toFixed(2);
                     document.getElementById('pulseSpeed').value = config.pulseSpeed || 1.0;

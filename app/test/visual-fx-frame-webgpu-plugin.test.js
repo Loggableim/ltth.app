@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const pluginRoot = path.join(__dirname, '..', 'plugins', 'visual-fx-frame-webgpu');
+const pluginRoot = path.join(__dirname, '..', '..', 'plugin-store', 'sources', 'visual-fx-frame-webgpu');
 const read = relativePath => fs.readFileSync(path.join(pluginRoot, relativePath), 'utf8');
 
 describe('Visual FX Frame WEBGPU plugin contract', () => {
@@ -11,7 +11,7 @@ describe('Visual FX Frame WEBGPU plugin contract', () => {
     expect(manifest).toMatchObject({
       id: 'visual-fx-frame-webgpu',
       name: 'Visual FX Frame WEBGPU',
-      version: '1.0.0',
+      version: '1.1.0',
       enabled: false,
       devStatus: 'working-beta'
     });
@@ -19,7 +19,9 @@ describe('Visual FX Frame WEBGPU plugin contract', () => {
       'webgpu-compute-simulation',
       'webgpu-indirect-rendering',
       'hdr-bloom-pipeline',
-      'adaptive-quality'
+      'adaptive-quality',
+      'subscriber-beta',
+      'visual-variants'
     ]));
   });
 

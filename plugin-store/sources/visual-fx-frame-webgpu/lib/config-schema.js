@@ -4,6 +4,9 @@ const VISUAL_STYLES = Object.freeze(['realistic', 'neon', 'hybrid']);
 const EFFECT_TYPES = Object.freeze(['flames', 'particles', 'energy', 'lightning']);
 const QUALITY_MODES = Object.freeze(['low-load', 'obs-safe', 'max-quality']);
 const FRAME_MODES = Object.freeze(['bottom', 'top', 'sides', 'all']);
+const FRAME_STYLES = Object.freeze(['classic', 'organic', 'double', 'segmented', 'portal']);
+const PULSE_PATTERNS = Object.freeze(['breathe', 'heartbeat', 'ripple']);
+const VISUAL_VARIANTS = Object.freeze(['custom', 'inferno-forge', 'neon-pulse', 'storm-portal']);
 
 const DEFAULT_WEBGPU_CONFIG = VISUAL_FX_DEFAULT_CONFIG;
 
@@ -14,6 +17,16 @@ function clone(value) {
 
 function allowed(value, values, fallback) {
   return values.includes(value) ? value : fallback;
+}
+
+function clamp(value, min, max, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
+}
+
+function color(value, fallback) {
+  const normalized = String(value || '').toLowerCase();
+  return /^#[0-9a-f]{6}$/.test(normalized) ? normalized : fallback;
 }
 
 function normalizeFramePositions(value) {
@@ -36,8 +49,16 @@ function normalizeConfig(source = {}) {
   result.effectType = allowed(source.effectType, EFFECT_TYPES, DEFAULT_WEBGPU_CONFIG.effectType);
   result.qualityMode = allowed(source.qualityMode, QUALITY_MODES, DEFAULT_WEBGPU_CONFIG.qualityMode);
   result.frameMode = allowed(source.frameMode, FRAME_MODES, DEFAULT_WEBGPU_CONFIG.frameMode);
+  result.frameStyle = allowed(source.frameStyle, FRAME_STYLES, DEFAULT_WEBGPU_CONFIG.frameStyle);
+  result.pulsePattern = allowed(source.pulsePattern, PULSE_PATTERNS, DEFAULT_WEBGPU_CONFIG.pulsePattern);
+  result.visualVariant = allowed(source.visualVariant, VISUAL_VARIANTS, 'custom');
+  result.frameThickness = Math.round(clamp(source.frameThickness, 5, 500, DEFAULT_WEBGPU_CONFIG.frameThickness));
+  result.frameGap = clamp(source.frameGap, 0, 100, DEFAULT_WEBGPU_CONFIG.frameGap);
+  result.segmentCount = Math.round(clamp(source.segmentCount, 4, 64, DEFAULT_WEBGPU_CONFIG.segmentCount));
+  result.flameColor = color(source.flameColor, DEFAULT_WEBGPU_CONFIG.flameColor);
+  result.secondaryColor = color(source.secondaryColor, DEFAULT_WEBGPU_CONFIG.secondaryColor);
   result.framePositions = normalizeFramePositions(source.framePositions);
-  result.visualProfileVersion = 4;
+  result.visualProfileVersion = 5;
   return result;
 }
 
@@ -62,6 +83,9 @@ module.exports = {
   DEFAULT_WEBGPU_CONFIG,
   EFFECT_TYPES,
   FRAME_MODES,
+  FRAME_STYLES,
+  PULSE_PATTERNS,
+  VISUAL_VARIANTS,
   QUALITY_MODES,
   VISUAL_STYLES,
   normalizeConfig,

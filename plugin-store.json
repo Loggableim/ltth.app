@@ -1008,6 +1008,31 @@
       "screenshots": [
         "/screenshots/features/webgpu-emoji-rain.png"
       ]
+    },
+    {
+      "id": "visual-fx-frame-webgpu",
+      "name": {
+        "en": "Visual FX Frame WEBGPU",
+        "de": "Visual FX Frame WEBGPU",
+        "es": "Visual FX Frame WEBGPU",
+        "fr": "Visual FX Frame WEBGPU"
+      },
+      "description": {
+        "en": "Subscriber beta with native WebGPU frame materials, dual-color flames, pulse waves and three cinematic variants.",
+        "de": "Subscriber-Beta mit nativen WebGPU-Rahmenmaterialien, zweifarbigen Flammen, Pulswellen und drei cineastischen Varianten.",
+        "es": "Beta para suscriptores con marcos WebGPU nativos, llamas de dos colores, ondas de pulso y tres variantes cinematográficas.",
+        "fr": "Bêta abonnés avec cadres WebGPU natifs, flammes bicolores, ondes pulsées et trois variantes cinématiques."
+      },
+      "version": "1.1.0",
+      "author": "Pup Cid",
+      "category": "overlay",
+      "channel": "open-beta",
+      "badges": ["subscriber-only"],
+      "access": { "type": "subscriber" },
+      "packageUrl": "https://ltth.app/plugin-store/packages/visual-fx-frame-webgpu-1.1.0.zip",
+      "sha256": "d5178904f137e861a47d4030456a1c7d7afecc47d45bde7c54fdd078b494b380",
+      "pricing": { "type": "free", "amount": 0, "currency": "EUR" },
+      "screenshots": []
     }
   ]
 }

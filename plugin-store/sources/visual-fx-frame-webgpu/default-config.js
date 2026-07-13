@@ -8,15 +8,20 @@
 const VISUAL_FX_DEFAULT_CONFIG = Object.freeze({
   renderer: 'webgpu',
   visualStyle: 'hybrid',
+  visualVariant: 'custom',
   effectType: 'flames',
   qualityMode: 'obs-safe',
   resolutionPreset: 'tiktok-portrait',
   customWidth: 720,
   customHeight: 1280,
   frameMode: 'bottom',
+  frameStyle: 'classic',
   frameThickness: 150,
+  frameGap: 10,
+  segmentCount: 18,
   framePositions: [{ x: 0, y: 0, width: 100, height: 100 }],
   flameColor: '#ff6600',
+  secondaryColor: '#ffd36a',
   backgroundTint: '#000000',
   backgroundTintOpacity: 0,
   flameSpeed: 0.5,
@@ -34,6 +39,7 @@ const VISUAL_FX_DEFAULT_CONFIG = Object.freeze({
   frameNoiseAmount: 0.12,
   animationEasing: 'linear',
   pulseEnabled: false,
+  pulsePattern: 'breathe',
   pulseAmount: 0.16,
   pulseSpeed: 1,
   bloomEnabled: true,
@@ -57,7 +63,7 @@ const VISUAL_FX_DEFAULT_CONFIG = Object.freeze({
   smokeIntensity: 0.18,
   smokeSpeed: 0.22,
   smokeColor: '#2d2623',
-  visualProfileVersion: 4
+  visualProfileVersion: 5
 });
 
 if (typeof window !== 'undefined') {

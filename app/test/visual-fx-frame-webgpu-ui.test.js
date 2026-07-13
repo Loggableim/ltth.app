@@ -1,11 +1,17 @@
 const fs = require('fs');
 const path = require('path');
 
-const pluginRoot = path.join(__dirname, '..', 'plugins', 'visual-fx-frame-webgpu');
+const pluginRoot = path.join(__dirname, '..', '..', 'plugin-store', 'sources', 'visual-fx-frame-webgpu');
 const settings = fs.readFileSync(path.join(pluginRoot, 'ui', 'settings.html'), 'utf8');
 const appRoot = path.join(__dirname, '..');
 const dashboard = fs.readFileSync(path.join(appRoot, 'public', 'dashboard.html'), 'utf8');
 const navigation = fs.readFileSync(path.join(appRoot, 'public', 'js', 'navigation.js'), 'utf8');
+
+function readVisualPresets() {
+  const match = settings.match(/const VISUAL_PRESETS = (\{[\s\S]*?\n        \});/);
+  if (!match) throw new Error('VISUAL_PRESETS declaration missing');
+  return Function(`"use strict"; return (${match[1]});`)();
+}
 
 describe('Visual FX Frame WEBGPU Control Room', () => {
   test('offers the three approved visual styles', () => {
@@ -14,6 +20,36 @@ describe('Visual FX Frame WEBGPU Control Room', () => {
     expect(settings).toContain('<option value="neon"');
     expect(settings).toContain('<option value="hybrid"');
     expect(settings).toContain("visualStyle: document.getElementById('visualStyle').value");
+  });
+
+  test('offers exactly the three 1.1 variants without overwriting geometry or triggers', () => {
+    const presets = readVisualPresets();
+    expect(Object.keys(presets)).toEqual(['inferno-forge', 'neon-pulse', 'storm-portal']);
+    expect(settings.match(/data-visual-preset=/g)).toHaveLength(3);
+    expect(settings).toContain('data-visual-preset="inferno-forge"');
+    expect(settings).toContain('data-visual-preset="neon-pulse"');
+    expect(settings).toContain('data-visual-preset="storm-portal"');
+
+    for (const preset of Object.values(presets)) {
+      for (const protectedField of [
+        'resolutionPreset', 'customWidth', 'customHeight', 'frameMode',
+        'framePositions', 'triggerRules', 'triggerPreset', 'triggerCooldown', 'triggerMaxStack'
+      ]) expect(preset).not.toHaveProperty(protectedField);
+    }
+  });
+
+  test('supports five-pixel frames and the new material controls', () => {
+    expect(settings).toContain('id="frameThickness" min="5" max="500" value="150" step="5"');
+    for (const id of ['frameStyle', 'secondaryColor', 'frameGap', 'segmentCount', 'pulsePattern']) {
+      expect(settings).toContain(`id="${id}"`);
+    }
+  });
+
+  test('keeps variant application preview-only and marks manual edits custom', () => {
+    const applyBody = settings.match(/function applyVisualPreset\(name\) \{([\s\S]*?)\n        \}/)?.[1] || '';
+    expect(applyBody).not.toContain('debouncedSaveConfig');
+    expect(settings).toContain('function markVisualVariantCustom()');
+    expect(settings).toContain("visualVariant: currentVisualVariant");
   });
 
   test('shows live WebGPU adapter and performance metrics', () => {
@@ -39,7 +75,8 @@ describe('Visual FX Frame WEBGPU Control Room', () => {
         visualStyle: expect.any(String),
         runtime: expect.any(String),
         adapter: expect.any(String),
-        import: expect.any(String)
+        import: expect.any(String),
+        variants: expect.any(Object)
       });
     }
   });

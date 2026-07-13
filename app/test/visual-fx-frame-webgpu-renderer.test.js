@@ -1,12 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
-const rendererRoot = path.join(__dirname, '..', 'plugins', 'visual-fx-frame-webgpu', 'renderer');
+const pluginRoot = path.join(__dirname, '..', '..', 'plugin-store', 'sources', 'visual-fx-frame-webgpu');
+const rendererRoot = path.join(pluginRoot, 'renderer');
+const requirePlugin = relativePath => require(path.join(pluginRoot, relativePath));
 const read = file => fs.readFileSync(path.join(rendererRoot, file), 'utf8');
 
 describe('Visual FX Frame WEBGPU native renderer', () => {
   test('defines compute stages for fields, particles, and lightning', () => {
-    const shaders = require('../plugins/visual-fx-frame-webgpu/renderer/effect-pipelines');
+    const shaders = requirePlugin('renderer/effect-pipelines');
     const library = shaders.createShaderLibrary();
 
     expect(library.compute).toContain('fn simulateField');
@@ -21,6 +23,12 @@ describe('Visual FX Frame WEBGPU native renderer', () => {
     expect(library.scene).toContain('EFFECT_PARTICLES');
     expect(library.scene).toContain('EFFECT_ENERGY');
     expect(library.scene).toContain('EFFECT_LIGHTNING');
+    for (const contract of [
+      'FRAME_STYLE_CLASSIC', 'FRAME_STYLE_ORGANIC', 'FRAME_STYLE_DOUBLE',
+      'FRAME_STYLE_SEGMENTED', 'FRAME_STYLE_PORTAL', 'fn pulseWave',
+      'fn domainWarp', 'uniforms.secondaryColor', 'uniforms.frameFx',
+      'uniforms.pulseFx', 'lightning['
+    ]) expect(library.scene).toContain(contract);
   });
 
   test('uses storage simulation, indirect draws, and HDR post-processing', () => {
@@ -40,6 +48,7 @@ describe('Visual FX Frame WEBGPU native renderer', () => {
     expect(postSource).toContain('setPipeline(this.pipelines.kawaseBlur)');
     expect(postSource).toContain('bloomTexture');
     expect(postSource).toContain('scene.rgb + bloom.rgb * post.intensity');
+    expect(engineSource).toContain("scene: this._createBindGroup(this.pipelines.scene, [[0, this.buffers.uniforms], [1, this.buffers.field], [3, this.buffers.lightning]])");
   });
 
   test('loads renderer modules in dependency order without a fallback backend', () => {
@@ -57,7 +66,7 @@ describe('Visual FX Frame WEBGPU native renderer', () => {
   });
 
   test('stops after one failed device recovery attempt', async () => {
-    const WebGPUVisualFxEngine = require('../plugins/visual-fx-frame-webgpu/renderer/webgpu-effects-engine');
+    const WebGPUVisualFxEngine = requirePlugin('renderer/webgpu-effects-engine');
     const statuses = [];
     const engine = new WebGPUVisualFxEngine({ getContext: jest.fn() }, {
       onStatus: status => statuses.push(status)
@@ -75,7 +84,7 @@ describe('Visual FX Frame WEBGPU native renderer', () => {
   });
 
   test('exposes runtime metrics and deterministic trigger state', () => {
-    const WebGPUVisualFxEngine = require('../plugins/visual-fx-frame-webgpu/renderer/webgpu-effects-engine');
+    const WebGPUVisualFxEngine = requirePlugin('renderer/webgpu-effects-engine');
     const engine = new WebGPUVisualFxEngine({ getContext: jest.fn() }, {
       config: { effectType: 'flames', qualityMode: 'obs-safe', visualStyle: 'hybrid' }
     });
@@ -95,7 +104,7 @@ describe('Visual FX Frame WEBGPU native renderer', () => {
   });
 
   test('reports rolling p95 and slow-frame ratio for runtime acceptance', () => {
-    const WebGPUVisualFxEngine = require('../plugins/visual-fx-frame-webgpu/renderer/webgpu-effects-engine');
+    const WebGPUVisualFxEngine = requirePlugin('renderer/webgpu-effects-engine');
     const engine = new WebGPUVisualFxEngine({ getContext: jest.fn() });
     for (let index = 0; index < 113; index += 1) engine._updateMetrics(16, 0.2);
     for (let index = 0; index < 7; index += 1) engine._updateMetrics(30, 0.2);
@@ -107,9 +116,9 @@ describe('Visual FX Frame WEBGPU native renderer', () => {
   });
 
   test('sends hot-core whiteness to the shader instead of forcing a white frame', () => {
-    const shaders = require('../plugins/visual-fx-frame-webgpu/renderer/effect-pipelines');
+    const shaders = requirePlugin('renderer/effect-pipelines');
     const library = shaders.createShaderLibrary();
-    const WebGPUVisualFxEngine = require('../plugins/visual-fx-frame-webgpu/renderer/webgpu-effects-engine');
+    const WebGPUVisualFxEngine = requirePlugin('renderer/webgpu-effects-engine');
     const writeBuffer = jest.fn();
     const engine = new WebGPUVisualFxEngine({ width: 1920, height: 1080 }, {
       config: { coreWhiteness: 0 }
@@ -126,5 +135,40 @@ describe('Visual FX Frame WEBGPU native renderer', () => {
     const brightCoreBytes = writeBuffer.mock.calls.at(-1)[2];
     expect(new DataView(brightCoreBytes).getFloat32(128, true)).toBeCloseTo(0.72);
     expect(library.scene).toContain('uniforms.material.x');
+  });
+
+  test('packs dual-color frame and pulse controls into the GPU uniform block', () => {
+    const WebGPUVisualFxEngine = requirePlugin('renderer/webgpu-effects-engine');
+    const writeBuffer = jest.fn();
+    const engine = new WebGPUVisualFxEngine({ width: 1920, height: 1080 }, {
+      config: {
+        frameStyle: 'portal', secondaryColor: '#8040ff', frameGap: 12,
+        segmentCount: 24, edgeFeather: 0.35, frameNoiseAmount: 0.2,
+        pulseEnabled: true, pulseAmount: 0.34, pulseSpeed: 0.9,
+        pulsePattern: 'heartbeat', frameCurve: 0.25, flameBrightness: 0.5
+      }
+    });
+    engine.device = { queue: { writeBuffer } };
+    engine.buffers = { uniforms: {} };
+
+    engine._writeUniforms(1000, 1 / 60);
+    const bytes = writeBuffer.mock.calls.at(-1)[2];
+    const view = new DataView(bytes);
+    expect(bytes.byteLength).toBe(192);
+    expect(view.getFloat32(132, true)).toBeCloseTo(0.34);
+    expect(view.getFloat32(136, true)).toBeCloseTo(0.9);
+    expect(view.getFloat32(140, true)).toBe(4);
+    expect(view.getFloat32(144, true)).toBeCloseTo(128 / 255);
+    expect(view.getFloat32(148, true)).toBeCloseTo(64 / 255);
+    expect(view.getFloat32(152, true)).toBe(1);
+    expect(view.getFloat32(160, true)).toBe(12);
+    expect(view.getFloat32(164, true)).toBe(24);
+    expect(view.getFloat32(176, true)).toBe(1);
+  });
+
+  test('tone maps straight color before restoring premultiplied alpha', () => {
+    const postSource = read('hdr-post-processor.js');
+    expect(postSource).toContain('let straightColor = premultiplied.rgb / safeAlpha');
+    expect(postSource).toContain('return vec4f(mapped * premultiplied.a, premultiplied.a)');
   });
 });

@@ -29,7 +29,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     // Use pluginLimiter if provided, otherwise fall back to apiLimiter
     const limiter = pluginLimiter || apiLimiter;
     const env = options.env || process.env;
-    const pluginStore = new PluginStore(pluginLoader, { logger });
+    const pluginStore = options.pluginStore || new PluginStore(pluginLoader, { logger });
     const storeAuth = options.storeAuth || createRequireStoreAuth({ env, logger });
     const storeAuthConfig = options.storeAuthConfig || (() => buildStoreAuthConfig(env));
     const storeAccountResponse = options.storeAccountResponse || ((req) => buildStoreAccountResponse(req, env));
