@@ -672,6 +672,8 @@ class OSCBridgePlugin {
 
                 if (scanResult.found) {
                     // Destroy old client if exists to avoid lingering reconnect timers
+                    await this.stopAvatarCapabilitiesWatcher();
+                    this.invalidateAvatarCapabilities('oscquery_port_scan');
                     if (this.oscQueryClient) {
                         this.oscQueryClient.destroy();
                     }
@@ -1011,6 +1013,7 @@ class OSCBridgePlugin {
                         this.logger
                     );
                     if (scanResult.found) {
+                        this.invalidateAvatarCapabilities('oscquery_port_scan');
                         this.oscQueryClient = new OSCQueryClient(
                             this.config.oscQuery?.host || '127.0.0.1',
                             scanResult.port,
@@ -1038,8 +1041,16 @@ class OSCBridgePlugin {
                     });
                 }
 
-                // Trigger discovery
-                await this.autoDiscoverOSCQuery();
+                // Trigger discovery and do not use a stale/partial scan result.
+                const discovery = await this.autoDiscoverOSCQuery();
+                if (!discovery.success) {
+                    this.invalidateAvatarCapabilities('oscquery_discovery_failed');
+                    return res.status(502).json({
+                        success: false,
+                        error: `OSCQuery discovery failed: ${discovery.error}`,
+                        diagnostics: this.buildOSCQueryDiagnostics()
+                    });
+                }
 
                 // Give VRChat a moment to populate the avatar parameter after discovery
                 // Then retry up to 3 times with 1 second delays if not found
@@ -1430,6 +1441,7 @@ class OSCBridgePlugin {
             }
 
             await this.stopAvatarCapabilitiesWatcher();
+            this.invalidateAvatarCapabilities('oscquery_reconfigured');
 
             this.config = candidateConfig;
             configApplied = true;
@@ -1514,6 +1526,7 @@ class OSCBridgePlugin {
         this.config = previousConfig;
 
         await this.stopAvatarCapabilitiesWatcher();
+        this.invalidateAvatarCapabilities('oscquery_restored');
 
         if (this.oscQueryClient) {
             this.oscQueryClient.disconnect();
@@ -2225,10 +2238,14 @@ class OSCBridgePlugin {
             if (!this.oscQueryClient) {
                 const host = this.config.oscQuery?.host || '127.0.0.1';
                 const port = this.config.oscQuery?.port || 9001;
+                this.invalidateAvatarCapabilities('oscquery_created');
                 this.oscQueryClient = new OSCQueryClient(host, port, this.logger);
             }
 
             const result = await this.oscQueryClient.discover();
+            if (!Array.isArray(result?.parameters) || result.parameters.length === 0) {
+                throw new Error('OSCQuery discovery returned no avatar parameters');
+            }
             this.logger.info(`✅ OSCQuery discovered ${result.parameters.length} parameters`);
 
             // Auto-discover PhysBones if enabled
@@ -2250,12 +2267,14 @@ class OSCBridgePlugin {
             }
 
             this.api.emit('osc:oscquery-discovered', result);
+            return { success: true, result };
         } catch (error) {
             const errorMessage = error?.message || String(error);
             this.logger.error(`OSCQuery auto-discovery failed: ${errorMessage}`);
             if (error?.stack) {
                 this.logger.error(`OSCQuery auto-discovery stack: ${error.stack}`);
             }
+            return { success: false, error: errorMessage };
         }
     }
 
@@ -2841,6 +2860,21 @@ class OSCBridgePlugin {
             client.stopAvatarWatcher();
         }
         await this.avatarCapabilityRefreshPromise.catch(() => undefined);
+    }
+
+    /**
+     * Drops scan-derived runtime state when its OSCQuery source changes.
+     */
+    invalidateAvatarCapabilities(source) {
+        this.avatarCapabilityIntentGeneration++;
+        this.avatarCapabilitiesWatcherClient = null;
+        this.activeAvatarProfile = null;
+        this.api.emit('osc:avatar-capabilities', {
+            avatarId: null,
+            profile: null,
+            source,
+            timestamp: Date.now()
+        });
     }
 
     /**

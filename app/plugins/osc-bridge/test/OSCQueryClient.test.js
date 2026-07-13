@@ -231,6 +231,37 @@ describe('OSCQueryClient', () => {
         });
     });
 
+    describe('Avatar watcher ordering', () => {
+        test('does not emit an older poll after a newer poll has completed discovery', async () => {
+            jest.useFakeTimers();
+            client.avatarInfo = { id: 'avtr_initial' };
+            const callback = jest.fn();
+            let resolveOlderDiscovery;
+            const olderDiscovery = new Promise(resolve => { resolveOlderDiscovery = resolve; });
+            client.discover = jest.fn()
+                .mockImplementationOnce(() => olderDiscovery)
+                .mockResolvedValueOnce({ parameters: [] });
+            axios.get
+                .mockResolvedValueOnce({ data: { VALUE: 'avtr_old' } })
+                .mockResolvedValueOnce({ data: { VALUE: 'avtr_new' } });
+
+            client.startAvatarWatcher(10, callback);
+            jest.advanceTimersByTime(10);
+            await Promise.resolve();
+            jest.advanceTimersByTime(10);
+            await Promise.resolve();
+            await Promise.resolve();
+            resolveOlderDiscovery({ parameters: [] });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(callback).toHaveBeenCalledTimes(1);
+            expect(callback).toHaveBeenCalledWith(expect.objectContaining({ id: 'avtr_new' }));
+            expect(client.avatarInfo).toEqual(expect.objectContaining({ id: 'avtr_new' }));
+            jest.useRealTimers();
+        });
+    });
+
     describe('Cleanup', () => {
         test('should clean up resources on destroy', () => {
             client._addParameter('/test1', { TYPE: 'f', ACCESS: 3 });

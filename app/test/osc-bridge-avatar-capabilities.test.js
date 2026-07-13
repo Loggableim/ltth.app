@@ -1,4 +1,5 @@
 const OSCBridgePlugin = require('../plugins/osc-bridge/main');
+const OSCQueryClient = require('../plugins/osc-bridge/modules/OSCQueryClient');
 
 describe('OSC-Bridge avatar capability profiles', () => {
   let plugin;
@@ -298,6 +299,109 @@ describe('OSC-Bridge avatar capability profiles', () => {
     expect(plugin.config.avatars).toEqual([expect.objectContaining({ avatarId: 'avtr_newest' })]);
     expect(plugin.activeAvatarProfile).toEqual(expect.objectContaining({ avatarId: 'avtr_newest' }));
     expect(api.emit).not.toHaveBeenCalledWith('osc:avatar-capabilities', expect.objectContaining({ avatarId: 'avtr_old_inflight' }));
+  });
+
+  test('clears a capability profile and restores legacy helper behavior when OSCQuery is reconfigured', async () => {
+    const routes = new Map();
+    api.registerRoute.mockImplementation((method, path, handler) => routes.set(`${method.toLowerCase()} ${path}`, handler));
+    const oldClient = { stopAvatarWatcher: jest.fn(), disconnect: jest.fn() };
+    plugin.config.oscQuery = { enabled: true, host: '127.0.0.1', port: 9001 };
+    plugin.oscQueryClient = oldClient;
+    plugin.avatarCapabilitiesWatcherClient = oldClient;
+    plugin.activeAvatarProfile = {
+      avatarId: 'avtr_old',
+      availableActions: { standard: { Wave: false }, emotes: {}, gogoloco: {}, physbones: [], custom: [] }
+    };
+    plugin.isRunning = true;
+    plugin.transport.stop = jest.fn().mockResolvedValue({ success: true });
+    plugin.sendMessage = jest.fn(() => ({ success: true }));
+    plugin.registerRoutes();
+
+    await plugin.updateConfig({ oscQuery: { host: '127.0.0.1', port: 9002 } });
+
+    expect(plugin.activeAvatarProfile).toBeNull();
+    expect(plugin.avatarCapabilitiesWatcherClient).toBeNull();
+    const waveResponse = makeResponse();
+    routes.get('post /api/osc/vrchat/wave')({ body: {} }, waveResponse);
+    expect(waveResponse.payload.success).toBe(true);
+  });
+
+  test('clears a capability profile when OSCQuery is disabled', async () => {
+    const oldClient = { stopAvatarWatcher: jest.fn(), disconnect: jest.fn() };
+    plugin.config.oscQuery = { enabled: true, host: '127.0.0.1', port: 9001 };
+    plugin.oscQueryClient = oldClient;
+    plugin.avatarCapabilitiesWatcherClient = oldClient;
+    plugin.activeAvatarProfile = { avatarId: 'avtr_old', availableActions: {} };
+
+    await plugin.updateConfig({ oscQuery: { enabled: false } });
+
+    expect(plugin.oscQueryClient).toBeNull();
+    expect(plugin.activeAvatarProfile).toBeNull();
+    expect(plugin.avatarCapabilitiesWatcherClient).toBeNull();
+  });
+
+  test('clears a capability profile when port scan replaces the OSCQuery client', async () => {
+    const routes = new Map();
+    api.registerRoute.mockImplementation((method, path, handler) => routes.set(`${method.toLowerCase()} ${path}`, handler));
+    const oldClient = { destroy: jest.fn(), stopAvatarWatcher: jest.fn() };
+    plugin.config.oscQuery = { enabled: true, host: '127.0.0.1', port: 9001 };
+    plugin.oscQueryClient = oldClient;
+    plugin.avatarCapabilitiesWatcherClient = oldClient;
+    plugin.activeAvatarProfile = { avatarId: 'avtr_old', availableActions: {} };
+    plugin.registerRoutes();
+    const scanSpy = jest.spyOn(OSCQueryClient, 'scanForVRChatOSCQuery').mockResolvedValue({
+      found: true,
+      port: 9010,
+      hostInfo: { NAME: 'VRChat' },
+      candidates: []
+    });
+
+    const response = makeResponse();
+    await routes.get('post /api/osc/oscquery/scan-port')({ body: { autoSave: false } }, response);
+
+    expect(response.payload.success).toBe(true);
+    expect(oldClient.destroy).toHaveBeenCalledTimes(1);
+    expect(plugin.activeAvatarProfile).toBeNull();
+    expect(plugin.avatarCapabilitiesWatcherClient).toBeNull();
+    scanSpy.mockRestore();
+  });
+
+  test.each([
+    ['discovery rejects', () => Promise.reject(new Error('OSCQuery unavailable'))],
+    ['discovery returns no parameters', () => Promise.resolve({ parameters: [] })]
+  ])('does not persist or gate a profile when %s', async (_label, discover) => {
+    const routes = new Map();
+    api.registerRoute.mockImplementation((method, path, handler) => routes.set(`${method.toLowerCase()} ${path}`, handler));
+    plugin.oscQueryClient = {
+      discover: jest.fn(discover),
+      avatarInfo: { id: 'avtr_should_not_persist' },
+      parameters: new Map(),
+      getAllParameters: jest.fn(() => []),
+      startAvatarWatcher: jest.fn()
+    };
+    plugin.activeAvatarProfile = {
+      avatarId: 'avtr_stale',
+      availableActions: { standard: { Wave: false }, emotes: {}, gogoloco: {}, physbones: [], custom: [] }
+    };
+    plugin.isRunning = true;
+    plugin.sendMessage = jest.fn(() => ({ success: true }));
+    plugin.config.oscQuery = { enabled: true, host: '127.0.0.1', port: 9001 };
+    plugin.registerRoutes();
+
+    const response = makeResponse();
+    await routes.get('post /api/osc/avatar/auto-detect')({ body: {} }, response);
+
+    expect(response.statusCode).toBe(502);
+    expect(response.payload).toEqual(expect.objectContaining({
+      success: false,
+      error: expect.stringContaining('OSCQuery discovery failed'),
+      diagnostics: expect.any(Object)
+    }));
+    expect(plugin.activeAvatarProfile).toBeNull();
+    expect(api.setConfig).not.toHaveBeenCalled();
+    const waveResponse = makeResponse();
+    routes.get('post /api/osc/vrchat/wave')({ body: {} }, waveResponse);
+    expect(waveResponse.payload.success).toBe(true);
   });
 });
 
