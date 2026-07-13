@@ -10,6 +10,7 @@ const {
     safeSocketHandler,
     safeActionHandler
 } = require('../../modules/error-handler');
+const path = require('path');
 
 class APIBridgePlugin {
     constructor(api) {
@@ -26,6 +27,13 @@ class APIBridgePlugin {
         this.api.log('Initialisiere API Bridge Plugin...', 'info');
 
         // ========== HTTP Endpoints ==========
+
+        // This is a read-only technical reference. It deliberately exposes no
+        // action button, so operators can inspect the contract before wiring a
+        // client to the execution endpoint.
+        this.api.registerRoute('get', '/api-bridge/ui', (req, res) => {
+            res.sendFile(path.join(__dirname, 'ui.html'));
+        });
 
         // App Info Endpoint
         this.api.registerRoute('get', '/api/bridge/info', (req, res) => {

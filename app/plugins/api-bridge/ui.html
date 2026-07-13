@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en" data-theme="cid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API Bridge — local contract</title>
+  <link rel="stylesheet" href="/css/themes.css">
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--color-bg-primary, #050806); color: var(--color-text-primary, #f4fff4); font: 16px/1.5 Inter, Segoe UI, sans-serif; }
+    main { max-width: 1040px; margin: 0 auto; padding: 32px 24px 56px; }
+    header, section { border: 1px solid var(--color-border, #246238); border-radius: 14px; background: var(--color-bg-card, #0a160c); padding: 20px; }
+    header { border-color: #28d86f; margin-bottom: 20px; }
+    h1, h2, p { margin: 0; } h1 { font-size: 1.7rem; } h2 { font-size: 1.05rem; }
+    .eyebrow { color: #62e997; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; font-size: .75rem; margin-bottom: 8px; }
+    .lede { color: var(--color-text-muted, #b6c4b8); margin-top: 8px; max-width: 72ch; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-top: 16px; }
+    section { min-height: 172px; } section.wide { grid-column: 1 / -1; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    code { color: #aaf5c8; } pre { overflow: auto; background: #020503; border: 1px solid #1f5530; border-radius: 8px; padding: 12px; color: #e9fff0; }
+    .method { color: #030603; background: #4ade80; border-radius: 999px; padding: 2px 8px; font-weight: 800; font-size: .75rem; margin-right: 7px; }
+    .method.post { background: #facc15; } .safe { color: #aaf5c8; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main>
+    <header id="bridge-overview">
+      <p class="eyebrow" data-copy="eyebrow">Local, read-only reference</p>
+      <h1 data-copy="title">API Bridge contract</h1>
+      <p class="lede" data-copy="lede">Inspect these local endpoints before integrating a client. This page never sends an action request.</p>
+    </header>
+    <div class="grid">
+      <section id="bridge-info">
+        <h2><span class="method">GET</span><code>/api/bridge/info</code></h2>
+        <p data-copy="info">Identify the running LTTH and API Bridge versions.</p>
+        <pre>{ "success": true, "data": { "plugin": "api-bridge" } }</pre>
+      </section>
+      <section id="bridge-actions">
+        <h2><span class="method">GET</span><code>/api/bridge/actions</code></h2>
+        <p data-copy="actions">List action IDs and their declared parameters. Reading this endpoint has no side effect.</p>
+        <pre>{ "success": true, "data": [ { "id": "…" } ] }</pre>
+      </section>
+      <section id="bridge-events">
+        <h2><span class="method">GET</span><code>/api/bridge/events?limit=1</code></h2>
+        <p data-copy="events">Review the most recent event record; a new temporary profile starts with an empty list.</p>
+        <pre>{ "success": true, "data": { "events": [], "total": 0 } }</pre>
+      </section>
+      <section id="bridge-request">
+        <h2><span class="method post">POST</span><code>/api/bridge/actions/exec</code></h2>
+        <p data-copy="request">Execution belongs in a separately tested client. Verify the required body without sending it here.</p>
+        <pre>{ "actionId": "declared-action-id", "context": {} }</pre>
+      </section>
+      <section id="bridge-safety" class="wide">
+        <h2 data-copy="safetyTitle">Safe integration boundary</h2>
+        <p class="safe" data-copy="safety">Use GET endpoints first. Keep credentials and production action IDs out of screenshots and test profiles; POST execution is intentionally not available on this page.</p>
+      </section>
+    </div>
+  </main>
+  <script>
+    const locale = new URLSearchParams(location.search).get('lang') || localStorage.getItem('app_locale') || 'en';
+    const copy = {
+      de: { eyebrow: 'Lokale Referenz, nur lesend', title: 'API-Bridge-Vertrag', lede: 'Prüfe diese lokalen Endpunkte, bevor du einen Client integrierst. Diese Seite sendet keine Aktionsanfrage.', info: 'Ermittle die laufenden LTTH- und API-Bridge-Versionen.', actions: 'Liste Aktions-IDs und ihre deklarierten Parameter auf. Das Lesen dieses Endpunkts hat keine Nebenwirkung.', events: 'Prüfe den letzten Ereigniseintrag; ein frisches Testprofil startet mit einer leeren Liste.', request: 'Die Ausführung gehört in einen separat getesteten Client. Prüfe den erforderlichen Body, ohne ihn hier zu senden.', safetyTitle: 'Sichere Integrationsgrenze', safety: 'Verwende zuerst GET-Endpunkte. Zugangsdaten und produktive Aktions-IDs gehören weder in Screenshots noch in Testprofile; POST-Ausführung ist auf dieser Seite absichtlich nicht verfügbar.' },
+      en: { eyebrow: 'Local, read-only reference', title: 'API Bridge contract', lede: 'Inspect these local endpoints before integrating a client. This page never sends an action request.', info: 'Identify the running LTTH and API Bridge versions.', actions: 'List action IDs and their declared parameters. Reading this endpoint has no side effect.', events: 'Review the most recent event record; a new temporary profile starts with an empty list.', request: 'Execution belongs in a separately tested client. Verify the required body without sending it here.', safetyTitle: 'Safe integration boundary', safety: 'Use GET endpoints first. Keep credentials and production action IDs out of screenshots and test profiles; POST execution is intentionally not available on this page.' },
+      es: { eyebrow: 'Referencia local de solo lectura', title: 'Contrato de API Bridge', lede: 'Inspecciona estos endpoints locales antes de integrar un cliente. Esta página no envía solicitudes de acción.', info: 'Identifica las versiones en ejecución de LTTH y API Bridge.', actions: 'Enumera IDs de acción y sus parámetros declarados. Leer este endpoint no tiene efectos.', events: 'Revisa el evento más reciente; un perfil temporal nuevo empieza con una lista vacía.', request: 'La ejecución pertenece a un cliente probado por separado. Verifica el body requerido sin enviarlo aquí.', safetyTitle: 'Límite seguro de integración', safety: 'Usa primero endpoints GET. Mantén credenciales e IDs de producción fuera de capturas y perfiles de prueba; la ejecución POST no está disponible aquí intencionadamente.' },
+      fr: { eyebrow: 'Référence locale en lecture seule', title: 'Contrat API Bridge', lede: 'Inspectez ces endpoints locaux avant d’intégrer un client. Cette page n’envoie aucune demande d’action.', info: 'Identifiez les versions LTTH et API Bridge en cours.', actions: 'Listez les identifiants d’action et leurs paramètres déclarés. La lecture de cet endpoint est sans effet.', events: 'Examinez le dernier événement ; un profil temporaire neuf commence avec une liste vide.', request: 'L’exécution appartient à un client testé séparément. Vérifiez le corps requis sans l’envoyer ici.', safetyTitle: 'Limite d’intégration sûre', safety: 'Utilisez d’abord les endpoints GET. Gardez identifiants et IDs de production hors des captures et profils de test ; l’exécution POST n’est volontairement pas disponible ici.' }
+    };
+    const selected = copy[locale] || copy.en;
+    document.documentElement.lang = locale;
+    document.querySelectorAll('[data-copy]').forEach((node) => { node.textContent = selected[node.dataset.copy] || node.textContent; });
+  </script>
+</body>
+</html>

@@ -322,11 +322,14 @@ function showEvent(eventData) {
     console.log('[OpenShock Overlay] Showing event:', eventData);
 
     try {
+        const overlayContainer = document.getElementById('overlay-container');
         const card = document.getElementById('event-card');
-        if (!card) {
+        if (!overlayContainer || !card) {
             console.error('[OpenShock Overlay] Event card element not found');
             return;
         }
+
+        overlayContainer.classList.remove('hidden');
 
         // Set type icon and color
         const typeIcon = getTypeIcon(eventData.type);
@@ -416,6 +419,7 @@ function hideEvent() {
         setTimeout(() => {
             card.classList.add('hidden');
             card.classList.remove('slide-out');
+            document.getElementById('overlay-container')?.classList.add('hidden');
         }, config.animationDuration);
 
         // Stop countdown
