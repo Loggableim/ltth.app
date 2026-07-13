@@ -1133,6 +1133,7 @@
         <button class="tab-btn" data-tab="tab-asr"><span class="tab-chip">AS</span><span class="tab-label" data-i18n="generated.c5c7ed4e46d0">ASR & Sprache</span></button>
         <button class="tab-btn" data-tab="tab-translation"><span class="tab-chip">TR</span><span class="tab-label" data-i18n="generated.4fe92c514108">Übersetzung</span></button>
         <button class="tab-btn" data-tab="tab-multilang"><span class="tab-chip">ML</span><span class="tab-label">Multi-Language</span></button>
+        <button class="tab-btn" data-tab="tab-vrchat"><span class="tab-chip">VR</span><span class="tab-label">VRChat</span></button>
       </div>
 
       <div class="stt-sidebar-card">
@@ -1429,6 +1430,22 @@
         </div>
       </div>
     </div>
+
+    <div id="tab-vrchat" class="tab-content">
+      <div class="section-heading">VRChat Chatbox</div>
+      <div class="card">
+        <div class="card-title">Finale Untertitel an VRChat senden</div>
+        <label class="inline-flex" style="margin-top:0;">
+          <input type="checkbox" id="vrchat-chatbox-enabled">
+          An VRChat-Chatbox senden
+        </label>
+        <p class="help-text">Sendet nur finale Original-Untertitel nach 700 ms BÃ¼ndelung. Lange Texte werden automatisch auf das VRChat-Chatbox-Limit aufgeteilt.</p>
+        <div class="btn-row">
+          <button id="btn-save-vrchat-chatbox" class="btn btn-primary btn-sm">VRChat-Ausgabe speichern</button>
+          <span id="vrchat-chatbox-status" style="font-size:12px;"></span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -1529,6 +1546,22 @@
         document.getElementById('stat-segments').textContent = buf.segmentCount || 0;
 
         const cfg = s.config || {};
+        const vrchat = s.vrchatChatbox || {};
+        const vrchatEnabled = document.getElementById('vrchat-chatbox-enabled');
+        const vrchatStatus = document.getElementById('vrchat-chatbox-status');
+        if (vrchatEnabled) vrchatEnabled.checked = vrchat.enabled === true;
+        if (vrchatStatus) {
+          if (!vrchat.enabled) {
+            vrchatStatus.textContent = 'Deaktiviert';
+            vrchatStatus.style.color = '#888';
+          } else if (vrchat.bridgeAvailable) {
+            vrchatStatus.textContent = 'OSC-Bridge bereit';
+            vrchatStatus.style.color = '#4CAF50';
+          } else {
+            vrchatStatus.textContent = vrchat.lastError || 'OSC-Bridge nicht verfÃ¼gbar â€“ Untertitel bleiben aktiv.';
+            vrchatStatus.style.color = 'var(--stt-status-warning, #facc15)';
+          }
+        }
         const tc = cfg.translation || {};
         document.getElementById('translation-enabled').checked = tc.enabled || false;
         const apiKeyField = document.getElementById('translation-apiKey');
@@ -1815,6 +1848,26 @@
       document.getElementById('translation-apiKey').dataset.dirty = '1';
     }
 
+    async function saveVrchatChatboxSettings() {
+      const status = document.getElementById('vrchat-chatbox-status');
+      const enabled = document.getElementById('vrchat-chatbox-enabled').checked;
+      try {
+        const res = await fetch('/api/stt-ticker/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vrchatChatbox: { enabled } })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Speichern fehlgeschlagen');
+        status.textContent = enabled ? 'Aktiviert â€“ OSC-Bridge wird geprÃ¼ft.' : 'Deaktiviert';
+        status.style.color = enabled ? '#4CAF50' : '#888';
+        refreshStatus();
+      } catch (error) {
+        status.textContent = error.message;
+        status.style.color = '#f44336';
+      }
+    }
+
     async function saveAsrConfig() {
       const asr = {
         provider: document.getElementById('asr-provider')?.value || 'auto',
@@ -2021,6 +2074,7 @@
     document.getElementById('translation-color').addEventListener('change', saveConfig);
     document.getElementById('btn-save-translation').addEventListener('click', saveConfig);
     document.getElementById('btn-clear-cache').addEventListener('click', clearTranslationCache);
+    document.getElementById('btn-save-vrchat-chatbox').addEventListener('click', saveVrchatChatboxSettings);
 
     document.getElementById('btn-test-deepgram').addEventListener('click', async () => {
       const statusEl = document.getElementById('deepgram-test-status');

@@ -48,7 +48,8 @@ const DEFAULT_OSC_BRIDGE_CONFIG = {
     enabled: false,
     mirrorTikTokChat: false,
     prefix: '[TikTok]',
-    showTyping: true
+    showTyping: true,
+    notificationSound: false
   },
   chatCommands: {
     enabled: true,

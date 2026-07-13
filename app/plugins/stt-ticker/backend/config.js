@@ -134,6 +134,11 @@ const DEFAULT_CONFIG = {
     maxTextLength: 500           // max chars to send to LLM per request
   },
 
+  // Optionaler Versand finaler Original-Untertitel an die VRChat-Chatbox.
+  vrchatChatbox: {
+    enabled: false
+  },
+
   // Overlay defaults (can be overridden via URL params)
   overlay: {
     design: 'classic',

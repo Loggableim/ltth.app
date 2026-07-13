@@ -160,6 +160,8 @@ class OSCBridgePlugin {
         this.presetManager = new ParameterPresetManager(api);
         this.animazingPalIntentHandler = null;
         this.animazingPalBridgeRegistered = false;
+        this.sttTickerChatboxIntentHandler = null;
+        this.sttTickerChatboxBridgeRegistered = false;
 
         // Modular components (initialized later)
         this.oscQueryClient = null; // OSCQueryClient instance
@@ -233,6 +235,7 @@ class OSCBridgePlugin {
 
             // AnimazingPal intent bridge
             this.registerAnimazingPalBridge();
+            this.registerSttTickerChatboxBridge();
 
             // GCCE Commands registrieren
             this.registerGCCECommands();
@@ -2228,9 +2231,9 @@ class OSCBridgePlugin {
                 }, 1000);
             }
 
-            // Send message to chatbox
-            // VRChat chatbox takes string and boolean (true = send immediately)
-            this.send(this.VRCHAT_PARAMS.CHATBOX_INPUT, message, true);
+            // Send message to chatbox. The optional third OSC boolean controls
+            // VRChat's notification sound and is disabled by default.
+            this.send(this.VRCHAT_PARAMS.CHATBOX_INPUT, message, true, this.config.chatbox?.notificationSound === true);
 
             this.logger.info(`💬 Sent to VRChat chatbox: ${message}`);
             return true;
@@ -2272,6 +2275,43 @@ class OSCBridgePlugin {
         this.api.on('animazingpal:vrchat-intent', this.animazingPalIntentHandler);
         this.animazingPalBridgeRegistered = true;
         this.logger.info('? AnimazingPal VRChat intent bridge registered');
+    }
+
+    registerSttTickerChatboxBridge() {
+        if (typeof this.api.on !== 'function' || this.sttTickerChatboxBridgeRegistered) {
+            return;
+        }
+        this.sttTickerChatboxIntentHandler = intent => this.handleSttTickerChatboxIntent(intent);
+        this.api.on('stt-ticker:vrchat-chatbox', this.sttTickerChatboxIntentHandler);
+        this.sttTickerChatboxBridgeRegistered = true;
+        this.logger.info('STT Ticker VRChat chatbox bridge registered');
+    }
+
+    handleSttTickerChatboxIntent(intent) {
+        if (!intent || typeof intent !== 'object' || !this.isRunning) return false;
+
+        const chatbox = this.config?.chatbox || {};
+        if (intent.type === 'typing') {
+            if (chatbox.showTyping === false) return true;
+            return this.send(this.VRCHAT_PARAMS.CHATBOX_TYPING, intent.visible === true);
+        }
+
+        if (intent.type !== 'send' || !Array.isArray(intent.messages)) return false;
+        const messages = intent.messages
+            .map(message => String(message || '').trim())
+            .filter(Boolean);
+        if (messages.length === 0) return false;
+
+        if (chatbox.showTyping !== false) {
+            this.send(this.VRCHAT_PARAMS.CHATBOX_TYPING, false);
+        }
+        const notificationSound = chatbox.notificationSound === true;
+        return messages.every(message => this.send(
+            this.VRCHAT_PARAMS.CHATBOX_INPUT,
+            message,
+            true,
+            notificationSound
+        ));
     }
 
     handleAnimazingPalIntent(intent) {
@@ -2600,6 +2640,11 @@ class OSCBridgePlugin {
             }
         }
         this.animazingPalBridgeRegistered = false;
+
+        if (this.sttTickerChatboxIntentHandler && typeof this.api.removeListener === 'function') {
+            this.api.removeListener('stt-ticker:vrchat-chatbox', this.sttTickerChatboxIntentHandler);
+        }
+        this.sttTickerChatboxBridgeRegistered = false;
 
         for (const timer of this.resetTimers) {
             clearTimeout(timer);
