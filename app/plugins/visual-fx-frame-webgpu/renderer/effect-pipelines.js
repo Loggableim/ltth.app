@@ -22,6 +22,7 @@ struct Uniforms {
   background: vec4f,
   frameRect: vec4f,
   budgets: vec4u,
+  material: vec4f,
 };
 
 struct Particle {
@@ -157,13 +158,16 @@ fn sdFrame(uv: vec2f) -> f32 {
 }
 
 fn styleColor(base: vec3f, energy: f32) -> vec3f {
+  var material = base;
   if (uniforms.style == STYLE_REALISTIC) {
-    return mix(base * vec3f(1.15, 0.58, 0.18), vec3f(1.0, 0.95, 0.72), pow(energy, 3.0));
+    material = base * vec3f(1.15, 0.58, 0.18);
+  } else if (uniforms.style == STYLE_NEON) {
+    material = mix(base, base.brg * 1.45 + base * vec3f(0.08, 0.15, 0.32), 0.48) * (1.1 + energy);
+  } else {
+    material = mix(base * vec3f(1.1, 0.72, 0.35), base.brg * 1.35, 0.32) * (1.0 + energy * 0.65);
   }
-  if (uniforms.style == STYLE_NEON) {
-    return mix(base, base.brg * 1.45 + vec3f(0.08, 0.15, 0.32), 0.48) * (1.1 + energy);
-  }
-  return mix(base * vec3f(1.1, 0.72, 0.35), base.brg * 1.35, 0.32) + energy * vec3f(0.7, 0.9, 1.15);
+  let hotCore = clamp(uniforms.material.x, 0.0, 1.0) * pow(clamp(energy, 0.0, 1.0), 3.0);
+  return mix(material, vec3f(1.0, 0.95, 0.82), hotCore);
 }
 
 @fragment fn sceneFragment(input: VertexOut) -> @location(0) vec4f {

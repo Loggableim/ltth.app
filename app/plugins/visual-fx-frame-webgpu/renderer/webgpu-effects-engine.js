@@ -37,6 +37,7 @@
         flameSpeed: 0.5,
         bloomIntensity: 0.78,
         bloomThreshold: 0.58,
+        coreWhiteness: 0.66,
         ...options.config
       };
       this.adapter = null;
@@ -279,7 +280,7 @@
       const color = this._hex(this.config.flameColor, [1, 0.4, 0, 1]);
       const background = this._hex(this.config.backgroundTint, [0, 0, 0, 0]);
       const pulse = Math.min(2, this.activeTriggers.reduce((sum, trigger) => sum + (Number(trigger.intensityBoost ?? trigger.amount ?? trigger.intensity) || 0.25), 0));
-      const bytes = new ArrayBuffer(128);
+      const bytes = new ArrayBuffer(144);
       const view = new DataView(bytes);
       const f32 = (offset, value) => view.setFloat32(offset, Number(value) || 0, true);
       const u32 = (offset, value) => view.setUint32(offset, Math.max(0, Number(value) || 0), true);
@@ -296,6 +297,7 @@
         .forEach((value, index) => f32(96 + index * 4, value));
       u32(112, state.maxParticles); u32(116, state.lightningBranches);
       u32(120, state.bloomLevels); u32(124, this.activeTriggers.length);
+      f32(128, Math.max(0, Math.min(1, Number(this.config.coreWhiteness) || 0)));
       this.device.queue.writeBuffer(this.buffers.uniforms, 0, bytes);
     }
 

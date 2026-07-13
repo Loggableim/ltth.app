@@ -105,4 +105,26 @@ describe('Visual FX Frame WEBGPU native renderer', () => {
       slowFrameRatio: 0.058
     });
   });
+
+  test('sends hot-core whiteness to the shader instead of forcing a white frame', () => {
+    const shaders = require('../plugins/visual-fx-frame-webgpu/renderer/effect-pipelines');
+    const library = shaders.createShaderLibrary();
+    const WebGPUVisualFxEngine = require('../plugins/visual-fx-frame-webgpu/renderer/webgpu-effects-engine');
+    const writeBuffer = jest.fn();
+    const engine = new WebGPUVisualFxEngine({ width: 1920, height: 1080 }, {
+      config: { coreWhiteness: 0 }
+    });
+    engine.device = { queue: { writeBuffer } };
+    engine.buffers = { uniforms: {} };
+
+    engine._writeUniforms(1000, 1 / 60);
+    const zeroCoreBytes = writeBuffer.mock.calls.at(-1)[2];
+    expect(new DataView(zeroCoreBytes).getFloat32(128, true)).toBe(0);
+
+    engine.updateConfig({ coreWhiteness: 0.72 });
+    engine._writeUniforms(1000, 1 / 60);
+    const brightCoreBytes = writeBuffer.mock.calls.at(-1)[2];
+    expect(new DataView(brightCoreBytes).getFloat32(128, true)).toBeCloseTo(0.72);
+    expect(library.scene).toContain('uniforms.material.x');
+  });
 });
