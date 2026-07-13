@@ -293,6 +293,38 @@ describe('Music Bot runtime and UI regressions', () => {
     }
   });
 
+  test('does not emit a stale playback sync when Auto-DJ tracks have no source ID', async () => {
+    const firstTrack = { title: 'First Auto-DJ Song', startedAt: Date.now(), duration: 180 };
+    const secondTrack = { title: 'Second Auto-DJ Song', startedAt: Date.now(), duration: 180 };
+    const { plugin, api } = createPluginWithQueue([]);
+    let activeTrack = firstTrack;
+    let resolvePosition;
+    let syncCallback;
+    const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation((callback) => {
+      syncCallback = callback;
+      return 456;
+    });
+
+    plugin.playbackEngine = {
+      getNowPlaying: jest.fn(() => activeTrack),
+      getPosition: jest.fn(() => new Promise((resolve) => { resolvePosition = resolve; })),
+      getState: jest.fn(() => 'playing')
+    };
+
+    try {
+      plugin._startPlaybackSync();
+      const pendingSync = syncCallback();
+      activeTrack = secondTrack;
+      resolvePosition(5);
+      await pendingSync;
+
+      expect(api.emit).not.toHaveBeenCalledWith('musicbot:playback-sync', expect.anything());
+    } finally {
+      plugin._stopPlaybackSync();
+      setIntervalSpy.mockRestore();
+    }
+  });
+
   test('minimal overlay ignores a stale playback sync from a different title', () => {
     const { dom, socketHandlers } = bootMusicBotOverlay();
     doms.push(dom);
@@ -315,6 +347,28 @@ describe('Music Bot runtime and UI regressions', () => {
 
     expect(dom.window.document.getElementById('minimal-text').textContent).toContain('Active Song');
     expect(dom.window.document.getElementById('minimal-text').textContent).not.toContain('Stale Song');
+  });
+
+  test('minimal overlay ignores an id-less legacy now-playing event after a tracked song starts', () => {
+    const { dom, socketHandlers } = bootMusicBotOverlay();
+    doms.push(dom);
+
+    socketHandlers['musicbot:now-playing']({
+      id: 'active-track',
+      title: 'Active Song',
+      duration: 180,
+      startedAt: Date.now(),
+      state: 'playing'
+    });
+    socketHandlers['musicbot:now-playing']({
+      title: 'Legacy Song',
+      duration: 180,
+      startedAt: Date.now(),
+      state: 'playing'
+    });
+
+    expect(dom.window.document.getElementById('minimal-text').textContent).toContain('Active Song');
+    expect(dom.window.document.getElementById('minimal-text').textContent).not.toContain('Legacy Song');
   });
 
   test('resolver config updates keep the bundled yt-dlp path for the default setting', () => {

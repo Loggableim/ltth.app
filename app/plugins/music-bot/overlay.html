@@ -953,6 +953,7 @@
 
       function handleNowPlaying(payload) {
         if (!payload) { clearTrack(); return; }
+        if (currentTrack?.id && !payload.id) return;
         const duration = Number(payload.duration) || 0;
         const positionSeconds = Number(payload.position);
         const baseStarted =

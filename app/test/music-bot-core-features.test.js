@@ -361,6 +361,21 @@ describe('Music Bot core features', () => {
     expect(commands[0]).toEqual(['loadfile', 'https://media.example.test/direct-media.m4a', 'replace']);
   });
 
+  test('assigns a playback ID when an Auto-DJ track has no source ID', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50, normalization: { enabled: false } }, { log: jest.fn() });
+    engine.process = { exitCode: null };
+    engine._sendCommand = jest.fn(async () => {});
+    engine._applyNormalizationFilter = jest.fn(async () => {});
+    engine.setVolume = jest.fn(async () => {});
+
+    await engine.play({
+      title: 'Auto-DJ Song',
+      url: 'https://media.example.test/auto-dj.m4a'
+    });
+
+    expect(engine.getNowPlaying().id).toEqual(expect.any(String));
+  });
+
   test('only counts Auto-DJ tracks after playback starts successfully', async () => {
     const resolver = {
       resolvePlaylistEntry: jest.fn(async () => ({

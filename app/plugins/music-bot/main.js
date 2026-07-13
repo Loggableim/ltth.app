@@ -2372,7 +2372,7 @@ class MusicBotPlugin extends EventEmitter {
         }
       }
       const latestTrack = this.playbackEngine.getNowPlaying();
-      if (!latestTrack || latestTrack.id !== nowPlaying.id) return;
+      if (latestTrack !== nowPlaying) return;
       this.api.emit('musicbot:playback-sync', {
         id: nowPlaying.id,
         title: nowPlaying.title,

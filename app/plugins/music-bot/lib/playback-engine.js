@@ -4,6 +4,7 @@ const net = require('net');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { randomUUID } = require('crypto');
 
 const DEFAULT_DUCKING_TARGET_PERCENT = 35;
 const DEFAULT_NORMALIZATION_INTEGRATED_LUFS = -16;
@@ -48,7 +49,7 @@ class PlaybackEngine extends EventEmitter {
     const playbackUrl = track.localPath || track.streamUrl || track.url;
 
     const newTrackPayload = {
-      id: track.id,
+      id: track.id || randomUUID(),
       title: track.title,
       artist: track.artist || '',
       duration: track.duration || null,
