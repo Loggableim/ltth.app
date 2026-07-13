@@ -2844,7 +2844,14 @@ class OSCBridgePlugin {
 
         const now = Date.now();
         const avatars = Array.isArray(this.config.avatars) ? this.config.avatars : [];
-        const existingIndex = avatars.findIndex(avatar => avatar.avatarId === avatarId);
+        const normalizedAvatarId = this.normalizeAvatarId(avatarId);
+        if (!normalizedAvatarId) {
+            throw new Error('Cannot persist avatar capabilities without a valid avatar ID');
+        }
+        const matchingIndexes = avatars
+            .map((avatar, index) => this.normalizeAvatarId(avatar.avatarId) === normalizedAvatarId ? index : -1)
+            .filter(index => index >= 0);
+        const existingIndex = matchingIndexes[0] ?? -1;
         const existingAvatar = existingIndex >= 0 ? avatars[existingIndex] : null;
         let profile = existingAvatar;
         const isNew = !profile;
@@ -2853,18 +2860,22 @@ class OSCBridgePlugin {
             profile = {
                 id: `avatar_${now}`,
                 name: `Auto-detected Avatar ${new Date(now).toLocaleString()}`,
-                avatarId,
+                avatarId: normalizedAvatarId,
                 description: `Auto-detected on ${new Date(now).toLocaleString()}`
             };
         } else {
             profile = { ...profile };
         }
 
+        profile.avatarId = normalizedAvatarId;
         profile.availableActions = availableActions;
         profile.parameterCount = parameterCount;
         profile.detectedAt = now;
         const nextAvatars = existingIndex >= 0
-            ? avatars.map((avatar, index) => index === existingIndex ? profile : avatar)
+            ? avatars.flatMap((avatar, index) => {
+                if (matchingIndexes.includes(index) && index !== existingIndex) return [];
+                return [index === existingIndex ? profile : avatar];
+            })
             : [...avatars, profile];
         const nextConfig = { ...this.config, avatars: nextAvatars };
 
