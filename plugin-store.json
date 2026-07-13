@@ -533,7 +533,7 @@
         "es": "Hybridshock para eventos en vivo de TikTok - compatible con PiShock y flujos de trabajo de recompensas hápticas. Incluye mapeo de eventos, control de patrones, capas de seguridad, gestión de colas y soporte de overlay.",
         "fr": "Hybridshock pour les événements TikTok Live - prend en charge PiShock et des workflows de récompenses haptiques. Inclut le mappage d'événements, le contrôle des patterns, les couches de sécurité, la gestion de file d'attente et le support d'overlay."
       },
-      "version": "1.1.0",
+      "version": "1.2.0",
       "author": "ltth.app Team",
       "category": "integration",
       "channel": "open-beta",
@@ -543,8 +543,8 @@
       "access": {
         "type": "closed-beta"
       },
-      "packageUrl": "https://ltth.app/plugin-store/packages/openshock-1.1.0.zip",
-      "sha256": "494d5541e6b0cd2d36cd93bb0cae5533d057d7ade9925abe54ccb871c9675a38",
+      "packageUrl": "https://ltth.app/plugin-store/packages/openshock-1.2.0.zip",
+      "sha256": "6a0a154cf5659ffb1b7680b8f419edcfee22c493f614b0cdf0416e79ed51937d",
       "pricing": {
         "type": "free",
         "amount": 0,

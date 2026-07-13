@@ -706,7 +706,7 @@
             { icon: 'gift', label: 'Gift Milestone', view: 'gift-milestone', plugin: 'milestone-leaderboard' },
             { icon: 'video', label: 'Multi-Cam', view: 'multicam', plugin: 'multicam' },
             { icon: 'gamepad-2', label: 'OSC-Bridge', view: 'osc-bridge', plugin: 'osc-bridge' },
-            { icon: 'zap', label: 'HybridShock', view: 'openshock', plugin: 'openshock' },
+            { icon: 'zap', label: 'Hybridshock', view: 'openshock', plugin: 'openshock' },
             { icon: 'help-circle', label: 'Quiz Show', view: 'quiz-show', plugin: 'quiz-show' },
             { icon: 'trophy', label: 'Viewer XP', view: 'milestone-leaderboard', plugin: 'milestone-leaderboard' },
             { icon: 'flask-conical', label: 'Stream Alchemy', view: 'streamalchemy', plugin: 'streamalchemy' },

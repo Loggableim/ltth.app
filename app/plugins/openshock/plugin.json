@@ -1,7 +1,7 @@
 {
   "id": "openshock",
   "name": "Hybridshock",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Hybridshock for TikTok Live events - supports PiShock and haptic reward workflows. Includes event mapping, pattern control, safety layers, queue management, and overlay support.",
   "author": "ltth.app Team",
   "icon": "/plugins/openshock/assets/branding/hybridshock-icon.png",

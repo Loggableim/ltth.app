@@ -90,13 +90,13 @@ function createScriptContext(relativeScriptPath, html) {
   return { dom, context, socket };
 }
 
-describe('Hybrid Shock event contracts', () => {
+describe('Hybridshock event contracts', () => {
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  test('publishes Hybrid Shock as the plugin name', () => {
-    expect(pluginManifest.name).toBe('Hybrid Shock');
+  test('publishes Hybridshock as the plugin name', () => {
+    expect(pluginManifest.name).toBe('Hybridshock');
   });
 
   test('broadcasts canonical command payloads with flat aliases for the UI and overlay', () => {

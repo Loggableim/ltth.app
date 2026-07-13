@@ -33,7 +33,79 @@ async function listZipEntries(zipPath) {
   });
 }
 
+async function readZipEntry(zipPath, entryName) {
+  const zipFile = await openZip(zipPath);
+
+  return new Promise((resolve, reject) => {
+    let found = false;
+
+    zipFile.readEntry();
+    zipFile.on('entry', (entry) => {
+      if (entry.fileName !== entryName) {
+        zipFile.readEntry();
+        return;
+      }
+
+      found = true;
+      zipFile.openReadStream(entry, (streamError, stream) => {
+        if (streamError) {
+          zipFile.close();
+          reject(streamError);
+          return;
+        }
+
+        const chunks = [];
+        stream.on('data', (chunk) => chunks.push(chunk));
+        stream.on('error', (error) => {
+          zipFile.close();
+          reject(error);
+        });
+        stream.on('end', () => {
+          zipFile.close();
+          resolve(Buffer.concat(chunks));
+        });
+      });
+    });
+    zipFile.on('end', () => {
+      if (!found) {
+        zipFile.close();
+        reject(new Error(`ZIP entry not found: ${entryName}`));
+      }
+    });
+    zipFile.on('error', reject);
+  });
+}
+
 describe('Official plugin store registry', () => {
+  it('publishes the Hybridshock 1.2.0 package with matching manifest and documentation metadata', async () => {
+    const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
+    const hybridShock = registry.plugins.find((plugin) => plugin.id === 'openshock');
+    const sourceManifest = JSON.parse(fs.readFileSync(
+      path.join(repoRoot, 'app', 'plugins', 'openshock', 'plugin.json'),
+      'utf8'
+    ));
+
+    assert(hybridShock, 'Hybridshock must exist in the official store registry');
+    assert.strictEqual(sourceManifest.name, 'Hybridshock');
+    assert.strictEqual(sourceManifest.version, '1.2.0');
+    assert.strictEqual(hybridShock.name.en, 'Hybridshock');
+    assert.strictEqual(hybridShock.version, '1.2.0');
+    assert.strictEqual(
+      hybridShock.packageUrl,
+      'https://ltth.app/plugin-store/packages/openshock-1.2.0.zip'
+    );
+
+    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'openshock-1.2.0.zip');
+    const packagedManifest = JSON.parse((await readZipEntry(packagePath, 'plugin.json')).toString('utf8'));
+    assert.strictEqual(packagedManifest.name, 'Hybridshock');
+    assert.strictEqual(packagedManifest.version, '1.2.0');
+
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const translations = JSON.parse(fs.readFileSync(path.join(repoRoot, 'locales', `${locale}.json`), 'utf8'));
+      assert.strictEqual(translations['docs.plugin.openshock.title'], 'Hybridshock');
+    }
+  });
+
   it('publishes installable HTTPS packages with matching SHA-256 checksums', async () => {
     const registryPath = path.join(repoRoot, 'plugin-store.json');
     const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));

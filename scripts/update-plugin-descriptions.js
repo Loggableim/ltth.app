@@ -89,10 +89,10 @@ const pluginDescriptions = {
     fr: 'Système complet d\'objectifs en direct avec types d\'objectifs Pièces, Likes, Abonnés et personnalisés. Suivi en temps réel avec API d\'événements et overlays personnalisables pour l\'engagement des spectateurs.'
   },
   'hybridshock': {
-    en: 'Bidirectional bridge between TikTok Live events and HybridShock API (HTTP/WebSocket). Features flexible mapping system, action queue, rate limiting, and advanced debugging tools.',
-    de: 'Bidirektionale Brücke zwischen TikTok-Live-Events und HybridShock-API (HTTP/WebSocket). Bietet flexibles Mapping-System, Action-Queue, Rate-Limiting und erweiterte Debugging-Tools.',
-    es: 'Puente bidireccional entre eventos en vivo de TikTok y API de HybridShock (HTTP/WebSocket). Presenta sistema de mapeo flexible, cola de acciones, limitación de tasa y herramientas de depuración avanzadas.',
-    fr: 'Pont bidirectionnel entre événements TikTok Live et API HybridShock (HTTP/WebSocket). Comprend système de mappage flexible, file d\'actions, limitation de débit et outils de débogage avancés.'
+    en: 'Bidirectional bridge between TikTok Live events and Hybridshock API (HTTP/WebSocket). Features flexible mapping system, action queue, rate limiting, and advanced debugging tools.',
+    de: 'Bidirektionale Brücke zwischen TikTok-Live-Events und Hybridshock-API (HTTP/WebSocket). Bietet flexibles Mapping-System, Action-Queue, Rate-Limiting und erweiterte Debugging-Tools.',
+    es: 'Puente bidireccional entre eventos en vivo de TikTok y API de Hybridshock (HTTP/WebSocket). Presenta sistema de mapeo flexible, cola de acciones, limitación de tasa y herramientas de depuración avanzadas.',
+    fr: 'Pont bidirectionnel entre événements TikTok Live et API Hybridshock (HTTP/WebSocket). Comprend système de mappage flexible, file d\'actions, limitation de débit et outils de débogage avancés.'
   },
   'lastevent-spotlight': {
     en: 'Live overlays showing the last active user for each event type (follower, like, chatter, share, gifter, subscriber). Perfect for recognizing recent viewer interactions.',

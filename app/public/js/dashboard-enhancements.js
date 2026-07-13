@@ -577,7 +577,7 @@
             'soundboard': 'Soundboard',
             'flows': 'Automation Flows',
             'osc-bridge': 'OSC-Bridge',
-            'openshock-emergency-stop': 'HybridShock Emergency Stop'
+            'openshock-emergency-stop': 'Hybridshock Emergency Stop'
         };
 
         const name = actionNames[action] || action;

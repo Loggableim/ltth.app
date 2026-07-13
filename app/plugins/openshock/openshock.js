@@ -162,10 +162,10 @@ async function loadInitialData() {
         // Update API status with device count
         updateApiStatus(devices.length > 0, devices.length);
 
-        showNotification('HybridShock plugin loaded successfully', 'success');
+        showNotification('Hybridshock plugin loaded successfully', 'success');
     } catch (error) {
         console.error('[OpenShock] Error loading initial data:', error);
-        showNotification('Error loading HybridShock data', 'error');
+        showNotification('Error loading Hybridshock data', 'error');
         
         // Update API status as failed
         updateApiStatus(false, 0);

@@ -1002,16 +1002,16 @@ http://localhost:3000/flame-overlay/overlay
 
 ---
 
-### 30. HybridShock Integration
+### 30. Hybridshock Integration
 **Status:** 🔵 Final
 **Version:** 1.0.0
 **Autor:** Pup Cid
 
 **Beschreibung:**
-Bidirektionale Bridge zwischen TikTok Live Events und HybridShock API (HTTP/WebSocket). Ermöglicht das Triggern von HybridShock-Actions durch TikTok-Events mit flexiblem Mapping-System, Action-Queue, Rate-Limiting und erweiterten Debugging-Tools.
+Bidirektionale Bridge zwischen TikTok Live Events und Hybridshock API (HTTP/WebSocket). Ermöglicht das Triggern von Hybridshock-Actions durch TikTok-Events mit flexiblem Mapping-System, Action-Queue, Rate-Limiting und erweiterten Debugging-Tools.
 
 **Features:**
-- ⚡ HybridShock API-Integration (HTTP/WS)
+- ⚡ Hybridshock API-Integration (HTTP/WS)
 - 🎁 Gift-zu-Action-Mapping
 - 📊 Queue-Management
 - ⏱️ Rate-Limiting

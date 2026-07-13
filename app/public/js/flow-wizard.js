@@ -485,7 +485,7 @@
             overlay: '🖼️ Overlay',
             obs: '🎬 OBS',
             osc: '📡 OSC / VRChat',
-            openshock: '⚡ HybridShock',
+            openshock: '⚡ Hybridshock',
             logic: '🔀 Logik',
             integration: '🔗 Integrationen',
             utility: '🛠️ Hilfreich',
