@@ -320,7 +320,7 @@ function normalizeStoreLicense(source = {}) {
   const license = source.ltthLicense || source.license || source;
   const status = cleanEnvValue(license.status);
   const plan = cleanEnvValue(license.plan);
-  const active = license.active === true || (status === 'active' && plan === 'beta-free');
+  const active = license.active === true || (status === 'active' && Boolean(plan));
 
   return {
     active,
@@ -328,7 +328,8 @@ function normalizeStoreLicense(source = {}) {
     plan: active ? (plan || 'beta-free') : (plan || null),
     licenseId: cleanEnvValue(license.licenseId) || null,
     claimedAt: cleanEnvValue(license.claimedAt) || null,
-    termsVersion: cleanEnvValue(license.termsVersion) || null
+    termsVersion: cleanEnvValue(license.termsVersion) || null,
+    source: cleanEnvValue(license.source) || null
   };
 }
 
@@ -342,8 +343,57 @@ function normalizeStoreAccess(source = {}) {
       access.closed_beta_plugins ||
       access.plugins ||
       access.pluginIds
-    )
+    ),
+    features: normalizeList(access.features || access.feature)
   };
+}
+
+function normalizeClerkPlan(value) {
+  const match = cleanEnvValue(value).toLowerCase().match(/^[uo]:([a-z0-9][a-z0-9_-]*)$/);
+  return match ? match[1] : null;
+}
+
+function normalizeClerkFeatures(value) {
+  return normalizeList(String(value || '').replace(/\b[uo]:/g, ''));
+}
+
+function extractBillingEntitlementFromClaims(claims = {}) {
+  const plan = normalizeClerkPlan(claims.pla);
+  const features = normalizeClerkFeatures(claims.fea);
+
+  return {
+    present: Boolean(plan),
+    paid: Boolean(plan && plan !== 'free'),
+    plan,
+    features,
+    source: plan ? 'clerk-billing' : null
+  };
+}
+
+function mergeStoreAccess(...values) {
+  const merged = {
+    groups: [],
+    closedBetaPlugins: [],
+    features: []
+  };
+
+  for (const value of values) {
+    const access = normalizeStoreAccess(value);
+    merged.groups = normalizeList(merged.groups.concat(access.groups));
+    merged.closedBetaPlugins = normalizeList(merged.closedBetaPlugins.concat(access.closedBetaPlugins));
+    merged.features = normalizeList(merged.features.concat(access.features));
+  }
+
+  return merged;
+}
+
+function buildBillingLicense(entitlement = {}) {
+  return normalizeStoreLicense({
+    active: entitlement.present,
+    status: entitlement.present ? 'active' : 'missing',
+    plan: entitlement.plan,
+    source: entitlement.source
+  });
 }
 
 function buildBetaLicense(userId, now = () => new Date()) {
@@ -455,6 +505,11 @@ function extractAccessFromClaims(claims = {}) {
 }
 
 async function loadStoreLicense(userId, options = {}) {
+  const billing = extractBillingEntitlementFromClaims(options.sessionClaims || {});
+  if (billing.present) {
+    return buildBillingLicense(billing);
+  }
+
   const claimsLicense = extractLicenseFromClaims(options.sessionClaims || {});
   if (claimsLicense.active) {
     return claimsLicense;
@@ -471,9 +526,28 @@ async function loadStoreLicense(userId, options = {}) {
 
 async function loadStoreEntitlements(userId, options = {}) {
   const claims = options.sessionClaims || {};
+  const billing = extractBillingEntitlementFromClaims(claims);
   const claimsLicense = extractLicenseFromClaims(claims);
   const claimsAccess = extractAccessFromClaims(claims);
   const claimsHaveAccess = claimsAccess.groups.length > 0 || claimsAccess.closedBetaPlugins.length > 0;
+
+  const clerkClient = resolveClerkClient(options);
+  let user = null;
+  if (userId && clerkClient?.users && typeof clerkClient.users.getUser === 'function') {
+    user = await clerkClient.users.getUser(userId);
+  }
+
+  if (billing.present) {
+    const billingAccess = {
+      groups: billing.paid ? ['subscriber'] : [],
+      features: billing.features
+    };
+    const userAccess = user ? extractAccessFromUser(user) : {};
+    return {
+      license: buildBillingLicense(billing),
+      access: mergeStoreAccess(billingAccess, claimsAccess, userAccess)
+    };
+  }
 
   if (claimsLicense.active && claimsHaveAccess) {
     return {
@@ -482,15 +556,13 @@ async function loadStoreEntitlements(userId, options = {}) {
     };
   }
 
-  const clerkClient = resolveClerkClient(options);
-  if (!userId || !clerkClient?.users || typeof clerkClient.users.getUser !== 'function') {
+  if (!user) {
     return {
       license: claimsLicense.active ? claimsLicense : buildBetaLicense(userId, options.now),
       access: claimsAccess
     };
   }
 
-  const user = await clerkClient.users.getUser(userId);
   return {
     license: extractLicenseFromUser(user),
     access: extractAccessFromUser(user)
