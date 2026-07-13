@@ -21,6 +21,8 @@ const fs = require('fs');
 const multer = require('multer');
 const crypto = require('crypto');
 const { createDefaultWebGPUConfig, normalizeWebGPUConfig } = require('./lib/webgpu-config');
+delete require.cache[require.resolve('./lib/avatar-proxy')];
+const { MAX_BYTES: AVATAR_PROXY_MAX_BYTES, fetchAllowedAvatar } = require('./lib/avatar-proxy');
 
 class WebGPUEmojiRainPlugin {
   constructor(api) {
@@ -1473,6 +1475,39 @@ class WebGPUEmojiRainPlugin {
     this.api.registerRoute('get', '/webgpu-emoji-rain/uploads/:filename', serveUploadedImage);
     this.api.registerRoute('get', '/uploads/webgpu-emoji-rain/:filename', serveUploadedImage);
 
+    const serveRemoteImage = async (req, res) => {
+      try {
+        const upstream = await fetchAllowedAvatar(String(req.query?.url || '').trim());
+        if (!upstream.ok) {
+          return res.status(upstream.status).json({ success: false, error: 'Remote image unavailable' });
+        }
+
+        const contentType = upstream.headers.get('content-type') || '';
+        if (!contentType.toLowerCase().startsWith('image/')) {
+          return res.status(415).json({ success: false, error: 'Remote URL is not an image' });
+        }
+
+        const contentLength = Number(upstream.headers.get('content-length'));
+        if (Number.isFinite(contentLength) && contentLength > AVATAR_PROXY_MAX_BYTES) {
+          return res.status(413).json({ success: false, error: 'Remote image is too large' });
+        }
+
+        const bytes = Buffer.from(await upstream.arrayBuffer());
+        if (bytes.length > AVATAR_PROXY_MAX_BYTES) {
+          return res.status(413).json({ success: false, error: 'Remote image is too large' });
+        }
+
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=1800');
+        return res.send(bytes);
+      } catch (error) {
+        this.api.log(`[WebGPU Emoji Rain] Remote image proxy failed: ${error.message}`, 'warn');
+        return res.status(error.statusCode || 400).json({ success: false, error: 'Invalid remote image request' });
+      }
+    };
+    this.api.registerRoute('get', '/api/webgpu-emoji-rain/avatar', serveRemoteImage);
+    this.api.registerRoute('get', '/api/webgpu-emoji-rain/asset', serveRemoteImage);
+
     // Get emoji rain config (from database)
     this.api.registerRoute('get', '/api/webgpu-emoji-rain/config', (req, res) => {
       try {
@@ -2550,7 +2585,7 @@ class WebGPUEmojiRainPlugin {
         duration: 0,
         burst: isBurst,
         username,
-        profilePictureUrl: data.profilePictureUrl || null,
+        profilePictureUrl: this.getProfilePictureUrl(data),
         reason,
         source: `event:${reason}`
       });

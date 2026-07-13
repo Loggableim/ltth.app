@@ -153,6 +153,26 @@ describe('WebGPU Emoji Rain - Herzballons', () => {
     });
   });
 
+  test('normal emoji rain resolves a TikTok avatar urlList before sending it to the profile mapping', () => {
+    const api = new MockAPI();
+    const plugin = new WebGPUEmojiRainPlugin(api);
+
+    plugin.spawnEmojiRain('follow', {
+      uniqueId: 'follower',
+      user: {
+        profilePictureUrl: {
+          urlList: ['https://p16.tiktokcdn.com/follower-avatar.webp']
+        }
+      }
+    }, 1, '💙');
+
+    expect(api.emissions.at(-1).data).toMatchObject({
+      username: 'follower',
+      profilePictureUrl: 'https://p16.tiktokcdn.com/follower-avatar.webp',
+      reason: 'follow'
+    });
+  });
+
   test('like events can show Herzballons and normal emoji rain in parallel', () => {
     const api = new MockAPI();
     const plugin = new WebGPUEmojiRainPlugin(api);

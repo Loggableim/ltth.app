@@ -16,6 +16,7 @@ const multer = require('multer');
 const AsrPipeline = require('./backend/asr-pipeline');
 const TextBuffer = require('./backend/text-buffer');
 const Translator = require('./backend/translator');
+const { routeTranscriptSegments } = require('./backend/lang-detect');
 const { ConfigManager, DEFAULT_CONFIG } = require('./backend/config');
 
 // Audio-MIME-Types (identisch zu Sidekick)
@@ -26,6 +27,9 @@ const ASR_SAFE_AUDIO_MIME_TYPES = new Set([
   'audio/mp4', 'audio/m4a', 'audio/aac'
 ]);
 const ASR_OCTET_AUDIO_EXTENSIONS = new Set(['.webm', '.ogg', '.opus', '.wav', '.mp3', '.mpeg', '.mp4', '.m4a', '.aac']);
+const VRCHAT_CHATBOX_EVENT = 'stt-ticker:vrchat-chatbox';
+const VRCHAT_CHATBOX_DEBOUNCE_MS = 700;
+const VRCHAT_CHATBOX_MAX_CHARS = 144;
 
 class SttTickerPlugin {
   constructor(api) {
@@ -45,6 +49,10 @@ class SttTickerPlugin {
     this.textBuffer = null;
     this.translator = null;
     this.destroyed = false;
+    this.vrchatChatboxParts = [];
+    this.vrchatChatboxTimer = null;
+    this.vrchatChatboxTyping = false;
+    this.vrchatChatboxLastError = null;
   }
 
   async init() {
@@ -86,6 +94,7 @@ class SttTickerPlugin {
   async destroy() {
     this.logger.info('Destroying STT Ticker Plugin...');
     this.destroyed = true;
+    this._clearVrchatChatboxQueue();
 
     if (this.asrPipeline) {
       this.asrPipeline.destroy();
@@ -353,6 +362,7 @@ class SttTickerPlugin {
       if (this.textBuffer) {
         this.textBuffer.clear();
       }
+      this._clearVrchatChatboxQueue();
       this._emitTranscript({ text: '', segments: [], cleared: true });
       res.json({ success: true, message: 'Buffer cleared' });
     });
@@ -481,6 +491,8 @@ class SttTickerPlugin {
     const startedAt = Date.now();
     let transcript;
 
+    this._startVrchatChatboxTyping();
+
     try {
       // ASR-Pipeline transkribieren
       // Sprache wird intern aus config.asr.languageMode/languageFixed aufgelöst
@@ -489,6 +501,7 @@ class SttTickerPlugin {
         filename: file.originalname
       });
     } catch (error) {
+      this._stopVrchatChatboxTyping();
       this.logger.warn(`STT Ticker transcription failed: ${error.message}`);
       return this._sendError(res, 502, 'TICKER_ASR_FAILED', error.message || 'Transcription failed', true);
     }
@@ -497,6 +510,7 @@ class SttTickerPlugin {
     const latencyMs = Date.now() - startedAt;
 
     if (text.length < (this.config.minTranscriptChars || 2)) {
+      this._stopVrchatChatboxTyping();
       return res.json({
         success: true,
         transcript: {
@@ -513,31 +527,42 @@ class SttTickerPlugin {
 
     // Optional: Übersetzung via Ollama Cloud
     let translation = null;
-    if (this.translator && this.config.translation?.enabled && this.config.translation?.apiKey) {
-      try {
-        // Prüfe ob Multi-Language-Modus aktiv ist
-        const multiCfg = this.config.multiLanguage || {};
-        if (multiCfg.enabled && Array.isArray(multiCfg.outputLanguages) && multiCfg.outputLanguages.length > 0) {
-          // Multi-Language: übersetze in alle Zielsprachen auf einmal
-          translation = await this.translator.translateMulti(text, {
-            sourceLanguage: transcript.language,
-            outputLanguages: multiCfg.outputLanguages
-          });
-        } else {
-          // Legacy: einzelne Zielsprache
+    const multiCfg = this.config.multiLanguage || {};
+    const multiLanguageActive = multiCfg.enabled
+      && Array.isArray(multiCfg.outputLanguages)
+      && multiCfg.outputLanguages.length > 0;
+
+    if (this.textBuffer && multiLanguageActive) {
+      let routedSegments = this._routeCaptionSegments(transcript);
+      if (this.translator && this.config.translation?.enabled && this.config.translation?.apiKey) {
+        routedSegments = await this.translator.translateSegments(routedSegments, {
+          defaultLanguage: multiCfg.defaultLanguage,
+          outputLanguages: multiCfg.outputLanguages
+        });
+      }
+
+      for (const segment of routedSegments) {
+        this.textBuffer.push({
+          text: segment.text,
+          provider: transcript.provider || 'fish.audio',
+          timestamp: Date.now(),
+          latencyMs,
+          language: segment.language,
+          languageSource: segment.languageSource,
+          translation: { translations: segment.translations || {} }
+        });
+      }
+    } else if (this.textBuffer) {
+      if (this.translator && this.config.translation?.enabled && this.config.translation?.apiKey) {
+        try {
           translation = await this.translator.translate(text, {
             sourceLanguage: transcript.language,
             _detectedLanguage: transcript.language
           });
+        } catch (error) {
+          this.logger.warn(`STT Ticker translation failed: ${error.message}`);
         }
-      } catch (error) {
-        this.logger.warn(`STT Ticker translation failed: ${error.message}`);
-        // Non-fatal — wir senden trotzdem den Originaltext
       }
-    }
-
-    // Text in den Buffer einfügen (inkl. erkannter Sprache)
-    if (this.textBuffer) {
       this.textBuffer.push({
         text,
         segments: transcript.segments || [],
@@ -546,7 +571,7 @@ class SttTickerPlugin {
         latencyMs,
         language: transcript.language || 'unknown',
         languageSource: transcript.languageSource || 'fallback',
-        translation  // Übersetzung anhängen
+        translation
       });
     }
 
@@ -558,6 +583,7 @@ class SttTickerPlugin {
       dual: null
     };
     this._emitTranscript(output);
+    this._queueVrchatChatboxText(text);
 
     return res.json({
       success: true,
@@ -579,6 +605,140 @@ class SttTickerPlugin {
   _emitStatus() {
     if (this.destroyed) return;
     this.io.emit('stt-ticker:status', this._getStatus());
+  }
+
+  _routeCaptionSegments(transcript) {
+    const routed = routeTranscriptSegments(transcript, this.config);
+    if (routed.length > 0) return routed;
+
+    return [{
+      text: String(transcript.text || '').trim(),
+      language: transcript.language || this.config.multiLanguage?.defaultLanguage || 'de',
+      languageSource: transcript.languageSource || 'fallback'
+    }].filter(segment => segment.text);
+  }
+
+  _isVrchatChatboxEnabled() {
+    return this.config?.vrchatChatbox?.enabled === true;
+  }
+
+  _getVrchatBridge() {
+    if (typeof this.api.getPlugin === 'function') {
+      return this.api.getPlugin('osc-bridge');
+    }
+    if (typeof this.api.pluginLoader?.getPluginInstance === 'function') {
+      return this.api.pluginLoader.getPluginInstance('osc-bridge');
+    }
+    return this.api.pluginLoader?.loadedPlugins?.get('osc-bridge')?.instance || null;
+  }
+
+  _isVrchatBridgeAvailable() {
+    const bridge = this._getVrchatBridge();
+    if (!bridge) return false;
+    if (typeof bridge.getStatus === 'function') return bridge.getStatus().isRunning === true;
+    return bridge.isRunning === true;
+  }
+
+  _markVrchatBridgeUnavailable() {
+    this.vrchatChatboxLastError = 'OSC Bridge nicht verfuegbar';
+  }
+
+  _emitVrchatChatboxIntent(intent) {
+    if (!this._isVrchatBridgeAvailable()) {
+      this._markVrchatBridgeUnavailable();
+      return false;
+    }
+    if (typeof this.api.emit !== 'function') {
+      this.vrchatChatboxLastError = 'Plugin-Event-Bus nicht verfuegbar';
+      return false;
+    }
+    this.vrchatChatboxLastError = null;
+    return this.api.emit(VRCHAT_CHATBOX_EVENT, intent) !== false;
+  }
+
+  _startVrchatChatboxTyping() {
+    if (!this._isVrchatChatboxEnabled() || this.vrchatChatboxTyping) return;
+    if (this._emitVrchatChatboxIntent({ type: 'typing', visible: true })) {
+      this.vrchatChatboxTyping = true;
+    }
+  }
+
+  _stopVrchatChatboxTyping() {
+    if (!this.vrchatChatboxTyping) return;
+    this.vrchatChatboxTyping = false;
+    this._emitVrchatChatboxIntent({ type: 'typing', visible: false });
+  }
+
+  _queueVrchatChatboxText(text) {
+    if (!this._isVrchatChatboxEnabled()) return false;
+    if (!this._isVrchatBridgeAvailable()) {
+      this._markVrchatBridgeUnavailable();
+      return false;
+    }
+
+    const normalized = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!normalized) return false;
+
+    this._startVrchatChatboxTyping();
+    this.vrchatChatboxParts.push(normalized);
+    if (this.vrchatChatboxTimer) clearTimeout(this.vrchatChatboxTimer);
+    this.vrchatChatboxTimer = setTimeout(() => this._flushVrchatChatboxText(), VRCHAT_CHATBOX_DEBOUNCE_MS);
+    return true;
+  }
+
+  _flushVrchatChatboxText() {
+    this.vrchatChatboxTimer = null;
+    const text = this.vrchatChatboxParts.join(' ').replace(/\s+/g, ' ').trim();
+    this.vrchatChatboxParts = [];
+    if (!text) {
+      this._stopVrchatChatboxTyping();
+      return false;
+    }
+
+    if (!this._isVrchatBridgeAvailable()) {
+      this._markVrchatBridgeUnavailable();
+      this.vrchatChatboxTyping = false;
+      return false;
+    }
+
+    this._stopVrchatChatboxTyping();
+    return this._emitVrchatChatboxIntent({
+      type: 'send',
+      messages: this._splitVrchatChatboxText(text)
+    });
+  }
+
+  _splitVrchatChatboxText(text) {
+    const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+    const messages = [];
+    let current = '';
+
+    for (let word of words) {
+      while (word.length > VRCHAT_CHATBOX_MAX_CHARS) {
+        if (current) {
+          messages.push(current);
+          current = '';
+        }
+        messages.push(word.slice(0, VRCHAT_CHATBOX_MAX_CHARS));
+        word = word.slice(VRCHAT_CHATBOX_MAX_CHARS);
+      }
+      const candidate = current ? `${current} ${word}` : word;
+      if (candidate.length > VRCHAT_CHATBOX_MAX_CHARS && current) {
+        messages.push(current);
+        current = word;
+      } else {
+        current = candidate;
+      }
+    }
+    if (current) messages.push(current);
+    return messages;
+  }
+
+  _clearVrchatChatboxQueue() {
+    if (this.vrchatChatboxTimer) clearTimeout(this.vrchatChatboxTimer);
+    this.vrchatChatboxTimer = null;
+    this.vrchatChatboxParts = [];
+    this._stopVrchatChatboxTyping();
   }
 
   // ==================== Status ====================
@@ -604,6 +764,12 @@ class SttTickerPlugin {
       },
       buffer: bufferStats,
       translation: translatorStatus,
+      vrchatChatbox: {
+        enabled: this._isVrchatChatboxEnabled(),
+        bridgeAvailable: this._isVrchatBridgeAvailable(),
+        pendingSegments: this.vrchatChatboxParts.length,
+        lastError: this.vrchatChatboxLastError
+      },
       config: this._getSafeConfig()
     };
   }

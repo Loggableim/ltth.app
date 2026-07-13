@@ -7,7 +7,7 @@ const manifest = require('../plugin.json');
 
 describe('OscBridgeConfig', () => {
   test('manifest loads the plugin but keeps runtime bridge disabled', () => {
-    expect(manifest.enabled).toBe(true);
+    expect(manifest.enabled).toBe(false);
     expect(manifest.devStatus).toBe('stable');
     expect(manifest.settings).toEqual(expect.objectContaining({
       enabled: false,
@@ -16,6 +16,7 @@ describe('OscBridgeConfig', () => {
       receivePort: 9001,
       autoRetryOnError: false
     }));
+    expect(manifest.settings).not.toHaveProperty('allowedIPs');
   });
 
   test('deep-merges legacy partial config while preserving nested defaults', () => {
@@ -53,6 +54,17 @@ describe('OscBridgeConfig', () => {
       enabled: true,
       batchWindow: 10
     }));
+    expect(config).not.toHaveProperty('allowedIPs');
+  });
+
+  test('accepts arbitrary OSC target hosts without an allowlist setting', () => {
+    const config = normalizeConfig({
+      sendHost: 'vrchat-bridge.local',
+      allowedIPs: ['127.0.0.1']
+    });
+
+    expect(validateConfig(config)).toEqual({ valid: true, errors: [] });
+    expect(config).not.toHaveProperty('allowedIPs');
   });
 
   test('reports invalid ports and unsafe host values', () => {

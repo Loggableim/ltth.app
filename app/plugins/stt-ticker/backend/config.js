@@ -4,6 +4,26 @@
  * Default settings and configuration management.
  */
 
+const DEFAULT_TRANSLATION_MODEL = 'deepseek-v4-flash';
+const VALID_OVERLAY_DESIGNS = new Set([
+  'classic',
+  'modern',
+  'minimal',
+  'neon',
+  'glass',
+  'compact',
+  'cinematic'
+]);
+const LEGACY_TRANSLATION_MODELS = new Set([
+  'nemotron-3-nano',
+  'deepseek-v4',
+  'qwen2.5-14b-instruct',
+  'qwen2.5-72b-instruct',
+  'llama-3.3-70b-instruct',
+  'mistral-large-2',
+  'gemma-2-27b-it'
+]);
+
 const DEFAULT_CONFIG = {
   // Master enable
   enabled: true,
@@ -44,7 +64,7 @@ const DEFAULT_CONFIG = {
 
   // Dual-Language Overlay (EN oben / DE unten)
   dualLanguage: {
-    enabled: true,              // true = Segmente nach Sprache auf 2 Zeilen verteilt
+    enabled: false,             // legacy display mode; multiLanguage is the active multi-row layout
     topLanguage: 'en',          // Sprache für obere Zeile
     bottomLanguage: 'de',       // Sprache für untere Zeile
     topColor: '#FFD700',        // gold für Englisch
@@ -105,7 +125,7 @@ const DEFAULT_CONFIG = {
   translation: {
     enabled: false,
     apiKey: '',                 // wird persistent in Plugin-Config gespeichert
-    model: 'nemotron-3-nano',  // default model for translation
+    model: DEFAULT_TRANSLATION_MODEL,
     timeoutMs: 30000,           // Ollama Cloud request timeout (in ms)
     targetLanguage: 'en',
     sourceLanguage: 'auto',     // 'auto' = Heuristik erkennt Quellsprache
@@ -114,9 +134,14 @@ const DEFAULT_CONFIG = {
     maxTextLength: 500           // max chars to send to LLM per request
   },
 
+  // Optionaler Versand finaler Original-Untertitel an die VRChat-Chatbox.
+  vrchatChatbox: {
+    enabled: false
+  },
+
   // Overlay defaults (can be overridden via URL params)
   overlay: {
-    design: 'dual-language',
+    design: 'classic',
     position: 'bottom-center',
     fontSize: '36px',
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
@@ -157,6 +182,11 @@ class ConfigManager {
       const stored = this.api.getConfig('config');
       if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
         this.config = this._deepMerge(this._cloneDefaults(), stored);
+        const translationMigrated = this._migrateLegacyTranslationModel();
+        const overlayMigrated = this._migrateLegacyOverlayDesign();
+        if (translationMigrated || overlayMigrated) {
+          this.save();
+        }
       } else {
         this.config = this._cloneDefaults();
         this.save();
@@ -216,9 +246,29 @@ class ConfigManager {
   _cloneDefaults() {
     return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
   }
+
+  _migrateLegacyTranslationModel() {
+    const model = this.config?.translation?.model;
+    if (!LEGACY_TRANSLATION_MODELS.has(model)) return false;
+
+    this.config.translation.model = DEFAULT_TRANSLATION_MODEL;
+    return true;
+  }
+
+  _migrateLegacyOverlayDesign() {
+    const design = this.config?.overlay?.design;
+    if (VALID_OVERLAY_DESIGNS.has(design)) return false;
+
+    this.config.overlay = {
+      ...(this.config.overlay || {}),
+      design: 'classic'
+    };
+    return true;
+  }
 }
 
 module.exports = {
   ConfigManager,
-  DEFAULT_CONFIG
+  DEFAULT_CONFIG,
+  VALID_OVERLAY_DESIGNS
 };

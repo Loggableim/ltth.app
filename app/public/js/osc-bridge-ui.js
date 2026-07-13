@@ -74,6 +74,10 @@ function populateForm(config) {
     document.getElementById('sendPort').value = config.sendPort || 9000;
     document.getElementById('receivePort').value = config.receivePort || 9001;
     document.getElementById('verboseMode').checked = config.verboseMode || false;
+    const chatboxShowTyping = document.getElementById('chatbox-show-typing');
+    const chatboxNotificationSound = document.getElementById('chatbox-notification-sound');
+    if (chatboxShowTyping) chatboxShowTyping.checked = config.chatbox?.showTyping !== false;
+    if (chatboxNotificationSound) chatboxNotificationSound.checked = config.chatbox?.notificationSound === true;
     
     // Populate advanced features
     if (config.oscQuery) {
@@ -204,6 +208,8 @@ if (configForm) {
         const sendPort = document.getElementById('sendPort');
         const receivePort = document.getElementById('receivePort');
         const verboseMode = document.getElementById('verboseMode');
+        const chatboxShowTyping = document.getElementById('chatbox-show-typing');
+        const chatboxNotificationSound = document.getElementById('chatbox-notification-sound');
 
         if (!enabled || !sendHost || !sendPort || !receivePort || !verboseMode) {
             console.warn('Config form elements not found');
@@ -215,7 +221,12 @@ if (configForm) {
             sendHost: sendHost.value,
             sendPort: parseInt(sendPort.value),
             receivePort: parseInt(receivePort.value),
-            verboseMode: verboseMode.checked
+            verboseMode: verboseMode.checked,
+            chatbox: {
+                ...(currentConfig.chatbox || {}),
+                showTyping: chatboxShowTyping ? chatboxShowTyping.checked : true,
+                notificationSound: chatboxNotificationSound ? chatboxNotificationSound.checked : false
+            }
         };
 
     const response = await fetch('/api/osc/config', {

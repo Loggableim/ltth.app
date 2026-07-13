@@ -159,7 +159,7 @@ class TextBuffer {
     // Multi-Language Output (N Zeilen)
     const multiCfg = this.config.multiLanguage || {};
     if (multiCfg.enabled && Array.isArray(multiCfg.outputLanguages) && multiCfg.outputLanguages.length > 0) {
-      output.multi = this._buildMultiOutput(segmentOutputs, multiCfg, maxChars);
+      output.multi = this._buildMultiOutput(segmentOutputs, multiCfg);
     } else {
       output.multi = null;
     }
@@ -178,7 +178,6 @@ class TextBuffer {
     const topLang = dual.topLanguage || 'en';
     const botLang = dual.bottomLanguage || 'de';
     const maxLines = this.config.maxLines || 2;
-
     const matchesLang = (seg, lang) => {
       if (seg.language === lang) return true;
       if (seg.language === 'unknown' || !seg.language) {
@@ -241,48 +240,31 @@ class TextBuffer {
    * Zeile 0 = Original (defaultLanguage), Zeile 1..N = Übersetzungen.
    * Jede Zeile hat: { language, text, color, lines }
    */
-  _buildMultiOutput(segmentOutputs, multiCfg, maxChars) {
+  _buildMultiOutput(segmentOutputs, multiCfg) {
     const defaultLang = multiCfg.defaultLanguage || 'de';
     const outputLangs = multiCfg.outputLanguages || [];
     const colors = multiCfg.colors || {};
-    const maxLines = this.config.maxLines || 2;
 
-    // Original-Text (defaultLanguage) sammeln
-    const defaultSegs = segmentOutputs
-      .filter(s => s.language === defaultLang || s.language === 'unknown' || !s.language)
-      .slice(-maxLines);
-    const defaultText = defaultSegs.map(s => s.cleaned || s.text).join(' ');
+    // Jede konfigurierte Sprache erhält entweder ihren Originaltext oder die
+    // zugehörige Übersetzung. Dadurch bleibt ein als Englisch erkanntes
+    // Segment sichtbar, auch wenn Deutsch die Standardzeile ist.
+    const languages = Array.from(new Set([defaultLang, ...outputLangs]));
+    const lines = languages.map(lang => {
+      const rowParts = segmentOutputs.map(segment => {
+        const isSourceLanguage = segment.language === lang || (
+          lang === defaultLang && (segment.language === 'unknown' || !segment.language)
+        );
+        if (isSourceLanguage) return segment.text;
+        return segment.translations?.[lang]?.text || '';
+      }).filter(Boolean);
 
-    // Zeilen bauen: Zeile 0 = Original, Zeile 1..N = Übersetzungen
-    const lines = [];
-
-    // Zeile 0: Original
-    lines.push({
-      language: defaultLang,
-      text: defaultText,
-      color: colors[defaultLang] || '#FFFFFF',
-      type: 'original'
-    });
-
-    // Zeilen 1..N: Übersetzungen
-    for (const lang of outputLangs) {
-      if (lang === defaultLang) continue; // nicht doppelt
-
-      // Übersetzung aus den Segmenten holen
-      let transText = '';
-      for (const seg of segmentOutputs) {
-        if (seg.translations && seg.translations[lang]) {
-          transText = seg.translations[lang].text;
-        }
-      }
-
-      lines.push({
+      return {
         language: lang,
-        text: transText || '',
-        color: colors[lang] || '#FFD700',
-        type: 'translation'
-      });
-    }
+        text: rowParts.join(' '),
+        color: colors[lang] || (lang === defaultLang ? '#FFFFFF' : '#FFD700'),
+        type: lang === defaultLang ? 'original' : 'translation'
+      };
+    });
 
     return {
       enabled: true,

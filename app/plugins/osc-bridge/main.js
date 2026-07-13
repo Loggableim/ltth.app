@@ -82,7 +82,7 @@ class ParameterPresetManager {
  * Features:
  * - Dauerhaft aktiv (kein Auto-Shutdown)
  * - VRChat-Standard-Parameter (/avatar/parameters/*, /world/*)
- * - Sicherheit: Nur lokale IPs erlaubt
+ * - Configurable OSC target hosts (including LAN and remote hosts)
  * - Vollständiges Logging mit oscBridge.log
  * - Event-Bus-Integration für eingehende OSC-Signale
  * - Flow-System-Integration für automatische Trigger
@@ -147,9 +147,6 @@ class OSCBridgePlugin {
             stats: this.stats
         });
 
-        // Sicherheit: Erlaubte IP-Adressen
-        this.ALLOWED_IPS = ['127.0.0.1', 'localhost', '::1', '0.0.0.0'];
-
         // Cooldown tracking for avatar switching
         this.avatarSwitchCooldowns = {
             perUser: new Map(), // Map<username, timestamp>
@@ -160,12 +157,19 @@ class OSCBridgePlugin {
         this.presetManager = new ParameterPresetManager(api);
         this.animazingPalIntentHandler = null;
         this.animazingPalBridgeRegistered = false;
+        this.sttTickerChatboxIntentHandler = null;
+        this.sttTickerChatboxBridgeRegistered = false;
 
         // Modular components (initialized later)
         this.oscQueryClient = null; // OSCQueryClient instance
         this.avatarStateStore = null; // AvatarStateStore instance
         this.expressionController = null; // ExpressionController instance
         this.physBonesController = null; // PhysBonesController instance
+        this.activeAvatarProfile = null; // Last successfully scanned avatar capabilities
+        this.avatarCapabilitiesWatcherClient = null;
+        this.avatarCapabilitiesGeneration = 0;
+        this.avatarCapabilityRefreshPromise = Promise.resolve();
+        this.avatarCapabilityIntentGeneration = 0;
 
         // Standard VRChat Parameter-Pfade
         this.VRCHAT_PARAMS = {
@@ -233,6 +237,7 @@ class OSCBridgePlugin {
 
             // AnimazingPal intent bridge
             this.registerAnimazingPalBridge();
+            this.registerSttTickerChatboxBridge();
 
             // GCCE Commands registrieren
             this.registerGCCECommands();
@@ -448,36 +453,42 @@ class OSCBridgePlugin {
         // VRChat Helper-Endpoints
         this.api.registerRoute('post', '/api/osc/vrchat/wave', (req, res) => {
             const duration = req.body.duration || 2000;
+            if (this.rejectUnsupportedAvatarCapability(res, 'standard', 'Wave', 'wave')) return;
             const success = this.wave(duration);
             res.json({ success, action: 'wave', duration, error: success ? undefined : 'OSC action failed: wave' });
         });
 
         this.api.registerRoute('post', '/api/osc/vrchat/celebrate', (req, res) => {
             const duration = req.body.duration || 3000;
+            if (this.rejectUnsupportedAvatarCapability(res, 'standard', 'Celebrate', 'celebrate')) return;
             const success = this.celebrate(duration);
             res.json({ success, action: 'celebrate', duration, error: success ? undefined : 'OSC action failed: celebrate' });
         });
 
         this.api.registerRoute('post', '/api/osc/vrchat/dance', (req, res) => {
             const duration = req.body.duration || 5000;
+            if (this.rejectUnsupportedAvatarCapability(res, 'standard', 'Dance', 'dance')) return;
             const success = this.dance(duration);
             res.json({ success, action: 'dance', duration, error: success ? undefined : 'OSC action failed: dance' });
         });
 
         this.api.registerRoute('post', '/api/osc/vrchat/hearts', (req, res) => {
             const duration = req.body.duration || 2000;
+            if (this.rejectUnsupportedAvatarCapability(res, 'standard', 'Hearts', 'hearts')) return;
             const success = this.hearts(duration);
             res.json({ success, action: 'hearts', duration, error: success ? undefined : 'OSC action failed: hearts' });
         });
 
         this.api.registerRoute('post', '/api/osc/vrchat/confetti', (req, res) => {
             const duration = req.body.duration || 3000;
+            if (this.rejectUnsupportedAvatarCapability(res, 'standard', 'Confetti', 'confetti')) return;
             const success = this.confetti(duration);
             res.json({ success, action: 'confetti', duration, error: success ? undefined : 'OSC action failed: confetti' });
         });
 
         this.api.registerRoute('post', '/api/osc/vrchat/emote', (req, res) => {
             const { slot, duration } = req.body;
+            if (this.rejectUnsupportedAvatarCapability(res, 'emote', slot || 0, 'emote')) return;
             const success = this.triggerEmote(slot || 0, duration || 2000);
             res.json({ success, action: 'emote', slot, duration, error: success ? undefined : 'OSC action failed: emote' });
         });
@@ -498,6 +509,7 @@ class OSCBridgePlugin {
             if (velocity === undefined || velocity < 0 || velocity > 1) {
                 return res.status(400).json({ success: false, error: 'Velocity must be between 0 and 1' });
             }
+            if (this.rejectUnsupportedAvatarCapability(res, 'gogoloco', 'Velocity', 'gogoloco_velocity')) return;
             const success = this.setGoGoLocoVelocity(velocity);
             res.json({ success, action: 'gogoloco_velocity', velocity, error: success ? undefined : 'OSC action failed: gogoloco_velocity' });
         });
@@ -507,24 +519,28 @@ class OSCBridgePlugin {
             if (angle === undefined || angle < -1 || angle > 1) {
                 return res.status(400).json({ success: false, error: 'Turn angle must be between -1 and 1' });
             }
+            if (this.rejectUnsupportedAvatarCapability(res, 'gogoloco', 'Turn', 'gogoloco_turn')) return;
             const success = this.setGoGoLocoTurn(angle);
             res.json({ success, action: 'gogoloco_turn', angle, error: success ? undefined : 'OSC action failed: gogoloco_turn' });
         });
 
         this.api.registerRoute('post', '/api/osc/vrchat/gogoloco/grounded', (req, res) => {
             const { grounded } = req.body;
+            if (this.rejectUnsupportedAvatarCapability(res, 'gogoloco', 'Grounded', 'gogoloco_grounded')) return;
             const success = this.setGoGoLocoGrounded(grounded);
             res.json({ success, action: 'gogoloco_grounded', grounded, error: success ? undefined : 'OSC action failed: gogoloco_grounded' });
         });
 
         this.api.registerRoute('post', '/api/osc/vrchat/gogoloco/fly', (req, res) => {
             const { flying } = req.body;
+            if (this.rejectUnsupportedAvatarCapability(res, 'gogoloco', 'Fly', 'gogoloco_fly')) return;
             const success = this.setGoGoLocoFly(flying);
             res.json({ success, action: 'gogoloco_fly', flying, error: success ? undefined : 'OSC action failed: gogoloco_fly' });
         });
 
         this.api.registerRoute('post', '/api/osc/vrchat/gogoloco/swim', (req, res) => {
             const { swimming } = req.body;
+            if (this.rejectUnsupportedAvatarCapability(res, 'gogoloco', 'Swim', 'gogoloco_swim')) return;
             const success = this.setGoGoLocoSwim(swimming);
             res.json({ success, action: 'gogoloco_swim', swimming, error: success ? undefined : 'OSC action failed: gogoloco_swim' });
         });
@@ -656,6 +672,8 @@ class OSCBridgePlugin {
 
                 if (scanResult.found) {
                     // Destroy old client if exists to avoid lingering reconnect timers
+                    await this.stopAvatarCapabilitiesWatcher();
+                    this.invalidateAvatarCapabilities('oscquery_port_scan');
                     if (this.oscQueryClient) {
                         this.oscQueryClient.destroy();
                     }
@@ -767,8 +785,16 @@ class OSCBridgePlugin {
             if (!boneName) {
                 return res.status(400).json({ success: false, error: 'Bone name required' });
             }
-            this.triggerPhysBoneAnimation(boneName, animation, params);
-            res.json({ success: true, boneName, animation });
+            if (this.rejectUnsupportedAvatarCapability(res, 'physbone', boneName, 'physbone_animation')) return;
+            const animationId = this.triggerPhysBoneAnimation(boneName, animation, params);
+            const success = animationId !== false && animationId !== null && animationId !== undefined;
+            res.json({
+                success,
+                boneName,
+                animation,
+                animationId: success ? animationId : undefined,
+                error: success ? undefined : 'PhysBone animation failed'
+            });
         });
 
         // Chatbox Endpoints
@@ -788,12 +814,14 @@ class OSCBridgePlugin {
                 return res.status(400).json({ success: false, error: 'Slot required' });
             }
             const expressionType = type || 'Emote';
+            if (expressionType === 'Emote' && this.rejectUnsupportedAvatarCapability(res, 'emote', slot, 'emote')) return;
+            let success;
             if (this.expressionController) {
-                this.expressionController.triggerExpression(expressionType, slot, hold);
+                success = this.expressionController.triggerExpression(expressionType, slot, hold);
             } else {
-                this.triggerExpression(slot, hold);
+                success = this.triggerExpression(slot, hold);
             }
-            res.json({ success: true, type: expressionType, slot, hold });
+            res.json({ success, type: expressionType, slot, hold, error: success ? undefined : 'Expression trigger failed' });
         });
 
         this.api.registerRoute('post', '/api/osc/expressions/combo', async (req, res) => {
@@ -801,6 +829,7 @@ class OSCBridgePlugin {
             if (!combo || !Array.isArray(combo)) {
                 return res.status(400).json({ success: false, error: 'Combo array required' });
             }
+            if (this.rejectUnsupportedEmoteSteps(res, combo)) return;
             const success = await this.playExpressionCombo(combo);
             res.json({ success, steps: combo.length });
         });
@@ -810,6 +839,7 @@ class OSCBridgePlugin {
             if (!combo || !Array.isArray(combo)) {
                 return res.status(400).json({ success: false, error: 'Combo array required' });
             }
+            if (this.rejectUnsupportedEmoteSteps(res, combo)) return;
             if (this.expressionController) {
                 this.expressionController.queueCombo(combo);
                 res.json({ success: true, queueLength: this.expressionController.comboQueue.length });
@@ -951,11 +981,12 @@ class OSCBridgePlugin {
                     return res.json({ success: false, error: 'OSCQuery not initialized', actions: [] });
                 }
 
-                const availableActions = this.getAvailableActions();
+                const availableActions = this.activeAvatarProfile?.availableActions || this.getAvailableActions();
 
                 res.json({
                     success: true,
                     actions: availableActions,
+                    profile: this.activeAvatarProfile,
                     timestamp: Date.now()
                 });
             } catch (error) {
@@ -982,6 +1013,7 @@ class OSCBridgePlugin {
                         this.logger
                     );
                     if (scanResult.found) {
+                        this.invalidateAvatarCapabilities('oscquery_port_scan');
                         this.oscQueryClient = new OSCQueryClient(
                             this.config.oscQuery?.host || '127.0.0.1',
                             scanResult.port,
@@ -1009,8 +1041,16 @@ class OSCBridgePlugin {
                     });
                 }
 
-                // Trigger discovery
-                await this.autoDiscoverOSCQuery();
+                // Trigger discovery and do not use a stale/partial scan result.
+                const discovery = await this.autoDiscoverOSCQuery();
+                if (!discovery.success) {
+                    this.invalidateAvatarCapabilities('oscquery_discovery_failed');
+                    return res.status(502).json({
+                        success: false,
+                        error: `OSCQuery discovery failed: ${discovery.error}`,
+                        diagnostics: this.buildOSCQueryDiagnostics()
+                    });
+                }
 
                 // Give VRChat a moment to populate the avatar parameter after discovery
                 // Then retry up to 3 times with 1 second delays if not found
@@ -1028,39 +1068,19 @@ class OSCBridgePlugin {
                     });
                 }
 
-                // Get available actions
-                const availableActions = this.getAvailableActions();
-
-                // Check if avatar already exists in config
-                const existingAvatar = this.config.avatars?.find(a => a.avatarId === avatarId);
-
-                if (!existingAvatar) {
-                    // Auto-add avatar to list with timestamp as name
-                    const newAvatar = {
-                        id: `avatar_${Date.now()}`,
-                        name: `Auto-detected Avatar ${new Date().toLocaleString()}`,
-                        avatarId: avatarId,
-                        description: `Auto-detected on ${new Date().toLocaleString()}`,
-                        availableActions: availableActions,
-                        detectedAt: Date.now()
-                    };
-
-                    if (!this.config.avatars) {
-                        this.config.avatars = [];
-                    }
-
-                    this.config.avatars.push(newAvatar);
-                    await this.api.setConfig('config', this.config);
-
-                    this.logger.info(`✅ Auto-detected and added new avatar: ${avatarId}`);
+                const capabilityResult = await this.queueAvatarCapabilitiesRefresh(avatarId, 'manual_scan');
+                if (!capabilityResult) {
+                    return res.json({ success: false, error: 'Avatar scan was superseded by a newer avatar update' });
                 }
+                this.startAvatarCapabilitiesWatcher();
 
                 res.json({
                     success: true,
                     avatarId: avatarId,
-                    availableActions: availableActions,
-                    isNew: !existingAvatar,
-                    parameterCount: this.oscQueryClient.parameters.size
+                    availableActions: capabilityResult.profile.availableActions,
+                    profile: capabilityResult.profile,
+                    isNew: capabilityResult.isNew,
+                    parameterCount: capabilityResult.profile.parameterCount
                 });
 
             } catch (error) {
@@ -1285,6 +1305,7 @@ class OSCBridgePlugin {
     }
 
     async stop() {
+        await this.stopAvatarCapabilitiesWatcher();
         if (!this.isRunning) {
             const result = await this.transport.stop();
             this.udpPort = null;
@@ -1392,14 +1413,38 @@ class OSCBridgePlugin {
     }
 
     async updateConfig(newConfig) {
-        try {
-            const wasRunning = this.isRunning;
+        const previousConfig = this.config;
+        const candidateConfig = normalizeConfig(deepMerge(
+            previousConfig || this.getDefaultConfig(),
+            newConfig || {}
+        ));
+        const candidateValidation = validateConfig(candidateConfig);
+        if (!candidateValidation.valid) {
+            return {
+                success: false,
+                error: candidateValidation.errors.join('; '),
+                errors: candidateValidation.errors
+            };
+        }
 
+        const wasRunning = this.isRunning || this.transport?.state === 'running';
+        let configApplied = false;
+        try {
             if (wasRunning) {
-                await this.stop();
+                const stopResult = await this.stop();
+                if (!stopResult?.success) {
+                    return {
+                        success: false,
+                        error: `Failed to stop OSC-Bridge before applying configuration: ${stopResult?.error || 'unknown error'}`
+                    };
+                }
             }
 
-            this.config = normalizeConfig(deepMerge(this.config || this.getDefaultConfig(), newConfig || {}));
+            await this.stopAvatarCapabilitiesWatcher();
+            this.invalidateAvatarCapabilities('oscquery_reconfigured');
+
+            this.config = candidateConfig;
+            configApplied = true;
 
             const validation = validateConfig(this.config);
             if (!validation.valid) {
@@ -1425,24 +1470,100 @@ class OSCBridgePlugin {
                 this.logger.info('📡 OSCQuery client removed (disabled in config)');
             }
 
-            await this.api.setConfig('config', this.config);
+            const persistConfig = () => this.api.setConfig('config', this.config);
 
             if (wasRunning && this.config.enabled) {
-                await this.start();
+                const startResult = await this.start();
+                if (!startResult?.success) {
+                    return await this.restoreConfigAfterFailedUpdate(
+                        previousConfig,
+                        wasRunning,
+                        `New OSC configuration could not be started: ${startResult?.error || 'unknown error'}`
+                    );
+                }
             } else if (!this.config.enabled && wasRunning) {
                 this.logger.info('📡 OSC-Bridge disabled');
             } else if (this.config.enabled && !wasRunning) {
-                await this.start();
+                const startResult = await this.start();
+                if (!startResult?.success) {
+                    return await this.restoreConfigAfterFailedUpdate(
+                        previousConfig,
+                        wasRunning,
+                        `New OSC configuration could not be started: ${startResult?.error || 'unknown error'}`
+                    );
+                }
             }
 
+            await persistConfig();
             this.emitStatus();
 
             return { success: true, config: this.config };
 
         } catch (error) {
             this.logger.error('Failed to update OSC config:', error);
+            if (configApplied) {
+                return this.restoreConfigAfterFailedUpdate(
+                    previousConfig,
+                    wasRunning,
+                    `Failed to apply OSC configuration: ${error.message}`,
+                    true
+                );
+            }
             return { success: false, error: error.message };
         }
+    }
+
+    async restoreConfigAfterFailedUpdate(previousConfig, wasRunning, error, restorePersistedConfig = false) {
+        let restoreError = null;
+        const candidateIsRunning = this.isRunning || this.transport?.state === 'running';
+        if (candidateIsRunning) {
+            const stopResult = await this.stop();
+            if (!stopResult?.success) {
+                restoreError = stopResult?.error || 'failed to stop candidate transport';
+            }
+        }
+
+        this.config = previousConfig;
+
+        await this.stopAvatarCapabilitiesWatcher();
+        this.invalidateAvatarCapabilities('oscquery_restored');
+
+        if (this.oscQueryClient) {
+            this.oscQueryClient.disconnect();
+            this.oscQueryClient = null;
+        }
+
+        const oscCfg = previousConfig?.oscQuery;
+        if (oscCfg?.enabled) {
+            this.oscQueryClient = new OSCQueryClient(
+                oscCfg.host || '127.0.0.1',
+                oscCfg.port || 9001,
+                this.logger
+            );
+        }
+
+        if (!restoreError && wasRunning && previousConfig?.enabled) {
+            const restoreResult = await this.start();
+            if (!restoreResult?.success) {
+                restoreError = restoreResult?.error || 'unknown error';
+            }
+        }
+
+        if (!restoreError && restorePersistedConfig) {
+            try {
+                await this.api.setConfig('config', this.config);
+            } catch (persistError) {
+                restoreError = `failed to restore persisted config: ${persistError.message}`;
+            }
+        }
+
+        this.emitStatus();
+        return {
+            success: false,
+            error: restoreError
+                ? `${error}; previous configuration could not be fully restored: ${restoreError}`
+                : `${error}; previous configuration restored`
+        };
     }
 
     emitStatus() {
@@ -2117,10 +2238,14 @@ class OSCBridgePlugin {
             if (!this.oscQueryClient) {
                 const host = this.config.oscQuery?.host || '127.0.0.1';
                 const port = this.config.oscQuery?.port || 9001;
+                this.invalidateAvatarCapabilities('oscquery_created');
                 this.oscQueryClient = new OSCQueryClient(host, port, this.logger);
             }
 
             const result = await this.oscQueryClient.discover();
+            if (!Array.isArray(result?.parameters) || result.parameters.length === 0) {
+                throw new Error('OSCQuery discovery returned no avatar parameters');
+            }
             this.logger.info(`✅ OSCQuery discovered ${result.parameters.length} parameters`);
 
             // Auto-discover PhysBones if enabled
@@ -2138,31 +2263,18 @@ class OSCBridgePlugin {
                     }
                 });
 
-                // Watch for avatar changes
-                this.oscQueryClient.startAvatarWatcher(5000, (avatarInfo) => {
-                    this.logger.info(`👤 Avatar changed: ${avatarInfo.id}`);
-
-                    if (this.avatarStateStore) {
-                        this.avatarStateStore.setCurrentAvatar(avatarInfo.id);
-                    }
-
-                    if (this.physBonesController) {
-                        // Pass both avatarId and avatarName (null if not available)
-                        this.physBonesController.onAvatarChanged(avatarInfo.id, null);
-                    }
-
-                    // Re-discover parameters for new avatar
-                    this.autoDiscoverOSCQuery();
-                });
+                this.startAvatarCapabilitiesWatcher();
             }
 
             this.api.emit('osc:oscquery-discovered', result);
+            return { success: true, result };
         } catch (error) {
             const errorMessage = error?.message || String(error);
             this.logger.error(`OSCQuery auto-discovery failed: ${errorMessage}`);
             if (error?.stack) {
                 this.logger.error(`OSCQuery auto-discovery stack: ${error.stack}`);
             }
+            return { success: false, error: errorMessage };
         }
     }
 
@@ -2228,9 +2340,9 @@ class OSCBridgePlugin {
                 }, 1000);
             }
 
-            // Send message to chatbox
-            // VRChat chatbox takes string and boolean (true = send immediately)
-            this.send(this.VRCHAT_PARAMS.CHATBOX_INPUT, message, true);
+            // Send message to chatbox. The optional third OSC boolean controls
+            // VRChat's notification sound and is disabled by default.
+            this.send(this.VRCHAT_PARAMS.CHATBOX_INPUT, message, true, this.config.chatbox?.notificationSound === true);
 
             this.logger.info(`💬 Sent to VRChat chatbox: ${message}`);
             return true;
@@ -2272,6 +2384,43 @@ class OSCBridgePlugin {
         this.api.on('animazingpal:vrchat-intent', this.animazingPalIntentHandler);
         this.animazingPalBridgeRegistered = true;
         this.logger.info('? AnimazingPal VRChat intent bridge registered');
+    }
+
+    registerSttTickerChatboxBridge() {
+        if (typeof this.api.on !== 'function' || this.sttTickerChatboxBridgeRegistered) {
+            return;
+        }
+        this.sttTickerChatboxIntentHandler = intent => this.handleSttTickerChatboxIntent(intent);
+        this.api.on('stt-ticker:vrchat-chatbox', this.sttTickerChatboxIntentHandler);
+        this.sttTickerChatboxBridgeRegistered = true;
+        this.logger.info('STT Ticker VRChat chatbox bridge registered');
+    }
+
+    handleSttTickerChatboxIntent(intent) {
+        if (!intent || typeof intent !== 'object' || !this.isRunning) return false;
+
+        const chatbox = this.config?.chatbox || {};
+        if (intent.type === 'typing') {
+            if (chatbox.showTyping === false) return true;
+            return this.send(this.VRCHAT_PARAMS.CHATBOX_TYPING, intent.visible === true);
+        }
+
+        if (intent.type !== 'send' || !Array.isArray(intent.messages)) return false;
+        const messages = intent.messages
+            .map(message => String(message || '').trim())
+            .filter(Boolean);
+        if (messages.length === 0) return false;
+
+        if (chatbox.showTyping !== false) {
+            this.send(this.VRCHAT_PARAMS.CHATBOX_TYPING, false);
+        }
+        const notificationSound = chatbox.notificationSound === true;
+        return messages.every(message => this.send(
+            this.VRCHAT_PARAMS.CHATBOX_INPUT,
+            message,
+            true,
+            notificationSound
+        ));
     }
 
     handleAnimazingPalIntent(intent) {
@@ -2575,6 +2724,197 @@ class OSCBridgePlugin {
         return actions;
     }
 
+    /**
+     * Persist a scan result without overwriting metadata maintained by the user.
+     */
+    async upsertAvatarCapabilities(avatarId, availableActions, parameterCount, isCurrent = () => true) {
+        if (!isCurrent()) return null;
+
+        const now = Date.now();
+        const avatars = Array.isArray(this.config.avatars) ? this.config.avatars : [];
+        const existingIndex = avatars.findIndex(avatar => avatar.avatarId === avatarId);
+        const existingAvatar = existingIndex >= 0 ? avatars[existingIndex] : null;
+        let profile = existingAvatar;
+        const isNew = !profile;
+
+        if (!profile) {
+            profile = {
+                id: `avatar_${now}`,
+                name: `Auto-detected Avatar ${new Date(now).toLocaleString()}`,
+                avatarId,
+                description: `Auto-detected on ${new Date(now).toLocaleString()}`
+            };
+        } else {
+            profile = { ...profile };
+        }
+
+        profile.availableActions = availableActions;
+        profile.parameterCount = parameterCount;
+        profile.detectedAt = now;
+        const nextAvatars = existingIndex >= 0
+            ? avatars.map((avatar, index) => index === existingIndex ? profile : avatar)
+            : [...avatars, profile];
+        const nextConfig = { ...this.config, avatars: nextAvatars };
+
+        if (!isCurrent()) return null;
+        await this.api.setConfig('config', nextConfig);
+        if (!isCurrent()) {
+            // A stale write may have completed after a newer avatar intent was
+            // queued. Restore the still-valid runtime config before continuing.
+            await this.api.setConfig('config', this.config);
+            return null;
+        }
+
+        this.config = nextConfig;
+
+        return { profile, isNew };
+    }
+
+    /**
+     * Make a persisted scan result the active runtime capability profile.
+     */
+    async refreshAvatarCapabilities(avatarId, source = 'scan', isCurrent = () => true) {
+        if (!isCurrent()) return null;
+        const availableActions = this.getAvailableActions();
+        const parameterCount = this.oscQueryClient?.parameters?.size || 0;
+        const result = await this.upsertAvatarCapabilities(avatarId, availableActions, parameterCount, isCurrent);
+        if (!result) return null;
+        if (!isCurrent()) return null;
+
+        this.activeAvatarProfile = result.profile;
+        if (this.avatarStateStore) {
+            this.avatarStateStore.setCurrentAvatar(avatarId, result.profile.name || null);
+        }
+
+        this.api.emit('osc:avatar-capabilities', {
+            avatarId,
+            profile: result.profile,
+            isNew: result.isNew,
+            source,
+            timestamp: Date.now()
+        });
+
+        return result;
+    }
+
+    /**
+     * Serializes all scan and watcher refreshes and lets only the newest intent
+     * persist, activate, and emit an avatar capability profile.
+     */
+    queueAvatarCapabilitiesRefresh(avatarId, source = 'scan', client = this.oscQueryClient, watcherIsCurrent = null) {
+        const intentGeneration = ++this.avatarCapabilityIntentGeneration;
+        const isCurrent = () => (
+            intentGeneration === this.avatarCapabilityIntentGeneration &&
+            (!client || this.oscQueryClient === client) &&
+            (!watcherIsCurrent || watcherIsCurrent())
+        );
+
+        this.avatarCapabilityRefreshPromise = this.avatarCapabilityRefreshPromise
+            .catch(() => undefined)
+            .then(() => isCurrent() ? this.refreshAvatarCapabilities(avatarId, source, isCurrent) : null);
+        return this.avatarCapabilityRefreshPromise;
+    }
+
+    /**
+     * Starts one watcher per OSCQuery client after a successful scan.
+     */
+    startAvatarCapabilitiesWatcher() {
+        if (!this.oscQueryClient || this.avatarCapabilitiesWatcherClient === this.oscQueryClient) {
+            return false;
+        }
+
+        const client = this.oscQueryClient;
+        const generation = this.avatarCapabilitiesGeneration;
+        const isCurrent = () => (
+            this.oscQueryClient === client &&
+            this.avatarCapabilitiesWatcherClient === client &&
+            this.avatarCapabilitiesGeneration === generation
+        );
+        client.startAvatarWatcher(5000, async (avatarInfo) => {
+            if (!avatarInfo?.id || !isCurrent()) return false;
+            this.logger.info(`👤 Avatar changed: ${avatarInfo.id}`);
+
+            if (this.physBonesController) {
+                this.physBonesController.onAvatarChanged(avatarInfo.id, null);
+            }
+
+            try {
+                return await this.queueAvatarCapabilitiesRefresh(avatarInfo.id, 'avatar_change', client, isCurrent);
+            } catch (error) {
+                this.logger.error(`Avatar capability refresh failed: ${error.message}`);
+                return false;
+            }
+        });
+        this.avatarCapabilitiesWatcherClient = client;
+        return true;
+    }
+
+    /**
+     * Stops the watcher and waits for any already scheduled capability refresh.
+     */
+    async stopAvatarCapabilitiesWatcher() {
+        this.avatarCapabilitiesGeneration++;
+        const client = this.avatarCapabilitiesWatcherClient;
+        this.avatarCapabilitiesWatcherClient = null;
+        if (client && typeof client.stopAvatarWatcher === 'function') {
+            client.stopAvatarWatcher();
+        }
+        await this.avatarCapabilityRefreshPromise.catch(() => undefined);
+    }
+
+    /**
+     * Drops scan-derived runtime state when its OSCQuery source changes.
+     */
+    invalidateAvatarCapabilities(source) {
+        this.avatarCapabilityIntentGeneration++;
+        this.avatarCapabilitiesWatcherClient = null;
+        this.activeAvatarProfile = null;
+        this.api.emit('osc:avatar-capabilities', {
+            avatarId: null,
+            profile: null,
+            source,
+            timestamp: Date.now()
+        });
+    }
+
+    /**
+     * Returns a clear error for known helper actions once a scan has established
+     * the active avatar's capabilities. Raw OSC and user mappings do not use it.
+     */
+    rejectUnsupportedAvatarCapability(res, category, capability, action) {
+        if (!this.activeAvatarProfile) return false;
+
+        const actions = this.activeAvatarProfile.availableActions || {};
+        let supported = false;
+        if (category === 'standard') {
+            supported = actions.standard?.[capability] === true;
+        } else if (category === 'emote') {
+            supported = actions.emotes?.[`Emote${capability}`] === true;
+        } else if (category === 'gogoloco') {
+            supported = actions.gogoloco?.[capability] === true;
+        } else if (category === 'physbone') {
+            supported = Array.isArray(actions.physbones) && actions.physbones.some(bone => bone.name === capability);
+        }
+
+        if (supported) return false;
+        res.status(422).json({
+            success: false,
+            error: `Unsupported by active avatar: ${action}`,
+            avatarId: this.activeAvatarProfile.avatarId,
+            action
+        });
+        return true;
+    }
+
+    rejectUnsupportedEmoteSteps(res, combo) {
+        for (const step of combo) {
+            if ((step.type || 'Emote') === 'Emote' && this.rejectUnsupportedAvatarCapability(res, 'emote', step.slot, 'emote')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     async destroy() {
         // Unregister GCCE commands
         this.unregisterGCCECommands();
@@ -2600,6 +2940,11 @@ class OSCBridgePlugin {
             }
         }
         this.animazingPalBridgeRegistered = false;
+
+        if (this.sttTickerChatboxIntentHandler && typeof this.api.removeListener === 'function') {
+            this.api.removeListener('stt-ticker:vrchat-chatbox', this.sttTickerChatboxIntentHandler);
+        }
+        this.sttTickerChatboxBridgeRegistered = false;
 
         for (const timer of this.resetTimers) {
             clearTimeout(timer);

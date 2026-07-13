@@ -1,7 +1,7 @@
 {
   "id": "webgpu-emoji-rain",
   "name": "WebGPU EmojiRain",
-  "version": "3.0.0",
+  "version": "3.0.2",
   "description": "Native WebGPU EmojiRain with GPU compute physics, instanced sprite rendering, HDR bloom, cinematic-neon profiles, custom assets, heart balloons, gift balls, presets, GCCE commands, Flow actions, and TikTok LIVE integration.",
   "author": "Pup Cid",
   "entry": "main.js",

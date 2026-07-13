@@ -14,6 +14,24 @@ function createAdapter() {
 }
 
 describe('Eulerstream team level extraction', () => {
+  test('extracts the current TikTok avatar from avatarThumb.url_list', () => {
+    const adapter = createAdapter();
+
+    const userData = adapter.extractUserData({
+      user: {
+        uniqueId: 'avatarviewer',
+        userId: '789',
+        avatarThumb: {
+          url_list: [
+            'https://p16-sign-va.tiktokcdn.com/avatarviewer.webp'
+          ]
+        }
+      }
+    });
+
+    expect(userData.profilePictureUrl).toBe('https://p16-sign-va.tiktokcdn.com/avatarviewer.webp');
+  });
+
   test('extracts team level from SDK v2 fansClubInfo.fansLevel', () => {
     const adapter = createAdapter();
 

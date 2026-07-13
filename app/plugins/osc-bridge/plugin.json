@@ -15,10 +15,6 @@
     "sendPort": 9000,
     "receivePort": 9001,
     "verboseMode": false,
-    "allowedIPs": [
-      "127.0.0.1",
-      "::1"
-    ],
     "autoRetryOnError": false,
     "retryDelay": 5000,
     "maxPacketSize": 65536

@@ -1133,6 +1133,7 @@
         <button class="tab-btn" data-tab="tab-asr"><span class="tab-chip">AS</span><span class="tab-label" data-i18n="generated.c5c7ed4e46d0">ASR & Sprache</span></button>
         <button class="tab-btn" data-tab="tab-translation"><span class="tab-chip">TR</span><span class="tab-label" data-i18n="generated.4fe92c514108">Übersetzung</span></button>
         <button class="tab-btn" data-tab="tab-multilang"><span class="tab-chip">ML</span><span class="tab-label">Multi-Language</span></button>
+        <button class="tab-btn" data-tab="tab-vrchat"><span class="tab-chip">VR</span><span class="tab-label">VRChat</span></button>
       </div>
 
       <div class="stt-sidebar-card">
@@ -1202,9 +1203,8 @@
         <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:12px;cursor:text;">
         <div class="grid-2" style="margin-top:10px;">
           <div>
-            <label>Design</label>
+            <label>Untertitel-Stil</label>
             <select id="design-select">
-              <option value="dual-language" data-i18n="generated.4580126e715a">Dual-Language (2 Zeilen)</option>
               <option value="classic" data-i18n="generated.0bf5373400f3">Classic (TV-Untertitel)</option>
               <option value="modern" data-i18n="generated.878f83588f67">Modern (Clean, Blur)</option>
               <option value="minimal" data-i18n="generated.f5978ce331d1">Minimal (Nur Text)</option>
@@ -1212,12 +1212,8 @@
               <option value="glass" data-i18n="generated.5a7e4b4b17c4">Glass (Glasmorphismus)</option>
               <option value="compact" data-i18n="generated.e12e46ccc0b0">Compact (Klein)</option>
               <option value="cinematic" data-i18n="generated.405606eee294">Cinematic (Film)</option>
-              <option value="scrolling" data-i18n="generated.ece9be230d15">Scrolling (Laufband)</option>
-              <option value="fliessend" data-i18n="generated.13ddd5f84b99">Fliessend (Liste)</option>
-              <option value="starwars" data-i18n="generated.6cc1adf8d5f6">Star Wars (Crawl)</option>
-              <option value="ticker3" data-i18n="generated.89f669a3f959">3-Zeilen Ticker</option>
-              <option value="karaoke" data-i18n="generated.0e99906c06ae">Karaoke (Wort-Highlight)</option>
             </select>
+            <p class="help-text">Mehrere gewählte Sprachen werden automatisch als eigene Zeilen angezeigt.</p>
           </div>
           <div>
             <label>Position</label>
@@ -1434,6 +1430,22 @@
         </div>
       </div>
     </div>
+
+    <div id="tab-vrchat" class="tab-content">
+      <div class="section-heading">VRChat Chatbox</div>
+      <div class="card">
+        <div class="card-title">Finale Untertitel an VRChat senden</div>
+        <label class="inline-flex" style="margin-top:0;">
+          <input type="checkbox" id="vrchat-chatbox-enabled">
+          An VRChat-Chatbox senden
+        </label>
+        <p class="help-text">Sendet nur finale Original-Untertitel nach 700 ms BÃ¼ndelung. Lange Texte werden automatisch auf das VRChat-Chatbox-Limit aufgeteilt.</p>
+        <div class="btn-row">
+          <button id="btn-save-vrchat-chatbox" class="btn btn-primary btn-sm">VRChat-Ausgabe speichern</button>
+          <span id="vrchat-chatbox-status" style="font-size:12px;"></span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -1534,6 +1546,22 @@
         document.getElementById('stat-segments').textContent = buf.segmentCount || 0;
 
         const cfg = s.config || {};
+        const vrchat = s.vrchatChatbox || {};
+        const vrchatEnabled = document.getElementById('vrchat-chatbox-enabled');
+        const vrchatStatus = document.getElementById('vrchat-chatbox-status');
+        if (vrchatEnabled) vrchatEnabled.checked = vrchat.enabled === true;
+        if (vrchatStatus) {
+          if (!vrchat.enabled) {
+            vrchatStatus.textContent = 'Deaktiviert';
+            vrchatStatus.style.color = '#888';
+          } else if (vrchat.bridgeAvailable) {
+            vrchatStatus.textContent = 'OSC-Bridge bereit';
+            vrchatStatus.style.color = '#4CAF50';
+          } else {
+            vrchatStatus.textContent = vrchat.lastError || 'OSC-Bridge nicht verfÃ¼gbar â€“ Untertitel bleiben aktiv.';
+            vrchatStatus.style.color = 'var(--stt-status-warning, #facc15)';
+          }
+        }
         const tc = cfg.translation || {};
         document.getElementById('translation-enabled').checked = tc.enabled || false;
         const apiKeyField = document.getElementById('translation-apiKey');
@@ -1551,7 +1579,7 @@
           keyStatus.style.color = 'var(--stt-status-warning, #facc15)';
         }
         await loadLanguages(tc.sourceLanguage || 'de', tc.targetLanguage || 'en');
-        await loadModels(tc.model || 'nemotron-3-nano');
+        await loadModels(tc.model || 'deepseek-v4-flash');
         if (tc.color) document.getElementById('translation-color').value = tc.color;
 
         populateAsrConfig(cfg);
@@ -1720,14 +1748,10 @@
       const overlay = cfg.overlay || {};
       const designSel = document.getElementById('design-select');
       if (!designSel) return;
-      const design = overlay.design || 'dual-language';
-      if (![...designSel.options].some(o => o.value === design)) {
-        const opt = document.createElement('option');
-        opt.value = 'dual-language';
-        opt.textContent = 'Dual-Language (2 Zeilen EN/DE)';
-        designSel.appendChild(opt);
-      }
-      designSel.value = design;
+      const design = overlay.design || 'classic';
+      designSel.value = [...designSel.options].some(option => option.value === design)
+        ? design
+        : 'classic';
     }
 
     function populateMultiLang(cfg) {
@@ -1736,6 +1760,11 @@
       populateLanguageSelect('ml-add-lang', '', true);
       if (ml.outputLanguages) {
         renderLangTags(ml.outputLanguages);
+      }
+      const status = document.getElementById('ml-status');
+      if (status && (!ml.outputLanguages || ml.outputLanguages.length === 0)) {
+        status.textContent = 'Keine Zielsprache gewählt – normale Untertitelanzeige aktiv.';
+        status.style.color = 'var(--stt-status-warning, #facc15)';
       }
     }
 
@@ -1817,6 +1846,26 @@
     function apiKeyFieldMarkDirty() {
       document.getElementById('translation-apiKey').dataset.loaded = '1';
       document.getElementById('translation-apiKey').dataset.dirty = '1';
+    }
+
+    async function saveVrchatChatboxSettings() {
+      const status = document.getElementById('vrchat-chatbox-status');
+      const enabled = document.getElementById('vrchat-chatbox-enabled').checked;
+      try {
+        const res = await fetch('/api/stt-ticker/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vrchatChatbox: { enabled } })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Speichern fehlgeschlagen');
+        status.textContent = enabled ? 'Aktiviert â€“ OSC-Bridge wird geprÃ¼ft.' : 'Deaktiviert';
+        status.style.color = enabled ? '#4CAF50' : '#888';
+        refreshStatus();
+      } catch (error) {
+        status.textContent = error.message;
+        status.style.color = '#f44336';
+      }
     }
 
     async function saveAsrConfig() {
@@ -2025,6 +2074,7 @@
     document.getElementById('translation-color').addEventListener('change', saveConfig);
     document.getElementById('btn-save-translation').addEventListener('click', saveConfig);
     document.getElementById('btn-clear-cache').addEventListener('click', clearTranslationCache);
+    document.getElementById('btn-save-vrchat-chatbox').addEventListener('click', saveVrchatChatboxSettings);
 
     document.getElementById('btn-test-deepgram').addEventListener('click', async () => {
       const statusEl = document.getElementById('deepgram-test-status');

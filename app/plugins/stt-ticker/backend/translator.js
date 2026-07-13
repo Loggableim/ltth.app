@@ -1,14 +1,13 @@
 ﻿/**
  * STT Ticker - Translator
  *
- * Übersetzt transkribierten Text via Ollama Cloud API (OpenAI-kompatibel).
+ * Übersetzt transkribierten Text via Ollama Cloud API.
  * Optionales Feature - nur aktiv wenn translation.enabled=true und apiKey gesetzt.
  *
- * API: POST https://api.ollama.cloud/v1/chat/completions
- * (OpenAI-kompatibler Endpoint)
+ * API: POST https://ollama.com/api/chat
  */
 
-const OLLAMA_BASE_URL = 'https://api.ollama.cloud/v1';
+const OLLAMA_BASE_URL = 'https://ollama.com/api';
 
 // Bekannte Sprachen für die UI
 const LANGUAGES = [
@@ -178,7 +177,12 @@ class Translator {
     }
 
     const sourceLang = options.sourceLanguage || cfg.sourceLanguage || 'auto';
-    const outputLangs = Array.isArray(options.outputLanguages) ? options.outputLanguages : [];
+    const requestedOutputLangs = Array.isArray(options.outputLanguages) ? options.outputLanguages : [];
+    const defaultLanguage = this.config.multiLanguage?.defaultLanguage;
+    const outputLangs = Array.from(new Set([
+      defaultLanguage,
+      ...requestedOutputLangs
+    ].filter(Boolean)));
     if (outputLangs.length === 0) {
       return { translated: false, translations: {} };
     }
@@ -241,23 +245,110 @@ class Translator {
   }
 
   /**
-   * Ruft die Ollama Cloud API auf (OpenAI-kompatibel).
+   * Translates several independently routed caption fragments in one Cloud
+   * request. Each source fragment keeps its language and receives only the
+   * remaining configured display languages as translations.
+   */
+  async translateSegments(segments, options = {}) {
+    const cfg = this.config.translation || {};
+    const sourceSegments = Array.isArray(segments) ? segments : [];
+    const prepared = sourceSegments
+      .map((segment, index) => ({
+        ...segment,
+        id: String(segment.id || `segment-${index + 1}`),
+        text: String(segment.text || '').trim(),
+        language: segment.language || options.defaultLanguage || 'de'
+      }))
+      .filter(segment => segment.text.length >= 2);
+    const defaultLanguage = options.defaultLanguage || this.config.multiLanguage?.defaultLanguage;
+    const outputLanguages = Array.from(new Set([
+      defaultLanguage,
+      ...(Array.isArray(options.outputLanguages) ? options.outputLanguages : [])
+    ].filter(Boolean)));
+    const withEmptyTranslations = () => prepared.map(segment => ({ ...segment, translations: {} }));
+
+    if (!cfg.enabled || !cfg.apiKey || prepared.length === 0 || outputLanguages.length === 0) {
+      return withEmptyTranslations();
+    }
+
+    const requests = prepared.map(segment => ({
+      id: segment.id,
+      text: segment.text,
+      sourceLanguage: segment.language,
+      targetLanguages: outputLanguages.filter(language => language !== segment.language)
+    }));
+    if (!requests.some(request => request.targetLanguages.length > 0)) {
+      return withEmptyTranslations();
+    }
+    if (!this._checkRateLimit()) {
+      this.logger.warn('STT Ticker: Segment translation rate limited');
+      return withEmptyTranslations();
+    }
+
+    const systemPrompt = 'You are a real-time caption translator. Translate every JSON input item into exactly its targetLanguages. Return ONLY a JSON object keyed by item id. Each value must be an object whose keys are target language codes and whose values are translations. Do not add markdown or explanations.';
+    try {
+      const result = await this._callOllama(systemPrompt, JSON.stringify(requests), cfg);
+      const parsed = this._parseJsonResponse(result);
+      if (!parsed || typeof parsed !== 'object') {
+        this.logger.warn('STT Ticker: Segment translation returned unparseable result');
+        return withEmptyTranslations();
+      }
+
+      const colors = this.config.multiLanguage?.colors || {};
+      return prepared.map(segment => {
+        const resultByLanguage = parsed[segment.id] || {};
+        const translations = {};
+        for (const language of outputLanguages) {
+          const value = resultByLanguage[language];
+          if (language !== segment.language && typeof value === 'string' && value.trim()) {
+            translations[language] = {
+              text: value.trim(),
+              color: colors[language] || cfg.color || '#FFD700'
+            };
+          }
+        }
+        return { ...segment, translations };
+      });
+    } catch (error) {
+      this.logger.warn(`STT Ticker: Segment translation failed: ${error.message}`);
+      return withEmptyTranslations();
+    }
+  }
+
+  _parseJsonResponse(result) {
+    try {
+      return JSON.parse(result);
+    } catch (error) {
+      const jsonMatch = String(result || '').match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return null;
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (nestedError) {
+        return null;
+      }
+    }
+  }
+
+  /**
+   * Ruft die native Ollama Cloud API auf.
    */
   async _callOllama(systemPrompt, text, cfg) {
     const axios = require('axios');
     const timeoutMs = Number(cfg.timeoutMs) > 0 ? Number(cfg.timeoutMs) : 30000;
 
     const response = await axios.post(
-      `${OLLAMA_BASE_URL}/chat/completions`,
+      `${OLLAMA_BASE_URL}/chat`,
       {
         model: cfg.model || 'deepseek-v4-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: text }
         ],
-        temperature: 0.1,
-        max_tokens: Math.min(Math.ceil(text.length * 1.5), 2000),
-        stream: false
+        stream: false,
+        think: false,
+        options: {
+          temperature: 0.1
+        }
       },
       {
         headers: {
@@ -268,11 +359,11 @@ class Translator {
       }
     );
 
-    if (!response.data?.choices?.[0]?.message?.content) {
+    if (!response.data?.message?.content) {
       throw new Error('Empty response from Ollama Cloud');
     }
 
-    return response.data.choices[0].message.content.trim();
+    return response.data.message.content.trim();
   }
 
   /**
@@ -285,15 +376,15 @@ class Translator {
 
     try {
       const axios = require('axios');
-      const response = await axios.get(`${OLLAMA_BASE_URL}/models`, {
+      const response = await axios.get(`${OLLAMA_BASE_URL}/tags`, {
         headers: { 'Authorization': `Bearer ${key}` },
         timeout: 10000
       });
 
-      if (response.data?.data && Array.isArray(response.data.data)) {
-        return response.data.data
-          .filter(m => m.id && !m.id.includes('embed'))
-          .map(m => ({ id: m.id, name: m.id }));
+      if (response.data?.models && Array.isArray(response.data.models)) {
+        return response.data.models
+          .filter(model => model.name && !model.name.includes('embed'))
+          .map(model => ({ id: model.name, name: model.name }));
       }
       return this._defaultModels();
     } catch (error) {
@@ -304,14 +395,10 @@ class Translator {
 
   _defaultModels() {
     return [
-      { id: 'nemotron-3-nano', name: 'Nemotron 3 Nano' },
       { id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash' },
-      { id: 'deepseek-v4', name: 'DeepSeek V4' },
-      { id: 'qwen2.5-14b-instruct', name: 'Qwen 2.5 14B' },
-      { id: 'qwen2.5-72b-instruct', name: 'Qwen 2.5 72B' },
-      { id: 'llama-3.3-70b-instruct', name: 'Llama 3.3 70B' },
-      { id: 'mistral-large-2', name: 'Mistral Large 2' },
-      { id: 'gemma-2-27b-it', name: 'Gemma 2 27B' }
+      { id: 'gpt-oss:20b', name: 'GPT-OSS 20B' },
+      { id: 'gemma3:4b', name: 'Gemma 3 4B' },
+      { id: 'nemotron-3-nano:30b', name: 'Nemotron 3 Nano 30B' },
     ];
   }
 

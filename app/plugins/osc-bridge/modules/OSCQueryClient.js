@@ -35,6 +35,7 @@ class OSCQueryClient {
         this.hostInfo = null;
         this.avatarInfo = null;
         this.avatarWatcher = null;
+        this.avatarWatcherSequence = 0;
         this.reconnectTimer = null;
         this.destroyed = false;
         this.shouldReconnect = false;
@@ -232,24 +233,29 @@ class OSCQueryClient {
     /**
      * Watch for avatar changes
      */
-    async watchAvatarChange(callback) {
+    async watchAvatarChange(callback, isCurrent = () => true) {
         try {
             // Poll /avatar/change endpoint
             const response = await axios.get(`${this.baseUrl}/avatar/change`);
             const data = response.data;
             
             if (data.VALUE !== this.avatarInfo?.id) {
+                if (!isCurrent()) return false;
                 this.avatarInfo = { id: data.VALUE, changedAt: Date.now() };
                 this.logger.info(`👤 Avatar changed: ${data.VALUE}`);
                 
                 // Re-discover parameters for new avatar
                 await this.discover();
+                if (!isCurrent()) return false;
                 
                 if (callback) callback(this.avatarInfo);
                 this._emit('avatar_changed', this.avatarInfo);
+                return true;
             }
+            return false;
         } catch (error) {
             this.logger.debug('Avatar change check failed:', error.message);
+            return false;
         }
     }
 
@@ -260,7 +266,10 @@ class OSCQueryClient {
         this.stopAvatarWatcher(); // Clear any existing watcher
         
         this.avatarWatcher = setInterval(async () => {
-            await this.watchAvatarChange(callback);
+            const sequence = ++this.avatarWatcherSequence;
+            await this.watchAvatarChange(callback, () => (
+                this.avatarWatcher !== null && sequence === this.avatarWatcherSequence
+            ));
         }, interval);
         
         this.logger.info('👀 Avatar change watcher started');
@@ -270,6 +279,7 @@ class OSCQueryClient {
      * Stop polling for avatar changes
      */
     stopAvatarWatcher() {
+        this.avatarWatcherSequence++;
         if (this.avatarWatcher) {
             clearInterval(this.avatarWatcher);
             this.avatarWatcher = null;
