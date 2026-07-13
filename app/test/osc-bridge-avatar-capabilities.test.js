@@ -45,6 +45,38 @@ describe('OSC-Bridge avatar capability profiles', () => {
     expect(api.setConfig).toHaveBeenCalledWith('config', plugin.config);
   });
 
+  test('normalizes and deduplicates legacy array avatar IDs when refreshing a scan', async () => {
+    plugin.config.avatars = [
+      {
+        id: 'legacy-array-profile',
+        avatarId: ['avtr_duplicate'],
+        name: 'Kept avatar name',
+        description: 'Kept user description'
+      },
+      {
+        id: 'duplicate-profile',
+        avatarId: 'avtr_duplicate',
+        name: 'Duplicate scan result'
+      }
+    ];
+
+    const result = await plugin.upsertAvatarCapabilities(
+      'avtr_duplicate',
+      { standard: {}, emotes: {}, gogoloco: {}, physbones: [], custom: [] },
+      362
+    );
+
+    expect(result.isNew).toBe(false);
+    expect(plugin.config.avatars).toHaveLength(1);
+    expect(plugin.config.avatars[0]).toEqual(expect.objectContaining({
+      id: 'legacy-array-profile',
+      avatarId: 'avtr_duplicate',
+      name: 'Kept avatar name',
+      description: 'Kept user description',
+      parameterCount: 362
+    }));
+  });
+
   test('recognizes GoGo Loco VRCEmote as the native eight-slot emote controller', () => {
     plugin.oscQueryClient = {
       parameters: new Map([['/avatar/parameters/Go/VRCEmote', { value: 0 }]]),
