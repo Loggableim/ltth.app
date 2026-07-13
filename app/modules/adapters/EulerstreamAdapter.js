@@ -1689,24 +1689,36 @@ class EulerstreamAdapter extends BaseAdapter {
     extractProfilePictureUrl(user) {
         if (!user) return '';
 
-        // Try various fields that might contain the profile picture
-        const pictureData = user.profilePictureUrl || user.profilePicture || user.avatarThumb || user.avatarLarger || user.avatarUrl;
-        
-        if (!pictureData) return '';
+        const pictureCandidates = [
+            user.profilePictureUrl,
+            user.profilePicture,
+            user.avatarThumb,
+            user.avatarMedium,
+            user.avatarLarger,
+            user.avatarUrl,
+            user.avatar
+        ];
 
-        // If it's already a string URL, return it
-        if (typeof pictureData === 'string') {
-            return pictureData;
-        }
+        for (const pictureData of pictureCandidates) {
+            if (typeof pictureData === 'string' && pictureData.trim()) {
+                return pictureData.trim();
+            }
+            if (!pictureData || typeof pictureData !== 'object') continue;
 
-        // If it's an object with url array (Eulerstream format), extract the first URL
-        if (pictureData.url && Array.isArray(pictureData.url) && pictureData.url.length > 0) {
-            return pictureData.url[0];
-        }
-
-        // If it's an object with urlList array (alternative format)
-        if (pictureData.urlList && Array.isArray(pictureData.urlList) && pictureData.urlList.length > 0) {
-            return pictureData.urlList[0];
+            for (const value of [
+                pictureData.url,
+                pictureData.url_list,
+                pictureData.urlList,
+                pictureData.urls,
+                pictureData.uri
+            ]) {
+                if (Array.isArray(value)) {
+                    const url = value.find(candidate => typeof candidate === 'string' && candidate.trim());
+                    if (url) return url.trim();
+                } else if (typeof value === 'string' && value.trim()) {
+                    return value.trim();
+                }
+            }
         }
 
         return '';

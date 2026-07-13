@@ -201,6 +201,18 @@
       || null;
   }
 
+  function profilePictureAsset(profilePictureUrl) {
+    const value = String(profilePictureUrl || '').trim();
+    if (!/^https?:\/\//i.test(value)) return value || '👤';
+    return `/api/webgpu-emoji-rain/avatar?url=${encodeURIComponent(value)}`;
+  }
+
+  function remoteAsset(asset) {
+    const value = String(asset || '').trim();
+    if (!/^https?:\/\//i.test(value)) return value;
+    return `/api/webgpu-emoji-rain/asset?url=${encodeURIComponent(value)}`;
+  }
+
   function findUserMapping(username) {
     const target = String(username || '').trim().toLowerCase();
     if (!target || !state.userMappings || typeof state.userMappings !== 'object') return null;
@@ -231,13 +243,13 @@
     const mapped = findUserMapping(data.username || data.uniqueId);
     if (mapped) {
       if (mapped === PROFILE_PICTURE_TOKEN) {
-        return { asset: profilePictureUrl || '👤', fallback: '👤', isProfile: true };
+        return { asset: profilePictureAsset(profilePictureUrl), fallback: '👤', isProfile: true };
       }
       return { asset: mapped, fallback, isProfile: false };
     }
 
     if (data.emoji === PROFILE_PICTURE_TOKEN) {
-      return { asset: profilePictureUrl || '👤', fallback: '👤', isProfile: true };
+      return { asset: profilePictureAsset(profilePictureUrl), fallback: '👤', isProfile: true };
     }
 
     const reason = `${data.reason || ''} ${data.source || ''}`.toLowerCase();
@@ -480,7 +492,7 @@
     for (let index = 0; index < count; index++) {
       const useProfile = Boolean(profilePictureUrl) && (index + 1) % profileEvery === 0;
       enqueueSpawn({
-        asset: useProfile ? profilePictureUrl : '♥',
+        asset: useProfile ? profilePictureAsset(profilePictureUrl) : '♥',
         fallbackAsset: useProfile ? '👤' : '♥',
         count: 1,
         kind: useProfile ? 'profile' : 'balloon',
@@ -512,7 +524,7 @@
 
     for (let index = 0; index < count; index++) {
       enqueueSpawn({
-        asset: data.giftImageUrl || data.giftPictureUrl || data.imageUrl || '🎁',
+        asset: remoteAsset(data.giftImageUrl || data.giftPictureUrl || data.imageUrl || '🎁'),
         fallbackAsset: '🎁',
         count: 1,
         kind: 'gift',

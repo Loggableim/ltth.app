@@ -220,17 +220,17 @@ describe('WebGPU EmojiRain renderer parity', () => {
   test('adapter preserves gift, sticker, profile and superfan semantics', async () => {
     const { renderer, socketHandlers } = await loadAdapter({ mappings: { alice: '{{profilePicture}}' } });
 
-    socketHandlers['webgpu-emoji-rain:gift-balls']({ giftImageUrl: '/gift.webp', count: 1, size: 120 });
+    socketHandlers['webgpu-emoji-rain:gift-balls']({ giftImageUrl: 'https://p16-webcast.tiktokcdn.com/catalog-gift.gif', count: 1, size: 120 });
     socketHandlers['webgpu-emoji-rain:spawn']({ emoji: '/sticker.webp', reason: 'sticker', count: 1 });
-    socketHandlers['webgpu-emoji-rain:spawn']({ emoji: '💙', username: 'alice', profilePictureUrl: '/alice.webp', count: 1 });
+    socketHandlers['webgpu-emoji-rain:spawn']({ emoji: '💙', username: 'alice', profilePictureUrl: 'https://p16.tiktokcdn.com/alice.webp', count: 1 });
     socketHandlers['webgpu-emoji-rain:spawn']({ emoji: '🔥', reason: 'gift', burst: true, count: 1 });
     await flushAsyncWork();
 
     const spawns = renderer.spawn.mock.calls.map(([options]) => options);
     expect(spawns).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: 'gift', asset: '/gift.webp' }),
+      expect.objectContaining({ kind: 'gift', asset: '/api/webgpu-emoji-rain/asset?url=https%3A%2F%2Fp16-webcast.tiktokcdn.com%2Fcatalog-gift.gif' }),
       expect.objectContaining({ kind: 'sticker', asset: '/sticker.webp' }),
-      expect.objectContaining({ kind: 'profile', asset: '/alice.webp' }),
+      expect.objectContaining({ kind: 'profile', asset: '/api/webgpu-emoji-rain/avatar?url=https%3A%2F%2Fp16.tiktokcdn.com%2Falice.webp' }),
       expect.objectContaining({ kind: 'superfan', asset: '🔥' })
     ]));
   });
