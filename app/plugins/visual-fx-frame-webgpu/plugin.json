@@ -1,0 +1,39 @@
+{
+  "id": "visual-fx-frame-webgpu",
+  "name": "Visual FX Frame WEBGPU",
+  "version": "1.0.0",
+  "description": "Native WebGPU edition of Visual FX Frame with compute-driven effects, HDR bloom, adaptive quality, real-time preview, TikTok LIVE triggers, presets and flow integration.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "devStatus": "working-beta",
+  "icon": "/plugins/visual-fx-frame-webgpu/assets/branding/visual-fx-frame-webgpu-icon.png",
+  "logo": "/plugins/visual-fx-frame-webgpu/assets/branding/visual-fx-frame-webgpu-logo.png",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "database",
+    "tiktok-events"
+  ],
+  "features": [
+    "multiple-effect-modes",
+    "webgpu-compute-simulation",
+    "webgpu-indirect-rendering",
+    "hdr-bloom-pipeline",
+    "adaptive-quality",
+    "realistic-neon-hybrid-styles",
+    "obs-transparent-overlay",
+    "real-time-preview",
+    "tiktok-event-triggers",
+    "gift-catalog-rule-builder",
+    "trigger-presets",
+    "flow-integration",
+    "4k-support"
+  ],
+  "descriptions": {
+    "en": "Native WebGPU visual frame with compute-driven flames, particles, energy and lightning in Realistic, Neon and Hybrid styles.",
+    "de": "Nativer WebGPU-Effektrahmen mit Compute-Flammen, Partikeln, Energie und Blitzen in den Stilen Realistic, Neon und Hybrid.",
+    "es": "Marco visual WebGPU nativo con llamas, partículas, energía y rayos por cómputo en estilos Realistic, Neon e Hybrid.",
+    "fr": "Cadre visuel WebGPU natif avec flammes, particules, énergie et éclairs calculés dans les styles Realistic, Neon et Hybrid."
+  }
+}

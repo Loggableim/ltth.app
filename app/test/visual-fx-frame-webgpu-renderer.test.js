@@ -1,0 +1,108 @@
+const fs = require('fs');
+const path = require('path');
+
+const rendererRoot = path.join(__dirname, '..', 'plugins', 'visual-fx-frame-webgpu', 'renderer');
+const read = file => fs.readFileSync(path.join(rendererRoot, file), 'utf8');
+
+describe('Visual FX Frame WEBGPU native renderer', () => {
+  test('defines compute stages for fields, particles, and lightning', () => {
+    const shaders = require('../plugins/visual-fx-frame-webgpu/renderer/effect-pipelines');
+    const library = shaders.createShaderLibrary();
+
+    expect(library.compute).toContain('fn simulateField');
+    expect(library.compute).toContain('fn updateParticles');
+    expect(library.compute).toContain('fn buildLightning');
+    expect(library.compute).toContain('curlNoise');
+    expect(library.scene).toContain('fn sdFrame');
+    expect(library.scene).toContain('STYLE_REALISTIC');
+    expect(library.scene).toContain('STYLE_NEON');
+    expect(library.scene).toContain('STYLE_HYBRID');
+    expect(library.scene).toContain('EFFECT_FLAMES');
+    expect(library.scene).toContain('EFFECT_PARTICLES');
+    expect(library.scene).toContain('EFFECT_ENERGY');
+    expect(library.scene).toContain('EFFECT_LIGHTNING');
+  });
+
+  test('uses storage simulation, indirect draws, and HDR post-processing', () => {
+    const engineSource = read('webgpu-effects-engine.js');
+    const resourceSource = read('gpu-resources.js');
+    const postSource = read('hdr-post-processor.js');
+
+    expect(resourceSource).toContain('GPUBufferUsage.STORAGE');
+    expect(resourceSource).toContain('GPUBufferUsage.INDIRECT');
+    expect(engineSource).toContain('dispatchWorkgroups');
+    expect(engineSource).toContain('drawIndirect');
+    expect(postSource).toContain("format: 'rgba16float'");
+    expect(postSource).toContain('brightExtract');
+    expect(postSource).toContain('kawaseBlur');
+    expect(postSource).toContain('composite');
+    expect(postSource).toContain('premultiplied');
+    expect(postSource).toContain('setPipeline(this.pipelines.kawaseBlur)');
+    expect(postSource).toContain('bloomTexture');
+    expect(postSource).toContain('scene.rgb + bloom.rgb * post.intensity');
+  });
+
+  test('loads renderer modules in dependency order without a fallback backend', () => {
+    const overlay = read('index.html');
+    const resourcesIndex = overlay.indexOf('gpu-resources.js');
+    const shadersIndex = overlay.indexOf('effect-pipelines.js');
+    const postIndex = overlay.indexOf('hdr-post-processor.js');
+    const engineIndex = overlay.indexOf('webgpu-effects-engine.js');
+
+    expect(resourcesIndex).toBeGreaterThan(0);
+    expect(shadersIndex).toBeGreaterThan(resourcesIndex);
+    expect(postIndex).toBeGreaterThan(shadersIndex);
+    expect(engineIndex).toBeGreaterThan(postIndex);
+    expect(overlay).not.toMatch(/webgl|canvas-fallback/i);
+  });
+
+  test('stops after one failed device recovery attempt', async () => {
+    const WebGPUVisualFxEngine = require('../plugins/visual-fx-frame-webgpu/renderer/webgpu-effects-engine');
+    const statuses = [];
+    const engine = new WebGPUVisualFxEngine({ getContext: jest.fn() }, {
+      onStatus: status => statuses.push(status)
+    });
+    engine.init = jest.fn(async () => false);
+
+    await engine._handleDeviceLost({ message: 'first loss' });
+    await engine._handleDeviceLost({ message: 'second loss' });
+
+    expect(engine.init).toHaveBeenCalledTimes(1);
+    expect(statuses.map(status => status.state)).toEqual([
+      'device-lost', 'recovering', 'error', 'device-lost', 'error'
+    ]);
+    expect(engine.running).toBe(false);
+  });
+
+  test('exposes runtime metrics and deterministic trigger state', () => {
+    const WebGPUVisualFxEngine = require('../plugins/visual-fx-frame-webgpu/renderer/webgpu-effects-engine');
+    const engine = new WebGPUVisualFxEngine({ getContext: jest.fn() }, {
+      config: { effectType: 'flames', qualityMode: 'obs-safe', visualStyle: 'hybrid' }
+    });
+
+    engine.handleTrigger({ id: 'gift-1', type: 'effect-switch', effect: 'lightning', duration: 1000 });
+
+    expect(engine.activeTriggers).toHaveLength(1);
+    expect(engine.getMetrics()).toMatchObject({
+      backend: 'webgpu',
+      effectType: 'lightning',
+      visualStyle: 'hybrid',
+      qualityMode: 'obs-safe',
+      renderScale: 1
+    });
+    engine.clearTriggers();
+    expect(engine.activeTriggers).toEqual([]);
+  });
+
+  test('reports rolling p95 and slow-frame ratio for runtime acceptance', () => {
+    const WebGPUVisualFxEngine = require('../plugins/visual-fx-frame-webgpu/renderer/webgpu-effects-engine');
+    const engine = new WebGPUVisualFxEngine({ getContext: jest.fn() });
+    for (let index = 0; index < 113; index += 1) engine._updateMetrics(16, 0.2);
+    for (let index = 0; index < 7; index += 1) engine._updateMetrics(30, 0.2);
+
+    expect(engine.getMetrics()).toMatchObject({
+      p95FrameTimeMs: 30,
+      slowFrameRatio: 0.058
+    });
+  });
+});
