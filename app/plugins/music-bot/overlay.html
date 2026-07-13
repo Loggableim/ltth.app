@@ -930,7 +930,7 @@
         socket.on('musicbot:playback-stopped', handlePlaybackStopped);
         socket.on('musicbot:queue-update', handleQueueUpdate);
         socket.on('musicbot:volume-changed', () => {});
-        socket.on('musicbot:playback-sync', handleNowPlaying);
+        socket.on('musicbot:playback-sync', handlePlaybackSync);
         socket.on('musicbot:vote-skip-update', handleVoteSkipUpdate);
       }
 
@@ -943,6 +943,14 @@
         renderQueueExtras();
       }
 
+      function handlePlaybackSync(payload) {
+        if (!payload || !currentTrack) return;
+        const hasMatchingId = payload.id && currentTrack.id && payload.id === currentTrack.id;
+        const hasMatchingTitle = !payload.id && payload.title === currentTrack.title;
+        if (!hasMatchingId && !hasMatchingTitle) return;
+        handleNowPlaying({ ...payload, id: payload.id || currentTrack.id });
+      }
+
       function handleNowPlaying(payload) {
         if (!payload) { clearTrack(); return; }
         const duration = Number(payload.duration) || 0;
@@ -952,10 +960,13 @@
             ? Date.now() - positionSeconds * 1000
             : payload.startedAt || Date.now();
 
-        const isNewTrack = !currentTrack || currentTrack.title !== payload.title;
+        const isNewTrack = !currentTrack || (payload.id
+          ? currentTrack.id !== payload.id
+          : currentTrack.title !== payload.title);
         const prevState = state;
 
         currentTrack = {
+          id: payload.id || currentTrack?.id || null,
           title: payload.title || 'Unbekannter Titel',
           artist: payload.artist || '',
           requestedBy: payload.requestedBy || '',

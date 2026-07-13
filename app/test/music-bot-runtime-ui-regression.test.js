@@ -151,6 +151,24 @@ function bootMusicBotUi(options = {}) {
   return { dom, fetchMock, socketHandlers };
 }
 
+function bootMusicBotOverlay() {
+  const socketHandlers = {};
+  const html = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/overlay.html'), 'utf8');
+  const dom = new JSDOM(html, {
+    url: 'http://localhost:3000/plugins/music-bot/overlay.html?design=minimal&theme=default&position=bottom-left',
+    runScripts: 'dangerously',
+    beforeParse(window) {
+      window.io = () => ({
+        on: jest.fn((event, handler) => {
+          socketHandlers[event] = handler;
+        }),
+        emit: jest.fn()
+      });
+    }
+  });
+  return { dom, socketHandlers };
+}
+
 describe('Music Bot runtime and UI regressions', () => {
   let doms;
 
@@ -273,6 +291,30 @@ describe('Music Bot runtime and UI regressions', () => {
       plugin._stopPlaybackSync();
       setIntervalSpy.mockRestore();
     }
+  });
+
+  test('minimal overlay ignores a stale playback sync from a different title', () => {
+    const { dom, socketHandlers } = bootMusicBotOverlay();
+    doms.push(dom);
+
+    socketHandlers['musicbot:now-playing']({
+      id: 'active-track',
+      title: 'Active Song',
+      artist: 'Artist',
+      duration: 180,
+      startedAt: Date.now(),
+      state: 'playing'
+    });
+    socketHandlers['musicbot:playback-sync']({
+      title: 'Stale Song',
+      artist: 'Other Artist',
+      duration: 180,
+      position: 10,
+      state: 'playing'
+    });
+
+    expect(dom.window.document.getElementById('minimal-text').textContent).toContain('Active Song');
+    expect(dom.window.document.getElementById('minimal-text').textContent).not.toContain('Stale Song');
   });
 
   test('resolver config updates keep the bundled yt-dlp path for the default setting', () => {
