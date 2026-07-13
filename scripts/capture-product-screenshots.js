@@ -135,13 +135,32 @@ function waitForServer(child, baseUrl) {
   });
 }
 
-async function startIsolatedApp(profileName) {
+function prepareDocsPluginFixture(profileDir, guideId) {
+  if (guideId !== 'visual-fx-frame-webgpu') return null;
+  const sourceDir = path.join(REPO_ROOT, 'plugin-store', 'sources', guideId);
+  const fixtureRoot = path.join(profileDir, 'docs-plugin-fixture');
+  const fixtureDir = path.join(fixtureRoot, guideId);
+  const manifestPath = path.join(fixtureDir, 'plugin.json');
+  if (!fs.existsSync(path.join(sourceDir, 'plugin.json'))) {
+    throw new Error(`Docs capture fixture is missing its plugin source: ${sourceDir}`);
+  }
+  fs.cpSync(sourceDir, fixtureDir, { recursive: true });
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  // Store packages only become enabled after installation. The copied fixture
+  // is temporary and must load so the capture follows its real UI route.
+  manifest.enabled = true;
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  return fixtureRoot;
+}
+
+async function startIsolatedApp(profileName, guideId = null) {
   if (!START_APP) {
     if (!EXTERNAL_BASE_URL) throw new Error('SCREENSHOT_BASE_URL is required when SCREENSHOT_START_APP=false');
     return { baseUrl: EXTERNAL_BASE_URL, child: null, profileDir: null };
   }
   const port = await freePort();
   const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), `ltth-docs-capture-${profileName}-`));
+  const docsCapturePluginDir = COLLECTION === 'docs' ? prepareDocsPluginFixture(profileDir, guideId) : null;
   const child = spawn(process.execPath, [path.join(REPO_ROOT, 'app', 'server.js')], {
     cwd: path.join(REPO_ROOT, 'app'),
     env: {
@@ -153,7 +172,8 @@ async function startIsolatedApp(profileName) {
       LTTH_DISABLE_TIKTOK_AUTO_RECONNECT: 'true',
       LTTH_NO_BROWSER: 'true',
       DISABLE_SWAGGER: 'true',
-      LTTH_BIND_ADDRESS: '127.0.0.1'
+      LTTH_BIND_ADDRESS: '127.0.0.1',
+      ...(docsCapturePluginDir ? { LTTH_DOCS_CAPTURE_PLUGIN_DIR: docsCapturePluginDir } : {})
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -454,7 +474,7 @@ async function captureDocs(spec, assets, locales) {
         let page;
         try {
           console.log(`Capturing ${locale}/${guideId} (${guideAssets.length} steps)`);
-          app = await startIsolatedApp(`${guideId}-${locale}`);
+          app = await startIsolatedApp(`${guideId}-${locale}`, guideId);
           page = await createCapturePage(locale);
           for (const asset of guideAssets) {
             try {
@@ -507,6 +527,33 @@ async function captureProduct(spec, assets, locales) {
   return { outputs, failures };
 }
 
+function compatibleDocsOutput(output, expectedById) {
+  const asset = expectedById.get(output.id);
+  if (!asset || !DOCS_LOCALES.includes(output.locale)) return false;
+  return output.guideId === asset.guideId
+    && output.stepId === asset.stepId
+    && output.route === asset.route
+    && output.selector === asset.selector
+    && JSON.stringify(output.action) === JSON.stringify(asset.action)
+    && output.focus?.label === asset.focusText[output.locale]
+    && output.state?.lang === output.locale
+    && output.state?.i18n === output.locale
+    && output.state?.theme === 'cid';
+}
+
+function mergePartialDocsOutputs(spec, newOutputs) {
+  const expectedById = new Map(spec.assets.map((asset) => [asset.id, asset]));
+  const byKey = new Map();
+  if (fs.existsSync(MANIFEST_PATH)) {
+    const existing = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
+    for (const output of existing.outputs || []) {
+      if (compatibleDocsOutput(output, expectedById)) byKey.set(`${output.locale}:${output.id}`, output);
+    }
+  }
+  for (const output of newOutputs) byKey.set(`${output.locale}:${output.id}`, output);
+  return DOCS_LOCALES.flatMap((locale) => spec.assets.map((asset) => byKey.get(`${locale}:${asset.id}`)).filter(Boolean));
+}
+
 async function capture() {
   const fullSpec = COLLECTION === 'docs' ? buildDocsSpec(REPO_ROOT) : buildSpec(REPO_ROOT);
   const locales = (process.env.SCREENSHOT_LANGS || (COLLECTION === 'docs' ? DOCS_LOCALES : PRODUCT_LOCALES).join(','))
@@ -520,6 +567,8 @@ async function capture() {
   if (!assets.length) throw new Error('No capture assets selected');
 
   const result = COLLECTION === 'docs' ? await captureDocs(fullSpec, assets, locales) : await captureProduct(fullSpec, assets, locales);
+  const partialDocsCapture = COLLECTION === 'docs' && (requestedIds.length > 0 || limit > 0 || locales.length !== DOCS_LOCALES.length);
+  const outputs = partialDocsCapture ? mergePartialDocsOutputs(fullSpec, result.outputs) : result.outputs;
   const fullHash = specHash(fullSpec);
   const manifest = {
     ...fullSpec,
@@ -529,11 +578,11 @@ async function capture() {
     specHash: fullHash,
     requestedLocales: locales,
     requestedIds: assets.map((asset) => asset.id),
-    outputs: result.outputs,
+    outputs,
     failures: result.failures
   };
   fs.writeFileSync(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
-  console.log(`Captured ${result.outputs.length} screenshots; ${result.failures.length} failed.`);
+  console.log(`Captured ${result.outputs.length} screenshots; ${result.failures.length} failed. Manifest now contains ${outputs.length} current captures.`);
   console.log(`Manifest: ${path.relative(REPO_ROOT, MANIFEST_PATH)}`);
   if (result.failures.length) process.exitCode = 1;
 }

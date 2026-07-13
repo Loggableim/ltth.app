@@ -13,6 +13,8 @@ function sourceFileFor(route) {
   if (route === '/clarityhud/ui') return path.join(ROOT, 'app', 'plugins', 'clarityhud', 'ui', 'main.html');
   if (route === '/overlay/clarity/full') return path.join(ROOT, 'app', 'plugins', 'clarityhud', 'overlays', 'full.html');
   if (route === '/webgpu-fireworks/overlay') return path.join(ROOT, 'app', 'plugins', 'webgpu-fireworks', 'overlay.html');
+  if (route === '/visual-fx-frame-webgpu/ui') return path.join(ROOT, 'plugin-store', 'sources', 'visual-fx-frame-webgpu', 'ui', 'settings.html');
+  if (route === '/visual-fx-frame-webgpu/overlay') return path.join(ROOT, 'plugin-store', 'sources', 'visual-fx-frame-webgpu', 'renderer', 'index.html');
   if (route.startsWith('/dashboard.html')) return path.join(ROOT, 'app', 'public', 'dashboard.html');
   return path.join(ROOT, 'app', route.replace(/^\//, ''));
 }

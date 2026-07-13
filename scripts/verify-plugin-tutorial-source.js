@@ -6,9 +6,11 @@ const path = require('path');
 const { LOCALES, buildGuides } = require('./plugin-tutorial-source');
 
 const ROOT = path.resolve(__dirname, '..');
-const manifests = fs.readdirSync(path.join(ROOT, 'app', 'plugins'), { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(ROOT, 'app', 'plugins', entry.name, 'plugin.json')))
-  .map((entry) => JSON.parse(fs.readFileSync(path.join(ROOT, 'app', 'plugins', entry.name, 'plugin.json'), 'utf8')));
+const manifestRoots = [path.join(ROOT, 'app', 'plugins'), path.join(ROOT, 'plugin-store', 'sources')];
+const manifests = manifestRoots.flatMap((pluginRoot) => fs.readdirSync(pluginRoot, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(pluginRoot, entry.name, 'plugin.json')))
+  .map((entry) => JSON.parse(fs.readFileSync(path.join(pluginRoot, entry.name, 'plugin.json'), 'utf8'))))
+  .filter((manifest) => manifest.id !== 'store-admin');
 const source = fs.readFileSync(path.join(__dirname, 'plugin-tutorial-source.js'), 'utf8');
 const guides = buildGuides(ROOT);
 
@@ -17,6 +19,7 @@ assert.ok(!source.includes('function stepCopy('), 'step copy must not be selecte
 assert.ok(!source.includes('function buildSteps('), 'capture steps must not be built from a shared index-based template');
 assert.ok(!source.includes('return `#${stepId}`;'), 'capture selectors must come from verified UI anchors, not generated step ids');
 assert.strictEqual(guides.length, manifests.length + 1, 'every manifest plus Store Admin needs one guide');
+assert.ok(guides.some((guide) => guide.id === 'visual-fx-frame-webgpu'), 'Visual FX Frame WEBGPU needs a guide');
 const workflowSignatures = new Set();
 const SAFE_ACTION_TYPES = new Set([
   'open-plugin-manager',

@@ -581,7 +581,14 @@ const leaderboard = new Leaderboard(db, io, activeProfile); // Pass streamer_id 
 logger.info(`✅ Leaderboard initialized with streamer scope: ${activeProfile}`);
 
 // Plugin-System initialisieren
-const pluginsDir = path.join(__dirname, 'plugins');
+// A docs capture may mount one throwaway plugin fixture. Normal LTTH launches
+// always retain the shipped plugin directory.
+const docsCapturePluginDir = process.env.LTTH_DOCS_CAPTURE === 'true'
+    ? process.env.LTTH_DOCS_CAPTURE_PLUGIN_DIR
+    : '';
+const pluginsDir = docsCapturePluginDir
+    ? path.resolve(docsCapturePluginDir)
+    : path.join(__dirname, 'plugins');
 const pluginLoader = new PluginLoader(pluginsDir, app, io, db, logger, configPathManager, activeProfile);
 logger.info('🔌 Plugin Loader initialized');
 
@@ -3894,7 +3901,7 @@ function writeObsOverlayWrapper(resolvedPort) {
         // Register static file serving AFTER plugins are loaded
         // This ensures plugin-registered routes take precedence over static file serving
         
-        app.use('/plugins', express.static(path.join(__dirname, 'plugins')));
+        app.use('/plugins', express.static(pluginsDir));
         logger.info('📂 Plugin static files served from /plugins/* with global OBS cache protection');
 
         if (loadedCount > 0) {
@@ -3945,7 +3952,7 @@ function writeObsOverlayWrapper(resolvedPort) {
             logger.info('ℹ️  No plugins found in /plugins directory');
             
             // Still register static file serving even with no plugins.
-            app.use('/plugins', express.static(path.join(__dirname, 'plugins')));
+            app.use('/plugins', express.static(pluginsDir));
             iftttEngine.setupTimerTriggers();
             logger.info('IFTTT timer triggers initialized');
             logger.info('📂 Plugin static files served from /plugins/* with global OBS cache protection');

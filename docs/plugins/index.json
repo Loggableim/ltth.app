@@ -1224,6 +1224,42 @@
     }
   },
   {
+    "id": "visual-fx-frame-webgpu",
+    "name": "Visual FX Frame WEBGPU",
+    "category": "plugin",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": false,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
+      "en": "/screenshots/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
+      "es": "/screenshots/es/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
+      "fr": "/screenshots/fr/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Visual FX Frame WEBGPU",
+        "summary": "Visual FX Frame WEBGPU richtet WebGPU-Rahmen, Premium-Stile und Qualitätsprofil ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
+        "firstResult": "der Rahmen wird gerendert und die Qualitätsanzeige bleibt im Testprofil"
+      },
+      "en": {
+        "title": "Visual FX Frame WEBGPU",
+        "summary": "Visual FX Frame WEBGPU configures WebGPU frame, premium styles, and quality profile with a safe local check instead of a LIVE trigger.",
+        "firstResult": "the frame is rendered and the quality indicator stays in the test profile"
+      },
+      "es": {
+        "title": "Visual FX Frame WEBGPU",
+        "summary": "Visual FX Frame WEBGPU configura marco WebGPU, estilos premium y perfil de calidad mediante una comprobación local segura, no un disparador LIVE.",
+        "firstResult": "el marco se renderiza y el indicador de calidad permanece en el perfil de prueba"
+      },
+      "fr": {
+        "title": "Visual FX Frame WEBGPU",
+        "summary": "Visual FX Frame WEBGPU configure cadre WebGPU, styles premium et profil de qualité avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
+        "firstResult": "le cadre est rendu et l’indicateur de qualité reste dans le profil de test"
+      }
+    }
+  },
+  {
     "id": "weather-control",
     "name": "Weather Control",
     "category": "plugin",

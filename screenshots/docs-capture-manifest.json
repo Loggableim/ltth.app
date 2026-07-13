@@ -6476,6 +6476,210 @@
       }
     },
     {
+      "id": "visual-fx-frame-webgpu__webgpu-frame-card",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "webgpu-frame-card",
+      "canonical": "/screenshots/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#webgpuRuntimeState",
+      "action": {
+        "type": "open-plugin-surface",
+        "stepId": "webgpu-frame-card"
+      },
+      "focusText": {
+        "de": "Webgpu Frame Card im Testprofil konfigurieren",
+        "en": "Configure Webgpu Frame Card in the test profile",
+        "es": "Configura Webgpu Frame Card en el perfil de prueba",
+        "fr": "Configurez Webgpu Frame Card dans le profil de test"
+      },
+      "expected": {
+        "de": "Die passende Plugin-Oberfläche ist eindeutig sichtbar.",
+        "en": "The relevant plugin surface is visibly identified.",
+        "es": "La superficie correspondiente del plugin queda identificada.",
+        "fr": "La surface de plugin correspondante est clairement visible."
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "visual-fx-frame-webgpu__texture-select",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "texture-select",
+      "canonical": "/screenshots/docs/plugins/visual-fx-frame-webgpu/texture-select.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#visualStyle",
+      "action": {
+        "type": "set-demo-value",
+        "stepId": "texture-select"
+      },
+      "focusText": {
+        "de": "Texture Select im Testprofil konfigurieren",
+        "en": "Configure Texture Select in the test profile",
+        "es": "Configura Texture Select en el perfil de prueba",
+        "fr": "Configurez Texture Select dans le profil de test"
+      },
+      "expected": {
+        "de": "Der Demo-Wert ist sichtbar und kann vor dem Test geprüft werden.",
+        "en": "The demo value is visible and can be reviewed before testing.",
+        "es": "El valor demo queda visible y puede revisarse antes de probar.",
+        "fr": "La valeur démo est visible et peut être vérifiée avant le test."
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "visual-fx-frame-webgpu__quality-profile",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "quality-profile",
+      "canonical": "/screenshots/docs/plugins/visual-fx-frame-webgpu/quality-profile.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#qualityMode",
+      "action": {
+        "type": "set-demo-value",
+        "stepId": "quality-profile"
+      },
+      "focusText": {
+        "de": "Quality Profile im Testprofil konfigurieren",
+        "en": "Configure Quality Profile in the test profile",
+        "es": "Configura Quality Profile en el perfil de prueba",
+        "fr": "Configurez Quality Profile dans le profil de test"
+      },
+      "expected": {
+        "de": "Der Demo-Wert ist sichtbar und kann vor dem Test geprüft werden.",
+        "en": "The demo value is visible and can be reviewed before testing.",
+        "es": "El valor demo queda visible y puede revisarse antes de probar.",
+        "fr": "La valeur démo est visible et peut être vérifiée avant le test."
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "visual-fx-frame-webgpu__gpu-frame-preview",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "gpu-frame-preview",
+      "canonical": "/screenshots/docs/plugins/visual-fx-frame-webgpu/gpu-frame-preview.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#previewToggle",
+      "action": {
+        "type": "run-local-preview",
+        "stepId": "gpu-frame-preview"
+      },
+      "focusText": {
+        "de": "GPU Frame Preview lokal testen",
+        "en": "Test GPU Frame Preview locally",
+        "es": "Prueba GPU Frame Preview localmente",
+        "fr": "Testez GPU Frame Preview localement"
+      },
+      "expected": {
+        "de": "der Rahmen wird gerendert und die Qualitätsanzeige bleibt im Testprofil",
+        "en": "the frame is rendered and the quality indicator stays in the test profile",
+        "es": "el marco se renderiza y el indicador de calidad permanece en el perfil de prueba",
+        "fr": "le cadre est rendu et l’indicateur de qualité reste dans le profil de test"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "visual-fx-frame-webgpu__frame-obs-source",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "frame-obs-source",
+      "canonical": "/screenshots/docs/plugins/visual-fx-frame-webgpu/frame-obs-source.png",
+      "route": "/visual-fx-frame-webgpu/overlay",
+      "selector": "#visualFxCanvas",
+      "action": {
+        "type": "open-overlay-preview",
+        "stepId": "frame-obs-source"
+      },
+      "focusText": {
+        "de": "Frame OBS Source als Overlay-Vorschau oeffnen",
+        "en": "Open Frame OBS Source as an overlay preview",
+        "es": "Abre Frame OBS Source como vista previa de overlay",
+        "fr": "Ouvrez Frame OBS Source comme apercu overlay"
+      },
+      "expected": {
+        "de": "der Rahmen wird gerendert und die Qualitätsanzeige bleibt im Testprofil",
+        "en": "the frame is rendered and the quality indicator stays in the test profile",
+        "es": "el marco se renderiza y el indicador de calidad permanece en el perfil de prueba",
+        "fr": "le cadre est rendu et l’indicateur de qualité reste dans le profil de test"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "visual-fx-frame-webgpu__frame-reset",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "frame-reset",
+      "canonical": "/screenshots/docs/plugins/visual-fx-frame-webgpu/frame-reset.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#savePresetBtn",
+      "action": {
+        "type": "reset-demo-state",
+        "stepId": "frame-reset"
+      },
+      "focusText": {
+        "de": "Frame Reset sicher zuruecksetzen",
+        "en": "Reset Frame Reset safely",
+        "es": "Restablece Frame Reset con seguridad",
+        "fr": "Reinitialisez Frame Reset en securite"
+      },
+      "expected": {
+        "de": "Das Testprofil bleibt ohne produktive Auswirkung.",
+        "en": "The test profile remains free of production impact.",
+        "es": "El perfil de prueba permanece sin impacto de producción.",
+        "fr": "Le profil de test reste sans impact de production."
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
       "id": "weather-control__weather-card",
       "guideId": "weather-control",
       "stepId": "weather-card",
@@ -7089,8 +7293,8 @@
     }
   ],
   "sourceUrl": "isolated-local-process",
-  "capturedAt": "2026-07-13T08:41:56.611Z",
-  "specHash": "aabfbbeec59a2f21baa45b967e8c3fa971900b9a5ba7402076548c07be2c72b6",
+  "capturedAt": "2026-07-13T16:30:06.345Z",
+  "specHash": "7533e0fe10ded1ac86eb9b7c2bed1f08ff249b0d6c240bf7f96960a6adcf4667",
   "requestedLocales": [
     "de",
     "en",
@@ -7098,214 +7302,12 @@
     "fr"
   ],
   "requestedIds": [
-    "advanced-timer__timer-card",
-    "advanced-timer__timer-duration",
-    "advanced-timer__start-signal",
-    "advanced-timer__countdown-preview",
-    "advanced-timer__timer-overlay",
-    "advanced-timer__timer-reset",
-    "animazingpal__avatar-card",
-    "animazingpal__avatar-event-map",
-    "animazingpal__placeholder-provider",
-    "animazingpal__sample-event",
-    "animazingpal__mapping-review",
-    "api-bridge__bridge-info",
-    "api-bridge__actions-list",
-    "api-bridge__request-example",
-    "api-bridge__event-stream-check",
-    "api-bridge__bridge-review",
-    "chatango__chatango-card",
-    "chatango__room-placeholder",
-    "chatango__widget-position",
-    "chatango__widget-preview",
-    "chatango__chatango-review",
-    "clarityhud__hud-card",
-    "clarityhud__hud-modules",
-    "clarityhud__chat-region",
-    "clarityhud__full-hud-preview",
-    "clarityhud__obs-hud-source",
-    "clarityhud__hud-reset",
-    "coinbattle__coinbattle-card",
-    "coinbattle__coin-values",
-    "coinbattle__battle-mode",
-    "coinbattle__demo-match",
-    "coinbattle__battle-overlay",
-    "coinbattle__match-reset",
-    "config-import__backup-card",
-    "config-import__export-scope",
-    "config-import__test-export",
-    "config-import__restore-inspection",
-    "config-import__backup-cleanup",
-    "data-source__source-card",
-    "data-source__local-source",
-    "data-source__field-map",
-    "data-source__data-preview",
-    "data-source__source-review",
-    "gift-catalog__catalog-card",
-    "gift-catalog__catalog-filter",
-    "gift-catalog__coin-threshold",
-    "gift-catalog__gift-preview",
-    "gift-catalog__catalog-review",
-    "emoji-rain__emoji-card",
-    "emoji-rain__rain-preset",
-    "emoji-rain__gift-map",
-    "emoji-rain__rain-test",
-    "emoji-rain__rain-overlay",
-    "emoji-rain__rain-reset",
-    "fireworks__fireworks-card",
-    "fireworks__effect-profile",
-    "fireworks__audio-limit",
-    "fireworks__fireworks-test",
-    "fireworks__fireworks-overlay",
-    "fireworks__fireworks-reset",
-    "gcce__command-card",
-    "gcce__command-name",
-    "gcce__permission-rule",
-    "gcce__command-dry-run",
-    "gcce__command-review",
-    "openshock__safety-card",
-    "openshock__safe-limit",
-    "openshock__device-placeholder",
-    "openshock__shock-simulation",
-    "openshock__shock-overlay",
-    "openshock__safety-reset",
-    "interactive-story__story-card",
-    "interactive-story__story-mode",
-    "interactive-story__vote-rule",
-    "interactive-story__local-decision",
-    "interactive-story__story-overlay",
-    "interactive-story__story-reset",
-    "goals__goals-card",
-    "goals__goal-target",
-    "goals__reset-rule",
-    "goals__progress-pulse",
-    "goals__goal-overlay",
-    "goals__goal-reset",
-    "store-admin__store-card",
-    "store-admin__official-source",
-    "store-admin__package-status",
-    "store-admin__store-inspection",
-    "store-admin__store-review",
-    "game-engine__engine-card",
-    "game-engine__game-mode",
-    "game-engine__queue-rule",
-    "game-engine__test-round",
-    "game-engine__game-hud",
-    "game-engine__queue-reset",
-    "minecraft-connect__minecraft-card",
-    "minecraft-connect__offline-address",
-    "minecraft-connect__event-format",
-    "minecraft-connect__offline-message",
-    "minecraft-connect__minecraft-review",
-    "multicam__multicam-card",
-    "multicam__camera-source",
-    "multicam__scene-rule",
-    "multicam__scene-dry-run",
-    "multicam__multicam-review",
-    "music-bot__music-card",
-    "music-bot__mpv-path",
-    "music-bot__queue-rule",
-    "music-bot__sample-queue",
-    "music-bot__music-overlay",
-    "music-bot__queue-reset",
-    "osc-bridge__osc-card",
-    "osc-bridge__loopback-host",
-    "osc-bridge__udp-port",
-    "osc-bridge__loopback-check",
-    "osc-bridge__osc-review",
-    "quiz-show__quiz-card",
-    "quiz-show__question-pool",
-    "quiz-show__answer-window",
-    "quiz-show__sample-question",
-    "quiz-show__quiz-overlay",
-    "quiz-show__quiz-reset",
-    "sidekick__sidekick-card",
-    "sidekick__assistant-mode",
-    "sidekick__context-source",
-    "sidekick__local-request",
-    "sidekick__sidekick-overlay",
-    "sidekick__sidekick-reset",
-    "soundboard__soundboard-card",
-    "soundboard__sound-slot",
-    "soundboard__volume-rule",
-    "soundboard__muted-sound-test",
-    "soundboard__soundboard-review",
-    "spotlight__spotlight-card",
-    "spotlight__event-style",
-    "spotlight__display-duration",
-    "spotlight__chatter-preview",
-    "spotlight__spotlight-overlay",
-    "spotlight__spotlight-reset",
-    "streamalchemy__alchemy-card",
-    "streamalchemy__automation-rule",
-    "streamalchemy__action-chain",
-    "streamalchemy__rule-dry-run",
-    "streamalchemy__alchemy-overlay",
-    "streamalchemy__rule-reset",
-    "stt-ticker__ticker-card",
-    "stt-ticker__subtitle-language",
-    "stt-ticker__ticker-style",
-    "stt-ticker__sample-sentence",
-    "stt-ticker__ticker-overlay",
-    "stt-ticker__ticker-reset",
-    "talking-heads__heads-card",
-    "talking-heads__character-select",
-    "talking-heads__speech-map",
-    "talking-heads__text-preview",
-    "talking-heads__heads-overlay",
-    "talking-heads__heads-reset",
-    "tts__tts-card",
-    "tts__voice-select",
-    "tts__moderation-filter",
-    "tts__muted-voice-preview",
-    "tts__tts-review",
-    "thermal-printer__printer-card",
-    "thermal-printer__offline-profile",
-    "thermal-printer__encoding-rule",
-    "thermal-printer__queue-test",
-    "thermal-printer__printer-review",
-    "toptier__tier-card",
-    "toptier__ranking-rule",
-    "toptier__tier-threshold",
-    "toptier__rank-preview",
-    "toptier__tier-overlay",
-    "toptier__tier-reset",
-    "vdoninja__ninja-card",
-    "vdoninja__placeholder-room",
-    "vdoninja__guest-layout",
-    "vdoninja__browser-preview",
-    "vdoninja__obs-guest-source",
-    "vdoninja__ninja-reset",
-    "milestone-leaderboard__xp-card",
-    "milestone-leaderboard__xp-rule",
-    "milestone-leaderboard__milestone",
-    "milestone-leaderboard__xp-pulse",
-    "milestone-leaderboard__leaderboard-overlay",
-    "milestone-leaderboard__xp-reset",
-    "flame-overlay__frame-card",
-    "flame-overlay__frame-style",
-    "flame-overlay__frame-intensity",
-    "flame-overlay__frame-preview",
-    "flame-overlay__frame-obs-source",
-    "flame-overlay__frame-reset",
-    "weather-control__weather-card",
-    "weather-control__weather-effect",
-    "weather-control__lifecycle-rule",
-    "weather-control__weather-pulse",
-    "weather-control__weather-overlay",
-    "weather-control__weather-reset",
-    "webgpu-emoji-rain__gpu-rain-card",
-    "webgpu-emoji-rain__gpu-preset",
-    "webgpu-emoji-rain__asset-rule",
-    "webgpu-emoji-rain__gpu-rain-test",
-    "webgpu-emoji-rain__gpu-rain-overlay",
-    "webgpu-emoji-rain__gpu-rain-reset",
-    "webgpu-fireworks__gpu-fireworks-card",
-    "webgpu-fireworks__gpu-quality",
-    "webgpu-fireworks__follower-trigger",
-    "webgpu-fireworks__gpu-fireworks-test",
-    "webgpu-fireworks__gpu-fireworks-overlay",
-    "webgpu-fireworks__gpu-fireworks-reset"
+    "visual-fx-frame-webgpu__webgpu-frame-card",
+    "visual-fx-frame-webgpu__texture-select",
+    "visual-fx-frame-webgpu__quality-profile",
+    "visual-fx-frame-webgpu__gpu-frame-preview",
+    "visual-fx-frame-webgpu__frame-obs-source",
+    "visual-fx-frame-webgpu__frame-reset"
   ],
   "outputs": [
     {
@@ -13933,6 +13935,198 @@
       },
       "sha256": "cbb163234b82d43b12b8bb7c113aba8fe126d153c2c1c16a983a7d2995d63d61",
       "bytes": 82197
+    },
+    {
+      "locale": "de",
+      "id": "visual-fx-frame-webgpu__webgpu-frame-card",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "webgpu-frame-card",
+      "path": "screenshots/de/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#webgpuRuntimeState",
+      "action": {
+        "type": "open-plugin-surface",
+        "stepId": "webgpu-frame-card"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#webgpuRuntimeState",
+        "text": "initializing",
+        "label": "Webgpu Frame Card im Testprofil konfigurieren"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=de"
+      },
+      "sha256": "e1c864373ff14c2f23f6d975d727dae1f87a33e5977047b02d4bcf746578ce0f",
+      "bytes": 146833
+    },
+    {
+      "locale": "de",
+      "id": "visual-fx-frame-webgpu__texture-select",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "texture-select",
+      "path": "screenshots/de/docs/plugins/visual-fx-frame-webgpu/texture-select.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#visualStyle",
+      "action": {
+        "type": "set-demo-value",
+        "stepId": "texture-select"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#visualStyle",
+        "text": "Realistic\nPremium Neon\nHybrid",
+        "label": "Texture Select im Testprofil konfigurieren"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=de"
+      },
+      "sha256": "71ae950314850a61d8063adef1fcb20789243455151f30a30afa2aa92a60f360",
+      "bytes": 148727
+    },
+    {
+      "locale": "de",
+      "id": "visual-fx-frame-webgpu__quality-profile",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "quality-profile",
+      "path": "screenshots/de/docs/plugins/visual-fx-frame-webgpu/quality-profile.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#qualityMode",
+      "action": {
+        "type": "set-demo-value",
+        "stepId": "quality-profile"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#qualityMode",
+        "text": "OBS-safe\nMax Quality\nLow Load",
+        "label": "Quality Profile im Testprofil konfigurieren"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=de"
+      },
+      "sha256": "f235fbe0799acd0006a55979d4aa2fdd7250d992b04ad99090278f1a63f9cd11",
+      "bytes": 149061
+    },
+    {
+      "locale": "de",
+      "id": "visual-fx-frame-webgpu__gpu-frame-preview",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "gpu-frame-preview",
+      "path": "screenshots/de/docs/plugins/visual-fx-frame-webgpu/gpu-frame-preview.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#previewToggle",
+      "action": {
+        "type": "run-local-preview",
+        "stepId": "gpu-frame-preview"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#previewToggle",
+        "text": "▶️ Vorschau starten",
+        "label": "GPU Frame Preview lokal testen"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=de"
+      },
+      "sha256": "af257807269bd6dc9de0bbe4ec5cde4a50bc5456d57e10817ba25bebf5f6f186",
+      "bytes": 85619
+    },
+    {
+      "locale": "de",
+      "id": "visual-fx-frame-webgpu__frame-obs-source",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "frame-obs-source",
+      "path": "screenshots/de/docs/plugins/visual-fx-frame-webgpu/frame-obs-source.png",
+      "route": "/visual-fx-frame-webgpu/overlay",
+      "selector": "#visualFxCanvas",
+      "action": {
+        "type": "open-overlay-preview",
+        "stepId": "frame-obs-source"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#visualFxCanvas",
+        "text": "",
+        "label": "Frame OBS Source als Overlay-Vorschau oeffnen"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/overlay?lang=de"
+      },
+      "sha256": "9cf842bfab9a0cc685d34eee447d80769a0c79a11d00dd12c669d86537fe218c",
+      "bytes": 9415
+    },
+    {
+      "locale": "de",
+      "id": "visual-fx-frame-webgpu__frame-reset",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "frame-reset",
+      "path": "screenshots/de/docs/plugins/visual-fx-frame-webgpu/frame-reset.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#savePresetBtn",
+      "action": {
+        "type": "reset-demo-state",
+        "stepId": "frame-reset"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#savePresetBtn",
+        "text": "💾 Speichern",
+        "label": "Frame Reset sicher zuruecksetzen"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "de",
+        "i18n": "de",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=de"
+      },
+      "sha256": "c860876f4bfcc32cea289bd1dd9e43633695ad4df80e582630b4cb3441055155",
+      "bytes": 81950
     },
     {
       "locale": "de",
@@ -21158,6 +21352,198 @@
     },
     {
       "locale": "en",
+      "id": "visual-fx-frame-webgpu__webgpu-frame-card",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "webgpu-frame-card",
+      "path": "screenshots/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#webgpuRuntimeState",
+      "action": {
+        "type": "open-plugin-surface",
+        "stepId": "webgpu-frame-card"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#webgpuRuntimeState",
+        "text": "initializing",
+        "label": "Configure Webgpu Frame Card in the test profile"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=en"
+      },
+      "sha256": "a09e99dd1650a726b2f04eea236ba0d393d916fcec63729cfb488be31296d8bd",
+      "bytes": 146880
+    },
+    {
+      "locale": "en",
+      "id": "visual-fx-frame-webgpu__texture-select",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "texture-select",
+      "path": "screenshots/docs/plugins/visual-fx-frame-webgpu/texture-select.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#visualStyle",
+      "action": {
+        "type": "set-demo-value",
+        "stepId": "texture-select"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#visualStyle",
+        "text": "Realistic\nPremium Neon\nHybrid",
+        "label": "Configure Texture Select in the test profile"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=en"
+      },
+      "sha256": "7dced11843761d63aa59964ad17c70c06cbe45535fda545a29978ee870bbf980",
+      "bytes": 148824
+    },
+    {
+      "locale": "en",
+      "id": "visual-fx-frame-webgpu__quality-profile",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "quality-profile",
+      "path": "screenshots/docs/plugins/visual-fx-frame-webgpu/quality-profile.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#qualityMode",
+      "action": {
+        "type": "set-demo-value",
+        "stepId": "quality-profile"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#qualityMode",
+        "text": "OBS-safe\nMax Quality\nLow Load",
+        "label": "Configure Quality Profile in the test profile"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=en"
+      },
+      "sha256": "2332bb453e171bc079eabe54060d2eda12bb6b9144e465afa8656a17d862f67b",
+      "bytes": 148930
+    },
+    {
+      "locale": "en",
+      "id": "visual-fx-frame-webgpu__gpu-frame-preview",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "gpu-frame-preview",
+      "path": "screenshots/docs/plugins/visual-fx-frame-webgpu/gpu-frame-preview.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#previewToggle",
+      "action": {
+        "type": "run-local-preview",
+        "stepId": "gpu-frame-preview"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#previewToggle",
+        "text": "▶️ Vorschau starten",
+        "label": "Test GPU Frame Preview locally"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=en"
+      },
+      "sha256": "2c6dbd33273fd9fb43bdeffdbbda9123dd759f5d7aceb4e485b297214450fd12",
+      "bytes": 85617
+    },
+    {
+      "locale": "en",
+      "id": "visual-fx-frame-webgpu__frame-obs-source",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "frame-obs-source",
+      "path": "screenshots/docs/plugins/visual-fx-frame-webgpu/frame-obs-source.png",
+      "route": "/visual-fx-frame-webgpu/overlay",
+      "selector": "#visualFxCanvas",
+      "action": {
+        "type": "open-overlay-preview",
+        "stepId": "frame-obs-source"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#visualFxCanvas",
+        "text": "",
+        "label": "Open Frame OBS Source as an overlay preview"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/overlay?lang=en"
+      },
+      "sha256": "efc6b6665fb12b41f03651e507188e49f0870e3c092807bf410a5013cc5e1226",
+      "bytes": 9460
+    },
+    {
+      "locale": "en",
+      "id": "visual-fx-frame-webgpu__frame-reset",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "frame-reset",
+      "path": "screenshots/docs/plugins/visual-fx-frame-webgpu/frame-reset.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#savePresetBtn",
+      "action": {
+        "type": "reset-demo-state",
+        "stepId": "frame-reset"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#savePresetBtn",
+        "text": "💾 Speichern",
+        "label": "Reset Frame Reset safely"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "en",
+        "i18n": "en",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=en"
+      },
+      "sha256": "b03d504a836f5cf4f9ce3474aa54bb30f2387706bbdf9aafa99cc6436b617dd8",
+      "bytes": 81628
+    },
+    {
+      "locale": "en",
       "id": "weather-control__weather-card",
       "guideId": "weather-control",
       "stepId": "weather-card",
@@ -28377,6 +28763,198 @@
       },
       "sha256": "e43314d54766833ed24731aa40ac1cc5bfa5a799b4d2712ba38374d0026cd29f",
       "bytes": 82341
+    },
+    {
+      "locale": "es",
+      "id": "visual-fx-frame-webgpu__webgpu-frame-card",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "webgpu-frame-card",
+      "path": "screenshots/es/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#webgpuRuntimeState",
+      "action": {
+        "type": "open-plugin-surface",
+        "stepId": "webgpu-frame-card"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#webgpuRuntimeState",
+        "text": "initializing",
+        "label": "Configura Webgpu Frame Card en el perfil de prueba"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=es"
+      },
+      "sha256": "cd004ea7326e3c281563e387ed7be5e656aa0e83b6663c50108b4745dc1c2da3",
+      "bytes": 146616
+    },
+    {
+      "locale": "es",
+      "id": "visual-fx-frame-webgpu__texture-select",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "texture-select",
+      "path": "screenshots/es/docs/plugins/visual-fx-frame-webgpu/texture-select.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#visualStyle",
+      "action": {
+        "type": "set-demo-value",
+        "stepId": "texture-select"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#visualStyle",
+        "text": "Realistic\nPremium Neon\nHybrid",
+        "label": "Configura Texture Select en el perfil de prueba"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=es"
+      },
+      "sha256": "95fbf944ab67c79ece59e4527b3167c8834f947c12a5f5cc6e0c4701151c8035",
+      "bytes": 148820
+    },
+    {
+      "locale": "es",
+      "id": "visual-fx-frame-webgpu__quality-profile",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "quality-profile",
+      "path": "screenshots/es/docs/plugins/visual-fx-frame-webgpu/quality-profile.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#qualityMode",
+      "action": {
+        "type": "set-demo-value",
+        "stepId": "quality-profile"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#qualityMode",
+        "text": "OBS-safe\nMax Quality\nLow Load",
+        "label": "Configura Quality Profile en el perfil de prueba"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=es"
+      },
+      "sha256": "093711b9efca677d0ea32310e9f39938ec3dd43db658fc6fcde6a733b92f2a8d",
+      "bytes": 149099
+    },
+    {
+      "locale": "es",
+      "id": "visual-fx-frame-webgpu__gpu-frame-preview",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "gpu-frame-preview",
+      "path": "screenshots/es/docs/plugins/visual-fx-frame-webgpu/gpu-frame-preview.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#previewToggle",
+      "action": {
+        "type": "run-local-preview",
+        "stepId": "gpu-frame-preview"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#previewToggle",
+        "text": "▶️ Vorschau starten",
+        "label": "Prueba GPU Frame Preview localmente"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=es"
+      },
+      "sha256": "e01ae93b562a5cfa6fa14c339a17c8da810f2b00e9f3e6db86010c3adff09741",
+      "bytes": 85408
+    },
+    {
+      "locale": "es",
+      "id": "visual-fx-frame-webgpu__frame-obs-source",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "frame-obs-source",
+      "path": "screenshots/es/docs/plugins/visual-fx-frame-webgpu/frame-obs-source.png",
+      "route": "/visual-fx-frame-webgpu/overlay",
+      "selector": "#visualFxCanvas",
+      "action": {
+        "type": "open-overlay-preview",
+        "stepId": "frame-obs-source"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#visualFxCanvas",
+        "text": "",
+        "label": "Abre Frame OBS Source como vista previa de overlay"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/overlay?lang=es"
+      },
+      "sha256": "2f2d5e6caf331c90c7c6960672ec67c41a7374fc1d17e4cc1a4e939c7785cb5c",
+      "bytes": 9525
+    },
+    {
+      "locale": "es",
+      "id": "visual-fx-frame-webgpu__frame-reset",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "frame-reset",
+      "path": "screenshots/es/docs/plugins/visual-fx-frame-webgpu/frame-reset.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#savePresetBtn",
+      "action": {
+        "type": "reset-demo-state",
+        "stepId": "frame-reset"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#savePresetBtn",
+        "text": "💾 Speichern",
+        "label": "Restablece Frame Reset con seguridad"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "es",
+        "i18n": "es",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=es"
+      },
+      "sha256": "44208a228e6a35ea1682b00f6ad06c3b5396daae1fd527d942bc7cd4f5fe4516",
+      "bytes": 82100
     },
     {
       "locale": "es",
@@ -35602,6 +36180,198 @@
     },
     {
       "locale": "fr",
+      "id": "visual-fx-frame-webgpu__webgpu-frame-card",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "webgpu-frame-card",
+      "path": "screenshots/fr/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#webgpuRuntimeState",
+      "action": {
+        "type": "open-plugin-surface",
+        "stepId": "webgpu-frame-card"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#webgpuRuntimeState",
+        "text": "initializing",
+        "label": "Configurez Webgpu Frame Card dans le profil de test"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=fr"
+      },
+      "sha256": "26acef4fea4b7f09a0b3e240bd4e90db8768879fd1878a04df19c18ab50a9795",
+      "bytes": 146719
+    },
+    {
+      "locale": "fr",
+      "id": "visual-fx-frame-webgpu__texture-select",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "texture-select",
+      "path": "screenshots/fr/docs/plugins/visual-fx-frame-webgpu/texture-select.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#visualStyle",
+      "action": {
+        "type": "set-demo-value",
+        "stepId": "texture-select"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#visualStyle",
+        "text": "Realistic\nPremium Neon\nHybrid",
+        "label": "Configurez Texture Select dans le profil de test"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=fr"
+      },
+      "sha256": "081e14997b37ebfca01b8f6f130aba9867846cc1a134704636e394480bd7df3e",
+      "bytes": 149007
+    },
+    {
+      "locale": "fr",
+      "id": "visual-fx-frame-webgpu__quality-profile",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "quality-profile",
+      "path": "screenshots/fr/docs/plugins/visual-fx-frame-webgpu/quality-profile.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#qualityMode",
+      "action": {
+        "type": "set-demo-value",
+        "stepId": "quality-profile"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#qualityMode",
+        "text": "OBS-safe\nMax Quality\nLow Load",
+        "label": "Configurez Quality Profile dans le profil de test"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=fr"
+      },
+      "sha256": "c7dde72b5a5959858ec18a7a023efc2c258e0add3be94864214b1b7c9b39f8ff",
+      "bytes": 149222
+    },
+    {
+      "locale": "fr",
+      "id": "visual-fx-frame-webgpu__gpu-frame-preview",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "gpu-frame-preview",
+      "path": "screenshots/fr/docs/plugins/visual-fx-frame-webgpu/gpu-frame-preview.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#previewToggle",
+      "action": {
+        "type": "run-local-preview",
+        "stepId": "gpu-frame-preview"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#previewToggle",
+        "text": "▶️ Vorschau starten",
+        "label": "Testez GPU Frame Preview localement"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=fr"
+      },
+      "sha256": "dc7051d2c61846bb48767c9a0dfc80a22dda56a716b8e97d61bc373b446e6fd5",
+      "bytes": 85447
+    },
+    {
+      "locale": "fr",
+      "id": "visual-fx-frame-webgpu__frame-obs-source",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "frame-obs-source",
+      "path": "screenshots/fr/docs/plugins/visual-fx-frame-webgpu/frame-obs-source.png",
+      "route": "/visual-fx-frame-webgpu/overlay",
+      "selector": "#visualFxCanvas",
+      "action": {
+        "type": "open-overlay-preview",
+        "stepId": "frame-obs-source"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#visualFxCanvas",
+        "text": "",
+        "label": "Ouvrez Frame OBS Source comme apercu overlay"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/overlay?lang=fr"
+      },
+      "sha256": "93be37d5a885a492835cffaebcec450832a2eade41a887060fd49182a27be738",
+      "bytes": 9529
+    },
+    {
+      "locale": "fr",
+      "id": "visual-fx-frame-webgpu__frame-reset",
+      "guideId": "visual-fx-frame-webgpu",
+      "stepId": "frame-reset",
+      "path": "screenshots/fr/docs/plugins/visual-fx-frame-webgpu/frame-reset.png",
+      "route": "/visual-fx-frame-webgpu/ui",
+      "selector": "#savePresetBtn",
+      "action": {
+        "type": "reset-demo-state",
+        "stepId": "frame-reset"
+      },
+      "fixture": {
+        "profile": "docs-visual-fx-frame-webgpu",
+        "externalPolicy": "blocked",
+        "mode": "ui"
+      },
+      "focus": {
+        "selector": "#savePresetBtn",
+        "text": "💾 Speichern",
+        "label": "Reinitialisez Frame Reset en securite"
+      },
+      "preparation": [],
+      "state": {
+        "lang": "fr",
+        "i18n": "fr",
+        "theme": "cid",
+        "route": "/visual-fx-frame-webgpu/ui?lang=fr"
+      },
+      "sha256": "6051542c3cad993959dc9c295450c4b186a7b4e0454cf1c2d51fcc00ab3316c5",
+      "bytes": 82026
+    },
+    {
+      "locale": "fr",
       "id": "weather-control__weather-card",
       "guideId": "weather-control",
       "stepId": "weather-card",
@@ -36197,7 +36967,5 @@
       "bytes": 167369
     }
   ],
-  "failures": [],
-  "reconciledAt": "2026-07-13T16:19:21.853Z",
-  "reconciliation": "Removed captures only for tutorial definitions absent from the current manifest inventory."
+  "failures": []
 }
