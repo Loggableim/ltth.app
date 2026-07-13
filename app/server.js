@@ -268,7 +268,9 @@ io.sockets.setMaxListeners(50);
 // OBS Browser Sources can otherwise retain stale overlay shells, scripts, or API data.
 // This must run before static and plugin route middleware so every delivery path is covered.
 app.use(obsCacheControl);
-app.use(express.json());
+// Avatar capability profiles can contain hundreds of scanned OSC parameters.
+// Keep a bounded limit while allowing those legitimate local configuration saves.
+app.use(express.json({ limit: '2mb' }));
 // Locale API – serve translation JSON files
 const localeRouter = require('./routes/locale');
 app.use('/api/i18n/translations', localeRouter);
