@@ -11,7 +11,7 @@ The OSC-Bridge plugin provides a permanent OSC (Open Sound Control) bridge for V
 - ✅ VRChat standard parameters (/avatar/parameters/*, /world/*)
 - ✅ Bidirectional communication (send & receive)
 - ✅ Default ports: 9000 (send), 9001 (receive)
-- ✅ Security: Only local IPs allowed
+- ✅ Configurable target host: localhost, LAN, and remote OSC endpoints are supported
 - ✅ Complete logging (oscBridge.log)
 - ✅ Verbose mode for live debugging
 - ✅ Low latency (<50ms)
@@ -511,8 +511,8 @@ Bot: 💃 Dance animation triggered!
 
 ## Security Notes
 
-- Only local IP addresses are allowed (127.0.0.1, ::1, localhost)
-- OSC traffic is not encrypted (local network only)
+- OSC target hosts are not allowlisted. Use `sendHost` to select localhost, a LAN device, or a remote OSC endpoint.
+- OSC traffic is not encrypted; use only trusted networks or an isolated transport.
 - Gift mappings are stored in plugin configuration
 - Avatar IDs are not sensitive but should be from trusted sources
 

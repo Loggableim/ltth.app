@@ -4,7 +4,6 @@ const DEFAULT_OSC_BRIDGE_CONFIG = {
   sendPort: 9000,
   receivePort: 9001,
   verboseMode: false,
-  allowedIPs: ['127.0.0.1', '::1'],
   autoRetryOnError: false,
   retryDelay: 5000,
   maxPacketSize: 65536,
@@ -162,7 +161,7 @@ function normalizeConfig(config = {}) {
 
   if (!Array.isArray(merged.giftMappings)) merged.giftMappings = [];
   if (!Array.isArray(merged.avatars)) merged.avatars = [];
-  if (!Array.isArray(merged.allowedIPs)) merged.allowedIPs = DEFAULT_OSC_BRIDGE_CONFIG.allowedIPs.slice();
+  delete merged.allowedIPs;
   if (!Array.isArray(merged.chatCommands.commands) || merged.chatCommands.commands.length === 0) {
     merged.chatCommands.commands = createDefaultCommands();
   }

@@ -385,7 +385,7 @@ class PhysBonesController {
         
         this.pendingTimeouts.add(timeoutId);
 
-        return null; // No continuous animation
+        return true; // Grab was sent and its release timeout is scheduled
     }
 
     _animateTwitch(boneName, basePath, amplitude) {
