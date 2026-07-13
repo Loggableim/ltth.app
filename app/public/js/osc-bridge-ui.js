@@ -1370,18 +1370,52 @@ if (typeof window !== 'undefined') {
 let currentAvatarData = null;
 let availableActions = null;
 
+function translateOscBridge(key, fallback, params = {}) {
+    const translationKey = `osc_bridge.${key}`;
+    try {
+        const translated = window.i18n?.t?.(translationKey, params);
+        if (translated && translated !== translationKey) return translated;
+    } catch (error) {
+        console.warn('OSC-Bridge translation failed:', error);
+    }
+
+    return fallback.replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+}
+
 function formatDiagnostics(data) {
     if (!data || !data.diagnostics) {
-        return data?.error || 'Unknown OSCQuery error';
+        const error = data?.error || '';
+        if (error.startsWith('OSCQuery discovery failed: ')) {
+            return translateOscBridge('runtime.oscquery.discovery_failed', 'OSCQuery discovery failed: {error}', {
+                error: error.slice('OSCQuery discovery failed: '.length)
+            });
+        }
+        if (error.startsWith('OSCQuery scan request failed: ')) {
+            return translateOscBridge('runtime.oscquery.scan_request_failed', 'OSCQuery search request failed: {error}', {
+                error: error.slice('OSCQuery scan request failed: '.length)
+            });
+        }
+        return error || translateOscBridge('runtime.oscquery.unknown_error', 'Unknown OSCQuery error');
     }
 
     const diagnostics = data.diagnostics;
-    const actions = Array.isArray(diagnostics.actions) ? diagnostics.actions : [];
+    const actionCodes = Array.isArray(diagnostics.actionCodes) ? diagnostics.actionCodes : [];
+    const actions = actionCodes.length
+        ? actionCodes.map(code => translateOscBridge(`runtime.oscquery.actions.${code}`, code))
+        : (Array.isArray(diagnostics.actions) ? diagnostics.actions : []);
     const actionText = actions.length
-        ? '\n\nNext steps:\n' + actions.map((action, index) => `${index + 1}. ${action}`).join('\n')
+        ? `\n\n${translateOscBridge('runtime.oscquery.next_steps', 'Next steps:')}\n` + actions.map((action, index) => `${index + 1}. ${action}`).join('\n')
         : '';
+    const rawError = data.error || diagnostics.summary || '';
+    const error = rawError.startsWith('OSCQuery discovery failed: ')
+        ? translateOscBridge('runtime.oscquery.discovery_failed', 'OSCQuery discovery failed: {error}', {
+            error: rawError.slice('OSCQuery discovery failed: '.length)
+        })
+        : (rawError || translateOscBridge('runtime.oscquery.unknown_error', 'Unknown OSCQuery error'));
 
-    return `${data.error || diagnostics.summary || 'OSCQuery failed'}\n\nHost: ${diagnostics.host}\nPort: ${diagnostics.port}\nScanned: ${diagnostics.scannedRange}${actionText}`;
+    return `${error}\n\n${translateOscBridge('runtime.oscquery.host', 'Host: {host}', { host: diagnostics.host })}\n${translateOscBridge('runtime.oscquery.port', 'Port: {port}', { port: diagnostics.port })}\n${translateOscBridge('runtime.oscquery.scanned', 'Legacy TCP range: {range}', { range: diagnostics.scannedRange })}${actionText}`;
 }
 
 function renderOSCQueryResult(data) {
@@ -1394,7 +1428,13 @@ function renderOSCQueryResult(data) {
     if (data.success) {
         resultEl.style.borderLeftColor = '#10b981';
         resultEl.style.background = 'rgba(16, 185, 129, 0.1)';
-        resultEl.textContent = `OSCQuery found on ${data.port}. The port was ${data.autoSaved ? 'saved' : 'not saved'}.`;
+        resultEl.textContent = translateOscBridge('runtime.oscquery.found', 'OSCQuery found at {host}:{port}. The port was {saved}.', {
+            host: data.host || '127.0.0.1',
+            port: data.port,
+            saved: data.autoSaved
+                ? translateOscBridge('runtime.oscquery.saved', 'saved')
+                : translateOscBridge('runtime.oscquery.not_saved', 'not saved')
+        });
         return;
     }
 
@@ -1413,7 +1453,7 @@ async function scanOSCQuery() {
     try {
         if (btn) {
             btn.disabled = true;
-            btn.textContent = 'Scanning OSCQuery...';
+            btn.textContent = translateOscBridge('runtime.oscquery.scanning', 'Searching VRChat OSCQuery...');
         }
 
         const response = await fetch('/api/osc/oscquery/scan-port', {
@@ -1451,11 +1491,7 @@ async function scanOSCQuery() {
                 host: hostInput ? hostInput.value : '127.0.0.1',
                 port: portInput ? parseInt(portInput.value, 10) || 9001 : 9001,
                 scannedRange: '9001-9020',
-                actions: [
-                    'Check that the local server is running.',
-                    'Start VRChat and enable OSC via Action Menu > OSC > Enabled.',
-                    'Retry the scan after VRChat has loaded into a world.'
-                ]
+                actionCodes: ['start_vrchat', 'open_osc_debug', 'search_mdns']
             }
         });
     } finally {
@@ -1472,7 +1508,7 @@ async function autoDetectAvatar() {
     
     try {
         btn.disabled = true;
-        btn.textContent = '🔍 Erkenne Avatar...';
+        btn.textContent = `🔍 ${translateOscBridge('runtime.oscquery.detecting_avatar', 'Detecting avatar...')}`;
         
         const response = await fetch('/api/osc/avatar/auto-detect', {
             method: 'POST'
@@ -1505,7 +1541,7 @@ async function autoDetectAvatar() {
         }
     } catch (error) {
         console.error('Error auto-detecting avatar:', error);
-        alert('Fehler beim Erkennen des Avatars: ' + error.message);
+        alert(translateOscBridge('runtime.oscquery.avatar_detect_failed', 'Avatar detection failed: {error}', { error: error.message }));
         hideCurrentAvatar();
     } finally {
         btn.disabled = false;

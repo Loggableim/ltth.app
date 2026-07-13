@@ -557,6 +557,86 @@ class OSCQueryClient {
         logger.info(`❌ No VRChat OSCQuery server found in port range ${startPort}–${endPort}`);
         return { found: false, scannedPorts: portRange.length, candidates: [] };
     }
+    /**
+     * Discover VRChat's OSCQuery HTTP endpoint via its advertised mDNS service.
+     *
+     * VRChat does not guarantee TCP port 9001 for OSCQuery. It advertises the
+     * current endpoint as an _oscjson._tcp service, often on a dynamic port.
+     */
+    static async discoverVRChatOSCQuery(options = {}, logger = console) {
+        const timeout = Number.isInteger(options.timeout) && options.timeout >= 50
+            ? options.timeout
+            : 1000;
+        const createBonjour = options.createBonjour || (() => {
+            const { Bonjour } = require('bonjour-service');
+            return new Bonjour({}, error => logger.warn(`OSCQuery mDNS error: ${error.message}`));
+        });
+
+        return new Promise(resolve => {
+            let bonjour = null;
+            let browser = null;
+            let timer = null;
+            let finished = false;
+
+            const finish = result => {
+                if (finished) return;
+                finished = true;
+                if (timer) clearTimeout(timer);
+                try {
+                    if (browser && typeof browser.stop === 'function') browser.stop();
+                } catch (error) {
+                    logger.debug(`OSCQuery mDNS browser cleanup failed: ${error.message}`);
+                }
+                try {
+                    if (bonjour && typeof bonjour.destroy === 'function') bonjour.destroy();
+                } catch (error) {
+                    logger.debug(`OSCQuery mDNS cleanup failed: ${error.message}`);
+                }
+                resolve(result);
+            };
+
+            try {
+                bonjour = createBonjour();
+                browser = bonjour.find({ type: 'oscjson', protocol: 'tcp' }, service => {
+                    const name = String(service?.name || '');
+                    const port = Number(service?.port);
+                    if (!/^VRChat-/i.test(name) || !Number.isInteger(port) || port < 1 || port > 65535) {
+                        return;
+                    }
+
+                    const addresses = Array.isArray(service.addresses) ? service.addresses : [];
+                    const host = addresses.find(address => address === '127.0.0.1')
+                        || addresses.find(address => address === '::1')
+                        || service.host
+                        || '127.0.0.1';
+                    logger.info(`VRChat OSCQuery discovered via mDNS on ${host}:${port} (${name})`);
+                    finish({
+                        found: true,
+                        host,
+                        port,
+                        service: {
+                            name,
+                            host,
+                            addresses,
+                            port,
+                            type: service.type,
+                            protocol: service.protocol,
+                            txt: service.txt || {}
+                        }
+                    });
+                });
+                if (browser && typeof browser.on === 'function') {
+                    browser.on('error', error => logger.warn(`OSCQuery mDNS browser error: ${error.message}`));
+                }
+            } catch (error) {
+                logger.warn(`OSCQuery mDNS discovery could not start: ${error.message}`);
+                finish({ found: false, service: null });
+                return;
+            }
+
+            timer = setTimeout(() => finish({ found: false, service: null }), timeout);
+        });
+    }
 }
 
 module.exports = OSCQueryClient;

@@ -118,6 +118,7 @@ describe('OSC-Bridge API truthfulness', () => {
     const plugin = new OSCBridgePlugin(makeApi(routes));
     plugin.config = plugin.getDefaultConfig();
     plugin.registerRoutes();
+    const mdnsSpy = jest.spyOn(OSCQueryClient, 'discoverVRChatOSCQuery').mockResolvedValue({ found: false, service: null });
     const scanSpy = jest.spyOn(OSCQueryClient, 'scanForVRChatOSCQuery').mockResolvedValue({
       found: false,
       scannedPorts: 20,
@@ -145,11 +146,12 @@ describe('OSC-Bridge API truthfulness', () => {
         port: 9001,
         scannedRange: '9001-9020',
         actions: expect.arrayContaining([
-          expect.stringContaining('Enable OSC in VRChat')
+          expect.stringContaining('Action Menu > OSC')
         ])
       })
     }));
 
+    mdnsSpy.mockRestore();
     scanSpy.mockRestore();
   });
 });

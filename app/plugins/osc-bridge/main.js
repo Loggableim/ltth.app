@@ -359,6 +359,44 @@ class OSCBridgePlugin {
         ];
     }
 
+    async discoverAndApplyVRChatOSCQuery(options = {}) {
+        const result = await OSCQueryClient.discoverVRChatOSCQuery({
+            timeout: options.timeout || this.config?.oscQuery?.timeout || 1000
+        }, this.logger);
+        if (!result.found) return result;
+
+        const host = result.host || '127.0.0.1';
+        const port = result.port;
+        const needsReplacement = !this.oscQueryClient
+            || this.oscQueryClient.host !== host
+            || this.oscQueryClient.port !== port;
+
+        if (needsReplacement) {
+            await this.stopAvatarCapabilitiesWatcher();
+            this.invalidateAvatarCapabilities('oscquery_mdns_discovery');
+            if (this.oscQueryClient?.destroy) this.oscQueryClient.destroy();
+            this.oscQueryClient = new OSCQueryClient(host, port, this.logger);
+        }
+
+        const configChanged = !this.config.oscQuery
+            || this.config.oscQuery.enabled !== true
+            || this.config.oscQuery.host !== host
+            || this.config.oscQuery.port !== port;
+        let autoSaved = false;
+        if (options.autoSave !== false && configChanged) {
+            this.config.oscQuery = {
+                ...(this.config.oscQuery || {}),
+                enabled: true,
+                host,
+                port
+            };
+            await this.api.setConfig('config', this.config);
+            autoSaved = true;
+        }
+
+        return { ...result, host, port, autoSaved };
+    }
+
     buildOSCQueryDiagnostics(overrides = {}) {
         const host = overrides.host || this.config?.oscQuery?.host || '127.0.0.1';
         const startPort = overrides.startPort || this.config?.oscQuery?.scanStartPort || 9001;
@@ -368,13 +406,20 @@ class OSCBridgePlugin {
             host,
             port: overrides.port || this.config?.oscQuery?.port || 9001,
             scannedRange: `${startPort}-${endPort}`,
-            summary: 'VRChat OSCQuery was not reachable on the scanned localhost TCP ports.',
+            summary: 'VRChat OSCQuery could not be discovered through mDNS or the legacy TCP port scan.',
+            actionCodes: [
+                'start_vrchat',
+                'open_osc_debug',
+                'verify_udp_ports',
+                'search_mdns',
+                'check_firewall'
+            ],
             actions: [
                 'Start VRChat and load into a world with an avatar.',
-                'Enable OSC in VRChat via Action Menu > OSC > Enabled.',
-                'Keep OSC Bridge sendHost at 127.0.0.1, sendPort at 9000, receivePort at 9001.',
-                'Use OSCQuery port 9001 first; if another VRChat OSCQuery port is shown, run scan and save that port.',
-                'If discovery still fails, restart VRChat after enabling OSC and check local firewall rules for localhost TCP.'
+                'Open Action Menu > OSC > OSC Debug once; this also enables OSC.',
+                'Keep sendHost at 127.0.0.1 and sendPort at 9000. The Bridge receivePort is the UDP destination for VRChat output.',
+                'Use OSCQuery search again. VRChat advertises its OSCQuery HTTP port dynamically via mDNS, so it is not necessarily 9001.',
+                'If discovery still fails, restart VRChat after enabling OSC and allow local mDNS/localhost traffic through the firewall.'
             ]
         };
     }
@@ -668,6 +713,21 @@ class OSCBridgePlugin {
                 if (endPort !== undefined) scanOptions.endPort = endPort;
                 if (timeout !== undefined) scanOptions.timeout = timeout;
 
+                const mdnsResult = await this.discoverAndApplyVRChatOSCQuery({
+                    timeout: scanOptions.timeout,
+                    autoSave
+                });
+                if (mdnsResult.found) {
+                    return res.json({
+                        success: true,
+                        host: mdnsResult.host,
+                        port: mdnsResult.port,
+                        service: mdnsResult.service,
+                        candidates: [mdnsResult.service],
+                        autoSaved: mdnsResult.autoSaved
+                    });
+                }
+
                 const scanResult = await OSCQueryClient.scanForVRChatOSCQuery(host, scanOptions, this.logger);
 
                 if (scanResult.found) {
@@ -690,6 +750,7 @@ class OSCBridgePlugin {
 
                     return res.json({
                         success: true,
+                        host,
                         port: scanResult.port,
                         hostInfo: scanResult.hostInfo,
                         candidates: scanResult.candidates,
@@ -997,15 +1058,19 @@ class OSCBridgePlugin {
 
         this.api.registerRoute('post', '/api/osc/avatar/auto-detect', async (req, res) => {
             try {
+                // VRChat advertises OSCQuery through mDNS and commonly uses a
+                // dynamic HTTP port. Prefer that service over a stale saved port.
+                const mdnsResult = await this.discoverAndApplyVRChatOSCQuery({ autoSave: true });
+
                 // On-demand client init if oscQuery is enabled but client not yet created (race condition fallback)
-                if (!this.oscQueryClient && this.config.oscQuery?.enabled) {
+                if (!mdnsResult.found && !this.oscQueryClient && this.config.oscQuery?.enabled) {
                     const host = this.config.oscQuery.host || '127.0.0.1';
                     const port = this.config.oscQuery.port || 9001;
                     this.oscQueryClient = new OSCQueryClient(host, port, this.logger);
                     this.logger.info('📡 OSCQuery client on-demand initialized for auto-detect');
                 }
 
-                if (!this.oscQueryClient) {
+                if (!mdnsResult.found && !this.oscQueryClient) {
                     // Try auto-scan first (quick, port range 9000-9020)
                     const scanResult = await OSCQueryClient.scanForVRChatOSCQuery(
                         this.config.oscQuery?.host || '127.0.0.1',
@@ -2561,6 +2626,11 @@ class OSCBridgePlugin {
      * Get current avatar ID from OSCQuery
      * @returns {Promise<string|null>} Current avatar ID or null if not available
      */
+    normalizeAvatarId(value) {
+        const candidate = Array.isArray(value) ? value[0] : value;
+        return typeof candidate === 'string' && candidate.trim() ? candidate : null;
+    }
+
     async getCurrentAvatarId(options = {}) {
         const { retries = 0, retryDelay = 1000 } = options;
 
@@ -2571,9 +2641,11 @@ class OSCBridgePlugin {
             }
 
             // Try to get from cached avatar info first
-            if (this.oscQueryClient.avatarInfo?.id) {
-                this.logger.debug(`Using cached avatar ID: ${this.oscQueryClient.avatarInfo.id}`);
-                return this.oscQueryClient.avatarInfo.id;
+            const cachedAvatarId = this.normalizeAvatarId(this.oscQueryClient.avatarInfo?.id);
+            if (cachedAvatarId) {
+                this.oscQueryClient.avatarInfo.id = cachedAvatarId;
+                this.logger.debug(`Using cached avatar ID: ${cachedAvatarId}`);
+                return cachedAvatarId;
             }
 
             // Try to query /avatar/change parameter directly
@@ -2583,14 +2655,15 @@ class OSCBridgePlugin {
                     timeout: 5000
                 });
 
-                if (response.data && response.data.VALUE) {
+                const avatarId = this.normalizeAvatarId(response.data?.VALUE);
+                if (avatarId) {
                     this.logger.info(`✅ Avatar ID detected: ${response.data.VALUE}`);
                     // Cache it
                     this.oscQueryClient.avatarInfo = {
-                        id: response.data.VALUE,
+                        id: avatarId,
                         changedAt: Date.now()
                     };
-                    return response.data.VALUE;
+                    return avatarId;
                 }
             } catch (axiosError) {
                 this.logger.debug(`Failed to query /avatar/change: ${axiosError.message}`);
@@ -2599,14 +2672,15 @@ class OSCBridgePlugin {
             // If direct query fails, try to find it in discovered parameters
             if (this.oscQueryClient.parameters && this.oscQueryClient.parameters.size > 0) {
                 const avatarChangeParam = this.oscQueryClient.parameters.get('/avatar/change');
-                if (avatarChangeParam && avatarChangeParam.value) {
+                const avatarId = this.normalizeAvatarId(avatarChangeParam?.value);
+                if (avatarId) {
                     this.logger.info(`[OK] Avatar ID from parameters: ${avatarChangeParam.value}`);
                     // Cache it
                     this.oscQueryClient.avatarInfo = {
-                        id: avatarChangeParam.value,
+                        id: avatarId,
                         changedAt: Date.now()
                     };
-                    return avatarChangeParam.value;
+                    return avatarId;
                 }
             }
 

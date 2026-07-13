@@ -638,7 +638,7 @@
                             <label for="oscQueryPort" data-i18n="generated.e236eb07bc08">OSCQuery Port</label>
                             <input type="number" class="form-control" id="oscQueryPort" name="oscQueryPort" value="9001" placeholder="9001">
                             <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="generated.cf0c3c65e548">
-                                OSCQuery HTTP/WebSocket Port (Standard: 9001)
+                                OSCQuery HTTP/WebSocket port (detected automatically via mDNS)
                             </small>
                         </div>
                     </div>
@@ -651,7 +651,7 @@
                         <div class="form-group" style="margin-top: 16px;">
                             <button type="button" class="btn btn-secondary" id="btn-oscquery-scan" data-i18n="generated.0c8b3fbace3b">OSCQuery suchen</button>
                             <small style="color: var(--color-text-muted); font-size: 0.85em; display: block; margin-top: 8px;" data-i18n="generated.3ec1fee24ad6">
-                                Scans localhost TCP ports 9001-9020 and saves the detected VRChat OSCQuery port.
+                                Finds the VRChat OSCQuery service via mDNS and saves its current port automatically.
                             </small>
                             <div id="oscquery-scan-result" class="info-box" style="display:none; margin-top: 12px;"></div>
                         </div>

@@ -231,6 +231,64 @@ describe('OSCQueryClient', () => {
         });
     });
 
+    describe('VRChat OSCQuery service discovery', () => {
+        test('finds the dynamically advertised VRChat OSCQuery TCP port via mDNS', async () => {
+            const browser = {
+                stop: jest.fn(),
+                on: jest.fn()
+            };
+            const bonjour = {
+                find: jest.fn((options, callback) => {
+                    expect(options).toEqual({ type: 'oscjson', protocol: 'tcp' });
+                    setImmediate(() => callback({
+                        name: 'VRChat-Client-94317D',
+                        host: 'localhost',
+                        addresses: ['127.0.0.1'],
+                        port: 59755,
+                        type: 'oscjson',
+                        protocol: 'tcp'
+                    }));
+                    return browser;
+                }),
+                destroy: jest.fn()
+            };
+
+            const result = await OSCQueryClient.discoverVRChatOSCQuery({
+                timeout: 100,
+                createBonjour: () => bonjour
+            }, mockLogger);
+
+            expect(result).toEqual(expect.objectContaining({
+                found: true,
+                host: '127.0.0.1',
+                port: 59755,
+                service: expect.objectContaining({ name: 'VRChat-Client-94317D' })
+            }));
+            expect(browser.stop).toHaveBeenCalledTimes(1);
+            expect(bonjour.destroy).toHaveBeenCalledTimes(1);
+        });
+
+        test('returns no result after the discovery timeout and releases mDNS resources', async () => {
+            const browser = {
+                stop: jest.fn(),
+                on: jest.fn()
+            };
+            const bonjour = {
+                find: jest.fn(() => browser),
+                destroy: jest.fn()
+            };
+
+            const result = await OSCQueryClient.discoverVRChatOSCQuery({
+                timeout: 10,
+                createBonjour: () => bonjour
+            }, mockLogger);
+
+            expect(result).toEqual({ found: false, service: null });
+            expect(browser.stop).toHaveBeenCalledTimes(1);
+            expect(bonjour.destroy).toHaveBeenCalledTimes(1);
+        });
+    });
+
     describe('Avatar watcher ordering', () => {
         test('does not emit an older poll after a newer poll has completed discovery', async () => {
             jest.useFakeTimers();

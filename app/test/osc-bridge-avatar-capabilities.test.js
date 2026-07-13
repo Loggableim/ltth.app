@@ -4,11 +4,17 @@ const OSCQueryClient = require('../plugins/osc-bridge/modules/OSCQueryClient');
 describe('OSC-Bridge avatar capability profiles', () => {
   let plugin;
   let api;
+  let mdnsSpy;
 
   beforeEach(() => {
     api = makeApi();
     plugin = new OSCBridgePlugin(api);
     plugin.config = plugin.getDefaultConfig();
+    mdnsSpy = jest.spyOn(OSCQueryClient, 'discoverVRChatOSCQuery').mockResolvedValue({ found: false, service: null });
+  });
+
+  afterEach(() => {
+    mdnsSpy.mockRestore();
   });
 
   test('replaces scan-owned fields without overwriting user avatar metadata', async () => {
@@ -363,6 +369,32 @@ describe('OSC-Bridge avatar capability profiles', () => {
     expect(oldClient.destroy).toHaveBeenCalledTimes(1);
     expect(plugin.activeAvatarProfile).toBeNull();
     expect(plugin.avatarCapabilitiesWatcherClient).toBeNull();
+    scanSpy.mockRestore();
+  });
+
+  test('uses the mDNS-advertised OSCQuery port instead of scanning only the legacy 9000 range', async () => {
+    const routes = new Map();
+    api.registerRoute.mockImplementation((method, path, handler) => routes.set(`${method.toLowerCase()} ${path}`, handler));
+    plugin.registerRoutes();
+    mdnsSpy.mockResolvedValue({
+      found: true,
+      host: '127.0.0.1',
+      port: 59755,
+      service: { name: 'VRChat-Client-94317D' }
+    });
+    const scanSpy = jest.spyOn(OSCQueryClient, 'scanForVRChatOSCQuery').mockResolvedValue({ found: false, candidates: [] });
+
+    const response = makeResponse();
+    await routes.get('post /api/osc/oscquery/scan-port')({ body: { autoSave: true } }, response);
+
+    expect(response.payload).toEqual(expect.objectContaining({
+      success: true,
+      host: '127.0.0.1',
+      port: 59755,
+      autoSaved: true
+    }));
+    expect(plugin.config.oscQuery).toEqual(expect.objectContaining({ enabled: true, host: '127.0.0.1', port: 59755 }));
+    expect(scanSpy).not.toHaveBeenCalled();
     scanSpy.mockRestore();
   });
 

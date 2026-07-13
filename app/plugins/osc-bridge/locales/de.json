@@ -10,6 +10,31 @@
       "errors": "Fehler",
       "uptime": "Laufzeit"
     },
+    "runtime": {
+      "oscquery": {
+        "unknown_error": "Unbekannter OSCQuery-Fehler",
+        "discovery_failed": "OSCQuery-Erkennung fehlgeschlagen: {error}",
+        "not_configured": "OSCQuery ist nicht eingerichtet und es wurde kein VRChat-Dienst gefunden.",
+        "next_steps": "Nächste Schritte:",
+        "host": "Host: {host}",
+        "port": "Port: {port}",
+        "scanned": "Geprüfter Legacy-TCP-Bereich: {range}",
+        "found": "OSCQuery unter {host}:{port} gefunden. Der Port wurde {saved}.",
+        "saved": "gespeichert",
+        "not_saved": "nicht gespeichert",
+        "scanning": "VRChat-OSCQuery wird gesucht...",
+        "scan_request_failed": "OSCQuery-Suchanfrage fehlgeschlagen: {error}",
+        "detecting_avatar": "Avatar wird erkannt...",
+        "avatar_detect_failed": "Avatar-Erkennung fehlgeschlagen: {error}",
+        "actions": {
+          "start_vrchat": "Starten Sie VRChat und laden Sie eine Welt mit einem Avatar.",
+          "open_osc_debug": "Öffnen Sie einmal Action Menu > OSC > OSC Debug; dadurch wird OSC ebenfalls aktiviert.",
+          "verify_udp_ports": "Lassen Sie sendHost auf 127.0.0.1 und sendPort auf 9000. receivePort der Bridge ist das UDP-Ziel für VRChat-Ausgaben.",
+          "search_mdns": "Suchen Sie OSCQuery erneut. VRChat bewirbt seinen OSCQuery-HTTP-Port dynamisch über mDNS; er ist daher nicht zwingend 9001.",
+          "check_firewall": "Falls die Erkennung weiter fehlschlägt, starten Sie VRChat nach dem Aktivieren neu und erlauben Sie lokalen mDNS-/localhost-Verkehr in der Firewall."
+        }
+      }
+    },
     "config": {
       "title": "Konfiguration",
       "info_title": "VRChat OSC-Integration",
@@ -187,10 +212,10 @@
     "c9a7b7343a39": "OSCQuery Host",
     "0d2b5f6adace": "IP-Adresse des VRChat OSCQuery-Servers (Standard: 127.0.0.1)",
     "e236eb07bc08": "OSCQuery Port",
-    "cf0c3c65e548": "OSCQuery HTTP/WebSocket Port (Standard: 9001)",
+    "cf0c3c65e548": "OSCQuery-HTTP/WebSocket-Port (wird automatisch über mDNS erkannt)",
     "2e5d493ff74b": "Auto-Subscribe (WebSocket Updates empfangen)",
     "0c8b3fbace3b": "OSCQuery suchen",
-    "3ec1fee24ad6": "Scans localhost TCP ports 9001-9020 and saves the detected VRChat OSCQuery port.",
+    "3ec1fee24ad6": "Findet den VRChat-OSCQuery-Dienst über mDNS und speichert seinen aktuellen Port automatisch.",
     "dfd0c192de52": "Aktiviert Live-Updates über WebSocket für Echtzeit-Parameter-Änderungen",
     "5fd34a1db2bb": "📊 Live Parameter Monitoring",
     "b105b299a2de": "Echtzeit-Überwachung",

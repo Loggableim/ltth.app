@@ -172,6 +172,21 @@ describe('OSC-Bridge Avatar Detection', () => {
             );
         });
 
+        test('should normalize a one-element OSCQuery VALUE array to an avatar ID string', async () => {
+            oscBridgePlugin.oscQueryClient = mockOSCQueryClient;
+            axiosGetSpy.mockResolvedValue({
+                data: { VALUE: ['avtr_from_oscquery'] }
+            });
+
+            const avatarId = await oscBridgePlugin.getCurrentAvatarId();
+
+            expect(avatarId).toBe('avtr_from_oscquery');
+            expect(mockOSCQueryClient.avatarInfo).toEqual({
+                id: 'avtr_from_oscquery',
+                changedAt: expect.any(Number)
+            });
+        });
+
         test('should not retry by default when options not specified', async () => {
             oscBridgePlugin.oscQueryClient = mockOSCQueryClient;
 

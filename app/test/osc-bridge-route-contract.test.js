@@ -5,17 +5,20 @@ describe('OSC-Bridge route contracts', () => {
   let api;
   let plugin;
   let routes;
+  let mdnsSpy;
 
   beforeEach(() => {
     routes = new Map();
     api = makeApi(routes);
     plugin = new OSCBridgePlugin(api);
     plugin.config = plugin.getDefaultConfig();
+    mdnsSpy = jest.spyOn(OSCQueryClient, 'discoverVRChatOSCQuery').mockResolvedValue({ found: false, service: null });
     plugin.registerRoutes();
   });
 
   afterEach(async () => {
     await plugin.destroy();
+    mdnsSpy.mockRestore();
   });
 
   test('registers the complete public route inventory and status socket', () => {
