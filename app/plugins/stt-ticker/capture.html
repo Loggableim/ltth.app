@@ -841,12 +841,6 @@
           <select id="ml-default-lang" style="flex:1;"></select>
         </div>
         <div class="settings-row">
-          <label style="min-width:auto;">
-            <input type="checkbox" id="ml-show-default" checked><span data-i18n="generated.2f72d7ae9da6">
-            Default-Sprache anzeigen (Zeile 1)
-          </span></label>
-        </div>
-        <div class="settings-row">
           <label data-i18n="generated.584647d4f1b7">Sprache hinzufügen</label>
           <select id="ml-add-lang" style="flex:1;"></select>
           <button id="btn-add-lang" class="btn btn-small btn-primary">+</button>
@@ -922,7 +916,7 @@
     let translationConfig = {
       enabled: false,
       apiKey: '',
-      model: 'nemotron-3-nano'
+      model: 'deepseek-v4-flash'
     };
 
     // Stats
@@ -996,7 +990,6 @@
     const mlAddLangEl = document.getElementById('ml-add-lang');
     const mlModelEl = document.getElementById('ml-model');
     const mlAsrModelEl = document.getElementById('ml-asr-model');
-    const mlShowDefaultEl = document.getElementById('ml-show-default');
     const mlOverlayUrlEl = document.getElementById('ml-overlay-url');
     const audioDeviceSelectEl = document.getElementById('audio-device-select');
     const btnRefreshDevices = document.getElementById('btn-refresh-devices');
@@ -1114,15 +1107,12 @@
 
     function updatePreviewFromConfig() {
       const lines = [];
-      // Default-Sprache nur anzeigen wenn Checkbox aktiv
-      if (mlShowDefaultEl.checked) {
-        lines.push({
-          language: mlDefaultLangEl.value,
-          text: '',
-          color: multiLang.colors[mlDefaultLangEl.value] || '#FFFFFF',
-          type: 'original'
-        });
-      }
+      lines.push({
+        language: mlDefaultLangEl.value,
+        text: '',
+        color: multiLang.colors[mlDefaultLangEl.value] || '#FFFFFF',
+        type: 'original'
+      });
       for (const lang of currentOutputLangs) {
         if (lang === mlDefaultLangEl.value) continue;
         lines.push({
@@ -1342,6 +1332,10 @@
           currentOutputLangs = (multiLang.outputLanguages || []).slice();
           renderLangTags();
           updatePreviewFromConfig();
+          if (currentOutputLangs.length === 0) {
+            document.getElementById('ml-status').textContent = 'Keine Zielsprache gewählt – normale Untertitelanzeige aktiv.';
+            document.getElementById('ml-status').style.color = 'var(--stt-status-warning, #facc15)';
+          }
           log('Multi-Language: ' + currentOutputLangs.length + ' Zielsprachen');
         }
         // Translation Config laden (für Modell)
@@ -1353,7 +1347,7 @@
 
           translationConfig.enabled = tc.enabled || false;
           translationConfig.apiKey = tc.apiKey || '';
-          translationConfig.model = tc.model || 'nemotron-3-nano';
+          translationConfig.model = tc.model || 'deepseek-v4-flash';
 
           // Fallback: Ollama-Key aus globalen Dashboard-Settings holen
           // (tts_ollama_api_key wird im Dashboard unter "API Keys" gespeichert)
@@ -1380,7 +1374,7 @@
         log('Konnte Settings nicht laden, nutze Defaults', 'warn');
       }
       // Overlay-URL setzen
-      mlOverlayUrlEl.value = API + '/overlay/stt-ticker?design=dual-language&position=bottom-center&maxLines=2&fontSize=36px';
+      mlOverlayUrlEl.value = API + '/overlay/stt-ticker?design=classic&position=bottom-center&maxLines=2&fontSize=36px';
     }
 
     async function saveMultiLangSettings() {
@@ -1618,10 +1612,6 @@
     document.getElementById('settings-toggle').addEventListener('click', function() {
       var body = document.getElementById('settings-body');
       body.style.display = body.style.display === 'none' ? 'block' : 'none';
-    });
-
-    mlShowDefaultEl.addEventListener('change', function() {
-      updatePreviewFromConfig();
     });
 
     document.getElementById('btn-copy-overlay-url').addEventListener('click', function() {

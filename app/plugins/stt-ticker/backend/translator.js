@@ -245,6 +245,91 @@ class Translator {
   }
 
   /**
+   * Translates several independently routed caption fragments in one Cloud
+   * request. Each source fragment keeps its language and receives only the
+   * remaining configured display languages as translations.
+   */
+  async translateSegments(segments, options = {}) {
+    const cfg = this.config.translation || {};
+    const sourceSegments = Array.isArray(segments) ? segments : [];
+    const prepared = sourceSegments
+      .map((segment, index) => ({
+        ...segment,
+        id: String(segment.id || `segment-${index + 1}`),
+        text: String(segment.text || '').trim(),
+        language: segment.language || options.defaultLanguage || 'de'
+      }))
+      .filter(segment => segment.text.length >= 2);
+    const defaultLanguage = options.defaultLanguage || this.config.multiLanguage?.defaultLanguage;
+    const outputLanguages = Array.from(new Set([
+      defaultLanguage,
+      ...(Array.isArray(options.outputLanguages) ? options.outputLanguages : [])
+    ].filter(Boolean)));
+    const withEmptyTranslations = () => prepared.map(segment => ({ ...segment, translations: {} }));
+
+    if (!cfg.enabled || !cfg.apiKey || prepared.length === 0 || outputLanguages.length === 0) {
+      return withEmptyTranslations();
+    }
+
+    const requests = prepared.map(segment => ({
+      id: segment.id,
+      text: segment.text,
+      sourceLanguage: segment.language,
+      targetLanguages: outputLanguages.filter(language => language !== segment.language)
+    }));
+    if (!requests.some(request => request.targetLanguages.length > 0)) {
+      return withEmptyTranslations();
+    }
+    if (!this._checkRateLimit()) {
+      this.logger.warn('STT Ticker: Segment translation rate limited');
+      return withEmptyTranslations();
+    }
+
+    const systemPrompt = 'You are a real-time caption translator. Translate every JSON input item into exactly its targetLanguages. Return ONLY a JSON object keyed by item id. Each value must be an object whose keys are target language codes and whose values are translations. Do not add markdown or explanations.';
+    try {
+      const result = await this._callOllama(systemPrompt, JSON.stringify(requests), cfg);
+      const parsed = this._parseJsonResponse(result);
+      if (!parsed || typeof parsed !== 'object') {
+        this.logger.warn('STT Ticker: Segment translation returned unparseable result');
+        return withEmptyTranslations();
+      }
+
+      const colors = this.config.multiLanguage?.colors || {};
+      return prepared.map(segment => {
+        const resultByLanguage = parsed[segment.id] || {};
+        const translations = {};
+        for (const language of outputLanguages) {
+          const value = resultByLanguage[language];
+          if (language !== segment.language && typeof value === 'string' && value.trim()) {
+            translations[language] = {
+              text: value.trim(),
+              color: colors[language] || cfg.color || '#FFD700'
+            };
+          }
+        }
+        return { ...segment, translations };
+      });
+    } catch (error) {
+      this.logger.warn(`STT Ticker: Segment translation failed: ${error.message}`);
+      return withEmptyTranslations();
+    }
+  }
+
+  _parseJsonResponse(result) {
+    try {
+      return JSON.parse(result);
+    } catch (error) {
+      const jsonMatch = String(result || '').match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return null;
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (nestedError) {
+        return null;
+      }
+    }
+  }
+
+  /**
    * Ruft die native Ollama Cloud API auf.
    */
   async _callOllama(systemPrompt, text, cfg) {

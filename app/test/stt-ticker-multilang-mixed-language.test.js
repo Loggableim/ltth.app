@@ -74,4 +74,58 @@ describe('STT Ticker mixed-language multi output', () => {
       buffer.destroy();
     }
   });
+
+  test('combines routed source fragments and translations in every selected language row', () => {
+    const buffer = new TextBuffer(MULTI_LANGUAGE_CONFIG);
+    try {
+      buffer.push({
+        text: 'Welcome everyone.',
+        language: 'en',
+        translation: {
+          translations: {
+            de: { text: 'Willkommen zusammen.' },
+            fr: { text: 'Bienvenue à tous.' }
+          }
+        }
+      });
+      buffer.push({
+        text: 'Guten Morgen.',
+        language: 'de',
+        translation: {
+          translations: {
+            en: { text: 'Good morning.' },
+            fr: { text: 'Bonjour.' }
+          }
+        }
+      });
+
+      expect(buffer.getCurrent().multi.lines).toEqual([
+        expect.objectContaining({ language: 'de', text: 'Willkommen zusammen. Guten Morgen.' }),
+        expect.objectContaining({ language: 'en', text: 'Welcome everyone. Good morning.' }),
+        expect.objectContaining({ language: 'fr', text: 'Bienvenue à tous. Bonjour.' })
+      ]);
+    } finally {
+      buffer.destroy();
+    }
+  });
+
+  test('falls back to classic output when no target language is selected', () => {
+    const buffer = new TextBuffer({
+      ...MULTI_LANGUAGE_CONFIG,
+      multiLanguage: {
+        ...MULTI_LANGUAGE_CONFIG.multiLanguage,
+        outputLanguages: []
+      }
+    });
+    try {
+      buffer.push({ text: 'Sichtbarer Untertitel', language: 'de' });
+
+      expect(buffer.getCurrent()).toMatchObject({
+        text: 'Sichtbarer Untertitel',
+        multi: null
+      });
+    } finally {
+      buffer.destroy();
+    }
+  });
 });

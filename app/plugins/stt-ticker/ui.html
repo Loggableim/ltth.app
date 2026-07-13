@@ -1202,9 +1202,8 @@
         <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:12px;cursor:text;">
         <div class="grid-2" style="margin-top:10px;">
           <div>
-            <label>Design</label>
+            <label>Untertitel-Stil</label>
             <select id="design-select">
-              <option value="dual-language" data-i18n="generated.4580126e715a">Dual-Language (2 Zeilen)</option>
               <option value="classic" data-i18n="generated.0bf5373400f3">Classic (TV-Untertitel)</option>
               <option value="modern" data-i18n="generated.878f83588f67">Modern (Clean, Blur)</option>
               <option value="minimal" data-i18n="generated.f5978ce331d1">Minimal (Nur Text)</option>
@@ -1212,12 +1211,8 @@
               <option value="glass" data-i18n="generated.5a7e4b4b17c4">Glass (Glasmorphismus)</option>
               <option value="compact" data-i18n="generated.e12e46ccc0b0">Compact (Klein)</option>
               <option value="cinematic" data-i18n="generated.405606eee294">Cinematic (Film)</option>
-              <option value="scrolling" data-i18n="generated.ece9be230d15">Scrolling (Laufband)</option>
-              <option value="fliessend" data-i18n="generated.13ddd5f84b99">Fliessend (Liste)</option>
-              <option value="starwars" data-i18n="generated.6cc1adf8d5f6">Star Wars (Crawl)</option>
-              <option value="ticker3" data-i18n="generated.89f669a3f959">3-Zeilen Ticker</option>
-              <option value="karaoke" data-i18n="generated.0e99906c06ae">Karaoke (Wort-Highlight)</option>
             </select>
+            <p class="help-text">Mehrere gewählte Sprachen werden automatisch als eigene Zeilen angezeigt.</p>
           </div>
           <div>
             <label>Position</label>
@@ -1551,7 +1546,7 @@
           keyStatus.style.color = 'var(--stt-status-warning, #facc15)';
         }
         await loadLanguages(tc.sourceLanguage || 'de', tc.targetLanguage || 'en');
-        await loadModels(tc.model || 'nemotron-3-nano');
+        await loadModels(tc.model || 'deepseek-v4-flash');
         if (tc.color) document.getElementById('translation-color').value = tc.color;
 
         populateAsrConfig(cfg);
@@ -1720,14 +1715,10 @@
       const overlay = cfg.overlay || {};
       const designSel = document.getElementById('design-select');
       if (!designSel) return;
-      const design = overlay.design || 'dual-language';
-      if (![...designSel.options].some(o => o.value === design)) {
-        const opt = document.createElement('option');
-        opt.value = 'dual-language';
-        opt.textContent = 'Dual-Language (2 Zeilen EN/DE)';
-        designSel.appendChild(opt);
-      }
-      designSel.value = design;
+      const design = overlay.design || 'classic';
+      designSel.value = [...designSel.options].some(option => option.value === design)
+        ? design
+        : 'classic';
     }
 
     function populateMultiLang(cfg) {
@@ -1736,6 +1727,11 @@
       populateLanguageSelect('ml-add-lang', '', true);
       if (ml.outputLanguages) {
         renderLangTags(ml.outputLanguages);
+      }
+      const status = document.getElementById('ml-status');
+      if (status && (!ml.outputLanguages || ml.outputLanguages.length === 0)) {
+        status.textContent = 'Keine Zielsprache gewählt – normale Untertitelanzeige aktiv.';
+        status.style.color = 'var(--stt-status-warning, #facc15)';
       }
     }
 

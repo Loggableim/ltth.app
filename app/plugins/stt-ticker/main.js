@@ -16,6 +16,7 @@ const multer = require('multer');
 const AsrPipeline = require('./backend/asr-pipeline');
 const TextBuffer = require('./backend/text-buffer');
 const Translator = require('./backend/translator');
+const { routeTranscriptSegments } = require('./backend/lang-detect');
 const { ConfigManager, DEFAULT_CONFIG } = require('./backend/config');
 
 // Audio-MIME-Types (identisch zu Sidekick)
@@ -513,31 +514,42 @@ class SttTickerPlugin {
 
     // Optional: Übersetzung via Ollama Cloud
     let translation = null;
-    if (this.translator && this.config.translation?.enabled && this.config.translation?.apiKey) {
-      try {
-        // Prüfe ob Multi-Language-Modus aktiv ist
-        const multiCfg = this.config.multiLanguage || {};
-        if (multiCfg.enabled && Array.isArray(multiCfg.outputLanguages) && multiCfg.outputLanguages.length > 0) {
-          // Multi-Language: übersetze in alle Zielsprachen auf einmal
-          translation = await this.translator.translateMulti(text, {
-            sourceLanguage: transcript.language,
-            outputLanguages: multiCfg.outputLanguages
-          });
-        } else {
-          // Legacy: einzelne Zielsprache
+    const multiCfg = this.config.multiLanguage || {};
+    const multiLanguageActive = multiCfg.enabled
+      && Array.isArray(multiCfg.outputLanguages)
+      && multiCfg.outputLanguages.length > 0;
+
+    if (this.textBuffer && multiLanguageActive) {
+      let routedSegments = this._routeCaptionSegments(transcript);
+      if (this.translator && this.config.translation?.enabled && this.config.translation?.apiKey) {
+        routedSegments = await this.translator.translateSegments(routedSegments, {
+          defaultLanguage: multiCfg.defaultLanguage,
+          outputLanguages: multiCfg.outputLanguages
+        });
+      }
+
+      for (const segment of routedSegments) {
+        this.textBuffer.push({
+          text: segment.text,
+          provider: transcript.provider || 'fish.audio',
+          timestamp: Date.now(),
+          latencyMs,
+          language: segment.language,
+          languageSource: segment.languageSource,
+          translation: { translations: segment.translations || {} }
+        });
+      }
+    } else if (this.textBuffer) {
+      if (this.translator && this.config.translation?.enabled && this.config.translation?.apiKey) {
+        try {
           translation = await this.translator.translate(text, {
             sourceLanguage: transcript.language,
             _detectedLanguage: transcript.language
           });
+        } catch (error) {
+          this.logger.warn(`STT Ticker translation failed: ${error.message}`);
         }
-      } catch (error) {
-        this.logger.warn(`STT Ticker translation failed: ${error.message}`);
-        // Non-fatal — wir senden trotzdem den Originaltext
       }
-    }
-
-    // Text in den Buffer einfügen (inkl. erkannter Sprache)
-    if (this.textBuffer) {
       this.textBuffer.push({
         text,
         segments: transcript.segments || [],
@@ -546,7 +558,7 @@ class SttTickerPlugin {
         latencyMs,
         language: transcript.language || 'unknown',
         languageSource: transcript.languageSource || 'fallback',
-        translation  // Übersetzung anhängen
+        translation
       });
     }
 
@@ -579,6 +591,17 @@ class SttTickerPlugin {
   _emitStatus() {
     if (this.destroyed) return;
     this.io.emit('stt-ticker:status', this._getStatus());
+  }
+
+  _routeCaptionSegments(transcript) {
+    const routed = routeTranscriptSegments(transcript, this.config);
+    if (routed.length > 0) return routed;
+
+    return [{
+      text: String(transcript.text || '').trim(),
+      language: transcript.language || this.config.multiLanguage?.defaultLanguage || 'de',
+      languageSource: transcript.languageSource || 'fallback'
+    }].filter(segment => segment.text);
   }
 
   // ==================== Status ====================

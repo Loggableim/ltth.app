@@ -140,8 +140,50 @@ function mapUnknown(unknownPolicy, fallback) {
   return { lang: fallback || 'en', confidence: 0 };
 }
 
+function splitIntoSentences(text) {
+  return (String(text || '').match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [])
+    .map(sentence => sentence.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Splits a transcript at provider pause boundaries or sentence boundaries and
+ * assigns every resulting caption fragment to one display language.
+ */
+function routeTranscriptSegments(transcript = {}, config = {}) {
+  const providerSegments = Array.isArray(transcript.segments)
+    ? transcript.segments.filter(segment => segment && typeof segment.text === 'string' && segment.text.trim())
+    : [];
+  const sourceSegments = providerSegments.length > 0
+    ? providerSegments
+    : [{ text: transcript.text || '' }];
+  const defaultLanguage = config.multiLanguage?.defaultLanguage
+    || config.translation?.autoDetectDefault
+    || config.asr?.fallbackLanguage
+    || 'de';
+  const detectionConfig = config.langDetect || {};
+
+  return sourceSegments.flatMap(segment => splitIntoSentences(segment.text).map(text => {
+    const detected = detectLanguage(text, {
+      minConfidence: detectionConfig.minConfidence ?? 0.15,
+      unknownPolicy: 'auto',
+      fallback: defaultLanguage
+    });
+    const confidentlyDetected = Number(detected.confidence) > 0;
+
+    return {
+      text,
+      language: confidentlyDetected ? detected.lang : defaultLanguage,
+      languageSource: confidentlyDetected ? 'segment-heuristic' : 'segment-fallback',
+      start: segment.start,
+      end: segment.end
+    };
+  }));
+}
+
 module.exports = {
   detectLanguage,
+  routeTranscriptSegments,
   // Exportiert für Tests
   _STOPWORDS_DE: STOPWORDS_DE,
   _STOPWORDS_EN: STOPWORDS_EN,

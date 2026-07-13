@@ -76,6 +76,31 @@ describe('STT Ticker native Ollama Cloud API', () => {
       })
     );
   });
+
+  test('batches translations for differently routed source segments into one Cloud request', async () => {
+    axios.post.mockResolvedValueOnce({
+      data: {
+        message: {
+          content: JSON.stringify({
+            'segment-1': { de: 'Hallo zusammen', fr: 'Bonjour à tous' },
+            'segment-2': { en: 'Hello everyone', fr: 'Bonjour à tous' }
+          })
+        }
+      }
+    });
+    const translator = createTranslator();
+
+    const translated = await translator.translateSegments([
+      { id: 'segment-1', text: 'Hello everyone', language: 'en' },
+      { id: 'segment-2', text: 'Hallo zusammen', language: 'de' }
+    ], { outputLanguages: ['en', 'fr'], defaultLanguage: 'de' });
+
+    expect(axios.post).toHaveBeenCalledTimes(1);
+    expect(translated).toEqual([
+      expect.objectContaining({ id: 'segment-1', translations: expect.objectContaining({ de: expect.any(Object), fr: expect.any(Object) }) }),
+      expect.objectContaining({ id: 'segment-2', translations: expect.objectContaining({ en: expect.any(Object), fr: expect.any(Object) }) })
+    ]);
+  });
 });
 
 describe('STT Ticker Ollama model migration', () => {
