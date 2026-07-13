@@ -32,10 +32,10 @@ const SAFETY = {
   obs: L('Nutze eine nicht gesendete OBS-Testszene; LIVE-Ausgaben bleiben deaktiviert.', 'Use an OBS test scene that is not live; LIVE output remains disabled.', 'Usa una escena de prueba de OBS que no esté al aire; la salida LIVE permanece desactivada.', 'Utilisez une scène de test OBS non diffusée ; la sortie LIVE reste désactivée.')
 };
 
-// These are deliberate workflows, not profile-derived defaults. Their ids
-// become public anchors and capture-manifest ids, so adding a plugin requires
-// a conscious description of its specific configuration and safe proof.
-const WORKFLOWS = Object.freeze({
+// These are the public, per-guide step anchors. They are not an ordered
+// template: a descriptor is materialised from its own action and selector
+// below, so capture semantics never depend on a step's array position.
+const GUIDE_STEP_IDS = Object.freeze({
   'advanced-timer': ['timer-card', 'timer-duration', 'start-signal', 'countdown-preview', 'timer-overlay', 'timer-reset'],
   animazingpal: ['avatar-card', 'avatar-event-map', 'placeholder-provider', 'sample-event', 'mapping-review'],
   'api-bridge': ['bridge-info', 'actions-list', 'request-example', 'event-stream-check', 'bridge-review'],
@@ -77,8 +77,8 @@ const WORKFLOWS = Object.freeze({
 });
 
 function fact(id, route, topic, test, expected, options = {}) {
-  if (!WORKFLOWS[id]) throw new Error(`Missing explicit workflow for ${id}`);
-  return {
+  if (!GUIDE_STEP_IDS[id]) throw new Error(`Missing explicit step descriptors for ${id}`);
+  const entry = {
     id,
     route,
     topic: L(...topic),
@@ -88,12 +88,11 @@ function fact(id, route, topic, test, expected, options = {}) {
     safety: options.safety || 'local',
     overlay: options.overlay || null,
     related: options.related || [],
-    mode: options.mode || 'ui',
-    workflow: WORKFLOWS[id],
-    // The leading selectors are guide-specific; the structural alternatives
-    // keep older plugin UIs capturable while the verifier records the matched
-    // element and visible text for manual review.
-    focus: options.focus || `[data-plugin-id="${id}"], #${id}, .${id}, main, form, [role="main"], .container, #app, canvas`
+    mode: options.mode || 'ui'
+  };
+  return {
+    ...entry,
+    steps: GUIDE_STEP_IDS[id].map((stepId) => createStepDescriptor(entry, stepId))
   };
 }
 
@@ -183,41 +182,96 @@ function localizedGuideCopy(name, entry) {
   return copy;
 }
 
-function stepCopy(name, entry, id, index) {
+// A step's safe action is deliberately declared from its public anchor, never
+// from its position in a sequence. This makes adding or reordering a step a
+// data change instead of silently changing a capture's meaning.
+function stepAction(entry, stepId) {
+  if (entry.mode === 'api') return 'inspect-readonly-api';
+  if (entry.mode === 'admin') return 'inspect-safe-store-state';
+  if (stepId.endsWith('-card')) return 'open-plugin-manager';
+  if (/(?:overlay|obs-source|hud-source)$/.test(stepId)) return 'open-overlay-preview';
+  if (/(?:reset|cleanup)$/.test(stepId)) return 'reset-demo-state';
+  if (/(?:test|preview|pulse|match|round|message|run|sentence|simulation|check|request|question|queue-test|dry-run)$/.test(stepId)) return 'run-local-preview';
+  if (/(?:review|inspection)$/.test(stepId)) return 'save-demo-config';
+  return 'set-demo-value';
+}
+
+function stepRoute(entry, action) {
+  if (action === 'open-plugin-manager' || action === 'inspect-safe-store-state') return '/dashboard.html?view=plugins';
+  if (action === 'open-overlay-preview') return entry.overlay || entry.route;
+  return entry.route;
+}
+
+function stepSelector(entry, stepId, action) {
+  if (action === 'open-plugin-manager') return `[data-plugin="${entry.id}"]`;
+  if (action === 'inspect-safe-store-state') return '.plugin-mode-btn[data-plugin-mode="store"]';
+  // Each follow-up action targets the labelled control specified by the guide.
+  // The capture driver treats it as a required UI anchor rather than falling
+  // back to a page container or body element.
+  return `#${stepId}`;
+}
+
+function localizedStepCopy(entry, stepId, action) {
   const copy = {};
   for (const locale of LOCALES) {
     const topic = entry.topic[locale];
     const test = entry.test[locale];
     const expected = entry.expected[locale];
-    const action = index === 0
-      ? { title: locale === 'de' ? `${name} gezielt aktivieren` : locale === 'en' ? `Enable ${name} deliberately` : locale === 'es' ? `Activa ${name} de forma intencionada` : `Activez ${name} volontairement`, body: locale === 'de' ? `Öffne den Plugin Manager, suche ${name} und bestätige den Status. Die Aufnahme markiert ausschließlich diese Plugin-Karte.` : locale === 'en' ? `Open Plugin Manager, find ${name}, and confirm its status. The capture highlights this plugin card only.` : locale === 'es' ? `Abre el gestor de plugins, busca ${name} y confirma su estado. La captura resalta solo esta tarjeta.` : `Ouvrez le gestionnaire de plugins, trouvez ${name} et confirmez son état. La capture met en évidence cette carte uniquement.`, expected: locale === 'de' ? `${name} ist im Testprofil verfügbar.` : locale === 'en' ? `${name} is available in the test profile.` : locale === 'es' ? `${name} está disponible en el perfil de prueba.` : `${name} est disponible dans le profil de test.` }
-      : index === 1
-        ? { title: locale === 'de' ? `${topic} öffnen` : locale === 'en' ? `Open ${topic}` : locale === 'es' ? `Abre ${topic}` : `Ouvrez ${topic}`, body: locale === 'de' ? `Rufe die echte Plugin-Oberfläche über ${entry.route} auf und lies die sichtbaren Optionen, bevor du etwas speicherst.` : locale === 'en' ? `Open the real plugin surface at ${entry.route} and read the visible options before saving anything.` : locale === 'es' ? `Abre la interfaz real del plugin en ${entry.route} y lee las opciones visibles antes de guardar.` : `Ouvrez la véritable interface du plugin à ${entry.route} et lisez les options visibles avant tout enregistrement.`, expected: locale === 'de' ? `Die Oberfläche für ${topic} ist ohne Fehler sichtbar.` : locale === 'en' ? `The ${topic} surface is visible without errors.` : locale === 'es' ? `La interfaz de ${topic} es visible sin errores.` : `L’interface ${topic} est visible sans erreur.` }
-        : index === 2
-          ? { title: locale === 'de' ? `${topic} mit Demo-Werten setzen` : locale === 'en' ? `Set ${topic} with demo values` : locale === 'es' ? `Configura ${topic} con valores demo` : `Réglez ${topic} avec des valeurs démo`, body: locale === 'de' ? `Verwende nur lokale Beispielwerte. Speichere keine Produktivzugänge, Geräte-IDs oder LIVE-Ziele.` : locale === 'en' ? `Use local sample values only. Do not save production credentials, device IDs, or LIVE targets.` : locale === 'es' ? `Usa solo valores de ejemplo locales. No guardes credenciales, IDs de dispositivo ni destinos LIVE de producción.` : `Utilisez uniquement des valeurs d’exemple locales. N’enregistrez aucun accès de production, identifiant d’appareil ou cible LIVE.`, expected: locale === 'de' ? `Die Testkonfiguration ist nachvollziehbar gespeichert.` : locale === 'en' ? `The test configuration is saved and reviewable.` : locale === 'es' ? `La configuración de prueba queda guardada y puede revisarse.` : `La configuration de test est enregistrée et contrôlable.` }
-          : index === 3
-            ? { title: locale === 'de' ? `${test} ausführen` : locale === 'en' ? `Run ${test}` : locale === 'es' ? `Ejecuta ${test}` : `Exécutez ${test}`, body: locale === 'de' ? `Nutze ausschließlich den lokalen Test, die Vorschau oder den Trockenlauf dieser Oberfläche.` : locale === 'en' ? `Use this surface’s local test, preview, or dry run only.` : locale === 'es' ? `Usa solo la prueba local, vista previa o ejecución en seco de esta interfaz.` : `Utilisez uniquement le test local, l’aperçu ou l’essai à blanc de cette interface.`, expected }
-            : index === 4
-              ? { title: locale === 'de' ? `Sichtbares Ergebnis kontrollieren` : locale === 'en' ? `Confirm the visible result` : locale === 'es' ? `Confirma el resultado visible` : `Confirmez le résultat visible`, body: locale === 'de' ? `Prüfe genau dieses Soll-Ergebnis: ${expected}` : locale === 'en' ? `Check this exact expected result: ${expected}` : locale === 'es' ? `Comprueba este resultado esperado exacto: ${expected}` : `Contrôlez ce résultat attendu précis : ${expected}`, expected }
-              : { title: locale === 'de' ? `Testzustand zurücksetzen` : locale === 'en' ? `Reset the test state` : locale === 'es' ? `Restablece el estado de prueba` : `Réinitialisez l’état de test`, body: locale === 'de' ? `Entferne Demo-Werte oder schließe die Vorschau, bevor du in eine produktive Szene wechselst.` : locale === 'en' ? `Remove demo values or close the preview before moving to a production scene.` : locale === 'es' ? `Elimina los valores demo o cierra la vista previa antes de pasar a una escena de producción.` : `Supprimez les valeurs démo ou fermez l’aperçu avant de passer à une scène de production.`, expected: locale === 'de' ? `Das Testprofil bleibt sauber und nicht produktiv.` : locale === 'en' ? `The test profile remains clean and non-production.` : locale === 'es' ? `El perfil de prueba permanece limpio y no productivo.` : `Le profil de test reste propre et non productif.` };
-    copy[locale] = { ...action, alt: `${name}: ${action.title}` };
+    let title;
+    let body;
+    let result;
+    if (action === 'open-plugin-manager') {
+      title = locale === 'de' ? 'Plugin-Karte im Manager öffnen' : locale === 'en' ? 'Open the plugin card in Manager' : locale === 'es' ? 'Abre la tarjeta del plugin en el gestor' : 'Ouvrez la carte du plugin dans le gestionnaire';
+      body = locale === 'de' ? `Öffne genau die Karte für ${topic} und bestätige den aktiven Testprofil-Status.` : locale === 'en' ? `Open the exact card for ${topic} and confirm its active test-profile status.` : locale === 'es' ? `Abre la tarjeta exacta de ${topic} y confirma su estado activo en el perfil de prueba.` : `Ouvrez la carte exacte pour ${topic} et confirmez son état actif dans le profil de test.`;
+      result = locale === 'de' ? 'Die zugehörige Plugin-Karte ist eindeutig sichtbar.' : locale === 'en' ? 'The corresponding plugin card is visibly identified.' : locale === 'es' ? 'La tarjeta correspondiente del plugin queda identificada.' : 'La carte correspondante du plugin est clairement visible.';
+    } else if (action === 'inspect-readonly-api') {
+      title = locale === 'de' ? 'Lokale API-Antwort nur lesend prüfen' : locale === 'en' ? 'Inspect the local API response read-only' : locale === 'es' ? 'Inspecciona la respuesta de API local en solo lectura' : 'Inspectez la réponse API locale en lecture seule';
+      body = locale === 'de' ? `Rufe die lokale Bridge-Information für ${topic} ab. Sende keinen POST-Request und führe keine Aktion aus.` : locale === 'en' ? `Read the local bridge information for ${topic}. Do not send a POST request or execute an action.` : locale === 'es' ? `Consulta la información local del puente para ${topic}. No envíes POST ni ejecutes acciones.` : `Lisez les informations locales du bridge pour ${topic}. N’envoyez aucune requête POST et n’exécutez aucune action.`;
+      result = expected;
+    } else if (action === 'inspect-safe-store-state') {
+      title = locale === 'de' ? 'Sicheren Store-Standardzustand prüfen' : locale === 'en' ? 'Inspect the safe default store state' : locale === 'es' ? 'Inspecciona el estado seguro predeterminado de la tienda' : 'Inspectez l’état sûr par défaut du store';
+      body = locale === 'de' ? `Öffne die Store-Ansicht für ${topic}; Community-Quellen und Installationen bleiben unverändert.` : locale === 'en' ? `Open the store view for ${topic}; leave community sources and installations unchanged.` : locale === 'es' ? `Abre la vista de tienda de ${topic}; no cambies fuentes comunitarias ni instalaciones.` : `Ouvrez la vue du store pour ${topic} ; ne modifiez ni les sources communautaires ni les installations.`;
+      result = expected;
+    } else if (action === 'open-overlay-preview') {
+      title = locale === 'de' ? `Overlay-Vorschau für ${topic} öffnen` : locale === 'en' ? `Open the overlay preview for ${topic}` : locale === 'es' ? `Abre la vista previa del overlay de ${topic}` : `Ouvrez l’aperçu overlay pour ${topic}`;
+      body = locale === 'de' ? 'Nutze ausschließlich eine nicht gesendete OBS-Testszene; keine produktive Browser-Quelle wird geändert.' : locale === 'en' ? 'Use only an OBS test scene that is not live; do not change a production browser source.' : locale === 'es' ? 'Usa solo una escena de prueba de OBS que no esté al aire; no cambies una fuente de navegador de producción.' : 'Utilisez uniquement une scène de test OBS non diffusée ; ne modifiez pas de source navigateur de production.';
+      result = expected;
+    } else if (action === 'run-local-preview') {
+      title = locale === 'de' ? `${test} ausführen` : locale === 'en' ? `Run ${test}` : locale === 'es' ? `Ejecuta ${test}` : `Exécutez ${test}`;
+      body = locale === 'de' ? `Starte ausschließlich den lokalen Test für ${topic}; externe Dienste, Geräte und LIVE-Ereignisse bleiben getrennt.` : locale === 'en' ? `Run only the local test for ${topic}; external services, devices, and LIVE events stay disconnected.` : locale === 'es' ? `Ejecuta solo la prueba local de ${topic}; servicios externos, dispositivos y eventos LIVE permanecen desconectados.` : `Exécutez uniquement le test local pour ${topic} ; les services externes, appareils et événements LIVE restent déconnectés.`;
+      result = expected;
+    } else if (action === 'reset-demo-state') {
+      title = locale === 'de' ? `Demo-Zustand für ${topic} zurücksetzen` : locale === 'en' ? `Reset the demo state for ${topic}` : locale === 'es' ? `Restablece el estado demo de ${topic}` : `Réinitialisez l’état démo de ${topic}`;
+      body = locale === 'de' ? 'Entferne die Testwerte oder beende die Vorschau, bevor du einen produktiven Stream vorbereitest.' : locale === 'en' ? 'Remove test values or end the preview before preparing a production stream.' : locale === 'es' ? 'Elimina los valores de prueba o finaliza la vista previa antes de preparar un directo de producción.' : 'Supprimez les valeurs de test ou fermez l’aperçu avant de préparer un stream de production.';
+      result = locale === 'de' ? 'Das Testprofil bleibt ohne produktive Auswirkung.' : locale === 'en' ? 'The test profile remains free of production impact.' : locale === 'es' ? 'El perfil de prueba permanece sin impacto de producción.' : 'Le profil de test reste sans impact de production.';
+    } else if (action === 'save-demo-config') {
+      title = locale === 'de' ? `${topic} als Testkonfiguration prüfen` : locale === 'en' ? `Review ${topic} as a test configuration` : locale === 'es' ? `Revisa ${topic} como configuración de prueba` : `Vérifiez ${topic} comme configuration de test`;
+      body = locale === 'de' ? 'Kontrolliere die sichtbaren Demo-Werte vor dem Speichern; verwende keine Zugangsdaten, Geräte-IDs oder LIVE-Ziele.' : locale === 'en' ? 'Review the visible demo values before saving; use no credentials, device IDs, or LIVE targets.' : locale === 'es' ? 'Revisa los valores demo visibles antes de guardar; no uses credenciales, IDs de dispositivo ni destinos LIVE.' : 'Contrôlez les valeurs démo visibles avant l’enregistrement ; n’utilisez ni identifiants, ni ID d’appareil, ni cible LIVE.';
+      result = locale === 'de' ? 'Die Testkonfiguration ist nachvollziehbar und sicher gespeichert.' : locale === 'en' ? 'The test configuration is saved safely and can be reviewed.' : locale === 'es' ? 'La configuración de prueba se guarda de forma segura y puede revisarse.' : 'La configuration de test est enregistrée de manière sûre et vérifiable.';
+    } else {
+      title = locale === 'de' ? `${topic} mit Demo-Werten konfigurieren` : locale === 'en' ? `Configure ${topic} with demo values` : locale === 'es' ? `Configura ${topic} con valores demo` : `Configurez ${topic} avec des valeurs démo`;
+      body = locale === 'de' ? `Bearbeite nur das beschriftete Feld „${stepId}“ und verwende einen lokalen Platzhalterwert.` : locale === 'en' ? `Edit only the labelled “${stepId}” field and use a local placeholder value.` : locale === 'es' ? `Edita solo el campo etiquetado «${stepId}» y usa un valor local de marcador.` : `Modifiez uniquement le champ « ${stepId} » et utilisez une valeur locale fictive.`;
+      result = locale === 'de' ? 'Der Demo-Wert ist sichtbar und kann vor dem Test geprüft werden.' : locale === 'en' ? 'The demo value is visible and can be reviewed before testing.' : locale === 'es' ? 'El valor demo queda visible y puede revisarse antes de probar.' : 'La valeur démo est visible et peut être vérifiée avant le test.';
+    }
+    copy[locale] = { title, body, expected: result, alt: `${title} — ${topic}` };
   }
   return copy;
 }
 
-function buildSteps(name, entry) {
-  const routes = ['/dashboard.html?view=plugins', entry.route, entry.route, entry.route, entry.overlay || entry.route];
-  return entry.workflow.map((id, index) => ({
-    id,
-    copy: stepCopy(name, entry, id, Math.min(index, 5)),
+function createStepDescriptor(entry, stepId) {
+  const action = stepAction(entry, stepId);
+  const copy = localizedStepCopy(entry, stepId, action);
+  return {
+    id: stepId,
+    copy,
     capture: {
-      route: routes[Math.min(index, routes.length - 1)],
-      assertVisible: entry.focus,
-      focusText: entry.topic,
-      action: index === 0 ? { type: 'plugin-manager', pluginId: entry.id } : index === 3 ? { type: 'safe-test', target: entry.test } : index === 4 && entry.overlay ? { type: 'overlay-preview', target: entry.overlay } : { type: 'focus-topic', target: entry.topic },
-      expected: entry.expected
+      route: stepRoute(entry, action),
+      assertVisible: stepSelector(entry, stepId, action),
+      focusText: Object.fromEntries(LOCALES.map((locale) => [locale, copy[locale].title])),
+      action: { type: action, stepId },
+      expected: Object.fromEntries(LOCALES.map((locale) => [locale, copy[locale].expected]))
     }
-  }));
+  };
 }
 
 function buildGuides(repoRoot) {
@@ -245,7 +299,7 @@ function buildGuides(repoRoot) {
       related: entry.related,
       overlay: entry.overlay,
       capture: { fixture: { profile: `docs-${record.id}`, externalPolicy: 'blocked', mode: entry.mode } },
-      steps: buildSteps(name, entry)
+      steps: entry.steps
     };
   }).sort((left, right) => left.name.localeCompare(right.name));
 }
