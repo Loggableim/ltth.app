@@ -32,7 +32,52 @@ const SAFETY = {
   obs: L('Nutze eine nicht gesendete OBS-Testszene; LIVE-Ausgaben bleiben deaktiviert.', 'Use an OBS test scene that is not live; LIVE output remains disabled.', 'Usa una escena de prueba de OBS que no esté al aire; la salida LIVE permanece desactivada.', 'Utilisez une scène de test OBS non diffusée ; la sortie LIVE reste désactivée.')
 };
 
+// These are deliberate workflows, not profile-derived defaults. Their ids
+// become public anchors and capture-manifest ids, so adding a plugin requires
+// a conscious description of its specific configuration and safe proof.
+const WORKFLOWS = Object.freeze({
+  'advanced-timer': ['timer-card', 'timer-duration', 'start-signal', 'countdown-preview', 'timer-overlay', 'timer-reset'],
+  animazingpal: ['avatar-card', 'avatar-event-map', 'placeholder-provider', 'sample-event', 'mapping-review'],
+  'api-bridge': ['bridge-info', 'actions-list', 'request-example', 'event-stream-check', 'bridge-review'],
+  chatango: ['chatango-card', 'room-placeholder', 'widget-position', 'widget-preview', 'chatango-review'],
+  clarityhud: ['hud-card', 'hud-modules', 'chat-region', 'full-hud-preview', 'obs-hud-source', 'hud-reset'],
+  coinbattle: ['coinbattle-card', 'coin-values', 'battle-mode', 'demo-match', 'battle-overlay', 'match-reset'],
+  'config-import': ['backup-card', 'export-scope', 'test-export', 'restore-inspection', 'backup-cleanup'],
+  'data-source': ['source-card', 'local-source', 'field-map', 'data-preview', 'source-review'],
+  'emoji-rain': ['emoji-card', 'rain-preset', 'gift-map', 'rain-test', 'rain-overlay', 'rain-reset'],
+  fireworks: ['fireworks-card', 'effect-profile', 'audio-limit', 'fireworks-test', 'fireworks-overlay', 'fireworks-reset'],
+  'flame-overlay': ['frame-card', 'frame-style', 'frame-intensity', 'frame-preview', 'frame-obs-source', 'frame-reset'],
+  'game-engine': ['engine-card', 'game-mode', 'queue-rule', 'test-round', 'game-hud', 'queue-reset'],
+  gcce: ['command-card', 'command-name', 'permission-rule', 'command-dry-run', 'command-review'],
+  'gift-catalog': ['catalog-card', 'catalog-filter', 'coin-threshold', 'gift-preview', 'catalog-review'],
+  goals: ['goals-card', 'goal-target', 'reset-rule', 'progress-pulse', 'goal-overlay', 'goal-reset'],
+  'interactive-story': ['story-card', 'story-mode', 'vote-rule', 'local-decision', 'story-overlay', 'story-reset'],
+  'milestone-leaderboard': ['xp-card', 'xp-rule', 'milestone', 'xp-pulse', 'leaderboard-overlay', 'xp-reset'],
+  'minecraft-connect': ['minecraft-card', 'offline-address', 'event-format', 'offline-message', 'minecraft-review'],
+  multicam: ['multicam-card', 'camera-source', 'scene-rule', 'scene-dry-run', 'multicam-review'],
+  'music-bot': ['music-card', 'mpv-path', 'queue-rule', 'sample-queue', 'music-overlay', 'queue-reset'],
+  openshock: ['safety-card', 'safe-limit', 'device-placeholder', 'shock-simulation', 'shock-overlay', 'safety-reset'],
+  'osc-bridge': ['osc-card', 'loopback-host', 'udp-port', 'loopback-check', 'osc-review'],
+  'quiz-show': ['quiz-card', 'question-pool', 'answer-window', 'sample-question', 'quiz-overlay', 'quiz-reset'],
+  sidekick: ['sidekick-card', 'assistant-mode', 'context-source', 'local-request', 'sidekick-overlay', 'sidekick-reset'],
+  soundboard: ['soundboard-card', 'sound-slot', 'volume-rule', 'muted-sound-test', 'soundboard-review'],
+  spotlight: ['spotlight-card', 'event-style', 'display-duration', 'chatter-preview', 'spotlight-overlay', 'spotlight-reset'],
+  streamalchemy: ['alchemy-card', 'automation-rule', 'action-chain', 'rule-dry-run', 'alchemy-overlay', 'rule-reset'],
+  'stt-ticker': ['ticker-card', 'subtitle-language', 'ticker-style', 'sample-sentence', 'ticker-overlay', 'ticker-reset'],
+  'talking-heads': ['heads-card', 'character-select', 'speech-map', 'text-preview', 'heads-overlay', 'heads-reset'],
+  'thermal-printer': ['printer-card', 'offline-profile', 'encoding-rule', 'queue-test', 'printer-review'],
+  toptier: ['tier-card', 'ranking-rule', 'tier-threshold', 'rank-preview', 'tier-overlay', 'tier-reset'],
+  tts: ['tts-card', 'voice-select', 'moderation-filter', 'muted-voice-preview', 'tts-review'],
+  vdoninja: ['ninja-card', 'placeholder-room', 'guest-layout', 'browser-preview', 'obs-guest-source', 'ninja-reset'],
+  'visual-fx-frame-webgpu': ['webgpu-frame-card', 'texture-select', 'quality-profile', 'gpu-frame-preview', 'frame-obs-source', 'frame-reset'],
+  'weather-control': ['weather-card', 'weather-effect', 'lifecycle-rule', 'weather-pulse', 'weather-overlay', 'weather-reset'],
+  'webgpu-emoji-rain': ['gpu-rain-card', 'gpu-preset', 'asset-rule', 'gpu-rain-test', 'gpu-rain-overlay', 'gpu-rain-reset'],
+  'webgpu-fireworks': ['gpu-fireworks-card', 'gpu-quality', 'follower-trigger', 'gpu-fireworks-test', 'gpu-fireworks-overlay', 'gpu-fireworks-reset'],
+  'store-admin': ['store-card', 'official-source', 'package-status', 'store-inspection', 'store-review']
+});
+
 function fact(id, route, topic, test, expected, options = {}) {
+  if (!WORKFLOWS[id]) throw new Error(`Missing explicit workflow for ${id}`);
   return {
     id,
     route,
@@ -44,7 +89,11 @@ function fact(id, route, topic, test, expected, options = {}) {
     overlay: options.overlay || null,
     related: options.related || [],
     mode: options.mode || 'ui',
-    focus: options.focus || 'body'
+    workflow: WORKFLOWS[id],
+    // The leading selectors are guide-specific; the structural alternatives
+    // keep older plugin UIs capturable while the verifier records the matched
+    // element and visible text for manual review.
+    focus: options.focus || `[data-plugin-id="${id}"], #${id}, .${id}, main, form, [role="main"], .container, #app, canvas`
   };
 }
 
@@ -158,11 +207,9 @@ function stepCopy(name, entry, id, index) {
 
 function buildSteps(name, entry) {
   const routes = ['/dashboard.html?view=plugins', entry.route, entry.route, entry.route, entry.overlay || entry.route];
-  const ids = ['plugin-status', 'workspace', 'demo-configuration', 'safe-test', entry.overlay ? 'overlay-preview' : 'result-check'];
-  if (entry.overlay) ids.push('test-reset');
-  return ids.map((id, index) => ({
+  return entry.workflow.map((id, index) => ({
     id,
-    copy: stepCopy(name, entry, id, index),
+    copy: stepCopy(name, entry, id, Math.min(index, 5)),
     capture: {
       route: routes[Math.min(index, routes.length - 1)],
       assertVisible: entry.focus,
