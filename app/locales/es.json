@@ -53,6 +53,7 @@
     "fireworks": "Fuegos Artificiales",
     "flame_overlay": "Visual FX Frame",
     "visual_fx_frame": "Visual FX Frame",
+    "visual_fx_frame_webgpu": "Visual FX Frame WEBGPU",
     "webgpu_emoji_rain": "Emoji Rain",
     "interactive_story": "Historia Interactiva",
     "gcce_hud": "GCCE HUD Overlay",

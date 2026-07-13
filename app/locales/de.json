@@ -27,6 +27,7 @@
     "fireworks_dev": "Feuerwerk Dev",
     "flame_overlay": "Visual FX Frame",
     "visual_fx_frame": "Visual FX Frame",
+    "visual_fx_frame_webgpu": "Visual FX Frame WEBGPU",
     "webgpu_emoji_rain": "Emoji Rain",
     "multi_guest": "Multi-Gast",
     "gift_milestone": "Geschenk-Meilenstein",

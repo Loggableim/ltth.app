@@ -28,6 +28,7 @@
         fireworks: '#fb7185',
         'webgpu-fireworks': '#22d3ee',
         'flame-overlay': '#7c3aed',
+        'visual-fx-frame-webgpu': '#22d3ee',
         'quiz-show': '#10b981',
         'interactive-story': '#8b5cf6',
         coinbattle: '#eab308',

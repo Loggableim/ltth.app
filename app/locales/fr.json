@@ -54,6 +54,7 @@
     "fireworks": "Feux d'Artifice",
     "flame_overlay": "Visual FX Frame",
     "visual_fx_frame": "Visual FX Frame",
+    "visual_fx_frame_webgpu": "Visual FX Frame WEBGPU",
     "webgpu_emoji_rain": "Emoji Rain",
     "gcce_hud": "GCCE HUD Overlay",
     "chatango": "Chatango",
