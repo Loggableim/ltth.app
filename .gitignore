@@ -77,6 +77,7 @@ tmp_*
 tmp-*
 .tmp_*
 .playwright-cli/
+.worktrees/
 output/
 app/output/
 artifacts/
