@@ -788,11 +788,15 @@
 
   autoDjSave.addEventListener('click', async () => {
     const playlistUrls = parseList(autoDjPlaylistUrls?.value || '');
+    const mixHistoryPercent = Number(autoDjMixHistoryPercent.value);
+    const normalizedMixHistoryPercent = autoDjMixHistoryPercent.value.trim() === '' || !Number.isFinite(mixHistoryPercent)
+      ? 80
+      : Math.min(100, Math.max(0, mixHistoryPercent));
     const payload = {
       enabled: autoDjEnabled.checked,
       mode: autoDjMode.value,
       historyMinPlays: Number(autoDjHistoryPlays.value) || 1,
-      mixHistoryPercent: Math.min(100, Math.max(0, Number(autoDjMixHistoryPercent.value) || 80)),
+      mixHistoryPercent: normalizedMixHistoryPercent,
       repeatCooldownHours: Math.min(168, Math.max(1, Number(autoDjRepeatCooldownHours.value) || 12)),
       maxConsecutiveAutoDJ: Number(autoDjMaxConsecutive.value) || 1,
       announceAutoDJ: autoDjAnnounce.checked,

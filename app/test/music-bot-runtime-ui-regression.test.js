@@ -952,6 +952,25 @@ describe('Music Bot runtime and UI regressions', () => {
     });
   });
 
+  test('preserves a zero Radio-Mix history percentage in the Auto-DJ save payload', async () => {
+    const { dom, fetchMock } = bootMusicBotUi();
+    doms.push(dom);
+    const mixHistoryPercent = dom.window.document.getElementById('auto-dj-mix-history-percent');
+    const save = dom.window.document.getElementById('auto-dj-save');
+
+    mixHistoryPercent.value = '0';
+    save.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const togglePost = fetchMock.mock.calls.find(([url, options = {}]) => {
+      return url === '/api/plugins/music-bot/auto-dj/toggle' && options.method === 'POST';
+    });
+    expect(togglePost).toBeTruthy();
+    const payload = JSON.parse(togglePost[1].body);
+    expect(payload.mixHistoryPercent).toBe(0);
+  });
+
   test('restores saved Auto-DJ playlist URLs into the settings form', async () => {
     const { dom } = bootMusicBotUi({
       autoDjConfig: {
