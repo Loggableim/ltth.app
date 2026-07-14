@@ -81,6 +81,11 @@ function parseControls(source, route) {
   const controls = [];
   const seen = new Set();
   const add = (tag, attributes, content = '') => {
+    // Template-rendered markup often contains source expressions such as
+    // `${item.id}`. Those are not visible controls or truthful defaults until
+    // the runtime has supplied data, so a static guide must not publish the
+    // expression itself as a label, selector, or value.
+    if (String(attributes).includes('${') || String(content).includes('${')) return;
     const type = attribute(attributes, 'type').toLowerCase();
     if (type === 'hidden' || hasAttribute(attributes, 'hidden') || /display\s*:\s*none/i.test(attribute(attributes, 'style'))) return;
     if (tag === 'a' && !/(?:\bbtn\b|role\s*=\s*["']button["'])/i.test(attributes)) return;
@@ -110,4 +115,60 @@ function collectGuideUiInventory(repoRoot, guide) {
   return { route, file, controls: parseControls(referencedSource(file, repoRoot), route) };
 }
 
-module.exports = { collectGuideUiInventory, parseControls, sourceFileFor };
+function pluginSourceDirectory(repoRoot, pluginId, route) {
+  const candidates = [
+    path.join(repoRoot, 'app', 'plugins', pluginId),
+    path.join(repoRoot, 'plugin-store', 'sources', pluginId)
+  ];
+  const pluginDirectory = candidates.find((candidate) => fs.existsSync(candidate));
+  if (pluginDirectory) return pluginDirectory;
+  const surface = sourceFileFor(repoRoot, route);
+  return surface ? path.dirname(surface) : null;
+}
+
+function sourceFiles(directory) {
+  if (!directory || !fs.existsSync(directory)) return [];
+  const files = [];
+  const visit = (current) => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const file = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        if (!['node_modules', 'test', 'tests'].includes(entry.name)) visit(file);
+      } else if (/\.(?:js|cjs|mjs|html)$/i.test(entry.name)) {
+        files.push(file);
+      }
+    }
+  };
+  visit(directory);
+  return files.sort();
+}
+
+function uniqueIntegrations(entries) {
+  const byKey = new Map();
+  for (const entry of entries) byKey.set(`${entry.type}:${entry.value}`, entry);
+  return [...byKey.values()].sort((left, right) => left.type.localeCompare(right.type) || left.value.localeCompare(right.value));
+}
+
+function collectPluginIntegrationInventory(repoRoot, pluginId, route) {
+  const directory = pluginSourceDirectory(repoRoot, pluginId, route);
+  const source = sourceFiles(directory).map((file) => fs.readFileSync(file, 'utf8')).join('\n');
+  const integrations = [];
+  const add = (type, value) => {
+    if (value) integrations.push({ type, value });
+  };
+
+  for (const match of source.matchAll(/registerRoute\(\s*['"](?:get|post|put|patch|delete)['"]\s*,\s*['"](\/api\/[^'"]+)/gi)) add('rest', match[1]);
+  for (const match of source.matchAll(/(?:socket|io)\.(?:on|emit)\(\s*['"]([^'"]+)/gi)) add('socket-event', match[1]);
+  for (const match of source.matchAll(/register(?:Flow)?Action\(\s*['"]([^'"]+)/gi)) add('flow-action', match[1]);
+  for (const match of source.matchAll(/register(?:Chat)?Command\(\s*['"]([^'"]+)/gi)) add('chat-command', match[1]);
+  for (const match of source.matchAll(/\b(api\.(?:getPluginDataDir|getSetting|setSetting|deleteSetting)|(?:database|db)\.(?:get|set|run|prepare))\b/g)) add('storage', match[1]);
+  for (const match of source.matchAll(/registerRoute\(\s*['"](?:get|post|put|patch|delete)['"]\s*,\s*['"](\/api\/[^'"]*(?:import|export)[^'"]*)/gi)) add('import-export', match[1]);
+
+  return {
+    directory,
+    sourceFiles: sourceFiles(directory),
+    integrations: uniqueIntegrations(integrations)
+  };
+}
+
+module.exports = { collectGuideUiInventory, collectPluginIntegrationInventory, parseControls, sourceFileFor };

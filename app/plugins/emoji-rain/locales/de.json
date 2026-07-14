@@ -390,7 +390,29 @@
         "notifications": {
           "enabled": "Emoji Rain aktiviert.",
           "disabled": "Emoji Rain deaktiviert.",
-          "configuration_saved": "Konfiguration gespeichert."
+          "configuration_saved": "Konfiguration gespeichert.",
+          "test_emojis_spawned": "Test-Emojis wurden erzeugt.",
+          "error_prefix": "Fehler: {error}",
+          "configuration_load_failed": "Konfiguration konnte nicht geladen werden.",
+          "ui_update_failed": "Oberfläche konnte nicht aktualisiert werden.",
+          "configuration_save_failed": "Konfiguration konnte nicht gespeichert werden: {error}",
+          "network_save_failed": "Netzwerkfehler beim Speichern.",
+          "test_in_progress": "Bitte warten, ein Test läuft bereits.",
+          "network_test_failed": "Netzwerkfehler beim Ausführen des Tests.",
+          "heart_balloons_spawned": "Test-Herzballons wurden erzeugt.",
+          "heart_balloons_test_failed": "Herzballon-Test fehlgeschlagen: {error}",
+          "gift_ball_spawned": "Test-Geschenk-Kugel wurde erzeugt.",
+          "gift_ball_test_failed": "Geschenk-Kugel-Test fehlgeschlagen: {error}",
+          "network_failed": "Netzwerkfehler.",
+          "upload_file_required": "Wähle mindestens eine Datei aus.",
+          "upload_result": "{uploaded} hochgeladen, {failed} fehlgeschlagen.",
+          "upload_success": "{uploaded} Bild(er) erfolgreich hochgeladen.",
+          "image_deleted": "Bild gelöscht.",
+          "image_delete_failed": "Bild konnte nicht gelöscht werden: {error}",
+          "network_image_delete_failed": "Netzwerkfehler beim Löschen des Bildes.",
+          "username_required": "Gib einen Benutzernamen ein.",
+          "emoji_or_profile_picture_required": "Gib ein Emoji ein oder aktiviere die Profilbild-Option.",
+          "user_mappings_saved": "Benutzer-Zuordnungen gespeichert."
         }
       }
     }

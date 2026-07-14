@@ -22,7 +22,8 @@ describe('plugin guide definition rendering', () => {
       }
 
       for (const locale of LOCALES) {
-        const values = JSON.parse(fs.readFileSync(path.join(repoRoot, 'locales', `${locale}.json`), 'utf8'));
+        const values = JSON.parse(fs.readFileSync(path.join(repoRoot, 'locales', 'guides', `${locale}.json`), 'utf8'));
+        expect(Object.values(values).some((value) => typeof value === 'string' && value.includes('${'))).toBe(false);
         expect(values[`docs.plugin.${guide.id}.purpose`]).toEqual(expect.any(String));
         expect(values[`docs.plugin.${guide.id}.activation.navigation`]).toEqual(expect.any(String));
         expect(values[`docs.plugin.${guide.id}.workflows.golden-path.title`]).toEqual(expect.any(String));
@@ -31,5 +32,16 @@ describe('plugin guide definition rendering', () => {
         expect(values[`docs.plugin.${guide.id}.troubleshooting.0.resolution`]).toEqual(expect.any(String));
       }
     }
+  });
+
+  test('derives plugin integrations from the shipped implementation rather than guide mode labels', () => {
+    const guides = buildGuides(repoRoot);
+    const emojiRain = guides.find((guide) => guide.id === 'emoji-rain');
+
+    expect(guides.every((guide) => guide.definition.integrations.some((integration) => integration.type === 'local-surface'))).toBe(true);
+    expect(emojiRain.definition.integrations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'rest', value: '/api/emoji-rain/config' }),
+      expect.objectContaining({ type: 'flow-action', value: 'emoji_rain_trigger' })
+    ]));
   });
 });

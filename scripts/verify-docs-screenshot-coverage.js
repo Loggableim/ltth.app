@@ -101,13 +101,39 @@ for (const output of manifest.outputs || []) {
   assert.strictEqual(output.route, asset.route, `${key} route drifted`);
   assert.strictEqual(output.selector, asset.selector, `${key} selector drifted`);
   assert.deepStrictEqual(output.action, asset.action, `${key} action drifted`);
+  assert.deepStrictEqual(output.workflow, asset.workflow, `${key} workflow contract drifted`);
+  assert.ok(output.receipt, `${key} is missing its CaptureReceipt`);
+  assert.deepStrictEqual(output.receipt?.operations, asset.workflow.operations, `${key} receipt operations drifted`);
+  assert.ok(output.receipt?.postconditions?.every((condition) => condition.passed === true), `${key} has an unfulfilled receipt postcondition`);
   assert.strictEqual(output.state?.lang, locale, `${key} document language is not localized`);
   assert.strictEqual(output.state?.i18n, locale, `${key} plugin i18n language is not localized`);
   assert.strictEqual(output.state?.theme, 'cid', `${key} was not captured in the Cid theme`);
   assert.strictEqual(output.focus?.selector, asset.selector, `${key} did not focus its declared UI anchor`);
   assert.ok(Array.isArray(output.preparation), `${key} did not record its capture preparation list`);
   for (const preparation of output.preparation) {
-    assert.strictEqual(preparation?.type, 'activate-tab', `${key} used a synthetic capture-only preparation`);
+    const isTabActivation = preparation?.type === 'activate-tab';
+    const isTimerCreation = asset.guideId === 'advanced-timer'
+      && asset.stepId === 'timer-overlay'
+      && preparation?.type === 'create-demo-timer'
+      && preparation.selector === '#timer-form button[type="submit"]';
+    const isTimerOverlayUrl = asset.guideId === 'advanced-timer'
+      && asset.stepId === 'timer-overlay'
+      && preparation?.type === 'use-created-overlay-url'
+      && preparation.selector === '#timer-container'
+      && typeof preparation.timerId === 'string'
+      && preparation.timerId.length > 0;
+    const isGoalCreation = asset.guideId === 'goals'
+      && asset.stepId === 'goal-overlay'
+      && preparation?.type === 'create-demo-goal'
+      && preparation.selector === '#goal-form button[type="submit"]';
+    const isGoalOverlayUrl = asset.guideId === 'goals'
+      && asset.stepId === 'goal-overlay'
+      && preparation?.type === 'use-created-overlay-url'
+      && preparation.selector === '#goal-container'
+      && typeof preparation.goalId === 'string'
+      && preparation.goalId.length > 0;
+    assert.ok(isTabActivation || isTimerCreation || isTimerOverlayUrl || isGoalCreation || isGoalOverlayUrl,
+      `${key} recorded an unrecognized capture preparation`);
   }
   assert.strictEqual(output.focus?.selector, asset.selector, `${key} did not focus its declared product anchor`);
   const relative = asset.canonical.replace(/^\/screenshots\//, '');

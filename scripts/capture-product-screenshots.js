@@ -9,6 +9,7 @@ const { spawn } = require('child_process');
 const { buildSpec, LOCALES: PRODUCT_LOCALES } = require('./product-screenshot-spec');
 const { buildDocsSpec, LOCALES: DOCS_LOCALES } = require('./docs-screenshot-spec');
 const { prepareDocsPluginFixture } = require('./lib/docs-capture-plugin-fixture');
+const { createCaptureReceipt } = require('./lib/capture-receipt');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const APP_VERSION = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'package.json'), 'utf8')).version;
@@ -20,6 +21,19 @@ const TIMEOUT_MS = Number(process.env.SCREENSHOT_TIMEOUT_MS || 60000);
 const WAIT_AFTER_LOAD_MS = Number(process.env.SCREENSHOT_WAIT_AFTER_LOAD_MS || 1500);
 const ASSET_TIMEOUT_MS = Number(process.env.SCREENSHOT_ASSET_TIMEOUT_MS || 20000);
 const START_APP = process.env.SCREENSHOT_START_APP !== 'false';
+const RUNTIME_PLUGIN_ROUTE_PREFIXES = new Set(['flame-overlay', 'visual-fx-frame-webgpu']);
+const DOCUMENTATION_DEMO_INPUT_VALUES = Object.freeze({
+  'emoji-rain/choose-emojis': '💧, ✨, 🎉'
+});
+const STORE_ADMIN_OPTIONAL_API_RESPONSES = Object.freeze({
+  '/api/plugin-store/account': { success: true, account: { authenticated: false } },
+  '/api/emoji-rain/status': { success: false, unavailable: true },
+  '/api/webgpu-emoji-rain/status': { success: false, unavailable: true },
+  '/api/data-source/status': { success: false, unavailable: true },
+  '/api/openshock/safety': { success: false, unavailable: true },
+  '/api/soundboard/gifts': [],
+  '/api/myinstants/categories': { success: false, results: [] }
+});
 
 function loadPuppeteer() {
   const candidates = [
@@ -82,7 +96,7 @@ function rewritePluginAssetRequest(request) {
     return true;
   }
   const match = url.pathname.match(/^\/([a-z0-9-]+)\/(.+)$/i);
-  if (!match || url.pathname.startsWith('/plugins/') || ['api', 'js', 'css', 'images', 'assets', 'locales'].includes(match[1])) return false;
+  if (!match || url.pathname.startsWith('/plugins/') || RUNTIME_PLUGIN_ROUTE_PREFIXES.has(match[1]) || ['api', 'js', 'css', 'images', 'assets', 'fonts', 'locales'].includes(match[1])) return false;
   const resource = match[2];
   if (!/^(?:assets\/|.*\.(?:js|css|png|jpe?g|gif|svg|webp|woff2?|mp3|wav|json))/i.test(resource)) return false;
   url.pathname = `/plugins/${match[1]}/${resource}`;
@@ -90,10 +104,28 @@ function rewritePluginAssetRequest(request) {
   return true;
 }
 
-async function attachPluginAssetRewrite(page) {
+function respondToStoreAdminOptionalApi(request, guideId) {
+  if (guideId !== 'store-admin') return false;
+  const url = new URL(request.url());
+  const body = STORE_ADMIN_OPTIONAL_API_RESPONSES[url.pathname];
+  if (body === undefined) return false;
+
+  // The signed-out Store workflow runs in an isolated profile with only its
+  // own plugin loaded. The dashboard nevertheless probes optional, unrelated
+  // plugin APIs while booting. Their unavailable state is not part of the
+  // Store UI, so make that absence explicit without starting extra runtimes.
+  request.respond({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(body)
+  });
+  return true;
+}
+
+async function attachPluginAssetRewrite(page, guideId = null) {
   await page.setRequestInterception(true);
   page.on('request', (request) => {
-    if (!rewritePluginAssetRequest(request)) request.continue();
+    if (!respondToStoreAdminOptionalApi(request, guideId) && !rewritePluginAssetRequest(request)) request.continue();
   });
 }
 
@@ -199,13 +231,30 @@ async function stopIsolatedApp(app) {
   }
 }
 
+function applyCaptureDocumentSettings(lang) {
+  localStorage.setItem('dashboard-theme', 'cid');
+  localStorage.setItem('app_locale', lang);
+  const root = document.documentElement;
+  if (!root) {
+    document.addEventListener('DOMContentLoaded', () => applyCaptureDocumentSettings(lang), { once: true });
+    return;
+  }
+  root.setAttribute('data-theme', 'cid');
+  root.lang = lang;
+}
+
 async function configurePage(page, locale) {
-  await page.evaluateOnNewDocument((lang) => {
-    localStorage.setItem('dashboard-theme', 'cid');
-    localStorage.setItem('app_locale', lang);
-    document.documentElement.setAttribute('data-theme', 'cid');
-    document.documentElement.lang = lang;
-  }, locale);
+  page.__docsCaptureConsoleErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      const location = message.location();
+      page.__docsCaptureConsoleErrors.push(
+        location.url ? `${message.text()} (${location.url}:${location.lineNumber})` : message.text()
+      );
+    }
+  });
+  page.on('pageerror', (error) => page.__docsCaptureConsoleErrors.push(error.message));
+  await page.evaluateOnNewDocument(applyCaptureDocumentSettings, locale);
 }
 
 async function activateContainingTab(page, selector) {
@@ -268,11 +317,15 @@ async function applySafeStepState(page, asset, locale) {
   // or production stream action. A guide may explicitly opt into one local
   // safe button action in its temporary profile; every other button remains
   // untouched.
-  await page.evaluate((lang) => {
+  await page.evaluate(async (lang) => {
     document.documentElement.lang = lang;
     document.documentElement.setAttribute('data-theme', 'cid');
     localStorage.setItem('dashboard-theme', 'cid');
     localStorage.setItem('app_locale', lang);
+    if (window.i18n && typeof window.i18n.setLocale === 'function') {
+      await window.i18n.setLocale(lang);
+      window.i18n.updateDOM?.();
+    }
   }, locale);
   if (asset.action && asset.action.prepare === 'create-demo-timer') {
     await page.evaluate(() => {
@@ -561,7 +614,8 @@ async function applySafeStepState(page, asset, locale) {
     }
   }
   if (asset.action && asset.action.type === 'set-demo-value') {
-    await page.evaluate((selector) => {
+    const demoValue = DOCUMENTATION_DEMO_INPUT_VALUES[`${asset.guideId}/${asset.stepId}`] || 'LTTH docs demo';
+    await page.evaluate((selector, value) => {
       const field = document.querySelector(selector);
       if (!field || !['INPUT', 'TEXTAREA', 'SELECT'].includes(field.tagName)) return;
       if (field.tagName === 'SELECT') {
@@ -570,11 +624,11 @@ async function applySafeStepState(page, asset, locale) {
       } else if (field.type === 'checkbox') {
         field.checked = true;
       } else if (!['button', 'submit', 'password', 'file'].includes(field.type)) {
-        field.value = 'LTTH docs demo';
+        field.value = value;
       }
       field.dispatchEvent(new Event('input', { bubbles: true }));
       field.dispatchEvent(new Event('change', { bubbles: true }));
-    }, asset.action.inputSelector || asset.selector);
+    }, asset.action.inputSelector || asset.selector, demoValue);
   }
   if (asset.action && asset.action.allowClick) {
     await page.evaluate((selector, actionType, guideId) => {
@@ -591,6 +645,90 @@ async function applySafeStepState(page, asset, locale) {
     }, asset.action.clickSelector || asset.selector, asset.action.type, asset.guideId);
     await new Promise((resolve) => setTimeout(resolve, asset.action.settleMs || 250));
   }
+}
+
+async function prepareAdvancedTimerOverlay(page, baseUrl, asset, locale) {
+  const setupRoute = '/plugins/advanced-timer/ui.html';
+  const setupResponse = await page.goto(urlFor(baseUrl, setupRoute, locale), {
+    waitUntil: 'domcontentloaded',
+    timeout: TIMEOUT_MS
+  });
+  if (!setupResponse || setupResponse.status() >= 400) {
+    throw new Error(`HTTP ${setupResponse ? setupResponse.status() : 'no response'} while preparing Advanced Timer overlay`);
+  }
+  await new Promise((resolve) => setTimeout(resolve, WAIT_AFTER_LOAD_MS));
+  await applySafeStepState(page, {
+    guideId: asset.guideId,
+    action: {
+      type: 'run-local-preview',
+      prepare: 'create-demo-timer',
+      allowClick: true,
+      clickSelector: '#timer-form button[type="submit"]',
+      settleMs: 750
+    }
+  }, locale);
+  const timerId = await page.evaluate(async () => {
+    const response = await fetch('/api/advanced-timer/timers');
+    const data = await response.json();
+    const timer = data.timers?.find((candidate) => (
+      candidate.name === 'LTTH docs countdown' && Number(candidate.initial_duration) === 90
+    ));
+    if (!data.success || !timer?.id) {
+      throw new Error('Advanced Timer local documentation timer was not created');
+    }
+    return timer.id;
+  });
+  const overlayUrl = new URL(urlFor(baseUrl, asset.route, locale));
+  overlayUrl.searchParams.set('timer', timerId);
+  return {
+    url: overlayUrl.toString(),
+    preparation: [
+      { type: 'create-demo-timer', selector: '#timer-form button[type="submit"]' },
+      { type: 'use-created-overlay-url', selector: '#timer-container', timerId }
+    ]
+  };
+}
+
+async function prepareGoalsOverlay(page, baseUrl, asset, locale) {
+  const setupRoute = '/goals/ui';
+  const setupResponse = await page.goto(urlFor(baseUrl, setupRoute, locale), {
+    waitUntil: 'domcontentloaded',
+    timeout: TIMEOUT_MS
+  });
+  if (!setupResponse || setupResponse.status() >= 400) {
+    throw new Error(`HTTP ${setupResponse ? setupResponse.status() : 'no response'} while preparing Goal overlay`);
+  }
+  await new Promise((resolve) => setTimeout(resolve, WAIT_AFTER_LOAD_MS));
+  await applySafeStepState(page, { guideId: asset.guideId, action: { prepare: 'open-goal-create-modal' } }, locale);
+  await page.evaluate(() => {
+    const name = document.getElementById('goal-name');
+    const target = document.getElementById('goal-target');
+    const form = document.getElementById('goal-form');
+    if (!(name instanceof HTMLInputElement) || !(target instanceof HTMLInputElement) || !(form instanceof HTMLFormElement)) {
+      throw new Error('Goal demo form is unavailable');
+    }
+    name.value = 'LTTH docs goal';
+    target.value = '100';
+    for (const field of [name, target]) {
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      field.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    form.requestSubmit();
+  });
+  const goalId = await page.waitForFunction(async () => {
+    const response = await fetch('/api/goals');
+    const data = await response.json();
+    return data.goals?.find((goal) => goal.name === 'LTTH docs goal')?.id || false;
+  }, { timeout: 5000 }).then((handle) => handle.jsonValue());
+  const overlayUrl = new URL(urlFor(baseUrl, asset.route, locale));
+  overlayUrl.searchParams.set('id', goalId);
+  return {
+    url: overlayUrl.toString(),
+    preparation: [
+      { type: 'create-demo-goal', selector: '#goal-form button[type="submit"]' },
+      { type: 'use-created-overlay-url', selector: '#goal-container', goalId }
+    ]
+  };
 }
 
 function screenshotClipForAnchor(viewport, anchorRect) {
@@ -611,34 +749,10 @@ function screenshotClipForAnchor(viewport, anchorRect) {
   };
 }
 
-function captureReceipt({ asset, locale, outputPath: screenshotPath, httpStatus, state, focus, preparation, sha256 }) {
-  const action = asset.action || { type: 'inspect' };
-  return {
-    schemaVersion: 1,
-    plugin: asset.guideId,
-    language: locale,
-    appVersion: APP_VERSION,
-    route: asset.route,
-    operations: [
-      { type: 'goto', route: asset.route },
-      ...(action.prepare ? [{ type: 'prepare', name: action.prepare }] : []),
-      { type: action.type, selector: action.clickSelector || action.inputSelector || asset.selector }
-    ],
-    postconditions: [
-      { type: 'http-status', expected: '< 400', actual: httpStatus, passed: httpStatus < 400 },
-      { type: 'anchor-visible', selector: asset.selector, actual: Boolean(state.anchorRect), passed: Boolean(state.anchorRect) },
-      { type: 'document-language', expected: locale, actual: state.lang, passed: state.lang === locale },
-      { type: 'i18n-locale', expected: locale, actual: state.i18n, passed: state.i18n === locale },
-      { type: 'cid-theme', expected: 'cid', actual: state.theme, passed: state.theme === 'cid' },
-      { type: 'screenshot-hash', actual: sha256, passed: Boolean(sha256) }
-    ],
-    screenshotPath,
-    sha256,
-    preparation
-  };
-}
-
 async function captureAsset(page, baseUrl, asset, locale) {
+  // A browser page is reused inside one isolated plugin process. Console
+  // evidence belongs to this workflow step only, never to a prior step.
+  page.__docsCaptureConsoleErrors = [];
   await page.setViewport(asset.viewport);
   // Overlay renderers can start live sockets, WebGL loops, or audio engines on
   // load. For documentation we preserve their shipped markup and styles while
@@ -650,7 +764,13 @@ async function captureAsset(page, baseUrl, asset, locale) {
   // empty state must not start that runtime or make a network request.
   const staticOnly = needsOpenShockDemo || asset.guideId === 'interactive-story';
   await page.setJavaScriptEnabled(!staticOnly);
-  const response = await page.goto(urlFor(baseUrl, asset.route, locale), { waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS });
+  const advancedTimerOverlay = asset.action && asset.action.prepare === 'create-demo-timer-overlay'
+    ? await prepareAdvancedTimerOverlay(page, baseUrl, asset, locale)
+    : null;
+  const goalsOverlay = asset.action && asset.action.prepare === 'create-demo-goal-overlay'
+    ? await prepareGoalsOverlay(page, baseUrl, asset, locale)
+    : null;
+  const response = await page.goto(advancedTimerOverlay?.url || goalsOverlay?.url || urlFor(baseUrl, asset.route, locale), { waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS });
   if (!response || response.status() >= 400) throw new Error(`HTTP ${response ? response.status() : 'no response'} for ${asset.route}`);
   // Store initialization automatically opens the external account bridge for
   // a fresh profile. Clear the local bridge session as soon as its shipped
@@ -680,18 +800,43 @@ async function captureAsset(page, baseUrl, asset, locale) {
   // workflow. Run that workflow first, then let the generic tab helper reveal
   // a static parent pane if the anchor still needs it.
   const tabPreparation = await activateContainingTab(page, asset.selector);
-  const preparation = [tabPreparation].filter(Boolean);
+  const preparation = [...(advancedTimerOverlay?.preparation || []), ...(goalsOverlay?.preparation || []), tabPreparation].filter(Boolean);
   const focus = await assertRenderedAnchor(page, asset.selector);
   await new Promise((resolve) => setTimeout(resolve, 100));
-  const state = await page.evaluate((lang, anchorSelector) => {
+  const observedSelectors = [...new Set([
+    asset.selector,
+    asset.action?.inputSelector,
+    ...asset.workflow.postconditions.map((condition) => condition.selector)
+  ].filter(Boolean))];
+  const state = await page.evaluate((lang, anchorSelector, selectors) => {
     const anchor = document.querySelector(anchorSelector);
     const rect = anchor && anchor.getBoundingClientRect();
+    const controlState = (selector) => {
+      const element = document.querySelector(selector);
+      const controlRect = element && element.getBoundingClientRect();
+      const style = element && getComputedStyle(element);
+      const visible = Boolean(element && style && controlRect && style.display !== 'none' && style.visibility !== 'hidden' && controlRect.width >= 2 && controlRect.height >= 2);
+      return {
+        visible,
+        text: (element?.innerText || element?.textContent || element?.value || element?.getAttribute('aria-label') || '').trim(),
+        value: element && 'value' in element ? element.value : null,
+        checked: element && 'checked' in element ? Boolean(element.checked) : null,
+        overlay: Boolean(element && (element.matches('canvas, [data-overlay], .overlay, #overlay-root, #canvas-container') || element.querySelector('canvas, [data-overlay], .overlay, #overlay-root')))
+      };
+    };
     return {
       lang: document.documentElement.lang || document.documentElement.getAttribute('data-lang') || null,
       i18n: window.i18n && typeof window.i18n.getLocale === 'function' ? window.i18n.getLocale() : (window.I18n && window.I18n.currentLang) || document.documentElement.lang || null,
       theme: document.documentElement.getAttribute('data-theme') || null,
       route: `${location.pathname}${location.search}`,
-          viewport: {
+      anchorText: (anchor?.innerText || anchor?.value || anchor?.getAttribute('aria-label') || '').trim(),
+      anchorValue: anchor && 'value' in anchor ? anchor.value : null,
+      anchorChecked: anchor && 'checked' in anchor ? Boolean(anchor.checked) : null,
+      overlayVisible: Boolean(document.querySelector('canvas, [data-overlay], .overlay, #overlay-root')),
+      controls: Object.fromEntries(selectors.map((selector) => {
+        return [selector, controlState(selector)];
+      })),
+              viewport: {
             scrollX: window.scrollX,
             scrollY: window.scrollY,
             scrollWidth: document.documentElement.scrollWidth,
@@ -701,7 +846,7 @@ async function captureAsset(page, baseUrl, asset, locale) {
       },
       anchorRect: rect ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height } : null
     };
-  }, locale, asset.selector);
+  }, locale, asset.selector, observedSelectors);
   if (state.lang !== locale) throw new Error(`Document language is ${state.lang || 'unset'}, expected ${locale}`);
   if (state.theme !== 'cid') throw new Error(`Theme is ${state.theme || 'unset'}, expected cid`);
   if (!state.anchorRect) throw new Error(`Capture anchor has no rendered geometry: ${asset.selector}`);
@@ -771,6 +916,7 @@ async function captureAsset(page, baseUrl, asset, locale) {
     route: asset.route,
     selector: asset.selector,
     action: asset.action,
+    workflow: asset.workflow,
     httpStatus: response.status(),
     fixture: asset.fixture,
     focus,
@@ -780,16 +926,21 @@ async function captureAsset(page, baseUrl, asset, locale) {
     sha256,
     bytes: bytes.length
   };
-  output.receipt = captureReceipt({
+  output.receipt = createCaptureReceipt({
     asset,
     locale,
-    outputPath: output.path,
+    appVersion: APP_VERSION,
+    screenshotPath: output.path,
     httpStatus: output.httpStatus,
     state,
-    focus,
     preparation,
-    sha256
+    sha256,
+    consoleErrors: page.__docsCaptureConsoleErrors
   });
+  const failedPostconditions = output.receipt.postconditions.filter((condition) => !condition.passed);
+  if (failedPostconditions.length) {
+    throw new Error(`Workflow postconditions failed for ${asset.guideId}/${asset.stepId}: ${JSON.stringify(failedPostconditions)}`);
+  }
   return output;
 }
 
@@ -815,9 +966,9 @@ async function captureDocs(spec, assets, locales) {
   const outputs = [];
   const failures = [];
   try {
-    const createCapturePage = async (locale) => {
+    const createCapturePage = async (locale, guideId) => {
       const page = await browser.newPage();
-      await attachPluginAssetRewrite(page);
+      await attachPluginAssetRewrite(page, guideId);
       await configurePage(page, locale);
       return page;
     };
@@ -834,7 +985,7 @@ async function captureDocs(spec, assets, locales) {
         try {
           console.log(`Capturing ${locale}/${guideId} (${guideAssets.length} steps)`);
           app = await startIsolatedApp(`${guideId}-${locale}`, guideId);
-          page = await createCapturePage(locale);
+          page = await createCapturePage(locale, guideId);
           for (const asset of guideAssets) {
             try {
               outputs.push(await withTimeout(captureAsset(page, app.baseUrl, asset, locale), `${locale}/${asset.id}`));
@@ -850,7 +1001,7 @@ async function captureDocs(spec, assets, locales) {
               failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: `${error.message}${diagnostic}${startupDiagnostic}` });
               if (error.message.includes('Timed out after')) {
                 await page.close().catch(() => {});
-                page = await createCapturePage(locale);
+                page = await createCapturePage(locale, guideId);
               }
             }
           }
@@ -902,9 +1053,12 @@ function compatibleDocsOutput(output, expectedById) {
     && output.route === asset.route
     && output.selector === asset.selector
     && JSON.stringify(output.action) === JSON.stringify(asset.action)
-        && output.focus?.selector === asset.selector
-        && output.screenshotClip
-        && output.screenshotClip.width === Math.min(output.state?.viewport?.clientWidth || 0, 640)
+    && JSON.stringify(output.workflow) === JSON.stringify(asset.workflow)
+    && JSON.stringify(output.receipt?.operations) === JSON.stringify(asset.workflow.operations)
+    && output.receipt?.postconditions?.every((condition) => condition.passed === true)
+    && output.focus?.selector === asset.selector
+    && output.screenshotClip
+    && output.screenshotClip.width === Math.min(output.state?.viewport?.clientWidth || 0, 640)
     && output.state?.lang === output.locale
     && output.state?.i18n === output.locale
     && output.state?.theme === 'cid';

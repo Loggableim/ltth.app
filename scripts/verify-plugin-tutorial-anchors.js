@@ -17,6 +17,8 @@ function sourceFileFor(route) {
   if (pathname === '/clarityhud/ui') return path.join(ROOT, 'app', 'plugins', 'clarityhud', 'ui', 'main.html');
   if (pathname === '/overlay/clarity/full') return path.join(ROOT, 'app', 'plugins', 'clarityhud', 'overlays', 'full.html');
   if (pathname === '/webgpu-fireworks/overlay') return path.join(ROOT, 'app', 'plugins', 'webgpu-fireworks', 'overlay.html');
+  if (pathname === '/goals/overlay') return path.join(ROOT, 'app', 'plugins', 'goals', 'overlay', 'index.html');
+  if (pathname === '/flame-overlay/overlay') return path.join(ROOT, 'app', 'plugins', 'flame-overlay', 'renderer', 'index.html');
   if (pathname === '/visual-fx-frame-webgpu/ui') return path.join(ROOT, 'plugin-store', 'sources', 'visual-fx-frame-webgpu', 'ui', 'settings.html');
   if (pathname === '/visual-fx-frame-webgpu/overlay') return path.join(ROOT, 'plugin-store', 'sources', 'visual-fx-frame-webgpu', 'renderer', 'index.html');
   if (pathname.startsWith('/dashboard.html')) return path.join(ROOT, 'app', 'public', 'dashboard.html');

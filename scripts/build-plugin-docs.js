@@ -6,6 +6,7 @@ const { LOCALES, buildGuides } = require('./plugin-tutorial-source');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'docs', 'plugins');
+const GUIDE_LOCALES_OUT = path.join(ROOT, 'locales', 'guides');
 const escapeHtml = (value) => String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const key = (id, suffix) => `docs.plugin.${id}.${suffix}`;
 const imagePath = (locale, id, stepId) => locale === 'en'
@@ -120,7 +121,7 @@ function definitionMarkup(guide, values) {
   return `<section class="plugin-doc-section" id="guide-purpose" data-guide-section="purpose"><h2 data-i18n="docs.plugin.definition.purpose">${escapeHtml(de['docs.plugin.definition.purpose'])}</h2><p data-i18n="${key(guide.id, 'purpose')}">${escapeHtml(de[key(guide.id, 'purpose')])}</p><p data-i18n="${key(guide.id, 'audience')}">${escapeHtml(de[key(guide.id, 'audience')])}</p></section><section class="plugin-doc-section" id="guide-activation" data-guide-section="activation"><h2 data-i18n="docs.plugin.definition.activation">${escapeHtml(de['docs.plugin.definition.activation'])}</h2><p data-i18n="${key(guide.id, 'activation.navigation')}">${escapeHtml(de[key(guide.id, 'activation.navigation')])}</p><p><code>${escapeHtml(definition.activation.route)}</code></p></section><section class="plugin-doc-section" id="guide-workflows" data-guide-section="workflows"><h2 data-i18n="docs.plugin.definition.workflows">${escapeHtml(de['docs.plugin.definition.workflows'])}</h2>${workflows}</section><section class="plugin-doc-section" id="guide-settings" data-guide-section="settings"><h2 data-i18n="docs.plugin.definition.settings">${escapeHtml(de['docs.plugin.definition.settings'])}</h2>${settings}</section><section class="plugin-doc-section" id="guide-integrations" data-guide-section="integrations"><h2 data-i18n="docs.plugin.definition.integrations">${escapeHtml(de['docs.plugin.definition.integrations'])}</h2><ul>${integrations}</ul></section><section class="plugin-doc-section" id="guide-controls" data-guide-section="controls"><h2 data-i18n="docs.plugin.definition.controls">${escapeHtml(de['docs.plugin.definition.controls'])}</h2><ul>${controls}</ul></section><section class="plugin-doc-section" id="guide-troubleshooting" data-guide-section="troubleshooting"><h2 data-i18n="docs.plugin.troubleshooting">${escapeHtml(de['docs.plugin.troubleshooting'])}</h2>${troubleshooting}</section>`;
 }
 
-function legacyGuidePage(guide, values, byId) {
+function renderGuideShell(guide, values, byId) {
   const de = values.de;
   const steps = guide.steps.map((step, index) => stepMarkup(guide, step, index, values)).join('\n');
   const toc = guide.steps.map((step, index) => `<li><a href="#step-${escapeHtml(step.id)}" data-i18n="${key(guide.id, `steps.${step.id}.title`)}">${index + 1}. ${escapeHtml(de[key(guide.id, `steps.${step.id}.title`)])}</a></li>`).join('');
@@ -129,14 +130,14 @@ function legacyGuidePage(guide, values, byId) {
   return `<!DOCTYPE html><html lang="de" data-lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="${escapeHtml(guide.copy.de.summary)}"><title data-i18n="${key(guide.id, 'title')}">${escapeHtml(guide.name)} – LTTH Docs</title><link rel="canonical" href="https://ltth.app/docs/plugins/${guide.id}.html">${LOCALES.map((locale) => `<link rel="alternate" hreflang="${locale}" href="https://ltth.app/docs/plugins/${guide.id}.html?lang=${locale}">`).join('')}<link rel="alternate" hreflang="x-default" href="https://ltth.app/docs/plugins/${guide.id}.html"><meta property="og:type" content="article"><meta property="og:title" content="${escapeHtml(guide.name)} – LTTH Docs"><meta property="og:description" content="${escapeHtml(guide.copy.de.summary)}"><meta property="og:image" content="https://ltth.app${imagePath('en', guide.id, guide.steps[0].id)}"><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/css/layout.css?v=menu-20260712a"><link rel="stylesheet" href="/css/docs.css"><link rel="stylesheet" href="/css/site-v2.css?v=site-v2-20260712a"></head><body class="site-v2"><a class="skip-to-content" href="#main-content" data-i18n="homeV2.skip">Zum Inhalt springen</a><main id="main-content" class="plugin-doc-page"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="/docs.html" data-i18n="docs.plugin.breadcrumb.docs">${escapeHtml(de['docs.plugin.breadcrumb.docs'])}</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current" data-i18n="${key(guide.id, 'title')}">${escapeHtml(guide.name)}</span></nav><header class="plugin-doc-hero"><p class="plugin-doc-hero__eyebrow" data-i18n="${key(guide.id, 'status')}">${escapeHtml(de[key(guide.id, 'status')])}</p><h1 data-i18n="${key(guide.id, 'title')}">${escapeHtml(guide.name)}</h1><p data-i18n="${key(guide.id, 'summary')}">${escapeHtml(de[key(guide.id, 'summary')])}</p><dl class="plugin-doc-meta"><div><dt data-i18n="docs.plugin.status">${escapeHtml(de['docs.plugin.status'])}</dt><dd data-i18n="${key(guide.id, 'status')}">${escapeHtml(de[key(guide.id, 'status')])}</dd></div><div><dt>Version</dt><dd>${escapeHtml(guide.version)}</dd></div></dl></header><section class="plugin-doc-section plugin-doc-first-result"><h2 data-i18n="docs.plugin.result">${escapeHtml(de['docs.plugin.result'])}</h2><p data-i18n="${key(guide.id, 'firstResult')}">${escapeHtml(de[key(guide.id, 'firstResult')])}</p></section><aside class="plugin-doc-toc"><h2 data-i18n="docs.plugin.contents">${escapeHtml(de['docs.plugin.contents'])}</h2><ol>${toc}</ol></aside><section class="plugin-doc-section"><h2 data-i18n="docs.plugin.requirements">${escapeHtml(de['docs.plugin.requirements'])}</h2><p data-i18n="${key(guide.id, 'requirements')}">${escapeHtml(de[key(guide.id, 'requirements')])}</p></section><section class="plugin-doc-section plugin-doc-safety"><h2 data-i18n="docs.plugin.safety">${escapeHtml(de['docs.plugin.safety'])}</h2><p data-i18n="${key(guide.id, 'safety')}">${escapeHtml(de[key(guide.id, 'safety')])}</p></section><section class="plugin-doc-section"><h2 data-i18n="docs.plugin.steps">${escapeHtml(de['docs.plugin.steps'])}</h2><ol class="plugin-doc-steps">${steps}</ol></section>${overlay}<section class="plugin-doc-section"><h2 data-i18n="docs.plugin.troubleshooting">${escapeHtml(de['docs.plugin.troubleshooting'])}</h2><p data-i18n="${key(guide.id, 'troubleshooting')}">${escapeHtml(de[key(guide.id, 'troubleshooting')])}</p></section>${related ? `<section class="plugin-doc-section"><h2 data-i18n="docs.plugin.related">${escapeHtml(de['docs.plugin.related'])}</h2><ul>${related}</ul></section>` : ''}<p><a class="btn btn-secondary" href="/docs.html" data-i18n="docs.plugin.back">${escapeHtml(de['docs.plugin.back'])}</a></p></main><script src="/js/main.js"></script><script src="/js/i18n.js"></script><script src="/js/layout.js?v=site-v2-20260712a"></script><script>document.addEventListener('DOMContentLoaded',async()=>{if(window.LTTHLayout)await LTTHLayout.init();if(window.I18n)await I18n.init(window.__ltthLang||'de');});</script></body></html>\n`;
 }
 
-function guidePage(guide, values, byId) {
+function renderGuideDocument(guide, values, byId) {
   const marker = '<section class="plugin-doc-section"><h2 data-i18n="docs.plugin.steps">';
-  const withoutLegacyTroubleshooting = legacyGuidePage(guide, values, byId).replace(
+  const withoutDuplicateTroubleshooting = renderGuideShell(guide, values, byId).replace(
     /<section class="plugin-doc-section"><h2 data-i18n="docs\.plugin\.troubleshooting">[\s\S]*?<\/section>(?=(?:<section class="plugin-doc-section"><h2 data-i18n="docs\.plugin\.related"|<p><a class="btn))/,
     ''
   );
-  if (!withoutLegacyTroubleshooting.includes(marker)) throw new Error(`Plugin guide page marker is missing for ${guide.id}`);
-  return withoutLegacyTroubleshooting.replace(marker, `${definitionMarkup(guide, values)}${marker}`);
+  if (!withoutDuplicateTroubleshooting.includes(marker)) throw new Error(`Plugin guide page marker is missing for ${guide.id}`);
+  return withoutDuplicateTroubleshooting.replace(marker, `${definitionMarkup(guide, values)}${marker}`);
 }
 
 function updateSitemap(guides) {
@@ -166,20 +167,40 @@ function removeStaleGuideTranslations(current, guides) {
   }
 }
 
+function isGuideProseKey(name, guides) {
+  const match = name.match(/^docs\.plugin\.([a-z0-9-]+)\.(.+)$/);
+  return Boolean(match && match[2] !== 'title' && guides.some((guide) => guide.id === match[1]));
+}
+
+function guideLocaleBundle(values) {
+  return Object.fromEntries(Object.entries(values).filter(([name]) => name.startsWith('docs.plugin.')));
+}
+
 function main() {
   const guides = buildGuides(ROOT);
   const values = buildLocales(guides);
   const byId = new Map(guides.map((guide) => [guide.id, guide]));
   fs.mkdirSync(OUT, { recursive: true });
+  fs.mkdirSync(GUIDE_LOCALES_OUT, { recursive: true });
   removeStaleGuidePages(guides);
-  for (const guide of guides) fs.writeFileSync(path.join(OUT, `${guide.id}.html`), guidePage(guide, values, byId), 'utf8');
+  for (const guide of guides) fs.writeFileSync(path.join(OUT, `${guide.id}.html`), renderGuideDocument(guide, values, byId), 'utf8');
   fs.writeFileSync(path.join(OUT, 'index.json'), `${JSON.stringify(guides.map((guide) => ({ id: guide.id, name: guide.name, category: guide.category, access: guide.devStatus, devStatus: guide.devStatus, storeAvailable: guide.id === 'store-admin' || fs.existsSync(path.join(ROOT, 'plugin-store', 'packages', `${guide.id}.zip`)), image: Object.fromEntries(LOCALES.map((locale) => [locale, imagePath(locale, guide.id, guide.steps[0].id)])), translations: Object.fromEntries(LOCALES.map((locale) => [locale, { title: guide.copy[locale].title, summary: guide.copy[locale].summary, firstResult: guide.copy[locale].firstResult }])) })), null, 2)}\n`, 'utf8');
   for (const locale of LOCALES) {
     const file = path.join(ROOT, 'locales', `${locale}.json`);
     const current = JSON.parse(fs.readFileSync(file, 'utf8'));
     removeStaleGuideTranslations(current, guides);
-    Object.assign(current, values[locale]);
+    for (const name of Object.keys(current)) {
+      if (isGuideProseKey(name, guides)) delete current[name];
+    }
+    const rootValues = Object.fromEntries(Object.entries(values[locale])
+      .filter(([name]) => !isGuideProseKey(name, guides)));
+    Object.assign(current, rootValues);
     fs.writeFileSync(file, `${JSON.stringify(current, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(
+      path.join(GUIDE_LOCALES_OUT, `${locale}.json`),
+      `${JSON.stringify(guideLocaleBundle(values[locale]), null, 2)}\n`,
+      'utf8'
+    );
   }
   updateSitemap(guides);
   console.log(`Built ${guides.length} detailed plugin tutorial pages in four locales.`);

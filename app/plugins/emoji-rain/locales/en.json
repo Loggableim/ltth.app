@@ -390,7 +390,29 @@
         "notifications": {
           "enabled": "Emoji Rain enabled.",
           "disabled": "Emoji Rain disabled.",
-          "configuration_saved": "Configuration saved."
+          "configuration_saved": "Configuration saved.",
+          "test_emojis_spawned": "Test emojis spawned.",
+          "error_prefix": "Error: {error}",
+          "configuration_load_failed": "Could not load configuration.",
+          "ui_update_failed": "Could not update the UI.",
+          "configuration_save_failed": "Could not save configuration: {error}",
+          "network_save_failed": "Network error while saving.",
+          "test_in_progress": "Please wait; a test is already running.",
+          "network_test_failed": "Network error while running the test.",
+          "heart_balloons_spawned": "Test heart balloons spawned.",
+          "heart_balloons_test_failed": "Heart-balloons test failed: {error}",
+          "gift_ball_spawned": "Test gift ball spawned.",
+          "gift_ball_test_failed": "Gift-ball test failed: {error}",
+          "network_failed": "Network error.",
+          "upload_file_required": "Choose at least one file.",
+          "upload_result": "{uploaded} uploaded, {failed} failed.",
+          "upload_success": "{uploaded} image(s) uploaded successfully.",
+          "image_deleted": "Image deleted.",
+          "image_delete_failed": "Could not delete image: {error}",
+          "network_image_delete_failed": "Network error while deleting the image.",
+          "username_required": "Enter a username.",
+          "emoji_or_profile_picture_required": "Enter an emoji or enable the profile-picture option.",
+          "user_mappings_saved": "User mappings saved."
         }
       }
     }

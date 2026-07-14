@@ -192,6 +192,13 @@ describe('documentation capture real workflows', () => {
     });
   });
 
+  test('uses the documented comma-separated emoji sample instead of generic text', () => {
+    const emojiList = step('emoji-rain', 'choose-emojis');
+    expect(emojiList.workflow.postconditions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'input-value', selector: '#emoji_set', expected: '💧, ✨, 🎉' })
+    ]));
+  });
+
   test('opens the relevant Flame Overlay tabs before documenting their controls', () => {
     expect(step('flame-overlay', 'frame-style').capture.action).toMatchObject({ prepare: 'open-flame-frame-tab' });
     expect(step('flame-overlay', 'frame-intensity').capture.action).toMatchObject({ prepare: 'open-flame-motion-tab' });

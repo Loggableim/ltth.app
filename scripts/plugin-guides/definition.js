@@ -98,7 +98,24 @@ function settingFromInventory(control) {
   };
 }
 
-function createGuideDefinition({ name, version, entry, copy, steps, overlay, inventory = { controls: [] } }) {
+function integrationDescription(type, value) {
+  const labels = {
+    rest: localized('Öffentlicher lokaler REST-Endpunkt aus dem Plugin-Code; der Guide sendet keine Anfrage.', 'Public local REST endpoint from the plugin code; the guide sends no request.', 'Endpoint REST local público del código del plugin; la guía no envía solicitudes.', 'Endpoint REST local public issu du code du plugin ; le guide n’envoie aucune requête.'),
+    'socket-event': localized('Socket-Ereignis, das im Plugin-Code registriert ist.', 'Socket event registered in the plugin code.', 'Evento de socket registrado en el código del plugin.', 'Événement socket enregistré dans le code du plugin.'),
+    'flow-action': localized('Flow-Aktion, die das Plugin für lokale Automatisierungen registriert.', 'Flow action registered by the plugin for local automations.', 'Acción de flujo registrada por el plugin para automatizaciones locales.', 'Action de flux enregistrée par le plugin pour les automatisations locales.'),
+    'chat-command': localized('Chat-Befehl, der vom Plugin-Code registriert wird.', 'Chat command registered by the plugin code.', 'Comando de chat registrado por el código del plugin.', 'Commande de chat enregistrée par le code du plugin.'),
+    storage: localized('Persistenzzugriff, der im Plugin-Code verwendet wird.', 'Persistence access used by the plugin code.', 'Acceso de persistencia usado por el código del plugin.', 'Accès de persistance utilisé par le code du plugin.'),
+    'import-export': localized('Import-/Export-Endpunkt aus dem Plugin-Code; im Guide nur als Referenz, nicht ausgeführt.', 'Import/export endpoint from the plugin code; reference only, never executed by the guide.', 'Endpoint de importación/exportación del código del plugin; solo referencia, la guía no lo ejecuta.', 'Endpoint d’import/export issu du code du plugin ; uniquement une référence, jamais exécutée par le guide.')
+  };
+  return labels[type] || localized(
+    `Verifizierter Integrationswert aus dem Plugin-Code: ${value}.`,
+    `Verified integration value from the plugin code: ${value}.`,
+    `Valor de integración verificado del código del plugin: ${value}.`,
+    `Valeur d’intégration vérifiée dans le code du plugin : ${value}.`
+  );
+}
+
+function createGuideDefinition({ name, version, entry, copy, steps, overlay, inventory = { controls: [] }, integrationInventory = { integrations: [] } }) {
   const workflows = localizedWorkflow(name, entry.topic, entry.test, overlay);
   const localTestSteps = steps.filter((step) => ['run-local-preview', 'save-demo-config'].includes(step.capture.action.type)).map((step) => step.id);
   const overlaySteps = steps.filter((step) => step.capture.action.type === 'open-overlay-preview').map((step) => step.id);
@@ -135,10 +152,10 @@ function createGuideDefinition({ name, version, entry, copy, steps, overlay, inv
     metadata: {
       purpose: Object.fromEntries(LOCALES.map((locale) => [locale, copy[locale].summary])),
       audience: localized(
-        'Streamer:innen, die das Plugin zuerst ohne LIVE-Auswirkung einrichten möchten.',
-        'Streamers who want to set up the plugin without LIVE impact first.',
-        'Streamers que quieren configurar primero el plugin sin impacto LIVE.',
-        'Streamers qui souhaitent d’abord configurer le plugin sans impact LIVE.'
+        `Streamer:innen, die ${entry.topic.de} zuerst ohne LIVE-Auswirkung einrichten möchten.`,
+        `Streamers who want to set up ${entry.topic.en} without LIVE impact first.`,
+        `Streamers que quieren configurar primero ${entry.topic.es} sin impacto LIVE.`,
+        `Streamers qui souhaitent d’abord configurer ${entry.topic.fr} sans impact LIVE.`
       ),
       version,
       prerequisites: Object.fromEntries(LOCALES.map((locale) => [locale, copy[locale].requirements])),
@@ -180,32 +197,22 @@ function createGuideDefinition({ name, version, entry, copy, steps, overlay, inv
           'URL d’overlay locale pour une source navigateur temporaire.'
         )
       }] : []),
-      ...(entry.mode === 'api' ? [{
-        type: 'rest',
-        value: entry.route,
-        description: localized(
-          'Lesender lokaler REST-Einstiegspunkt; keine Aktion wird durch den Guide ausgelöst.',
-          'Read-only local REST entry point; the guide triggers no action.',
-          'Punto de entrada REST local de solo lectura; la guía no activa ninguna acción.',
-          'Point d’entrée REST local en lecture seule ; le guide ne déclenche aucune action.'
-        )
-      }] : [])
+      ...(integrationInventory.integrations || []).map((integration) => ({
+        type: integration.type,
+        value: integration.value,
+        description: integrationDescription(integration.type, integration.value)
+      }))
     ],
     troubleshooting: [
       {
         symptom: localized(
-          'Die lokale Oberfläche oder Vorschau ist leer.',
-          'The local surface or preview is empty.',
-          'La superficie local o la vista previa está vacía.',
-          'La surface locale ou l’aperçu est vide.'
+          `${name}: ${entry.topic.de} ist in der lokalen Oberfläche oder Vorschau leer.`,
+          `${name}: ${entry.topic.en} is empty in the local surface or preview.`,
+          `${name}: ${entry.topic.es} está vacío en la superficie local o vista previa.`,
+          `${name} : ${entry.topic.fr} est vide dans la surface locale ou l’aperçu.`
         ),
         checks: Object.fromEntries(LOCALES.map((locale) => [locale, [copy[locale].troubleshooting, copy[locale].requirements]])),
-        resolution: localized(
-          'Plugin-Status prüfen, die exakte lokale Route erneut öffnen und den Testwert im frischen Testprofil speichern.',
-          'Check plugin status, reopen the exact local route, and save the test value in a fresh test profile.',
-          'Comprueba el estado del plugin, vuelve a abrir la ruta local exacta y guarda el valor de prueba en un perfil nuevo.',
-          'Vérifiez l’état du plugin, rouvrez la route locale exacte et enregistrez la valeur de test dans un profil neuf.'
-        )
+        resolution: Object.fromEntries(LOCALES.map((locale) => [locale, copy[locale].troubleshooting]))
       }
     ],
     visibleControls

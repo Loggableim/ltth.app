@@ -390,7 +390,29 @@
         "notifications": {
           "enabled": "Emoji Rain activé.",
           "disabled": "Emoji Rain désactivé.",
-          "configuration_saved": "Configuration enregistrée."
+          "configuration_saved": "Configuration enregistrée.",
+          "test_emojis_spawned": "Les emoji de test ont été générés.",
+          "error_prefix": "Erreur : {error}",
+          "configuration_load_failed": "Impossible de charger la configuration.",
+          "ui_update_failed": "Impossible de mettre à jour l’interface.",
+          "configuration_save_failed": "Impossible d’enregistrer la configuration : {error}",
+          "network_save_failed": "Erreur réseau lors de l’enregistrement.",
+          "test_in_progress": "Veuillez patienter ; un test est déjà en cours.",
+          "network_test_failed": "Erreur réseau lors de l’exécution du test.",
+          "heart_balloons_spawned": "Des ballons-cœurs de test ont été générés.",
+          "heart_balloons_test_failed": "Échec du test des ballons-cœurs : {error}",
+          "gift_ball_spawned": "Une boule cadeau de test a été générée.",
+          "gift_ball_test_failed": "Échec du test de boule cadeau : {error}",
+          "network_failed": "Erreur réseau.",
+          "upload_file_required": "Choisissez au moins un fichier.",
+          "upload_result": "{uploaded} importés, {failed} échoués.",
+          "upload_success": "{uploaded} image(s) importée(s) avec succès.",
+          "image_deleted": "Image supprimée.",
+          "image_delete_failed": "Impossible de supprimer l’image : {error}",
+          "network_image_delete_failed": "Erreur réseau lors de la suppression de l’image.",
+          "username_required": "Saisissez un nom d’utilisateur.",
+          "emoji_or_profile_picture_required": "Saisissez un emoji ou activez l’option de photo de profil.",
+          "user_mappings_saved": "Associations utilisateur enregistrées."
         }
       }
     }

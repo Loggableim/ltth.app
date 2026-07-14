@@ -10,9 +10,15 @@ const guides = buildGuides(ROOT);
 const indexPath = path.join(ROOT, 'docs', 'plugins', 'index.json');
 assert.ok(fs.existsSync(indexPath), 'Missing docs/plugins/index.json');
 const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
+const readLocale = (locale) => ({
+  ...JSON.parse(fs.readFileSync(path.join(ROOT, 'locales', `${locale}.json`), 'utf8')),
+  ...JSON.parse(fs.readFileSync(path.join(ROOT, 'locales', 'guides', `${locale}.json`), 'utf8'))
+});
 
 for (const locale of LOCALES) {
-  const values = JSON.parse(fs.readFileSync(path.join(ROOT, 'locales', `${locale}.json`), 'utf8'));
+  const values = readLocale(locale);
+  assert.ok(!Object.values(values).some((value) => typeof value === 'string' && value.includes('${')),
+    `${locale} guide locale payload contains an unresolved source template expression`);
   for (const field of ['metaDescription', 'safeTitle', 'installTitle', 'installBody', 'profileTitle', 'profileBody', 'obsTitle', 'obsBody']) {
     assert.ok(values[`docs.hub.${field}`], `Missing ${locale} docs hub ${field}`);
   }
@@ -22,6 +28,7 @@ for (const guide of guides) {
   const pagePath = path.join(ROOT, 'docs', 'plugins', `${guide.id}.html`);
   assert.ok(fs.existsSync(pagePath), `Missing tutorial page: ${guide.id}`);
   const page = fs.readFileSync(pagePath, 'utf8');
+  assert.ok(!page.includes('${'), `${guide.id} rendered an unresolved source template expression`);
   assert.ok(page.includes('plugin-doc-toc'), `${guide.id} needs a tutorial table of contents`);
   assert.ok(page.includes('plugin-doc-first-result'), `${guide.id} needs a concrete first-result block`);
   assert.ok(page.includes('plugin-doc-safety'), `${guide.id} needs a safety block`);
@@ -35,7 +42,7 @@ for (const guide of guides) {
   }
   if (guide.overlay) assert.ok(page.includes('plugin-doc-obs'), `${guide.id} needs an OBS/overlay section`);
   for (const locale of LOCALES) {
-    const values = JSON.parse(fs.readFileSync(path.join(ROOT, 'locales', `${locale}.json`), 'utf8'));
+    const values = readLocale(locale);
     for (const field of ['title', 'summary', 'firstResult', 'requirements', 'safety', 'troubleshooting']) {
       assert.ok(values[`docs.plugin.${guide.id}.${field}`], `Missing ${locale} ${guide.id} ${field}`);
     }

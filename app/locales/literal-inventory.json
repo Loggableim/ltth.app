@@ -1,5 +1,2658 @@
 {
-  "generatedAt": "2026-07-11T12:33:44.829Z",
-  "files": 232,
-  "findings": []
+  "generatedAt": "2026-07-14T20:47:55.155Z",
+  "files": 274,
+  "findings": [
+    {
+      "file": "app/plugins/api-bridge/ui.html",
+      "text": "API Bridge — local contract"
+    },
+    {
+      "file": "app/plugins/api-bridge/ui.html",
+      "text": "Local, read-only reference"
+    },
+    {
+      "file": "app/plugins/api-bridge/ui.html",
+      "text": "API Bridge contract"
+    },
+    {
+      "file": "app/plugins/api-bridge/ui.html",
+      "text": "Inspect these local endpoints before integrating a client. This page never sends an action request."
+    },
+    {
+      "file": "app/plugins/api-bridge/ui.html",
+      "text": "Identify the running LTTH and API Bridge versions."
+    },
+    {
+      "file": "app/plugins/api-bridge/ui.html",
+      "text": "List action IDs and their declared parameters. Reading this endpoint has no side effect."
+    },
+    {
+      "file": "app/plugins/api-bridge/ui.html",
+      "text": "Review the most recent event record; a new temporary profile starts with an empty list."
+    },
+    {
+      "file": "app/plugins/api-bridge/ui.html",
+      "text": "Execution belongs in a separately tested client. Verify the required body without sending it here."
+    },
+    {
+      "file": "app/plugins/api-bridge/ui.html",
+      "text": "Safe integration boundary"
+    },
+    {
+      "file": "app/plugins/api-bridge/ui.html",
+      "text": "Use GET endpoints first. Keep credentials and production action IDs out of screenshots and test profiles; POST execution is intentionally not available on this page."
+    },
+    {
+      "file": "app/plugins/music-bot/ui.html",
+      "text": "History-Anteil im Radio-Mix (%)"
+    },
+    {
+      "file": "app/plugins/music-bot/ui.html",
+      "text": "Wiederholungs-Sperre (Stunden)"
+    },
+    {
+      "file": "app/plugins/osc-bridge/ui.html",
+      "text": "VRChat Chatbox"
+    },
+    {
+      "file": "app/plugins/osc-bridge/ui.html",
+      "text": "Typing-Indikator bei externen Chatbox-Nachrichten anzeigen"
+    },
+    {
+      "file": "app/plugins/osc-bridge/ui.html",
+      "text": "Benachrichtigungston in VRChat abspielen"
+    },
+    {
+      "file": "app/plugins/stt-ticker/ui.html",
+      "text": "Mehrere gewählte Sprachen werden automatisch als eigene Zeilen angezeigt."
+    },
+    {
+      "file": "app/plugins/stt-ticker/ui.html",
+      "text": "VRChat Chatbox"
+    },
+    {
+      "file": "app/plugins/stt-ticker/ui.html",
+      "text": "Finale Untertitel an VRChat senden"
+    },
+    {
+      "file": "app/plugins/stt-ticker/ui.html",
+      "text": "An VRChat-Chatbox senden"
+    },
+    {
+      "file": "app/plugins/stt-ticker/ui.html",
+      "text": "Sendet nur finale Original-Untertitel nach 700 ms BÃ¼ndelung. Lange Texte werden automatisch auf das VRChat-Chatbox-Limit aufgeteilt."
+    },
+    {
+      "file": "app/plugins/stt-ticker/ui.html",
+      "text": "VRChat-Ausgabe speichern"
+    },
+    {
+      "file": "app/plugins/webgpu-emoji-rain/ui.html",
+      "text": "-- FPS"
+    },
+    {
+      "file": "auth/index.html",
+      "text": "Zur Website"
+    },
+    {
+      "file": "changelog.html",
+      "text": "helle, responsive Feature-Übersicht, lokalisierte Praxisleitfäden für DE/EN/ES/FR und korrigierte CSS-Ressourcen."
+    },
+    {
+      "file": "changelog.html",
+      "text": "Viewer XP und Hybridshock erhalten kanonische URLs; entfernte Sammelseiten werden auf die Feature-Übersicht weitergeleitet."
+    },
+    {
+      "file": "changelog.html",
+      "text": "Launcher, Clerk-Sicherheit, Plugin-API, Support und Community-Hinweise ergänzt."
+    },
+    {
+      "file": "community.html",
+      "text": "LTTH-Support im Discord"
+    },
+    {
+      "file": "community.html",
+      "text": "Der Discord ist ein Multistreamer-Server. Für Fragen zu ltth.app bitte im PupCid-Bereich posten oder ein Ticket eröffnen. Für reproduzierbare Bugs stehen zusätzlich GitHub Issues zur Verfügung."
+    },
+    {
+      "file": "community.html",
+      "text": "PupCid-Support öffnen"
+    },
+    {
+      "file": "features/auto-updater.html",
+      "text": "Der Launcher zeigt Version, Installationspfad, Backup-Status und Rollback verständlich an."
+    },
+    {
+      "file": "features/hybridshock.html",
+      "text": "Hybridshock – LTTH"
+    },
+    {
+      "file": "features/hybridshock.html",
+      "text": "Sichere, kontrollierte haptische Reaktionen auf Gifts, Chat-Befehle und Flow-Events – mit Queue, Limits und Testmodus."
+    },
+    {
+      "file": "features/hybridshock.html",
+      "text": "1. Gerät verbinden"
+    },
+    {
+      "file": "features/hybridshock.html",
+      "text": "Endpoint und Credentials ausschließlich lokal im Plugin hinterlegen."
+    },
+    {
+      "file": "features/hybridshock.html",
+      "text": "2. Regeln absichern"
+    },
+    {
+      "file": "features/hybridshock.html",
+      "text": "Events, Intensität, Queue und Maximalwerte definieren; zunächst den Testmodus verwenden."
+    },
+    {
+      "file": "features/hybridshock.html",
+      "text": "3. Live testen"
+    },
+    {
+      "file": "features/hybridshock.html",
+      "text": "Mit einem kontrollierten Testevent prüfen und erst danach echte Rewards aktivieren."
+    },
+    {
+      "file": "features/hybridshock.html",
+      "text": "Bei Problemen: Logs prüfen, Limits reduzieren und die Verbindung im Testmodus erneut validieren."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Alle Apps ansehen - ltth.app"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Zum Hauptinhalt springen"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Alle Apps auf einen Blick"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Entdecke die Apps und Features mit echten Screenshots, Nutzen und passenden Deep-Dive-Links."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Alle Apps"
+    },
+    {
+      "file": "features/index.html",
+      "text": "im Katalog"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Screenshots pro Eintrag"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Jetzt herunterladen"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Zur Startseite"
+    },
+    {
+      "file": "features/index.html",
+      "text": "App-Katalog von ltth.app"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Alle Apps und Features von ltth.app mit Screenshots, Beschreibungen und Deep-Dive-Links."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Alle Apps im Katalog"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Sprachen: DE / EN / ES / FR"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Suche zurücksetzen"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Katalog bereit"
+    },
+    {
+      "file": "features/index.html",
+      "text": "KI & Intelligenz"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Audio & Stimme"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Visuell & Overlay"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Gaming & Interaktion"
+    },
+    {
+      "file": "features/index.html",
+      "text": "System & Erweiterung"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Verbindungen & Integrationen"
+    },
+    {
+      "file": "features/index.html",
+      "text": "KI-gestützte Assistenten, Avatar-Logik und adaptive Story-Flows für Streams mit mehr Reaktionstiefe."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Macht Reaktionen, Personas und narrative Abläufe direkt steuerbar."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Für VTuber, Stream-Assistenten und interaktive Live-Erlebnisse."
+    },
+    {
+      "file": "features/index.html",
+      "text": "AnimazingPal Brain Engine"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Deep Dive"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Mehrplattform-Integration für VTuber-Avatar-Steuerung über TikTok LIVE Events. Unterstützt Animaze, VTube Studio und VSeeFace mit KI-Brain Engine, Langzeit-Gedächtnis, Persönlichkeits-System und GPT-gesteuerten Antworten."
+    },
+    {
+      "file": "features/index.html",
+      "text": "1 Screenshots"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Übersicht"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Interactive Story Generator"
+    },
+    {
+      "file": "features/index.html",
+      "text": "KI-gestützte interaktive Story-Generierung mit Chat-Voting, Bildgenerierung, Multi-Voice-TTS und adaptiven OBS-Overlays. Erstelle fesselnde Geschichten mit deinem Publikum mithilfe von LLM-Technologie."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Sidekick – Intelligenter Stream-Assistent"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Intelligenter Stream-Assistent, der Sprache und Avatar-Reaktionen über AnimazingPal und Fish.audio delegiert. Bietet Event-Analyse, automatische Antworten, Benutzer-Gedächtnis mit Verfall, Nachrichten-Batching, Relevanz-Scoring und umfassende Stream-Analytik."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Talking Heads"
+    },
+    {
+      "file": "features/index.html",
+      "text": "KI-generierte 2D-Avatare mit synchronisierten Animationen für TikTok-Nutzer, die per TTS sprechen. Mit rollenbasierter Aktivierung, mehreren Stil-Vorlagen und OBS-Integration."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Sprach- und Soundfunktionen, die Eingaben in hörbare, sofort nutzbare Stream-Momente verwandeln."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Bringt Sprache, Stimme und Sound ohne Umwege in den Live-Flow."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Für TTS, Soundboard, Untertitel und musikgesteuerte Interaktion."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Live-Untertitel-Overlay für hörgeschädigte Zuschauer. Transkribiert die Sprache des Hosts via Fish.audio ASR und zeigt sie als konfigurierbaren Ticker in OBS an."
+    },
+    {
+      "file": "features/index.html",
+      "text": "4 Screenshots"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Barrierefreie Ansicht"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Music Bot"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Zuschauer-gesteuerter Musikbot für TikTok-LIVE-Streams. Chat-Befehle ermöglichen Musikwünsche, Überspringen und Verwaltung von Titeln über YouTube oder SoundCloud."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Geschenkspezifische Sounds, Audio-Queue-Management und MyInstants-Integration für TikTok-Events. Bietet anpassbare Sound-Mappings, Lautstärkeregelung und Queue-Priorisierung."
+    },
+    {
+      "file": "features/index.html",
+      "text": "2 Screenshots"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Text-to-Speech Engine"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Enterprise-Grade-TTS-Plugin mit Multi-Engine-Unterstützung (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), Berechtigungssystem, Spracherkennung, Caching und Queue-Management."
+    },
+    {
+      "file": "features/index.html",
+      "text": "3 Screenshots"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Overlays, Effekte und Statusanzeigen, die den Stream sichtbar strukturieren."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Macht Events, Ziele und Status direkt im Bild verständlich."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Alert System"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Alert System – Vollständig anpassbare Alerts für Gifts, Follows, Shares, Likes und Subscriptions mit Sound, Text und Bild/GIF-Kombinationen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Ultra-minimalistische, VR-optimierte und barrierefreie HUD-Overlays für Chat und Activity-Feeds. Entwickelt für Klarheit und Lesbarkeit in Virtual-Reality-Umgebungen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "GCCE HUD"
+    },
+    {
+      "file": "features/index.html",
+      "text": "GCCE HUD zeigt Live-Status, Cooldowns und aktive Spielaktionen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Gift Milestone"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Gift Milestone setzt Aktionen automatisch bei definierter Schwelle."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Goals System"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Komplettes Live-Ziele-System mit Münz-, Likes-, Follower- und benutzerdefinierten Zieltypen. Echtzeit-Tracking mit Event-API und anpassbaren Overlays für Zuschauer-Engagement."
+    },
+    {
+      "file": "features/index.html",
+      "text": "LastEvent Spotlight"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Moderne Live-Overlays für Follower-, Like-, Chat-, Share-, Geschenk-, Abo-, Top-Gift- und Rotations-Spotlight-Ansichten."
+    },
+    {
+      "file": "features/index.html",
+      "text": "TikTok Visual Effects Overlay"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Broadcast-sicheres WebGL-Effekt-Overlay mit 4 rollenbasierten visuellen Modi, Echtzeit-Vorschau und Rahmen-Positionierung. TikTok LIVE Trigger reagieren auf Gifts, Follows, Likes, Shares, Subscribes und Chat-Farbbefehle mit gestuften Base-, Accent- und Impact-Reaktionen. Benanntes Preset-System, Flow-Integration und leistungsstarker Kawase Bloom. Enthält Flames, Partikel-Burst, Energie-Wellen und elektrische Blitze. Unterstützt Auflösungen bis 4K mit vollständig anpassbaren Farben, Intensität, Geschwindigkeit und präziser Rahmenpositionierung. Transparenter Hintergrund für nahtlose OBS-Integration."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Top Tier Plugin"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Live-Rangliste für Likes und Geschenke mit Decay-Mechanik, Rang-Animationen, kombinierter Ansicht und Overlay-Varianten für Hochformat und Querformat."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Viewer XP System"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Viewer XP System – XP-Tracking pro Viewer, Level-System mit Overlays, Bestenlisten und OBS Overlay-Integration für TikTok LIVE."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Vulkan Rockets"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Vulkan Rockets erzeugt visuelle Effekte bei definierten Ausloesern."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Weather Overlay"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Professionelles Wettereffekt-Plugin mit 13 Stream-Overlay-Effekten, Community-Gamification, Presets, Sequenzen, Audio, Event-Triggern, Qualitaetssteuerung und Layering pro Effekt."
+    },
+    {
+      "file": "features/index.html",
+      "text": "WebGPU Emoji Rain"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Strikt nativer WebGPU EmojiRain mit Compute-Physik, GPU-Kollisionen, instanzierten Sprites, HDR-Bloom, Cinematic-Neon-Profilen und adaptiver 1080p60-Qualität."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Spielbare Formate, bei denen Chat, Gifts und Regeln direkt in Unterhaltung umgewandelt werden."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Macht Zuschaueraktionen zu spielbaren Momenten mit klaren Regeln."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Für Quiz, Slots, Game-Engines und interaktive Challenges."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Game Engine"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Interaktive Spielmaschine für TikTok LIVE Streams. Spiele Vier Gewinnt, Schach, Plinko, Glücksrad, Slot Machine und Live Arena mit Zuschauern über Chat-Befehle, Live-Aktivität und Geschenke. Bietet serverautoritativ bestimmte Plinko-Auszahlungen, konfigurierbare Odds-Profile, geprüfte OpenShock-Workflows, anpassbare Overlays, kompaktes HUD, XP-Belohnungen, Siegesserien, Sound-Effekte und ein erweiterbares Spiel-Framework."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Quiz Show"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Interaktives Quiz-Show-Plugin fuer TikTok-Livestreams mit Kategorie-Voting, Duel-Modus, Achievements, Seasons, Chat-Integration, Jokern und hochwertigen Overlays."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Slot Machine"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Slot Machine – 3-Reel-Engine mit Multi-Machine-Support, eigenen Sound-Uploads, Superfan-Erkennung und vollständig anpassbarem Design für TikTok LIVE."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Werkzeuge für Betrieb, Automation, Updates und die Architektur hinter dem Stream-Setup."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Advanced Timer"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Professionelles Multi-Timer-System mit Event-Triggern, Automatisierung, Zuschauer-Interaktion und anpassbaren Overlays. Perfekt für Subathons, Challenges, Stream-Zeitpläne und Ziele."
+    },
+    {
+      "file": "features/index.html",
+      "text": "API Bridge"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Ermöglicht externen Anwendungen die Steuerung des Tools via HTTP und WebSocket. Bietet REST-API-Endpunkte und Echtzeit-Event-Streaming für Drittanbieter-Integrationen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Auto-Update System"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Auto-Update System – Automatische Update-Prüfung, One-Click Patch-Anwendung, Versions-Management, Rollback-Support und Update-Benachrichtigungen für LTTH."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Config Import – Backup & Restore"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Vollständiges Konfigurations-Backup- und Wiederherstellungssystem. Exportieren Sie alle Einstellungen in ein ZIP-Archiv, importieren Sie aus einem Backup, zeigen Sie Konflikte in der Vorschau an und migrieren Sie von älteren Installationen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Custom Chat Commands"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Custom Chat Commands – Eigene !Befehle für TikTok LIVE definieren, Flows auslösen, Cooldowns verwalten, Berechtigungsstufen und Command-Aliasse festlegen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Data Source Manager"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Wähle Eulerstream oder TikFinity als Datenquelle für TikTok-LIVE-Events."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Flow Engine"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Flow Engine – Visueller Flow-Editor mit Event-Triggern, Bedingungen, Schleifen und einer umfangreichen Action-Library für komplexe TikTok LIVE Automatisierungen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Universeller Chat-Befehls-Interpreter und Framework für alle Plugins. Bietet zentralisierte Befehlsanalyse, Berechtigungsverwaltung und erweiterbares Befehlsregistrierungssystem."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Hybridshock verbindet TikTok LIVE Events mit sicheren haptischen Reaktionen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "0 Screenshots"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Multi-Tab Dashboard"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Multi-Tab Dashboard – Zentrales Steuerungszentrum mit Live-Viewer-Stats, Chat-Feed, Event-Log, Quick Actions, OBS-Integration und Plugin-Verwaltung für TikTok LIVE."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Plugin System"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Plugin System ? 30+ eingebaute Plugins, Hot-Reload, JavaScript API für eigene Plugins und nahtlose Admin-UI Integration für PupCid's Little TikTool Helper."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Security & Privacy"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Security & Privacy – CORS-Konfiguration, CSP, Input-Validatoren, Rate Limiting und freemium lokale Verarbeitung für ltth.app."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Stream Alchemy"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Verwandeln Sie TikTok-Geschenke in virtuelle RPG-Items mit Crafting-Mechaniken und KI-generierten Icons. Bietet Inventarsystem, Item-Crafting und Rezept-Verwaltung."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Integrationen, die LTTH mit externen Plattformen, Geräten und Protokollen verbinden."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Erweitert den Stream um echte Verbindungen nach außen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Für VRChat, VDO.Ninja, TikFinity, Hardware und Spezial-Workflows."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Integriert Chatango-Chaträume in Ihren Stream. Konfigurieren Sie einbettbare Chat-Widgets, passen Sie das Aussehen an und erhalten Sie Chat-Nachrichten als Events für Flows und Automatisierungen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Minecraft Connect"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Minecraft Connect verbindet TikTok-Events mit in-game Aktionen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Multi-Cam Switcher"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Wechselt OBS-Szenen über Geschenke oder Chat-Befehle; unterstützt Spout-Feeds, Kameras 1-5. Perfekt für dynamische Multi-Kamera-Setups mit automatisiertem Szenenwechsel. [Working Beta]"
+    },
+    {
+      "file": "features/index.html",
+      "text": "OSC / VRChat Bridge"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Produktionsreife OSC-Bridge fuer VRChat. Verbindet TikTok-Events, IFTTT-Aktionen, GCCE-Befehle und VRChat-Avatar-Parameter ueber validierte OSC-Nachrichten."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Thermal Printer"
+    },
+    {
+      "file": "features/index.html",
+      "text": "Druckt TikTok-Live-Events (Chat, Geschenke, Follows) physisch auf einem Thermodrucker (ESC/POS). Unterstützt USB- und Netzwerkdrucker mit anpassbaren Druckvorlagen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "VDO.Ninja Multi-Guest Integration"
+    },
+    {
+      "file": "features/index.html",
+      "text": "VDO.Ninja-Integration für Multi-Guest-Streaming. Verwaltet Räume, Gäste, Layouts und Audio-Kontrollen für professionelle Multi-Cam-Setups mit nahtloser Gast-Integration."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Keine Treffer"
+    },
+    {
+      "file": "features/security.html",
+      "text": "Datenschutz und Konto"
+    },
+    {
+      "file": "features-en.html",
+      "text": "View all apps - ltth.app"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Skip to main content"
+    },
+    {
+      "file": "features-en.html",
+      "text": "All apps at a glance"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Explore the apps and features with real screenshots, benefits, and deep-dive links."
+    },
+    {
+      "file": "features-en.html",
+      "text": "All apps"
+    },
+    {
+      "file": "features-en.html",
+      "text": "in the catalog"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Screenshots per entry"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Download now"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Back to home"
+    },
+    {
+      "file": "features-en.html",
+      "text": "ltth.app feature catalog"
+    },
+    {
+      "file": "features-en.html",
+      "text": "All ltth.app features and apps with screenshots, descriptions, and deep-dive links."
+    },
+    {
+      "file": "features-en.html",
+      "text": "All apps in the catalog"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Languages: DE / EN / ES / FR"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Clear search"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Catalog ready"
+    },
+    {
+      "file": "features-en.html",
+      "text": "AI & Intelligence"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Audio & Voice"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Visual & Overlay"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Gaming & Interaction"
+    },
+    {
+      "file": "features-en.html",
+      "text": "System & Extensions"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Connections & Integrations"
+    },
+    {
+      "file": "features-en.html",
+      "text": "AI-powered assistants, avatar logic, and adaptive story flows for streams with more reactive depth."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Makes reactions, personas, and narrative flows directly controllable."
+    },
+    {
+      "file": "features-en.html",
+      "text": "For VTubers, stream assistants, and interactive live experiences."
+    },
+    {
+      "file": "features-en.html",
+      "text": "AnimazingPal Brain Engine"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Deep dive"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Multi-platform VTuber avatar control via TikTok LIVE events. Supports Animaze, VTube Studio, and VSeeFace with an AI Brain Engine, long-term memory, personality system, and GPT-powered intelligent responses."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Use context"
+    },
+    {
+      "file": "features-en.html",
+      "text": "1 Screenshots"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Interactive Story Generator"
+    },
+    {
+      "file": "features-en.html",
+      "text": "AI-powered interactive story generation with chat voting, image generation, multi-voice TTS, and adaptive OBS overlays. Create engaging stories with your audience using LLM technology."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Sidekick – Intelligenter Stream-Assistent"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Intelligent stream assistant that delegates speech and avatar responses through AnimazingPal and Fish.audio. Features event analysis, automatic responses, user memory with decay, message batching, relevance scoring, and comprehensive stream analytics."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Dashboard view"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Talking Heads"
+    },
+    {
+      "file": "features-en.html",
+      "text": "AI-generated 2D avatars with synchronized animations for TikTok users speaking via TTS. Features role-based activation, multiple style templates, and OBS integration."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Speech and sound features that turn input into audible, immediately usable stream moments."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Brings speech, voice, and sound straight into the live flow."
+    },
+    {
+      "file": "features-en.html",
+      "text": "For TTS, soundboard, captions, and music-driven interaction."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Live caption overlay for hearing-impaired viewers. Transcribes host speech via Fish.audio ASR and displays it as a configurable ticker in OBS."
+    },
+    {
+      "file": "features-en.html",
+      "text": "4 Screenshots"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Night view"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Accessibility view"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Overlay view"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Capture view"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Music Bot"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Viewer-controlled music bot for TikTok LIVE streams. Chat commands let viewers request, skip, and manage songs via YouTube or SoundCloud."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Gift-specific sounds, audio queue management, and MyInstants integration for TikTok events. Features customizable sound mappings, volume control, and queue prioritization."
+    },
+    {
+      "file": "features-en.html",
+      "text": "2 Screenshots"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Detail view"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Text-to-Speech Engine"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Enterprise-grade TTS plugin with multi-engine support (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), permission system, language detection, caching, and queue management."
+    },
+    {
+      "file": "features-en.html",
+      "text": "3 Screenshots"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Admin view"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Settings view"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Overlays, effects, and status indicators that structure the stream visually."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Makes events, goals, and status understandable right in the frame."
+    },
+    {
+      "file": "features-en.html",
+      "text": "For OBS, HUDs, animations, and visible responses to viewer actions."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Alert System"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Fully customizable alerts for gifts, follows, shares, likes, and subscriptions with sound, text, and image/GIF combinations."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Ultra-minimalistic, VR-optimized and accessible HUD overlays for chat and activity feeds. Designed for clarity and readability in virtual reality environments."
+    },
+    {
+      "file": "features-en.html",
+      "text": "GCCE HUD"
+    },
+    {
+      "file": "features-en.html",
+      "text": "HUD overlay for the GCCE command engine. Shows active commands, cooldowns, and permission status in the OBS stream."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Gift Milestone"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Gift Milestone setzt Aktionen automatisch bei definierter Schwelle."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Goals System"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Complete Live Goals system with Coin, Likes, Follower, and Custom goal types. Real-time tracking with Event API and customizable overlays for viewer engagement."
+    },
+    {
+      "file": "features-en.html",
+      "text": "LastEvent Spotlight"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Modern live overlays for follower, like, chat, share, gift, subscriber, top gift, and rotation spotlight views."
+    },
+    {
+      "file": "features-en.html",
+      "text": "TikTok Visual Effects Overlay"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Broadcast-safe WebGL effects overlay featuring 4 role-based visual modes with real-time preview and frame positioning. TikTok LIVE triggers react to gifts, follows, likes, shares, subscribes and chat color commands with layered base, accent and impact reactions. Named config preset system, flow integration, and high-performance Kawase bloom. Includes Flames, Particle Burst, Energy Waves, and Electric Lightning. Supports resolutions up to 4K with fully customizable colors, intensity, speed, and precise frame positioning. Transparent background for seamless OBS integration."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Top Tier Plugin"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Live leaderboard for likes and gifts with decay logic, rank animations, a combined view, and overlay variants for portrait and landscape streams."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Viewer XP System"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Per-viewer XP tracking, a level system with overlays, leaderboards, and OBS overlay integration for TikTok LIVE."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Leaderboard view"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Vulkan Rockets"
+    },
+    {
+      "file": "features-en.html",
+      "text": "GPU-accelerated fireworks effects with gift-specific displays, combo systems, and interactive triggers. Features WebGL2 rendering with Canvas 2D fallback for maximum compatibility."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Weather Overlay"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Professional weather effects plugin with 13 stream overlay effects, community gamification, presets, sequences, audio, event triggers, quality controls, and per-effect layering."
+    },
+    {
+      "file": "features-en.html",
+      "text": "WebGPU Emoji Rain"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Strict native WebGPU EmojiRain with compute physics, GPU collisions, instanced sprites, HDR bloom, cinematic-neon profiles, and adaptive 1080p60 quality."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Playable formats that turn chat, gifts, and rules directly into entertainment."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Turns audience actions into playable moments with clear rules."
+    },
+    {
+      "file": "features-en.html",
+      "text": "For quizzes, slots, game engines, and interactive challenges."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Game Engine"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Interactive game engine for TikTok LIVE streams. Play Connect4, Chess, Plinko, Wheel of Fortune, Slot Machine, and Live Arena with viewers using chat commands, live activity, and gifts. Features server-authoritative Plinko payouts, configurable odds profiles, reviewed OpenShock workflows, customizable overlays, compact HUD, XP rewards, win streaks, sound effects, and an extensible game framework."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Quiz Show"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Interactive quiz show plugin for TikTok livestreams with category voting, duel mode, achievements, seasons, chat integration, jokers, and high-end overlays."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Slot Machine"
+    },
+    {
+      "file": "features-en.html",
+      "text": "A 3-reel engine with multi-machine support, custom sound uploads, superfan detection, and a fully customizable design for TikTok LIVE."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Tools for operations, automation, updates, and the architecture behind the stream setup."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Keeps your setup maintainable, extensible, and running without friction."
+    },
+    {
+      "file": "features-en.html",
+      "text": "For plugin management, event routing, updates, and safety layers."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Advanced Timer"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Professional multi-timer system with event triggers, automation, viewer interaction, and customizable overlays. Perfect for subathons, challenges, stream schedules, and goals."
+    },
+    {
+      "file": "features-en.html",
+      "text": "API Bridge"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Enables external applications to control the tool via HTTP and WebSocket. Provides REST API endpoints and real-time event streaming for third-party integrations."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Auto-Update System"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Automatic update checks, one-click patching, version management, rollback support, and update notifications for LTTH."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Config Import – Backup & Restore"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Full configuration backup and restore system. Export all settings to a ZIP archive, import from a backup, preview conflicts, and migrate from legacy installations."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Custom Chat Commands"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Define your own !commands for TikTok LIVE, trigger flows, manage cooldowns, and set permission levels."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Data Source Manager"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Choose Eulerstream or TikFinity as the data source for TikTok LIVE events."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Flow Engine"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Visual flow editor with event triggers, conditions, loops, and an extensive action library for complex TikTok LIVE automations."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Editor view"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Universal chat command interpreter and framework for all plugins. Provides centralized command parsing, permission management, and extensible command registration system."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Hybridshock verbindet TikTok LIVE Events mit sicheren haptischen Reaktionen."
+    },
+    {
+      "file": "features-en.html",
+      "text": "0 Screenshots"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Multi-Tab Dashboard"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Central control hub with live viewer stats, chat feed, event log, quick actions, and OBS integration."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Plugin System"
+    },
+    {
+      "file": "features-en.html",
+      "text": "30+ built-in plugins, hot reload without restarting, a JavaScript API for custom plugins, and seamless admin UI integration."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Security & Privacy"
+    },
+    {
+      "file": "features-en.html",
+      "text": "CORS configuration, CSP, input validators, rate limiting, and 100% local processing without any cloud dependency for LTTH."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Stream Alchemy"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Transform TikTok gifts into virtual RPG items with crafting mechanics and AI-generated icons. Features inventory system, item crafting, and recipe management."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Integrations that connect LTTH with external platforms, devices, and protocols."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Extends the stream with real connections to the outside world."
+    },
+    {
+      "file": "features-en.html",
+      "text": "For VRChat, VDO.Ninja, TikFinity, hardware, and special workflows."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Integrates Chatango chat rooms into your stream. Configure embeddable chat widgets, customize appearance, and receive chat messages as events for use in flows and automations."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Minecraft Connect"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Minecraft Connect links TikTok events to in-game actions so gifts, chat, and other triggers can reach your world."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Multi-Cam Switcher"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Switches OBS scenes via gifts or chat commands; supports Spout feeds, cameras 1-5. Perfect for dynamic multi-camera setups with automated scene switching. [Working Beta]"
+    },
+    {
+      "file": "features-en.html",
+      "text": "OSC / VRChat Bridge"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Production-ready OSC bridge for VRChat. Connects TikTok events, IFTTT actions, GCCE commands, and VRChat avatar parameters through validated OSC messages."
+    },
+    {
+      "file": "features-en.html",
+      "text": "Thermal Printer"
+    },
+    {
+      "file": "features-en.html",
+      "text": "Prints TikTok Live events (chat, gifts, follows) physically on a thermal printer (ESC/POS). Supports USB and network printers with customizable print templates."
+    },
+    {
+      "file": "features-en.html",
+      "text": "VDO.Ninja Multi-Guest Integration"
+    },
+    {
+      "file": "features-en.html",
+      "text": "VDO.Ninja integration for multi-guest streaming. Manages rooms, guests, layouts, and audio controls for professional multi-cam setups with seamless guest integration."
+    },
+    {
+      "file": "features-en.html",
+      "text": "No results found"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Ver todas las apps - ltth.app"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Saltar al contenido principal"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Catálogo"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Todas las apps de un vistazo"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Explora las apps y funciones con capturas reales, beneficios y enlaces a los deep dives."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Todas las apps"
+    },
+    {
+      "file": "features-es.html",
+      "text": "en el catálogo"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Capturas por entrada"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Descargar ahora"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Documentación"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Volver al inicio"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Catálogo de apps de ltth.app"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Las funciones y apps de ltth.app con capturas, descripciones y enlaces a los deep dives."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Todas las apps en el catálogo"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Idiomas: DE / EN / ES / FR"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Borrar búsqueda"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Catálogo listo"
+    },
+    {
+      "file": "features-es.html",
+      "text": "IA e inteligencia"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Audio y voz"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Visual y overlay"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Juegos e interacción"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Sistema y extensiones"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Conexiones e integraciones"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Categorías"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Asistentes impulsados por IA, lógica de avatar y flujos de historias adaptativos para streams con más profundidad reactiva."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Hace que las reacciones, las personas y los flujos narrativos sean controlables directamente."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Para VTubers, asistentes de stream y experiencias en vivo interactivas."
+    },
+    {
+      "file": "features-es.html",
+      "text": "AnimazingPal Brain Engine"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Deep dive"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Control de avatar VTuber multiplataforma a través de eventos de TikTok LIVE. Compatible con Animaze, VTube Studio y VSeeFace con un Motor de Cerebro IA, memoria a largo plazo, sistema de personalidades y respuestas inteligentes con GPT."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Contexto de uso"
+    },
+    {
+      "file": "features-es.html",
+      "text": "1 Capturas"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Interactive Story Generator"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Generación de historias interactivas impulsada por IA con votación por chat, generación de imágenes, TTS multi-voz y overlays adaptativos para OBS. Crea historias cautivadoras con tu audiencia usando tecnología LLM."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Sidekick – Intelligenter Stream-Assistent"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Asistente de stream inteligente que delega voz y respuestas de avatar mediante AnimazingPal y Fish.audio. Incluye análisis de eventos, respuestas automáticas, memoria de usuarios con decaimiento, agrupación de mensajes, puntuación de relevancia y análisis completo de streams."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Vista del panel"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Talking Heads"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Avatares 2D generados por IA con animaciones sincronizadas para usuarios de TikTok que hablan mediante TTS. Incluye activación por roles, varias plantillas de estilo e integración con OBS."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Funciones de voz y sonido que convierten las entradas en momentos de stream audibles y utilizables al instante."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Lleva voz, habla y sonido directamente al flujo en vivo."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Para TTS, soundboard, subtítulos e interacción impulsada por música."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Overlay de subtítulos en directo para espectadores con discapacidad auditiva. Transcribe la voz del anfitrión mediante Fish.audio ASR y la muestra como un ticker configurable en OBS."
+    },
+    {
+      "file": "features-es.html",
+      "text": "4 Capturas"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Vista nocturna"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Vista de accesibilidad"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Vista de overlay"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Vista de captura"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Music Bot"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Bot de música controlado por la audiencia para directos de TikTok LIVE. Los comandos del chat permiten pedir, saltar y gestionar canciones mediante YouTube o SoundCloud."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Sonidos específicos de regalos, gestión de cola de audio e integración de MyInstants para eventos de TikTok. Presenta mapeos de sonido personalizables, control de volumen y priorización de cola."
+    },
+    {
+      "file": "features-es.html",
+      "text": "2 Capturas"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Vista detallada"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Text-to-Speech Engine"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Plugin TTS de nivel empresarial con soporte multi-motor (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), sistema de permisos, detección de idioma, almacenamiento en caché y gestión de colas."
+    },
+    {
+      "file": "features-es.html",
+      "text": "3 Capturas"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Vista de administración"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Vista de ajustes"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Overlays, efectos e indicadores de estado que estructuran visualmente el stream."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Hace comprensibles eventos, objetivos y estado directamente en la imagen."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Para OBS, HUDs, animaciones y respuestas visibles a las acciones de la audiencia."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Alert System"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Alertas totalmente personalizables para regalos, follows, compartidos, likes y suscripciones con combinaciones de sonido, texto e imagen/GIF."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Overlays HUD ultra minimalistas, optimizados para VR y accesibles para chat y feeds de actividad. Diseñados para claridad y legibilidad en entornos de realidad virtual."
+    },
+    {
+      "file": "features-es.html",
+      "text": "GCCE HUD"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Overlay HUD para el motor de comandos GCCE. Muestra comandos activos, tiempos de espera y estado de permisos en la transmisión de OBS."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Gift Milestone"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Gift Milestone setzt Aktionen automatisch bei definierter Schwelle."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Goals System"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Sistema completo de objetivos en vivo con tipos de objetivos de monedas, likes, seguidores y personalizados. Seguimiento en tiempo real con API de eventos y overlays personalizables para la participación del espectador."
+    },
+    {
+      "file": "features-es.html",
+      "text": "LastEvent Spotlight"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Overlays en vivo modernos para vistas Spotlight de seguidores, me gusta, chat, compartir, regalo, suscriptor, mejor regalo y rotación."
+    },
+    {
+      "file": "features-es.html",
+      "text": "TikTok Visual Effects Overlay"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Overlay de efectos WebGL seguro para broadcast con 4 modos visuales basados en rol, vista previa en tiempo real y posicionamiento de marco. Los disparadores de TikTok LIVE reaccionan a regalos, follows, likes, compartidos, suscripciones y comandos de color en chat con respuestas escalonadas de base, acento e impacto. Incluye sistema de presets con nombre, integración de flows y Kawase bloom de alto rendimiento."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Top Tier Plugin"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Clasificación en directo de likes y regalos con lógica de decaimiento, animaciones de rango, vista combinada y variantes de overlay para transmisiones verticales y horizontales."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Viewer XP System"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Seguimiento de XP por espectador, sistema de niveles con overlays, clasificaciones e integración de overlay OBS para TikTok LIVE."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Vista de clasificación"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Vulkan Rockets"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Vulkan Rockets erzeugt visuelle Effekte bei definierten Ausloesern."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Weather Overlay"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Plugin profesional de efectos climaticos con 13 efectos de overlay, gamificacion comunitaria, presets, secuencias, audio, disparadores de eventos, calidad configurable y capas por efecto."
+    },
+    {
+      "file": "features-es.html",
+      "text": "WebGPU Emoji Rain"
+    },
+    {
+      "file": "features-es.html",
+      "text": "EmojiRain WebGPU nativo estricto con física de cómputo, colisiones GPU, sprites instanciados, bloom HDR, perfiles cinematográficos-neón y calidad 1080p60 adaptativa."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Formatos jugables que convierten chat, regalos y reglas directamente en entretenimiento."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Convierte las acciones de la audiencia en momentos jugables con reglas claras."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Para concursos, tragamonedas, motores de juego y desafíos interactivos."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Game Engine"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Motor de juegos interactivo para transmisiones en vivo de TikTok. Juega Connect4, Ajedrez, Plinko, Ruleta de la Fortuna, Máquina Tragaperras y Live Arena con espectadores usando comandos de chat, actividad en directo y regalos. Incluye pagos de Plinko controlados por el servidor, perfiles de probabilidades configurables, flujos de OpenShock revisados, overlays personalizables, HUD compacto y recompensas XP."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Quiz Show"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Plugin de concurso interactivo para directos de TikTok con votacion de categorias, modo duelo, logros, temporadas, chat, comodines y overlays."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Slot Machine"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Motor de 3 carretes con soporte para varias máquinas, subida de sonidos personalizados, detección de superfans y diseño totalmente personalizable para TikTok LIVE."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Herramientas para operaciones, automatización, actualizaciones y la arquitectura detrás de la configuración del stream."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Mantiene tu configuración mantenible, extensible y en funcionamiento sin fricciones."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Para gestión de plugins, enrutado de eventos, actualizaciones y capas de seguridad."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Advanced Timer"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Sistema profesional de múltiples temporizadores con activadores de eventos, automatización, interacción con espectadores y overlays personalizables. Perfecto para subathons, desafíos, horarios de transmisión y objetivos."
+    },
+    {
+      "file": "features-es.html",
+      "text": "API Bridge"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Permite que aplicaciones externas controlen la herramienta mediante HTTP y WebSocket. Proporciona endpoints de API REST y streaming de eventos en tiempo real para integraciones de terceros."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Auto-Update System"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Comprobación automática de actualizaciones, aplicación de parches con un clic, gestión de versiones, soporte de rollback y notificaciones de actualización para LTTH."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Config Import – Backup & Restore"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Sistema completo de copia de seguridad y restauración de configuración. Exporte todos los ajustes a un archivo ZIP, importe desde una copia de seguridad, previsualice conflictos y migre desde instalaciones antiguas."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Custom Chat Commands"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Define tus propios comandos ! para TikTok LIVE, activa flujos, gestiona tiempos de espera y define niveles de permisos."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Data Source Manager"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Elige Eulerstream o TikFinity como fuente de datos para los eventos de TikTok LIVE."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Flow Engine"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Editor visual de flujos con disparadores de eventos, condiciones, bucles y una amplia biblioteca de acciones para automatizaciones complejas de TikTok LIVE."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Vista del editor"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Intérprete universal de comandos de chat y framework para todos los plugins. Proporciona análisis centralizado de comandos, gestión de permisos y sistema extensible de registro de comandos."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Hybridshock verbindet TikTok LIVE Events mit sicheren haptischen Reaktionen."
+    },
+    {
+      "file": "features-es.html",
+      "text": "0 Capturas"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Multi-Tab Dashboard"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Centro de control central con estadísticas en vivo de espectadores, feed de chat, registro de eventos, acciones rápidas e integración con OBS."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Plugin System"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Más de 30 plugins integrados, recarga en caliente sin reiniciar, API de JavaScript para plugins propios e integración fluida con la interfaz de administración."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Security & Privacy"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Configuración de CORS, CSP, validadores de entrada, limitación de tasa y procesamiento 100% local sin dependencia de la nube para LTTH."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Stream Alchemy"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Transforma regalos de TikTok en objetos RPG virtuales con mecánicas de elaboración e iconos generados por IA. Presenta sistema de inventario, elaboración de objetos y gestión de recetas."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Integraciones que conectan LTTH con plataformas, dispositivos y protocolos externos."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Amplía el stream con conexiones reales hacia el exterior."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Para VRChat, VDO.Ninja, TikFinity, hardware y flujos de trabajo especiales."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Integra salas de chat de Chatango en tu transmisión. Configura widgets de chat insertables, personaliza la apariencia y recibe mensajes de chat como eventos para usar en flujos y automatizaciones."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Minecraft Connect"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Minecraft Connect vincula los eventos de TikTok con acciones dentro del juego para que regalos, chat y otros disparadores lleguen a tu mundo."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Multi-Cam Switcher"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Cambia escenas de OBS mediante regalos o comandos de chat; admite feeds Spout, cámaras 1-5. Perfecto para configuraciones dinámicas de múltiples cámaras con cambio de escena automatizado. [Working Beta]"
+    },
+    {
+      "file": "features-es.html",
+      "text": "OSC / VRChat Bridge"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Puente OSC listo para produccion para VRChat. Conecta eventos de TikTok, acciones IFTTT, comandos GCCE y parametros de avatar de VRChat mediante mensajes OSC validados."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Thermal Printer"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Imprime eventos en vivo de TikTok (chat, regalos, seguimientos) físicamente en una impresora térmica (ESC/POS). Admite impresoras USB y de red con plantillas de impresión personalizables."
+    },
+    {
+      "file": "features-es.html",
+      "text": "VDO.Ninja Multi-Guest Integration"
+    },
+    {
+      "file": "features-es.html",
+      "text": "Integración de VDO.Ninja para transmisión con múltiples invitados. Gestiona salas, invitados, diseños y controles de audio para configuraciones multi-cámara profesionales con integración fluida de invitados."
+    },
+    {
+      "file": "features-es.html",
+      "text": "No se encontraron resultados"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Voir toutes les apps - ltth.app"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Aller au contenu principal"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Toutes les apps en un coup d’oeil"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Explorez les apps et fonctionnalités avec de vraies captures, les bénéfices et des liens vers les deep dives."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Toutes les apps"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "dans le catalogue"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Captures par entrée"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Télécharger maintenant"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Retour à l'accueil"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Catalogue de fonctionnalités ltth.app"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Les fonctionnalités et apps de ltth.app avec captures, descriptions et liens vers les deep dives."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Toutes les apps dans le catalogue"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Langues: DE / EN / ES / FR"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Effacer la recherche"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Catalogue prêt"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "IA et intelligence"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Audio et voix"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Visuel et overlay"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Jeux et interaction"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Système et extensions"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Connexions et intégrations"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Catégories"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Assistants alimentés par l'IA, logique d'avatar et flux d'histoire adaptatifs pour des streams plus réactifs."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Rend les réactions, les personas et les flux narratifs directement contrôlables."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Pour les VTubers, assistants de stream et expériences live interactives."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "AnimazingPal Brain Engine"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Deep dive"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Contrôle d'avatar VTuber multiplateforme via les événements TikTok LIVE. Compatible avec Animaze, VTube Studio et VSeeFace avec un moteur IA, mémoire à long terme, système de personnalités et réponses intelligentes GPT."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Bénéfice"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Contexte d'usage"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "1 Captures"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vue d’ensemble"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Interactive Story Generator"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Génération d'histoires interactives alimentée par l'IA avec vote par chat, génération d'images, TTS multi-voix et overlays adaptatifs OBS. Créez des histoires captivantes avec votre public grâce à la technologie LLM."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Sidekick – Intelligenter Stream-Assistent"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Assistant de stream intelligent qui délègue la voix et les réponses d'avatar via AnimazingPal et Fish.audio. Comprend l'analyse d'événements, les réponses automatiques, la mémoire utilisateur avec déclin, le regroupement de messages, le scoring de pertinence et l'analytique complète de streams."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vue du tableau de bord"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Talking Heads"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Avatars 2D générés par IA avec des animations synchronisées pour les utilisateurs TikTok qui parlent via TTS. Comprend une activation par rôle, plusieurs modèles de style et une intégration OBS."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Des fonctions de voix et de son qui transforment les entrées en moments de stream immédiatement utilisables."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Amène la voix, la parole et le son directement dans le flux live."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Pour le TTS, le soundboard, les sous-titres et l’interaction pilotée par la musique."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Overlay de sous-titres en direct pour les spectateurs malentendants. Il transcrit la voix de l’hôte avec Fish.audio ASR et l’affiche dans OBS sous forme de bandeau configurable."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "4 Captures"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vue de nuit"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vue d'accessibilité"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vue de l’overlay"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vue de capture"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Music Bot"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Bot musical contrôlé par les spectateurs pour les directs TikTok LIVE. Les commandes du chat permettent de demander, passer et gérer des titres via YouTube ou SoundCloud."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Sons spécifiques aux cadeaux, gestion de file d'attente audio et intégration MyInstants pour événements TikTok. Comprend mappages de sons personnalisables, contrôle du volume et priorisation de file d'attente."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "2 Captures"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vue détaillée"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Text-to-Speech Engine"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Plugin TTS de niveau entreprise avec support multi-moteur (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), système de permissions, détection de langue, mise en cache et gestion de file d'attente."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "3 Captures"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vue d'administration"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vue des paramètres"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Des overlays, effets et indicateurs d’état qui structurent visuellement le stream."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Rend les événements, objectifs et statuts compréhensibles directement à l’écran."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Pour OBS, les HUDs, les animations et les réponses visibles aux actions des spectateurs."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Alert System"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Alertes entièrement personnalisables pour les cadeaux, follows, partages, likes et abonnements avec combinaisons son, texte et image/GIF."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Overlays HUD ultra-minimalistes, optimisés VR et accessibles pour chat et flux d'activité. Conçus pour la clarté et la lisibilité dans les environnements de réalité virtuelle."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "GCCE HUD"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Overlay HUD pour le moteur de commandes GCCE. Affiche les commandes actives, les temps de recharge et l’état des permissions dans le stream OBS."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Gift Milestone"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Gift Milestone setzt Aktionen automatisch bei definierter Schwelle."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Goals System"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Système complet d'objectifs en direct avec types d'objectifs Pièces, Likes, Abonnés et personnalisés. Suivi en temps réel avec API d'événements et overlays personnalisables pour l'engagement des spectateurs."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "LastEvent Spotlight"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Overlays en direct modernes pour les vues Spotlight de follower, like, chat, partage, cadeau, abonné, top cadeau et rotation."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "TikTok Visual Effects Overlay"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Overlay d'effets WebGL sûr pour le broadcast avec 4 modes visuels basés sur des rôles, aperçu en temps réel et positionnement de cadre. Les déclencheurs TikTok LIVE réagissent aux cadeaux, follows, likes, partages, abonnements et commandes de couleur du chat avec des réponses en couches base, accent et impact. Comprend un système de préréglages nommés, l'intégration flow et un Kawase bloom haute performance."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Top Tier Plugin"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Classement en direct des likes et cadeaux avec logique de décroissance, animations de rang, vue combinée et variantes d’overlay pour les streams verticaux et horizontaux."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Viewer XP System"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Suivi XP par spectateur, système de niveaux avec overlays, classements et intégration d’overlay OBS pour TikTok LIVE."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vue du classement"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vulkan Rockets"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vulkan Rockets erzeugt visuelle Effekte bei definierten Ausloesern."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Weather Overlay"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Plugin professionnel d'effets meteo avec 13 effets d'overlay, gamification communautaire, presets, sequences, audio, declencheurs d'evenements, qualite configurable et calques par effet."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "WebGPU Emoji Rain"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "EmojiRain WebGPU natif strict avec physique compute, collisions GPU, sprites instanciés, bloom HDR, profils cinématiques-néon et qualité 1080p60 adaptative."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Des formats jouables qui transforment directement le chat, les cadeaux et les règles en divertissement."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Transforme les actions du public en moments jouables avec des règles claires."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Pour les quiz, machines à sous, moteurs de jeu et défis interactifs."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Game Engine"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Moteur de jeux interactif pour les diffusions TikTok LIVE. Jouez à Connect4, Échecs, Plinko, Roue de la Fortune, Machine à Sous et Live Arena avec les spectateurs. Comprend des paiements Plinko déterminés par le serveur, des profils de probabilités configurables, des flux OpenShock soumis à validation, des overlays personnalisables, un HUD compact et des récompenses XP."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Quiz Show"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Plugin de quiz interactif pour livestreams TikTok avec vote de categories, mode duel, succes, saisons, chat, jokers et overlays."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Slot Machine"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Moteur à 3 rouleaux avec prise en charge de plusieurs machines, import de sons personnalisés, détection des superfans et design entièrement personnalisable pour TikTok LIVE."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Des outils pour l’exploitation, l’automatisation, les mises à jour et l’architecture derrière le setup de stream."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Garde votre configuration maintenable, extensible et fluide au quotidien."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Pour la gestion des plugins, le routage d’événements, les mises à jour et les couches de sécurité."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Advanced Timer"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Système professionnel de minuteries multiples avec déclencheurs d'événements, automatisation, interaction avec les spectateurs et overlays personnalisables. Parfait pour les subathons, défis, plannings de stream et objectifs."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "API Bridge"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Permet aux applications externes de contrôler l'outil via HTTP et WebSocket. Fournit des endpoints API REST et streaming d'événements en temps réel pour les intégrations tierces."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Auto-Update System"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vérification automatique des mises à jour, application des correctifs en un clic, gestion des versions, prise en charge du rollback et notifications de mise à jour pour LTTH."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Config Import – Backup & Restore"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Système complet de sauvegarde et restauration de configuration. Exportez tous les paramètres dans une archive ZIP, importez depuis une sauvegarde, prévisualisez les conflits et migrez depuis d'anciennes installations."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Custom Chat Commands"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Définissez vos propres commandes ! pour TikTok LIVE, déclenchez des flows, gérez les cooldowns et définissez les niveaux d'autorisation."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Data Source Manager"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Choisissez Eulerstream ou TikFinity comme source de données pour les événements TikTok LIVE."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Flow Engine"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Éditeur de flux visuel avec déclencheurs d'événements, conditions, boucles et une vaste bibliothèque d'actions pour des automatisations TikTok LIVE complexes."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Vue de l’éditeur"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Interpréteur universel de commandes de chat et framework pour tous les plugins. Fournit analyse centralisée des commandes, gestion des permissions et système extensible d'enregistrement de commandes."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Hybridshock verbindet TikTok LIVE Events mit sicheren haptischen Reaktionen."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "0 Captures"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Multi-Tab Dashboard"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Centre de contrôle central avec statistiques en direct des spectateurs, flux de chat, journal d'événements, actions rapides et intégration OBS."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Plugin System"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "30+ plugins intégrés, rechargement à chaud sans redémarrage, API JavaScript pour vos propres plugins et intégration fluide à l’interface d’administration."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Security & Privacy"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Configuration CORS, CSP, validateurs d’entrée, limitation de débit et traitement 100 % local sans dépendance au cloud pour LTTH."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Stream Alchemy"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Transforme les cadeaux TikTok en objets RPG virtuels avec mécaniques d'artisanat et icônes générées par IA. Comprend système d'inventaire, fabrication d'objets et gestion de recettes."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Des intégrations qui relient LTTH à des plateformes, appareils et protocoles externes."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Étend le stream avec de vraies connexions vers l’extérieur."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Pour VRChat, VDO.Ninja, TikFinity, le matériel et les workflows spéciaux."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Intègre les salons de chat Chatango dans votre stream. Configurez des widgets de chat intégrables, personnalisez l'apparence et recevez les messages de chat comme événements pour les flux et automatisations."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Minecraft Connect"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Minecraft Connect relie les événements TikTok aux actions en jeu pour que les cadeaux, le chat et d’autres déclencheurs atteignent votre monde."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Multi-Cam Switcher"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Change les scènes OBS via cadeaux ou commandes de chat; prend en charge les flux Spout, caméras 1-5. Parfait pour les configurations multi-caméras dynamiques avec changement de scène automatisé. [Working Beta]"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "OSC / VRChat Bridge"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Pont OSC pret pour la production pour VRChat. Connecte les evenements TikTok, les actions IFTTT, les commandes GCCE et les parametres d'avatar VRChat via des messages OSC valides."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Thermal Printer"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Imprime les événements TikTok Live (chat, cadeaux, abonnements) physiquement sur une imprimante thermique (ESC/POS). Prend en charge les imprimantes USB et réseau avec modèles d'impression personnalisables."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "VDO.Ninja Multi-Guest Integration"
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Intégration VDO.Ninja pour streaming multi-invités. Gère les salles, invités, dispositions et contrôles audio pour configurations multi-caméras professionnelles avec intégration transparente des invités."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Aucun résultat"
+    },
+    {
+      "file": "impressum.html",
+      "text": "Datenschutz und EU-Kontakt"
+    },
+    {
+      "file": "impressum.html",
+      "text": "Die Website verarbeitet nur die für den Betrieb erforderlichen technischen Zugriffsdaten. Die öffentliche Website verwendet keinen Nachtmodus, kein Tracking zur Personalisierung und keine Pflicht zur Kontoerstellung. Für Datenschutzanfragen, Betroffenenrechte nach DSGVO oder Fragen zur Verarbeitung wenden Sie sich bitte an"
+    },
+    {
+      "file": "impressum.html",
+      "text": "Diese Hinweise ersetzen keine individuelle Rechtsberatung. Betreiberangaben, UID-/Firmenbuchdaten und gegebenenfalls eine verantwortliche Person für redaktionelle Inhalte müssen vor Veröffentlichung auf Aktualität geprüft werden."
+    },
+    {
+      "file": "obs-overlay-wrapper.html",
+      "text": "LTTH OBS Wrapper"
+    },
+    {
+      "file": "plugin-store/sources/visual-fx-frame-webgpu/renderer/index.html",
+      "text": "Visual FX Frame WEBGPU"
+    },
+    {
+      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
+      "text": "Premium Neon"
+    },
+    {
+      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
+      "text": "WEBGPU RUNTIME"
+    },
+    {
+      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
+      "text": "Particles — · Field — · Bloom — · Lightning —"
+    },
+    {
+      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
+      "text": "Solar Forge"
+    },
+    {
+      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
+      "text": "Prism Reactor"
+    },
+    {
+      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
+      "text": "Arcane Bloom"
+    },
+    {
+      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
+      "text": "Tempest Rift"
+    },
+    {
+      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
+      "text": "Quantum Circuit"
+    },
+    {
+      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
+      "text": "10 px"
+    },
+    {
+      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
+      "text": "Brechungsstärke"
+    },
+    {
+      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
+      "text": "Sekundärfarbe:"
+    },
+    {
+      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
+      "text": "Include and overwrite named presets"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Der neue LTTH Plugin Store wird geladen..."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Advanced Timer"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Timer und Stream-Automatisierung."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Zur Anleitung"
+    },
+    {
+      "file": "plugins.html",
+      "text": "VTuber-Avatar-Steuerung für Live-Events."
+    },
+    {
+      "file": "plugins.html",
+      "text": "API Bridge"
+    },
+    {
+      "file": "plugins.html",
+      "text": "HTTP- und WebSocket-Integration."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Chatango Integration"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Chat-Widgets und Automatisierung."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Barrierefreie HUD-Overlays."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Interaktives Live-Battle-Overlay."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Config Backup & Restore"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Sicherung und Wiederherstellung."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Data Source Manager"
+    },
+    {
+      "file": "plugins.html",
+      "text": "TikTok-Datenquelle auswählen."
+    },
+    {
+      "file": "plugins.html",
+      "text": "GPU-beschleunigte Feuerwerkseffekte."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Visual FX Frame"
+    },
+    {
+      "file": "plugins.html",
+      "text": "WebGL-Effekte für OBS."
+    },
+    {
+      "file": "plugins.html",
+      "text": "LTTH Game Engine"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Interaktive Spiele für Live-Streams."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Global Chat Command Engine"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Chat-Befehle zentral verwalten."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Live Goals"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Ziele und Live-Overlays."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Interactive Story Generator"
+    },
+    {
+      "file": "plugins.html",
+      "text": "KI-gestützte Geschichten mit Chat-Voting."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Live-Overlays für wichtige Events."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Milestone Leaderboard"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Meilensteine, Rangliste und Viewer-XP."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Multi-Cam Switcher"
+    },
+    {
+      "file": "plugins.html",
+      "text": "OBS-Szenen per Event wechseln."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Music Bot"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Musikwünsche aus dem Chat."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Haptische Event-Workflows."
+    },
+    {
+      "file": "plugins.html",
+      "text": "VRChat- und OSC-Integration."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Quiz Show"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Interaktive Quizshow für TikTok LIVE."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Intelligenter Stream-Assistent."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Sounds für Geschenke und Events."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Geschenke in RPG-Items verwandeln."
+    },
+    {
+      "file": "plugins.html",
+      "text": "LTTH App Store Admin"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Store- und Beta-Freigaben verwalten."
+    },
+    {
+      "file": "plugins.html",
+      "text": "STT Ticker"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Live-Untertitel für OBS."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Talking Heads"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Animierte KI-Avatare."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Thermal Printer"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Live-Ereignisse physisch drucken."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Top Tier"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Live Like- und Gift-Rangliste."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Text-to-Speech System"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Mehrere TTS-Engines und Warteschlangen."
+    },
+    {
+      "file": "plugins.html",
+      "text": "VDO.Ninja Multi-Guest Manager"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Weather Control"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Wettereffekte für Stream-Overlays."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Physikbasierter Emoji-Regen."
+    },
+    {
+      "file": "plugins.html",
+      "text": "WebGPU EmojiRain"
+    },
+    {
+      "file": "plugins.html",
+      "text": "GPU-beschleunigter Emoji-Regen."
+    },
+    {
+      "file": "plugins.html",
+      "text": "Visual FX Frame WEBGPU"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Native WebGPU-Effektrahmen für OBS."
+    },
+    {
+      "file": "_partials/header.html",
+      "text": "Advanced Timer"
+    },
+    {
+      "file": "_partials/header.html",
+      "text": "Viewer XP"
+    },
+    {
+      "file": "_partials/header.html",
+      "text": "Music Bot"
+    },
+    {
+      "file": "_partials/header.html",
+      "text": "Quiz Show"
+    },
+    {
+      "file": "_partials/header.html",
+      "text": "Stream Alchemy"
+    },
+    {
+      "file": "_partials/header.html",
+      "text": "STT Ticker"
+    },
+    {
+      "file": "_partials/header.html",
+      "text": "Talking Heads"
+    },
+    {
+      "file": "_partials/header.html",
+      "text": "Thermal Printer"
+    },
+    {
+      "file": "_partials/header.html",
+      "text": "Weather Control"
+    }
+  ]
 }

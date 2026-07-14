@@ -412,7 +412,7 @@ class SpotlightPlugin {
     return {
       uniqueId: `testuser_${Date.now()}`,
       nickname: `Test ${this.eventTypes[type].label}`,
-      profilePictureUrl: 'https://via.placeholder.com/150/0000FF/FFFFFF?text=Test',
+      profilePictureUrl: '',
       timestamp: new Date().toISOString(),
       eventType: type,
       label: this.eventTypes[type].label,

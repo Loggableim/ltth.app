@@ -2,7 +2,7 @@
 
 const { LOCALES, buildGuides } = require('./plugin-tutorial-source');
 
-const SPEC_VERSION = '2026-07-14-plugin-docs-v4';
+const SPEC_VERSION = '2026-07-14-plugin-docs-v5';
 
 function buildDocsSpec(repoRoot) {
   const guides = buildGuides(repoRoot);
@@ -21,6 +21,7 @@ function buildDocsSpec(repoRoot) {
       route: step.capture.route,
       selector: step.capture.assertVisible,
       action: step.capture.action,
+      workflow: step.workflow,
       focusText: step.capture.focusText,
       expected: step.capture.expected,
       fixture: guide.capture.fixture,

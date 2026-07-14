@@ -18,7 +18,10 @@ function verifyPluginDocsE2e(root) {
   const guides = buildGuides(root);
   const localeValues = Object.fromEntries(LOCALES.map((locale) => [
     locale,
-    readJson(path.join(root, 'locales', `${locale}.json`))
+    {
+      ...readJson(path.join(root, 'locales', `${locale}.json`)),
+      ...readJson(path.join(root, 'locales', 'guides', `${locale}.json`))
+    }
   ]));
 
   for (const guide of guides) {

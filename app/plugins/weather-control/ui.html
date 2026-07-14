@@ -3652,14 +3652,14 @@
                 btn.classList.add('btn-success');
                 btn.querySelector('span:first-child').textContent = '⏸️';
                 text.setAttribute('data-i18n-key', 'buttons.preview_off');
-                text.textContent = i18nTranslate('buttons.preview_off');
+                text.textContent = translate('buttons.preview_off');
             } else {
                 previewEngine.stop();
                 btn.classList.remove('btn-success');
                 btn.classList.add('btn-primary');
                 btn.querySelector('span:first-child').textContent = '▶️';
                 text.setAttribute('data-i18n-key', 'buttons.preview_on');
-                text.textContent = i18nTranslate('buttons.preview_on');
+                text.textContent = translate('buttons.preview_on');
             }
         }
 
