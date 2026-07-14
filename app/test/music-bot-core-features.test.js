@@ -15,16 +15,17 @@ function createDbMock() {
 
 function createAutoDjDb({ recentHistory = [], exclusions = [], historyCandidates = [] } = {}) {
   const runCalls = [];
+  const resolveRows = (rows, ...args) => (typeof rows === 'function' ? rows(...args) : rows);
   return {
     runCalls,
     prepare: jest.fn((sql) => ({
       run: jest.fn((params) => {
         runCalls.push(params);
       }),
-      all: jest.fn(() => {
-        if (sql.includes('finishedAt >= ?')) return recentHistory;
-        if (sql.includes('plugin_music_bot_history')) return historyCandidates;
-        if (sql.includes('plugin_music_bot_autodj_exclusions')) return exclusions;
+      all: jest.fn((...args) => {
+        if (sql.includes('finishedAt >= ?')) return resolveRows(recentHistory, ...args);
+        if (sql.includes('plugin_music_bot_history')) return resolveRows(historyCandidates, ...args);
+        if (sql.includes('plugin_music_bot_autodj_exclusions')) return resolveRows(exclusions, ...args);
         return [];
       })
     }))
@@ -489,6 +490,36 @@ describe('Music Bot core features', () => {
     }));
   });
 
+  test('does not block tracks whose history and failed-stream exclusions have expired', () => {
+    const now = Date.UTC(2026, 6, 14, 12, 0, 0);
+    const cooldownMs = 12 * 60 * 60 * 1000;
+    const history = [{
+      youtubeId: 'expired-id',
+      title: 'Expired History',
+      artist: 'Expired Artist',
+      finishedAt: now - cooldownMs - 1
+    }];
+    const exclusions = [{
+      youtubeId: 'expired-id',
+      titleKey: 'expired history',
+      artistKey: 'expired artist',
+      expiresAt: now - 1
+    }];
+    const db = createAutoDjDb({
+      recentHistory: (cutoff) => history.filter((row) => row.finishedAt >= cutoff),
+      exclusions: (queryNow) => exclusions.filter((row) => row.expiresAt > queryNow)
+    });
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'mix', repeatCooldownHours: 12 }, {}, db, { log: jest.fn() });
+
+    const blocks = autoDJ.getSelectionBlocks(now);
+
+    expect(autoDJ.isTrackBlocked({
+      youtubeId: 'expired-id',
+      title: 'Expired History',
+      artist: 'Expired Artist'
+    }, blocks)).toBe(false);
+  });
+
   test('uses the default 12-hour cooldown when Auto-DJ cooldown configuration is omitted', () => {
     const now = Date.UTC(2026, 6, 14, 12, 0, 0);
     const db = createAutoDjDb();
@@ -569,6 +600,45 @@ describe('Music Bot core features', () => {
     } finally {
       Math.random = originalRandom;
     }
+  });
+
+  test('does not reuse a session-played history candidate as a Radio-Mix fallback', async () => {
+    const candidate = {
+      youtubeId: 'session-played', title: 'Session Played', artist: 'History Artist',
+      url: 'https://www.youtube.com/watch?v=session-played', plays: 2
+    };
+    const resolver = { resolvePlaylistEntry: jest.fn(async () => ({ success: false })) };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'mix',
+      mixHistoryPercent: 0,
+      historyMinPlays: 2,
+      historyShuffled: false
+    }, resolver, createAutoDjDb({ historyCandidates: [candidate] }), { log: jest.fn() });
+    autoDJ.playedInSession.add(candidate.youtubeId);
+
+    const result = await autoDJ.getNextSong();
+
+    expect(result).toBeNull();
+    expect(autoDJ.getStatus().selectionSource).not.toBe('history-fallback');
+  });
+
+  test('preserves history-mode fallback to a session-played candidate', async () => {
+    const candidate = {
+      youtubeId: 'session-played', title: 'Session Played', artist: 'History Artist',
+      url: 'https://www.youtube.com/watch?v=session-played', plays: 2
+    };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'history',
+      historyMinPlays: 2,
+      historyShuffled: false
+    }, {}, createAutoDjDb({ historyCandidates: [candidate] }), { log: jest.fn() });
+    autoDJ.playedInSession.add(candidate.youtubeId);
+
+    const result = await autoDJ.getNextSong();
+
+    expect(result.song.youtubeId).toBe(candidate.youtubeId);
   });
 
   test('skips blocked radio suggestions and accepts the next fresh suggestion', async () => {
