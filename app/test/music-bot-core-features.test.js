@@ -259,6 +259,29 @@ describe('Music Bot core features', () => {
     expect(engine.getState()).toBe('playing');
   });
 
+  test('does not retain an outgoing association after an ordinary clear', () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const track = { id: 'terminal-clear', title: 'Terminal clear' };
+    engine.nowPlaying = track;
+    engine.state = 'playing';
+
+    engine.clearNowPlaying();
+
+    expect(engine._replacementOutgoingTrack).toBeNull();
+  });
+
+  test('retains only the current track for an explicitly remembered replacement', () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const active = { id: 'active', title: 'Active' };
+    engine.nowPlaying = active;
+
+    expect(engine.rememberReplacementOutgoing(active)).toBe(true);
+    engine.clearNowPlaying({ preserveReplacementOutgoing: true });
+
+    expect(engine._replacementOutgoingTrack).toBe(active);
+    expect(engine.rememberReplacementOutgoing({ id: 'stale' })).toBe(false);
+  });
+
   test('does not revive playback from a late MPV start-file event without a track', () => {
     const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
 
