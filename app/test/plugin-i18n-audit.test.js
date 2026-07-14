@@ -42,10 +42,21 @@ describe('plugin i18n audit', () => {
 
   test('permits invariant product names and resolution values without masking ordinary UI copy', () => {
     writePluginFixture(pluginsRoot, 'emoji-rain', {
-      de: { plugins: { 'emoji-rain': { labels: { product: 'Emoji Rain', hud: 'OBS HUD', resolution: '1080p (1920x1080)' } } } },
-      en: { plugins: { 'emoji-rain': { labels: { product: 'Emoji Rain', hud: 'OBS HUD', resolution: '1080p (1920x1080)' } } } },
-      es: { plugins: { 'emoji-rain': { labels: { product: 'Emoji Rain', hud: 'OBS HUD', resolution: '1080p (1920x1080)' } } } },
-      fr: { plugins: { 'emoji-rain': { labels: { product: 'Emoji Rain', hud: 'OBS HUD', resolution: '1080p (1920x1080)' } } } }
+      de: { plugins: { 'emoji-rain': { labels: { product: 'Emoji Rain', hud: 'OBS HUD', resolution: '1080p (1920x1080)', rawResolution: '2560x1440 (2K)', downscale: '3840x2160 -> 960x540', protocol: 'HTTP', multiplier: '1000 XP x10', choice: '!a, !b, !c, !d', font: 'Times New Roman', provider: 'OpenAI (DALL-E 3)', webhook: '🌐 Webhook', apiKey: 'sk-...', payload: '[ {"action":"fog","duration":8000} ]' } } } },
+      en: { plugins: { 'emoji-rain': { labels: { product: 'Emoji Rain', hud: 'OBS HUD', resolution: '1080p (1920x1080)', rawResolution: '2560x1440 (2K)', downscale: '3840x2160 -> 960x540', protocol: 'HTTP', multiplier: '1000 XP x10', choice: '!a, !b, !c, !d', font: 'Times New Roman', provider: 'OpenAI (DALL-E 3)', webhook: '🌐 Webhook', apiKey: 'sk-...', payload: '[ {"action":"fog","duration":8000} ]' } } } },
+      es: { plugins: { 'emoji-rain': { labels: { product: 'Emoji Rain', hud: 'OBS HUD', resolution: '1080p (1920x1080)', rawResolution: '2560x1440 (2K)', downscale: '3840x2160 -> 960x540', protocol: 'HTTP', multiplier: '1000 XP x10', choice: '!a, !b, !c, !d', font: 'Times New Roman', provider: 'OpenAI (DALL-E 3)', webhook: '🌐 Webhook', apiKey: 'sk-...', payload: '[ {"action":"fog","duration":8000} ]' } } } },
+      fr: { plugins: { 'emoji-rain': { labels: { product: 'Emoji Rain', hud: 'OBS HUD', resolution: '1080p (1920x1080)', rawResolution: '2560x1440 (2K)', downscale: '3840x2160 -> 960x540', protocol: 'HTTP', multiplier: '1000 XP x10', choice: '!a, !b, !c, !d', font: 'Times New Roman', provider: 'OpenAI (DALL-E 3)', webhook: '🌐 Webhook', apiKey: 'sk-...', payload: '[ {"action":"fog","duration":8000} ]' } } } }
+    });
+
+    expect(auditPluginLocales(pluginsRoot).errors).toEqual([]);
+  });
+
+  test('accepts legitimate French accented words while still rejecting mojibake', () => {
+    writePluginFixture(pluginsRoot, 'emoji-rain', {
+      de: { plugins: { 'emoji-rain': { labels: { minimumAge: 'Mindestalter' } } } },
+      en: { plugins: { 'emoji-rain': { labels: { minimumAge: 'Minimum age' } } } },
+      es: { plugins: { 'emoji-rain': { labels: { minimumAge: 'Edad mínima' } } } },
+      fr: { plugins: { 'emoji-rain': { labels: { minimumAge: 'Âge minimum' } } } }
     });
 
     expect(auditPluginLocales(pluginsRoot).errors).toEqual([]);

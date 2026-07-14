@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.26e3285ff50b">OpenShock Pattern Editor - Complete Demo</title>
-    
+    <title data-i18n="plugins.openshock.labels.openshock_pattern_editor_complete_demo">OpenShock Pattern Editor - Complete Demo</title>
+
     <link rel="stylesheet" href="/css/themes.css">
     <!-- Pattern Editor CSS -->
     <link rel="stylesheet" href="pattern-editor.css">
-    
+
     <script>
         /* Pattern editor theme bridge */
         (() => {
@@ -182,21 +182,21 @@
 <body>
     <div class="demo-container">
         <div class="demo-header">
-            <h1 data-i18n="generated.7a7a93b4c1a9">⚡ OpenShock Pattern Editor</h1>
-            <p style="color: #aaa; font-size: 1.2em;" data-i18n="generated.42095ebb7092">Complete Pattern Design & Testing System</p>
+            <h1 data-i18n="plugins.openshock.labels.openshock_pattern_editor">⚡ OpenShock Pattern Editor</h1>
+            <p style="color: #aaa; font-size: 1.2em;" data-i18n="plugins.openshock.labels.complete_pattern_design_testing_system">Complete Pattern Design & Testing System</p>
         </div>
 
         <!-- API Configuration -->
         <div class="api-config">
-            <h2 style="color: #00d4ff; margin-bottom: 15px;" data-i18n="generated.c2d94b7e653e">🔑 API Konfiguration</h2>
+            <h2 style="color: #00d4ff; margin-bottom: 15px;" data-i18n="plugins.openshock.labels.api_konfiguration_c2d94b">🔑 API Konfiguration</h2>
             <div class="api-config-grid">
                 <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label" data-i18n="generated.321f0659ad53">OpenShock API Key</label>
-                    <input type="password" id="apiKey" class="form-input" 
+                    <label class="form-label" data-i18n="plugins.openshock.labels.openshock_api_key">OpenShock API Key</label>
+                    <input type="password" id="apiKey" class="form-input"
                            value="6PP4UFqvQg1sWEyWKTD30dvbBMLfwtaW5sPwfopq8HKBSNIQYxdabBV0fANe623m"
                            placeholder="Dein API Key">
                 </div>
-                <button class="btn btn-primary" id="connectBtn" style="height: 46px;" data-i18n="generated.bfd207467e5d">
+                <button class="btn btn-primary" id="connectBtn" style="height: 46px;" data-i18n="plugins.openshock.labels.verbinden_bfd207">
                     🔌 Verbinden
                 </button>
             </div>
@@ -204,7 +204,7 @@
 
         <!-- Device Status -->
         <div class="device-status" id="deviceStatusContainer" style="display: none;">
-            <h2 style="color: #00d4ff; margin-bottom: 15px;" data-i18n="generated.662889a9cdef">📱 Verbundene Geräte</h2>
+            <h2 style="color: #00d4ff; margin-bottom: 15px;" data-i18n="plugins.openshock.labels.verbundene_gerate">📱 Verbundene Geräte</h2>
             <div id="deviceList" class="device-grid"></div>
         </div>
 
@@ -213,7 +213,7 @@
 
         <!-- Emergency Stop -->
         <div style="text-align: center; margin-top: 30px;">
-            <button class="btn btn-danger btn-lg" id="emergencyStopBtn" data-i18n="generated.ab097ab1de02">
+            <button class="btn btn-danger btn-lg" id="emergencyStopBtn" data-i18n="plugins.openshock.labels.notaus_alle_gerate_stoppen">
                 🛑 NOTAUS - Alle Geräte stoppen
             </button>
         </div>
@@ -291,11 +291,11 @@
         // Initialize on DOM load
         document.addEventListener('DOMContentLoaded', () => {
             console.log('[Pattern Editor] Initializing...');
-            
+
             // Connect button
             document.getElementById('connectBtn').addEventListener('click', async () => {
                 const apiKey = document.getElementById('apiKey').value.trim();
-                
+
                 if (!apiKey) {
                     alert('Bitte API Key eingeben!');
                     return;
@@ -304,30 +304,30 @@
                 try {
                     document.getElementById('connectBtn').disabled = true;
                     document.getElementById('connectBtn').textContent = '⏳ Verbinde...';
-                    
+
                     // Create API client
                     apiClient = new OpenShockAPIClient(apiKey);
-                    
+
                     // Get devices
                     devices = await apiClient.getDevices();
-                    
+
                     console.log(`[Pattern Editor] ${devices.length} Gerät(e) gefunden`);
-                    
+
                     // Show devices
                     showDevices(devices);
-                    
+
                     // Initialize pattern editor
                     if (!patternEditor) {
                         const container = document.getElementById('patternEditorContainer');
                         patternEditor = new PatternEditorView(container, apiClient);
                         patternEditor.init();
                     }
-                    
+
                     // Set devices
                     patternEditor.setDevices(devices);
-                    
+
                     alert(`✅ Erfolgreich verbunden!\n${devices.length} Gerät(e) gefunden.`);
-                    
+
                     document.getElementById('connectBtn').textContent = '✅ Verbunden';
                 } catch (error) {
                     console.error('[Pattern Editor] Connection error:', error);
@@ -366,9 +366,9 @@
         function showDevices(deviceList) {
             const container = document.getElementById('deviceStatusContainer');
             const listContainer = document.getElementById('deviceList');
-            
+
             container.style.display = 'block';
-            
+
             if (deviceList.length === 0) {
                 listContainer.innerHTML = '<p style="color: #aaa;">Keine Geräte gefunden</p>';
                 return;

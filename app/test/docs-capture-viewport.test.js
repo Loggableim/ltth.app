@@ -16,4 +16,12 @@ describe('docs screenshot capture viewport', () => {
     expect(source).toContain('x: Math.round(Math.max(0, Math.min(anchorCenterX - (width / 2), maxX)))');
     expect(source).toContain("await page.screenshot({ path: target, type: 'png', clip: screenshotClip })");
   });
+
+  test('defines the required 1440 by 900 product capture window for every guide action', () => {
+    const spec = require('../../scripts/docs-screenshot-spec');
+    const docs = spec.buildDocsSpec(path.join(__dirname, '..', '..'));
+
+    expect(docs.viewport).toEqual({ width: 1440, height: 900, deviceScaleFactor: 1 });
+    expect(docs.assets.every((asset) => asset.viewport.width === 1440 && asset.viewport.height === 900)).toBe(true);
+  });
 });

@@ -1,32 +1,37 @@
 {
-  "api_bridge": {
-    "plugin": {
-      "name": "API Bridge",
-      "description": "Enables external applications to control LTTH through HTTP and WebSocket APIs."
-    },
-    "ui": {
-      "title": "API Bridge",
-      "actions": {
-        "save": "Save",
-        "cancel": "Cancel",
-        "refresh": "Refresh",
-        "close": "Close",
-        "test": "Test",
-        "clear": "Clear"
+  "plugins": {
+    "api-bridge": {
+      "api_bridge": {
+        "plugin": {
+          "name": "API Bridge",
+          "description": "Enables external applications to control LTTH through HTTP and WebSocket APIs."
+        },
+        "ui": {
+          "title": "API Bridge",
+          "actions": {
+            "save": "Save",
+            "cancel": "Cancel",
+            "refresh": "Refresh",
+            "close": "Close",
+            "test": "Test",
+            "clear": "Clear"
+          },
+          "status": {
+            "ready": "Ready",
+            "loading": "Loading…",
+            "connected": "Connected",
+            "disconnected": "Disconnected",
+            "error": "Error"
+          },
+          "messages": {
+            "saved": "Settings saved.",
+            "failed": "Could not save settings.",
+            "noData": "No data available.",
+            "confirm": "Are you sure?"
+          }
+        }
       },
-      "status": {
-        "ready": "Ready",
-        "loading": "Loading…",
-        "connected": "Connected",
-        "disconnected": "Disconnected",
-        "error": "Error"
-      },
-      "messages": {
-        "saved": "Settings saved.",
-        "failed": "Could not save settings.",
-        "noData": "No data available.",
-        "confirm": "Are you sure?"
-      }
+      "labels": {}
     }
   }
 }

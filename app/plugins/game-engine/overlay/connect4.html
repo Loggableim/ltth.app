@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.0d7e26638c6e">Connect4 Overlay - LTTH Game Engine</title>
+  <title data-i18n="plugins.game-engine.labels.connect4_overlay_ltth_game_engine">Connect4 Overlay - LTTH Game Engine</title>
   <script>
     (function () {
       const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
@@ -599,28 +599,28 @@
 
   <!-- Challenge Screen -->
   <div id="challenge-screen">
-    <div class="challenge-title" data-i18n="generated.3fef6a540c58">NEW CHALLENGER!</div>
-    <div class="challenge-question" data-i18n="generated.85677aa338ac">Accept Challenge?</div>
+    <div class="challenge-title" data-i18n="plugins.game-engine.labels.new_challenger">NEW CHALLENGER!</div>
+    <div class="challenge-question" data-i18n="plugins.game-engine.labels.accept_challenge">Accept Challenge?</div>
     <div id="challenger-name" style="font-size: 24px; color: #64B5F6; margin-bottom: 20px;"></div>
     <div class="challenge-gift">
       <div id="challenge-gift-container"></div>
     </div>
-    <div class="challenge-info" data-i18n="generated.6d00e248c01e">Send this gift to start:</div>
+    <div class="challenge-info" data-i18n="plugins.game-engine.labels.send_this_gift_to_start">Send this gift to start:</div>
     <div id="gift-name" style="font-size: 20px; color: #FFC107; margin-top: 10px;"></div>
     <div id="challenge-timer" class="challenge-timer"></div>
   </div>
 
   <!-- Leaderboard Screen -->
   <div id="leaderboard-screen">
-    <div class="leaderboard-title" data-i18n="generated.58fdc344b6e5">🏆 Leaderboard 🏆</div>
+    <div class="leaderboard-title" data-i18n="plugins.game-engine.labels.leaderboard">🏆 Leaderboard 🏆</div>
     <div id="leaderboard-type" class="leaderboard-type"></div>
     <div id="leaderboard-content"></div>
   </div>
 
   <div id="game-container">
     <div id="game-header">
-      <div id="game-title">Vier Gewinnt / Connect4</div>
-      <div id="game-status">Warte auf Spiel...</div>
+      <div id="game-title" data-i18n="plugins.game-engine.labels.vier_gewinnt_connect4">Vier Gewinnt / Connect4</div>
+      <div id="game-status" data-i18n="plugins.game-engine.labels.warte_auf_spiel_ec3ee7">Warte auf Spiel...</div>
     </div>
 
     <div id="game-board">
@@ -655,16 +655,16 @@
 
   <!-- Test Mode Controls -->
   <div id="test-mode-controls" style="display: none; position: fixed; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.9); padding: 20px; border-radius: 10px; z-index: 10000; color: white; font-family: Arial, sans-serif;">
-    <h3 style="margin: 0 0 15px 0; color: #4CAF50;" data-i18n="generated.1ae978191cf9">🧪 Test Mode</h3>
+    <h3 style="margin: 0 0 15px 0; color: #4CAF50;" data-i18n="plugins.game-engine.labels.test_mode">🧪 Test Mode</h3>
     <div style="margin-bottom: 10px;">
-      <button id="test-start-game" style="width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; margin-bottom: 5px;" data-i18n="generated.6f8231152530">Start Test Game</button>
+      <button id="test-start-game" style="width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; margin-bottom: 5px;" data-i18n="plugins.game-engine.labels.start_test_game">Start Test Game</button>
     </div>
     <div id="test-game-controls" style="display: none;">
       <div style="margin-bottom: 10px;">
-        <strong><span data-i18n="generated.64d2cf1a81b5">Current Player: </span><span id="test-current-player">1</span></strong>
+        <strong><span data-i18n="plugins.game-engine.labels.current_player">Current Player: </span><span id="test-current-player">1</span></strong>
       </div>
       <div style="margin-bottom: 10px;">
-        <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="generated.5a40c44f2989">Drop Piece in Column:</label>
+        <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="plugins.game-engine.labels.drop_piece_in_column">Drop Piece in Column:</label>
         <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">
           <button class="test-column-btn" data-column="A" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">A</button>
           <button class="test-column-btn" data-column="B" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">B</button>
@@ -676,7 +676,7 @@
         </div>
       </div>
       <div>
-        <button id="test-end-game" style="width: 100%; padding: 10px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;" data-i18n="generated.b50098161c26">End Test Game</button>
+        <button id="test-end-game" style="width: 100%; padding: 10px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;" data-i18n="plugins.game-engine.labels.end_test_game">End Test Game</button>
       </div>
     </div>
   </div>
@@ -684,7 +684,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io({ auth: { role: 'overlay' } });
-    
+
     let currentSession = null;
     let gameConfig = null;
     let lastInteractiveDisplayRevision = -1;
@@ -703,18 +703,18 @@
 
     // Sound effects (using Web Audio API)
     let audioContext = null; // Lazy initialization to avoid autoplay policy issues
-    
+
     function getAudioContext() {
       if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
       }
       return audioContext;
     }
-    
+
     // Play audio file (MP3/WAV)
     function playAudioFile(filePath, volume = null) {
       if (!gameConfig || !gameConfig.soundEnabled) return;
-      
+
       try {
         const audio = new Audio(filePath);
         audio.volume = volume !== null ? volume : (gameConfig.soundVolume || 0.5);
@@ -725,10 +725,10 @@
         console.warn('Failed to load audio:', error);
       }
     }
-    
+
     function playSound(type) {
       if (!gameConfig || !gameConfig.soundEnabled) return;
-      
+
       // Map sound types to default sound files
       const defaultSounds = {
         'move': '/game-engine/sounds/default/game start.mp3',
@@ -736,25 +736,25 @@
         'draw': '/game-engine/sounds/default/game over.mp3',
         'timer_warning': '/game-engine/sounds/default/ten-sec-timer.mp3'
       };
-      
+
       // Use default sounds if available, otherwise fall back to oscillator
       if (defaultSounds[type]) {
         playAudioFile(defaultSounds[type]);
         return;
       }
-      
+
       // Fallback to oscillator sounds for compatibility
       try {
         const ctx = getAudioContext();
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
-        
+
         oscillator.connect(gainNode);
         gainNode.connect(ctx.destination);
-        
+
         const volume = (gameConfig.soundVolume || 0.5) * 0.3;
         gainNode.gain.value = volume;
-        
+
         switch(type) {
           case 'move':
             oscillator.frequency.value = 400;
@@ -772,7 +772,7 @@
             gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
             break;
         }
-        
+
         oscillator.start();
         oscillator.stop(ctx.currentTime + 0.5);
       } catch (error) {
@@ -791,12 +791,12 @@
     // Confetti celebration
     function celebrateWin() {
       if (!gameConfig || !gameConfig.celebrationEnabled) return;
-      
+
       const celebrationOverlay = document.getElementById('celebration-overlay');
       celebrationOverlay.classList.add('active');
-      
+
       const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff8800'];
-      
+
       for (let i = 0; i < CONFETTI_CONFIG.count; i++) {
         setTimeout(() => {
           const confetti = document.createElement('div');
@@ -805,11 +805,11 @@
           confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
           confetti.style.animationDelay = Math.random() * (CONFETTI_CONFIG.animationDelay / 1000) + 's';
           celebrationOverlay.appendChild(confetti);
-          
+
           setTimeout(() => confetti.remove(), CONFETTI_CONFIG.duration);
         }, i * CONFETTI_CONFIG.spawnInterval);
       }
-      
+
       setTimeout(() => {
         celebrationOverlay.classList.remove('active');
       }, CONFETTI_CONFIG.duration);
@@ -821,26 +821,26 @@
     // Media playback function
     function playMedia(mediaInfo) {
       if (!mediaInfo || !mediaInfo.file_path) return;
-      
+
       try {
-        const element = mediaInfo.media_type === 'audio' 
+        const element = mediaInfo.media_type === 'audio'
           ? document.createElement('audio')
           : document.createElement('video');
-        
+
         element.src = mediaInfo.file_path;
         element.volume = (gameConfig && gameConfig.soundVolume) ? gameConfig.soundVolume : 0.5;
         element.style.display = 'none';
-        
+
         document.body.appendChild(element);
-        
+
         element.play().catch(err => {
           console.warn('Media playback failed:', err);
         });
-        
+
         element.onended = () => {
           document.body.removeChild(element);
         };
-        
+
         element.onerror = () => {
           console.error('Failed to load media:', mediaInfo.file_path);
           document.body.removeChild(element);
@@ -891,13 +891,13 @@
       challengeTimerInterval = setInterval(() => {
         const now = new Date();
         const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
-        
+
         timerDiv.textContent = `⏱️ ${remaining}s`;
-        
+
         if (remaining <= 5) {
           timerDiv.classList.add('warning');
         }
-        
+
         if (remaining <= 0) {
           clearInterval(challengeTimerInterval);
         }
@@ -913,7 +913,7 @@
     function hideChallengeScreen() {
       const challengeScreen = document.getElementById('challenge-screen');
       challengeScreen.classList.remove('show');
-      
+
       if (challengeTimerInterval) {
         clearInterval(challengeTimerInterval);
         challengeTimerInterval = null;
@@ -953,13 +953,13 @@
       // Rotate through leaderboards
       leaderboardRotationInterval = setInterval(async () => {
         currentLeaderboardIndex++;
-        
+
         if (currentLeaderboardIndex >= types.length) {
           // Finished rotation
           hideLeaderboard();
           clearInterval(leaderboardRotationInterval);
           leaderboardRotationInterval = null;
-          
+
           // Hide game container after leaderboards
           setTimeout(() => {
             document.getElementById('game-container').classList.remove('active');
@@ -1014,7 +1014,7 @@
     // Render leaderboard table
     function renderLeaderboardTable(data, type) {
       const rankIcons = ['🥇', '🥈', '🥉'];
-      
+
       const table = document.createElement('table');
       table.className = 'leaderboard-table';
       const thead = document.createElement('thead');
@@ -1026,7 +1026,7 @@
       };
       addHeader('Rang');
       addHeader('Spieler');
-      
+
       if (type === 'daily') {
         addHeader('Siege Heute');
         addHeader('Spiele Heute');
@@ -1043,7 +1043,7 @@
       thead.appendChild(headerRow);
       table.appendChild(thead);
       const tbody = document.createElement('tbody');
-      
+
       data.forEach((player, index) => {
         const row = document.createElement('tr');
         const rankCell = document.createElement('td');
@@ -1059,7 +1059,7 @@
           cell.textContent = String(value);
           row.appendChild(cell);
         };
-        
+
         if (type === 'daily') {
           addCell(player.wins_today || 0);
           addCell(player.games_today || 0);
@@ -1083,11 +1083,11 @@
     function initializeBoard() {
       const boardGrid = document.getElementById('board-grid');
       boardGrid.innerHTML = '';
-      
+
       for (let row = 0; row < ROWS; row++) {
         const rowDiv = document.createElement('div');
         rowDiv.className = 'board-row';
-        
+
         for (let col = 0; col < COLUMNS; col++) {
           const cell = document.createElement('div');
           cell.className = 'board-cell';
@@ -1095,7 +1095,7 @@
           cell.dataset.col = col;
           rowDiv.appendChild(cell);
         }
-        
+
         boardGrid.appendChild(rowDiv);
       }
     }
@@ -1103,7 +1103,7 @@
     // Apply configuration
     function applyConfig(config) {
       gameConfig = config;
-      
+
       if (config.boardColor) {
         document.documentElement.style.setProperty('--board-color', config.boardColor);
       }
@@ -1146,20 +1146,20 @@
     // Update board display
     function updateBoard(state) {
       const board = state.board;
-      
+
       for (let row = 0; row < ROWS; row++) {
         for (let col = 0; col < COLUMNS; col++) {
           const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
           const cellValue = board[row][col];
-          
+
           // Clear existing pieces
           cell.innerHTML = '';
           cell.classList.remove('filled');
-          
+
           if (cellValue !== 0) {
             const piece = document.createElement('div');
             piece.className = `piece player${cellValue}`;
-            
+
             // Check if this cell is part of winning combination
             if (state.winningCells) {
               const isWinning = state.winningCells.some(([r, c]) => r === row && c === col);
@@ -1167,7 +1167,7 @@
                 piece.classList.add('winning');
               }
             }
-            
+
             cell.appendChild(piece);
             cell.classList.add('filled');
           }
@@ -1179,13 +1179,13 @@
     function updatePlayerInfo(state) {
       const player1Info = document.getElementById('player1-info');
       const player2Info = document.getElementById('player2-info');
-      
+
       document.getElementById('player1-name').textContent = state.player1.nickname || state.player1.username;
       document.getElementById('player2-name').textContent = state.player2.nickname || state.player2.username;
-      
+
       document.getElementById('player1-color').style.background = state.player1.color;
       document.getElementById('player2-color').style.background = state.player2.color;
-      
+
       // Highlight current player
       player1Info.classList.toggle('active', state.currentPlayer === 1 && state.status === 'active');
       player2Info.classList.toggle('active', state.currentPlayer === 2 && state.status === 'active');
@@ -1195,7 +1195,7 @@
     function updateStatus(state) {
       const statusDiv = document.getElementById('game-status');
       const dt = (gameConfig && gameConfig._displayTexts) || {};
-      
+
       if (state.status === 'completed') {
         if (state.winner) {
           const winnerInfo = state.winner === 1 ? state.player1 : state.player2;
@@ -1217,7 +1217,7 @@
       const resultText = document.getElementById('result-text');
       const xpReward = document.getElementById('xp-reward');
       const dt = (gameConfig && gameConfig._displayTexts) || {};
-      
+
       if (data.winner) {
         const winnerInfo = data.state.winner === 1 ? data.state.player1 : data.state.player2;
         const winLabel = dt.labelWin || '🏆 {player} gewinnt!';
@@ -1226,13 +1226,13 @@
         if (winnerText) {
           winnerText.textContent = winLabel.replace('{player}', winnerInfo.nickname || winnerInfo.username || '');
         }
-        
+
         // Play appropriate win sound based on which player won
-        const winSound = data.state.winner === 1 
+        const winSound = data.state.winner === 1
           ? '/game-engine/sounds/default/player-1-wins.mp3'
           : '/game-engine/sounds/default/player-2-wins.mp3';
         playAudioFile(winSound);
-        
+
         celebrateWin();
       } else if (data.reason === 'draw') {
         resultText.innerHTML = '';
@@ -1244,7 +1244,7 @@
       } else {
         resultText.innerHTML = '<span>Spiel beendet</span>';
       }
-      
+
       // Show XP reward if viewer won/lost
       let xpText = '';
       if (data.winner && data.state.player1.role === 'viewer') {
@@ -1253,7 +1253,7 @@
         xpText = data.state.winner === 2 ? '✨ +100 XP' : '✨ +25 XP';
       }
       xpReward.textContent = xpText;
-      
+
       // Show win streak if enabled
       if (gameConfig && gameConfig.showWinStreaks && data.winStreak && data.winStreak.newWinStreak > 1) {
         const streakDiv = document.createElement('div');
@@ -1265,14 +1265,14 @@
         streakDiv.appendChild(document.createTextNode(` ${data.winStreak.newWinStreak} Siege in Folge!`));
         xpReward.after(streakDiv);
       }
-      
+
       // Show ELO changes if enabled
       if (gameConfig && gameConfig.eloEnabled && data.eloChanges) {
         const eloContainer = document.createElement('div');
         eloContainer.className = 'elo-changes';
         eloContainer.style.marginTop = '15px';
         eloContainer.style.fontSize = '16px';
-        
+
         const appendEloChange = (player, change) => {
           if (!change) return;
           const row = document.createElement('div');
@@ -1291,10 +1291,10 @@
         };
         appendEloChange(data.state.player1, data.eloChanges.player1);
         appendEloChange(data.state.player2, data.eloChanges.player2);
-        
+
         xpReward.after(eloContainer);
       }
-      
+
       resultDiv.classList.add('show');
       
       if (!authoritative) {
@@ -1374,12 +1374,12 @@
       if (data.interactive || data.gameType !== 'connect4' || interactiveSnapshotActive) return;
       console.log('Game started:', data);
       hideChallengeScreen(); // Hide challenge screen when game starts
-      
+
       // Play challenge accepted media if available
       if (data.media) {
         playMedia(data.media);
       }
-      
+
       currentSession = data.sessionId;
       applyConfig(data.config);
       updateBoard(data.state);
@@ -1407,7 +1407,7 @@
         updateStatus(data.state);
         showResult(data);
         currentSession = null;
-        
+
         // Show leaderboard rotation after game ends
         setTimeout(() => {
           showLeaderboardRotation(data.gameType);
@@ -1451,11 +1451,11 @@
     // ============================================
     // TEST MODE FUNCTIONALITY
     // ============================================
-    
+
     if (testMode) {
       console.log('🧪 Test mode enabled');
       document.getElementById('test-mode-controls').style.display = 'block';
-      
+
       // Start test game button
       document.getElementById('test-start-game').addEventListener('click', async () => {
         try {
@@ -1469,9 +1469,9 @@
               player2Name: 'Test Player 2'
             })
           });
-          
+
           const data = await response.json();
-          
+
           if (data.success) {
             testSessionId = data.sessionId;
             console.log('Test game started:', data);
@@ -1486,7 +1486,7 @@
           alert('Error starting test game: ' + error.message);
         }
       });
-      
+
       // Column buttons for making moves
       document.querySelectorAll('.test-column-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -1494,9 +1494,9 @@
             alert('No active test game');
             return;
           }
-          
+
           const column = btn.getAttribute('data-column');
-          
+
           try {
             const response = await fetch('/api/game-engine/manual/move', {
               method: 'POST',
@@ -1506,9 +1506,9 @@
                 column: column
               })
             });
-            
+
             const data = await response.json();
-            
+
             if (!data.success) {
               console.error('Failed to make move:', data.error);
             }
@@ -1517,14 +1517,14 @@
           }
         });
       });
-      
+
       // End test game button
       document.getElementById('test-end-game').addEventListener('click', async () => {
         if (!testSessionId) {
           alert('No active test game');
           return;
         }
-        
+
         try {
           const response = await fetch('/api/game-engine/manual/end', {
             method: 'POST',
@@ -1533,9 +1533,9 @@
               sessionId: testSessionId
             })
           });
-          
+
           const data = await response.json();
-          
+
           if (data.success) {
             testSessionId = null;
             document.getElementById('test-start-game').style.display = 'block';
@@ -1548,7 +1548,7 @@
           console.error('Error ending test game:', error);
         }
       });
-      
+
       // Update current player display when move is made
       socket.on('game-engine:move-made', (data) => {
         if (data.sessionId === testSessionId && data.manual) {
@@ -1556,7 +1556,7 @@
           document.getElementById('test-current-player').textContent = currentPlayer;
         }
       });
-      
+
       // Reset test controls when game ends
       socket.on('game-engine:game-ended', (data) => {
         if (data.sessionId === testSessionId) {

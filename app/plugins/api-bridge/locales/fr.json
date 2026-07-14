@@ -1,32 +1,37 @@
 {
-  "api_bridge": {
-    "plugin": {
-      "name": "Pont API",
-      "description": "Permet à des applications externes de contrôler LTTH via des API HTTP et WebSocket."
-    },
-    "ui": {
-      "title": "API Bridge",
-      "actions": {
-        "save": "Enregistrer",
-        "cancel": "Annuler",
-        "refresh": "Actualiser",
-        "close": "Fermer",
-        "test": "Tester",
-        "clear": "Effacer"
+  "plugins": {
+    "api-bridge": {
+      "api_bridge": {
+        "plugin": {
+          "name": "Pont API",
+          "description": "Permet à des applications externes de contrôler LTTH via des API HTTP et WebSocket."
+        },
+        "ui": {
+          "title": "Pont API",
+          "actions": {
+            "save": "Enregistrer",
+            "cancel": "Annuler",
+            "refresh": "Actualiser",
+            "close": "Fermer",
+            "test": "Tester",
+            "clear": "Effacer"
+          },
+          "status": {
+            "ready": "Prêt",
+            "loading": "Chargement…",
+            "connected": "Connecté",
+            "disconnected": "Déconnecté",
+            "error": "Erreur"
+          },
+          "messages": {
+            "saved": "Réglages enregistrés.",
+            "failed": "Impossible d’enregistrer les réglages.",
+            "noData": "Aucune donnée disponible.",
+            "confirm": "Voulez-vous continuer ?"
+          }
+        }
       },
-      "status": {
-        "ready": "Prêt",
-        "loading": "Chargement…",
-        "connected": "Connecté",
-        "disconnected": "Déconnecté",
-        "error": "Erreur"
-      },
-      "messages": {
-        "saved": "Réglages enregistrés.",
-        "failed": "Impossible d’enregistrer les réglages.",
-        "noData": "Aucune donnée disponible.",
-        "confirm": "Voulez-vous continuer ?"
-      }
+      "labels": {}
     }
   }
 }

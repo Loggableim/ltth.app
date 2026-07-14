@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.9767332464b4">Talking Heads - Admin UI</title>
+    <title data-i18n="plugins.talking-heads.labels.talking_heads_admin_ui">Talking Heads - Admin UI</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/ui.css">
     <script src="/js/i18n-client.js"></script>
@@ -13,7 +13,7 @@
         <div class="row">
             <div class="col-12">
                 <h2 class="mb-4">
-                    <i class="bi bi-person-video3"></i><span data-i18n="generated.f55c0279c0ce"> Talking Heads Configuration
+                    <i class="bi bi-person-video3"></i><span data-i18n="plugins.talking-heads.labels.talking_heads_configuration"> Talking Heads Configuration
                 </span></h2>
             </div>
         </div>
@@ -23,7 +23,7 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0" data-i18n="generated.37fcd7d8ce81">Plugin Status</h5>
+                        <h5 class="mb-0" data-i18n="plugins.talking-heads.labels.plugin_status">Plugin Status</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -47,16 +47,16 @@
                                 <span id="apiStatus" class="badge bg-secondary">Unbekannt</span>
                             </div>
                             <div class="col-md-3">
-                                <span id="cacheStats" class="text-muted" data-i18n="generated.d31e43fad2e6">Cache: 0 Avatare</span>
+                                <span id="cacheStats" class="text-muted" data-i18n="plugins.talking-heads.labels.cache_0_avatare">Cache: 0 Avatare</span>
                             </div>
                         </div>
                         <div class="row mt-2">
                             <div class="col-md-12">
                                 <button class="btn btn-sm btn-primary" id="testApiBtn">
-                                    <i class="bi bi-check-circle"></i><span data-i18n="generated.c9c51df1cce5"> API testen
+                                    <i class="bi bi-check-circle"></i><span data-i18n="plugins.talking-heads.labels.test_api"> API testen
                                 </span></button>
                                 <small class="text-muted ms-3">
-                                    <i class="bi bi-info-circle"></i><span data-i18n="generated.3b473f41fcfb"> Debug-Logging schreibt detaillierte Informationen in die Log-Datei
+                                    <i class="bi bi-info-circle"></i><span data-i18n="plugins.talking-heads.labels.debug_logging_schreibt_detaillierte_informationen_in_die_log"> Debug-Logging schreibt detaillierte Informationen in die Log-Datei
                                 </span></small>
                             </div>
                         </div>
@@ -70,14 +70,14 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="bi bi-terminal"></i><span data-i18n="generated.cf83184e3843"> Debug Log</span></h5>
+                        <h5 class="mb-0"><i class="bi bi-terminal"></i><span data-i18n="plugins.talking-heads.labels.debug_log"> Debug Log</span></h5>
                         <button class="btn btn-sm btn-secondary" id="refreshLogBtn">
                             <i class="bi bi-arrow-clockwise"></i> Aktualisieren
                         </button>
                     </div>
                     <div class="card-body">
                         <div id="debugLogViewer" class="bg-dark text-light p-3" style="max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;">
-                            <div class="text-muted" data-i18n="generated.5573d0b74877">Debug-Logging aktivieren, um Logs zu sehen...</div>
+                            <div class="text-muted" data-i18n="plugins.talking-heads.labels.debug_logging_aktivieren_um_logs_zu_sehen">Debug-Logging aktivieren, um Logs zu sehen...</div>
                         </div>
                     </div>
                 </div>
@@ -89,24 +89,24 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0" data-i18n="generated.2a3c0c400e1b">KI-Bildgenerator API</h5>
+                        <h5 class="mb-0" data-i18n="plugins.talking-heads.labels.ki_bildgenerator_api">KI-Bildgenerator API</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="imageApiUrl" class="form-label" data-i18n="generated.9e08c378d6b9">API URL</label>
-                                <input type="text" class="form-control" id="imageApiUrl" 
+                                <label for="imageApiUrl" class="form-label" data-i18n="plugins.talking-heads.labels.api_url">API URL</label>
+                                <input type="text" class="form-control" id="imageApiUrl"
                                        placeholder="https://api.siliconflow.com/v1/images/generations">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="imageApiKey" class="form-label" data-i18n="generated.91066cff9ada">API Key</label>
-                                <input type="password" class="form-control" id="imageApiKey" 
+                                <label for="imageApiKey" class="form-label" data-i18n="plugins.talking-heads.labels.api_key">API Key</label>
+                                <input type="password" class="form-control" id="imageApiKey"
                                        placeholder="Ihr API-Schlüssel">
                             </div>
                         </div>
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle"></i>
-                            <strong>Hinweis:</strong><span data-i18n="generated.ccd9ae7b83b8"> Das Plugin verwendet die SiliconFlow API mit FLUX.1-schnell für schnelle Bildgenerierung. 
+                            <strong>Hinweis:</strong><span data-i18n="plugins.talking-heads.labels.das_plugin_verwendet_die_siliconflow_api_mit_flux"> Das Plugin verwendet die SiliconFlow API mit FLUX.1-schnell für schnelle Bildgenerierung.
                             Sie benötigen einen gültigen API-Schlüssel.
                         </span></div>
                     </div>
@@ -126,19 +126,19 @@
                             <div class="col-md-6 mb-3">
                                 <label for="defaultStyle" class="form-label">Standard-Stil</label>
                                 <select class="form-select" id="defaultStyle">
-                                    <option value="furry" data-i18n="generated.4ddeca2a18d3">Furry - Tierischer Charakter</option>
-                                    <option value="tech" data-i18n="generated.d7817bdb3e6a">Tech - Futuristisch</option>
-                                    <option value="medieval" data-i18n="generated.45178a89ad36">Medieval - Mittelalter/Fantasy</option>
-                                    <option value="noble" data-i18n="generated.068f0ccfb169">Noble - Aristokratisch</option>
-                                    <option value="cartoon" data-i18n="generated.4afa2872071a">Cartoon - Comic-Stil</option>
-                                    <option value="whimsical" data-i18n="generated.b84be50fdd9a">Whimsical - Märchenhaft</option>
-                                    <option value="realistic" data-i18n="generated.527e59171a3f">Realistic - Realistisch</option>
+                                    <option value="furry" data-i18n="plugins.talking-heads.labels.furry_tierischer_charakter">Furry - Tierischer Charakter</option>
+                                    <option value="tech" data-i18n="plugins.talking-heads.labels.tech_futuristisch">Tech - Futuristisch</option>
+                                    <option value="medieval" data-i18n="plugins.talking-heads.labels.medieval_mittelalter_fantasy">Medieval - Mittelalter/Fantasy</option>
+                                    <option value="noble" data-i18n="plugins.talking-heads.labels.noble_aristokratisch">Noble - Aristokratisch</option>
+                                    <option value="cartoon" data-i18n="plugins.talking-heads.labels.cartoon_comic_stil">Cartoon - Comic-Stil</option>
+                                    <option value="whimsical" data-i18n="plugins.talking-heads.labels.whimsical_marchenhaft">Whimsical - Märchenhaft</option>
+                                    <option value="realistic" data-i18n="plugins.talking-heads.labels.realistic_realistisch">Realistic - Realistisch</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
                                 <div id="stylePreview" class="border rounded p-3 bg-light">
                                     <p class="mb-0"><strong>Stil-Beschreibung:</strong></p>
-                                    <p id="styleDescription" class="mb-0 text-muted" data-i18n="generated.cd91738218d0">Wählen Sie einen Stil</p>
+                                    <p id="styleDescription" class="mb-0 text-muted" data-i18n="plugins.talking-heads.labels.wahlen_sie_einen_stil">Wählen Sie einen Stil</p>
                                 </div>
                             </div>
                         </div>
@@ -169,7 +169,7 @@
                             </div>
                             <div class="col-md-6 mb-3" id="minTeamLevelWrapper" style="display: none;">
                                 <label for="minTeamLevel" class="form-label" data-i18n="talking_heads_ui.labels.min_team_level">Minimales Team-Level</label>
-                                <input type="number" class="form-control" id="minTeamLevel" 
+                                <input type="number" class="form-control" id="minTeamLevel"
                                        min="0" max="6" value="0">
                             </div>
                         </div>
@@ -189,17 +189,17 @@
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label for="fadeInDuration" class="form-label" data-i18n="talking_heads_ui.labels.fade_in">Fade-In Dauer (ms)</label>
-                                <input type="number" class="form-control" id="fadeInDuration" 
+                                <input type="number" class="form-control" id="fadeInDuration"
                                        min="0" max="2000" step="100" value="300">
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="fadeOutDuration" class="form-label" data-i18n="talking_heads_ui.labels.fade_out">Fade-Out Dauer (ms)</label>
-                                <input type="number" class="form-control" id="fadeOutDuration" 
+                                <input type="number" class="form-control" id="fadeOutDuration"
                                        min="0" max="2000" step="100" value="300">
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="blinkInterval" class="form-label" data-i18n="talking_heads_ui.labels.blink_interval">Blinzel-Intervall (ms)</label>
-                                <input type="number" class="form-control" id="blinkInterval" 
+                                <input type="number" class="form-control" id="blinkInterval"
                                        min="1000" max="10000" step="500" value="3000">
                             </div>
                         </div>
@@ -237,14 +237,14 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="cacheDuration" class="form-label" data-i18n="talking_heads_ui.labels.cache_duration">Cache-Dauer (Tage)</label>
-                                <input type="number" class="form-control" id="cacheDuration" 
+                                <input type="number" class="form-control" id="cacheDuration"
                                        min="1" max="365" value="30">
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-12">
                                 <button class="btn btn-danger" id="clearCacheBtn">
-                                    <i class="bi bi-trash"></i><span data-i18n="generated.aa4a5e940af7"> Gesamten Cache leeren
+                                    <i class="bi bi-trash"></i><span data-i18n="plugins.talking-heads.labels.clear_entire_cache"> Gesamten Cache leeren
                                 </span></button>
                             </div>
                         </div>
@@ -258,11 +258,11 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0" data-i18n="generated.0d31c63cbd8e">Aktive Animationen</h5>
+                        <h5 class="mb-0" data-i18n="plugins.talking-heads.labels.active_animations">Aktive Animationen</h5>
                     </div>
                     <div class="card-body">
                         <div id="activeAnimations" class="list-group">
-                            <div class="text-muted" data-i18n="generated.b91a6ecd6292">Keine aktiven Animationen</div>
+                            <div class="text-muted" data-i18n="plugins.talking-heads.labels.keine_aktiven_animationen">Keine aktiven Animationen</div>
                         </div>
                     </div>
                 </div>
@@ -273,7 +273,7 @@
         <div class="row">
             <div class="col-12">
                 <button class="btn btn-success btn-lg" id="saveConfigBtn">
-                    <i class="bi bi-save"></i><span data-i18n="generated.999b275fa734"> Konfiguration speichern
+                    <i class="bi bi-save"></i><span data-i18n="plugins.talking-heads.labels.save_configuration"> Konfiguration speichern
                 </span></button>
             </div>
         </div>

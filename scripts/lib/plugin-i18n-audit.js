@@ -18,7 +18,10 @@ const INVARIANT_UI_TEXT = new Set([
 ]);
 
 const LOCALES = ['de', 'en', 'es', 'fr'];
-const MALFORMED_UTF8 = /\uFFFD|Ã.|Â.|â(?:€|€™|€˜|€œ|€)/;
+// Mojibake leaves UTF-8 continuation-byte code points after a Latin-1 lead
+// character (for example "GrÃ¶ÃŸe"). Do not flag legitimate words such as
+// the French "Âge", whose second character is an ordinary ASCII letter.
+const MALFORMED_UTF8 = /\uFFFD|\u00C3[\u0080-\u00BF]|\u00C2[\u0080-\u00BF]|\u00E2[\u0080-\u00BF]{1,2}/;
 
 function isObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value);
@@ -45,8 +48,14 @@ function isUserFacingText(value) {
 }
 
 function isInvariantUiText(value) {
+  const normalized = value.replace(/^[^\p{L}\p{N}]+/u, '').trim();
   return INVARIANT_UI_TEXT.has(value)
-    || /^(?:720p|1080p|1440p|4K)(?: Portrait)? \(\d+x\d+\)$/.test(value);
+    || value === '×'
+    || /^(?:\[|\{)[\s\S]*(?:\]|\})$/.test(value)
+    || /^(?:720p|1080p|1440p|4K)(?: Portrait)? \(\d+x\d+\)$/.test(normalized)
+    || /^(?:\d{3,4}x\d{3,4}(?:\s*\(\dK\)|\s*->\s*\d{3,4}x\d{3,4})?|\d{3,4}p \(\d+x\d+\)|\d+ XP x\d+|!?[A-Za-z](?:, !?[A-Za-z]){1,5}|sk-\.\.\.|Times New Roman|OpenAI(?: \([^)]+\)| TTS \(Premium\))?|Speechify TTS \(Premium\)|Webhook|Audio)$/.test(normalized)
+    || /^(?:[A-Z][A-Z0-9+._-]{1,}|\d+(?:\.\d+)?\s?(?:ms|s|fps|px|%|MB|GB|KB)|https?:\/\/\S+|\/\S+|[\w.-]+:\/\/\S+|[\w.-]+\.\w{2,})(?:\s*[|/,]\s*(?:[A-Z][A-Z0-9+._-]{1,}|\d+(?:\.\d+)?\s?(?:ms|s|fps|px|%|MB|GB|KB)))?$/.test(value)
+    || /^(?:WebGPU|TikTok|TikFinity|LTTH|MPV|OSC|VRChat|OpenShock|Chatango|ChatPal)$/i.test(normalized);
 }
 
 function auditPluginLocales(pluginsRoot) {
@@ -130,4 +139,4 @@ function auditPluginLocales(pluginsRoot) {
   return { errors: [...new Set(errors)].sort(), plugins };
 }
 
-module.exports = { LOCALES, flattenTranslations, auditPluginLocales };
+module.exports = { LOCALES, flattenTranslations, isInvariantUiText, auditPluginLocales };

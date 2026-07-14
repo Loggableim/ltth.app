@@ -1,247 +1,251 @@
 {
-  "weather_control": {
-    "title": "Weather Control",
-    "subtitle": "Stream Weather Effects",
-    "config": {
-      "title": "Configuration",
-      "enabled": "Enable Weather Effects",
-      "default_weather": "Default Weather",
-      "transition_duration": "Transition Duration (seconds)",
-      "save": "Save Settings"
-    },
-    "chat_commands": {
-      "title": "Chat Commands",
-      "enabled": "Enable Chat Commands",
-      "require_permission": "Require Permissions",
-      "allow_intensity": "Allow Intensity Control",
-      "allow_duration": "Allow Duration Control",
-      "description": "Allow viewers to trigger weather effects via chat commands"
-    },
-    "weather_types": {
-      "clear": "Clear",
-      "rain": "Rain",
-      "snow": "Snow",
-      "storm": "Storm",
-      "fog": "Fog",
-      "wind": "Wind",
-      "thunder": "Thunder",
-      "sunbeam": "Sunbeam",
-      "glitchclouds": "Glitch Clouds",
-      "aurora": "Aurora",
-      "fireflies": "Fireflies",
-      "meteors": "Meteors",
-      "sakura": "Sakura",
-      "embers": "Embers",
-      "heatwave": "Heatwave"
-    },
-    "commands": {
-      "weather": {
-        "description": "Trigger weather effects on the stream",
-        "syntax": "/weather <effect> [intensity] [duration]",
-        "examples": "/weather rain, /weather storm 0.8"
+  "plugins": {
+    "weather-control": {
+      "weather_control": {
+        "title": "Weather Control",
+        "subtitle": "Stream Weather Effects",
+        "config": {
+          "title": "Configuration",
+          "enabled": "Enable Weather Effects",
+          "default_weather": "Default Weather",
+          "transition_duration": "Transition Duration (seconds)",
+          "save": "Save Settings"
+        },
+        "chat_commands": {
+          "title": "Chat Commands",
+          "enabled": "Enable Chat Commands",
+          "require_permission": "Require Permissions",
+          "allow_intensity": "Allow Intensity Control",
+          "allow_duration": "Allow Duration Control",
+          "description": "Allow viewers to trigger weather effects via chat commands"
+        },
+        "weather_types": {
+          "clear": "Clear",
+          "rain": "Rain",
+          "snow": "Snow",
+          "storm": "Storm",
+          "fog": "Fog",
+          "wind": "Wind",
+          "thunder": "Thunder",
+          "sunbeam": "Sunbeam",
+          "glitchclouds": "Glitch Clouds",
+          "aurora": "Aurora",
+          "fireflies": "Fireflies",
+          "meteors": "Meteors",
+          "sakura": "Sakura",
+          "embers": "Embers",
+          "heatwave": "Heatwave"
+        },
+        "commands": {
+          "weather": {
+            "description": "Trigger weather effects on the stream",
+            "syntax": "/weather <effect> [intensity] [duration]",
+            "examples": "/weather rain, /weather storm 0.8"
+          },
+          "weatherlist": {
+            "description": "List all available weather effects",
+            "syntax": "/weatherlist"
+          },
+          "weatherstop": {
+            "description": "Stop all active weather effects or one specific effect",
+            "syntax": "/weatherstop [effect]"
+          }
+        },
+        "triggers": {
+          "title": "Event Triggers",
+          "gift_trigger": "Trigger on Gift",
+          "follow_trigger": "Trigger on Follow",
+          "weather_map": "Gift to Weather Mapping"
+        },
+        "overlay": {
+          "title": "Overlay",
+          "url": "Overlay URL",
+          "copy": "Copy URL",
+          "open": "Open Overlay",
+          "test": "Test Weather Effect"
+        },
+        "controls": {
+          "set_weather": "Set Weather",
+          "clear_weather": "Clear All Effects"
+        }
       },
-      "weatherlist": {
-        "description": "List all available weather effects",
-        "syntax": "/weatherlist"
+      "header": {
+        "title": "Weather Control",
+        "back": "Back"
       },
-      "weatherstop": {
-        "description": "Stop all active weather effects or one specific effect",
-        "syntax": "/weatherstop [effect]"
+      "stats": {
+        "effects": "Weather Effects",
+        "active": "Active Effects",
+        "events": "Events Triggered",
+        "connection": "Connection"
+      },
+      "cards": {
+        "preview": {
+          "title": "Live Weather Preview"
+        },
+        "main": {
+          "title": "Main Settings",
+          "enable": "Enable Weather Control Plugin",
+          "use_global": "Use Global Authentication",
+          "rate_limit": "Rate Limit (requests/min)",
+          "overlay_url": "Overlay URL"
+        },
+        "chat": {
+          "title": "Chat Commands (GCCE Integration)",
+          "info": "Requires Global Chat Command Engine (GCCE) plugin to be enabled. Viewers can trigger weather effects via chat commands.",
+          "enable": "Enable Chat Commands",
+          "enable_help": "Allow viewers to trigger weather effects using /weather, /weatherlist, and /weatherstop commands.",
+          "require_permission": "Require Permissions",
+          "require_permission_help": "Use the permission system below to control who can use weather commands.",
+          "allow_intensity": "Allow intensity",
+          "allow_intensity_help": "Allow users to specify effect intensity (0.0-1.0).",
+          "allow_duration": "Allow duration",
+          "allow_duration_help": "Allow users to specify effect duration (1-60 seconds).",
+          "command_names_title": "Custom Command Names",
+          "command_weather": "Weather Command",
+          "command_weather_placeholder": "Command weather placeholder",
+          "command_weather_help": "Trigger effects command",
+          "command_list": "List Command",
+          "command_list_placeholder": "Command list placeholder",
+          "command_list_help": "List available effects",
+          "command_stop": "Stop Command",
+          "command_stop_placeholder": "Command stop placeholder",
+          "command_stop_help": "Stop all effects",
+          "command_usage_title": "Command Usage:",
+          "command_usage_weather": "Command usage weather",
+          "command_usage_list": "Command usage list",
+          "command_usage_stop": "Command usage stop"
+        },
+        "permissions": {
+          "title": "Permission Settings",
+          "enable": "Enable Permission System",
+          "allow_all": "Allow All Users",
+          "followers": "Followers",
+          "superfans": "Superfans",
+          "subscribers": "Subscribers",
+          "team_members": "Team members",
+          "min_team_level": "Min Team Level",
+          "top_gifters": "Top Gifters (Top N)",
+          "min_points": "Minimum Points Required"
+        },
+        "effects": {
+          "title": "Weather Effects Configuration"
+        },
+        "tools": {
+          "title": "Weather Control Tools",
+          "search": "Search Effects",
+          "category": "Effect Category",
+          "preset": "Effect Preset",
+          "sequence_name": "Sequence Name",
+          "sequence_steps": "Sequence Steps JSON"
+        },
+        "audio": {
+          "enable": "Enable Weather Audio"
+        },
+        "active": {
+          "title": "Active Weather Effects"
+        },
+        "triggers": {
+          "title": "Event Triggers"
+        },
+        "gifts": {
+          "title": "Gift-to-Weather Mappings",
+          "description": "Map specific TikTok gifts to weather effects. When a mapped gift is received, it will trigger the configured weather effect.",
+          "load_prompt": "Click \"Load Gift Catalog\" to see available gifts",
+          "effect_label": "${translate('cards.gifts.effect_label') || 'Weather Effect'}"
+        }
+      },
+      "buttons": {
+        "preview_on": "Start Preview",
+        "test_rain": "Test Rain Effect",
+        "stop_all": "Stop All",
+        "copy": "Copy",
+        "load_catalog": "Load catalog",
+        "update_catalog": "Update catalog",
+        "refresh_mappings": "Refresh mappings",
+        "save_config": "Save config"
+      },
+      "preview": {
+        "fps": "FPS",
+        "avg_fps": "Avg FPS",
+        "particles": "Particles",
+        "active_effects": "Active",
+        "warning": "Performance Warning: This configuration may lag on low-end systems"
+      },
+      "settings": {
+        "quality_preset": "Quality Preset",
+        "adaptive_quality": "Adaptive Quality"
+      },
+      "effects": {
+        "names": {
+          "rain": "Rain",
+          "snow": "Snow",
+          "storm": "Storm",
+          "fog": "Fog",
+          "thunder": "Thunder",
+          "sunbeam": "Sunbeam",
+          "glitchclouds": "Glitch Clouds",
+          "aurora": "Aurora Borealis",
+          "fireflies": "Fireflies",
+          "meteors": "Meteor Shower",
+          "sakura": "Sakura Petals",
+          "embers": "Rising Embers",
+          "heatwave": "Heatwave"
+        },
+        "intensity": "Intensity",
+        "duration_ms": "Duration (ms)",
+        "permanent_label": "Permanent",
+        "permanent_help": "Keep this effect running until manually stopped.",
+        "test_button": "Test Effect",
+        "fog_color": "Fog Color Preset",
+        "sunbeam_colortemp": "Color Temperature"
+      },
+      "labels": {
+        "cool_moonlight": "Cool Moonlight",
+        "ultra_800": "Ultra – 800",
+        "golden_hour": "Golden Hour",
+        "import_config": "Import Config",
+        "audio_volume": "Audio Volume",
+        "static_noise": "Static Noise",
+        "ice_blue": "Ice Blue",
+        "community_meter_max": "Community Meter Max",
+        "digital_blocks": "Digital Blocks",
+        "apply_preset": "Apply Preset",
+        "trigger_sequence": "Trigger Sequence",
+        "reset_progress": "Reset Progress",
+        "community_meter_carry_over": "Community Meter Carry Over",
+        "reward_thresholds_json": "Reward Thresholds JSON",
+        "low_100_max_particles": "Low – 100 max particles",
+        "glitch_intensity_multiplier": "Glitch Intensity Multiplier",
+        "golden_mist": "Golden Mist",
+        "enable_gamification": "Enable Gamification",
+        "show_overlay_meter": "Show Overlay Meter",
+        "weather_gamification": "Weather Gamification",
+        "show_overlay_streak": "Show Overlay Streak",
+        "show_overlay_quest": "Show Overlay Quest",
+        "high_500": "High – 500",
+        "refresh_state": "Refresh State",
+        "rgb_shift": "RGB Shift",
+        "action_fog_delay_0_intensity_0_35_duration": "[ {\"action\":\"fog\",\"delay\":0,\"intensity\":0.35,\"duration\":8000}, {\"action\":\"rain\",\"delay\":2000,\"intensity\":0.55,\"duration\":10000}, {\"action\":\"thunder\",\"delay\":5500,\"intensity\":0.8,\"duration\":5000} ]",
+        "blood_red": "Blood Red",
+        "reward_cooldown_ms": "Reward Cooldown (ms)",
+        "weather_control_modern_configuration": "Weather Control - Modern Configuration",
+        "no_active_effects_reported_by_the_overlay_yet": "No active effects reported by the overlay yet.",
+        "community_weather": "Community Weather",
+        "streak_window_ms": "Streak Window (ms)",
+        "quest_pool_json": "Quest Pool JSON",
+        "chromatic_aberration": "Chromatic Aberration",
+        "next_reward": "Next Reward",
+        "medium_300": "Medium – 300",
+        "all_categories": "All categories",
+        "export_config": "Export Config",
+        "show_reward_feed": "Show Reward Feed",
+        "glitch_sub_effects": "Glitch Sub-Effects",
+        "toxic_green": "Toxic Green",
+        "weather_control_overlay": "Weather Control Overlay",
+        "default_white": "Default White",
+        "streak_bonus_threshold": "Streak Bonus Threshold"
       }
-    },
-    "triggers": {
-      "title": "Event Triggers",
-      "gift_trigger": "Trigger on Gift",
-      "follow_trigger": "Trigger on Follow",
-      "weather_map": "Gift to Weather Mapping"
-    },
-    "overlay": {
-      "title": "Overlay",
-      "url": "Overlay URL",
-      "copy": "Copy URL",
-      "open": "Open Overlay",
-      "test": "Test Weather Effect"
-    },
-    "controls": {
-      "set_weather": "Set Weather",
-      "clear_weather": "Clear All Effects"
     }
-  },
-  "header": {
-    "title": "Weather Control",
-    "back": "Back"
-  },
-  "stats": {
-    "effects": "Weather Effects",
-    "active": "Active Effects",
-    "events": "Events Triggered",
-    "connection": "Connection"
-  },
-  "cards": {
-    "preview": {
-      "title": "Live Weather Preview"
-    },
-    "main": {
-      "title": "Main Settings",
-      "enable": "Enable Weather Control Plugin",
-      "use_global": "Use Global Authentication",
-      "rate_limit": "Rate Limit (requests/min)",
-      "overlay_url": "Overlay URL"
-    },
-    "chat": {
-      "title": "Chat Commands (GCCE Integration)",
-      "info": "Requires Global Chat Command Engine (GCCE) plugin to be enabled. Viewers can trigger weather effects via chat commands.",
-      "enable": "Enable Chat Commands",
-      "enable_help": "Allow viewers to trigger weather effects using /weather, /weatherlist, and /weatherstop commands.",
-      "require_permission": "Require Permissions",
-      "require_permission_help": "Use the permission system below to control who can use weather commands.",
-      "allow_intensity": "Allow intensity",
-      "allow_intensity_help": "Allow users to specify effect intensity (0.0-1.0).",
-      "allow_duration": "Allow duration",
-      "allow_duration_help": "Allow users to specify effect duration (1-60 seconds).",
-      "command_names_title": "Custom Command Names",
-      "command_weather": "Weather Command",
-      "command_weather_placeholder": "Command weather placeholder",
-      "command_weather_help": "Trigger effects command",
-      "command_list": "List Command",
-      "command_list_placeholder": "Command list placeholder",
-      "command_list_help": "List available effects",
-      "command_stop": "Stop Command",
-      "command_stop_placeholder": "Command stop placeholder",
-      "command_stop_help": "Stop all effects",
-      "command_usage_title": "Command Usage:",
-      "command_usage_weather": "Command usage weather",
-      "command_usage_list": "Command usage list",
-      "command_usage_stop": "Command usage stop"
-    },
-    "permissions": {
-      "title": "Permission Settings",
-      "enable": "Enable Permission System",
-      "allow_all": "Allow All Users",
-      "followers": "Followers",
-      "superfans": "Superfans",
-      "subscribers": "Subscribers",
-      "team_members": "Team members",
-      "min_team_level": "Min Team Level",
-      "top_gifters": "Top Gifters (Top N)",
-      "min_points": "Minimum Points Required"
-    },
-    "effects": {
-      "title": "Weather Effects Configuration"
-    },
-    "tools": {
-      "title": "Weather Control Tools",
-      "search": "Search Effects",
-      "category": "Effect Category",
-      "preset": "Effect Preset",
-      "sequence_name": "Sequence Name",
-      "sequence_steps": "Sequence Steps JSON"
-    },
-    "audio": {
-      "enable": "Enable Weather Audio"
-    },
-    "active": {
-      "title": "Active Weather Effects"
-    },
-    "triggers": {
-      "title": "Event Triggers"
-    },
-    "gifts": {
-      "title": "Gift-to-Weather Mappings",
-      "description": "Map specific TikTok gifts to weather effects. When a mapped gift is received, it will trigger the configured weather effect.",
-      "load_prompt": "Click \"Load Gift Catalog\" to see available gifts",
-      "effect_label": "${translate('cards.gifts.effect_label') || 'Weather Effect'}"
-    }
-  },
-  "buttons": {
-    "preview_on": "Start Preview",
-    "test_rain": "Test Rain Effect",
-    "stop_all": "Stop All",
-    "copy": "Copy",
-    "load_catalog": "Load catalog",
-    "update_catalog": "Update catalog",
-    "refresh_mappings": "Refresh mappings",
-    "save_config": "Save config"
-  },
-  "preview": {
-    "fps": "FPS",
-    "avg_fps": "Avg FPS",
-    "particles": "Particles",
-    "active_effects": "Active",
-    "warning": "Performance Warning: This configuration may lag on low-end systems"
-  },
-  "settings": {
-    "quality_preset": "Quality Preset",
-    "adaptive_quality": "Adaptive Quality"
-  },
-  "effects": {
-    "names": {
-      "rain": "Rain",
-      "snow": "Snow",
-      "storm": "Storm",
-      "fog": "Fog",
-      "thunder": "Thunder",
-      "sunbeam": "Sunbeam",
-      "glitchclouds": "Glitch Clouds",
-      "aurora": "Aurora Borealis",
-      "fireflies": "Fireflies",
-      "meteors": "Meteor Shower",
-      "sakura": "Sakura Petals",
-      "embers": "Rising Embers",
-      "heatwave": "Heatwave"
-    },
-    "intensity": "Intensity",
-    "duration_ms": "Duration (ms)",
-    "permanent_label": "Permanent",
-    "permanent_help": "Keep this effect running until manually stopped.",
-    "test_button": "Test Effect",
-    "fog_color": "Fog Color Preset",
-    "sunbeam_colortemp": "Color Temperature"
-  },
-  "generated": {
-    "ebecd84294ad": "Weather Control Overlay",
-    "c2a7b3dab075": "Community Weather",
-    "b9976ecf33bd": "Weather Control - Modern Configuration",
-    "5b8291333b02": "Low – 100 max particles",
-    "dfde99875009": "Medium – 300",
-    "abfcee528a81": "High – 500",
-    "144c7c55e9af": "Ultra – 800",
-    "779a6397dae4": "Weather Gamification",
-    "6853c5bde0e1": "Enable Gamification",
-    "72e61906e575": "Show Overlay Meter",
-    "8ea4bc4451a6": "Show Overlay Quest",
-    "7d7ae0979abb": "Show Overlay Streak",
-    "e359fbc2d418": "Show Reward Feed",
-    "4a787846dc25": "Community Meter Carry Over",
-    "40aee244f1c5": "Community Meter Max",
-    "c5f462e99353": "Streak Window (ms)",
-    "f3db218bd5d8": "Streak Bonus Threshold",
-    "b8a3e3b28d66": "Reward Cooldown (ms)",
-    "ca68901ede4e": "Quest Pool JSON",
-    "4b97935cdb6a": "Reward Thresholds JSON",
-    "d94c529cd4f2": "Next Reward",
-    "ac9596f9df11": "Refresh State",
-    "4742ae4bf532": "Reset Progress",
-    "ef362803179d": "Default White",
-    "e8e2379da7c7": "Toxic Green",
-    "b5f1e6becb05": "Blood Red",
-    "328b83a7d103": "Ice Blue",
-    "6763ce3e7cc0": "Golden Mist",
-    "1b0f2846af67": "Golden Hour",
-    "04de1683bf29": "Cool Moonlight",
-    "e35e6a41f776": "Glitch Sub-Effects",
-    "ad9a30566ea3": "RGB Shift",
-    "2fa0d6e6b752": "Static Noise",
-    "42e3f0101616": "Digital Blocks",
-    "ce591d0c7bf0": "Chromatic Aberration",
-    "61b4759dd15b": "Glitch Intensity Multiplier",
-    "e10c5bafc836": "All categories",
-    "45f33640e68e": "Apply Preset",
-    "e14eab67c856": "Export Config",
-    "2322a56f9001": "Import Config",
-    "46d034cc1cc8": "Trigger Sequence",
-    "ae87ba8c9442": "[ {\"action\":\"fog\",\"delay\":0,\"intensity\":0.35,\"duration\":8000}, {\"action\":\"rain\",\"delay\":2000,\"intensity\":0.55,\"duration\":10000}, {\"action\":\"thunder\",\"delay\":5500,\"intensity\":0.8,\"duration\":5000} ]",
-    "274f3f25b9a5": "Audio Volume",
-    "c0ebdbd71309": "No active effects reported by the overlay yet."
   }
 }

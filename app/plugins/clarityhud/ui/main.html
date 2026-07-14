@@ -169,7 +169,7 @@
       opacity: 0.9;
       max-width: 60ch;
     }
-    
+
     .profile-toolbar {
       display: flex;
       justify-content: flex-start;
@@ -1033,7 +1033,7 @@
     .stream-config .color-input-wrapper input[type="color"]:hover {
       border-color: var(--color-accent-primary);
     }
-    
+
     .status-list {
       display: grid;
       gap: 8px;
@@ -1044,14 +1044,14 @@
       border: 1px solid var(--color-border);
       font-size: 13px;
     }
-    
+
     .status-item {
       display: flex;
       justify-content: space-between;
       gap: 12px;
       color: var(--color-text-secondary);
     }
-    
+
     .wizard-options {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1110,13 +1110,13 @@
     <div class="container">
     <div class="header">
       <div class="header-copy">
-        <h1><span data-i18n="generated.9e12b7592f0c">ClarityHUD Dashboard </span><span id="plugin-version" style="font-size: 12px; opacity: 0.6;">v1.1.0</span></h1>
+        <h1><span data-i18n="plugins.clarityhud.labels.clarityhud_dashboard">ClarityHUD Dashboard </span><span id="plugin-version" style="font-size: 12px; opacity: 0.6;">v1.1.0</span></h1>
         <p data-i18n="clarityhud.dashboard.subtitle">Ultra-minimalistic, VR-optimized, and accessible HUD overlays for TikTok Live</p>
         <div class="profile-toolbar">
-          <button class="btn btn-info" data-action="export-profile" data-i18n="generated.36c2168789e4">Export Profile</button>
-          <button class="btn btn-info" data-action="import-profile" data-i18n="generated.c74a0fa98c81">Import Profile</button>
-          <button class="btn btn-primary" data-action="open-setup-wizard" data-i18n="generated.4eac0a37c0d6">Setup Wizard</button>
-          <button class="btn btn-secondary" data-action="save-custom-preset" data-i18n="generated.16e7ef11522e">Save Preset</button>
+          <button class="btn btn-info" data-action="export-profile" data-i18n="plugins.clarityhud.labels.export_profile">Export Profile</button>
+          <button class="btn btn-info" data-action="import-profile" data-i18n="plugins.clarityhud.labels.import_profile">Import Profile</button>
+          <button class="btn btn-primary" data-action="open-setup-wizard" data-i18n="plugins.clarityhud.labels.setup_wizard">Setup Wizard</button>
+          <button class="btn btn-secondary" data-action="save-custom-preset" data-i18n="plugins.clarityhud.labels.save_preset">Save Preset</button>
           <input type="file" id="profile-import-input" accept="application/json,.json" hidden>
         </div>
       </div>
@@ -1184,7 +1184,7 @@
       <div class="hud-section">
         <div class="hud-header">
           <h2 data-i18n="clarityhud.multi_hud.title">Multi-Stream HUD</h2>
-          <p data-i18n="generated.e000a5fc9248">Display up to 3 additional TikTok streams alongside your primary stream</p>
+          <p data-i18n="plugins.clarityhud.labels.display_up_to_3_additional_tiktok_streams_alongside">Display up to 3 additional TikTok streams alongside your primary stream</p>
         </div>
         <div class="hud-content">
           <div class="preview-container">
@@ -1200,7 +1200,7 @@
           </div>
 
           <div id="multi-status" class="status-list">
-            <div class="status-item"><span data-i18n="generated.71d79253542c">Multi-stream status</span><span>Loading...</span></div>
+            <div class="status-item"><span data-i18n="plugins.clarityhud.labels.multi_stream_status">Multi-stream status</span><span>Loading...</span></div>
           </div>
 
           <div class="button-group">
@@ -1214,8 +1214,8 @@
       <!-- Stream Overlay Section -->
       <div class="hud-section">
         <div class="hud-header">
-          <h2 data-i18n="generated.be53abcfbf2a">Stream Overlay</h2>
-          <p data-i18n="generated.f32b942ca380">OBS overlay for alerts, highlights, and ticker content</p>
+          <h2 data-i18n="plugins.clarityhud.labels.stream_overlay">Stream Overlay</h2>
+          <p data-i18n="plugins.clarityhud.labels.obs_overlay_for_alerts_highlights_and_ticker_content">OBS overlay for alerts, highlights, and ticker content</p>
         </div>
         <div class="hud-content">
           <div class="preview-container">
@@ -1232,7 +1232,7 @@
 
           <div class="button-group">
             <button class="btn btn-primary" data-action="open-settings" data-type="stream" data-i18n="clarityhud.buttons.settings">Settings</button>
-            <button class="btn btn-success" data-action="test-event" data-type="stream" data-i18n="generated.b4c21204fc2f">Test All</button>
+            <button class="btn btn-success" data-action="test-event" data-type="stream" data-i18n="plugins.clarityhud.labels.test_all">Test All</button>
             <button class="btn btn-secondary" data-action="refresh-preview" data-type="stream" data-i18n="clarityhud.buttons.refresh_preview">Refresh Preview</button>
           </div>
         </div>
@@ -1280,13 +1280,13 @@
   <div id="setup-wizard-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 data-i18n="generated.58d4e1473481">Setup Wizard</h2>
+        <h2 data-i18n="plugins.clarityhud.labels.setup_wizard_58d4e1">Setup Wizard</h2>
         <span class="close" id="close-setup-wizard">&times;</span>
       </div>
       <div class="wizard-options">
-        <button class="preset-btn" data-wizard-preset="vrchat-readable" data-i18n="generated.fba38e80390a">VRChat Readable</button>
-        <button class="preset-btn" data-wizard-preset="obs-clean" data-i18n="generated.a5fa513989d0">OBS Clean</button>
-        <button class="preset-btn" data-wizard-preset="high-activity" data-i18n="generated.55c7d85f8fee">High Activity</button>
+        <button class="preset-btn" data-wizard-preset="vrchat-readable" data-i18n="plugins.clarityhud.labels.vrchat_readable">VRChat Readable</button>
+        <button class="preset-btn" data-wizard-preset="obs-clean" data-i18n="plugins.clarityhud.labels.obs_clean">OBS Clean</button>
+        <button class="preset-btn" data-wizard-preset="high-activity" data-i18n="plugins.clarityhud.labels.high_activity">High Activity</button>
       </div>
     </div>
   </div>

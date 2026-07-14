@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.003bfbf5b3b0">OpenShock - Rotating Gifts Overlay</title>
+    <title data-i18n="plugins.openshock.labels.openshock_rotating_gifts_overlay">OpenShock - Rotating Gifts Overlay</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * {
@@ -201,7 +201,7 @@
         <div class="progress-dots" id="progressDots"></div>
     </div>
 
-    <div class="no-gifts" id="noGifts" style="display: none;" data-i18n="generated.7668ebc7e0f8">
+    <div class="no-gifts" id="noGifts" style="display: none;" data-i18n="plugins.openshock.labels.no_active_gift_mappings_configured">
         No active gift mappings configured
     </div>
 
@@ -319,11 +319,11 @@
             setTimeout(() => {
                 // Update content
                 document.getElementById('giftName').textContent = gift.giftName || 'Unknown Gift';
-                
+
                 // Update icon
                 const iconImg = document.getElementById('giftIcon');
                 const iconPlaceholder = document.getElementById('giftIconPlaceholder');
-                
+
                 if (gift.giftIconUrl) {
                     iconImg.src = gift.giftIconUrl;
                     iconImg.style.display = 'block';
@@ -335,7 +335,7 @@
 
                 // Update pattern info
                 document.getElementById('patternName').textContent = gift.patternName || 'Direct Command';
-                
+
                 // Format duration
                 const durationMs = gift.patternDurationMs || 0;
                 const durationSec = (durationMs / 1000).toFixed(1);

@@ -21,6 +21,7 @@ class I18n {
     this.defaultLocale = defaultLocale;
     this.currentLocale = defaultLocale;
     this.translations = {};
+    this.translationOrigins = {};
     this.supportedLocales = ['en', 'de', 'es', 'fr'];
     this.loadTranslations();
   }
@@ -47,6 +48,7 @@ class I18n {
       if (fs.existsSync(filePath)) {
         try {
           this.translations[locale] = readJsonFile(filePath);
+          this.recordTranslationOrigins(locale, this.translations[locale], filePath);
         } catch (error) {
           console.error(`Failed to load ${locale} translations:`, error.message);
           this.translations[locale] = {};
@@ -111,9 +113,10 @@ class I18n {
                   ? pluginTranslations
                   : { plugins: { [pluginId]: pluginTranslations } };
 
-                this.translations[locale] = this.deepMerge(
-                  this.translations[locale],
-                  namespacedTranslations
+                this.translations[locale] = this.mergeTranslationSource(
+                  locale,
+                  namespacedTranslations,
+                  pluginLocalePath
                 );
 
                 console.log(`✅ Loaded ${locale} translations for plugin: ${plugin}`);
@@ -150,6 +153,44 @@ class I18n {
     }
 
     return output;
+  }
+
+  translationLeaves(value, prefix = '', leaves = {}) {
+    if (!this.isObject(value)) {
+      leaves[prefix] = value;
+      return leaves;
+    }
+    Object.entries(value).forEach(([key, child]) => {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      this.translationLeaves(child, fullKey, leaves);
+    });
+    return leaves;
+  }
+
+  recordTranslationOrigins(locale, translations, sourcePath) {
+    if (!this.translationOrigins[locale]) this.translationOrigins[locale] = new Map();
+    Object.keys(this.translationLeaves(translations)).forEach((key) => {
+      if (!this.translationOrigins[locale].has(key)) {
+        this.translationOrigins[locale].set(key, sourcePath);
+      }
+    });
+  }
+
+  mergeTranslationSource(locale, source, sourcePath, target = this.translations[locale] || {}, fallbackSourcePath = 'existing translations') {
+    const targetLeaves = this.translationLeaves(target);
+    const sourceLeaves = this.translationLeaves(source);
+    const origins = this.translationOrigins[locale] || new Map();
+
+    Object.entries(sourceLeaves).forEach(([key, value]) => {
+      if (Object.hasOwn(targetLeaves, key) && targetLeaves[key] !== value) {
+        const existingSource = origins.get(key) || fallbackSourcePath;
+        throw new Error(`Translation collision at ${key} between ${existingSource} and ${sourcePath}`);
+      }
+    });
+
+    const merged = this.deepMerge(target, source);
+    this.recordTranslationOrigins(locale, source, sourcePath);
+    return merged;
   }
 
   /**

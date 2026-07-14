@@ -886,11 +886,11 @@
             .form-row {
                 grid-template-columns: 1fr;
             }
-            
+
             .guest-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .layout-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
@@ -950,7 +950,7 @@
         <div class="header">
             <div class="header-title">
                 <h1>
-                    <span class="status-indicator status-inactive" id="statusIndicator"></span><span data-i18n="generated.d081e00afbcf">
+                    <span class="status-indicator status-inactive" id="statusIndicator"></span><span data-i18n="plugins.vdoninja.labels.vdo_ninja_multi_guest_manager">
                     VDO.Ninja Multi-Guest Manager
                 </span></h1>
             </div>
@@ -959,7 +959,7 @@
         <!-- Room Management Card -->
         <div class="card">
             <div class="card-header">
-                <h3 data-i18n="generated.a0883beb6e88">🏠 Room Management</h3>
+                <h3 data-i18n="plugins.vdoninja.labels.room_management">🏠 Room Management</h3>
             </div>
             <div class="card-body">
                 <div id="roomSection">
@@ -975,7 +975,7 @@
                                 <input type="number" id="maxGuestsInput" class="form-input" value="6" min="1" max="12">
                             </div>
                         </div>
-                        <button id="createRoomBtn" class="btn btn-primary" data-i18n="generated.1e29b6441cac">
+                        <button id="createRoomBtn" class="btn btn-primary" data-i18n="plugins.vdoninja.labels.create_room">
                             ✨ Create Room
                         </button>
                     </div>
@@ -991,14 +991,14 @@
                                 <span class="room-info-label" data-i18n="vdoninja.room.info.director_url">Director URL (for OBS):</span>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     <span id="directorUrl" class="room-info-value">-</span>
-                                    <button class="copy-btn" data-copy-target="directorUrl" data-i18n="generated.831d1e1f4481">📋 Copy</button>
+                                    <button class="copy-btn" data-copy-target="directorUrl" data-i18n="plugins.vdoninja.labels.copy_831d1e">📋 Copy</button>
                                 </div>
                             </div>
                             <div class="room-info-row">
                                 <span class="room-info-label" data-i18n="vdoninja.room.info.guest_invite_url">Guest Invite URL:</span>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     <span id="guestInviteUrl" class="room-info-value">-</span>
-                                    <button class="copy-btn" data-copy-target="guestInviteUrl" data-i18n="generated.6f19e7e95e85">📋 Copy</button>
+                                    <button class="copy-btn" data-copy-target="guestInviteUrl" data-i18n="plugins.vdoninja.labels.copy">📋 Copy</button>
                                 </div>
                             </div>
                             <div class="room-info-row">
@@ -1007,16 +1007,16 @@
                             </div>
                         </div>
                         <div style="margin-top: 1rem;">
-                            <button id="closeRoomBtn" class="btn btn-danger" data-i18n="generated.4b1ae3a117fa">
+                            <button id="closeRoomBtn" class="btn btn-danger" data-i18n="plugins.vdoninja.labels.close_room">
                                 🔒 Close Room
                             </button>
                         </div>
-                        
+
                         <!-- Director URL Control Room Iframe -->
                         <div id="directorIframeContainer" class="director-iframe-container" style="display: none;">
                             <div class="director-iframe-header">
-                                <h4 data-i18n="generated.02fb6db844bf">🎬 Director Control Room</h4>
-                                <button id="toggleIframeBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.75rem;" data-i18n="generated.8ff7af16d066">
+                                <h4 data-i18n="plugins.vdoninja.labels.director_control_room">🎬 Director Control Room</h4>
+                                <button id="toggleIframeBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.75rem;" data-i18n="plugins.vdoninja.labels.hide">
                                     ▼ Hide
                                 </button>
                             </div>
@@ -1032,12 +1032,12 @@
         <!-- Guest Controls Card -->
         <div class="card">
             <div class="card-header">
-                <h3 data-i18n="generated.a8df44552b01">👥 Guest Controls</h3>
+                <h3 data-i18n="plugins.vdoninja.labels.guest_controls">👥 Guest Controls</h3>
                 <div style="display: flex; gap: 0.5rem;">
-                    <button id="muteAllBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;" data-i18n="generated.ea39a5d4b54d">
+                    <button id="muteAllBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;" data-i18n="plugins.vdoninja.labels.mute_all">
                         🔇 Mute All
                     </button>
-                    <button id="unmuteAllBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;" data-i18n="generated.d4d59077a105">
+                    <button id="unmuteAllBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;" data-i18n="plugins.vdoninja.labels.unmute_all">
                         🔊 Unmute All
                     </button>
                 </div>
@@ -1056,7 +1056,7 @@
         <!-- Layout Management Card -->
         <div class="card">
             <div class="card-header">
-                <h3 data-i18n="generated.97c55d691b89">🎨 Layout Presets</h3>
+                <h3 data-i18n="plugins.vdoninja.labels.layout_presets">🎨 Layout Presets</h3>
             </div>
             <div class="card-body">
                 <div class="layout-grid">
@@ -1092,10 +1092,10 @@
 
         <!-- Info Alert -->
         <div class="alert alert-info">
-            <strong data-i18n="generated.423559c1f4d6">ℹ️ Quick Guide:</strong><br><span data-i18n="generated.baea64c042a7">
-            1. Create a room to get started</span><br><span data-i18n="generated.d5272065ec30">
-            2. Add the Director URL to OBS as a Browser Source (1920x1080)</span><br><span data-i18n="generated.0b7bbf03784f">
-            3. Share the Guest Invite URL with your guests</span><br><span data-i18n="generated.16b01a352138">
+            <strong data-i18n="plugins.vdoninja.labels.i_quick_guide">ℹ️ Quick Guide:</strong><br><span data-i18n="plugins.vdoninja.labels.1_create_a_room_to_get_started">
+            1. Create a room to get started</span><br><span data-i18n="plugins.vdoninja.labels.2_add_the_director_url_to_obs_as">
+            2. Add the Director URL to OBS as a Browser Source (1920x1080)</span><br><span data-i18n="plugins.vdoninja.labels.3_share_the_guest_invite_url_with_your">
+            3. Share the Guest Invite URL with your guests</span><br><span data-i18n="plugins.vdoninja.labels.4_control_guests_in_real_time_from_this">
             4. Control guests in real-time from this dashboard
         </span></div>
     </div>
@@ -1259,7 +1259,7 @@
                     activeRoom = data.status.activeRoom;
                     document.getElementById('createRoomForm').style.display = 'none';
                     document.getElementById('activeRoomInfo').style.display = 'block';
-                    
+
                     document.getElementById('activeRoomName').textContent = activeRoom.roomName;
                     document.getElementById('directorUrl').textContent = activeRoom.directorUrl || 'N/A';
                     document.getElementById('guestInviteUrl').textContent = activeRoom.guestInviteUrl || 'N/A';
@@ -1271,7 +1271,7 @@
                         const directorIframeContainer = document.getElementById('directorIframeContainer');
                         const directorIframeWrapper = document.getElementById('directorIframeWrapper');
                         const toggleBtn = document.getElementById('toggleIframeBtn');
-                        
+
                         directorIframe.src = activeRoom.directorUrl;
                         directorIframeContainer.style.display = 'block';
                         directorIframeWrapper.style.display = 'block';
@@ -1290,13 +1290,13 @@
                     activeRoom = null;
                     document.getElementById('createRoomForm').style.display = 'block';
                     document.getElementById('activeRoomInfo').style.display = 'none';
-                    
+
                     // Hide and clear Director URL iframe
                     const directorIframe = document.getElementById('directorIframe');
                     const directorIframeContainer = document.getElementById('directorIframeContainer');
                     directorIframeContainer.style.display = 'none';
                     directorIframe.src = '';
-                    
+
                     guests.clear();
                     renderGuests();
                 }
@@ -1358,7 +1358,7 @@
 
         function renderGuests() {
             const container = document.getElementById('guestsContainer');
-            
+
             if (guests.size === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
@@ -1377,7 +1377,7 @@
                         <span class="guest-slot">Slot ${guest.slot}</span>
                     </div>
                     <div class="guest-controls">
-                        <button class="control-btn ${guest.audioEnabled ? 'active' : ''}" 
+                        <button class="control-btn ${guest.audioEnabled ? 'active' : ''}"
                                 onclick="toggleAudio(${guest.slot})">
                             ${guest.audioEnabled ? '🔊' : '🔇'} Audio
                         </button>
@@ -1396,7 +1396,7 @@
                         <label class="form-label" style="margin-bottom: 0.25rem;">
                             Volume: ${Math.round(guest.volume * 100)}%
                         </label>
-                        <input type="range" class="volume-slider" 
+                        <input type="range" class="volume-slider"
                                min="0" max="100" value="${guest.volume * 100}"
                                onchange="setVolume(${guest.slot}, this.value / 100)">
                     </div>
@@ -1409,7 +1409,7 @@
         function toggleAudio(slot) {
             const guest = guests.get(slot);
             if (!guest) return;
-            
+
             if (guest.audioEnabled) {
                 controlGuest(slot, 'mute', { audioEnabled: false });
             } else {
@@ -1420,7 +1420,7 @@
         function toggleVideo(slot) {
             const guest = guests.get(slot);
             if (!guest) return;
-            
+
             if (guest.videoEnabled) {
                 controlGuest(slot, 'mute', { videoEnabled: false });
             } else {
@@ -1439,7 +1439,7 @@
         function kickGuest(slot) {
             const guest = guests.get(slot);
             if (!guest) return;
-            
+
             if (confirm(`Kick ${guest.name}?`)) {
                 controlGuest(slot, 'kick', { reason: 'Kicked by host' });
             }
@@ -1447,7 +1447,7 @@
 
         function updateGuestCount() {
             if (activeRoom) {
-                document.getElementById('guestCount').textContent = 
+                document.getElementById('guestCount').textContent =
                     `${guests.size} / ${activeRoom.maxGuests}`;
             }
         }
@@ -1466,10 +1466,10 @@
         function toggleDirectorIframe() {
             const wrapper = document.getElementById('directorIframeWrapper');
             const btn = document.getElementById('toggleIframeBtn');
-            
+
             // Check if wrapper is currently hidden
             const isHidden = wrapper.offsetParent === null;
-            
+
             if (isHidden) {
                 wrapper.style.display = 'block';
                 btn.textContent = '▼ Hide';
@@ -1482,7 +1482,7 @@
         function copyToClipboard(elementId) {
             const element = document.getElementById(elementId);
             const text = element.textContent;
-            
+
             navigator.clipboard.writeText(text).then(() => {
                 const btn = event.target;
                 const originalText = btn.textContent;

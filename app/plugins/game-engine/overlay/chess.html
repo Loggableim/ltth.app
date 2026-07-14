@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title data-i18n="generated.0b78b46d8b79">LTTH Chess Overlay</title>
+  <title data-i18n="plugins.game-engine.labels.ltth_chess_overlay">LTTH Chess Overlay</title>
   <style>
     * {
       margin: 0;
@@ -387,22 +387,22 @@
 <body>
   <!-- Test Mode Controls -->
   <div id="test-mode-controls">
-    <h3 data-i18n="generated.63a73efb6bc9">🧪 Test Mode</h3>
+    <h3 data-i18n="plugins.game-engine.labels.test_mode_63a73e">🧪 Test Mode</h3>
     <div id="test-start-section">
-      <label data-i18n="generated.87cb239fd89b">Player 1 Name:</label>
+      <label data-i18n="plugins.game-engine.labels.player_1_name">Player 1 Name:</label>
       <input type="text" id="test-player1-name" value="White Player">
-      <label data-i18n="generated.880f608c9add">Player 2 Name:</label>
+      <label data-i18n="plugins.game-engine.labels.player_2_name">Player 2 Name:</label>
       <input type="text" id="test-player2-name" value="Black Player">
-      <button class="btn-start" id="test-start-chess" data-i18n="generated.19a7dc6ab1f5">♟️ Start Chess Game</button>
+      <button class="btn-start" id="test-start-chess" data-i18n="plugins.game-engine.labels.start_chess_game">♟️ Start Chess Game</button>
     </div>
     <div id="test-move-section" style="display: none;">
       <div style="margin-bottom: 10px;">
-        <strong><span data-i18n="generated.50ac5ed28d43">Current Turn: </span><span id="test-current-turn" data-i18n="game_engine.display_texts.chess.label_white">White</span></strong>
+        <strong><span data-i18n="plugins.game-engine.labels.current_turn">Current Turn: </span><span id="test-current-turn" data-i18n="game_engine.display_texts.chess.label_white">White</span></strong>
       </div>
-      <label data-i18n="generated.95dd4c8a9d3c">Move (e.g., e4, Nf3):</label>
+      <label data-i18n="plugins.game-engine.labels.move_e_g_e4_nf3">Move (e.g., e4, Nf3):</label>
       <input type="text" id="test-move-input" placeholder="Enter move">
-      <button class="btn-start" id="test-make-move" data-i18n="generated.6a961032097a">Make Move</button>
-      <button class="btn-danger" id="test-end-chess" data-i18n="generated.73bc45849a5d">End Game</button>
+      <button class="btn-start" id="test-make-move" data-i18n="plugins.game-engine.labels.make_move">Make Move</button>
+      <button class="btn-danger" id="test-end-chess" data-i18n="plugins.game-engine.labels.end_game">End Game</button>
     </div>
   </div>
 
@@ -412,18 +412,18 @@
         <div id="board-container">
           <div id="chessboard"></div>
         </div>
-        
+
         <div id="side-panel">
           <!-- Black player (top) -->
           <div class="player-card black" id="black-player">
-            <div class="player-name black" id="black-name">Black Player</div>
+            <div class="player-name black" id="black-name" data-i18n="plugins.game-engine.labels.black_player">Black Player</div>
             <div class="timer" id="black-timer">5:00</div>
             <div class="captured-pieces" id="black-captured"></div>
           </div>
 
           <!-- White player (bottom) -->
           <div class="player-card white" id="white-player">
-            <div class="player-name white" id="white-name">White Player</div>
+            <div class="player-name white" id="white-name" data-i18n="plugins.game-engine.labels.white_player">White Player</div>
             <div class="timer" id="white-timer">5:00</div>
             <div class="captured-pieces" id="white-captured"></div>
           </div>
@@ -434,7 +434,7 @@
 
   <div id="game-over-overlay">
     <div class="game-over-content">
-      <div class="game-over-title" id="game-over-title">Game Over!</div>
+      <div class="game-over-title" id="game-over-title" data-i18n="plugins.game-engine.labels.game_over">Game Over!</div>
       <div class="winner-name" id="winner-name"></div>
       <div class="game-over-reason" id="game-over-reason"></div>
     </div>
@@ -445,12 +445,12 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io({ auth: { role: 'overlay' } });
-    
+
     // Check if test mode is enabled
     const urlParams = new URLSearchParams(window.location.search);
     const testMode = urlParams.get('testMode') === 'true';
     let testSessionId = null;
-    
+
     // Unicode chess pieces
     const pieces = {
       'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
@@ -469,7 +469,7 @@
     function initBoard() {
       const board = document.getElementById('chessboard');
       board.innerHTML = '';
-      
+
       for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
           const square = document.createElement('div');
@@ -486,13 +486,13 @@
     function updateBoardFromFEN(fen) {
       const [position, turn, castling, enPassant, halfmove, fullmove] = fen.split(' ');
       const ranks = position.split('/');
-      
+
       const squares = document.querySelectorAll('.square');
       squares.forEach(sq => {
         sq.innerHTML = '';
         sq.classList.remove('highlight', 'check', 'last-move');
       });
-      
+
       let squareIndex = 0;
       for (let rank of ranks) {
         for (let char of rank) {
@@ -516,13 +516,13 @@
     // Highlight last move
     function highlightLastMove(move) {
       if (!move || !move.from || !move.to) return;
-      
+
       const fromSquare = document.querySelector(`[data-square="${move.from}"]`);
       const toSquare = document.querySelector(`[data-square="${move.to}"]`);
-      
+
       lastMoveSquares.forEach(sq => sq.classList.remove('last-move'));
       lastMoveSquares = [];
-      
+
       if (fromSquare) {
         fromSquare.classList.add('last-move');
         lastMoveSquares.push(fromSquare);
@@ -536,13 +536,13 @@
     // Highlight check
     function highlightCheck(inCheck, currentPlayer) {
       document.querySelectorAll('.square').forEach(sq => sq.classList.remove('check'));
-      
+
       if (!inCheck) return;
-      
+
       // Find king position
       const squares = document.querySelectorAll('.square');
       const kingPiece = currentPlayer === 'white' ? '♔' : '♚';
-      
+
       squares.forEach(sq => {
         const piece = sq.querySelector('.piece');
         if (piece && piece.textContent === kingPiece) {
@@ -555,10 +555,10 @@
     function updateCapturedPieces(captured) {
       const whiteCaptured = document.getElementById('black-captured'); // White captured black pieces
       const blackCaptured = document.getElementById('white-captured'); // Black captured white pieces
-      
+
       whiteCaptured.innerHTML = '';
       blackCaptured.innerHTML = '';
-      
+
       // White's captures (black pieces)
       ['p', 'n', 'b', 'r', 'q'].forEach(piece => {
         const count = captured.white[piece] || 0;
@@ -569,7 +569,7 @@
           whiteCaptured.appendChild(span);
         }
       });
-      
+
       // Black's captures (white pieces)
       ['P', 'N', 'B', 'R', 'Q'].forEach(piece => {
         const count = captured.black[piece.toLowerCase()] || 0;
@@ -594,14 +594,14 @@
     function updateTimers(timers) {
       const whiteTimer = document.getElementById('white-timer');
       const blackTimer = document.getElementById('black-timer');
-      
+
       whiteTimer.textContent = formatTime(timers.white);
       blackTimer.textContent = formatTime(timers.black);
-      
+
       // Apply warning/critical classes
       whiteTimer.classList.remove('warning', 'critical');
       blackTimer.classList.remove('warning', 'critical');
-      
+
       if (timers.white < 30000) whiteTimer.classList.add(timers.white < 10000 ? 'critical' : 'warning');
       if (timers.black < 30000) blackTimer.classList.add(timers.black < 10000 ? 'critical' : 'warning');
     }
@@ -610,10 +610,10 @@
     function updateActivePlayer(currentPlayer) {
       const whiteCard = document.getElementById('white-player');
       const blackCard = document.getElementById('black-player');
-      
+
       whiteCard.classList.remove('active');
       blackCard.classList.remove('active');
-      
+
       if (currentPlayer === 'white') {
         whiteCard.classList.add('active');
       } else {
@@ -627,7 +627,7 @@
       msgEl.textContent = message;
       msgEl.classList.toggle('error', isError);
       msgEl.classList.add('show');
-      
+
       setTimeout(() => {
         msgEl.classList.remove('show');
       }, 3000);
@@ -636,7 +636,7 @@
     // Show confetti
     function showConfetti() {
       const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
-      
+
       for (let i = 0; i < 150; i++) {
         setTimeout(() => {
           const confetti = document.createElement('div');
@@ -645,7 +645,7 @@
           confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
           confetti.style.animationDelay = Math.random() * 2 + 's';
           document.body.appendChild(confetti);
-          
+
           setTimeout(() => confetti.remove(), 3000);
         }, i * 30);
       }
@@ -775,20 +775,20 @@
       
       gameState = data.state;
       config = data.config;
-      
+
       // Apply display texts if present in config
       applyDisplayTexts(config.displayTexts);
-      
+
       // Update player names
       document.getElementById('white-name').textContent = gameState.whitePlayer.nickname;
       document.getElementById('black-name').textContent = gameState.blackPlayer.nickname;
-      
+
       // Update board
       updateBoardFromFEN(gameState.fen);
       updateTimers(gameState.timers);
       updateActivePlayer(gameState.currentPlayer);
       updateCapturedPieces(gameState.capturedPieces);
-      
+
       // Show overlay
       document.getElementById('overlay-container').classList.add('active');
     });
@@ -797,7 +797,7 @@
       if (data.interactive || data.gameType !== 'chess' || interactiveSnapshotActive) return;
       
       gameState = data.state;
-      
+
       // Update board
       updateBoardFromFEN(data.fen);
       highlightLastMove(data.move);
@@ -824,7 +824,7 @@
         const title = document.getElementById('game-over-title');
         const winnerName = document.getElementById('winner-name');
         const reason = document.getElementById('game-over-reason');
-        
+
         if (data.winner) {
           const winnerInfo = data.winner === 'white' ? gameState.whitePlayer : gameState.blackPlayer;
           const dt = config._displayTexts || {};
@@ -833,7 +833,7 @@
           title.style.color = data.winner === 'white' ? '#4CAF50' : '#2196F3';
           winnerName.textContent = winnerInfo.nickname;
           winnerName.style.color = data.winner === 'white' ? '#4CAF50' : '#2196F3';
-          
+
           if (config.celebrationEnabled) {
             showConfetti();
           }
@@ -844,7 +844,7 @@
           winnerName.textContent = dt.labelDraw || '🤝 Remis!';
           winnerName.style.color = '#FFC107';
         }
-        
+
         const dt = config._displayTexts || {};
         const reasonText = {
           'checkmate': dt.labelCheckmate || '♚ Schachmatt!',
@@ -857,9 +857,9 @@
           'draw_agreement': dt.labelDraw || '🤝 Remis!'
         };
         reason.textContent = reasonText[data.reason] || data.reason;
-        
+
         overlay.classList.add('show');
-        
+
         // Hide after 5 seconds
         setTimeout(() => {
           overlay.classList.remove('show');
@@ -878,18 +878,18 @@
     // ============================================
     // TEST MODE FUNCTIONALITY
     // ============================================
-    
+
     if (testMode) {
       console.log('🧪 Chess test mode enabled');
       document.getElementById('test-mode-controls').style.display = 'block';
-      
+
       // Note: Chess doesn't have a manual mode API like Connect4, so we'll note this limitation
       // For now, we'll display a message that chess test mode requires the backend UI
-      
+
       document.getElementById('test-start-chess').addEventListener('click', () => {
         alert('Chess test mode requires using the Admin UI (game-engine/ui) to start manual games.\n\nThis overlay test mode is currently only fully supported for Connect4, Plinko, and Wheel.');
       });
-      
+
       // Update turn display when moves are made
       socket.on('game-engine:move-made', (data) => {
         if (data.sessionId === testSessionId && data.gameType === 'chess') {
@@ -897,7 +897,7 @@
           document.getElementById('test-current-turn').textContent = turn;
         }
       });
-      
+
       // Reset test controls when game ends
       socket.on('game-engine:game-ended', (data) => {
         if (data.sessionId === testSessionId) {

@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.d748b6dce195">User Profile - Viewer XP</title>
+  <title data-i18n="plugins.milestone-leaderboard.labels.user_profile_viewer_xp">User Profile - Viewer XP</title>
   <style>
     * {
       margin: 0;
@@ -267,7 +267,7 @@
 </head>
 <body>
   <div id="profileCard" class="profile-card">
-    <div class="rank-badge" id="rankBadge" style="display: none;"><span data-i18n="generated.0f3911bb392a">
+    <div class="rank-badge" id="rankBadge" style="display: none;"><span data-i18n="plugins.milestone-leaderboard.labels.rank">
       🏆 Rank #</span><span id="rankNumber">1</span>
     </div>
 
@@ -279,13 +279,13 @@
         <div class="profile-username" id="username">Username</div>
         <div class="profile-title" id="title">Newcomer</div>
       </div>
-      <div class="profile-level" id="level" data-i18n="generated.38aef4233604">Level 1</div>
+      <div class="profile-level" id="level" data-i18n="plugins.milestone-leaderboard.labels.level_1">Level 1</div>
     </div>
 
     <div class="xp-progress">
       <div class="xp-progress-label">
-        <span data-i18n="generated.d50fdebeb800">XP Progress</span>
-        <span id="xpLabel" data-i18n="generated.bc504af13814">0 / 100 XP</span>
+        <span data-i18n="plugins.milestone-leaderboard.labels.xp_progress">XP Progress</span>
+        <span id="xpLabel" data-i18n="plugins.milestone-leaderboard.labels.0_100_xp">0 / 100 XP</span>
       </div>
       <div class="xp-progress-bar">
         <div class="xp-progress-fill" id="xpFill" style="width: 0%">
@@ -297,7 +297,7 @@
     <div class="stats-grid">
       <div class="stat-item">
         <div class="stat-label">
-          <span class="stat-icon">⭐</span><span data-i18n="generated.445dd1a02640">Total XP
+          <span class="stat-icon">⭐</span><span data-i18n="plugins.milestone-leaderboard.labels.total_xp">Total XP
         </span></div>
         <div class="stat-value" id="totalXP">0</div>
       </div>
@@ -305,17 +305,17 @@
         <div class="stat-label">
           <span class="stat-icon">🔥</span>Streak
         </div>
-        <div class="stat-value" id="streak" data-i18n="generated.a5fd95addbb1">0 days</div>
+        <div class="stat-value" id="streak" data-i18n="plugins.milestone-leaderboard.labels.0_days">0 days</div>
       </div>
       <div class="stat-item">
         <div class="stat-label">
-          <span class="stat-icon">⏱️</span><span data-i18n="generated.635f063de225">Watch Time
+          <span class="stat-icon">⏱️</span><span data-i18n="plugins.milestone-leaderboard.labels.watch_time">Watch Time
         </span></div>
         <div class="stat-value" id="watchTime">0h</div>
       </div>
       <div class="stat-item">
         <div class="stat-label">
-          <span class="stat-icon">📅</span><span data-i18n="generated.9b88cb37ac2d">Last Seen
+          <span class="stat-icon">📅</span><span data-i18n="plugins.milestone-leaderboard.labels.last_seen">Last Seen
         </span></div>
         <div class="stat-value" id="lastSeen">Today</div>
       </div>
@@ -325,7 +325,7 @@
       <!-- Badges will be dynamically added -->
     </div>
 
-    <div class="footer" data-i18n="generated.473d23355860">
+    <div class="footer" data-i18n="plugins.milestone-leaderboard.labels.viewer_xp_keep_engaging_to_level_up">
       Viewer XP • Keep engaging to level up!
     </div>
   </div>
@@ -333,10 +333,10 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     let socket;
-    
+
     try {
       socket = io();
-      
+
       // Connection status logging
       socket.on('connect', () => {
         console.log('✅ User Profile: Socket.io connected');
@@ -354,7 +354,7 @@
       // Display error message
       document.body.innerHTML = '<div style="color: red; text-align: center; padding: 50px; font-family: sans-serif;"><h2>⚠️ Connection Error</h2><p>Failed to connect to server. Please refresh the page.</p></div>';
     }
-    
+
     const profileCard = document.getElementById('profileCard');
     let hideTimeout;
 
@@ -413,10 +413,10 @@
       const xpProgress = data.xp_progress || 0;
       const xpForNext = data.xp_for_next_level || 100;
       const xpPercent = data.xp_progress_percent || 0;
-      
+
       document.getElementById('xpLabel').textContent = `${xpProgress.toLocaleString()} / ${xpForNext.toLocaleString()} XP`;
       document.getElementById('xpPercent').textContent = `${Math.round(xpPercent)}%`;
-      
+
       setTimeout(() => {
         document.getElementById('xpFill').style.width = `${Math.min(xpPercent, 100)}%`;
       }, 300);
@@ -424,7 +424,7 @@
       // Update stats
       document.getElementById('totalXP').textContent = (data.total_xp_earned || 0).toLocaleString();
       document.getElementById('streak').textContent = `${data.streak_days || 0} days`;
-      
+
       // Calculate watch time in hours using shared function
       const watchMinutes = data.watch_time_minutes || 0;
       document.getElementById('watchTime').textContent = formatWatchTime(watchMinutes);
@@ -437,20 +437,20 @@
         const diffMins = Math.floor(diffMs / 60000);
         const diffHours = Math.floor(diffMins / 60);
         const diffDays = Math.floor(diffHours / 24);
-        
+
         let lastSeenText = 'Now';
         if (diffMins < 1) lastSeenText = 'Now';
         else if (diffMins < 60) lastSeenText = `${diffMins}m ago`;
         else if (diffHours < 24) lastSeenText = `${diffHours}h ago`;
         else lastSeenText = `${diffDays}d ago`;
-        
+
         document.getElementById('lastSeen').textContent = lastSeenText;
       }
 
       // Update badges
       const badgesContainer = document.getElementById('badgesContainer');
       badgesContainer.innerHTML = '';
-      
+
       if (data.badges && data.badges.length > 0) {
         data.badges.forEach(badge => {
           const badgeEl = document.createElement('div');
@@ -469,7 +469,7 @@
       else if (level >= 30) avatarEmoji = '💎';
       else if (level >= 20) avatarEmoji = '⭐';
       else if (level >= 10) avatarEmoji = '✨';
-      
+
       document.getElementById('avatar').textContent = avatarEmoji;
 
       // Show the card

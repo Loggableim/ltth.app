@@ -600,44 +600,44 @@
         <!-- Advanced Features -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title" data-i18n="generated.1512c4113214">⚙️ Erweiterte Funktionen</h2>
+                <h2 class="card-title" data-i18n="plugins.osc-bridge.labels.erweiterte_funktionen">⚙️ Erweiterte Funktionen</h2>
             </div>
 
             <div class="info-box">
-                <h4 data-i18n="generated.5fe1352cea9b">OSCQuery, Live Monitoring & Performance</h4>
-                <p data-i18n="generated.dfb492426572">Aktivieren Sie erweiterte Funktionen für automatische Avatar-Erkennung, Echtzeit-Monitoring und Performance-Optimierungen.</p>
+                <h4 data-i18n="plugins.osc-bridge.labels.oscquery_live_monitoring_performance">OSCQuery, Live Monitoring & Performance</h4>
+                <p data-i18n="plugins.osc-bridge.labels.aktivieren_sie_erweiterte_funktionen_fur_automatische_avatar_erkennung">Aktivieren Sie erweiterte Funktionen für automatische Avatar-Erkennung, Echtzeit-Monitoring und Performance-Optimierungen.</p>
             </div>
 
             <form id="advanced-features-form">
                 <!-- OSCQuery Settings -->
                 <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--color-border);">
-                    <h3 style="margin-bottom: 16px;" data-i18n="generated.936238d8cbc5">🔍 OSCQuery Auto-Discovery</h3>
-                    
+                    <h3 style="margin-bottom: 16px;" data-i18n="plugins.osc-bridge.labels.oscquery_auto_discovery">🔍 OSCQuery Auto-Discovery</h3>
+
                     <div class="info-box" style="background: rgba(59, 130, 246, 0.1); border-left-color: #3b82f6;">
-                        <h4 style="color: #3b82f6;" data-i18n="generated.7096a1193b3a">Was ist OSCQuery?</h4>
-                        <p data-i18n="generated.c9db91c3b60e">OSCQuery ermöglicht die automatische Erkennung aller verfügbaren VRChat-Avatar-Parameter ohne manuelle Konfiguration. 
+                        <h4 style="color: #3b82f6;" data-i18n="plugins.osc-bridge.labels.was_ist_oscquery">Was ist OSCQuery?</h4>
+                        <p data-i18n="plugins.osc-bridge.labels.oscquery_ermoglicht_die_automatische_erkennung_aller_verfugbaren_vrchat">OSCQuery ermöglicht die automatische Erkennung aller verfügbaren VRChat-Avatar-Parameter ohne manuelle Konfiguration.
                            Dies ist erforderlich für Avatar Auto-Discovery und PhysBones-Steuerung.</p>
                     </div>
 
                     <div class="form-group">
                         <div class="checkbox-group">
                             <input type="checkbox" id="oscQueryEnabled" name="oscQueryEnabled">
-                            <label for="oscQueryEnabled" data-i18n="generated.cfabc7d176c4">OSCQuery aktivieren (empfohlen für Avatar-Erkennung)</label>
+                            <label for="oscQueryEnabled" data-i18n="plugins.osc-bridge.labels.oscquery_aktivieren_empfohlen_fur_avatar_erkennung">OSCQuery aktivieren (empfohlen für Avatar-Erkennung)</label>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="oscQueryHost" data-i18n="generated.c9a7b7343a39">OSCQuery Host</label>
+                            <label for="oscQueryHost" data-i18n="plugins.osc-bridge.labels.oscquery_host">OSCQuery Host</label>
                             <input type="text" class="form-control" id="oscQueryHost" name="oscQueryHost" value="127.0.0.1" placeholder="127.0.0.1">
-                            <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="generated.0d2b5f6adace">
+                            <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="plugins.osc-bridge.labels.ip_adresse_des_vrchat_oscquery_servers_standard_127">
                                 IP-Adresse des VRChat OSCQuery-Servers (Standard: 127.0.0.1)
                             </small>
                         </div>
                         <div class="form-group">
-                            <label for="oscQueryPort" data-i18n="generated.e236eb07bc08">OSCQuery Port</label>
+                            <label for="oscQueryPort" data-i18n="plugins.osc-bridge.labels.oscquery_port">OSCQuery Port</label>
                             <input type="number" class="form-control" id="oscQueryPort" name="oscQueryPort" value="9001" placeholder="9001">
-                            <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="generated.cf0c3c65e548">
+                            <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="plugins.osc-bridge.labels.oscquery_http_websocket_port_detected_automatically_via_mdns">
                                 OSCQuery HTTP/WebSocket port (detected automatically via mDNS)
                             </small>
                         </div>
@@ -646,16 +646,16 @@
                     <div class="form-group">
                         <div class="checkbox-group">
                             <input type="checkbox" id="oscQueryAutoSubscribe" name="oscQueryAutoSubscribe">
-                            <label for="oscQueryAutoSubscribe" data-i18n="generated.2e5d493ff74b">Auto-Subscribe (WebSocket Updates empfangen)</label>
+                            <label for="oscQueryAutoSubscribe" data-i18n="plugins.osc-bridge.labels.auto_subscribe_websocket_updates_empfangen">Auto-Subscribe (WebSocket Updates empfangen)</label>
                         </div>
                         <div class="form-group" style="margin-top: 16px;">
-                            <button type="button" class="btn btn-secondary" id="btn-oscquery-scan" data-i18n="generated.0c8b3fbace3b">OSCQuery suchen</button>
-                            <small style="color: var(--color-text-muted); font-size: 0.85em; display: block; margin-top: 8px;" data-i18n="generated.3ec1fee24ad6">
+                            <button type="button" class="btn btn-secondary" id="btn-oscquery-scan" data-i18n="plugins.osc-bridge.labels.oscquery_suchen">OSCQuery suchen</button>
+                            <small style="color: var(--color-text-muted); font-size: 0.85em; display: block; margin-top: 8px;" data-i18n="plugins.osc-bridge.labels.finds_the_vrchat_oscquery_service_via_mdns_and">
                                 Finds the VRChat OSCQuery service via mDNS and saves its current port automatically.
                             </small>
                             <div id="oscquery-scan-result" class="info-box" style="display:none; margin-top: 12px;"></div>
                         </div>
-                        <small style="color: var(--color-text-muted); font-size: 0.85em; margin-left: 28px; display: block;" data-i18n="generated.dfd0c192de52">
+                        <small style="color: var(--color-text-muted); font-size: 0.85em; margin-left: 28px; display: block;" data-i18n="plugins.osc-bridge.labels.aktiviert_live_updates_uber_websocket_fur_echtzeit_parameter">
                             Aktiviert Live-Updates über WebSocket für Echtzeit-Parameter-Änderungen
                         </small>
                     </div>
@@ -663,32 +663,32 @@
 
                 <!-- Live Monitoring Settings -->
                 <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--color-border);">
-                    <h3 style="margin-bottom: 16px;" data-i18n="generated.5fd34a1db2bb">📊 Live Parameter Monitoring</h3>
-                    
+                    <h3 style="margin-bottom: 16px;" data-i18n="plugins.osc-bridge.labels.live_parameter_monitoring">📊 Live Parameter Monitoring</h3>
+
                     <div class="info-box" style="background: rgba(16, 185, 129, 0.1); border-left-color: #10b981;">
-                        <h4 style="color: #10b981;" data-i18n="generated.b105b299a2de">Echtzeit-Überwachung</h4>
-                        <p data-i18n="generated.5b69ae6a6927">Live Monitoring verfolgt alle Avatar-Parameter in Echtzeit und speichert einen Verlauf für Visualisierungen und Debugging.</p>
+                        <h4 style="color: #10b981;" data-i18n="plugins.osc-bridge.labels.echtzeit_uberwachung">Echtzeit-Überwachung</h4>
+                        <p data-i18n="plugins.osc-bridge.labels.live_monitoring_verfolgt_alle_avatar_parameter_in_echtzeit">Live Monitoring verfolgt alle Avatar-Parameter in Echtzeit und speichert einen Verlauf für Visualisierungen und Debugging.</p>
                     </div>
 
                     <div class="form-group">
                         <div class="checkbox-group">
                             <input type="checkbox" id="liveMonitoringEnabled" name="liveMonitoringEnabled">
-                            <label for="liveMonitoringEnabled" data-i18n="generated.a55a654d6f46">Live Monitoring aktivieren</label>
+                            <label for="liveMonitoringEnabled" data-i18n="plugins.osc-bridge.labels.live_monitoring_aktivieren">Live Monitoring aktivieren</label>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="liveMonitoringInterval" data-i18n="generated.2c858fc6c673">Update-Intervall (ms)</label>
+                            <label for="liveMonitoringInterval" data-i18n="plugins.osc-bridge.labels.update_intervall_ms">Update-Intervall (ms)</label>
                             <input type="number" class="form-control" id="liveMonitoringInterval" name="liveMonitoringInterval" value="100" min="50" max="1000" step="50">
-                            <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="generated.10ad29d5c2ec">
+                            <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="plugins.osc-bridge.labels.haufigkeit_der_updates_standard_100ms_10_updates_sekunde">
                                 Häufigkeit der Updates (Standard: 100ms = 10 Updates/Sekunde)
                             </small>
                         </div>
                         <div class="form-group">
-                            <label for="liveMonitoringHistory" data-i18n="generated.632b7498ddac">Verlauf-Dauer (ms)</label>
+                            <label for="liveMonitoringHistory" data-i18n="plugins.osc-bridge.labels.verlauf_dauer_ms">Verlauf-Dauer (ms)</label>
                             <input type="number" class="form-control" id="liveMonitoringHistory" name="liveMonitoringHistory" value="60000" min="10000" max="300000" step="10000">
-                            <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="generated.14cbb4f58e9c">
+                            <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="plugins.osc-bridge.labels.wie_lange_verlaufsdaten_gespeichert_werden_standard_60000ms_1">
                                 Wie lange Verlaufsdaten gespeichert werden (Standard: 60000ms = 1 Minute)
                             </small>
                         </div>
@@ -697,44 +697,44 @@
 
                 <!-- PhysBones Settings -->
                 <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--color-border);">
-                    <h3 style="margin-bottom: 16px;" data-i18n="generated.1570182a949f">🦴 PhysBones Control</h3>
-                    
+                    <h3 style="margin-bottom: 16px;" data-i18n="plugins.osc-bridge.labels.physbones_control">🦴 PhysBones Control</h3>
+
                     <div class="info-box" style="background: rgba(168, 85, 247, 0.1); border-left-color: #a855f7;">
-                        <h4 style="color: #a855f7;" data-i18n="generated.aaca34a94916">PhysBones Steuerung</h4>
-                        <p data-i18n="generated.46c69cf8d6dc">Steuern Sie Avatar-Physik (Schwanz, Ohren, Haare usw.) über OSC. Erfordert OSCQuery für automatische Erkennung.</p>
+                        <h4 style="color: #a855f7;" data-i18n="plugins.osc-bridge.labels.physbones_steuerung">PhysBones Steuerung</h4>
+                        <p data-i18n="plugins.osc-bridge.labels.steuern_sie_avatar_physik_schwanz_ohren_haare_usw">Steuern Sie Avatar-Physik (Schwanz, Ohren, Haare usw.) über OSC. Erfordert OSCQuery für automatische Erkennung.</p>
                     </div>
 
                     <div class="form-group">
                         <div class="checkbox-group">
                             <input type="checkbox" id="physBonesEnabled" name="physBonesEnabled">
-                            <label for="physBonesEnabled" data-i18n="generated.dc21953bd7ba">PhysBones Control aktivieren</label>
+                            <label for="physBonesEnabled" data-i18n="plugins.osc-bridge.labels.physbones_control_aktivieren">PhysBones Control aktivieren</label>
                         </div>
                     </div>
                 </div>
 
                 <!-- Performance Settings -->
                 <div style="margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 16px;" data-i18n="generated.7bb13bb90a6b">⚡ Performance-Optimierungen</h3>
-                    
+                    <h3 style="margin-bottom: 16px;" data-i18n="plugins.osc-bridge.labels.performance_optimierungen">⚡ Performance-Optimierungen</h3>
+
                     <div class="info-box" style="background: rgba(251, 191, 36, 0.1); border-left-color: #fbbf24;">
-                        <h4 style="color: #fbbf24;" data-i18n="generated.b13b45a3dfd8">Message Batching & Caching</h4>
-                        <p data-i18n="generated.6ab90fde429b">Verbessern Sie die Performance durch intelligentes Batching und Caching von OSC-Nachrichten.</p>
+                        <h4 style="color: #fbbf24;" data-i18n="plugins.osc-bridge.labels.message_batching_caching">Message Batching & Caching</h4>
+                        <p data-i18n="plugins.osc-bridge.labels.verbessern_sie_die_performance_durch_intelligentes_batching_und">Verbessern Sie die Performance durch intelligentes Batching und Caching von OSC-Nachrichten.</p>
                     </div>
 
                     <div class="form-group">
                         <div class="checkbox-group">
                             <input type="checkbox" id="messageBatchingEnabled" name="messageBatchingEnabled">
-                            <label for="messageBatchingEnabled" data-i18n="generated.8ea1a9bcf450">Message Batching aktivieren (empfohlen)</label>
+                            <label for="messageBatchingEnabled" data-i18n="plugins.osc-bridge.labels.message_batching_aktivieren_empfohlen">Message Batching aktivieren (empfohlen)</label>
                         </div>
-                        <small style="color: var(--color-text-muted); font-size: 0.85em; margin-left: 28px; display: block;" data-i18n="generated.0ef3fd013d4a">
+                        <small style="color: var(--color-text-muted); font-size: 0.85em; margin-left: 28px; display: block;" data-i18n="plugins.osc-bridge.labels.bundelt_mehrere_osc_nachrichten_fur_bessere_performance_200">
                             Bündelt mehrere OSC-Nachrichten für bessere Performance (+200% Durchsatz)
                         </small>
                     </div>
 
                     <div class="form-group">
-                        <label for="batchWindow" data-i18n="generated.3498a284daad">Batch-Fenster (ms)</label>
+                        <label for="batchWindow" data-i18n="plugins.osc-bridge.labels.batch_fenster_ms">Batch-Fenster (ms)</label>
                         <input type="number" class="form-control" id="batchWindow" name="batchWindow" value="10" min="1" max="100" step="1">
-                        <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="generated.73d6f9d5ce6a">
+                        <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="plugins.osc-bridge.labels.zeitfenster_fur_nachrichten_bundelung_standard_10ms">
                             Zeitfenster für Nachrichten-Bündelung (Standard: 10ms)
                         </small>
                     </div>
@@ -742,24 +742,24 @@
                     <div class="form-group">
                         <div class="checkbox-group">
                             <input type="checkbox" id="parameterCachingEnabled" name="parameterCachingEnabled">
-                            <label for="parameterCachingEnabled" data-i18n="generated.0da18a121713">Parameter Caching aktivieren (empfohlen)</label>
+                            <label for="parameterCachingEnabled" data-i18n="plugins.osc-bridge.labels.parameter_caching_aktivieren_empfohlen">Parameter Caching aktivieren (empfohlen)</label>
                         </div>
-                        <small style="color: var(--color-text-muted); font-size: 0.85em; margin-left: 28px; display: block;" data-i18n="generated.5bb24ac0631e">
+                        <small style="color: var(--color-text-muted); font-size: 0.85em; margin-left: 28px; display: block;" data-i18n="plugins.osc-bridge.labels.verhindert_redundante_nachrichten_fur_unveranderte_werte_50_cpu">
                             Verhindert redundante Nachrichten für unveränderte Werte (-50% CPU-Last)
                         </small>
                     </div>
 
                     <div class="form-group">
-                        <label for="cacheTTL" data-i18n="generated.9afcd5f39ece">Cache TTL (ms)</label>
+                        <label for="cacheTTL" data-i18n="plugins.osc-bridge.labels.cache_ttl_ms">Cache TTL (ms)</label>
                         <input type="number" class="form-control" id="cacheTTL" name="cacheTTL" value="5000" min="1000" max="60000" step="1000">
-                        <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="generated.7ff87b4cb628">
+                        <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="plugins.osc-bridge.labels.zeit_bis_cache_eintrage_erneuert_werden_standard_5000ms">
                             Zeit bis Cache-Einträge erneuert werden (Standard: 5000ms)
                         </small>
                     </div>
                 </div>
 
                 <div class="btn-group">
-                    <button type="submit" class="btn btn-primary" data-i18n="generated.5273f3bf3fcf">Erweiterte Einstellungen speichern</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="plugins.osc-bridge.labels.erweiterte_einstellungen_speichern">Erweiterte Einstellungen speichern</button>
                 </div>
             </form>
         </div>
@@ -801,17 +801,17 @@
                 </div>
 
                 <div class="btn-group" style="margin-top: 20px;">
-                    <button type="submit" class="btn btn-primary" data-i18n="generated.200c99844a04">Save Chat Command Settings</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="plugins.osc-bridge.labels.save_chat_command_settings">Save Chat Command Settings</button>
                 </div>
             </form>
 
             <!-- Avatar Switch via Chat Commands -->
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--color-border);">
-                <h3 style="margin-bottom: 16px;" data-i18n="generated.1c4606a02693">👤 Avatar Switching via Chat Commands</h3>
-                
+                <h3 style="margin-bottom: 16px;" data-i18n="plugins.osc-bridge.labels.avatar_switching_via_chat_commands">👤 Avatar Switching via Chat Commands</h3>
+
                 <div class="info-box">
                     <h4 data-i18n="osc_bridge.avatar_switch.info_title">Avatar Chat Command</h4>
-                    <p><span data-i18n="generated.29a2381e7011">Allow viewers to switch your VRChat avatar via the </span><code>/avatar &lt;name&gt;</code><span data-i18n="generated.ff2e82c69d46"> command. Configure cooldowns to prevent spam.</span></p>
+                    <p><span data-i18n="plugins.osc-bridge.labels.allow_viewers_to_switch_your_vrchat_avatar_via">Allow viewers to switch your VRChat avatar via the </span><code>/avatar &lt;name&gt;</code><span data-i18n="plugins.osc-bridge.labels.command_configure_cooldowns_to_prevent_spam"> command. Configure cooldowns to prevent spam.</span></p>
                 </div>
 
                 <form id="avatar-switch-form">
@@ -856,7 +856,7 @@
             <!-- Available Commands Management -->
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--color-border);">
                 <h3 style="margin-bottom: 16px;" data-i18n="osc_bridge.command_management.title">⚙️ Command Management</h3>
-                
+
                 <div class="info-box">
                     <h4 data-i18n="osc_bridge.command_management.info_title">Configure Available Commands</h4>
                     <p data-i18n="osc_bridge.command_management.info_text">Enable or disable individual commands, change permissions, and add custom commands. Changes will be registered with GCCE automatically.</p>
@@ -891,12 +891,12 @@
             <!-- Add Custom Command Form (Initially hidden) -->
             <div class="add-item-form" id="custom-command-form" style="display: none; margin-top: 20px;">
                 <h4 style="margin-top: 0;" data-i18n="osc_bridge.command_management.add_custom">Add Custom Command</h4>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label data-i18n="osc_bridge.custom_command.command_name">Command Name</label>
                         <input type="text" class="form-control" id="new-cmd-name" placeholder="mycommand">
-                        <small style="color: var(--color-text-muted); font-size: 0.85em;"><span data-i18n="generated.22afa4454522">
+                        <small style="color: var(--color-text-muted); font-size: 0.85em;"><span data-i18n="plugins.osc-bridge.labels.users_will_type">
                             Users will type /</span><span id="cmd-preview">mycommand</span>
                         </small>
                     </div>
@@ -948,47 +948,47 @@
         <!-- Avatar Auto-Discovery -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title" data-i18n="generated.7caa67dc5278">👤 Avatar Auto-Discovery</h2>
+                <h2 class="card-title" data-i18n="plugins.osc-bridge.labels.avatar_auto_discovery">👤 Avatar Auto-Discovery</h2>
             </div>
 
             <div class="info-box">
-                <h4 data-i18n="generated.6b65c0ab8241">Aktuellen Avatar und verfügbare Aktionen erkennen</h4>
-                <p><span data-i18n="generated.ad588ab98a6c">Klicken Sie auf "Avatar erkennen", um automatisch den aktuell aktiven VRChat-Avatar und seine verfügbaren Parameter zu erkennen. 
-                   </span><strong>Hinweis:</strong><span data-i18n="generated.77c7e88b6d9f"> OSCQuery muss in den "Erweiterten Funktionen" aktiviert sein und VRChat muss laufen.</span></p>
+                <h4 data-i18n="plugins.osc-bridge.labels.aktuellen_avatar_und_verfugbare_aktionen_erkennen">Aktuellen Avatar und verfügbare Aktionen erkennen</h4>
+                <p><span data-i18n="plugins.osc-bridge.labels.klicken_sie_auf_avatar_erkennen_um_automatisch_den">Klicken Sie auf "Avatar erkennen", um automatisch den aktuell aktiven VRChat-Avatar und seine verfügbaren Parameter zu erkennen.
+                   </span><strong>Hinweis:</strong><span data-i18n="plugins.osc-bridge.labels.oscquery_muss_in_den_erweiterten_funktionen_aktiviert_sein"> OSCQuery muss in den "Erweiterten Funktionen" aktiviert sein und VRChat muss laufen.</span></p>
             </div>
 
             <div class="form-group">
-                <button type="button" class="btn btn-primary" id="btn-auto-detect-avatar" data-i18n="generated.44121446c810">🔍 Avatar erkennen</button>
-                <button type="button" class="btn btn-secondary" id="btn-refresh-actions" data-i18n="generated.ffca2751a161">🔄 Aktionen aktualisieren</button>
+                <button type="button" class="btn btn-primary" id="btn-auto-detect-avatar" data-i18n="plugins.osc-bridge.labels.avatar_erkennen">🔍 Avatar erkennen</button>
+                <button type="button" class="btn btn-secondary" id="btn-refresh-actions" data-i18n="plugins.osc-bridge.labels.aktionen_aktualisieren">🔄 Aktionen aktualisieren</button>
             </div>
 
             <div id="current-avatar-info" style="margin-top: 20px; display: none;">
                 <div style="background: var(--color-bg-secondary); padding: 16px; border-radius: 8px; border-left: 4px solid var(--color-accent-success);">
-                    <h4 style="margin: 0 0 8px 0; color: var(--color-accent-success);" data-i18n="generated.a882b28a4707">✅ Aktiver Avatar erkannt</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--color-accent-success);" data-i18n="plugins.osc-bridge.labels.aktiver_avatar_erkannt">✅ Aktiver Avatar erkannt</h4>
                     <p style="margin: 0; font-family: monospace; font-size: 0.9em; word-break: break-all;">
-                        <strong data-i18n="generated.a772d7fb3539">Avatar ID:</strong> <span id="current-avatar-id">-</span>
+                        <strong data-i18n="plugins.osc-bridge.labels.avatar_id">Avatar ID:</strong> <span id="current-avatar-id">-</span>
                     </p>
                     <p style="margin: 8px 0 0 0; font-size: 0.9em; color: var(--color-text-muted);">
-                        <strong data-i18n="generated.3a2a7bdaa968">Parameter gefunden:</strong> <span id="current-avatar-param-count">0</span>
+                        <strong data-i18n="plugins.osc-bridge.labels.parameter_gefunden">Parameter gefunden:</strong> <span id="current-avatar-param-count">0</span>
                     </p>
                 </div>
             </div>
 
             <div id="available-actions-container" style="margin-top: 20px; display: none;">
-                <h3 style="margin-bottom: 12px;" data-i18n="generated.0f506e88e01d">Verfügbare Aktionen für diesen Avatar:</h3>
-                
+                <h3 style="margin-bottom: 12px;" data-i18n="plugins.osc-bridge.labels.verfugbare_aktionen_fur_diesen_avatar">Verfügbare Aktionen für diesen Avatar:</h3>
+
                 <div style="margin-bottom: 16px;">
-                    <h4 style="color: var(--color-text-secondary); margin-bottom: 8px;" data-i18n="generated.3e4a96aa2ecc">Standard VRChat Aktionen:</h4>
+                    <h4 style="color: var(--color-text-secondary); margin-bottom: 8px;" data-i18n="plugins.osc-bridge.labels.standard_vrchat_aktionen">Standard VRChat Aktionen:</h4>
                     <div id="standard-actions-list" class="vrchat-params"></div>
                 </div>
 
                 <div style="margin-bottom: 16px;">
-                    <h4 style="color: var(--color-text-secondary); margin-bottom: 8px;" data-i18n="generated.f2b487da49d3">Emote Slots:</h4>
+                    <h4 style="color: var(--color-text-secondary); margin-bottom: 8px;" data-i18n="plugins.osc-bridge.labels.emote_slots">Emote Slots:</h4>
                     <div id="emote-slots-list" class="vrchat-params"></div>
                 </div>
 
                 <div id="custom-params-section" style="margin-bottom: 16px; display: none;">
-                    <h4 style="color: var(--color-text-secondary); margin-bottom: 8px;" data-i18n="generated.14e5dd4a0fe2">Avatar-spezifische Parameter:</h4>
+                    <h4 style="color: var(--color-text-secondary); margin-bottom: 8px;" data-i18n="plugins.osc-bridge.labels.avatar_spezifische_parameter">Avatar-spezifische Parameter:</h4>
                     <div id="custom-params-list" class="vrchat-params"></div>
                 </div>
 
@@ -1029,14 +1029,14 @@
 
             <div class="info-box">
                 <h4 data-i18n="osc_bridge.custom_actions.subtitle">Benutzerdefinierte OSC-Nachrichten</h4>
-                <p data-i18n="osc_bridge.custom_actions.description">Senden Sie eigene OSC-Nachrichten an VRChat oder andere OSC-kompatible Anwendungen. 
+                <p data-i18n="osc_bridge.custom_actions.description">Senden Sie eigene OSC-Nachrichten an VRChat oder andere OSC-kompatible Anwendungen.
                    Die Nachrichten werden an die konfigurierte Zieladresse gesendet.</p>
             </div>
 
             <form id="custom-osc-form">
                 <div class="form-group">
                     <label for="custom-address" data-i18n="osc_bridge.custom_actions.address_label">OSC-Adresse</label>
-                    <input type="text" class="form-control" id="custom-address" name="customAddress" 
+                    <input type="text" class="form-control" id="custom-address" name="customAddress"
                            placeholder="/avatar/parameters/CustomParameter" required>
                     <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="osc_bridge.custom_actions.address_help">
                         Muss mit / beginnen, z.B. /avatar/parameters/MyCustomParam
@@ -1045,7 +1045,7 @@
 
                 <div class="form-group">
                     <label for="custom-value" data-i18n="osc_bridge.custom_actions.value_label">Wert</label>
-                    <input type="text" class="form-control" id="custom-value" name="customValue" 
+                    <input type="text" class="form-control" id="custom-value" name="customValue"
                            placeholder="1" required>
                     <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="osc_bridge.custom_actions.value_help">
                         Zahl (z.B. 1, 0.5, 100), Text (z.B. "Hallo") oder Boolean (true/false)
@@ -1054,7 +1054,7 @@
 
                 <div class="form-group">
                     <label for="custom-duration" data-i18n="osc_bridge.custom_actions.reset_label">Auto-Reset nach (ms, optional)</label>
-                    <input type="number" class="form-control" id="custom-duration" name="customDuration" 
+                    <input type="number" class="form-control" id="custom-duration" name="customDuration"
                            placeholder="2000" min="0">
                     <small style="color: var(--color-text-muted); font-size: 0.85em;" data-i18n="osc_bridge.custom_actions.reset_help">
                         Wenn gesetzt, wird der Wert nach der angegebenen Zeit auf 0 zurückgesetzt
@@ -1063,12 +1063,12 @@
 
                 <div class="btn-group">
                     <button type="submit" class="btn btn-primary" data-i18n="osc_bridge.custom_actions.send">Senden</button>
-                    <button type="button" class="btn btn-secondary" id="btn-save-custom" data-i18n="generated.20bdc65d7326">Als Preset speichern</button>
+                    <button type="button" class="btn btn-secondary" id="btn-save-custom" data-i18n="plugins.osc-bridge.labels.als_preset_speichern">Als Preset speichern</button>
                 </div>
             </form>
 
             <div id="custom-presets" style="margin-top: 20px;">
-                <h4 style="margin-bottom: 12px; color: var(--color-text-secondary);" data-i18n="generated.3e20c48b247d">Gespeicherte Presets</h4>
+                <h4 style="margin-bottom: 12px; color: var(--color-text-secondary);" data-i18n="plugins.osc-bridge.labels.gespeicherte_presets">Gespeicherte Presets</h4>
                 <div id="presets-container" class="vrchat-params">
                     <!-- Presets werden hier dynamisch eingefügt -->
                 </div>
@@ -1108,11 +1108,11 @@
 
             <div class="add-item-form">
                 <h4 style="margin-top: 0;" data-i18n="osc_bridge.gift_mappings.add_new">Add New Gift Mapping</h4>
-                
+
                 <!-- Gift Catalogue Selector -->
                 <div class="form-group" style="margin-bottom: 16px;">
                     <label style="display: flex; justify-content: space-between; align-items: center;">
-                        <span><span data-i18n="generated.a68891dcf05e">Select from Gift Catalogue </span><span id="gift-catalog-count" style="color: var(--color-accent-success); font-size: 0.85em;"></span></span>
+                        <span><span data-i18n="plugins.osc-bridge.labels.select_from_gift_catalogue">Select from Gift Catalogue </span><span id="gift-catalog-count" style="color: var(--color-accent-success); font-size: 0.85em;"></span></span>
                         <button type="button" class="btn btn-secondary btn-small" id="refresh-gift-catalog" style="padding: 4px 10px;" data-i18n="osc_bridge.gift_mappings.refresh_catalogue">
                             🔄 Refresh Catalogue
                         </button>
@@ -1120,7 +1120,7 @@
                     <select class="form-control" id="gift-catalog-selector" style="font-size: 14px;">
                         <option value="" data-i18n="osc_bridge.gift_mappings.select_gift_or_manual">-- Select a gift from catalogue or enter manually below --</option>
                     </select>
-                    <small id="gift-catalog-hint" style="color: var(--color-text-muted); font-size: 0.85em; margin-top: 4px; display: block;" data-i18n="generated.68e12ab0f13a">
+                    <small id="gift-catalog-hint" style="color: var(--color-text-muted); font-size: 0.85em; margin-top: 4px; display: block;" data-i18n="plugins.osc-bridge.labels.gifts_are_auto_detected_when_viewers_send_them">
                         💡 Gifts are auto-detected when viewers send them during a stream. Connect to a TikTok stream to populate the catalogue.
                     </small>
                 </div>
@@ -1142,9 +1142,9 @@
                             <option value="dance">Dance</option>
                             <option value="hearts">Hearts</option>
                             <option value="confetti">Confetti</option>
-                            <option value="emote" data-i18n="generated.e7f54cd606e7">Emote Slot</option>
-                            <option value="avatar" data-i18n="generated.b6a21a06dccb">Switch Avatar</option>
-                            <option value="custom_parameter" data-i18n="generated.d8028067194a">Custom Parameter</option>
+                            <option value="emote" data-i18n="plugins.osc-bridge.labels.emote_slot">Emote Slot</option>
+                            <option value="avatar" data-i18n="plugins.osc-bridge.labels.switch_avatar">Switch Avatar</option>
+                            <option value="custom_parameter" data-i18n="plugins.osc-bridge.labels.custom_parameter">Custom Parameter</option>
                         </select>
                     </div>
                 </div>

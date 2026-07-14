@@ -1,62 +1,66 @@
 {
-  "spotlight": {
-    "title": "Spotlight",
-    "subtitle": "Highlight Recent Events",
-    "config": {
-      "title": "Configuración",
-      "enabled": "Activar Spotlight",
-      "display_duration": "Display Duration (seconds)",
-      "animation": "Animation Style",
-      "position": "Position",
-      "save": "Guardar Configuración"
-    },
-    "event_types": {
-      "title": "Event Types",
-      "follower": "Latest Follower",
-      "gifter": "Top Gifter",
-      "chatter": "Top Chatter",
-      "subscriber": "Latest Subscriber",
-      "like": "Latest Like",
-      "gift_streak": "Gift Streak"
-    },
-    "overlays": {
-      "title": "Overlays",
-      "follower_url": "Follower Spotlight URL",
-      "gifter_url": "Gifter Spotlight URL",
-      "chatter_url": "Chatter Spotlight URL",
-      "subscriber_url": "Subscriber Spotlight URL",
-      "like_url": "Like Spotlight URL",
-      "gift_streak_url": "Gift Streak URL",
-      "copy": "Copiar URL",
-      "open": "Abrir Overlay"
-    },
-    "appearance": {
-      "title": "Appearance",
-      "theme": "Theme",
-      "font_size": "Font Size",
-      "show_avatar": "Show Avatar",
-      "show_animation": "Show Animation"
+  "plugins": {
+    "spotlight": {
+      "spotlight": {
+        "title": "Foco",
+        "subtitle": "Highlight Recent Events",
+        "config": {
+          "title": "Configuración",
+          "enabled": "Activar Spotlight",
+          "display_duration": "Display Duration (seconds)",
+          "animation": "Animation Style",
+          "position": "Posición",
+          "save": "Guardar Configuración"
+        },
+        "event_types": {
+          "title": "Event Types",
+          "follower": "Latest Follower",
+          "gifter": "Top Gifter",
+          "chatter": "Top Chatter",
+          "subscriber": "Latest Subscriber",
+          "like": "Latest Like",
+          "gift_streak": "Gift Streak"
+        },
+        "overlays": {
+          "title": "Superposiciones",
+          "follower_url": "Follower Spotlight URL",
+          "gifter_url": "Gifter Spotlight URL",
+          "chatter_url": "Chatter Spotlight URL",
+          "subscriber_url": "Subscriber Spotlight URL",
+          "like_url": "Like Spotlight URL",
+          "gift_streak_url": "Gift Streak URL",
+          "copy": "Copiar URL",
+          "open": "Abrir Overlay"
+        },
+        "appearance": {
+          "title": "Appearance",
+          "theme": "Tema",
+          "font_size": "Font Size",
+          "show_avatar": "Show Avatar",
+          "show_animation": "Show Animation"
+        }
+      },
+      "labels": {
+        "day_night_cid_vision_impaired_and_contrast_themes": "Temas de día, noche, cid, problemas de visión y contraste",
+        "spotlight_gifter": "Foco - Gifter",
+        "live_overlay_studio": "Estudio de superposición en vivo",
+        "follower_like_chat_share_gift_subscriber_top_gift": "Seguidor, Me gusta, Chat, Compartir, Regalo, Suscriptor, Regalo principal, Racha de regalos, Rotación",
+        "wide_screen_optimized": "Optimizado para pantalla ancha",
+        "spotlight_multi_hud_rotation": "Foco - Rotación Multi-HUD",
+        "theme_aware_ui": "UI sensible al tema",
+        "spotlight_share": "Destacado - Compartir",
+        "spotlight_gift_streak": "Destacado - Racha de regalos",
+        "copy_and_preview_urls": "Copiar y obtener una vista previa de las URL",
+        "overlay_modes": "modos de superposición",
+        "built_for_broad_desktop_screens_and_embed_workflows": "Diseñado para pantallas de escritorio amplias y flujos de trabajo integrados",
+        "then_save_settings": ", luego guarda la configuración",
+        "spotlight_like": "Destacado: Me gusta",
+        "spotlight_top_gift": "Destacado: el mejor regalo",
+        "spotlight_subscriber": "Destacado: suscriptor",
+        "spotlight_chatter": "Destacado: charla",
+        "spotlight_follower": "Destacado - Seguidor",
+        "modern_live_overlays_for_recent_tiktok_activity_copy": "Superposiciones en vivo modernas para la actividad reciente de TikTok. Copie URL, obtenga modos de vista previa, pruebe flujos de eventos y ajuste la apariencia sin perder ninguna de las funciones de superposición existentes."
+      }
     }
-  },
-  "generated": {
-    "d33b5c8c91f8": "Spotlight - Chatter",
-    "dcc3834004c0": "Spotlight - Follower",
-    "20fc5276784d": "Spotlight - Gifter",
-    "661873280ca3": "Spotlight - Gift Streak",
-    "a8efb45ee3d3": "Spotlight - Like",
-    "49d2ae625b62": "Spotlight - Multi-HUD Rotation",
-    "5df554508231": "Spotlight - Share",
-    "d00b674cb70a": "Spotlight - Subscriber",
-    "b788ac2fddd1": "Spotlight - Top Gift",
-    "2483e74f1f82": "Live overlay studio",
-    "ecfdc4e8071c": "Modern live overlays for recent TikTok activity. Copy URLs, preview modes, test event flows, and fine-tune the appearance without losing any of the existing overlay features.",
-    "77d4cf4ab3f3": "overlay modes",
-    "70e2570b6576": "Copy and preview URLs",
-    "59154819e454": "Theme-aware UI",
-    "2fc4f27ea1ec": "Wide-screen optimized",
-    "294242fda9e1": "Follower, Like, Chat, Share, Gift, Subscriber, Top Gift, Gift Streak, Rotation",
-    "a4506340d807": ", then save settings",
-    "116e60c9f537": "Day, night, cid, vision-impaired, and contrast themes",
-    "7abafb256869": "Built for broad desktop screens and embed workflows"
   }
 }

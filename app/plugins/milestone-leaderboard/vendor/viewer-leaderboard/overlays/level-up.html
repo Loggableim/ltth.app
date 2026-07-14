@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.5fa1daae2612">Level Up Overlay</title>
+  <title data-i18n="plugins.milestone-leaderboard.labels.level_up_overlay">Level Up Overlay</title>
   <style>
     * {
       margin: 0;
@@ -57,7 +57,7 @@
       border-radius: 30px;
       padding: 60px 80px;
       text-align: center;
-      box-shadow: 
+      box-shadow:
         0 0 60px rgba(102, 126, 234, 0.6),
         0 0 120px rgba(118, 75, 162, 0.4),
         inset 0 0 40px rgba(255, 255, 255, 0.1);
@@ -110,7 +110,7 @@
       text-transform: uppercase;
       letter-spacing: 4px;
       margin-bottom: 20px;
-      text-shadow: 
+      text-shadow:
         0 0 20px rgba(255, 255, 255, 0.5),
         0 4px 8px rgba(0, 0, 0, 0.3);
       position: relative;
@@ -132,7 +132,7 @@
       font-weight: 700;
       color: #FFD700;
       margin-bottom: 30px;
-      text-shadow: 
+      text-shadow:
         0 0 15px rgba(255, 215, 0, 0.8),
         0 4px 8px rgba(0, 0, 0, 0.3);
       position: relative;
@@ -153,7 +153,7 @@
       font-size: 120px;
       font-weight: 900;
       color: #fff;
-      text-shadow: 
+      text-shadow:
         0 0 30px rgba(255, 255, 255, 0.8),
         0 8px 16px rgba(0, 0, 0, 0.4);
       line-height: 1;
@@ -310,7 +310,7 @@
 <body>
   <div class="level-up-container" id="levelUpContainer">
     <div class="level-up-card">
-      <div class="level-up-title" data-i18n="generated.dd2692ac7b7f">LEVEL UP!</div>
+      <div class="level-up-title" data-i18n="plugins.milestone-leaderboard.labels.level_up">LEVEL UP!</div>
       <div class="username" id="username">Player</div>
       <div class="level-display">
         <div class="level-number" id="oldLevel">1</div>
@@ -453,7 +453,7 @@
     function createConfetti() {
       const confettiCount = 100;
       const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500'];
-      
+
       for (let i = 0; i < confettiCount; i++) {
         const confetti = document.createElement('div');
         confetti.className = 'confetti';
@@ -474,7 +474,7 @@
       // Create a simple beep sound using Web Audio API
       try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        
+
         // Create a short melody for level up
         const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
         let startTime = audioContext.currentTime;
@@ -482,19 +482,19 @@
         notes.forEach((frequency, index) => {
           const oscillator = audioContext.createOscillator();
           const gainNode = audioContext.createGain();
-          
+
           oscillator.connect(gainNode);
           gainNode.connect(audioContext.destination);
-          
+
           oscillator.frequency.value = frequency;
           oscillator.type = 'sine';
-          
+
           const noteStart = startTime + (index * 0.15);
           const noteEnd = noteStart + 0.15;
-          
+
           gainNode.gain.setValueAtTime(0.3, noteStart);
           gainNode.gain.exponentialRampToValueAtTime(0.01, noteEnd);
-          
+
           oscillator.start(noteStart);
           oscillator.stop(noteEnd);
         });

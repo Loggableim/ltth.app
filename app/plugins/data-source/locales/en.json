@@ -1,46 +1,50 @@
 {
-  "data_source": {
-    "plugin": {
-      "name": "Data Source Manager",
-      "description": "Choose Eulerstream or TikFinity as the TikTok data source."
-    },
-    "ui": {
-      "title": "Data Source Manager",
-      "actions": {
-        "save": "Save",
-        "cancel": "Cancel",
-        "refresh": "Refresh",
-        "close": "Close",
-        "test": "Test",
-        "clear": "Clear"
+  "plugins": {
+    "data-source": {
+      "data_source": {
+        "plugin": {
+          "name": "Data Source Manager",
+          "description": "Choose Eulerstream or TikFinity as the TikTok data source."
+        },
+        "ui": {
+          "title": "Data Source Manager",
+          "actions": {
+            "save": "Save",
+            "cancel": "Cancel",
+            "refresh": "Refresh",
+            "close": "Close",
+            "test": "Test",
+            "clear": "Clear"
+          },
+          "status": {
+            "ready": "Ready",
+            "loading": "Loading…",
+            "connected": "Connected",
+            "disconnected": "Disconnected",
+            "error": "Error"
+          },
+          "messages": {
+            "saved": "Settings saved.",
+            "failed": "Could not save settings.",
+            "noData": "No data available.",
+            "confirm": "Are you sure?"
+          }
+        }
       },
-      "status": {
-        "ready": "Ready",
-        "loading": "Loading…",
-        "connected": "Connected",
-        "disconnected": "Disconnected",
-        "error": "Error"
-      },
-      "messages": {
-        "saved": "Settings saved.",
-        "failed": "Could not save settings.",
-        "noData": "No data available.",
-        "confirm": "Are you sure?"
+      "labels": {
+        "die_anderung_wird_beim": "The change will be made at",
+        "websocket_port": "WebSocket port",
+        "lauft_und_mit_deinem_tiktok_account_verbunden_ist": "is running and connected to your TikTok account before you connect.",
+        "nachsten_verbinden": "next connect",
+        "aktiv_ein_laufender_stream_wird_nicht_unterbrochen": "active. A running stream is not interrupted.",
+        "tikfinity_einstellungen": "⚙️ TikFinity Settings",
+        "direkte_websocket_verbindung_zu_tiktok_uber_eulerstream_sdk": "Direct WebSocket connection to TikTok via Eulerstream SDK. Requires API key.",
+        "datenquellen_manager": "🔌 Data Source Manager",
+        "tikfinity_desktop_app": "TikFinity Desktop App",
+        "stelle_sicher_dass_die": "⚠️ Make sure the",
+        "verbindung_uber_die_tikfinity_desktop_app_lokaler_websocket": "Connection via TikFinity Desktop App (local WebSocket). TikFinity needs to run.",
+        "einstellungen_speichern": "💾 Save settings"
       }
     }
-  },
-  "generated": {
-    "b47a69f1d841": "🔌 Datenquellen-Manager",
-    "129f6225610c": "Die Änderung wird beim",
-    "2ccbd9cb162e": "nächsten Verbinden",
-    "32d1296c7fb8": "aktiv. Ein laufender Stream wird nicht unterbrochen.",
-    "b1594359082e": "Direkte WebSocket-Verbindung zu TikTok über Eulerstream SDK. Benötigt API-Key.",
-    "f4c4c00a4e5e": "Verbindung über die TikFinity Desktop App (lokaler WebSocket). TikFinity muss laufen.",
-    "34c7dfc0d5d0": "⚙️ TikFinity Einstellungen",
-    "d8781ae2bc2b": "⚠️ Stelle sicher, dass die",
-    "cfa0c4c5b1ff": "TikFinity Desktop App",
-    "29bc64103728": "läuft und mit deinem TikTok-Account verbunden ist, bevor du dich verbindest.",
-    "273b0f615627": "WebSocket Port",
-    "ffe3ff0db820": "💾 Einstellungen speichern"
   }
 }

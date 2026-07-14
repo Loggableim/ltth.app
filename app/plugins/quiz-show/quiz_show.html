@@ -69,7 +69,7 @@
                 <img class="quiz-header-logo" data-brand-logo src="/plugins/quiz-show/assets/quiz-show-icon.png" alt="Quiz Show">
                 <div class="header-brand-copy">
                     <span class="header-brand-kicker">LTTH</span>
-                    <span class="header-brand-title" data-i18n="generated.c6a7d10f372b">Quiz Show</span>
+                    <span class="header-brand-title" data-i18n="plugins.quiz-show.labels.quiz_show">Quiz Show</span>
                 </div>
             </div>
             <div class="header-status">
@@ -96,7 +96,7 @@
                 <span data-i18n="quiz_show.leaderboard.title"> Leaderboard</span>
             </button>
             <button class="tab-button" data-tab="overlay-config">
-                <span data-i18n="generated.8080af08fc75"> Overlay Konfiguration</span>
+                <span data-i18n="plugins.quiz-show.labels.overlay_konfiguration"> Overlay Konfiguration</span>
             </button>
             <button class="tab-button" data-tab="gift-jokers">
                 <span>Gift-Joker</span>
@@ -113,9 +113,9 @@
         <div id="dashboard" class="tab-content active">
             <section class="dashboard-hero">
                 <div class="dashboard-hero-copy">
-                    <div class="dashboard-hero-kicker" data-i18n="generated.69ac664deb10">LTTH Quiz Show</div>
-                    <h1 data-i18n="generated.f31019836413">Quiz Show Control Center</h1>
-                    <p data-i18n="generated.b50f028b148e">Interaktive Quizrunden, KI-Fragenpakete, Gift-Joker und Live-Leaderboard fuer deinen Stream.</p>
+                    <div class="dashboard-hero-kicker" data-i18n="plugins.quiz-show.labels.ltth_quiz_show">LTTH Quiz Show</div>
+                    <h1 data-i18n="plugins.quiz-show.labels.quiz_show_control_center">Quiz Show Control Center</h1>
+                    <p data-i18n="plugins.quiz-show.labels.interaktive_quizrunden_ki_fragenpakete_gift_joker_und_live">Interaktive Quizrunden, KI-Fragenpakete, Gift-Joker und Live-Leaderboard fuer deinen Stream.</p>
                 </div>
                 <div class="dashboard-hero-badge">
                     <img class="dashboard-hero-logo" data-brand-wide-logo src="/plugins/quiz-show/assets/quiz-show-logo-wide.png" alt="Quiz Show Logo">
@@ -125,25 +125,25 @@
                 <!-- Current Question Panel -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.8f4d4a97fa8d">Aktuelle Frage</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.aktuelle_frage">Aktuelle Frage</h2>
                         <div class="panel-controls">
                             <select id="gameModeSelect" class="form-control" style="width: auto; display: inline-block; margin-right: 10px;">
                                 <option value="classic">Klassisch</option>
-                                <option value="fastestFinger" data-i18n="generated.60628b49b1ee">Schnellste Finger</option>
+                                <option value="fastestFinger" data-i18n="plugins.quiz-show.labels.schnellste_finger">Schnellste Finger</option>
                                 <option value="elimination">Elimination</option>
                                 <option value="marathon">Marathon</option>
                                 <option value="duel">Duel</option>
                             </select>
                             <div class="category-filter-container">
                                 <button type="button" id="categoryFilterButton" class="category-filter-button">
-                                    <span id="categoryFilterLabel" data-i18n="generated.27b8f5ac149a">Alle Kategorien</span>
+                                    <span id="categoryFilterLabel" data-i18n="plugins.quiz-show.labels.alle_kategorien">Alle Kategorien</span>
                                     <span class="category-filter-arrow"></span>
                                 </button>
                                 <div id="categoryFilterDropdown" class="category-dropdown">
                                     <div class="category-dropdown-header">
                                         <label class="category-filter-all-label">
                                             <input type="checkbox" id="categoryFilterAll" checked>
-                                            <strong data-i18n="generated.b0dbb00c4851">Alle Kategorien</strong>
+                                            <strong data-i18n="plugins.quiz-show.labels.alle_kategorien_b0dbb0">Alle Kategorien</strong>
                                         </label>
                                     </div>
                                     <div id="categoryFilterOptions" class="category-dropdown-options">
@@ -151,14 +151,14 @@
                                     </div>
                                 </div>
                             </div>
-                            <button id="startQuizBtn" class="btn btn-primary" data-i18n="generated.10a767bfb73b"> Quiz Starten</button>
+                            <button id="startQuizBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.quiz_starten"> Quiz Starten</button>
                             <button id="nextQuestionBtn" class="btn btn-secondary" disabled data-i18n="quiz_show.game.next_question"> Nächste Frage</button>
                             <button id="stopQuizBtn" class="btn btn-danger" disabled> Stoppen</button>
                         </div>
                     </div>
                     <div class="panel-body">
                         <div id="currentQuestionDisplay" class="question-display">
-                            <p class="no-question" data-i18n="generated.aa822d510618">Keine Frage aktiv. Starte das Quiz!</p>
+                            <p class="no-question" data-i18n="plugins.quiz-show.labels.keine_frage_aktiv_starte_das_quiz">Keine Frage aktiv. Starte das Quiz!</p>
                         </div>
 
                         <div id="answerOptions" class="answer-options hidden">
@@ -170,7 +170,7 @@
                                 <div id="timerBar" class="timer-bar"></div>
                             </div>
                             <div class="timer-text">
-                                <span id="timeRemaining">30</span><span data-i18n="generated.ad3d2ea64f61">s verbleibend
+                                <span id="timeRemaining">30</span><span data-i18n="plugins.quiz-show.labels.s_verbleibend">s verbleibend
                             </span></div>
                         </div>
                     </div>
@@ -179,7 +179,7 @@
                 <!-- Statistics Panel -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.f9cf2e692312">Live Statistiken</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.live_statistiken">Live Statistiken</h2>
                     </div>
                     <div class="panel-body">
                         <div class="stats-grid">
@@ -188,11 +188,11 @@
                                 <div class="stat-value" id="answerCount">0</div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-label" data-i18n="generated.2d2b42d2145e">Runden Total</div>
+                                <div class="stat-label" data-i18n="plugins.quiz-show.labels.runden_total">Runden Total</div>
                                 <div class="stat-value" id="totalRounds">0</div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-label" data-i18n="generated.2457d3e4ce4b">Richtig Total</div>
+                                <div class="stat-label" data-i18n="plugins.quiz-show.labels.richtig_total">Richtig Total</div>
                                 <div class="stat-value" id="totalCorrect">0</div>
                             </div>
                             <div class="stat-card">
@@ -206,7 +206,7 @@
                                 <span class="dashboard-mini-leaderboard__badge">Season</span>
                             </div>
                             <div id="dashboardLeaderboardPreview" class="dashboard-mini-leaderboard__list">
-                                <p class="no-data" data-i18n="generated.f4a26a395d37">Keine Eintr&auml;ge</p>
+                                <p class="no-data" data-i18n="plugins.quiz-show.labels.keine_eintrage_f4a26a">Keine Eintr&auml;ge</p>
                             </div>
                         </div>
                     </div>
@@ -215,11 +215,11 @@
                 <!-- Joker Events Panel -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.7df05604c99e">Joker Feed</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.joker_feed">Joker Feed</h2>
                     </div>
                     <div class="panel-body">
                         <div id="jokerEvents" class="joker-events">
-                            <p class="no-events" data-i18n="generated.5ec77879dac4">Keine Joker verwendet</p>
+                            <p class="no-events" data-i18n="plugins.quiz-show.labels.keine_joker_verwendet">Keine Joker verwendet</p>
                         </div>
                     </div>
                 </div>
@@ -232,7 +232,7 @@
                 <!-- Upload Section -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.77fb850102c4">Fragen Upload (JSON)</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.fragen_upload_json">Fragen Upload (JSON)</h2>
                     </div>
                     <div class="panel-body">
                         <div class="upload-section">
@@ -260,7 +260,7 @@
                 <!-- Question Editor -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.90f9d63cd696">Frage Erstellen/Bearbeiten</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.frage_erstellen_bearbeiten">Frage Erstellen/Bearbeiten</h2>
                     </div>
                     <div class="panel-body">
                         <div class="form-group">
@@ -270,25 +270,25 @@
 
                         <div class="answers-grid">
                             <div class="form-group">
-                                <label data-i18n="generated.8e15e98cff11">Antwort A:</label>
+                                <label data-i18n="plugins.quiz-show.labels.antwort_a">Antwort A:</label>
                                 <input type="text" id="answerA" class="form-control" placeholder="Antwort A">
                             </div>
                             <div class="form-group">
-                                <label data-i18n="generated.063f4943284c">Antwort B:</label>
+                                <label data-i18n="plugins.quiz-show.labels.antwort_b">Antwort B:</label>
                                 <input type="text" id="answerB" class="form-control" placeholder="Antwort B">
                             </div>
                             <div class="form-group">
-                                <label data-i18n="generated.6d8601021972">Antwort C:</label>
+                                <label data-i18n="plugins.quiz-show.labels.antwort_c">Antwort C:</label>
                                 <input type="text" id="answerC" class="form-control" placeholder="Antwort C">
                             </div>
                             <div class="form-group">
-                                <label data-i18n="generated.02a249bc69fa">Antwort D:</label>
+                                <label data-i18n="plugins.quiz-show.labels.antwort_d">Antwort D:</label>
                                 <input type="text" id="answerD" class="form-control" placeholder="Antwort D">
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="generated.d45a4332fddd">Richtige Antwort:</label>
+                            <label data-i18n="plugins.quiz-show.labels.richtige_antwort_d45a43">Richtige Antwort:</label>
                             <select id="correctAnswer" class="form-control">
                                 <option value="0">A</option>
                                 <option value="1">B</option>
@@ -318,14 +318,14 @@
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="generated.9c86ce355172">Info (optional - wird nach der Runde angezeigt):</label>
+                            <label data-i18n="plugins.quiz-show.labels.info_optional_wird_nach_der_runde_angezeigt">Info (optional - wird nach der Runde angezeigt):</label>
                             <textarea id="questionInfo" class="form-control" rows="2" placeholder="Zusätzliche Informationen zur Antwort (optional)"></textarea>
                         </div>
 
                         <div class="button-group">
-                            <button id="addQuestionBtn" class="btn btn-primary" data-i18n="generated.ba91f98a9c76"> Frage Hinzufügen</button>
-                            <button id="updateQuestionBtn" class="btn btn-secondary hidden" data-i18n="generated.5e68f6cb0db2"> Frage Aktualisieren</button>
-                            <button id="cancelEditBtn" class="btn btn-secondary hidden" data-i18n="generated.e2b295a4fdbb">X Abbrechen</button>
+                            <button id="addQuestionBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.frage_hinzufugen"> Frage Hinzufügen</button>
+                            <button id="updateQuestionBtn" class="btn btn-secondary hidden" data-i18n="plugins.quiz-show.labels.frage_aktualisieren"> Frage Aktualisieren</button>
+                            <button id="cancelEditBtn" class="btn btn-secondary hidden" data-i18n="plugins.quiz-show.labels.x_abbrechen_e2b295">X Abbrechen</button>
                         </div>
                     </div>
                 </div>
@@ -333,14 +333,14 @@
                 <!-- Questions List -->
                 <div class="panel full-width">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.80580756769f">Fragen Datenbank</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.fragen_datenbank">Fragen Datenbank</h2>
                         <div class="panel-info">
-                            <span id="questionCount" data-i18n="generated.29ba33b8af93">0 Fragen</span>
+                            <span id="questionCount" data-i18n="plugins.quiz-show.labels.0_fragen">0 Fragen</span>
                         </div>
                     </div>
                     <div class="panel-body">
                         <div id="questionsList" class="questions-list">
-                            <p class="no-data" data-i18n="generated.68ef3f7dade2">Keine Fragen vorhanden</p>
+                            <p class="no-data" data-i18n="plugins.quiz-show.labels.keine_fragen_vorhanden">Keine Fragen vorhanden</p>
                         </div>
                     </div>
                 </div>
@@ -351,13 +351,13 @@
         <div id="ai-packages" class="tab-content">
             <div class="panel">
                 <div class="panel-header">
-                    <h2 data-i18n="generated.0a8e361ed46d"> AI Fragenpakete mit OpenAI</h2>
+                    <h2 data-i18n="plugins.quiz-show.labels.ai_fragenpakete_mit_openai"> AI Fragenpakete mit OpenAI</h2>
                 </div>
                 <div class="panel-body">
                     <!-- Info about OpenAI Configuration -->
                     <div class="info-message" style="margin-bottom: 20px; padding: 15px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px;">
-                        <strong data-i18n="quiz_show.ai_packages.config.title"> OpenAI Konfiguration</strong><br><span data-i18n="generated.f5891970458a">
-                        Der OpenAI API-Schlüssel wird jetzt zentral im </span><strong>Haupteinstellungspanel</strong><span data-i18n="generated.88ab71679c42"> (Einstellungen  OpenAI API Configuration) verwaltet.
+                        <strong data-i18n="quiz_show.ai_packages.config.title"> OpenAI Konfiguration</strong><br><span data-i18n="plugins.quiz-show.labels.der_openai_api_schlussel_wird_jetzt_zentral_im">
+                        Der OpenAI API-Schlüssel wird jetzt zentral im </span><strong>Haupteinstellungspanel</strong><span data-i18n="plugins.quiz-show.labels.einstellungen_openai_api_configuration_verwaltet"> (Einstellungen  OpenAI API Configuration) verwaltet.
                     </span></div>
 
                     <!-- Generate Question Package Section -->
@@ -366,40 +366,40 @@
                             <h3 data-i18n="quiz_show.ai_packages.generate.title">Neues Fragenpaket Generieren</h3>
                         </div>
                         <div class="panel-body">
-                            <div id="generateWarning" class="warning-message" style="margin-bottom: 15px; display: none;" data-i18n="generated.6e13e4a440a7">
+                            <div id="generateWarning" class="warning-message" style="margin-bottom: 15px; display: none;" data-i18n="plugins.quiz-show.labels.bitte_konfigurieren_sie_zuerst_ihren_openai_api_schlussel">
                                   Bitte konfigurieren Sie zuerst Ihren OpenAI API-Schlüssel im Haupteinstellungspanel.
                             </div>
 
                             <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px;">
                                 <div class="form-group">
-                                    <label for="packageCategory" data-i18n="generated.875d598876d8">Kategorie *</label>
-                                    <input 
-                                        type="text" 
-                                        id="packageCategory" 
-                                        class="form-control" 
+                                    <label for="packageCategory" data-i18n="plugins.quiz-show.labels.kategorie">Kategorie *</label>
+                                    <input
+                                        type="text"
+                                        id="packageCategory"
+                                        class="form-control"
                                         list="categoryList"
                                         placeholder="z.B. Geographie, Geschichte, Sport"
                                     >
                                 </div>
-                                
+
                                 <div class="form-group">
                                     <label for="packageSize" data-i18n="quiz_show.ai_packages.generate.package_size">Anzahl Fragen</label>
-                                    <input 
-                                        type="number" 
-                                        id="packageSize" 
-                                        class="form-control" 
-                                        min="5" 
-                                        max="50" 
+                                    <input
+                                        type="number"
+                                        id="packageSize"
+                                        class="form-control"
+                                        min="5"
+                                        max="50"
                                         value="10"
                                     >
                                 </div>
 
                                 <div class="form-group">
                                     <label for="packageName" data-i18n="quiz_show.ai_packages.generate.package_name">Paketname (optional)</label>
-                                    <input 
-                                        type="text" 
-                                        id="packageName" 
-                                        class="form-control" 
+                                    <input
+                                        type="text"
+                                        id="packageName"
+                                        class="form-control"
                                         placeholder="Automatisch generiert"
                                     >
                                 </div>
@@ -409,17 +409,17 @@
                                     <select id="packageLanguage" class="form-control">
                                         <option value="de">Deutsch</option>
                                         <option value="en">English</option>
-                                        <option value="es" data-i18n="generated.01842cd5fbe0">Español</option>
-                                        <option value="fr" data-i18n="generated.b3fb1c089fbc">Français</option>
+                                        <option value="es" data-i18n="plugins.quiz-show.labels.espanol">Español</option>
+                                        <option value="fr" data-i18n="plugins.quiz-show.labels.francais_b3fb1c">Français</option>
                                         <option value="it">Italiano</option>
-                                        <option value="pt" data-i18n="generated.3c4091b3f91d">Português</option>
+                                        <option value="pt" data-i18n="plugins.quiz-show.labels.portugues">Português</option>
                                         <option value="nl">Nederlands</option>
                                         <option value="pl">Polski</option>
-                                        <option value="ru" data-i18n="generated.f527537c07f6">Русский</option>
-                                        <option value="tr" data-i18n="generated.5852375082fe">Türkçe</option>
-                                        <option value="ja" data-i18n="generated.b556ffe0045c">日本語</option>
-                                        <option value="zh" data-i18n="generated.ea7c805d1cd2">中文</option>
-                                        <option value="ar" data-i18n="generated.536ebf938360">العربية</option>
+                                        <option value="ru" data-i18n="plugins.quiz-show.labels.label_f52753">Русский</option>
+                                        <option value="tr" data-i18n="plugins.quiz-show.labels.turkce_585237">Türkçe</option>
+                                        <option value="ja" data-i18n="plugins.quiz-show.labels.label_b556ff">日本語</option>
+                                        <option value="zh" data-i18n="plugins.quiz-show.labels.label_ea7c80">中文</option>
+                                        <option value="ar" data-i18n="plugins.quiz-show.labels.label_536ebf">العربية</option>
                                     </select>
                                 </div>
                             </div>
@@ -427,10 +427,10 @@
                             <div class="info-box" style="margin: 15px 0; padding: 10px; background: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 4px;">
                                 <strong> Schwierigkeitsverteilung:</strong>
                                 <ul style="margin: 5px 0 0 20px; padding: 0;">
-                                    <li data-i18n="generated.9598dcdb620c">50% Einfach (</li>
-                                    <li data-i18n="generated.98e9c5fa18c1">~17% Mittel (</li>
-                                    <li data-i18n="generated.c2fb54fbe9c8">~17% Schwer (</li>
-                                    <li data-i18n="generated.ffc882dec16b">~16% Expert (</li>
+                                    <li data-i18n="plugins.quiz-show.labels.50_einfach">50% Einfach (</li>
+                                    <li data-i18n="plugins.quiz-show.labels.17_mittel">~17% Mittel (</li>
+                                    <li data-i18n="plugins.quiz-show.labels.17_schwer">~17% Schwer (</li>
+                                    <li data-i18n="plugins.quiz-show.labels.16_expert">~16% Expert (</li>
                                 </ul>
                                 <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #666;" data-i18n="quiz_show.ai_packages.generate.duplicate_info">
                                     Vorhandene Fragen in der Kategorie werden automatisch erkannt, um Duplikate zu vermeiden.
@@ -445,7 +445,7 @@
                                 <div class="progress-bar">
                                     <div class="progress-fill" id="generationProgressBar"></div>
                                 </div>
-                                <div class="progress-text" id="generationProgressText" data-i18n="generated.2624424c84b3">Generiere Fragen...</div>
+                                <div class="progress-text" id="generationProgressText" data-i18n="plugins.quiz-show.labels.generiere_fragen">Generiere Fragen...</div>
                             </div>
                         </div>
                     </div>
@@ -453,7 +453,7 @@
                     <!-- Batch Generate Question Packages Section -->
                     <div class="panel" style="margin-bottom: 20px;">
                         <div class="panel-header">
-                            <h3 data-i18n="generated.0c50ad677193"> Batch Fragenpakete Generieren</h3>
+                            <h3 data-i18n="plugins.quiz-show.labels.batch_fragenpakete_generieren"> Batch Fragenpakete Generieren</h3>
                         </div>
                         <div class="panel-body">
                             <div id="batchGenerateWarning" class="warning-message" style="margin-bottom: 15px; display: none;" data-i18n="quiz_show.ai_packages.generate.warning">
@@ -461,27 +461,27 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="batchCategories" data-i18n="generated.5db58b73a7f4">Kategorien (eine pro Zeile) *</label>
-                                <textarea 
-                                    id="batchCategories" 
-                                    class="form-control" 
+                                <label for="batchCategories" data-i18n="plugins.quiz-show.labels.kategorien_eine_pro_zeile_5db58b">Kategorien (eine pro Zeile) *</label>
+                                <textarea
+                                    id="batchCategories"
+                                    class="form-control"
                                     rows="8"
                                     placeholder="Geographie&#10;Geschichte&#10;Mathematik&#10;Naturwissenschaften&#10;Sport&#10;Musik&#10;Film & Fernsehen&#10;..."
                                     style="font-family: monospace; resize: vertical;"
                                 ></textarea>
-                                <small style="color: #666; margin-top: 5px; display: block;" data-i18n="generated.5eb865f35241">
+                                <small style="color: #666; margin-top: 5px; display: block;" data-i18n="plugins.quiz-show.labels.geben_sie_jede_kategorie_in_eine_neue_zeile">
                                     Geben Sie jede Kategorie in eine neue Zeile ein. Leere Zeilen werden ignoriert.
                                 </small>
                             </div>
 
                             <div class="form-group">
-                                <label for="batchPackageSize" data-i18n="generated.cdc84d1bd403">Anzahl Fragen pro Paket</label>
-                                <input 
-                                    type="number" 
-                                    id="batchPackageSize" 
-                                    class="form-control" 
-                                    min="5" 
-                                    max="50" 
+                                <label for="batchPackageSize" data-i18n="plugins.quiz-show.labels.anzahl_fragen_pro_paket">Anzahl Fragen pro Paket</label>
+                                <input
+                                    type="number"
+                                    id="batchPackageSize"
+                                    class="form-control"
+                                    min="5"
+                                    max="50"
                                     value="10"
                                     style="max-width: 200px;"
                                 >
@@ -492,32 +492,32 @@
                                 <select id="batchPackageLanguage" class="form-control" style="max-width: 200px;">
                                     <option value="de">Deutsch</option>
                                     <option value="en">English</option>
-                                    <option value="es" data-i18n="generated.b9c59776924e">Español</option>
-                                    <option value="fr" data-i18n="generated.94ceeb0a6f05">Français</option>
+                                    <option value="es" data-i18n="plugins.quiz-show.labels.espanol_b9c597">Español</option>
+                                    <option value="fr" data-i18n="plugins.quiz-show.labels.francais">Français</option>
                                     <option value="it">Italiano</option>
-                                    <option value="pt" data-i18n="generated.5719d0c1a78f">Português</option>
+                                    <option value="pt" data-i18n="plugins.quiz-show.labels.portugues_5719d0">Português</option>
                                     <option value="nl">Nederlands</option>
                                     <option value="pl">Polski</option>
-                                    <option value="ru" data-i18n="generated.5649575b1d5b">Русский</option>
-                                    <option value="tr" data-i18n="generated.b95de60dcdb4">Türkçe</option>
-                                    <option value="ja" data-i18n="generated.b36e4eb3fafb">日本語</option>
-                                    <option value="zh" data-i18n="generated.3a48d204ed19">中文</option>
-                                    <option value="ar" data-i18n="generated.9d9767a8d500">العربية</option>
+                                    <option value="ru" data-i18n="plugins.quiz-show.labels.label_564957">Русский</option>
+                                    <option value="tr" data-i18n="plugins.quiz-show.labels.turkce_b95de6">Türkçe</option>
+                                    <option value="ja" data-i18n="plugins.quiz-show.labels.label_b36e4e">日本語</option>
+                                    <option value="zh" data-i18n="plugins.quiz-show.labels.label">中文</option>
+                                    <option value="ar" data-i18n="plugins.quiz-show.labels.label_9d9767">العربية</option>
                                 </select>
                             </div>
 
                             <div class="info-box" style="margin: 15px 0; padding: 10px; background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px;">
                                 <strong> Batch-Generierung:</strong>
                                 <ul style="margin: 5px 0 0 20px; padding: 0;">
-                                    <li data-i18n="generated.240d303f1e40">Die Generierung läuft im Hintergrund</li>
-                                    <li data-i18n="generated.cb7cebbdc46b">Sie können die Seite während der Generierung nutzen</li>
-                                    <li data-i18n="generated.59f26220703d">Fortschritt wird in Echtzeit angezeigt</li>
-                                    <li data-i18n="generated.0140594c23e5">Zwischen den Kategorien wird eine kurze Pause eingelegt</li>
+                                    <li data-i18n="plugins.quiz-show.labels.die_generierung_lauft_im_hintergrund">Die Generierung läuft im Hintergrund</li>
+                                    <li data-i18n="plugins.quiz-show.labels.sie_konnen_die_seite_wahrend_der_generierung_nutzen">Sie können die Seite während der Generierung nutzen</li>
+                                    <li data-i18n="plugins.quiz-show.labels.fortschritt_wird_in_echtzeit_angezeigt">Fortschritt wird in Echtzeit angezeigt</li>
+                                    <li data-i18n="plugins.quiz-show.labels.zwischen_den_kategorien_wird_eine_kurze_pause_eingelegt">Zwischen den Kategorien wird eine kurze Pause eingelegt</li>
                                 </ul>
                             </div>
 
                             <div class="form-actions">
-                                <button id="batchGenerateBtn" class="btn btn-success" data-i18n="generated.4675de2bd94a"> Batch Generierung Starten</button>
+                                <button id="batchGenerateBtn" class="btn btn-success" data-i18n="plugins.quiz-show.labels.batch_generierung_starten"> Batch Generierung Starten</button>
                             </div>
                             <div id="batchGenerateMessage" class="message hidden" style="margin-top: 10px;"></div>
                             <div id="batchGenerationProgress" class="hidden" style="margin-top: 15px;">
@@ -541,12 +541,12 @@
                         <div class="panel-header">
                             <h3 data-i18n="quiz_show.ai_packages.list.title"> Verfügbare Fragenpakete</h3>
                             <div class="panel-controls">
-                                <span id="packageCount" class="badge" data-i18n="generated.6021b40c049d">0 Pakete</span>
+                                <span id="packageCount" class="badge" data-i18n="plugins.quiz-show.labels.0_pakete">0 Pakete</span>
                             </div>
                         </div>
                         <div class="panel-body">
                             <div class="info-box" style="margin-bottom: 15px; padding: 10px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px;">
-                                <strong> Tipp:</strong><span data-i18n="generated.3455ffcda569"> Wählen Sie ein oder mehrere Pakete aus, um nur Fragen aus diesen Paketen im Quiz zu verwenden. Wenn keine Pakete ausgewählt sind, werden alle Fragen verwendet.
+                                <strong> Tipp:</strong><span data-i18n="plugins.quiz-show.labels.select_one_or_more_packages_to_use_only"> Wählen Sie ein oder mehrere Pakete aus, um nur Fragen aus diesen Paketen im Quiz zu verwenden. Wenn keine Pakete ausgewählt sind, werden alle Fragen verwendet.
                             </span></div>
                             <div id="packagesList" class="packages-list">
                                 <p class="no-data" data-i18n="quiz_show.ai_packages.list.no_packages">Keine Pakete vorhanden. Generieren Sie Ihr erstes Paket oben!</p>
@@ -563,25 +563,25 @@
                 <!-- Game Settings -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.4241d4c9bd90">Spiel Einstellungen</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.spiel_einstellungen">Spiel Einstellungen</h2>
                     </div>
                     <div class="panel-body">
                         <div class="form-group">
-                            <label title="Wie lange haben Zuschauer Zeit zu antworten?" data-i18n="generated.f8c5585ccacb">
+                            <label title="Wie lange haben Zuschauer Zeit zu antworten?" data-i18n="plugins.quiz-show.labels.rundendauer_sekunden">
                                 Rundendauer (Sekunden):
                             </label>
                             <input type="number" id="roundDuration" class="form-control" min="10" max="120" value="30">
                         </div>
 
                         <div class="form-group">
-                            <label title="Punkte für die erste richtige Antwort" data-i18n="generated.55c3148f0eeb">
+                            <label title="Punkte für die erste richtige Antwort" data-i18n="plugins.quiz-show.labels.punkte_fur_erste_richtige_antwort">
                                 Punkte für erste richtige Antwort:
                             </label>
                             <input type="number" id="pointsFirstCorrect" class="form-control" min="1" max="1000" value="100">
                         </div>
 
                         <div class="form-group">
-                            <label title="Punkte für weitere richtige Antworten" data-i18n="generated.f4e64ac19f14">
+                            <label title="Punkte für weitere richtige Antworten" data-i18n="plugins.quiz-show.labels.punkte_fur_weitere_richtige_antworten">
                                 Punkte für weitere richtige Antworten:
                             </label>
                             <input type="number" id="pointsOtherCorrect" class="form-control" min="1" max="1000" value="50">
@@ -590,37 +590,37 @@
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="multipleWinners" checked>
-                                <span data-i18n="generated.2e1869822364">Mehrere Gewinner (alle richtigen Antworten zählen)</span>
+                                <span data-i18n="plugins.quiz-show.labels.mehrere_gewinner_alle_richtigen_antworten_zahlen">Mehrere Gewinner (alle richtigen Antworten zählen)</span>
                             </label>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="showAnswersAfterTime">
-                                <span data-i18n="generated.5e2536288699">Antworten erst nach Ablauf anzeigen</span>
+                                <span data-i18n="plugins.quiz-show.labels.antworten_erst_nach_ablauf_anzeigen">Antworten erst nach Ablauf anzeigen</span>
                             </label>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="shuffleAnswers">
-                                <span data-i18n="generated.35d0469480a1">Antwortreihenfolge mischen</span>
+                                <span data-i18n="plugins.quiz-show.labels.antwortreihenfolge_mischen">Antwortreihenfolge mischen</span>
                             </label>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="randomQuestions" checked>
-                                <span data-i18n="generated.541b7260705f">Fragen in zufälliger Reihenfolge</span>
+                                <span data-i18n="plugins.quiz-show.labels.fragen_in_zufalliger_reihenfolge">Fragen in zufälliger Reihenfolge</span>
                             </label>
                         </div>
 
                         <div class="form-group">
-                            <label title="Anzahl der Runden im Quiz (0 = unbegrenzt)" data-i18n="generated.1c4e7f14b660">
+                            <label title="Anzahl der Runden im Quiz (0 = unbegrenzt)" data-i18n="plugins.quiz-show.labels.anzahl_runden">
                                 Anzahl Runden:
                             </label>
                             <input type="number" id="totalRounds" class="form-control" min="0" max="100" value="10">
-                            <small style="color: #666; display: block; margin-top: 5px;" data-i18n="generated.4a330c19f117">
+                            <small style="color: #666; display: block; margin-top: 5px;" data-i18n="plugins.quiz-show.labels.0_unbegrenzt_sonst_anzahl_der_fragen_pro_quiz">
                                 0 = Unbegrenzt, sonst Anzahl der Fragen pro Quiz-Session
                             </small>
                         </div>
@@ -628,24 +628,24 @@
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="showRoundNumber" checked>
-                                <span data-i18n="generated.773c9c618ace">Rundenzahl im OBS HUD anzeigen</span>
+                                <span data-i18n="plugins.quiz-show.labels.rundenzahl_im_obs_hud_anzeigen">Rundenzahl im OBS HUD anzeigen</span>
                             </label>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label title="Ultra-Kompakt-Modus: Frage zuerst lesen, dann Antworten anzeigen (passt in 600x350)">
                                 <input type="checkbox" id="ultraKompaktModus">
-                                <span data-i18n="generated.bbc28a4ec950">Ultra-Kompakt-Modus (600x350)</span>
+                                <span data-i18n="plugins.quiz-show.labels.ultra_kompakt_modus_600x350">Ultra-Kompakt-Modus (600x350)</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.aa0ff80826a5">Zeigt zuerst die Frage, wartet kurz (z.B. für TTS), dann erscheinen die Antworten. Optimiert für kleine Overlays.</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.zeigt_zuerst_die_frage_wartet_kurz_z_b">Zeigt zuerst die Frage, wartet kurz (z.B. für TTS), dann erscheinen die Antworten. Optimiert für kleine Overlays.</div>
                         </div>
 
                         <div class="form-group" id="ultraKompaktAnswerDelayGroup" style="display: none;">
-                            <label title="Wie lange warten bevor Antworten angezeigt werden (z.B. für TTS)" data-i18n="generated.a1850ae76b8c">
+                            <label title="Wie lange warten bevor Antworten angezeigt werden (z.B. für TTS)" data-i18n="plugins.quiz-show.labels.antwort_verzogerung_sekunden">
                                 Antwort-Verzögerung (Sekunden):
                             </label>
                             <input type="number" id="ultraKompaktAnswerDelay" class="form-control" min="1" max="10" value="3">
-                            <small style="color: #666; display: block; margin-top: 5px;" data-i18n="generated.ed88556353d5">
+                            <small style="color: #666; display: block; margin-top: 5px;" data-i18n="plugins.quiz-show.labels.zeit_zwischen_frage_anzeige_und_antwort_anzeige_fur">
                                 Zeit zwischen Frage-Anzeige und Antwort-Anzeige (für TTS-Ansage)
                             </small>
                         </div>
@@ -655,44 +655,44 @@
                 <!-- Joker Settings -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.c693ebce6a73">Joker Einstellungen</h2>
-                        <div class="help-text" data-i18n="generated.8564547ddd21">Nur für Superfans</div>
+                        <h2 data-i18n="plugins.quiz-show.labels.joker_einstellungen">Joker Einstellungen</h2>
+                        <div class="help-text" data-i18n="plugins.quiz-show.labels.nur_fur_superfans">Nur für Superfans</div>
                     </div>
                     <div class="panel-body">
                         <div class="form-group">
-                            <label title="Maximale Anzahl an Jokern, die pro Runde insgesamt eingesetzt werden können" data-i18n="generated.52490fc04c75">Joker pro Runde (gesamt):</label>
+                            <label title="Maximale Anzahl an Jokern, die pro Runde insgesamt eingesetzt werden können" data-i18n="plugins.quiz-show.labels.joker_pro_runde_gesamt">Joker pro Runde (gesamt):</label>
                             <input type="number" id="jokersPerRound" class="form-control" min="0" max="10" value="3">
-                            <div class="help-text small" data-i18n="generated.0ce05d2f6588">Begrenzt die Gesamtanzahl aller Joker-Einsätze pro Fragerunde</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.begrenzt_die_gesamtanzahl_aller_joker_einsatze_pro_fragerunde">Begrenzt die Gesamtanzahl aller Joker-Einsätze pro Fragerunde</div>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label title="Aktiviert den 50:50 Joker - entfernt zwei falsche Antwortoptionen">
                                 <input type="checkbox" id="joker50Enabled" checked>
-                                <span data-i18n="generated.d1f21c087c68">50:50 Joker aktiviert (!joker50)</span>
+                                <span data-i18n="plugins.quiz-show.labels.50_50_joker_aktiviert_joker50">50:50 Joker aktiviert (!joker50)</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.55c0c0e5cb43">Entfernt zwei falsche Antworten und lässt nur zwei Optionen übrig</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.entfernt_zwei_falsche_antworten_und_lasst_nur_zwei">Entfernt zwei falsche Antworten und lässt nur zwei Optionen übrig</div>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label title="Aktiviert den Info Joker - zeigt eine falsche Antwort zur Orientierung">
                                 <input type="checkbox" id="jokerInfoEnabled" checked>
-                                <span data-i18n="generated.a46082e201b9">Info Joker aktiviert (!jokerInfo)</span>
+                                <span data-i18n="plugins.quiz-show.labels.info_joker_aktiviert_jokerinfo">Info Joker aktiviert (!jokerInfo)</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.53766a0536cb">Zeigt eine falsche Antwort als Hinweis zur Eingrenzung</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.zeigt_eine_falsche_antwort_als_hinweis_zur_eingrenzung">Zeigt eine falsche Antwort als Hinweis zur Eingrenzung</div>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label title="Aktiviert den Zeit Joker - verlängert die verfügbare Zeit zum Antworten">
                                 <input type="checkbox" id="jokerTimeEnabled" checked>
-                                <span data-i18n="generated.0930122a4d65">Zeit Joker aktiviert (!jokerTime)</span>
+                                <span data-i18n="plugins.quiz-show.labels.zeit_joker_aktiviert_jokertime">Zeit Joker aktiviert (!jokerTime)</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.fccb04ed4554">Verlängert die Countdown-Zeit um den eingestellten Bonus</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.verlangert_die_countdown_zeit_um_den_eingestellten_bonus">Verlängert die Countdown-Zeit um den eingestellten Bonus</div>
                         </div>
 
                         <div class="form-group">
-                            <label title="Wie viele Sekunden durch den Zeit-Joker hinzugefügt werden" data-i18n="generated.94f1315ad232">Zeit-Bonus (Sekunden):</label>
+                            <label title="Wie viele Sekunden durch den Zeit-Joker hinzugefügt werden" data-i18n="plugins.quiz-show.labels.zeit_bonus_sekunden">Zeit-Bonus (Sekunden):</label>
                             <input type="number" id="jokerTimeBoost" class="form-control" min="5" max="60" value="15">
-                            <div class="help-text small" data-i18n="generated.cdde7dcafdb7">Zusätzliche Zeit, die beim Einsatz des Zeit-Jokers gewährt wird</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.zusatzliche_zeit_die_beim_einsatz_des_zeit_jokers">Zusätzliche Zeit, die beim Einsatz des Zeit-Jokers gewährt wird</div>
                         </div>
                     </div>
                 </div>
@@ -700,97 +700,97 @@
                 <!-- Chat Commands Settings -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.99aa82d7cf99"> Chat Befehle</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.chat_befehle"> Chat Befehle</h2>
                     </div>
                     <div class="panel-body">
                         <div class="help-text" style="margin-bottom: 20px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; border-radius: 4px;">
-                            <strong> Hinweis:</strong><span data-i18n="generated.75d52867124a"> Konfigurieren Sie, wie Zuschauer antworten können. Mehrere Prefixe können gleichzeitig verwendet werden (z.B. sowohl !a als auch /a).
+                            <strong> Hinweis:</strong><span data-i18n="plugins.quiz-show.labels.konfigurieren_sie_wie_zuschauer_antworten_konnen_mehrere_prefixe"> Konfigurieren Sie, wie Zuschauer antworten können. Mehrere Prefixe können gleichzeitig verwendet werden (z.B. sowohl !a als auch /a).
                         </span></div>
 
                         <!-- Answer Commands -->
                         <h3 style="margin-bottom: 15px; font-size: 16px; font-weight: 600;">Antwort-Befehle</h3>
-                        
+
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="allowPlainLetters" checked>
-                                <span data-i18n="generated.1d83ae8b805f">Einfache Buchstaben erlauben (a, b, c, d)</span>
+                                <span data-i18n="plugins.quiz-show.labels.einfache_buchstaben_erlauben_a_b_c_d">Einfache Buchstaben erlauben (a, b, c, d)</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.531e284d4f08">Erlaubt Antworten ohne Präfix: Einfach "a" schreiben</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.erlaubt_antworten_ohne_prafix_einfach_a_schreiben">Erlaubt Antworten ohne Präfix: Einfach "a" schreiben</div>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="allowExclamation" checked>
-                                <span data-i18n="generated.1429b9bcf140">Ausrufezeichen-Prefix (!a, !b, !c, !d)</span>
+                                <span data-i18n="plugins.quiz-show.labels.ausrufezeichen_prefix_a_b_c_d">Ausrufezeichen-Prefix (!a, !b, !c, !d)</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.a0b8a363da7f">Erlaubt Antworten mit !: "!a" schreiben</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.erlaubt_antworten_mit_a_schreiben">Erlaubt Antworten mit !: "!a" schreiben</div>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="allowSlash">
-                                <span data-i18n="generated.4c3f4720041e">Slash-Prefix (/a, /b, /c, /d)</span>
+                                <span data-i18n="plugins.quiz-show.labels.slash_prefix_a_b_c_d">Slash-Prefix (/a, /b, /c, /d)</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.b2d411b4fdcd">Erlaubt Antworten mit /: "/a" schreiben</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.erlaubt_antworten_mit_a_schreiben_b2d411">Erlaubt Antworten mit /: "/a" schreiben</div>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="allowFullText" checked>
-                                <span data-i18n="generated.23553338d36d">Vollständige Antworten erlauben</span>
+                                <span data-i18n="plugins.quiz-show.labels.vollstandige_antworten_erlauben">Vollständige Antworten erlauben</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.ce861a0a4228">Erlaubt das Schreiben der kompletten Antwort (z.B. "Berlin")</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.erlaubt_das_schreiben_der_kompletten_antwort_z_b">Erlaubt das Schreiben der kompletten Antwort (z.B. "Berlin")</div>
                         </div>
 
                         <!-- Joker Commands -->
                         <h3 style="margin-top: 25px; margin-bottom: 15px; font-size: 16px; font-weight: 600;">Joker-Befehle</h3>
-                        
+
                         <div class="form-group">
                             <label>Joker-Command-Prefix:</label>
                             <select id="jokerCommandPrefix" class="form-control">
-                                <option value="!joker" data-i18n="generated.cbfa9ea162d1">!joker (Standard)</option>
+                                <option value="!joker" data-i18n="plugins.quiz-show.labels.joker_standard">!joker (Standard)</option>
                                 <option value="/joker">/joker</option>
-                                <option value="!j" data-i18n="generated.8804376979a7">!j (Kurzform)</option>
-                                <option value="/j" data-i18n="generated.c7b65e45218e">/j (Kurzform)</option>
+                                <option value="!j" data-i18n="plugins.quiz-show.labels.j_kurzform">!j (Kurzform)</option>
+                                <option value="/j" data-i18n="plugins.quiz-show.labels.j_kurzform_c7b65e">/j (Kurzform)</option>
                             </select>
-                            <div class="help-text small" data-i18n="generated.98e1bcdcf4a7">Beispiel: !joker50, !jokerTime, etc.</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.beispiel_joker50_jokertime_etc">Beispiel: !joker50, !jokerTime, etc.</div>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="jokerSuperfanOnly" checked>
-                                <span data-i18n="generated.a2fb8ac29812">Joker nur für Superfans/Subscriber</span>
+                                <span data-i18n="plugins.quiz-show.labels.joker_nur_fur_superfans_subscriber">Joker nur für Superfans/Subscriber</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.993bd92bf3dd">Beschränkt Joker-Nutzung auf Zuschauer mit Superfan- oder Subscriber-Status</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.beschrankt_joker_nutzung_auf_zuschauer_mit_superfan_oder">Beschränkt Joker-Nutzung auf Zuschauer mit Superfan- oder Subscriber-Status</div>
                         </div>
 
                         <!-- Command Permissions -->
                         <h3 style="margin-top: 25px; margin-bottom: 15px; font-size: 16px; font-weight: 600;">Berechtigungen</h3>
-                        
+
                         <div class="form-group">
-                            <label data-i18n="generated.750a3184a3bf">Minimale Berechtigung für Antworten:</label>
+                            <label data-i18n="plugins.quiz-show.labels.minimale_berechtigung_fur_antworten">Minimale Berechtigung für Antworten:</label>
                             <select id="answerPermissionLevel" class="form-control">
-                                <option value="all" selected data-i18n="generated.372a1ff95949">Alle Zuschauer</option>
-                                <option value="subscriber" data-i18n="generated.673347b9eb1b">Nur Subscriber</option>
-                                <option value="superfan" data-i18n="generated.178fde5462ac">Nur Superfans</option>
-                                <option value="moderator" data-i18n="generated.a3edae10eefd">Nur Moderatoren</option>
+                                <option value="all" selected data-i18n="plugins.quiz-show.labels.alle_zuschauer">Alle Zuschauer</option>
+                                <option value="subscriber" data-i18n="plugins.quiz-show.labels.nur_subscriber">Nur Subscriber</option>
+                                <option value="superfan" data-i18n="plugins.quiz-show.labels.nur_superfans">Nur Superfans</option>
+                                <option value="moderator" data-i18n="plugins.quiz-show.labels.nur_moderatoren">Nur Moderatoren</option>
                             </select>
-                            <div class="help-text small" data-i18n="generated.39fe0142d6aa">Wer darf auf Quiz-Fragen antworten?</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.wer_darf_auf_quiz_fragen_antworten">Wer darf auf Quiz-Fragen antworten?</div>
                         </div>
 
                         <!-- Integration Status -->
                         <h3 style="margin-top: 25px; margin-bottom: 15px; font-size: 16px; font-weight: 600;">Integration</h3>
-                        
+
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="useGCCE">
-                                <span data-i18n="generated.9e77ec0fabd4">Global Chat Command Engine (GCCE) nutzen</span>
+                                <span data-i18n="plugins.quiz-show.labels.global_chat_command_engine_gcce_nutzen">Global Chat Command Engine (GCCE) nutzen</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.bab147ed9d42">Integriert Quiz-Commands mit dem globalen Command-System (empfohlen)</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.integriert_quiz_commands_mit_dem_globalen_command_system">Integriert Quiz-Commands mit dem globalen Command-System (empfohlen)</div>
                         </div>
 
                         <div id="gcceStatus" class="help-text" style="margin-top: 10px; padding: 10px; border-radius: 4px; display: none;">
-                            <strong data-i18n="generated.11dff7f37f05">GCCE Status:</strong> <span id="gcceStatusText" data-i18n="generated.8b0d74f9b2ef">Wird geladen...</span>
+                            <strong data-i18n="plugins.quiz-show.labels.gcce_status">GCCE Status:</strong> <span id="gcceStatusText" data-i18n="plugins.quiz-show.labels.wird_geladen">Wird geladen...</span>
                         </div>
                     </div>
                 </div>
@@ -798,43 +798,43 @@
                 <!-- TTS Settings -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.0c3ce4fa02a2"> TTS Einstellungen</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.tts_einstellungen"> TTS Einstellungen</h2>
                     </div>
                     <div class="panel-body">
                         <div class="form-group checkbox-group">
                             <label title="Aktiviert die automatische Vorlesefunktion für Fragen">
                                 <input type="checkbox" id="ttsEnabled">
-                                <span data-i18n="generated.67c58c4daa51">TTS Aktiviert (Fragen vorlesen)</span>
+                                <span data-i18n="plugins.quiz-show.labels.tts_aktiviert_fragen_vorlesen">TTS Aktiviert (Fragen vorlesen)</span>
                             </label>
                         </div>
 
                         <div class="form-group">
-                            <label title="Wählen Sie die Stimme für die Sprachausgabe" data-i18n="generated.fe990010d475">TTS Stimme:</label>
+                            <label title="Wählen Sie die Stimme für die Sprachausgabe" data-i18n="plugins.quiz-show.labels.tts_stimme">TTS Stimme:</label>
                             <select id="ttsVoice" class="form-control">
                                 <option value="default">Standard</option>
-                                <option value="de-DE-Standard-A" data-i18n="generated.f9f40f9d27b7">Deutsch (Weiblich A)</option>
-                                <option value="de-DE-Standard-B" data-i18n="generated.d71e1a241ab9">Deutsch (Männlich B)</option>
-                                <option value="de-DE-Standard-C" data-i18n="generated.51a44a29da5a">Deutsch (Weiblich C)</option>
-                                <option value="de-DE-Standard-D" data-i18n="generated.28613710b477">Deutsch (Männlich D)</option>
+                                <option value="de-DE-Standard-A" data-i18n="plugins.quiz-show.labels.deutsch_weiblich_a">Deutsch (Weiblich A)</option>
+                                <option value="de-DE-Standard-B" data-i18n="plugins.quiz-show.labels.deutsch_mannlich_b">Deutsch (Männlich B)</option>
+                                <option value="de-DE-Standard-C" data-i18n="plugins.quiz-show.labels.deutsch_weiblich_c">Deutsch (Weiblich C)</option>
+                                <option value="de-DE-Standard-D" data-i18n="plugins.quiz-show.labels.deutsch_mannlich_d">Deutsch (Männlich D)</option>
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label title="Lautstärke der TTS-Wiedergabe (0-100%)" data-i18n="generated.e765b27b7163">TTS Lautstärke (%):</label>
+                            <label title="Lautstärke der TTS-Wiedergabe (0-100%)" data-i18n="plugins.quiz-show.labels.tts_lautstarke_e765b2">TTS Lautstärke (%):</label>
                             <input type="number" id="ttsVolume" class="form-control" min="0" max="100" value="80">
-                            <div class="help-text small" data-i18n="generated.8f7ba9c8a373">Steuert die Lautstärke der automatischen Sprachausgabe</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.steuert_die_lautstarke_der_automatischen_sprachausgabe">Steuert die Lautstärke der automatischen Sprachausgabe</div>
                         </div>
 
                         <div class="form-group">
-                            <label title="Geschwindigkeit der TTS-Wiedergabe (0.5-2.0, 1.0 = normal)" data-i18n="generated.b48590fbcd93">TTS Geschwindigkeit:</label>
+                            <label title="Geschwindigkeit der TTS-Wiedergabe (0.5-2.0, 1.0 = normal)" data-i18n="plugins.quiz-show.labels.tts_geschwindigkeit">TTS Geschwindigkeit:</label>
                             <input type="number" id="ttsSpeed" class="form-control" min="0.5" max="2.0" step="0.1" value="1.0">
-                            <div class="help-text small" data-i18n="generated.54e0fb5f81f0">0.5 = langsam, 1.0 = normal, 2.0 = schnell</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.0_5_langsam_1_0_normal_2_0">0.5 = langsam, 1.0 = normal, 2.0 = schnell</div>
                         </div>
 
                         <div class="form-group">
-                            <label title="Verzögerung in Sekunden bevor Frage angezeigt wird" data-i18n="generated.9232c38e7d77">TTS Startzeit vor Frage (Sekunden):</label>
+                            <label title="Verzögerung in Sekunden bevor Frage angezeigt wird" data-i18n="plugins.quiz-show.labels.tts_startzeit_vor_frage_sekunden">TTS Startzeit vor Frage (Sekunden):</label>
                             <input type="number" id="ttsStartDelay" class="form-control" min="0" max="10" value="2">
-                            <div class="help-text small" data-i18n="generated.fc3cf43bdf80">Wie lange TTS spricht bevor die Frage angezeigt wird (Synchronisierung)</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.wie_lange_tts_spricht_bevor_die_frage_angezeigt">Wie lange TTS spricht bevor die Frage angezeigt wird (Synchronisierung)</div>
                         </div>
                     </div>
                 </div>
@@ -842,13 +842,13 @@
                 <!-- Marathon Mode Settings -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.37178ab47207"> Marathon Modus</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.marathon_modus"> Marathon Modus</h2>
                     </div>
                     <div class="panel-body">
                         <div class="form-group">
-                            <label data-i18n="generated.8adb5a2d42bc">Marathon Länge (Anzahl richtiger Antworten):</label>
+                            <label data-i18n="plugins.quiz-show.labels.marathon_lange_anzahl_richtiger_antworten">Marathon Länge (Anzahl richtiger Antworten):</label>
                             <input type="number" id="marathonLength" class="form-control" min="5" max="50" value="15">
-                            <div class="help-text small" data-i18n="generated.1165782e032d">Wie viele Fragen muss ein Spieler in Folge richtig beantworten?</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.wie_viele_fragen_muss_ein_spieler_in_folge">Wie viele Fragen muss ein Spieler in Folge richtig beantworten?</div>
                         </div>
                     </div>
                 </div>
@@ -856,35 +856,35 @@
                 <!-- Auto Mode Settings -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.15588efe45cc"> Auto Modus</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.auto_modus"> Auto Modus</h2>
                     </div>
                     <div class="panel-body">
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="autoMode">
-                                <span data-i18n="generated.be1b3339a623">Auto Modus aktiviert (Automatisch zur nächsten Frage)</span>
+                                <span data-i18n="plugins.quiz-show.labels.auto_modus_aktiviert_automatisch_zur_nachsten_frage">Auto Modus aktiviert (Automatisch zur nächsten Frage)</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.8cb3d70843af">Hotkey: Shift + A toggelt den Auto Modus direkt im Dashboard.</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.hotkey_shift_a_toggelt_den_auto_modus_direkt">Hotkey: Shift + A toggelt den Auto Modus direkt im Dashboard.</div>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="autoRestartRound" checked>
-                                <span data-i18n="generated.7f4d0fb262f9">Automatischer Neustart nach Rundenende</span>
+                                <span data-i18n="plugins.quiz-show.labels.automatischer_neustart_nach_rundenende">Automatischer Neustart nach Rundenende</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.4264b8bedf71">Wenn deaktiviert, pausiert das Quiz nach jeder Runde und zeigt das Leaderboard</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.wenn_deaktiviert_pausiert_das_quiz_nach_jeder_runde">Wenn deaktiviert, pausiert das Quiz nach jeder Runde und zeigt das Leaderboard</div>
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="generated.5f56d20425b3">Wartezeit vor nächster Frage (Sekunden):</label>
+                            <label data-i18n="plugins.quiz-show.labels.wartezeit_vor_nachster_frage_sekunden">Wartezeit vor nächster Frage (Sekunden):</label>
                             <input type="number" id="autoModeDelay" class="form-control" min="3" max="30" value="5">
-                            <div class="help-text small" data-i18n="generated.d4eab7ed3217">Zeit in Sekunden zwischen Antwortanzeige und nächster Frage</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.zeit_in_sekunden_zwischen_antwortanzeige_und_nachster_frage">Zeit in Sekunden zwischen Antwortanzeige und nächster Frage</div>
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="generated.f56a067b4dca">Antworteinblendedauer (Sekunden):</label>
+                            <label data-i18n="plugins.quiz-show.labels.antworteinblendedauer_sekunden">Antworteinblendedauer (Sekunden):</label>
                             <input type="number" id="answerDisplayDuration" class="form-control" min="6" max="30" value="6">
-                            <div class="help-text small" data-i18n="generated.bf82d3fb3f69">Mindestens 6 Sekunden - Zeit für korrekte Antwort und Info-Text (inkl. TTS-Ausgabe)</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.mindestens_6_sekunden_zeit_fur_korrekte_antwort_und">Mindestens 6 Sekunden - Zeit für korrekte Antwort und Info-Text (inkl. TTS-Ausgabe)</div>
                         </div>
                     </div>
                 </div>
@@ -892,53 +892,53 @@
                 <!-- Voter Icons Settings -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.d88db9550997"> Voter Icons (Antwortvisualisierung)</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.voter_icons_antwortvisualisierung"> Voter Icons (Antwortvisualisierung)</h2>
                     </div>
                     <div class="panel-body">
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="voterIconsEnabled" checked>
-                                <span data-i18n="generated.eec8f0dfcb07">Voter Icons anzeigen</span>
+                                <span data-i18n="plugins.quiz-show.labels.voter_icons_anzeigen">Voter Icons anzeigen</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.a8a4e27e0785">Zeigt Profilbilder der Zuschauer über den Antworten an, für die sie gestimmt haben</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.zeigt_profilbilder_der_zuschauer_uber_den_antworten_an">Zeigt Profilbilder der Zuschauer über den Antworten an, für die sie gestimmt haben</div>
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="generated.ce5d67e23cef">Icon-Größe:</label>
+                            <label data-i18n="plugins.quiz-show.labels.icon_gro_e">Icon-Größe:</label>
                             <select id="voterIconSize" class="form-control">
-                                <option value="small" data-i18n="generated.23e76b79055b">Klein (24px)</option>
-                                <option value="medium" selected data-i18n="generated.d9506d8dcd63">Mittel (32px)</option>
-                                <option value="large" data-i18n="generated.c33df1a11b17">Groß (40px)</option>
+                                <option value="small" data-i18n="plugins.quiz-show.labels.klein_24px">Klein (24px)</option>
+                                <option value="medium" selected data-i18n="plugins.quiz-show.labels.mittel_32px">Mittel (32px)</option>
+                                <option value="large" data-i18n="plugins.quiz-show.labels.gro_40px">Groß (40px)</option>
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="generated.74c3fe7d2b00">Maximale Icons pro Antwort:</label>
+                            <label data-i18n="plugins.quiz-show.labels.maximale_icons_pro_antwort">Maximale Icons pro Antwort:</label>
                             <input type="number" id="voterIconMaxVisible" class="form-control" min="3" max="50" value="10">
-                            <div class="help-text small" data-i18n="generated.acab5f4eb4ea">Überschüssige Voter werden als "+X weitere" angezeigt</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.uberschussige_voter_werden_als_x_weitere_angezeigt">Überschüssige Voter werden als "+X weitere" angezeigt</div>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="voterIconCompactMode" checked>
-                                <span data-i18n="generated.bb6aa52eb0be">Kompaktmodus bei vielen Votes</span>
+                                <span data-i18n="plugins.quiz-show.labels.kompaktmodus_bei_vielen_votes">Kompaktmodus bei vielen Votes</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.3870f18b2ca3">Verkleinert Icons automatisch bei mehr als 5 Teilnehmern</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.verkleinert_icons_automatisch_bei_mehr_als_5_teilnehmern">Verkleinert Icons automatisch bei mehr als 5 Teilnehmern</div>
                         </div>
 
                         <div class="form-group">
                             <label>Animationsstil:</label>
                             <select id="voterIconAnimation" class="form-control">
-                                <option value="fade" selected data-i18n="generated.748077c5d3ab">Einblenden (Fade)</option>
-                                <option value="slide" data-i18n="generated.f6ce8ffba5fb">Einsliden (Slide)</option>
+                                <option value="fade" selected data-i18n="plugins.quiz-show.labels.einblenden_fade">Einblenden (Fade)</option>
+                                <option value="slide" data-i18n="plugins.quiz-show.labels.einsliden_slide">Einsliden (Slide)</option>
                             </select>
                         </div>
 
                         <div class="form-group">
                             <label>Positionierung:</label>
                             <select id="voterIconPosition" class="form-control">
-                                <option value="above" selected data-i18n="generated.7557cee2e852">Über der Antwort</option>
-                                <option value="beside" data-i18n="generated.5d25f870fca6">Neben der Antwort</option>
+                                <option value="above" selected data-i18n="plugins.quiz-show.labels.uber_der_antwort">Über der Antwort</option>
+                                <option value="beside" data-i18n="plugins.quiz-show.labels.neben_der_antwort">Neben der Antwort</option>
                                 <option value="embedded">Eingebettet</option>
                             </select>
                         </div>
@@ -946,9 +946,9 @@
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="voterIconShowOnScoreboard">
-                                <span data-i18n="generated.67281b0dffb0">Avatare im Scoreboard anzeigen</span>
+                                <span data-i18n="plugins.quiz-show.labels.avatare_im_scoreboard_anzeigen">Avatare im Scoreboard anzeigen</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.0dbee280fcbf">Zeigt kleine Avatare neben der Punktzahl bei korrekten Antworten</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.zeigt_kleine_avatare_neben_der_punktzahl_bei_korrekten">Zeigt kleine Avatare neben der Punktzahl bei korrekten Antworten</div>
                         </div>
                     </div>
                 </div>
@@ -956,42 +956,42 @@
                 <!-- Slot Machine Settings -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.c5a8d56e12e7"> Slot Machine Modus</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.slot_machine_modus"> Slot Machine Modus</h2>
                     </div>
                     <div class="panel-body">
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="slotMachineEnabled">
-                                <span data-i18n="generated.9cf4cad1b2f7">Slot Machine Modus aktivieren</span>
+                                <span data-i18n="plugins.quiz-show.labels.slot_machine_modus_aktivieren">Slot Machine Modus aktivieren</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.e4630786dca8">Vor jeder Frage wird eine zufällige Kategorie durch Slot Machine Animation ausgewählt</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.vor_jeder_frage_wird_eine_zufallige_kategorie_durch">Vor jeder Frage wird eine zufällige Kategorie durch Slot Machine Animation ausgewählt</div>
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="generated.1060a2580c44">Spin-Dauer (Sekunden):</label>
+                            <label data-i18n="plugins.quiz-show.labels.spin_dauer_sekunden">Spin-Dauer (Sekunden):</label>
                             <input type="number" id="slotMachineSpinDuration" class="form-control" min="1" max="10" step="0.5" value="3">
-                            <div class="help-text small" data-i18n="generated.fdc658f6f7a2">Wie lange die Slot Machine rotiert (1-10 Sekunden)</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.wie_lange_die_slot_machine_rotiert_1_10">Wie lange die Slot Machine rotiert (1-10 Sekunden)</div>
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="generated.98f0680c6034">Spin-Geschwindigkeit (ms):</label>
+                            <label data-i18n="plugins.quiz-show.labels.spin_geschwindigkeit_ms">Spin-Geschwindigkeit (ms):</label>
                             <input type="number" id="slotMachineSpinSpeed" class="form-control" min="50" max="500" step="10" value="100">
-                            <div class="help-text small" data-i18n="generated.d93faefeb116">Geschwindigkeit des Kategoriewechsels in Millisekunden (50-500ms)</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.geschwindigkeit_des_kategoriewechsels_in_millisekunden_50_500ms">Geschwindigkeit des Kategoriewechsels in Millisekunden (50-500ms)</div>
                         </div>
 
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="slotMachineAutoStart">
-                                <span data-i18n="generated.b73ab72cd52b">Automatisch beim Quiz-Start aktivieren</span>
+                                <span data-i18n="plugins.quiz-show.labels.automatisch_beim_quiz_start_aktivieren">Automatisch beim Quiz-Start aktivieren</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.313c2bdf2b44">Startet die Slot Machine automatisch bei jedem Quiz-Start</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.startet_die_slot_machine_automatisch_bei_jedem_quiz">Startet die Slot Machine automatisch bei jedem Quiz-Start</div>
                         </div>
 
                         <div class="form-group">
-                            <button id="triggerSlotMachineBtn" class="btn btn-secondary" style="margin-top: 10px;" data-i18n="generated.70fff6ba0381">
+                            <button id="triggerSlotMachineBtn" class="btn btn-secondary" style="margin-top: 10px;" data-i18n="plugins.quiz-show.labels.slot_machine_manuell_testen">
                                  Slot Machine Manuell Testen
                             </button>
-                            <div class="help-text small" data-i18n="generated.4fb3c50c107c">Testet die Slot Machine Animation im Overlay (unabhängig vom Quiz)</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.testet_die_slot_machine_animation_im_overlay_unabhangig">Testet die Slot Machine Animation im Overlay (unabhängig vom Quiz)</div>
                         </div>
                     </div>
                 </div>
@@ -999,26 +999,26 @@
                 <!-- LLM On-the-fly Question Generation Settings -->
                 <div class="panel">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.c5031bdbef92"> KI-Fragen-Generierung (On-the-Fly)</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.ki_fragen_generierung_on_the_fly"> KI-Fragen-Generierung (On-the-Fly)</h2>
                     </div>
                     <div class="panel-body">
                         <div class="help-text" style="margin-bottom: 20px; padding: 12px; background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; border-radius: 4px;">
-                            <strong data-i18n="generated.9fd0d66e7959"> On-the-Fly Generierung:</strong><span data-i18n="generated.df7d65792cef"> Wenn keine Fragen mehr im Pool verfügbar sind, generiert die KI automatisch eine neue Frage, speichert sie in der Datenbank und zeigt sie sofort an. So läuft das Quiz endlos weiter.
+                            <strong data-i18n="plugins.quiz-show.labels.on_the_fly_generierung"> On-the-Fly Generierung:</strong><span data-i18n="plugins.quiz-show.labels.wenn_keine_fragen_mehr_im_pool_verfugbar_sind"> Wenn keine Fragen mehr im Pool verfügbar sind, generiert die KI automatisch eine neue Frage, speichert sie in der Datenbank und zeigt sie sofort an. So läuft das Quiz endlos weiter.
                         </span></div>
 
                         <div class="form-group checkbox-group">
                             <label>
                                 <input type="checkbox" id="llmEnabled">
-                                <span data-i18n="generated.2d330fa1a807">On-the-Fly Generierung aktivieren</span>
+                                <span data-i18n="plugins.quiz-show.labels.on_the_fly_generierung_aktivieren">On-the-Fly Generierung aktivieren</span>
                             </label>
-                            <div class="help-text small" data-i18n="generated.504c3ed68ea3">Generiert automatisch neue Fragen per KI, wenn der Fragenpool leer ist</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.generiert_automatisch_neue_fragen_per_ki_wenn_der">Generiert automatisch neue Fragen per KI, wenn der Fragenpool leer ist</div>
                         </div>
 
                         <div class="form-group">
                             <label>KI-Provider:</label>
                             <select id="llmProvider" class="form-control">
-                                <option value="openai" data-i18n="generated.3352bb65616d">OpenAI (API-Key erforderlich)</option>
-                                <option value="ollama" data-i18n="generated.cf3fd628f1c4">Ollama (Lokal, kein API-Key nötig)</option>
+                                <option value="openai" data-i18n="plugins.quiz-show.labels.openai_api_key_erforderlich">OpenAI (API-Key erforderlich)</option>
+                                <option value="ollama" data-i18n="plugins.quiz-show.labels.ollama_lokal_kein_api_key_notig">Ollama (Lokal, kein API-Key nötig)</option>
                             </select>
                         </div>
 
@@ -1030,32 +1030,32 @@
                         <div class="form-group">
                             <label for="llmModel">Modell:</label>
                             <input type="text" id="llmModel" class="form-control" placeholder="z.B. gpt-5-mini, llama3.2, mistral">
-                            <div class="help-text small" data-i18n="generated.cf5acb8a97b2">OpenAI: gpt-5-mini, gpt-4o-mini | Ollama: llama3.2, mistral, qwen2.5</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.openai_gpt_5_mini_gpt_4o_mini_ollama">OpenAI: gpt-5-mini, gpt-4o-mini | Ollama: llama3.2, mistral, qwen2.5</div>
                         </div>
 
                         <div class="form-group" id="llmBaseUrlGroup">
-                            <label for="llmBaseUrl" data-i18n="generated.448dd4f1adc3">Base URL (optional):</label>
+                            <label for="llmBaseUrl" data-i18n="plugins.quiz-show.labels.base_url_optional">Base URL (optional):</label>
                             <input type="text" id="llmBaseUrl" class="form-control" placeholder="http://localhost:11434/v1 (Ollama Standard)">
-                            <div class="help-text small" data-i18n="generated.7930e892b3ea">Nur für Ollama oder benutzerdefinierte Endpoints. OpenAI-URL nicht ändern.</div>
+                            <div class="help-text small" data-i18n="plugins.quiz-show.labels.nur_fur_ollama_oder_benutzerdefinierte_endpoints_openai_url">Nur für Ollama oder benutzerdefinierte Endpoints. OpenAI-URL nicht ändern.</div>
                         </div>
 
                         <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                             <div class="form-group">
-                                <label for="llmLanguage" data-i18n="generated.898e2d6d30b0">Sprache der Fragen:</label>
+                                <label for="llmLanguage" data-i18n="plugins.quiz-show.labels.sprache_der_fragen">Sprache der Fragen:</label>
                                 <select id="llmLanguage" class="form-control">
                                     <option value="de">Deutsch</option>
                                     <option value="en">English</option>
-                                    <option value="es" data-i18n="generated.be5d80e0d1b2">Español</option>
-                                    <option value="fr" data-i18n="generated.f53a66fd3c6b">Français</option>
+                                    <option value="es" data-i18n="plugins.quiz-show.labels.espanol_be5d80">Español</option>
+                                    <option value="fr" data-i18n="plugins.quiz-show.labels.francais_f53a66">Français</option>
                                     <option value="it">Italiano</option>
-                                    <option value="pt" data-i18n="generated.aad9066ebdac">Português</option>
+                                    <option value="pt" data-i18n="plugins.quiz-show.labels.portugues_aad906">Português</option>
                                     <option value="nl">Nederlands</option>
                                     <option value="pl">Polski</option>
-                                    <option value="ru" data-i18n="generated.6a9523b0e027">Русский</option>
-                                    <option value="tr" data-i18n="generated.27637cc12739">Türkçe</option>
-                                    <option value="ja" data-i18n="generated.cb790d57f196">日本語</option>
-                                    <option value="zh" data-i18n="generated.7722f6867016">中文</option>
-                                    <option value="ar" data-i18n="generated.7d4cbd1cde8d">العربية</option>
+                                    <option value="ru" data-i18n="plugins.quiz-show.labels.label_6a9523">Русский</option>
+                                    <option value="tr" data-i18n="plugins.quiz-show.labels.turkce">Türkçe</option>
+                                    <option value="ja" data-i18n="plugins.quiz-show.labels.label_cb790d">日本語</option>
+                                    <option value="zh" data-i18n="plugins.quiz-show.labels.label_7722f6">中文</option>
+                                    <option value="ar" data-i18n="plugins.quiz-show.labels.label_7d4cbd">العربية</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -1070,7 +1070,7 @@
                         </div>
 
                         <div class="form-actions" style="margin-top: 15px;">
-                            <button id="testLlmConnectionBtn" class="btn btn-secondary" data-i18n="generated.05af3b827647"> Verbindung testen</button>
+                            <button id="testLlmConnectionBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.verbindung_testen"> Verbindung testen</button>
                             <div id="llmTestResult" class="message hidden" style="margin-top: 10px;"></div>
                         </div>
                     </div>
@@ -1079,7 +1079,7 @@
                 <!-- Save Button -->
                 <div class="panel full-width">
                     <div class="panel-body">
-                        <button id="saveSettingsBtn" class="btn btn-primary btn-large" data-i18n="generated.efe3560d6e1f"> Einstellungen Speichern</button>
+                        <button id="saveSettingsBtn" class="btn btn-primary btn-large" data-i18n="plugins.quiz-show.labels.einstellungen_speichern_efe356"> Einstellungen Speichern</button>
                         <div id="saveMessage" class="message hidden"></div>
                     </div>
                 </div>
@@ -1093,13 +1093,13 @@
                     <h2 data-i18n="quiz_show.leaderboard.title"> Leaderboard</h2>
                     <div class="panel-controls">
                         <select id="seasonSelect" class="form-control" style="width: auto; display: inline-block; margin-right: 10px;">
-                            <option value="active" data-i18n="generated.76318977c25f">Aktuelle Saison</option>
+                            <option value="active" data-i18n="plugins.quiz-show.labels.aktuelle_saison">Aktuelle Saison</option>
                             <!-- Seasons will be populated dynamically -->
                         </select>
-                        <button id="newSeasonBtn" class="btn btn-secondary" data-i18n="generated.bdd7b3f5d0b3"> Neue Saison</button>
+                        <button id="newSeasonBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.neue_saison"> Neue Saison</button>
                         <button id="exportLeaderboardBtn" class="btn btn-secondary"> Exportieren</button>
                         <button id="importLeaderboardBtn" class="btn btn-secondary"> Importieren</button>
-                        <button id="resetLeaderboardBtn" class="btn btn-danger" data-i18n="generated.35d10c1dbe7f"> Zurücksetzen</button>
+                        <button id="resetLeaderboardBtn" class="btn btn-danger" data-i18n="plugins.quiz-show.labels.zurucksetzen"> Zurücksetzen</button>
                     </div>
                 </div>
                 <div class="panel-body">
@@ -1114,7 +1114,7 @@
                             </thead>
                             <tbody id="leaderboardBody">
                                 <tr>
-                                    <td colspan="3" class="no-data" data-i18n="generated.a7ac6efa9260">Keine Einträge</td>
+                                    <td colspan="3" class="no-data" data-i18n="plugins.quiz-show.labels.keine_eintrage">Keine Einträge</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1126,7 +1126,7 @@
             <div id="importModal" class="modal hidden">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3 data-i18n="generated.0f22b159e02a">Leaderboard Importieren</h3>
+                        <h3 data-i18n="plugins.quiz-show.labels.leaderboard_importieren">Leaderboard Importieren</h3>
                         <button class="modal-close">&times;</button>
                     </div>
                     <div class="modal-body">
@@ -1151,17 +1151,17 @@
             <!-- Quick Actions Header -->
             <div class="panel">
                 <div class="panel-header">
-                    <h2 data-i18n="generated.d05390124f44"> Overlay Konfiguration</h2>
+                    <h2 data-i18n="plugins.quiz-show.labels.overlay_konfiguration_d05390"> Overlay Konfiguration</h2>
                     <div class="panel-controls">
                         <button id="openOverlayBtn" class="btn btn-secondary" data-i18n="quiz_show.overlay.open"> Overlay öffnen</button>
-                        <button id="openSplitscreenOverlayBtn" class="btn btn-secondary" data-i18n="generated.9f91a199ac0a"> Splitscreen öffnen</button>
-                        <button id="openLeaderboardOverlayBtn" class="btn btn-secondary" data-i18n="generated.a1d9248ce486"> Leaderboard öffnen</button>
-                        <button id="refreshPreviewBtn" class="btn btn-secondary" data-i18n="generated.5022cafbd285"> Vorschau aktualisieren</button>
+                        <button id="openSplitscreenOverlayBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.splitscreen_offnen"> Splitscreen öffnen</button>
+                        <button id="openLeaderboardOverlayBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.leaderboard_offnen"> Leaderboard öffnen</button>
+                        <button id="refreshPreviewBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.vorschau_aktualisieren"> Vorschau aktualisieren</button>
                     </div>
                 </div>
                 <div class="panel-body">
                     <div class="help-text" style="padding: 15px; background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; border-radius: 6px;">
-                        <strong data-i18n="generated.48fcd4d3e100"> OBS Browser-Quellen URLs:</strong><br>
+                        <strong data-i18n="plugins.quiz-show.labels.obs_browser_quellen_urls"> OBS Browser-Quellen URLs:</strong><br>
                         <code style="display: block; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">/quiz-show/overlay</code>
                         <code style="display: block; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">/quiz-show/overlay/splitscreen</code>
                         <code style="display: block; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">/quiz-show/leaderboard-overlay</code>
@@ -1176,18 +1176,18 @@
                 <div class="accordion-section">
                     <button class="accordion-header" data-section="layouts">
                         <span class="accordion-icon"></span>
-                        <span class="accordion-title" data-i18n="generated.e6ca778d3757">Layout Management</span>
+                        <span class="accordion-title" data-i18n="plugins.quiz-show.labels.layout_management">Layout Management</span>
                         <span class="accordion-arrow"></span>
                     </button>
                     <div class="accordion-content" data-content="layouts">
                         <div class="accordion-inner">
                             <!-- Saved Layouts -->
                             <div class="config-subsection">
-                                <h3 data-i18n="generated.bae73cc5ce1f">Gespeicherte Layouts</h3>
-                                <div class="help-text" style="margin-bottom: 15px;" data-i18n="generated.9f0894dfccfd">
+                                <h3 data-i18n="plugins.quiz-show.labels.gespeicherte_layouts">Gespeicherte Layouts</h3>
+                                <div class="help-text" style="margin-bottom: 15px;" data-i18n="plugins.quiz-show.labels.layouts_speichern_element_positionen_und_gro_en_fur">
                                     Layouts speichern Element-Positionen und Größen für verschiedene Auflösungen.
                                 </div>
-                                <button id="createNewLayoutBtn" class="btn btn-primary btn-sm" style="margin-bottom: 15px;" data-i18n="generated.77aede4b4fb9"> Neues Layout erstellen</button>
+                                <button id="createNewLayoutBtn" class="btn btn-primary btn-sm" style="margin-bottom: 15px;" data-i18n="plugins.quiz-show.labels.neues_layout_erstellen"> Neues Layout erstellen</button>
                                 <div id="layoutsList" class="layouts-list">
                                     <!-- Layouts will be populated here -->
                                 </div>
@@ -1195,42 +1195,42 @@
 
                             <!-- Layout Editor -->
                             <div class="config-subsection" id="layoutEditorSection" style="display: none;">
-                                <h3 data-i18n="generated.6adfb8657122">Layout bearbeiten</h3>
+                                <h3 data-i18n="plugins.quiz-show.labels.layout_bearbeiten">Layout bearbeiten</h3>
                                 <div class="form-grid-2col">
                                     <div class="form-group">
-                                        <label data-i18n="generated.b933794526dd">Layout Name</label>
+                                        <label data-i18n="plugins.quiz-show.labels.layout_name">Layout Name</label>
                                         <input type="text" id="layoutName" class="form-control" placeholder="Mein Custom Layout">
                                     </div>
                                     <div class="form-group">
                                         <label>Ausrichtung</label>
                                         <select id="layoutOrientation" class="form-control">
-                                            <option value="horizontal" data-i18n="generated.48c3058c134d">Horizontal (Landscape)</option>
-                                            <option value="vertical" data-i18n="generated.4684b549cf86">Vertikal (Portrait)</option>
+                                            <option value="horizontal" data-i18n="plugins.quiz-show.labels.horizontal_landscape">Horizontal (Landscape)</option>
+                                            <option value="vertical" data-i18n="plugins.quiz-show.labels.vertikal_portrait">Vertikal (Portrait)</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
-                                        <label data-i18n="generated.6e6cd7304928">Breite (px)</label>
+                                        <label data-i18n="plugins.quiz-show.labels.breite_px">Breite (px)</label>
                                         <input type="number" id="layoutWidth" class="form-control" value="1920" min="800" max="3840">
                                     </div>
                                     <div class="form-group">
-                                        <label data-i18n="generated.8b34b5dfe46c">Höhe (px)</label>
+                                        <label data-i18n="plugins.quiz-show.labels.hohe_px">Höhe (px)</label>
                                         <input type="number" id="layoutHeight" class="form-control" value="1080" min="600" max="2160">
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <label>
-                                        <input type="checkbox" id="layoutIsDefault"><span data-i18n="generated.1bcc133522d0">
+                                        <input type="checkbox" id="layoutIsDefault"><span data-i18n="plugins.quiz-show.labels.als_standard_layout_fur_diese_ausrichtung_setzen">
                                         Als Standard-Layout für diese Ausrichtung setzen
                                     </span></label>
                                 </div>
-                                
+
                                 <!-- Grid-Based Element Positioning -->
                                 <div class="help-text" style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 12px; margin: 15px 0; border-radius: 4px;">
-                                    <strong data-i18n="generated.787afadae326"> Grid-System (wie Schiffe versenken):</strong><br>
-                                     <strong data-i18n="generated.e3a36d0e757a">Spalte (X):</strong><span data-i18n="generated.982f78ac3c5e"> A-Z (horizontal von links nach rechts)</span><br>
-                                     <strong data-i18n="generated.773d97d6e057">Zeile (Y):</strong><span data-i18n="generated.11c2bb1c6aeb"> 1-20 (vertikal von oben nach unten)</span><br>
-                                     <strong data-i18n="generated.ea3d81ecf072">Größe:</strong><span data-i18n="generated.f488eaa2d52e"> Vordefinierte Größen für konsistentes Layout</span><br>
-                                     <strong>Sichtbarkeit:</strong><span data-i18n="generated.d47391fa4816"> Ein/Aus schalten mit Checkbox</span><br><span data-i18n="generated.22c16c1f1e05">
+                                    <strong data-i18n="plugins.quiz-show.labels.grid_system_wie_schiffe_versenken"> Grid-System (wie Schiffe versenken):</strong><br>
+                                     <strong data-i18n="plugins.quiz-show.labels.spalte_x_e3a36d">Spalte (X):</strong><span data-i18n="plugins.quiz-show.labels.a_z_horizontal_von_links_nach_rechts"> A-Z (horizontal von links nach rechts)</span><br>
+                                     <strong data-i18n="plugins.quiz-show.labels.zeile_y_773d97">Zeile (Y):</strong><span data-i18n="plugins.quiz-show.labels.1_20_vertikal_von_oben_nach_unten"> 1-20 (vertikal von oben nach unten)</span><br>
+                                     <strong data-i18n="plugins.quiz-show.labels.gro_e">Größe:</strong><span data-i18n="plugins.quiz-show.labels.vordefinierte_gro_en_fur_konsistentes_layout"> Vordefinierte Größen für konsistentes Layout</span><br>
+                                     <strong>Sichtbarkeit:</strong><span data-i18n="plugins.quiz-show.labels.ein_aus_schalten_mit_checkbox"> Ein/Aus schalten mit Checkbox</span><br><span data-i18n="plugins.quiz-show.labels.beispiel_c_5_spalte_c_zeile_5">
                                      Beispiel: "C-5" = Spalte C, Zeile 5
                                 </span></div>
 
@@ -1240,9 +1240,9 @@
                                         <thead>
                                             <tr>
                                                 <th>Element</th>
-                                                <th data-i18n="generated.77c7a4301e4a">Spalte (X)</th>
-                                                <th data-i18n="generated.3fd6b369821e">Zeile (Y)</th>
-                                                <th data-i18n="generated.ff06a42ff293">Größe</th>
+                                                <th data-i18n="plugins.quiz-show.labels.spalte_x">Spalte (X)</th>
+                                                <th data-i18n="plugins.quiz-show.labels.zeile_y">Zeile (Y)</th>
+                                                <th data-i18n="plugins.quiz-show.labels.gro_e_ff06a4">Größe</th>
                                                 <th>Sichtbar</th>
                                             </tr>
                                         </thead>
@@ -1278,10 +1278,10 @@
                                                 </td>
                                                 <td>
                                                     <select class="grid-size" data-element="question">
-                                                        <option value="small" data-i18n="generated.a8ee0cea44bb">Klein (400x100)</option>
-                                                        <option value="medium" selected data-i18n="generated.3ace61e60904">Mittel (800x150)</option>
-                                                        <option value="large" data-i18n="generated.2c1f790d93e1">Groß (1200x200)</option>
-                                                        <option value="xlarge" data-i18n="generated.4e88994cc5bb">Extra Groß (1600x250)</option>
+                                                        <option value="small" data-i18n="plugins.quiz-show.labels.klein_400x100">Klein (400x100)</option>
+                                                        <option value="medium" selected data-i18n="plugins.quiz-show.labels.mittel_800x150">Mittel (800x150)</option>
+                                                        <option value="large" data-i18n="plugins.quiz-show.labels.gro_1200x200">Groß (1200x200)</option>
+                                                        <option value="xlarge" data-i18n="plugins.quiz-show.labels.extra_gro_1600x250">Extra Groß (1600x250)</option>
                                                     </select>
                                                 </td>
                                                 <td>
@@ -1319,10 +1319,10 @@
                                                 </td>
                                                 <td>
                                                     <select class="grid-size" data-element="answers">
-                                                        <option value="small" data-i18n="generated.9ac88955a930">Klein (400x300)</option>
-                                                        <option value="medium" selected data-i18n="generated.a30d5941fe6b">Mittel (800x400)</option>
-                                                        <option value="large" data-i18n="generated.d55179b173d8">Groß (1200x500)</option>
-                                                        <option value="xlarge" data-i18n="generated.0b803f094931">Extra Groß (1600x600)</option>
+                                                        <option value="small" data-i18n="plugins.quiz-show.labels.klein_400x300">Klein (400x300)</option>
+                                                        <option value="medium" selected data-i18n="plugins.quiz-show.labels.mittel_800x400">Mittel (800x400)</option>
+                                                        <option value="large" data-i18n="plugins.quiz-show.labels.gro_1200x500">Groß (1200x500)</option>
+                                                        <option value="xlarge" data-i18n="plugins.quiz-show.labels.extra_gro_1600x600">Extra Groß (1600x600)</option>
                                                     </select>
                                                 </td>
                                                 <td>
@@ -1360,10 +1360,10 @@
                                                 </td>
                                                 <td>
                                                     <select class="grid-size" data-element="timer">
-                                                        <option value="small" selected data-i18n="generated.30b783697580">Klein (150x150)</option>
-                                                        <option value="medium" data-i18n="generated.3eebf67544bd">Mittel (200x200)</option>
-                                                        <option value="large" data-i18n="generated.948d79f26b05">Groß (250x250)</option>
-                                                        <option value="xlarge" data-i18n="generated.2edc40c28697">Extra Groß (300x300)</option>
+                                                        <option value="small" selected data-i18n="plugins.quiz-show.labels.klein_150x150">Klein (150x150)</option>
+                                                        <option value="medium" data-i18n="plugins.quiz-show.labels.mittel_200x200">Mittel (200x200)</option>
+                                                        <option value="large" data-i18n="plugins.quiz-show.labels.gro_250x250">Groß (250x250)</option>
+                                                        <option value="xlarge" data-i18n="plugins.quiz-show.labels.extra_gro_300x300">Extra Groß (300x300)</option>
                                                     </select>
                                                 </td>
                                                 <td>
@@ -1401,10 +1401,10 @@
                                                 </td>
                                                 <td>
                                                     <select class="grid-size" data-element="leaderboard">
-                                                        <option value="small" data-i18n="generated.97d6c53cb2b6">Klein (250x300)</option>
-                                                        <option value="medium" selected data-i18n="generated.441f13ade0f5">Mittel (300x400)</option>
-                                                        <option value="large" data-i18n="generated.14351250f116">Groß (350x500)</option>
-                                                        <option value="xlarge" data-i18n="generated.dcbe2bf4e12c">Extra Groß (400x600)</option>
+                                                        <option value="small" data-i18n="plugins.quiz-show.labels.klein_250x300">Klein (250x300)</option>
+                                                        <option value="medium" selected data-i18n="plugins.quiz-show.labels.mittel_300x400">Mittel (300x400)</option>
+                                                        <option value="large" data-i18n="plugins.quiz-show.labels.gro_350x500">Groß (350x500)</option>
+                                                        <option value="xlarge" data-i18n="plugins.quiz-show.labels.extra_gro_400x600">Extra Groß (400x600)</option>
                                                     </select>
                                                 </td>
                                                 <td>
@@ -1412,7 +1412,7 @@
                                                 </td>
                                             </tr>
                                             <tr data-element="jokerInfo">
-                                                <td><strong data-i18n="generated.554400d2a56c"> Joker Info</strong></td>
+                                                <td><strong data-i18n="plugins.quiz-show.labels.joker_info"> Joker Info</strong></td>
                                                 <td>
                                                     <select class="grid-column" data-element="jokerInfo">
                                                         <option value="A">A</option>
@@ -1442,10 +1442,10 @@
                                                 </td>
                                                 <td>
                                                     <select class="grid-size" data-element="jokerInfo">
-                                                        <option value="small" selected data-i18n="generated.0ddaa8c75413">Klein (300x80)</option>
-                                                        <option value="medium" data-i18n="generated.a54b32c23567">Mittel (400x100)</option>
-                                                        <option value="large" data-i18n="generated.ffb74748ef87">Groß (500x120)</option>
-                                                        <option value="xlarge" data-i18n="generated.ba1a9e0b8b03">Extra Groß (600x150)</option>
+                                                        <option value="small" selected data-i18n="plugins.quiz-show.labels.klein_300x80">Klein (300x80)</option>
+                                                        <option value="medium" data-i18n="plugins.quiz-show.labels.mittel_400x100">Mittel (400x100)</option>
+                                                        <option value="large" data-i18n="plugins.quiz-show.labels.gro_500x120">Groß (500x120)</option>
+                                                        <option value="xlarge" data-i18n="plugins.quiz-show.labels.extra_gro_600x150">Extra Groß (600x150)</option>
                                                     </select>
                                                 </td>
                                                 <td>
@@ -1458,7 +1458,7 @@
 
                                 <!-- Visual Grid Preview -->
                                 <div class="help-text" style="margin-top: 20px; margin-bottom: 10px;">
-                                    <strong data-i18n="generated.e0946f6ddd05"> Visuelle Vorschau:</strong><span data-i18n="generated.9cde84cf155e"> Die unten gezeigte Vorschau zeigt die Elemente in ihrer Position im Grid.
+                                    <strong data-i18n="plugins.quiz-show.labels.visuelle_vorschau"> Visuelle Vorschau:</strong><span data-i18n="plugins.quiz-show.labels.die_unten_gezeigte_vorschau_zeigt_die_elemente_in"> Die unten gezeigte Vorschau zeigt die Elemente in ihrer Position im Grid.
                                 </span></div>
                                 <div class="grid-visual-preview" id="gridVisualPreview">
                                     <div class="grid-overlay">
@@ -1470,9 +1470,9 @@
                                 </div>
 
                                 <div class="button-group" style="margin-top: 15px;">
-                                    <button id="saveLayoutBtn" class="btn btn-primary" data-i18n="generated.554b33b83eb3"> Layout Speichern</button>
-                                    <button id="deleteLayoutBtn" class="btn btn-danger" data-i18n="generated.98a68dc009e4"> Layout Löschen</button>
-                                    <button id="cancelLayoutBtn" class="btn btn-secondary" data-i18n="generated.81f320d705bf">X Abbrechen</button>
+                                    <button id="saveLayoutBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.layout_speichern"> Layout Speichern</button>
+                                    <button id="deleteLayoutBtn" class="btn btn-danger" data-i18n="plugins.quiz-show.labels.layout_loschen"> Layout Löschen</button>
+                                    <button id="cancelLayoutBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.x_abbrechen">X Abbrechen</button>
                                 </div>
                                 <div id="layoutSaveMessage" class="message hidden"></div>
                             </div>
@@ -1486,7 +1486,7 @@
                 <div class="accordion-section">
                     <button class="accordion-header" data-section="visual">
                         <span class="accordion-icon"></span>
-                        <span class="accordion-title" data-i18n="generated.ee9d3840ce87">Theme & Visuals</span>
+                        <span class="accordion-title" data-i18n="plugins.quiz-show.labels.theme_visuals">Theme & Visuals</span>
                         <span class="accordion-arrow"></span>
                     </button>
                     <div class="accordion-content" data-content="visual">
@@ -1497,15 +1497,15 @@
                                     <select id="hudTheme" class="form-control">
                                         <option value="night">Night</option>
                                         <option value="day">Day</option>
-                                        <option value="contrast" data-i18n="generated.38aa0186ac67">High Contrast</option>
-                                        <option value="vision-impaired" data-i18n="generated.80f6d887e782">Vision Impaired</option>
+                                        <option value="contrast" data-i18n="plugins.quiz-show.labels.high_contrast">High Contrast</option>
+                                        <option value="vision-impaired" data-i18n="plugins.quiz-show.labels.vision_impaired_80f6d8">Vision Impaired</option>
                                     </select>
                                 </div>
 
                                 <div class="form-group">
-                                    <label data-i18n="generated.56014051bf85">Antworten Layout:</label>
+                                    <label data-i18n="plugins.quiz-show.labels.antworten_layout">Antworten Layout:</label>
                                     <select id="answersLayout" class="form-control">
-                                        <option value="grid" data-i18n="generated.41c924b2016b">Grid (2x2)</option>
+                                        <option value="grid" data-i18n="plugins.quiz-show.labels.grid_2x2">Grid (2x2)</option>
                                         <option value="vertical">Vertikal</option>
                                         <option value="horizontal">Horizontal</option>
                                     </select>
@@ -1514,10 +1514,10 @@
                                 <div class="form-group">
                                     <label>Timer-Variante:</label>
                                     <select id="timerVariant" class="form-control">
-                                        <option value="circular" selected data-i18n="generated.f53f0b27e3c4">Circular SVG</option>
-                                        <option value="bar" data-i18n="generated.a834aeeb787c">Progress Bar</option>
-                                        <option value="neon" data-i18n="generated.4f690525540f">Neon Glow</option>
-                                        <option value="ring" data-i18n="generated.33dea3813b41">Ring mit Farbverlauf</option>
+                                        <option value="circular" selected data-i18n="plugins.quiz-show.labels.circular_svg">Circular SVG</option>
+                                        <option value="bar" data-i18n="plugins.quiz-show.labels.progress_bar">Progress Bar</option>
+                                        <option value="neon" data-i18n="plugins.quiz-show.labels.neon_glow">Neon Glow</option>
+                                        <option value="ring" data-i18n="plugins.quiz-show.labels.ring_mit_farbverlauf">Ring mit Farbverlauf</option>
                                     </select>
                                 </div>
                             </div>
@@ -1529,13 +1529,13 @@
                             </div>
 
                             <div class="form-group">
-                                <label data-i18n="generated.072b8b4d8393">Glow-Intensität:</label>
+                                <label data-i18n="plugins.quiz-show.labels.glow_intensitat">Glow-Intensität:</label>
                                 <input type="range" id="glowIntensity" min="0" max="2" step="0.1" value="1" class="form-range">
                                 <div class="range-value"><span id="glowIntensityValue">1.0</span>x</div>
                             </div>
 
                             <div class="button-group">
-                                <button id="saveVisualSettingsBtn" class="btn btn-primary" data-i18n="generated.e2980ac46b3d"> Visuelle Einstellungen Speichern</button>
+                                <button id="saveVisualSettingsBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.visuelle_einstellungen_speichern"> Visuelle Einstellungen Speichern</button>
                             </div>
                             <div id="visualSaveMessage" class="message hidden"></div>
                         </div>
@@ -1555,38 +1555,38 @@
                                 <div class="form-group">
                                     <label>Frage-Einblendung:</label>
                                     <select id="questionAnimation" class="form-control">
-                                        <option value="slide-in-left" data-i18n="generated.99871fda2306">Slide In Left</option>
-                                        <option value="slide-in-right" data-i18n="generated.9b9925e7c687">Slide In Right</option>
-                                        <option value="slide-in-top" data-i18n="generated.e8410aec29e4">Slide In Top</option>
-                                        <option value="slide-in-bottom" selected data-i18n="generated.377305c725b1">Slide In Bottom</option>
-                                        <option value="fade-in" data-i18n="generated.f6a7aec6727d">Fade In</option>
-                                        <option value="scale-in" data-i18n="generated.f5116a1ab353">Scale In</option>
-                                        <option value="bounce-in" data-i18n="generated.da2a1556599e">Bounce In</option>
-                                        <option value="elastic-in" data-i18n="generated.789af9b6e672">Elastic Pop</option>
-                                        <option value="flip-in" data-i18n="generated.b9d23be34175">Flip In</option>
-                                        <option value="rotate-in" data-i18n="generated.1a7bd24173db">Rotate In</option>
+                                        <option value="slide-in-left" data-i18n="plugins.quiz-show.labels.slide_in_left">Slide In Left</option>
+                                        <option value="slide-in-right" data-i18n="plugins.quiz-show.labels.slide_in_right">Slide In Right</option>
+                                        <option value="slide-in-top" data-i18n="plugins.quiz-show.labels.slide_in_top">Slide In Top</option>
+                                        <option value="slide-in-bottom" selected data-i18n="plugins.quiz-show.labels.slide_in_bottom">Slide In Bottom</option>
+                                        <option value="fade-in" data-i18n="plugins.quiz-show.labels.fade_in">Fade In</option>
+                                        <option value="scale-in" data-i18n="plugins.quiz-show.labels.scale_in">Scale In</option>
+                                        <option value="bounce-in" data-i18n="plugins.quiz-show.labels.bounce_in">Bounce In</option>
+                                        <option value="elastic-in" data-i18n="plugins.quiz-show.labels.elastic_pop">Elastic Pop</option>
+                                        <option value="flip-in" data-i18n="plugins.quiz-show.labels.flip_in">Flip In</option>
+                                        <option value="rotate-in" data-i18n="plugins.quiz-show.labels.rotate_in">Rotate In</option>
                                     </select>
                                 </div>
 
                                 <div class="form-group">
-                                    <label data-i18n="generated.b986352a76d2">Richtige Antwort:</label>
+                                    <label data-i18n="plugins.quiz-show.labels.richtige_antwort_b98635">Richtige Antwort:</label>
                                     <select id="correctAnimation" class="form-control">
-                                        <option value="glow-pulse" selected data-i18n="generated.4c02c040aa0c">Glow Pulse</option>
-                                        <option value="explode" data-i18n="generated.750f8c53c7de">Explode Highlight</option>
-                                        <option value="burst" data-i18n="generated.b1030dc56b7a">Correct Burst</option>
+                                        <option value="glow-pulse" selected data-i18n="plugins.quiz-show.labels.glow_pulse">Glow Pulse</option>
+                                        <option value="explode" data-i18n="plugins.quiz-show.labels.explode_highlight">Explode Highlight</option>
+                                        <option value="burst" data-i18n="plugins.quiz-show.labels.correct_burst">Correct Burst</option>
                                     </select>
                                 </div>
 
                                 <div class="form-group">
-                                    <label data-i18n="generated.2622925af01a">Falsche Antwort:</label>
+                                    <label data-i18n="plugins.quiz-show.labels.falsche_antwort">Falsche Antwort:</label>
                                     <select id="wrongAnimation" class="form-control">
-                                        <option value="shake" selected data-i18n="generated.bb22dd8466e8">Shake Reject</option>
+                                        <option value="shake" selected data-i18n="plugins.quiz-show.labels.shake_reject">Shake Reject</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div class="button-group">
-                                <button id="saveAnimationSettingsBtn" class="btn btn-primary" data-i18n="generated.8bbbee842b77"> Animations-Einstellungen Speichern</button>
+                                <button id="saveAnimationSettingsBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.animations_einstellungen_speichern"> Animations-Einstellungen Speichern</button>
                             </div>
                             <div id="animationSaveMessage" class="message hidden"></div>
                         </div>
@@ -1597,7 +1597,7 @@
                 <div class="accordion-section">
                     <button class="accordion-header" data-section="colors">
                         <span class="accordion-icon"></span>
-                        <span class="accordion-title" data-i18n="generated.1771969db3e3">Farben & Schriftarten</span>
+                        <span class="accordion-title" data-i18n="plugins.quiz-show.labels.farben_schriftarten">Farben & Schriftarten</span>
                         <span class="accordion-arrow"></span>
                     </button>
                     <div class="accordion-content" data-content="colors">
@@ -1605,11 +1605,11 @@
                             <h3>Farben</h3>
                             <div class="color-grid">
                                 <div class="form-group">
-                                    <label data-i18n="generated.2e627925d73a">Primärfarbe:</label>
+                                    <label data-i18n="plugins.quiz-show.labels.primarfarbe">Primärfarbe:</label>
                                     <input type="color" id="colorPrimary" value="#3b82f6" class="form-control color-input">
                                 </div>
                                 <div class="form-group">
-                                    <label data-i18n="generated.e88cc75abd1d">Sekundärfarbe:</label>
+                                    <label data-i18n="plugins.quiz-show.labels.sekundarfarbe">Sekundärfarbe:</label>
                                     <input type="color" id="colorSecondary" value="#8b5cf6" class="form-control color-input">
                                 </div>
                                 <div class="form-group">
@@ -1631,29 +1631,29 @@
                                 <div class="form-group">
                                     <label>Schriftfamilie:</label>
                                     <select id="fontFamily" class="form-control">
-                                        <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" selected data-i18n="generated.1548c9abd7f7">System Standard</option>
+                                        <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" selected data-i18n="plugins.quiz-show.labels.system_standard">System Standard</option>
                                         <option value="'Arial', sans-serif">Arial</option>
                                         <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
                                         <option value="'Georgia', serif">Georgia</option>
-                                        <option value="'Times New Roman', serif" data-i18n="generated.88c934855952">Times New Roman</option>
-                                        <option value="'Courier New', monospace" data-i18n="generated.e2935340070e">Courier New</option>
-                                        <option value="'Comic Sans MS', cursive" data-i18n="generated.f929d8072837">Comic Sans</option>
+                                        <option value="'Times New Roman', serif" data-i18n="plugins.quiz-show.labels.times_new_roman">Times New Roman</option>
+                                        <option value="'Courier New', monospace" data-i18n="plugins.quiz-show.labels.courier_new">Courier New</option>
+                                        <option value="'Comic Sans MS', cursive" data-i18n="plugins.quiz-show.labels.comic_sans">Comic Sans</option>
                                     </select>
                                 </div>
 
                                 <div class="form-group">
-                                    <label data-i18n="generated.d62cc272101c">Frage-Schriftgröße:</label>
+                                    <label data-i18n="plugins.quiz-show.labels.frage_schriftgro_e">Frage-Schriftgröße:</label>
                                     <input type="text" id="fontSizeQuestion" value="2.2rem" class="form-control">
                                 </div>
 
                                 <div class="form-group">
-                                    <label data-i18n="generated.fb62577c7cde">Antwort-Schriftgröße:</label>
+                                    <label data-i18n="plugins.quiz-show.labels.antwort_schriftgro_e">Antwort-Schriftgröße:</label>
                                     <input type="text" id="fontSizeAnswer" value="1.1rem" class="form-control">
                                 </div>
                             </div>
 
                             <div class="button-group">
-                                <button id="saveColorFontSettingsBtn" class="btn btn-primary" data-i18n="generated.ba2f03ca1647"> Farben & Schriften Speichern</button>
+                                <button id="saveColorFontSettingsBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.farben_schriften_speichern"> Farben & Schriften Speichern</button>
                             </div>
                             <div id="colorFontSaveMessage" class="message hidden"></div>
                         </div>
@@ -1664,12 +1664,12 @@
                 <div class="accordion-section">
                     <button class="accordion-header" data-section="advanced">
                         <span class="accordion-icon"></span>
-                        <span class="accordion-title" data-i18n="generated.244ac95725eb">Erweitert (Custom CSS)</span>
+                        <span class="accordion-title" data-i18n="plugins.quiz-show.labels.erweitert_custom_css">Erweitert (Custom CSS)</span>
                         <span class="accordion-arrow"></span>
                     </button>
                     <div class="accordion-content" data-content="advanced">
                         <div class="accordion-inner">
-                            <div class="help-text" style="margin-bottom: 15px;" data-i18n="generated.a742ceaf9065">
+                            <div class="help-text" style="margin-bottom: 15px;" data-i18n="plugins.quiz-show.labels.fugen_sie_hier_eigenes_css_hinzu_um_das">
                                 Fügen Sie hier eigenes CSS hinzu, um das Overlay weiter anzupassen.
                             </div>
                             <textarea id="customCSS" class="css-editor" placeholder="/* Eigenes CSS hier einfügen */
@@ -1679,7 +1679,7 @@
 }"></textarea>
 
                             <div class="button-group" style="margin-top: 15px;">
-                                <button id="saveCustomCSSBtn" class="btn btn-primary" data-i18n="generated.281cb0880d0e"> Custom CSS Speichern</button>
+                                <button id="saveCustomCSSBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.custom_css_speichern"> Custom CSS Speichern</button>
                             </div>
                             <div id="customCSSSaveMessage" class="message hidden"></div>
                         </div>
@@ -1689,16 +1689,16 @@
                 <!-- Global Save/Reset -->
                 <div class="panel" style="margin-top: 20px;">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.118e9ae49fc5"> Alle Einstellungen</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.alle_einstellungen"> Alle Einstellungen</h2>
                     </div>
                     <div class="panel-body">
-                        <div class="help-text" style="margin-bottom: 15px;" data-i18n="generated.ab271a895022">
-                            Nutzen Sie die "Alle Speichern" Funktion, um alle Overlay-Einstellungen auf einmal zu speichern, 
+                        <div class="help-text" style="margin-bottom: 15px;" data-i18n="plugins.quiz-show.labels.nutzen_sie_die_alle_speichern_funktion_um_alle">
+                            Nutzen Sie die "Alle Speichern" Funktion, um alle Overlay-Einstellungen auf einmal zu speichern,
                             oder speichern Sie einzelne Abschnitte über die jeweiligen Buttons in den Accordion-Bereichen.
                         </div>
                         <div class="button-group">
-                            <button id="saveHUDConfigBtn" class="btn btn-primary btn-large" data-i18n="generated.d9b58a0f78c3"> Alle Einstellungen Speichern</button>
-                            <button id="resetHUDConfigBtn" class="btn btn-danger" data-i18n="generated.afead9ac1f4c"> Auf Standard zurücksetzen</button>
+                            <button id="saveHUDConfigBtn" class="btn btn-primary btn-large" data-i18n="plugins.quiz-show.labels.alle_einstellungen_speichern"> Alle Einstellungen Speichern</button>
+                            <button id="resetHUDConfigBtn" class="btn btn-danger" data-i18n="plugins.quiz-show.labels.auf_standard_zurucksetzen"> Auf Standard zurücksetzen</button>
                         </div>
                         <div id="hudSaveMessage" class="message hidden"></div>
                     </div>
@@ -1707,7 +1707,7 @@
                 <!-- Live Preview -->
                 <div class="panel" style="margin-top: 20px;">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.18702dc2f056"> Live Vorschau</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.live_vorschau"> Live Vorschau</h2>
                     </div>
                     <div class="panel-body">
                         <div class="preview-wrapper" id="previewWrapper">
@@ -1726,7 +1726,7 @@
                         <h2> Gift-Einstellungen</h2>
                     </div>
                     <div class="panel-body">
-                        <div class="help-text" data-i18n="generated.3950f8cf92c8">
+                        <div class="help-text" data-i18n="plugins.quiz-show.labels.konfigurieren_sie_tiktok_geschenke_fur_quiz_start_und">
                             Konfigurieren Sie TikTok-Geschenke für Quiz-Start und Joker-Aktivierung.
                         </div>
                     </div>
@@ -1735,50 +1735,50 @@
                 <!-- Quiz-Start Gift Configuration -->
                 <div class="panel full-width">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.df8c2aff903e"> Quiz-Start per Geschenk</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.quiz_start_per_geschenk"> Quiz-Start per Geschenk</h2>
                     </div>
                     <div class="panel-body">
-                        <div class="help-text" style="margin-bottom: 20px;" data-i18n="generated.b8508659ac50">
-                            Wählen Sie ein Geschenk, das automatisch ein Quiz mit Auto-Play startet. 
+                        <div class="help-text" style="margin-bottom: 20px;" data-i18n="plugins.quiz-show.labels.wahlen_sie_ein_geschenk_das_automatisch_ein_quiz">
+                            Wählen Sie ein Geschenk, das automatisch ein Quiz mit Auto-Play startet.
                             Das Quiz läuft dann automatisch weiter mit den konfigurierten Einstellungen (siehe Settings-Tab).
                         </div>
 
                         <div class="form-group">
                             <label>
-                                <input type="checkbox" id="quizStartGiftEnabled"><span data-i18n="generated.6adfd30b61e3">
+                                <input type="checkbox" id="quizStartGiftEnabled"><span data-i18n="plugins.quiz-show.labels.quiz_start_per_geschenk_aktivieren">
                                 Quiz-Start per Geschenk aktivieren
                             </span></label>
                         </div>
 
                         <div id="quizStartGiftConfig" style="margin-top: 20px; display: none;">
                             <div class="form-group">
-                                <label data-i18n="generated.794da81ba48c">Quiz-Start Geschenk auswählen</label>
+                                <label data-i18n="plugins.quiz-show.labels.quiz_start_geschenk_auswahlen">Quiz-Start Geschenk auswählen</label>
                                 <select id="quizStartGiftSelector" class="form-control">
-                                    <option value="" data-i18n="generated.c8e7f07fb220">-- Geschenk wählen --</option>
+                                    <option value="" data-i18n="plugins.quiz-show.labels.geschenk_wahlen_c8e7f0">-- Geschenk wählen --</option>
                                 </select>
-                                <small data-i18n="generated.f9a83ea34cda">Oder manuell eingeben:</small>
+                                <small data-i18n="plugins.quiz-show.labels.oder_manuell_eingeben_f9a83e">Oder manuell eingeben:</small>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label data-i18n="generated.21bb2a4573cd">Geschenk ID</label>
+                                    <label data-i18n="plugins.quiz-show.labels.geschenk_id">Geschenk ID</label>
                                     <input type="number" id="quizStartGiftId" class="form-control" placeholder="z.B. 5655">
                                 </div>
                                 <div class="form-group">
-                                    <label data-i18n="generated.2f5befcc4c55">Geschenk Name</label>
+                                    <label data-i18n="plugins.quiz-show.labels.geschenk_name">Geschenk Name</label>
                                     <input type="text" id="quizStartGiftName" class="form-control" placeholder="z.B. Galaxy">
                                 </div>
                             </div>
 
                             <div class="help-text" style="margin-top: 15px; padding: 10px; background: #f0f9ff; border-left: 4px solid #3b82f6;">
-                                <strong> Hinweis:</strong><span data-i18n="generated.d7866f0ffbc1"> Wenn ein Viewer dieses Geschenk sendet, wird automatisch ein Quiz gestartet. 
-                                Der Auto-Modus wird aktiviert und das Quiz läuft mit den Einstellungen aus dem Settings-Tab 
+                                <strong> Hinweis:</strong><span data-i18n="plugins.quiz-show.labels.wenn_ein_viewer_dieses_geschenk_sendet_wird_automatisch"> Wenn ein Viewer dieses Geschenk sendet, wird automatisch ein Quiz gestartet.
+                                Der Auto-Modus wird aktiviert und das Quiz läuft mit den Einstellungen aus dem Settings-Tab
                                 (z.B. Auto-Modus Verzögerung, Rundenzahl, etc.).
                             </span></div>
                         </div>
 
                         <div class="button-group" style="margin-top: 20px;">
-                            <button id="saveQuizStartGiftBtn" class="btn btn-primary" data-i18n="generated.0239ae94796d"> Einstellungen Speichern</button>
+                            <button id="saveQuizStartGiftBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.einstellungen_speichern"> Einstellungen Speichern</button>
                         </div>
                         <div id="quizStartGiftSaveMessage" class="message hidden"></div>
                     </div>
@@ -1787,16 +1787,16 @@
                 <!-- Gift-Joker List -->
                 <div class="panel full-width">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.34b205e9e738"> Aktive Zuordnungen</h2>
-                        <button id="addGiftJokerBtn" class="btn btn-primary btn-sm" data-i18n="generated.42c0067fb4a0"> Zuordnung Hinzufügen</button>
+                        <h2 data-i18n="plugins.quiz-show.labels.aktive_zuordnungen"> Aktive Zuordnungen</h2>
+                        <button id="addGiftJokerBtn" class="btn btn-primary btn-sm" data-i18n="plugins.quiz-show.labels.zuordnung_hinzufugen"> Zuordnung Hinzufügen</button>
                     </div>
                     <div class="panel-body">
                         <table class="data-table" id="giftJokerTable">
                             <thead>
                                 <tr>
-                                    <th data-i18n="generated.abd6895cf54c">Geschenk ID</th>
-                                    <th data-i18n="generated.ce1422a19065">Geschenk Name</th>
-                                    <th data-i18n="generated.4c380f9a3ebc">Joker Typ</th>
+                                    <th data-i18n="plugins.quiz-show.labels.geschenk_id_abd689">Geschenk ID</th>
+                                    <th data-i18n="plugins.quiz-show.labels.geschenk_name_ce1422">Geschenk Name</th>
+                                    <th data-i18n="plugins.quiz-show.labels.joker_typ">Joker Typ</th>
                                     <th>Status</th>
                                     <th>Aktionen</th>
                                 </tr>
@@ -1811,36 +1811,36 @@
                 <!-- Add/Edit Gift-Joker Mapping -->
                 <div class="panel full-width" id="giftJokerFormPanel" style="display: none;">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.e2d87ac1dddd"> Zuordnung Hinzufügen/Bearbeiten</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.zuordnung_hinzufugen_bearbeiten"> Zuordnung Hinzufügen/Bearbeiten</h2>
                     </div>
                     <div class="panel-body">
                         <div class="form-row">
                             <div class="form-group">
-                                <label data-i18n="generated.1b5308b79f9b">Geschenk auswählen</label>
+                                <label data-i18n="plugins.quiz-show.labels.geschenk_auswahlen">Geschenk auswählen</label>
                                 <select id="giftSelector" class="form-control">
-                                    <option value="" data-i18n="generated.5001f06f9056">-- Geschenk wählen --</option>
+                                    <option value="" data-i18n="plugins.quiz-show.labels.geschenk_wahlen">-- Geschenk wählen --</option>
                                 </select>
-                                <small data-i18n="generated.80a68fcbda0e">Oder manuell eingeben:</small>
+                                <small data-i18n="plugins.quiz-show.labels.oder_manuell_eingeben">Oder manuell eingeben:</small>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label data-i18n="generated.33c1f80ecdab">Geschenk ID</label>
+                                <label data-i18n="plugins.quiz-show.labels.geschenk_id_33c1f8">Geschenk ID</label>
                                 <input type="number" id="giftJokerId" class="form-control" placeholder="z.B. 5655">
                             </div>
                             <div class="form-group">
-                                <label data-i18n="generated.af7a53e4093a">Geschenk Name</label>
+                                <label data-i18n="plugins.quiz-show.labels.geschenk_name_af7a53">Geschenk Name</label>
                                 <input type="text" id="giftJokerName" class="form-control" placeholder="z.B. Rose">
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="generated.eb697cf10370">Joker Typ</label>
+                            <label data-i18n="plugins.quiz-show.labels.joker_typ_eb697c">Joker Typ</label>
                             <select id="giftJokerType" class="form-control">
-                                <option value="25" data-i18n="generated.a212fd8aa166">25% Joker (1 falsche Antwort entfernen)</option>
-                                <option value="50" data-i18n="generated.4bbba11f568e">50:50 Joker (2 falsche Antworten entfernen)</option>
-                                <option value="info" data-i18n="generated.75a0f72b2dd2">Info Joker (eine falsche Antwort markieren)</option>
-                                <option value="time" data-i18n="generated.caba25b39a2d">Zeit Joker (Zeit verlängern)</option>
+                                <option value="25" data-i18n="plugins.quiz-show.labels.25_joker_1_falsche_antwort_entfernen">25% Joker (1 falsche Antwort entfernen)</option>
+                                <option value="50" data-i18n="plugins.quiz-show.labels.50_50_joker_2_falsche_antworten_entfernen">50:50 Joker (2 falsche Antworten entfernen)</option>
+                                <option value="info" data-i18n="plugins.quiz-show.labels.info_joker_eine_falsche_antwort_markieren">Info Joker (eine falsche Antwort markieren)</option>
+                                <option value="time" data-i18n="plugins.quiz-show.labels.zeit_joker_zeit_verlangern">Zeit Joker (Zeit verlängern)</option>
                             </select>
                         </div>
 
@@ -1852,8 +1852,8 @@
                         </div>
 
                         <div class="button-group">
-                            <button id="saveGiftJokerBtn" class="btn btn-primary" data-i18n="generated.31c91a686550"> Zuordnung Speichern</button>
-                            <button id="cancelGiftJokerBtn" class="btn btn-secondary" data-i18n="generated.ec2d1e6e8d2e">X Abbrechen</button>
+                            <button id="saveGiftJokerBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.zuordnung_speichern"> Zuordnung Speichern</button>
+                            <button id="cancelGiftJokerBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.x_abbrechen_ec2d1e">X Abbrechen</button>
                         </div>
                         <div id="giftJokerSaveMessage" class="message hidden"></div>
                     </div>
@@ -1862,29 +1862,29 @@
                 <!-- TTS Configuration -->
                 <div class="panel full-width">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.16fd18db41b1"> TTS Lautstärke</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.tts_lautstarke"> TTS Lautstärke</h2>
                     </div>
                     <div class="panel-body">
                         <div class="form-group">
-                            <label data-i18n="generated.e606e987da5c">Globale TTS Lautstärke (0-100%)</label>
+                            <label data-i18n="plugins.quiz-show.labels.globale_tts_lautstarke_0_100">Globale TTS Lautstärke (0-100%)</label>
                             <input type="range" id="ttsVolumeGlobal" class="form-range" min="0" max="100" value="80">
                             <div class="range-value" id="ttsVolumeGlobalValue">80%</div>
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="generated.23c3bb4a3a10">Session TTS Lautstärke (0-100%)</label>
+                            <label data-i18n="plugins.quiz-show.labels.session_tts_lautstarke_0_100">Session TTS Lautstärke (0-100%)</label>
                             <input type="range" id="ttsVolumeSession" class="form-range" min="0" max="100" value="80">
                             <div class="range-value" id="ttsVolumeSessionValue">80%</div>
                         </div>
 
                         <div class="form-group">
                             <label>
-                                <input type="checkbox" id="ttsEnabled" checked><span data-i18n="generated.69fcdef09d55">
+                                <input type="checkbox" id="ttsEnabled" checked><span data-i18n="plugins.quiz-show.labels.tts_aktiviert">
                                 TTS Aktiviert
                             </span></label>
                         </div>
 
-                        <button id="saveTTSConfigBtn" class="btn btn-primary" data-i18n="generated.b4845bc4f990"> TTS Einstellungen Speichern</button>
+                        <button id="saveTTSConfigBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.tts_einstellungen_speichern"> TTS Einstellungen Speichern</button>
                         <div id="ttsConfigSaveMessage" class="message hidden"></div>
                     </div>
                 </div>
@@ -1892,68 +1892,68 @@
                 <!-- Leaderboard Display Configuration -->
                 <div class="panel full-width">
                     <div class="panel-header">
-                        <h2 data-i18n="generated.5ee6bd28dc22"> Leaderboard Anzeige</h2>
+                        <h2 data-i18n="plugins.quiz-show.labels.leaderboard_anzeige"> Leaderboard Anzeige</h2>
                     </div>
                     <div class="panel-body">
                         <div class="form-group">
                             <label>
-                                <input type="checkbox" id="leaderboardShowAfterQuestion" checked><span data-i18n="generated.403f18ebf99d">
+                                <input type="checkbox" id="leaderboardShowAfterQuestion" checked><span data-i18n="plugins.quiz-show.labels.leaderboard_nach_jeder_frage_anzeigen">
                                 Leaderboard nach jeder Frage anzeigen
                             </span></label>
-                            <small style="color: #666; display: block; margin-top: 5px; margin-left: 20px;" data-i18n="generated.1f66a0b6f19f">
+                            <small style="color: #666; display: block; margin-top: 5px; margin-left: 20px;" data-i18n="plugins.quiz-show.labels.zeigt_das_leaderboard_sofort_nach_jeder_einzelnen_frage">
                                 Zeigt das Leaderboard sofort nach jeder einzelnen Frage an
                             </small>
                         </div>
 
                         <div class="form-group" id="questionDisplayTypeGroup" style="display: none; margin-left: 20px;">
-                            <label data-i18n="generated.1c52ad73ed15">Fragen-Anzeige Typ</label>
+                            <label data-i18n="plugins.quiz-show.labels.fragen_anzeige_typ">Fragen-Anzeige Typ</label>
                             <select id="leaderboardQuestionDisplayType" class="form-control">
-                                <option value="round" data-i18n="generated.da2553575406">Nur Runden-Leaderboard (aktuelle Frage)</option>
-                                <option value="season" selected data-i18n="generated.cca087fcf540">Nur Season-Leaderboard (Gesamtwertung)</option>
-                                <option value="both" data-i18n="generated.dcabd21d15ea">Runde + Season</option>
+                                <option value="round" data-i18n="plugins.quiz-show.labels.nur_runden_leaderboard_aktuelle_frage">Nur Runden-Leaderboard (aktuelle Frage)</option>
+                                <option value="season" selected data-i18n="plugins.quiz-show.labels.nur_season_leaderboard_gesamtwertung">Nur Season-Leaderboard (Gesamtwertung)</option>
+                                <option value="both" data-i18n="plugins.quiz-show.labels.runde_season_dcabd2">Runde + Season</option>
                             </select>
-                            <small style="color: #666; display: block; margin-top: 5px;" data-i18n="generated.8fb036f41736">
+                            <small style="color: #666; display: block; margin-top: 5px;" data-i18n="plugins.quiz-show.labels.was_nach_jeder_frage_angezeigt_werden_soll">
                                 Was nach jeder Frage angezeigt werden soll
                             </small>
                         </div>
 
                         <div class="form-group" style="margin-top: 20px;">
                             <label>
-                                <input type="checkbox" id="leaderboardShowAfterRound" checked><span data-i18n="generated.b7287eb42d37">
+                                <input type="checkbox" id="leaderboardShowAfterRound" checked><span data-i18n="plugins.quiz-show.labels.leaderboard_am_ende_der_runde_anzeigen">
                                 Leaderboard am Ende der Runde anzeigen
                             </span></label>
-                            <small style="color: #666; display: block; margin-top: 5px; margin-left: 20px;" data-i18n="generated.1bfe329efbdb">
+                            <small style="color: #666; display: block; margin-top: 5px; margin-left: 20px;" data-i18n="plugins.quiz-show.labels.zeigt_das_leaderboard_am_ende_einer_quiz_runde">
                                 Zeigt das Leaderboard am Ende einer Quiz-Runde an (wenn Sie manuell "Stop" drücken)
                             </small>
                         </div>
 
                         <div class="form-group" id="roundDisplayTypeGroup" style="margin-left: 20px;">
-                            <label data-i18n="generated.d5ce886b7e7e">Runden-Anzeige Typ</label>
+                            <label data-i18n="plugins.quiz-show.labels.runden_anzeige_typ">Runden-Anzeige Typ</label>
                             <select id="leaderboardRoundDisplayType" class="form-control">
-                                <option value="round" data-i18n="generated.9793ca268816">Nur Runden-Leaderboard</option>
-                                <option value="season" data-i18n="generated.f2315e423cf9">Nur Season-Leaderboard</option>
-                                <option value="both" data-i18n="generated.3916e7ac31b5">Runde + Season</option>
+                                <option value="round" data-i18n="plugins.quiz-show.labels.nur_runden_leaderboard">Nur Runden-Leaderboard</option>
+                                <option value="season" data-i18n="plugins.quiz-show.labels.nur_season_leaderboard">Nur Season-Leaderboard</option>
+                                <option value="both" data-i18n="plugins.quiz-show.labels.runde_season">Runde + Season</option>
                             </select>
-                            <small style="color: #666; display: block; margin-top: 5px;" data-i18n="generated.a7f51af12d81">
+                            <small style="color: #666; display: block; margin-top: 5px;" data-i18n="plugins.quiz-show.labels.was_am_ende_der_runde_angezeigt_werden_soll">
                                 Was am Ende der Runde angezeigt werden soll
                             </small>
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="generated.3c16b2056d46">Spielende-Anzeige Typ</label>
+                            <label data-i18n="plugins.quiz-show.labels.spielende_anzeige_typ">Spielende-Anzeige Typ</label>
                             <select id="leaderboardEndGameDisplayType" class="form-control">
                                 <option value="round">Runden-Leaderboard</option>
                                 <option value="season">Season-Leaderboard</option>
                             </select>
-                            <small style="color: #666; display: block; margin-top: 5px;" data-i18n="generated.59f7a40dbaef">
+                            <small style="color: #666; display: block; margin-top: 5px;" data-i18n="plugins.quiz-show.labels.was_beim_beenden_des_gesamten_quiz_angezeigt_werden">
                                 Was beim Beenden des gesamten Quiz angezeigt werden soll
                             </small>
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="generated.199b2c5fd4a1">Auto-Hide Verzögerung (Sekunden)</label>
+                            <label data-i18n="plugins.quiz-show.labels.auto_hide_verzogerung_sekunden">Auto-Hide Verzögerung (Sekunden)</label>
                             <input type="number" id="leaderboardAutoHideDelay" class="form-control" value="6" min="6" max="60" readonly>
-                            <small style="color: #666; display: block; margin-top: 5px;" data-i18n="generated.2382d7bf4ea4">
+                            <small style="color: #666; display: block; margin-top: 5px;" data-i18n="plugins.quiz-show.labels.fest_auf_6_sekunden_eingestellt_leaderboard_wird_nach">
                                 Fest auf 6 Sekunden eingestellt - Leaderboard wird nach jeder Frage für 6 Sekunden angezeigt (wenn aktiviert)
                             </small>
                         </div>
@@ -1961,13 +1961,13 @@
                         <div class="form-group">
                             <label>Animationsstil</label>
                             <select id="leaderboardAnimationStyle" class="form-control">
-                                <option value="fade" data-i18n="generated.d85b4feeb75f">Einblenden (Fade)</option>
-                                <option value="slide" data-i18n="generated.756750b8fd17">Hereingleiten (Slide)</option>
-                                <option value="zoom" data-i18n="generated.9eb0e86bca8e">Zoomen (Zoom)</option>
+                                <option value="fade" data-i18n="plugins.quiz-show.labels.einblenden_fade_d85b4f">Einblenden (Fade)</option>
+                                <option value="slide" data-i18n="plugins.quiz-show.labels.hereingleiten_slide">Hereingleiten (Slide)</option>
+                                <option value="zoom" data-i18n="plugins.quiz-show.labels.zoomen_zoom">Zoomen (Zoom)</option>
                             </select>
                         </div>
 
-                        <button id="saveLeaderboardConfigBtn" class="btn btn-primary" data-i18n="generated.102c83fc457e"> Leaderboard Einstellungen Speichern</button>
+                        <button id="saveLeaderboardConfigBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.leaderboard_einstellungen_speichern"> Leaderboard Einstellungen Speichern</button>
                         <div id="leaderboardConfigSaveMessage" class="message hidden"></div>
                     </div>
                 </div>
@@ -1979,72 +1979,72 @@
                 <div class="panel">
                     <h2>Setup-Wizard</h2>
                     <div class="form-group">
-                        <label data-i18n="generated.5ff2481919ac">Aktueller Schritt</label>
+                        <label data-i18n="plugins.quiz-show.labels.aktueller_schritt">Aktueller Schritt</label>
                         <select id="setupWizardStep" class="form-control">
                             <option value="questions" data-i18n="quiz_show.questions.title">Fragen</option>
                             <option value="categories">Kategorien</option>
                             <option value="overlay" data-i18n="quiz_show.overlay.title">Overlay</option>
                             <option value="sounds">Sounds</option>
-                            <option value="show" data-i18n="generated.7fe2922280a0">Erste Show</option>
+                            <option value="show" data-i18n="plugins.quiz-show.labels.erste_show">Erste Show</option>
                         </select>
                     </div>
                     <label class="toggle-label">
                         <input type="checkbox" id="setupWizardCompleted">
-                        <span data-i18n="generated.a80242f1486f">Setup abgeschlossen</span>
+                        <span data-i18n="plugins.quiz-show.labels.setup_abgeschlossen">Setup abgeschlossen</span>
                     </label>
-                    <button id="saveSetupWizardBtn" class="btn btn-primary" data-i18n="generated.abb01cea01be">Setup speichern</button>
+                    <button id="saveSetupWizardBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.setup_speichern">Setup speichern</button>
                     <div id="setupWizardMessage" class="message hidden"></div>
                 </div>
 
                 <div class="panel">
                     <h2>Plugin-Health</h2>
                     <div id="quizHealthPanel" class="health-grid"></div>
-                    <button id="refreshHealthBtn" class="btn btn-secondary" data-i18n="generated.65a657ec7b1a">Health aktualisieren</button>
+                    <button id="refreshHealthBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.health_aktualisieren">Health aktualisieren</button>
                 </div>
 
                 <div class="panel">
-                    <h2 data-i18n="generated.019aaf61ea9f">Cooldown & Kategorie-Voting</h2>
+                    <h2 data-i18n="plugins.quiz-show.labels.cooldown_kategorie_voting">Cooldown & Kategorie-Voting</h2>
                     <div class="form-group">
-                        <label data-i18n="generated.dec872809880">Fragen-Cooldown in Stunden</label>
+                        <label data-i18n="plugins.quiz-show.labels.fragen_cooldown_in_stunden">Fragen-Cooldown in Stunden</label>
                         <input type="number" id="questionCooldownHours" class="form-control" min="0" max="168" step="1" value="24">
                     </div>
                     <label class="toggle-label">
                         <input type="checkbox" id="categoryVotingEnabled">
-                        <span data-i18n="generated.477d0da78ed5">Publikumsvoting aktivieren</span>
+                        <span data-i18n="plugins.quiz-show.labels.publikumsvoting_aktivieren">Publikumsvoting aktivieren</span>
                     </label>
                     <label class="toggle-label">
                         <input type="checkbox" id="categoryVoteBeforeQuestion">
-                        <span data-i18n="generated.3796ddd332a3">Vor der naechsten Frage abstimmen lassen</span>
+                        <span data-i18n="plugins.quiz-show.labels.vor_der_naechsten_frage_abstimmen_lassen">Vor der naechsten Frage abstimmen lassen</span>
                     </label>
                     <div class="form-group">
-                        <label data-i18n="generated.a95cb182e0d2">Voting-Dauer (Sekunden)</label>
+                        <label data-i18n="plugins.quiz-show.labels.voting_dauer_sekunden">Voting-Dauer (Sekunden)</label>
                         <input type="number" id="categoryVoteDuration" class="form-control" min="5" max="120" value="20">
                     </div>
                     <div class="form-group">
-                        <label data-i18n="generated.6f42612d6151">Kategorien fuer manuelles Voting</label>
+                        <label data-i18n="plugins.quiz-show.labels.kategorien_fuer_manuelles_voting">Kategorien fuer manuelles Voting</label>
                         <textarea id="categoryVoteOptions" class="form-control" rows="4" placeholder="Sport&#10;Musik&#10;Gaming&#10;Allgemein"></textarea>
                     </div>
-                    <button id="saveVotingConfigBtn" class="btn btn-primary" data-i18n="generated.e88e47789e59">Voting speichern</button>
-                    <button id="startCategoryVoteBtn" class="btn btn-secondary" data-i18n="generated.384f81799c58">Voting starten</button>
-                    <button id="finishCategoryVoteBtn" class="btn btn-secondary" data-i18n="generated.b05d0ccb8e2d">Voting beenden</button>
+                    <button id="saveVotingConfigBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.voting_speichern">Voting speichern</button>
+                    <button id="startCategoryVoteBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.voting_starten">Voting starten</button>
+                    <button id="finishCategoryVoteBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.voting_beenden">Voting beenden</button>
                     <div id="categoryVoteStatus" class="message hidden"></div>
                 </div>
 
                 <div class="panel">
-                    <h2 data-i18n="generated.39d5fbf027d1">Shows / Playlists</h2>
+                    <h2 data-i18n="plugins.quiz-show.labels.shows_playlists">Shows / Playlists</h2>
                     <div class="form-grid compact">
                         <input type="text" id="showName" class="form-control" placeholder="Show-Name">
                         <input type="number" id="showRoundCount" class="form-control" min="1" max="250" value="10">
                     </div>
                     <div class="form-group">
-                        <label data-i18n="generated.285c6f9aeca3">Kategorien (eine pro Zeile)</label>
+                        <label data-i18n="plugins.quiz-show.labels.kategorien_eine_pro_zeile">Kategorien (eine pro Zeile)</label>
                         <textarea id="showCategories" class="form-control" rows="4"></textarea>
                     </div>
                     <label class="toggle-label">
                         <input type="checkbox" id="showAudienceVoting">
-                        <span data-i18n="generated.6c24fa1e4284">Publikum waehlt Kategorie je Frage</span>
+                        <span data-i18n="plugins.quiz-show.labels.publikum_waehlt_kategorie_je_frage">Publikum waehlt Kategorie je Frage</span>
                     </label>
-                    <button id="saveShowBtn" class="btn btn-primary" data-i18n="generated.321237250d20">Show speichern</button>
+                    <button id="saveShowBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.show_speichern">Show speichern</button>
                     <div id="showsList" class="compact-list"></div>
                 </div>
 
@@ -2058,29 +2058,29 @@
                         <input type="text" id="duelLeftUsers" class="form-control" placeholder="user1,user2">
                         <input type="text" id="duelRightUsers" class="form-control" placeholder="user3,user4">
                     </div>
-                    <button id="startDuelBtn" class="btn btn-primary" data-i18n="generated.2b0ca9c66488">Duel starten</button>
-                    <button id="stopDuelBtn" class="btn btn-secondary" data-i18n="generated.8338cf424d7e">Duel beenden</button>
+                    <button id="startDuelBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.duel_starten">Duel starten</button>
+                    <button id="stopDuelBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.duel_beenden">Duel beenden</button>
                     <div id="duelStatus" class="message hidden"></div>
                 </div>
 
                 <div class="panel">
-                    <h2 data-i18n="generated.48d691fbf4a5">Theme & Accessibility</h2>
+                    <h2 data-i18n="plugins.quiz-show.labels.theme_accessibility">Theme & Accessibility</h2>
                     <div class="form-group">
                         <label>Theme-Preset</label>
                         <select id="hudThemePreset" class="form-control">
                             <option value="night">Night</option>
                             <option value="day">Day</option>
-                            <option value="contrast" data-i18n="generated.76a4cfcc5d15">High Contrast</option>
-                            <option value="vision-impaired" data-i18n="generated.7de857e6a94e">Vision Impaired</option>
+                            <option value="contrast" data-i18n="plugins.quiz-show.labels.high_contrast_76a4cf">High Contrast</option>
+                            <option value="vision-impaired" data-i18n="plugins.quiz-show.labels.vision_impaired">Vision Impaired</option>
                         </select>
                     </div>
                     <label class="toggle-label">
                         <input type="checkbox" id="reducedMotion">
-                        <span data-i18n="generated.8037bd3b84c0">Reduced Motion</span>
+                        <span data-i18n="plugins.quiz-show.labels.reduced_motion">Reduced Motion</span>
                     </label>
                     <label class="toggle-label">
                         <input type="checkbox" id="highContrast">
-                        <span data-i18n="generated.ab850b11e0af">High Contrast erzwingen</span>
+                        <span data-i18n="plugins.quiz-show.labels.high_contrast_erzwingen">High Contrast erzwingen</span>
                     </label>
                     <div class="form-group">
                         <label>Avatar-Performance</label>
@@ -2092,9 +2092,9 @@
                     </div>
                     <label class="toggle-label">
                         <input type="checkbox" id="avatarCacheEnabled">
-                        <span data-i18n="generated.545082a59c7d">Avatar-Cache verwenden</span>
+                        <span data-i18n="plugins.quiz-show.labels.avatar_cache_verwenden">Avatar-Cache verwenden</span>
                     </label>
-                    <button id="saveVisualExpansionBtn" class="btn btn-primary" data-i18n="generated.ec5f88aef7e6">Visuals speichern</button>
+                    <button id="saveVisualExpansionBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.visuals_speichern">Visuals speichern</button>
                 </div>
 
                 <div class="panel">
@@ -2104,20 +2104,20 @@
                         <input type="number" id="soundVolume" class="form-control" min="0" max="1" step="0.1" value="1">
                     </div>
                     <input type="file" id="soundFileInput" class="form-control" accept=".mp3,.wav,.ogg,.m4a,.aac,audio/*">
-                    <button id="uploadSoundBtn" class="btn btn-primary" data-i18n="generated.17cb3bc77f74">Sound speichern</button>
-                    <button id="testSoundBtn" class="btn btn-secondary" data-i18n="generated.b196cd3c5e41">Sound testen</button>
+                    <button id="uploadSoundBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.sound_speichern">Sound speichern</button>
+                    <button id="testSoundBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.sound_testen">Sound testen</button>
                     <div id="soundsList" class="compact-list"></div>
                 </div>
 
                 <div class="panel">
-                    <h2 data-i18n="generated.0e972e5a19e4">Achievements & Seasons</h2>
+                    <h2 data-i18n="plugins.quiz-show.labels.achievements_seasons">Achievements & Seasons</h2>
                     <label class="toggle-label">
                         <input type="checkbox" id="achievementsEnabled">
-                        <span data-i18n="generated.3f23852c858a">Achievements aktivieren</span>
+                        <span data-i18n="plugins.quiz-show.labels.achievements_aktivieren">Achievements aktivieren</span>
                     </label>
                     <label class="toggle-label">
                         <input type="checkbox" id="achievementPopupsEnabled">
-                        <span data-i18n="generated.4b5a941d918c">Achievement-Popups im Overlay</span>
+                        <span data-i18n="plugins.quiz-show.labels.achievement_popups_im_overlay">Achievement-Popups im Overlay</span>
                     </label>
                     <div id="achievementRulesList" class="compact-list"></div>
                     <div class="form-group">
@@ -2129,10 +2129,10 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label data-i18n="generated.856105e21d05">Rollover-Tag (Woche 0-6, Monat 1-28)</label>
+                        <label data-i18n="plugins.quiz-show.labels.rollover_tag_woche_0_6_monat_1_28">Rollover-Tag (Woche 0-6, Monat 1-28)</label>
                         <input type="number" id="seasonAutomationDay" class="form-control" min="0" max="28" value="1">
                     </div>
-                    <button id="saveAchievementSeasonBtn" class="btn btn-primary" data-i18n="generated.d82baf58496d">Achievements & Seasons speichern</button>
+                    <button id="saveAchievementSeasonBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.achievements_seasons_speichern">Achievements & Seasons speichern</button>
                 </div>
             </div>
         </div>

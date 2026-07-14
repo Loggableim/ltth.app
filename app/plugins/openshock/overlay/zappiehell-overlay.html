@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.d3790a104f89">ZappieHell - Goal Progress Overlay</title>
+    <title data-i18n="plugins.openshock.labels.zappiehell_goal_progress_overlay">ZappieHell - Goal Progress Overlay</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * {
@@ -240,7 +240,7 @@
 </head>
 <body>
     <div class="goals-container" id="goalsContainer">
-        <div class="no-goals" id="noGoals" data-i18n="generated.4c9439255ea0">
+        <div class="no-goals" id="noGoals" data-i18n="plugins.openshock.labels.no_active_zappiehell_goals_configured">
             ⚡ No active ZappieHell goals configured ⚡
         </div>
     </div>
@@ -400,11 +400,11 @@
             // Update or create goal cards
             goals.forEach((goal, index) => {
                 let card = document.getElementById(`goal-${goal.id}`);
-                
+
                 if (!card) {
                     card = createGoalCard(goal);
                     container.appendChild(card);
-                    
+
                     // Trigger animation after a short delay
                     setTimeout(() => {
                         card.classList.add('visible');
@@ -417,10 +417,10 @@
             // Remove goals that are no longer active
             Array.from(container.children).forEach(child => {
                 if (child.id === 'noGoals') return;
-                
+
                 const goalId = child.id.replace('goal-', '');
                 const exists = goals.some(g => g.id === goalId);
-                
+
                 if (!exists) {
                     child.style.opacity = '0';
                     child.style.transform = 'translateX(100px)';
@@ -498,7 +498,7 @@
         // Handle goal completion
         function handleGoalCompletion(goal) {
             console.log('[ZappieHell] Handling completion for:', goal.name);
-            
+
             // Flash effect
             triggerFlash();
 
@@ -525,7 +525,7 @@
                 particle.style.left = `${Math.random() * 100}%`;
                 particle.style.top = `${50 + Math.random() * 30}%`;
                 particle.style.animationDelay = `${Math.random() * 0.5}s`;
-                
+
                 particlesContainer.appendChild(particle);
 
                 // Remove particle after animation

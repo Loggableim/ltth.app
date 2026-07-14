@@ -428,15 +428,15 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1 data-i18n="generated.3ab2685db665">💾 Config Backup &amp; Restore</h1>
-        <p data-i18n="generated.d025b7e91f63">Export your current configuration to a secure backup, restore from a previous backup, or migrate from an older installation.</p>
+        <h1 data-i18n="plugins.config-import.labels.config_backup_restore">💾 Config Backup &amp; Restore</h1>
+        <p data-i18n="plugins.config-import.labels.export_your_current_configuration_to_a_secure_backup">Export your current configuration to a secure backup, restore from a previous backup, or migrate from an older installation.</p>
     </div>
 
     <!-- Tabs -->
     <div class="tabs">
-        <button class="tab-btn active" data-tab="export" data-i18n="generated.ae1111e83041">📤 Export Backup</button>
-        <button class="tab-btn" data-tab="import" data-i18n="generated.3b27b0d638dd">📥 Import Backup</button>
-        <button class="tab-btn" data-tab="legacy" data-i18n="generated.31c095344a9f">🗂️ Legacy Import</button>
+        <button class="tab-btn active" data-tab="export" data-i18n="plugins.config-import.labels.export_backup">📤 Export Backup</button>
+        <button class="tab-btn" data-tab="import" data-i18n="plugins.config-import.labels.import_backup">📥 Import Backup</button>
+        <button class="tab-btn" data-tab="legacy" data-i18n="plugins.config-import.labels.legacy_import">🗂️ Legacy Import</button>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════════════
@@ -447,33 +447,33 @@
         <div id="exportAlert" class="alert hidden"></div>
 
         <div class="card">
-            <h2 data-i18n="generated.0d7a3ca52c25">📤 Export Current Configuration</h2>
-            <p class="desc" data-i18n="generated.047bb4e152ae">Create a complete backup ZIP of your settings. The backup can be restored later using the Import tab.</p>
+            <h2 data-i18n="plugins.config-import.labels.export_current_configuration">📤 Export Current Configuration</h2>
+            <p class="desc" data-i18n="plugins.config-import.labels.create_a_complete_backup_zip_of_your_settings">Create a complete backup ZIP of your settings. The backup can be restored later using the Import tab.</p>
 
-            <p class="section-title" data-i18n="generated.e3b82019c9b3">What to include</p>
+            <p class="section-title" data-i18n="plugins.config-import.labels.what_to_include">What to include</p>
             <div class="checkbox-group">
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incGlobal" checked><span data-i18n="generated.972329da7297">
+                    <input type="checkbox" id="incGlobal" checked><span data-i18n="plugins.config-import.labels.global_settings_972329">
                     🌍 Global Settings
                 </span></label>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incPluginSettings" checked><span data-i18n="generated.3f2be0549eff">
+                    <input type="checkbox" id="incPluginSettings" checked><span data-i18n="plugins.config-import.labels.plugin_settings">
                     🔌 Plugin Settings
                 </span></label>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incPluginData" checked><span data-i18n="generated.517633ab05e8">
+                    <input type="checkbox" id="incPluginData" checked><span data-i18n="plugins.config-import.labels.plugin_data_files">
                     📁 Plugin Data Files
                 </span></label>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incUserConfigs" checked><span data-i18n="generated.ab730adc0bda">
+                    <input type="checkbox" id="incUserConfigs" checked><span data-i18n="plugins.config-import.labels.user_configs">
                     User Configs
                 </span></label>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incUploads" checked><span data-i18n="generated.1ef7da7f3c61">
+                    <input type="checkbox" id="incUploads" checked><span data-i18n="plugins.config-import.labels.uploads">
                     🖼️ Uploads
                 </span></label>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incUserData" checked><span data-i18n="generated.3cd695e3408c">
+                    <input type="checkbox" id="incUserData" checked><span data-i18n="plugins.config-import.labels.user_data">
                     🗄️ User Data
                 </span></label>
             </div>
@@ -481,17 +481,17 @@
             <div id="capWarning" class="alert alert-warn hidden" style="margin-top:14px;"></div>
 
             <div style="margin-top:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-                <button class="btn btn-primary" id="exportBtn" data-i18n="generated.2039d237a147">
+                <button class="btn btn-primary" id="exportBtn" data-i18n="plugins.config-import.labels.download_backup">
                     📤 Download Backup
                 </button>
                 <span id="exportStatus" class="hidden" style="color:var(--color-text-muted,#888);font-size:0.88rem;">
-                    <span class="spinner"></span><span data-i18n="generated.9835ca65d0a1"> Creating backup…
+                    <span class="spinner"></span><span data-i18n="plugins.config-import.labels.creating_backup"> Creating backup…
                 </span></span>
             </div>
         </div>
 
         <div class="card hidden" id="exportResultCard">
-            <h2 data-i18n="generated.f2e00fd1fd70">✅ Backup Created</h2>
+            <h2 data-i18n="plugins.config-import.labels.backup_created">✅ Backup Created</h2>
             <div id="exportResultMsg"></div>
             <div id="exportWarnings"></div>
         </div>
@@ -506,13 +506,13 @@
 
         <!-- Step 1: Upload -->
         <div class="card" id="importStep1">
-            <h2 data-i18n="generated.6c5214a28411">📥 Import Backup File</h2>
-            <p class="desc" data-i18n="generated.59e7125efd85">Upload a ZIP backup file created by this tool. The backup will be previewed before anything is changed.</p>
+            <h2 data-i18n="plugins.config-import.labels.import_backup_file">📥 Import Backup File</h2>
+            <p class="desc" data-i18n="plugins.config-import.labels.upload_a_zip_backup_file_created_by_this">Upload a ZIP backup file created by this tool. The backup will be previewed before anything is changed.</p>
 
             <div class="upload-zone" id="uploadZone">
                 <div class="icon">📦</div>
-                <p><strong data-i18n="generated.46f3fcb4415f">Drop your backup ZIP here</strong></p>
-                <p data-i18n="generated.14ade627f89d">or click to browse files</p>
+                <p><strong data-i18n="plugins.config-import.labels.drop_your_backup_zip_here">Drop your backup ZIP here</strong></p>
+                <p data-i18n="plugins.config-import.labels.or_click_to_browse_files">or click to browse files</p>
                 <input type="file" id="fileInput" accept=".zip,application/zip" style="display:none;">
             </div>
 
@@ -524,18 +524,18 @@
             </div>
 
             <div style="margin-top:16px;">
-                <button class="btn btn-primary" id="validateBtn" disabled data-i18n="generated.a27bf867d7a3">
+                <button class="btn btn-primary" id="validateBtn" disabled data-i18n="plugins.config-import.labels.validate_preview">
                     🔍 Validate &amp; Preview
                 </button>
                 <span id="validateStatus" class="hidden" style="margin-left:12px;color:var(--color-text-muted,#888);font-size:0.88rem;">
-                    <span class="spinner"></span><span data-i18n="generated.6d69c9e93365"> Validating…
+                    <span class="spinner"></span><span data-i18n="plugins.config-import.labels.validating"> Validating…
                 </span></span>
             </div>
         </div>
 
         <!-- Step 2: Preview -->
         <div class="card hidden" id="importStep2">
-            <h2 data-i18n="generated.b5dd838cc389">🔍 Import Preview</h2>
+            <h2 data-i18n="plugins.config-import.labels.import_preview">🔍 Import Preview</h2>
 
             <div id="manifestInfo" style="margin-bottom:16px;font-size:0.88rem;color:var(--color-text-muted,#888);"></div>
 
@@ -543,65 +543,65 @@
 
             <div id="previewWarnings"></div>
 
-            <p class="section-title" data-i18n="generated.9a5912ffe020">Plugin details</p>
+            <p class="section-title" data-i18n="plugins.config-import.labels.plugin_details">Plugin details</p>
             <div style="overflow-x:auto;">
                 <table class="preview-table" id="pluginTable">
                     <thead>
                         <tr>
                             <th>Plugin</th>
-                            <th data-i18n="generated.57d6e684a4b9">New Keys</th>
+                            <th data-i18n="plugins.config-import.labels.new_keys">New Keys</th>
                             <th>Conflicts</th>
-                            <th data-i18n="generated.64258d8e3905">Data Files</th>
+                            <th data-i18n="plugins.config-import.labels.data_files">Data Files</th>
                         </tr>
                     </thead>
                     <tbody id="pluginTableBody"></tbody>
                 </table>
             </div>
 
-            <p class="section-title" data-i18n="generated.1d3dd4851bf1">Import mode</p>
+            <p class="section-title" data-i18n="plugins.config-import.labels.import_mode">Import mode</p>
             <div class="mode-group">
-                <button class="mode-btn" data-mode="merge" id="modeMerge"><span data-i18n="generated.2e1036bc0e98">
+                <button class="mode-btn" data-mode="merge" id="modeMerge"><span data-i18n="plugins.config-import.labels.merge">
                     🔀 Merge
-                    </span><div class="mode-desc" data-i18n="generated.bfafa87a6cfd">Add missing settings only; existing values are kept.</div>
+                    </span><div class="mode-desc" data-i18n="plugins.config-import.labels.add_missing_settings_only_existing_values_are_kept">Add missing settings only; existing values are kept.</div>
                 </button>
-                <button class="mode-btn selected" data-mode="replace" id="modeReplace"><span data-i18n="generated.8ba8f7150fb7">
+                <button class="mode-btn selected" data-mode="replace" id="modeReplace"><span data-i18n="plugins.config-import.labels.replace">
                     🔄 Replace
-                    </span><div class="mode-desc" data-i18n="generated.f699cc6d2010">Overwrite all matching settings with backup values.</div>
+                    </span><div class="mode-desc" data-i18n="plugins.config-import.labels.overwrite_all_matching_settings_with_backup_values">Overwrite all matching settings with backup values.</div>
                 </button>
             </div>
 
-            <p class="section-title" data-i18n="generated.ae5b74c37bea">Sections to restore</p>
+            <p class="section-title" data-i18n="plugins.config-import.labels.sections_to_restore">Sections to restore</p>
             <div class="checkbox-group" id="importSections">
-                <label class="checkbox-label"><input type="checkbox" id="impGlobal" checked><span data-i18n="generated.25ff211b75cf"> 🌍 Global Settings</span></label>
-                <label class="checkbox-label"><input type="checkbox" id="impPluginSettings" checked><span data-i18n="generated.a911d395a22b"> 🔌 Plugin Settings</span></label>
-                <label class="checkbox-label"><input type="checkbox" id="impPluginData" checked><span data-i18n="generated.78b8e4b999e1"> 📁 Plugin Data Files</span></label>
-                <label class="checkbox-label" id="impUploadsLbl"><input type="checkbox" id="impUploads"><span data-i18n="generated.486cc23e9f4d"> 🖼️ Uploads</span></label>
-                <label class="checkbox-label" id="impUserDataLbl"><input type="checkbox" id="impUserData"><span data-i18n="generated.ee60263493ed"> 🗄️ User Data</span></label>
+                <label class="checkbox-label"><input type="checkbox" id="impGlobal" checked><span data-i18n="plugins.config-import.labels.global_settings"> 🌍 Global Settings</span></label>
+                <label class="checkbox-label"><input type="checkbox" id="impPluginSettings" checked><span data-i18n="plugins.config-import.labels.plugin_settings_a911d3"> 🔌 Plugin Settings</span></label>
+                <label class="checkbox-label"><input type="checkbox" id="impPluginData" checked><span data-i18n="plugins.config-import.labels.plugin_data_files_78b8e4"> 📁 Plugin Data Files</span></label>
+                <label class="checkbox-label" id="impUploadsLbl"><input type="checkbox" id="impUploads"><span data-i18n="plugins.config-import.labels.uploads_486cc2"> 🖼️ Uploads</span></label>
+                <label class="checkbox-label" id="impUserDataLbl"><input type="checkbox" id="impUserData"><span data-i18n="plugins.config-import.labels.user_data_ee6026"> 🗄️ User Data</span></label>
             </div>
 
             <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
-                <button class="btn btn-primary" id="doImportBtn" data-i18n="generated.20ea843162ae">
+                <button class="btn btn-primary" id="doImportBtn" data-i18n="plugins.config-import.labels.restore_now">
                     ✅ Restore Now
                 </button>
-                <button class="btn btn-secondary" id="cancelImportBtn" data-i18n="generated.b457fb0fa446">
+                <button class="btn btn-secondary" id="cancelImportBtn" data-i18n="plugins.config-import.labels.cancel">
                     ✕ Cancel
                 </button>
                 <span id="doImportStatus" class="hidden" style="margin-left:4px;color:var(--color-text-muted,#888);font-size:0.88rem;">
-                    <span class="spinner"></span><span data-i18n="generated.9695809fd6ad"> Importing…
+                    <span class="spinner"></span><span data-i18n="plugins.config-import.labels.importing_969580"> Importing…
                 </span></span>
             </div>
         </div>
 
         <!-- Step 3: Result -->
         <div class="card hidden" id="importStep3">
-            <h2 data-i18n="generated.001357a9346f">📋 Import Result</h2>
+            <h2 data-i18n="plugins.config-import.labels.import_result">📋 Import Result</h2>
             <div id="importResultMsg"></div>
             <div id="importResultLog" class="log-area"></div>
-            <button class="btn btn-secondary" id="toggleLogBtn" style="margin-top:10px;display:none;" data-i18n="generated.1b2ccbf4faae">
+            <button class="btn btn-secondary" id="toggleLogBtn" style="margin-top:10px;display:none;" data-i18n="plugins.config-import.labels.show_details">
                 🔽 Show Details
             </button>
             <div style="margin-top:16px;">
-                <button class="btn btn-secondary" id="newImportBtn" data-i18n="generated.1563a2832ead">📥 Import Another Backup</button>
+                <button class="btn btn-secondary" id="newImportBtn" data-i18n="plugins.config-import.labels.import_another_backup">📥 Import Another Backup</button>
             </div>
         </div>
     </div>
@@ -611,52 +611,52 @@
     ════════════════════════════════════════════════════════════════════════════ -->
     <div id="tab-legacy" class="tab-panel">
 
-        <div class="alert alert-info" style="margin-bottom:16px;"><span data-i18n="generated.b445ce972b87">
-            ℹ️ </span><strong data-i18n="generated.9961ce1e61fe">Legacy Import</strong><span data-i18n="generated.e0189def301c"> – Use this to migrate settings from an older installation that stores files directly in the application directory (pre-persistent-config versions).
+        <div class="alert alert-info" style="margin-bottom:16px;"><span data-i18n="plugins.config-import.labels.i">
+            ℹ️ </span><strong data-i18n="plugins.config-import.labels.legacy_import_9961ce">Legacy Import</strong><span data-i18n="plugins.config-import.labels.use_this_to_migrate_settings_from_an_older"> – Use this to migrate settings from an older installation that stores files directly in the application directory (pre-persistent-config versions).
         </span></div>
 
         <div id="legacyAlert" class="alert hidden"></div>
 
         <div class="card hidden" id="legacyDiscoveryCard">
-            <h2 data-i18n="generated.450bad319a8a">Detected Old Configs</h2>
-            <p class="desc" data-i18n="generated.b7ff3473f0c3">Known LTTH locations were scanned for old profiles, plugin data, uploads, and user data.</p>
+            <h2 data-i18n="plugins.config-import.labels.detected_old_configs">Detected Old Configs</h2>
+            <p class="desc" data-i18n="plugins.config-import.labels.known_ltth_locations_were_scanned_for_old_profiles">Known LTTH locations were scanned for old profiles, plugin data, uploads, and user data.</p>
             <div id="legacyDiscoveryList"></div>
         </div>
 
         <div class="card">
-            <h2 data-i18n="generated.5c8496ba0cf0">🗂️ Import from Old Installation Path</h2>
-            <p class="desc" data-i18n="generated.c82b500d5b07">Enter the directory where your old LTTH installation was installed. The tool will scan for configuration files and import them into the current persistent storage location.</p>
+            <h2 data-i18n="plugins.config-import.labels.import_from_old_installation_path">🗂️ Import from Old Installation Path</h2>
+            <p class="desc" data-i18n="plugins.config-import.labels.enter_the_directory_where_your_old_ltth_installation">Enter the directory where your old LTTH installation was installed. The tool will scan for configuration files and import them into the current persistent storage location.</p>
 
             <div class="form-group">
-                <label for="legacyPathInput" data-i18n="generated.a7a226949812">Old Installation Path</label>
+                <label for="legacyPathInput" data-i18n="plugins.config-import.labels.old_installation_path">Old Installation Path</label>
                 <div style="display:flex;gap:10px;">
                     <input type="text" id="legacyPathInput" placeholder="e.g. C:\Users\You\ltth or /home/you/ltth" style="flex:1;">
-                    <button class="btn btn-secondary" id="legacyValidateBtn" data-i18n="generated.5b11c40a5cf0">🔍 Scan</button>
+                    <button class="btn btn-secondary" id="legacyValidateBtn" data-i18n="plugins.config-import.labels.scan">🔍 Scan</button>
                 </div>
             </div>
 
             <div class="form-group hidden" id="legacyProfileGroup">
-                <label for="legacyProfileInput" data-i18n="generated.01f3e894a942">Profile name for imported config (optional)</label>
+                <label for="legacyProfileInput" data-i18n="plugins.config-import.labels.profile_name_for_imported_config_optional">Profile name for imported config (optional)</label>
                 <input type="text" id="legacyProfileInput" placeholder="imported-config" maxlength="50">
             </div>
 
             <div id="legacyFindings" class="hidden">
-                <p class="section-title" data-i18n="generated.ebcd2d7e45cb">Found in path</p>
+                <p class="section-title" data-i18n="plugins.config-import.labels.found_in_path">Found in path</p>
                 <div id="legacyFindingsList"></div>
             </div>
 
             <div style="margin-top:16px;">
-                <button class="btn btn-primary hidden" id="legacyImportBtn" disabled data-i18n="generated.7d7823a9321c">
+                <button class="btn btn-primary hidden" id="legacyImportBtn" disabled data-i18n="plugins.config-import.labels.import_legacy_settings">
                     📥 Import Legacy Settings
                 </button>
                 <span id="legacyStatus" class="hidden" style="margin-left:12px;color:var(--color-text-muted,#888);font-size:0.88rem;">
-                    <span class="spinner"></span><span data-i18n="generated.242a8c77605e"> Importing…
+                    <span class="spinner"></span><span data-i18n="plugins.config-import.labels.importing"> Importing…
                 </span></span>
             </div>
         </div>
 
         <div class="card hidden" id="legacyResultCard">
-            <h2 data-i18n="generated.84d731de11c6">📋 Import Result</h2>
+            <h2 data-i18n="plugins.config-import.labels.import_result_84d731">📋 Import Result</h2>
             <div id="legacyResultMsg"></div>
         </div>
     </div>

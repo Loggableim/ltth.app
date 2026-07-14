@@ -1,206 +1,210 @@
 {
-  "plugin": {
-    "name": "Erweiterter Timer",
-    "description": "Professionelles Multi-Timer-System mit Event-Automatisierung und anpassbaren Overlays"
-  },
-  "ui": {
-    "title": "Erweiterter Timer - Multi-Timer-System",
-    "tabs": {
-      "timers": "Timer",
-      "create": "Timer erstellen",
-      "profiles": "Profile",
-      "help": "Hilfe"
-    },
-    "buttons": {
-      "newTimer": "Neuer Timer",
-      "start": "Starten",
-      "pause": "Pausieren",
-      "stop": "Stoppen",
-      "reset": "Zurücksetzen",
-      "settings": "Einstellungen",
-      "delete": "Löschen",
-      "save": "Speichern",
-      "cancel": "Abbrechen",
-      "create": "Timer erstellen",
-      "export": "Exportieren",
-      "copy": "URL kopieren"
-    },
-    "labels": {
-      "timerName": "Timer-Name",
-      "timerMode": "Timer-Modus",
-      "initialDuration": "Anfangsdauer (Sekunden)",
-      "targetValue": "Zielwert (Sekunden)",
-      "overlayUrl": "Overlay-URL",
-      "activityLog": "Aktivitätsprotokoll"
-    },
-    "modes": {
-      "countdown": "Countdown - Von einer Zeit herunterzählen",
-      "countup": "Hochzählen - Auf einen Zielwert hochzählen",
-      "stopwatch": "Stoppuhr - Unbegrenzt hochzählen",
-      "loop": "Schleife - Countdown kontinuierlich wiederholen",
-      "interval": "Intervall - Bis zum Ziel hochzählen und wiederholen"
-    },
-    "states": {
-      "running": "Läuft",
-      "paused": "Pausiert",
-      "stopped": "Gestoppt",
-      "completed": "Abgeschlossen"
-    },
-    "messages": {
-      "noTimers": "Noch keine Timer vorhanden",
-      "createFirst": "Erstellen Sie Ihren ersten Timer",
-      "timerCreated": "Timer erfolgreich erstellt!",
-      "timerUpdated": "Timer erfolgreich aktualisiert!",
-      "timerDeleted": "Timer erfolgreich gelöscht!",
-      "confirmDelete": "Sind Sie sicher, dass Sie diesen Timer löschen möchten?",
-      "urlCopied": "URL in Zwischenablage kopiert!",
-      "noActivity": "Noch keine Aktivität",
-      "quickStart": "Erstellen Sie einen Timer und konfigurieren Sie Events in den Timer-Einstellungen, um basierend auf TikTok-Events (Geschenke, Likes, Follows usw.) Zeit hinzuzufügen"
-    },
-    "help": {
-      "modesTitle": "Timer-Modi",
-      "modesCountdown": "Countdown: Zählt von einer Startzeit auf Null herunter",
-      "modesCountup": "Hochzählen: Zählt von Null auf einen Zielwert hoch",
-      "modesStopwatch": "Stoppuhr: Zählt unbegrenzt hoch",
-      "modesLoop": "Schleife: Wiederholt den Countdown kontinuierlich",
-      "modesInterval": "Intervall: Zählt zum Ziel hoch, setzt zurück und wiederholt",
-      "eventAutomationTitle": "Event-Automatisierung",
-      "eventAutomationDesc": "Konfigurieren Sie Timer so, dass sie auf TikTok-Events reagieren:",
-      "eventGifts": "Geschenke - Zeit basierend auf Coin-Wert hinzufügen/entfernen (Sekunden pro Coin)",
-      "eventLikes": "Likes - Timer basierend auf erhaltenen Likes modifizieren (Sekunden pro Like)",
-      "eventFollows": "Follows - Neue Follower belohnen",
-      "eventShares": "Shares - Teilen ermutigen",
-      "eventChat": "Chat-Befehle - Zuschauer-Interaktion ermöglichen",
-      "timerChainsTitle": "Timer-Ketten",
-      "timerChainsDesc": "Verketten Sie Timer - wenn Timer A abgeschlossen ist, automatisch Timer B starten/stoppen/zurücksetzen",
-      "overlaysTitle": "Overlays",
-      "overlaysDesc": "Jeder Timer hat seine eigene Overlay-URL, die als Browser-Quelle in OBS hinzugefügt werden kann"
-    },
-    "settings": {
-      "tabs": {
-        "basic": "Grundlagen",
-        "events": "Events",
-        "overlay": "Overlay",
-        "logs": "Protokolle"
+  "plugins": {
+    "advanced-timer": {
+      "plugin": {
+        "name": "Erweiterter Timer",
+        "description": "Professionelles Multi-Timer-System mit Event-Automatisierung und anpassbaren Overlays"
       },
-      "eventsDesc": "Konfigurieren Sie, wie TikTok-Events diesen Timer beeinflussen",
-      "addEventRule": "+ Event-Regel hinzufügen",
-      "overlayInfo": "Fügen Sie diese URL als Browser-Quelle in OBS hinzu, um diesen Timer anzuzeigen"
+      "ui": {
+        "title": "Erweiterter Timer - Multi-Timer-System",
+        "tabs": {
+          "timers": "Timer",
+          "create": "Timer erstellen",
+          "profiles": "Profile",
+          "help": "Hilfe"
+        },
+        "buttons": {
+          "newTimer": "Neuer Timer",
+          "start": "Starten",
+          "pause": "Pausieren",
+          "stop": "Stoppen",
+          "reset": "Zurücksetzen",
+          "settings": "Einstellungen",
+          "delete": "Löschen",
+          "save": "Speichern",
+          "cancel": "Abbrechen",
+          "create": "Timer erstellen",
+          "export": "Exportieren",
+          "copy": "URL kopieren"
+        },
+        "labels": {
+          "timerName": "Timer-Name",
+          "timerMode": "Timer-Modus",
+          "initialDuration": "Anfangsdauer (Sekunden)",
+          "targetValue": "Zielwert (Sekunden)",
+          "overlayUrl": "Overlay-URL",
+          "activityLog": "Aktivitätsprotokoll"
+        },
+        "modes": {
+          "countdown": "Countdown - Von einer Zeit herunterzählen",
+          "countup": "Hochzählen - Auf einen Zielwert hochzählen",
+          "stopwatch": "Stoppuhr - Unbegrenzt hochzählen",
+          "loop": "Schleife - Countdown kontinuierlich wiederholen",
+          "interval": "Intervall - Bis zum Ziel hochzählen und wiederholen"
+        },
+        "states": {
+          "running": "Läuft",
+          "paused": "Pausiert",
+          "stopped": "Gestoppt",
+          "completed": "Abgeschlossen"
+        },
+        "messages": {
+          "noTimers": "Noch keine Timer vorhanden",
+          "createFirst": "Erstellen Sie Ihren ersten Timer",
+          "timerCreated": "Timer erfolgreich erstellt!",
+          "timerUpdated": "Timer erfolgreich aktualisiert!",
+          "timerDeleted": "Timer erfolgreich gelöscht!",
+          "confirmDelete": "Sind Sie sicher, dass Sie diesen Timer löschen möchten?",
+          "urlCopied": "URL in Zwischenablage kopiert!",
+          "noActivity": "Noch keine Aktivität",
+          "quickStart": "Erstellen Sie einen Timer und konfigurieren Sie Events in den Timer-Einstellungen, um basierend auf TikTok-Events (Geschenke, Likes, Follows usw.) Zeit hinzuzufügen"
+        },
+        "help": {
+          "modesTitle": "Timer-Modi",
+          "modesCountdown": "Countdown: Zählt von einer Startzeit auf Null herunter",
+          "modesCountup": "Hochzählen: Zählt von Null auf einen Zielwert hoch",
+          "modesStopwatch": "Stoppuhr: Zählt unbegrenzt hoch",
+          "modesLoop": "Schleife: Wiederholt den Countdown kontinuierlich",
+          "modesInterval": "Intervall: Zählt zum Ziel hoch, setzt zurück und wiederholt",
+          "eventAutomationTitle": "Event-Automatisierung",
+          "eventAutomationDesc": "Konfigurieren Sie Timer so, dass sie auf TikTok-Events reagieren:",
+          "eventGifts": "Geschenke - Zeit basierend auf Coin-Wert hinzufügen/entfernen (Sekunden pro Coin)",
+          "eventLikes": "Likes - Timer basierend auf erhaltenen Likes modifizieren (Sekunden pro Like)",
+          "eventFollows": "Follows - Neue Follower belohnen",
+          "eventShares": "Shares - Teilen ermutigen",
+          "eventChat": "Chat-Befehle - Zuschauer-Interaktion ermöglichen",
+          "timerChainsTitle": "Timer-Ketten",
+          "timerChainsDesc": "Verketten Sie Timer - wenn Timer A abgeschlossen ist, automatisch Timer B starten/stoppen/zurücksetzen",
+          "overlaysTitle": "Überlagerungen",
+          "overlaysDesc": "Jeder Timer hat seine eigene Overlay-URL, die als Browser-Quelle in OBS hinzugefügt werden kann"
+        },
+        "settings": {
+          "tabs": {
+            "basic": "Grundlagen",
+            "events": "Veranstaltungen",
+            "overlay": "Overlay",
+            "logs": "Protokolle"
+          },
+          "eventsDesc": "Konfigurieren Sie, wie TikTok-Events diesen Timer beeinflussen",
+          "addEventRule": "+ Event-Regel hinzufügen",
+          "overlayInfo": "Fügen Sie diese URL als Browser-Quelle in OBS hinzu, um diesen Timer anzuzeigen"
+        }
+      },
+      "events": {
+        "types": {
+          "gift": "Geschenk",
+          "like": "Wie",
+          "follow": "Folgen",
+          "share": "Teilen",
+          "subscribe": "Abonnement",
+          "chat": "Chatten"
+        },
+        "actions": {
+          "addTime": "Zeit hinzufügen",
+          "removeTime": "Zeit entfernen",
+          "setValue": "Wert setzen"
+        }
+      },
+      "logs": {
+        "events": {
+          "started": "Gestartet",
+          "paused": "Pausiert",
+          "stopped": "Gestoppt",
+          "reset": "Zurückgesetzt",
+          "completed": "Abgeschlossen",
+          "time_added": "Zeit hinzugefügt",
+          "time_removed": "Zeit entfernt",
+          "gift": "Geschenk",
+          "like": "Wie",
+          "follow": "Folgen",
+          "share": "Teilen",
+          "subscribe": "Abonnement",
+          "chat": "Chatten",
+          "chain_triggered": "Kette ausgelöst",
+          "threshold_reached": "Schwellenwert erreicht",
+          "flow": "Fließen"
+        }
+      },
+      "rotator": {
+        "sectionTitle": "Rotator (Delta-Anzeige)",
+        "sectionDesc": "Zeigt die letzte Zeit-Änderung um den Timer herum (oben/unten/links/rechts). Custom-Geschenke zeigen das Geschenk-GIF aus dem Katalog.",
+        "enable": "Rotator aktivieren",
+        "position": "Position",
+        "positionTop": "Oben",
+        "positionBottom": "Unten",
+        "positionLeft": "Links",
+        "positionRight": "Rechts",
+        "slots": "Spielautomaten",
+        "rotationMs": "Rotation (ms)",
+        "minSeconds": "Min. Sekunden zum Anzeigen",
+        "showGiftImage": "Geschenk-Bild zeigen",
+        "showGiftName": "Geschenk-Name zeigen",
+        "showTimeDelta": "Zeit-Δ zeigen",
+        "showSourceEmoji": "Quell-Emoji zeigen",
+        "fontScale": "Schriftgröße",
+        "fadeAlpha": "Deckkraft",
+        "sourcesShown": "Angezeigte Quellen:",
+        "save": "Rotator speichern"
+      },
+      "thresholdEffects": {
+        "sectionTitle": "Effekte für große Änderungen",
+        "sectionDesc": "Wenn eine einzelne Zeit-Änderung den Schwellenwert überschreitet, wird der Timer mit einer Animation/einem Rahmen überlagert. Eingebauter Stil, eigener Upload oder beides kombiniert.",
+        "enable": "Effekte aktivieren",
+        "thresholdSeconds": "Schwellenwert (Sekunden)",
+        "direction": "Richtung",
+        "directionBoth": "Beide (+/-)",
+        "directionPositive": "Nur positiv",
+        "directionNegative": "Nur negativ",
+        "durationMs": "Effekt-Dauer (ms)",
+        "builtin": "Eingebaute Animation",
+        "intensity": "Intensität (0.5..2.0)",
+        "frameSlotsTitle": "Eigene Rahmen (bis zu 6 PNG/WebP/GIF/SVG — abwechselnd gezeigt):",
+        "frameSlotN": "Steckplatz {n}",
+        "frameEmpty": "Kein Rahmen",
+        "frameLabel": "Beschriftung (optional)",
+        "frameUpload": "Hochladen",
+        "frameRemove": "Entfernen",
+        "save": "Einstellungen speichern"
+      },
+      "labels": {
+        "save_current_setup": "Aktuelles Setup speichern",
+        "counts_down_to_zero_great_for_subathon_timers": "Zählt bis auf Null herunter – ideal für Subathon-Timer",
+        "advanced_event_rules": "Erweiterte Veranstaltungsregeln",
+        "directly_on_each_timer_card_use_positive_values": "direkt auf jeder Timerkarte. Verwenden Sie positive Werte, um die Zeit zu verlängern, negative, um sie zu verkürzen.",
+        "counts_up_to_target_then_resets_and_repeats": "Zählt bis zum Ziel, wird dann zurückgesetzt und wiederholt",
+        "x_multiplier": "x Multiplikator",
+        "advanced_event_rules_2e8c2b": "Erweiterte Veranstaltungsregeln",
+        "enable_the": "Aktivieren Sie die",
+        "count_up_count_up_to_a_target": "Count Up – bis zu einem Ziel zählen",
+        "each_timer_card_shows_its_overlay_url_add": "Jede Timer-Karte zeigt ihre Overlay-URL an. Fügen Sie es als Browserquelle in OBS hinzu.",
+        "to_multiply_all_interaction_values_by_a_factor": "um alle Interaktionswerte mit einem Faktor zu multiplizieren (z. B. x10 für Ereignisse).",
+        "countdown_count_down_from_a_time": "Countdown – Countdown von einem Zeitpunkt an",
+        "counts_up_to_a_target_value": "Zählt bis zu einem Zielwert",
+        "link_on_each_timer_card_to_configure_per": "Link auf jeder Timer-Karte, um Regeln pro Geschenk und pro Befehl zu konfigurieren.",
+        "stopwatch_count_up_indefinitely": "Stoppuhr – Zählen Sie auf unbestimmte Zeit hoch",
+        "create_timer": "Timer erstellen",
+        "timer_overlay": "Timer-Overlay",
+        "quick_setup": "Schnelle Einrichtung",
+        "quick_reference_for_modes_direct_interactions_multiplier_behavior": "Kurzanleitung für Modi, direkte Interaktionen, Multiplikatorverhalten und OBS-Overlay-Nutzung.",
+        "control_every_active_timer_inspect_states_copy_overlay": "Kontrollieren Sie jeden aktiven Timer, überprüfen Sie Zustände, kopieren Sie Overlay-URLs und springen Sie in erweiterte Ereignisregeln ein, ohne den vollen Funktionsumfang zu verlieren.",
+        "need_gift_name_filters_or_chat_command_matching": "Benötigen Sie Filter für Geschenknamen oder einen Chat-Befehlsabgleich? Benutzen Sie die",
+        "obs_overlay": "OBS-Overlay",
+        "save_reapply_and_move_between_timer_setups_without": "Speichern Sie die Timer-Setups, wenden Sie sie erneut an und wechseln Sie zwischen ihnen, ohne Ihre Struktur neu erstellen zu müssen.",
+        "direct_interactions": "Direkte Interaktionen",
+        "choose_the_mode_configure_the_baseline_duration_and": "Wählen Sie den Modus, konfigurieren Sie die Basisdauer und halten Sie direkte Interaktionen für die Stream-seitige Optimierung bereit.",
+        "counts_up_indefinitely": "Zählt auf unbestimmte Zeit hoch",
+        "timers_at_a_glance": "Timer auf einen Blick",
+        "multi_timer_control_center": "Multi-Timer-Kontrollzentrum",
+        "interval_repeat_up_to_target": "Intervall – bis zum Ziel wiederholen",
+        "wide_screen_ready_timers_rules_rotators_profiles_stay": "Breitbild-fähig. Timer, Regeln, Rotatoren und Profile bleiben verfügbar.",
+        "count_up": "Hochzählen:",
+        "timer_overlay_dbe4d9": "Timer-Overlay",
+        "after_creating_the_timer_you_can_set_per": "Nachdem Sie den Timer erstellt haben, können Sie „Pro Coin“, „Pro Like“, „Pro Follow“ usw. direkt auf der Timer-Karte festlegen – für grundlegende Interaktionen sind keine separaten Ereignisregeln erforderlich.",
+        "continuously_repeats_countdown": "Wiederholt den Countdown kontinuierlich",
+        "per_coin_per_follow_per_share_per_subscribe": "Pro Münze, pro Follow, pro Share, pro Abonnement, pro Like, pro Chat-Nachricht",
+        "help_and_setup": "Hilfe und Einrichtung",
+        "loop_repeat_countdown_continuously": "Schleife – Countdown kontinuierlich wiederholen"
+      }
     }
-  },
-  "events": {
-    "types": {
-      "gift": "Geschenk",
-      "like": "Like",
-      "follow": "Follow",
-      "share": "Share",
-      "subscribe": "Abonnement",
-      "chat": "Chat"
-    },
-    "actions": {
-      "addTime": "Zeit hinzufügen",
-      "removeTime": "Zeit entfernen",
-      "setValue": "Wert setzen"
-    }
-  },
-  "logs": {
-    "events": {
-      "started": "Gestartet",
-      "paused": "Pausiert",
-      "stopped": "Gestoppt",
-      "reset": "Zurückgesetzt",
-      "completed": "Abgeschlossen",
-      "time_added": "Zeit hinzugefügt",
-      "time_removed": "Zeit entfernt",
-      "gift": "Geschenk",
-      "like": "Like",
-      "follow": "Follow",
-      "share": "Share",
-      "subscribe": "Abonnement",
-      "chat": "Chat",
-      "chain_triggered": "Kette ausgelöst",
-      "threshold_reached": "Schwellenwert erreicht",
-      "flow": "Flow"
-    }
-  },
-  "rotator": {
-    "sectionTitle": "Rotator (Delta-Anzeige)",
-    "sectionDesc": "Zeigt die letzte Zeit-Änderung um den Timer herum (oben/unten/links/rechts). Custom-Geschenke zeigen das Geschenk-GIF aus dem Katalog.",
-    "enable": "Rotator aktivieren",
-    "position": "Position",
-    "positionTop": "Oben",
-    "positionBottom": "Unten",
-    "positionLeft": "Links",
-    "positionRight": "Rechts",
-    "slots": "Slots",
-    "rotationMs": "Rotation (ms)",
-    "minSeconds": "Min. Sekunden zum Anzeigen",
-    "showGiftImage": "Geschenk-Bild zeigen",
-    "showGiftName": "Geschenk-Name zeigen",
-    "showTimeDelta": "Zeit-Δ zeigen",
-    "showSourceEmoji": "Quell-Emoji zeigen",
-    "fontScale": "Schriftgröße",
-    "fadeAlpha": "Deckkraft",
-    "sourcesShown": "Angezeigte Quellen:",
-    "save": "Rotator speichern"
-  },
-  "thresholdEffects": {
-    "sectionTitle": "Effekte für große Änderungen",
-    "sectionDesc": "Wenn eine einzelne Zeit-Änderung den Schwellenwert überschreitet, wird der Timer mit einer Animation/einem Rahmen überlagert. Eingebauter Stil, eigener Upload oder beides kombiniert.",
-    "enable": "Effekte aktivieren",
-    "thresholdSeconds": "Schwellenwert (Sekunden)",
-    "direction": "Richtung",
-    "directionBoth": "Beide (+/-)",
-    "directionPositive": "Nur positiv",
-    "directionNegative": "Nur negativ",
-    "durationMs": "Effekt-Dauer (ms)",
-    "builtin": "Eingebaute Animation",
-    "intensity": "Intensität (0.5..2.0)",
-    "frameSlotsTitle": "Eigene Rahmen (bis zu 6 PNG/WebP/GIF/SVG — abwechselnd gezeigt):",
-    "frameSlotN": "Slot {n}",
-    "frameEmpty": "Kein Rahmen",
-    "frameLabel": "Beschriftung (optional)",
-    "frameUpload": "Hochladen",
-    "frameRemove": "Entfernen",
-    "save": "Einstellungen speichern"
-  },
-  "generated": {
-    "dbe4d9133c04": "Timer Overlay",
-    "7f8ab618d3d9": "Timer Overlay",
-    "c3c568c922cd": "Multi-timer control center",
-    "c7b8ec23a7ac": "Wide-screen ready. Timers, rules, rotators, profiles stay available.",
-    "c279a2a1a555": "Timers at a glance",
-    "990ecde05a91": "Control every active timer, inspect states, copy overlay URLs and jump into advanced event rules without losing the full feature set.",
-    "7e53695347bc": "Create timer",
-    "b86f46ec6bc1": "Choose the mode, configure the baseline duration and keep direct interactions ready for stream-side tuning.",
-    "4de504791293": "Countdown - count down from a time",
-    "3727e833d7fc": "Count Up - count up to a target",
-    "7949abfa845e": "Stopwatch - count up indefinitely",
-    "f804752b216c": "Loop - repeat countdown continuously",
-    "c67371171158": "Interval - repeat up to target",
-    "81be5107a3e8": "Quick Setup",
-    "dde33698cb4a": "After creating the timer you can set Per Coin, Per Like, Per Follow etc. directly on the timer card - no separate event rules needed for basic interactions.",
-    "b2f95e10b87e": "Save, reapply and move between timer setups without rebuilding your structure.",
-    "1a6372899e2b": "Save Current Setup",
-    "e85f00ba5a80": "Help and setup",
-    "83b669204be5": "Quick reference for modes, direct interactions, multiplier behavior and OBS overlay usage.",
-    "1ad6e9c6eaca": "Counts down to zero - great for subathon timers",
-    "ceaf09dc8ffc": "Count Up:",
-    "50692ddbb216": "Counts up to a target value",
-    "bf7052e8e302": "Counts up indefinitely",
-    "e2ca52006976": "Continuously repeats countdown",
-    "2826418935bb": "Counts up to target, then resets and repeats",
-    "b37ed4b61f44": "Direct Interactions",
-    "e2de78ab8955": "Per Coin, Per Follow, Per Share, Per Subscribe, Per Like, Per Chat Message",
-    "25b6639f41ec": "directly on each timer card. Use positive values to add time, negative to reduce.",
-    "32d2e97eab9a": "Enable the",
-    "2b6f7ea3eabe": "x Multiplier",
-    "420669edaed3": "to multiply all interaction values by a factor (for example, x10 for events).",
-    "1fe350d539b4": "Advanced Event Rules",
-    "a9513a9f35b8": "Need gift-name filters or chat-command matching? Use the",
-    "2e8c2bf59aba": "Advanced Event Rules",
-    "645a41f54e47": "link on each timer card to configure per-gift and per-command rules.",
-    "ae1cc5120d6d": "OBS Overlay",
-    "3b7dbecac785": "Each timer card shows its overlay URL. Add it as a Browser Source in OBS."
   }
 }

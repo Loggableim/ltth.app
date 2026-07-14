@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.a6304ce27ecb">Fireworks Superplugin - Settings</title>
+    <title data-i18n="plugins.fireworks.labels.fireworks_superplugin_settings">Fireworks Superplugin - Settings</title>
     <link href="/css/tailwind.output.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/themes.css">
     <script>
@@ -73,13 +73,13 @@
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             min-height: 100vh;
         }
-        
+
         .card {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
+
         .section-title {
             color: #ffd700;
             border-bottom: 2px solid rgba(255, 215, 0, 0.3);
@@ -92,7 +92,7 @@
             object-fit: contain;
             max-width: 100%;
         }
-        
+
         .toggle-switch {
             position: relative;
             width: 50px;
@@ -102,11 +102,11 @@
             cursor: pointer;
             transition: background 0.3s;
         }
-        
+
         .toggle-switch.active {
             background: #22c55e;
         }
-        
+
         .toggle-switch::after {
             content: '';
             position: absolute;
@@ -118,29 +118,29 @@
             border-radius: 50%;
             transition: transform 0.3s;
         }
-        
+
         .toggle-switch.active::after {
             transform: translateX(24px);
         }
-        
+
         .btn-primary {
             background: linear-gradient(45deg, #6366f1, #8b5cf6);
             transition: all 0.3s;
         }
-        
+
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
         }
-        
+
         .btn-danger {
             background: linear-gradient(45deg, #ef4444, #dc2626);
         }
-        
+
         .btn-success {
             background: linear-gradient(45deg, #22c55e, #16a34a);
         }
-        
+
         .shape-preview {
             width: 60px;
             height: 60px;
@@ -154,21 +154,21 @@
             transition: all 0.2s;
             border: 2px solid transparent;
         }
-        
+
         .shape-preview:hover {
             transform: scale(1.1);
         }
-        
+
         .shape-preview.selected {
             border-color: #ffd700;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
         }
-        
+
         .shape-preview.active-shape {
             border-color: #ffd700;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
         }
-        
+
         .color-swatch {
             width: 32px;
             height: 32px;
@@ -177,16 +177,16 @@
             border: 2px solid rgba(255, 255, 255, 0.3);
             transition: transform 0.2s;
         }
-        
+
         .color-swatch:hover {
             transform: scale(1.2);
         }
-        
+
         .gift-list {
             max-height: 400px;
             overflow-y: auto;
         }
-        
+
         .gift-item {
             display: flex;
             align-items: center;
@@ -196,13 +196,13 @@
             border-radius: 8px;
             margin-bottom: 8px;
         }
-        
+
         .gift-item img {
             width: 40px;
             height: 40px;
             object-fit: contain;
         }
-        
+
         input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
@@ -212,7 +212,7 @@
             border-radius: 4px;
             outline: none;
         }
-        
+
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -222,7 +222,7 @@
             border-radius: 50%;
             cursor: pointer;
         }
-        
+
         .toast {
             position: fixed;
             bottom: 20px;
@@ -245,20 +245,20 @@
             transition: all 0.3s;
             z-index: 1000;
         }
-        
+
         .toast.show {
             transform: translateY(0);
             opacity: 1;
         }
-        
+
         .toast.success {
             background: #22c55e;
         }
-        
+
         .toast.error {
             background: #ef4444;
         }
-        
+
         /* Tab System */
         .tabs {
             display: flex;
@@ -267,7 +267,7 @@
             border-bottom: 2px solid rgba(255, 255, 255, 0.1);
             padding-bottom: 0;
         }
-        
+
         .tab-button {
             padding: 12px 24px;
             background: transparent;
@@ -280,12 +280,12 @@
             border-bottom: 3px solid transparent;
             margin-bottom: -2px;
         }
-        
+
         .tab-button:hover {
             color: rgba(255, 255, 255, 0.9);
             background: rgba(255, 255, 255, 0.05);
         }
-        
+
         .tab-button.active {
             color: #ffd700;
             border-bottom-color: #ffd700;
@@ -312,11 +312,11 @@
             color: #000 !important;
             border-color: #facc15 !important;
         }
-        
+
         .tab-content {
             display: none;
         }
-        
+
         .tab-content.active {
             display: block;
         }
@@ -574,7 +574,7 @@
                 width: min(600px, 92vw) !important;
             }
         }
-    
+
         /* Cid theme alignment */
         html[data-theme="cid"] body {
             background: #030603;
@@ -689,14 +689,14 @@
                 <div class="fireworks-hero-stack">
                     <div class="fireworks-status-row">
                         <span id="overview-enabled-state" class="status-chip status-chip--success">Enabled</span>
-                        <span id="overview-theme-state" class="status-chip" data-i18n="generated.10b01a39f442">Theme: Night</span>
-                        <span id="overview-resolution-state" class="status-chip" data-i18n="generated.4282c95410d9">1080p · Landscape</span>
-                        <span id="overview-performance-state" class="status-chip" data-i18n="generated.c373958ab47e">60 FPS · 1,000 particles</span>
-                        <span id="overview-safety-state" class="status-chip" data-i18n="generated.b818a4ddfb30">Queue off · Adaptive on</span>
+                        <span id="overview-theme-state" class="status-chip" data-i18n="plugins.fireworks.labels.theme_night">Theme: Night</span>
+                        <span id="overview-resolution-state" class="status-chip" data-i18n="plugins.fireworks.labels.1080p_landscape">1080p · Landscape</span>
+                        <span id="overview-performance-state" class="status-chip" data-i18n="plugins.fireworks.labels.60_fps_1_000_particles">60 FPS · 1,000 particles</span>
+                        <span id="overview-safety-state" class="status-chip" data-i18n="plugins.fireworks.labels.queue_off_adaptive_on">Queue off · Adaptive on</span>
                     </div>
                 </div>
                 <div class="fireworks-hero-actions">
-                    <button id="test-btn" class="btn-primary px-6 py-3 rounded-lg font-bold" data-i18n="generated.d72e65d939e8">
+                    <button id="test-btn" class="btn-primary px-6 py-3 rounded-lg font-bold" data-i18n="plugins.fireworks.labels.test_firework">
                         Test Firework
                     </button>
                     <button id="save-btn" class="btn-success px-6 py-3 rounded-lg font-bold" data-i18n="fireworks.save_settings">
@@ -732,19 +732,19 @@
                 <!-- Trigger Settings -->
                 <div class="card rounded-xl p-6">
                     <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.gift_triggers">&#x1F381; Gift Triggers</h2>
-                    
+
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <label data-i18n="fireworks.enable_gift_triggers">Enable Gift Triggers</label>
                             <div id="gift-toggle" class="toggle-switch active" data-config="giftTriggersEnabled"></div>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.minimum_coins_to_trigger">Minimum Coins to Trigger</label>
                             <input type="number" id="min-coins" class="w-full bg-black/30 rounded-lg px-4 py-2" value="1" min="1">
                         </div>
-                        
-                        <button id="test-gift-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="generated.0444e7fffdad">
+
+                        <button id="test-gift-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="plugins.fireworks.labels.test_gift_firework">
                             &#x1F381; Test Gift Firework
                         </button>
                     </div>
@@ -753,13 +753,13 @@
                 <!-- Combo System -->
                 <div class="card rounded-xl p-6">
                     <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.combo_system">&#x1F525; Combo System</h2>
-                    
+
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <label data-i18n="fireworks.enable_combo_streaks">Enable Combo Streaks</label>
                             <div id="combo-toggle" class="toggle-switch active" data-config="comboEnabled"></div>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.combo_timeout_seconds">Combo Timeout (seconds)</label>
                             <input type="range" id="combo-timeout" min="5" max="30" value="10" class="w-full">
@@ -769,7 +769,7 @@
                                 <span>30s</span>
                             </div>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.max_combo_multiplier">Max Combo Multiplier</label>
                             <input type="range" id="combo-max" min="2" max="10" step="0.5" value="5" class="w-full">
@@ -779,7 +779,7 @@
                                 <span>10x</span>
                             </div>
                         </div>
-                        
+
                         <button id="test-combo-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="fireworks.test_combo_effect">
                             &#x1F525; Test Combo Effect
                         </button>
@@ -789,13 +789,13 @@
                 <!-- Escalation System -->
                 <div class="card rounded-xl p-6">
                     <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.escalation_tiers">&#x2B06;&#xFE0F; Escalation Tiers</h2>
-                    
+
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <label data-i18n="fireworks.enable_escalation">Enable Escalation</label>
                             <div id="escalation-toggle" class="toggle-switch active" data-config="escalationEnabled"></div>
                         </div>
-                        
+
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block mb-2 text-sm" data-i18n="fireworks.small_coins">Small (coins)</label>
@@ -814,7 +814,7 @@
                                 <input type="number" id="tier-massive" class="w-full bg-black/30 rounded-lg px-4 py-2" value="1000">
                             </div>
                         </div>
-                        
+
                         <div class="grid grid-cols-4 gap-2 text-center text-sm">
                             <div class="bg-green-900/30 rounded p-2">
                                 <div data-i18n="fireworks.small">Small</div>
@@ -833,7 +833,7 @@
                                 <div class="font-bold" id="particle-massive">200</div>
                             </div>
                         </div>
-                        
+
                         <div class="grid grid-cols-2 gap-2">
                             <button id="test-tier-small-btn" class="btn-primary py-2 rounded-lg font-bold text-sm" data-i18n="fireworks.test_small">
                                 Test Small
@@ -854,13 +854,13 @@
                 <!-- Audio Settings -->
                 <div class="card rounded-xl p-6">
                     <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.audio">&#x1F50A; Audio</h2>
-                    
+
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <label data-i18n="fireworks.enable_sounds">Enable Sounds</label>
                             <div id="audio-toggle" class="toggle-switch active" data-config="audioEnabled"></div>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.volume">Volume</label>
                             <input type="range" id="audio-volume" min="0" max="100" value="70" class="w-full">
@@ -879,17 +879,17 @@
                 <!-- Shape Selection -->
                 <div class="card rounded-xl p-6">
                     <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.explosion_shapes">&#x1F386; Explosion Shapes</h2>
-                    
+
                     <div class="space-y-4">
                         <div class="flex items-center justify-between mb-2">
                             <label data-i18n="fireworks.random_shape_rotation">Random Shape Rotation</label>
                             <div id="random-shape-toggle" class="toggle-switch" data-config="randomShapeEnabled"></div>
                         </div>
-                        
+
                         <p class="text-sm text-gray-400 mb-2" data-i18n="fireworks.click_shapes_to_activate_deactivate_for_random_selection_selected_shapes_have_gold_border">
                             Click shapes to activate/deactivate for random selection. Selected shapes have gold border.
                         </p>
-                        
+
                         <div class="flex flex-wrap gap-4 mb-4">
                             <div class="shape-preview active-shape" data-shape="burst" title="Burst">&#x1F386;</div>
                             <div class="shape-preview" data-shape="heart" title="Heart">&#x2764;&#xFE0F;</div>
@@ -898,22 +898,22 @@
                             <div class="shape-preview" data-shape="spiral" title="Spiral">&#x1F300;</div>
                             <div class="shape-preview" data-shape="paws" title="Paws">&#x1F43E;</div>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2 text-sm" data-i18n="fireworks.default_shape_when_random_disabled">Default Shape (when random disabled)</label>
                             <select id="default-shape" class="w-full bg-black/30 rounded-lg px-4 py-2">
-                                <option value="burst" data-i18n="generated.b20df332bf6a">&#x1F386; Burst</option>
-                                <option value="heart" data-i18n="generated.063a00de2420">&#x2764;&#xFE0F; Heart</option>
-                                <option value="star" data-i18n="generated.4183099322c1">&#x2B50; Star</option>
-                                <option value="ring" data-i18n="generated.84e4c25982f9">&#x25EF; Ring</option>
-                                <option value="spiral" data-i18n="generated.89445c9681b4">&#x1F300; Spiral</option>
-                                <option value="paws" data-i18n="generated.c679ac929c4d">&#x1F43E; Paws</option>
+                                <option value="burst" data-i18n="plugins.fireworks.labels.burst">&#x1F386; Burst</option>
+                                <option value="heart" data-i18n="plugins.fireworks.labels.heart">&#x2764;&#xFE0F; Heart</option>
+                                <option value="star" data-i18n="plugins.fireworks.labels.star">&#x2B50; Star</option>
+                                <option value="ring" data-i18n="plugins.fireworks.labels.ring">&#x25EF; Ring</option>
+                                <option value="spiral" data-i18n="plugins.fireworks.labels.spiral">&#x1F300; Spiral</option>
+                                <option value="paws" data-i18n="plugins.fireworks.labels.paws">&#x1F43E; Paws</option>
                             </select>
                         </div>
-                        
+
                         <p class="text-sm text-gray-400" data-i18n="fireworks.active_shapes">Active shapes:</p>
                         <p id="active-shapes-list" class="text-white font-bold">burst</p>
-                        
+
                         <div class="grid grid-cols-2 gap-2 mt-2">
                             <button id="test-shape-burst-btn" class="btn-primary py-2 rounded-lg font-bold text-sm" data-i18n="fireworks.test_burst">
                                 &#x1F386; Test Burst
@@ -943,7 +943,7 @@
                 <!-- Color Settings -->
                 <div class="card rounded-xl p-6">
                     <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.colors">&#x1F308; Colors</h2>
-                    
+
                     <div class="space-y-4">
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.color_mode">Color Mode</label>
@@ -954,7 +954,7 @@
                                 <option value="rainbow" data-i18n="fireworks.rainbow">Rainbow</option>
                             </select>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.theme_colors">Theme Colors</label>
                             <div class="flex flex-wrap gap-2" id="color-swatches">
@@ -962,7 +962,7 @@
                                 <input id="color-hex" type="text" value="#ff4444" maxlength="7" aria-label="Theme color hex value" class="bg-gray-700 rounded px-2 py-1 w-24 font-mono text-sm uppercase">
                                 <button id="add-color" class="color-swatch bg-gray-700 flex items-center justify-center text-xl" type="button">+</button>
                             </div>
-                            <p class="text-xs text-gray-400 mt-2" data-i18n="generated.599f659e3c85">Click a color to remove it. Drag colors to set the palette order.</p>
+                            <p class="text-xs text-gray-400 mt-2" data-i18n="plugins.fireworks.labels.click_a_color_to_remove_it_drag_colors">Click a color to remove it. Drag colors to set the palette order.</p>
                         </div>
                     </div>
                 </div>
@@ -970,18 +970,18 @@
                 <!-- Visual Effects -->
                 <div class="card rounded-xl p-6">
                     <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.visual_effects">&#x2728; Visual Effects</h2>
-                    
+
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <label data-i18n="fireworks.particle_trails">Particle Trails</label>
                             <div id="trails-toggle" class="toggle-switch active" data-config="trailsEnabled"></div>
                         </div>
-                        
+
                         <div class="flex items-center justify-between">
                             <label data-i18n="fireworks.glow_effect">Glow Effect</label>
                             <div id="glow-toggle" class="toggle-switch active" data-config="glowEnabled"></div>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.max_particles">Max Particles</label>
                             <input type="range" id="max-particles" min="500" max="3000" step="100" value="1000" class="w-full">
@@ -991,7 +991,7 @@
                                 <span>3000</span>
                             </div>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.particle_size">Particle Size</label>
                             <div class="flex gap-4">
@@ -1006,7 +1006,7 @@
                 <!-- Toaster Mode (Low-End PC Optimization) -->
                 <div class="card rounded-xl p-6 border-2 border-orange-500/30">
                     <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.toaster_mode.title">Toaster Mode (Low-End PCs)</h2>
-                    
+
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <label for="toaster_mode" style="display: flex; align-items: center; gap: 10px;">
@@ -1014,11 +1014,11 @@
                             </label>
                             <div id="toaster-toggle" class="toggle-switch" data-config="toasterMode"></div>
                         </div>
-                        
+
                         <p class="text-sm text-gray-400" data-i18n="fireworks.toaster_mode.description">
                             Uses Canvas 2D rendering instead of WebGL for maximum compatibility
                         </p>
-                        
+
                         <div class="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
                             <strong class="text-orange-400" data-i18n="fireworks.toaster_mode.changes_title">What changes:</strong>
                             <div class="mt-2 space-y-1 text-sm">
@@ -1029,7 +1029,7 @@
                                 <div>- <span class="text-gray-300" data-i18n="fireworks.toaster_mode.effects">Visual Effects: All maintained</span></div>
                             </div>
                         </div>
-                        
+
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
                             <strong class="text-blue-400" data-i18n="fireworks.toaster_mode.tip_title">Tip:</strong>
                             <p class="text-sm text-gray-300 mt-1" data-i18n="fireworks.toaster_mode.tip">
@@ -1041,125 +1041,125 @@
 
                 <!-- Performance & Resolution Settings -->
                 <div class="card rounded-xl p-6 border-2 border-blue-500/30">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="generated.ad046041f90f">Performance & Resolution</h2>
-                    
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="plugins.fireworks.labels.performance_resolution">Performance & Resolution</h2>
+
                     <div class="space-y-4">
                         <div>
-                            <label class="block mb-2"><strong data-i18n="generated.07594bd7e7e0">OBS Overlay Resolution</strong></label>
+                            <label class="block mb-2"><strong data-i18n="plugins.fireworks.labels.obs_overlay_resolution">OBS Overlay Resolution</strong></label>
                             <select id="resolution-preset" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="resolutionPreset">
-                                <option value="360p" data-i18n="generated.f2ee7e934adc">360p (640x360) - Minimum</option>
-                                <option value="540p" data-i18n="generated.a82a0128436b">540p (960x540) - Low</option>
-                                <option value="720p" data-i18n="generated.6139370ce1cb">720p (1280x720) - Medium</option>
-                                <option value="1080p" selected data-i18n="generated.8383e2b8a824">1080p (1920x1080) - High (Default)</option>
-                                <option value="1440p" data-i18n="generated.afc067edd784">1440p (2560x1440) - Very High</option>
-                                <option value="4k" data-i18n="generated.8c863a6b1f33">4K (3840x2160) - Ultra</option>
+                                <option value="360p" data-i18n="plugins.fireworks.labels.360p_640x360_minimum">360p (640x360) - Minimum</option>
+                                <option value="540p" data-i18n="plugins.fireworks.labels.540p_960x540_low">540p (960x540) - Low</option>
+                                <option value="720p" data-i18n="plugins.fireworks.labels.720p_1280x720_medium">720p (1280x720) - Medium</option>
+                                <option value="1080p" selected data-i18n="plugins.fireworks.labels.1080p_1920x1080_high_default">1080p (1920x1080) - High (Default)</option>
+                                <option value="1440p" data-i18n="plugins.fireworks.labels.1440p_2560x1440_very_high">1440p (2560x1440) - Very High</option>
+                                <option value="4k" data-i18n="plugins.fireworks.labels.4k_3840x2160_ultra">4K (3840x2160) - Ultra</option>
                             </select>
-                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.f0d7e93e985c">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.fireworks.labels.standard_obs_browser_source_size_recommended_1080p_1920x1080">
                                 Standard OBS Browser Source size. Recommended: 1080p (1920x1080).
                             </p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block mb-2"><strong data-i18n="generated.cf1005579a27">Highest Internal Render Resolution</strong></label>
+                                <label class="block mb-2"><strong data-i18n="plugins.fireworks.labels.highest_internal_render_resolution">Highest Internal Render Resolution</strong></label>
                                 <select id="internal-max-resolution" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="internalMaxResolutionPreset">
-                                    <option value="480p" data-i18n="generated.297dd74eed78">480p (854x480)</option>
-                                    <option value="540p" data-i18n="generated.1f3fdea47c57">540p (960x540)</option>
-                                    <option value="720p" data-i18n="generated.9080b9578484">720p (1280x720)</option>
-                                    <option value="1080p" data-i18n="generated.2f14a4f2b240">1080p (1920x1080)</option>
-                                    <option value="1440p" data-i18n="generated.c84a22f127ab">1440p (2560x1440)</option>
-                                    <option value="4k" selected data-i18n="generated.5405a86d9ff9">4K (3840x2160) - Recommended</option>
+                                    <option value="480p" data-i18n="plugins.fireworks.labels.480p_854x480">480p (854x480)</option>
+                                    <option value="540p" data-i18n="plugins.fireworks.labels.540p_960x540">540p (960x540)</option>
+                                    <option value="720p" data-i18n="plugins.fireworks.labels.720p_1280x720_9080b9">720p (1280x720)</option>
+                                    <option value="1080p" data-i18n="plugins.fireworks.labels.1080p_1920x1080">1080p (1920x1080)</option>
+                                    <option value="1440p" data-i18n="plugins.fireworks.labels.1440p_2560x1440_c84a22">1440p (2560x1440)</option>
+                                    <option value="4k" selected data-i18n="plugins.fireworks.labels.4k_3840x2160_recommended">4K (3840x2160) - Recommended</option>
                                 </select>
                             </div>
 
                             <div>
-                                <label class="block mb-2"><strong data-i18n="generated.93a651583bed">Lowest Internal Render Resolution</strong></label>
+                                <label class="block mb-2"><strong data-i18n="plugins.fireworks.labels.lowest_internal_render_resolution">Lowest Internal Render Resolution</strong></label>
                                 <select id="internal-min-resolution" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="internalMinResolutionPreset">
-                                    <option value="480p" data-i18n="generated.f4fcc311e9c4">480p (854x480)</option>
-                                    <option value="540p" selected data-i18n="generated.ab9c3b96de24">540p (960x540) - Recommended</option>
-                                    <option value="720p" data-i18n="generated.777debd587c4">720p (1280x720)</option>
-                                    <option value="1080p" data-i18n="generated.7c2a97cfda17">1080p (1920x1080)</option>
-                                    <option value="1440p" data-i18n="generated.4f733bb43a30">1440p (2560x1440)</option>
-                                    <option value="4k" data-i18n="generated.97f18aedaf50">4K (3840x2160)</option>
+                                    <option value="480p" data-i18n="plugins.fireworks.labels.480p_854x480_f4fcc3">480p (854x480)</option>
+                                    <option value="540p" selected data-i18n="plugins.fireworks.labels.540p_960x540_recommended">540p (960x540) - Recommended</option>
+                                    <option value="720p" data-i18n="plugins.fireworks.labels.720p_1280x720">720p (1280x720)</option>
+                                    <option value="1080p" data-i18n="plugins.fireworks.labels.1080p_1920x1080_7c2a97">1080p (1920x1080)</option>
+                                    <option value="1440p" data-i18n="plugins.fireworks.labels.1440p_2560x1440">1440p (2560x1440)</option>
+                                    <option value="4k" data-i18n="plugins.fireworks.labels.4k_3840x2160">4K (3840x2160)</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-4">
-                            <strong class="text-emerald-400" data-i18n="generated.cb8322a7bfde">OBS-safe Dynamic Resolution:</strong>
+                            <strong class="text-emerald-400" data-i18n="plugins.fireworks.labels.obs_safe_dynamic_resolution">OBS-safe Dynamic Resolution:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300" id="internal-resolution-info">
-                                <div><span data-i18n="generated.2982b7b37bf0">- OBS Source: </span><span id="obs-source-resolution">1920x1080</span></div>
-                                <div><span data-i18n="generated.16c5e5bba5bc">- Internal range: </span><span id="internal-resolution-range" data-i18n="generated.192a3a0c8e77">3840x2160 -> 960x540</span></div>
-                                <div data-i18n="generated.f46ad55e8ff8">- Scaling changes only the canvas bitmap, not the OBS Browser Source size.</div>
+                                <div><span data-i18n="plugins.fireworks.labels.obs_source">- OBS Source: </span><span id="obs-source-resolution">1920x1080</span></div>
+                                <div><span data-i18n="plugins.fireworks.labels.internal_range">- Internal range: </span><span id="internal-resolution-range" data-i18n="plugins.fireworks.labels.3840x2160_960x540">3840x2160 -> 960x540</span></div>
+                                <div data-i18n="plugins.fireworks.labels.scaling_changes_only_the_canvas_bitmap_not_the">- Scaling changes only the canvas bitmap, not the OBS Browser Source size.</div>
                             </div>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2"><strong>Orientation</strong></label>
                             <select id="orientation-select" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="orientation">
-                                <option value="landscape" data-i18n="generated.82c53ce19bc4">Landscape (16:9)</option>
-                                <option value="portrait" data-i18n="generated.362c9762bfb0">Portrait (9:16)</option>
+                                <option value="landscape" data-i18n="plugins.fireworks.labels.landscape_16_9">Landscape (16:9)</option>
+                                <option value="portrait" data-i18n="plugins.fireworks.labels.portrait_9_16">Portrait (9:16)</option>
                             </select>
-                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.428cdb7f750a">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.fireworks.labels.choose_the_output_format_for_the_obs_overlay">
                                 Choose the output format for the OBS overlay
                             </p>
                         </div>
-                        
+
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
                             <strong class="text-blue-400" data-i18n="fireworks.toaster_mode.tip_title">Tip:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300" id="resolution-info">
-                                <div><span data-i18n="generated.5259409c5959">- Current: </span><span id="current-resolution">1920x1080</span></div>
-                                <div><span data-i18n="generated.217dc26f4690">- Orientation: </span><span id="current-orientation">Landscape</span></div>
-                                <div><span data-i18n="generated.5d8dfe3309a3">- Performance Impact: </span><span id="performance-impact">High</span></div>
+                                <div><span data-i18n="plugins.fireworks.labels.current">- Current: </span><span id="current-resolution">1920x1080</span></div>
+                                <div><span data-i18n="plugins.fireworks.labels.orientation">- Orientation: </span><span id="current-orientation">Landscape</span></div>
+                                <div><span data-i18n="plugins.fireworks.labels.performance_impact">- Performance Impact: </span><span id="performance-impact">High</span></div>
                             </div>
                         </div>
-                        
+
                         <div>
-                            <label class="block mb-2"><strong data-i18n="generated.527f7cb41d51">Target FPS</strong></label>
+                            <label class="block mb-2"><strong data-i18n="plugins.fireworks.labels.target_fps">Target FPS</strong></label>
                             <input type="range" id="target-fps" min="24" max="60" step="6" value="60" class="w-full" data-config="targetFps">
                             <div class="flex justify-between text-sm text-gray-400">
-                                <span data-i18n="generated.4e5d041b2b3f">24 FPS</span>
-                                <span id="target-fps-value" data-i18n="generated.609327dcb376">60 FPS</span>
-                                <span data-i18n="generated.e0f3f7d054e6">60 FPS</span>
+                                <span data-i18n="plugins.fireworks.labels.24_fps">24 FPS</span>
+                                <span id="target-fps-value" data-i18n="plugins.fireworks.labels.60_fps">60 FPS</span>
+                                <span data-i18n="plugins.fireworks.labels.60_fps_e0f3f7">60 FPS</span>
                             </div>
-                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.aaa9f2a9d578">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.fireworks.labels.user_selectable_target_fps_system_will_auto_adjust">
                                 User-selectable target FPS - system will auto-adjust quality to maintain this
                             </p>
                         </div>
-                        
+
                         <div>
-                            <label class="block mb-2"><strong data-i18n="generated.c89f1e68557f">Minimum FPS (Adaptive Performance)</strong></label>
+                            <label class="block mb-2"><strong data-i18n="plugins.fireworks.labels.minimum_fps_adaptive_performance">Minimum FPS (Adaptive Performance)</strong></label>
                             <input type="range" id="min-fps" min="15" max="45" step="3" value="24" class="w-full" data-config="minFps">
                             <div class="flex justify-between text-sm text-gray-400">
-                                <span data-i18n="generated.d23019f420fe">15 FPS</span>
-                                <span id="min-fps-value" data-i18n="generated.769483522dd2">24 FPS</span>
-                                <span data-i18n="generated.5d3c9c40549a">45 FPS</span>
+                                <span data-i18n="plugins.fireworks.labels.15_fps">15 FPS</span>
+                                <span id="min-fps-value" data-i18n="plugins.fireworks.labels.24_fps_769483">24 FPS</span>
+                                <span data-i18n="plugins.fireworks.labels.45_fps">45 FPS</span>
                             </div>
-                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.4b9b83856dad">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.fireworks.labels.below_this_fps_system_enters_minimal_quality_mode">
                                 Below this FPS, system enters minimal quality mode (can go down to 24 FPS)
                             </p>
                         </div>
-                        
+
                         <div>
-                            <label class="block mb-2"><strong data-i18n="generated.9a90955fb1a1">Despawn Fade Duration</strong></label>
+                            <label class="block mb-2"><strong data-i18n="plugins.fireworks.labels.despawn_fade_duration">Despawn Fade Duration</strong></label>
                             <input type="range" id="despawn-fade" min="1.0" max="5.0" step="0.5" value="3.0" class="w-full" data-config="despawnFadeDuration">
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>1.0s</span>
                                 <span id="despawn-fade-value">3.0s</span>
                                 <span>5.0s</span>
                             </div>
-                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.fa8016402062">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.fireworks.labels.how_long_overloaded_rockets_and_particles_fade_out">
                                 How long overloaded rockets and particles fade out under pressure (longer looks smoother)
                             </p>
                         </div>
-                        
+
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
                             <strong class="text-blue-400" data-i18n="fireworks.toaster_mode.tip_title">Tip:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300">
-                                <div data-i18n="generated.1521a0da1d4b">- Combo 5+: Rockets skipped, instant explosions</div>
-                                <div data-i18n="generated.e5387df99dd8">- Combo 8+: Instant bursts, no rocket animation</div>
-                                <div data-i18n="generated.e811ef591a29">- Combo 10+: 50% fewer particles</div>
-                                <div data-i18n="generated.4e5b8ce444bc">- Auto-throttling prevents system overload</div>
+                                <div data-i18n="plugins.fireworks.labels.combo_5_rockets_skipped_instant_explosions">- Combo 5+: Rockets skipped, instant explosions</div>
+                                <div data-i18n="plugins.fireworks.labels.combo_8_instant_bursts_no_rocket_animation">- Combo 8+: Instant bursts, no rocket animation</div>
+                                <div data-i18n="plugins.fireworks.labels.combo_10_50_fewer_particles">- Combo 10+: 50% fewer particles</div>
+                                <div data-i18n="plugins.fireworks.labels.auto_throttling_prevents_system_overload">- Auto-throttling prevents system overload</div>
                             </div>
                         </div>
                     </div>
@@ -1167,39 +1167,39 @@
 
                 <!-- Queue System (Lag Prevention) -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="generated.31445628b18a">&#x23F3; Queue System (Lag Prevention)</h2>
-                    
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="plugins.fireworks.labels.queue_system_lag_prevention">&#x23F3; Queue System (Lag Prevention)</h2>
+
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="generated.921612f02d32">Enable Queue System</label>
+                            <label data-i18n="plugins.fireworks.labels.enable_queue_system">Enable Queue System</label>
                             <div id="queue-enabled-toggle" class="toggle-switch" data-config="queueEnabled"></div>
                         </div>
-                        
-                        <p class="text-sm text-gray-400" data-i18n="generated.f646caaea89a">
-                            Limit the number of fireworks per second to prevent lag during gift spam. 
+
+                        <p class="text-sm text-gray-400" data-i18n="plugins.fireworks.labels.limit_the_number_of_fireworks_per_second_to">
+                            Limit the number of fireworks per second to prevent lag during gift spam.
                             When enabled, excessive fireworks are skipped to maintain smooth performance.
                         </p>
-                        
+
                         <div>
-                            <label class="block mb-2"><strong data-i18n="generated.d0bd1609a1c2">Max Rockets Per Second</strong></label>
+                            <label class="block mb-2"><strong data-i18n="plugins.fireworks.labels.max_rockets_per_second">Max Rockets Per Second</strong></label>
                             <input type="range" id="max-rockets-per-second" min="1" max="20" step="1" value="5" class="w-full" data-config="maxRocketsPerSecond">
                             <div class="flex justify-between text-sm text-gray-400">
-                                <span data-i18n="generated.264de3c92f5c">1/s (Strict)</span>
+                                <span data-i18n="plugins.fireworks.labels.1_s_strict">1/s (Strict)</span>
                                 <span id="max-rockets-value">5/s</span>
-                                <span data-i18n="generated.923b83d7fb94">20/s (Relaxed)</span>
+                                <span data-i18n="plugins.fireworks.labels.20_s_relaxed">20/s (Relaxed)</span>
                             </div>
-                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.e4192edfe308">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.fireworks.labels.lower_values_prevent_more_lag_but_skip_more">
                                 Lower values prevent more lag but skip more fireworks during spam
                             </p>
                         </div>
-                        
+
                         <div class="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
-                            <strong class="text-yellow-400" data-i18n="generated.45721e81100f">&#x2139; Note:</strong>
+                            <strong class="text-yellow-400" data-i18n="plugins.fireworks.labels.i_note">&#x2139; Note:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300">
-                                <div data-i18n="generated.163f01e606d3">- When rate limit is reached, additional fireworks are skipped (not queued for later)</div>
-                                <div data-i18n="generated.f8b492ecfde4">- Recommended: 5-10 rockets/sec for balanced performance</div>
-                                <div data-i18n="generated.fe6edc51e51b">- Lower settings help prevent stuttering during extreme gift spam</div>
-                                <div data-i18n="generated.def5fd2aba14">- Disable this feature if you prefer to see every firework regardless of performance</div>
+                                <div data-i18n="plugins.fireworks.labels.when_rate_limit_is_reached_additional_fireworks_are">- When rate limit is reached, additional fireworks are skipped (not queued for later)</div>
+                                <div data-i18n="plugins.fireworks.labels.recommended_5_10_rockets_sec_for_balanced_performance">- Recommended: 5-10 rockets/sec for balanced performance</div>
+                                <div data-i18n="plugins.fireworks.labels.lower_settings_help_prevent_stuttering_during_extreme_gift">- Lower settings help prevent stuttering during extreme gift spam</div>
+                                <div data-i18n="plugins.fireworks.labels.disable_this_feature_if_you_prefer_to_see">- Disable this feature if you prefer to see every firework regardless of performance</div>
                             </div>
                         </div>
                     </div>
@@ -1208,14 +1208,14 @@
                 <!-- Performance Limits (NEW) -->
                 <div class="card rounded-xl p-6 border-2 border-red-500/30">
                     <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.performance_limits">&#x26A1; Performance Limits</h2>
-                    
+
                     <div class="space-y-4">
                         <div class="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-3 mb-4">
                             <p class="text-sm text-yellow-200" data-i18n="fireworks.performance_info">
                                 Diese Einstellungen sch-tzen vor Freezes bei vielen gleichzeitigen Events. Niedrigere Werte = mehr Stabilit-t.
                             </p>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.max_concurrent_fireworks">Max Gleichzeitige Fireworks</label>
                             <input type="range" id="max-fireworks" min="1" max="20" value="5" class="w-full">
@@ -1225,7 +1225,7 @@
                                 <span>20</span>
                             </div>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.max_total_particles">Max Partikel Global</label>
                             <input type="range" id="max-particles-limit" min="200" max="2000" step="100" value="800" class="w-full">
@@ -1235,7 +1235,7 @@
                                 <span>2000</span>
                             </div>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.emergency_cleanup_threshold">Emergency Cleanup Schwelle</label>
                             <input type="range" id="emergency-threshold" min="500" max="3000" step="100" value="1000" class="w-full">
@@ -1245,14 +1245,14 @@
                                 <span>3000</span>
                             </div>
                         </div>
-                        
+
                         <hr class="border-gray-700">
-                        
+
                         <div class="flex items-center justify-between">
                             <label data-i18n="fireworks.adaptive_performance">Adaptive Performance</label>
                             <div id="adaptive-toggle" class="toggle-switch active" data-config="adaptivePerformance"></div>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.min_target_fps">Minimum Target FPS</label>
                             <input type="range" id="min-target-fps" min="20" max="50" value="30" class="w-full">
@@ -1265,7 +1265,7 @@
                                 Frame Skip wird aktiviert wenn FPS unter diesen Wert f-llt
                             </p>
                         </div>
-                        
+
                         <div class="flex items-center justify-between">
                             <label data-i18n="fireworks.enable_frame_skip">Frame Skip aktivieren</label>
                             <div id="frame-skip-toggle" class="toggle-switch active" data-config="frameSkipEnabled"></div>
@@ -1276,17 +1276,17 @@
                 <!-- User Avatar Integration -->
                 <div class="card rounded-xl p-6">
                     <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.user_avatar_integration">&#x1F464; User Avatar Integration</h2>
-                    
+
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <label data-i18n="fireworks.use_user_avatars">Use User Avatars</label>
                             <div id="avatar-toggle" class="toggle-switch" data-config="userAvatarEnabled"></div>
                         </div>
-                        
+
                         <p class="text-sm text-gray-400" data-i18n="fireworks.when_enabled_user_profile_pictures_will_be_mixed_with_gift_images_as_particles">
                             When enabled, user profile pictures will be mixed with gift images as particles
                         </p>
-                        
+
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.avatar_particle_probability">Avatar Particle Probability</label>
                             <input type="range" id="avatar-chance" min="0" max="100" value="30" class="w-full">
@@ -1299,8 +1299,8 @@
                                 Higher values = more avatar particles vs. gift images
                             </p>
                         </div>
-                        
-                        <button id="test-avatar-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="generated.2524bdedcf61">
+
+                        <button id="test-avatar-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="plugins.fireworks.labels.test_avatar_firework">
                             &#x1F464; Test Avatar Firework
                         </button>
                     </div>
@@ -1308,38 +1308,38 @@
 
                 <!-- Gift Animation Text Position -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="generated.9dbc4ee53c42">&#x1F4AC; Gift Animation Text</h2>
-                    
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="plugins.fireworks.labels.gift_animation_text">&#x1F4AC; Gift Animation Text</h2>
+
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label><strong data-i18n="generated.bc2828db15ef">Show Gift Text</strong></label>
+                            <label><strong data-i18n="plugins.fireworks.labels.show_gift_text">Show Gift Text</strong></label>
                             <div id="gift-popup-enabled-toggle" class="toggle-switch active" data-config="giftPopupEnabled"></div>
                         </div>
-                        
-                        <p class="text-sm text-gray-400" data-i18n="generated.9066a1ce76ee">
+
+                        <p class="text-sm text-gray-400" data-i18n="plugins.fireworks.labels.enable_or_disable_the_gift_animation_text_that">
                             Enable or disable the gift animation text that shows gifter name and coins
                         </p>
-                        
+
                         <div>
-                            <label class="block mb-2"><strong data-i18n="generated.1fa14af3a04c">Gift Text Position</strong></label>
+                            <label class="block mb-2"><strong data-i18n="plugins.fireworks.labels.gift_text_position">Gift Text Position</strong></label>
                             <select id="gift-popup-position" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="giftPopupPosition">
-                                <option value="top" data-i18n="generated.701e10b93d74">Top - Centered at top of screen</option>
-                                <option value="middle" data-i18n="generated.4d56be4185d7">Middle - Centered in middle of screen</option>
-                                <option value="bottom" data-i18n="generated.506ce16c3c9b">Bottom - At rocket launch position (default)</option>
-                                <option value="none" data-i18n="generated.d21a76db3567">None - Hide completely</option>
+                                <option value="top" data-i18n="plugins.fireworks.labels.top_centered_at_top_of_screen">Top - Centered at top of screen</option>
+                                <option value="middle" data-i18n="plugins.fireworks.labels.middle_centered_in_middle_of_screen">Middle - Centered in middle of screen</option>
+                                <option value="bottom" data-i18n="plugins.fireworks.labels.bottom_at_rocket_launch_position_default">Bottom - At rocket launch position (default)</option>
+                                <option value="none" data-i18n="plugins.fireworks.labels.none_hide_completely">None - Hide completely</option>
                             </select>
-                            <p class="text-xs text-gray-400 mt-1" data-i18n="generated.e62d3245c292">
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.fireworks.labels.choose_where_the_gift_animation_text_appears_during">
                                 Choose where the gift animation text appears during fireworks
                             </p>
                         </div>
-                        
+
                         <div class="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-                            <strong class="text-green-400" data-i18n="generated.9652c994e7c4">&#x1F50D; Preview:</strong>
+                            <strong class="text-green-400" data-i18n="plugins.fireworks.labels.preview">&#x1F50D; Preview:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300">
-                                <div>- <strong>Top:</strong><span data-i18n="generated.fd4ac8b5484d"> Text appears at top-center of screen</span></div>
-                                <div>- <strong>Middle:</strong><span data-i18n="generated.a549f3ea7ef6"> Text appears in center of screen</span></div>
-                                <div>- <strong>Bottom:</strong><span data-i18n="generated.898af30262cf"> Text appears at firework launch position</span></div>
-                                <div>- <strong>None:</strong><span data-i18n="generated.f424d59fdc29"> No text is shown</span></div>
+                                <div>- <strong>Top:</strong><span data-i18n="plugins.fireworks.labels.text_appears_at_top_center_of_screen"> Text appears at top-center of screen</span></div>
+                                <div>- <strong>Middle:</strong><span data-i18n="plugins.fireworks.labels.text_appears_in_center_of_screen"> Text appears in center of screen</span></div>
+                                <div>- <strong>Bottom:</strong><span data-i18n="plugins.fireworks.labels.text_appears_at_firework_launch_position"> Text appears at firework launch position</span></div>
+                                <div>- <strong>None:</strong><span data-i18n="plugins.fireworks.labels.no_text_is_shown"> No text is shown</span></div>
                             </div>
                         </div>
                     </div>
@@ -1348,13 +1348,13 @@
                 <!-- Goal Finale -->
                 <div class="card rounded-xl p-6">
                     <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.goal_finale">&#x1F389; Goal Finale</h2>
-                    
+
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <label data-i18n="fireworks.enable_goal_finales">Enable Goal Finales</label>
                             <div id="finale-toggle" class="toggle-switch active" data-config="goalFinaleEnabled"></div>
                         </div>
-                        
+
                         <div>
                             <label class="block mb-2" data-i18n="fireworks.finale_intensity">Finale Intensity</label>
                             <input type="range" id="finale-intensity" min="1" max="10" step="0.5" value="3" class="w-full">
@@ -1364,7 +1364,7 @@
                                 <span>10x</span>
                             </div>
                         </div>
-                        
+
                         <button id="test-finale-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="fireworks.test_finale">
                             &#x1F389; Test Finale
                         </button>
@@ -1373,16 +1373,16 @@
 
                 <!-- Follower Fireworks -->
                 <div class="card rounded-xl p-6">
-                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="generated.16a1590bbc56">&#x1F465; Follower Feuerwerk</h2>
-                    
+                    <h2 class="section-title text-xl font-bold mb-4" data-i18n="plugins.fireworks.labels.follower_feuerwerk">&#x1F465; Follower Feuerwerk</h2>
+
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="generated.d6f528bfc5c4">Enable Follower Fireworks</label>
+                            <label data-i18n="plugins.fireworks.labels.enable_follower_fireworks">Enable Follower Fireworks</label>
                             <div id="follower-toggle" class="toggle-switch" data-config="followerFireworksEnabled"></div>
                         </div>
-                        
+
                         <div>
-                            <label class="block mb-2" data-i18n="generated.8dfa6ac13452">Number of Rockets per Follow</label>
+                            <label class="block mb-2" data-i18n="plugins.fireworks.labels.number_of_rockets_per_follow">Number of Rockets per Follow</label>
                             <input type="range" id="follower-rocket-count" min="1" max="10" step="1" value="3" class="w-full">
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>1</span>
@@ -1390,19 +1390,19 @@
                                 <span>10</span>
                             </div>
                         </div>
-                        
+
                         <div class="flex items-center justify-between">
-                            <label data-i18n="generated.2e5712c884cc">Show Thank You Animation</label>
+                            <label data-i18n="plugins.fireworks.labels.show_thank_you_animation">Show Thank You Animation</label>
                             <div id="follower-animation-toggle" class="toggle-switch active" data-config="followerShowAnimation"></div>
                         </div>
-                        
+
                         <div class="flex items-center justify-between">
-                            <label data-i18n="generated.ee38bd430c47">Show Profile Picture</label>
+                            <label data-i18n="plugins.fireworks.labels.show_profile_picture">Show Profile Picture</label>
                             <div id="follower-profile-toggle" class="toggle-switch active" data-config="followerShowProfilePicture"></div>
                         </div>
-                        
+
                         <div>
-                            <label class="block mb-2" data-i18n="generated.413d28e84b29">Animation Duration (seconds)</label>
+                            <label class="block mb-2" data-i18n="plugins.fireworks.labels.animation_duration_seconds">Animation Duration (seconds)</label>
                             <input type="range" id="follower-animation-duration" min="1" max="10" step="0.5" value="3" class="w-full">
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>1s</span>
@@ -1410,9 +1410,9 @@
                                 <span>10s</span>
                             </div>
                         </div>
-                        
+
                         <div>
-                            <label class="block mb-2" data-i18n="generated.09029b0cf4bc">Animation Delay (seconds)</label>
+                            <label class="block mb-2" data-i18n="plugins.fireworks.labels.animation_delay_seconds">Animation Delay (seconds)</label>
                             <input type="range" id="follower-animation-delay" min="0" max="10" step="0.5" value="3" class="w-full">
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>0s</span>
@@ -1420,44 +1420,44 @@
                                 <span>10s</span>
                             </div>
                         </div>
-                        
+
                         <div>
-                            <label class="block mb-2" data-i18n="generated.fa8e1a648433">Animation Position</label>
+                            <label class="block mb-2" data-i18n="plugins.fireworks.labels.animation_position">Animation Position</label>
                             <select id="follower-animation-position" class="w-full bg-gray-700 text-white p-2 rounded-lg">
-                                <option value="top-left" data-i18n="generated.4c147b2e4aed">Top Left</option>
-                                <option value="top-center" data-i18n="generated.4eec6cc25c2b">Top Center</option>
-                                <option value="top-right" data-i18n="generated.1de62d5da183">Top Right</option>
+                                <option value="top-left" data-i18n="plugins.fireworks.labels.top_left">Top Left</option>
+                                <option value="top-center" data-i18n="plugins.fireworks.labels.top_center">Top Center</option>
+                                <option value="top-right" data-i18n="plugins.fireworks.labels.top_right">Top Right</option>
                                 <option value="center" selected>Center</option>
-                                <option value="bottom-left" data-i18n="generated.40b38d3673b8">Bottom Left</option>
-                                <option value="bottom-center" data-i18n="generated.08b0497d7559">Bottom Center</option>
-                                <option value="bottom-right" data-i18n="generated.c978e16904ce">Bottom Right</option>
+                                <option value="bottom-left" data-i18n="plugins.fireworks.labels.bottom_left">Bottom Left</option>
+                                <option value="bottom-center" data-i18n="plugins.fireworks.labels.bottom_center">Bottom Center</option>
+                                <option value="bottom-right" data-i18n="plugins.fireworks.labels.bottom_right">Bottom Right</option>
                             </select>
                         </div>
-                        
+
                         <div>
-                            <label class="block mb-2" data-i18n="generated.07b32ac66285">Animation Style</label>
+                            <label class="block mb-2" data-i18n="plugins.fireworks.labels.animation_style">Animation Style</label>
                             <select id="follower-animation-style" class="w-full bg-gray-700 text-white p-2 rounded-lg">
-                                <option value="gradient-purple" selected data-i18n="generated.5c6898ec84df">Gradient Purple (Default)</option>
-                                <option value="gradient-blue" data-i18n="generated.df8c18028897">Gradient Blue</option>
-                                <option value="gradient-gold" data-i18n="generated.f83f4b8024f4">Gradient Gold</option>
-                                <option value="gradient-rainbow" data-i18n="generated.cbd73a60346c">Gradient Rainbow</option>
+                                <option value="gradient-purple" selected data-i18n="plugins.fireworks.labels.gradient_purple_default">Gradient Purple (Default)</option>
+                                <option value="gradient-blue" data-i18n="plugins.fireworks.labels.gradient_blue">Gradient Blue</option>
+                                <option value="gradient-gold" data-i18n="plugins.fireworks.labels.gradient_gold">Gradient Gold</option>
+                                <option value="gradient-rainbow" data-i18n="plugins.fireworks.labels.gradient_rainbow">Gradient Rainbow</option>
                                 <option value="neon">Neon</option>
                                 <option value="minimal">Minimal</option>
                             </select>
                         </div>
-                        
+
                         <div>
-                            <label class="block mb-2" data-i18n="generated.8dc85e9d7266">Animation Size</label>
+                            <label class="block mb-2" data-i18n="plugins.fireworks.labels.animation_size">Animation Size</label>
                             <select id="follower-animation-size" class="w-full bg-gray-700 text-white p-2 rounded-lg">
                                 <option value="small" data-i18n="fireworks.small">Small</option>
-                                <option value="medium" selected data-i18n="generated.ad0a5ccacd0a">Medium (Default)</option>
+                                <option value="medium" selected data-i18n="plugins.fireworks.labels.medium_default">Medium (Default)</option>
                                 <option value="large">Large</option>
                                 <option value="custom">Custom</option>
                             </select>
                         </div>
-                        
+
                         <div id="follower-animation-scale-container" style="display: none;">
-                            <label class="block mb-2" data-i18n="generated.3a8652be3748">Custom Scale Factor</label>
+                            <label class="block mb-2" data-i18n="plugins.fireworks.labels.custom_scale_factor">Custom Scale Factor</label>
                             <input type="range" id="follower-animation-scale" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full">
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>0.5x</span>
@@ -1465,22 +1465,22 @@
                                 <span>2.0x</span>
                             </div>
                         </div>
-                        
+
                         <div>
-                            <label class="block mb-2" data-i18n="generated.ba47b3a1bc58">Entrance Animation</label>
+                            <label class="block mb-2" data-i18n="plugins.fireworks.labels.entrance_animation">Entrance Animation</label>
                             <select id="follower-animation-entrance" class="w-full bg-gray-700 text-white p-2 rounded-lg">
-                                <option value="scale" selected data-i18n="generated.0c0183d48809">Scale (Default)</option>
-                                <option value="fade" data-i18n="generated.390bc65781a2">Fade In</option>
-                                <option value="slide-up" data-i18n="generated.d87813e38741">Slide Up</option>
-                                <option value="slide-down" data-i18n="generated.47794d02454e">Slide Down</option>
-                                <option value="slide-left" data-i18n="generated.93bb8f5fdccc">Slide Left</option>
-                                <option value="slide-right" data-i18n="generated.018a7947f448">Slide Right</option>
+                                <option value="scale" selected data-i18n="plugins.fireworks.labels.scale_default">Scale (Default)</option>
+                                <option value="fade" data-i18n="plugins.fireworks.labels.fade_in">Fade In</option>
+                                <option value="slide-up" data-i18n="plugins.fireworks.labels.slide_up">Slide Up</option>
+                                <option value="slide-down" data-i18n="plugins.fireworks.labels.slide_down">Slide Down</option>
+                                <option value="slide-left" data-i18n="plugins.fireworks.labels.slide_left">Slide Left</option>
+                                <option value="slide-right" data-i18n="plugins.fireworks.labels.slide_right">Slide Right</option>
                                 <option value="bounce">Bounce</option>
                                 <option value="rotate">Rotate</option>
                             </select>
                         </div>
-                        
-                        <button id="test-follower-btn" class="w-full btn-success py-3 rounded-lg font-bold" data-i18n="generated.46bd27850580">
+
+                        <button id="test-follower-btn" class="w-full btn-success py-3 rounded-lg font-bold" data-i18n="plugins.fireworks.labels.test_follower_fireworks">
                             &#x1F465; Test Follower Fireworks
                         </button>
                     </div>
@@ -1489,11 +1489,11 @@
                 <!-- OBS Overlay URL -->
                 <div class="card rounded-xl p-6">
                     <h2 class="section-title text-xl font-bold mb-4" data-i18n="fireworks.overlay">OBS Overlay</h2>
-                    
+
                     <p class="text-sm text-gray-400 mb-4" data-i18n="fireworks.use_this_url_in_obs">
                         Use this URL in OBS as a Browser Source.
                     </p>
-                    
+
                     <div class="flex">
                         <button id="copy-overlay-url" class="w-full bg-white/10 hover:bg-white/20 py-2 rounded-lg transition" data-i18n="fireworks.copy_overlay_url">
                             &#x1F4CB; Copy Overlay URL
@@ -1521,11 +1521,11 @@
                             <span class="text-xs bg-purple-500/20 px-2 py-1 rounded">4K</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div data-i18n="generated.1ffe9cb4a8e2">Resolution: 4K (3840x2160)</div>
-                            <div data-i18n="generated.aae78b5170b6">Max Particles: 3000</div>
-                            <div data-i18n="generated.c59f3b968d27">Target FPS: 60</div>
-                            <div data-i18n="generated.610573fd9f21">Effects: All Enabled</div>
-                            <div data-i18n="generated.eaf62290944c">GPU: WebGL</div>
+                            <div data-i18n="plugins.fireworks.labels.resolution_4k_3840x2160">Resolution: 4K (3840x2160)</div>
+                            <div data-i18n="plugins.fireworks.labels.max_particles_3000">Max Particles: 3000</div>
+                            <div data-i18n="plugins.fireworks.labels.target_fps_60">Target FPS: 60</div>
+                            <div data-i18n="plugins.fireworks.labels.effects_all_enabled_610573">Effects: All Enabled</div>
+                            <div data-i18n="plugins.fireworks.labels.gpu_webgl_eaf622">GPU: WebGL</div>
                         </div>
                         <button class="w-full mt-4 bg-purple-500 hover:bg-purple-600 py-2 rounded-lg font-bold transition" data-i18n="fireworks.presets.apply">
                             Anwenden
@@ -1539,11 +1539,11 @@
                             <span class="text-xs bg-blue-500/20 px-2 py-1 rounded">1440p</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div data-i18n="generated.d49814746370">- Resolution: 1440p (2560x1440)</div>
-                            <div data-i18n="generated.afb4231f1d4d">- Max Particles: 2000</div>
-                            <div data-i18n="generated.c6cec2154b57">- Target FPS: 60</div>
-                            <div data-i18n="generated.7a49ccb23f26">- Effects: All Enabled</div>
-                            <div data-i18n="generated.6bfd2406f209">- GPU: WebGL</div>
+                            <div data-i18n="plugins.fireworks.labels.resolution_1440p_2560x1440">- Resolution: 1440p (2560x1440)</div>
+                            <div data-i18n="plugins.fireworks.labels.max_particles_2000">- Max Particles: 2000</div>
+                            <div data-i18n="plugins.fireworks.labels.target_fps_60_c6cec2">- Target FPS: 60</div>
+                            <div data-i18n="plugins.fireworks.labels.effects_all_enabled_7a49cc">- Effects: All Enabled</div>
+                            <div data-i18n="plugins.fireworks.labels.gpu_webgl_6bfd24">- GPU: WebGL</div>
                         </div>
                         <button class="w-full mt-4 bg-blue-500 hover:bg-blue-600 py-2 rounded-lg font-bold transition" data-i18n="fireworks.presets.apply">
                             Anwenden
@@ -1557,11 +1557,11 @@
                             <span class="text-xs bg-green-500/20 px-2 py-1 rounded">Empfohlen</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div data-i18n="generated.411d7e2ea913">- Resolution: 1080p (1920x1080)</div>
-                            <div data-i18n="generated.f971f5550721">- Max Particles: 1500</div>
-                            <div data-i18n="generated.fddd7b8b7848">- Target FPS: 60</div>
-                            <div data-i18n="generated.001c7533f976">- Effects: All Enabled</div>
-                            <div data-i18n="generated.56392f43511f">- GPU: WebGL</div>
+                            <div data-i18n="plugins.fireworks.labels.resolution_1080p_1920x1080">- Resolution: 1080p (1920x1080)</div>
+                            <div data-i18n="plugins.fireworks.labels.max_particles_1500">- Max Particles: 1500</div>
+                            <div data-i18n="plugins.fireworks.labels.target_fps_60_fddd7b">- Target FPS: 60</div>
+                            <div data-i18n="plugins.fireworks.labels.effects_all_enabled">- Effects: All Enabled</div>
+                            <div data-i18n="plugins.fireworks.labels.gpu_webgl">- GPU: WebGL</div>
                         </div>
                         <button class="w-full mt-4 bg-green-500 hover:bg-green-600 py-2 rounded-lg font-bold transition" data-i18n="fireworks.presets.apply">
                             Anwenden
@@ -1575,11 +1575,11 @@
                             <span class="text-xs bg-yellow-500/20 px-2 py-1 rounded">720p</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div data-i18n="generated.3568736c45bb">- Resolution: 720p (1280x720)</div>
-                            <div data-i18n="generated.a62ae700adad">- Max Particles: 1000</div>
-                            <div data-i18n="generated.d0da55032f4e">- Target FPS: 48</div>
-                            <div data-i18n="generated.b065f6a4dee8">- Effects: Reduced</div>
-                            <div data-i18n="generated.b23bea72aa4b">- GPU: WebGL</div>
+                            <div data-i18n="plugins.fireworks.labels.resolution_720p_1280x720">- Resolution: 720p (1280x720)</div>
+                            <div data-i18n="plugins.fireworks.labels.max_particles_1000">- Max Particles: 1000</div>
+                            <div data-i18n="plugins.fireworks.labels.target_fps_48">- Target FPS: 48</div>
+                            <div data-i18n="plugins.fireworks.labels.effects_reduced">- Effects: Reduced</div>
+                            <div data-i18n="plugins.fireworks.labels.gpu_webgl_b23bea">- GPU: WebGL</div>
                         </div>
                         <button class="w-full mt-4 bg-yellow-500 hover:bg-yellow-600 py-2 rounded-lg font-bold transition" data-i18n="fireworks.presets.apply">
                             Anwenden
@@ -1593,11 +1593,11 @@
                             <span class="text-xs bg-orange-500/20 px-2 py-1 rounded">540p</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div data-i18n="generated.1be0d43571d8">- Resolution: 540p (960x540)</div>
-                            <div data-i18n="generated.18942e6065db">- Max Particles: 500</div>
-                            <div data-i18n="generated.690c5705dfe2">- Target FPS: 30</div>
-                            <div data-i18n="generated.658d6c7a0a92">- Effects: Minimal</div>
-                            <div data-i18n="generated.e0af983d0229">- GPU: Canvas 2D</div>
+                            <div data-i18n="plugins.fireworks.labels.resolution_540p_960x540">- Resolution: 540p (960x540)</div>
+                            <div data-i18n="plugins.fireworks.labels.max_particles_500">- Max Particles: 500</div>
+                            <div data-i18n="plugins.fireworks.labels.target_fps_30">- Target FPS: 30</div>
+                            <div data-i18n="plugins.fireworks.labels.effects_minimal_658d6c">- Effects: Minimal</div>
+                            <div data-i18n="plugins.fireworks.labels.gpu_canvas_2d_e0af98">- GPU: Canvas 2D</div>
                         </div>
                         <button class="w-full mt-4 bg-orange-500 hover:bg-orange-600 py-2 rounded-lg font-bold transition" data-i18n="fireworks.presets.apply">
                             Anwenden
@@ -1611,11 +1611,11 @@
                             <span class="text-xs bg-red-500/20 px-2 py-1 rounded">360p</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-300">
-                            <div data-i18n="generated.d18fdff22e56">- Resolution: 360p (640x360)</div>
-                            <div data-i18n="generated.8dbcd3820465">- Max Particles: 300</div>
-                            <div data-i18n="generated.8647bdb53ce7">- Target FPS: 24</div>
-                            <div data-i18n="generated.541a3b8a8c77">- Effects: Minimal</div>
-                            <div data-i18n="generated.6105717d4a7c">- GPU: Canvas 2D</div>
+                            <div data-i18n="plugins.fireworks.labels.resolution_360p_640x360">- Resolution: 360p (640x360)</div>
+                            <div data-i18n="plugins.fireworks.labels.max_particles_300">- Max Particles: 300</div>
+                            <div data-i18n="plugins.fireworks.labels.target_fps_24">- Target FPS: 24</div>
+                            <div data-i18n="plugins.fireworks.labels.effects_minimal">- Effects: Minimal</div>
+                            <div data-i18n="plugins.fireworks.labels.gpu_canvas_2d">- GPU: Canvas 2D</div>
                         </div>
                         <button class="w-full mt-4 bg-red-500 hover:bg-red-600 py-2 rounded-lg font-bold transition" data-i18n="fireworks.presets.apply">
                             Anwenden
@@ -1672,7 +1672,7 @@
                             <div id="benchmark-progress-bar" class="bg-blue-500 h-2 rounded-full transition-all" style="width: 0%"></div>
                         </div>
                         <div class="text-xs text-gray-400 text-center">
-                            <span id="benchmark-step">0</span> / <span id="benchmark-total">6</span><span data-i18n="generated.dfb38f997e1a"> Tests abgeschlossen
+                            <span id="benchmark-step">0</span> / <span id="benchmark-total">6</span><span data-i18n="plugins.fireworks.labels.tests_abgeschlossen"> Tests abgeschlossen
                         </span></div>
                     </div>
                 </div>
@@ -1680,7 +1680,7 @@
                 <!-- Benchmark Results -->
                 <div id="benchmark-results" style="display: none;">
                     <h3 class="text-xl font-bold mb-4">&#x1F4CA; <span data-i18n="fireworks.benchmark.results">Benchmark-Ergebnisse</span></h3>
-                    
+
                     <div class="grid grid-cols-1 gap-4 mb-6">
                         <!-- Results will be populated here -->
                     </div>
@@ -1699,7 +1699,7 @@
                     <p class="text-sm text-yellow-300">
                         &#x2139; <strong data-i18n="fireworks.benchmark.info">Hinweis:</strong>
                         <span data-i18n="fireworks.benchmark.info_text">
-                            Der Benchmark -ffnet das OBS-Overlay-Fenster und f-hrt verschiedene Szenarien durch. 
+                            Der Benchmark -ffnet das OBS-Overlay-Fenster und f-hrt verschiedene Szenarien durch.
                             Dies dauert etwa 1-2 Minuten. Schlie-en Sie das Fenster nicht w-hrend des Tests.
                         </span>
                     </p>

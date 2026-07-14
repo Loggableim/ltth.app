@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.cbd85e7514b8">Interactive Story - OBS Overlay</title>
+  <title data-i18n="plugins.interactive-story.labels.interactive_story_obs_overlay">Interactive Story - OBS Overlay</title>
   <script>
     (function () {
       const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
@@ -100,12 +100,12 @@
     #imageContainer.visible {
       opacity: 1;
     }
-    
+
     #imageContainer.darkened {
       /* Keep container visible but darken the image via filter */
       opacity: 1;
     }
-    
+
     #imageContainer.darkened #storyImage {
       filter: brightness(0.35);
     }
@@ -116,7 +116,7 @@
       object-fit: cover;
       transition: filter 0.8s ease-in-out;
     }
-    
+
     #imageContainer.title-mode #storyImage {
       filter: brightness(1);
       object-fit: contain;
@@ -140,24 +140,24 @@
       cursor: move;
       width: min(92vw, 1100px);
     }
-    
+
     #titleOverlay.dragging {
       transition: none;
       border-color: rgba(233,69,96,0.8);
       box-shadow: 0 0 30px rgba(233,69,96,0.6);
     }
-    
+
     #titleOverlay.visible {
       opacity: 1;
       transform: translate(-50%, -50%) scale(1);
       animation: titlePulse 3s ease-in-out infinite;
     }
-    
+
     @keyframes titlePulse {
       0%, 100% { box-shadow: 0 0 30px rgba(233,69,96,0.3); }
       50% { box-shadow: 0 0 50px rgba(233,69,96,0.5); }
     }
-    
+
     #titleOverlay h1 {
       color: var(--title-color, #e94560);
       font-size: calc(var(--title-font-size, 2.5em) * 1.6);
@@ -218,12 +218,12 @@
       cursor: move;
       pointer-events: auto; /* Override parent's pointer-events: none */
     }
-    
+
     #chapterContent.dragging {
       transition: none;
       box-shadow: 0 0 30px rgba(233,69,96,0.5);
     }
-    
+
     /* Hide scrollbar for Chrome/Safari/Opera */
     #chapterContent::-webkit-scrollbar {
       display: none;
@@ -233,7 +233,7 @@
     #chapterContent.scroll-mode {
       gap: 1.5em;
     }
-    
+
     /* Individual sentence styling - improved animations */
     .scroll-sentence {
       opacity: 0;
@@ -245,13 +245,13 @@
       border-radius: 8px;
       background: transparent;
     }
-    
+
     .scroll-sentence.past {
       opacity: 0.15;
       transform: translateY(-100px) scale(0.7);
       filter: blur(2px);
     }
-    
+
     .scroll-sentence.current {
       opacity: 1;
       transform: translateY(0) scale(1.05);
@@ -262,23 +262,23 @@
       background: linear-gradient(90deg, rgba(233,69,96,0.1) 0%, rgba(233,69,96,0.2) 50%, rgba(233,69,96,0.1) 100%);
       border-left: 3px solid var(--title-color, #e94560);
     }
-    
+
     .scroll-sentence.future {
       opacity: 0.35;
       transform: translateY(60px) scale(0.85);
       filter: blur(0.3px);
     }
-    
+
     .scroll-sentence.hidden {
       opacity: 0;
       transform: translateY(150px) scale(0.6);
     }
-    
+
     /* Visibility control classes */
     .scroll-sentence.completely-hidden {
       display: none;
     }
-    
+
     /* Immediate/Self-Reading Mode Styles */
     .immediate-title {
       color: var(--title-color, #e94560);
@@ -293,7 +293,7 @@
       border-radius: 15px;
       border: 2px solid rgba(233,69,96,0.3);
     }
-    
+
     .immediate-content {
       color: var(--text-color, #ffffff);
       font-size: calc(var(--text-font-size, 1.3em) * 1.4);
@@ -308,21 +308,21 @@
       scrollbar-width: thin;
       scrollbar-color: rgba(233,69,96,0.5) rgba(0,0,0,0.3);
     }
-    
+
     .immediate-content::-webkit-scrollbar {
       width: 8px;
     }
-    
+
     .immediate-content::-webkit-scrollbar-track {
       background: rgba(0,0,0,0.3);
       border-radius: 4px;
     }
-    
+
     .immediate-content::-webkit-scrollbar-thumb {
       background: rgba(233,69,96,0.5);
       border-radius: 4px;
     }
-    
+
     .immediate-content::-webkit-scrollbar-thumb:hover {
       background: rgba(233,69,96,0.7);
     }
@@ -346,7 +346,7 @@
       display: block;
       opacity: 1;
     }
-    
+
     #votingOverlay.dragging {
       transition: none;
       box-shadow: 0 0 40px rgba(233,69,96,0.6);
@@ -365,7 +365,7 @@
       border: 2px solid rgba(233,69,96,0.5);
       animation: pulseGlow 2s ease-in-out infinite;
     }
-    
+
     @keyframes pulseGlow {
       0%, 100% { box-shadow: 0 0 20px rgba(233,69,96,0.3); }
       50% { box-shadow: 0 0 40px rgba(233,69,96,0.5); }
@@ -388,7 +388,7 @@
       animation: slideIn 0.5s ease-out;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    
+
     .choice-item:hover {
       transform: translateX(5px);
       box-shadow: 0 5px 25px rgba(233,69,96,0.3);
@@ -399,7 +399,7 @@
       background: linear-gradient(135deg, rgba(40,167,69,0.3) 0%, rgba(15,52,96,0.4) 50%, rgba(0,0,0,0.6) 100%);
       animation: winnerPulse 1s ease-in-out infinite;
     }
-    
+
     @keyframes winnerPulse {
       0%, 100% { box-shadow: 0 0 20px rgba(40,167,69,0.4); }
       50% { box-shadow: 0 0 40px rgba(40,167,69,0.7); }
@@ -495,12 +495,12 @@
       animation: spin 1s linear infinite;
       margin: 0 auto 20px;
     }
-    
+
     .generating-media {
       margin-bottom: 12px;
       display: none;
     }
-    
+
     .generating-media img,
     .generating-media video {
       width: min(92vw, 720px);
@@ -617,12 +617,12 @@
     body.portrait #textOverlay {
       /* Full screen overlay, no adjustments needed */
     }
-    
+
     body.portrait #chapterContent {
       width: 90%;
       max-height: 60%;
     }
-    
+
     body.portrait #titleOverlay h1 {
       font-size: calc(var(--title-font-size, 2.5em) * 1.2);
     }
@@ -750,11 +750,11 @@
 
   <!-- Voting Overlay -->
   <div id="votingOverlay" class="draggable" data-element="voting">
-    <div class="voting-header" data-i18n="generated.eaca07ac1f70">
+    <div class="voting-header" data-i18n="plugins.interactive-story.labels.vote_now_type_your_choice_in_chat">
       Vote Now! Type your choice in chat
     </div>
     <div class="choice-container" id="choiceContainer"></div>
-    <div class="timer-display" id="timerDisplay" data-i18n="generated.e7eb75276728">Time Remaining: --</div>
+    <div class="timer-display" id="timerDisplay" data-i18n="plugins.interactive-story.labels.time_remaining">Time Remaining: --</div>
   </div>
 
   <!-- Generating Overlay -->
@@ -764,19 +764,19 @@
       <img id="generatingImage" alt="Generating animation">
       <video id="generatingVideo" loop muted playsinline></video>
     </div>
-    <div class="generating-text" data-i18n="generated.fac6e6fa6110">Generating next chapter...</div>
+    <div class="generating-text" data-i18n="plugins.interactive-story.labels.generating_next_chapter">Generating next chapter...</div>
   </div>
 
   <!-- Results Overlay -->
   <div id="resultsOverlay">
-    <div class="results-title" data-i18n="generated.14016c28bca9">Winner!</div>
+    <div class="results-title" data-i18n="plugins.interactive-story.labels.winner">Winner!</div>
     <div class="results-choice" id="winningChoice"></div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-    
+
     let currentChapter = null;
     let votingActive = false;
     let voteTimer = null;
@@ -786,11 +786,11 @@
     let sentences = [];
     let sentenceTimer = null;
     let scrollingInProgress = false;
-    
+
     // Configuration constants
     const MAX_VISIBLE_PAST_SENTENCES = 2; // How many past sentences to keep visible before hiding
     const SENTENCE_ANIMATION_DELAY_MS = 100; // Delay before animating sentence entrance
-    
+
     // Overlay timing constants
     // NOTE: TEXT_OVERLAY_FADE_DURATION_MS must match CSS transition on #textOverlay
     //       See CSS rule: #textOverlay { transition: opacity 0.8s ease-in-out; }
@@ -827,10 +827,10 @@
     function applyConfiguration(cfg) {
       const root = document.documentElement;
       const body = document.body;
-      
+
       // Parse resolution
       const [width, height] = cfg.overlayResolution.split('x').map(Number);
-      
+
       // Apply orientation
       if (cfg.overlayOrientation === 'portrait') {
         body.classList.add('portrait');
@@ -841,7 +841,7 @@
         root.style.setProperty('--overlay-width', `${width}px`);
         root.style.setProperty('--overlay-height', `${height}px`);
       }
-      
+
       // Apply font and colors
       root.style.setProperty('--font-family', cfg.overlayFontFamily);
       root.style.setProperty('--text-font-size', `${cfg.overlayFontSize}em`);
@@ -849,11 +849,11 @@
       root.style.setProperty('--text-color', cfg.overlayTextColor);
       root.style.setProperty('--title-color', cfg.overlayTitleColor);
       root.style.setProperty('--overlay-background', cfg.overlayBackgroundGradient);
-      
+
       // Apply display mode class
       const contentEl = document.getElementById('chapterContent');
       contentEl.classList.remove('sentence-mode', 'scroll-mode');
-      
+
       if (cfg.overlayDisplayMode === 'sentence') {
         contentEl.classList.add('sentence-mode');
       } else if (cfg.overlayDisplayMode === 'scroll') {
@@ -864,12 +864,12 @@
         const ttsDuration = estimatedWords / avgWordsPerSecond;
         root.style.setProperty('--scroll-duration', `${ttsDuration}s`);
       }
-      
+
       applyGeneratingAnimation(cfg);
-      
+
       console.log('Configuration applied:', cfg);
     }
-    
+
     function applyGeneratingAnimation(cfg) {
       const mode = cfg.generatingAnimationMode || 'default';
       const url = cfg.generatingAnimationUrl || '';
@@ -877,16 +877,16 @@
       const media = document.getElementById('generatingMedia');
       const img = document.getElementById('generatingImage');
       const video = document.getElementById('generatingVideo');
-      
+
       if (!spinner || !media || !img || !video) return;
-      
+
       const lowerUrl = url.toLowerCase();
       const isVideo = lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.mov');
-      
+
       if (mode === 'custom' && url) {
         spinner.style.display = 'none';
         media.style.display = 'block';
-        
+
         if (isVideo) {
           video.style.display = 'block';
           img.style.display = 'none';
@@ -910,7 +910,7 @@
         video.removeAttribute('src');
       }
     }
-    
+
     function restartGeneratingAnimationPlayback() {
       const video = document.getElementById('generatingVideo');
       if (video && video.style.display !== 'none') {
@@ -922,11 +922,11 @@
     // ============================================
     // DRAGGABLE OVERLAY ELEMENTS
     // ============================================
-    
+
     let overlayConfig = {
       positions: {}
     };
-    
+
     let dragState = {
       isDragging: false,
       element: null,
@@ -935,7 +935,7 @@
       snapToGrid: false,
       gridSize: 20
     };
-    
+
     /**
      * Initialize draggable functionality for overlay elements
      * Similar to quiz plugin implementation
@@ -943,16 +943,16 @@
     function initDraggableElements() {
       // Load saved positions
       loadOverlayPositions();
-      
+
       const draggableElements = document.querySelectorAll('.draggable');
-      
+
       draggableElements.forEach(element => {
         element.addEventListener('mousedown', startDrag);
       });
-      
+
       document.addEventListener('mousemove', doDrag);
       document.addEventListener('mouseup', stopDrag);
-      
+
       // Keyboard shortcuts
       document.addEventListener('keydown', (e) => {
         if (e.key === 'g' || e.key === 'G') {
@@ -966,70 +966,70 @@
           }
         }
       });
-      
+
       console.log('✅ Draggable overlay elements initialized');
       console.log('💡 Tip: Hold Ctrl/Cmd and drag elements to reposition them');
       console.log('💡 Press "G" to toggle snap-to-grid, Ctrl+R to reset positions');
     }
-    
+
     function startDrag(e) {
       // Only allow dragging with Ctrl/Cmd key to prevent accidental moves
       if (!e.ctrlKey && !e.metaKey) return;
-      
+
       dragState.isDragging = true;
       dragState.element = e.currentTarget;
-      
+
       const rect = dragState.element.getBoundingClientRect();
       dragState.offsetX = e.clientX - rect.left;
       dragState.offsetY = e.clientY - rect.top;
-      
+
       dragState.element.classList.add('dragging');
       e.preventDefault();
     }
-    
+
     function doDrag(e) {
       if (!dragState.isDragging || !dragState.element) return;
-      
+
       let x = e.clientX - dragState.offsetX;
       let y = e.clientY - dragState.offsetY;
-      
+
       // Snap to grid
       if (dragState.snapToGrid) {
         x = Math.round(x / dragState.gridSize) * dragState.gridSize;
         y = Math.round(y / dragState.gridSize) * dragState.gridSize;
       }
-      
+
       // Apply position
       dragState.element.style.position = 'fixed';
       dragState.element.style.left = x + 'px';
       dragState.element.style.top = y + 'px';
       dragState.element.style.transform = 'none';
-      
+
       e.preventDefault();
     }
-    
+
     function stopDrag(e) {
       if (!dragState.isDragging) return;
-      
+
       dragState.element.classList.remove('dragging');
-      
+
       // Save position
       const elementType = dragState.element.getAttribute('data-element');
       const rect = dragState.element.getBoundingClientRect();
-      
+
       if (!overlayConfig.positions) overlayConfig.positions = {};
       if (!overlayConfig.positions[elementType]) overlayConfig.positions[elementType] = {};
-      
+
       overlayConfig.positions[elementType].top = rect.top;
       overlayConfig.positions[elementType].left = rect.left;
-      
+
       // Send to server
       saveOverlayPositions();
-      
+
       dragState.isDragging = false;
       dragState.element = null;
     }
-    
+
     async function loadOverlayPositions() {
       try {
         const response = await fetch('/api/interactive-story/overlay-positions');
@@ -1037,24 +1037,24 @@
           console.log('No saved overlay positions found, using defaults');
           return;
         }
-        
+
         const data = await response.json();
         overlayConfig = data;
-        
+
         // Apply saved positions
         if (overlayConfig.positions) {
           applyOverlayPositions();
         }
-        
+
         console.log('✅ Overlay positions loaded:', overlayConfig.positions);
       } catch (error) {
         console.error('Error loading overlay positions:', error);
       }
     }
-    
+
     function applyOverlayPositions() {
       if (!overlayConfig.positions) return;
-      
+
       // Apply title position
       if (overlayConfig.positions.title) {
         const titleEl = document.getElementById('titleOverlay');
@@ -1064,7 +1064,7 @@
         titleEl.style.top = pos.top + 'px';
         titleEl.style.transform = 'none';
       }
-      
+
       // Apply content position
       if (overlayConfig.positions.content) {
         const contentEl = document.getElementById('chapterContent');
@@ -1074,7 +1074,7 @@
         contentEl.style.top = pos.top + 'px';
         contentEl.style.transform = 'none';
       }
-      
+
       // Apply voting position
       if (overlayConfig.positions.voting) {
         const votingEl = document.getElementById('votingOverlay');
@@ -1085,7 +1085,7 @@
         votingEl.style.transform = 'none';
       }
     }
-    
+
     async function saveOverlayPositions() {
       try {
         const response = await fetch('/api/interactive-story/overlay-positions', {
@@ -1095,7 +1095,7 @@
           },
           body: JSON.stringify(overlayConfig)
         });
-        
+
         if (!response.ok) {
           console.error('Failed to save overlay positions');
         } else {
@@ -1105,15 +1105,15 @@
         console.error('Error saving overlay positions:', error);
       }
     }
-    
+
     async function resetOverlayPositions() {
       overlayConfig.positions = {};
-      
+
       // Reset styles to defaults
       const titleEl = document.getElementById('titleOverlay');
       const contentEl = document.getElementById('chapterContent');
       const votingEl = document.getElementById('votingOverlay');
-      
+
       [titleEl, contentEl, votingEl].forEach(el => {
         if (el) {
           el.style.position = '';
@@ -1122,7 +1122,7 @@
           el.style.transform = '';
         }
       });
-      
+
       await saveOverlayPositions();
       console.log('✅ Overlay positions reset to defaults');
     }
@@ -1133,29 +1133,29 @@
       scrollingInProgress = false;
       sentences = [];
       currentSentenceIndex = 0;
-      
+
       // Prepare the overlay for title phase
       document.getElementById('generatingOverlay').classList.remove('active');
       const overlay = document.getElementById('storyOverlay');
       overlay.classList.add('active');
       document.getElementById('textOverlay').classList.remove('visible');
-      
+
       const titleOverlay = document.getElementById('titleOverlay');
       const titleText = document.getElementById('titleText');
       titleOverlay.classList.remove('visible');
       titleText.textContent = chapter.title;
-      
+
       const contentEl = document.getElementById('chapterContent');
       contentEl.textContent = '';
-      
+
       // Update image if available
       const imageContainer = document.getElementById('imageContainer');
       const storyImage = document.getElementById('storyImage');
-      
+
       if (chapter.imagePath) {
         // imagePath now contains just the filename (not full path)
         storyImage.src = `/api/interactive-story/image/${chapter.imagePath}`;
-        
+
         // Show image in title mode (bright, centered)
         imageContainer.classList.add('title-mode');
         imageContainer.classList.remove('darkened');
@@ -1166,82 +1166,82 @@
         imageContainer.classList.remove('title-mode');
       }
     });
-    
+
     // Title display phase after image preview
     socket.on('story:chapter-title-phase', (data) => {
       const overlay = document.getElementById('storyOverlay');
       overlay.classList.add('active');
-      
+
       const titleOverlay = document.getElementById('titleOverlay');
       const titleText = document.getElementById('titleText');
       titleText.textContent = data.title || (currentChapter ? currentChapter.title : '');
       titleOverlay.classList.add('visible');
-      
+
       const imageContainer = document.getElementById('imageContainer');
       imageContainer.classList.remove('title-mode');
       imageContainer.classList.add('darkened');
       document.getElementById('textOverlay').classList.remove('visible');
     });
-    
+
     // Handle progressive TTS sentence display
     // Handle TTS start - prepare for progressive sentence display
     socket.on('story:chapter-tts-start', (data) => {
       console.log('TTS started - preparing for progressive sentence display', data);
-      
+
       scrollingInProgress = true;
       currentSentenceIndex = 0;
       sentences = [];
-      
+
       // Fade out title overlay
       const titleOverlay = document.getElementById('titleOverlay');
       titleOverlay.classList.remove('visible');
-      
+
       // Darken image and make it background
       const imageContainer = document.getElementById('imageContainer');
       setTimeout(() => {
         imageContainer.classList.remove('title-mode');
         imageContainer.classList.add('darkened');
-        
+
         // Prepare content for Star Wars scroll
         const contentEl = document.getElementById('chapterContent');
         contentEl.classList.add('scroll-mode');
         // Clear content safely (compatible with all browsers)
         contentEl.textContent = '';
-        
+
         // Show text overlay
         document.getElementById('textOverlay').classList.add('visible');
       }, 400);
     });
-    
+
     // Handle individual sentences arriving during TTS playback (Star Wars scroll effect)
     socket.on('story:chapter-sentence', (data) => {
       console.log(`Sentence ${data.index + 1}/${data.total}:`, data.sentence);
-      
+
       if (!scrollingInProgress) return;
-      
+
       const contentEl = document.getElementById('chapterContent');
-      
+
       // Create sentence element
       const sentenceEl = document.createElement('div');
       sentenceEl.className = 'scroll-sentence hidden';
       sentenceEl.textContent = data.sentence;
-      
+
       // Add to container
       contentEl.appendChild(sentenceEl);
       sentences.push(sentenceEl);
-      
+
       // Animate entrance after brief delay
       setTimeout(() => {
         updateSentenceStates(data.index);
       }, SENTENCE_ANIMATION_DELAY_MS);
     });
-    
+
     // Update sentence states based on current index
     function updateSentenceStates(currentIndex) {
       sentences.forEach((sentenceEl, index) => {
         // Remove all state classes
         sentenceEl.classList.remove('past', 'current', 'future', 'hidden', 'completely-hidden');
-        
+
         if (index < currentIndex - MAX_VISIBLE_PAST_SENTENCES) {
           // Very old sentences - remove from view completely using CSS class
           sentenceEl.classList.add('completely-hidden');
@@ -1259,41 +1259,41 @@
           sentenceEl.classList.add('hidden');
         }
       });
-      
+
       currentSentenceIndex = currentIndex;
     }
-    
+
     // Handle TTS complete (ready for voting)
     socket.on('story:chapter-tts-complete', (data) => {
       console.log('TTS complete for chapter', data.chapterNumber);
       scrollingInProgress = false;
-      
+
       // Keep last sentence visible as current (not marked as past)
       if (sentences.length > 0) {
         updateSentenceStates(sentences.length - 1);
       }
-      
+
       // Ready for voting to start - text will fade out when voting overlay appears
     });
-    
+
     // Handle immediate chapter display (fallback when TTS disabled)
     socket.on('story:chapter-display', (data) => {
       console.log('📖 Chapter display event received:', data.mode, data.chapter?.title);
-      
+
       if (data.mode === 'immediate' && data.chapter) {
         // Hide title overlay
         const titleOverlay = document.getElementById('titleOverlay');
         titleOverlay.classList.remove('visible');
-        
+
         // Setup image
         const imageContainer = document.getElementById('imageContainer');
         imageContainer.classList.add('darkened');
         imageContainer.classList.remove('title-mode');
-        
+
         // Make sure story overlay is active
         const overlay = document.getElementById('storyOverlay');
         overlay.classList.add('active');
-        
+
         // Display full chapter content for self-reading
         displayImmediateChapter(data.chapter);
       }
@@ -1302,14 +1302,14 @@
     // Handle voting started
     socket.on('story:voting-started', (data) => {
       votingActive = true;
-      
+
       // STEP 1: Hide text overlay first
       document.getElementById('textOverlay').classList.remove('visible');
-      
+
       // Only display voting if we have choices (not for final chapter where choices would be null or empty)
       if (data.choices && data.choices.length > 0) {
         voteCounts = new Array(data.choices.length).fill(0);
-        
+
         // STEP 2: Wait for text overlay fade-out transition to complete before showing voting
         setTimeout(() => {
           displayVoting(data.choices, data.duration, data.voteKeywordPattern || '!letter');
@@ -1327,7 +1327,7 @@
     socket.on('story:voting-ended', (results) => {
       votingActive = false;
       showResults(results);
-      
+
       // Hide voting after 3 seconds
       setTimeout(() => {
         document.getElementById('votingOverlay').classList.remove('active');
@@ -1365,7 +1365,7 @@
     // Handle story ended - hide all overlays
     socket.on('story:ended', (data) => {
       console.log('Story ended, hiding overlay:', data);
-      
+
       // Hide all overlays with fade out
       document.getElementById('storyOverlay').classList.remove('active');
       document.getElementById('votingOverlay').classList.remove('active');
@@ -1377,19 +1377,19 @@
       imageContainer.classList.remove('visible');
       imageContainer.classList.remove('darkened');
       imageContainer.classList.remove('title-mode');
-      
+
       // Reset state
       currentChapter = null;
       votingActive = false;
       scrollingInProgress = false;
       sentences = [];
       currentSentenceIndex = 0;
-      
+
       if (voteTimer) {
         clearInterval(voteTimer);
         voteTimer = null;
       }
-      
+
       if (sentenceTimer) {
         clearInterval(sentenceTimer);
         sentenceTimer = null;
@@ -1404,18 +1404,18 @@
     function displayChapter(chapter) {
       // Hide generating overlay
       document.getElementById('generatingOverlay').classList.remove('active');
-      
+
       // Show story overlay
       const overlay = document.getElementById('storyOverlay');
       overlay.classList.add('active');
-      
+
       // Update title
       document.getElementById('chapterTitle').textContent = chapter.title;
-      
+
       // Update image if available
       const imageContainer = document.getElementById('imageContainer');
       const storyImage = document.getElementById('storyImage');
-      
+
       if (chapter.imagePath) {
         const filename = chapter.imagePath.split('/').pop();
         storyImage.src = `/api/interactive-story/image/${filename}`;
@@ -1423,7 +1423,7 @@
       } else {
         imageContainer.classList.remove('visible');
       }
-      
+
       // Display content based on mode
       if (config && config.overlayDisplayMode === 'sentence') {
         displaySentenceBySentence(chapter.content);
@@ -1432,7 +1432,7 @@
       } else {
         displayFullChapter(chapter.content);
       }
-      
+
       // Show text overlay
       document.getElementById('textOverlay').classList.add('visible');
     }
@@ -1443,7 +1443,7 @@
         clearInterval(sentenceTimer);
         sentenceTimer = null;
       }
-      
+
       const contentEl = document.getElementById('chapterContent');
       contentEl.classList.remove('scroll-mode');
       contentEl.textContent = content;
@@ -1455,10 +1455,10 @@
         clearInterval(sentenceTimer);
         sentenceTimer = null;
       }
-      
+
       const contentEl = document.getElementById('chapterContent');
       contentEl.classList.add('scroll-mode');
-      
+
       // Reset animation by removing and re-adding the class
       contentEl.style.animation = 'none';
       setTimeout(() => {
@@ -1471,16 +1471,16 @@
       // Split content into sentences
       sentences = splitIntoSentences(content);
       currentSentenceIndex = 0;
-      
+
       // Clear any existing timer
       if (sentenceTimer) {
         clearInterval(sentenceTimer);
       }
-      
+
       // Display first sentence
       const contentEl = document.getElementById('chapterContent');
       contentEl.textContent = sentences[0] || '';
-      
+
       // Set up timer to show sentences one by one (every 5 seconds)
       if (sentences.length > 1) {
         sentenceTimer = setInterval(() => {
@@ -1496,29 +1496,29 @@
         }, 5000);
       }
     }
-    
+
     /**
      * Display chapter immediately for self-reading mode (when TTS is disabled)
      * Shows full content with proper styling for reading
      */
     function displayImmediateChapter(chapter) {
       console.log('📖 Displaying chapter immediately for self-reading:', chapter.title);
-      
+
       // Hide generating overlay
       document.getElementById('generatingOverlay').classList.remove('active');
-      
+
       // Show story overlay
       const overlay = document.getElementById('storyOverlay');
       overlay.classList.add('active');
-      
+
       // Update image if available
       const imageContainer = document.getElementById('imageContainer');
       const storyImage = document.getElementById('storyImage');
-      
+
       if (chapter.imagePath) {
         // Handle both filename-only and full path formats
-        const filename = chapter.imagePath.includes('/') || chapter.imagePath.includes('\\') 
-          ? chapter.imagePath.split(/[/\\]/).pop() 
+        const filename = chapter.imagePath.includes('/') || chapter.imagePath.includes('\\')
+          ? chapter.imagePath.split(/[/\\]/).pop()
           : chapter.imagePath;
         storyImage.src = `/api/interactive-story/image/${filename}`;
         imageContainer.classList.add('visible');
@@ -1529,35 +1529,35 @@
         imageContainer.classList.add('darkened');
         imageContainer.classList.remove('title-mode');
       }
-      
+
       // Clear any sentence timer
       if (sentenceTimer) {
         clearInterval(sentenceTimer);
         sentenceTimer = null;
       }
-      
+
       // Show full content with title for self-reading
       const contentEl = document.getElementById('chapterContent');
       contentEl.classList.remove('scroll-mode');
-      
+
       // Create reading-friendly display with title and full content
       contentEl.innerHTML = '';
-      
+
       // Add chapter title
       const titleEl = document.createElement('div');
       titleEl.className = 'immediate-title';
       titleEl.textContent = chapter.title;
       contentEl.appendChild(titleEl);
-      
+
       // Add content text
       const textEl = document.createElement('div');
       textEl.className = 'immediate-content';
       textEl.textContent = chapter.content;
       contentEl.appendChild(textEl);
-      
+
       // Show text overlay
       document.getElementById('textOverlay').classList.add('visible');
-      
+
       console.log('✅ Chapter displayed for self-reading');
     }
 
@@ -1567,12 +1567,12 @@
         clearInterval(sentenceTimer);
         sentenceTimer = null;
       }
-      
+
       const votingOverlay = document.getElementById('votingOverlay');
       const choiceContainer = document.getElementById('choiceContainer');
-      
+
       choiceContainer.innerHTML = '';
-      
+
       choices.forEach((choice, index) => {
         const voteKeyword = getVoteKeywordForIndex(index, voteKeywordPattern);
         const choiceDiv = document.createElement('div');
@@ -1587,13 +1587,13 @@
         `;
         choiceContainer.appendChild(choiceDiv);
       });
-      
+
       votingOverlay.classList.add('active');
-      
+
       // Start timer
       startVoteTimer(duration);
     }
-    
+
     /**
      * Get vote keyword for a specific choice index based on pattern
      * @param {number} index - Choice index (0-based)
@@ -1604,19 +1604,19 @@
       switch (pattern) {
         case '!letter':
           return `!${String.fromCharCode('a'.charCodeAt(0) + index)}`;
-        
+
         case 'letter':
           return String.fromCharCode('A'.charCodeAt(0) + index);
-        
+
         case 'number':
           return String(index + 1);
-        
+
         case 'antwort':
           return `Antwort ${index + 1}`;
-        
+
         case 'answer':
           return `Answer ${index + 1}`;
-        
+
         default:
           return `!${String.fromCharCode('a'.charCodeAt(0) + index)}`;
       }
@@ -1624,13 +1624,13 @@
 
     function updateVoteDisplay() {
       if (!votingActive) return;
-      
+
       const maxVotes = Math.max(...voteCounts, 1);
-      
+
       voteCounts.forEach((count, index) => {
         const votesEl = document.getElementById(`votes-${index}`);
         const barEl = document.getElementById(`bar-${index}`);
-        
+
         if (votesEl) votesEl.textContent = count;
         if (barEl) {
           const percentage = (count / maxVotes) * 100;
@@ -1642,18 +1642,18 @@
     function startVoteTimer(duration) {
       const timerDisplay = document.getElementById('timerDisplay');
       let timeLeft = duration;
-      
+
       if (voteTimer) clearInterval(voteTimer);
-      
+
       voteTimer = setInterval(() => {
         timeLeft--;
-        
+
         if (timeLeft <= 0) {
           clearInterval(voteTimer);
           timerDisplay.textContent = 'Voting Ended!';
         } else {
           timerDisplay.textContent = `Time Remaining: ${timeLeft}s`;
-          
+
           if (timeLeft <= 10) {
             timerDisplay.classList.add('urgent');
           } else {
@@ -1669,14 +1669,14 @@
       if (winnerEl) {
         winnerEl.classList.add('winner');
       }
-      
+
       // Show results overlay
       document.getElementById('winningChoice').textContent = results.winnerText;
       document.getElementById('resultsOverlay').classList.add('active');
     }
 
     // Relay TTS playback ended event back to server
-    // This is needed because plugin-to-plugin communication requires 
+    // This is needed because plugin-to-plugin communication requires
     // client relay: TTS plugin → client → back to server → interactive-story plugin
     socket.on('tts:playback:ended', (data) => {
       console.log('TTS playback ended, relaying to server:', data);
@@ -1696,7 +1696,7 @@
     socket.on('connect_error', (error) => {
       console.error('❌ Socket.io connection error:', error);
     });
-    
+
     // Listen for real-time configuration updates
     socket.on('story:config-updated', (updatedConfig) => {
       console.log('📡 Configuration updated, applying changes...', updatedConfig);
@@ -1712,7 +1712,7 @@
     loadConfiguration().then(() => {
       console.log('✅ Interactive Story Overlay loaded and configured successfully');
       console.log('📺 Overlay ready - waiting for story to start...');
-      
+
       // Initialize draggable elements
       initDraggableElements();
     }).catch((error) => {

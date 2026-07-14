@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.socket.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws: wss:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';">
-    <title data-i18n="generated.18127b84fb21">CoinBattle Overlay</title>
+    <title data-i18n="plugins.coinbattle.labels.coinbattle_overlay">CoinBattle Overlay</title>
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="/plugins/coinbattle/overlay/styles.css">
     <script src="/js/i18n-client.js"></script>
@@ -37,7 +37,7 @@
             <div class="team-score team-red">
                 <div class="team-header">
                     <img id="team-red-image" class="team-image" style="display: none;" alt="Red Team">
-                    <div class="team-name" id="team-red-name" data-i18n="generated.538c8560d110">RED TEAM</div>
+                    <div class="team-name" id="team-red-name" data-i18n="plugins.coinbattle.labels.red_team">RED TEAM</div>
                 </div>
                 <div class="team-coins" id="team-red-coins">0</div>
                 <div class="team-players" id="team-red-players">
@@ -48,7 +48,7 @@
             <div class="team-score team-blue">
                 <div class="team-header">
                     <img id="team-blue-image" class="team-image" style="display: none;" alt="Blue Team">
-                    <div class="team-name" id="team-blue-name" data-i18n="generated.35578fb32c9b">BLUE TEAM</div>
+                    <div class="team-name" id="team-blue-name" data-i18n="plugins.coinbattle.labels.blue_team">BLUE TEAM</div>
                 </div>
                 <div class="team-coins" id="team-blue-coins">0</div>
                 <div class="team-players" id="team-blue-players">
@@ -60,17 +60,17 @@
         <!-- Leaderboard -->
         <div id="leaderboard-container" class="leaderboard-container">
             <div class="leaderboard-header">
-                <div class="leaderboard-title" data-i18n="generated.e646998ac429">🏆 LEADERBOARD</div>
+                <div class="leaderboard-title" data-i18n="plugins.coinbattle.labels.leaderboard">🏆 LEADERBOARD</div>
             </div>
             <div id="leaderboard-content" class="leaderboard-content">
                 <!-- Dynamic leaderboard entries -->
             </div>
         </div>
-        
+
         <!-- King of the Hill Mode -->
         <div id="koth-container" class="koth-container" style="display: none;">
             <div class="koth-header">
-                <div class="koth-title" data-i18n="generated.cd4a9297f5c7">👑 KING OF THE HILL</div>
+                <div class="koth-title" data-i18n="plugins.coinbattle.labels.king_of_the_hill">👑 KING OF THE HILL</div>
             </div>
             <div class="koth-king" id="koth-king">
                 <!-- King position -->
@@ -83,7 +83,7 @@
         <!-- Pyramid Mode -->
         <div id="pyramid-container" class="pyramid-container" style="display: none;">
             <div class="pyramid-header">
-                <div class="pyramid-title" data-i18n="generated.2dc12f98249a">🔺 PYRAMID BATTLE</div>
+                <div class="pyramid-title" data-i18n="plugins.coinbattle.labels.pyramid_battle">🔺 PYRAMID BATTLE</div>
                 <div class="pyramid-timer" id="pyramid-timer">02:00</div>
             </div>
             <div class="pyramid-rows" id="pyramid-rows">
@@ -105,7 +105,7 @@
                 </div>
             </div>
             <div class="pyramid-knockout" id="pyramid-knockout" style="display: none;">
-                <div class="knockout-text" data-i18n="generated.d8de1f037ad9">🥊 KNOCKOUT!</div>
+                <div class="knockout-text" data-i18n="plugins.coinbattle.labels.knockout">🥊 KNOCKOUT!</div>
             </div>
         </div>
 
@@ -115,7 +115,7 @@
             <div class="winner-content">
                 <div class="winner-trophy">🏆</div>
                 <div class="winner-label">WINNER</div>
-                <div class="winner-name" id="winner-name" data-i18n="generated.9bfcb9adafdd">Player Name</div>
+                <div class="winner-name" id="winner-name" data-i18n="plugins.coinbattle.labels.player_name">Player Name</div>
                 <div class="winner-stats">
                     <div class="winner-stat">
                         <span class="stat-label">Coins:</span>
@@ -133,8 +133,8 @@
         <div id="badge-notification" class="badge-notification" style="display: none;">
             <div class="badge-icon" id="badge-icon">🏆</div>
             <div class="badge-text">
-                <div class="badge-title" id="badge-title" data-i18n="generated.5b604db41854">Achievement Unlocked!</div>
-                <div class="badge-name" id="badge-name" data-i18n="generated.74555ca5cd57">Badge Name</div>
+                <div class="badge-title" id="badge-title" data-i18n="plugins.coinbattle.labels.achievement_unlocked">Achievement Unlocked!</div>
+                <div class="badge-name" id="badge-name" data-i18n="plugins.coinbattle.labels.badge_name">Badge Name</div>
             </div>
         </div>
 
@@ -156,7 +156,7 @@
         <div id="winner-credits" class="winner-credits" style="display: none;">
             <div class="credits-bg"></div>
             <div class="credits-scroll">
-                <div class="credits-title" data-i18n="generated.021ee6c51904">🎮 MATCH WINNERS 🎮</div>
+                <div class="credits-title" data-i18n="plugins.coinbattle.labels.match_winners">🎮 MATCH WINNERS 🎮</div>
                 <div class="credits-list" id="credits-list">
                     <!-- Winner credits will be added dynamically -->
                 </div>

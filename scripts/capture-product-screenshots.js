@@ -11,6 +11,7 @@ const { buildDocsSpec, LOCALES: DOCS_LOCALES } = require('./docs-screenshot-spec
 const { prepareDocsPluginFixture } = require('./lib/docs-capture-plugin-fixture');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
+const APP_VERSION = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'package.json'), 'utf8')).version;
 const SCREENSHOT_ROOT = path.join(REPO_ROOT, 'screenshots');
 const COLLECTION = process.env.SCREENSHOT_COLLECTION === 'docs' ? 'docs' : 'product';
 const MANIFEST_PATH = path.join(SCREENSHOT_ROOT, COLLECTION === 'docs' ? 'docs-capture-manifest.json' : 'product-capture-manifest.json');
@@ -610,6 +611,33 @@ function screenshotClipForAnchor(viewport, anchorRect) {
   };
 }
 
+function captureReceipt({ asset, locale, outputPath: screenshotPath, httpStatus, state, focus, preparation, sha256 }) {
+  const action = asset.action || { type: 'inspect' };
+  return {
+    schemaVersion: 1,
+    plugin: asset.guideId,
+    language: locale,
+    appVersion: APP_VERSION,
+    route: asset.route,
+    operations: [
+      { type: 'goto', route: asset.route },
+      ...(action.prepare ? [{ type: 'prepare', name: action.prepare }] : []),
+      { type: action.type, selector: action.clickSelector || action.inputSelector || asset.selector }
+    ],
+    postconditions: [
+      { type: 'http-status', expected: '< 400', actual: httpStatus, passed: httpStatus < 400 },
+      { type: 'anchor-visible', selector: asset.selector, actual: Boolean(state.anchorRect), passed: Boolean(state.anchorRect) },
+      { type: 'document-language', expected: locale, actual: state.lang, passed: state.lang === locale },
+      { type: 'i18n-locale', expected: locale, actual: state.i18n, passed: state.i18n === locale },
+      { type: 'cid-theme', expected: 'cid', actual: state.theme, passed: state.theme === 'cid' },
+      { type: 'screenshot-hash', actual: sha256, passed: Boolean(sha256) }
+    ],
+    screenshotPath,
+    sha256,
+    preparation
+  };
+}
+
 async function captureAsset(page, baseUrl, asset, locale) {
   await page.setViewport(asset.viewport);
   // Overlay renderers can start live sockets, WebGL loops, or audio engines on
@@ -733,7 +761,8 @@ async function captureAsset(page, baseUrl, asset, locale) {
       return Boolean(timer && timer.classList.contains('hidden') && start && !start.disabled);
     }, { timeout: 3000 });
   }
-  return {
+  const sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+  const output = {
     locale,
     id: asset.id,
     guideId: asset.guideId,
@@ -742,14 +771,26 @@ async function captureAsset(page, baseUrl, asset, locale) {
     route: asset.route,
     selector: asset.selector,
     action: asset.action,
+    httpStatus: response.status(),
     fixture: asset.fixture,
     focus,
     preparation,
     state,
     screenshotClip,
-    sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
+    sha256,
     bytes: bytes.length
   };
+  output.receipt = captureReceipt({
+    asset,
+    locale,
+    outputPath: output.path,
+    httpStatus: output.httpStatus,
+    state,
+    focus,
+    preparation,
+    sha256
+  });
+  return output;
 }
 
 async function captureFailureContext(page) {

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.7ff2518a6cc2">Leaderboard - Configuration</title>
+    <title data-i18n="plugins.milestone-leaderboard.labels.leaderboard_configuration">Leaderboard - Configuration</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function () {
@@ -624,7 +624,7 @@
         html[data-theme="vision-impaired"] small {
             font-size: 1rem;
         }
-    
+
         /* Cid theme alignment */
         html[data-theme="cid"] body {
             background: #030603;
@@ -736,19 +736,19 @@
             <div class="card-title">Statistics</div>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="generated.6e0d44fb9a7a">Session Gifters</div>
+                    <div class="stat-label" data-i18n="plugins.milestone-leaderboard.labels.session_gifters">Session Gifters</div>
                     <div class="stat-value" id="stat-session-gifters">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="generated.16638bac42a3">All-Time Gifters</div>
+                    <div class="stat-label" data-i18n="plugins.milestone-leaderboard.labels.all_time_gifters">All-Time Gifters</div>
                     <div class="stat-value" id="stat-alltime-gifters">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="generated.3e7d22c3b923">Session Total Coins</div>
+                    <div class="stat-label" data-i18n="plugins.milestone-leaderboard.labels.session_total_coins">Session Total Coins</div>
                     <div class="stat-value" id="stat-session-coins">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="generated.b45b5a988258">All-Time Total Coins</div>
+                    <div class="stat-label" data-i18n="plugins.milestone-leaderboard.labels.all_time_total_coins">All-Time Total Coins</div>
                     <div class="stat-value" id="stat-alltime-coins">0</div>
                 </div>
             </div>
@@ -756,7 +756,7 @@
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab-btn active" data-tab="session" data-i18n="generated.b7e7b3e84158">Current Session</button>
+            <button class="tab-btn active" data-tab="session" data-i18n="plugins.milestone-leaderboard.labels.current_session_b7e7b3">Current Session</button>
             <button class="tab-btn" data-tab="alltime">All-Time</button>
             <button class="tab-btn" data-tab="settings">Settings</button>
         </div>
@@ -764,10 +764,10 @@
         <!-- Session Tab -->
         <div class="tab-panel active" id="session-tab">
             <div class="card">
-                <div class="card-title"><span data-i18n="generated.87c59321e8ce">
+                <div class="card-title"><span data-i18n="plugins.milestone-leaderboard.labels.current_session_leaderboard">
                     Current Session Leaderboard
                     </span><div style="margin-left: auto;">
-                        <button class="btn btn-secondary" id="reset-session-btn" data-i18n="generated.0db3520321ad">Reset Session</button>
+                        <button class="btn btn-secondary" id="reset-session-btn" data-i18n="plugins.milestone-leaderboard.labels.reset_session">Reset Session</button>
                     </div>
                 </div>
                 <div id="session-start-info" style="margin-bottom: 16px; color: var(--color-text-secondary);"></div>
@@ -777,14 +777,14 @@
                             <th>Rank</th>
                             <th>User</th>
                             <th>Coins</th>
-                            <th data-i18n="generated.a96e266b4fd2">Gifts Count</th>
+                            <th data-i18n="plugins.milestone-leaderboard.labels.gifts_count">Gifts Count</th>
                         </tr>
                     </thead>
                     <tbody id="session-leaderboard">
                         <tr>
                             <td colspan="4" class="empty-state">
                                 <div class="empty-icon">🎁</div>
-                                <p data-i18n="generated.6a63ef971aca">Waiting for gifts in this session...</p>
+                                <p data-i18n="plugins.milestone-leaderboard.labels.waiting_for_gifts_in_this_session">Waiting for gifts in this session...</p>
                             </td>
                         </tr>
                     </tbody>
@@ -795,21 +795,21 @@
         <!-- All-Time Tab -->
         <div class="tab-panel" id="alltime-tab">
             <div class="card">
-                <div class="card-title" data-i18n="generated.2e0522d2739a">All-Time Champions</div>
+                <div class="card-title" data-i18n="plugins.milestone-leaderboard.labels.all_time_champions_2e0522">All-Time Champions</div>
                 <table class="leaderboard-table">
                     <thead>
                         <tr>
                             <th>Rank</th>
                             <th>User</th>
                             <th data-i18n="gift_milestone.users.total_coins">Total Coins</th>
-                            <th data-i18n="generated.e328ca812369">Total Gifts</th>
+                            <th data-i18n="plugins.milestone-leaderboard.labels.total_gifts">Total Gifts</th>
                         </tr>
                     </thead>
                     <tbody id="alltime-leaderboard">
                         <tr>
                             <td colspan="4" class="empty-state">
                                 <div class="empty-icon">🏆</div>
-                                <p data-i18n="generated.819b9c2d8eb4">No champions yet...</p>
+                                <p data-i18n="plugins.milestone-leaderboard.labels.no_champions_yet_819b9c">No champions yet...</p>
                             </td>
                         </tr>
                     </tbody>
@@ -820,55 +820,55 @@
         <!-- Settings Tab -->
         <div class="tab-panel" id="settings-tab">
             <div class="card">
-                <div class="card-title" data-i18n="generated.2a35cf8552b6">Leaderboard Settings</div>
+                <div class="card-title" data-i18n="plugins.milestone-leaderboard.labels.leaderboard_settings">Leaderboard Settings</div>
                 <form id="config-form">
                     <div class="form-group">
-                        <label class="form-label" for="display-limit" data-i18n="generated.b8dd82331243">Display Limit</label>
+                        <label class="form-label" for="display-limit" data-i18n="plugins.milestone-leaderboard.labels.display_limit">Display Limit</label>
                         <input type="number" class="form-input" id="display-limit" name="displayLimit" min="1" max="50" value="10">
-                        <small style="color: var(--color-text-secondary);" data-i18n="generated.8656649b4164">Number of top users to display on overlay</small>
+                        <small style="color: var(--color-text-secondary);" data-i18n="plugins.milestone-leaderboard.labels.number_of_top_users_to_display_on_overlay">Number of top users to display on overlay</small>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="min-coins" data-i18n="generated.35caa5727509">Minimum Coins</label>
+                        <label class="form-label" for="min-coins" data-i18n="plugins.milestone-leaderboard.labels.minimum_coins">Minimum Coins</label>
                         <input type="number" class="form-input" id="min-coins" name="minCoins" min="0" value="0">
-                        <small style="color: var(--color-text-secondary);" data-i18n="generated.f309697f9bb1">Minimum coins required to appear on leaderboard</small>
+                        <small style="color: var(--color-text-secondary);" data-i18n="plugins.milestone-leaderboard.labels.minimum_coins_required_to_appear_on_leaderboard">Minimum coins required to appear on leaderboard</small>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="theme-select" data-i18n="generated.5552497f9507">Overlay Theme</label>
+                        <label class="form-label" for="theme-select" data-i18n="plugins.milestone-leaderboard.labels.overlay_theme">Overlay Theme</label>
                         <select class="form-input" id="theme-select" name="theme">
-                            <option value="neon" data-i18n="generated.88bc74d9ca3c">Neon/Cyberpunk (Cyan & Magenta)</option>
-                            <option value="elegant" data-i18n="generated.e331be554fc0">Elegant/Minimalist (Clean White)</option>
-                            <option value="gaming" data-i18n="generated.ee1b8a754cbc">Gaming/Esports (Red & Orange)</option>
-                            <option value="royal" data-i18n="generated.06bcb68d5aa9">Royal/Crown (Purple & Gold)</option>
-                            <option value="gradient" data-i18n="generated.53e6a87f7942">Modern Gradient (Blue & Teal)</option>
+                            <option value="neon" data-i18n="plugins.milestone-leaderboard.labels.neon_cyberpunk_cyan_magenta">Neon/Cyberpunk (Cyan & Magenta)</option>
+                            <option value="elegant" data-i18n="plugins.milestone-leaderboard.labels.elegant_minimalist_clean_white">Elegant/Minimalist (Clean White)</option>
+                            <option value="gaming" data-i18n="plugins.milestone-leaderboard.labels.gaming_esports_red_orange">Gaming/Esports (Red & Orange)</option>
+                            <option value="royal" data-i18n="plugins.milestone-leaderboard.labels.royal_crown_purple_gold">Royal/Crown (Purple & Gold)</option>
+                            <option value="gradient" data-i18n="plugins.milestone-leaderboard.labels.modern_gradient_blue_teal">Modern Gradient (Blue & Teal)</option>
                         </select>
-                        <small style="color: var(--color-text-secondary);" data-i18n="generated.05bcaa012c1c">Choose the visual style for your overlay</small>
+                        <small style="color: var(--color-text-secondary);" data-i18n="plugins.milestone-leaderboard.labels.choose_the_visual_style_for_your_overlay">Choose the visual style for your overlay</small>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">
-                            <input type="checkbox" id="show-animations" name="showAnimations" checked><span data-i18n="generated.6a8ed21cb11a">
+                            <input type="checkbox" id="show-animations" name="showAnimations" checked><span data-i18n="plugins.milestone-leaderboard.labels.enable_overtake_animations">
                             Enable Overtake Animations
                         </span></label>
-                        <small style="color: var(--color-text-secondary);" data-i18n="generated.d0d47c2afca3">Show special effects when someone moves up in rank</small>
+                        <small style="color: var(--color-text-secondary);" data-i18n="plugins.milestone-leaderboard.labels.show_special_effects_when_someone_moves_up_in">Show special effects when someone moves up in rank</small>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" data-i18n="gift_milestone.overlay.url">Overlay URL</label>
                         <input type="text" class="form-input" id="overlay-url" readonly>
-                        <small style="color: var(--color-text-secondary);" data-i18n="generated.231f6fade902">Use this URL in OBS Browser Source</small>
+                        <small style="color: var(--color-text-secondary);" data-i18n="plugins.milestone-leaderboard.labels.use_this_url_in_obs_browser_source">Use this URL in OBS Browser Source</small>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.aaf8768e24cc">Preview URL (Test Mode with Mock Data)</label>
+                        <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.preview_url_test_mode_with_mock_data">Preview URL (Test Mode with Mock Data)</label>
                         <input type="text" class="form-input" id="preview-url" readonly>
-                        <small style="color: var(--color-text-secondary);" data-i18n="generated.8d76a6863af1">Use this URL to preview different themes with test data</small>
+                        <small style="color: var(--color-text-secondary);" data-i18n="plugins.milestone-leaderboard.labels.use_this_url_to_preview_different_themes_with">Use this URL to preview different themes with test data</small>
                     </div>
 
                     <div style="display: flex; gap: 10px;">
-                        <button type="submit" class="btn btn-primary" data-i18n="generated.654d70299d44">Save Settings</button>
-                        <button type="button" class="btn btn-secondary" id="preview-btn" data-i18n="generated.5d8f28ca3d94">Preview Overlay</button>
+                        <button type="submit" class="btn btn-primary" data-i18n="plugins.milestone-leaderboard.labels.save_settings_654d70">Save Settings</button>
+                        <button type="button" class="btn btn-secondary" id="preview-btn" data-i18n="plugins.milestone-leaderboard.labels.preview_overlay">Preview Overlay</button>
                     </div>
                 </form>
             </div>
@@ -911,18 +911,18 @@
             try {
                 const response = await fetch('/api/plugins/leaderboard/combined?limit=50');
                 const data = await response.json();
-                
+
                 if (data.success) {
                     sessionData = data.session.data || [];
                     alltimeData = data.alltime.data || [];
-                    
+
                     updateSessionLeaderboard();
                     updateAlltimeLeaderboard();
                     updateStats();
-                    
+
                     if (data.session.startTime) {
                         const startDate = new Date(data.session.startTime);
-                        document.getElementById('session-start-info').textContent = 
+                        document.getElementById('session-start-info').textContent =
                             `Session started: ${startDate.toLocaleString()}`;
                     }
                 }
@@ -934,7 +934,7 @@
         // Update session leaderboard
         function updateSessionLeaderboard() {
             const tbody = document.getElementById('session-leaderboard');
-            
+
             if (!sessionData || sessionData.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" class="empty-state">
                     <div class="empty-icon">🎁</div>
@@ -956,7 +956,7 @@
         // Update all-time leaderboard
         function updateAlltimeLeaderboard() {
             const tbody = document.getElementById('alltime-leaderboard');
-            
+
             if (!alltimeData || alltimeData.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" class="empty-state">
                     <div class="empty-icon">🏆</div>
@@ -979,7 +979,7 @@
         function updateStats() {
             const sessionCoins = sessionData.reduce((sum, u) => sum + u.coins, 0);
             const alltimeCoins = alltimeData.reduce((sum, u) => sum + u.totalCoins, 0);
-            
+
             document.getElementById('stat-session-gifters').textContent = sessionData.length;
             document.getElementById('stat-alltime-gifters').textContent = alltimeData.length;
             document.getElementById('stat-session-coins').textContent = sessionCoins.toLocaleString();
@@ -1000,11 +1000,11 @@
             document.getElementById('min-coins').value = config.minCoins || config.min_coins_to_show || 0;
             document.getElementById('theme-select').value = config.theme || 'neon';
             document.getElementById('show-animations').checked = config.showAnimations !== undefined ? config.showAnimations : (config.show_animations !== 0);
-            
+
             // Set overlay URL dynamically
             const overlayUrl = `${window.location.protocol}//${window.location.host}/leaderboard/overlay`;
             document.getElementById('overlay-url').value = overlayUrl;
-            
+
             // Set preview URL
             const previewUrl = `${window.location.protocol}//${window.location.host}/leaderboard/overlay?preview=true&theme=${config.theme || 'neon'}`;
             document.getElementById('preview-url').value = previewUrl;
@@ -1013,7 +1013,7 @@
         // Handle form submission
         document.getElementById('config-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const formData = new FormData(e.target);
             const newConfig = {
                 displayLimit: parseInt(formData.get('displayLimit')),
@@ -1084,7 +1084,7 @@
             message.className = `message ${type}`;
             message.textContent = text;
             container.appendChild(message);
-            
+
             setTimeout(() => message.remove(), 5000);
         }
 

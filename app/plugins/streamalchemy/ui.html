@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.b9b47c159834">StreamAlchemy Relaunch</title>
+  <title data-i18n="plugins.streamalchemy.labels.streamalchemy_relaunch">StreamAlchemy Relaunch</title>
   <link rel="stylesheet" href="/css/themes.css">
   <script>
     (function () {
@@ -580,7 +580,7 @@
       .item-frame { width: 58px; height: 58px; padding: 4px; }
       .item-frame img { width: 48px; height: 48px; }
     }
-  
+
         /* Cid theme alignment */
         html[data-theme="cid"] body {
             background: #030603;
@@ -729,7 +729,7 @@
     <aside class="sidebar">
       <div class="brand">
         <h1>StreamAlchemy</h1>
-        <p data-i18n="generated.7b44bc6f5264">Relaunch Runtime</p>
+        <p data-i18n="plugins.streamalchemy.labels.relaunch_runtime">Relaunch Runtime</p>
       </div>
       <nav class="nav" aria-label="StreamAlchemy Bereiche">
         <button class="active" data-target="overview">Overview</button>
@@ -744,7 +744,7 @@
       <div class="topline">
         <div>
           <h2 id="viewTitle">Overview</h2>
-          <p id="viewSubtitle" data-i18n="generated.e95089737002">Live status for inventory, cached recipes, generation providers, and local model readiness.</p>
+          <p id="viewSubtitle" data-i18n="plugins.streamalchemy.labels.live_status_for_inventory_cached_recipes_generation_providers">Live status for inventory, cached recipes, generation providers, and local model readiness.</p>
         </div>
         <div class="actions">
           <button class="button" id="refreshBtn" type="button">Refresh</button>
@@ -759,15 +759,15 @@
           <div class="metric"><span>Items</span><strong id="metricItems">0</strong></div>
           <div class="metric"><span>Recipes</span><strong id="metricRecipes">0</strong></div>
           <div class="metric"><span>Jobs</span><strong id="metricJobs">0</strong></div>
-          <div class="metric"><span data-i18n="generated.afaf9618a869">Ready Providers</span><strong id="metricProvider">0</strong></div>
+          <div class="metric"><span data-i18n="plugins.streamalchemy.labels.ready_providers">Ready Providers</span><strong id="metricProvider">0</strong></div>
         </div>
         <div class="layout">
           <div class="panel">
-            <h3 data-i18n="generated.c0deb146d8c8">Provider Status</h3>
+            <h3 data-i18n="plugins.streamalchemy.labels.provider_status">Provider Status</h3>
             <div class="provider-list" id="providerList"></div>
           </div>
           <div class="panel">
-            <h3 data-i18n="generated.1bc0e3b1469e">System Analysis</h3>
+            <h3 data-i18n="plugins.streamalchemy.labels.system_analysis">System Analysis</h3>
             <div class="analysis-list" id="analysisList"></div>
           </div>
         </div>
@@ -788,18 +788,18 @@
       <section class="view" data-view="settings">
         <form class="panel" id="settingsForm">
           <label class="check-row">
-            <input type="checkbox" id="enabled"><span data-i18n="generated.5fc6b2a704ee">
+            <input type="checkbox" id="enabled"><span data-i18n="plugins.streamalchemy.labels.plugin_enabled">
             Plugin enabled
           </span></label>
           <label class="check-row">
-            <input type="checkbox" id="autoCrafting"><span data-i18n="generated.8f7af909e725">
+            <input type="checkbox" id="autoCrafting"><span data-i18n="plugins.streamalchemy.labels.auto_crafting_enabled">
             Auto crafting enabled
           </span></label>
           <div class="field-grid">
-            <label><span data-i18n="generated.eb549ea90ec4">Crafting window ms
+            <label><span data-i18n="plugins.streamalchemy.labels.crafting_window_ms">Crafting window ms
               </span><input type="number" id="craftingWindowMs" min="1000" max="30000" step="500">
             </label>
-            <label><span data-i18n="generated.d54f4c5d2925">Default style
+            <label><span data-i18n="plugins.streamalchemy.labels.default_style">Default style
               </span><select id="defaultStyle">
                 <option value="rpg" data-i18n="streamalchemy.styles.rpg">RPG</option>
                 <option value="fantasy" data-i18n="streamalchemy.styles.fantasy">Fantasy</option>
@@ -809,34 +809,34 @@
                 <option value="cartoon" data-i18n="streamalchemy.styles.cartoon">Cartoon</option>
               </select>
             </label>
-            <label><span data-i18n="generated.b571e9809be8">Generation mode
+            <label><span data-i18n="plugins.streamalchemy.labels.generation_mode">Generation mode
               </span><select id="generationMode">
-                <option value="remote" data-i18n="generated.3ecd4549a646">Remote provider</option>
-                <option value="local_strict" data-i18n="generated.8658eea87470">Local only (strict)</option>
+                <option value="remote" data-i18n="plugins.streamalchemy.labels.remote_provider">Remote provider</option>
+                <option value="local_strict" data-i18n="plugins.streamalchemy.labels.local_only_strict">Local only (strict)</option>
               </select>
             </label>
-            <label><span data-i18n="generated.c24180b76ded">Preferred preset
+            <label><span data-i18n="plugins.streamalchemy.labels.preferred_preset">Preferred preset
               </span><select id="selectedPresetId"></select>
             </label>
-            <label><span data-i18n="generated.79bcb3ba8d60">Provider order
+            <label><span data-i18n="plugins.streamalchemy.labels.provider_order">Provider order
               </span><input type="text" id="providerOrder">
             </label>
-            <label><span data-i18n="generated.f94b5fcb6339">ComfyUI URL
+            <label><span data-i18n="plugins.streamalchemy.labels.comfyui_url">ComfyUI URL
               </span><input type="url" id="comfyUrl">
             </label>
-            <label><span data-i18n="generated.41f7988eab3e">ComfyUI root
+            <label><span data-i18n="plugins.streamalchemy.labels.comfyui_root">ComfyUI root
               </span><input type="text" id="comfyRootDir" placeholder="C:\ComfyUI">
             </label>
-            <label><span data-i18n="generated.449bbd1351d1">Hugging Face token
+            <label><span data-i18n="plugins.streamalchemy.labels.hugging_face_token">Hugging Face token
               </span><input type="password" id="hfToken" autocomplete="off" placeholder="HF_TOKEN / HUGGINGFACE_TOKEN">
             </label>
-            <label><span data-i18n="generated.d4417874fb05">Local size
+            <label><span data-i18n="plugins.streamalchemy.labels.local_size">Local size
               </span><input type="text" id="localSize">
             </label>
-            <label><span data-i18n="generated.9116116ceeab">Local steps
+            <label><span data-i18n="plugins.streamalchemy.labels.local_steps">Local steps
               </span><input type="number" id="localSteps" min="1" max="40">
             </label>
-            <label><span data-i18n="generated.371f3bd59e35">Local concurrency
+            <label><span data-i18n="plugins.streamalchemy.labels.local_concurrency">Local concurrency
               </span><input type="number" id="localConcurrency" min="1" max="4">
             </label>
           </div>
@@ -844,7 +844,7 @@
           <div class="model-installer">
             <div class="provider-row" style="border-bottom: 0; padding: 0;">
               <div>
-                <div class="name" data-i18n="generated.913bfdc42390">Local model installer</div>
+                <div class="name" data-i18n="plugins.streamalchemy.labels.local_model_installer">Local model installer</div>
                 <div class="muted" id="localModelPath">-</div>
               </div>
               <span class="status" id="localModelState">unknown</span>
@@ -854,20 +854,20 @@
             </div>
             <div class="model-error" id="localModelError" role="alert"></div>
             <div class="actions" style="justify-content: flex-start;">
-              <button class="button" id="installLocalModelBtn" type="button" data-i18n="generated.5bbaefadb171">Install local model</button>
-              <button class="button" id="runLocalTestBtn" type="button" data-i18n="generated.ef53fc06614a">Test local generation</button>
+              <button class="button" id="installLocalModelBtn" type="button" data-i18n="plugins.streamalchemy.labels.install_local_model">Install local model</button>
+              <button class="button" id="runLocalTestBtn" type="button" data-i18n="plugins.streamalchemy.labels.test_local_generation">Test local generation</button>
               <span class="muted" id="localModelBytes"></span>
             </div>
             <ul class="model-help">
-              <li data-i18n="generated.94d9f4731f97">One-click download only works for open checkpoints and requires a valid ComfyUI root path.</li>
-              <li data-i18n="generated.c9cd91f6c1fc">For gated Hugging Face models, accept upstream terms and provide HF_TOKEN or HUGGINGFACE_TOKEN before starting LTTH.</li>
-              <li data-i18n="generated.5d5fb282c8ac">If automatic download is blocked, place the file at the exact target path shown below and refresh the page.</li>
+              <li data-i18n="plugins.streamalchemy.labels.one_click_download_only_works_for_open_checkpoints">One-click download only works for open checkpoints and requires a valid ComfyUI root path.</li>
+              <li data-i18n="plugins.streamalchemy.labels.for_gated_hugging_face_models_accept_upstream_terms">For gated Hugging Face models, accept upstream terms and provide HF_TOKEN or HUGGINGFACE_TOKEN before starting LTTH.</li>
+              <li data-i18n="plugins.streamalchemy.labels.if_automatic_download_is_blocked_place_the_file">If automatic download is blocked, place the file at the exact target path shown below and refresh the page.</li>
             </ul>
             <ul class="manual-steps" id="manualSteps"></ul>
           </div>
 
           <div class="panel" style="margin-top: 16px; padding: 14px;">
-            <h3 data-i18n="generated.8acc456f1fa2">Recommended models for this system</h3>
+            <h3 data-i18n="plugins.streamalchemy.labels.recommended_models_for_this_system">Recommended models for this system</h3>
             <div class="preset-list" id="presetList"></div>
           </div>
 

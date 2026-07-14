@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.998c0cbff13f">Plinko - LTTH Game Engine</title>
+  <title data-i18n="plugins.game-engine.labels.plinko_ltth_game_engine">Plinko - LTTH Game Engine</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <style>
@@ -104,8 +104,8 @@
     .ball-label .username {
       font-size: 12px;
       color: #00ffff;
-      text-shadow: 
-        0 0 8px rgba(0, 255, 255, 1), 
+      text-shadow:
+        0 0 8px rgba(0, 255, 255, 1),
         0 0 15px rgba(0, 255, 255, 0.8),
         0 2px 4px rgba(0, 0, 0, 1);
       white-space: nowrap;
@@ -119,7 +119,7 @@
       font-size: 20px;
       font-weight: bold;
       text-align: center;
-      text-shadow: 
+      text-shadow:
         0 0 10px currentColor,
         0 0 20px currentColor,
         0 2px 8px rgba(0, 0, 0, 1);
@@ -127,7 +127,7 @@
       color: white;
       transition: all 0.3s ease;
     }
-    
+
     .slot-label.active {
       transform: scale(1.3);
       filter: brightness(1.5);
@@ -152,13 +152,13 @@
       width: 16px;
       background: linear-gradient(180deg, #00ffff, #0088aa);
       border-radius: 6px;
-      box-shadow: 
+      box-shadow:
         0 0 10px rgba(0, 255, 255, 0.6),
         inset 0 0 5px rgba(255, 255, 255, 0.3);
       transition: all 0.3s ease;
       position: relative;
     }
-    
+
     .heatmap-bar::before {
       content: '';
       position: absolute;
@@ -169,10 +169,10 @@
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent);
       border-radius: 6px 6px 0 0;
     }
-    
+
     .heatmap-bar:hover {
       transform: scale(1.1);
-      box-shadow: 
+      box-shadow:
         0 0 20px rgba(0, 255, 255, 1),
         inset 0 0 10px rgba(255, 255, 255, 0.5);
     }
@@ -313,7 +313,7 @@
 
   <!-- Leaderboard Container -->
   <div id="leaderboard-container">
-    <div id="leaderboard-title" data-i18n="generated.5b705f8642aa">🏆 Plinko Leaderboard 🏆</div>
+    <div id="leaderboard-title" data-i18n="plugins.game-engine.labels.plinko_leaderboard">🏆 Plinko Leaderboard 🏆</div>
     <ul id="leaderboard-list">
       <!-- Leaderboard items will be populated dynamically -->
     </ul>
@@ -321,21 +321,21 @@
 
   <!-- Test Mode Controls -->
   <div id="test-mode-controls">
-    <h3 data-i18n="generated.5d60585216d3">🧪 Test Mode</h3>
+    <h3 data-i18n="plugins.game-engine.labels.test_mode_5d6058">🧪 Test Mode</h3>
     <div>
-      <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="generated.f19647378b96">Bet Amount (XP):</label>
+      <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="plugins.game-engine.labels.bet_amount_xp">Bet Amount (XP):</label>
       <input type="number" id="test-bet-amount" value="100" min="10" max="1000" step="10">
     </div>
     <div>
-      <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="generated.d808b6e60641">Player Name:</label>
+      <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="plugins.game-engine.labels.player_name">Player Name:</label>
       <input type="text" id="test-player-name" value="TestPlayer">
     </div>
     <div>
-      <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="generated.4557e311710a">Ball Count:</label>
+      <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="plugins.game-engine.labels.ball_count">Ball Count:</label>
       <input type="number" id="test-ball-count" value="1" min="1" max="10">
     </div>
-    <button class="btn-start" id="test-drop-ball" data-i18n="generated.ed2cbff06a62">🎰 Drop Ball</button>
-    <button class="btn-start" id="test-show-leaderboard" style="background: #2196F3;" data-i18n="generated.db8b6b41c7f9">📊 Show Leaderboard</button>
+    <button class="btn-start" id="test-drop-ball" data-i18n="plugins.game-engine.labels.drop_ball">🎰 Drop Ball</button>
+    <button class="btn-start" id="test-show-leaderboard" style="background: #2196F3;" data-i18n="plugins.game-engine.labels.show_leaderboard">📊 Show Leaderboard</button>
   </div>
 
   <script>
@@ -740,7 +740,7 @@
         targetSlot.render.fillStyle = '#ffffff';
         targetSlot.render.shadowBlur = 30;
         targetSlot.render.shadowColor = originalColor;
-        
+
         // Animate slot label
         const labels = document.querySelectorAll('.slot-label');
         if (labels[slotIndex]) {
@@ -749,7 +749,7 @@
             labels[slotIndex].classList.remove('active');
           }, 500);
         }
-        
+
         setTimeout(() => {
           targetSlot.render.fillStyle = originalColor;
           targetSlot.render.shadowBlur = 0;
@@ -837,19 +837,19 @@
     function showLeaderboard(duration = 5000) {
       // Request leaderboard data from server
       socket.emit('plinko:request-leaderboard', { limit: 10 });
-      
+
       // Hide Plinko board
       if (plinkoBoard) {
         plinkoBoard.style.display = 'none';
       }
-      
+
       console.log(`📊 Showing leaderboard for ${duration}ms`);
-      
+
       // Clear any existing timer
       if (leaderboardTimer) {
         clearTimeout(leaderboardTimer);
       }
-      
+
       // Auto-hide after duration
       if (duration > 0) {
         leaderboardTimer = setTimeout(() => {
@@ -949,13 +949,13 @@
       config.physicsSettings = newConfig.physicsSettings;
       config.giftMappings = newConfig.giftMappings;
       overlayTestMode = overlayTestMode || !!config.physicsSettings.testModeEnabled;
-      
+
       // Apply display texts
       applyDisplayTexts(newConfig.displayTexts);
-      
+
       // Update gravity
       engine.gravity.y = config.physicsSettings.gravity;
-      
+
       // Rebuild world
       setupWorld();
       updateTestModeControlsVisibility();
@@ -968,13 +968,13 @@
         config.physicsSettings = newConfig.physicsSettings;
         config.giftMappings = newConfig.giftMappings || {};
         overlayTestMode = overlayTestMode || !!config.physicsSettings.testModeEnabled;
-        
+
         // Apply display texts
         applyDisplayTexts(newConfig.displayTexts);
-        
+
         // Update gravity
         engine.gravity.y = config.physicsSettings.gravity;
-        
+
         // Rebuild world
         setupWorld();
         updateTestModeControlsVisibility();
@@ -1010,9 +1010,9 @@
     window.addEventListener('resize', () => {
       const oldWidth = WIDTH;
       const oldHeight = HEIGHT;
-      
+
       refreshDimensions();
-      
+
       if (render && render.canvas) {
         // Update canvas dimensions
         render.canvas.width = WIDTH;
@@ -1021,14 +1021,14 @@
         render.options.height = HEIGHT;
         render.bounds.max.x = WIDTH;
         render.bounds.max.y = HEIGHT;
-        
+
         // Rebuild world with new dimensions
         setupWorld();
-        
+
         // Scale existing balls to new coordinate system
         const scaleX = WIDTH / oldWidth;
         const scaleY = HEIGHT / oldHeight;
-        
+
         for (const [ballId, ballData] of balls.entries()) {
           if (ballData.body && !ballData.hasLanded) {
             const pos = ballData.body.position;
@@ -1038,7 +1038,7 @@
             });
           }
         }
-        
+
         console.log(`📐 Resized overlay: ${WIDTH}x${HEIGHT}`);
       }
     });
@@ -1069,16 +1069,16 @@
       const controls = document.getElementById('test-mode-controls');
       if (!controls) return;
       controls.style.display = 'block';
-      
+
       // Drop ball button
       document.getElementById('test-drop-ball').onclick = () => {
         const betAmount = parseInt(document.getElementById('test-bet-amount').value) || 100;
         const playerName = document.getElementById('test-player-name').value || 'TestPlayer';
         const count = Math.max(1, Math.min(10, parseInt(document.getElementById('test-ball-count').value) || 1));
-        
+
         // Make sure Plinko board is visible when dropping balls
         showPlinkoBoard();
-        
+
         for (let i = 0; i < count; i++) {
           const ballId = 'test_' + Date.now() + '_' + Math.random();
           const ballData = {
@@ -1095,7 +1095,7 @@
           spawnBall(ballData);
         }
       };
-      
+
       // Show leaderboard button (test mode only)
       const leaderboardBtn = document.getElementById('test-show-leaderboard');
       if (leaderboardBtn) {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.e477480f425c">Sidekick - Admin Panel</title>
+  <title data-i18n="plugins.sidekick.labels.sidekick_admin_panel">Sidekick - Admin Panel</title>
   <link rel="stylesheet" href="/css/themes.css">
   <script>
     (function () {
@@ -449,11 +449,11 @@
       .grid {
         grid-template-columns: 1fr;
       }
-      
+
       .tabs {
         flex-direction: column;
       }
-      
+
       .tab {
         border-radius: 5px;
       }
@@ -500,7 +500,7 @@
     html[data-theme="vision-impaired"] .brand-logo {
       width: min(320px, 60vw);
     }
-  
+
         /* Cid theme alignment */
         html[data-theme="cid"] body {
             background: #030603;
@@ -594,7 +594,7 @@
             border-color: #4ade80;
             -webkit-text-fill-color: #030603;
         }
-    
+
     /* Accessibility contrast pass: explicit readable controls in contrast modes */
     html[data-theme="contrast"] .tab.active,
     html[data-theme="contrast"] .btn-primary,
@@ -636,7 +636,7 @@
       <img class="brand-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
       <span id="status-badge" class="badge badge-success">Active</span>
     </div>
-    <p style="color: var(--color-text-secondary); margin-bottom: 20px;" data-i18n="generated.1dbea83717d2">Intelligenter Stream-Assistent mit AnimazingPal + Fish.audio Delegation</p>
+    <p style="color: var(--color-text-secondary); margin-bottom: 20px;" data-i18n="plugins.sidekick.labels.intelligenter_stream_assistent_mit_animazingpal_fish_audio_delegation">Intelligenter Stream-Assistent mit AnimazingPal + Fish.audio Delegation</p>
 
     <div class="tabs">
       <button class="tab active" data-tab="status">Status</button>
@@ -650,7 +650,7 @@
     <div id="tab-status" class="tab-content active">
       <div class="grid">
         <div class="card">
-          <h3 data-i18n="generated.c6b65d340b52">🔌 Verbindungen</h3>
+          <h3 data-i18n="plugins.sidekick.labels.verbindungen">🔌 Verbindungen</h3>
           <div class="inline-row" style="margin-top: 15px;">
             <span class="status-indicator" id="animaze-status-indicator"></span>
             <span>AnimazingPal: <span id="animaze-status-text" data-i18n="sidekick.ui.status.disconnected">Disconnected</span></span>
@@ -668,11 +668,11 @@
         </div>
 
         <div class="card">
-          <h3 data-i18n="generated.7348f6fab05b">🎤 Steuerung</h3>
+          <h3 data-i18n="plugins.sidekick.labels.steuerung">🎤 Steuerung</h3>
           <div class="inline-row" style="margin-top: 15px;">
-            <button id="btn-mute" class="btn-warning" data-i18n="generated.f39bb77b878f">🔇 Mute</button>
-            <button id="btn-unmute" class="btn-primary" data-i18n="generated.a82d40c71fb1">🔊 Unmute</button>
-            <button id="btn-reset" class="btn-danger" data-i18n="generated.26bea99435be">🔄 Reset Session</button>
+            <button id="btn-mute" class="btn-warning" data-i18n="plugins.sidekick.labels.mute">🔇 Mute</button>
+            <button id="btn-unmute" class="btn-primary" data-i18n="plugins.sidekick.labels.unmute">🔊 Unmute</button>
+            <button id="btn-reset" class="btn-danger" data-i18n="plugins.sidekick.labels.reset_session">🔄 Reset Session</button>
           </div>
           <div style="margin-top: 15px;">
             <label for="test-message">Test-Nachricht:</label>
@@ -685,8 +685,8 @@
       </div>
 
       <div class="card" id="host-asr-panel">
-        <h3 data-i18n="generated.90f9b92c8d1d">🎙️ Host-Mic / Fish ASR</h3>
-        <p class="help-text" style="margin-bottom: 15px;" data-i18n="generated.090105e3934a">
+        <h3 data-i18n="plugins.sidekick.labels.host_mic_fish_asr">🎙️ Host-Mic / Fish ASR</h3>
+        <p class="help-text" style="margin-bottom: 15px;" data-i18n="plugins.sidekick.labels.hort_auf_ein_echtes_host_mikrofon_sendet_kurze">
           Hört auf ein echtes Host-Mikrofon, sendet kurze Sprachsegmente an Fish.audio ASR und gibt erkannte Host-Sprache an die Sidekick-Konversation weiter.
           Wähle nicht den CABLE-/Loopback-Ausgang, sonst kann Feedback entstehen.
         </p>
@@ -694,47 +694,47 @@
           <div>
             <div class="form-group">
               <label for="host-asr-enabled">
-                <input type="checkbox" id="host-asr-enabled"><span data-i18n="generated.bf34bb586db0"> ASR Listening im Browser aktivieren
+                <input type="checkbox" id="host-asr-enabled"><span data-i18n="plugins.sidekick.labels.asr_listening_im_browser_aktivieren"> ASR Listening im Browser aktivieren
               </span></label>
             </div>
             <div class="inline-row">
-              <button id="btn-asr-permission" class="btn-primary" data-i18n="generated.a46593fa6a46">Mikrofon erlauben / Geräte laden</button>
-              <button id="btn-asr-refresh" class="btn-secondary" data-i18n="generated.189f6c3a80b6">Status aktualisieren</button>
-              <button id="btn-asr-test" class="btn-warning" data-i18n="generated.b4e80c2be57e">Test-Aufnahme starten</button>
+              <button id="btn-asr-permission" class="btn-primary" data-i18n="plugins.sidekick.labels.mikrofon_erlauben_gerate_laden">Mikrofon erlauben / Geräte laden</button>
+              <button id="btn-asr-refresh" class="btn-secondary" data-i18n="plugins.sidekick.labels.status_aktualisieren">Status aktualisieren</button>
+              <button id="btn-asr-test" class="btn-warning" data-i18n="plugins.sidekick.labels.test_aufnahme_starten">Test-Aufnahme starten</button>
             </div>
             <div class="form-group" style="margin-top: 15px;">
-              <label for="host-asr-device" data-i18n="generated.344fbf6ccb2d">Audio-Eingabegerät</label>
+              <label for="host-asr-device" data-i18n="plugins.sidekick.labels.audio_eingabegerat">Audio-Eingabegerät</label>
               <select id="host-asr-device">
-                <option value="" data-i18n="generated.7890670373b7">Geräte laden...</option>
+                <option value="" data-i18n="plugins.sidekick.labels.gerate_laden">Geräte laden...</option>
               </select>
             </div>
             <div id="host-asr-device-warning" class="asr-warning" style="display: none;"></div>
             <div class="form-group" style="margin-top: 10px;">
               <label for="host-asr-unsafe-override">
-                <input type="checkbox" id="host-asr-unsafe-override"><span data-i18n="generated.4a67f6065f46"> Ich verstehe: dieses Gerät kann Loopback/Feedback verursachen
+                <input type="checkbox" id="host-asr-unsafe-override"><span data-i18n="plugins.sidekick.labels.ich_verstehe_dieses_gerat_kann_loopback_feedback_verursachen"> Ich verstehe: dieses Gerät kann Loopback/Feedback verursachen
               </span></label>
             </div>
           </div>
           <div>
             <div class="grid">
               <div class="form-group">
-                <label for="host-asr-language" data-i18n="generated.8253dc76bc78">Sprache (optional, z.B. de-DE)</label>
+                <label for="host-asr-language" data-i18n="plugins.sidekick.labels.sprache_optional_z_b_de_de">Sprache (optional, z.B. de-DE)</label>
                 <input type="text" id="host-asr-language" maxlength="16" placeholder="Auto">
               </div>
               <div class="form-group">
-                <label for="host-asr-max-bytes" data-i18n="generated.6031d93b6387">Max Audio Bytes</label>
+                <label for="host-asr-max-bytes" data-i18n="plugins.sidekick.labels.max_audio_bytes">Max Audio Bytes</label>
                 <input type="number" id="host-asr-max-bytes" min="1" value="8388608">
               </div>
               <div class="form-group">
-                <label for="host-asr-min-transcript" data-i18n="generated.9ee6722a64bc">Min. Transcript-Zeichen</label>
+                <label for="host-asr-min-transcript" data-i18n="plugins.sidekick.labels.min_transcript_zeichen">Min. Transcript-Zeichen</label>
                 <input type="number" id="host-asr-min-transcript" min="1" value="3">
               </div>
               <div class="form-group">
-                <label for="host-asr-silence-timeout" data-i18n="generated.8faffae48eb5">Silence Timeout (ms)</label>
+                <label for="host-asr-silence-timeout" data-i18n="plugins.sidekick.labels.silence_timeout_ms">Silence Timeout (ms)</label>
                 <input type="number" id="host-asr-silence-timeout" min="250" max="5000" value="900">
               </div>
               <div class="form-group">
-                <label for="host-asr-max-segment" data-i18n="generated.cf0bab4f069f">Max Segment (ms)</label>
+                <label for="host-asr-max-segment" data-i18n="plugins.sidekick.labels.max_segment_ms">Max Segment (ms)</label>
                 <input type="number" id="host-asr-max-segment" min="1000" max="30000" value="12000">
               </div>
             </div>
@@ -743,12 +743,12 @@
         <div class="grid" style="margin-top: 15px;">
           <div>
             <p>ASR: <strong id="host-asr-enabled-status">Unknown</strong></p>
-            <p><span data-i18n="generated.e2e0864e19a3">TTS/Fish bereit: </span><strong id="host-asr-ready-status">Unknown</strong></p>
+            <p><span data-i18n="plugins.sidekick.labels.tts_fish_bereit">TTS/Fish bereit: </span><strong id="host-asr-ready-status">Unknown</strong></p>
             <p>Recorder: <strong id="host-asr-recorder-status">Idle</strong></p>
           </div>
           <div>
-            <p>Requests: <strong id="host-asr-requests">0</strong><span data-i18n="generated.7dc0164f3f86"> · Transkribiert: </span><strong id="host-asr-transcribed">0</strong><span data-i18n="generated.058ae1ce59be"> · Delegiert: </span><strong id="host-asr-delegated">0</strong></p>
-            <p><span data-i18n="generated.6abe92ae5435">Letzte Latenz: </span><strong id="host-asr-latency">-</strong></p>
+            <p>Requests: <strong id="host-asr-requests">0</strong><span data-i18n="plugins.sidekick.labels.transkribiert"> · Transkribiert: </span><strong id="host-asr-transcribed">0</strong><span data-i18n="plugins.sidekick.labels.delegiert"> · Delegiert: </span><strong id="host-asr-delegated">0</strong></p>
+            <p><span data-i18n="plugins.sidekick.labels.letzte_latenz">Letzte Latenz: </span><strong id="host-asr-latency">-</strong></p>
             <div class="inline-row">
               <span>Level</span>
               <div class="asr-meter"><div class="asr-meter-fill" id="host-asr-meter"></div></div>
@@ -756,14 +756,14 @@
           </div>
         </div>
         <div style="margin-top: 15px;">
-          <p><span data-i18n="generated.fe62954b9a11">Letztes Transcript: </span><strong id="host-asr-last-transcript">-</strong></p>
-          <p><span data-i18n="generated.126ccc077896">Letzte Host-Entscheidung: </span><strong id="host-asr-last-decision">-</strong></p>
-          <p><span data-i18n="generated.94ee027d3036">Letzte Host-Entscheidungs-Gründe: </span><strong id="host-asr-last-decision-reason">-</strong></p>
-          <p><span data-i18n="generated.24697c65c6f5">Letzter Host-Score: </span><strong id="host-asr-last-decision-score">-</strong></p>
-          <p><span data-i18n="generated.be92ba6746c2">Letzter Fehler: </span><strong id="host-asr-last-error" class="asr-muted">-</strong></p>
+          <p><span data-i18n="plugins.sidekick.labels.letztes_transcript">Letztes Transcript: </span><strong id="host-asr-last-transcript">-</strong></p>
+          <p><span data-i18n="plugins.sidekick.labels.letzte_host_entscheidung">Letzte Host-Entscheidung: </span><strong id="host-asr-last-decision">-</strong></p>
+          <p><span data-i18n="plugins.sidekick.labels.letzte_host_entscheidungs_grunde">Letzte Host-Entscheidungs-Gründe: </span><strong id="host-asr-last-decision-reason">-</strong></p>
+          <p><span data-i18n="plugins.sidekick.labels.letzter_host_score">Letzter Host-Score: </span><strong id="host-asr-last-decision-score">-</strong></p>
+          <p><span data-i18n="plugins.sidekick.labels.letzter_fehler">Letzter Fehler: </span><strong id="host-asr-last-error" class="asr-muted">-</strong></p>
         </div>
         <div class="asr-warning" style="margin-top: 15px;">
-          <p><span data-i18n="generated.d0d7e17152dd">Host Preflight: </span><strong id="host-preflight-status">Unknown</strong></p>
+          <p><span data-i18n="plugins.sidekick.labels.host_preflight">Host Preflight: </span><strong id="host-preflight-status">Unknown</strong></p>
           <ul id="host-preflight-checks" style="margin-left: 20px; margin-top: 8px;"></ul>
         </div>
       </div>
@@ -783,21 +783,21 @@
         </div>
         <div class="stat-card">
           <div class="stat-value" id="stat-viewers">0</div>
-          <div class="stat-label" data-i18n="generated.59c508a94662">Aktive Viewer</div>
+          <div class="stat-label" data-i18n="plugins.sidekick.labels.aktive_viewer">Aktive Viewer</div>
         </div>
       </div>
 
       <div class="card">
-        <h3 data-i18n="generated.67106647b1f2">📊 Session Statistiken</h3>
+        <h3 data-i18n="plugins.sidekick.labels.session_statistiken">📊 Session Statistiken</h3>
         <div class="grid">
           <div>
             <p>Laufzeit: <strong id="session-duration">0:00:00</strong></p>
-            <p><span data-i18n="generated.8319e4eb0d0e">Total Events: </span><strong id="session-events">0</strong></p>
-            <p><span data-i18n="generated.91360394fb84">Responses gesendet: </span><strong id="session-responses">0</strong></p>
+            <p><span data-i18n="plugins.sidekick.labels.total_events">Total Events: </span><strong id="session-events">0</strong></p>
+            <p><span data-i18n="plugins.sidekick.labels.responses_gesendet">Responses gesendet: </span><strong id="session-responses">0</strong></p>
           </div>
           <div>
-            <p><span data-i18n="generated.9a344960a57b">Dedupe Hits: </span><strong id="session-dedupe">0</strong></p>
-            <p><span data-i18n="generated.1326c1357f37">Rate Limit Status: </span><strong id="ratelimit-status">OK</strong></p>
+            <p><span data-i18n="plugins.sidekick.labels.dedupe_hits">Dedupe Hits: </span><strong id="session-dedupe">0</strong></p>
+            <p><span data-i18n="plugins.sidekick.labels.rate_limit_status">Rate Limit Status: </span><strong id="ratelimit-status">OK</strong></p>
           </div>
         </div>
       </div>
@@ -807,82 +807,82 @@
     <div id="tab-settings" class="tab-content">
       <div class="card">
         <h3>Sprachausgabe</h3>
-        <p style="color: var(--color-text-secondary); margin-bottom: 15px;" data-i18n="generated.130dc1ec9886">AnimazingPal + Fish.audio. Stimme, Persönlichkeit, Viewer-Profile, Audio-Routing und Avatar-Lipsync werden zentral in AnimazingPal konfiguriert.</p>
+        <p style="color: var(--color-text-secondary); margin-bottom: 15px;" data-i18n="plugins.sidekick.labels.animazingpal_fish_audio_stimme_personlichkeit_viewer_profile_audio">AnimazingPal + Fish.audio. Stimme, Persönlichkeit, Viewer-Profile, Audio-Routing und Avatar-Lipsync werden zentral in AnimazingPal konfiguriert.</p>
         <div class="form-group">
-          <label for="output-username" data-i18n="generated.a8ee937565e8">Name der Assistenz</label>
+          <label for="output-username" data-i18n="plugins.sidekick.labels.name_der_assistenz">Name der Assistenz</label>
           <input type="text" id="output-username" value="Sidekick" maxlength="64">
         </div>
       </div>
 
       <div class="card">
-        <h3 data-i18n="generated.07df20d64fd5">💬 Chat Einstellungen</h3>
+        <h3 data-i18n="plugins.sidekick.labels.chat_einstellungen">💬 Chat Einstellungen</h3>
         <div class="grid">
           <div class="form-group">
             <label for="comment-enabled">
-              <input type="checkbox" id="comment-enabled"><span data-i18n="generated.0501d877744e"> Chat-Verarbeitung aktiviert
+              <input type="checkbox" id="comment-enabled"><span data-i18n="plugins.sidekick.labels.chat_verarbeitung_aktiviert"> Chat-Verarbeitung aktiviert
             </span></label>
           </div>
           <div class="form-group">
-            <label for="reply-threshold" data-i18n="generated.88a1bb1e940b">Reply Threshold (0-1)</label>
+            <label for="reply-threshold" data-i18n="plugins.sidekick.labels.reply_threshold_0_1">Reply Threshold (0-1)</label>
             <input type="number" id="reply-threshold" min="0" max="1" step="0.1" value="0.6">
           </div>
           <div class="form-group">
-            <label for="global-cooldown" data-i18n="generated.1c5a83fb44d4">Global Cooldown (Sek)</label>
+            <label for="global-cooldown" data-i18n="plugins.sidekick.labels.global_cooldown_sek">Global Cooldown (Sek)</label>
             <input type="number" id="global-cooldown" min="0" value="6">
           </div>
           <div class="form-group">
-            <label for="user-cooldown" data-i18n="generated.846861ecdc8b">Per-User Cooldown (Sek)</label>
+            <label for="user-cooldown" data-i18n="plugins.sidekick.labels.per_user_cooldown_sek">Per-User Cooldown (Sek)</label>
             <input type="number" id="user-cooldown" min="0" value="15">
           </div>
           <div class="form-group">
-            <label for="max-replies" data-i18n="generated.11e3411b66e3">Max Replies/Min</label>
+            <label for="max-replies" data-i18n="plugins.sidekick.labels.max_replies_min">Max Replies/Min</label>
             <input type="number" id="max-replies" min="1" value="20">
           </div>
         </div>
         <div class="form-group">
           <label>
-            <input type="checkbox" id="respond-greetings"><span data-i18n="generated.ab517db25bcc"> Auf Grüße antworten
+            <input type="checkbox" id="respond-greetings"><span data-i18n="plugins.sidekick.labels.auf_gru_e_antworten"> Auf Grüße antworten
           </span></label>
         </div>
         <div class="form-group">
           <label>
-            <input type="checkbox" id="respond-thanks"><span data-i18n="generated.8c2208698a9c"> Auf Danke antworten
+            <input type="checkbox" id="respond-thanks"><span data-i18n="plugins.sidekick.labels.auf_danke_antworten"> Auf Danke antworten
           </span></label>
         </div>
       </div>
 
       <div class="card">
-        <h3 data-i18n="generated.0f79d27ad275">👋 Join Greetings</h3>
+        <h3 data-i18n="plugins.sidekick.labels.join_greetings">👋 Join Greetings</h3>
         <div class="form-group">
           <label>
-            <input type="checkbox" id="joins-enabled"><span data-i18n="generated.9411f2669c0e"> Join Greetings aktiviert
+            <input type="checkbox" id="joins-enabled"><span data-i18n="plugins.sidekick.labels.join_greetings_aktiviert"> Join Greetings aktiviert
           </span></label>
         </div>
         <div class="grid">
           <div class="form-group">
-            <label for="greet-delay" data-i18n="generated.bf761e49a04a">Greet nach (Sek)</label>
+            <label for="greet-delay" data-i18n="plugins.sidekick.labels.greet_nach_sek">Greet nach (Sek)</label>
             <input type="number" id="greet-delay" min="0" value="30">
           </div>
           <div class="form-group">
-            <label for="greet-cooldown" data-i18n="generated.6c6638bd08d3">Global Greet Cooldown (Sek)</label>
+            <label for="greet-cooldown" data-i18n="plugins.sidekick.labels.global_greet_cooldown_sek">Global Greet Cooldown (Sek)</label>
             <input type="number" id="greet-cooldown" min="0" value="180">
           </div>
         </div>
       </div>
 
       <div class="card">
-        <h3 data-i18n="generated.aa80d7e126ea">📦 Outbox Batching</h3>
+        <h3 data-i18n="plugins.sidekick.labels.outbox_batching">📦 Outbox Batching</h3>
         <div class="grid">
           <div class="form-group">
-            <label for="batch-window" data-i18n="generated.40a6a404207e">Batch Window (Sek)</label>
+            <label for="batch-window" data-i18n="plugins.sidekick.labels.batch_window_sek">Batch Window (Sek)</label>
             <input type="number" id="batch-window" min="1" value="8">
           </div>
           <div class="form-group">
-            <label for="batch-max-items" data-i18n="generated.720f94a5c6a7">Max Items pro Batch</label>
+            <label for="batch-max-items" data-i18n="plugins.sidekick.labels.max_items_pro_batch">Max Items pro Batch</label>
             <input type="number" id="batch-max-items" min="1" value="8">
           </div>
           <div class="form-group">
-            <label for="batch-max-chars" data-i18n="generated.41caced0e7e8">Max Zeichen</label>
+            <label for="batch-max-chars" data-i18n="plugins.sidekick.labels.max_zeichen">Max Zeichen</label>
             <input type="number" id="batch-max-chars" min="50" value="320">
           </div>
           <div class="form-group">
@@ -894,72 +894,72 @@
 
       <div class="card">
         <h3>Host-Entscheidungslogik</h3>
-        <p style="color: var(--color-text-secondary); margin-bottom: 15px;" data-i18n="generated.d1a332a963c4">Legt fest, wie der Host entscheidet, ob eine transkribierte Host-Aussage beantwortet wird.</p>
+        <p style="color: var(--color-text-secondary); margin-bottom: 15px;" data-i18n="plugins.sidekick.labels.legt_fest_wie_der_host_entscheidet_ob_eine">Legt fest, wie der Host entscheidet, ob eine transkribierte Host-Aussage beantwortet wird.</p>
         <div class="grid">
           <div class="form-group">
-            <label for="host-reply-probability" data-i18n="generated.8615f19a71e3">Host Antwort-Wahrscheinlichkeit (0-1)</label>
+            <label for="host-reply-probability" data-i18n="plugins.sidekick.labels.host_antwort_wahrscheinlichkeit_0_1">Host Antwort-Wahrscheinlichkeit (0-1)</label>
             <input type="number" id="host-reply-probability" min="0" max="1" step="0.05" value="0.75">
           </div>
           <div class="form-group">
-            <label for="host-min-confidence" data-i18n="generated.7ed5d6f92f99">Min. ASR Confidence (0-1)</label>
+            <label for="host-min-confidence" data-i18n="plugins.sidekick.labels.min_asr_confidence_0_1">Min. ASR Confidence (0-1)</label>
             <input type="number" id="host-min-confidence" min="0" max="1" step="0.05" value="0.35">
           </div>
           <div class="form-group">
-            <label for="host-context-cooldown" data-i18n="generated.402d383ec1f6">Host Kontext-Cooldown (ms)</label>
+            <label for="host-context-cooldown" data-i18n="plugins.sidekick.labels.host_kontext_cooldown_ms">Host Kontext-Cooldown (ms)</label>
             <input type="number" id="host-context-cooldown" min="0" value="6000">
           </div>
           <div class="form-group">
-            <label for="host-overtalk-cooldown" data-i18n="generated.837c5660b0ff">Anti-Overtalk Cooldown (ms)</label>
+            <label for="host-overtalk-cooldown" data-i18n="plugins.sidekick.labels.anti_overtalk_cooldown_ms">Anti-Overtalk Cooldown (ms)</label>
             <input type="number" id="host-overtalk-cooldown" min="0" value="1800">
           </div>
           <div class="form-group">
-            <label for="host-longform-limit" data-i18n="generated.129a73d6b41c">Long-Form Wortlimit</label>
+            <label for="host-longform-limit" data-i18n="plugins.sidekick.labels.long_form_wortlimit">Long-Form Wortlimit</label>
             <input type="number" id="host-longform-limit" min="1" value="48">
           </div>
         </div>
       </div>
 
-      <button id="btn-save-settings" class="btn-primary" data-i18n="generated.27637fa0c317">💾 Einstellungen speichern</button>
+      <button id="btn-save-settings" class="btn-primary" data-i18n="plugins.sidekick.labels.einstellungen_speichern">💾 Einstellungen speichern</button>
     </div>
 
     <!-- Memory Tab -->
     <div id="tab-memory" class="tab-content">
       <div class="card">
-        <h3 data-i18n="generated.a0ee5774089a">🧠 Memory Statistiken</h3>
+        <h3 data-i18n="plugins.sidekick.labels.memory_statistiken">🧠 Memory Statistiken</h3>
         <div class="grid">
           <div class="stat-card">
             <div class="stat-value" id="memory-users">0</div>
-            <div class="stat-label" data-i18n="generated.f88b3bcaaa56">Gespeicherte User</div>
+            <div class="stat-label" data-i18n="plugins.sidekick.labels.gespeicherte_user">Gespeicherte User</div>
           </div>
           <div class="stat-card">
             <div class="stat-value" id="memory-gifts">0</div>
-            <div class="stat-label" data-i18n="generated.1e9338a11637">Total Gifts</div>
+            <div class="stat-label" data-i18n="plugins.sidekick.labels.total_gifts">Total Gifts</div>
           </div>
           <div class="stat-card">
             <div class="stat-value" id="memory-follows">0</div>
-            <div class="stat-label" data-i18n="generated.6c76c706c8f7">Total Follows</div>
+            <div class="stat-label" data-i18n="plugins.sidekick.labels.total_follows">Total Follows</div>
           </div>
         </div>
         <div style="margin-top: 15px;">
-          <button id="btn-clear-memory" class="btn-danger" data-i18n="generated.1f4838addca2">🗑️ Memory löschen</button>
+          <button id="btn-clear-memory" class="btn-danger" data-i18n="plugins.sidekick.labels.memory_loschen">🗑️ Memory löschen</button>
         </div>
       </div>
 
       <div class="card">
-        <h3 data-i18n="generated.e077839b5426">🏆 Top User (Engagement)</h3>
+        <h3 data-i18n="plugins.sidekick.labels.top_user_engagement">🏆 Top User (Engagement)</h3>
         <div class="user-list" id="top-users">
           <p style="color: #666; padding: 20px; text-align: center;">Lade...</p>
         </div>
       </div>
 
       <div class="card">
-        <h3 data-i18n="generated.d48be1ad62c7">🔍 User Suche</h3>
+        <h3 data-i18n="plugins.sidekick.labels.user_suche">🔍 User Suche</h3>
         <div class="inline-row" style="margin-bottom: 15px;">
           <input type="text" id="search-user" placeholder="Nickname oder ID suchen...">
           <button id="btn-search" class="btn-primary">Suchen</button>
         </div>
         <div class="user-list" id="search-results">
-          <p style="color: #666; padding: 20px; text-align: center;" data-i18n="generated.499aecfe6785">Suchbegriff eingeben...</p>
+          <p style="color: #666; padding: 20px; text-align: center;" data-i18n="plugins.sidekick.labels.suchbegriff_eingeben">Suchbegriff eingeben...</p>
         </div>
       </div>
     </div>
@@ -967,7 +967,7 @@
     <!-- Analytics Tab -->
     <div id="tab-analytics" class="tab-content">
       <div class="card">
-        <h3 data-i18n="generated.ab432362e9bb">📈 Live Rates (pro Minute)</h3>
+        <h3 data-i18n="plugins.sidekick.labels.live_rates_pro_minute">📈 Live Rates (pro Minute)</h3>
         <div class="grid">
           <div class="stat-card">
             <div class="stat-value" id="rate-chats">0</div>
@@ -989,7 +989,7 @@
       </div>
 
       <div class="card">
-        <h3 data-i18n="generated.7e1c6994996a">Sidekick Decision Funnel</h3>
+        <h3 data-i18n="plugins.sidekick.labels.sidekick_decision_funnel">Sidekick Decision Funnel</h3>
         <div class="grid">
           <div class="stat-card">
             <div class="stat-value" id="decision-attempts">0</div>
@@ -1011,27 +1011,27 @@
         <div class="grid" style="margin-top: 15px;">
           <div class="stat-card">
             <div class="stat-value" id="decision-acceptance">0.0%</div>
-            <div class="stat-label" data-i18n="generated.3885e642740f">Acceptance Rate</div>
+            <div class="stat-label" data-i18n="plugins.sidekick.labels.acceptance_rate">Acceptance Rate</div>
           </div>
           <div class="stat-card" style="text-align: left;">
-            <div class="stat-label" data-i18n="generated.8e2985cfaf35">Top Reject Reasons</div>
+            <div class="stat-label" data-i18n="plugins.sidekick.labels.top_reject_reasons">Top Reject Reasons</div>
             <div id="decision-reasons" class="help-text" style="margin-top: 8px;">-</div>
           </div>
         </div>
-        <div class="help-text" style="margin-top: 10px;" id="decision-types" data-i18n="generated.c382dd301296">By event type: -</div>
+        <div class="help-text" style="margin-top: 10px;" id="decision-types" data-i18n="plugins.sidekick.labels.by_event_type">By event type: -</div>
       </div>
 
       <div class="card">
-        <h3 data-i18n="generated.2ccb4029f63e">🎯 Top Gifter</h3>
+        <h3 data-i18n="plugins.sidekick.labels.top_gifter">🎯 Top Gifter</h3>
         <div class="user-list" id="top-gifters">
           <p style="color: #666; padding: 20px; text-align: center;">Lade...</p>
         </div>
       </div>
 
       <div class="card">
-        <h3 data-i18n="generated.ab419fe39a0e">📊 Event History</h3>
+        <h3 data-i18n="plugins.sidekick.labels.event_history">📊 Event History</h3>
         <div class="chart-container">
-          <div class="chart-placeholder" data-i18n="generated.307690f569ee">
+          <div class="chart-placeholder" data-i18n="plugins.sidekick.labels.chart_visualisierung_in_zukunftiger_version">
             Chart-Visualisierung (in zukünftiger Version)
           </div>
         </div>
@@ -1041,10 +1041,10 @@
     <!-- Events Tab -->
     <div id="tab-events" class="tab-content">
       <div class="card">
-        <h3 data-i18n="generated.b5f36dfb8ac3">📜 Event Log</h3>
+        <h3 data-i18n="plugins.sidekick.labels.event_log">📜 Event Log</h3>
         <div class="inline-row" style="margin-bottom: 15px;">
           <select id="event-filter">
-            <option value="" data-i18n="generated.b23b177a6b4d">Alle Events</option>
+            <option value="" data-i18n="plugins.sidekick.labels.alle_events">Alle Events</option>
             <option value="chat">Chat</option>
             <option value="gift">Gift</option>
             <option value="follow">Follow</option>
@@ -1053,23 +1053,23 @@
             <option value="join">Join</option>
             <option value="like">Like</option>
           </select>
-          <button id="btn-refresh-events" class="btn-secondary" data-i18n="generated.2de6840a14fb">🔄 Aktualisieren</button>
+          <button id="btn-refresh-events" class="btn-secondary" data-i18n="plugins.sidekick.labels.aktualisieren">🔄 Aktualisieren</button>
         </div>
         <div class="event-log" id="event-log">
-          <p style="color: #666; text-align: center;" data-i18n="generated.bd743e5d0a9f">Lade Events...</p>
+          <p style="color: #666; text-align: center;" data-i18n="plugins.sidekick.labels.lade_events">Lade Events...</p>
         </div>
       </div>
 
       <div class="card">
-        <h3 data-i18n="generated.4c2e102ca301">🔍 Deduper Status</h3>
+        <h3 data-i18n="plugins.sidekick.labels.deduper_status">🔍 Deduper Status</h3>
         <div class="grid">
           <div>
-            <p><span data-i18n="generated.a2074032a360">Größe: </span><strong id="deduper-size">0</strong><span data-i18n="generated.6ee377707ac9"> Einträge</span></p>
-            <p><span data-i18n="generated.cc2aef534800">Total Checks: </span><strong id="deduper-checks">0</strong></p>
+            <p><span data-i18n="plugins.sidekick.labels.gro_e">Größe: </span><strong id="deduper-size">0</strong><span data-i18n="plugins.sidekick.labels.eintrage"> Einträge</span></p>
+            <p><span data-i18n="plugins.sidekick.labels.total_checks">Total Checks: </span><strong id="deduper-checks">0</strong></p>
           </div>
           <div>
-            <p><span data-i18n="generated.775dde3bf23c">Duplikate blockiert: </span><strong id="deduper-blocked">0</strong></p>
-            <p><span data-i18n="generated.b3e2d68bd198">Hit Rate: </span><strong id="deduper-hitrate">0%</strong></p>
+            <p><span data-i18n="plugins.sidekick.labels.duplikate_blockiert">Duplikate blockiert: </span><strong id="deduper-blocked">0</strong></p>
+            <p><span data-i18n="plugins.sidekick.labels.hit_rate">Hit Rate: </span><strong id="deduper-hitrate">0%</strong></p>
           </div>
         </div>
       </div>
@@ -1080,7 +1080,7 @@
   <script>
     // Initialize Socket.io
     const socket = io();
-    
+
     // State
     let config = {};
     let status = {};
@@ -1110,7 +1110,7 @@
       maxSegmentMs: 12000
     };
     let hostAsrSettings = { ...hostAsrDefaults };
-    
+
     // Tab switching
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -1120,7 +1120,7 @@
         document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
       });
     });
-    
+
     // Fetch status
     async function fetchStatus() {
       try {
@@ -1134,7 +1134,7 @@
         console.error('Failed to fetch status:', err);
       }
     }
-    
+
     // Fetch config
     async function fetchConfig() {
       try {
@@ -1729,7 +1729,7 @@
         list.appendChild(item);
       }
     }
-    
+
       // Update status UI
     function updateStatusUI() {
       // Mute status badge
@@ -1741,7 +1741,7 @@
         badge.className = 'badge badge-success';
         badge.textContent = 'Active';
       }
-      
+
       // AnimazingPal connection
       const animazeIndicator = document.getElementById('animaze-status-indicator');
       const animazeText = document.getElementById('animaze-status-text');
@@ -1752,42 +1752,42 @@
         animazeIndicator.className = 'status-indicator status-disconnected';
         animazeText.textContent = 'Disconnected';
       }
-      
+
       // Queue
       const queueLength = status.outbox?.bufferSize || 0;
       document.getElementById('queue-length').textContent = queueLength;
       const queueProgress = Math.min(100, (queueLength / 8) * 100);
       document.getElementById('queue-progress').style.width = queueProgress + '%';
-      
+
       // Stats
       const rates = status.currentRates || {};
       document.getElementById('stat-chats').textContent = rates.chatsPerMinute || 0;
       document.getElementById('stat-gifts').textContent = status.session?.totalGifts || 0;
       document.getElementById('stat-follows').textContent = status.session?.totalFollows || 0;
       document.getElementById('stat-viewers').textContent = status.activeViewers || 0;
-      
+
       // Session
       const duration = status.session?.duration || 0;
       const hours = Math.floor(duration / 3600000);
       const minutes = Math.floor((duration % 3600000) / 60000);
       const seconds = Math.floor((duration % 60000) / 1000);
-      document.getElementById('session-duration').textContent = 
+      document.getElementById('session-duration').textContent =
         `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
       document.getElementById('session-events').textContent = status.session?.totalEvents || 0;
       document.getElementById('session-responses').textContent = status.session?.responsesSent || 0;
       document.getElementById('session-dedupe').textContent = status.session?.dedupeHits || 0;
-      
+
       // Rate limit
       const rlStatus = status.rateLimiter?.globalCooldownRemaining > 0 ? 'Cooldown' : 'OK';
       document.getElementById('ratelimit-status').textContent = rlStatus;
-      
+
       // Deduper
       const deduper = status.deduper || {};
       document.getElementById('deduper-size').textContent = deduper.size || 0;
       document.getElementById('deduper-checks').textContent = deduper.totalChecks || 0;
       document.getElementById('deduper-blocked').textContent = deduper.duplicatesBlocked || 0;
       document.getElementById('deduper-hitrate').textContent = (deduper.hitRate || 0) + '%';
-      
+
       // Analytics rates
       document.getElementById('rate-chats').textContent = rates.chatsPerMinute || 0;
       document.getElementById('rate-gifts').textContent = rates.giftsPerMinute || 0;
@@ -1803,11 +1803,11 @@
         ? Math.round(hostDecision.score * 1000) / 1000
         : '-';
     }
-    
+
     // Update config UI
     function updateConfigUI() {
       document.getElementById('output-username').value = config.output?.username || 'Sidekick';
-      
+
       document.getElementById('comment-enabled').checked = config.comment?.enabled !== false;
       document.getElementById('reply-threshold').value = config.comment?.replyThreshold || 0.6;
       document.getElementById('global-cooldown').value = config.comment?.globalCooldown || 6;
@@ -1815,11 +1815,11 @@
       document.getElementById('max-replies').value = config.comment?.maxRepliesPerMin || 20;
       document.getElementById('respond-greetings').checked = config.comment?.respondToGreetings !== false;
       document.getElementById('respond-thanks').checked = config.comment?.respondToThanks !== false;
-      
+
       document.getElementById('joins-enabled').checked = config.joinRules?.enabled !== false;
       document.getElementById('greet-delay').value = config.joinRules?.greetAfterSeconds || 30;
       document.getElementById('greet-cooldown').value = config.joinRules?.greetGlobalCooldownSec || 180;
-      
+
       document.getElementById('batch-window').value = config.outbox?.windowSeconds || 8;
       document.getElementById('batch-max-items').value = config.outbox?.maxItems || 8;
       document.getElementById('batch-max-chars').value = config.outbox?.maxChars || 320;
@@ -1838,7 +1838,7 @@
       document.getElementById('host-overtalk-cooldown').value = config.conversation?.hostOvertalkCooldownMs ?? 1800;
       document.getElementById('host-longform-limit').value = config.conversation?.hostLongFormWordLimit ?? 48;
     }
-    
+
     // Save config
     async function saveConfig() {
       const readFloatInput = (id, fallback = 0) => {
@@ -1886,7 +1886,7 @@
           hostLongFormWordLimit: Math.max(1, Math.round(readNumberInput('host-longform-limit', config.conversation?.hostLongFormWordLimit ?? 48)))
         }
       };
-      
+
       try {
         const res = await fetch('/api/sidekick/config', {
           method: 'POST',
@@ -1903,7 +1903,7 @@
         alert('Fehler beim Speichern!');
       }
     }
-    
+
     // Fetch memory stats
     async function fetchMemoryStats() {
       try {
@@ -1918,7 +1918,7 @@
         console.error('Failed to fetch memory stats:', err);
       }
     }
-    
+
     // Fetch top users
     async function fetchTopUsers() {
       try {
@@ -1946,12 +1946,12 @@
         console.error('Failed to fetch top users:', err);
       }
     }
-    
+
     // Fetch events
     async function fetchEvents() {
       const filter = document.getElementById('event-filter').value;
       try {
-        const url = filter 
+        const url = filter
           ? `/api/sidekick/events?type=${filter}&limit=50`
           : '/api/sidekick/events?limit=50';
         const res = await fetch(url);
@@ -1979,7 +1979,7 @@
         console.error('Failed to fetch events:', err);
       }
     }
-    
+
     // Fetch metrics for analytics
     async function fetchMetrics() {
       try {
@@ -2028,12 +2028,12 @@
         console.error('Failed to fetch metrics:', err);
       }
     }
-    
+
     // Search users
     async function searchUsers() {
       const query = document.getElementById('search-user').value;
       if (!query) return;
-      
+
       try {
         const res = await fetch(`/api/sidekick/memory/search?q=${encodeURIComponent(query)}&limit=20`);
         const data = await res.json();
@@ -2056,18 +2056,18 @@
         console.error('Failed to search users:', err);
       }
     }
-    
+
     // Button handlers
     document.getElementById('btn-connect').addEventListener('click', async () => {
       await fetch('/api/sidekick/animaze/connect', { method: 'POST' });
       fetchStatus();
     });
-    
+
     document.getElementById('btn-disconnect').addEventListener('click', async () => {
       await fetch('/api/sidekick/animaze/disconnect', { method: 'POST' });
       fetchStatus();
     });
-    
+
     document.getElementById('btn-mute').addEventListener('click', async () => {
       await fetch('/api/sidekick/mute', {
         method: 'POST',
@@ -2076,7 +2076,7 @@
       });
       fetchStatus();
     });
-    
+
     document.getElementById('btn-unmute').addEventListener('click', async () => {
       await fetch('/api/sidekick/mute', {
         method: 'POST',
@@ -2085,14 +2085,14 @@
       });
       fetchStatus();
     });
-    
+
     document.getElementById('btn-reset').addEventListener('click', async () => {
       if (confirm('Session wirklich zurücksetzen?')) {
         await fetch('/api/sidekick/reset', { method: 'POST' });
         fetchStatus();
       }
     });
-    
+
     document.getElementById('btn-test').addEventListener('click', async () => {
       const message = document.getElementById('test-message').value;
       if (!message) return;
@@ -2129,9 +2129,9 @@
     ['host-asr-silence-timeout', 'host-asr-max-segment'].forEach(id => {
       document.getElementById(id).addEventListener('change', saveHostAsrSettings);
     });
-    
+
     document.getElementById('btn-save-settings').addEventListener('click', saveConfig);
-    
+
     document.getElementById('btn-clear-memory').addEventListener('click', async () => {
       if (confirm('Memory wirklich löschen?')) {
         await fetch('/api/sidekick/memory/clear', { method: 'POST' });
@@ -2139,21 +2139,21 @@
         fetchTopUsers();
       }
     });
-    
+
     document.getElementById('btn-search').addEventListener('click', searchUsers);
     document.getElementById('search-user').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') searchUsers();
     });
-    
+
     document.getElementById('btn-refresh-events').addEventListener('click', fetchEvents);
     document.getElementById('event-filter').addEventListener('change', fetchEvents);
-    
+
     // Socket events
     socket.on('sidekick:status', (data) => {
       status = data;
       updateStatusUI();
     });
-    
+
     // Initial load
     document.getElementById('host-asr-enabled').checked = !!hostAsrSettings.enabled;
     document.getElementById('host-asr-unsafe-override').checked = !!hostAsrSettings.unsafeOverride;
@@ -2172,7 +2172,7 @@
     fetchTopUsers();
     fetchEvents();
     fetchMetrics();
-    
+
     // Periodic updates
     setInterval(fetchStatus, 2000);
     setInterval(fetchAsrStatus, 5000);

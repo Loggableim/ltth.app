@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.3ba8caf8c980">Game Engine HUD - LTTH</title>
+  <title data-i18n="plugins.game-engine.labels.game_engine_hud_ltth">Game Engine HUD - LTTH</title>
   <script>
     (function () {
       const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
@@ -187,11 +187,11 @@
     }
 
     @keyframes pulse {
-      0%, 100% { 
+      0%, 100% {
         opacity: 1;
         box-shadow: 0 0 5px #4CAF50;
       }
-      50% { 
+      50% {
         opacity: 0.6;
         box-shadow: 0 0 10px #4CAF50;
       }
@@ -436,7 +436,7 @@
     </div>
 
     <div class="hud-content">
-      <div class="game-status-text" id="game-status" data-i18n="generated.cd6cfcf40ae9">
+      <div class="game-status-text" id="game-status" data-i18n="plugins.game-engine.labels.warte_auf_spiel">
         Warte auf Spiel...
       </div>
 
@@ -449,7 +449,7 @@
               <div class="player-role" id="player1-role">viewer</div>
             </div>
           </div>
-          <div class="turn-indicator" id="player1-turn" style="display: none;" data-i18n="generated.11106a2dfc3d">
+          <div class="turn-indicator" id="player1-turn" style="display: none;" data-i18n="plugins.game-engine.labels.am_zug">
             AM ZUG
           </div>
         </div>
@@ -462,7 +462,7 @@
               <div class="player-role" id="player2-role">streamer</div>
             </div>
           </div>
-          <div class="turn-indicator" id="player2-turn" style="display: none;" data-i18n="generated.d15fb3109b31">
+          <div class="turn-indicator" id="player2-turn" style="display: none;" data-i18n="plugins.game-engine.labels.am_zug_d15fb3">
             AM ZUG
           </div>
         </div>
@@ -471,7 +471,7 @@
       <div class="game-stats" id="game-stats" style="display: none;">
         <div class="stat-item">
           <span class="stat-value" id="move-count">0</span>
-          <span class="stat-label" data-i18n="generated.d31694ac9ad4">Züge</span>
+          <span class="stat-label" data-i18n="plugins.game-engine.labels.zuge">Züge</span>
         </div>
         <div class="stat-item">
           <span class="stat-value" id="game-time">0:00</span>
@@ -483,7 +483,7 @@
 
       <!-- Plinko activity indicator -->
       <div class="plinko-activity" id="plinko-activity" style="display: none;">
-        <div class="plinko-activity-title" data-i18n="generated.e9c8dd8c4eb5">🎰 Plinko Aktivität</div>
+        <div class="plinko-activity-title" data-i18n="plugins.game-engine.labels.plinko_aktivitat">🎰 Plinko Aktivität</div>
         <div id="plinko-balls-list"></div>
       </div>
     </div>
@@ -492,19 +492,19 @@
   <!-- Plinko notification popup -->
   <div class="plinko-notification" id="plinko-notification">
     <span class="plinko-ball-icon">🎰</span>
-    <span id="plinko-notification-text" data-i18n="generated.995f9a23b10c">Ball dropped!</span>
+    <span id="plinko-notification-text" data-i18n="plugins.game-engine.labels.ball_dropped">Ball dropped!</span>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io({ auth: { role: 'overlay' } });
-    
+
     // Parse URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const position = urlParams.get('position') || 'top-right';
     const minimal = urlParams.get('minimal') === 'true';
     const hideWhenInactive = urlParams.get('hideWhenInactive') === 'true';
-    
+
     const hud = document.getElementById('hud');
     const statusIndicator = document.getElementById('status-indicator');
     const gameStatus = document.getElementById('game-status');
@@ -517,7 +517,7 @@
     const plinkoBallsList = document.getElementById('plinko-balls-list');
     const plinkoNotification = document.getElementById('plinko-notification');
     const plinkoNotificationText = document.getElementById('plinko-notification-text');
-    
+
     let currentSession = null;
     let gameStartTime = null;
     let gameTimeInterval = null;
@@ -543,7 +543,7 @@
     // Update game time
     function updateGameTime() {
       if (!gameStartTime) return;
-      
+
       const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
       const minutes = Math.floor(elapsed / 60);
       const seconds = elapsed % 60;
@@ -587,7 +587,7 @@
 
         // Get player info based on game type
         let player1Info, player2Info;
-        
+
         if (gameType === 'chess') {
           // Chess uses whitePlayer/blackPlayer
           player1Info = state.whitePlayer || state.player1;
@@ -601,7 +601,7 @@
         // Update player info with null checks
         if (player1Info) {
           document.getElementById('player1-name').textContent = player1Info.nickname || player1Info.username || 'Player 1';
-          document.getElementById('player1-role').textContent = gameType === 'chess' 
+          document.getElementById('player1-role').textContent = gameType === 'chess'
             ? ((player1Info.side === 'white' || player1Info.side === 'black') ? (player1Info.side === 'white' ? 'Weiß' : 'Schwarz') : 'Spieler')
             : (player1Info.role || 'viewer');
           document.getElementById('player1-color').style.background = player1Info.color || '#4CAF50';
@@ -624,7 +624,7 @@
         if (state.status === 'active') {
           // Determine which player is current based on game type
           let isPlayer1Turn = false;
-          
+
           if (gameType === 'chess') {
             // Chess: currentPlayer is 'white' or 'black'
             isPlayer1Turn = state.currentPlayer === 'white';
@@ -632,7 +632,7 @@
             // Connect4: currentPlayer is 1 or 2
             isPlayer1Turn = state.currentPlayer === 1;
           }
-          
+
           if (isPlayer1Turn) {
             player1Row.classList.add('active-turn');
             player2Row.classList.remove('active-turn');
@@ -673,11 +673,11 @@
     // Supports Connect4 (player1/player2 with winner 1/2), Chess (whitePlayer/blackPlayer with winner 'white'/'black')
     function showGameResult(data) {
       gameResult.style.display = 'block';
-      
+
       if (data.winner) {
         let winnerInfo;
         const state = data.state;
-        
+
         // Determine winner info based on game type
         if (currentGameType === 'chess') {
           // Chess: winner is 'white' or 'black'
@@ -691,7 +691,7 @@
           const winnerNum = data.winner || state.winner;
           winnerInfo = winnerNum === 1 ? state.player1 : state.player2;
         }
-        
+
         if (winnerInfo) {
           gameResult.textContent = `🏆 ${winnerInfo.nickname || winnerInfo.username} gewinnt!`;
         } else {
@@ -730,7 +730,7 @@
     function showPlinkoNotification(text, duration = 3000) {
       plinkoNotificationText.textContent = text;
       plinkoNotification.classList.add('show');
-      
+
       setTimeout(() => {
         plinkoNotification.classList.remove('show');
       }, duration);
@@ -744,7 +744,7 @@
       }
 
       plinkoActivity.style.display = 'block';
-      
+
       plinkoBallsList.replaceChildren();
       for (const [ballId, ballData] of activePlinkoBalls.entries()) {
         const item = document.createElement('div');
@@ -758,7 +758,7 @@
         item.append(playerName, betAmount);
         plinkoBallsList.appendChild(item);
       }
-      
+
       // Show HUD when Plinko is active
       hud.classList.add('active');
       if (hideWhenInactive) {
@@ -772,13 +772,13 @@
       currentSession = data.sessionId;
       currentGameType = data.gameType || 'connect4';
       gameStartTime = Date.now();
-      
+
       // Start game time counter
       if (gameTimeInterval) {
         clearInterval(gameTimeInterval);
       }
       gameTimeInterval = setInterval(updateGameTime, 1000);
-      
+
       updateHUD(data.state, currentGameType);
     });
 
@@ -800,7 +800,7 @@
     // Plinko-specific events
     socket.on('plinko:spawn-ball', (data) => {
       console.log('Plinko ball spawned:', data);
-      
+
       // Add to active balls
       activePlinkoBalls.set(data.ballId, {
         username: data.username,
@@ -808,23 +808,23 @@
         bet: data.bet,
         ballType: data.ballType
       });
-      
+
       // Show notification
       showPlinkoNotification(`🎰 ${data.nickname || data.username} dropped ${data.bet} XP!`, 2000);
-      
+
       // Update activity display
       updatePlinkoActivity();
     });
 
     socket.on('plinko:ball-result', (data) => {
       console.log('Plinko ball result:', data);
-      
+
       // Remove from active balls
       activePlinkoBalls.delete(data.ballId);
-      
+
       // Calculate net profit
       const netProfit = data.netProfit || (data.winnings - data.bet);
-      
+
       // Select appropriate emoji based on result
       let resultEmoji = '😐'; // Neutral (break even)
       if (netProfit > 0) {
@@ -832,15 +832,15 @@
       } else if (netProfit < 0) {
         resultEmoji = '😢'; // Loss
       }
-      
+
       // Format profit with + or - sign
       const profitSign = netProfit >= 0 ? '+' : '';
       const playerName = data.nickname || data.username;
-      
+
       // Build result text
       const resultText = `${resultEmoji} ${playerName}: ${data.multiplier}x = ${data.winnings} XP (${profitSign}${netProfit})`;
       showPlinkoNotification(resultText, 3000);
-      
+
       // Update activity display
       updatePlinkoActivity();
     });
@@ -857,20 +857,20 @@
         if (data && data.gameType && data.state) {
           currentSession = data.sessionId;
           currentGameType = data.gameType;
-          
+
           // Estimate game start time based on move count
           // Since we don't have the exact start time, we calculate backwards from now
           // using the move count and our estimated time per move
-          const estimatedElapsedMs = (data.state.moveCount || 0) * 
-                                      TIME_ESTIMATION.SECONDS_PER_MOVE * 
+          const estimatedElapsedMs = (data.state.moveCount || 0) *
+                                      TIME_ESTIMATION.SECONDS_PER_MOVE *
                                       TIME_ESTIMATION.MS_PER_SECOND;
           gameStartTime = Date.now() - estimatedElapsedMs;
-          
+
           if (gameTimeInterval) {
             clearInterval(gameTimeInterval);
           }
           gameTimeInterval = setInterval(updateGameTime, 1000);
-          
+
           updateHUD(data.state, currentGameType);
         } else if (!hideWhenInactive) {
           hud.classList.add('active');

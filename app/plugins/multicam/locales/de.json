@@ -1,104 +1,108 @@
 {
-  "multicam": {
-    "title": "Multi-Cam Umschalter",
-    "subtitle": "Stream-Kamera-Verwaltung",
-    "safety_lock": "⚠️ SICHERHEITSSPERRE AKTIV - Zu viele schnelle Umschaltungen erkannt. Warte 60 Sekunden...",
-    "current_scene": "Aktuelle Szene:",
-    "status": {
-      "connected": "Verbunden",
-      "disconnected": "Getrennt"
-    },
-    "connection": {
-      "title": "Verbindung",
-      "host": "Host",
-      "port": "Port",
-      "password": "Passwort",
-      "connect": "OBS verbinden",
-      "disconnect": "OBS trennen",
-      "save_settings": "Einstellungen speichern",
-      "auto_connect_settings": "Auto-Verbindungs-Einstellungen",
-      "connect_on_start": "Beim Start verbinden",
-      "connect_on_start_desc": "Automatisch mit OBS verbinden, wenn Plugin initialisiert wird",
-      "connect_delay_ms": "Verbindungsverzögerung (ms)",
-      "connect_delay_ms_desc": "Verzögerung vor Verbindung beim Start",
-      "auto_reconnect_enabled": "Auto-Wiederverbindung aktivieren",
-      "auto_reconnect_enabled_desc": "Automatisch wiederverbinden, wenn Verbindung verloren geht",
-      "max_reconnect_minutes": "Max. Wiederverbindungsdauer (Min)",
-      "max_reconnect_minutes_desc": "Wiederverbindungsversuche nach dieser Zeit stoppen",
-      "health_check_settings": "Gesundheitsprüfungs-Einstellungen",
-      "health_check_enabled": "Gesundheitsprüfung aktivieren",
-      "health_check_enabled_desc": "Regelmäßig prüfen, ob OBS-Verbindung gesund ist",
-      "health_check_interval_ms": "Gesundheitsprüfungs-Intervall (ms)",
-      "health_check_interval_ms_desc": "Zeit zwischen Gesundheitsprüfungen"
-    },
-    "switcher": {
-      "title": "Szenen-Umschalter",
-      "select_scene": "Szene auswählen...",
-      "switch": "Umschalten"
-    },
-    "hot_buttons": {
-      "title": "Schnell-Tasten"
-    },
-    "gift_mapping": {
-      "title": "Geschenk-zu-Szene-Zuordnung",
-      "description": "Wählen Sie ein Geschenk und weisen Sie es einer OBS-Szene zu. Wenn Benutzer dieses Geschenk senden, wird die Szene automatisch umgeschaltet.",
-      "select_gift": "Geschenk auswählen",
-      "loading": "Geschenke werden geladen...",
-      "select_scene": "Zielszene",
-      "select_scene_placeholder": "Szene auswählen...",
-      "min_coins": "Min. Coins (optional)",
-      "add": "Zuordnung hinzufügen",
-      "refresh_gifts": "Geschenke aktualisieren",
-      "current_mappings": "Aktuelle Zuordnungen:"
-    },
-    "log": {
-      "title": "Aktivitätsprotokoll",
-      "waiting": "Warte auf Ereignisse..."
-    },
-    "cameras": {
-      "title": "Kameraquellen",
-      "add": "Kamera hinzufügen",
-      "name": "Kameraname",
-      "url": "Quell-URL",
-      "active": "Aktiv",
-      "preview": "Vorschau"
-    },
-    "overlay": {
-      "title": "Overlay-Einstellungen",
-      "url": "Overlay-URL",
-      "copy": "URL kopieren",
-      "open": "Overlay öffnen"
-    },
-    "settings": {
-      "save": "Einstellungen speichern",
-      "reset": "Auf Standard zurücksetzen"
+  "plugins": {
+    "multicam": {
+      "multicam": {
+        "title": "Multi-Cam Umschalter",
+        "subtitle": "Stream-Kamera-Verwaltung",
+        "safety_lock": "⚠️ SICHERHEITSSPERRE AKTIV - Zu viele schnelle Umschaltungen erkannt. Warte 60 Sekunden...",
+        "current_scene": "Aktuelle Szene:",
+        "status": {
+          "connected": "Verbunden",
+          "disconnected": "Getrennt"
+        },
+        "connection": {
+          "title": "Verbindung",
+          "host": "Host",
+          "port": "Port",
+          "password": "Passwort",
+          "connect": "OBS verbinden",
+          "disconnect": "OBS trennen",
+          "save_settings": "Einstellungen speichern",
+          "auto_connect_settings": "Auto-Verbindungs-Einstellungen",
+          "connect_on_start": "Beim Start verbinden",
+          "connect_on_start_desc": "Automatisch mit OBS verbinden, wenn Plugin initialisiert wird",
+          "connect_delay_ms": "Verbindungsverzögerung (ms)",
+          "connect_delay_ms_desc": "Verzögerung vor Verbindung beim Start",
+          "auto_reconnect_enabled": "Auto-Wiederverbindung aktivieren",
+          "auto_reconnect_enabled_desc": "Automatisch wiederverbinden, wenn Verbindung verloren geht",
+          "max_reconnect_minutes": "Max. Wiederverbindungsdauer (Min)",
+          "max_reconnect_minutes_desc": "Wiederverbindungsversuche nach dieser Zeit stoppen",
+          "health_check_settings": "Gesundheitsprüfungs-Einstellungen",
+          "health_check_enabled": "Gesundheitsprüfung aktivieren",
+          "health_check_enabled_desc": "Regelmäßig prüfen, ob OBS-Verbindung gesund ist",
+          "health_check_interval_ms": "Gesundheitsprüfungs-Intervall (ms)",
+          "health_check_interval_ms_desc": "Zeit zwischen Gesundheitsprüfungen"
+        },
+        "switcher": {
+          "title": "Szenen-Umschalter",
+          "select_scene": "Szene auswählen...",
+          "switch": "Umschalten"
+        },
+        "hot_buttons": {
+          "title": "Schnell-Tasten"
+        },
+        "gift_mapping": {
+          "title": "Geschenk-zu-Szene-Zuordnung",
+          "description": "Wählen Sie ein Geschenk und weisen Sie es einer OBS-Szene zu. Wenn Benutzer dieses Geschenk senden, wird die Szene automatisch umgeschaltet.",
+          "select_gift": "Geschenk auswählen",
+          "loading": "Geschenke werden geladen...",
+          "select_scene": "Zielszene",
+          "select_scene_placeholder": "Szene auswählen...",
+          "min_coins": "Min. Coins (optional)",
+          "add": "Zuordnung hinzufügen",
+          "refresh_gifts": "Geschenke aktualisieren",
+          "current_mappings": "Aktuelle Zuordnungen:"
+        },
+        "log": {
+          "title": "Aktivitätsprotokoll",
+          "waiting": "Warte auf Ereignisse..."
+        },
+        "cameras": {
+          "title": "Kameraquellen",
+          "add": "Kamera hinzufügen",
+          "name": "Kameraname",
+          "url": "Quell-URL",
+          "active": "Aktiv",
+          "preview": "Vorschau"
+        },
+        "overlay": {
+          "title": "Overlay-Einstellungen",
+          "url": "Overlay-URL",
+          "copy": "URL kopieren",
+          "open": "Overlay öffnen"
+        },
+        "settings": {
+          "save": "Einstellungen speichern",
+          "reset": "Auf Standard zurücksetzen"
+        }
+      },
+      "labels": {
+        "warte_auf_events": "Warte auf Events...",
+        "aktivitats_log": "Aktivitäts-Log",
+        "name_a_z": "Name (A-Z)",
+        "nur_nicht_zugeordnete": "Nur nicht zugeordnete",
+        "klein_1_99_coins": "Klein (1-99 Coins)",
+        "coins_absteigend": "Coins (absteigend)",
+        "lade_geschenkekatalog": "Lade Geschenkekatalog...",
+        "current_scene": "Aktuelle Szene:",
+        "multi_cam_switcher_geschenkekatalog": "🎥 Multi-Cam Switcher — Geschenkekatalog",
+        "wahle_fur_jedes_geschenk_die_obs_szene_kamera": "Wähle für jedes Geschenk die OBS-Szene (Kamera), die automatisch geschaltet werden soll. Geschenke ohne Zuordnung werden ignoriert. Änderungen werden mit \"Speichern\" übernommen.",
+        "alle_geschenke": "Alle Geschenke",
+        "gro_1000_9999_coins": "Groß (1000-9999 Coins)",
+        "szene_wahlen": "Szene wählen...",
+        "alle_kameras": "Alle Kameras",
+        "whale_10_000_coins": "Whale (10.000+ Coins)",
+        "nur_zugeordnete": "Nur zugeordnete",
+        "multi_cam_switcher_geschenkekatalog_d98d94": "Multi-Cam Switcher - Geschenkekatalog",
+        "zugeordnete_zuerst": "Zugeordnete zuerst",
+        "geschenkekatalog_kamerazuordnung": "🎁 Geschenkekatalog — Kamerazuordnung",
+        "anderungen": "Änderungen —",
+        "coins_aufsteigend": "Coins (aufsteigend)",
+        "geschenke_zugeordnet": "Geschenke zugeordnet",
+        "zurucksetzen": "↺ Zurücksetzen",
+        "mittel_100_999_coins": "Mittel (100-999 Coins)",
+        "zuordnungen_speichern": "💾 Zuordnungen speichern"
+      }
     }
-  },
-  "generated": {
-    "d98d9459e2c2": "Multi-Cam Switcher - Geschenkekatalog",
-    "7b2142ad925b": "🎥 Multi-Cam Switcher — Geschenkekatalog",
-    "538ca4e2a0e1": "Aktuelle Szene:",
-    "ac273c3d705c": "Szene wählen...",
-    "e88178498f7d": "🎁 Geschenkekatalog — Kamerazuordnung",
-    "7e1444f0507b": "Wähle für jedes Geschenk die OBS-Szene (Kamera), die automatisch geschaltet werden soll. Geschenke ohne Zuordnung werden ignoriert. Änderungen werden mit \"Speichern\" übernommen.",
-    "85146024a5cf": "Alle Geschenke",
-    "d8e461082e5c": "Nur zugeordnete",
-    "1cb8a372e53e": "Nur nicht zugeordnete",
-    "311e65a5d89e": "Klein (1-99 Coins)",
-    "fd5f62f0c30d": "Mittel (100-999 Coins)",
-    "9bd6e6407dba": "Groß (1000-9999 Coins)",
-    "d4f79ba6f6fd": "Whale (10.000+ Coins)",
-    "cc273318efc2": "Alle Kameras",
-    "3624bd31b43b": "Coins (absteigend)",
-    "f5548d2b2de7": "Coins (aufsteigend)",
-    "195a855060f9": "Name (A-Z)",
-    "db2f31ac9333": "Zugeordnete zuerst",
-    "4b9db5cda62b": "Lade Geschenkekatalog...",
-    "ec57b5b6e58c": "Änderungen —",
-    "f92f14727eb0": "Geschenke zugeordnet",
-    "fe2c68cf499a": "💾 Zuordnungen speichern",
-    "fa72100a3307": "↺ Zurücksetzen",
-    "190b9b430d8c": "Aktivitäts-Log",
-    "165d311ede4f": "Warte auf Events..."
   }
 }

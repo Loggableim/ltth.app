@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.f85e4905d2ea">Hybrid Shock Control Panel</title>
+    <title data-i18n="plugins.openshock.labels.hybrid_shock_control_panel">Hybrid Shock Control Panel</title>
     <link rel="icon" type="image/png" href="/plugins/openshock/assets/branding/hybridshock-icon.png">
     <link rel="apple-touch-icon" href="/plugins/openshock/assets/branding/hybridshock-icon.png">
     <link rel="stylesheet" href="/css/themes.css">
@@ -338,7 +338,7 @@
                 border-width: 3px;
             }
         }
-    
+
         /* Cid theme alignment */
         html[data-theme="cid"] body {
             background: #030603;
@@ -482,7 +482,7 @@
                 <img class="brand-logo" data-brand-logo src="/plugins/openshock/assets/branding/hybridshock-logo.png" alt="Hybridshock">
             </div>
             <div style="display: flex; align-items: center; gap: 16px;">
-                <button id="headerEmergencyStop" class="btn btn-danger" title="Emergency Stop - Immediately stops all shocks and disables further commands" data-i18n="generated.1a421d20da66">
+                <button id="headerEmergencyStop" class="btn btn-danger" title="Emergency Stop - Immediately stops all shocks and disables further commands" data-i18n="plugins.openshock.labels.emergency_stop">
                     🛑 EMERGENCY STOP
                 </button>
                 <div id="connection-status">
@@ -496,13 +496,13 @@
 
         <!-- Tabs Navigation -->
         <div class="tabs">
-            <button class="tab-button active" data-tab="dashboard" data-i18n="generated.d0f7f3ae6545">📊 Dashboard</button>
-            <button class="tab-button" data-tab="mapper" data-i18n="generated.da4c012db26b">🔗 Event Mapper</button>
-            <button class="tab-button" data-tab="gifts" data-i18n="generated.a94d29b51d97">🎁 Gift Catalog</button>
-            <button class="tab-button" data-tab="safety" data-i18n="generated.241bd81680ba">🛡️ Safety</button>
-            <button class="tab-button" data-tab="patterns" data-i18n="generated.a912426d9771">🎵 Patterns</button>
-            <button class="tab-button" data-tab="zappiehell" data-i18n="generated.363f38f81b0e">⚡ ZappieHell</button>
-            <button class="tab-button" data-tab="advanced" data-i18n="generated.6f73700146f3">⚙️ Advanced</button>
+            <button class="tab-button active" data-tab="dashboard" data-i18n="plugins.openshock.labels.dashboard">📊 Dashboard</button>
+            <button class="tab-button" data-tab="mapper" data-i18n="plugins.openshock.labels.event_mapper_da4c01">🔗 Event Mapper</button>
+            <button class="tab-button" data-tab="gifts" data-i18n="plugins.openshock.labels.gift_catalog_a94d29">🎁 Gift Catalog</button>
+            <button class="tab-button" data-tab="safety" data-i18n="plugins.openshock.labels.safety">🛡️ Safety</button>
+            <button class="tab-button" data-tab="patterns" data-i18n="plugins.openshock.labels.patterns">🎵 Patterns</button>
+            <button class="tab-button" data-tab="zappiehell" data-i18n="plugins.openshock.labels.zappiehell">⚡ ZappieHell</button>
+            <button class="tab-button" data-tab="advanced" data-i18n="plugins.openshock.labels.advanced">⚙️ Advanced</button>
         </div>
 
         <!-- Tab 1: Dashboard -->
@@ -510,11 +510,11 @@
             <!-- Connection Status Card -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.787e2e1df436">Connection Status</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.connection_status_787e2e">Connection Status</h2>
                 </div>
                 <div class="grid-3">
                     <div class="stat-card">
-                        <div class="stat-label" data-i18n="generated.6b5286b60623">API Status</div>
+                        <div class="stat-label" data-i18n="plugins.openshock.labels.api_status">API Status</div>
                         <div class="stat-value" id="apiStatus">⚫</div>
                     </div>
                     <div class="stat-card">
@@ -531,21 +531,21 @@
             <!-- Test Shock Function -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.5470b4de5f95">⚡ Test Shock Function</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.test_shock_function_5470b4">⚡ Test Shock Function</h2>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.db2b8be012ef">Select Device for Test</label>
+                    <label class="form-label" data-i18n="plugins.openshock.labels.select_device_for_test_db2b8b">Select Device for Test</label>
                     <select class="form-input" id="testShockDevice">
-                        <option value="" data-i18n="generated.6fe94ae06611">-- Select a device --</option>
+                        <option value="" data-i18n="plugins.openshock.labels.select_a_device">-- Select a device --</option>
                     </select>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-warning btn-lg" id="testShockButton" disabled data-i18n="generated.71c050c4da4b">
+                    <button class="btn btn-warning btn-lg" id="testShockButton" disabled data-i18n="plugins.openshock.labels.test_shock_1s_100">
                         ⚡ Test Shock (1s, 100%)
                     </button>
                 </div>
                 <p class="text-muted mt-2">
-                    <small data-i18n="generated.4dc1b2c3d3dc">⚠️ This will send a 1-second shock at 100% intensity to the selected device.</small>
+                    <small data-i18n="plugins.openshock.labels.this_will_send_a_1_second_shock_at">⚠️ This will send a 1-second shock at 100% intensity to the selected device.</small>
                 </p>
             </div>
 
@@ -553,10 +553,10 @@
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">Devices</h2>
-                    <button class="btn btn-primary btn-sm" id="refreshDevices" data-i18n="generated.8f6a6e55d4e4">🔄 Refresh</button>
+                    <button class="btn btn-primary btn-sm" id="refreshDevices" data-i18n="plugins.openshock.labels.refresh_8f6a6e">🔄 Refresh</button>
                 </div>
                 <div id="devicesList">
-                    <p class="text-muted text-center" data-i18n="generated.126548936cc9">No devices found. Configure API key first.</p>
+                    <p class="text-muted text-center" data-i18n="plugins.openshock.labels.no_devices_found_configure_api_key_first">No devices found. Configure API key first.</p>
                 </div>
             </div>
 
@@ -564,11 +564,11 @@
                 <!-- Live Queue Status -->
                 <div class="card">
                     <div class="card-header">
-                        <h2 class="card-title" data-i18n="generated.70f1eb3cffc4">Live Queue</h2>
+                        <h2 class="card-title" data-i18n="plugins.openshock.labels.live_queue_70f1eb">Live Queue</h2>
                     </div>
                     <div class="grid-3">
                         <div class="stat-card">
-                            <div class="stat-label" data-i18n="generated.ab150d83893a">Queue Length</div>
+                            <div class="stat-label" data-i18n="plugins.openshock.labels.queue_length_ab150d">Queue Length</div>
                             <div class="stat-value" id="queueLength">0</div>
                         </div>
                         <div class="stat-card">
@@ -586,15 +586,15 @@
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">Statistics</h2>
-                        <button class="btn btn-secondary btn-sm" id="resetStats" data-i18n="generated.5d89e1ec0603">🔄 Reset</button>
+                        <button class="btn btn-secondary btn-sm" id="resetStats" data-i18n="plugins.openshock.labels.reset_5d89e1">🔄 Reset</button>
                     </div>
                     <div class="grid-3">
                         <div class="stat-card">
-                            <div class="stat-label" data-i18n="generated.4721f29e4c42">Total Commands</div>
+                            <div class="stat-label" data-i18n="plugins.openshock.labels.total_commands">Total Commands</div>
                             <div class="stat-value" id="totalCommands">0</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label" data-i18n="generated.028f6f78a11a">Success Rate</div>
+                            <div class="stat-label" data-i18n="plugins.openshock.labels.success_rate">Success Rate</div>
                             <div class="stat-value" id="successRate">0%</div>
                         </div>
                         <div class="stat-card">
@@ -608,29 +608,29 @@
             <!-- Recent Commands Log -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.6a5a76b4dab0">Recent Commands</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.recent_commands_6a5a76">Recent Commands</h2>
                     <div class="btn-group">
-                        <button class="btn btn-secondary btn-sm" id="clearLog" data-i18n="generated.f4bfe44450fb">🗑️ Clear</button>
-                        <button class="btn btn-secondary btn-sm" id="exportLog" data-i18n="generated.893129d90fc0">📥 Export</button>
+                        <button class="btn btn-secondary btn-sm" id="clearLog" data-i18n="plugins.openshock.labels.clear_f4bfe4">🗑️ Clear</button>
+                        <button class="btn btn-secondary btn-sm" id="exportLog" data-i18n="plugins.openshock.labels.export_893129">📥 Export</button>
                     </div>
                 </div>
                 <div class="log-container" id="commandLog">
-                    <p class="text-muted text-center" data-i18n="generated.e01535c51ab2">No commands executed yet.</p>
+                    <p class="text-muted text-center" data-i18n="plugins.openshock.labels.no_commands_executed_yet_e01535">No commands executed yet.</p>
                 </div>
             </div>
 
             <!-- Debug Log -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.f5bef4005249">🐛 Debug Log</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.debug_log_f5bef4">🐛 Debug Log</h2>
                     <div class="btn-group">
-                        <button class="btn btn-secondary btn-sm" id="clearDebugLog" data-i18n="generated.c259dbd50e50">🗑️ Clear</button>
-                        <button class="btn btn-secondary btn-sm" id="exportDebugLog" data-i18n="generated.b635b5b7648e">📥 Export</button>
-                        <button class="btn btn-secondary btn-sm" id="toggleDebugVerbose" data-i18n="generated.c271e884cee1">📊 Verbose</button>
+                        <button class="btn btn-secondary btn-sm" id="clearDebugLog" data-i18n="plugins.openshock.labels.clear_c259db">🗑️ Clear</button>
+                        <button class="btn btn-secondary btn-sm" id="exportDebugLog" data-i18n="plugins.openshock.labels.export_b635b5">📥 Export</button>
+                        <button class="btn btn-secondary btn-sm" id="toggleDebugVerbose" data-i18n="plugins.openshock.labels.verbose">📊 Verbose</button>
                     </div>
                 </div>
                 <div class="log-container" id="debugLog" style="max-height: 300px; overflow-y: auto;">
-                    <p class="text-muted text-center" data-i18n="generated.dda93e57d1d4">Debug log is empty. Pattern operations will be logged here.</p>
+                    <p class="text-muted text-center" data-i18n="plugins.openshock.labels.debug_log_is_empty_pattern_operations_will_be">Debug log is empty. Pattern operations will be logged here.</p>
                 </div>
             </div>
         </div>
@@ -639,15 +639,15 @@
         <div id="mapper" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.839beeca147a">Event Mappings</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.event_mappings">Event Mappings</h2>
                     <div class="btn-group">
-                        <button class="btn btn-success" id="addMapping" data-i18n="generated.98db6465dee6">➕ Add Mapping</button>
-                        <button class="btn btn-secondary" id="importMappings" data-i18n="generated.7965bd375829">📥 Import</button>
-                        <button class="btn btn-secondary" id="exportMappings" data-i18n="generated.9a2e1cbfd83f">📤 Export</button>
+                        <button class="btn btn-success" id="addMapping" data-i18n="plugins.openshock.labels.add_mapping">➕ Add Mapping</button>
+                        <button class="btn btn-secondary" id="importMappings" data-i18n="plugins.openshock.labels.import">📥 Import</button>
+                        <button class="btn btn-secondary" id="exportMappings" data-i18n="plugins.openshock.labels.export_9a2e1c">📤 Export</button>
                     </div>
                 </div>
                 <div id="mappingsList">
-                    <p class="text-muted text-center" data-i18n="generated.2d5583f27544">No mappings configured. Click "Add Mapping" to create one.</p>
+                    <p class="text-muted text-center" data-i18n="plugins.openshock.labels.no_mappings_configured_click_add_mapping_to_create">No mappings configured. Click "Add Mapping" to create one.</p>
                 </div>
             </div>
         </div>
@@ -656,15 +656,15 @@
         <div id="gifts" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.0f32160f550e">🎁 TikTok Gift Catalog</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.tiktok_gift_catalog">🎁 TikTok Gift Catalog</h2>
                     <div class="btn-group">
-                        <button class="btn btn-primary" id="refreshGiftCatalog" data-i18n="generated.d9438ebf272b">🔄 Refresh Catalog</button>
+                        <button class="btn btn-primary" id="refreshGiftCatalog" data-i18n="plugins.openshock.labels.refresh_catalog_d9438e">🔄 Refresh Catalog</button>
                     </div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted" data-i18n="generated.3086133f2f6b">Below are all available TikTok gifts. You can create Event Mappings to trigger shock patterns when specific gifts are received.</p>
+                    <p class="text-muted" data-i18n="plugins.openshock.labels.below_are_all_available_tiktok_gifts_you_can">Below are all available TikTok gifts. You can create Event Mappings to trigger shock patterns when specific gifts are received.</p>
                     <div id="giftCatalogList">
-                        <p class="text-center text-muted" data-i18n="generated.7d8d8443f629">Loading gift catalog...</p>
+                        <p class="text-center text-muted" data-i18n="plugins.openshock.labels.loading_gift_catalog">Loading gift catalog...</p>
                     </div>
                 </div>
             </div>
@@ -675,54 +675,54 @@
             <!-- Global Limits -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.698770bdd27f">Global Safety Limits</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.global_safety_limits_698770">Global Safety Limits</h2>
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
                         <div class="slider-label">
-                            <span class="form-label" data-i18n="generated.0a339b144eb0">Max Intensity</span>
+                            <span class="form-label" data-i18n="plugins.openshock.labels.max_intensity">Max Intensity</span>
                             <span class="slider-value" id="globalMaxIntensityValue">100</span>
                         </div>
                         <input type="range" id="globalMaxIntensity" min="1" max="100" value="100">
                     </div>
                     <div class="form-group">
                         <div class="slider-label">
-                            <span class="form-label" data-i18n="generated.003ba4f87315">Max Duration (ms)</span>
+                            <span class="form-label" data-i18n="plugins.openshock.labels.max_duration_ms">Max Duration (ms)</span>
                             <span class="slider-value" id="globalMaxDurationValue">30000</span>
                         </div>
                         <input type="range" id="globalMaxDuration" min="300" max="30000" step="100" value="30000">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.cba7d277d18a">Max Commands per Minute</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.max_commands_per_minute_cba7d2">Max Commands per Minute</label>
                         <input type="number" class="form-input" id="globalMaxCommandsPerMin" value="60" min="1" max="600">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.1f15eb1943c1">Cooldown between Commands (ms)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.cooldown_between_commands_ms">Cooldown between Commands (ms)</label>
                         <input type="number" class="form-input" id="globalCooldown" value="1000" min="0" step="100">
                     </div>
                 </div>
-                <button class="btn btn-primary" id="saveGlobalLimits" data-i18n="generated.cb108a4e3fb0">💾 Save Global Limits</button>
+                <button class="btn btn-primary" id="saveGlobalLimits" data-i18n="plugins.openshock.labels.save_global_limits_cb108a">💾 Save Global Limits</button>
             </div>
 
             <!-- Device Limits -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.012b814a6abb">Per-Device Limits</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.per_device_limits">Per-Device Limits</h2>
                 </div>
                 <div class="table-scroll">
                     <table class="table">
                         <thead>
                             <tr>
                                 <th>Device</th>
-                                <th data-i18n="generated.8d4f24679120">Max Intensity</th>
-                                <th data-i18n="generated.3071da702879">Max Duration (ms)</th>
-                                <th data-i18n="generated.d7a8950ee5fb">Cooldown (ms)</th>
+                                <th data-i18n="plugins.openshock.labels.max_intensity_8d4f24">Max Intensity</th>
+                                <th data-i18n="plugins.openshock.labels.max_duration_ms_3071da">Max Duration (ms)</th>
+                                <th data-i18n="plugins.openshock.labels.cooldown_ms_d7a895">Cooldown (ms)</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="deviceLimitsTable">
                             <tr>
-                                <td colspan="5" class="text-center text-muted" data-i18n="generated.76fa6a414445">No devices configured</td>
+                                <td colspan="5" class="text-center text-muted" data-i18n="plugins.openshock.labels.no_devices_configured">No devices configured</td>
                             </tr>
                         </tbody>
                     </table>
@@ -732,59 +732,59 @@
             <!-- User Limits -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.3161aa384506">User Restrictions</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.user_restrictions_3161aa">User Restrictions</h2>
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.72888f81c965">Min Follower Age (days)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.min_follower_age_days_72888f">Min Follower Age (days)</label>
                         <input type="number" class="form-input" id="minFollowerAge" value="0" min="0">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.afd7fa158d2a">Max Commands per User (per session)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.max_commands_per_user_per_session_afd7fa">Max Commands per User (per session)</label>
                         <input type="number" class="form-input" id="maxCommandsPerUser" value="10" min="1">
                     </div>
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.b865f820895b">Minimum Permission Level</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.minimum_permission_level">Minimum Permission Level</label>
                         <select class="form-select" id="minPermissionLevel">
-                            <option value="all" data-i18n="generated.2ca1c3d3e53f">All Users</option>
-                            <option value="subscriber" data-i18n="generated.f133052e7254">Subscribers Only</option>
-                            <option value="vip" data-i18n="generated.9fc6b73a00e0">VIP & Above</option>
-                            <option value="moderator" data-i18n="generated.ce066d3f8903">Moderators & Above</option>
-                            <option value="broadcaster" data-i18n="generated.98d212040faa">Broadcaster Only</option>
+                            <option value="all" data-i18n="plugins.openshock.labels.all_users">All Users</option>
+                            <option value="subscriber" data-i18n="plugins.openshock.labels.subscribers_only">Subscribers Only</option>
+                            <option value="vip" data-i18n="plugins.openshock.labels.vip_above">VIP & Above</option>
+                            <option value="moderator" data-i18n="plugins.openshock.labels.moderators_above">Moderators & Above</option>
+                            <option value="broadcaster" data-i18n="plugins.openshock.labels.broadcaster_only">Broadcaster Only</option>
                         </select>
-                        <small class="form-hint" data-i18n="generated.a27508df1a2a">Restrict commands based on user role</small>
+                        <small class="form-hint" data-i18n="plugins.openshock.labels.restrict_commands_based_on_user_role">Restrict commands based on user role</small>
                     </div>
                     <div class="form-group">
                         <div class="form-checkbox" style="margin-top: 28px;">
                             <input type="checkbox" id="requireSuperfan">
-                            <label class="form-label form-label-no-margin" data-i18n="generated.31899a618c68">Require Superfan Status</label>
+                            <label class="form-label form-label-no-margin" data-i18n="plugins.openshock.labels.require_superfan_status">Require Superfan Status</label>
                         </div>
-                        <small class="form-hint" data-i18n="generated.22a4d0eeb66e">Only allow commands from superfans</small>
+                        <small class="form-hint" data-i18n="plugins.openshock.labels.only_allow_commands_from_superfans">Only allow commands from superfans</small>
                     </div>
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.8c7e2be6d13a">Whitelist (usernames, comma separated)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.whitelist_usernames_comma_separated_8c7e2b">Whitelist (usernames, comma separated)</label>
                         <input type="text" class="form-input" id="whitelist" placeholder="user1, user2, user3">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.0e9b71aec956">Blacklist (usernames, comma separated)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.blacklist_usernames_comma_separated">Blacklist (usernames, comma separated)</label>
                         <input type="text" class="form-input" id="blacklist" placeholder="baduser1, baduser2">
                     </div>
                 </div>
-                <button class="btn btn-primary" id="saveUserLimits" data-i18n="generated.bf9827003546">💾 Save User Limits</button>
+                <button class="btn btn-primary" id="saveUserLimits" data-i18n="plugins.openshock.labels.save_user_limits">💾 Save User Limits</button>
             </div>
 
             <!-- Emergency Stop -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.6766fb75eb3f">Emergency Controls</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.emergency_controls">Emergency Controls</h2>
                 </div>
                 <div class="text-center">
-                    <button class="btn btn-danger btn-lg" id="emergencyStop" data-i18n="generated.fe6265f1a2d8">🛑 EMERGENCY STOP</button>
-                    <p class="text-muted mt-2" data-i18n="generated.d008099ce356">Immediately stops all commands and pauses the queue</p>
+                    <button class="btn btn-danger btn-lg" id="emergencyStop" data-i18n="plugins.openshock.labels.emergency_stop_fe6265">🛑 EMERGENCY STOP</button>
+                    <p class="text-muted mt-2" data-i18n="plugins.openshock.labels.immediately_stops_all_commands_and_pauses_the_queue_d00809">Immediately stops all commands and pauses the queue</p>
                     <div id="emergencyStatus" class="mt-2"></div>
                 </div>
             </div>
@@ -794,25 +794,25 @@
         <div id="patterns" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.465ad4eeddfd">⚡ Custom Patterns</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.custom_patterns">⚡ Custom Patterns</h2>
                     <div class="btn-group">
-                        <button class="btn btn-success" id="addPattern" data-i18n="generated.10021b14d733">➕ Neues Pattern</button>
-                        <button class="btn btn-secondary" id="importPatterns" data-i18n="generated.ab4926bb82df">📥 Importieren</button>
-                        <button class="btn btn-secondary" id="exportPatterns" data-i18n="generated.e91b432f13fa">📤 Exportieren</button>
+                        <button class="btn btn-success" id="addPattern" data-i18n="plugins.openshock.labels.neues_pattern">➕ Neues Pattern</button>
+                        <button class="btn btn-secondary" id="importPatterns" data-i18n="plugins.openshock.labels.importieren">📥 Importieren</button>
+                        <button class="btn btn-secondary" id="exportPatterns" data-i18n="plugins.openshock.labels.exportieren">📤 Exportieren</button>
                     </div>
                 </div>
 
                 <!-- Info -->
                 <div class="card-body">
                     <div class="alert alert-info">
-                        <strong data-i18n="generated.b271617a8c89">💡 Info:</strong><span data-i18n="generated.317276f2148b"> Patterns sind Sequenzen von Schock-, Vibrations- und Pausen-Aktionen. 
+                        <strong data-i18n="plugins.openshock.labels.info">💡 Info:</strong><span data-i18n="plugins.openshock.labels.patterns_sind_sequenzen_von_schock_vibrations_und_pausen"> Patterns sind Sequenzen von Schock-, Vibrations- und Pausen-Aktionen.
                         Erstelle eigene Patterns mit individuellen Schritten und Kombinationen.
                     </span></div>
                 </div>
 
                 <!-- Custom Patterns List -->
                 <div class="grid-3" id="customPatternsList">
-                    <p class="text-muted text-center" data-i18n="generated.46fc77c88214">Noch keine Patterns erstellt. Klicke auf "Neues Pattern" um eines zu erstellen.</p>
+                    <p class="text-muted text-center" data-i18n="plugins.openshock.labels.noch_keine_patterns_erstellt_klicke_auf_neues_pattern">Noch keine Patterns erstellt. Klicke auf "Neues Pattern" um eines zu erstellen.</p>
                 </div>
             </div>
         </div>
@@ -822,10 +822,10 @@
             <!-- ZappieHell Overview -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.7ddce101a38c">⚡ ZappieHell Goals & Event Chains</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.zappiehell_goals_event_chains">⚡ ZappieHell Goals & Event Chains</h2>
                 </div>
                 <div class="info-box">
-                    <strong data-i18n="generated.c29242793e61">💡 Info:</strong><span data-i18n="generated.db2a69397186"> ZappieHell is a goal-based system that triggers event chains when coin targets are reached.
+                    <strong data-i18n="plugins.openshock.labels.info_c29242">💡 Info:</strong><span data-i18n="plugins.openshock.labels.zappiehell_is_a_goal_based_system_that_triggers"> ZappieHell is a goal-based system that triggers event chains when coin targets are reached.
                     Goals can be stream-specific (reset after each stream) or global (persistent across streams).
                     Event chains can include Hybrid Shock actions, delays, TTS, webhooks, and overlay animations.
                 </span></div>
@@ -834,39 +834,39 @@
             <!-- Goals Management -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.25bc162f1552">🎯 Goals</h2>
-                    <button class="btn btn-success" id="addGoalBtn" data-i18n="generated.eb7d543bae1c">➕ Add Goal</button>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.goals">🎯 Goals</h2>
+                    <button class="btn btn-success" id="addGoalBtn" data-i18n="plugins.openshock.labels.add_goal">➕ Add Goal</button>
                 </div>
                 <div id="goalsList">
-                    <p class="text-muted" data-i18n="generated.59f52827f45b">Loading goals...</p>
+                    <p class="text-muted" data-i18n="plugins.openshock.labels.loading_goals">Loading goals...</p>
                 </div>
             </div>
 
             <!-- Event Chains Management -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.0eff3659dd06">🔗 Event Chains</h2>
-                    <button class="btn btn-success" id="addChainBtn" data-i18n="generated.0f65a67f1ca8">➕ Add Event Chain</button>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.event_chains">🔗 Event Chains</h2>
+                    <button class="btn btn-success" id="addChainBtn" data-i18n="plugins.openshock.labels.add_event_chain">➕ Add Event Chain</button>
                 </div>
                 <div id="chainsList">
-                    <p class="text-muted" data-i18n="generated.6f37041cc121">Loading event chains...</p>
+                    <p class="text-muted" data-i18n="plugins.openshock.labels.loading_event_chains">Loading event chains...</p>
                 </div>
             </div>
 
             <!-- Overlay Links -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.61ab95d21b04">📺 ZappieHell Overlay</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.zappiehell_overlay">📺 ZappieHell Overlay</h2>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.0ffba41aeefa">OBS Browser Source URL</label>
+                    <label class="form-label" data-i18n="plugins.openshock.labels.obs_browser_source_url">OBS Browser Source URL</label>
                     <div class="input-group">
                         <input type="text" class="form-input" id="zappiehellOverlayUrl" readonly>
-                        <button class="btn btn-secondary" id="copyZappieHellOverlayUrl" data-i18n="generated.208c693cced1">📋 Copy</button>
+                        <button class="btn btn-secondary" id="copyZappieHellOverlayUrl" data-i18n="plugins.openshock.labels.copy">📋 Copy</button>
                     </div>
                 </div>
                 <div class="info-box">
-                    <strong data-i18n="generated.d6e5d41b2e10">💡 How to use:</strong><span data-i18n="generated.47f02c957091"> Copy the URL above and add it as a Browser Source in OBS.
+                    <strong data-i18n="plugins.openshock.labels.how_to_use">💡 How to use:</strong><span data-i18n="plugins.openshock.labels.copy_the_url_above_and_add_it_as"> Copy the URL above and add it as a Browser Source in OBS.
                     The overlay will display active goals with progress bars and celebrate when goals are completed.
                 </span></div>
             </div>
@@ -877,15 +877,15 @@
             <!-- Provider Selection + API Settings -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.537333652d21">⚡ Shock Device Provider</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.shock_device_provider">⚡ Shock Device Provider</h2>
                 </div>
 
                 <!-- Provider Dropdown -->
                 <div class="form-group">
                     <label class="form-label" data-i18n="openshock.config.api_provider">API Provider</label>
                     <select class="form-input" id="apiProvider">
-                        <option value="openshock" data-i18n="generated.91e5f84a2558">🔴 OpenShock</option>
-                        <option value="pishock" data-i18n="generated.2187ffaa6140">🟡 PiShock</option>
+                        <option value="openshock" data-i18n="plugins.openshock.labels.openshock">🔴 OpenShock</option>
+                        <option value="pishock" data-i18n="plugins.openshock.labels.pishock">🟡 PiShock</option>
                     </select>
                 </div>
 
@@ -893,18 +893,18 @@
                 <div id="providerStatusBadge" style="margin-bottom: 12px;">
                     <span class="status-badge status-disconnected" id="providerStatusText">
                         <span class="status-dot"></span>
-                        <span data-i18n="generated.55ea1f99cadb">Not configured</span>
+                        <span data-i18n="plugins.openshock.labels.not_configured">Not configured</span>
                     </span>
                 </div>
 
                 <!-- ---- OpenShock Fields ---- -->
                 <div id="openshockFields">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.e2bd23cdc531">API Key</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.api_key_e2bd23">API Key</label>
                         <input type="password" class="form-input" id="apiKey" placeholder="Enter your OpenShock API key">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.9af1a3a6b671">Base URL</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.base_url_9af1a3">Base URL</label>
                         <input type="text" class="form-input" id="baseUrl" value="https://api.openshock.app" placeholder="https://api.openshock.app">
                     </div>
                 </div>
@@ -924,14 +924,14 @@
                     <div class="form-group">
                         <label class="form-label" style="margin-bottom:8px;">
                             ShareCodes
-                            <span class="text-muted" style="font-size:0.8em; margin-left:6px;" data-i18n="generated.969475cb07a1">
+                            <span class="text-muted" style="font-size:0.8em; margin-left:6px;" data-i18n="plugins.openshock.labels.sharecodes_act_as_device_ids">
                                 (ShareCodes act as device IDs)
                             </span>
                         </label>
 
                         <!-- ShareCode List -->
                         <div id="shareCodeList" style="margin-bottom:10px;">
-                            <p class="text-muted text-center" id="shareCodeEmpty" data-i18n="generated.ca55e792d4da">No ShareCodes configured yet.</p>
+                            <p class="text-muted text-center" id="shareCodeEmpty" data-i18n="plugins.openshock.labels.no_sharecodes_configured_yet">No ShareCodes configured yet.</p>
                         </div>
 
                         <!-- Add ShareCode Inline Form -->
@@ -941,11 +941,11 @@
                                 <input type="text" class="form-input" id="newShareCode" placeholder="e.g. 17519CD8GAP">
                             </div>
                             <div style="flex:1; min-width:120px;">
-                                <label class="form-label" style="font-size:0.8em;" data-i18n="generated.b44a419ce294">Display Name</label>
+                                <label class="form-label" style="font-size:0.8em;" data-i18n="plugins.openshock.labels.display_name">Display Name</label>
                                 <input type="text" class="form-input" id="newShareCodeName" placeholder="e.g. Collar 1">
                             </div>
                             <div>
-                                <button class="btn btn-success btn-sm" id="addShareCodeBtn" style="white-space:nowrap;" data-i18n="generated.b91a69a709f9">
+                                <button class="btn btn-success btn-sm" id="addShareCodeBtn" style="white-space:nowrap;" data-i18n="plugins.openshock.labels.add_code">
                                     ➕ Add Code
                                 </button>
                             </div>
@@ -954,27 +954,27 @@
                 </div>
 
                 <div class="btn-group" style="margin-top:12px;">
-                    <button class="btn btn-primary" id="saveApiSettings" data-i18n="generated.5e817e88b959">💾 Save Settings</button>
-                    <button class="btn btn-secondary" id="testConnection" data-i18n="generated.3b5466e00ecf">🔌 Test Connection</button>
+                    <button class="btn btn-primary" id="saveApiSettings" data-i18n="plugins.openshock.labels.save_settings">💾 Save Settings</button>
+                    <button class="btn btn-secondary" id="testConnection" data-i18n="plugins.openshock.labels.test_connection_3b5466">🔌 Test Connection</button>
                 </div>
             </div>
 
             <!-- Queue Management -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.9917c7b7577d">Queue Management</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.queue_management">Queue Management</h2>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-warning" id="pauseQueue" data-i18n="generated.fd192476222f">⏸️ Pause Queue</button>
-                    <button class="btn btn-success" id="resumeQueue" data-i18n="generated.cf2c36a32306">▶️ Resume Queue</button>
-                    <button class="btn btn-danger" id="clearQueue" data-i18n="generated.7f022adc685e">🗑️ Clear Queue</button>
+                    <button class="btn btn-warning" id="pauseQueue" data-i18n="plugins.openshock.labels.pause_queue_fd1924">⏸️ Pause Queue</button>
+                    <button class="btn btn-success" id="resumeQueue" data-i18n="plugins.openshock.labels.resume_queue_cf2c36">▶️ Resume Queue</button>
+                    <button class="btn btn-danger" id="clearQueue" data-i18n="plugins.openshock.labels.clear_queue_7f022a">🗑️ Clear Queue</button>
                 </div>
             </div>
 
             <!-- Debug Log -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.9fb82afa591c">Debug Log</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.debug_log_9fb82a">Debug Log</h2>
                     <div class="btn-group">
                         <select class="form-select form-select-auto" id="logFilter">
                             <option value="all">All</option>
@@ -982,19 +982,19 @@
                             <option value="warning">Warning</option>
                             <option value="error">Error</option>
                         </select>
-                        <button class="btn btn-secondary btn-sm" id="advancedClearDebugLog" data-i18n="generated.f60762065f3d">🗑️ Clear</button>
-                        <button class="btn btn-secondary btn-sm" id="advancedExportDebugLog" data-i18n="generated.62063b7c1f7e">📥 Export</button>
+                        <button class="btn btn-secondary btn-sm" id="advancedClearDebugLog" data-i18n="plugins.openshock.labels.clear_f60762">🗑️ Clear</button>
+                        <button class="btn btn-secondary btn-sm" id="advancedExportDebugLog" data-i18n="plugins.openshock.labels.export_62063b">📥 Export</button>
                     </div>
                 </div>
                 <div class="log-container" id="advancedDebugLog">
-                    <p class="text-muted text-center" data-i18n="generated.e3ac234ee5a2">Debug log is empty.</p>
+                    <p class="text-muted text-center" data-i18n="plugins.openshock.labels.debug_log_is_empty_e3ac23">Debug log is empty.</p>
                 </div>
             </div>
 
             <!-- Detailed Statistics -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.7c57ffed1ca6">Detailed Statistics</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.labels.detailed_statistics_7c57ff">Detailed Statistics</h2>
                 </div>
                 <div class="table-scroll">
                     <table class="table">
@@ -1006,27 +1006,27 @@
                         </thead>
                         <tbody id="detailedStatsTable">
                             <tr>
-                                <td data-i18n="generated.20ec4363613b">Total Events Received</td>
+                                <td data-i18n="plugins.openshock.labels.total_events_received">Total Events Received</td>
                                 <td id="statTotalEvents">0</td>
                             </tr>
                             <tr>
-                                <td data-i18n="generated.8e985c55d1d9">Total Commands Sent</td>
+                                <td data-i18n="plugins.openshock.labels.total_commands_sent_8e985c">Total Commands Sent</td>
                                 <td id="statTotalCommands">0</td>
                             </tr>
                             <tr>
-                                <td data-i18n="generated.ea895925834d">Successful Commands</td>
+                                <td data-i18n="plugins.openshock.labels.successful_commands_ea8959">Successful Commands</td>
                                 <td id="statSuccessfulCommands">0</td>
                             </tr>
                             <tr>
-                                <td data-i18n="generated.25981c2cfbe3">Failed Commands</td>
+                                <td data-i18n="plugins.openshock.labels.failed_commands">Failed Commands</td>
                                 <td id="statFailedCommands">0</td>
                             </tr>
                             <tr>
-                                <td data-i18n="generated.e6d8bf53c909">Average Response Time</td>
+                                <td data-i18n="plugins.openshock.labels.average_response_time_e6d8bf">Average Response Time</td>
                                 <td id="statAvgResponseTime">0ms</td>
                             </tr>
                             <tr>
-                                <td data-i18n="generated.8d3c4993256f">Commands in Queue</td>
+                                <td data-i18n="plugins.openshock.labels.commands_in_queue">Commands in Queue</td>
                                 <td id="statQueueSize">0</td>
                             </tr>
                         </tbody>
@@ -1040,12 +1040,12 @@
     <div id="mappingModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="mappingModalTitle" data-i18n="generated.6906202a4371">Add Event Mapping</h2>
+                <h2 class="modal-title" id="mappingModalTitle" data-i18n="plugins.openshock.labels.add_event_mapping_690620">Add Event Mapping</h2>
                 <button class="modal-close" id="closeMappingModal">×</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.8e156336345a">Mapping Name</label>
+                    <label class="form-label" data-i18n="plugins.openshock.labels.mapping_name">Mapping Name</label>
                     <input type="text" class="form-input" id="mappingName" placeholder="e.g., Rose Gift Shock">
                 </div>
 
@@ -1057,10 +1057,10 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.ef5064471944">Event Type</label>
+                    <label class="form-label" data-i18n="plugins.openshock.labels.event_type_ef5064">Event Type</label>
                     <select class="form-select" id="mappingEventType">
                         <option value="gift">Gift</option>
-                        <option value="chat" data-i18n="generated.d4527bd91bc0">Chat Message</option>
+                        <option value="chat" data-i18n="plugins.openshock.labels.chat_message_d4527b">Chat Message</option>
                         <option value="follow">Follow</option>
                         <option value="share">Share</option>
                         <option value="like">Like</option>
@@ -1071,34 +1071,34 @@
                 <!-- Conditions (dynamic based on event type) -->
                 <div id="mappingConditions">
                     <div class="form-group" id="conditionGift">
-                        <label class="form-label" data-i18n="generated.6d06f46e7954">Gift Name</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.gift_name">Gift Name</label>
                         <select class="form-select" id="mappingGiftNameSelect">
-                            <option value="" data-i18n="generated.c9ac1dcaa747">All Gifts</option>
+                            <option value="" data-i18n="plugins.openshock.labels.all_gifts_c9ac1d">All Gifts</option>
                         </select>
-                        <small class="form-help-text" data-i18n="generated.9e0cf7761f7a">Or enter custom name below:</small>
+                        <small class="form-help-text" data-i18n="plugins.openshock.labels.or_enter_custom_name_below_9e0cf7">Or enter custom name below:</small>
                         <input type="text" class="form-input" id="mappingGiftName" placeholder="e.g., Rose, TikTok (leave empty to use selection above)">
                     </div>
                     <div class="grid-2" id="conditionCoinRange">
                         <div class="form-group">
-                            <label class="form-label" data-i18n="generated.1d4e419f64c9">Min Coins</label>
+                            <label class="form-label" data-i18n="plugins.openshock.labels.min_coins">Min Coins</label>
                             <input type="number" class="form-input" id="mappingMinCoins" value="0" min="0" placeholder="0 = keine Untergrenze">
-                            <small class="form-hint" data-i18n="generated.dd5646e9a19a">Minimum Coins (0 = keine Grenze)</small>
+                            <small class="form-hint" data-i18n="plugins.openshock.labels.minimum_coins_0_keine_grenze">Minimum Coins (0 = keine Grenze)</small>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n="generated.c017321ce620">Max Coins</label>
+                            <label class="form-label" data-i18n="plugins.openshock.labels.max_coins">Max Coins</label>
                             <input type="number" class="form-input" id="mappingMaxCoins" value="" min="0" placeholder="leer = keine Obergrenze">
-                            <small class="form-hint" data-i18n="generated.c8cb13a393d7">Maximum Coins (leer = keine Grenze)</small>
+                            <small class="form-hint" data-i18n="plugins.openshock.labels.maximum_coins_leer_keine_grenze">Maximum Coins (leer = keine Grenze)</small>
                         </div>
                     </div>
                     <div class="form-group hidden" id="conditionMessagePattern">
-                        <label class="form-label" data-i18n="generated.24102a14ebf7">Message Pattern (regex)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.message_pattern_regex">Message Pattern (regex)</label>
                         <input type="text" class="form-input" id="mappingMessagePattern" placeholder="e.g., ^!shock">
                     </div>
                 </div>
 
                 <!-- Action Configuration -->
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.8ef83b4d92c3">Action Type</label>
+                    <label class="form-label" data-i18n="plugins.openshock.labels.action_type_8ef83b">Action Type</label>
                     <select class="form-select" id="mappingActionType">
                         <option value="shock">Shock</option>
                         <option value="vibrate">Vibrate</option>
@@ -1109,7 +1109,7 @@
                 <div class="form-group">
                     <label class="form-label">Device</label>
                     <select class="form-select" id="mappingDevice">
-                        <option value="" data-i18n="generated.a17a6564c0ca">Select Device...</option>
+                        <option value="" data-i18n="plugins.openshock.labels.select_device_a17a65">Select Device...</option>
                     </select>
                 </div>
 
@@ -1130,24 +1130,24 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.af206611c5ba">Pattern (optional)</label>
+                    <label class="form-label" data-i18n="plugins.openshock.labels.pattern_optional_af2066">Pattern (optional)</label>
                     <select class="form-select" id="mappingPattern">
-                        <option value="" data-i18n="generated.2a649c8e8095">None (Single pulse)</option>
+                        <option value="" data-i18n="plugins.openshock.labels.none_single_pulse">None (Single pulse)</option>
                     </select>
                 </div>
 
                 <!-- Cooldowns -->
                 <div class="grid-3">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.3ed5ec4c221c">Global Cooldown (ms)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.global_cooldown_ms">Global Cooldown (ms)</label>
                         <input type="number" class="form-input" id="mappingGlobalCooldown" value="0" min="0" step="100">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.e5e808f9a887">Per-Device Cooldown (ms)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.per_device_cooldown_ms">Per-Device Cooldown (ms)</label>
                         <input type="number" class="form-input" id="mappingDeviceCooldown" value="0" min="0" step="100">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.494aa3a2b13a">Per-User Cooldown (ms)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.per_user_cooldown_ms">Per-User Cooldown (ms)</label>
                         <input type="number" class="form-input" id="mappingUserCooldown" value="0" min="0" step="100">
                     </div>
                 </div>
@@ -1155,18 +1155,18 @@
                 <!-- Safety Overrides -->
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.7d1eb3c7bc47">Max Intensity Override</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.max_intensity_override_7d1eb3">Max Intensity Override</label>
                         <input type="number" class="form-input" id="mappingMaxIntensity" value="100" min="1" max="100">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.ae268e76b43d">Max Duration Override (ms)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.max_duration_override_ms">Max Duration Override (ms)</label>
                         <input type="number" class="form-input" id="mappingMaxDuration" value="30000" min="300" step="100">
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" id="saveMappingBtn" data-i18n="generated.462750254656">💾 Save Mapping</button>
-                <button class="btn btn-secondary" id="cancelMappingBtn" data-i18n="generated.c5778b3cbc9c">❌ Cancel</button>
+                <button class="btn btn-primary" id="saveMappingBtn" data-i18n="plugins.openshock.labels.save_mapping">💾 Save Mapping</button>
+                <button class="btn btn-secondary" id="cancelMappingBtn" data-i18n="plugins.openshock.labels.cancel_c5778b">❌ Cancel</button>
             </div>
         </div>
     </div>
@@ -1175,13 +1175,13 @@
     <div id="patternModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="patternModalTitle" data-i18n="generated.8f502738fb41">⚡ Neues Pattern erstellen</h2>
+                <h2 class="modal-title" id="patternModalTitle" data-i18n="plugins.openshock.labels.neues_pattern_erstellen">⚡ Neues Pattern erstellen</h2>
                 <button class="modal-close" id="closePatternModal">×</button>
             </div>
             <div class="modal-body">
                 <!-- Pattern Info -->
                 <div class="alert alert-info mb-3">
-                    <strong data-i18n="generated.ef9d756e21e9">💡 So funktioniert's:</strong><span data-i18n="generated.d1002ca57552"> Füge einzelne Schritte hinzu (Shock, Vibration, Sound, Pause). 
+                    <strong data-i18n="plugins.openshock.labels.so_funktioniert_s">💡 So funktioniert's:</strong><span data-i18n="plugins.openshock.labels.fuge_einzelne_schritte_hinzu_shock_vibration_sound_pause"> Füge einzelne Schritte hinzu (Shock, Vibration, Sound, Pause).
                     Die Schritte werden nacheinander ausgeführt.
                 </span></div>
 
@@ -1191,36 +1191,36 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.655f0584432c">Beschreibung (optional)</label>
+                    <label class="form-label" data-i18n="plugins.openshock.labels.beschreibung_optional">Beschreibung (optional)</label>
                     <input type="text" class="form-input" id="patternDescription" placeholder="Kurze Beschreibung des Patterns">
                 </div>
 
                 <!-- Step Builder - Simplified -->
                 <div class="card mt-3" id="quickStepForm">
                     <div class="card-header">
-                        <h3 class="modal-title-small" data-i18n="generated.37d0aa216129">➕ Schritt hinzufügen</h3>
+                        <h3 class="modal-title-small" data-i18n="plugins.openshock.labels.schritt_hinzufugen">➕ Schritt hinzufügen</h3>
                     </div>
                     <div class="modal-body-padding">
                         <div class="grid-2 mb-3">
                             <div class="form-group">
                                 <label class="form-label">Aktion</label>
                                 <select class="form-select" id="stepType">
-                                    <option value="shock" data-i18n="generated.7d135cde3c4c">⚡ Schock</option>
-                                    <option value="vibrate" data-i18n="generated.57b289898a7c">📳 Vibration</option>
-                                    <option value="pause" data-i18n="generated.7013c9433308">⏸️ Pause</option>
+                                    <option value="shock" data-i18n="plugins.openshock.labels.schock">⚡ Schock</option>
+                                    <option value="vibrate" data-i18n="plugins.openshock.labels.vibration">📳 Vibration</option>
+                                    <option value="pause" data-i18n="plugins.openshock.labels.pause">⏸️ Pause</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" data-i18n="generated.a7b5939a6e9f">Dauer (Millisekunden)</label>
+                                <label class="form-label" data-i18n="plugins.openshock.labels.dauer_millisekunden">Dauer (Millisekunden)</label>
                                 <input type="number" class="form-input" id="stepDuration" value="500" min="300" max="30000" step="100">
-                                <small class="form-hint" data-i18n="generated.f3bce2cb89c0">Min: 300ms, Max: 30000ms</small>
+                                <small class="form-hint" data-i18n="plugins.openshock.labels.min_300ms_max_30000ms">Min: 300ms, Max: 30000ms</small>
                             </div>
                         </div>
                         <div class="form-group" id="stepIntensityGroup">
-                            <label class="form-label"><span data-i18n="generated.caa77dd86892">Intensität: </span><span id="stepIntensityValue">50</span>%</label>
+                            <label class="form-label"><span data-i18n="plugins.openshock.labels.intensitat">Intensität: </span><span id="stepIntensityValue">50</span>%</label>
                             <input type="range" id="stepIntensity" min="1" max="100" value="50" class="slider-large">
                         </div>
-                        <button class="btn btn-success btn-block" id="addPatternStep" data-i18n="generated.4295f6e1ced9">
+                        <button class="btn btn-success btn-block" id="addPatternStep" data-i18n="plugins.openshock.labels.schritt_zum_pattern_hinzufugen">
                             ➕ Schritt zum Pattern hinzufügen
                         </button>
                     </div>
@@ -1230,10 +1230,10 @@
                 <div class="form-group mt-3">
                     <div class="step-list-header">
                         <label class="form-label"><strong>Pattern-Schritte</strong> (<span id="stepCountLabel">0</span> Schritte)</label>
-                        <button class="btn btn-sm btn-danger" id="clearAllSteps" style="display: none;" data-i18n="generated.e473650cfee2">🗑️ Alle löschen</button>
+                        <button class="btn btn-sm btn-danger" id="clearAllSteps" style="display: none;" data-i18n="plugins.openshock.labels.alle_loschen">🗑️ Alle löschen</button>
                     </div>
                     <div class="step-list" id="patternSteps">
-                        <div class="text-muted text-center p-3" data-i18n="generated.0bb599f50172">Noch keine Schritte hinzugefügt. Füge oben deinen ersten Schritt hinzu.</div>
+                        <div class="text-muted text-center p-3" data-i18n="plugins.openshock.labels.noch_keine_schritte_hinzugefugt_fuge_oben_deinen_ersten">Noch keine Schritte hinzugefügt. Füge oben deinen ersten Schritt hinzu.</div>
                     </div>
                 </div>
 
@@ -1241,7 +1241,7 @@
                 <div class="form-group mt-3">
                     <label class="form-label">Vorschau</label>
                     <div class="pattern-timeline" id="patternPreview">
-                        <p class="text-muted text-center pattern-timeline-text" data-i18n="generated.2f1a8ac5c6fd">Schritte hinzufügen für Vorschau</p>
+                        <p class="text-muted text-center pattern-timeline-text" data-i18n="plugins.openshock.labels.schritte_hinzufugen_fur_vorschau">Schritte hinzufügen für Vorschau</p>
                     </div>
                     <div class="pattern-info" id="patternInfo" style="display: none;">
                         <small class="text-muted">
@@ -1251,8 +1251,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary btn-lg" id="savePatternBtn" data-i18n="generated.df766e7a8464">💾 Pattern speichern</button>
-                <button class="btn btn-secondary" id="cancelPatternBtn" data-i18n="generated.620062cc7d94">❌ Abbrechen</button>
+                <button class="btn btn-primary btn-lg" id="savePatternBtn" data-i18n="plugins.openshock.labels.pattern_speichern">💾 Pattern speichern</button>
+                <button class="btn btn-secondary" id="cancelPatternBtn" data-i18n="plugins.openshock.labels.abbrechen">❌ Abbrechen</button>
             </div>
         </div>
     </div>
@@ -1261,42 +1261,42 @@
     <div id="goalModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="goalModalTitle" data-i18n="generated.60aa50a8e39e">⚡ Add ZappieHell Goal</h2>
+                <h2 class="modal-title" id="goalModalTitle" data-i18n="plugins.openshock.labels.add_zappiehell_goal">⚡ Add ZappieHell Goal</h2>
                 <button class="modal-close" id="closeGoalModal">×</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="goalId">
-                
+
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.c5b80d47e090">Goal Name *</label>
+                    <label class="form-label" data-i18n="plugins.openshock.labels.goal_name">Goal Name *</label>
                     <input type="text" class="form-input" id="goalName" placeholder="e.g., ZappieHell Level 1" required>
                 </div>
 
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.862af83605cd">Target Coins *</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.target_coins">Target Coins *</label>
                         <input type="number" class="form-input" id="goalTargetCoins" placeholder="5000" min="1" required>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.573c27ee3603">Current Coins</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.current_coins">Current Coins</label>
                         <input type="number" class="form-input" id="goalCurrentCoins" placeholder="0" min="0" value="0">
                     </div>
                 </div>
 
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.7f1d940e601f">Goal Type</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.goal_type">Goal Type</label>
                         <select class="form-select" id="goalType">
-                            <option value="stream" data-i18n="generated.1aa8c890bbe1">🔴 Stream (resets after stream ends)</option>
-                            <option value="global" data-i18n="generated.9f8a164c64d4">🌐 Global (persistent across streams)</option>
+                            <option value="stream" data-i18n="plugins.openshock.labels.stream_resets_after_stream_ends">🔴 Stream (resets after stream ends)</option>
+                            <option value="global" data-i18n="plugins.openshock.labels.global_persistent_across_streams">🌐 Global (persistent across streams)</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.686e9ababf18">Event Chain</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.event_chain">Event Chain</label>
                         <select class="form-select" id="goalChainId">
-                            <option value="" data-i18n="generated.0514f7148c18">-- No chain --</option>
+                            <option value="" data-i18n="plugins.openshock.labels.no_chain">-- No chain --</option>
                         </select>
                     </div>
                 </div>
@@ -1309,8 +1309,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary btn-lg" id="saveGoalBtn" data-i18n="generated.e4cd9bdbd6ff">💾 Save Goal</button>
-                <button class="btn btn-secondary" id="cancelGoalBtn" data-i18n="generated.df59abebdc0d">❌ Cancel</button>
+                <button class="btn btn-primary btn-lg" id="saveGoalBtn" data-i18n="plugins.openshock.labels.save_goal">💾 Save Goal</button>
+                <button class="btn btn-secondary" id="cancelGoalBtn" data-i18n="plugins.openshock.labels.cancel_df59ab">❌ Cancel</button>
             </div>
         </div>
     </div>
@@ -1319,14 +1319,14 @@
     <div id="chainModal" class="modal">
         <div class="modal-content-large">
             <div class="modal-header">
-                <h2 class="modal-title" id="chainModalTitle" data-i18n="generated.8821fff17c70">🔗 Add Event Chain</h2>
+                <h2 class="modal-title" id="chainModalTitle" data-i18n="plugins.openshock.labels.add_event_chain_8821ff">🔗 Add Event Chain</h2>
                 <button class="modal-close" id="closeChainModal">×</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="chainId">
-                
+
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.681a87a1e1cd">Chain Name *</label>
+                    <label class="form-label" data-i18n="plugins.openshock.labels.chain_name">Chain Name *</label>
                     <input type="text" class="form-input" id="chainName" placeholder="e.g., ZappieHell Level 1 Chain" required>
                 </div>
 
@@ -1337,28 +1337,28 @@
 
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="modal-title-small" data-i18n="generated.3e7a1d2b8ac2">Chain Steps</h3>
-                        <button class="btn btn-success btn-sm" id="addChainStepBtn" data-i18n="generated.d2ec1cf5b5ba">➕ Add Step</button>
+                        <h3 class="modal-title-small" data-i18n="plugins.openshock.labels.chain_steps">Chain Steps</h3>
+                        <button class="btn btn-success btn-sm" id="addChainStepBtn" data-i18n="plugins.openshock.labels.add_step_d2ec1c">➕ Add Step</button>
                     </div>
                     <div id="chainStepsList">
-                        <p class="text-muted" style="padding: 20px;" data-i18n="generated.946534e7c302">No steps added yet. Click "Add Step" to begin.</p>
+                        <p class="text-muted" style="padding: 20px;" data-i18n="plugins.openshock.labels.no_steps_added_yet_click_add_step_to">No steps added yet. Click "Add Step" to begin.</p>
                     </div>
                 </div>
 
                 <div class="info-box mt-3">
-                    <strong data-i18n="generated.87b4cc39c1fd">💡 Available Step Types:</strong>
+                    <strong data-i18n="plugins.openshock.labels.available_step_types">💡 Available Step Types:</strong>
                     <ul style="margin-top: 8px; margin-left: 20px;">
-                        <li><strong data-i18n="generated.edb1c85e7463">Hybrid Shock:</strong><span data-i18n="generated.cfe50f2986e0"> Trigger shock pattern or direct command</span></li>
-                        <li><strong>Delay:</strong><span data-i18n="generated.8ff193e13df1"> Wait for specified duration before next step</span></li>
-                        <li><strong>Audio/TTS:</strong><span data-i18n="generated.9d6c4d1279ea"> Play audio or text-to-speech</span></li>
-                        <li><strong>Webhook:</strong><span data-i18n="generated.07ebe51bd9f2"> Send HTTP request to external URL</span></li>
-                        <li><strong>Overlay:</strong><span data-i18n="generated.5b9ce6742092"> Trigger overlay animation</span></li>
+                        <li><strong data-i18n="plugins.openshock.labels.hybrid_shock_edb1c8">Hybrid Shock:</strong><span data-i18n="plugins.openshock.labels.trigger_shock_pattern_or_direct_command"> Trigger shock pattern or direct command</span></li>
+                        <li><strong>Delay:</strong><span data-i18n="plugins.openshock.labels.wait_for_specified_duration_before_next_step"> Wait for specified duration before next step</span></li>
+                        <li><strong>Audio/TTS:</strong><span data-i18n="plugins.openshock.labels.play_audio_or_text_to_speech"> Play audio or text-to-speech</span></li>
+                        <li><strong>Webhook:</strong><span data-i18n="plugins.openshock.labels.send_http_request_to_external_url"> Send HTTP request to external URL</span></li>
+                        <li><strong>Overlay:</strong><span data-i18n="plugins.openshock.labels.trigger_overlay_animation"> Trigger overlay animation</span></li>
                     </ul>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary btn-lg" id="saveChainBtn" data-i18n="generated.2dd584a14e65">💾 Save Event Chain</button>
-                <button class="btn btn-secondary" id="cancelChainBtn" data-i18n="generated.ebfb66ece299">❌ Cancel</button>
+                <button class="btn btn-primary btn-lg" id="saveChainBtn" data-i18n="plugins.openshock.labels.save_event_chain">💾 Save Event Chain</button>
+                <button class="btn btn-secondary" id="cancelChainBtn" data-i18n="plugins.openshock.labels.cancel_ebfb66">❌ Cancel</button>
             </div>
         </div>
     </div>
@@ -1367,20 +1367,20 @@
     <div id="stepModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="stepModalTitle" data-i18n="generated.a7b0cf9bd04c">➕ Add Chain Step</h2>
+                <h2 class="modal-title" id="stepModalTitle" data-i18n="plugins.openshock.labels.add_chain_step">➕ Add Chain Step</h2>
                 <button class="modal-close" id="closeStepModal">×</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="stepIndex">
-                
+
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.e2d3459adb9b">Step Type *</label>
+                    <label class="form-label" data-i18n="plugins.openshock.labels.step_type">Step Type *</label>
                     <select class="form-select" id="stepTypeSelect">
-                        <option value="openshock" data-i18n="generated.857b5e3cd46b">⚡ Hybrid Shock</option>
-                        <option value="delay" data-i18n="generated.772b6e6a72ba">⏱️ Delay</option>
-                        <option value="audio" data-i18n="generated.ebb3bb330179">🔊 Audio/TTS</option>
-                        <option value="webhook" data-i18n="generated.61224d8024d7">🌐 Webhook</option>
-                        <option value="overlay" data-i18n="generated.08adacc13cea">📺 Overlay Animation</option>
+                        <option value="openshock" data-i18n="plugins.openshock.labels.hybrid_shock">⚡ Hybrid Shock</option>
+                        <option value="delay" data-i18n="plugins.openshock.labels.delay">⏱️ Delay</option>
+                        <option value="audio" data-i18n="plugins.openshock.labels.audio_tts">🔊 Audio/TTS</option>
+                        <option value="webhook" data-i18n="plugins.openshock.labels.webhook">🌐 Webhook</option>
+                        <option value="overlay" data-i18n="plugins.openshock.labels.overlay_animation">📺 Overlay Animation</option>
                     </select>
                 </div>
 
@@ -1389,31 +1389,31 @@
                     <div class="form-group">
                         <label class="form-label">Pattern</label>
                         <select class="form-select" id="stepPatternId">
-                            <option value="" data-i18n="generated.b6582c241c5e">-- Direct Command --</option>
+                            <option value="" data-i18n="plugins.openshock.labels.direct_command">-- Direct Command --</option>
                         </select>
                     </div>
 
                     <div class="grid-2" id="directCommandFields">
                         <div class="form-group">
-                            <label class="form-label" data-i18n="generated.46890c23df5b">Command Type</label>
+                            <label class="form-label" data-i18n="plugins.openshock.labels.command_type">Command Type</label>
                             <select class="form-select" id="stepCommandType">
-                                <option value="vibrate" data-i18n="generated.1e8838bc4019">📳 Vibrate</option>
-                                <option value="shock" data-i18n="generated.b79571906663">⚡ Shock</option>
-                                <option value="sound" data-i18n="generated.e2a10843e1e4">🔊 Sound</option>
+                                <option value="vibrate" data-i18n="plugins.openshock.labels.vibrate">📳 Vibrate</option>
+                                <option value="shock" data-i18n="plugins.openshock.labels.shock_b79571">⚡ Shock</option>
+                                <option value="sound" data-i18n="plugins.openshock.labels.sound">🔊 Sound</option>
                             </select>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Device</label>
                             <select class="form-select" id="stepDeviceId">
-                                <option value="" data-i18n="generated.d47c76f24239">-- First Available --</option>
+                                <option value="" data-i18n="plugins.openshock.labels.first_available">-- First Available --</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="grid-2">
                         <div class="form-group">
-                            <label class="form-label" data-i18n="generated.b24a2fdaa909">Intensity (1-100)</label>
+                            <label class="form-label" data-i18n="plugins.openshock.labels.intensity_1_100">Intensity (1-100)</label>
                             <input type="number" class="form-input" id="stepIntensity" value="50" min="1" max="100">
                         </div>
 
@@ -1427,7 +1427,7 @@
                 <!-- Delay Step Fields -->
                 <div id="delayStepFields" class="step-fields" style="display: none;">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.941f81d4130d">Delay Duration (ms)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.delay_duration_ms">Delay Duration (ms)</label>
                         <input type="number" class="form-input" id="delayDurationMs" value="2000" min="100" max="60000">
                     </div>
                 </div>
@@ -1435,7 +1435,7 @@
                 <!-- Audio Step Fields -->
                 <div id="audioStepFields" class="step-fields" style="display: none;">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.6d9efbf31a40">Audio ID or TTS Text</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.audio_id_or_tts_text">Audio ID or TTS Text</label>
                         <input type="text" class="form-input" id="audioText" placeholder="Enter text for TTS or audio ID">
                     </div>
                 </div>
@@ -1443,7 +1443,7 @@
                 <!-- Webhook Step Fields -->
                 <div id="webhookStepFields" class="step-fields" style="display: none;">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.d8c6a3b1bcbe">URL *</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.url">URL *</label>
                         <input type="url" class="form-input" id="webhookUrl" placeholder="https://example.com/webhook">
                     </div>
 
@@ -1458,7 +1458,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.c48322390e47">Request Body (JSON)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.request_body_json">Request Body (JSON)</label>
                         <textarea class="form-input" id="webhookBody" rows="4" placeholder='{"key": "value"}'>{}</textarea>
                     </div>
                 </div>
@@ -1466,7 +1466,7 @@
                 <!-- Overlay Step Fields -->
                 <div id="overlayStepFields" class="step-fields" style="display: none;">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.8fc25b8a2f11">Animation Type</label>
+                        <label class="form-label" data-i18n="plugins.openshock.labels.animation_type">Animation Type</label>
                         <input type="text" class="form-input" id="overlayAnimationType" placeholder="e.g., flash, pulse">
                     </div>
 
@@ -1477,8 +1477,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary btn-lg" id="saveStepBtn" data-i18n="generated.2d9a428ac30c">💾 Save Step</button>
-                <button class="btn btn-secondary" id="cancelStepBtn" data-i18n="generated.b0a05a138380">❌ Cancel</button>
+                <button class="btn btn-primary btn-lg" id="saveStepBtn" data-i18n="plugins.openshock.labels.save_step">💾 Save Step</button>
+                <button class="btn btn-secondary" id="cancelStepBtn" data-i18n="plugins.openshock.labels.cancel_b0a05a">❌ Cancel</button>
             </div>
         </div>
     </div>

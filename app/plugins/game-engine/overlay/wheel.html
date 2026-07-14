@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.50bb4f6318b8">Glücksrad - LTTH Game Engine</title>
+  <title data-i18n="plugins.game-engine.labels.glucksrad_ltth_game_engine">Glücksrad - LTTH Game Engine</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
@@ -78,7 +78,7 @@
     /* Wheel canvas */
     #wheel-canvas {
       border-radius: 50%;
-      box-shadow: 
+      box-shadow:
         0 0 0 15px #1a1a2e,
         0 0 0 20px #FFD700,
         0 0 0 25px #1a1a2e,
@@ -97,7 +97,7 @@
       justify-content: center;
       align-items: center;
       font-size: 36px;
-      box-shadow: 
+      box-shadow:
         0 0 20px rgba(255, 215, 0, 0.5),
         inset 0 3px 10px rgba(255, 255, 255, 0.4),
         inset 0 -3px 10px rgba(0, 0, 0, 0.2);
@@ -158,7 +158,7 @@
       padding: 25px 50px;
       border-radius: 20px;
       text-align: center;
-      box-shadow: 
+      box-shadow:
         0 15px 40px rgba(0, 0, 0, 0.5),
         0 0 50px rgba(76, 175, 80, 0.3);
       border: 3px solid #81C784;
@@ -190,7 +190,7 @@
       font-size: 42px;
       font-weight: 900;
       color: #FFD700;
-      text-shadow: 
+      text-shadow:
         0 0 20px rgba(255, 215, 0, 0.5),
         2px 2px 4px rgba(0, 0, 0, 0.3);
       margin-top: 10px;
@@ -204,15 +204,15 @@
 
     /* Shock animation */
     @keyframes shock-pulse {
-      0%, 100% { 
+      0%, 100% {
         transform: translateX(-50%) scale(1);
         filter: brightness(1);
       }
-      25% { 
+      25% {
         transform: translateX(-50%) scale(1.05) rotate(2deg);
         filter: brightness(1.3);
       }
-      75% { 
+      75% {
         transform: translateX(-50%) scale(1.05) rotate(-2deg);
         filter: brightness(1.3);
       }
@@ -222,7 +222,7 @@
     #win-announcement.shock {
       background: linear-gradient(135deg, var(--shock-color-primary), var(--shock-color-secondary));
       border: 3px solid #FFD700;
-      box-shadow: 
+      box-shadow:
         0 15px 40px rgba(0, 0, 0, 0.5),
         0 0 50px rgba(255, 107, 0, 0.6),
         0 0 100px rgba(255, 107, 0, 0.3);
@@ -244,7 +244,7 @@
     #win-announcement.niete {
       background: linear-gradient(135deg, #607D8B, #455A64);
       border: 3px solid #90A4AE;
-      box-shadow: 
+      box-shadow:
         0 15px 40px rgba(0, 0, 0, 0.5),
         0 0 50px rgba(96, 125, 139, 0.3);
     }
@@ -268,7 +268,7 @@
       padding: 25px 40px;
       border-radius: 20px;
       text-align: center;
-      box-shadow: 
+      box-shadow:
         0 15px 40px rgba(0, 0, 0, 0.5),
         0 0 50px rgba(33, 150, 243, 0.3);
       border: 3px solid #64B5F6;
@@ -414,7 +414,7 @@
 
     /* Glow effect during spin */
     #wheel-wrapper.spinning #wheel-canvas {
-      box-shadow: 
+      box-shadow:
         0 0 0 15px #1a1a2e,
         0 0 0 20px #FFD700,
         0 0 0 25px #1a1a2e,
@@ -462,25 +462,25 @@
 <body>
   <div id="wheel-container">
     <div id="idle-message">
-      <div class="idle-title" id="idle-message-title" data-i18n="generated.ea637af2d0fd">🎡 Warte auf Spieler...</div>
-      <div class="idle-subtitle" id="idle-message-subtitle" data-i18n="generated.25e161f4b23a">Sende ein Geschenk, um das Glücksrad zu drehen!</div>
+      <div class="idle-title" id="idle-message-title" data-i18n="plugins.game-engine.labels.warte_auf_spieler">🎡 Warte auf Spieler...</div>
+      <div class="idle-subtitle" id="idle-message-subtitle" data-i18n="plugins.game-engine.labels.sende_ein_geschenk_um_das_glucksrad_zu_drehen">Sende ein Geschenk, um das Glücksrad zu drehen!</div>
     </div>
 
     <!-- Test Mode Controls -->
     <div id="test-mode-controls">
-      <h3 data-i18n="generated.efb6967dcdec">🧪 Test Mode</h3>
+      <h3 data-i18n="plugins.game-engine.labels.test_mode_efb696">🧪 Test Mode</h3>
       <div>
-        <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="generated.fb84e1b82c1d">Player Name:</label>
+        <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="plugins.game-engine.labels.player_name_fb84e1">Player Name:</label>
         <input type="text" id="test-player-name" value="TestPlayer">
       </div>
-      <button id="test-spin-wheel" data-i18n="generated.a97154d5a28b">🎡 Spin Wheel</button>
+      <button id="test-spin-wheel" data-i18n="plugins.game-engine.labels.spin_wheel">🎡 Spin Wheel</button>
     </div>
 
     <div id="player-info">
       <img id="player-avatar" src="" alt="Avatar">
       <div>
         <div class="player-name" id="player-name">Spieler</div>
-        <div class="gift-name" id="gift-info" data-i18n="generated.b782f8cc2415">🎁 Geschenk</div>
+        <div class="gift-name" id="gift-info" data-i18n="plugins.game-engine.labels.geschenk">🎁 Geschenk</div>
       </div>
     </div>
 
@@ -491,18 +491,18 @@
     </div>
 
     <div id="win-announcement">
-      <div class="congrats" id="congrats-text" data-i18n="generated.4c2eda286dd9">🎉 Glückwunsch!</div>
+      <div class="congrats" id="congrats-text" data-i18n="plugins.game-engine.labels.gluckwunsch">🎉 Glückwunsch!</div>
       <div class="winner-name" id="winner-name">Spieler</div>
       <div class="prize" id="prize-text">PRIZE</div>
     </div>
 
     <div id="info-screen">
-      <div class="info-header" data-i18n="generated.59f3ea24d63f">ℹ️ Information</div>
-      <div class="info-text" id="info-screen-text" data-i18n="generated.4934de0c2b1f">Um deinen Gewinn abzuholen, besuche discord.gg/deinserver</div>
+      <div class="info-header" data-i18n="plugins.game-engine.labels.i_information">ℹ️ Information</div>
+      <div class="info-text" id="info-screen-text" data-i18n="plugins.game-engine.labels.um_deinen_gewinn_abzuholen_besuche_discord_gg_deinserver_4934de">Um deinen Gewinn abzuholen, besuche discord.gg/deinserver</div>
     </div>
 
     <div id="queue-display">
-      <h3 data-i18n="generated.fe8a3672aca4">📋 Warteschlange</h3>
+      <h3 data-i18n="plugins.game-engine.labels.warteschlange">📋 Warteschlange</h3>
       <ul id="queue-list"></ul>
     </div>
 
@@ -528,7 +528,7 @@
         soundVolume: 0.7
       }
     };
-    
+
     // Current wheel ID (for loading custom audio)
     let currentWheelId = null;
 
@@ -548,18 +548,18 @@
       default: '🎮'
     };
     let queue = [];
-    
+
     // Audio loaded state
     let audioLoaded = false;
-    
+
     // Web Audio API context for tick sound (avoids using Connect4 audio)
     let audioContext = null;
-    
+
     // Audio constants for tick sound
     const TICK_SOUND_VOLUME_MULTIPLIER = 0.15; // Lower volume multiplier for tick sound
     const TICK_SOUND_FREQUENCY = 800; // Hz
     const TICK_SOUND_DURATION = 0.03; // seconds
-    
+
     function getAudioContext() {
       if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -598,27 +598,27 @@
         idleMessageRevealTimer = null;
       }
     }
-    
+
     // Play tick sound using Web Audio API (wheel-specific, not Connect4)
     function playTickSound() {
       if (!config.settings.soundEnabled) return;
-      
+
       try {
         const audioCtx = getAudioContext();
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
-        
+
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-        
+
         // Short click sound - higher frequency for wheel tick
         oscillator.type = 'sine';
         oscillator.frequency.value = TICK_SOUND_FREQUENCY;
-        
+
         const volume = (config.settings.soundVolume || 0.7) * TICK_SOUND_VOLUME_MULTIPLIER;
         gainNode.gain.value = volume;
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + TICK_SOUND_DURATION);
-        
+
         oscillator.start();
         oscillator.stop(audioCtx.currentTime + TICK_SOUND_DURATION);
       } catch (error) {
@@ -658,7 +658,7 @@
     const prize2Sound = document.getElementById('prize-2-sound');
     const prize3Sound = document.getElementById('prize-3-sound');
     const lostSound = document.getElementById('lost-sound');
-    
+
     // Default audio URLs
     const defaultAudioUrls = {
       spinning: '/game-engine/sounds/wheel/spinning sound.mp3',
@@ -667,18 +667,18 @@
       prize3: '/game-engine/sounds/wheel/price 3 audio.mp3',
       lost: '/game-engine/sounds/wheel/lost.mp3'
     };
-    
+
     /**
      * Load audio files for a specific wheel
      */
     async function loadWheelAudio(wheelId) {
       currentWheelId = wheelId;
-      
+
       try {
         // Fetch audio settings
         const res = await fetch(`/api/game-engine/wheel/audio/settings?wheelId=${wheelId}`);
         const settings = await res.json();
-        
+
         // Set audio sources based on settings
         const audioMap = {
           spinning: spinSound,
@@ -687,11 +687,11 @@
           prize3: prize3Sound,
           lost: lostSound
         };
-        
+
         for (const [type, audioEl] of Object.entries(audioMap)) {
           const setting = settings[type];
           let audioUrl;
-          
+
           if (setting && setting.isCustom) {
             // Use custom audio with cache-busting timestamp
             audioUrl = `/game-engine/sounds/wheel/custom/${wheelId}/${type}.mp3?t=${Date.now()}`;
@@ -699,11 +699,11 @@
             // Use default audio
             audioUrl = defaultAudioUrls[type];
           }
-          
+
           audioEl.src = audioUrl;
           audioEl.load();
         }
-        
+
         audioLoaded = true;
         console.log('Wheel audio loaded for wheel', wheelId);
       } catch (error) {
@@ -717,7 +717,7 @@
         audioLoaded = true;
       }
     }
-    
+
     // Initialize with default audio
     loadWheelAudio('1');
 
@@ -726,28 +726,28 @@
 
     /**
      * Draw the wheel with current configuration
-     * 
+     *
      * COORDINATE SYSTEM SYNCHRONIZATION:
      * - Canvas native: 0° is at right (3 o'clock), increases clockwise
      * - Wheel logical: 0° is at top (12 o'clock), increases clockwise
      * - Offset applied: -Math.PI/2 (-90°) to align canvas 0° with wheel 0°
-     * 
+     *
      * When rotation = 0:
      * - Segment 0 is drawn from -90° to (-90° + segmentAngle) in canvas coords
      * - This places segment 0 at top (12 o'clock), directly under the pointer
      * - This matches the server assumption that segment 0 starts at 0° (top)
-     * 
+     *
      * When rotation = R:
      * - The entire wheel is rotated R degrees clockwise
      * - ctx.rotate() rotates the coordinate system, then segments are drawn
      * - After rotation, the segment originally at position P is now at (P + R)
      * - The pointer stays at top (-90° canvas = 270° absolute = 0° wheel)
-     * 
+     *
      * @param {number} rotation - Rotation angle in degrees (0 = no rotation)
      */
     function drawWheel(rotation = 0) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
+
       if (!config.segments || config.segments.length === 0) {
         // Draw placeholder wheel
         ctx.beginPath();
@@ -788,11 +788,11 @@
         ctx.moveTo(centerX, centerY);
         ctx.arc(centerX, centerY, radius, startAngle, endAngle);
         ctx.closePath();
-        
+
         // Fill with segment color
         ctx.fillStyle = segment.color || '#4CAF50';
         ctx.fill();
-        
+
         // Add border
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 2;
@@ -805,12 +805,12 @@
         ctx.textAlign = 'right';
         ctx.fillStyle = getContrastColor(segment.color || '#4CAF50');
         ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-        
+
         // Wrap text if too long
         const text = segment.text || `Preis ${i + 1}`;
         const maxWidth = radius - 50;
         ctx.fillText(truncateText(text, maxWidth), radius - 20, 6);
-        
+
         ctx.restore();
       }
 
@@ -841,7 +841,7 @@
       ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       let width = ctx.measureText(text).width;
       if (width <= maxWidth) return text;
-      
+
       while (width > maxWidth && text.length > 0) {
         text = text.slice(0, -1);
         width = ctx.measureText(text + '...').width;
@@ -922,19 +922,19 @@
 
     /**
      * Animate wheel spin
-     * 
+     *
      * CRITICAL REQUIREMENTS FOR CORRECT LANDING:
      * 1. Spin duration MUST remain constant (matches server calculation)
      * 2. Wheel MUST start at rotation = 0° (segment 0 at top under pointer)
      * 3. Total rotation value from server MUST be used exactly as provided
-     * 
+     *
      * The server calculates totalRotation based on:
      * - Starting position: 0° (segment 0 at top)
      * - Configured spinDuration
      * - Cubic ease-out easing function
-     * 
+     *
      * If any of these assumptions are violated, the wheel will land on the wrong segment!
-     * 
+     *
      * IMPORTANT: Before calling this function, ensure currentRotation is reset to 0
      * and drawWheel(0) has been called to visually reset the wheel position.
      */
@@ -983,13 +983,13 @@
       function animate(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / actualDuration, 1);
-        
+
         // Easing function (ease-out cubic)
         const easeOut = 1 - Math.pow(1 - progress, 3);
-        
+
         const newRotation = startRotation + (finalRotation * easeOut);
         currentRotation = newRotation;
-        
+
         // Draw wheel
         drawWheel(newRotation);
 
@@ -1009,7 +1009,7 @@
           // Spin complete
           wheelWrapper.classList.remove('spinning');
           isSpinning = false;
-          
+
           // Stop spin sound if still playing
           if (config.settings.soundEnabled) {
             spinSound.pause();
@@ -1019,12 +1019,12 @@
           // Calculate which segment the wheel visually landed on based on final rotation (for debugging)
           const landedSegmentIndex = calculateLandingSegment(currentRotation);
           let reportedSegmentIndex = landedSegmentIndex;
-          
+
           if (!config.segments[reportedSegmentIndex]) {
             console.error(`Invalid landing calculation: segment ${reportedSegmentIndex} does not exist (total segments: ${config.segments.length})`);
             reportedSegmentIndex = winningSegment.index;
           }
-          
+
           if (reportedSegmentIndex !== winningSegment.index) {
             console.warn(`Wheel landing mismatch! Expected segment ${winningSegment.index} (${winningSegment.text}), but landed on segment ${reportedSegmentIndex}. Reporting mismatch for server validation.`);
           }
@@ -1046,17 +1046,17 @@
      */
     function showWinAnnouncement(name, prize, prizeColor, isNiete = false, prizeAudio = null, isShock = false, shockIntensity = 0) {
       winnerName.textContent = name;
-      
+
       // Handle shock segment
       if (isShock) {
         congratsText.textContent = '⚡ SHOCK!';
         prizeText.textContent = `${prize} (${shockIntensity}%)`;
         prizeText.style.color = getComputedStyle(document.documentElement).getPropertyValue('--shock-color-primary').trim() || '#FF6B00';
         winAnnouncement.classList.add('shock');
-        
+
         // Add shock animation effect
         winAnnouncement.style.animation = 'shock-pulse 0.3s ease-in-out 3';
-        
+
         // Don't spawn confetti for shock
       } else if (isNiete) {
         // Handle "Niete" (no win) case
@@ -1067,7 +1067,7 @@
         prizeText.textContent = nieteText;
         prizeText.style.color = prizeColor || '#90A4AE';
         winAnnouncement.classList.add('niete');
-        
+
         // Don't spawn confetti for Niete
       } else {
         // Regular win
@@ -1077,18 +1077,18 @@
         prizeText.style.color = prizeColor || '#FFD700';
         winAnnouncement.classList.remove('niete');
         winAnnouncement.classList.remove('shock');
-        
+
         // Spawn confetti for wins
         spawnConfetti();
       }
-      
+
       winAnnouncement.classList.add('visible');
 
       // Play appropriate sound based on segment configuration
       if (config.settings.soundEnabled) {
         const volume = config.settings.soundVolume || 0.7;
         let soundToPlay = null;
-        
+
         if (isShock) {
           // Play lost sound for shock (or could be a special shock sound)
           soundToPlay = lostSound;
@@ -1117,7 +1117,7 @@
           // reached for genuine wins missing an explicit prizeAudio configuration.
           soundToPlay = prize1Sound;
         }
-        
+
         if (soundToPlay) {
           soundToPlay.volume = volume;
           soundToPlay.currentTime = 0;
@@ -1153,7 +1153,7 @@
         clearTimeout(hidePlayerAndWheelTimer);
         hidePlayerAndWheelTimer = null;
       }
-      
+
       // Show info screen after win (not for Niete or Shock)
       const settings = config.settings || {};
       if (!isNiete && !isShock && settings.infoScreenEnabled && settings.infoScreenText) {
@@ -1177,7 +1177,7 @@
       const settings = config.settings || {};
       infoScreenText.textContent = settings.infoScreenText || 'Um deinen Gewinn abzuholen, besuche discord.gg/deinserver';
       infoScreen.classList.add('visible');
-      
+
       // Hide after delay
       const infoDuration = (settings.infoScreenDuration || 5) * 1000;
       if (hideInfoScreenTimer) {
@@ -1194,7 +1194,7 @@
      */
     function hideInfoScreen() {
       infoScreen.classList.remove('visible');
-      
+
       // Hide player info after info screen
       if (hidePlayerAndWheelTimer) {
         clearTimeout(hidePlayerAndWheelTimer);
@@ -1215,7 +1215,7 @@
 
       playerInfo.classList.remove('visible');
       wheelWrapper.classList.remove('visible');
-      
+
       // Show idle message if no queue
       if (queue.length === 0) {
         if (idleMessageRevealTimer) {
@@ -1235,7 +1235,7 @@
       playerName.textContent = nickname || 'Spieler';
       playerAvatar.src = profilePictureUrl || 'https://via.placeholder.com/50';
       giftInfo.textContent = giftName ? `🎁 ${giftName}` : '🎡 Dreht das Rad';
-      
+
       playerInfo.classList.add('visible');
       wheelWrapper.classList.add('visible');
     }
@@ -1273,7 +1273,7 @@
       if (!item) {
         return null;
       }
-      
+
       return {
         type: item.type,
         spinId: item.spinId,
@@ -1290,16 +1290,16 @@
       if (!status) {
         return;
       }
-      
+
       const updatedQueue = [];
-      
+
       if (status.currentItem) {
         const currentItem = normalizeQueueItem(status.currentItem);
         if (currentItem) {
           updatedQueue.push(currentItem);
         }
       }
-      
+
       if (Array.isArray(status.queue)) {
         status.queue.forEach((item) => {
           const normalizedItem = normalizeQueueItem(item);
@@ -1308,7 +1308,7 @@
           }
         });
       }
-      
+
       queue = updatedQueue;
       updateQueueDisplay();
     }
@@ -1325,15 +1325,15 @@
      */
     function updateIdleMessage() {
       const settings = config.settings || {};
-      
+
       // Check if idle message is enabled (default: true)
       if (settings.idleMessageEnabled === false) {
         idleMessage.style.display = 'none';
         return;
       }
-      
+
       idleMessage.style.display = '';
-      
+
       // Update title and subtitle
       idleMessageTitle.textContent = settings.idleMessageTitle || '🎡 Warte auf Spieler...';
       idleMessageSubtitle.textContent = settings.idleMessageSubtitle || 'Sende ein Geschenk, um das Glücksrad zu drehen!';
@@ -1356,7 +1356,7 @@
     function spawnConfetti() {
       const colors = ['#FFD700', '#FF6B6B', '#4CAF50', '#2196F3', '#9C27B0', '#FF9800'];
       const container = document.getElementById('wheel-container');
-      
+
       for (let i = 0; i < 50; i++) {
         const confetti = document.createElement('div');
         confetti.className = 'confetti';
@@ -1366,18 +1366,18 @@
         confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
         confetti.style.width = (Math.random() * 10 + 5) + 'px';
         confetti.style.height = (Math.random() * 10 + 5) + 'px';
-        
+
         container.appendChild(confetti);
-        
+
         // Animate
         const animation = confetti.animate([
-          { 
-            top: '-20px', 
+          {
+            top: '-20px',
             opacity: 1,
             transform: `rotate(0deg) translateX(0)`
           },
-          { 
-            top: '100vh', 
+          {
+            top: '100vh',
             opacity: 0,
             transform: `rotate(${Math.random() * 720}deg) translateX(${(Math.random() - 0.5) * 200}px)`
           }
@@ -1385,7 +1385,7 @@
           duration: Math.random() * 2000 + 2000,
           easing: 'ease-out'
         });
-        
+
         animation.onfinish = () => confetti.remove();
       }
     }
@@ -1399,63 +1399,63 @@
 
     socket.on('wheel:config', (newConfig) => {
       console.log('⚙️ Received wheel config', newConfig);
-      
+
       // Validate received config
       if (!newConfig) {
         console.error('wheel:config received null/undefined config');
         return;
       }
-      
+
       if (!newConfig.segments || !Array.isArray(newConfig.segments)) {
         console.error('wheel:config received invalid segments:', newConfig.segments);
         return;
       }
-      
+
       if (newConfig.segments.length === 0) {
         console.warn('wheel:config received empty segments array');
         // Allow empty segments to show "no configuration" state
       }
-      
+
       config.segments = newConfig.segments || [];
       config.settings = newConfig.settings || config.settings;
-      
+
       // Apply display texts from settings
       applyDisplayTexts(newConfig.settings && newConfig.settings.displayTexts);
-      
+
       console.log(`✅ Config applied: ${config.segments.length} segments`);
       drawWheel(currentRotation);
-      
+
       // Update idle message text based on settings
       updateIdleMessage();
     });
 
     socket.on('wheel:config-updated', (newConfig) => {
       console.log('⚙️ Wheel config updated', newConfig);
-      
+
       // Validate received config
       if (!newConfig) {
         console.error('wheel:config-updated received null/undefined config');
         return;
       }
-      
+
       if (!newConfig.segments || !Array.isArray(newConfig.segments)) {
         console.error('wheel:config-updated received invalid segments:', newConfig.segments);
         return;
       }
-      
+
       if (newConfig.segments.length === 0) {
         console.warn('wheel:config-updated received empty segments array');
       }
-      
+
       config.segments = newConfig.segments || config.segments;
       config.settings = newConfig.settings || config.settings;
-      
+
       // Apply display texts if provided
       applyDisplayTexts(newConfig.settings && newConfig.settings.displayTexts);
-      
+
       console.log(`✅ Config updated: ${config.segments.length} segments`);
       drawWheel(currentRotation);
-      
+
       // Update idle message text based on settings
       updateIdleMessage();
     });
@@ -1464,48 +1464,48 @@
       console.log('🎡 Spin start', data);
 
       clearWheelTimers();
-      
+
       // Validate spin data
       if (!data) {
         console.error('wheel:spin-start received null/undefined data');
         return;
       }
-      
+
       if (!data.segments || !Array.isArray(data.segments) || data.segments.length === 0) {
         console.error('wheel:spin-start received invalid or empty segments:', data.segments);
         return;
       }
-      
+
       if (typeof data.winningSegmentIndex !== 'number' || data.winningSegmentIndex < 0 || data.winningSegmentIndex >= data.segments.length) {
         console.error(`wheel:spin-start received invalid winningSegmentIndex ${data.winningSegmentIndex} (segments: ${data.segments?.length || 0})`);
         return;
       }
-      
+
       if (!data.winningSegment) {
         console.error('wheel:spin-start missing winningSegment data');
         return;
       }
-      
+
       // Load audio for this wheel if different from current
       if (data.wheelId && data.wheelId !== currentWheelId) {
         await loadWheelAudio(data.wheelId);
       }
-      
+
       // Update config from spin event to ensure sync with server
       // This is CRITICAL - the server sends the authoritative segment list for this spin
       if (data.segments && data.segments.length > 0) {
         const previousSegmentCount = config.segments.length;
         config.segments = data.segments;
-        
+
         if (previousSegmentCount !== data.segments.length) {
           console.warn(`⚠️ Segment count changed: ${previousSegmentCount} → ${data.segments.length}`);
         }
       }
-      
+
       if (data.settings) {
         config.settings = { ...config.settings, ...data.settings };
       }
-      
+
       // Log segment metadata for debugging
       console.log(`✅ Spin config applied: ${config.segments.length} segments, winning index: ${data.winningSegmentIndex} (${data.winningSegment.text}), rotation: ${data.totalRotation.toFixed(2)}°`);
 
@@ -1519,10 +1519,10 @@
 
       // Show player info
       showPlayerInfo(data.nickname, data.profilePictureUrl, data.giftName);
-      
+
       // Note: Queue item will be removed on wheel:spin-result (after spin completes)
       // Do NOT remove here, otherwise queue display disappears before spin finishes
-      
+
       // Start spin animation
       spinStartTimer = setTimeout(() => {
         spinStartTimer = null;
@@ -1539,7 +1539,7 @@
         );
       }, 1000); // Short delay to show player info first
     });
-    
+
     // Listen for audio updates
     socket.on('wheel:audio-updated', async (data) => {
       console.log('🔊 Audio updated', data);
@@ -1551,7 +1551,7 @@
 
     socket.on('wheel:spin-queued', (data) => {
       console.log('📋 Spin queued', data);
-      
+
       queue.push({
         type: 'wheel',
         spinId: data.spinId,
@@ -1559,14 +1559,14 @@
         nickname: data.nickname,
         position: data.position
       });
-      
+
       updateQueueDisplay();
     });
 
     // Unified queue event - same handling as legacy event
     socket.on('unified-queue:wheel-queued', (data) => {
       console.log('📋 [UNIFIED] Spin queued', data);
-      
+
       queue.push({
         type: 'wheel',
         spinId: data.spinId,
@@ -1574,14 +1574,14 @@
         nickname: data.nickname || data.username, // Fallback to username if nickname not provided
         position: data.position
       });
-      
+
       updateQueueDisplay();
     });
 
     // Unified queue event for Plinko
     socket.on('unified-queue:plinko-queued', (data) => {
       console.log('📋 [UNIFIED] Plinko queued', data);
-      
+
       queue.push({
         type: 'plinko',
         batchId: data.batchId,
@@ -1589,7 +1589,7 @@
         nickname: data.nickname || data.username,
         position: data.position
       });
-      
+
       updateQueueDisplay();
     });
 
@@ -1607,7 +1607,7 @@
 
     socket.on('wheel:queue-processing', (data) => {
       console.log('📋 Processing queue', data);
-      
+
       // Note: Do NOT remove from queue here - wait until spin actually completes
       // This event fires when spin is about to start, not when it completes
       // Queue will be removed on wheel:spin-result
@@ -1619,24 +1619,24 @@
         console.error('wheel:spin-result received null/undefined data');
         return;
       }
-      
+
       const isSpinIdMismatch = currentSpinId && data.spinId !== currentSpinId;
-      
+
       if (data.syncMismatch) {
         console.warn(`Spin sync mismatch detected (expected: ${data.expectedSegmentIndex}, reported: ${data.reportedSegmentIndex})`);
       }
-      
+
       // Remove completed spin from queue display AFTER result is received
       queue = queue.filter(item => item.spinId !== data.spinId);
       updateQueueDisplay();
-      
+
       if (isSpinIdMismatch) {
         console.warn(`wheel:spin-result for unexpected spinId ${data.spinId} (current: ${currentSpinId})`);
         requestQueueStatusSync();
         // Skip announcement to avoid showing results for a stale spin.
         return;
       }
-      
+
       showWinAnnouncement(
         data.nickname || data.username || 'Spieler',
         data.prize,
@@ -1647,7 +1647,7 @@
         data.isShock || false,
         data.shockIntensity || 0
       );
-      
+
       currentSpinId = null;
     });
 
@@ -1655,20 +1655,20 @@
     socket.on('wheel:spin-error', (data) => {
       console.error('❌ Spin error', data);
       clearWheelTimers();
-      
+
       // Validate required data (spinId is required, others have fallbacks)
       if (!data || !data.spinId) {
         console.error('wheel:spin-error received invalid data:', data);
         return;
       }
-      
+
       // Remove from queue if present
       queue = queue.filter(item => item.spinId !== data.spinId);
       updateQueueDisplay();
       if (currentSpinId && data.spinId === currentSpinId) {
         currentSpinId = null;
       }
-      
+
       // Show error message in announcement area (with safe fallbacks)
       winnerName.textContent = data.nickname || data.username || 'Spieler';
       congratsText.textContent = '❌ Fehler';
@@ -1677,7 +1677,7 @@
       winAnnouncement.classList.remove('niete');
       winAnnouncement.classList.remove('shock');
       winAnnouncement.classList.add('visible');
-      
+
       // Hide error after 5 seconds
       setTimeout(() => {
         winAnnouncement.classList.remove('visible');
@@ -1687,43 +1687,43 @@
     socket.on('wheel:spin-timeout', (data) => {
       console.warn('⚠️ Spin timeout (overlay did not respond)', data);
       clearWheelTimers();
-      
+
       // Validate required data
       if (!data || !data.spinId) {
         console.error('wheel:spin-timeout received invalid data:', data);
         return;
       }
-      
+
       // Only handle timeout if this spin is currently active
       if (isSpinning && currentSpinId === data.spinId) {
         console.log(`Resetting stuck spin ${data.spinId}`);
-        
+
         // Stop spinning immediately
         isSpinning = false;
         currentSpinId = null;
-        
+
         // Reset wheel visual state
         wheelWrapper.classList.remove('spinning');
         wheel.style.transition = 'none';
         wheel.style.transform = 'rotate(0deg)';
-        
+
         // Force reflow
         void wheel.offsetHeight;
-        
+
         // Re-enable transition
         wheel.style.transition = '';
-        
+
         // Hide any visible announcements
         winAnnouncement.classList.remove('visible');
         infoScreen.classList.remove('visible');
-        
+
         // Show idle message
         idleMessage.classList.add('visible');
         updateIdleMessage();
-        
+
         console.log('Wheel state reset after timeout');
       }
-      
+
       // Remove from queue if present
       queue = queue.filter(item => item.spinId !== data.spinId);
       updateQueueDisplay();
@@ -1738,19 +1738,19 @@
     // ============================================
     // TEST MODE FUNCTIONALITY
     // ============================================
-    
+
     // Check if test mode is enabled
     const urlParams = new URLSearchParams(window.location.search);
     const testMode = urlParams.get('testMode') === 'true';
-    
+
     if (testMode) {
       console.log('🧪 Wheel test mode enabled');
       document.getElementById('test-mode-controls').style.display = 'block';
-      
+
       // Spin wheel button
       document.getElementById('test-spin-wheel').addEventListener('click', async () => {
         const playerName = document.getElementById('test-player-name').value || 'TestPlayer';
-        
+
         try {
           const response = await fetch('/api/game-engine/wheel/spin', {
             method: 'POST',
@@ -1761,9 +1761,9 @@
               giftName: 'Test Spin'
             })
           });
-          
+
           const data = await response.json();
-          
+
           if (data.success) {
             console.log('Test spin triggered:', data);
           } else {

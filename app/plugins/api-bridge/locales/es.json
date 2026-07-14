@@ -1,32 +1,37 @@
 {
-  "api_bridge": {
-    "plugin": {
-      "name": "Puente API",
-      "description": "Permite controlar LTTH desde aplicaciones externas mediante APIs HTTP y WebSocket."
-    },
-    "ui": {
-      "title": "API Bridge",
-      "actions": {
-        "save": "Guardar",
-        "cancel": "Cancelar",
-        "refresh": "Actualizar",
-        "close": "Cerrar",
-        "test": "Probar",
-        "clear": "Borrar"
+  "plugins": {
+    "api-bridge": {
+      "api_bridge": {
+        "plugin": {
+          "name": "Puente API",
+          "description": "Permite controlar LTTH desde aplicaciones externas mediante APIs HTTP y WebSocket."
+        },
+        "ui": {
+          "title": "Puente API",
+          "actions": {
+            "save": "Guardar",
+            "cancel": "Cancelar",
+            "refresh": "Actualizar",
+            "close": "Cerrar",
+            "test": "Probar",
+            "clear": "Borrar"
+          },
+          "status": {
+            "ready": "Listo",
+            "loading": "Cargando …",
+            "connected": "Conectado",
+            "disconnected": "Desconectado",
+            "error": "Error"
+          },
+          "messages": {
+            "saved": "Ajustes guardados.",
+            "failed": "No se pudieron guardar los ajustes.",
+            "noData": "No hay datos disponibles.",
+            "confirm": "¿Seguro que quieres continuar?"
+          }
+        }
       },
-      "status": {
-        "ready": "Listo",
-        "loading": "Cargando …",
-        "connected": "Conectado",
-        "disconnected": "Desconectado",
-        "error": "Error"
-      },
-      "messages": {
-        "saved": "Ajustes guardados.",
-        "failed": "No se pudieron guardar los ajustes.",
-        "noData": "No hay datos disponibles.",
-        "confirm": "¿Seguro que quieres continuar?"
-      }
+      "labels": {}
     }
   }
 }

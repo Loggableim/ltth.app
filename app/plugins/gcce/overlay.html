@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <!-- Fixed viewport for OBS Browser Source - standard 1080p overlay dimensions -->
     <meta name="viewport" content="width=1920, height=1080">
-    <title data-i18n="generated.212bf7b4dd97">GCCE Overlay</title>
+    <title data-i18n="plugins.gcce.labels.gcce_overlay">GCCE Overlay</title>
     <link rel="stylesheet" href="/gcce/style.css">
     <script src="/js/i18n-client.js"></script>
 </head>
@@ -19,10 +19,10 @@
     <!-- Help Panel -->
     <div id="helpPanel" class="help-panel hidden">
         <div class="help-content">
-            <h2 id="helpTitle" data-i18n="generated.e9f92ad0d034">Available Commands</h2>
+            <h2 id="helpTitle" data-i18n="plugins.gcce.labels.available_commands_e9f92a">Available Commands</h2>
             <div id="helpBody"></div>
             <div class="help-footer">
-                <p data-i18n="generated.02981915654a">Type /help &lt;command&gt; for details</p>
+                <p data-i18n="plugins.gcce.labels.type_help_command_for_details">Type /help &lt;command&gt; for details</p>
             </div>
         </div>
     </div>
@@ -37,13 +37,13 @@
 
     <!-- Socket.io Client -->
     <script src="/socket.io/socket.io.js"></script>
-    
+
     <script>
         // ===== SOCKET.IO CONNECTION =====
         const socket = io();
-        
+
         // ===== MESSAGE DISPLAY =====
-        
+
         /**
          * Display a command input notification
          */
@@ -51,7 +51,7 @@
             const container = document.getElementById('commandInputNotifications');
             const notification = document.createElement('div');
             notification.className = 'command-input-notification';
-            
+
             // Create notification content
             notification.innerHTML = `
                 <div class="command-input-content">
@@ -62,14 +62,14 @@
                     </div>
                 </div>
             `;
-            
+
             container.appendChild(notification);
-            
+
             // Animate in
             setTimeout(() => {
                 notification.classList.add('show');
             }, 10);
-            
+
             // Remove after duration
             setTimeout(() => {
                 notification.classList.remove('show');
@@ -78,7 +78,7 @@
                 }, 500);
             }, 3000);
         }
-        
+
         /**
          * Escape HTML to prevent XSS
          */
@@ -87,7 +87,7 @@
             div.textContent = text === null || text === undefined ? '' : String(text);
             return div.innerHTML;
         }
-        
+
         /**
          * Display a command result message
          */
@@ -115,14 +115,14 @@
             const messageEl = document.createElement('div');
             messageEl.className = `command-message ${type}`;
             messageEl.textContent = message;
-            
+
             container.appendChild(messageEl);
-            
+
             // Animate in
             setTimeout(() => {
                 messageEl.classList.add('show');
             }, 10);
-            
+
             // Remove after duration
             setTimeout(() => {
                 messageEl.classList.remove('show');
@@ -138,11 +138,11 @@
         function showError(errorText) {
             const container = document.getElementById('errorContainer');
             const message = document.getElementById('errorMessage');
-            
+
             message.textContent = errorText;
             container.classList.remove('hidden');
             container.classList.add('show');
-            
+
             setTimeout(() => {
                 container.classList.remove('show');
                 setTimeout(() => {
@@ -174,7 +174,7 @@
         function showHelpPanel(data) {
             const panel = document.getElementById('helpPanel');
             const body = document.getElementById('helpBody');
-            
+
             let html = '';
             for (const [category, commands] of Object.entries(data.categories || {})) {
                 html += `<div class="help-category">`;
@@ -186,11 +186,11 @@
                 html += `</ul>`;
                 html += `</div>`;
             }
-            
+
             body.innerHTML = html;
             panel.classList.remove('hidden');
             panel.classList.add('show');
-            
+
             setTimeout(() => {
                 panel.classList.remove('show');
                 setTimeout(() => {
@@ -207,7 +207,7 @@
             const panel = document.getElementById('helpPanel');
             const title = document.getElementById('helpTitle');
             const body = document.getElementById('helpBody');
-            
+
             title.textContent = `/${command.name || ''}`;
             body.innerHTML = `
                 <div class="command-detail">
@@ -217,10 +217,10 @@
                     <p class="plugin"><strong>Plugin:</strong> ${escapeHtml(command.pluginId || '')}</p>
                 </div>
             `;
-            
+
             panel.classList.remove('hidden');
             panel.classList.add('show');
-            
+
             setTimeout(() => {
                 panel.classList.remove('show');
                 setTimeout(() => {

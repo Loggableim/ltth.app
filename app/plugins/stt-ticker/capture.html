@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.c9a8726d76af">STT Ticker - Audio Capture</title>
+  <title data-i18n="plugins.stt-ticker.labels.stt_ticker_audio_capture">STT Ticker - Audio Capture</title>
   <link rel="stylesheet" href="/css/themes.css">
   <script>
     (() => {
@@ -276,7 +276,7 @@
     .info-box strong { color: #64B5F6; }
     .info-box .accent-green { color: #4CAF50; }
     .info-box .accent-yellow { color: #FFC107; }
-    
+
     /* stt final theme overrides */
     html[data-theme="day"] .status.idle,
     html[data-theme="day"] .stat,
@@ -350,7 +350,7 @@
       border: 3px solid #ffd400 !important;
       min-height: 44px;
     }
-  
+
     /* stt night idle contrast fix */
     html[data-theme="night"] .status.idle {
       background: #1f2937;
@@ -742,23 +742,23 @@
       <div class="capture-brand">
         <img class="capture-brand__icon" src="/ltthttsicon.png" alt="STT Ticker Icon">
         <div class="capture-brand__copy">
-          <h1 data-i18n="generated.38bc9b07c6cc">STT Ticker Capture</h1>
-          <p data-i18n="generated.124aef0a5a15">Client-seitige Stille-Erkennung, Multi-Language Output und OBS Overlay-Helfer. Optimiert für breite Displays und alle Themes.</p>
+          <h1 data-i18n="plugins.stt-ticker.labels.stt_ticker_capture">STT Ticker Capture</h1>
+          <p data-i18n="plugins.stt-ticker.labels.client_seitige_stille_erkennung_multi_language_output_und">Client-seitige Stille-Erkennung, Multi-Language Output und OBS Overlay-Helfer. Optimiert für breite Displays und alle Themes.</p>
         </div>
       </div>
       <div class="capture-actions">
-        <span class="capture-chip"><span class="dot"></span><span data-i18n="generated.60bd64ed7268"> Live capture</span></span>
+        <span class="capture-chip"><span class="dot"></span><span data-i18n="plugins.stt-ticker.labels.live_capture"> Live capture</span></span>
       </div>
     </header>
 
     <main class="capture-main">
     <div id="status" class="status idle">
       <span class="indicator"></span>
-      <span id="status-text" data-i18n="generated.3a2b89a1d71a">Bereit zum Start</span>
+      <span id="status-text" data-i18n="plugins.stt-ticker.labels.bereit_zum_start">Bereit zum Start</span>
     </div>
 
     <div class="meter-row">
-      <span data-i18n="generated.bad9dc5c9524">Live-Pegel (RMS)</span>
+      <span data-i18n="plugins.stt-ticker.labels.live_pegel_rms">Live-Pegel (RMS)</span>
       <span id="meter-value">0.000</span>
     </div>
     <div class="meter-wrap">
@@ -769,35 +769,35 @@
     <div class="stats">
       <div class="stat">
         <div class="stat-value" id="stat-sent">0</div>
-        <div class="stat-label" data-i18n="generated.538a4e948e92">An Server gesendet</div>
+        <div class="stat-label" data-i18n="plugins.stt-ticker.labels.an_server_gesendet">An Server gesendet</div>
       </div>
       <div class="stat savings">
         <div class="stat-value" id="stat-skipped">0</div>
-        <div class="stat-label" data-i18n="generated.a159ec26d75f">Stille übersprungen</div>
+        <div class="stat-label" data-i18n="plugins.stt-ticker.labels.stille_ubersprungen">Stille übersprungen</div>
       </div>
       <div class="stat savings">
         <div class="stat-value" id="stat-savings-pct">0%</div>
-        <div class="stat-label" data-i18n="generated.9a32141172ad">Tokens gespart</div>
+        <div class="stat-label" data-i18n="plugins.stt-ticker.labels.tokens_gespart">Tokens gespart</div>
       </div>
     </div>
 
     <section class="capture-panel capture-panel--mic">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;">
         <div>
-          <div class="capture-panel__eyebrow" data-i18n="generated.dcabf65a3c8e">Input source</div>
-          <h3 style="margin:0;" data-i18n="generated.cd5af8da3c0e">Mikrofon auswählen</h3>
+          <div class="capture-panel__eyebrow" data-i18n="plugins.stt-ticker.labels.input_source">Input source</div>
+          <h3 style="margin:0;" data-i18n="plugins.stt-ticker.labels.mikrofon_auswahlen">Mikrofon auswählen</h3>
         </div>
-        <button id="btn-refresh-devices" class="btn btn-secondary btn-sm" style="flex:0 0 auto;min-width:160px;" data-i18n="generated.721e1974364c">Freigeben & aktualisieren</button>
+        <button id="btn-refresh-devices" class="btn btn-secondary btn-sm" style="flex:0 0 auto;min-width:160px;" data-i18n="plugins.stt-ticker.labels.freigeben_aktualisieren">Freigeben & aktualisieren</button>
       </div>
       <div class="settings-row">
         <label for="audio-device-select">Quell-Mikrofon</label>
         <select id="audio-device-select" style="flex:1;"></select>
       </div>
-      <p class="help-text" style="margin-top:8px;" data-i18n="generated.894387db7487">Die Auswahl wird gespeichert und beim Start der Aufnahme verwendet. Nach der ersten Freigabe erscheinen die Gerätenamen.</p>
+      <p class="help-text" style="margin-top:8px;" data-i18n="plugins.stt-ticker.labels.die_auswahl_wird_gespeichert_und_beim_start_der">Die Auswahl wird gespeichert und beim Start der Aufnahme verwendet. Nach der ersten Freigabe erscheinen die Gerätenamen.</p>
     </section>
 
     <div class="controls">
-      <button id="btn-start" class="btn btn-primary" data-i18n="generated.95a86eada127">Capture starten</button>
+      <button id="btn-start" class="btn btn-primary" data-i18n="plugins.stt-ticker.labels.capture_starten">Capture starten</button>
       <button id="btn-stop" class="btn btn-danger" disabled>Stop</button>
     </div>
 
@@ -807,13 +807,13 @@
     <section class="capture-panel capture-panel--overlay">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <span style="font-size:14px;">OBS</span>
-        <strong style="color:#64B5F6;font-size:13px;" data-i18n="generated.9e3592a7262e">OBS Overlay URL</strong>
+        <strong style="color:#64B5F6;font-size:13px;" data-i18n="plugins.stt-ticker.labels.obs_overlay_url">OBS Overlay URL</strong>
       </div>
       <div class="inline-flex" style="gap:6px;">
         <input type="text" id="ml-overlay-url" readonly style="flex:1;font-family:monospace;font-size:12px;padding:6px 8px;cursor:text;" value="">
         <button id="btn-copy-overlay-url" class="btn btn-small btn-primary" style="flex:0;">Kopieren</button>
       </div>
-      <p class="help-text" style="margin-top:8px;" data-i18n="generated.32a4a731658e">Als Browser Source in OBS einfügen</p>
+      <p class="help-text" style="margin-top:8px;" data-i18n="plugins.stt-ticker.labels.als_browser_source_in_obs_einfugen">Als Browser Source in OBS einfügen</p>
     </section>
 
     <section class="capture-panel capture-panel--preview" id="preview-section">
@@ -822,31 +822,31 @@
     </section>
 
     <section class="capture-panel" id="settings-section">
-      <h3 id="settings-toggle" data-i18n="generated.6197ee4301de">Multi-Language Einstellungen</h3>
+      <h3 id="settings-toggle" data-i18n="plugins.stt-ticker.labels.multi_language_einstellungen">Multi-Language Einstellungen</h3>
       <div id="settings-body">
         <div class="settings-row">
           <label>STT-Modell</label>
           <select id="ml-asr-model" style="flex:1;">
-            <option value="" data-i18n="generated.3d81e150c045">Modell wählen</option>
+            <option value="" data-i18n="plugins.stt-ticker.labels.modell_wahlen">Modell wählen</option>
           </select>
         </div>
         <div class="settings-row">
-          <label data-i18n="generated.a248ae817a84">Übersetzungs-Modell</label>
+          <label data-i18n="plugins.stt-ticker.labels.ubersetzungs_modell_a248ae">Übersetzungs-Modell</label>
           <select id="ml-model" style="flex:1;">
-            <option value="" data-i18n="generated.69eb6c2351d0">Modelle laden...</option>
+            <option value="" data-i18n="plugins.stt-ticker.labels.modelle_laden">Modelle laden...</option>
           </select>
         </div>
         <div class="settings-row">
-          <label data-i18n="generated.0202e2239704">Default-Sprache (Original)</label>
+          <label data-i18n="plugins.stt-ticker.labels.default_sprache_original">Default-Sprache (Original)</label>
           <select id="ml-default-lang" style="flex:1;"></select>
         </div>
         <div class="settings-row">
-          <label data-i18n="generated.584647d4f1b7">Sprache hinzufügen</label>
+          <label data-i18n="plugins.stt-ticker.labels.sprache_hinzufugen_584647">Sprache hinzufügen</label>
           <select id="ml-add-lang" style="flex:1;"></select>
           <button id="btn-add-lang" class="btn btn-small btn-primary">+</button>
         </div>
         <div class="settings-row">
-          <label data-i18n="generated.f7a032a1c852">Aktive Sprachen</label>
+          <label data-i18n="plugins.stt-ticker.labels.aktive_sprachen">Aktive Sprachen</label>
           <div id="lang-tags" class="lang-tag-list"></div>
         </div>
         <div style="margin-top:8px;">
@@ -858,19 +858,19 @@
 
     <section class="capture-panel capture-panel--log">
       <div id="log" class="log-box">
-        <div style="color:#888" data-i18n="generated.49ad1c4c5459">Bereit. Klicke "Capture starten"...</div>
+        <div style="color:#888" data-i18n="plugins.stt-ticker.labels.bereit_klicke_capture_starten">Bereit. Klicke "Capture starten"...</div>
       </div>
     </section>
 
     <section class="capture-panel capture-panel--info">
       <div class="info-box">
-        <strong data-i18n="generated.e43772f2b648">Multi-Language Output:</strong><br><span data-i18n="generated.7f8304efb7fc">
-        1. Wähle </span><strong>Default-Sprache</strong><span data-i18n="generated.a9486c726b33"> (was gesprochen wird)</span><br><span data-i18n="generated.d4cc7492e518">
-        2. Füge </span><strong>Zielsprachen</strong><span data-i18n="generated.25be888a54f6"> hinzu (je eine Zeile im Output)</span><br><span data-i18n="generated.443990eb5143">
-        3. Wähle </span><strong data-i18n="generated.237fd4f667f0">Übersetzungs-Modell</strong><span data-i18n="generated.2604e6f3e632"> (wird automatisch geladen wenn API-Key vorhanden)</span><br><span data-i18n="generated.a349d2f26e5c">
+        <strong data-i18n="plugins.stt-ticker.labels.multi_language_output">Multi-Language Output:</strong><br><span data-i18n="plugins.stt-ticker.labels.1_wahle">
+        1. Wähle </span><strong>Default-Sprache</strong><span data-i18n="plugins.stt-ticker.labels.was_gesprochen_wird"> (was gesprochen wird)</span><br><span data-i18n="plugins.stt-ticker.labels.2_fuge">
+        2. Füge </span><strong>Zielsprachen</strong><span data-i18n="plugins.stt-ticker.labels.hinzu_je_eine_zeile_im_output"> hinzu (je eine Zeile im Output)</span><br><span data-i18n="plugins.stt-ticker.labels.3_wahle">
+        3. Wähle </span><strong data-i18n="plugins.stt-ticker.labels.ubersetzungs_modell">Übersetzungs-Modell</strong><span data-i18n="plugins.stt-ticker.labels.wird_automatisch_geladen_wenn_api_key_vorhanden"> (wird automatisch geladen wenn API-Key vorhanden)</span><br><span data-i18n="plugins.stt-ticker.labels.4_starte_capture_jede_zeile_zeigt_eine_sprache">
         4. Starte Capture - jede Zeile zeigt eine Sprache</span><br>
         <br>
-        <strong class="accent-yellow" data-i18n="generated.afe0ead43d03">Übersetzung via Ollama Cloud</strong><span data-i18n="generated.35a93230b20c"> - muss in den Admin-Settings aktiviert sein.
+        <strong class="accent-yellow" data-i18n="plugins.stt-ticker.labels.ubersetzung_via_ollama_cloud">Übersetzung via Ollama Cloud</strong><span data-i18n="plugins.stt-ticker.labels.muss_in_den_admin_settings_aktiviert_sein"> - muss in den Admin-Settings aktiviert sein.
       </span></div>
     </section>
     </aside>

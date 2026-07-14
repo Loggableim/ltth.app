@@ -1,70 +1,74 @@
 {
-  "thermal_printer": {
-    "name": "Thermal Printer",
-    "description": "Prints TikTok Live events on a thermal printer (ESC/POS)",
-    "status": {
-      "connected": "Connected",
-      "disconnected": "Disconnected",
-      "reconnecting": "Reconnecting...",
-      "queue_size": "Queue Size",
-      "printed_jobs": "Printed Jobs",
-      "failed_jobs": "Failed Jobs",
-      "uptime": "Uptime"
-    },
-    "config": {
-      "enable": "Enable Thermal Printer",
-      "printer_type": "Printer Type",
-      "usb": "USB",
-      "network": "Network",
-      "usb_vendor_id": "USB Vendor ID",
-      "usb_product_id": "USB Product ID",
-      "network_host": "Network Host/IP",
-      "network_port": "Network Port",
-      "event_filters": "Event Filters",
-      "print_chats": "Print Chat Messages",
-      "print_gifts": "Print Gifts",
-      "print_follows": "Print Follows",
-      "print_shares": "Print Shares",
-      "min_coins": "Minimum Coins to Print",
-      "ignore_bot_commands": "Ignore Bot Commands (messages starting with '!')",
-      "formatting": "Formatting",
-      "auto_cut": "Auto-cut paper after each event",
-      "paper_width": "Paper Width (characters)",
-      "encoding": "Character Encoding",
-      "advanced": "Advanced Settings",
-      "reconnect_attempts": "Reconnect Attempts",
-      "reconnect_delay": "Reconnect Delay (ms)",
-      "queue_max_size": "Max Queue Size",
-      "print_delay": "Print Delay (ms)"
-    },
-    "actions": {
-      "test_print": "Test Print",
-      "save": "Save Configuration",
-      "back": "Back to Dashboard"
-    },
-    "messages": {
-      "config_saved": "Configuration saved successfully!",
-      "config_error": "Error saving configuration",
-      "test_queued": "Test print job queued!",
-      "test_error": "Error sending test print",
-      "printer_not_running": "Printer service not running"
+  "plugins": {
+    "thermal-printer": {
+      "thermal_printer": {
+        "name": "Thermal Printer",
+        "description": "Prints TikTok Live events on a thermal printer (ESC/POS)",
+        "status": {
+          "connected": "Connected",
+          "disconnected": "Disconnected",
+          "reconnecting": "Reconnecting...",
+          "queue_size": "Queue Size",
+          "printed_jobs": "Printed Jobs",
+          "failed_jobs": "Failed Jobs",
+          "uptime": "Uptime"
+        },
+        "config": {
+          "enable": "Enable Thermal Printer",
+          "printer_type": "Printer Type",
+          "usb": "USB",
+          "network": "Network",
+          "usb_vendor_id": "USB Vendor ID",
+          "usb_product_id": "USB Product ID",
+          "network_host": "Network Host/IP",
+          "network_port": "Network Port",
+          "event_filters": "Event Filters",
+          "print_chats": "Print Chat Messages",
+          "print_gifts": "Print Gifts",
+          "print_follows": "Print Follows",
+          "print_shares": "Print Shares",
+          "min_coins": "Minimum Coins to Print",
+          "ignore_bot_commands": "Ignore Bot Commands (messages starting with '!')",
+          "formatting": "Formatting",
+          "auto_cut": "Auto-cut paper after each event",
+          "paper_width": "Paper Width (characters)",
+          "encoding": "Character Encoding",
+          "advanced": "Advanced Settings",
+          "reconnect_attempts": "Reconnect Attempts",
+          "reconnect_delay": "Reconnect Delay (ms)",
+          "queue_max_size": "Max Queue Size",
+          "print_delay": "Print Delay (ms)"
+        },
+        "actions": {
+          "test_print": "Test Print",
+          "save": "Save Configuration",
+          "back": "Back to Dashboard"
+        },
+        "messages": {
+          "config_saved": "Configuration saved successfully!",
+          "config_error": "Error saving configuration",
+          "test_queued": "Test print job queued!",
+          "test_error": "Error sending test print",
+          "printer_not_running": "Printer service not running"
+        }
+      },
+      "labels": {
+        "only_print_gifts_with_at_least_this_many": "Only print gifts with at least this many coins (saves paper)",
+        "typical_48_for_80mm_paper_32_for_58mm": "Typical: 48 for 80mm paper, 32 for 58mm paper",
+        "thermal_printer_configuration": "Thermal Printer - Configuration",
+        "gb18030_default": "GB18030 (Default)",
+        "printer_connection": "Printer Connection",
+        "save_configuration": "Save Configuration",
+        "test_print": "Test Print",
+        "back_to_dashboard": "Back to Dashboard",
+        "event_filters": "Event Filters",
+        "connection_status": "Connection Status",
+        "advanced_settings": "Advanced Settings",
+        "e_g_0x0e15_for_tm_t20_leave_empty": "e.g., 0x0e15 for TM-T20 (leave empty for auto-detect)",
+        "delay_between_print_jobs_prevents_overloading": "Delay between print jobs (prevents overloading)",
+        "minimum_coins_to_print_gifts": "Minimum Coins to Print (Gifts)",
+        "e_g_0x04b8_for_epson_leave_empty_for": "e.g., 0x04b8 for Epson (leave empty for auto-detect)"
+      }
     }
-  },
-  "generated": {
-    "3ee1fddf1259": "Thermal Printer - Configuration",
-    "997d134acc58": "Back to Dashboard",
-    "a58f2ec5003c": "Connection Status",
-    "6f939fcb088e": "Printer Connection",
-    "edf570ac77a7": "e.g., 0x04b8 for Epson (leave empty for auto-detect)",
-    "b9540ba89dfd": "e.g., 0x0e15 for TM-T20 (leave empty for auto-detect)",
-    "9dc827bdc32c": "Event Filters",
-    "cfc7e4a32810": "Minimum Coins to Print (Gifts)",
-    "0666dd4875b1": "Only print gifts with at least this many coins (saves paper)",
-    "6d8f13193ca0": "GB18030 (Default)",
-    "a9fe613c5931": "Advanced Settings",
-    "cf2a7e073163": "Delay between print jobs (prevents overloading)",
-    "9627d567d91a": "Test Print",
-    "89e7397c6e4b": "Save Configuration",
-    "1551e3bcfd2e": "Typical: 48 for 80mm paper, 32 for 58mm paper"
   }
 }

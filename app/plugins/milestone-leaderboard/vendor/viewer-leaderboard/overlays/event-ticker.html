@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.ef2aaeeb7359">XP Event Ticker</title>
+  <title data-i18n="plugins.milestone-leaderboard.labels.xp_event_ticker">XP Event Ticker</title>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     (function () {
@@ -376,31 +376,31 @@
   <div class="ticker-container">
     <div class="ticker-header">
       <span class="ticker-icon">⭐</span>
-      <span data-i18n="generated.ee1281f9ee19">Live XP Events</span>
+      <span data-i18n="plugins.milestone-leaderboard.labels.live_xp_events">Live XP Events</span>
       <span class="connection-status" id="connectionStatus">Connecting...</span>
     </div>
     <div class="events-list" id="eventsList">
-      <div class="empty-message" data-i18n="generated.11288244685d">Waiting for events...</div>
+      <div class="empty-message" data-i18n="plugins.milestone-leaderboard.labels.waiting_for_events">Waiting for events...</div>
     </div>
   </div>
 
   <!-- Settings Panel (hidden in production, visible in preview) -->
   <div class="settings-panel" id="settingsPanel" style="display: none;">
-    <h3 style="margin-bottom: 10px;" data-i18n="generated.af68d8063f8b">Overlay Settings</h3>
-    <label data-i18n="generated.b93eab7541ca">Max Events:</label>
+    <h3 style="margin-bottom: 10px;" data-i18n="plugins.milestone-leaderboard.labels.overlay_settings">Overlay Settings</h3>
+    <label data-i18n="plugins.milestone-leaderboard.labels.max_events">Max Events:</label>
     <input type="number" id="maxEvents" value="10" min="5" max="50">
-    
-    <label data-i18n="generated.5334b4891a95">Animation Duration (ms):</label>
+
+    <label data-i18n="plugins.milestone-leaderboard.labels.animation_duration_ms">Animation Duration (ms):</label>
     <input type="number" id="animDuration" value="300" min="100" max="1000">
-    
-    <label data-i18n="generated.1e72f167f8ca">Auto Scroll:</label>
+
+    <label data-i18n="plugins.milestone-leaderboard.labels.auto_scroll">Auto Scroll:</label>
     <select id="autoScroll">
       <option value="true">Enabled</option>
       <option value="false">Disabled</option>
     </select>
-    
-    <button onclick="applySettings()" data-i18n="generated.bcee833ca29f">Apply Settings</button>
-    <button onclick="toggleSettings()" data-i18n="generated.2352893bb6a2">Hide Settings</button>
+
+    <button onclick="applySettings()" data-i18n="plugins.milestone-leaderboard.labels.apply_settings">Apply Settings</button>
+    <button onclick="toggleSettings()" data-i18n="plugins.milestone-leaderboard.labels.hide_settings">Hide Settings</button>
   </div>
 
   <script>
@@ -445,10 +445,10 @@
       console.log('Connected to server');
       connectionStatus.textContent = 'Connected';
       connectionStatus.className = 'connection-status connected';
-      
+
       // Subscribe to XP events
       socket.emit('viewerxp:subscribe-events');
-      
+
       // Request recent events
       socket.emit('viewerxp:get-recent-events', { limit: config.maxEvents });
     });
@@ -479,12 +479,12 @@
     // Add new event
     function addEvent(event) {
       events.unshift(event);
-      
+
       // Trim to max events
       if (events.length > config.maxEvents) {
         events = events.slice(0, config.maxEvents);
       }
-      
+
       renderEvents();
     }
 
@@ -499,7 +499,7 @@
         const time = formatTime(event.created_at);
         const icon = eventIcons[event.event_type] || '⭐';
         const eventClass = getEventClass(event.event_type);
-        
+
         return `
           <div class="event-item ${eventClass}">
             <div class="event-header">
@@ -524,7 +524,7 @@
     function formatTime(timestamp) {
       const now = Date.now();
       const diff = Math.floor((now - timestamp) / 1000);
-      
+
       if (diff < 60) return 'just now';
       if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
       if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
@@ -560,11 +560,11 @@
       config.maxEvents = parseInt(document.getElementById('maxEvents').value);
       config.animDuration = parseInt(document.getElementById('animDuration').value);
       config.autoScroll = document.getElementById('autoScroll').value === 'true';
-      
+
       // Re-trim events
       events = events.slice(0, config.maxEvents);
       renderEvents();
-      
+
       console.log('Settings applied:', config);
     }
 
