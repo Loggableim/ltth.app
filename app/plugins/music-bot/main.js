@@ -887,6 +887,9 @@ class MusicBotPlugin extends EventEmitter {
 
     this.playbackEngine.on('track-end', (info) => {
       const activeTrack = this.playbackEngine.getNowPlaying?.();
+      if (info.reason === 'error' && !info.track && !activeTrack) {
+        return;
+      }
       if (info.reason !== 'crossfade' && info.track?.requestedBy === 'AutoDJ' && activeTrack && activeTrack !== info.track) {
         return;
       }

@@ -215,6 +215,50 @@ describe('Music Bot core features', () => {
     expect(engine.getState()).toBe('playing');
   });
 
+  test('attributes a delayed replacement end-file error to the outgoing track', () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const outgoing = { id: 'outgoing', title: 'Outgoing' };
+    const incoming = { id: 'incoming', title: 'Incoming' };
+    const trackEnd = jest.fn();
+    engine.on('track-end', trackEnd);
+    engine.nowPlaying = incoming;
+    engine.state = 'playing';
+    engine._replacementOutgoingTrack = outgoing;
+
+    engine._handleMessage(JSON.stringify({
+      event: 'end-file',
+      reason: 'error',
+      error: 'Delayed outgoing stream failure'
+    }));
+
+    expect(trackEnd).toHaveBeenCalledWith(expect.objectContaining({
+      track: outgoing,
+      reason: 'error',
+      error: 'Delayed outgoing stream failure'
+    }));
+    expect(engine._replacementOutgoingTrack).toBeNull();
+    expect(engine.getNowPlaying()).toBe(incoming);
+    expect(engine.getState()).toBe('playing');
+  });
+
+  test('ignores the replacement stop event without advancing playback', () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const outgoing = { id: 'outgoing', title: 'Outgoing' };
+    const incoming = { id: 'incoming', title: 'Incoming' };
+    const trackEnd = jest.fn();
+    engine.on('track-end', trackEnd);
+    engine.nowPlaying = incoming;
+    engine.state = 'playing';
+    engine._replacementOutgoingTrack = outgoing;
+
+    engine._handleMessage(JSON.stringify({ event: 'end-file', reason: 'stop' }));
+
+    expect(trackEnd).not.toHaveBeenCalled();
+    expect(engine._replacementOutgoingTrack).toBeNull();
+    expect(engine.getNowPlaying()).toBe(incoming);
+    expect(engine.getState()).toBe('playing');
+  });
+
   test('does not revive playback from a late MPV start-file event without a track', () => {
     const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
 
