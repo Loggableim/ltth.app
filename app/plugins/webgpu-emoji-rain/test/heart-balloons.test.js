@@ -79,6 +79,37 @@ describe('WebGPU Emoji Rain - Herzballons', () => {
     expect(first).not.toBe(other);
   });
 
+  test('shuffles every heart color and uses each before repeating within a stream', () => {
+    const random = jest.spyOn(Math, 'random').mockReturnValue(0);
+    const plugin = new WebGPUEmojiRainPlugin(new MockAPI());
+    random.mockRestore();
+    const colors = plugin.heartBalloonPalette.map((_, index) =>
+      plugin.getHeartBalloonColor(`viewer-${index}`)
+    );
+
+    expect(plugin.heartBalloonColorPool).toEqual(expect.any(Array));
+    expect(plugin.heartBalloonColorPool).not.toEqual(plugin.heartBalloonPalette);
+    expect(new Set(colors).size).toBe(plugin.heartBalloonPalette.length);
+    expect(plugin.getHeartBalloonColor('viewer-after-palette')).toBe(colors[0]);
+  });
+
+  test('resets user colors only for a confirmed new stream session', () => {
+    const plugin = new WebGPUEmojiRainPlugin(new MockAPI());
+    const firstColor = plugin.getHeartBalloonColor('viewer-one');
+
+    expect(plugin.handleHeartBalloonStreamSession({
+      streamIdentity: 'streamer:room-1',
+      isNewStream: false
+    })).toBe(false);
+    expect(plugin.getHeartBalloonColor('viewer-one')).toBe(firstColor);
+
+    expect(plugin.handleHeartBalloonStreamSession({
+      streamIdentity: 'streamer:room-2'
+    })).toBe(true);
+    expect(plugin.heartBalloonUserColors.size).toBe(0);
+    expect(plugin.heartBalloonColorIndex).toBe(0);
+  });
+
   test('triggerHeartBalloons emits heart-balloon spawn data', () => {
     const api = new MockAPI();
     const plugin = new WebGPUEmojiRainPlugin(api);

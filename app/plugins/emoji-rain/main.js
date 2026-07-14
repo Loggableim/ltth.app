@@ -104,6 +104,8 @@ class EmojiRainPlugin {
       '#c56cf0',
       '#ff7eb3'
     ];
+    this.heartBalloonColorPool = this.createHeartBalloonColorPool();
+    this.lastHeartBalloonStreamIdentity = null;
   }
 
   async init() {
@@ -705,6 +707,36 @@ class EmojiRainPlugin {
     return true;
   }
 
+  createHeartBalloonColorPool() {
+    const pool = [...this.heartBalloonPalette];
+    for (let index = pool.length - 1; index > 0; index--) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [pool[index], pool[swapIndex]] = [pool[swapIndex], pool[index]];
+    }
+    return pool;
+  }
+
+  handleHeartBalloonStreamSession(data = {}, { requireIsNewStream = false } = {}) {
+    if (data.isNewStream === false || (requireIsNewStream && data.isNewStream !== true)) {
+      return false;
+    }
+
+    const streamIdentity = data.streamIdentity || (
+      data.username && data.roomId
+        ? `${String(data.username).toLowerCase()}:${data.roomId}`
+        : null
+    );
+    if (!streamIdentity || streamIdentity === this.lastHeartBalloonStreamIdentity) {
+      return false;
+    }
+
+    this.heartBalloonUserColors.clear();
+    this.heartBalloonColorPool = this.createHeartBalloonColorPool();
+    this.heartBalloonColorIndex = 0;
+    this.lastHeartBalloonStreamIdentity = streamIdentity;
+    return true;
+  }
+
   getHeartBalloonColor(username) {
     const key = String(username || 'Unknown').toLowerCase();
 
@@ -712,7 +744,9 @@ class EmojiRainPlugin {
       return this.heartBalloonUserColors.get(key);
     }
 
-    const color = this.heartBalloonPalette[this.heartBalloonColorIndex % this.heartBalloonPalette.length];
+    const color = this.heartBalloonColorPool[
+      this.heartBalloonColorIndex % this.heartBalloonColorPool.length
+    ];
     this.heartBalloonColorIndex++;
     this.heartBalloonUserColors.set(key, color);
     return color;
@@ -2354,6 +2388,13 @@ class EmojiRainPlugin {
   }
 
   registerTikTokEventHandlers() {
+    this.api.registerTikTokEvent('streamSessionStarted', (data) => {
+      this.handleHeartBalloonStreamSession(data);
+    });
+    this.api.registerTikTokEvent('connected', (data) => {
+      this.handleHeartBalloonStreamSession(data, { requireIsNewStream: true });
+    });
+
     // Gift Event
     this.api.registerTikTokEvent('gift', (data) => {
       this.spawnEmojiRain('gift', data);
