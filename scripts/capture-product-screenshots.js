@@ -19,6 +19,10 @@ const WAIT_AFTER_LOAD_MS = Number(process.env.SCREENSHOT_WAIT_AFTER_LOAD_MS || 4
 const ASSET_TIMEOUT_MS = Number(process.env.SCREENSHOT_ASSET_TIMEOUT_MS || 20000);
 const START_APP = process.env.SCREENSHOT_START_APP !== 'false';
 
+function captureTrace(message) {
+  if (process.env.SCREENSHOT_TRACE === 'true') console.log(`[capture trace] ${message}`);
+}
+
 function loadPuppeteer() {
   const candidates = [
     path.join(REPO_ROOT, 'app', 'node_modules', 'puppeteer'),
@@ -136,14 +140,15 @@ function waitForServer(child, baseUrl) {
 }
 
 function prepareDocsPluginFixture(profileDir, guideId) {
-  if (guideId !== 'visual-fx-frame-webgpu') return null;
-  const sourceDir = path.join(REPO_ROOT, 'plugin-store', 'sources', guideId);
+  const sourceDir = guideId === 'visual-fx-frame-webgpu'
+    ? path.join(REPO_ROOT, 'plugin-store', 'sources', guideId)
+    : path.join(REPO_ROOT, 'app', 'plugins', guideId);
+  if (!fs.existsSync(path.join(sourceDir, 'plugin.json'))) return null;
+  const sourceManifest = JSON.parse(fs.readFileSync(path.join(sourceDir, 'plugin.json'), 'utf8'));
+  if (sourceManifest.enabled !== false) return null;
   const fixtureRoot = path.join(profileDir, 'docs-plugin-fixture');
   const fixtureDir = path.join(fixtureRoot, guideId);
   const manifestPath = path.join(fixtureDir, 'plugin.json');
-  if (!fs.existsSync(path.join(sourceDir, 'plugin.json'))) {
-    throw new Error(`Docs capture fixture is missing its plugin source: ${sourceDir}`);
-  }
   fs.cpSync(sourceDir, fixtureDir, { recursive: true });
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   // Store packages only become enabled after installation. The copied fixture
@@ -173,7 +178,10 @@ async function startIsolatedApp(profileName, guideId = null) {
       LTTH_NO_BROWSER: 'true',
       DISABLE_SWAGGER: 'true',
       LTTH_BIND_ADDRESS: '127.0.0.1',
-      ...(docsCapturePluginDir ? { LTTH_DOCS_CAPTURE_PLUGIN_DIR: docsCapturePluginDir } : {})
+      ...(docsCapturePluginDir ? {
+        LTTH_DOCS_CAPTURE_PLUGIN_DIR: docsCapturePluginDir,
+        NODE_PATH: [path.join(REPO_ROOT, 'app', 'node_modules'), process.env.NODE_PATH].filter(Boolean).join(path.delimiter)
+      } : {})
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -218,8 +226,12 @@ async function configurePage(page, locale) {
   await page.evaluateOnNewDocument((lang) => {
     localStorage.setItem('dashboard-theme', 'cid');
     localStorage.setItem('app_locale', lang);
-    document.documentElement.setAttribute('data-theme', 'cid');
-    document.documentElement.lang = lang;
+    const applyDocumentPreferences = () => {
+      document.documentElement.setAttribute('data-theme', 'cid');
+      document.documentElement.lang = lang;
+    };
+    if (document.documentElement) applyDocumentPreferences();
+    else document.addEventListener('DOMContentLoaded', applyDocumentPreferences, { once: true });
   }, locale);
 }
 
@@ -237,9 +249,19 @@ async function activateContainingTab(page, selector) {
     // of it. Include the target in the lookup so `#tab-profiles` activates
     // its real `[data-tab="profiles"]` control as well.
     for (let parent = target; parent; parent = parent.parentElement) {
-      const match = parent.id && parent.id.match(/^(?:tab|content)-(.+)$/);
-      if (!match) continue;
-      const tabName = match[1];
+      const workspacePanel = parent.getAttribute('data-workspace-panel');
+      if (workspacePanel) {
+        const trigger = document.querySelector(`[data-soundboard-view="${CSS.escape(workspacePanel)}"]`);
+        if (trigger && !trigger.disabled) {
+          trigger.click();
+          return { type: 'activate-tab', selector: `[data-soundboard-view="${workspacePanel}"]` };
+        }
+      }
+      const match = parent.id && parent.id.match(/^(?:tab|content)-(.+)$|^(.+)-tab$/);
+      const tabName = match
+        ? (match[1] || match[2])
+        : parent.id && document.querySelector(`[data-tab="${CSS.escape(parent.id)}"]`) ? parent.id : null;
+      if (!tabName) continue;
       const trigger = document.querySelector(`[data-tab="${CSS.escape(tabName)}"], #sidebar-tab-${CSS.escape(tabName)}`);
       if (trigger && !trigger.disabled) {
         trigger.click();
@@ -366,7 +388,83 @@ async function frameRelevantPluginUi(page, asset) {
   });
 }
 
-async function captureAsset(page, baseUrl, asset, locale) {
+function resolveCaptureTemplate(value, context) {
+  return String(value || '').replace(/{{([a-zA-Z0-9_]+)}}/g, (_, key) => {
+    if (!context[key]) throw new Error(`Capture context is missing ${key}`);
+    return String(context[key]);
+  });
+}
+
+async function setCaptureField(page, selector, value) {
+  await page.waitForSelector(selector, { visible: true, timeout: ASSET_TIMEOUT_MS });
+  await page.$eval(selector, (field, nextValue) => {
+    const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(field), 'value');
+    if (descriptor?.set) descriptor.set.call(field, nextValue);
+    else field.value = nextValue;
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    field.dispatchEvent(new Event('change', { bubbles: true }));
+  }, value);
+}
+
+async function executeCaptureOperation(page, operation, context) {
+  const selector = operation.selector ? resolveCaptureTemplate(operation.selector, context) : null;
+  if (operation.type === 'inspect') {
+    await page.waitForSelector(selector, { visible: true, timeout: ASSET_TIMEOUT_MS });
+  } else if (operation.type === 'click') {
+    await page.waitForSelector(selector, { visible: true, timeout: ASSET_TIMEOUT_MS });
+    await page.click(selector);
+  } else if (operation.type === 'fill') {
+    await setCaptureField(page, selector, operation.value);
+  } else if (operation.type === 'select') {
+    await page.waitForSelector(selector, { visible: true, timeout: ASSET_TIMEOUT_MS });
+    await page.select(selector, operation.value);
+  } else if (operation.type === 'submit') {
+    await page.waitForSelector(selector, { visible: true, timeout: ASSET_TIMEOUT_MS });
+    await page.$eval(selector, (form) => form.requestSubmit());
+  } else if (operation.type === 'wait') {
+    await new Promise((resolve) => setTimeout(resolve, Number(operation.milliseconds) || 0));
+  } else if (operation.type === 'wait-for-text') {
+    await page.waitForFunction(({ query, expected }) => document.querySelector(query)?.textContent?.includes(expected), { timeout: ASSET_TIMEOUT_MS }, { query: selector, expected: operation.includes });
+  } else if (operation.type === 'capture-attribute') {
+    await page.waitForSelector(selector, { visible: true, timeout: ASSET_TIMEOUT_MS });
+    let value = await page.$eval(selector, (element, attribute) => element.getAttribute(attribute), operation.attribute);
+    if (!value) throw new Error(`Capture attribute ${operation.attribute} is empty on ${selector}`);
+    if (operation.transform === 'strip-prefix:tc-') value = value.replace(/^tc-/, '');
+    context[operation.contextKey] = value;
+  } else {
+    throw new Error(`Unsupported capture operation: ${operation.type}`);
+  }
+  return { type: operation.type, ...(selector ? { selector } : {}), success: true };
+}
+
+async function executeCaptureWorkflow(page, asset, context) {
+  const receipts = [];
+  for (const operation of asset.operations || []) {
+    receipts.push(await executeCaptureOperation(page, operation, context));
+  }
+  return receipts;
+}
+
+async function verifyCapturePostconditions(page, asset, context) {
+  const receipts = [];
+  for (const condition of asset.postconditions || []) {
+    const selector = resolveCaptureTemplate(condition.selector, context);
+    if (condition.type === 'visible') {
+      await page.waitForSelector(selector, { visible: true, timeout: ASSET_TIMEOUT_MS });
+    } else if (condition.type === 'text') {
+      await page.waitForFunction(({ query, expected }) => document.querySelector(query)?.textContent?.includes(expected), { timeout: ASSET_TIMEOUT_MS }, { query: selector, expected: condition.includes });
+    } else if (condition.type === 'not-text') {
+      await page.waitForFunction(({ query, expected }) => !document.querySelector(query)?.textContent?.includes(expected), { timeout: ASSET_TIMEOUT_MS }, { query: selector, expected: condition.includes });
+    } else {
+      throw new Error(`Unsupported capture postcondition: ${condition.type}`);
+    }
+    receipts.push({ type: condition.type, selector, success: true });
+  }
+  return receipts;
+}
+
+async function captureAsset(page, baseUrl, asset, locale, context = {}) {
+  captureTrace(`${locale}/${asset.id}: start`);
   await page.setViewport(asset.viewport);
   // Overlay renderers can start live sockets, WebGL loops, or audio engines on
   // load. For documentation we preserve their shipped markup and styles while
@@ -379,8 +477,16 @@ async function captureAsset(page, baseUrl, asset, locale) {
   // empty state must not start that runtime or make a network request.
   const staticOnly = needsOpenShockDemo || asset.guideId === 'interactive-story';
   await page.setJavaScriptEnabled(!staticOnly);
-  const response = await page.goto(urlFor(baseUrl, asset.route, locale), { waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS });
-  if (!response || response.status() >= 400) throw new Error(`HTTP ${response ? response.status() : 'no response'} for ${asset.route}`);
+  const resolvedRoute = resolveCaptureTemplate(asset.route, context);
+  let response;
+  try {
+    response = await page.goto(urlFor(baseUrl, resolvedRoute, locale), { waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS });
+  } catch (error) {
+    error.message = `${error.message} (resolved route: ${resolvedRoute})`;
+    throw error;
+  }
+  if (!response || response.status() >= 400) throw new Error(`HTTP ${response ? response.status() : 'no response'} for ${resolvedRoute}`);
+  captureTrace(`${locale}/${asset.id}: document loaded (${resolvedRoute})`);
   await new Promise((resolve) => setTimeout(resolve, WAIT_AFTER_LOAD_MS));
   if (needsOpenShockDemo) {
     await page.setJavaScriptEnabled(true);
@@ -412,12 +518,29 @@ async function captureAsset(page, baseUrl, asset, locale) {
       container.appendChild(sample);
     }, locale);
   }
+  // A number of real plugin controls live in inactive tabs. Activate their
+  // owning tab before the declared workflow so an inspect-only step verifies
+  // the same visible state that is ultimately captured.
   const tabPreparation = await activateContainingTab(page, asset.selector);
+  captureTrace(`${locale}/${asset.id}: containing tab prepared`);
+  let operations;
+  let postconditions;
+  try {
+    operations = await executeCaptureWorkflow(page, asset, context);
+    postconditions = await verifyCapturePostconditions(page, asset, context);
+  } catch (error) {
+    error.message = `${error.message} (resolved route: ${resolvedRoute})`;
+    throw error;
+  }
+  captureTrace(`${locale}/${asset.id}: workflow verified`);
   await applySafeStepState(page, asset, locale);
+  captureTrace(`${locale}/${asset.id}: safe state applied`);
   await frameRelevantPluginUi(page, asset);
   const revealPreparation = await revealSafeDemoState(page, asset.selector);
+  captureTrace(`${locale}/${asset.id}: visible state prepared`);
   const preparation = [tabPreparation, revealPreparation].filter(Boolean);
   const focus = await applyCaptureFocus(page, asset.selector, asset.focusText[locale]);
+  captureTrace(`${locale}/${asset.id}: focused ${asset.selector}`);
   await new Promise((resolve) => setTimeout(resolve, 100));
   const state = await page.evaluate((lang) => ({
     lang: document.documentElement.lang || document.documentElement.getAttribute('data-lang') || null,
@@ -430,6 +553,7 @@ async function captureAsset(page, baseUrl, asset, locale) {
   const target = outputPath(asset, locale);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   await page.screenshot({ path: target, type: 'png' });
+  captureTrace(`${locale}/${asset.id}: screenshot written`);
   const bytes = fs.readFileSync(target);
   return {
     locale,
@@ -438,8 +562,11 @@ async function captureAsset(page, baseUrl, asset, locale) {
     stepId: asset.stepId,
     path: path.relative(REPO_ROOT, target).replace(/\\/g, '/'),
     route: asset.route,
+    resolvedRoute,
     selector: asset.selector,
     action: asset.action,
+    operations,
+    postconditions,
     fixture: asset.fixture,
     focus,
     preparation,
@@ -455,11 +582,16 @@ async function captureDocs(spec, assets, locales) {
   const browser = await puppeteer.launch({ headless: 'new', ...(executablePath ? { executablePath } : {}), args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const outputs = [];
   const failures = [];
+  const concurrency = Math.max(1, Number(process.env.SCREENSHOT_CAPTURE_CONCURRENCY || 1));
   try {
     const createCapturePage = async (locale) => {
       const page = await browser.newPage();
       await attachPluginAssetRewrite(page);
       await configurePage(page, locale);
+      if (process.env.SCREENSHOT_TRACE === 'true') {
+        page.on('console', (message) => console.log(`[capture console] ${locale}: ${message.type()}: ${message.text()}`));
+        page.on('pageerror', (error) => console.log(`[capture pageerror] ${locale}: ${error.message}`));
+      }
       return page;
     };
     const byGuide = new Map();
@@ -468,33 +600,41 @@ async function captureDocs(spec, assets, locales) {
       group.push(asset);
       byGuide.set(asset.guideId, group);
     }
-    for (const locale of locales) {
-      for (const [guideId, guideAssets] of byGuide) {
-        let app;
-        let page;
-        try {
-          console.log(`Capturing ${locale}/${guideId} (${guideAssets.length} steps)`);
-          app = await startIsolatedApp(`${guideId}-${locale}`, guideId);
-          page = await createCapturePage(locale);
-          for (const asset of guideAssets) {
-            try {
-              outputs.push(await withTimeout(captureAsset(page, app.baseUrl, asset, locale), `${locale}/${asset.id}`));
-            } catch (error) {
-              failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: error.message });
-              if (error.message.includes('Timed out after')) {
-                await page.close().catch(() => {});
-                page = await createCapturePage(locale);
-              }
+    const jobs = locales.flatMap((locale) => [...byGuide.entries()].map(([guideId, guideAssets]) => ({ locale, guideId, guideAssets })));
+    let nextJob = 0;
+    const captureJob = async ({ locale, guideId, guideAssets }) => {
+      let app;
+      let page;
+      try {
+        console.log(`Capturing ${locale}/${guideId} (${guideAssets.length} steps)`);
+        app = await startIsolatedApp(`${guideId}-${locale}`, guideId);
+        page = await createCapturePage(locale);
+        const context = {};
+        for (const asset of guideAssets) {
+          try {
+            outputs.push(await withTimeout(captureAsset(page, app.baseUrl, asset, locale, context), `${locale}/${asset.id}`));
+          } catch (error) {
+            failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: error.message });
+            if (error.message.includes('Timed out after')) {
+              await page.close().catch(() => {});
+              page = await createCapturePage(locale);
             }
           }
-        } catch (error) {
-          for (const asset of guideAssets) failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: `Isolated guide process failed: ${error.message}` });
-        } finally {
-          if (page) await page.close();
-          if (app) await stopIsolatedApp(app);
         }
+      } catch (error) {
+        for (const asset of guideAssets) failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: `Isolated guide process failed: ${error.message}` });
+      } finally {
+        if (page) await page.close();
+        if (app) await stopIsolatedApp(app);
       }
-    }
+    };
+    const workers = Array.from({ length: Math.min(concurrency, jobs.length) }, async () => {
+      while (nextJob < jobs.length) {
+        const job = jobs[nextJob++];
+        await captureJob(job);
+      }
+    });
+    await Promise.all(workers);
   } finally {
     await browser.close();
   }
@@ -530,11 +670,17 @@ async function captureProduct(spec, assets, locales) {
 function compatibleDocsOutput(output, expectedById) {
   const asset = expectedById.get(output.id);
   if (!asset || !DOCS_LOCALES.includes(output.locale)) return false;
+  const operationCount = (asset.operations || []).length;
+  const postconditionCount = (asset.postconditions || []).length;
   return output.guideId === asset.guideId
     && output.stepId === asset.stepId
     && output.route === asset.route
     && output.selector === asset.selector
     && JSON.stringify(output.action) === JSON.stringify(asset.action)
+    && (output.operations || []).length === operationCount
+    && (output.postconditions || []).length === postconditionCount
+    && (operationCount === 0 || (output.operations || []).every((receipt) => receipt.success === true))
+    && (postconditionCount === 0 || (output.postconditions || []).every((receipt) => receipt.success === true))
     && output.focus?.label === asset.focusText[output.locale]
     && output.state?.lang === output.locale
     && output.state?.i18n === output.locale
@@ -560,6 +706,9 @@ async function capture() {
     .split(',').map((value) => value.trim().toLowerCase()).filter((value) => (COLLECTION === 'docs' ? DOCS_LOCALES : PRODUCT_LOCALES).includes(value));
   if (!locales.length) throw new Error('SCREENSHOT_LANGS must contain supported locales');
   let assets = [...fullSpec.assets];
+  const requestedGuides = (process.env.SCREENSHOT_GUIDES || process.env.SCREENSHOT_GUIDE || '')
+    .split(',').map((value) => value.trim()).filter(Boolean);
+  if (requestedGuides.length) assets = assets.filter((asset) => requestedGuides.includes(asset.guideId));
   const requestedIds = (process.env.SCREENSHOT_IDS || '').split(',').map((value) => value.trim()).filter(Boolean);
   if (requestedIds.length) assets = assets.filter((asset) => requestedIds.includes(asset.id));
   const limit = Number(process.env.SCREENSHOT_LIMIT || 0);
@@ -567,7 +716,7 @@ async function capture() {
   if (!assets.length) throw new Error('No capture assets selected');
 
   const result = COLLECTION === 'docs' ? await captureDocs(fullSpec, assets, locales) : await captureProduct(fullSpec, assets, locales);
-  const partialDocsCapture = COLLECTION === 'docs' && (requestedIds.length > 0 || limit > 0 || locales.length !== DOCS_LOCALES.length);
+  const partialDocsCapture = COLLECTION === 'docs' && (requestedGuides.length > 0 || requestedIds.length > 0 || limit > 0 || locales.length !== DOCS_LOCALES.length);
   const outputs = partialDocsCapture ? mergePartialDocsOutputs(fullSpec, result.outputs) : result.outputs;
   const fullHash = specHash(fullSpec);
   const manifest = {

@@ -21,6 +21,8 @@ function buildDocsSpec(repoRoot) {
       route: step.capture.route,
       selector: step.capture.assertVisible,
       action: step.capture.action,
+      operations: step.capture.operations || [],
+      postconditions: step.capture.postconditions || [],
       focusText: step.capture.focusText,
       expected: step.capture.expected,
       fixture: guide.capture.fixture,

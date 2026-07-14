@@ -7,31 +7,31 @@
     "devStatus": "early-version",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/advanced-timer/timer-card.png",
-      "en": "/screenshots/docs/plugins/advanced-timer/timer-card.png",
-      "es": "/screenshots/es/docs/plugins/advanced-timer/timer-card.png",
-      "fr": "/screenshots/fr/docs/plugins/advanced-timer/timer-card.png"
+      "de": "/screenshots/de/docs/plugins/advanced-timer/open-timer-center.png",
+      "en": "/screenshots/docs/plugins/advanced-timer/open-timer-center.png",
+      "es": "/screenshots/es/docs/plugins/advanced-timer/open-timer-center.png",
+      "fr": "/screenshots/fr/docs/plugins/advanced-timer/open-timer-center.png"
     },
     "translations": {
       "de": {
         "title": "Advanced Timer",
-        "summary": "Advanced Timer richtet Timerdauer, Startsignal und Ablaufregeln ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "der Countdown startet mit deinen Demo-Werten"
+        "summary": "Lege einen isolierten Countdown an, pruefe Start, Pause und manuelle Zeitkorrektur und uebernimm erst die verifizierte Timer-URL in eine OBS-Testszene.",
+        "firstResult": "Ein lokaler 120-Sekunden-Countdown laeuft, laesst sich pausieren und stellt nach dem Reset wieder 02:00 dar."
       },
       "en": {
         "title": "Advanced Timer",
-        "summary": "Advanced Timer configures timer duration, start signal, and flow rules with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the countdown starts with your demo values"
+        "summary": "Create an isolated countdown, verify start, pause, and a manual time adjustment, then use the verified timer URL in an OBS test scene only.",
+        "firstResult": "A local 120-second countdown runs, pauses, and returns to 02:00 after reset."
       },
       "es": {
         "title": "Advanced Timer",
-        "summary": "Advanced Timer configura duración, señal de inicio y reglas de flujo del temporizador mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la cuenta atrás inicia con los valores de demostración"
+        "summary": "Crea una cuenta atras aislada, comprueba inicio, pausa y un ajuste manual, y usa la URL verificada solo en una escena de prueba de OBS.",
+        "firstResult": "Una cuenta atras local de 120 segundos se ejecuta, se pausa y vuelve a 02:00 despues de restablecerse."
       },
       "fr": {
         "title": "Advanced Timer",
-        "summary": "Advanced Timer configure durée, signal de départ et règles du minuteur avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "le compte à rebours démarre avec vos valeurs de démonstration"
+        "summary": "Creez un compte a rebours isole, verifiez le demarrage, la pause et un ajustement manuel, puis utilisez uniquement l URL verifiee dans une scene de test OBS.",
+        "firstResult": "Un compte a rebours local de 120 secondes demarre, se met en pause et revient a 02:00 apres reinitialisation."
       }
     }
   },
@@ -43,31 +43,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/animazingpal/avatar-card.png",
-      "en": "/screenshots/docs/plugins/animazingpal/avatar-card.png",
-      "es": "/screenshots/es/docs/plugins/animazingpal/avatar-card.png",
-      "fr": "/screenshots/fr/docs/plugins/animazingpal/avatar-card.png"
+      "de": "/screenshots/de/docs/plugins/animazingpal/avatar-status.png",
+      "en": "/screenshots/docs/plugins/animazingpal/avatar-status.png",
+      "es": "/screenshots/es/docs/plugins/animazingpal/avatar-status.png",
+      "fr": "/screenshots/fr/docs/plugins/animazingpal/avatar-status.png"
     },
     "translations": {
       "de": {
         "title": "AnimazingPal",
-        "summary": "AnimazingPal richtet Avatar- und Ereigniszuordnung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Zuordnung wird gespeichert, ohne einen externen Dienst zu kontaktieren"
+        "summary": "Pruefe Avatar- und Ereignisoptionen lokal, ohne einen Anbieter zu verbinden.",
+        "firstResult": "Die lokale Statusanzeige und die Mapping-Felder sind sichtbar."
       },
       "en": {
         "title": "AnimazingPal",
-        "summary": "AnimazingPal configures avatar and event mapping with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the mapping is saved without contacting an external service"
+        "summary": "Inspect avatar and event options locally without connecting a provider.",
+        "firstResult": "The local status and mapping fields are visible."
       },
       "es": {
         "title": "AnimazingPal",
-        "summary": "AnimazingPal configura asignación de avatar y eventos mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la asignación se guarda sin contactar un servicio externo"
+        "summary": "Inspecciona las opciones de avatar y eventos localmente sin conectar un proveedor.",
+        "firstResult": "El estado local y los campos de mapeo son visibles."
       },
       "fr": {
         "title": "AnimazingPal",
-        "summary": "AnimazingPal configure mappage d’avatar et d’événements avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "le mappage est enregistré sans contacter de service externe"
+        "summary": "Inspectez localement les options d avatar et d evenements sans connecter de fournisseur.",
+        "firstResult": "L etat local et les champs de mappage sont visibles."
       }
     }
   },
@@ -79,31 +79,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/api-bridge/bridge-info.png",
-      "en": "/screenshots/docs/plugins/api-bridge/bridge-info.png",
-      "es": "/screenshots/es/docs/plugins/api-bridge/bridge-info.png",
-      "fr": "/screenshots/fr/docs/plugins/api-bridge/bridge-info.png"
+      "de": "/screenshots/de/docs/plugins/api-bridge/bridge-overview.png",
+      "en": "/screenshots/docs/plugins/api-bridge/bridge-overview.png",
+      "es": "/screenshots/es/docs/plugins/api-bridge/bridge-overview.png",
+      "fr": "/screenshots/fr/docs/plugins/api-bridge/bridge-overview.png"
     },
     "translations": {
       "de": {
-        "title": "API Bridge",
-        "summary": "API Bridge richtet lokale Aktionen, Ereignisse und die API-Bridge ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Antwort beschreibt die verfügbare Bridge, ohne eine Aktion auszuführen"
+        "title": "API Bridge lesen",
+        "summary": "Prueft den lokalen GET-Vertrag der Bridge, ohne eine Aktion auszufuehren.",
+        "firstResult": "Info, Aktionen und Ereignisendpunkt sind als lesbare Referenz sichtbar."
       },
       "en": {
-        "title": "API Bridge",
-        "summary": "API Bridge configures local actions, events, and the API bridge with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the response describes the available bridge without executing an action"
+        "title": "Read API Bridge",
+        "summary": "Checks the bridge local GET contract without executing an action.",
+        "firstResult": "Info, actions, and event endpoints are visible as a read-only reference."
       },
       "es": {
-        "title": "API Bridge",
-        "summary": "API Bridge configura acciones locales, eventos y la API Bridge mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la respuesta describe el puente disponible sin ejecutar una acción"
+        "title": "Leer API Bridge",
+        "summary": "Revisa el contrato GET local de Bridge sin ejecutar acciones.",
+        "firstResult": "Info, acciones y endpoint de eventos son visibles como referencia."
       },
       "fr": {
-        "title": "API Bridge",
-        "summary": "API Bridge configure actions locales, événements et l’API Bridge avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la réponse décrit le bridge disponible sans exécuter d’action"
+        "title": "Lire API Bridge",
+        "summary": "Verifie le contrat GET local de Bridge sans executer d action.",
+        "firstResult": "Les endpoints info, actions et events sont visibles comme reference."
       }
     }
   },
@@ -115,31 +115,31 @@
     "devStatus": "early-version",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/chatango/chatango-card.png",
-      "en": "/screenshots/docs/plugins/chatango/chatango-card.png",
-      "es": "/screenshots/es/docs/plugins/chatango/chatango-card.png",
-      "fr": "/screenshots/fr/docs/plugins/chatango/chatango-card.png"
+      "de": "/screenshots/de/docs/plugins/chatango/chatango-form.png",
+      "en": "/screenshots/docs/plugins/chatango/chatango-form.png",
+      "es": "/screenshots/es/docs/plugins/chatango/chatango-form.png",
+      "fr": "/screenshots/fr/docs/plugins/chatango/chatango-form.png"
     },
     "translations": {
       "de": {
-        "title": "Chatango Integration",
-        "summary": "Chatango Integration richtet Raumname, Widget-Position und Chat-Thema ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "das Widget zeigt die gewählte Position ohne einen externen Chat zu öffnen"
+        "title": "Chatango",
+        "summary": "Pruefe Raum- und Widgetoptionen mit Platzhalterwerten ohne einen Chat zu oeffnen.",
+        "firstResult": "Das lokale Konfigurationsformular ist sichtbar."
       },
       "en": {
-        "title": "Chatango Integration",
-        "summary": "Chatango Integration configures room name, widget position, and chat theme with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the widget shows the chosen position without opening an external chat"
+        "title": "Chatango",
+        "summary": "Inspect room and widget options with placeholders without opening a chat.",
+        "firstResult": "The local configuration form is visible."
       },
       "es": {
-        "title": "Chatango Integration",
-        "summary": "Chatango Integration configura nombre de sala, posición del widget y tema del chat mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "el widget muestra la posición elegida sin abrir un chat externo"
+        "title": "Chatango",
+        "summary": "Inspecciona opciones de sala y widget con marcadores sin abrir un chat.",
+        "firstResult": "El formulario local de configuracion es visible."
       },
       "fr": {
-        "title": "Chatango Integration",
-        "summary": "Chatango Integration configure nom de salon, position du widget et thème du chat avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "le widget montre la position choisie sans ouvrir de chat externe"
+        "title": "Chatango",
+        "summary": "Inspectez les options de salon et de widget avec des valeurs fictives sans ouvrir de chat.",
+        "firstResult": "Le formulaire de configuration local est visible."
       }
     }
   },
@@ -151,31 +151,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/clarityhud/hud-card.png",
-      "en": "/screenshots/docs/plugins/clarityhud/hud-card.png",
-      "es": "/screenshots/es/docs/plugins/clarityhud/hud-card.png",
-      "fr": "/screenshots/fr/docs/plugins/clarityhud/hud-card.png"
+      "de": "/screenshots/de/docs/plugins/clarityhud/hud-version.png",
+      "en": "/screenshots/docs/plugins/clarityhud/hud-version.png",
+      "es": "/screenshots/es/docs/plugins/clarityhud/hud-version.png",
+      "fr": "/screenshots/fr/docs/plugins/clarityhud/hud-version.png"
     },
     "translations": {
       "de": {
-        "title": "ClarityHUD",
-        "summary": "ClarityHUD richtet HUD-Module, Chatbereich und Stream-Overlay ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die gewählten HUD-Bereiche sind in der Vorschau sichtbar"
+        "title": "ClarityHUD testen",
+        "summary": "Prueft Chat- und Full-HUD-Vorschau direkt in der Plugin-Oberflaeche.",
+        "firstResult": "Die eingebettete Full-HUD-Vorschau ist sichtbar."
       },
       "en": {
-        "title": "ClarityHUD",
-        "summary": "ClarityHUD configures HUD modules, chat area, and stream overlay with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the selected HUD sections are visible in preview"
+        "title": "Test ClarityHUD",
+        "summary": "Checks the chat and full HUD previews directly in the plugin interface.",
+        "firstResult": "The embedded full HUD preview is visible."
       },
       "es": {
-        "title": "ClarityHUD",
-        "summary": "ClarityHUD configura módulos HUD, área de chat y overlay de stream mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "las áreas HUD seleccionadas son visibles en la vista previa"
+        "title": "Probar ClarityHUD",
+        "summary": "Revisa las vistas previas de chat y HUD completo en la interfaz del plugin.",
+        "firstResult": "La vista previa integrada del HUD completo es visible."
       },
       "fr": {
-        "title": "ClarityHUD",
-        "summary": "ClarityHUD configure modules HUD, zone de chat et overlay de stream avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "les zones HUD sélectionnées sont visibles dans l’aperçu"
+        "title": "Tester ClarityHUD",
+        "summary": "Verifie les apercus Chat et HUD complet dans l interface du plugin.",
+        "firstResult": "L apercu HUD complet integre est visible."
       }
     }
   },
@@ -187,31 +187,31 @@
     "devStatus": "early-version",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/coinbattle/coinbattle-card.png",
-      "en": "/screenshots/docs/plugins/coinbattle/coinbattle-card.png",
-      "es": "/screenshots/es/docs/plugins/coinbattle/coinbattle-card.png",
-      "fr": "/screenshots/fr/docs/plugins/coinbattle/coinbattle-card.png"
+      "de": "/screenshots/de/docs/plugins/coinbattle/open-control.png",
+      "en": "/screenshots/docs/plugins/coinbattle/open-control.png",
+      "es": "/screenshots/es/docs/plugins/coinbattle/open-control.png",
+      "fr": "/screenshots/fr/docs/plugins/coinbattle/open-control.png"
     },
     "translations": {
       "de": {
-        "title": "CoinBattle",
-        "summary": "CoinBattle richtet Münzwerte, Kampfmodus und Match-Start ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Spielansicht zeigt ein gestartetes Demo-Match ohne LIVE-Ereignis"
+        "title": "CoinBattle simulieren",
+        "summary": "Richtet einen lokalen Matchtest ein und beendet ihn wieder in der Steuerzentrale.",
+        "firstResult": "Die Simulation zeigt eine lokale Rangliste."
       },
       "en": {
-        "title": "CoinBattle",
-        "summary": "CoinBattle configures coin values, battle mode, and match start with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the game view shows a started demo match without a LIVE event"
+        "title": "Simulate CoinBattle",
+        "summary": "Sets up and closes a local match test in the control centre.",
+        "firstResult": "The simulation shows a local leaderboard."
       },
       "es": {
-        "title": "CoinBattle",
-        "summary": "CoinBattle configura valores de monedas, modo de batalla e inicio de partida mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la vista de juego muestra una partida demo iniciada sin evento LIVE"
+        "title": "Simular CoinBattle",
+        "summary": "Configura y cierra una partida local de prueba en el centro de control.",
+        "firstResult": "La simulacion muestra una clasificacion local."
       },
       "fr": {
-        "title": "CoinBattle",
-        "summary": "CoinBattle configure valeurs des pièces, mode de combat et démarrage du match avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la vue de jeu montre un match démo démarré sans événement LIVE"
+        "title": "Simuler CoinBattle",
+        "summary": "Configure puis ferme un match de test local dans le centre de controle.",
+        "firstResult": "La simulation affiche un classement local."
       }
     }
   },
@@ -223,31 +223,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/config-import/backup-card.png",
-      "en": "/screenshots/docs/plugins/config-import/backup-card.png",
-      "es": "/screenshots/es/docs/plugins/config-import/backup-card.png",
-      "fr": "/screenshots/fr/docs/plugins/config-import/backup-card.png"
+      "de": "/screenshots/de/docs/plugins/config-import/backup-overview.png",
+      "en": "/screenshots/docs/plugins/config-import/backup-overview.png",
+      "es": "/screenshots/es/docs/plugins/config-import/backup-overview.png",
+      "fr": "/screenshots/fr/docs/plugins/config-import/backup-overview.png"
     },
     "translations": {
       "de": {
-        "title": "Config Backup & Restore",
-        "summary": "Config Backup & Restore richtet Backup-Datei, Export und Wiederherstellungsprüfung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "eine Testdatei wird erzeugt, ohne dein Produktivprofil zu überschreiben"
+        "title": "Config Import absichern",
+        "summary": "Dokumentiert Auswahl und Wiederherstellungsbereiche, ohne ein Backup zu erzeugen oder einzuspielen.",
+        "firstResult": "Die Export- und Importbereiche sind sichtbar, ohne Dateien anzufassen."
       },
       "en": {
-        "title": "Config Backup & Restore",
-        "summary": "Config Backup & Restore configures backup file, export, and restore check with a safe local check instead of a LIVE trigger.",
-        "firstResult": "a test file is created without overwriting your production profile"
+        "title": "Safeguard Config Import",
+        "summary": "Documents selection and restore areas without creating or importing a backup.",
+        "firstResult": "Export and import areas are visible without touching files."
       },
       "es": {
-        "title": "Config Backup & Restore",
-        "summary": "Config Backup & Restore configura archivo de copia, exportación y comprobación de restauración mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "se crea un archivo de prueba sin sobrescribir tu perfil de producción"
+        "title": "Proteger Config Import",
+        "summary": "Documenta seleccion y restauracion sin crear ni importar respaldo.",
+        "firstResult": "Las areas de exportacion e importacion son visibles sin tocar archivos."
       },
       "fr": {
-        "title": "Config Backup & Restore",
-        "summary": "Config Backup & Restore configure fichier de sauvegarde, export et contrôle de restauration avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "un fichier de test est créé sans écraser votre profil de production"
+        "title": "Securiser Config Import",
+        "summary": "Documente les zones de selection et restauration sans creer ni importer de sauvegarde.",
+        "firstResult": "Les zones export et import sont visibles sans toucher aux fichiers."
       }
     }
   },
@@ -259,31 +259,31 @@
     "devStatus": "available",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/data-source/source-card.png",
-      "en": "/screenshots/docs/plugins/data-source/source-card.png",
-      "es": "/screenshots/es/docs/plugins/data-source/source-card.png",
-      "fr": "/screenshots/fr/docs/plugins/data-source/source-card.png"
+      "de": "/screenshots/de/docs/plugins/data-source/source-status.png",
+      "en": "/screenshots/docs/plugins/data-source/source-status.png",
+      "es": "/screenshots/es/docs/plugins/data-source/source-status.png",
+      "fr": "/screenshots/fr/docs/plugins/data-source/source-status.png"
     },
     "translations": {
       "de": {
-        "title": "Data Source Manager",
-        "summary": "Data Source Manager richtet Datenquelle, Feldzuordnung und Aktualisierungsintervall ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Vorschau zeigt die Testfelder, ohne einen Fremdserver anzufragen"
+        "title": "Datenquelle",
+        "summary": "Pruefe die sichtbaren Datenquellen ohne eine Verbindung umzuschalten oder Einstellungen zu speichern.",
+        "firstResult": "Quellenstatus und sichere Hinweise sind sichtbar."
       },
       "en": {
-        "title": "Data Source Manager",
-        "summary": "Data Source Manager configures data source, field mapping, and refresh interval with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the preview shows test fields without requesting an external server"
+        "title": "Data Source",
+        "summary": "Inspect visible data sources without switching a connection or saving settings.",
+        "firstResult": "Source status and safe guidance are visible."
       },
       "es": {
-        "title": "Data Source Manager",
-        "summary": "Data Source Manager configura fuente de datos, asignación de campos e intervalo de actualización mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la vista previa muestra campos de prueba sin consultar un servidor externo"
+        "title": "Data Source",
+        "summary": "Inspecciona fuentes visibles sin cambiar conexion ni guardar ajustes.",
+        "firstResult": "Estado de fuente e indicaciones seguras son visibles."
       },
       "fr": {
-        "title": "Data Source Manager",
-        "summary": "Data Source Manager configure source de données, mappage des champs et intervalle de mise à jour avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "l’aperçu affiche les champs de test sans interroger de serveur externe"
+        "title": "Data Source",
+        "summary": "Inspectez les sources visibles sans changer de connexion ni enregistrer de reglages.",
+        "firstResult": "Statut de source et indications sures sont visibles."
       }
     }
   },
@@ -295,31 +295,31 @@
     "devStatus": "development-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/gift-catalog/catalog-card.png",
-      "en": "/screenshots/docs/plugins/gift-catalog/catalog-card.png",
-      "es": "/screenshots/es/docs/plugins/gift-catalog/catalog-card.png",
-      "fr": "/screenshots/fr/docs/plugins/gift-catalog/catalog-card.png"
+      "de": "/screenshots/de/docs/plugins/gift-catalog/catalog-status.png",
+      "en": "/screenshots/docs/plugins/gift-catalog/catalog-status.png",
+      "es": "/screenshots/es/docs/plugins/gift-catalog/catalog-status.png",
+      "fr": "/screenshots/fr/docs/plugins/gift-catalog/catalog-status.png"
     },
     "translations": {
       "de": {
-        "title": "Developer Guides",
-        "summary": "Developer Guides richtet Geschenkkatalog, Coinschwelle und Beispielzuordnung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die gefilterte Geschenkauswahl wird angezeigt, ohne LIVE-Daten zu laden"
+        "title": "Gift Catalog vorbereiten",
+        "summary": "Prueft Sprach- und Katalogfelder ohne eine externe Katalogabfrage oder Speicherung.",
+        "firstResult": "Status und Sprachfelder sind als lokale Eingabeflaeche sichtbar."
       },
       "en": {
-        "title": "Developer Guides",
-        "summary": "Developer Guides configures gift catalog, coin threshold, and sample mapping with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the filtered gift selection is shown without loading LIVE data"
+        "title": "Prepare Gift Catalog",
+        "summary": "Inspects language and catalog fields without external catalog lookup or saving.",
+        "firstResult": "Status and language fields are visible as a local input surface."
       },
       "es": {
-        "title": "Developer Guides",
-        "summary": "Developer Guides configura catálogo de regalos, umbral de monedas y asignación de ejemplo mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la selección filtrada se muestra sin cargar datos LIVE"
+        "title": "Preparar Gift Catalog",
+        "summary": "Revisa idioma y catalogo sin consulta externa ni guardado.",
+        "firstResult": "Estado y campos de idioma son visibles como interfaz local."
       },
       "fr": {
-        "title": "Developer Guides",
-        "summary": "Developer Guides configure catalogue de cadeaux, seuil de pièces et mappage d’exemple avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la sélection filtrée est affichée sans charger de données LIVE"
+        "title": "Preparer Gift Catalog",
+        "summary": "Inspecte les champs langue et catalogue sans recherche externe ni enregistrement.",
+        "firstResult": "Le statut et les champs de langue sont visibles comme surface locale."
       }
     }
   },
@@ -331,31 +331,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/emoji-rain/emoji-card.png",
-      "en": "/screenshots/docs/plugins/emoji-rain/emoji-card.png",
-      "es": "/screenshots/es/docs/plugins/emoji-rain/emoji-card.png",
-      "fr": "/screenshots/fr/docs/plugins/emoji-rain/emoji-card.png"
+      "de": "/screenshots/de/docs/plugins/emoji-rain/inspect-emoji-status.png",
+      "en": "/screenshots/docs/plugins/emoji-rain/inspect-emoji-status.png",
+      "es": "/screenshots/es/docs/plugins/emoji-rain/inspect-emoji-status.png",
+      "fr": "/screenshots/fr/docs/plugins/emoji-rain/inspect-emoji-status.png"
     },
     "translations": {
       "de": {
-        "title": "EmojiRain",
-        "summary": "EmojiRain richtet Emoji-Preset, Spawn-Regeln und Geschenkzuordnung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "Emojis erscheinen in der Vorschau, ohne TikTok LIVE zu verbinden"
+        "title": "Emoji Rain lokal pruefen",
+        "summary": "Setzt eine kleine Emoji-Auswahl im Testprofil und prueft die lokale Vorschau.",
+        "firstResult": "Die Vorschauflaeche bleibt ohne LIVE-Verbindung sichtbar."
       },
       "en": {
-        "title": "EmojiRain",
-        "summary": "EmojiRain configures emoji preset, spawn rules, and gift mapping with a safe local check instead of a LIVE trigger.",
-        "firstResult": "emojis appear in preview without connecting TikTok LIVE"
+        "title": "Check Emoji Rain locally",
+        "summary": "Sets a small emoji selection in the test profile and checks the local preview.",
+        "firstResult": "The preview area remains visible without a LIVE connection."
       },
       "es": {
-        "title": "EmojiRain",
-        "summary": "EmojiRain configura preajuste de emoji, reglas de aparición y asignación de regalos mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "los emojis aparecen en la vista previa sin conectar TikTok LIVE"
+        "title": "Revisar Emoji Rain de forma local",
+        "summary": "Define una pequena seleccion de emoji en el perfil de prueba y revisa la vista previa local.",
+        "firstResult": "El area de vista previa sigue visible sin conexion LIVE."
       },
       "fr": {
-        "title": "EmojiRain",
-        "summary": "EmojiRain configure préréglage emoji, règles d’apparition et mappage des cadeaux avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "les emojis apparaissent dans l’aperçu sans connecter TikTok LIVE"
+        "title": "Verifier Emoji Rain localement",
+        "summary": "Definit une petite selection d emoji dans le profil de test et verifie l apercu local.",
+        "firstResult": "La zone d apercu reste visible sans connexion LIVE."
       }
     }
   },
@@ -367,31 +367,31 @@
     "devStatus": "stable",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/fireworks/fireworks-card.png",
-      "en": "/screenshots/docs/plugins/fireworks/fireworks-card.png",
-      "es": "/screenshots/es/docs/plugins/fireworks/fireworks-card.png",
-      "fr": "/screenshots/fr/docs/plugins/fireworks/fireworks-card.png"
+      "de": "/screenshots/de/docs/plugins/fireworks/inspect-fireworks-settings.png",
+      "en": "/screenshots/docs/plugins/fireworks/inspect-fireworks-settings.png",
+      "es": "/screenshots/es/docs/plugins/fireworks/inspect-fireworks-settings.png",
+      "fr": "/screenshots/fr/docs/plugins/fireworks/inspect-fireworks-settings.png"
     },
     "translations": {
       "de": {
-        "title": "Fireworks Superplugin (Stable)",
-        "summary": "Fireworks Superplugin (Stable) richtet Effektprofil, Auslöser und Audio-Lautstärke ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "das Feuerwerk erscheint in der lokalen Overlay-Vorschau"
+        "title": "Fireworks-Vorschau testen",
+        "summary": "Prueft Lautstaerke und den integrierten Feuerwerk-Test ohne Stream-Ausgabe.",
+        "firstResult": "Der lokale Test kann aus den Einstellungen gestartet werden."
       },
       "en": {
-        "title": "Fireworks Superplugin (Stable)",
-        "summary": "Fireworks Superplugin (Stable) configures effect profile, trigger, and audio volume with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the fireworks appear in the local overlay preview"
+        "title": "Test the Fireworks preview",
+        "summary": "Checks volume and the built-in fireworks test without stream output.",
+        "firstResult": "The local test can be started from settings."
       },
       "es": {
-        "title": "Fireworks Superplugin (Stable)",
-        "summary": "Fireworks Superplugin (Stable) configura perfil de efecto, disparador y volumen de audio mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "los fuegos artificiales aparecen en la vista previa local"
+        "title": "Probar la vista previa de Fireworks",
+        "summary": "Revisa el volumen y la prueba integrada de fuegos sin salida de stream.",
+        "firstResult": "La prueba local se puede iniciar desde los ajustes."
       },
       "fr": {
-        "title": "Fireworks Superplugin (Stable)",
-        "summary": "Fireworks Superplugin (Stable) configure profil d’effet, déclencheur et volume audio avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "les feux d’artifice apparaissent dans l’aperçu local"
+        "title": "Tester l apercu Fireworks",
+        "summary": "Verifie le volume et le test de feux integre sans sortie de stream.",
+        "firstResult": "Le test local peut etre lance depuis les reglages."
       }
     }
   },
@@ -403,31 +403,31 @@
     "devStatus": "development-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/gcce/command-card.png",
-      "en": "/screenshots/docs/plugins/gcce/command-card.png",
-      "es": "/screenshots/es/docs/plugins/gcce/command-card.png",
-      "fr": "/screenshots/fr/docs/plugins/gcce/command-card.png"
+      "de": "/screenshots/de/docs/plugins/gcce/dashboard.png",
+      "en": "/screenshots/docs/plugins/gcce/dashboard.png",
+      "es": "/screenshots/es/docs/plugins/gcce/dashboard.png",
+      "fr": "/screenshots/fr/docs/plugins/gcce/dashboard.png"
     },
     "translations": {
       "de": {
-        "title": "Global Chat Command Engine",
-        "summary": "Global Chat Command Engine richtet Befehl, Berechtigung und Chat-Antwort ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "der Befehl wird validiert, ohne eine LIVE-Chatnachricht zu senden"
+        "title": "GCCE kontrolliert pruefen",
+        "summary": "Zeigt Dashboard, Commands, Monitoring und HUD ohne Chat-Gamepad-Eingaben.",
+        "firstResult": "Die getrennten GCCE-Bereiche sind sichtbar; keine Steueraktion wird gesendet."
       },
       "en": {
-        "title": "Global Chat Command Engine",
-        "summary": "Global Chat Command Engine configures command, permission, and chat response with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the command is validated without sending a LIVE chat message"
+        "title": "Inspect GCCE safely",
+        "summary": "Shows Dashboard, Commands, Monitoring, and HUD without chat-gamepad input.",
+        "firstResult": "The separate GCCE areas are visible; no control action is sent."
       },
       "es": {
-        "title": "Global Chat Command Engine",
-        "summary": "Global Chat Command Engine configura comando, permiso y respuesta de chat mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "el comando se valida sin enviar un mensaje de chat LIVE"
+        "title": "Inspeccionar GCCE con seguridad",
+        "summary": "Muestra panel, comandos, monitorizacion y HUD sin entrada de gamepad por chat.",
+        "firstResult": "Las areas GCCE son visibles; no se envia accion de control."
       },
       "fr": {
-        "title": "Global Chat Command Engine",
-        "summary": "Global Chat Command Engine configure commande, autorisation et réponse de chat avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la commande est validée sans envoyer de message de chat LIVE"
+        "title": "Inspecter GCCE en securite",
+        "summary": "Affiche tableau, commandes, suivi et HUD sans entree gamepad par chat.",
+        "firstResult": "Les zones GCCE sont visibles ; aucune action de controle n est envoyee."
       }
     }
   },
@@ -439,31 +439,31 @@
     "devStatus": "development-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/openshock/safety-card.png",
-      "en": "/screenshots/docs/plugins/openshock/safety-card.png",
-      "es": "/screenshots/es/docs/plugins/openshock/safety-card.png",
-      "fr": "/screenshots/fr/docs/plugins/openshock/safety-card.png"
+      "de": "/screenshots/de/docs/plugins/openshock/safety-surface.png",
+      "en": "/screenshots/docs/plugins/openshock/safety-surface.png",
+      "es": "/screenshots/es/docs/plugins/openshock/safety-surface.png",
+      "fr": "/screenshots/fr/docs/plugins/openshock/safety-surface.png"
     },
     "translations": {
       "de": {
         "title": "Hybridshock",
-        "summary": "Hybridshock richtet Sicherheitslimit, Queue und Gerätezuordnung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "der Ablauf wird als Simulation angezeigt und löst keine Haptik aus"
+        "summary": "Pruefe Sicherheitsgrenzen und die Offline-Oberflaeche ohne Geraet, Token oder Haptik.",
+        "firstResult": "Die Sicherheitswerte und Testkontrollen sind sichtbar."
       },
       "en": {
         "title": "Hybridshock",
-        "summary": "Hybridshock configures safety limit, queue, and device mapping with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the flow is shown as a simulation and triggers no haptics"
+        "summary": "Inspect safety limits and the offline surface without a device, token, or haptics.",
+        "firstResult": "Safety values and test controls are visible."
       },
       "es": {
         "title": "Hybridshock",
-        "summary": "Hybridshock configura límite de seguridad, cola y asignación de dispositivo mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "el flujo se muestra como simulación y no activa háptica"
+        "summary": "Inspecciona limites y la interfaz offline sin dispositivo, token ni haptica.",
+        "firstResult": "Los valores de seguridad y controles de prueba son visibles."
       },
       "fr": {
         "title": "Hybridshock",
-        "summary": "Hybridshock configure limite de sécurité, file et mappage d’appareil avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "le flux est affiché comme simulation et ne déclenche aucune haptique"
+        "summary": "Inspectez les limites et la surface hors ligne sans appareil, jeton ni haptique.",
+        "firstResult": "Les valeurs de securite et controles de test sont visibles."
       }
     }
   },
@@ -475,31 +475,31 @@
     "devStatus": "early-version",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/interactive-story/story-card.png",
-      "en": "/screenshots/docs/plugins/interactive-story/story-card.png",
-      "es": "/screenshots/es/docs/plugins/interactive-story/story-card.png",
-      "fr": "/screenshots/fr/docs/plugins/interactive-story/story-card.png"
+      "de": "/screenshots/de/docs/plugins/interactive-story/inspect-configuration.png",
+      "en": "/screenshots/docs/plugins/interactive-story/inspect-configuration.png",
+      "es": "/screenshots/es/docs/plugins/interactive-story/inspect-configuration.png",
+      "fr": "/screenshots/fr/docs/plugins/interactive-story/inspect-configuration.png"
     },
     "translations": {
       "de": {
-        "title": "Interactive Story Generator",
-        "summary": "Interactive Story Generator richtet Geschichtenmodus, Abstimmung und Modelloption ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Abstimmungsoberfläche reagiert, ohne einen externen Modellaufruf auszuführen"
+        "title": "Interactive Story Demo",
+        "summary": "Prueft Sprache, Story-Status und die Abstimmungsflaeche im Demo-Modus.",
+        "firstResult": "Der Demo-Status bleibt ohne externen Modellaufruf sichtbar."
       },
       "en": {
-        "title": "Interactive Story Generator",
-        "summary": "Interactive Story Generator configures story mode, voting, and model option with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the voting UI responds without an external model request"
+        "title": "Interactive Story demo",
+        "summary": "Checks language, story status, and the voting surface in demo mode.",
+        "firstResult": "The demo status remains visible without an external model call."
       },
       "es": {
-        "title": "Interactive Story Generator",
-        "summary": "Interactive Story Generator configura modo de historia, votación y opción de modelo mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la interfaz de votación responde sin solicitar un modelo externo"
+        "title": "Demo de Interactive Story",
+        "summary": "Revisa idioma, estado de historia y superficie de votacion en modo demo.",
+        "firstResult": "El estado demo sigue visible sin llamada externa al modelo."
       },
       "fr": {
-        "title": "Interactive Story Generator",
-        "summary": "Interactive Story Generator configure mode histoire, vote et option de modèle avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "l’interface de vote répond sans appel de modèle externe"
+        "title": "Demo Interactive Story",
+        "summary": "Verifie la langue, le statut de l histoire et la zone de vote en mode demo.",
+        "firstResult": "Le statut de demo reste visible sans appel de modele externe."
       }
     }
   },
@@ -511,31 +511,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/goals/goals-card.png",
-      "en": "/screenshots/docs/plugins/goals/goals-card.png",
-      "es": "/screenshots/es/docs/plugins/goals/goals-card.png",
-      "fr": "/screenshots/fr/docs/plugins/goals/goals-card.png"
+      "de": "/screenshots/de/docs/plugins/goals/inspect-goals.png",
+      "en": "/screenshots/docs/plugins/goals/inspect-goals.png",
+      "es": "/screenshots/es/docs/plugins/goals/inspect-goals.png",
+      "fr": "/screenshots/fr/docs/plugins/goals/inspect-goals.png"
     },
     "translations": {
       "de": {
-        "title": "Live Goals",
-        "summary": "Live Goals richtet Zielwert, Fortschrittsanzeige und Reset-Regel ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Fortschrittsanzeige ändert sich nur im Testprofil"
+        "title": "Goals im Testprofil",
+        "summary": "Prueft Zielwert, Abschlussregel und die eingebaute Fortschrittsvorschau.",
+        "firstResult": "Die Zielvorschau bleibt lokal sichtbar."
       },
       "en": {
-        "title": "Live Goals",
-        "summary": "Live Goals configures goal value, progress display, and reset rule with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the progress display changes only in the test profile"
+        "title": "Goals in the test profile",
+        "summary": "Checks target value, completion rule, and built-in progress preview.",
+        "firstResult": "The goal preview remains visible locally."
       },
       "es": {
-        "title": "Live Goals",
-        "summary": "Live Goals configura valor de objetivo, visualización de progreso y regla de reinicio mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la visualización de progreso cambia solo en el perfil de prueba"
+        "title": "Goals en el perfil de prueba",
+        "summary": "Revisa el valor objetivo, la regla de finalizacion y la vista previa de progreso integrada.",
+        "firstResult": "La vista previa del objetivo sigue visible de forma local."
       },
       "fr": {
-        "title": "Live Goals",
-        "summary": "Live Goals configure valeur d’objectif, affichage de progression et règle de remise à zéro avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "l’affichage de progression change uniquement dans le profil de test"
+        "title": "Goals dans le profil de test",
+        "summary": "Verifie la valeur cible, la regle d atteinte et l apercu de progression integre.",
+        "firstResult": "L apercu de l objectif reste visible localement."
       }
     }
   },
@@ -547,31 +547,31 @@
     "devStatus": "available",
     "storeAvailable": true,
     "image": {
-      "de": "/screenshots/de/docs/plugins/store-admin/store-card.png",
-      "en": "/screenshots/docs/plugins/store-admin/store-card.png",
-      "es": "/screenshots/es/docs/plugins/store-admin/store-card.png",
-      "fr": "/screenshots/fr/docs/plugins/store-admin/store-card.png"
+      "de": "/screenshots/de/docs/plugins/store-admin/admin-shell.png",
+      "en": "/screenshots/docs/plugins/store-admin/admin-shell.png",
+      "es": "/screenshots/es/docs/plugins/store-admin/admin-shell.png",
+      "fr": "/screenshots/fr/docs/plugins/store-admin/admin-shell.png"
     },
     "translations": {
       "de": {
-        "title": "LTTH App Store Admin",
-        "summary": "LTTH App Store Admin richtet Store-Ansicht, Quellenfreigabe und Paketstatus ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "der Store zeigt den sicheren Standardzustand; keine Quelle wird aktiviert"
+        "title": "Store Admin technisch pruefen",
+        "summary": "Prueft das lokale Plugin-Inventar sowie Laufzeit-, Health-, Debug- und Initialisierungsstatus ohne Anmeldung, Lizenzanspruch oder Paketmutation.",
+        "firstResult": "Fuenf sichere lokale JSON-Vertraege fuer Inventar und Service-Status sind lesbar; keine Anmeldungs- oder Schluesselantwort wird gezeigt."
       },
       "en": {
-        "title": "LTTH App Store Admin",
-        "summary": "LTTH App Store Admin configures store view, source approval, and package status with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the store shows the safe default state; no source is enabled"
+        "title": "Inspect Store Admin technically",
+        "summary": "Checks local plugin inventory plus runtime, health, debug, and initialization status without sign-in, license claims, or package mutation.",
+        "firstResult": "Five safe local JSON contracts for inventory and service status are readable; no sign-in or key response is shown."
       },
       "es": {
-        "title": "LTTH App Store Admin",
-        "summary": "LTTH App Store Admin configura vista de tienda, aprobación de fuentes y estado de paquetes mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la tienda muestra el estado seguro predeterminado; no se activa ninguna fuente"
+        "title": "Inspeccionar Store Admin tecnicamente",
+        "summary": "Revisa inventario local de plugins y estado de ejecucion, salud, depuracion e inicializacion sin iniciar sesion, reclamar licencia ni mutar paquetes.",
+        "firstResult": "Cinco contratos JSON locales seguros para inventario y estado de servicio son legibles; no se muestra respuesta de inicio de sesion ni claves."
       },
       "fr": {
-        "title": "LTTH App Store Admin",
-        "summary": "LTTH App Store Admin configure vue du store, approbation des sources et état des paquets avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "le store affiche l’état sûr par défaut ; aucune source n’est activée"
+        "title": "Inspecter Store Admin techniquement",
+        "summary": "Verifie l inventaire local des plugins ainsi que les etats d execution, sante, debug et initialisation sans connexion, reclamation de licence ni mutation de paquet.",
+        "firstResult": "Cinq contrats JSON locaux surs pour inventaire et etat du service sont lisibles ; aucune reponse de connexion ni cle n est affichee."
       }
     }
   },
@@ -583,31 +583,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/game-engine/engine-card.png",
-      "en": "/screenshots/docs/plugins/game-engine/engine-card.png",
-      "es": "/screenshots/es/docs/plugins/game-engine/engine-card.png",
-      "fr": "/screenshots/fr/docs/plugins/game-engine/engine-card.png"
+      "de": "/screenshots/de/docs/plugins/game-engine/open-manual-mode.png",
+      "en": "/screenshots/docs/plugins/game-engine/open-manual-mode.png",
+      "es": "/screenshots/es/docs/plugins/game-engine/open-manual-mode.png",
+      "fr": "/screenshots/fr/docs/plugins/game-engine/open-manual-mode.png"
     },
     "translations": {
       "de": {
-        "title": "LTTH Game Engine",
-        "summary": "LTTH Game Engine richtet Spielmodus, Queue und Geschenk- oder Chat-Trigger ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Testqueue wird abgearbeitet und die Spielansicht aktualisiert sich"
+        "title": "Game Engine Testrunde",
+        "summary": "Startet und beendet ein manuelles Spiel im lokalen Testmodus.",
+        "firstResult": "Ein manuelles Testspiel ist ohne Chat oder Geschenkereignis steuerbar."
       },
       "en": {
-        "title": "LTTH Game Engine",
-        "summary": "LTTH Game Engine configures game mode, queue, and gift or chat trigger with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the test queue is processed and the game view updates"
+        "title": "Game Engine test round",
+        "summary": "Starts and ends a manual game in local test mode.",
+        "firstResult": "A manual test game is controllable without chat or gift events."
       },
       "es": {
-        "title": "LTTH Game Engine",
-        "summary": "LTTH Game Engine configura modo de juego, cola y disparador de regalo o chat mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la cola de prueba se procesa y la vista del juego se actualiza"
+        "title": "Ronda de prueba de Game Engine",
+        "summary": "Inicia y termina un juego manual en modo de prueba local.",
+        "firstResult": "Un juego manual de prueba se puede controlar sin eventos de chat ni regalos."
       },
       "fr": {
-        "title": "LTTH Game Engine",
-        "summary": "LTTH Game Engine configure mode de jeu, file et déclencheur cadeau ou chat avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la file de test est traitée et la vue de jeu se met à jour"
+        "title": "Manche de test Game Engine",
+        "summary": "Demarre puis termine un jeu manuel en mode test local.",
+        "firstResult": "Un jeu manuel de test est controlable sans evenement de chat ni cadeau."
       }
     }
   },
@@ -619,31 +619,31 @@
     "devStatus": "early-version",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/minecraft-connect/minecraft-card.png",
-      "en": "/screenshots/docs/plugins/minecraft-connect/minecraft-card.png",
-      "es": "/screenshots/es/docs/plugins/minecraft-connect/minecraft-card.png",
-      "fr": "/screenshots/fr/docs/plugins/minecraft-connect/minecraft-card.png"
+      "de": "/screenshots/de/docs/plugins/minecraft-connect/commands-surface.png",
+      "en": "/screenshots/docs/plugins/minecraft-connect/commands-surface.png",
+      "es": "/screenshots/es/docs/plugins/minecraft-connect/commands-surface.png",
+      "fr": "/screenshots/fr/docs/plugins/minecraft-connect/commands-surface.png"
     },
     "translations": {
       "de": {
         "title": "Minecraft Connect",
-        "summary": "Minecraft Connect richtet Serveradresse, Ereignisbindung und Nachrichtenformat ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Konfiguration wird geprüft, ohne einen Minecraft-Server zu kontaktieren"
+        "summary": "Pruefe die lokale Bridge-Oberflaeche, ohne einen Minecraft-Server anzusprechen.",
+        "firstResult": "Die Offline- und Setupfelder sind sichtbar."
       },
       "en": {
         "title": "Minecraft Connect",
-        "summary": "Minecraft Connect configures server address, event binding, and message format with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the configuration is checked without contacting a Minecraft server"
+        "summary": "Inspect the local bridge surface without contacting a Minecraft server.",
+        "firstResult": "The offline and setup fields are visible."
       },
       "es": {
         "title": "Minecraft Connect",
-        "summary": "Minecraft Connect configura dirección del servidor, enlace de eventos y formato de mensaje mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la configuración se comprueba sin contactar un servidor de Minecraft"
+        "summary": "Inspecciona la interfaz local sin contactar un servidor de Minecraft.",
+        "firstResult": "Los campos offline y de configuracion son visibles."
       },
       "fr": {
         "title": "Minecraft Connect",
-        "summary": "Minecraft Connect configure adresse serveur, liaison d’événements et format de message avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la configuration est contrôlée sans contacter de serveur Minecraft"
+        "summary": "Inspectez la surface locale sans contacter de serveur Minecraft.",
+        "firstResult": "Les champs hors ligne et de configuration sont visibles."
       }
     }
   },
@@ -655,31 +655,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/multicam/multicam-card.png",
-      "en": "/screenshots/docs/plugins/multicam/multicam-card.png",
-      "es": "/screenshots/es/docs/plugins/multicam/multicam-card.png",
-      "fr": "/screenshots/fr/docs/plugins/multicam/multicam-card.png"
+      "de": "/screenshots/de/docs/plugins/multicam/current-scene.png",
+      "en": "/screenshots/docs/plugins/multicam/current-scene.png",
+      "es": "/screenshots/es/docs/plugins/multicam/current-scene.png",
+      "fr": "/screenshots/fr/docs/plugins/multicam/current-scene.png"
     },
     "translations": {
       "de": {
-        "title": "Multi-Cam Switcher",
-        "summary": "Multi-Cam Switcher richtet Kameraquelle, Szenenregel und Umschaltbedingung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Regel wird gespeichert, ohne OBS zu schalten"
+        "title": "Multicam",
+        "summary": "Pruefe Szenen- und Geschenkzuordnungen ohne OBS umzuschalten.",
+        "firstResult": "Die aktuelle Szene und die Zuordnungsoberflaeche sind sichtbar."
       },
       "en": {
-        "title": "Multi-Cam Switcher",
-        "summary": "Multi-Cam Switcher configures camera source, scene rule, and switch condition with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the rule is saved without switching OBS"
+        "title": "Multicam",
+        "summary": "Inspect scene and gift mappings without switching OBS.",
+        "firstResult": "The current scene and mapping surface are visible."
       },
       "es": {
-        "title": "Multi-Cam Switcher",
-        "summary": "Multi-Cam Switcher configura fuente de cámara, regla de escena y condición de cambio mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la regla se guarda sin cambiar OBS"
+        "title": "Multicam",
+        "summary": "Inspecciona escenas y mapeos de regalos sin cambiar OBS.",
+        "firstResult": "La escena actual y la interfaz de mapeo son visibles."
       },
       "fr": {
-        "title": "Multi-Cam Switcher",
-        "summary": "Multi-Cam Switcher configure source caméra, règle de scène et condition de bascule avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la règle est enregistrée sans basculer OBS"
+        "title": "Multicam",
+        "summary": "Inspectez les scenes et mappages de cadeaux sans basculer OBS.",
+        "firstResult": "La scene actuelle et la surface de mappage sont visibles."
       }
     }
   },
@@ -691,31 +691,31 @@
     "devStatus": "available",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/music-bot/music-card.png",
-      "en": "/screenshots/docs/plugins/music-bot/music-card.png",
-      "es": "/screenshots/es/docs/plugins/music-bot/music-card.png",
-      "fr": "/screenshots/fr/docs/plugins/music-bot/music-card.png"
+      "de": "/screenshots/de/docs/plugins/music-bot/music-onboarding.png",
+      "en": "/screenshots/docs/plugins/music-bot/music-onboarding.png",
+      "es": "/screenshots/es/docs/plugins/music-bot/music-onboarding.png",
+      "fr": "/screenshots/fr/docs/plugins/music-bot/music-onboarding.png"
     },
     "translations": {
       "de": {
         "title": "Music Bot",
-        "summary": "Music Bot richtet MPV-Pfad, Anfragequeue und Moderationsregel ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Queue zeigt den Eintrag; es startet keine externe Suche und keine Wiedergabe"
+        "summary": "Pruefe Onboarding und Queue-Oberflaechen ohne Suche, Anfrage oder Wiedergabe.",
+        "firstResult": "Die lokale Musikoberflaeche ist sichtbar."
       },
       "en": {
         "title": "Music Bot",
-        "summary": "Music Bot configures MPV path, request queue, and moderation rule with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the queue shows the entry; no external search or playback starts"
+        "summary": "Inspect onboarding and queue surfaces without searching, requesting, or playing media.",
+        "firstResult": "The local music surface is visible."
       },
       "es": {
         "title": "Music Bot",
-        "summary": "Music Bot configura ruta de MPV, cola de solicitudes y regla de moderación mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la cola muestra la entrada; no inicia búsqueda externa ni reproducción"
+        "summary": "Inspecciona onboarding y cola sin buscar, solicitar ni reproducir medios.",
+        "firstResult": "La interfaz local de musica es visible."
       },
       "fr": {
         "title": "Music Bot",
-        "summary": "Music Bot configure chemin MPV, file de demandes et règle de modération avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la file affiche l’entrée ; aucune recherche externe ni lecture ne démarre"
+        "summary": "Inspectez l onboarding et la file sans rechercher, demander ni lire de media.",
+        "firstResult": "La surface musicale locale est visible."
       }
     }
   },
@@ -727,31 +727,31 @@
     "devStatus": "stable",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/osc-bridge/osc-card.png",
-      "en": "/screenshots/docs/plugins/osc-bridge/osc-card.png",
-      "es": "/screenshots/es/docs/plugins/osc-bridge/osc-card.png",
-      "fr": "/screenshots/fr/docs/plugins/osc-bridge/osc-card.png"
+      "de": "/screenshots/de/docs/plugins/osc-bridge/osc-form.png",
+      "en": "/screenshots/docs/plugins/osc-bridge/osc-form.png",
+      "es": "/screenshots/es/docs/plugins/osc-bridge/osc-form.png",
+      "fr": "/screenshots/fr/docs/plugins/osc-bridge/osc-form.png"
     },
     "translations": {
       "de": {
-        "title": "OSC-Bridge (VRChat)",
-        "summary": "OSC-Bridge (VRChat) richtet Loopback-Adresse, UDP-Port und Nachrichtentyp ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Eingaben bleiben auf 127.0.0.1 und es wird kein VRChat-Client gesteuert"
+        "title": "OSC Bridge",
+        "summary": "Pruefe die lokale OSC-Konfiguration ohne eine UDP-Nachricht zu senden.",
+        "firstResult": "Loopback-Host, Port und Status sind sichtbar."
       },
       "en": {
-        "title": "OSC-Bridge (VRChat)",
-        "summary": "OSC-Bridge (VRChat) configures loopback address, UDP port, and message type with a safe local check instead of a LIVE trigger.",
-        "firstResult": "inputs remain on 127.0.0.1 and no VRChat client is controlled"
+        "title": "OSC Bridge",
+        "summary": "Inspect local OSC configuration without sending a UDP message.",
+        "firstResult": "Loopback host, port, and status are visible."
       },
       "es": {
-        "title": "OSC-Bridge (VRChat)",
-        "summary": "OSC-Bridge (VRChat) configura dirección loopback, puerto UDP y tipo de mensaje mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "las entradas permanecen en 127.0.0.1 y no se controla ningún cliente VRChat"
+        "title": "OSC Bridge",
+        "summary": "Inspecciona configuracion OSC local sin enviar mensajes UDP.",
+        "firstResult": "Host loopback, puerto y estado son visibles."
       },
       "fr": {
-        "title": "OSC-Bridge (VRChat)",
-        "summary": "OSC-Bridge (VRChat) configure adresse loopback, port UDP et type de message avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "les entrées restent sur 127.0.0.1 et aucun client VRChat n’est contrôlé"
+        "title": "OSC Bridge",
+        "summary": "Inspectez la configuration OSC locale sans envoyer de message UDP.",
+        "firstResult": "Hote loopback, port et statut sont visibles."
       }
     }
   },
@@ -763,31 +763,31 @@
     "devStatus": "development-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/quiz-show/quiz-card.png",
-      "en": "/screenshots/docs/plugins/quiz-show/quiz-card.png",
-      "es": "/screenshots/es/docs/plugins/quiz-show/quiz-card.png",
-      "fr": "/screenshots/fr/docs/plugins/quiz-show/quiz-card.png"
+      "de": "/screenshots/de/docs/plugins/quiz-show/inspect-dashboard.png",
+      "en": "/screenshots/docs/plugins/quiz-show/inspect-dashboard.png",
+      "es": "/screenshots/es/docs/plugins/quiz-show/inspect-dashboard.png",
+      "fr": "/screenshots/fr/docs/plugins/quiz-show/inspect-dashboard.png"
     },
     "translations": {
       "de": {
-        "title": "Pup Cid's Little Quiz Show Plugin",
-        "summary": "Pup Cid's Little Quiz Show Plugin richtet Fragenpool, Antwortzeit und Punktelogik ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Spielansicht zeigt die Frage ohne LIVE-Chatinteraktion"
+        "title": "Quiz Show Testfrage",
+        "summary": "Gibt eine lokale Frage ein, startet das Quiz und beendet es wieder ohne Chat.",
+        "firstResult": "Die Frage laesst sich im lokalen Quiz-Dashboard steuern."
       },
       "en": {
-        "title": "Pup Cid's Little Quiz Show Plugin",
-        "summary": "Pup Cid's Little Quiz Show Plugin configures question pool, answer time, and scoring logic with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the game view shows the question without LIVE chat interaction"
+        "title": "Quiz Show test question",
+        "summary": "Enters a local question, starts the quiz, and stops it again without chat.",
+        "firstResult": "The question can be controlled in the local quiz dashboard."
       },
       "es": {
-        "title": "Pup Cid's Little Quiz Show Plugin",
-        "summary": "Pup Cid's Little Quiz Show Plugin configura banco de preguntas, tiempo de respuesta y lógica de puntuación mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la vista de juego muestra la pregunta sin interacción de chat LIVE"
+        "title": "Pregunta de prueba de Quiz Show",
+        "summary": "Introduce una pregunta local, inicia el quiz y lo detiene sin chat.",
+        "firstResult": "La pregunta se puede controlar en el panel local del quiz."
       },
       "fr": {
-        "title": "Pup Cid's Little Quiz Show Plugin",
-        "summary": "Pup Cid's Little Quiz Show Plugin configure banque de questions, temps de réponse et logique de score avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la vue de jeu affiche la question sans interaction de chat LIVE"
+        "title": "Question de test Quiz Show",
+        "summary": "Saisit une question locale, lance le quiz puis l arrete sans chat.",
+        "firstResult": "La question peut etre controlee dans le tableau de bord local du quiz."
       }
     }
   },
@@ -799,31 +799,31 @@
     "devStatus": "development-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/sidekick/sidekick-card.png",
-      "en": "/screenshots/docs/plugins/sidekick/sidekick-card.png",
-      "es": "/screenshots/es/docs/plugins/sidekick/sidekick-card.png",
-      "fr": "/screenshots/fr/docs/plugins/sidekick/sidekick-card.png"
+      "de": "/screenshots/de/docs/plugins/sidekick/sidekick-status.png",
+      "en": "/screenshots/docs/plugins/sidekick/sidekick-status.png",
+      "es": "/screenshots/es/docs/plugins/sidekick/sidekick-status.png",
+      "fr": "/screenshots/fr/docs/plugins/sidekick/sidekick-status.png"
     },
     "translations": {
       "de": {
         "title": "Sidekick",
-        "summary": "Sidekick richtet Assistentenmodus, Kontextquelle und Antwortkanal ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die UI bestätigt die Konfiguration, ohne einen externen Dienst anzurufen"
+        "summary": "Pruefe lokale Assistentenfelder ohne Modell, Konto oder Antwortanfrage.",
+        "firstResult": "Status, Sprachoption und Testfeld sind sichtbar."
       },
       "en": {
         "title": "Sidekick",
-        "summary": "Sidekick configures assistant mode, context source, and response channel with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the UI confirms the configuration without calling an external service"
+        "summary": "Inspect local assistant fields without a model, account, or response request.",
+        "firstResult": "Status, language option, and test field are visible."
       },
       "es": {
         "title": "Sidekick",
-        "summary": "Sidekick configura modo asistente, fuente de contexto y canal de respuesta mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la UI confirma la configuración sin llamar a un servicio externo"
+        "summary": "Inspecciona campos locales sin modelo, cuenta ni solicitud de respuesta.",
+        "firstResult": "Estado, opcion de idioma y campo de prueba son visibles."
       },
       "fr": {
         "title": "Sidekick",
-        "summary": "Sidekick configure mode assistant, source de contexte et canal de réponse avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "l’UI confirme la configuration sans appeler de service externe"
+        "summary": "Inspectez les champs locaux sans modele, compte ni demande de reponse.",
+        "firstResult": "Statut, option de langue et champ de test sont visibles."
       }
     }
   },
@@ -835,31 +835,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/soundboard/soundboard-card.png",
-      "en": "/screenshots/docs/plugins/soundboard/soundboard-card.png",
-      "es": "/screenshots/es/docs/plugins/soundboard/soundboard-card.png",
-      "fr": "/screenshots/fr/docs/plugins/soundboard/soundboard-card.png"
+      "de": "/screenshots/de/docs/plugins/soundboard/soundboard-status.png",
+      "en": "/screenshots/docs/plugins/soundboard/soundboard-status.png",
+      "es": "/screenshots/es/docs/plugins/soundboard/soundboard-status.png",
+      "fr": "/screenshots/fr/docs/plugins/soundboard/soundboard-status.png"
     },
     "translations": {
       "de": {
         "title": "Soundboard",
-        "summary": "Soundboard richtet Sound-Slot, Lautstärke und Ereigniszuordnung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Zuordnung wird sichtbar, ohne Audio auszugeben"
+        "summary": "Pruefe lokale Soundzuordnungen ohne Audio auszugeben oder Quellen zu laden.",
+        "firstResult": "Status, Quellenfeld und Lautstaerke sind sichtbar."
       },
       "en": {
         "title": "Soundboard",
-        "summary": "Soundboard configures sound slot, volume, and event mapping with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the mapping becomes visible without audio output"
+        "summary": "Inspect local sound mappings without audio output or loading sources.",
+        "firstResult": "Status, source field, and volume are visible."
       },
       "es": {
         "title": "Soundboard",
-        "summary": "Soundboard configura ranura de sonido, volumen y asignación de evento mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la asignación se hace visible sin emitir audio"
+        "summary": "Inspecciona mapeos locales sin salida de audio ni carga de fuentes.",
+        "firstResult": "Estado, campo de fuente y volumen son visibles."
       },
       "fr": {
         "title": "Soundboard",
-        "summary": "Soundboard configure slot sonore, volume et mappage d’événement avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "le mappage devient visible sans sortie audio"
+        "summary": "Inspectez les mappages locaux sans sortie audio ni chargement de source.",
+        "firstResult": "Statut, champ de source et volume sont visibles."
       }
     }
   },
@@ -871,31 +871,31 @@
     "devStatus": "development-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/spotlight/spotlight-card.png",
-      "en": "/screenshots/docs/plugins/spotlight/spotlight-card.png",
-      "es": "/screenshots/es/docs/plugins/spotlight/spotlight-card.png",
-      "fr": "/screenshots/fr/docs/plugins/spotlight/spotlight-card.png"
+      "de": "/screenshots/de/docs/plugins/spotlight/inspect-overlay-grid.png",
+      "en": "/screenshots/docs/plugins/spotlight/inspect-overlay-grid.png",
+      "es": "/screenshots/es/docs/plugins/spotlight/inspect-overlay-grid.png",
+      "fr": "/screenshots/fr/docs/plugins/spotlight/inspect-overlay-grid.png"
     },
     "translations": {
       "de": {
-        "title": "Spotlight",
-        "summary": "Spotlight richtet Ereignistyp, Anzeigedauer und Spotlight-Stil ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Spotlight-Karte wird in der Vorschau gerendert"
+        "title": "Spotlight-Vorschau testen",
+        "summary": "Waehlt die Spotlight-Oberflaeche, startet deren Testkarte und schliesst sie wieder.",
+        "firstResult": "Der Preview-Frame zeigt die lokale Testkarte."
       },
       "en": {
-        "title": "Spotlight",
-        "summary": "Spotlight configures event type, display duration, and spotlight style with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the spotlight card is rendered in preview"
+        "title": "Test the Spotlight preview",
+        "summary": "Selects the Spotlight surface, starts its test card, and closes it again.",
+        "firstResult": "The preview frame shows the local test card."
       },
       "es": {
-        "title": "Spotlight",
-        "summary": "Spotlight configura tipo de evento, duración de visualización y estilo Spotlight mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la tarjeta Spotlight se renderiza en la vista previa"
+        "title": "Probar la vista previa de Spotlight",
+        "summary": "Selecciona la superficie Spotlight, inicia su tarjeta de prueba y la cierra.",
+        "firstResult": "El marco de vista previa muestra la tarjeta local de prueba."
       },
       "fr": {
-        "title": "Spotlight",
-        "summary": "Spotlight configure type d’événement, durée d’affichage et style Spotlight avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la carte Spotlight est rendue dans l’aperçu"
+        "title": "Tester l apercu Spotlight",
+        "summary": "Selectionne la surface Spotlight, lance sa carte de test puis la ferme.",
+        "firstResult": "Le cadre d apercu affiche la carte de test locale."
       }
     }
   },
@@ -907,31 +907,31 @@
     "devStatus": "early-version",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/streamalchemy/alchemy-card.png",
-      "en": "/screenshots/docs/plugins/streamalchemy/alchemy-card.png",
-      "es": "/screenshots/es/docs/plugins/streamalchemy/alchemy-card.png",
-      "fr": "/screenshots/fr/docs/plugins/streamalchemy/alchemy-card.png"
+      "de": "/screenshots/de/docs/plugins/streamalchemy/inspect-streamalchemy-settings.png",
+      "en": "/screenshots/docs/plugins/streamalchemy/inspect-streamalchemy-settings.png",
+      "es": "/screenshots/es/docs/plugins/streamalchemy/inspect-streamalchemy-settings.png",
+      "fr": "/screenshots/fr/docs/plugins/streamalchemy/inspect-streamalchemy-settings.png"
     },
     "translations": {
       "de": {
-        "title": "StreamAlchemy",
-        "summary": "StreamAlchemy richtet Automationsregel, Auslöser und Aktionskette ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Regel protokolliert den Trockenlauf, ohne LIVE-Aktionen auszuführen"
+        "title": "StreamAlchemy Trockenlauf",
+        "summary": "Prueft Generierungsmodus und fuehrt nur den eingebauten lokalen Test aus.",
+        "firstResult": "Der lokale Test ist im Craft-Bereich nachvollziehbar."
       },
       "en": {
-        "title": "StreamAlchemy",
-        "summary": "StreamAlchemy configures automation rule, trigger, and action chain with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the rule logs the dry run without executing LIVE actions"
+        "title": "StreamAlchemy dry run",
+        "summary": "Checks generation mode and runs only the built-in local test.",
+        "firstResult": "The local test is traceable in the craft area."
       },
       "es": {
-        "title": "StreamAlchemy",
-        "summary": "StreamAlchemy configura regla de automatización, disparador y cadena de acciones mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la regla registra la ejecución en seco sin realizar acciones LIVE"
+        "title": "Ejecucion en seco de StreamAlchemy",
+        "summary": "Revisa el modo de generacion y ejecuta solo la prueba local integrada.",
+        "firstResult": "La prueba local se puede seguir en el area de craft."
       },
       "fr": {
-        "title": "StreamAlchemy",
-        "summary": "StreamAlchemy configure règle d’automatisation, déclencheur et chaîne d’actions avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la règle journalise l’essai à blanc sans exécuter d’actions LIVE"
+        "title": "Essai a blanc StreamAlchemy",
+        "summary": "Verifie le mode de generation et execute uniquement le test local integre.",
+        "firstResult": "Le test local est visible dans la zone Craft."
       }
     }
   },
@@ -943,31 +943,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/stt-ticker/ticker-card.png",
-      "en": "/screenshots/docs/plugins/stt-ticker/ticker-card.png",
-      "es": "/screenshots/es/docs/plugins/stt-ticker/ticker-card.png",
-      "fr": "/screenshots/fr/docs/plugins/stt-ticker/ticker-card.png"
+      "de": "/screenshots/de/docs/plugins/stt-ticker/ticker-tabs.png",
+      "en": "/screenshots/docs/plugins/stt-ticker/ticker-tabs.png",
+      "es": "/screenshots/es/docs/plugins/stt-ticker/ticker-tabs.png",
+      "fr": "/screenshots/fr/docs/plugins/stt-ticker/ticker-tabs.png"
     },
     "translations": {
       "de": {
         "title": "STT Ticker",
-        "summary": "STT Ticker richtet Sprache, Untertitelmodus und Textstil ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "der Satz erscheint im Ticker ohne Mikrofonaufnahme"
+        "summary": "Pruefe Untertiteloptionen ohne Mikrofon, Provider oder Transkription zu starten.",
+        "firstResult": "Tabs, Sprache und Designsteuerung sind sichtbar."
       },
       "en": {
         "title": "STT Ticker",
-        "summary": "STT Ticker configures language, subtitle mode, and text style with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the sentence appears in the ticker without microphone capture"
+        "summary": "Inspect caption options without starting a microphone, provider, or transcription.",
+        "firstResult": "Tabs, language, and design control are visible."
       },
       "es": {
         "title": "STT Ticker",
-        "summary": "STT Ticker configura idioma, modo de subtítulos y estilo de texto mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la frase aparece en el ticker sin captura de micrófono"
+        "summary": "Inspecciona opciones de subtitulos sin iniciar microfono, proveedor ni transcripcion.",
+        "firstResult": "Pestanas, idioma y control de diseno son visibles."
       },
       "fr": {
         "title": "STT Ticker",
-        "summary": "STT Ticker configure langue, mode de sous-titres et style de texte avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la phrase apparaît dans le ticker sans capture micro"
+        "summary": "Inspectez les options de sous-titres sans demarrer microphone, fournisseur ni transcription.",
+        "firstResult": "Onglets, langue et controle de design sont visibles."
       }
     }
   },
@@ -979,31 +979,31 @@
     "devStatus": "early-version",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/talking-heads/heads-card.png",
-      "en": "/screenshots/docs/plugins/talking-heads/heads-card.png",
-      "es": "/screenshots/es/docs/plugins/talking-heads/heads-card.png",
-      "fr": "/screenshots/fr/docs/plugins/talking-heads/heads-card.png"
+      "de": "/screenshots/de/docs/plugins/talking-heads/overlay-avatar-container.png",
+      "en": "/screenshots/docs/plugins/talking-heads/overlay-avatar-container.png",
+      "es": "/screenshots/es/docs/plugins/talking-heads/overlay-avatar-container.png",
+      "fr": "/screenshots/fr/docs/plugins/talking-heads/overlay-avatar-container.png"
     },
     "translations": {
       "de": {
-        "title": "Talking Heads",
-        "summary": "Talking Heads richtet Charakter, Sprachereignis und Lippenbewegung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "der Charakter reagiert in der Vorschau ohne TTS-Provider"
+        "title": "Talking Heads Overlay-Routen",
+        "summary": "Pruefe die tatsaechlichen Overlay- und Viewer-Bar-Routen; das Plugin registriert keine Admin-UI-Route.",
+        "firstResult": "Avatarcontainer, HUD-Rahmen und Viewer-Bar sind sichtbar."
       },
       "en": {
-        "title": "Talking Heads",
-        "summary": "Talking Heads configures character, speech event, and lip movement with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the character reacts in preview without a TTS provider"
+        "title": "Talking Heads overlay routes",
+        "summary": "Inspect the actual overlay and viewer-bar routes; the plugin registers no admin UI route.",
+        "firstResult": "Avatar container, HUD frame, and viewer bar are visible."
       },
       "es": {
-        "title": "Talking Heads",
-        "summary": "Talking Heads configura personaje, evento de voz y movimiento de labios mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "el personaje reacciona en la vista previa sin proveedor TTS"
+        "title": "Rutas de overlay Talking Heads",
+        "summary": "Inspecciona las rutas reales de overlay y barra de espectadores; el plugin no registra ruta de UI admin.",
+        "firstResult": "El contenedor de avatar, marco HUD y barra de espectadores son visibles."
       },
       "fr": {
-        "title": "Talking Heads",
-        "summary": "Talking Heads configure personnage, événement vocal et mouvement des lèvres avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "le personnage réagit dans l’aperçu sans fournisseur TTS"
+        "title": "Routes overlay Talking Heads",
+        "summary": "Inspectez les vraies routes overlay et barre de viewers ; le plugin n enregistre aucune route UI admin.",
+        "firstResult": "Le conteneur avatar, cadre HUD et barre de viewers sont visibles."
       }
     }
   },
@@ -1015,31 +1015,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/tts/tts-card.png",
-      "en": "/screenshots/docs/plugins/tts/tts-card.png",
-      "es": "/screenshots/es/docs/plugins/tts/tts-card.png",
-      "fr": "/screenshots/fr/docs/plugins/tts/tts-card.png"
+      "de": "/screenshots/de/docs/plugins/tts/tts-config.png",
+      "en": "/screenshots/docs/plugins/tts/tts-config.png",
+      "es": "/screenshots/es/docs/plugins/tts/tts-config.png",
+      "fr": "/screenshots/fr/docs/plugins/tts/tts-config.png"
     },
     "translations": {
       "de": {
-        "title": "Text-to-Speech System",
-        "summary": "Text-to-Speech System richtet Stimme, Warteschlange und Moderationsfilter ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Vorschau validiert Text und Stimme, ohne Audio auszugeben"
+        "title": "Text-to-Speech",
+        "summary": "Pruefe Stimme, Moderation und Queue ohne Audio oder Provider-Anfrage.",
+        "firstResult": "Konfiguration und Queue-Stand sind sichtbar."
       },
       "en": {
-        "title": "Text-to-Speech System",
-        "summary": "Text-to-Speech System configures voice, queue, and moderation filter with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the preview validates text and voice without audio output"
+        "title": "Text-to-Speech",
+        "summary": "Inspect voice, moderation, and queue without audio or provider request.",
+        "firstResult": "Configuration and queue state are visible."
       },
       "es": {
-        "title": "Text-to-Speech System",
-        "summary": "Text-to-Speech System configura voz, cola y filtro de moderación mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la vista previa valida texto y voz sin emitir audio"
+        "title": "Text-to-Speech",
+        "summary": "Inspecciona voz, moderacion y cola sin audio ni solicitud al proveedor.",
+        "firstResult": "Configuracion y estado de cola son visibles."
       },
       "fr": {
-        "title": "Text-to-Speech System",
-        "summary": "Text-to-Speech System configure voix, file et filtre de modération avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "l’aperçu valide le texte et la voix sans sortie audio"
+        "title": "Text-to-Speech",
+        "summary": "Inspectez voix, moderation et file sans audio ni demande fournisseur.",
+        "firstResult": "Configuration et etat de file sont visibles."
       }
     }
   },
@@ -1051,31 +1051,31 @@
     "devStatus": "early-version",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/thermal-printer/printer-card.png",
-      "en": "/screenshots/docs/plugins/thermal-printer/printer-card.png",
-      "es": "/screenshots/es/docs/plugins/thermal-printer/printer-card.png",
-      "fr": "/screenshots/fr/docs/plugins/thermal-printer/printer-card.png"
+      "de": "/screenshots/de/docs/plugins/thermal-printer/printer-form.png",
+      "en": "/screenshots/docs/plugins/thermal-printer/printer-form.png",
+      "es": "/screenshots/es/docs/plugins/thermal-printer/printer-form.png",
+      "fr": "/screenshots/fr/docs/plugins/thermal-printer/printer-form.png"
     },
     "translations": {
       "de": {
         "title": "Thermal Printer",
-        "summary": "Thermal Printer richtet Druckerprofil, Zeichensatz und Warteschlange ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "ein Testeintrag bleibt in der Queue; es wird nichts gedruckt"
+        "summary": "Pruefe Druckerprofil und Queue offline, ohne Hardware anzuschliessen oder zu drucken.",
+        "firstResult": "Profilfelder und Queue-Stand sind sichtbar."
       },
       "en": {
         "title": "Thermal Printer",
-        "summary": "Thermal Printer configures printer profile, character set, and queue with a safe local check instead of a LIVE trigger.",
-        "firstResult": "a test item remains in the queue; nothing is printed"
+        "summary": "Inspect printer profile and queue offline without attaching hardware or printing.",
+        "firstResult": "Profile fields and queue state are visible."
       },
       "es": {
         "title": "Thermal Printer",
-        "summary": "Thermal Printer configura perfil de impresora, juego de caracteres y cola mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "una entrada de prueba permanece en la cola; no se imprime nada"
+        "summary": "Inspecciona perfil y cola offline sin conectar hardware ni imprimir.",
+        "firstResult": "Campos de perfil y estado de cola son visibles."
       },
       "fr": {
         "title": "Thermal Printer",
-        "summary": "Thermal Printer configure profil d’imprimante, jeu de caractères et file avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "une entrée de test reste dans la file ; rien n’est imprimé"
+        "summary": "Inspectez profil et file hors ligne sans connecter de materiel ni imprimer.",
+        "firstResult": "Champs de profil et etat de file sont visibles."
       }
     }
   },
@@ -1087,31 +1087,31 @@
     "devStatus": "available",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/toptier/tier-card.png",
-      "en": "/screenshots/docs/plugins/toptier/tier-card.png",
-      "es": "/screenshots/es/docs/plugins/toptier/tier-card.png",
-      "fr": "/screenshots/fr/docs/plugins/toptier/tier-card.png"
+      "de": "/screenshots/de/docs/plugins/toptier/inspect-live-panel.png",
+      "en": "/screenshots/docs/plugins/toptier/inspect-live-panel.png",
+      "es": "/screenshots/es/docs/plugins/toptier/inspect-live-panel.png",
+      "fr": "/screenshots/fr/docs/plugins/toptier/inspect-live-panel.png"
     },
     "translations": {
       "de": {
-        "title": "Top Tier",
-        "summary": "Top Tier richtet Ranking-Regel, Schwelle und Anzeigestil ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Top-Tier-Karte zeigt den Demo-Rang in der Vorschau"
+        "title": "TopTier Overlay-Test",
+        "summary": "Prueft Live-Panel und Ablaufregel, startet den lokalen Overlay-Test und setzt ihn zurueck.",
+        "firstResult": "Der Overlay-Test bleibt auf das Testprofil begrenzt."
       },
       "en": {
-        "title": "Top Tier",
-        "summary": "Top Tier configures ranking rule, threshold, and display style with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the Top Tier card shows the demo rank in preview"
+        "title": "TopTier overlay test",
+        "summary": "Checks the live panel and decay rule, starts the local overlay test, and resets it.",
+        "firstResult": "The overlay test remains limited to the test profile."
       },
       "es": {
-        "title": "Top Tier",
-        "summary": "Top Tier configura regla de ranking, umbral y estilo de visualización mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la tarjeta Top Tier muestra el rango demo en la vista previa"
+        "title": "Prueba de overlay TopTier",
+        "summary": "Revisa el panel live y la regla de decaimiento, inicia la prueba local del overlay y la restablece.",
+        "firstResult": "La prueba de overlay permanece limitada al perfil de prueba."
       },
       "fr": {
-        "title": "Top Tier",
-        "summary": "Top Tier configure règle de classement, seuil et style d’affichage avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la carte Top Tier affiche le rang démo dans l’aperçu"
+        "title": "Test d overlay TopTier",
+        "summary": "Verifie le panneau live et la regle de decroissance, lance le test local de l overlay puis le reinitialise.",
+        "firstResult": "Le test d overlay reste limite au profil de test."
       }
     }
   },
@@ -1123,31 +1123,31 @@
     "devStatus": "early-version",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/vdoninja/ninja-card.png",
-      "en": "/screenshots/docs/plugins/vdoninja/ninja-card.png",
-      "es": "/screenshots/es/docs/plugins/vdoninja/ninja-card.png",
-      "fr": "/screenshots/fr/docs/plugins/vdoninja/ninja-card.png"
+      "de": "/screenshots/de/docs/plugins/vdoninja/room-surface.png",
+      "en": "/screenshots/docs/plugins/vdoninja/room-surface.png",
+      "es": "/screenshots/es/docs/plugins/vdoninja/room-surface.png",
+      "fr": "/screenshots/fr/docs/plugins/vdoninja/room-surface.png"
     },
     "translations": {
       "de": {
-        "title": "VDO.Ninja Multi-Guest Manager",
-        "summary": "VDO.Ninja Multi-Guest Manager richtet Raumname, Gastlayout und Browserquelle ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Browser-Quelle ist vorbereitet, ohne einen Gast zu verbinden"
+        "title": "VDO.Ninja",
+        "summary": "Pruefe Raum- und Gastoberflaechen ohne einen Raum, Gast oder Browser-Stream zu erstellen.",
+        "firstResult": "Raumfelder und der leere Gastbereich sind sichtbar."
       },
       "en": {
-        "title": "VDO.Ninja Multi-Guest Manager",
-        "summary": "VDO.Ninja Multi-Guest Manager configures room name, guest layout, and browser source with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the browser source is prepared without connecting a guest"
+        "title": "VDO.Ninja",
+        "summary": "Inspect room and guest surfaces without creating a room, guest, or browser stream.",
+        "firstResult": "Room fields and the empty guest area are visible."
       },
       "es": {
-        "title": "VDO.Ninja Multi-Guest Manager",
-        "summary": "VDO.Ninja Multi-Guest Manager configura nombre de sala, diseño de invitados y fuente de navegador mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la fuente de navegador está preparada sin conectar un invitado"
+        "title": "VDO.Ninja",
+        "summary": "Inspecciona salas e invitados sin crear sala, invitado ni stream de navegador.",
+        "firstResult": "Campos de sala y el area vacia de invitados son visibles."
       },
       "fr": {
-        "title": "VDO.Ninja Multi-Guest Manager",
-        "summary": "VDO.Ninja Multi-Guest Manager configure nom de salle, disposition des invités et source navigateur avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la source navigateur est préparée sans connecter d’invité"
+        "title": "VDO.Ninja",
+        "summary": "Inspectez les surfaces de salon et invites sans creer salon, invite ni flux navigateur.",
+        "firstResult": "Champs de salon et zone vide des invites sont visibles."
       }
     }
   },
@@ -1159,31 +1159,31 @@
     "devStatus": "development-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/milestone-leaderboard/xp-card.png",
-      "en": "/screenshots/docs/plugins/milestone-leaderboard/xp-card.png",
-      "es": "/screenshots/es/docs/plugins/milestone-leaderboard/xp-card.png",
-      "fr": "/screenshots/fr/docs/plugins/milestone-leaderboard/xp-card.png"
+      "de": "/screenshots/de/docs/plugins/milestone-leaderboard/inspect-tiers.png",
+      "en": "/screenshots/docs/plugins/milestone-leaderboard/inspect-tiers.png",
+      "es": "/screenshots/es/docs/plugins/milestone-leaderboard/inspect-tiers.png",
+      "fr": "/screenshots/fr/docs/plugins/milestone-leaderboard/inspect-tiers.png"
     },
     "translations": {
       "de": {
-        "title": "Viewer XP",
-        "summary": "Viewer XP richtet XP-Regeln, Meilenstein und Ranglistenanzeige ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "ein Demonutzer erscheint in der Ranglisten-Vorschau"
+        "title": "Milestone Leaderboard testen",
+        "summary": "Erstellt eine kleine Teststufe, fuehrt die Celebration aus und setzt Testnutzer zurueck.",
+        "firstResult": "Der Celebration-Test ist lokal ausloesbar."
       },
       "en": {
-        "title": "Viewer XP",
-        "summary": "Viewer XP configures XP rules, milestone, and leaderboard display with a safe local check instead of a LIVE trigger.",
-        "firstResult": "a demo user appears in the leaderboard preview"
+        "title": "Test Milestone Leaderboard",
+        "summary": "Creates a small test tier, runs the celebration, and resets test users.",
+        "firstResult": "The celebration test is triggerable locally."
       },
       "es": {
-        "title": "Viewer XP",
-        "summary": "Viewer XP configura reglas de XP, hito y visualización de clasificación mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "un usuario demo aparece en la vista previa de clasificación"
+        "title": "Probar Milestone Leaderboard",
+        "summary": "Crea un nivel de prueba pequeno, ejecuta la celebracion y restablece usuarios de prueba.",
+        "firstResult": "La prueba de celebracion se puede activar localmente."
       },
       "fr": {
-        "title": "Viewer XP",
-        "summary": "Viewer XP configure règles XP, jalon et affichage du classement avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "un utilisateur démo apparaît dans l’aperçu du classement"
+        "title": "Tester Milestone Leaderboard",
+        "summary": "Cree un petit niveau de test, lance la celebration et reinitialise les utilisateurs de test.",
+        "firstResult": "Le test de celebration est declenchable localement."
       }
     }
   },
@@ -1195,31 +1195,31 @@
     "devStatus": "early-version",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/flame-overlay/frame-card.png",
-      "en": "/screenshots/docs/plugins/flame-overlay/frame-card.png",
-      "es": "/screenshots/es/docs/plugins/flame-overlay/frame-card.png",
-      "fr": "/screenshots/fr/docs/plugins/flame-overlay/frame-card.png"
+      "de": "/screenshots/de/docs/plugins/flame-overlay/inspect-flame-status.png",
+      "en": "/screenshots/docs/plugins/flame-overlay/inspect-flame-status.png",
+      "es": "/screenshots/es/docs/plugins/flame-overlay/inspect-flame-status.png",
+      "fr": "/screenshots/fr/docs/plugins/flame-overlay/inspect-flame-status.png"
     },
     "translations": {
       "de": {
-        "title": "Visual FX Frame",
-        "summary": "Visual FX Frame richtet Rahmenstil, Intensität und Farbvorgabe ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "der Rahmen ist sichtbar, ohne eine LIVE-Szene zu verändern"
+        "title": "Flame Overlay lokal pruefen",
+        "summary": "Prueft Rahmenposition, Geschwindigkeit und die lokale Flammenvorschau.",
+        "firstResult": "Die Vorschau kann ohne OBS- oder LIVE-Szene gestartet werden."
       },
       "en": {
-        "title": "Visual FX Frame",
-        "summary": "Visual FX Frame configures frame style, intensity, and color preset with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the frame is visible without changing a LIVE scene"
+        "title": "Check Flame Overlay locally",
+        "summary": "Checks frame position, speed, and the local flame preview.",
+        "firstResult": "The preview can start without an OBS or LIVE scene."
       },
       "es": {
-        "title": "Visual FX Frame",
-        "summary": "Visual FX Frame configura estilo de marco, intensidad y preajuste de color mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "el marco es visible sin cambiar una escena LIVE"
+        "title": "Revisar Flame Overlay de forma local",
+        "summary": "Revisa la posicion del marco, la velocidad y la vista previa local de llamas.",
+        "firstResult": "La vista previa se puede iniciar sin escena de OBS ni LIVE."
       },
       "fr": {
-        "title": "Visual FX Frame",
-        "summary": "Visual FX Frame configure style de cadre, intensité et préréglage de couleur avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "le cadre est visible sans modifier une scène LIVE"
+        "title": "Verifier Flame Overlay localement",
+        "summary": "Verifie la position du cadre, la vitesse et l apercu local des flammes.",
+        "firstResult": "L apercu peut demarrer sans scene OBS ni LIVE."
       }
     }
   },
@@ -1231,31 +1231,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
-      "en": "/screenshots/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
-      "es": "/screenshots/es/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
-      "fr": "/screenshots/fr/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png"
+      "de": "/screenshots/de/docs/plugins/visual-fx-frame-webgpu/inspect-frame-runtime.png",
+      "en": "/screenshots/docs/plugins/visual-fx-frame-webgpu/inspect-frame-runtime.png",
+      "es": "/screenshots/es/docs/plugins/visual-fx-frame-webgpu/inspect-frame-runtime.png",
+      "fr": "/screenshots/fr/docs/plugins/visual-fx-frame-webgpu/inspect-frame-runtime.png"
     },
     "translations": {
       "de": {
-        "title": "Visual FX Frame WEBGPU",
-        "summary": "Visual FX Frame WEBGPU richtet WebGPU-Rahmen, Premium-Stile und Qualitätsprofil ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "der Rahmen wird gerendert und die Qualitätsanzeige bleibt im Testprofil"
+        "title": "WebGPU Frame Vorschau",
+        "summary": "Prueft Laufzeit, Stil und Qualitaetsmodus und startet nur die lokale Vorschau.",
+        "firstResult": "Die lokale Vorschau kann ohne OBS-Ausgabe umgeschaltet werden."
       },
       "en": {
-        "title": "Visual FX Frame WEBGPU",
-        "summary": "Visual FX Frame WEBGPU configures WebGPU frame, premium styles, and quality profile with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the frame is rendered and the quality indicator stays in the test profile"
+        "title": "WebGPU Frame preview",
+        "summary": "Checks runtime, style, and quality mode, then starts only the local preview.",
+        "firstResult": "The local preview can be toggled without OBS output."
       },
       "es": {
-        "title": "Visual FX Frame WEBGPU",
-        "summary": "Visual FX Frame WEBGPU configura marco WebGPU, estilos premium y perfil de calidad mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "el marco se renderiza y el indicador de calidad permanece en el perfil de prueba"
+        "title": "Vista previa de WebGPU Frame",
+        "summary": "Revisa tiempo de ejecucion, estilo y modo de calidad e inicia solo la vista previa local.",
+        "firstResult": "La vista previa local se puede alternar sin salida OBS."
       },
       "fr": {
-        "title": "Visual FX Frame WEBGPU",
-        "summary": "Visual FX Frame WEBGPU configure cadre WebGPU, styles premium et profil de qualité avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "le cadre est rendu et l’indicateur de qualité reste dans le profil de test"
+        "title": "Apercu WebGPU Frame",
+        "summary": "Verifie le runtime, le style et le mode qualite puis lance uniquement l apercu local.",
+        "firstResult": "L apercu local peut etre bascule sans sortie OBS."
       }
     }
   },
@@ -1267,31 +1267,31 @@
     "devStatus": "development-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/weather-control/weather-card.png",
-      "en": "/screenshots/docs/plugins/weather-control/weather-card.png",
-      "es": "/screenshots/es/docs/plugins/weather-control/weather-card.png",
-      "fr": "/screenshots/fr/docs/plugins/weather-control/weather-card.png"
+      "de": "/screenshots/de/docs/plugins/weather-control/inspect-status-alert.png",
+      "en": "/screenshots/docs/plugins/weather-control/inspect-status-alert.png",
+      "es": "/screenshots/es/docs/plugins/weather-control/inspect-status-alert.png",
+      "fr": "/screenshots/fr/docs/plugins/weather-control/inspect-status-alert.png"
     },
     "translations": {
       "de": {
-        "title": "Weather Control",
-        "summary": "Weather Control richtet Wettereffect, Intensität und Lebenszyklus ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "der Effekt startet und endet in der Vorschau ohne LIVE-Szene"
+        "title": "Weather Control Testregen",
+        "summary": "Prueft das Qualitaetspreset, startet den lokalen Regen und stoppt ihn wieder.",
+        "firstResult": "Der Testregen bleibt in der Vorschau steuerbar."
       },
       "en": {
-        "title": "Weather Control",
-        "summary": "Weather Control configures weather effect, intensity, and lifecycle with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the effect starts and ends in preview without a LIVE scene"
+        "title": "Weather Control test rain",
+        "summary": "Checks the quality preset, starts local rain, and stops it again.",
+        "firstResult": "The test rain remains controllable in preview."
       },
       "es": {
-        "title": "Weather Control",
-        "summary": "Weather Control configura efecto meteorológico, intensidad y ciclo de vida mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "el efecto inicia y termina en la vista previa sin escena LIVE"
+        "title": "Lluvia de prueba de Weather Control",
+        "summary": "Revisa el preajuste de calidad, inicia lluvia local y la detiene.",
+        "firstResult": "La lluvia de prueba sigue controlable en la vista previa."
       },
       "fr": {
-        "title": "Weather Control",
-        "summary": "Weather Control configure effet météo, intensité et cycle de vie avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "l’effet commence et finit dans l’aperçu sans scène LIVE"
+        "title": "Pluie de test Weather Control",
+        "summary": "Verifie le prereglage qualite, lance une pluie locale puis l arrete.",
+        "firstResult": "La pluie de test reste controlable dans l apercu."
       }
     }
   },
@@ -1303,31 +1303,31 @@
     "devStatus": "development-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/webgpu-emoji-rain/gpu-rain-card.png",
-      "en": "/screenshots/docs/plugins/webgpu-emoji-rain/gpu-rain-card.png",
-      "es": "/screenshots/es/docs/plugins/webgpu-emoji-rain/gpu-rain-card.png",
-      "fr": "/screenshots/fr/docs/plugins/webgpu-emoji-rain/gpu-rain-card.png"
+      "de": "/screenshots/de/docs/plugins/webgpu-emoji-rain/inspect-renderer.png",
+      "en": "/screenshots/docs/plugins/webgpu-emoji-rain/inspect-renderer.png",
+      "es": "/screenshots/es/docs/plugins/webgpu-emoji-rain/inspect-renderer.png",
+      "fr": "/screenshots/fr/docs/plugins/webgpu-emoji-rain/inspect-renderer.png"
     },
     "translations": {
       "de": {
-        "title": "WebGPU EmojiRain",
-        "summary": "WebGPU EmojiRain richtet WebGPU-Preset, Assets und Geschenkregel ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die GPU-Vorschau zeigt Emojis und meldet keinen LIVE-Kontakt"
+        "title": "WebGPU Emoji Rain lokal",
+        "summary": "Prueft Renderer, Qualitaetsstufe und Intensitaet im lokalen Testprofil.",
+        "firstResult": "Die GPU-Oberflaeche bleibt ohne LIVE-Verbindung bedienbar."
       },
       "en": {
-        "title": "WebGPU EmojiRain",
-        "summary": "WebGPU EmojiRain configures WebGPU preset, assets, and gift rule with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the GPU preview shows emojis and reports no LIVE connection"
+        "title": "WebGPU Emoji Rain locally",
+        "summary": "Checks renderer, quality preset, and intensity in the local test profile.",
+        "firstResult": "The GPU interface remains usable without a LIVE connection."
       },
       "es": {
-        "title": "WebGPU EmojiRain",
-        "summary": "WebGPU EmojiRain configura preajuste WebGPU, recursos y regla de regalo mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la vista previa GPU muestra emojis y no informa conexión LIVE"
+        "title": "WebGPU Emoji Rain local",
+        "summary": "Revisa renderer, preajuste de calidad e intensidad en el perfil de prueba local.",
+        "firstResult": "La interfaz GPU sigue utilizable sin conexion LIVE."
       },
       "fr": {
-        "title": "WebGPU EmojiRain",
-        "summary": "WebGPU EmojiRain configure préréglage WebGPU, assets et règle de cadeau avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "l’aperçu GPU montre des emojis et n’indique aucune connexion LIVE"
+        "title": "WebGPU Emoji Rain local",
+        "summary": "Verifie le renderer, le prereglage qualite et l intensite dans le profil de test local.",
+        "firstResult": "L interface GPU reste utilisable sans connexion LIVE."
       }
     }
   },
@@ -1339,31 +1339,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/webgpu-fireworks/gpu-fireworks-card.png",
-      "en": "/screenshots/docs/plugins/webgpu-fireworks/gpu-fireworks-card.png",
-      "es": "/screenshots/es/docs/plugins/webgpu-fireworks/gpu-fireworks-card.png",
-      "fr": "/screenshots/fr/docs/plugins/webgpu-fireworks/gpu-fireworks-card.png"
+      "de": "/screenshots/de/docs/plugins/webgpu-fireworks/inspect-webgpu-fireworks-runtime.png",
+      "en": "/screenshots/docs/plugins/webgpu-fireworks/inspect-webgpu-fireworks-runtime.png",
+      "es": "/screenshots/es/docs/plugins/webgpu-fireworks/inspect-webgpu-fireworks-runtime.png",
+      "fr": "/screenshots/fr/docs/plugins/webgpu-fireworks/inspect-webgpu-fireworks-runtime.png"
     },
     "translations": {
       "de": {
-        "title": "WebGPU Fireworks",
-        "summary": "WebGPU Fireworks richtet WebGPU-Qualität, Auslöser und Performance-Grenze ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "das WebGPU-Feuerwerk wird gerendert, ohne TikTok LIVE zu verbinden"
+        "title": "WebGPU Fireworks Test",
+        "summary": "Prueft Laufzeit, Coin-Grenze und den eingebauten lokalen Feuerwerk-Test.",
+        "firstResult": "Der Test startet ohne TikTok-LIVE-Verbindung."
       },
       "en": {
-        "title": "WebGPU Fireworks",
-        "summary": "WebGPU Fireworks configures WebGPU quality, trigger, and performance limit with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the WebGPU fireworks render without connecting TikTok LIVE"
+        "title": "WebGPU Fireworks test",
+        "summary": "Checks runtime, coin limit, and the built-in local fireworks test.",
+        "firstResult": "The test starts without a TikTok LIVE connection."
       },
       "es": {
-        "title": "WebGPU Fireworks",
-        "summary": "WebGPU Fireworks configura calidad WebGPU, disparador y límite de rendimiento mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "los fuegos WebGPU se renderizan sin conectar TikTok LIVE"
+        "title": "Prueba de WebGPU Fireworks",
+        "summary": "Revisa tiempo de ejecucion, limite de monedas y la prueba local integrada de fuegos.",
+        "firstResult": "La prueba inicia sin conexion TikTok LIVE."
       },
       "fr": {
-        "title": "WebGPU Fireworks",
-        "summary": "WebGPU Fireworks configure qualité WebGPU, déclencheur et limite de performance avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "les feux WebGPU sont rendus sans connecter TikTok LIVE"
+        "title": "Test WebGPU Fireworks",
+        "summary": "Verifie le runtime, la limite de pieces et le test local de feux integre.",
+        "firstResult": "Le test demarre sans connexion TikTok LIVE."
       }
     }
   }

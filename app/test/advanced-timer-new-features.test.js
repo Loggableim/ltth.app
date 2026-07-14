@@ -190,6 +190,16 @@ describe('Advanced Timer - New Features', () => {
             // Check for fallback to default
             expect(overlayJs).toContain("template = 'default'");
         });
+
+        test('overlay theme observer does not write an unchanged theme repeatedly', () => {
+            const overlayHtml = fs.readFileSync(
+                path.join(pluginDir, 'overlay.html'),
+                'utf8'
+            );
+
+            expect(overlayHtml).toContain("if (document.documentElement.getAttribute('data-theme') !== theme)");
+            expect(overlayHtml).toContain("document.documentElement.setAttribute('data-theme', theme);");
+        });
     });
 
     describe('README Documentation', () => {

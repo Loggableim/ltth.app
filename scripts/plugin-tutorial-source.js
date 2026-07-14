@@ -5,6 +5,9 @@
 // build failure instead of silently receiving generic documentation.
 const fs = require('fs');
 const path = require('path');
+const systemWorkflows = require('./plugin-tutorial-workflows-system');
+const integrationWorkflows = require('./plugin-tutorial-workflows-integrations');
+const visualWorkflows = require('./plugin-tutorial-workflows-visual');
 
 const LOCALES = ['de', 'en', 'es', 'fr'];
 const L = (de, en, es, fr) => ({ de, en, es, fr });
@@ -286,7 +289,7 @@ function stepSelector(entry, stepId, action) {
   return anchors[index];
 }
 
-function localizedStepCopy(entry, stepId, action) {
+function explicitStepCopy(entry, stepId, action) {
   const copy = {};
   for (const locale of LOCALES) {
     const topic = entry.topic[locale];
@@ -339,7 +342,7 @@ function visibleStepName(stepId, locale) {
   return stepId.split('-').map((word) => word.length <= 3 ? word.toUpperCase() : `${word[0].toUpperCase()}${word.slice(1)}`).join(' ');
 }
 
-function contextualizeStepCopy(entry, stepId, action, copy) {
+function applyStepSpecificity(entry, stepId, action, copy) {
   for (const locale of LOCALES) {
     const label = visibleStepName(stepId, locale);
     const topic = entry.topic[locale];
@@ -361,6 +364,16 @@ function contextualizeStepCopy(entry, stepId, action, copy) {
       current.title = locale === 'de' ? `${label} im Testprofil konfigurieren` : locale === 'en' ? `Configure ${label} in the test profile` : locale === 'es' ? `Configura ${label} en el perfil de prueba` : `Configurez ${label} dans le profil de test`;
       current.body = locale === 'de' ? `Arbeite im sichtbaren Bereich ${label} von ${topic}. Verwende nur lokale Demo-Werte; keine Zugangsdaten, Geraete-ID oder LIVE-Ziel.` : locale === 'en' ? `Work in the visible ${label} area of ${topic}. Use local demo values only; never credentials, a device ID, or a LIVE target.` : locale === 'es' ? `Trabaja en el area visible ${label} de ${topic}. Usa solo valores demo locales; nunca credenciales, ID de dispositivo ni destino LIVE.` : `Travaillez dans la zone visible ${label} de ${topic}. Utilisez uniquement des valeurs demo locales, jamais identifiants, ID appareil ou cible LIVE.`;
     }
+    const route = stepRoute(entry, action, stepId);
+    const selector = stepSelector(entry, stepId, action);
+    const captureEvidence = locale === 'de'
+      ? ` Arbeite dabei an ${route} und pruefe das sichtbare Element ${selector}.`
+      : locale === 'en'
+        ? ` Work on ${route} and verify the visible ${selector} element.`
+        : locale === 'es'
+          ? ` Trabaja en ${route} y verifica el elemento visible ${selector}.`
+          : ` Travaillez sur ${route} et verifiez l element visible ${selector}.`;
+    current.body = `${current.body}${captureEvidence}`;
     current.alt = `${current.title} - ${topic}`;
   }
   return copy;
@@ -368,23 +381,173 @@ function contextualizeStepCopy(entry, stepId, action, copy) {
 
 function createStepDescriptor(entry, stepId) {
   const action = stepAction(entry, stepId);
-  const copy = contextualizeStepCopy(entry, stepId, action, localizedStepCopy(entry, stepId, action));
+  const copy = applyStepSpecificity(entry, stepId, action, explicitStepCopy(entry, stepId, action));
+  const route = stepRoute(entry, action, stepId);
+  const assertVisible = stepSelector(entry, stepId, action);
   return {
     id: stepId,
     copy,
     capture: {
-      route: stepRoute(entry, action, stepId),
-      assertVisible: stepSelector(entry, stepId, action),
+      route,
+      assertVisible,
       focusText: Object.fromEntries(LOCALES.map((locale) => [locale, copy[locale].title])),
-      action: { type: action, stepId },
+      action: { type: 'run-browser-workflow', stepId },
+      operations: [{ type: 'inspect', selector: assertVisible }],
+      postconditions: [{ type: 'visible', selector: assertVisible }],
       expected: Object.fromEntries(LOCALES.map((locale) => [locale, copy[locale].expected]))
     }
   };
 }
 
+function workflowStep(id, route, assertVisible, copy, operations, postconditions) {
+  return {
+    id,
+    copy,
+    capture: {
+      route,
+      assertVisible,
+      focusText: Object.fromEntries(LOCALES.map((locale) => [locale, copy[locale].title])),
+      action: { type: 'run-browser-workflow', stepId: id },
+      operations,
+      postconditions,
+      expected: Object.fromEntries(LOCALES.map((locale) => [locale, copy[locale].expected]))
+    }
+  };
+}
+
+function advancedTimerGuide() {
+  return {
+    id: 'advanced-timer',
+    explicit: true,
+    route: '/advanced-timer/ui',
+    requirement: 'obs',
+    safety: 'obs',
+    overlay: '/advanced-timer/overlay?timer={{timerId}}&template=progress',
+    related: ['goals', 'game-engine'],
+    mode: 'ui',
+    copy: {
+      de: {
+        title: 'Advanced Timer',
+        summary: 'Lege einen isolierten Countdown an, pruefe Start, Pause und manuelle Zeitkorrektur und uebernimm erst die verifizierte Timer-URL in eine OBS-Testszene.',
+        firstResult: 'Ein lokaler 120-Sekunden-Countdown laeuft, laesst sich pausieren und stellt nach dem Reset wieder 02:00 dar.',
+        requirements: 'Advanced Timer im Plugin Manager aktivieren; fuer den letzten Schritt eine nicht gesendete OBS-Testszene bereithalten.',
+        safety: 'Diese Anleitung erzeugt ausschliesslich einen Timer im temporaeren Testprofil. TikTok, Automationen und produktive OBS-Quellen bleiben unberuehrt.',
+        troubleshooting: 'Wenn keine Timerkarte erscheint, pruefe zuerst den aktiven Plugin-Status und die Route /advanced-timer/ui. Wenn die Overlay-Seite „Timer ID missing“ zeigt, kopiere die URL von der neu erzeugten Timerkarte statt die Basisroute zu verwenden.',
+        related: ['goals', 'game-engine']
+      },
+      en: {
+        title: 'Advanced Timer',
+        summary: 'Create an isolated countdown, verify start, pause, and a manual time adjustment, then use the verified timer URL in an OBS test scene only.',
+        firstResult: 'A local 120-second countdown runs, pauses, and returns to 02:00 after reset.',
+        requirements: 'Enable Advanced Timer in Plugin Manager; keep a non-live OBS test scene ready for the final step.',
+        safety: 'This guide creates a timer only in the temporary test profile. TikTok, automations, and production OBS sources remain untouched.',
+        troubleshooting: 'If no timer card appears, check that the plugin is enabled and open /advanced-timer/ui. If the overlay says “Timer ID missing”, copy the URL from the newly created card rather than using the base route.',
+        related: ['goals', 'game-engine']
+      },
+      es: {
+        title: 'Advanced Timer',
+        summary: 'Crea una cuenta atras aislada, comprueba inicio, pausa y un ajuste manual, y usa la URL verificada solo en una escena de prueba de OBS.',
+        firstResult: 'Una cuenta atras local de 120 segundos se ejecuta, se pausa y vuelve a 02:00 despues de restablecerse.',
+        requirements: 'Activa Advanced Timer en el gestor de plugins y prepara una escena de prueba de OBS que no este al aire para el ultimo paso.',
+        safety: 'Esta guia crea un temporizador solo en el perfil temporal de prueba. TikTok, automatizaciones y fuentes de OBS de produccion no se modifican.',
+        troubleshooting: 'Si no aparece una tarjeta de temporizador, comprueba que el plugin este activo y abre /advanced-timer/ui. Si el overlay indica “Timer ID missing”, copia la URL de la tarjeta nueva y no la ruta base.',
+        related: ['goals', 'game-engine']
+      },
+      fr: {
+        title: 'Advanced Timer',
+        summary: 'Creez un compte a rebours isole, verifiez le demarrage, la pause et un ajustement manuel, puis utilisez uniquement l URL verifiee dans une scene de test OBS.',
+        firstResult: 'Un compte a rebours local de 120 secondes demarre, se met en pause et revient a 02:00 apres reinitialisation.',
+        requirements: 'Activez Advanced Timer dans le gestionnaire de plugins et preparez une scene de test OBS non diffusee pour la derniere etape.',
+        safety: 'Ce guide cree un minuteur uniquement dans le profil de test temporaire. TikTok, les automatisations et les sources OBS de production ne sont pas modifies.',
+        troubleshooting: 'Si aucune carte de minuteur apparait, verifiez que le plugin est actif puis ouvrez /advanced-timer/ui. Si l overlay affiche “Timer ID missing”, copiez l URL de la nouvelle carte plutot que la route de base.',
+        related: ['goals', 'game-engine']
+      }
+    },
+    steps: [
+      workflowStep('open-timer-center', '/advanced-timer/ui', '.at-sidebar-nav', {
+        de: { title: 'Die Timer-Zentrale oeffnen', body: 'Aktiviere Advanced Timer im Plugin Manager und oeffne anschliessend /advanced-timer/ui. Die linke Navigation muss die Bereiche Timers, Create Timer, Profiles und Help zeigen.', expected: 'Die Timer-Zentrale ist erreichbar und der Bereich „Create Timer“ kann angewaehlt werden.', alt: 'Advanced Timer mit sichtbarer Bereichsnavigation' },
+        en: { title: 'Open the timer control center', body: 'Enable Advanced Timer in Plugin Manager, then open /advanced-timer/ui. The left navigation must show Timers, Create Timer, Profiles, and Help.', expected: 'The timer control center is reachable and the Create Timer section can be selected.', alt: 'Advanced Timer with the section navigation visible' },
+        es: { title: 'Abre el centro de control del temporizador', body: 'Activa Advanced Timer en el gestor de plugins y abre /advanced-timer/ui. La navegacion izquierda debe mostrar Timers, Create Timer, Profiles y Help.', expected: 'El centro de control esta disponible y se puede seleccionar Create Timer.', alt: 'Advanced Timer con la navegacion de secciones visible' },
+        fr: { title: 'Ouvrez le centre de controle du minuteur', body: 'Activez Advanced Timer dans le gestionnaire de plugins, puis ouvrez /advanced-timer/ui. La navigation de gauche doit afficher Timers, Create Timer, Profiles et Help.', expected: 'Le centre de controle est accessible et la section Create Timer peut etre selectionnee.', alt: 'Advanced Timer avec la navigation des sections visible' }
+      }, [{ type: 'click', selector: '[data-tab="timers"]' }], [{ type: 'visible', selector: '[data-tab="create"]' }]),
+      workflowStep('create-countdown', '/advanced-timer/ui', '#timers-container .at-timer-card .at-timer-card-header', {
+        de: { title: 'Einen 120-Sekunden-Countdown anlegen', body: 'Waehle Create Timer, trage bei Timer Name „Dokumentations-Test“ ein, waehle bei Timer Mode „Countdown“ und setze Initial Duration auf 120. Sende danach das Formular ab.', expected: 'Unter Timers erscheint die neue Karte im Zustand Stopped mit der Startzeit 02:00.', alt: 'Neu erstellte Advanced-Timer-Karte mit 120-Sekunden-Countdown' },
+        en: { title: 'Create a 120-second countdown', body: 'Select Create Timer, enter “Documentation Test” for Timer Name, select Countdown for Timer Mode, and set Initial Duration to 120. Then submit the form.', expected: 'The new card appears under Timers in the Stopped state with an initial value of 02:00.', alt: 'New Advanced Timer card with a 120-second countdown' },
+        es: { title: 'Crea una cuenta atras de 120 segundos', body: 'Selecciona Create Timer, escribe “Prueba de documentacion” como Timer Name, selecciona Countdown como Timer Mode y establece Initial Duration en 120. Despues envia el formulario.', expected: 'La nueva tarjeta aparece en Timers con estado Stopped y valor inicial de 02:00.', alt: 'Nueva tarjeta de Advanced Timer con una cuenta atras de 120 segundos' },
+        fr: { title: 'Creez un compte a rebours de 120 secondes', body: 'Selectionnez Create Timer, saisissez « Test documentation » pour Timer Name, choisissez Countdown pour Timer Mode et reglez Initial Duration sur 120. Envoyez ensuite le formulaire.', expected: 'La nouvelle carte apparait dans Timers avec l etat Stopped et la valeur initiale 02:00.', alt: 'Nouvelle carte Advanced Timer avec un compte a rebours de 120 secondes' }
+      }, [
+        { type: 'click', selector: '[data-tab="create"]' },
+        { type: 'fill', selector: '#timer-name', value: 'Documentation Test' },
+        { type: 'select', selector: '#timer-mode', value: 'countdown' },
+        { type: 'fill', selector: '#initial-duration', value: '120' },
+        { type: 'submit', selector: '#timer-form' },
+        { type: 'capture-attribute', selector: '#timers-container .at-timer-card', attribute: 'id', contextKey: 'timerId', transform: 'strip-prefix:tc-' }
+      ], [{ type: 'visible', selector: '#timers-container .at-timer-card' }, { type: 'text', selector: '#timers-container', includes: '02:00' }]),
+      workflowStep('start-and-pause', '/advanced-timer/ui', '#timers-container .at-timer-card .at-timer-display', {
+        de: { title: 'Countdown starten und lokal pausieren', body: 'Klicke auf der erzeugten Karte Start, warte mindestens zwei Sekunden und klicke danach Pause. Beobachte dabei die Zeitdarstellung auf derselben Karte.', expected: 'Der Status wechselt zuerst zu Running; nach Pause bleibt der Countdown mit einem niedrigeren Wert als 02:00 stehen.', alt: 'Lokal gestarteter und pausierter Advanced-Timer-Countdown' },
+        en: { title: 'Start and pause the countdown locally', body: 'Click Start on the created card, wait at least two seconds, then click Pause. Watch the time display on the same card.', expected: 'The status first changes to Running; after Pause the countdown stays at a value below 02:00.', alt: 'Locally started and paused Advanced Timer countdown' },
+        es: { title: 'Inicia y pausa la cuenta atras localmente', body: 'Haz clic en Start en la tarjeta creada, espera al menos dos segundos y despues haz clic en Pause. Observa la hora en la misma tarjeta.', expected: 'El estado cambia primero a Running; despues de Pause la cuenta atras queda por debajo de 02:00.', alt: 'Cuenta atras de Advanced Timer iniciada y pausada localmente' },
+        fr: { title: 'Demarrez puis mettez le compte a rebours en pause', body: 'Cliquez sur Start dans la carte creee, attendez au moins deux secondes, puis cliquez sur Pause. Observez l affichage du temps dans la meme carte.', expected: 'L etat passe d abord a Running ; apres Pause, le compte a rebours reste sous 02:00.', alt: 'Compte a rebours Advanced Timer demarre puis mis en pause localement' }
+      }, [
+        { type: 'click', selector: '#timers-container .at-timer-card [data-ctrl="start"]' },
+        { type: 'wait', milliseconds: 2200 },
+        { type: 'click', selector: '#timers-container .at-timer-card [data-ctrl="pause"]' }
+      ], [{ type: 'text', selector: '#timers-container .at-timer-card', includes: 'Paused' }]),
+      workflowStep('add-manual-time', '/advanced-timer/ui', '#timers-container .at-timer-card [data-at="add"][data-s="10"]', {
+        de: { title: 'Zehn Sekunden als manuellen Test hinzufuegen', body: 'Waehle auf derselben Karte +10s. Diese Schaltflaeche erzeugt einen lokalen manuellen Zeitimpuls; sie sendet kein TikTok-Ereignis und spricht keine externe Verbindung an.', expected: 'Die sichtbare Zeit springt um zehn Sekunden nach oben und der lokale Aktivitaetslog kann den manuellen Impuls anzeigen.', alt: 'Advanced Timer mit markierter lokaler Plus-zehn-Sekunden-Aktion' },
+        en: { title: 'Add ten seconds as a manual test', body: 'Select +10s on the same card. This control creates a local manual time delta; it does not send a TikTok event or contact an external service.', expected: 'The visible time jumps up by ten seconds and the local activity log can show the manual event.', alt: 'Advanced Timer with the local add-ten-seconds control highlighted' },
+        es: { title: 'Anade diez segundos como prueba manual', body: 'Selecciona +10s en la misma tarjeta. Este control crea un cambio de tiempo manual local; no envia un evento de TikTok ni contacta un servicio externo.', expected: 'El tiempo visible aumenta diez segundos y el registro local puede mostrar el evento manual.', alt: 'Advanced Timer con el control local de sumar diez segundos resaltado' },
+        fr: { title: 'Ajoutez dix secondes comme test manuel', body: 'Selectionnez +10s dans la meme carte. Ce controle cree un delta de temps manuel local ; il n envoie aucun evenement TikTok et ne contacte aucun service externe.', expected: 'Le temps visible augmente de dix secondes et le journal local peut afficher l evenement manuel.', alt: 'Advanced Timer avec le controle local ajouter dix secondes mis en evidence' }
+      }, [{ type: 'click', selector: '#timers-container .at-timer-card [data-at="add"][data-s="10"]' }], [{ type: 'visible', selector: '#timers-container .at-timer-card' }]),
+      workflowStep('preview-overlay', '/advanced-timer/overlay?timer={{timerId}}&template=progress', '.timer-name', {
+        de: { title: 'Die timerbezogene Overlay-URL pruefen', body: 'Oeffne die von der Karte erzeugte URL mit dem Parameter timer=<ID> und dem Template progress zuerst im Browser. Erst wenn dieser Test den Countdown zeigt, verwendest du exakt diese URL in einer nicht gesendeten OBS-Browserquelle.', expected: 'Das Progress-Overlay zeigt den Namen und den aktuellen Wert des gerade angelegten Timers; es erscheint kein Hinweis „Timer ID missing“.', alt: 'Progress-Overlay eines spezifischen Advanced-Timer-Countdowns' },
+        en: { title: 'Verify the timer-specific overlay URL', body: 'Open the URL generated by the card with timer=<ID> and the progress template in a browser first. Only use that exact URL in a non-live OBS browser source after this test shows the countdown.', expected: 'The progress overlay shows the name and current value of the timer just created; no “Timer ID missing” message appears.', alt: 'Progress overlay for a specific Advanced Timer countdown' },
+        es: { title: 'Verifica la URL de overlay especifica del temporizador', body: 'Abre primero en el navegador la URL creada por la tarjeta con timer=<ID> y la plantilla progress. Usa esa URL exacta en una fuente de navegador de OBS no emitida solo despues de que la prueba muestre la cuenta atras.', expected: 'El overlay progress muestra el nombre y el valor actual del temporizador creado; no aparece el aviso “Timer ID missing”.', alt: 'Overlay progress de una cuenta atras especifica de Advanced Timer' },
+        fr: { title: 'Verifiez l URL d overlay propre au minuteur', body: 'Ouvrez d abord dans le navigateur l URL generee par la carte avec timer=<ID> et le modele progress. Utilisez cette URL exacte dans une source navigateur OBS non diffusee seulement apres avoir vu le compte a rebours.', expected: 'L overlay progress affiche le nom et la valeur actuelle du minuteur cree ; aucun message « Timer ID missing » ne s affiche.', alt: 'Overlay progress pour un compte a rebours Advanced Timer specifique' }
+      }, [{ type: 'wait', milliseconds: 800 }], [{ type: 'visible', selector: '.timer-name' }, { type: 'text', selector: '.timer-name', includes: 'Documentation Test' }, { type: 'not-text', selector: 'body', includes: 'Timer ID missing' }, { type: 'not-text', selector: 'body', includes: 'Timer not found' }]),
+      workflowStep('configure-rotator', '/advanced-timer/ui', '#timers-container .at-timer-card [data-sec-body="rotator"]', {
+        de: { title: 'Den Delta-Rotator nur fuer manuelle Impulse konfigurieren', body: 'Oeffne Rotator (Delta Slider), setze Position auf bottom, lasse nur die Quelle manual aktiv und speichere mit Save Rotator. Danach darf +10s weiterhin als lokaler Impuls sichtbar bleiben.', expected: 'Der Rotatorbereich zeigt die gespeicherte Position Bottom; keine LIVE- oder Hardware-Quelle wurde aktiviert.', alt: 'Advanced-Timer-Rotator mit der sicheren manuellen Quelle' },
+        en: { title: 'Configure the delta rotator for manual events only', body: 'Open Rotator (Delta Slider), set Position to bottom, leave only the manual source enabled, and save with Save Rotator. The +10s action remains a local event.', expected: 'The rotator section shows the saved Bottom position; no LIVE or hardware source has been enabled.', alt: 'Advanced Timer rotator with the safe manual source' },
+        es: { title: 'Configura el rotador delta solo para eventos manuales', body: 'Abre Rotator (Delta Slider), establece Position en bottom, deja activa solo la fuente manual y guarda con Save Rotator. La accion +10s sigue siendo local.', expected: 'La seccion del rotador muestra la posicion Bottom guardada; no se activa ninguna fuente LIVE ni hardware.', alt: 'Rotador de Advanced Timer con la fuente manual segura' },
+        fr: { title: 'Configurez le rotateur delta pour les evenements manuels', body: 'Ouvrez Rotator (Delta Slider), reglez Position sur bottom, laissez uniquement la source manual active puis enregistrez avec Save Rotator. L action +10s reste locale.', expected: 'La section du rotateur affiche la position Bottom enregistree ; aucune source LIVE ni materielle n est activee.', alt: 'Rotateur Advanced Timer avec la source manuelle sure' }
+      }, [
+        { type: 'click', selector: '#timers-container .at-timer-card [data-sec="rotator"]' },
+        { type: 'select', selector: '#timers-container .at-timer-card [data-rot="position"]', value: 'bottom' },
+        { type: 'click', selector: '#timers-container .at-timer-card .save-rotator-btn' }
+      ], [{ type: 'visible', selector: '#timers-container .at-timer-card [data-sec-body="rotator"]' }]),
+      workflowStep('prepare-chat-rule', '/advanced-timer/ui', '#adv-events-modal', {
+        de: { title: 'Eine inaktive Chat-Regel vorbereiten', body: 'Oeffne Advanced Event Rules, fuege eine Regel Chat → Add Time mit dem Befehl !docs und dem Wert 15 hinzu und speichere sie. Ohne verbundenen LIVE-Chat bleibt die Regel vollstaendig inaktiv.', expected: 'Die Regel erscheint im Dialog als Chat-Befehl mit 15 Sekunden; es wird weder eine Chatnachricht noch eine externe Aktion ausgeloest.', alt: 'Advanced-Timer-Dialog mit sicher vorbereiteter Chat-Regel' },
+        en: { title: 'Prepare an inactive chat rule', body: 'Open Advanced Event Rules, add a Chat → Add Time rule with the !docs command and value 15, then save it. Without a connected LIVE chat, the rule remains completely inactive.', expected: 'The dialog lists a chat command with 15 seconds; no chat message or external action is triggered.', alt: 'Advanced Timer dialog with a safely prepared chat rule' },
+        es: { title: 'Prepara una regla de chat inactiva', body: 'Abre Advanced Event Rules, agrega una regla Chat → Add Time con el comando !docs y valor 15, y guardala. Sin un chat LIVE conectado, la regla permanece completamente inactiva.', expected: 'El dialogo muestra un comando de chat de 15 segundos; no se activa ningun mensaje ni accion externa.', alt: 'Dialogo de Advanced Timer con una regla de chat preparada de forma segura' },
+        fr: { title: 'Preparez une regle de chat inactive', body: 'Ouvrez Advanced Event Rules, ajoutez une regle Chat → Add Time avec la commande !docs et la valeur 15, puis enregistrez-la. Sans chat LIVE connecte, la regle reste totalement inactive.', expected: 'La boite de dialogue liste une commande de chat de 15 secondes ; aucun message ni aucune action externe ne sont declenches.', alt: 'Boite de dialogue Advanced Timer avec une regle de chat preparee en securite' }
+      }, [
+        { type: 'click', selector: '#timers-container .at-timer-card [data-adv-timer]' },
+        { type: 'click', selector: '#add-adv-event-btn' },
+        { type: 'select', selector: '#ee-type', value: 'chat' },
+        { type: 'select', selector: '#ee-action', value: 'add_time' },
+        { type: 'fill', selector: '#ee-value', value: '15' },
+        { type: 'fill', selector: '#ee-command', value: '!docs' },
+        { type: 'click', selector: '#ee-save' }
+      ], [{ type: 'visible', selector: '#adv-events-modal' }]),
+      workflowStep('reset-countdown', '/advanced-timer/ui', '#timers-container .at-timer-card [data-ctrl="reset"]', {
+        de: { title: 'Den Demo-Countdown sauber zuruecksetzen', body: 'Schliesse den Regel-Dialog und waehle auf der Timerkarte Reset. Der Capture-Prozess verwirft das gesamte temporaere Profil nach dem Guide; der sichtbare Reset belegt dennoch den realen Rueckweg zur Anfangsdauer.', expected: 'Die Karte steht wieder auf Stopped und zeigt erneut 02:00. Keine Testdaten gelangen in ein produktives Profil.', alt: 'Zurueckgesetzter Advanced-Timer-Demo-Countdown bei 02:00' },
+        en: { title: 'Reset the demo countdown cleanly', body: 'Close the rule dialog and select Reset on the timer card. The capture process discards the entire temporary profile after the guide; the visible reset still proves the real return to the initial duration.', expected: 'The card is Stopped again and shows 02:00. No test data reaches a production profile.', alt: 'Reset Advanced Timer demo countdown at 02:00' },
+        es: { title: 'Restablece la cuenta atras demo limpiamente', body: 'Cierra el dialogo de reglas y selecciona Reset en la tarjeta. El proceso de captura descarta todo el perfil temporal despues de la guia; el restablecimiento visible demuestra el retorno real a la duracion inicial.', expected: 'La tarjeta vuelve a Stopped y muestra 02:00. Ningun dato de prueba llega a un perfil de produccion.', alt: 'Cuenta atras demo de Advanced Timer restablecida a 02:00' },
+        fr: { title: 'Reinitialisez proprement le compte a rebours de demonstration', body: 'Fermez la boite de dialogue des regles puis choisissez Reset dans la carte du minuteur. Le processus de capture supprime le profil temporaire apres le guide ; la reinitialisation visible prouve le retour reel a la duree initiale.', expected: 'La carte revient a Stopped et affiche 02:00. Aucune donnee de test n atteint un profil de production.', alt: 'Compte a rebours de demonstration Advanced Timer reinitialise a 02:00' }
+      }, [{ type: 'click', selector: '#timers-container .at-timer-card [data-ctrl="reset"]' }], [{ type: 'text', selector: '#timers-container .at-timer-card', includes: '02:00' }])
+    ]
+  };
+}
+
 function buildGuides(repoRoot) {
   const manifests = readManifests(repoRoot);
-  const byId = new Map(FACTS.map((entry) => [entry.id, entry]));
+  const explicitEntries = [
+    advancedTimerGuide(),
+    ...Object.values(systemWorkflows),
+    ...Object.values(integrationWorkflows),
+    ...Object.values(visualWorkflows)
+  ];
+  const byId = new Map(explicitEntries.map((entry) => [entry.id, entry]));
   const expectedIds = [...manifests.map((manifest) => manifest.id), 'store-admin'].sort();
   const definedIds = [...byId.keys()].sort();
   if (JSON.stringify(expectedIds) !== JSON.stringify(definedIds)) {
@@ -396,6 +559,7 @@ function buildGuides(repoRoot) {
   const records = [...manifests, storeAdmin];
   return records.map((record) => {
     const entry = byId.get(record.id);
+    if (!entry.explicit) throw new Error(`Tutorial ${record.id} must use an explicit workflow definition`);
     const name = displayName(record.name, record.id);
     return {
       id: record.id,
@@ -403,9 +567,10 @@ function buildGuides(repoRoot) {
       version: record.version || 'current',
       devStatus: record.devStatus || record.accessType || 'available',
       category: record.category || 'plugin',
-      copy: localizedGuideCopy(name, entry),
-      related: entry.related,
+      copy: entry.copy || localizedGuideCopy(name, entry),
+      related: entry.related || [],
       overlay: entry.overlay,
+      workflowSource: entry.explicit ? 'explicit' : 'legacy',
       capture: { fixture: { profile: `docs-${record.id}`, externalPolicy: 'blocked', mode: entry.mode } },
       steps: entry.steps
     };

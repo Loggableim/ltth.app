@@ -101,6 +101,12 @@ for (const output of manifest.outputs || []) {
   assert.strictEqual(output.route, asset.route, `${key} route drifted`);
   assert.strictEqual(output.selector, asset.selector, `${key} selector drifted`);
   assert.deepStrictEqual(output.action, asset.action, `${key} action drifted`);
+  const expectedOperations = asset.operations || [];
+  const expectedPostconditions = asset.postconditions || [];
+  assert.strictEqual((output.operations || []).length, expectedOperations.length, `${key} did not execute every declared browser operation`);
+  assert.strictEqual((output.postconditions || []).length, expectedPostconditions.length, `${key} did not verify every declared success signal`);
+  for (const receipt of output.operations || []) assert.strictEqual(receipt.success, true, `${key} recorded an unsuccessful browser operation`);
+  for (const receipt of output.postconditions || []) assert.strictEqual(receipt.success, true, `${key} recorded an unsuccessful success signal`);
   assert.strictEqual(output.state?.lang, locale, `${key} document language is not localized`);
   assert.strictEqual(output.state?.i18n, locale, `${key} plugin i18n language is not localized`);
   assert.strictEqual(output.state?.theme, 'cid', `${key} was not captured in the Cid theme`);

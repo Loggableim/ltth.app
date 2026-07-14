@@ -30,7 +30,8 @@ const SAFE_ACTION_TYPES = new Set([
   'open-overlay-preview',
   'inspect-readonly-api',
   'inspect-safe-store-state',
-  'reset-demo-state'
+  'reset-demo-state',
+  'run-browser-workflow'
 ]);
 const GENERIC_SELECTORS = new Set(['body', 'main', 'form', '[role="main"]', '.container', '#app', 'canvas']);
 
