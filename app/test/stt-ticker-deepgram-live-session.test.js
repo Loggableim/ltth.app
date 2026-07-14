@@ -1,0 +1,152 @@
+const DeepgramLiveSessionManager = require('../plugins/stt-ticker/backend/asr/deepgram-live-session');
+
+function createConnection() {
+  const handlers = {};
+  return {
+    on: jest.fn((event, handler) => { handlers[event] = handler; }),
+    connect: jest.fn(),
+    waitForOpen: jest.fn().mockResolvedValue(),
+    sendMedia: jest.fn(),
+    sendKeepAlive: jest.fn(),
+    sendFinalize: jest.fn(),
+    sendCloseStream: jest.fn(),
+    close: jest.fn(),
+    emit(event, payload) { return handlers[event]?.(payload); }
+  };
+}
+
+function resultMessage(text, options = {}) {
+  const start = options.start || 0;
+  return {
+    type: 'Results',
+    start,
+    duration: 0.5,
+    is_final: options.isFinal === true,
+    speech_final: options.speechFinal === true,
+    channel: {
+      detected_language: 'de',
+      alternatives: [{
+        transcript: text,
+        confidence: 0.95,
+        words: [{
+          word: text,
+          punctuated_word: text,
+          start,
+          end: start + 0.5,
+          confidence: 0.95
+        }]
+      }]
+    }
+  };
+}
+
+function createHarness(overrides = {}) {
+  const connections = overrides.connections || [createConnection()];
+  const connect = jest.fn()
+    .mockImplementation(() => Promise.resolve(connections.shift()));
+  const socket = { id: 'capture-1', once: jest.fn(), emit: jest.fn() };
+  const callbacks = {
+    onInterim: overrides.onInterim || jest.fn(),
+    onFinal: overrides.onFinal || jest.fn(),
+    onStatus: overrides.onStatus || jest.fn()
+  };
+  const manager = new DeepgramLiveSessionManager({
+    getConfig: () => ({
+      asr: { deepgramModel: 'nova-2', languageMode: 'fixed', languageFixed: 'de' },
+      silenceTimeoutMs: 900,
+      vad: { sustainedSilenceMs: 1500 }
+    }),
+    getApiKey: () => 'test-key',
+    clientFactory: () => ({ listen: { v1: { connect } } }),
+    ...callbacks,
+    logger: { info() {}, warn() {}, error() {}, debug() {} }
+  });
+  return { manager, connect, socket, ...callbacks };
+}
+
+describe('STT Ticker Deepgram live session manager', () => {
+  test('isolates audio by socket and configures a Linear16 live stream', async () => {
+    const connection = createConnection();
+    const { manager, connect, socket } = createHarness({ connections: [connection] });
+
+    await manager.start(socket, { sampleRate: 16000, channels: 1 });
+    const accepted = manager.sendAudio('capture-1', Buffer.from([1, 2]));
+    const rejected = manager.sendAudio('capture-2', Buffer.from([3, 4]));
+
+    expect(connect).toHaveBeenCalledWith(expect.objectContaining({
+      model: 'nova-2',
+      language: 'de',
+      encoding: 'linear16',
+      sample_rate: 16000,
+      channels: 1,
+      interim_results: true,
+      endpointing: 900,
+      utterance_end_ms: '1500'
+    }));
+    expect(connection.connect).toHaveBeenCalledTimes(1);
+    expect(connection.waitForOpen).toHaveBeenCalledTimes(1);
+    expect(connection.sendMedia).toHaveBeenCalledWith(expect.any(Buffer));
+    expect(accepted).toBe(true);
+    expect(rejected).toBe(false);
+    await manager.destroy();
+  });
+
+  test('emits interim text and flushes accumulated final fragments once', async () => {
+    const connection = createConnection();
+    const onInterim = jest.fn();
+    const onFinal = jest.fn();
+    const { manager, socket } = createHarness({ connections: [connection], onInterim, onFinal });
+    await manager.start(socket, { sampleRate: 16000, channels: 1 });
+
+    connection.emit('message', resultMessage('Hallo', { start: 0 }));
+    connection.emit('message', resultMessage('Hallo', { isFinal: true, start: 0 }));
+    connection.emit('message', resultMessage('Welt.', { isFinal: true, speechFinal: true, start: 0.5 }));
+    connection.emit('message', { type: 'UtteranceEnd', last_word_end: 1.2 });
+
+    expect(onInterim).toHaveBeenCalledWith('capture-1', expect.objectContaining({
+      text: 'Hallo',
+      provider: 'deepgram',
+      isFinal: false
+    }));
+    expect(onFinal).toHaveBeenCalledTimes(1);
+    expect(onFinal).toHaveBeenCalledWith('capture-1', expect.objectContaining({
+      text: 'Hallo Welt.',
+      provider: 'deepgram',
+      language: 'de'
+    }));
+    await manager.destroy();
+  });
+
+  test('stops and replaces an existing socket session without accepting stale results', async () => {
+    const oldConnection = createConnection();
+    const newConnection = createConnection();
+    const onFinal = jest.fn();
+    const { manager, socket } = createHarness({
+      connections: [oldConnection, newConnection],
+      onFinal
+    });
+
+    await manager.start(socket, { sampleRate: 16000, channels: 1 });
+    await manager.start(socket, { sampleRate: 48000, channels: 1 });
+    oldConnection.emit('message', resultMessage('Alt', { isFinal: true, speechFinal: true }));
+    newConnection.emit('message', resultMessage('Neu', { isFinal: true, speechFinal: true }));
+
+    expect(oldConnection.sendFinalize).toHaveBeenCalledWith({ type: 'Finalize' });
+    expect(oldConnection.sendCloseStream).toHaveBeenCalledWith({ type: 'CloseStream' });
+    expect(oldConnection.close).toHaveBeenCalledTimes(1);
+    expect(onFinal).toHaveBeenCalledTimes(1);
+    expect(onFinal).toHaveBeenCalledWith('capture-1', expect.objectContaining({ text: 'Neu' }));
+    await manager.destroy();
+  });
+
+  test('rejects invalid input format and never exposes the API key in status', async () => {
+    const { manager, socket } = createHarness();
+
+    await expect(manager.start(socket, { sampleRate: 7999, channels: 1 }))
+      .rejects.toThrow('sample rate');
+    await expect(manager.start(socket, { sampleRate: 16000, channels: 2 }))
+      .rejects.toThrow('one audio channel');
+    expect(JSON.stringify(manager.getStatus())).not.toContain('test-key');
+    await manager.destroy();
+  });
+});
