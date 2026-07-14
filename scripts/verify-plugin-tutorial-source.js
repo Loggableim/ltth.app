@@ -4,13 +4,10 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const { LOCALES, buildGuides } = require('./plugin-tutorial-source');
+const { loadPublishedPluginCatalog } = require('./lib/published-plugin-catalog');
 
 const ROOT = path.resolve(__dirname, '..');
-const manifestRoots = [path.join(ROOT, 'app', 'plugins'), path.join(ROOT, 'plugin-store', 'sources')];
-const manifests = manifestRoots.flatMap((pluginRoot) => fs.readdirSync(pluginRoot, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(pluginRoot, entry.name, 'plugin.json')))
-  .map((entry) => JSON.parse(fs.readFileSync(path.join(pluginRoot, entry.name, 'plugin.json'), 'utf8'))))
-  .filter((manifest) => manifest.id !== 'store-admin');
+const catalog = loadPublishedPluginCatalog(ROOT);
 const source = fs.readFileSync(path.join(__dirname, 'plugin-tutorial-source.js'), 'utf8');
 const captureSource = fs.readFileSync(path.join(__dirname, 'capture-product-screenshots.js'), 'utf8');
 const guides = buildGuides(ROOT);
@@ -24,7 +21,7 @@ assert.ok(!captureSource.includes('revealSafeDemoState'), 'captures must not for
 assert.ok(!captureSource.includes('data-ltth-docs-'), 'captures must not inject documentation-only DOM state');
 assert.ok(!captureSource.includes('document.createElement('), 'captures must not inject synthetic DOM elements');
 assert.ok(captureSource.includes('asset.action && asset.action.allowClick'), 'a declared local-safe action must be able to execute its real workflow');
-assert.strictEqual(guides.length, manifests.length + 1, 'every manifest plus Store Admin needs one guide');
+assert.deepStrictEqual(guides.map((guide) => guide.id).sort(), catalog.guideIds, 'every published plugin plus Store Admin needs one guide');
 assert.ok(guides.some((guide) => guide.id === 'visual-fx-frame-webgpu'), 'Visual FX Frame WEBGPU needs a guide');
 const workflowSignatures = new Set();
 const SAFE_ACTION_TYPES = new Set([

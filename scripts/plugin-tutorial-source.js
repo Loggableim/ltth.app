@@ -4,37 +4,12 @@
 // live in scripts/plugin-guides/<id>.js. This file intentionally performs
 // inventory validation and runtime composition only; no guide prose, selectors
 // or workflow steps belong here.
-const fs = require('fs');
-const path = require('path');
 const { createGuideDefinition } = require('./plugin-guides/definition');
 const { collectGuideUiInventory, collectPluginIntegrationInventory } = require('./lib/plugin-guide-ui-inventory');
+const { loadPublishedPluginCatalog } = require('./lib/published-plugin-catalog');
 
 const LOCALES = ['de', 'en', 'es', 'fr'];
 const GUIDE_MODULES = require('./plugin-guides');
-
-function readManifests(repoRoot) {
-  const roots = [
-    path.join(repoRoot, 'app', 'plugins'),
-    path.join(repoRoot, 'plugin-store', 'sources')
-  ];
-  const manifests = roots.flatMap((pluginRoot) => fs.readdirSync(pluginRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(pluginRoot, entry.name, 'plugin.json')))
-    .map((entry) => JSON.parse(fs.readFileSync(path.join(pluginRoot, entry.name, 'plugin.json'), 'utf8'))))
-    .filter((manifest) => manifest.id !== 'store-admin');
-  const duplicate = manifests.find((manifest, index) => manifests.findIndex((candidate) => candidate.id === manifest.id) !== index);
-  if (duplicate) throw new Error(`Duplicate plugin tutorial manifest id: ${duplicate.id}`);
-  return manifests.sort((left, right) => left.id.localeCompare(right.id));
-}
-
-function readStoreAdmin(repoRoot) {
-  const store = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
-  return store.plugins.find((plugin) => plugin.id === 'store-admin') || {
-    id: 'store-admin',
-    name: 'Store Admin',
-    version: 'current',
-    devStatus: 'admin-only'
-  };
-}
 
 function assertLocalized(contract, name, valueType = 'object') {
   for (const locale of LOCALES) {
@@ -61,9 +36,10 @@ function assertGuideContract(guide) {
 }
 
 function buildGuides(repoRoot) {
-  const manifests = readManifests(repoRoot);
+  const catalog = loadPublishedPluginCatalog(repoRoot);
+  const manifests = catalog.plugins;
   const byId = new Map(GUIDE_MODULES.map((guide) => [guide.id, guide]));
-  const expectedIds = [...manifests.map((manifest) => manifest.id), 'store-admin'].sort();
+  const expectedIds = catalog.guideIds;
   const definedIds = [...byId.keys()].sort();
   if (JSON.stringify(expectedIds) !== JSON.stringify(definedIds)) {
     const missing = expectedIds.filter((id) => !byId.has(id));
@@ -71,7 +47,7 @@ function buildGuides(repoRoot) {
     throw new Error(`Tutorial definition inventory mismatch. Missing: ${missing.join(', ') || 'none'}; stale: ${stale.join(', ') || 'none'}`);
   }
 
-  const storeAdmin = readStoreAdmin(repoRoot);
+  const storeAdmin = catalog.storeAdmin;
   return [...manifests, storeAdmin].map((record) => {
     const contract = byId.get(record.id);
     assertGuideContract(contract);

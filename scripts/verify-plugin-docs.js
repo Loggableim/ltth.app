@@ -4,9 +4,11 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const { LOCALES, buildGuides } = require('./plugin-tutorial-source');
+const { loadPublishedPluginCatalog } = require('./lib/published-plugin-catalog');
 
 const ROOT = path.resolve(__dirname, '..');
 const guides = buildGuides(ROOT);
+const catalog = loadPublishedPluginCatalog(ROOT);
 const indexPath = path.join(ROOT, 'docs', 'plugins', 'index.json');
 assert.ok(fs.existsSync(indexPath), 'Missing docs/plugins/index.json');
 const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
@@ -58,5 +60,5 @@ for (const guide of guides) {
   }
 }
 
-assert.strictEqual(index.length, guides.length, 'Search index must contain exactly the current guide inventory');
+assert.deepStrictEqual(index.map((item) => item.id).sort(), catalog.guideIds, 'Search index must contain exactly the current guide inventory');
 console.log(`OK: ${guides.length} detailed plugin guides, four locales, generated pages, and search index coverage.`);
