@@ -354,6 +354,64 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(api.emit).not.toHaveBeenCalledWith('musicbot:playback-stopped', expect.anything());
   });
 
+  test('attributes a genuine replacement error to B after A fails and B starts', async () => {
+    const firstTrack = { id: 'auto-dj-a', title: 'Auto-DJ A', requestedBy: 'AutoDJ' };
+    const secondTrack = { id: 'auto-dj-b', title: 'Auto-DJ B', requestedBy: 'AutoDJ' };
+    const thirdTrack = { id: 'auto-dj-c', title: 'Auto-DJ C', requestedBy: 'AutoDJ' };
+    const { plugin, api } = createPluginWithQueue([]);
+    const playbackEngine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    playbackEngine.nowPlaying = firstTrack;
+    playbackEngine.state = 'playing';
+    plugin.playbackEngine = playbackEngine;
+    plugin.autoDJ = {
+      recordFailedTrack: jest.fn(),
+      markPlaybackFailed: jest.fn(),
+      setPlaybackSeed: jest.fn()
+    };
+    plugin.queueManager = {
+      markPlaying: jest.fn(),
+      resetVoteSkips: jest.fn(),
+      addToHistory: jest.fn(),
+      removeSkipImmunity: jest.fn()
+    };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._startPlaybackSync = jest.fn();
+    plugin._clearCrossfadeTimer = jest.fn();
+    plugin._maybePlayAutoDJ = jest.fn(async () => {
+      const nextTrack = plugin._maybePlayAutoDJ.mock.calls.length === 1 ? secondTrack : thirdTrack;
+      playbackEngine.nowPlaying = nextTrack;
+      playbackEngine.state = 'playing';
+      playbackEngine.emit('track-start', nextTrack);
+      return nextTrack;
+    });
+    plugin._registerPlaybackEvents();
+
+    playbackEngine._handleMessage(JSON.stringify({
+      event: 'end-file',
+      reason: 'error',
+      error: 'A failed'
+    }));
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(playbackEngine.getNowPlaying()).toBe(secondTrack);
+    expect(playbackEngine._replacementOutgoingTrack).toBeNull();
+
+    playbackEngine._handleMessage(JSON.stringify({
+      event: 'end-file',
+      reason: 'error',
+      error: 'B failed'
+    }));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenNthCalledWith(1, firstTrack, 'mpv-track-end');
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenNthCalledWith(2, secondTrack, 'mpv-track-end');
+    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(2);
+    expect(playbackEngine.getNowPlaying()).toBe(thirdTrack);
+    expect(api.emit).toHaveBeenCalledWith('musicbot:error', expect.objectContaining({
+      message: expect.stringContaining('Auto-DJ B')
+    }));
+    expect(api.emit).toHaveBeenCalledWith('musicbot:playback-stopped', {});
+  });
+
   test('ignores an untracked MPV error after playback is already idle', () => {
     const { plugin, api } = createPluginWithQueue([]);
     const playbackEngine = new (require('events'))();

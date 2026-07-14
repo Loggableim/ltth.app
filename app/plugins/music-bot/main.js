@@ -2363,7 +2363,9 @@ class MusicBotPlugin extends EventEmitter {
     this._stopPlaybackSync();
     this.autoDJ && this.autoDJ.recordFailedTrack && this.autoDJ.recordFailedTrack(track, reason);
     this.autoDJ && this.autoDJ.markPlaybackFailed && this.autoDJ.markPlaybackFailed(error);
-    this.playbackEngine.clearNowPlaying && this.playbackEngine.clearNowPlaying();
+    const preserveReplacementOutgoing = reason === 'ipc-confirmed'
+      && this.playbackEngine.rememberReplacementOutgoing?.(track);
+    this.playbackEngine.clearNowPlaying && this.playbackEngine.clearNowPlaying({ preserveReplacementOutgoing });
     this.api.log('[music-bot] AutoDJ track failed (' + reason + '); selecting replacement for ' + (track.id || track.title || 'unknown'), 'warn');
     return await this._maybePlayAutoDJ(true);
   }

@@ -85,23 +85,12 @@ class PlaybackEngine extends EventEmitter {
         throw error;
       }
     } else {
-      const outgoingTrack = this.nowPlaying;
-      if (outgoingTrack) {
-        this._replacementOutgoingTrack = outgoingTrack;
-      }
-      try {
-        await this._sendCommand(['loadfile', playbackUrl, 'replace']);
-        await this.setVolume(this.masterVolume);
+      await this._sendCommand(['loadfile', playbackUrl, 'replace']);
+      await this.setVolume(this.masterVolume);
 
-        this.nowPlaying = newTrackPayload;
-        this.state = 'playing';
-        this.emit('track-start', this.nowPlaying);
-      } catch (error) {
-        if (this._replacementOutgoingTrack === outgoingTrack) {
-          this._replacementOutgoingTrack = null;
-        }
-        throw error;
-      }
+      this.nowPlaying = newTrackPayload;
+      this.state = 'playing';
+      this.emit('track-start', this.nowPlaying);
     }
   }
 
@@ -280,13 +269,19 @@ class PlaybackEngine extends EventEmitter {
     return this.nowPlaying;
   }
 
-  clearNowPlaying() {
-    if (this.nowPlaying) {
-      this._replacementOutgoingTrack = this.nowPlaying;
-    }
+  rememberReplacementOutgoing(track) {
+    if (!track || this.nowPlaying !== track) return false;
+    this._replacementOutgoingTrack = track;
+    return true;
+  }
+
+  clearNowPlaying({ preserveReplacementOutgoing = false } = {}) {
     this.nowPlaying = null;
     this.state = 'idle';
     this._crossfadeOutgoingTrack = null;
+    if (!preserveReplacementOutgoing) {
+      this._replacementOutgoingTrack = null;
+    }
   }
 
   isPlaying() {
