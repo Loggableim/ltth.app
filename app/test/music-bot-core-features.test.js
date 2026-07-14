@@ -13,6 +13,23 @@ function createDbMock() {
   };
 }
 
+function createAutoDjDb({ recentHistory = [], exclusions = [] } = {}) {
+  const runCalls = [];
+  return {
+    runCalls,
+    prepare: jest.fn((sql) => ({
+      run: jest.fn((params) => {
+        runCalls.push(params);
+      }),
+      all: jest.fn(() => {
+        if (sql.includes('plugin_music_bot_history')) return recentHistory;
+        if (sql.includes('plugin_music_bot_autodj_exclusions')) return exclusions;
+        return [];
+      })
+    }))
+  };
+}
+
 function createApiMock(db) {
   return {
     getDatabase: () => db,
@@ -374,6 +391,34 @@ describe('Music Bot core features', () => {
     });
 
     expect(engine.getNowPlaying().id).toEqual(expect.any(String));
+  });
+
+  test('blocks matching video IDs, titles, and artists for the configured cooldown', () => {
+    const now = Date.UTC(2026, 6, 14, 12, 0, 0);
+    const db = createAutoDjDb({
+      recentHistory: [{ youtubeId: 'seen-id', title: 'Same Song!', artist: 'Artist One' }],
+      exclusions: [{ youtubeId: 'bad-id', titleKey: 'broken stream', artistKey: 'artist two' }]
+    });
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'mix', repeatCooldownHours: 12 }, {}, db, { log: jest.fn() });
+    const blocks = autoDJ.getSelectionBlocks(now);
+
+    expect(autoDJ.isTrackBlocked({ youtubeId: 'seen-id', title: 'Other', artist: 'Other' }, blocks)).toBe(true);
+    expect(autoDJ.isTrackBlocked({ youtubeId: 'new-id', title: 'same song', artist: 'Artist One' }, blocks)).toBe(true);
+    expect(autoDJ.isTrackBlocked({ youtubeId: 'bad-id', title: 'Fresh', artist: 'Fresh' }, blocks)).toBe(true);
+    expect(autoDJ.isTrackBlocked({ youtubeId: 'new-id', title: 'Fresh', artist: 'Fresh' }, blocks)).toBe(false);
+  });
+
+  test('persists a failed Auto-DJ track until the cooldown expires', () => {
+    const now = Date.UTC(2026, 6, 14, 12, 0, 0);
+    const db = createAutoDjDb();
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'mix', repeatCooldownHours: 12 }, {}, db, { log: jest.fn() });
+
+    autoDJ.recordFailedTrack({ youtubeId: 'stream-failure', title: 'Broken Stream', artist: 'DJ Test' }, 'end-file', now);
+
+    expect(db.runCalls[0]).toEqual(expect.objectContaining({
+      youtubeId: 'stream-failure', titleKey: 'broken stream', artistKey: 'dj test',
+      expiresAt: now + (12 * 60 * 60 * 1000), reason: 'end-file'
+    }));
   });
 
   test('only counts Auto-DJ tracks after playback starts successfully', async () => {
