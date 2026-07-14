@@ -251,6 +251,7 @@ describe('Music Bot runtime and UI regressions', () => {
       markPlaybackFailed: jest.fn()
     };
     plugin.playbackEngine = {
+      getNowPlaying: jest.fn(() => failedTrack),
       clearNowPlaying: jest.fn(),
       restart: jest.fn(),
       play: jest.fn()
@@ -270,6 +271,60 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledWith(true);
     expect(plugin.playbackEngine.restart).not.toHaveBeenCalled();
     expect(plugin.playbackEngine.play).not.toHaveBeenCalled();
+  });
+
+  test('ignores a delayed Auto-DJ track-end for the replaced track after watchdog recovery', async () => {
+    const failedTrack = { id: 'auto-dj-a', title: 'Auto-DJ A', requestedBy: 'AutoDJ' };
+    const replacementTrack = { id: 'auto-dj-b', title: 'Auto-DJ B', requestedBy: 'AutoDJ' };
+    const { plugin } = createPluginWithQueue([]);
+    const playbackEngine = new (require('events'))();
+    let activeTrack = failedTrack;
+    playbackEngine.getNowPlaying = jest.fn(() => activeTrack);
+    playbackEngine.getPosition = jest.fn(async () => {
+      throw new Error('MPV did not respond');
+    });
+    playbackEngine.clearNowPlaying = jest.fn(() => {
+      activeTrack = null;
+    });
+    plugin.playbackEngine = playbackEngine;
+    plugin.autoDJ = {
+      recordFailedTrack: jest.fn(),
+      markPlaybackFailed: jest.fn(),
+      setPlaybackSeed: jest.fn()
+    };
+    plugin.queueManager = {
+      markPlaying: jest.fn(),
+      resetVoteSkips: jest.fn(),
+      addToHistory: jest.fn(),
+      removeSkipImmunity: jest.fn()
+    };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._startPlaybackSync = jest.fn();
+    plugin._clearCrossfadeTimer = jest.fn();
+    plugin._emitError = jest.fn();
+    plugin._emitPlaybackStopped = jest.fn();
+    plugin._maybePlayAutoDJ = jest.fn(async () => {
+      activeTrack = replacementTrack;
+      playbackEngine.emit('track-start', replacementTrack);
+      return replacementTrack;
+    });
+    plugin._registerPlaybackEvents();
+
+    await plugin._recoverStalledPlayback(failedTrack, new Error('watchdog timed out'));
+    expect(activeTrack).toBe(replacementTrack);
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
+    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
+
+    playbackEngine.emit('track-end', {
+      track: failedTrack,
+      reason: 'error',
+      error: 'Delayed end-file event for A'
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(activeTrack).toBe(replacementTrack);
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
+    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
   });
 
   test('returns a requested song to the front when MPV rejects its start command', async () => {
