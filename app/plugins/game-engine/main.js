@@ -34,6 +34,7 @@ const net = require('net');
 
 const AVATAR_PROXY_ALLOWED_HOST_SUFFIXES = [
   'tiktokcdn.com',
+  'tiktokcdn-eu.com',
   'tiktokcdn-us.com',
   'bytegoofy.com',
   'tiktok.com',

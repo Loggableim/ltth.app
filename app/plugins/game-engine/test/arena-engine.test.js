@@ -6613,6 +6613,42 @@ describe('GameEnginePlugin arena integration', () => {
     }
   });
 
+  it('proxies current TikTok EU CDN avatar hosts as images', async () => {
+    const { plugin, routes } = createPlugin();
+    const originalFetch = global.fetch;
+    const imageBytes = Buffer.from('avatar-image');
+    const res = {
+      status: jest.fn(() => res),
+      json: jest.fn(),
+      setHeader: jest.fn(),
+      send: jest.fn()
+    };
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: jest.fn(() => 'image/webp') },
+      arrayBuffer: jest.fn().mockResolvedValue(imageBytes)
+    });
+
+    try {
+      plugin.registerRoutes();
+      await routes['GET /api/game-engine/arena/avatar']({
+        query: {
+          url: 'https://p16-common-sign.tiktokcdn-eu.com/avatar.webp?x-signature=test'
+        }
+      }, res);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://p16-common-sign.tiktokcdn-eu.com/avatar.webp?x-signature=test',
+        expect.objectContaining({ redirect: 'manual' })
+      );
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/webp');
+      expect(res.send).toHaveBeenCalledWith(imageBytes);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
   it('keeps chat activity flowing to the arena when GCCE owns chat commands', () => {
     const { plugin, handlers } = createPlugin();
     plugin.gcceCommandsRegistered = true;
