@@ -13,7 +13,7 @@ function createDbMock() {
   };
 }
 
-function createAutoDjDb({ recentHistory = [], exclusions = [] } = {}) {
+function createAutoDjDb({ recentHistory = [], exclusions = [], historyCandidates = [] } = {}) {
   const runCalls = [];
   return {
     runCalls,
@@ -22,7 +22,8 @@ function createAutoDjDb({ recentHistory = [], exclusions = [] } = {}) {
         runCalls.push(params);
       }),
       all: jest.fn(() => {
-        if (sql.includes('plugin_music_bot_history')) return recentHistory;
+        if (sql.includes('finishedAt >= ?')) return recentHistory;
+        if (sql.includes('plugin_music_bot_history')) return historyCandidates;
         if (sql.includes('plugin_music_bot_autodj_exclusions')) return exclusions;
         return [];
       })
@@ -445,6 +446,107 @@ describe('Music Bot core features', () => {
 
     expect(autoDJ.config.repeatCooldownHours).toBe(expectedHours);
     expect(db.runCalls[0].expiresAt).toBe(now + (expectedHours * 60 * 60 * 1000));
+  });
+
+  test('chooses an eligible history candidate when the weighted mix roll selects history', async () => {
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'mix',
+      mixHistoryPercent: 80,
+      historyMinPlays: 2,
+      historyShuffled: false
+    }, {}, createAutoDjDb({
+      historyCandidates: [{
+        youtubeId: 'history-only', title: 'History only', artist: 'History Artist',
+        url: 'https://www.youtube.com/watch?v=history-only', plays: 2
+      }]
+    }), { log: jest.fn() });
+    const originalRandom = Math.random;
+    Math.random = jest.fn(() => 0.2);
+
+    try {
+      const result = await autoDJ.getNextSong();
+
+      expect(result.song.youtubeId).toBe('history-only');
+      expect(autoDJ.getStatus().selectionSource).toBe('history');
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  test('falls back to history when the weighted radio lookup has no result', async () => {
+    const seed = {
+      youtubeId: 'seed-1', title: 'History seed', artist: 'Seed Artist',
+      url: 'https://www.youtube.com/watch?v=seed-1', plays: 2
+    };
+    const resolver = { resolvePlaylistEntry: jest.fn(async () => ({ success: false })) };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'mix',
+      mixHistoryPercent: 0,
+      historyMinPlays: 2,
+      historyShuffled: false
+    }, resolver, createAutoDjDb({ historyCandidates: [seed] }), { log: jest.fn() });
+    const originalRandom = Math.random;
+    Math.random = jest.fn(() => 0);
+
+    try {
+      const result = await autoDJ.getNextSong();
+
+      expect(resolver.resolvePlaylistEntry).toHaveBeenCalledWith(
+        'https://www.youtube.com/watch?v=seed-1&list=RDseed-1',
+        2
+      );
+      expect(result.song.youtubeId).toBe('seed-1');
+      expect(autoDJ.getStatus().selectionSource).toBe('history-fallback');
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  test('skips blocked radio suggestions and accepts the next fresh suggestion', async () => {
+    const resolver = {
+      resolvePlaylistEntry: jest.fn(async (_url, index) => ({
+        success: true,
+        song: index === 2
+          ? { youtubeId: 'blocked-radio', title: 'Blocked radio', artist: 'Blocked Artist' }
+          : { youtubeId: 'fresh-radio', title: 'Fresh radio', artist: 'Fresh Artist' }
+      }))
+    };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'mix',
+      mixHistoryPercent: 0,
+      historyMinPlays: 2,
+      historyShuffled: false
+    }, resolver, createAutoDjDb({
+      exclusions: [{ youtubeId: '', titleKey: '', artistKey: 'blocked artist' }],
+      historyCandidates: [{
+        youtubeId: 'seed-2', title: 'Seed', artist: 'Seed Artist',
+        url: 'https://www.youtube.com/watch?v=seed-2', plays: 2
+      }]
+    }), { log: jest.fn() });
+    const originalRandom = Math.random;
+    Math.random = jest.fn(() => 0);
+
+    try {
+      const result = await autoDJ.getNextSong();
+
+      expect(result.song.youtubeId).toBe('fresh-radio');
+      expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(
+        1,
+        'https://www.youtube.com/watch?v=seed-2&list=RDseed-2',
+        2
+      );
+      expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(
+        2,
+        'https://www.youtube.com/watch?v=seed-2&list=RDseed-2',
+        3
+      );
+      expect(autoDJ.getStatus().selectionSource).toBe('radio');
+    } finally {
+      Math.random = originalRandom;
+    }
   });
 
   test('only counts Auto-DJ tracks after playback starts successfully', async () => {
