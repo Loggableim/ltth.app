@@ -1,3 +1,5 @@
+const { randomUUID } = require('crypto');
+
 class AutoDJ {
   constructor(config, musicResolver, db, api) {
     this.api = api;
@@ -120,6 +122,76 @@ class AutoDJ {
 
   markPlaybackFailed(error) {
     this._setResult('error', `Wiedergabe fehlgeschlagen: ${error?.message || error || 'Unbekannter Fehler'}`);
+  }
+
+  getSelectionBlocks(now = Date.now()) {
+    const cooldownMs = this._getRepeatCooldownMs();
+    const blocks = {
+      youtubeIds: new Set(),
+      titleKeys: new Set(),
+      artistKeys: new Set()
+    };
+
+    const addTrack = (track) => {
+      const youtubeId = String(track.youtubeId || '').trim();
+      const titleKey = this._normalizeText(track.titleKey ?? track.title);
+      const artistKey = this._normalizeText(track.artistKey ?? track.artist);
+      if (youtubeId) blocks.youtubeIds.add(youtubeId);
+      if (titleKey) blocks.titleKeys.add(titleKey);
+      if (artistKey) blocks.artistKeys.add(artistKey);
+    };
+
+    try {
+      const history = this.db.prepare(
+        `SELECT youtubeId, title, artist
+         FROM plugin_music_bot_history
+         WHERE COALESCE(skipped, 0) = 0 AND finishedAt >= ?`
+      ).all(now - cooldownMs);
+      history.forEach(addTrack);
+
+      const exclusions = this.db.prepare(
+        `SELECT youtubeId, titleKey, artistKey
+         FROM plugin_music_bot_autodj_exclusions
+         WHERE expiresAt > ?`
+      ).all(now);
+      exclusions.forEach(addTrack);
+    } catch (error) {
+      this.api.log?.(`[music-bot] AutoDJ block lookup failed: ${error.message}`, 'warn');
+    }
+
+    return blocks;
+  }
+
+  isTrackBlocked(track, blocks) {
+    const youtubeId = String(track?.youtubeId || '').trim();
+    const titleKey = this._normalizeText(track?.title);
+    const artistKey = this._normalizeText(track?.artist);
+    return Boolean(
+      (youtubeId && blocks.youtubeIds.has(youtubeId)) ||
+      (titleKey && blocks.titleKeys.has(titleKey)) ||
+      (artistKey && blocks.artistKeys.has(artistKey))
+    );
+  }
+
+  recordFailedTrack(track, reason, now = Date.now()) {
+    const createdAt = now;
+    try {
+      this.db.prepare(
+        `INSERT INTO plugin_music_bot_autodj_exclusions
+          (id, youtubeId, titleKey, artistKey, expiresAt, reason, createdAt)
+          VALUES (@id, @youtubeId, @titleKey, @artistKey, @expiresAt, @reason, @createdAt)`
+      ).run({
+        id: randomUUID(),
+        youtubeId: String(track?.youtubeId || '').trim(),
+        titleKey: this._normalizeText(track?.title),
+        artistKey: this._normalizeText(track?.artist),
+        expiresAt: createdAt + this._getRepeatCooldownMs(),
+        reason: String(reason || ''),
+        createdAt
+      });
+    } catch (error) {
+      this.api.log?.(`[music-bot] Failed to persist AutoDJ exclusion: ${error.message}`, 'warn');
+    }
   }
 
   getStatus() {
@@ -288,6 +360,18 @@ class AutoDJ {
       message,
       updatedAt: Date.now()
     };
+  }
+
+  _getRepeatCooldownMs() {
+    return Math.max(Number(this.config.repeatCooldownHours) || 0, 0) * 60 * 60 * 1000;
+  }
+
+  _normalizeText(value) {
+    return String(value || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^\p{L}\p{N}]+/gu, ' ')
+      .trim();
   }
 }
 
