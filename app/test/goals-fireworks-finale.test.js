@@ -178,6 +178,40 @@ describe('Goals firework finale integration', () => {
     expect(fireworksPlugin.triggerFinale).toHaveBeenCalledTimes(1);
   });
 
+  test('prefers the WebGPU Fireworks finale for a reached Like goal', () => {
+    const sqlite = new Database(':memory:');
+    const webgpuFireworks = { triggerFinale: jest.fn() };
+    const legacyFireworks = { triggerFinale: jest.fn() };
+    const api = createApi(sqlite, new Map([
+      ['webgpu-fireworks', webgpuFireworks],
+      ['fireworks', legacyFireworks]
+    ]));
+    const plugin = new GoalsPlugin(api);
+
+    plugin.db.initialize();
+    const goal = plugin.db.createGoal({
+      id: 'goal_live_likes_webgpu_fireworks',
+      name: 'WebGPU Like Finale',
+      goal_type: 'likes',
+      current_value: 0,
+      target_value: 100,
+      firework_enabled: 1,
+      firework_intensity: 4,
+      firework_duration: 7000
+    });
+
+    const machine = plugin.stateMachineManager.getMachine(goal.id);
+    machine.initialize(goal);
+    plugin.setupStateMachineListeners(machine);
+
+    plugin.eventHandlers.setGoalValue(goal.id, 100);
+    machine.onUpdateAnimationEnd();
+
+    expect(webgpuFireworks.triggerFinale).toHaveBeenCalledWith(4, 7000);
+    expect(webgpuFireworks.triggerFinale).toHaveBeenCalledTimes(1);
+    expect(legacyFireworks.triggerFinale).not.toHaveBeenCalled();
+  });
+
   test('turns goal progress milestones into stable firework triggers before the finale', () => {
     const sqlite = new Database(':memory:');
     const fireworksPlugin = { triggerFinale: jest.fn(), triggerFirework: jest.fn() };
