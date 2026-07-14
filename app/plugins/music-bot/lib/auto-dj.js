@@ -334,9 +334,10 @@ class AutoDJ {
   async _pickFromMix() {
     const candidates = this._loadHistoryCandidates();
     const blocks = this.getSelectionBlocks();
+    this.selectionSource = null;
     this.blockedCount = candidates.filter((candidate) => this.isTrackBlocked(candidate, blocks)).length;
 
-    const pickHistory = () => this._pickFromHistoryCandidates(candidates, blocks);
+    const pickHistory = () => this._pickFromHistoryCandidates(candidates, blocks, { allowPlayedFallback: false });
     const pickRadio = async () => {
       const seed = this._nextMixSeed(candidates, blocks);
       return seed ? this._pickRelatedToSeed(seed, blocks) : null;
@@ -441,9 +442,10 @@ class AutoDJ {
       .all(minPlays);
   }
 
-  _pickFromHistoryCandidates(candidates, blocks) {
+  _pickFromHistoryCandidates(candidates, blocks, { allowPlayedFallback = true } = {}) {
     const eligible = this._getEligibleHistoryCandidates(candidates, blocks);
-    const candidate = eligible.find((row) => !this.playedInSession.has(row.youtubeId)) || eligible[0];
+    const candidate = eligible.find((row) => !this.playedInSession.has(row.youtubeId))
+      || (allowPlayedFallback ? eligible[0] : null);
     return candidate ? this._toTrack(candidate) : null;
   }
 

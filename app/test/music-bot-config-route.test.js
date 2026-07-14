@@ -186,6 +186,32 @@ describe('music-bot POST /api/plugins/music-bot/config', () => {
     expect(getBody.config.commandAliases.skip).toEqual(['old-skip']);
   });
 
+  test('normalizes Radio-Mix values submitted through the general config route', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    plugin._applyAudioVolume = jest.fn(async () => {});
+    plugin._registerRoutes();
+
+    const handler = api.handlers['POST:/api/plugins/music-bot/config'];
+    const res = createResponseMock();
+    await handler({ body: {
+      autoDJ: {
+        mode: 'mix',
+        mixHistoryPercent: -12,
+        repeatCooldownHours: 300
+      }
+    } }, res);
+
+    const persisted = api.setConfig.mock.calls[0][1];
+    expect(persisted.autoDJ).toMatchObject({
+      mode: 'mix',
+      mixHistoryPercent: 0,
+      repeatCooldownHours: 168
+    });
+    expect(plugin.autoDJ.updateConfig).toHaveBeenCalledWith(persisted.autoDJ);
+  });
+
   test('regression: merges and persists blocked keywords, aliases and both gift catalogs in one API update path', async () => {
     const api = createApi();
     const plugin = new MusicBotPlugin(api);
@@ -305,6 +331,36 @@ describe('music-bot Auto-DJ routes', () => {
     expect(plugin.autoDJ.activate).toHaveBeenCalledTimes(1);
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, track }));
+  });
+
+  test('normalizes Radio-Mix config before persisting the Auto-DJ toggle payload', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    plugin.queueManager = { getQueue: jest.fn(() => []) };
+    plugin.playbackEngine = { isPlaying: jest.fn(() => true) };
+    plugin.autoDJ = {
+      updateConfig: jest.fn(),
+      getStatus: jest.fn(() => ({ enabled: false }))
+    };
+    plugin._registerRoutes();
+
+    const handler = api.handlers['POST:/api/plugins/music-bot/auto-dj/toggle'];
+    const res = createResponseMock();
+    await handler({ body: {
+      enabled: false,
+      mode: 'mix',
+      mixHistoryPercent: 140.9,
+      repeatCooldownHours: 0
+    } }, res);
+
+    const persisted = api.setConfig.mock.calls[0][1];
+    expect(persisted.autoDJ).toMatchObject({
+      enabled: false,
+      mode: 'mix',
+      mixHistoryPercent: 100,
+      repeatCooldownHours: 1
+    });
+    expect(plugin.autoDJ.updateConfig).toHaveBeenCalledWith(persisted.autoDJ);
   });
 
   test('starts a selected queue item when the player has no current track', async () => {

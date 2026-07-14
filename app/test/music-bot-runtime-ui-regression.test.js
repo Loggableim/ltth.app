@@ -57,6 +57,7 @@ function bootMusicBotUi(options = {}) {
     randomKeywords: [],
     playlistUrls: []
   };
+  const autoDjStatus = options.autoDjStatus;
   const statusOnboarding = options.statusOnboarding || {
     completed: false,
     completedAt: null
@@ -72,6 +73,9 @@ function bootMusicBotUi(options = {}) {
       }
       return createJsonResponse({ success: true, config: {} });
     }
+    if (target.includes('/auto-dj/status') && autoDjStatus) {
+      return createJsonResponse({ success: true, status: autoDjStatus });
+    }
     if (target.includes('/status')) {
       return createJsonResponse({
         success: true,
@@ -85,18 +89,6 @@ function bootMusicBotUi(options = {}) {
     }
     if (target.includes('/queue')) return createJsonResponse({ success: true, queue: [] });
     if (target.includes('/history')) return createJsonResponse({ success: true, history: [] });
-    if (target.includes('/auto-dj/status')) {
-      return createJsonResponse({
-        success: true,
-        status: {
-          enabled: false,
-          mode: 'history',
-          historyMinPlays: 2,
-          maxConsecutiveAutoDJ: 10,
-          announceAutoDJ: true
-        }
-      });
-    }
     if (target.includes('/bans')) return createJsonResponse({ success: true, bans: [] });
     if (target.includes('/gift-catalog')) return createJsonResponse({ catalog: [] });
     if (target.includes('/setup-status')) return createJsonResponse({ success: true, issues: setupIssues });
@@ -222,6 +214,28 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin.queueManager.shiftNext).not.toHaveBeenCalled();
     expect(plugin._skipCurrent).not.toHaveBeenCalled();
     expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
+  });
+
+  test('records the selected Auto-DJ track when its initial playback start fails', async () => {
+    const track = { id: 'start-failed', title: 'Broken stream', requestedBy: 'AutoDJ' };
+    const { plugin } = createPluginWithQueue([]);
+    plugin._maybePlayAutoDJ = MusicBotPlugin.prototype._maybePlayAutoDJ.bind(plugin);
+    plugin.config.autoDJ.enabled = true;
+    plugin.autoDJ = {
+      getNextSong: jest.fn(async () => ({ song: track })),
+      recordFailedTrack: jest.fn(),
+      markPlaybackFailed: jest.fn()
+    };
+    plugin.playbackEngine = { play: jest.fn(async () => { throw new Error('loadfile failed'); }) };
+
+    const result = await plugin._maybePlayAutoDJ(true);
+
+    expect(result).toBeNull();
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(track, 'start-failed');
+    expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordFailedTrack.mock.invocationCallOrder[0])
+      .toBeLessThan(plugin.autoDJ.markPlaybackFailed.mock.invocationCallOrder[0]);
+    expect(plugin.autoDJ.getNextSong).toHaveBeenCalledTimes(1);
   });
 
   test('keeps an Auto-DJ stream playing when a longer IPC position probe confirms playback', async () => {
@@ -969,6 +983,53 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(togglePost).toBeTruthy();
     const payload = JSON.parse(togglePost[1].body);
     expect(payload.mixHistoryPercent).toBe(0);
+  });
+
+  test('restores a saved zero Radio-Mix history percentage', async () => {
+    const { dom } = bootMusicBotUi({
+      autoDjConfig: {
+        enabled: true,
+        mode: 'mix',
+        historyMinPlays: 1,
+        maxConsecutiveAutoDJ: 10,
+        announceAutoDJ: true,
+        mixHistoryPercent: 0,
+        repeatCooldownHours: 12,
+        playlistUrls: []
+      }
+    });
+    doms.push(dom);
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(dom.window.document.getElementById('auto-dj-mix-history-percent').value).toBe('0');
+  });
+
+  test('shows compact German Auto-DJ selection diagnostics without replacing the last result', async () => {
+    const { dom } = bootMusicBotUi({
+      autoDjStatus: {
+        enabled: true,
+        mode: 'mix',
+        historyMinPlays: 2,
+        mixHistoryPercent: 80,
+        repeatCooldownHours: 12,
+        maxConsecutiveAutoDJ: 10,
+        announceAutoDJ: true,
+        selectionSource: 'radio',
+        blockedCount: 3,
+        lastResult: { state: 'selected', message: 'Ausgewählt: Frischer Titel' }
+      }
+    });
+    doms.push(dom);
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const detail = dom.window.document.getElementById('auto-dj-detail').textContent;
+    expect(detail).toContain('Ausgewählt: Frischer Titel');
+    expect(detail).toContain('Quelle: radio');
+    expect(detail).toContain('Gesperrt: 3');
   });
 
   test('restores saved Auto-DJ playlist URLs into the settings form', async () => {

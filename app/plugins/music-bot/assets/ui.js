@@ -1496,7 +1496,12 @@
     if (autoDjPlaylistUrls) autoDjPlaylistUrls.value = (status.playlistUrls || []).join('\n');
     autoDjStatus.textContent = status.enabled ? (status.lastResult?.state === 'playing' ? 'Spielt' : 'Aktiv') : 'Deaktiviert';
     autoDjStatus.title = status.lastResult?.message || '';
-    if (autoDjDetail) autoDjDetail.textContent = status.lastResult?.message || '';
+    if (autoDjDetail) {
+      const diagnostics = [];
+      if (status.selectionSource) diagnostics.push(`Quelle: ${status.selectionSource}`);
+      if (typeof status.blockedCount === 'number') diagnostics.push(`Gesperrt: ${status.blockedCount}`);
+      autoDjDetail.textContent = [status.lastResult?.message, diagnostics.join(' · ')].filter(Boolean).join(' · ');
+    }
     if (heroAutodjStatus) heroAutodjStatus.textContent = status.enabled ? 'Ein' : 'Aus';
   }
 

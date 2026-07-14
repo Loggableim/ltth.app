@@ -133,8 +133,10 @@ const DEFAULT_CONFIG = {
     mode: 'history',
     historyMinPlays: 2,
     historyShuffled: true,
+    mixHistoryPercent: 80,
     maxConsecutiveAutoDJ: 10,
     announceAutoDJ: true,
+    repeatCooldownHours: 12,
     playlistUrls: [],
     playlistFallbackToRandom: true
   },
@@ -278,6 +280,7 @@ class MusicBotPlugin extends EventEmitter {
     this.config.moderation = this._mergeDeep(DEFAULT_CONFIG.moderation, this.config.moderation || {});
     this.config.monetization = this._mergeDeep(DEFAULT_CONFIG.monetization, this.config.monetization || {});
     this.config.audio = this._mergeDeep(DEFAULT_CONFIG.audio, this.config.audio || {});
+    this.config.autoDJ = this._normalizeAutoDJConfig(this.config.autoDJ);
     this.config.onboarding = this._normalizeOnboarding(this.config.onboarding);
     if (!Array.isArray(this.config.moderation.blockedKeywords)) {
       this.config.moderation.blockedKeywords = [];
@@ -828,6 +831,20 @@ class MusicBotPlugin extends EventEmitter {
     };
   }
 
+  _normalizeAutoDJConfig(value) {
+    const config = value && typeof value === 'object' ? { ...value } : {};
+    const normalizeInteger = (input, fallback, minimum, maximum) => {
+      const numeric = Number(input);
+      const normalized = Number.isFinite(numeric) ? Math.floor(numeric) : fallback;
+      return Math.min(maximum, Math.max(minimum, normalized));
+    };
+    return {
+      ...config,
+      mixHistoryPercent: normalizeInteger(config.mixHistoryPercent, 80, 0, 100),
+      repeatCooldownHours: normalizeInteger(config.repeatCooldownHours, 12, 1, 168)
+    };
+  }
+
   _getRequestCredits(username) {
     const key = String(username || '').toLowerCase();
     if (!key) return 0;
@@ -1191,6 +1208,7 @@ class MusicBotPlugin extends EventEmitter {
       this.config.moderation = this._mergeDeep(DEFAULT_CONFIG.moderation, this.config.moderation || {});
       this.config.monetization = this._mergeDeep(DEFAULT_CONFIG.monetization, this.config.monetization || {});
       this.config.audio = this._mergeDeep(DEFAULT_CONFIG.audio, this.config.audio || {});
+      this.config.autoDJ = this._normalizeAutoDJConfig(this.config.autoDJ);
       if (!Array.isArray(this.config.moderation.blockedKeywords)) {
         this.config.moderation.blockedKeywords = [];
       }
@@ -1356,6 +1374,7 @@ class MusicBotPlugin extends EventEmitter {
     this.api.registerRoute('post', '/api/plugins/music-bot/auto-dj/toggle', async (req, res) => {
       const payload = req.body || {};
       this.config.autoDJ = this._mergeDeep(this.config.autoDJ, payload);
+      this.config.autoDJ = this._normalizeAutoDJConfig(this.config.autoDJ);
       this.autoDJ?.updateConfig(this.config.autoDJ);
       if (this.config.autoDJ.enabled) {
         this.autoDJ?.activate();
@@ -2345,6 +2364,7 @@ class MusicBotPlugin extends EventEmitter {
       }
       return track;
     } catch (error) {
+      this.autoDJ.recordFailedTrack?.(track, 'start-failed');
       this.autoDJ.markPlaybackFailed(error);
       this.api.log(`[music-bot] AutoDJ playback failed: ${error.message}`, 'error');
       return null;
