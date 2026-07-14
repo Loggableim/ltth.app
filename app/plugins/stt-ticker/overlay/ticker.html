@@ -266,6 +266,7 @@
     const ring = ['', '', ''];
     let ringFilled = 0;
     let lastSeenSegId = null;
+    let interimText = '';
     function getThemeStyles(theme) {
       const isDay = theme === 'day';
       const isHighContrast = theme === 'contrast' || theme === 'vision-impaired';
@@ -457,16 +458,35 @@
 
     function renderClassic() {
       setActiveMode('classic');
-      line0.textContent = ring[2];
-      line1.textContent = ring[1];
-      line2.textContent = ring[0];
+      if (interimText) {
+        line0.textContent = interimText;
+        line1.textContent = ring[2];
+        line2.textContent = ring[1];
+      } else {
+        line0.textContent = ring[2];
+        line1.textContent = ring[1];
+        line2.textContent = ring[0];
+      }
       updateClassicVisibility();
+    }
+
+    function renderInterim(data) {
+      const text = String(data?.text || '').trim();
+      if (data?.isFinal || !text) {
+        const classicWasVisible = linesContainer.style.display !== 'none';
+        interimText = '';
+        if (classicWasVisible) renderClassic();
+        return;
+      }
+      interimText = text;
+      renderClassic();
     }
 
     function clearAll() {
       ring[0] = ring[1] = ring[2] = '';
       ringFilled = 0;
       lastSeenSegId = null;
+      interimText = '';
       setActiveMode('classic');
       renderClassic();
       if (dualContainer) dualContainer.innerHTML = '';
@@ -605,6 +625,8 @@
         return;
       }
     });
+
+    socket.on('stt-ticker:interim', renderInterim);
 
     socket.on('stt-ticker:clear', () => clearAll());
 
