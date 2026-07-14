@@ -1439,7 +1439,7 @@
           <input type="checkbox" id="vrchat-chatbox-enabled">
           An VRChat-Chatbox senden
         </label>
-        <p class="help-text">Sendet nur finale Original-Untertitel nach 700 ms BÃ¼ndelung. Lange Texte werden automatisch auf das VRChat-Chatbox-Limit aufgeteilt.</p>
+        <p class="help-text">Sendet nur finale Original-Untertitel nach 700 ms Bündelung. Lange Texte werden automatisch auf das VRChat-Chatbox-Limit aufgeteilt.</p>
         <div class="btn-row">
           <button id="btn-save-vrchat-chatbox" class="btn btn-primary btn-sm">VRChat-Ausgabe speichern</button>
           <span id="vrchat-chatbox-status" style="font-size:12px;"></span>
@@ -1558,7 +1558,7 @@
             vrchatStatus.textContent = 'OSC-Bridge bereit';
             vrchatStatus.style.color = '#4CAF50';
           } else {
-            vrchatStatus.textContent = vrchat.lastError || 'OSC-Bridge nicht verfÃ¼gbar â€“ Untertitel bleiben aktiv.';
+            vrchatStatus.textContent = vrchat.lastError || 'OSC-Bridge nicht verfügbar – Untertitel bleiben aktiv.';
             vrchatStatus.style.color = 'var(--stt-status-warning, #facc15)';
           }
         }
@@ -1858,7 +1858,7 @@
         });
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'Speichern fehlgeschlagen');
-        status.textContent = enabled ? 'Aktiviert â€“ OSC-Bridge wird geprÃ¼ft.' : 'Deaktiviert';
+            status.textContent = enabled ? 'Aktiviert – OSC-Bridge wird geprüft.' : 'Deaktiviert';
         status.style.color = enabled ? '#4CAF50' : '#888';
         refreshStatus();
       } catch (error) {

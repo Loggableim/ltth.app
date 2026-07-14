@@ -132,11 +132,11 @@ describe('Soundboard Audio Animations Export/Import', () => {
                 const localeContent = fs.readFileSync(localePath, 'utf8');
                 const localeData = JSON.parse(localeContent);
                 
-                expect(localeData.soundboard.animations).toBeDefined();
-                expect(localeData.soundboard.animations.export).toBeDefined();
-                expect(localeData.soundboard.animations.import).toBeDefined();
-                expect(localeData.soundboard.animations.exportSuccess).toBeDefined();
-                expect(localeData.soundboard.animations.importSuccess).toBeDefined();
+                expect(localeData.plugins.soundboard.soundboard.animations).toBeDefined();
+                expect(localeData.plugins.soundboard.soundboard.animations.export).toBeDefined();
+                expect(localeData.plugins.soundboard.soundboard.animations.import).toBeDefined();
+                expect(localeData.plugins.soundboard.soundboard.animations.exportSuccess).toBeDefined();
+                expect(localeData.plugins.soundboard.soundboard.animations.importSuccess).toBeDefined();
             });
         });
     });

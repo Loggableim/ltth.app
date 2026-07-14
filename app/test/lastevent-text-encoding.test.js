@@ -64,10 +64,20 @@ describe('LastEvent text encoding regressions', () => {
     const es = JSON.parse(fs.readFileSync(path.join(root, 'es.json'), 'utf8'));
     const fr = JSON.parse(fs.readFileSync(path.join(root, 'fr.json'), 'utf8'));
 
+    // Plugin locale files are intentionally isolated below plugins.<id>.
+    de.spotlight = de.plugins.spotlight.spotlight;
+    es.spotlight = es.plugins.spotlight.spotlight;
+    fr.spotlight = fr.plugins.spotlight.spotlight;
+
     expect(de.spotlight.overlays.open).toBe('Overlay öffnen');
     expect(de.spotlight.appearance.font_size).toBe('Schriftgröße');
     expect(es.spotlight.config.title).toBe('Configuración');
     expect(es.spotlight.config.save).toBe('Guardar Configuración');
     expect(fr.spotlight.config.save).toBe('Enregistrer les Paramètres');
+  });
+
+  test('STT Ticker UI has no malformed UTF-8 sequences', () => {
+    const content = fs.readFileSync(path.join(__dirname, '../plugins/stt-ticker/ui.html'), 'utf8');
+    expect(content).not.toMatch(/(?:\uFFFD|\u00C3(?:\u0192|[\u0080-\u00BF])|\u00C2[\u0080-\u00BF]|\u00E2[\u0080-\u00BF]{1,2})/);
   });
 });
