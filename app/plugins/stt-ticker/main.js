@@ -14,6 +14,7 @@
 const path = require('path');
 const multer = require('multer');
 const AsrPipeline = require('./backend/asr-pipeline');
+const DeepgramLiveSessionManager = require('./backend/asr/deepgram-live-session');
 const TextBuffer = require('./backend/text-buffer');
 const Translator = require('./backend/translator');
 const { routeTranscriptSegments } = require('./backend/lang-detect');
@@ -46,6 +47,7 @@ class SttTickerPlugin {
     this.configManager = null;
     this.config = null;
     this.asrPipeline = null;
+    this.deepgramLiveSessions = null;
     this.textBuffer = null;
     this.translator = null;
     this.destroyed = false;
@@ -68,6 +70,19 @@ class SttTickerPlugin {
 
       // ASR-Pipeline initialisieren
       this.asrPipeline = new AsrPipeline(this.api, this.config, this.logger);
+
+      this.deepgramLiveSessions = new DeepgramLiveSessionManager({
+        getConfig: () => this.config,
+        getApiKey: () => this.asrPipeline?.getDeepgramApiKey(),
+        logger: this.logger,
+        onInterim: (socketId, result) => this._handleDeepgramInterim(socketId, result),
+        onFinal: (socketId, result) => {
+          this._handleDeepgramFinal(socketId, result).catch(error => {
+            this.logger.warn(`Deepgram live final processing failed: ${error.message}`);
+          });
+        },
+        onStatus: (socketId, status) => this._emitDeepgramLiveStatus(socketId, status)
+      });
 
       // Translator initialisieren (optional)
       this.translator = new Translator(this.config, this.logger);
@@ -95,6 +110,11 @@ class SttTickerPlugin {
     this.logger.info('Destroying STT Ticker Plugin...');
     this.destroyed = true;
     this._clearVrchatChatboxQueue();
+
+    if (this.deepgramLiveSessions) {
+      await this.deepgramLiveSessions.destroy();
+      this.deepgramLiveSessions = null;
+    }
 
     if (this.asrPipeline) {
       this.asrPipeline.destroy();
@@ -506,26 +526,48 @@ class SttTickerPlugin {
       return this._sendError(res, 502, 'TICKER_ASR_FAILED', error.message || 'Transcription failed', true);
     }
 
-    const text = String(transcript.text || '').trim();
-    const latencyMs = Date.now() - startedAt;
-
-    if (text.length < (this.config.minTranscriptChars || 2)) {
-      this._stopVrchatChatboxTyping();
+    const committed = await this._commitTranscript(transcript, { startedAt });
+    if (!committed.accepted) {
       return res.json({
         success: true,
-        transcript: {
-          text,
-          segments: transcript.segments || [],
-          language: transcript.language || 'unknown',
-          languageSource: transcript.languageSource || 'fallback'
-        },
+        transcript: committed.transcript,
         accepted: false,
-        reason: 'transcript-too-short',
-        latencyMs
+        reason: committed.reason,
+        latencyMs: committed.latencyMs
       });
     }
 
-    // Optional: Übersetzung via Ollama Cloud
+    return res.json({
+      success: true,
+      transcript: committed.output,
+      accepted: true,
+      latencyMs: committed.latencyMs,
+      language: transcript.language,
+      languageSource: transcript.languageSource
+    });
+  }
+
+  async _commitTranscript(transcript, options = {}) {
+    const text = String(transcript?.text || '').trim();
+    const latencyMs = Number.isFinite(options.latencyMs)
+      ? options.latencyMs
+      : Math.max(0, Date.now() - (options.startedAt || Date.now()));
+
+    if (text.length < (this.config.minTranscriptChars || 2)) {
+      this._stopVrchatChatboxTyping();
+      return {
+        accepted: false,
+        reason: 'transcript-too-short',
+        latencyMs,
+        transcript: {
+          text,
+          segments: transcript?.segments || [],
+          language: transcript?.language || 'unknown',
+          languageSource: transcript?.languageSource || 'fallback'
+        }
+      };
+    }
+
     let translation = null;
     const multiCfg = this.config.multiLanguage || {};
     const multiLanguageActive = multiCfg.enabled
@@ -575,7 +617,6 @@ class SttTickerPlugin {
       });
     }
 
-    // Aktuelle Buffer-Ausgabe holen und via Socket senden
     const output = this.textBuffer ? this.textBuffer.getCurrent() : {
       text,
       segments: transcript.segments || [],
@@ -585,14 +626,43 @@ class SttTickerPlugin {
     this._emitTranscript(output);
     this._queueVrchatChatboxText(text);
 
-    return res.json({
-      success: true,
-      transcript: output,
-      accepted: true,
-      latencyMs,
-      language: transcript.language,
-      languageSource: transcript.languageSource
+    return { accepted: true, output, latencyMs };
+  }
+
+  _handleDeepgramInterim(socketId, result) {
+    if (this.destroyed || !this.config?.enabled) return false;
+    const text = String(result?.text || '').trim();
+    if (!text) return false;
+    this.io.emit('stt-ticker:interim', {
+      socketId,
+      text,
+      provider: 'deepgram',
+      isFinal: false,
+      timestamp: Date.now()
     });
+    return true;
+  }
+
+  async _handleDeepgramFinal(socketId, result) {
+    if (this.destroyed || !this.config?.enabled) return { accepted: false, reason: 'disabled' };
+
+    try {
+      const transcript = this.asrPipeline.normalizeResult(result);
+      const committed = await this._commitTranscript(transcript, { latencyMs: 0 });
+      this.io.emit('stt-ticker:interim', {
+        socketId,
+        text: '',
+        provider: 'deepgram',
+        isFinal: true,
+        timestamp: Date.now()
+      });
+      return committed;
+    } catch (error) {
+      this.asrPipeline?.recordError(error.message);
+      this.logger.warn(`Deepgram live transcript rejected: ${error.message}`);
+      this._emitDeepgramLiveStatus(socketId, { state: 'error', error: error.message });
+      return { accepted: false, reason: error.message };
+    }
   }
 
   // ==================== Socket Emitters ====================
@@ -600,6 +670,11 @@ class SttTickerPlugin {
   _emitTranscript(data) {
     if (this.destroyed) return;
     this.io.emit('stt-ticker:transcript', data);
+  }
+
+  _emitDeepgramLiveStatus(socketId, status) {
+    if (this.destroyed) return;
+    this.io.emit('stt-ticker:deepgram:status', { socketId, ...status });
   }
 
   _emitStatus() {

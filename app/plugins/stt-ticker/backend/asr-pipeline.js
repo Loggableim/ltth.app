@@ -62,61 +62,60 @@ class AsrPipeline {
         result = await this._transcribeFish(audioBuffer, options, apiLanguage);
       }
 
-      if (!result || !result.text) {
-        throw new Error('Empty transcription result');
-      }
-
-      this.diagnostics.counters.transcribed += 1;
-      this.diagnostics.lastTranscriptAt = Date.now();
-      this.diagnostics.lastError = null;
-      this.diagnostics.lastProvider = result.provider;
-
-      // Sprach-Klassifikation: bevorzugt Backend-Result, sonst Heuristik
-      let text = result.text.trim();
-
-      // HALLUZINATIONS-FILTER: Wenn Deepgram in CJK/Thai/Arabisch halluziniert,
-      // wirft das einen Mixed-Text-Output der unleserlich ist.
-      // Wir scrubben den Text BEVOR er ins Overlay geht.
-      // 1. Whitelist-Check: wenn Backend eine Sprache erkannt hat die NICHT
-      //    in der Whitelist ist (default: de,en) → komplett verwerfen.
-      if (result.language) {
-        const langWhitelist = (this.config.asr && Array.isArray(this.config.asr.languageWhitelist) && this.config.asr.languageWhitelist.length > 0)
-          ? this.config.asr.languageWhitelist
-          : ['de', 'en'];
-        const detectedLang = String(result.language).toLowerCase().slice(0, 2);
-        if (detectedLang && !langWhitelist.includes(detectedLang)) {
-          this.logger.warn(`STT Ticker: discarded transcript in language "${detectedLang}" (not in whitelist: ${langWhitelist.join(',')})`);
-          throw new Error(`Transcript language "${detectedLang}" not in whitelist`);
-        }
-      }
-
-      // 2. Unicode-Scrubber für gemischte Halluzinationen
-      text = this._scrubHallucinations(text);
-
-      // Wenn nach dem Scrubbing fast nix mehr da ist → leeres Resultat simulieren
-      if (text.length < 2) {
-        throw new Error('Empty transcription result (after hallucination filter)');
-      }
-
-      const langInfo = this._classifyLanguage(text, result.language);
-
-      return {
-        text,
-        segments: result.segments || [],
-        duration: result.duration || 0,
-        provider: result.provider,
-        model: result.model,
-        confidence: result.confidence,
-        language: langInfo.lang,
-        languageSource: langInfo.source,
-        requestId: result.requestId
-      };
+      return this.normalizeResult(result);
     } catch (error) {
       this.diagnostics.counters.errors += 1;
       this.diagnostics.lastError = error.message;
       this.logger.error(`STT Ticker: Transcription failed (${provider}): ${error.message}`);
       throw error;
     }
+  }
+
+  /**
+   * Applies the same filtering and language normalization to uploaded and live
+   * provider results before they enter any persistent output path.
+   */
+  normalizeResult(result) {
+    if (!result || !result.text) {
+      throw new Error('Empty transcription result');
+    }
+
+    let text = String(result.text).trim();
+    if (result.language) {
+      const langWhitelist = (this.config.asr
+        && Array.isArray(this.config.asr.languageWhitelist)
+        && this.config.asr.languageWhitelist.length > 0)
+        ? this.config.asr.languageWhitelist.map(language => String(language).toLowerCase().slice(0, 2))
+        : ['de', 'en'];
+      const detectedLang = String(result.language).toLowerCase().slice(0, 2);
+      if (detectedLang && !langWhitelist.includes(detectedLang)) {
+        this.logger.warn(`STT Ticker: discarded transcript in language "${detectedLang}" (not in whitelist: ${langWhitelist.join(',')})`);
+        throw new Error(`Transcript language "${detectedLang}" not in whitelist`);
+      }
+    }
+
+    text = this._scrubHallucinations(text);
+    if (text.length < 2) {
+      throw new Error('Empty transcription result (after hallucination filter)');
+    }
+
+    const langInfo = this._classifyLanguage(text, result.language);
+    this.diagnostics.counters.transcribed += 1;
+    this.diagnostics.lastTranscriptAt = Date.now();
+    this.diagnostics.lastError = null;
+    this.diagnostics.lastProvider = result.provider;
+
+    return {
+      text,
+      segments: result.segments || [],
+      duration: result.duration || 0,
+      provider: result.provider,
+      model: result.model,
+      confidence: result.confidence,
+      language: langInfo.lang,
+      languageSource: langInfo.source,
+      requestId: result.requestId
+    };
   }
 
   /**
@@ -273,8 +272,7 @@ class AsrPipeline {
       mimeType: options.mimeType,
       filename: options.filename,
       language: dgLanguage,
-      model: (asrCfg.deepgramModel || 'nova-2'),
-      threshold: '0.3'  // Confidence-Floor — unter 0.3 ist's Müll
+      model: (asrCfg.deepgramModel || 'nova-2')
     });
   }
 
@@ -483,6 +481,14 @@ class AsrPipeline {
 
   updateConfig(config) {
     this.config = config;
+  }
+
+  getEffectiveProvider() {
+    return this._resolveProvider();
+  }
+
+  getDeepgramApiKey() {
+    return this._getDeepgramKey();
   }
 
   getStatus() {
