@@ -91,6 +91,21 @@ class DeepgramLiveSessionManager {
     }
   }
 
+  finalize(socketId) {
+    const session = this.sessions.get(socketId);
+    if (!session?.open) return false;
+    try {
+      session.connection.sendFinalize({ type: 'Finalize' });
+      return true;
+    } catch (error) {
+      this._emitStatus(session, {
+        state: 'error',
+        error: this._safeErrorMessage(error, this.getApiKey())
+      });
+      return false;
+    }
+  }
+
   async stop(socketId, reason = 'stopped') {
     const session = this.sessions.get(socketId);
     if (!session) return false;

@@ -159,6 +159,9 @@ class SttTickerPlugin {
     this.api.registerRoute('get', '/stt-ticker/capture', (req, res) => {
       res.sendFile(path.join(__dirname, 'capture.html'));
     });
+    this.api.registerRoute('get', '/stt-ticker/capture-audio.js', (req, res) => {
+      res.sendFile(path.join(__dirname, 'capture-audio.js'));
+    });
 
     // Config abrufen
     this.api.registerRoute('get', '/api/stt-ticker/config', (req, res) => {
@@ -433,6 +436,43 @@ class SttTickerPlugin {
       if (current) {
         this.io.emit('stt-ticker:transcript', current);
       }
+    });
+
+    this.api.registerSocket('stt-ticker:deepgram:start', async (socket, input = {}, acknowledge) => {
+      if (!this.config?.enabled) {
+        const response = { ok: false, state: 'disabled', error: 'STT Ticker is disabled' };
+        if (typeof acknowledge === 'function') acknowledge(response);
+        return response;
+      }
+      if (this.asrPipeline?.getEffectiveProvider() !== 'deepgram') {
+        const response = { ok: false, state: 'wrong-provider', error: 'Deepgram is not the active provider' };
+        if (typeof acknowledge === 'function') acknowledge(response);
+        return response;
+      }
+
+      try {
+        const response = await this.deepgramLiveSessions.start(socket, input);
+        if (typeof acknowledge === 'function') acknowledge(response);
+        return response;
+      } catch (error) {
+        const response = { ok: false, state: 'error', error: error.message };
+        if (typeof acknowledge === 'function') acknowledge(response);
+        this._emitDeepgramLiveStatus(socket.id, response);
+        return response;
+      }
+    });
+
+    this.api.registerSocket('stt-ticker:deepgram:audio', (socket, payload) => {
+      if (this.asrPipeline?.getEffectiveProvider() !== 'deepgram') return false;
+      return this.deepgramLiveSessions?.sendAudio(socket.id, payload) || false;
+    });
+
+    this.api.registerSocket('stt-ticker:deepgram:finalize', (socket) => {
+      return this.deepgramLiveSessions?.finalize(socket.id) || false;
+    });
+
+    this.api.registerSocket('stt-ticker:deepgram:stop', (socket) => {
+      return this.deepgramLiveSessions?.stop(socket.id, 'capture-stop') || false;
     });
   }
 

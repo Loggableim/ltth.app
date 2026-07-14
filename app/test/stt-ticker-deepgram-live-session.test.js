@@ -149,4 +149,15 @@ describe('STT Ticker Deepgram live session manager', () => {
     expect(JSON.stringify(manager.getStatus())).not.toContain('test-key');
     await manager.destroy();
   });
+
+  test('finalizes an open utterance without closing the live connection', async () => {
+    const connection = createConnection();
+    const { manager, socket } = createHarness({ connections: [connection] });
+    await manager.start(socket, { sampleRate: 16000, channels: 1 });
+
+    expect(manager.finalize('capture-1')).toBe(true);
+    expect(connection.sendFinalize).toHaveBeenCalledWith({ type: 'Finalize' });
+    expect(connection.sendCloseStream).not.toHaveBeenCalled();
+    await manager.destroy();
+  });
 });
