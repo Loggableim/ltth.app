@@ -223,6 +223,55 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
   });
 
+  test('keeps an Auto-DJ stream playing when a longer IPC position probe confirms playback', async () => {
+    const current = { id: 'auto-dj-current', title: 'Auto-DJ Current', requestedBy: 'AutoDJ' };
+    const { plugin } = createPluginWithQueue([]);
+    plugin.playbackEngine = {
+      getNowPlaying: jest.fn(() => current),
+      getPosition: jest.fn(async () => 42),
+      restart: jest.fn(async () => current),
+      play: jest.fn(async () => {})
+    };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._startPlaybackSync = jest.fn();
+
+    await plugin._recoverStalledPlayback(current, new Error('mpv did not acknowledge command: get_property'));
+
+    expect(plugin.playbackEngine.getPosition).toHaveBeenCalledWith({ timeoutMs: 2000 });
+    expect(plugin.playbackEngine.restart).not.toHaveBeenCalled();
+    expect(plugin.playbackEngine.play).not.toHaveBeenCalled();
+    expect(plugin._startPlaybackSync).toHaveBeenCalledTimes(1);
+  });
+
+  test('advances a concurrently failed Auto-DJ track only once', async () => {
+    const failedTrack = { id: 'auto-dj-failed', title: 'Failed Auto-DJ', requestedBy: 'AutoDJ' };
+    const { plugin } = createPluginWithQueue([]);
+    plugin.autoDJ = {
+      recordFailedTrack: jest.fn(),
+      markPlaybackFailed: jest.fn()
+    };
+    plugin.playbackEngine = {
+      clearNowPlaying: jest.fn(),
+      restart: jest.fn(),
+      play: jest.fn()
+    };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._maybePlayAutoDJ = jest.fn(async () => null);
+
+    await Promise.all([
+      plugin._handleAutoDJPlaybackFailure(failedTrack, 'ipc-confirmed', new Error('MPV unavailable')),
+      plugin._handleAutoDJPlaybackFailure(failedTrack, 'ipc-confirmed', new Error('MPV unavailable'))
+    ]);
+
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(failedTrack, 'ipc-confirmed');
+    expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledTimes(1);
+    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
+    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledWith(true);
+    expect(plugin.playbackEngine.restart).not.toHaveBeenCalled();
+    expect(plugin.playbackEngine.play).not.toHaveBeenCalled();
+  });
+
   test('returns a requested song to the front when MPV rejects its start command', async () => {
     const queued = [{ id: 'requested', title: 'Requested Song', url: 'https://example.test/requested.mp3' }];
     const { plugin } = createPluginWithQueue(queued);
@@ -513,7 +562,7 @@ describe('Music Bot runtime and UI regressions', () => {
     }));
   });
 
-  test('surfaces an MPV playback error without advancing Auto-DJ to the next song', async () => {
+  test('routes an Auto-DJ MPV playback error through failure recovery without writing history', async () => {
     const failedTrack = { id: 'failed-track', title: 'Failed Track', requestedBy: 'AutoDJ' };
     const { plugin, api } = createPluginWithQueue([]);
     const playbackEngine = new (require('events'))();
@@ -528,6 +577,7 @@ describe('Music Bot runtime and UI regressions', () => {
     plugin._stopPlaybackSync = jest.fn();
     plugin._clearCrossfadeTimer = jest.fn();
     plugin._playNextFromQueue = jest.fn(async () => ({ success: true }));
+    plugin._handleAutoDJPlaybackFailure = jest.fn(async () => null);
     plugin._emitPlaybackStopped = jest.fn();
     plugin._registerPlaybackEvents();
 
@@ -540,7 +590,12 @@ describe('Music Bot runtime and UI regressions', () => {
 
     expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
     expect(plugin.queueManager.addToHistory).not.toHaveBeenCalled();
-    expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledWith(expect.any(Error));
+    expect(plugin._handleAutoDJPlaybackFailure).toHaveBeenCalledTimes(1);
+    expect(plugin._handleAutoDJPlaybackFailure).toHaveBeenCalledWith(
+      failedTrack,
+      expect.any(String),
+      expect.any(Error)
+    );
     expect(api.emit).toHaveBeenCalledWith('musicbot:error', expect.objectContaining({
       message: expect.stringContaining('Failed to open stream')
     }));
