@@ -2346,18 +2346,24 @@ class MusicBotPlugin extends EventEmitter {
 
   async _handleAutoDJPlaybackFailure(track, reason, error) {
     const trackId = track && track.id;
-    if (!trackId || this._autoDjRecoveryTrackIds.has(trackId)) return null;
-    this._autoDjRecoveryTrackIds.add(trackId);
-    try {
-      this._stopPlaybackSync();
-      this.autoDJ && this.autoDJ.recordFailedTrack && this.autoDJ.recordFailedTrack(track, reason);
-      this.autoDJ && this.autoDJ.markPlaybackFailed && this.autoDJ.markPlaybackFailed(error);
-      this.playbackEngine.clearNowPlaying && this.playbackEngine.clearNowPlaying();
-      this.api.log('[music-bot] AutoDJ track failed (' + reason + '); selecting replacement for ' + trackId, 'warn');
-      return await this._maybePlayAutoDJ(true);
-    } finally {
-      this._autoDjRecoveryTrackIds.delete(trackId);
+    if (!trackId) return null;
+    const activeTrack = this.playbackEngine?.getNowPlaying?.();
+    if (!activeTrack || activeTrack.id !== trackId) {
+      this.api.log('[music-bot] Ignoring stale AutoDJ playback failure for ' + trackId, 'warn');
+      return null;
     }
+    if (this._autoDjRecoveryTrackIds.has(trackId)) return null;
+    // Retain only the most recent completed recovery identity. It prevents
+    // sequential late events from replacing the same Auto-DJ track again
+    // without retaining an unbounded history of old track IDs.
+    this._autoDjRecoveryTrackIds.clear();
+    this._autoDjRecoveryTrackIds.add(trackId);
+    this._stopPlaybackSync();
+    this.autoDJ && this.autoDJ.recordFailedTrack && this.autoDJ.recordFailedTrack(track, reason);
+    this.autoDJ && this.autoDJ.markPlaybackFailed && this.autoDJ.markPlaybackFailed(error);
+    this.playbackEngine.clearNowPlaying && this.playbackEngine.clearNowPlaying();
+    this.api.log('[music-bot] AutoDJ track failed (' + reason + '); selecting replacement for ' + trackId, 'warn');
+    return await this._maybePlayAutoDJ(true);
   }
 
   _buildStatusPayload() {
