@@ -80,7 +80,18 @@ class I18n {
       const plugins = fs.readdirSync(pluginsDir);
 
       for (const plugin of plugins) {
+        const manifestPath = path.join(pluginsDir, plugin, 'plugin.json');
         const pluginLocalesDir = path.join(pluginsDir, plugin, 'locales');
+        let pluginId = plugin;
+
+        if (fs.existsSync(manifestPath)) {
+          try {
+            const manifest = readJsonFile(manifestPath);
+            if (typeof manifest.id === 'string' && manifest.id.trim()) pluginId = manifest.id.trim();
+          } catch (error) {
+            console.error(`Failed to read manifest for plugin ${plugin}:`, error.message);
+          }
+        }
 
         if (fs.existsSync(pluginLocalesDir)) {
           for (const locale of this.supportedLocales) {
@@ -95,9 +106,14 @@ class I18n {
                   this.translations[locale] = {};
                 }
 
+                const namespacedTranslations = pluginTranslations.plugins
+                  && pluginTranslations.plugins[pluginId]
+                  ? pluginTranslations
+                  : { plugins: { [pluginId]: pluginTranslations } };
+
                 this.translations[locale] = this.deepMerge(
                   this.translations[locale],
-                  pluginTranslations
+                  namespacedTranslations
                 );
 
                 console.log(`✅ Loaded ${locale} translations for plugin: ${plugin}`);

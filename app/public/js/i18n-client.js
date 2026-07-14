@@ -146,28 +146,43 @@ class I18nClient {
             return key;
         }
 
-        const keys = key.split('.');
-        let translation = this.translations[this.currentLocale];
-
-        // Traverse the translation object
-        for (const k of keys) {
-            if (translation && typeof translation === 'object' && k in translation) {
-                translation = translation[k];
-            } else {
-                // Supported locales must not silently borrow another language.
-                // updateDOM preserves the original label when this key is not
-                // present, making missing translations visible to QA.
-                return key;
+        for (const candidateKey of this.translationCandidates(key)) {
+            const translation = this.lookup(candidateKey);
+            if (typeof translation === 'string') {
+                return this.interpolate(translation, params);
             }
         }
 
-        // If translation is still an object, return the key
-        if (typeof translation !== 'string') {
-            return key;
+        // Supported locales must not silently borrow another language.
+        // updateDOM preserves the original label when this key is not
+        // present, making missing translations visible to QA.
+        return key;
+    }
+
+    lookup(key) {
+        const keys = key.split('.');
+        let translation = this.translations[this.currentLocale];
+
+        for (const part of keys) {
+            if (!translation || typeof translation !== 'object' || !(part in translation)) {
+                return null;
+            }
+            translation = translation[part];
         }
 
-        // Interpolate parameters
-        return this.interpolate(translation, params);
+        return translation;
+    }
+
+    currentPluginId() {
+        const parts = window.location.pathname.split('/').filter(Boolean);
+        const candidate = parts[0] === 'plugins' ? parts[1] : parts[0];
+        return /^[a-z0-9][a-z0-9-]*$/i.test(candidate || '') ? candidate : null;
+    }
+
+    translationCandidates(key) {
+        if (key.startsWith('plugins.')) return [key];
+        const pluginId = this.currentPluginId();
+        return pluginId ? [key, `plugins.${pluginId}.${key}`] : [key];
     }
 
     /**

@@ -1,6 +1,15 @@
 const socket = io();
 let config = {};
 
+function pluginText(key, fallback, params = {}) {
+    const fullKey = `plugins.emoji-rain.${key}`;
+    if (window.i18n && typeof window.i18n.t === 'function') {
+        const translated = window.i18n.t(fullKey, params);
+        if (translated && translated !== fullKey) return translated;
+    }
+    return fallback;
+}
+
 // Load configuration on page load
 async function loadConfig() {
     console.log('?? [EMOJI RAIN UI] Loading configuration...');
@@ -233,13 +242,19 @@ function updateUI() {
 
         setSummaryText('hero-visual-mode', document.getElementById('visual_mode')?.selectedOptions?.[0]?.textContent || 'Premium Stage');
         setSummaryText('hero-obs-size', `${document.getElementById('obs_hud_width').value || 1920} × ${document.getElementById('obs_hud_height').value || 1080}`);
-        setSummaryText('hero-obs-state', config.obs_hud_enabled === false ? 'Deaktiviert' : 'Aktiviert');
+        setSummaryText('hero-obs-state', config.obs_hud_enabled === false
+            ? pluginText('runtime.status.disabled', 'Disabled')
+            : pluginText('runtime.status.enabled', 'Enabled'));
         setSummaryText('hero-preview-mode', document.getElementById('visual_mode')?.selectedOptions?.[0]?.textContent || 'Premium Stage');
         setSummaryText('hero-preview-mode-copy', document.getElementById('visual_mode')?.selectedOptions?.[0]?.textContent || 'Premium Stage');
         setSummaryText('hero-preview-size', `${document.getElementById('obs_hud_width').value || 1920} × ${document.getElementById('obs_hud_height').value || 1080}`);
         setSummaryText('hero-preview-size-copy', `${document.getElementById('obs_hud_width').value || 1920} × ${document.getElementById('obs_hud_height').value || 1080}`);
-        setSummaryText('hero-preview-state', config.enabled ? 'Aktiviert' : 'Deaktiviert');
-        setSummaryText('hero-preview-state-copy', config.enabled ? 'Aktiviert' : 'Deaktiviert');
+        setSummaryText('hero-preview-state', config.enabled
+            ? pluginText('runtime.status.enabled', 'Enabled')
+            : pluginText('runtime.status.disabled', 'Disabled'));
+        setSummaryText('hero-preview-state-copy', config.enabled
+            ? pluginText('runtime.status.enabled', 'Enabled')
+            : pluginText('runtime.status.disabled', 'Disabled'));
 
         // Detect preset
         const width = config.obs_hud_width || 1920;
@@ -549,7 +564,7 @@ async function saveConfig() {
 
         if (data.success) {
             config = newConfig;
-            showNotification('Konfiguration gespeichert!');
+            showNotification(pluginText('runtime.notifications.configuration_saved', 'Configuration saved.'));
         } else {
             showNotification('Fehler beim Speichern: ' + data.error, true);
         }
@@ -673,7 +688,9 @@ function onEnabledToggleChange(event) {
         if (data.success) {
             config.enabled = enabled;
             updateEnabledStatus();
-            showNotification(enabled ? 'Emoji Rain aktiviert!' : 'Emoji Rain deaktiviert!');
+            showNotification(enabled
+                ? pluginText('runtime.notifications.enabled', 'Emoji Rain enabled.')
+                : pluginText('runtime.notifications.disabled', 'Emoji Rain disabled.'));
         } else {
             event.target.checked = !enabled;
             showNotification('Fehler: ' + data.error, true);
@@ -692,7 +709,9 @@ function updateEnabledStatus() {
     const previewStatus = document.getElementById('hero-preview-state');
     const previewStatusCopy = document.getElementById('hero-preview-state-copy');
     const enabled = document.getElementById('enabled-toggle').checked;
-    const statusText = enabled ? 'Aktiviert' : 'Deaktiviert';
+    const statusText = enabled
+        ? pluginText('runtime.status.enabled', 'Enabled')
+        : pluginText('runtime.status.disabled', 'Disabled');
 
     [heroStatus, toggleStatus, previewStatus, previewStatusCopy].forEach(element => {
         if (!element) return;
@@ -1073,7 +1092,7 @@ function updatePerformanceDisplay(fps, activeEmojis, mode) {
     }
 
     setSummaryText('hero-performance', `${fps || '--'} FPS`);
-    setSummaryText('hero-performance-detail', `${activeEmojis || '--'} aktive Emojis · ${mode || 'Normal'}`);
+        setSummaryText('hero-performance-detail', `${activeEmojis || '--'} ${pluginText('runtime.status.active_emojis', 'active emojis')} · ${mode || 'Normal'}`);
 }
 
 // ========== INITIALIZATION ==========

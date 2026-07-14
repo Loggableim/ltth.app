@@ -7905,7 +7905,7 @@
         
         if (data.success) {
           manualSessionId = data.sessionId;
-          showSuccess(data.message);
+          showMessage(data.message);
           
           // Show manual game controls
           document.getElementById('manual-game-controls').style.display = 'block';
@@ -7915,17 +7915,17 @@
           // Disable start button
           startManualGameBtn.disabled = true;
         } else {
-          showError(data.error || data.message || 'Fehler beim Starten des Spiels');
+          showMessage(data.error || data.message || 'Fehler beim Starten des Spiels', 'error');
         }
       } catch (error) {
-        showError('Fehler beim Starten des Spiels: ' + error.message);
+        showMessage('Fehler beim Starten des Spiels: ' + error.message, 'error');
       }
     }
     
     // Make manual move
     async function makeManualMove(player, column) {
       if (!manualSessionId) {
-        showError('Kein aktives Test-Spiel');
+        showMessage('Kein aktives Test-Spiel', 'error');
         return;
       }
       
@@ -7943,7 +7943,7 @@
         const data = await response.json();
         
         if (data.success) {
-          showSuccess(data.message);
+          showMessage(data.message);
           
           // Update current player
           if (data.nextPlayer) {
@@ -7957,17 +7957,17 @@
             }, 3000);
           }
         } else {
-          showError(data.error || 'Fehler beim Ausführen des Zugs');
+          showMessage(data.error || 'Fehler beim Ausführen des Zugs', 'error');
         }
       } catch (error) {
-        showError('Fehler beim Ausführen des Zugs: ' + error.message);
+        showMessage('Fehler beim Ausführen des Zugs: ' + error.message, 'error');
       }
     }
     
     // End manual game
     async function endManualGame() {
       if (!manualSessionId) {
-        showError('Kein aktives Test-Spiel');
+        showMessage('Kein aktives Test-Spiel', 'error');
         return;
       }
       
@@ -7987,13 +7987,13 @@
         const data = await response.json();
         
         if (data.success) {
-          showSuccess('Test-Spiel beendet');
+          showMessage('Test-Spiel beendet');
           resetManualMode();
         } else {
-          showError(data.error || 'Fehler beim Beenden des Spiels');
+          showMessage(data.error || 'Fehler beim Beenden des Spiels', 'error');
         }
       } catch (error) {
-        showError('Fehler beim Beenden des Spiels: ' + error.message);
+        showMessage('Fehler beim Beenden des Spiels: ' + error.message, 'error');
       }
     }
     

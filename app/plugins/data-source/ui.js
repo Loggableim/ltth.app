@@ -72,11 +72,15 @@
       body: JSON.stringify({ source: source })
     })
       .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.success) {
-          showToast(data.message, 'success');
-          // UI will be updated via socket event
-        } else {
+        .then(function (data) {
+          if (data.success) {
+            // Apply the successful local REST response immediately. Socket.IO
+            // still synchronises other dashboards, but the initiating panel
+            // must not depend on that asynchronous delivery to show its real
+            // TikFinity settings.
+            updateUI(data.newSource);
+            showToast(data.message, 'success');
+          } else {
           showToast(data.error || 'Fehler', 'error');
         }
       })

@@ -8,6 +8,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { buildSpec, LOCALES: PRODUCT_LOCALES } = require('./product-screenshot-spec');
 const { buildDocsSpec, LOCALES: DOCS_LOCALES } = require('./docs-screenshot-spec');
+const { prepareDocsPluginFixture } = require('./lib/docs-capture-plugin-fixture');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const SCREENSHOT_ROOT = path.join(REPO_ROOT, 'screenshots');
@@ -15,7 +16,7 @@ const COLLECTION = process.env.SCREENSHOT_COLLECTION === 'docs' ? 'docs' : 'prod
 const MANIFEST_PATH = path.join(SCREENSHOT_ROOT, COLLECTION === 'docs' ? 'docs-capture-manifest.json' : 'product-capture-manifest.json');
 const EXTERNAL_BASE_URL = (process.env.SCREENSHOT_BASE_URL || '').replace(/\/$/, '');
 const TIMEOUT_MS = Number(process.env.SCREENSHOT_TIMEOUT_MS || 60000);
-const WAIT_AFTER_LOAD_MS = Number(process.env.SCREENSHOT_WAIT_AFTER_LOAD_MS || 450);
+const WAIT_AFTER_LOAD_MS = Number(process.env.SCREENSHOT_WAIT_AFTER_LOAD_MS || 1500);
 const ASSET_TIMEOUT_MS = Number(process.env.SCREENSHOT_ASSET_TIMEOUT_MS || 20000);
 const START_APP = process.env.SCREENSHOT_START_APP !== 'false';
 
@@ -47,8 +48,9 @@ function outputPath(asset, locale) {
 }
 
 function urlFor(baseUrl, route, locale) {
-  const separator = route.includes('?') ? '&' : '?';
-  return `${baseUrl}${route}${separator}lang=${encodeURIComponent(locale)}`;
+  const url = new URL(route, baseUrl);
+  url.searchParams.set('lang', locale);
+  return url.toString();
 }
 
 function specHash(spec) {
@@ -135,24 +137,6 @@ function waitForServer(child, baseUrl) {
   });
 }
 
-function prepareDocsPluginFixture(profileDir, guideId) {
-  if (guideId !== 'visual-fx-frame-webgpu') return null;
-  const sourceDir = path.join(REPO_ROOT, 'plugin-store', 'sources', guideId);
-  const fixtureRoot = path.join(profileDir, 'docs-plugin-fixture');
-  const fixtureDir = path.join(fixtureRoot, guideId);
-  const manifestPath = path.join(fixtureDir, 'plugin.json');
-  if (!fs.existsSync(path.join(sourceDir, 'plugin.json'))) {
-    throw new Error(`Docs capture fixture is missing its plugin source: ${sourceDir}`);
-  }
-  fs.cpSync(sourceDir, fixtureDir, { recursive: true });
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-  // Store packages only become enabled after installation. The copied fixture
-  // is temporary and must load so the capture follows its real UI route.
-  manifest.enabled = true;
-  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
-  return fixtureRoot;
-}
-
 async function startIsolatedApp(profileName, guideId = null) {
   if (!START_APP) {
     if (!EXTERNAL_BASE_URL) throw new Error('SCREENSHOT_BASE_URL is required when SCREENSHOT_START_APP=false');
@@ -160,7 +144,7 @@ async function startIsolatedApp(profileName, guideId = null) {
   }
   const port = await freePort();
   const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), `ltth-docs-capture-${profileName}-`));
-  const docsCapturePluginDir = COLLECTION === 'docs' ? prepareDocsPluginFixture(profileDir, guideId) : null;
+  const docsCapturePluginDir = COLLECTION === 'docs' ? prepareDocsPluginFixture(REPO_ROOT, profileDir, guideId) : null;
   const child = spawn(process.execPath, [path.join(REPO_ROOT, 'app', 'server.js')], {
     cwd: path.join(REPO_ROOT, 'app'),
     env: {
@@ -186,7 +170,7 @@ async function startIsolatedApp(profileName, guideId = null) {
   const baseUrl = `http://127.0.0.1:${port}`;
   try {
     await waitForServer(child, baseUrl);
-    return { baseUrl, child, profileDir };
+      return { baseUrl, child, profileDir, getStartupLog: () => startupLog };
   } catch (error) {
     if (child.exitCode === null) child.kill();
     if (profileDir.startsWith(path.join(os.tmpdir(), 'ltth-docs-capture-'))) fs.rmSync(profileDir, { recursive: true, force: true });
@@ -237,9 +221,12 @@ async function activateContainingTab(page, selector) {
     // of it. Include the target in the lookup so `#tab-profiles` activates
     // its real `[data-tab="profiles"]` control as well.
     for (let parent = target; parent; parent = parent.parentElement) {
-      const match = parent.id && parent.id.match(/^(?:tab|content)-(.+)$/);
-      if (!match) continue;
-      const tabName = match[1];
+      // Shipped plugin UIs use tab-*, content-*, panel-*, and plain ids on a
+      // `.tab-content` pane. The matching control is still clicked in the
+      // real UI rather than changing a pane class directly.
+      const match = parent.id && parent.id.match(/^(?:tab|content|panel)-(.+)$/);
+      const tabName = match ? match[1] : (parent.id && parent.classList.contains('tab-content') ? parent.id : null);
+      if (!tabName) continue;
       const trigger = document.querySelector(`[data-tab="${CSS.escape(tabName)}"], #sidebar-tab-${CSS.escape(tabName)}`);
       if (trigger && !trigger.disabled) {
         trigger.click();
@@ -252,83 +239,326 @@ async function activateContainingTab(page, selector) {
   return activated;
 }
 
-async function applyCaptureFocus(page, selector, label) {
-  return page.evaluate((anchorSelector, focusLabel) => {
+async function assertRenderedAnchor(page, selector) {
+  return page.evaluate((anchorSelector) => {
     const anchor = document.querySelector(anchorSelector);
-    if (!anchor) throw new Error(`Capture selector not found: ${anchorSelector}`);
+    if (!anchor) {
+      const activeView = document.querySelector('.content-view.active')?.id || null;
+      throw new Error(`Capture selector not found: ${anchorSelector}; runtime=${location.href}; activeView=${activeView}; title=${document.title}`);
+    }
     const style = getComputedStyle(anchor);
     const rect = anchor.getBoundingClientRect();
     if (style.display === 'none' || style.visibility === 'hidden' || rect.width < 2 || rect.height < 2) {
       throw new Error(`Capture selector is not visibly rendered: ${anchorSelector}`);
     }
-    document.querySelectorAll('[data-ltth-docs-focus]').forEach((element) => element.removeAttribute('data-ltth-docs-focus'));
-    document.querySelectorAll('[data-ltth-docs-focus-label]').forEach((element) => element.remove());
-    let styleElement = document.getElementById('ltth-docs-capture-focus-style');
-    if (!styleElement) {
-      styleElement = document.createElement('style');
-      styleElement.id = 'ltth-docs-capture-focus-style';
-      styleElement.textContent = '[data-ltth-docs-focus]{outline:3px solid #26d9ff!important;outline-offset:4px!important;box-shadow:0 0 0 7px rgba(38,217,255,.22)!important;}[data-ltth-docs-focus-label]{position:fixed!important;z-index:2147483647!important;max-width:calc(100vw - 32px)!important;padding:6px 10px!important;border:2px solid #26d9ff!important;border-radius:7px!important;background:#031117!important;color:#f4ffff!important;font:700 13px/1.25 Inter,Segoe UI,sans-serif!important;box-shadow:0 4px 16px rgba(0,0,0,.45)!important;pointer-events:none!important;}';
-      document.head.appendChild(styleElement);
-    }
-    anchor.setAttribute('data-ltth-docs-focus', 'true');
-    anchor.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
-    const labelNode = document.createElement('div');
-    labelNode.setAttribute('data-ltth-docs-focus-label', 'true');
-    labelNode.textContent = focusLabel;
-    document.body.appendChild(labelNode);
-    const labelAnchorRect = anchor.getBoundingClientRect();
-    const labelRect = labelNode.getBoundingClientRect();
-    labelNode.style.left = `${Math.max(16, Math.min(window.innerWidth - labelRect.width - 16, labelAnchorRect.left))}px`;
-    labelNode.style.top = `${Math.max(16, Math.min(window.innerHeight - labelRect.height - 16, labelAnchorRect.top - labelRect.height - 10))}px`;
-    return { selector: anchorSelector, text: (anchor.innerText || anchor.value || anchor.getAttribute('aria-label') || '').trim().slice(0, 160), label: focusLabel };
-  }, selector, label);
-}
-
-async function revealSafeDemoState(page, selector) {
-  // Some controls are intentionally hidden until an account, a device, or a
-  // live event is present. In the temporary documentation profile we reveal
-  // only the existing markup and never invoke the associated action. This is
-  // deliberately recorded in the capture manifest as a capture-only demo
-  // preparation, separate from product behaviour.
-  return page.evaluate((anchorSelector) => {
-    const anchor = document.querySelector(anchorSelector);
-    if (!anchor) throw new Error(`Capture selector not found: ${anchorSelector}`);
-    const visible = (element) => {
-      const style = getComputedStyle(element);
-      const rect = element.getBoundingClientRect();
-      return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || '1') > 0.01 && rect.width >= 2 && rect.height >= 2;
+        // Keep the actual page at its normal left edge. The saved image may crop
+        // around this real anchor, but capture never changes layout or DOM state.
+    anchor.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+    window.scrollTo({ left: 0, top: window.scrollY, behavior: 'instant' });
+    return {
+      selector: anchorSelector,
+      text: (anchor.innerText || anchor.value || anchor.getAttribute('aria-label') || '').trim().slice(0, 160)
     };
-    if (visible(anchor)) return null;
-    const changed = [];
-    for (let node = anchor; node && node !== document.body; node = node.parentElement) {
-      const style = getComputedStyle(node);
-      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || '1') <= 0.01 || node.getBoundingClientRect().height < 2) {
-        node.setAttribute('data-ltth-docs-demo-reveal', 'true');
-        changed.push(node.id ? `#${node.id}` : node.tagName.toLowerCase());
-      }
-    }
-    if (!changed.length) return null;
-    let styleElement = document.getElementById('ltth-docs-capture-demo-style');
-    if (!styleElement) {
-      styleElement = document.createElement('style');
-      styleElement.id = 'ltth-docs-capture-demo-style';
-      styleElement.textContent = '[data-ltth-docs-demo-reveal]{display:block!important;visibility:visible!important;opacity:1!important;max-height:none!important;height:auto!important;overflow:visible!important;}';
-      document.head.appendChild(styleElement);
-    }
-    return { type: 'capture-only-safe-demo-reveal', selectors: changed };
   }, selector);
 }
 
 async function applySafeStepState(page, asset, locale) {
   // Screenshots never invoke a real device, external credential flow, print,
-  // or production stream action. Only local fields are focused/changed in the
-  // temporary profile; buttons are deliberately not clicked.
+  // or production stream action. A guide may explicitly opt into one local
+  // safe button action in its temporary profile; every other button remains
+  // untouched.
   await page.evaluate((lang) => {
     document.documentElement.lang = lang;
     document.documentElement.setAttribute('data-theme', 'cid');
     localStorage.setItem('dashboard-theme', 'cid');
     localStorage.setItem('app_locale', lang);
   }, locale);
+  if (asset.action && asset.action.prepare === 'create-demo-timer') {
+    await page.evaluate(() => {
+      const createTab = document.querySelector('.at-nav-btn[data-tab="create"]');
+      if (!(createTab instanceof HTMLButtonElement) || createTab.disabled) {
+        throw new Error('Advanced Timer create-tab control is unavailable');
+      }
+      createTab.click();
+      const name = document.getElementById('timer-name');
+      const duration = document.getElementById('initial-duration');
+      if (!(name instanceof HTMLInputElement) || !(duration instanceof HTMLInputElement)) {
+        throw new Error('Advanced Timer demo fields are unavailable');
+      }
+      name.value = 'LTTH docs countdown';
+      duration.value = '90';
+      for (const field of [name, duration]) {
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+        field.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 120));
+  }
+  if (asset.action && asset.action.prepare === 'select-local-tikfinity') {
+    await page.evaluate(() => {
+      const card = document.querySelector('#card-tikfinity.source-card[data-source="tikfinity"]');
+      if (!card) throw new Error('TikFinity source card is unavailable');
+      card.click();
+    });
+    await page.waitForFunction(() => {
+      const control = document.querySelector('#btn-save-tikfinity');
+      if (!control) return false;
+      const style = getComputedStyle(control);
+      const rect = control.getBoundingClientRect();
+      return style.display !== 'none' && style.visibility !== 'hidden' && rect.width >= 2 && rect.height >= 2;
+    }, { timeout: 2000 });
+  }
+  if (asset.action && asset.action.prepare === 'open-goal-create-modal') {
+    await page.evaluate(() => {
+      const openModal = document.getElementById('create-first-goal-btn');
+      if (!(openModal instanceof HTMLButtonElement) || openModal.disabled) {
+        throw new Error('Goals create button is unavailable');
+      }
+      openModal.click();
+    });
+    await page.waitForFunction(() => {
+      const modal = document.getElementById('goal-modal');
+      return Boolean(modal && modal.classList.contains('active') && getComputedStyle(modal).display !== 'none');
+    }, { timeout: 2000 });
+  }
+  if (asset.action && asset.action.prepare === 'open-milestone-tier-modal') {
+    await page.evaluate(() => {
+      const openModal = document.getElementById('addTierButton');
+      if (!(openModal instanceof HTMLButtonElement) || openModal.disabled) throw new Error('Milestone Leaderboard add-tier button is unavailable');
+      openModal.click();
+    });
+    await page.waitForFunction(() => {
+      const modal = document.getElementById('tierModal');
+      return Boolean(modal && modal.classList.contains('active') && getComputedStyle(modal).display !== 'none');
+    }, { timeout: 2000 });
+  }
+  if (asset.action && asset.action.prepare === 'open-openshock-safety-tab') {
+    await page.evaluate(() => {
+      const tab = document.querySelector('.tab-button[data-tab="safety"]');
+      if (!(tab instanceof HTMLButtonElement) || tab.disabled) throw new Error('OpenShock Safety tab is unavailable');
+      tab.click();
+    });
+    await page.waitForFunction(() => {
+      const panel = document.getElementById('safety');
+      return Boolean(panel && panel.classList.contains('active') && getComputedStyle(panel).display !== 'none');
+    }, { timeout: 2000 });
+  }
+  if (asset.action && asset.action.prepare === 'open-quiz-questions-tab') {
+    await page.evaluate(() => {
+      const tab = document.querySelector('.tab-button[data-tab="questions"]');
+      if (!(tab instanceof HTMLButtonElement) || tab.disabled) throw new Error('Quiz Show questions tab is unavailable');
+      tab.click();
+    });
+    await page.waitForFunction(() => {
+      const panel = document.getElementById('questions');
+      return Boolean(panel && panel.classList.contains('active') && getComputedStyle(panel).display !== 'none');
+    }, { timeout: 2000 });
+  }
+  if (asset.action && asset.action.prepare === 'open-store-admin-view') {
+    await page.evaluate(async () => {
+      if (!window.StoreAuth || typeof window.StoreAuth.clearBridgeSession !== 'function') {
+        throw new Error('Store Admin auth state is unavailable');
+      }
+      // Use the shipped signed-out state in the isolated capture profile. This
+      // prevents the real account bridge from navigating away before its UI is
+      // visible and never touches an account, source, or installed package.
+      await window.StoreAuth.clearBridgeSession(true);
+      if (!window.NavigationManager || typeof window.NavigationManager.switchView !== 'function') {
+        throw new Error('Store Admin navigation is unavailable');
+      }
+      window.NavigationManager.switchView('plugins');
+    });
+    await page.waitForFunction(() => {
+      const view = document.getElementById('view-plugins');
+      const signIn = document.querySelector('[data-store-auth-mode="sign-in"]');
+      return Boolean(view && view.classList.contains('active') && getComputedStyle(view).display !== 'none' && signIn && getComputedStyle(signIn).display !== 'none');
+    }, { timeout: 4000 });
+  }
+  if (asset.action && asset.action.prepare === 'open-spotlight-settings') {
+    await page.waitForFunction(() => document.querySelector('.overlay-card button[data-action="settings"][data-type="chatter"]'), { timeout: 3000 });
+    await page.evaluate(() => {
+      const openSettings = document.querySelector('.overlay-card button[data-action="settings"][data-type="chatter"]');
+      if (!(openSettings instanceof HTMLButtonElement) || openSettings.disabled) throw new Error('Spotlight chatter settings button is unavailable');
+      openSettings.click();
+    });
+    await page.waitForFunction(() => {
+      const modal = document.getElementById('settings-modal');
+      const form = document.getElementById('settings-form-container');
+      return Boolean(modal && modal.classList.contains('active') && form && getComputedStyle(form).display !== 'none');
+    }, { timeout: 3000 });
+  }
+  if (asset.action && asset.action.prepare === 'open-spotlight-preview') {
+    await page.waitForFunction(() => document.querySelector('.overlay-card button[data-action="preview"][data-type="chatter"]'), { timeout: 3000 });
+    await page.evaluate(() => {
+      const openPreview = document.querySelector('.overlay-card button[data-action="preview"][data-type="chatter"]');
+      if (!(openPreview instanceof HTMLButtonElement) || openPreview.disabled) throw new Error('Spotlight chatter preview button is unavailable');
+      openPreview.click();
+    });
+    await page.waitForFunction(() => {
+      const modal = document.getElementById('preview-modal');
+      const frame = document.getElementById('preview-frame');
+      return Boolean(modal && modal.classList.contains('active') && frame && getComputedStyle(frame).display !== 'none');
+    }, { timeout: 3000 });
+  }
+  if (asset.action && asset.action.prepare === 'open-streamalchemy-settings') {
+    await page.evaluate(() => {
+      const tab = document.querySelector('.nav button[data-target="settings"]');
+      if (!(tab instanceof HTMLButtonElement) || tab.disabled) throw new Error('StreamAlchemy Settings tab is unavailable');
+      tab.click();
+    });
+    await page.waitForFunction(() => {
+      const settings = document.querySelector('.view[data-view="settings"]');
+      return Boolean(settings && settings.classList.contains('active') && getComputedStyle(settings).display !== 'none');
+    }, { timeout: 2000 });
+  }
+  if (asset.action && asset.action.prepare === 'start-local-quiz') {
+    const localQuizAlreadyRunning = await page.evaluate(() => {
+      const timer = document.getElementById('timerDisplay');
+      return Boolean(timer && !timer.classList.contains('hidden') && getComputedStyle(timer).display !== 'none');
+    });
+    if (!localQuizAlreadyRunning) {
+      await page.evaluate(() => {
+        const questionsTab = document.querySelector('.tab-button[data-tab="questions"]');
+        if (!(questionsTab instanceof HTMLButtonElement) || questionsTab.disabled) throw new Error('Quiz Show questions tab is unavailable');
+        questionsTab.click();
+        const values = {
+          questionInput: 'Which workflow stays local?',
+          answerA: 'The isolated test workflow',
+          answerB: 'A LIVE production stream',
+          answerC: 'An external device test',
+          answerD: 'A remote account action',
+          questionCategory: 'LTTH docs'
+        };
+        for (const [id, value] of Object.entries(values)) {
+          const field = document.getElementById(id);
+          if (!(field instanceof HTMLInputElement)) throw new Error(`Quiz Show demo field is unavailable: ${id}`);
+          field.value = value;
+          field.dispatchEvent(new Event('input', { bubbles: true }));
+          field.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        const add = document.getElementById('addQuestionBtn');
+        if (!(add instanceof HTMLButtonElement) || add.disabled) throw new Error('Quiz Show add-question button is unavailable');
+        add.click();
+      });
+      await page.waitForFunction(() => document.getElementById('questionInput')?.value === '', { timeout: 4000 });
+      await page.evaluate(() => {
+        const dashboardTab = document.querySelector('.tab-button[data-tab="dashboard"]');
+        if (!(dashboardTab instanceof HTMLButtonElement) || dashboardTab.disabled) throw new Error('Quiz Show dashboard tab is unavailable');
+        dashboardTab.click();
+        const start = document.getElementById('startQuizBtn');
+        if (!(start instanceof HTMLButtonElement) || start.disabled) throw new Error('Quiz Show start button is unavailable after adding the local question');
+        start.click();
+      });
+    }
+    await page.waitForFunction(() => {
+      const timer = document.getElementById('timerDisplay');
+      const stop = document.getElementById('stopQuizBtn');
+      return Boolean(timer && !timer.classList.contains('hidden') && getComputedStyle(timer).display !== 'none' && stop && !stop.disabled);
+    }, { timeout: 4000 });
+  }
+  if (asset.action && asset.action.prepare === 'open-quiz-overlay-config-tab') {
+    await page.evaluate(() => {
+      const tab = document.querySelector('.tab-button[data-tab="overlay-config"]');
+      if (!(tab instanceof HTMLButtonElement) || tab.disabled) throw new Error('Quiz Show overlay-configuration tab is unavailable');
+      tab.click();
+    });
+    await page.waitForFunction(() => {
+      const panel = document.getElementById('overlay-config');
+      return Boolean(panel && panel.classList.contains('active') && getComputedStyle(panel).display !== 'none');
+    }, { timeout: 2000 });
+  }
+  if (asset.action && /^open-soundboard-(?:event-sounds|obs-overlay)$/.test(asset.action.prepare)) {
+    const view = asset.action.prepare === 'open-soundboard-event-sounds' ? 'event-sounds' : 'obs-overlay';
+    await page.evaluate((targetView) => {
+      const tab = document.querySelector(`.soundboard-nav-btn[data-soundboard-view="${targetView}"]`);
+      if (!(tab instanceof HTMLButtonElement) || tab.disabled) throw new Error(`Soundboard ${targetView} workspace is unavailable`);
+      tab.click();
+    }, view);
+    await page.waitForFunction((targetView) => {
+      const panel = document.querySelector(`[data-workspace-panel="${targetView}"]`);
+      return Boolean(panel && panel.classList.contains('active') && getComputedStyle(panel).display !== 'none');
+    }, { timeout: 2000 }, view);
+  }
+  if (asset.action && /^open-minecraft-(?:chat|setup)-tab$/.test(asset.action.prepare)) {
+    const tabName = asset.action.prepare === 'open-minecraft-chat-tab' ? 'chat' : 'setup';
+    await page.evaluate((targetTab) => {
+      const tab = document.querySelector(`.mc-tab[data-tab="${targetTab}"]`);
+      if (!(tab instanceof HTMLButtonElement) || tab.disabled) throw new Error(`Minecraft ${targetTab} tab is unavailable`);
+      tab.click();
+    }, tabName);
+    await page.waitForFunction((targetTab) => {
+      const panel = document.getElementById(`${targetTab}-tab`);
+      return Boolean(panel && panel.classList.contains('active') && getComputedStyle(panel).display !== 'none');
+    }, { timeout: 2000 }, tabName);
+  }
+  if (asset.action && asset.action.prepare === 'open-fireworks-settings') {
+    await page.evaluate(() => {
+      const tab = document.querySelector('.tab-button[data-tab="settings"]');
+      if (!(tab instanceof HTMLButtonElement) || tab.disabled) throw new Error('Fireworks settings tab is unavailable');
+      tab.click();
+    });
+    await page.waitForFunction(() => {
+      const panel = document.getElementById('settings');
+      return panel && getComputedStyle(panel).display !== 'none';
+    }, { timeout: 2000 });
+  }
+  if (asset.action && /^open-flame-(?:frame|motion)-tab$/.test(asset.action.prepare)) {
+    const tabName = asset.action.prepare === 'open-flame-frame-tab' ? 'frame' : 'motion';
+    await page.evaluate((targetTab) => {
+      const tab = document.querySelector(`.tab-btn[data-tab-target="${targetTab}"]`);
+      if (!(tab instanceof HTMLButtonElement) || tab.disabled) throw new Error(`Flame Overlay ${targetTab} tab is unavailable`);
+      tab.click();
+    }, tabName);
+    await page.waitForFunction((targetTab) => {
+      const panel = document.querySelector(`.tab-pane[data-tab="${targetTab}"]`);
+      return panel && !panel.classList.contains('hidden') && getComputedStyle(panel).display !== 'none';
+    }, { timeout: 2000 }, tabName);
+  }
+  if (asset.action && asset.action.prepare === 'start-local-manual-game') {
+    await page.evaluate(() => {
+      const tab = document.querySelector('.tab[data-tab="manual-mode"]');
+      if (!(tab instanceof HTMLButtonElement) || tab.disabled) throw new Error('Game Engine manual-mode tab is unavailable');
+      tab.click();
+    });
+    await page.waitForFunction(() => {
+      const start = document.getElementById('start-manual-game');
+      const style = start && getComputedStyle(start);
+      return Boolean(style && style.display !== 'none' && style.visibility !== 'hidden');
+    }, { timeout: 2000 });
+    const manualGameAlreadyActive = await page.evaluate(() => {
+      const controls = document.getElementById('manual-game-controls');
+      const style = controls && getComputedStyle(controls);
+      return Boolean(style && style.display !== 'none' && style.visibility !== 'hidden');
+    });
+    if (!manualGameAlreadyActive) {
+      await page.evaluate(() => {
+        const start = document.getElementById('start-manual-game');
+        if (!(start instanceof HTMLButtonElement) || start.disabled) throw new Error('Game Engine local test button is unavailable');
+        start.click();
+      });
+    }
+    try {
+      await page.waitForFunction(() => {
+        const controls = document.getElementById('manual-game-controls');
+        const style = controls && getComputedStyle(controls);
+        return Boolean(style && style.display !== 'none' && style.visibility !== 'hidden');
+      }, { timeout: 3000 });
+    } catch (_) {
+      const state = await page.evaluate(() => {
+        const controls = document.getElementById('manual-game-controls');
+        const error = document.getElementById('error-message');
+        const success = document.getElementById('success-message');
+        const style = controls && getComputedStyle(controls);
+        return {
+          controlsDisplay: style?.display || null,
+          controlsVisibility: style?.visibility || null,
+          error: error?.innerText?.trim() || null,
+          success: success?.innerText?.trim() || null
+        };
+      });
+      throw new Error(`Game Engine manual session did not render controls: ${JSON.stringify(state)}`);
+    }
+  }
   if (asset.action && asset.action.type === 'set-demo-value') {
     await page.evaluate((selector) => {
       const field = document.querySelector(selector);
@@ -343,27 +573,41 @@ async function applySafeStepState(page, asset, locale) {
       }
       field.dispatchEvent(new Event('input', { bubbles: true }));
       field.dispatchEvent(new Event('change', { bubbles: true }));
-    }, asset.selector);
+    }, asset.action.inputSelector || asset.selector);
+  }
+  if (asset.action && asset.action.allowClick) {
+    await page.evaluate((selector, actionType, guideId) => {
+      const control = document.querySelector(selector);
+      if (!control) throw new Error(`Capture selector not found: ${selector}`);
+      const isLocalSourceCard = actionType === 'select-local-source'
+        && guideId === 'data-source'
+        && control.matches('#card-tikfinity.source-card[data-source="tikfinity"]');
+      if (!(control instanceof HTMLButtonElement || control instanceof HTMLInputElement || control.getAttribute('role') === 'button' || isLocalSourceCard)) {
+        throw new Error(`Declared local action is not a clickable control: ${selector}`);
+      }
+      if (control.disabled) throw new Error(`Declared local action is disabled: ${selector}`);
+      control.click();
+    }, asset.action.clickSelector || asset.selector, asset.action.type, asset.guideId);
+    await new Promise((resolve) => setTimeout(resolve, asset.action.settleMs || 250));
   }
 }
 
-async function frameRelevantPluginUi(page, asset) {
-  // Interactive Story reserves a wide shell for a runtime status column. In
-  // the offline documentation state that column is empty, so frame the real
-  // configuration card rather than publishing a mostly blank 1280x800 image.
-  if (asset.guideId !== 'interactive-story' || !asset.route.includes('/ui.html')) return;
-  await page.evaluate(() => {
-    const card = document.getElementById('configurationCard');
-    if (!card) return;
-    card.setAttribute('data-ltth-docs-framed-ui', 'true');
-    let style = document.getElementById('ltth-docs-capture-frame-style');
-    if (!style) {
-      style = document.createElement('style');
-      style.id = 'ltth-docs-capture-frame-style';
-      style.textContent = '[data-ltth-docs-framed-ui]{position:fixed!important;inset:28px 40px!important;width:auto!important;max-height:calc(100vh - 56px)!important;overflow:auto!important;z-index:100!important;background:#071008!important;}';
-      document.head.appendChild(style);
-    }
-  });
+function screenshotClipForAnchor(viewport, anchorRect) {
+  const width = Math.min(viewport.clientWidth, 640);
+  const height = Math.min(viewport.height, 560);
+  const anchorCenterX = viewport.scrollX + anchorRect.left + (anchorRect.width / 2);
+  const anchorCenter = viewport.scrollY + anchorRect.top + (anchorRect.height / 2);
+  const maxX = Math.max(0, viewport.scrollWidth - width);
+  const maxY = Math.max(0, viewport.scrollHeight - height);
+  return {
+    // Each capture is a direct crop of the shipped UI around its real anchor.
+    // It makes the documented control readable without injecting focus chrome
+    // or modifying the page's natural scroll/layout state.
+    x: Math.round(Math.max(0, Math.min(anchorCenterX - (width / 2), maxX))),
+    y: Math.round(Math.max(0, Math.min(anchorCenter - (height / 2), maxY))),
+    width,
+    height
+  };
 }
 
 async function captureAsset(page, baseUrl, asset, locale) {
@@ -372,7 +616,6 @@ async function captureAsset(page, baseUrl, asset, locale) {
   // load. For documentation we preserve their shipped markup and styles while
   // preventing that unsafe runtime work in the isolated capture browser.
   const needsOpenShockDemo = asset.guideId === 'openshock' && asset.action && asset.action.type === 'open-overlay-preview';
-  const needsSpotlightDemo = asset.guideId === 'spotlight' && asset.action && asset.action.type === 'open-overlay-preview';
   // Interactive Story has a large, self-starting admin runtime that begins
   // status polling before a test story has been configured. The shipped HTML
   // already contains the complete configuration UI, so documenting its safe
@@ -381,7 +624,16 @@ async function captureAsset(page, baseUrl, asset, locale) {
   await page.setJavaScriptEnabled(!staticOnly);
   const response = await page.goto(urlFor(baseUrl, asset.route, locale), { waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS });
   if (!response || response.status() >= 400) throw new Error(`HTTP ${response ? response.status() : 'no response'} for ${asset.route}`);
-  await new Promise((resolve) => setTimeout(resolve, WAIT_AFTER_LOAD_MS));
+  // Store initialization automatically opens the external account bridge for
+  // a fresh profile. Clear the local bridge session as soon as its shipped
+  // dashboard scripts are available so the documented, real signed-out panel
+  // can render before a browser navigation begins.
+  const prepareImmediately = asset.action && asset.action.prepare === 'open-store-admin-view';
+  if (prepareImmediately) {
+    await applySafeStepState(page, asset, locale);
+  } else {
+    await new Promise((resolve) => setTimeout(resolve, WAIT_AFTER_LOAD_MS));
+  }
   if (needsOpenShockDemo) {
     await page.setJavaScriptEnabled(true);
     await page.addScriptTag({ url: `${baseUrl}/plugins/openshock/overlay/openshock_overlay.js` });
@@ -395,42 +647,92 @@ async function captureAsset(page, baseUrl, asset, locale) {
       source: 'docs-demo'
     }));
   }
-  if (needsSpotlightDemo) {
-    await page.evaluate((lang) => {
-      const labels = {
-        de: 'Sichere Docs-Demo · Spotlight-Chatter-Vorschau',
-        en: 'Safe docs demo · Spotlight chatter preview',
-        es: 'Demo segura de docs · vista previa de chatter Spotlight',
-        fr: 'Démo docs sûre · aperçu chatter Spotlight'
-      };
-      const container = document.getElementById('overlay-container');
-      if (!container) return;
-      const sample = document.createElement('div');
-      sample.className = 'no-data';
-      sample.setAttribute('data-ltth-docs-safe-demo', 'true');
-      sample.textContent = labels[lang] || labels.en;
-      container.appendChild(sample);
-    }, locale);
-  }
+  if (!prepareImmediately) await applySafeStepState(page, asset, locale);
+  // Some shipped controls are created only after a real settings/preview
+  // workflow. Run that workflow first, then let the generic tab helper reveal
+  // a static parent pane if the anchor still needs it.
   const tabPreparation = await activateContainingTab(page, asset.selector);
-  await applySafeStepState(page, asset, locale);
-  await frameRelevantPluginUi(page, asset);
-  const revealPreparation = await revealSafeDemoState(page, asset.selector);
-  const preparation = [tabPreparation, revealPreparation].filter(Boolean);
-  const focus = await applyCaptureFocus(page, asset.selector, asset.focusText[locale]);
+  const preparation = [tabPreparation].filter(Boolean);
+  const focus = await assertRenderedAnchor(page, asset.selector);
   await new Promise((resolve) => setTimeout(resolve, 100));
-  const state = await page.evaluate((lang) => ({
-    lang: document.documentElement.lang || document.documentElement.getAttribute('data-lang') || null,
-    i18n: window.i18n && typeof window.i18n.getLocale === 'function' ? window.i18n.getLocale() : (window.I18n && window.I18n.currentLang) || document.documentElement.lang || null,
-    theme: document.documentElement.getAttribute('data-theme') || null,
-    route: `${location.pathname}${location.search}`
-  }), locale);
+  const state = await page.evaluate((lang, anchorSelector) => {
+    const anchor = document.querySelector(anchorSelector);
+    const rect = anchor && anchor.getBoundingClientRect();
+    return {
+      lang: document.documentElement.lang || document.documentElement.getAttribute('data-lang') || null,
+      i18n: window.i18n && typeof window.i18n.getLocale === 'function' ? window.i18n.getLocale() : (window.I18n && window.I18n.currentLang) || document.documentElement.lang || null,
+      theme: document.documentElement.getAttribute('data-theme') || null,
+      route: `${location.pathname}${location.search}`,
+          viewport: {
+            scrollX: window.scrollX,
+            scrollY: window.scrollY,
+            scrollWidth: document.documentElement.scrollWidth,
+            clientWidth: document.documentElement.clientWidth,
+            scrollHeight: document.documentElement.scrollHeight,
+            height: window.innerHeight
+      },
+      anchorRect: rect ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height } : null
+    };
+  }, locale, asset.selector);
   if (state.lang !== locale) throw new Error(`Document language is ${state.lang || 'unset'}, expected ${locale}`);
   if (state.theme !== 'cid') throw new Error(`Theme is ${state.theme || 'unset'}, expected cid`);
+  if (!state.anchorRect) throw new Error(`Capture anchor has no rendered geometry: ${asset.selector}`);
+  const screenshotClip = screenshotClipForAnchor(state.viewport, state.anchorRect);
   const target = outputPath(asset, locale);
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  await page.screenshot({ path: target, type: 'png' });
+  await page.screenshot({ path: target, type: 'png', clip: screenshotClip });
   const bytes = fs.readFileSync(target);
+  if (asset.action && asset.action.cleanupSelector === '#end-manual-game') {
+    const cleanupConfirmation = new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Game Engine local cleanup confirmation did not open')), 2000);
+      page.once('dialog', async (dialog) => {
+        try {
+          await dialog.accept();
+          clearTimeout(timeout);
+          resolve();
+        } catch (error) {
+          clearTimeout(timeout);
+          reject(error);
+        }
+      });
+    });
+    await page.evaluate(() => {
+      const endGame = document.getElementById('end-manual-game');
+      if (!(endGame instanceof HTMLButtonElement) || endGame.disabled) throw new Error('Game Engine local cleanup button is unavailable');
+      endGame.click();
+    });
+    await cleanupConfirmation;
+    await page.waitForFunction(() => {
+      const controls = document.getElementById('manual-game-controls');
+      return Boolean(controls && getComputedStyle(controls).display === 'none');
+    }, { timeout: 3000 });
+  }
+  if (asset.action && asset.action.cleanupSelector === '#stopQuizBtn') {
+    const cleanupConfirmation = new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Quiz Show local cleanup confirmation did not open')), 2000);
+      page.once('dialog', async (dialog) => {
+        try {
+          await dialog.accept();
+          clearTimeout(timeout);
+          resolve();
+        } catch (error) {
+          clearTimeout(timeout);
+          reject(error);
+        }
+      });
+    });
+    await page.evaluate(() => {
+      const stop = document.getElementById('stopQuizBtn');
+      if (!(stop instanceof HTMLButtonElement) || stop.disabled) throw new Error('Quiz Show local cleanup button is unavailable');
+      stop.click();
+    });
+    await cleanupConfirmation;
+    await page.waitForFunction(() => {
+      const timer = document.getElementById('timerDisplay');
+      const start = document.getElementById('startQuizBtn');
+      return Boolean(timer && timer.classList.contains('hidden') && start && !start.disabled);
+    }, { timeout: 3000 });
+  }
   return {
     locale,
     id: asset.id,
@@ -444,9 +746,25 @@ async function captureAsset(page, baseUrl, asset, locale) {
     focus,
     preparation,
     state,
+    screenshotClip,
     sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
     bytes: bytes.length
   };
+}
+
+async function captureFailureContext(page) {
+  return page.evaluate(() => {
+    const isVisible = (element) => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return style.display !== 'none' && style.visibility !== 'hidden' && rect.width >= 2 && rect.height >= 2;
+    };
+    return [...document.querySelectorAll('.alert, .toast, [role="alert"]')]
+      .filter(isVisible)
+      .map((element) => (element.innerText || element.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 240))
+      .filter(Boolean)
+      .slice(0, 3);
+  }).catch(() => []);
 }
 
 async function captureDocs(spec, assets, locales) {
@@ -480,7 +798,15 @@ async function captureDocs(spec, assets, locales) {
             try {
               outputs.push(await withTimeout(captureAsset(page, app.baseUrl, asset, locale), `${locale}/${asset.id}`));
             } catch (error) {
-              failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: error.message });
+              const context = await captureFailureContext(page);
+              const diagnostic = context.length ? ` Visible page message: ${context.join(' | ')}` : '';
+              const startupLog = app?.getStartupLog?.() || '';
+              const relevantLog = startupLog.split(/\r?\n/)
+                .filter((line) => /plugin|config-import|error|failed/i.test(line))
+                .slice(-30)
+                .join(' | ');
+              const startupDiagnostic = relevantLog ? ` Startup log: ${relevantLog}` : '';
+              failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: `${error.message}${diagnostic}${startupDiagnostic}` });
               if (error.message.includes('Timed out after')) {
                 await page.close().catch(() => {});
                 page = await createCapturePage(locale);
@@ -535,7 +861,9 @@ function compatibleDocsOutput(output, expectedById) {
     && output.route === asset.route
     && output.selector === asset.selector
     && JSON.stringify(output.action) === JSON.stringify(asset.action)
-    && output.focus?.label === asset.focusText[output.locale]
+        && output.focus?.selector === asset.selector
+        && output.screenshotClip
+        && output.screenshotClip.width === Math.min(output.state?.viewport?.clientWidth || 0, 640)
     && output.state?.lang === output.locale
     && output.state?.i18n === output.locale
     && output.state?.theme === 'cid';

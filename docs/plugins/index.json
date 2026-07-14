@@ -325,37 +325,37 @@
   },
   {
     "id": "emoji-rain",
-    "name": "EmojiRain",
+    "name": "Emoji Rain",
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/emoji-rain/emoji-card.png",
-      "en": "/screenshots/docs/plugins/emoji-rain/emoji-card.png",
-      "es": "/screenshots/es/docs/plugins/emoji-rain/emoji-card.png",
-      "fr": "/screenshots/fr/docs/plugins/emoji-rain/emoji-card.png"
+      "de": "/screenshots/de/docs/plugins/emoji-rain/enable-emoji-rain.png",
+      "en": "/screenshots/docs/plugins/emoji-rain/enable-emoji-rain.png",
+      "es": "/screenshots/es/docs/plugins/emoji-rain/enable-emoji-rain.png",
+      "fr": "/screenshots/fr/docs/plugins/emoji-rain/enable-emoji-rain.png"
     },
     "translations": {
       "de": {
-        "title": "EmojiRain",
-        "summary": "EmojiRain richtet Emoji-Preset, Spawn-Regeln und Geschenkzuordnung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "Emojis erscheinen in der Vorschau, ohne TikTok LIVE zu verbinden"
+        "title": "Emoji Rain",
+        "summary": "Konfiguriere Emojis, die optionale OBS-HUD-Auflösung und einen lokalen Testrain. Die Anleitung verwendet keine TikTok-Verbindung und keine produktive OBS-Szene.",
+        "firstResult": "Der Test lässt die gewählten Emojis im lokalen HUD fallen."
       },
       "en": {
-        "title": "EmojiRain",
-        "summary": "EmojiRain configures emoji preset, spawn rules, and gift mapping with a safe local check instead of a LIVE trigger.",
-        "firstResult": "emojis appear in preview without connecting TikTok LIVE"
+        "title": "Emoji Rain",
+        "summary": "Configure the emoji list, optional OBS HUD resolution, and a local test rain. This guide uses no TikTok connection and no production OBS scene.",
+        "firstResult": "The test drops the selected emojis in the local HUD."
       },
       "es": {
-        "title": "EmojiRain",
-        "summary": "EmojiRain configura preajuste de emoji, reglas de aparición y asignación de regalos mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "los emojis aparecen en la vista previa sin conectar TikTok LIVE"
+        "title": "Emoji Rain",
+        "summary": "Configura la lista de emojis, la resolución opcional del HUD de OBS y una lluvia de prueba local. Esta guía no usa TikTok ni una escena productiva de OBS.",
+        "firstResult": "La prueba deja caer los emojis seleccionados en el HUD local."
       },
       "fr": {
-        "title": "EmojiRain",
-        "summary": "EmojiRain configure préréglage emoji, règles d’apparition et mappage des cadeaux avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "les emojis apparaissent dans l’aperçu sans connecter TikTok LIVE"
+        "title": "Emoji Rain",
+        "summary": "Configurez la liste d’emoji, la résolution facultative du HUD OBS et une pluie de test locale. Ce guide n’utilise ni TikTok ni une scène OBS de production.",
+        "firstResult": "Le test fait tomber les emoji sélectionnés dans le HUD local."
       }
     }
   },
