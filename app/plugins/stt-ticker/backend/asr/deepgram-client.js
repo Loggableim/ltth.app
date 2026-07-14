@@ -1,43 +1,25 @@
 /**
  * STT Ticker - Deepgram ASR Client
  *
- * Direkter REST-Aufruf an Deepgram's /v1/listen Endpoint.
- * Auth: Authorization: Token <API_KEY>
- * Endpoint: POST https://api.deepgram.com/v1/listen
- * Body: Multipart mit audio-File + Query-Params (model, language, etc.)
- *
- * Key wird lokal gehalten — niemals ins Git committed.
- * Plugin-Config-Pfad: app/plugins/stt-ticker/data/deepgram.key
- *                     ODER Config.asr.deepgramApiKey (aus UI)
- *
- * WICHTIG: Dieser Key ist UNABHÄNGIG vom TTS-Plugin (fishaudioApiKey).
- *           Er wird in der stt-ticker Plugin-Config gespeichert.
+ * Official Deepgram SDK adapter for prerecorded audio. The live WebSocket
+ * path is managed separately per connected capture socket.
  */
 
-const axios = require('axios');
-const FormData = require('form-data');
+const { DeepgramClient, DeepgramError } = require('@deepgram/sdk');
 
 class DeepgramAsrClient {
-  // Deepgram's harte Limits
-  static SERVICE_MAX_AUDIO_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
-  static DEFAULT_MAX_AUDIO_BYTES = 25 * 1024 * 1024;       // 25 MB conservative
+  static SERVICE_MAX_AUDIO_BYTES = 2 * 1024 * 1024 * 1024;
+  static DEFAULT_MAX_AUDIO_BYTES = 25 * 1024 * 1024;
   static MAX_ERROR_MESSAGE_BYTES = 2048;
 
-  // Sprachen die der 'multi'-Modus von Deepgram Nova-2 erkennt.
-  // Alles was NICHT hier ist (Chinesisch, Japanisch, Koreanisch, Thai, …)
-  // kann Deepgram mit language='multi' nicht ausgeben → keine Halluzinationen.
-  // Quelle: https://developers.deepgram.com/docs/language-multi
   static MULTI_LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru'];
-  // Default-Whitelist für Auto-Detection: nur DE + EN.
-  // User kann in der Config erweitern, aber sicher-default = DE+EN.
   static DEFAULT_LANGUAGE_WHITELIST = ['de', 'en'];
 
-  // Supported models — nova-2 ist Standard, multilingual für DE+EN
   static MODELS = {
     'nova-2': { name: 'Nova-2', multilingual: true, de: true, en: true },
-    'nova-3': { name: 'Nova-3', multilingual: true, de: true, en: true }, // wenn verfügbar
+    'nova-3': { name: 'Nova-3', multilingual: true, de: true, en: true },
     'whisper-large': { name: 'Whisper Large (Deepgram-hosted)', multilingual: true, de: true, en: true },
-    'whisper-medium': { name: 'Whisper Medium (Deepgram-hosted)', multilingual: true, de: true, en: true },
+    'whisper-medium': { name: 'Whisper Medium (Deepgram-hosted)', multilingual: true, de: true, en: true }
   };
 
   constructor(apiKey, logger, config = {}) {
@@ -48,100 +30,55 @@ class DeepgramAsrClient {
     this.logger = logger || {
       info: () => {}, warn: () => {}, error: () => {}, debug: () => {}
     };
-    this.apiUrl = config.apiUrl || 'https://api.deepgram.com/v1/listen';
+    this.clientFactory = config.clientFactory || ((key) => new DeepgramClient({ apiKey: key }));
     this.timeout = this._resolveTimeout(config.timeout, 30000);
     this.maxAudioBytes = this._resolveMaxAudioBytes(config.maxAudioBytes);
   }
 
-  /**
-   * Transkribiert einen Audio-Buffer.
-   * @param {Buffer} audioBuffer
-   * @param {Object} options { mimeType, filename, language, model, smartFormat, profanityFilter, ... }
-   * @returns {Object} { text, segments, duration, language, confidence, provider }
-   */
   async transcribe(audioBuffer, options = {}) {
+    this._validateAudio(audioBuffer);
+
+    const model = options.model || 'nova-2';
+    const language = !options.language || options.language === 'auto'
+      ? 'multi'
+      : options.language;
+    const requestOptions = {
+      model,
+      language,
+      smart_format: true,
+      punctuate: true,
+      utterances: true,
+      utt_split: 1,
+      timeoutInSeconds: Math.ceil(this.timeout / 1000),
+      maxRetries: 1
+    };
+
+    if (options.profanityFilter) requestOptions.profanity_filter = true;
+    if (options.diarize) requestOptions.diarize = true;
+    if (options.keywords) requestOptions.keywords = options.keywords;
+
+    try {
+      const client = this.clientFactory(this.apiKey);
+      const response = await client.listen.v1.media.transcribeFile(audioBuffer, requestOptions);
+      return this._parseResponse(response, model);
+    } catch (error) {
+      throw this._normalizeSdkError(error);
+    }
+  }
+
+  _validateAudio(audioBuffer) {
     if (!Buffer.isBuffer(audioBuffer) || audioBuffer.length === 0) {
       throw new Error('Deepgram ASR audio must be a non-empty Buffer');
     }
     if (audioBuffer.length > this.maxAudioBytes) {
       throw new Error(`Deepgram ASR audio exceeds ${this.maxAudioBytes} bytes`);
     }
-
-    const model = options.model || 'nova-2';
-    const language = options.language || 'de'; // Default Deutsch wenn nix
-    const params = this._buildQueryParams({ ...options, model, language });
-
-    const form = new FormData();
-    form.append('audio', audioBuffer, {
-      filename: options.filename || 'audio.webm',
-      contentType: options.mimeType || 'application/octet-stream',
-      knownLength: audioBuffer.length
-    });
-
-    const url = this.apiUrl + '?' + new URLSearchParams(params).toString();
-
-    try {
-      const response = await axios.post(url, form, {
-        headers: {
-          'Authorization': `Token ${this.apiKey}`,
-          ...form.getHeaders()
-        },
-        timeout: this.timeout,
-        maxContentLength: 50 * 1024 * 1024,
-        maxBodyLength: 100 * 1024 * 1024
-      });
-      return this._parseResponse(response.data);
-    } catch (error) {
-      throw this._normalizeError(error);
-    }
   }
 
-  _buildQueryParams(options) {
-    const params = {
-      model: options.model || 'nova-2',
-      smart_format: 'true',
-      punctuate: 'true',
-      utterances: 'true',
-      utt_split: '1.0',     // neue Utterance bei 1s Pause
-      encoding: options.encoding || 'auto', // Deepgram erkennt automatisch
-      // FILTER: Chinesisch, Japanisch, Koreanisch, Thai, Arabisch etc. komplett ausschließen.
-      // Sonst halluziniert Deepgram bei kurzen/leisen Chunks in exotische Sprachen.
-      threshold: options.threshold || '0.3',  // Confidence-Floor (0..1)
-    };
-
-    if (options.language) {
-      // Deepgram nimmt ISO-639-1 (de, en) oder "multi"
-      if (options.language === 'multi' || options.language === 'auto') {
-        // 'multi' ist der korrekte Modus für DE+EN+ES+FR+...
-        // Deepgram wählt dann nur aus den 7 unterstützten Sprachen
-        params.language = 'multi';
-      } else {
-        // Explizit eine Sprache → festschnüren, kein Auto-Detect
-        params.language = options.language;
-      }
-    } else {
-      // Kein language → 'multi'-Modus als sicherer Default
-      // (verhindert Auto-Detect aus 36 Sprachen → Halluzinationen)
-      params.language = 'multi';
-    }
-
-    if (options.profanityFilter) params.profanity_filter = 'true';
-    if (options.diarize) params.diarize = 'true';
-    if (options.keywords) {
-      params.keywords = Array.isArray(options.keywords)
-        ? options.keywords.join('&keywords=')
-        : options.keywords;
-    }
-
-    return params;
-  }
-
-  _parseResponse(data) {
+  _parseResponse(data, model = 'nova-2') {
     if (!data || typeof data !== 'object') {
       throw new Error('Deepgram ASR malformed response: empty');
     }
-
-    // Deepgram response: { metadata: { transaction_key, request_id, sha256, created, language, ... }, results: { channels: [{ alternatives: [{ transcript, confidence, words: [...] }] }] } }
 
     const meta = data.metadata || {};
     const channels = (data.results && data.results.channels) || [];
@@ -158,14 +95,13 @@ class DeepgramAsrClient {
       throw new Error('Empty transcription result');
     }
 
-    // Words in Segmente umwandeln (für Sprechpausen-Detection)
     const words = alternative.words || [];
     const segments = this._wordsToSegments(words, meta.duration || 0);
 
-    // Deepgram liefert language in metadata wenn detect_language=true
     let language = null;
-    if (meta.language && typeof meta.language === 'string') {
-      // Deepgram: "de" oder "en-US" → normalisieren auf 2-stellig
+    if (channels[0].detected_language) {
+      language = String(channels[0].detected_language).toLowerCase().slice(0, 2);
+    } else if (meta.language && typeof meta.language === 'string') {
       language = meta.language.toLowerCase().slice(0, 2);
     } else if (meta.detected_language) {
       language = String(meta.detected_language).toLowerCase().slice(0, 2);
@@ -175,33 +111,24 @@ class DeepgramAsrClient {
       text,
       segments,
       duration: meta.duration || 0,
-      language,        // kann null sein wenn detect_language deaktiviert
+      language,
       confidence: alternative.confidence,
       provider: 'deepgram',
-      model: meta.model || 'nova-2',
+      model,
       requestId: meta.request_id
     };
   }
 
-  /**
-   * Konvertiert Deepgram's word-level results in Segmente.
-   * Trennt an langen Pausen (>1s) zwischen Wörtern.
-   */
-  _wordsToSegments(words, totalDuration) {
+  _wordsToSegments(words) {
     if (!Array.isArray(words) || words.length === 0) return [];
 
     const segments = [];
     let current = { text: '', start: 0, end: 0, confidence: 0, wordCount: 0 };
 
-    for (let i = 0; i < words.length; i++) {
-      const w = words[i];
-      if (typeof w.start !== 'number' || typeof w.end !== 'number') continue;
+    for (const word of words) {
+      if (typeof word.start !== 'number' || typeof word.end !== 'number') continue;
 
-      // Neue Segment wenn: erste Word, oder große Pause zum vorherigen
-      // 0.8s = typische Sprechpause zwischen Sätzen
-      const isNewSegment = current.wordCount === 0 ||
-        (w.start - current.end) > 0.8;
-
+      const isNewSegment = current.wordCount === 0 || (word.start - current.end) > 0.8;
       if (isNewSegment && current.wordCount > 0) {
         segments.push({
           text: current.text.trim(),
@@ -209,12 +136,12 @@ class DeepgramAsrClient {
           end: current.end,
           confidence: current.confidence / current.wordCount
         });
-        current = { text: '', start: w.start, end: w.end, confidence: 0, wordCount: 0 };
+        current = { text: '', start: word.start, end: word.end, confidence: 0, wordCount: 0 };
       }
 
-      current.text += (current.text ? ' ' : '') + (w.punctuated_word || w.word);
-      current.end = w.end;
-      current.confidence += (typeof w.confidence === 'number' ? w.confidence : 0);
+      current.text += (current.text ? ' ' : '') + (word.punctuated_word || word.word);
+      current.end = word.end;
+      current.confidence += typeof word.confidence === 'number' ? word.confidence : 0;
       current.wordCount++;
     }
 
@@ -230,36 +157,45 @@ class DeepgramAsrClient {
     return segments;
   }
 
-  _normalizeError(error) {
-    if (error?.response) {
-      const status = error.response.status || 'unknown';
-      const msg = this._extractErrorMessage(error.response.data);
-      const err = new Error(`Deepgram ASR API error (${status}): ${msg}`);
-      err.deepgramStatus = Number(status);
-      err.deepgramApiError = true;
-      return err;
+  _normalizeSdkError(error) {
+    const status = error?.statusCode || error?.status || error?.response?.status;
+    const body = error?.body || error?.response?.data;
+    const message = body
+      ? this._extractErrorMessage(body)
+      : (error?.message || 'Unknown error');
+
+    if (status || error instanceof DeepgramError) {
+      const normalized = new Error(`Deepgram ASR API error (${status || 'unknown'}): ${message}`);
+      normalized.deepgramStatus = status ? Number(status) : null;
+      normalized.deepgramApiError = true;
+      normalized.deepgramMessage = message;
+      return normalized;
     }
-    if (error?.request) {
-      const err = new Error(`Deepgram ASR network error: ${error.message}`);
-      err.deepgramNetworkError = true;
-      return err;
+    if (error?.request || error?.cause || error instanceof TypeError) {
+      const normalized = new Error(`Deepgram ASR network error: ${message}`);
+      normalized.deepgramNetworkError = true;
+      normalized.deepgramMessage = message;
+      return normalized;
     }
     return error;
   }
 
   _extractErrorMessage(data) {
     if (!data) return 'Unknown error';
-    if (typeof data === 'string') return data;
+    if (typeof data === 'string') return data.slice(0, DeepgramAsrClient.MAX_ERROR_MESSAGE_BYTES);
     if (Buffer.isBuffer(data) || data instanceof Uint8Array) {
-      const s = Buffer.from(data).toString('utf8');
+      const text = Buffer.from(data)
+        .toString('utf8')
+        .slice(0, DeepgramAsrClient.MAX_ERROR_MESSAGE_BYTES);
       try {
-        const parsed = JSON.parse(s);
-        return parsed.err_msg || parsed.message || parsed.error || s;
-      } catch (e) {
-        return s;
+        const parsed = JSON.parse(text);
+        return parsed.err_msg || parsed.message || parsed.error || text;
+      } catch (error) {
+        return text;
       }
     }
-    return data.err_msg || data.message || data.error || JSON.stringify(data);
+    const message = data.err_msg || data.message || data.error || JSON.stringify(data);
+    return String(message).slice(0, DeepgramAsrClient.MAX_ERROR_MESSAGE_BYTES);
   }
 
   _resolveTimeout(value, fallback) {
@@ -278,22 +214,17 @@ class DeepgramAsrClient {
     return Math.min(value, DeepgramAsrClient.SERVICE_MAX_AUDIO_BYTES);
   }
 
-  /**
-   * Health-check: testet ob der API-Key gültig ist.
-   * Ruft /v1/projects (oder /v1/usage) auf — nur GET mit Auth.
-   */
   async testConnection() {
     try {
-      const res = await axios.get('https://api.deepgram.com/v1/usage', {
-        headers: { 'Authorization': `Token ${this.apiKey}` },
-        timeout: 10000
-      });
-      return { ok: true, status: res.status, data: res.data };
+      const client = this.clientFactory(this.apiKey);
+      await client.auth.v1.tokens.grant();
+      return { ok: true, status: 200 };
     } catch (error) {
+      const normalized = this._normalizeSdkError(error);
       return {
         ok: false,
-        status: error?.response?.status,
-        message: this._extractErrorMessage(error?.response?.data) || error.message
+        status: normalized.deepgramStatus || null,
+        message: normalized.deepgramMessage || normalized.message || 'Unknown error'
       };
     }
   }
