@@ -174,6 +174,7 @@ class MusicBotPlugin extends EventEmitter {
     this._mpvRestartAttempts = 0;
     this._playbackSyncFailures = 0;
     this._recoveringPlayback = false;
+    this._autoDjRecoveryTrackIds = new Set();
     this._pendingTrackAdvance = null;
     this._pendingSkipAdvance = null;
 
@@ -891,9 +892,17 @@ class MusicBotPlugin extends EventEmitter {
       if (info.reason === 'error') {
         const detail = info.error || `MPV end-file reason: ${info.mpvReason || 'unknown'}`;
         const message = `MPV konnte "${info.track?.title || 'den Titel'}" nicht abspielen: ${detail}`;
+        const playbackError = new Error(message);
         this.api.log(`[music-bot] ${message}`, 'error');
-        this.autoDJ?.markPlaybackFailed?.(new Error(message));
-        this._stopPlaybackSync();
+        if (info.track?.requestedBy === 'AutoDJ') {
+          Promise.resolve(this._handleAutoDJPlaybackFailure(info.track, 'mpv-track-end', playbackError))
+            .catch((recoveryError) => {
+              this.api.log(`[music-bot] AutoDJ track-end recovery failed: ${recoveryError.message}`, 'error');
+            });
+        } else {
+          this.autoDJ?.markPlaybackFailed?.(playbackError);
+          this._stopPlaybackSync();
+        }
         this._emitError(message);
         this._emitPlaybackStopped();
         return;
@@ -936,6 +945,14 @@ class MusicBotPlugin extends EventEmitter {
 
     this.playbackEngine.on('crashed', async () => {
       const current = this.playbackEngine.getNowPlaying();
+      if (current?.requestedBy === 'AutoDJ') {
+        const crashError = new Error(`mpv crashed while playing "${current.title || current.id}"`);
+        Promise.resolve(this._handleAutoDJPlaybackFailure(current, 'mpv-crash', crashError))
+          .catch((recoveryError) => {
+            this.api.log(`[music-bot] AutoDJ crash recovery failed: ${recoveryError.message}`, 'error');
+          });
+        return;
+      }
       this._mpvRestartAttempts += 1;
       if (this._mpvRestartAttempts > 3 || !current) {
         this.api.log('[music-bot] mpv crashed and could not be restarted', 'error');
@@ -2327,6 +2344,22 @@ class MusicBotPlugin extends EventEmitter {
     }
   }
 
+  async _handleAutoDJPlaybackFailure(track, reason, error) {
+    const trackId = track && track.id;
+    if (!trackId || this._autoDjRecoveryTrackIds.has(trackId)) return null;
+    this._autoDjRecoveryTrackIds.add(trackId);
+    try {
+      this._stopPlaybackSync();
+      this.autoDJ && this.autoDJ.recordFailedTrack && this.autoDJ.recordFailedTrack(track, reason);
+      this.autoDJ && this.autoDJ.markPlaybackFailed && this.autoDJ.markPlaybackFailed(error);
+      this.playbackEngine.clearNowPlaying && this.playbackEngine.clearNowPlaying();
+      this.api.log('[music-bot] AutoDJ track failed (' + reason + '); selecting replacement for ' + trackId, 'warn');
+      return await this._maybePlayAutoDJ(true);
+    } finally {
+      this._autoDjRecoveryTrackIds.delete(trackId);
+    }
+  }
+
   _buildStatusPayload() {
     return {
       success: true,
@@ -2392,6 +2425,18 @@ class MusicBotPlugin extends EventEmitter {
     if (this._recoveringPlayback || !track || !this.playbackEngine) return;
     const current = this.playbackEngine.getNowPlaying?.();
     if (!current || current.id !== track.id) return;
+
+    if (track.requestedBy === 'AutoDJ') {
+      try {
+        await this.playbackEngine.getPosition({ timeoutMs: 2000 });
+        this._playbackSyncFailures = 0;
+        this.api.log(`[music-bot] autodj-recovery-confirmed-playing: "${track.title}"`, 'warn');
+        this._startPlaybackSync();
+      } catch (positionError) {
+        await this._handleAutoDJPlaybackFailure(track, 'ipc-confirmed', positionError);
+      }
+      return;
+    }
 
     this._recoveringPlayback = true;
     this._playbackSyncFailures = 0;

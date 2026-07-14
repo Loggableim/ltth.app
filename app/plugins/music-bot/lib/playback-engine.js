@@ -292,7 +292,7 @@ class PlaybackEngine extends EventEmitter {
     }
   }
 
-  async getPosition() {
+  async getPosition({ timeoutMs = 500 } = {}) {
     if (!this.socket || this.state !== 'playing') return 0;
     return new Promise((resolve, reject) => {
       const requestId = Date.now();
@@ -313,7 +313,7 @@ class PlaybackEngine extends EventEmitter {
       const timeout = setTimeout(() => {
         this.socket.removeListener('data', handler);
         reject(new Error('mpv did not acknowledge command: get_property'));
-      }, 500);
+      }, timeoutMs);
       this.socket.on('data', handler);
       this.socket.write(`${JSON.stringify({ command: ['get_property', 'time-pos'], request_id: requestId })}\n`, (error) => {
         if (!error) return;
