@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Schnorrbecher Steuerung</title>
+  <link rel="stylesheet" href="/css/themes.css">
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { max-width: 1500px; margin: 0 auto; padding: 24px; background: var(--color-bg-primary, #141923); color: var(--color-text-primary, #f7f9ff); font-family: Arial, sans-serif; }
+    h1 { margin: 0 0 8px; } .subtitle { margin: 0 0 24px; color: var(--color-text-secondary, #afbbd4); }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 22px; }
+    .card, .panel { padding: 18px; border: 1px solid var(--color-border, #33415c); border-radius: 12px; background: var(--color-bg-card, #1e2635); box-shadow: 0 6px 16px rgba(0,0,0,.16); }
+    .card span { display: block; color: var(--color-text-secondary, #afbbd4); font-size: .85rem; } .card strong { display: block; margin-top: 7px; font-size: 1.45rem; }
+    .layout { display: grid; gap: 22px; grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr); }
+    .form-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    label { display: grid; gap: 6px; color: var(--color-text-secondary, #c3ccdf); font-size: .9rem; } label.check { grid-template-columns: 20px 1fr; align-items: center; }
+    input, select, button { min-height: 38px; border: 1px solid var(--color-border, #465573); border-radius: 7px; font: inherit; }
+    input, select { width: 100%; padding: 7px 9px; color: inherit; background: var(--color-bg-secondary, #111827); }
+    button { padding: 8px 13px; border-color: #e8b84b; background: #d8912b; color: #1d1300; font-weight: 800; cursor: pointer; }
+    button.secondary { border-color: #5e7da7; background: #294568; color: #eff7ff; } button.danger { border-color: #f07a7a; background: #8f2f36; color: #fff; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; } .full { grid-column: 1 / -1; }
+    #overlay-url { font-family: monospace; } #admin-message { min-height: 22px; margin-top: 12px; } #admin-message[data-level="error"] { color: #ff9ba1; } #admin-message[data-level="success"] { color: #8fe6a4; }
+    #overlay-preview { width: 100%; min-height: 480px; border: 1px solid #465573; border-radius: 10px; background: repeating-conic-gradient(#39465b 0 25%, #2f3a4d 0 50%) 50% / 28px 28px; }
+    @media (max-width: 950px) { .layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Schnorrbecher</h1>
+    <p class="subtitle">TikTok-LIVE Geschenkeglas für OBS Browser Sources</p>
+  </header>
+  <section class="grid" aria-label="Aktueller Status">
+    <div class="card"><span>Verbindung</span><strong id="connection-status">Prüfe…</strong></div>
+    <div class="card"><span>Livestream</span><strong id="livestream-status">Prüfe…</strong></div>
+    <div class="card"><span>Gesamtwert</span><strong id="total-value">0</strong></div>
+    <div class="card"><span>Physische Icons</span><strong id="physical-count">0</strong></div>
+    <div class="card"><span>Spawn-Warteschlange</span><strong id="pending-count">0</strong></div>
+  </section>
+  <main class="layout">
+    <section class="panel">
+      <h2>Steuerung</h2>
+      <div class="actions">
+        <label>Testwert <input id="test-gift-value" type="number" min="1" value="100"></label>
+        <button id="test-gift" type="button">Test Gift</button>
+        <button id="add-coins" type="button" class="secondary">Add 100 Coins</button>
+        <button id="reset-coin-jar" type="button" class="danger">Reset Coin Jar</button>
+        <button id="clear-event-cache" type="button" class="secondary">Clear event cache</button>
+      </div>
+      <label>OBS Browser-Source URL
+        <input id="overlay-url" readonly>
+      </label>
+      <div class="actions"><button id="copy-overlay-url" type="button" class="secondary">Overlay-URL kopieren</button></div>
+      <h2>Konfiguration</h2>
+      <form id="coin-jar-config">
+        <div class="form-grid">
+          <label class="check"><input name="enabled" type="checkbox" checked> Plugin aktiv</label>
+          <label>Becher-Label <input name="jarLabel" maxlength="120" value="Schnorr Becher"></label>
+          <label>Becherbreite <input name="jarWidth" type="number" min="160" max="1600" value="460"></label>
+          <label>Becherhöhe <input name="jarHeight" type="number" min="140" max="1400" value="580"></label>
+          <label>X-Position (%) <input name="jarX" type="number" min="0" max="100" value="50"></label>
+          <label>Y-Position (%) <input name="jarY" type="number" min="0" max="100" value="82"></label>
+          <label>Icon-Skalierung <input name="iconScale" type="number" min="0.25" max="3" step="0.05" value="1"></label>
+          <label>Max. physische Icons <input name="maxPhysicalIcons" type="number" min="20" max="600" value="300"></label>
+          <label>Spawn-Multiplikator <input name="spawnMultiplier" type="number" min="0.1" max="5" step="0.1" value="1"></label>
+          <label>Spawn-Delay (ms) <input name="spawnDelayMs" type="number" min="20" max="1000" value="80"></label>
+          <label>Counter-Label <input name="counterLabel" maxlength="120" value="Gifts"></label>
+          <label>Counter-Schriftgröße <input name="counterFontSize" type="number" min="12" max="160" value="42"></label>
+          <label>Counter-Farbe <input name="counterColor" type="color" value="#ffffff"></label>
+          <label>Glas-Randfarbe <input name="jarBorderColor" type="color" value="#f6d365"></label>
+          <label>Glas-Transparenz <input name="jarOpacity" type="number" min="0" max="1" step="0.05" value="0.22"></label>
+          <label>Persistenz <select name="persistenceMode"><option value="session">Session</option><option value="persistent">Persistent</option></select></label>
+          <label>Sound-Lautstärke <input name="soundVolume" type="number" min="0" max="1" step="0.05" value="0.35"></label>
+          <label class="check"><input name="showCounter" type="checkbox" checked> Gesamtzähler anzeigen</label>
+          <label class="check"><input name="showGiftPopup" type="checkbox" checked> Geschenk-Popup anzeigen</label>
+          <label class="check"><input name="showSenderName" type="checkbox" checked> Absendername anzeigen</label>
+          <label class="check"><input name="showGiftImage" type="checkbox" checked> Geschenkbild anzeigen</label>
+          <label class="check"><input name="resetOnNewStream" type="checkbox" checked> Bei neuem Stream zurücksetzen</label>
+          <label class="check"><input name="physicsEnabled" type="checkbox" checked> Physik aktiv</label>
+          <label class="check"><input name="soundEnabled" type="checkbox"> Sound aktiv</label>
+          <label class="check"><input name="requireResetConfirmation" type="checkbox" checked> Reset bestätigen</label>
+          <div class="full actions"><button type="submit">Konfiguration speichern</button></div>
+        </div>
+      </form>
+      <div id="admin-message" role="status"></div>
+    </section>
+    <aside class="panel">
+      <h2>Overlay-Vorschau</h2>
+      <iframe id="overlay-preview" title="Schnorrbecher Overlay-Vorschau" allow="autoplay"></iframe>
+    </aside>
+  </main>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/plugins/schnorrbecher/ui.js"></script>
+</body>
+</html>
