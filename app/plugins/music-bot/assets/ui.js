@@ -100,6 +100,8 @@
   const autoDjEnabled = document.getElementById('auto-dj-enabled');
   const autoDjMode = document.getElementById('auto-dj-mode');
   const autoDjHistoryPlays = document.getElementById('auto-dj-history-plays');
+  const autoDjMixHistoryPercent = document.getElementById('auto-dj-mix-history-percent');
+  const autoDjRepeatCooldownHours = document.getElementById('auto-dj-repeat-cooldown-hours');
   const autoDjMaxConsecutive = document.getElementById('auto-dj-max-consecutive');
   const autoDjAnnounce = document.getElementById('auto-dj-announce');
   const autoDjStatus = document.getElementById('auto-dj-status');
@@ -790,6 +792,8 @@
       enabled: autoDjEnabled.checked,
       mode: autoDjMode.value,
       historyMinPlays: Number(autoDjHistoryPlays.value) || 1,
+      mixHistoryPercent: Math.min(100, Math.max(0, Number(autoDjMixHistoryPercent.value) || 80)),
+      repeatCooldownHours: Math.min(168, Math.max(1, Number(autoDjRepeatCooldownHours.value) || 12)),
       maxConsecutiveAutoDJ: Number(autoDjMaxConsecutive.value) || 1,
       announceAutoDJ: autoDjAnnounce.checked,
       playlistUrls,
@@ -1071,6 +1075,8 @@
       autoDjEnabled.checked = Boolean(configData.config.autoDJ.enabled);
       autoDjMode.value = configData.config.autoDJ.mode || 'history';
       autoDjHistoryPlays.value = configData.config.autoDJ.historyMinPlays || 1;
+      autoDjMixHistoryPercent.value = configData.config.autoDJ.mixHistoryPercent ?? 80;
+      autoDjRepeatCooldownHours.value = configData.config.autoDJ.repeatCooldownHours ?? 12;
       autoDjMaxConsecutive.value = configData.config.autoDJ.maxConsecutiveAutoDJ || 1;
       autoDjAnnounce.checked = Boolean(configData.config.autoDJ.announceAutoDJ);
       if (autoDjPlaylistUrls) {
@@ -1479,6 +1485,8 @@
     autoDjEnabled.checked = Boolean(status.enabled);
     autoDjMode.value = status.mode || 'history';
     autoDjHistoryPlays.value = status.historyMinPlays || 1;
+    autoDjMixHistoryPercent.value = status.mixHistoryPercent ?? 80;
+    autoDjRepeatCooldownHours.value = status.repeatCooldownHours ?? 12;
     autoDjMaxConsecutive.value = status.maxConsecutiveAutoDJ || 1;
     autoDjAnnounce.checked = Boolean(status.announceAutoDJ);
     if (autoDjPlaylistUrls) autoDjPlaylistUrls.value = (status.playlistUrls || []).join('\n');

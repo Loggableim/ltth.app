@@ -925,6 +925,33 @@ describe('Music Bot runtime and UI regressions', () => {
     ]);
   });
 
+  test('persists Radio-Mix Auto-DJ settings with clamped mix values', async () => {
+    const { dom, fetchMock } = bootMusicBotUi();
+    doms.push(dom);
+    const mode = dom.window.document.getElementById('auto-dj-mode');
+    const mixHistoryPercent = dom.window.document.getElementById('auto-dj-mix-history-percent');
+    const repeatCooldownHours = dom.window.document.getElementById('auto-dj-repeat-cooldown-hours');
+    const save = dom.window.document.getElementById('auto-dj-save');
+
+    mode.value = 'mix';
+    mixHistoryPercent.value = '80';
+    repeatCooldownHours.value = '12';
+    save.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const togglePost = fetchMock.mock.calls.find(([url, options = {}]) => {
+      return url === '/api/plugins/music-bot/auto-dj/toggle' && options.method === 'POST';
+    });
+    expect(togglePost).toBeTruthy();
+    const payload = JSON.parse(togglePost[1].body);
+    expect(payload).toMatchObject({
+      mode: 'mix',
+      mixHistoryPercent: 80,
+      repeatCooldownHours: 12
+    });
+  });
+
   test('restores saved Auto-DJ playlist URLs into the settings form', async () => {
     const { dom } = bootMusicBotUi({
       autoDjConfig: {
@@ -943,6 +970,28 @@ describe('Music Bot runtime and UI regressions', () => {
 
     expect(dom.window.document.getElementById('auto-dj-playlist-urls').value)
       .toBe('https://youtube.com/playlist?list=PLScN1UM-Rlxo');
+  });
+
+  test('restores saved Radio-Mix Auto-DJ settings into the settings form', async () => {
+    const { dom } = bootMusicBotUi({
+      autoDjConfig: {
+        enabled: true,
+        mode: 'mix',
+        historyMinPlays: 1,
+        maxConsecutiveAutoDJ: 10,
+        announceAutoDJ: true,
+        mixHistoryPercent: 80,
+        repeatCooldownHours: 12,
+        playlistUrls: []
+      }
+    });
+    doms.push(dom);
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(dom.window.document.getElementById('auto-dj-mix-history-percent').value).toBe('80');
+    expect(dom.window.document.getElementById('auto-dj-repeat-cooldown-hours').value).toBe('12');
   });
 
   test('serves German Music Bot labels as UTF-8 text instead of mojibake', () => {
