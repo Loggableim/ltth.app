@@ -25,10 +25,16 @@ class AutoDJ {
       historyShuffled: true,
       maxConsecutiveAutoDJ: 10,
       announceAutoDJ: true,
+      repeatCooldownHours: 12,
       playlistUrls: [],
       playlistFallbackToRandom: true,
       ...(config || {})
     };
+    const configuredCooldownHours = Number(this.config.repeatCooldownHours);
+    const cooldownHours = Number.isFinite(configuredCooldownHours)
+      ? Math.floor(configuredCooldownHours)
+      : 12;
+    this.config.repeatCooldownHours = Math.min(Math.max(cooldownHours, 1), 168);
     if (!this.config.enabled) {
       this.isActive = false;
       this._setResult('disabled', 'Auto-DJ ist deaktiviert.');
@@ -363,7 +369,7 @@ class AutoDJ {
   }
 
   _getRepeatCooldownMs() {
-    return Math.max(Number(this.config.repeatCooldownHours) || 0, 0) * 60 * 60 * 1000;
+    return this.config.repeatCooldownHours * 60 * 60 * 1000;
   }
 
   _normalizeText(value) {

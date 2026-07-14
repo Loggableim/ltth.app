@@ -421,6 +421,32 @@ describe('Music Bot core features', () => {
     }));
   });
 
+  test('uses the default 12-hour cooldown when Auto-DJ cooldown configuration is omitted', () => {
+    const now = Date.UTC(2026, 6, 14, 12, 0, 0);
+    const db = createAutoDjDb();
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'mix' }, {}, db, { log: jest.fn() });
+
+    autoDJ.recordFailedTrack({ youtubeId: 'default-cooldown' }, 'end-file', now);
+
+    expect(db.runCalls[0].expiresAt).toBe(now + (12 * 60 * 60 * 1000));
+  });
+
+  test.each([
+    ['invalid', 'not-a-number', 12],
+    ['fractional', 12.9, 12],
+    ['below minimum', 0, 1],
+    ['above maximum', 999, 168]
+  ])('normalizes %s Auto-DJ cooldown values before recording exclusions', (_label, repeatCooldownHours, expectedHours) => {
+    const now = Date.UTC(2026, 6, 14, 12, 0, 0);
+    const db = createAutoDjDb();
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'mix', repeatCooldownHours }, {}, db, { log: jest.fn() });
+
+    autoDJ.recordFailedTrack({ youtubeId: 'normalized-cooldown' }, 'end-file', now);
+
+    expect(autoDJ.config.repeatCooldownHours).toBe(expectedHours);
+    expect(db.runCalls[0].expiresAt).toBe(now + (expectedHours * 60 * 60 * 1000));
+  });
+
   test('only counts Auto-DJ tracks after playback starts successfully', async () => {
     const resolver = {
       resolvePlaylistEntry: jest.fn(async () => ({
