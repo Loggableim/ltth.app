@@ -3,6 +3,7 @@ const path = require('path');
 const { JSDOM } = require('jsdom');
 const MusicBotPlugin = require('../plugins/music-bot/main');
 const MusicResolver = require('../plugins/music-bot/lib/music-resolver');
+const PlaybackEngine = require('../plugins/music-bot/lib/playback-engine');
 
 const windowsTest = process.platform === 'win32' ? test : test.skip;
 
@@ -303,14 +304,11 @@ describe('Music Bot runtime and UI regressions', () => {
     const failedTrack = { id: 'auto-dj-a', title: 'Auto-DJ A', requestedBy: 'AutoDJ' };
     const replacementTrack = { id: 'auto-dj-b', title: 'Auto-DJ B', requestedBy: 'AutoDJ' };
     const { plugin, api } = createPluginWithQueue([]);
-    const playbackEngine = new (require('events'))();
-    let activeTrack = failedTrack;
-    playbackEngine.getNowPlaying = jest.fn(() => activeTrack);
+    const playbackEngine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    playbackEngine.nowPlaying = failedTrack;
+    playbackEngine.state = 'playing';
     playbackEngine.getPosition = jest.fn(async () => {
       throw new Error('MPV did not respond');
-    });
-    playbackEngine.clearNowPlaying = jest.fn(() => {
-      activeTrack = null;
     });
     plugin.playbackEngine = playbackEngine;
     plugin.autoDJ = {
@@ -328,31 +326,54 @@ describe('Music Bot runtime and UI regressions', () => {
     plugin._startPlaybackSync = jest.fn();
     plugin._clearCrossfadeTimer = jest.fn();
     plugin._maybePlayAutoDJ = jest.fn(async () => {
-      activeTrack = replacementTrack;
+      playbackEngine.nowPlaying = replacementTrack;
+      playbackEngine.state = 'playing';
       playbackEngine.emit('track-start', replacementTrack);
       return replacementTrack;
     });
     plugin._registerPlaybackEvents();
 
     await plugin._recoverStalledPlayback(failedTrack, new Error('watchdog timed out'));
-    expect(activeTrack).toBe(replacementTrack);
+    expect(playbackEngine.getNowPlaying()).toBe(replacementTrack);
     expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
     const crossfadeTimerClearCount = plugin._clearCrossfadeTimer.mock.calls.length;
+    expect(playbackEngine._replacementOutgoingTrack).toBe(failedTrack);
 
-    playbackEngine.emit('track-end', {
-      track: failedTrack,
+    playbackEngine._handleMessage(JSON.stringify({
+      event: 'end-file',
       reason: 'error',
       error: 'Delayed end-file event for A'
-    });
-    await new Promise((resolve) => setImmediate(resolve));
+    }));
 
-    expect(activeTrack).toBe(replacementTrack);
+    expect(playbackEngine.getNowPlaying()).toBe(replacementTrack);
     expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
     expect(plugin._clearCrossfadeTimer).toHaveBeenCalledTimes(crossfadeTimerClearCount);
     expect(api.emit).not.toHaveBeenCalledWith('musicbot:error', expect.anything());
     expect(api.emit).not.toHaveBeenCalledWith('musicbot:playback-stopped', expect.anything());
+  });
+
+  test('ignores an untracked MPV error after playback is already idle', () => {
+    const { plugin, api } = createPluginWithQueue([]);
+    const playbackEngine = new (require('events'))();
+    playbackEngine.getNowPlaying = jest.fn(() => null);
+    plugin.playbackEngine = playbackEngine;
+    plugin._clearCrossfadeTimer = jest.fn();
+    plugin._emitError = jest.fn();
+    plugin._emitPlaybackStopped = jest.fn();
+    plugin._registerPlaybackEvents();
+
+    playbackEngine.emit('track-end', {
+      track: null,
+      reason: 'error',
+      error: 'Late untracked MPV error'
+    });
+
+    expect(plugin._clearCrossfadeTimer).not.toHaveBeenCalled();
+    expect(plugin._emitError).not.toHaveBeenCalled();
+    expect(plugin._emitPlaybackStopped).not.toHaveBeenCalled();
+    expect(api.emit).not.toHaveBeenCalledWith('musicbot:error', expect.anything());
   });
 
   test('returns a requested song to the front when MPV rejects its start command', async () => {
