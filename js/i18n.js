@@ -52,6 +52,7 @@
     
     function apply() {
         document.documentElement.lang = currentLang;
+        document.documentElement.dataset.lang = currentLang;
         document.querySelectorAll('[data-i18n-href]').forEach(el => {
             const key = el.getAttribute('data-i18n-href');
             const value = get(key);
