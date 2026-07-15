@@ -905,6 +905,9 @@ class SttTickerPlugin {
         fishaudioConfigured: asrStatus.fishaudioConfigured,
         diagnostics: asrStatus.diagnostics
       },
+      deepgramLive: this.deepgramLiveSessions
+        ? this.deepgramLiveSessions.getStatus()
+        : { activeSessions: 0, sessions: [] },
       buffer: bufferStats,
       translation: translatorStatus,
       vrchatChatbox: {

@@ -6,9 +6,16 @@ jest.mock('axios', () => ({
 const DeepgramAsrClient = require('../plugins/stt-ticker/backend/asr/deepgram-client');
 
 function createSdkClient() {
+  const liveConnection = {
+    connect: jest.fn(),
+    waitForOpen: jest.fn().mockResolvedValue(),
+    sendCloseStream: jest.fn(),
+    close: jest.fn()
+  };
   return {
     listen: {
       v1: {
+        connect: jest.fn().mockResolvedValue(liveConnection),
         media: {
           transcribeFile: jest.fn().mockResolvedValue({
             metadata: {
@@ -89,7 +96,7 @@ describe('STT Ticker Deepgram SDK client', () => {
     });
   });
 
-  test('tests credentials through SDK auth without returning the access token', async () => {
+  test('tests transcription credentials through an SDK live-listen handshake', async () => {
     const sdk = createSdkClient();
     const client = new DeepgramAsrClient('test-key', null, {
       clientFactory: () => sdk,
@@ -98,7 +105,18 @@ describe('STT Ticker Deepgram SDK client', () => {
 
     const result = await client.testConnection();
 
-    expect(sdk.auth.v1.tokens.grant).toHaveBeenCalledTimes(1);
+    expect(sdk.listen.v1.connect).toHaveBeenCalledWith(expect.objectContaining({
+      model: 'nova-2',
+      encoding: 'linear16',
+      sample_rate: 16000,
+      Authorization: 'Token test-key'
+    }));
+    const connection = await sdk.listen.v1.connect.mock.results[0].value;
+    expect(connection.connect).toHaveBeenCalledTimes(1);
+    expect(connection.waitForOpen).toHaveBeenCalledTimes(1);
+    expect(connection.sendCloseStream).toHaveBeenCalledWith({ type: 'CloseStream' });
+    expect(connection.close).toHaveBeenCalledTimes(1);
+    expect(sdk.auth.v1.tokens.grant).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: true, status: 200 });
     expect(JSON.stringify(result)).not.toContain('temporary-token');
   });
@@ -109,7 +127,7 @@ describe('STT Ticker Deepgram SDK client', () => {
     error.statusCode = 401;
     error.body = { err_code: 'INVALID_AUTH', err_msg: 'Invalid credentials' };
     error.request = { headers: { Authorization: 'Token test-key' } };
-    sdk.auth.v1.tokens.grant.mockRejectedValue(error);
+    sdk.listen.v1.connect.mockRejectedValue(error);
     const client = new DeepgramAsrClient('test-key', null, { clientFactory: () => sdk });
 
     const result = await client.testConnection();

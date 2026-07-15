@@ -215,9 +215,23 @@ class DeepgramAsrClient {
   }
 
   async testConnection() {
+    let connection = null;
     try {
       const client = this.clientFactory(this.apiKey);
-      await client.auth.v1.tokens.grant();
+      connection = await client.listen.v1.connect({
+        model: 'nova-2',
+        language: 'de',
+        encoding: 'linear16',
+        sample_rate: 16000,
+        channels: 1,
+        interim_results: false,
+        reconnectAttempts: 0,
+        connectionTimeoutInSeconds: Math.max(1, Math.ceil(this.timeout / 1000)),
+        Authorization: `Token ${this.apiKey}`
+      });
+      connection.connect();
+      await connection.waitForOpen();
+      connection.sendCloseStream({ type: 'CloseStream' });
       return { ok: true, status: 200 };
     } catch (error) {
       const normalized = this._normalizeSdkError(error);
@@ -226,6 +240,8 @@ class DeepgramAsrClient {
         status: normalized.deepgramStatus || null,
         message: normalized.deepgramMessage || normalized.message || 'Unknown error'
       };
+    } finally {
+      try { connection?.close(); } catch (error) { /* best effort */ }
     }
   }
 }
