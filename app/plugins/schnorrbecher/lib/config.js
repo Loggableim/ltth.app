@@ -1,5 +1,6 @@
 const DEFAULT_CONFIG = Object.freeze({
   enabled: true,
+  jarStyle: 'classic',
   jarWidth: 460,
   jarHeight: 580,
   jarX: 50,
@@ -50,11 +51,16 @@ function normalizeText(value, fallback, maximum = 120) {
   return value.trim().slice(0, maximum) || fallback;
 }
 
+function normalizeJarStyle(value) {
+  return ['classic', 'mason', 'arcade'].includes(value) ? value : DEFAULT_CONFIG.jarStyle;
+}
+
 function normalizeConfig(input = {}) {
   return {
     ...DEFAULT_CONFIG,
     ...input,
     enabled: normalizeBoolean(input.enabled, DEFAULT_CONFIG.enabled),
+    jarStyle: normalizeJarStyle(input.jarStyle),
     jarWidth: Math.round(clamp(input.jarWidth, DEFAULT_CONFIG.jarWidth, 160, 1600)),
     jarHeight: Math.round(clamp(input.jarHeight, DEFAULT_CONFIG.jarHeight, 140, 1400)),
     jarX: clamp(input.jarX, DEFAULT_CONFIG.jarX, 0, 100),

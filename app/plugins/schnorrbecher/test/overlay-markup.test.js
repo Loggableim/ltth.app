@@ -15,5 +15,8 @@ describe('Schnorrbecher OBS overlay markup', () => {
     expect(css).toContain('background: transparent');
     expect(css).toContain('overflow: hidden');
     expect(css).toContain('border-top: 0');
+    expect(css).toContain('--jar-artwork');
+    expect(css).toContain('.gift-sprite');
+    expect(css).not.toContain('background: radial-gradient(circle at 32% 28%');
   });
 });

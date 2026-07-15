@@ -5,6 +5,7 @@ const {
   planVisualCoins,
   CoinJarOverlay
 } = require('../overlay/coincup');
+const { JSDOM } = require('jsdom');
 
 describe('CoinJarOverlay planning', () => {
   test('keeps the open top and walls inside the configured jar', () => {
@@ -83,5 +84,35 @@ describe('CoinJarOverlay planning', () => {
     overlay.applySync({ generation: 0, totalCoinValue: 0, visualCoinCount: 0 });
 
     expect(overlay.generation).toBe(0);
+  });
+
+  test('selects the configured jar artwork and renders catalog gifts without coin styling', () => {
+    const document = new JSDOM([
+      '<main id="coin-jar-scene"><div id="coin-jar-sprites"></div>',
+      '<div id="coin-jar"><div class="jar-label"></div></div>',
+      '<div id="coin-jar-counter"></div><div id="coin-jar-debug"></div></main>'
+    ].join('')).window.document;
+    const overlay = Object.create(CoinJarOverlay.prototype);
+    overlay.document = document;
+    overlay.config = { jarStyle: 'classic', maxPhysicalIcons: 300, iconScale: 1, spawnMultiplier: 1, spawnDelayMs: 80, jarOpacity: 0.22 };
+    overlay.elements = {
+      scene: document.querySelector('#coin-jar-scene'),
+      jar: document.querySelector('#coin-jar'),
+      jarLabel: document.querySelector('.jar-label'),
+      counter: document.querySelector('#coin-jar-counter'),
+      sprites: document.querySelector('#coin-jar-sprites'),
+      debug: document.querySelector('#coin-jar-debug')
+    };
+    overlay.resize = jest.fn();
+    overlay._renderCounter = jest.fn();
+
+    overlay.applyConfig({ jarStyle: 'arcade' });
+    const sprite = overlay._createSprite({ giftName: 'Rose', giftImage: 'https://catalog.example/rose.png' }, 64, 0);
+
+    expect(overlay.elements.jar.dataset.jarStyle).toBe('arcade');
+    expect(overlay.elements.jar.style.getPropertyValue('--jar-artwork')).toContain('/assets/jars/arcade.png');
+    expect(sprite.className).toContain('gift-sprite');
+    expect(sprite.className).not.toContain('coin-sprite');
+    expect(sprite.querySelector('img').src).toBe('https://catalog.example/rose.png');
   });
 });

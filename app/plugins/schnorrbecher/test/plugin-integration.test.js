@@ -135,4 +135,25 @@ describe('Schnorrbecher plugin integration', () => {
     expect(firstPayload.totalCoinValue).toBe(500);
     expect(secondPayload).toEqual(firstPayload);
   });
+
+  test('declares generated branding and glass assets and exposes an enabled-only Visual FX view', () => {
+    const pluginRoot = path.join(__dirname, '..');
+    const manifest = JSON.parse(fs.readFileSync(path.join(pluginRoot, 'plugin.json'), 'utf8'));
+    const dashboardHtml = fs.readFileSync(path.join(pluginRoot, '..', '..', 'public', 'dashboard.html'), 'utf8');
+
+    expect(manifest.icon).toBe('/plugins/schnorrbecher/assets/branding/schnorrbecher-icon.png');
+    expect(manifest.logo).toBe('/plugins/schnorrbecher/assets/branding/schnorrbecher-logo.png');
+    for (const asset of [
+      'branding/schnorrbecher-icon.png',
+      'branding/schnorrbecher-logo.png',
+      'jars/classic.png',
+      'jars/mason.png',
+      'jars/arcade.png'
+    ]) {
+      expect(fs.existsSync(path.join(pluginRoot, 'assets', asset))).toBe(true);
+    }
+    expect(dashboardHtml).toContain('data-view="schnorrbecher"');
+    expect(dashboardHtml).toContain('data-plugin="schnorrbecher"');
+    expect(dashboardHtml).toContain('data-src="/schnorrbecher/ui"');
+  });
 });

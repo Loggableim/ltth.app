@@ -97,6 +97,17 @@ describe('Official plugin store registry', () => {
     const packagedManifest = JSON.parse((await readZipEntry(packagePath, 'plugin.json')).toString('utf8'));
     assert.strictEqual(packagedManifest.id, 'schnorrbecher');
     assert.strictEqual(packagedManifest.version, sourceManifest.version);
+
+    const entries = await listZipEntries(packagePath);
+    for (const asset of [
+      'assets/branding/schnorrbecher-icon.png',
+      'assets/branding/schnorrbecher-logo.png',
+      'assets/jars/classic.png',
+      'assets/jars/mason.png',
+      'assets/jars/arcade.png'
+    ]) {
+      assert(entries.includes(asset), `Schnorrbecher package must include ${asset}`);
+    }
   });
 
   it('publishes the Hybridshock 1.2.0 package with matching manifest and documentation metadata', async () => {
