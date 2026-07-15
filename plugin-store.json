@@ -1010,6 +1010,34 @@
       ]
     },
     {
+      "id": "schnorrbecher",
+      "name": {
+        "en": "Schnorrbecher",
+        "de": "Schnorrbecher",
+        "es": "Schnorrbecher",
+        "fr": "Schnorrbecher"
+      },
+      "description": {
+        "en": "A transparent OBS coin jar that fills with physics-driven TikTok LIVE gift icons.",
+        "de": "Ein transparentes OBS-Münzglas, das sich mit physikalisch animierten TikTok-LIVE-Geschenk-Icons füllt.",
+        "es": "Un tarro de monedas transparente para OBS que se llena con iconos de regalos de TikTok LIVE animados con física.",
+        "fr": "Un bocal de pièces OBS transparent qui se remplit d’icônes de cadeaux TikTok LIVE animées par la physique."
+      },
+      "version": "1.0.0",
+      "author": "LTTH",
+      "category": "overlay",
+      "channel": "open-beta",
+      "badges": [],
+      "packageUrl": "https://ltth.app/plugin-store/packages/schnorrbecher-1.0.0.zip",
+      "sha256": "fc807bd33a9582b5f80ee5a70e01526f98cc99be8bc3d5f0ff7fef7ed9674a72",
+      "pricing": {
+        "type": "free",
+        "amount": 0,
+        "currency": "EUR"
+      },
+      "screenshots": []
+    },
+    {
       "id": "visual-fx-frame-webgpu",
       "name": {
         "en": "Visual FX Frame WEBGPU",
