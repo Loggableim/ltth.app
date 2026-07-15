@@ -1518,8 +1518,6 @@ html[data-theme="cid"] .toast-message {
 .modal-content-large {
     max-width: 1200px;
     width: 95%;
-    max-height: 90vh;
-    overflow-y: auto;
 }
 
 /* Curve Canvas Container */
