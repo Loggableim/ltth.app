@@ -16,6 +16,7 @@ class GoalsEventHandlers {
         this.api = plugin.api;
         this.db = plugin.db;
         this.stateMachineManager = plugin.stateMachineManager;
+        this.lastResetStreamIdentity = null;
     }
 
     /**
@@ -43,19 +44,54 @@ class GoalsEventHandlers {
         });
 
         // Listen for TikTok connection to sync likes goals
-        this.api.registerTikTokEvent('connected', () => {
+        this.api.registerTikTokEvent('connected', (data) => {
+            this.handleConfirmedNewStream(data);
+
             // Wait a moment for stats to be populated, then sync
             this.plugin._lifecycle.trackTimeout(setTimeout(() => {
                 this.syncLikesGoalsWithStream();
             }, SYNC_DELAY_ON_CONNECT_MS));
         });
 
-        // Session data resets only after a different room ID is confirmed.
-        this.api.registerTikTokEvent('streamSessionStarted', () => {
-            this.resetGoalsOnStreamEnd();
+        // The lifecycle event arrives before the connected event. Keep it as
+        // the primary path, while the confirmed connected payload below is a
+        // fallback if a plugin handler was registered late during startup.
+        this.api.registerTikTokEvent('streamSessionStarted', (data) => {
+            this.handleConfirmedNewStream(data);
         });
 
         this.api.log('✅ Goals TikTok event handlers registered', 'info');
+    }
+
+    /**
+     * Reset goals once for a newly confirmed TikTok LIVE room.
+     *
+     * Eulerstream emits streamSessionStarted before connected. On startup or
+     * plugin reload, that lifecycle event can be missed while the confirmed
+     * connected payload still carries the authoritative isNewStream flag.
+     * Both paths land here and are deduplicated by stream identity.
+     *
+     * @param {object} data Confirmed stream-session or connected payload
+     * @returns {boolean} True when goals were reset
+     */
+    handleConfirmedNewStream(data = {}) {
+        if (data.isNewStream === false) {
+            return false;
+        }
+
+        const streamIdentity = data.streamIdentity || (
+            data.username && data.roomId
+                ? `${String(data.username).toLowerCase()}:${data.roomId}`
+                : null
+        );
+
+        if (!streamIdentity || streamIdentity === this.lastResetStreamIdentity) {
+            return false;
+        }
+
+        this.lastResetStreamIdentity = streamIdentity;
+        this.resetGoalsOnStreamEnd();
+        return true;
     }
 
     /**

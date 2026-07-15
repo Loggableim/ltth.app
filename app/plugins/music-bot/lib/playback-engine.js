@@ -31,6 +31,7 @@ class PlaybackEngine extends EventEmitter {
     this._duckReleaseTimer = null;
     this._timedDuckActive = false;
     this._crossfadeOutgoingTrack = null;
+    this._replacementOutgoingTrack = null;
     this._pendingCommands = new Map();
     this._nextCommandId = 1;
     this._skipInProgress = false;
@@ -120,6 +121,7 @@ class PlaybackEngine extends EventEmitter {
     this.nowPlaying = null;
     this.state = 'idle';
     this._crossfadeOutgoingTrack = null;
+    this._replacementOutgoingTrack = null;
     await this._sendCommand(['stop']);
     this.emit('track-end', { track: skippedTrack, reason: 'skip' });
   }
@@ -217,6 +219,8 @@ class PlaybackEngine extends EventEmitter {
     }
     this.nowPlaying = null;
     this.state = 'idle';
+    this._crossfadeOutgoingTrack = null;
+    this._replacementOutgoingTrack = null;
     this._restartAttempts = 0;
     this._duckActiveCount = 0;
     this._timedDuckActive = false;
@@ -254,6 +258,7 @@ class PlaybackEngine extends EventEmitter {
       }
       this.state = 'idle';
       this._crossfadeOutgoingTrack = null;
+      this._replacementOutgoingTrack = null;
       return currentTrack;
     } finally {
       this._shuttingDown = false;
@@ -264,10 +269,19 @@ class PlaybackEngine extends EventEmitter {
     return this.nowPlaying;
   }
 
-  clearNowPlaying() {
+  rememberReplacementOutgoing(track) {
+    if (!track || this.nowPlaying !== track) return false;
+    this._replacementOutgoingTrack = track;
+    return true;
+  }
+
+  clearNowPlaying({ preserveReplacementOutgoing = false } = {}) {
     this.nowPlaying = null;
     this.state = 'idle';
     this._crossfadeOutgoingTrack = null;
+    if (!preserveReplacementOutgoing) {
+      this._replacementOutgoingTrack = null;
+    }
   }
 
   isPlaying() {
@@ -614,17 +628,24 @@ class PlaybackEngine extends EventEmitter {
           this._skipInProgress = false;
           return;
         }
-        const outgoingTrack = this._crossfadeOutgoingTrack;
+        const crossfadeOutgoingTrack = this._crossfadeOutgoingTrack;
+        const replacementOutgoingTrack = this._replacementOutgoingTrack;
+        const outgoingTrack = crossfadeOutgoingTrack || replacementOutgoingTrack;
         const endedTrack = outgoingTrack || this.nowPlaying;
         const mpvReason = String(msg.reason || 'unknown');
         // `loadfile ... replace` emits a stop for the outgoing playlist entry.
         // It is not a completed song and must not trigger another queue advance.
+        if (replacementOutgoingTrack && mpvReason === 'stop') {
+          this._replacementOutgoingTrack = null;
+          return;
+        }
         if (!outgoingTrack && mpvReason === 'stop') {
           return;
         }
         const isPlaybackError = mpvReason === 'error';
-        const reason = outgoingTrack ? 'crossfade' : (isPlaybackError ? 'error' : 'ended');
+        const reason = crossfadeOutgoingTrack ? 'crossfade' : (isPlaybackError ? 'error' : 'ended');
         this._crossfadeOutgoingTrack = null;
+        this._replacementOutgoingTrack = null;
         if (!outgoingTrack) {
           this.state = 'idle';
         }
@@ -634,7 +655,7 @@ class PlaybackEngine extends EventEmitter {
           trackEnd.error = msg.error || msg.file_error || 'MPV could not play this stream';
         }
         this.emit('track-end', trackEnd);
-        if (this.nowPlaying?.id === endedTrack?.id) {
+        if (this.nowPlaying === endedTrack) {
           this.nowPlaying = null;
         }
       } else if (msg.event === 'property-change' && msg.name === 'volume') {

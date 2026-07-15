@@ -13,6 +13,25 @@ function createDbMock() {
   };
 }
 
+function createAutoDjDb({ recentHistory = [], exclusions = [], historyCandidates = [] } = {}) {
+  const runCalls = [];
+  const resolveRows = (rows, ...args) => (typeof rows === 'function' ? rows(...args) : rows);
+  return {
+    runCalls,
+    prepare: jest.fn((sql) => ({
+      run: jest.fn((params) => {
+        runCalls.push(params);
+      }),
+      all: jest.fn((...args) => {
+        if (sql.includes('finishedAt >= ?')) return resolveRows(recentHistory, ...args);
+        if (sql.includes('plugin_music_bot_history')) return resolveRows(historyCandidates, ...args);
+        if (sql.includes('plugin_music_bot_autodj_exclusions')) return resolveRows(exclusions, ...args);
+        return [];
+      })
+    }))
+  };
+}
+
 function createApiMock(db) {
   return {
     getDatabase: () => db,
@@ -197,6 +216,73 @@ describe('Music Bot core features', () => {
     expect(engine.getState()).toBe('playing');
   });
 
+  test('attributes a delayed replacement end-file error to the outgoing track', () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const outgoing = { id: 'outgoing', title: 'Outgoing' };
+    const incoming = { id: 'incoming', title: 'Incoming' };
+    const trackEnd = jest.fn();
+    engine.on('track-end', trackEnd);
+    engine.nowPlaying = incoming;
+    engine.state = 'playing';
+    engine._replacementOutgoingTrack = outgoing;
+
+    engine._handleMessage(JSON.stringify({
+      event: 'end-file',
+      reason: 'error',
+      error: 'Delayed outgoing stream failure'
+    }));
+
+    expect(trackEnd).toHaveBeenCalledWith(expect.objectContaining({
+      track: outgoing,
+      reason: 'error',
+      error: 'Delayed outgoing stream failure'
+    }));
+    expect(engine._replacementOutgoingTrack).toBeNull();
+    expect(engine.getNowPlaying()).toBe(incoming);
+    expect(engine.getState()).toBe('playing');
+  });
+
+  test('ignores the replacement stop event without advancing playback', () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const outgoing = { id: 'outgoing', title: 'Outgoing' };
+    const incoming = { id: 'incoming', title: 'Incoming' };
+    const trackEnd = jest.fn();
+    engine.on('track-end', trackEnd);
+    engine.nowPlaying = incoming;
+    engine.state = 'playing';
+    engine._replacementOutgoingTrack = outgoing;
+
+    engine._handleMessage(JSON.stringify({ event: 'end-file', reason: 'stop' }));
+
+    expect(trackEnd).not.toHaveBeenCalled();
+    expect(engine._replacementOutgoingTrack).toBeNull();
+    expect(engine.getNowPlaying()).toBe(incoming);
+    expect(engine.getState()).toBe('playing');
+  });
+
+  test('does not retain an outgoing association after an ordinary clear', () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const track = { id: 'terminal-clear', title: 'Terminal clear' };
+    engine.nowPlaying = track;
+    engine.state = 'playing';
+
+    engine.clearNowPlaying();
+
+    expect(engine._replacementOutgoingTrack).toBeNull();
+  });
+
+  test('retains only the current track for an explicitly remembered replacement', () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const active = { id: 'active', title: 'Active' };
+    engine.nowPlaying = active;
+
+    expect(engine.rememberReplacementOutgoing(active)).toBe(true);
+    engine.clearNowPlaying({ preserveReplacementOutgoing: true });
+
+    expect(engine._replacementOutgoingTrack).toBe(active);
+    expect(engine.rememberReplacementOutgoing({ id: 'stale' })).toBe(false);
+  });
+
   test('does not revive playback from a late MPV start-file event without a track', () => {
     const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
 
@@ -374,6 +460,230 @@ describe('Music Bot core features', () => {
     });
 
     expect(engine.getNowPlaying().id).toEqual(expect.any(String));
+  });
+
+  test('blocks matching video IDs, titles, and artists for the configured cooldown', () => {
+    const now = Date.UTC(2026, 6, 14, 12, 0, 0);
+    const db = createAutoDjDb({
+      recentHistory: [{ youtubeId: 'seen-id', title: 'Same Song!', artist: 'Artist One' }],
+      exclusions: [{ youtubeId: 'bad-id', titleKey: 'broken stream', artistKey: 'artist two' }]
+    });
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'mix', repeatCooldownHours: 12 }, {}, db, { log: jest.fn() });
+    const blocks = autoDJ.getSelectionBlocks(now);
+
+    expect(autoDJ.isTrackBlocked({ youtubeId: 'seen-id', title: 'Other', artist: 'Other' }, blocks)).toBe(true);
+    expect(autoDJ.isTrackBlocked({ youtubeId: 'new-id', title: 'same song', artist: 'Artist One' }, blocks)).toBe(true);
+    expect(autoDJ.isTrackBlocked({ youtubeId: 'bad-id', title: 'Fresh', artist: 'Fresh' }, blocks)).toBe(true);
+    expect(autoDJ.isTrackBlocked({ youtubeId: 'new-id', title: 'Fresh', artist: 'Fresh' }, blocks)).toBe(false);
+  });
+
+  test('persists a failed Auto-DJ track until the cooldown expires', () => {
+    const now = Date.UTC(2026, 6, 14, 12, 0, 0);
+    const db = createAutoDjDb();
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'mix', repeatCooldownHours: 12 }, {}, db, { log: jest.fn() });
+
+    autoDJ.recordFailedTrack({ youtubeId: 'stream-failure', title: 'Broken Stream', artist: 'DJ Test' }, 'end-file', now);
+
+    expect(db.runCalls[0]).toEqual(expect.objectContaining({
+      youtubeId: 'stream-failure', titleKey: 'broken stream', artistKey: 'dj test',
+      expiresAt: now + (12 * 60 * 60 * 1000), reason: 'end-file'
+    }));
+  });
+
+  test('does not block tracks whose history and failed-stream exclusions have expired', () => {
+    const now = Date.UTC(2026, 6, 14, 12, 0, 0);
+    const cooldownMs = 12 * 60 * 60 * 1000;
+    const history = [{
+      youtubeId: 'expired-id',
+      title: 'Expired History',
+      artist: 'Expired Artist',
+      finishedAt: now - cooldownMs - 1
+    }];
+    const exclusions = [{
+      youtubeId: 'expired-id',
+      titleKey: 'expired history',
+      artistKey: 'expired artist',
+      expiresAt: now - 1
+    }];
+    const db = createAutoDjDb({
+      recentHistory: (cutoff) => history.filter((row) => row.finishedAt >= cutoff),
+      exclusions: (queryNow) => exclusions.filter((row) => row.expiresAt > queryNow)
+    });
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'mix', repeatCooldownHours: 12 }, {}, db, { log: jest.fn() });
+
+    const blocks = autoDJ.getSelectionBlocks(now);
+
+    expect(autoDJ.isTrackBlocked({
+      youtubeId: 'expired-id',
+      title: 'Expired History',
+      artist: 'Expired Artist'
+    }, blocks)).toBe(false);
+  });
+
+  test('uses the default 12-hour cooldown when Auto-DJ cooldown configuration is omitted', () => {
+    const now = Date.UTC(2026, 6, 14, 12, 0, 0);
+    const db = createAutoDjDb();
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'mix' }, {}, db, { log: jest.fn() });
+
+    autoDJ.recordFailedTrack({ youtubeId: 'default-cooldown' }, 'end-file', now);
+
+    expect(db.runCalls[0].expiresAt).toBe(now + (12 * 60 * 60 * 1000));
+  });
+
+  test.each([
+    ['invalid', 'not-a-number', 12],
+    ['fractional', 12.9, 12],
+    ['below minimum', 0, 1],
+    ['above maximum', 999, 168]
+  ])('normalizes %s Auto-DJ cooldown values before recording exclusions', (_label, repeatCooldownHours, expectedHours) => {
+    const now = Date.UTC(2026, 6, 14, 12, 0, 0);
+    const db = createAutoDjDb();
+    const autoDJ = new AutoDJ({ enabled: true, mode: 'mix', repeatCooldownHours }, {}, db, { log: jest.fn() });
+
+    autoDJ.recordFailedTrack({ youtubeId: 'normalized-cooldown' }, 'end-file', now);
+
+    expect(autoDJ.config.repeatCooldownHours).toBe(expectedHours);
+    expect(db.runCalls[0].expiresAt).toBe(now + (expectedHours * 60 * 60 * 1000));
+  });
+
+  test('chooses an eligible history candidate when the weighted mix roll selects history', async () => {
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'mix',
+      mixHistoryPercent: 80,
+      historyMinPlays: 2,
+      historyShuffled: false
+    }, {}, createAutoDjDb({
+      historyCandidates: [{
+        youtubeId: 'history-only', title: 'History only', artist: 'History Artist',
+        url: 'https://www.youtube.com/watch?v=history-only', plays: 2
+      }]
+    }), { log: jest.fn() });
+    const originalRandom = Math.random;
+    Math.random = jest.fn(() => 0.2);
+
+    try {
+      const result = await autoDJ.getNextSong();
+
+      expect(result.song.youtubeId).toBe('history-only');
+      expect(autoDJ.getStatus().selectionSource).toBe('history');
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  test('falls back to history when the weighted radio lookup has no result', async () => {
+    const seed = {
+      youtubeId: 'seed-1', title: 'History seed', artist: 'Seed Artist',
+      url: 'https://www.youtube.com/watch?v=seed-1', plays: 2
+    };
+    const resolver = { resolvePlaylistEntry: jest.fn(async () => ({ success: false })) };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'mix',
+      mixHistoryPercent: 0,
+      historyMinPlays: 2,
+      historyShuffled: false
+    }, resolver, createAutoDjDb({ historyCandidates: [seed] }), { log: jest.fn() });
+    const originalRandom = Math.random;
+    Math.random = jest.fn(() => 0);
+
+    try {
+      const result = await autoDJ.getNextSong();
+
+      expect(resolver.resolvePlaylistEntry).toHaveBeenCalledWith(
+        'https://www.youtube.com/watch?v=seed-1&list=RDseed-1',
+        2
+      );
+      expect(result.song.youtubeId).toBe('seed-1');
+      expect(autoDJ.getStatus().selectionSource).toBe('history-fallback');
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  test('does not reuse a session-played history candidate as a Radio-Mix fallback', async () => {
+    const candidate = {
+      youtubeId: 'session-played', title: 'Session Played', artist: 'History Artist',
+      url: 'https://www.youtube.com/watch?v=session-played', plays: 2
+    };
+    const resolver = { resolvePlaylistEntry: jest.fn(async () => ({ success: false })) };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'mix',
+      mixHistoryPercent: 0,
+      historyMinPlays: 2,
+      historyShuffled: false
+    }, resolver, createAutoDjDb({ historyCandidates: [candidate] }), { log: jest.fn() });
+    autoDJ.playedInSession.add(candidate.youtubeId);
+
+    const result = await autoDJ.getNextSong();
+
+    expect(result).toBeNull();
+    expect(autoDJ.getStatus().selectionSource).not.toBe('history-fallback');
+  });
+
+  test('preserves history-mode fallback to a session-played candidate', async () => {
+    const candidate = {
+      youtubeId: 'session-played', title: 'Session Played', artist: 'History Artist',
+      url: 'https://www.youtube.com/watch?v=session-played', plays: 2
+    };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'history',
+      historyMinPlays: 2,
+      historyShuffled: false
+    }, {}, createAutoDjDb({ historyCandidates: [candidate] }), { log: jest.fn() });
+    autoDJ.playedInSession.add(candidate.youtubeId);
+
+    const result = await autoDJ.getNextSong();
+
+    expect(result.song.youtubeId).toBe(candidate.youtubeId);
+  });
+
+  test('skips blocked radio suggestions and accepts the next fresh suggestion', async () => {
+    const resolver = {
+      resolvePlaylistEntry: jest.fn(async (_url, index) => ({
+        success: true,
+        song: index === 2
+          ? { youtubeId: 'blocked-radio', title: 'Blocked radio', artist: 'Blocked Artist' }
+          : { youtubeId: 'fresh-radio', title: 'Fresh radio', artist: 'Fresh Artist' }
+      }))
+    };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'mix',
+      mixHistoryPercent: 0,
+      historyMinPlays: 2,
+      historyShuffled: false
+    }, resolver, createAutoDjDb({
+      exclusions: [{ youtubeId: '', titleKey: '', artistKey: 'blocked artist' }],
+      historyCandidates: [{
+        youtubeId: 'seed-2', title: 'Seed', artist: 'Seed Artist',
+        url: 'https://www.youtube.com/watch?v=seed-2', plays: 2
+      }]
+    }), { log: jest.fn() });
+    const originalRandom = Math.random;
+    Math.random = jest.fn(() => 0);
+
+    try {
+      const result = await autoDJ.getNextSong();
+
+      expect(result.song.youtubeId).toBe('fresh-radio');
+      expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(
+        1,
+        'https://www.youtube.com/watch?v=seed-2&list=RDseed-2',
+        2
+      );
+      expect(resolver.resolvePlaylistEntry).toHaveBeenNthCalledWith(
+        2,
+        'https://www.youtube.com/watch?v=seed-2&list=RDseed-2',
+        3
+      );
+      expect(autoDJ.getStatus().selectionSource).toBe('radio');
+    } finally {
+      Math.random = originalRandom;
+    }
   });
 
   test('only counts Auto-DJ tracks after playback starts successfully', async () => {

@@ -452,11 +452,20 @@
             <option value="history">History</option>
             <option value="playlist">Playlist</option>
             <option value="random" data-i18n="generated.2c844c8435e7">Aehnliche Titel</option>
+            <option value="mix">Radio-Mix</option>
           </select>
         </label>
         <label class="field">
           <span data-i18n="generated.1ac81dffc72d">Min. Plays in History</span>
           <input type="number" id="auto-dj-history-plays" min="1" value="2">
+        </label>
+        <label class="field">
+          <span>History-Anteil im Radio-Mix (%)</span>
+          <input type="number" id="auto-dj-mix-history-percent" min="0" max="100" value="80">
+        </label>
+        <label class="field">
+          <span>Wiederholungs-Sperre (Stunden)</span>
+          <input type="number" id="auto-dj-repeat-cooldown-hours" min="1" max="168" value="12">
         </label>
         <label class="field">
           <span data-i18n="generated.f4b80de26677">Max. aufeinanderfolgende Tracks</span>

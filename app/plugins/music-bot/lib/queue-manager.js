@@ -503,6 +503,20 @@ class QueueManager {
     }
 
     try {
+      this.db.prepare(
+        'CREATE TABLE IF NOT EXISTS plugin_music_bot_autodj_exclusions (' +
+        'id TEXT PRIMARY KEY, youtubeId TEXT, titleKey TEXT, artistKey TEXT, ' +
+        'expiresAt INTEGER NOT NULL, reason TEXT NOT NULL, createdAt INTEGER NOT NULL)'
+      ).run();
+      this.db.prepare(
+        'CREATE INDEX IF NOT EXISTS idx_music_bot_autodj_exclusions_expiry ' +
+        'ON plugin_music_bot_autodj_exclusions(expiresAt)'
+      ).run();
+    } catch (error) {
+      this.api.log?.(`[music-bot] Failed to ensure Auto-DJ exclusion table: ${error.message}`, 'error');
+    }
+
+    try {
       this.db
         .prepare(
           `CREATE TABLE IF NOT EXISTS plugin_music_bot_queue (

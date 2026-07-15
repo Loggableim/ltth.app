@@ -3,6 +3,7 @@ const path = require('path');
 const { JSDOM } = require('jsdom');
 const MusicBotPlugin = require('../plugins/music-bot/main');
 const MusicResolver = require('../plugins/music-bot/lib/music-resolver');
+const PlaybackEngine = require('../plugins/music-bot/lib/playback-engine');
 
 const windowsTest = process.platform === 'win32' ? test : test.skip;
 
@@ -56,6 +57,7 @@ function bootMusicBotUi(options = {}) {
     randomKeywords: [],
     playlistUrls: []
   };
+  const autoDjStatus = options.autoDjStatus;
   const statusOnboarding = options.statusOnboarding || {
     completed: false,
     completedAt: null
@@ -71,6 +73,9 @@ function bootMusicBotUi(options = {}) {
       }
       return createJsonResponse({ success: true, config: {} });
     }
+    if (target.includes('/auto-dj/status') && autoDjStatus) {
+      return createJsonResponse({ success: true, status: autoDjStatus });
+    }
     if (target.includes('/status')) {
       return createJsonResponse({
         success: true,
@@ -84,18 +89,6 @@ function bootMusicBotUi(options = {}) {
     }
     if (target.includes('/queue')) return createJsonResponse({ success: true, queue: [] });
     if (target.includes('/history')) return createJsonResponse({ success: true, history: [] });
-    if (target.includes('/auto-dj/status')) {
-      return createJsonResponse({
-        success: true,
-        status: {
-          enabled: false,
-          mode: 'history',
-          historyMinPlays: 2,
-          maxConsecutiveAutoDJ: 10,
-          announceAutoDJ: true
-        }
-      });
-    }
     if (target.includes('/bans')) return createJsonResponse({ success: true, bans: [] });
     if (target.includes('/gift-catalog')) return createJsonResponse({ catalog: [] });
     if (target.includes('/setup-status')) return createJsonResponse({ success: true, issues: setupIssues });
@@ -223,13 +216,30 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
   });
 
-  test('keeps an Auto-DJ track playing when a longer position probe confirms MPV is healthy', async () => {
-    const current = {
-      id: 'auto-dj-current',
-      title: 'Auto-DJ Current',
-      requestedBy: 'AutoDJ',
-      url: 'https://example.test/current.mp3'
+  test('records the selected Auto-DJ track when its initial playback start fails', async () => {
+    const track = { id: 'start-failed', title: 'Broken stream', requestedBy: 'AutoDJ' };
+    const { plugin } = createPluginWithQueue([]);
+    plugin._maybePlayAutoDJ = MusicBotPlugin.prototype._maybePlayAutoDJ.bind(plugin);
+    plugin.config.autoDJ.enabled = true;
+    plugin.autoDJ = {
+      getNextSong: jest.fn(async () => ({ song: track })),
+      recordFailedTrack: jest.fn(),
+      markPlaybackFailed: jest.fn()
     };
+    plugin.playbackEngine = { play: jest.fn(async () => { throw new Error('loadfile failed'); }) };
+
+    const result = await plugin._maybePlayAutoDJ(true);
+
+    expect(result).toBeNull();
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(track, 'start-failed');
+    expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordFailedTrack.mock.invocationCallOrder[0])
+      .toBeLessThan(plugin.autoDJ.markPlaybackFailed.mock.invocationCallOrder[0]);
+    expect(plugin.autoDJ.getNextSong).toHaveBeenCalledTimes(1);
+  });
+
+  test('keeps an Auto-DJ stream playing when a longer IPC position probe confirms playback', async () => {
+    const current = { id: 'auto-dj-current', title: 'Auto-DJ Current', requestedBy: 'AutoDJ' };
     const { plugin } = createPluginWithQueue([]);
     plugin.playbackEngine = {
       getNowPlaying: jest.fn(() => current),
@@ -246,6 +256,196 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin.playbackEngine.restart).not.toHaveBeenCalled();
     expect(plugin.playbackEngine.play).not.toHaveBeenCalled();
     expect(plugin._startPlaybackSync).toHaveBeenCalledTimes(1);
+  });
+
+  test('advances a concurrently failed Auto-DJ track only once', async () => {
+    const failedTrack = { id: 'auto-dj-failed', title: 'Failed Auto-DJ', requestedBy: 'AutoDJ' };
+    const { plugin } = createPluginWithQueue([]);
+    plugin.autoDJ = {
+      recordFailedTrack: jest.fn(),
+      markPlaybackFailed: jest.fn()
+    };
+    plugin.playbackEngine = {
+      getNowPlaying: jest.fn(() => failedTrack),
+      clearNowPlaying: jest.fn(),
+      restart: jest.fn(),
+      play: jest.fn()
+    };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._maybePlayAutoDJ = jest.fn(async () => null);
+
+    await Promise.all([
+      plugin._handleAutoDJPlaybackFailure(failedTrack, 'ipc-confirmed', new Error('MPV unavailable')),
+      plugin._handleAutoDJPlaybackFailure(failedTrack, 'ipc-confirmed', new Error('MPV unavailable'))
+    ]);
+
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(failedTrack, 'ipc-confirmed');
+    expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledTimes(1);
+    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
+    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledWith(true);
+    expect(plugin.playbackEngine.restart).not.toHaveBeenCalled();
+    expect(plugin.playbackEngine.play).not.toHaveBeenCalled();
+  });
+
+  test('allows a new Auto-DJ playback object to recover when it reuses an older track ID', async () => {
+    const firstPlayback = { id: 'reused-auto-dj-id', title: 'Auto-DJ A', requestedBy: 'AutoDJ' };
+    const secondPlayback = { id: 'reused-auto-dj-id', title: 'Auto-DJ A Again', requestedBy: 'AutoDJ' };
+    const { plugin } = createPluginWithQueue([]);
+    let activeTrack = firstPlayback;
+    plugin.autoDJ = {
+      recordFailedTrack: jest.fn(),
+      markPlaybackFailed: jest.fn()
+    };
+    plugin.playbackEngine = {
+      getNowPlaying: jest.fn(() => activeTrack),
+      clearNowPlaying: jest.fn(),
+      restart: jest.fn(),
+      play: jest.fn()
+    };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._maybePlayAutoDJ = jest.fn(async () => null);
+
+    await plugin._handleAutoDJPlaybackFailure(firstPlayback, 'ipc-confirmed', new Error('first failure'));
+    activeTrack = secondPlayback;
+    await plugin._handleAutoDJPlaybackFailure(secondPlayback, 'ipc-confirmed', new Error('second failure'));
+
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(2);
+    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(2);
+  });
+
+  test('ignores a delayed Auto-DJ track-end for the replaced track after watchdog recovery', async () => {
+    const failedTrack = { id: 'auto-dj-a', title: 'Auto-DJ A', requestedBy: 'AutoDJ' };
+    const replacementTrack = { id: 'auto-dj-b', title: 'Auto-DJ B', requestedBy: 'AutoDJ' };
+    const { plugin, api } = createPluginWithQueue([]);
+    const playbackEngine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    playbackEngine.nowPlaying = failedTrack;
+    playbackEngine.state = 'playing';
+    playbackEngine.getPosition = jest.fn(async () => {
+      throw new Error('MPV did not respond');
+    });
+    plugin.playbackEngine = playbackEngine;
+    plugin.autoDJ = {
+      recordFailedTrack: jest.fn(),
+      markPlaybackFailed: jest.fn(),
+      setPlaybackSeed: jest.fn()
+    };
+    plugin.queueManager = {
+      markPlaying: jest.fn(),
+      resetVoteSkips: jest.fn(),
+      addToHistory: jest.fn(),
+      removeSkipImmunity: jest.fn()
+    };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._startPlaybackSync = jest.fn();
+    plugin._clearCrossfadeTimer = jest.fn();
+    plugin._maybePlayAutoDJ = jest.fn(async () => {
+      playbackEngine.nowPlaying = replacementTrack;
+      playbackEngine.state = 'playing';
+      playbackEngine.emit('track-start', replacementTrack);
+      return replacementTrack;
+    });
+    plugin._registerPlaybackEvents();
+
+    await plugin._recoverStalledPlayback(failedTrack, new Error('watchdog timed out'));
+    expect(playbackEngine.getNowPlaying()).toBe(replacementTrack);
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
+    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
+    const crossfadeTimerClearCount = plugin._clearCrossfadeTimer.mock.calls.length;
+    expect(playbackEngine._replacementOutgoingTrack).toBe(failedTrack);
+
+    playbackEngine._handleMessage(JSON.stringify({
+      event: 'end-file',
+      reason: 'error',
+      error: 'Delayed end-file event for A'
+    }));
+
+    expect(playbackEngine.getNowPlaying()).toBe(replacementTrack);
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
+    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
+    expect(plugin._clearCrossfadeTimer).toHaveBeenCalledTimes(crossfadeTimerClearCount);
+    expect(api.emit).not.toHaveBeenCalledWith('musicbot:error', expect.anything());
+    expect(api.emit).not.toHaveBeenCalledWith('musicbot:playback-stopped', expect.anything());
+  });
+
+  test('attributes a genuine replacement error to B after A fails and B starts', async () => {
+    const firstTrack = { id: 'auto-dj-a', title: 'Auto-DJ A', requestedBy: 'AutoDJ' };
+    const secondTrack = { id: 'auto-dj-b', title: 'Auto-DJ B', requestedBy: 'AutoDJ' };
+    const thirdTrack = { id: 'auto-dj-c', title: 'Auto-DJ C', requestedBy: 'AutoDJ' };
+    const { plugin, api } = createPluginWithQueue([]);
+    const playbackEngine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    playbackEngine.nowPlaying = firstTrack;
+    playbackEngine.state = 'playing';
+    plugin.playbackEngine = playbackEngine;
+    plugin.autoDJ = {
+      recordFailedTrack: jest.fn(),
+      markPlaybackFailed: jest.fn(),
+      setPlaybackSeed: jest.fn()
+    };
+    plugin.queueManager = {
+      markPlaying: jest.fn(),
+      resetVoteSkips: jest.fn(),
+      addToHistory: jest.fn(),
+      removeSkipImmunity: jest.fn()
+    };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._startPlaybackSync = jest.fn();
+    plugin._clearCrossfadeTimer = jest.fn();
+    plugin._maybePlayAutoDJ = jest.fn(async () => {
+      const nextTrack = plugin._maybePlayAutoDJ.mock.calls.length === 1 ? secondTrack : thirdTrack;
+      playbackEngine.nowPlaying = nextTrack;
+      playbackEngine.state = 'playing';
+      playbackEngine.emit('track-start', nextTrack);
+      return nextTrack;
+    });
+    plugin._registerPlaybackEvents();
+
+    playbackEngine._handleMessage(JSON.stringify({
+      event: 'end-file',
+      reason: 'error',
+      error: 'A failed'
+    }));
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(playbackEngine.getNowPlaying()).toBe(secondTrack);
+    expect(playbackEngine._replacementOutgoingTrack).toBeNull();
+
+    playbackEngine._handleMessage(JSON.stringify({
+      event: 'end-file',
+      reason: 'error',
+      error: 'B failed'
+    }));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenNthCalledWith(1, firstTrack, 'mpv-track-end');
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenNthCalledWith(2, secondTrack, 'mpv-track-end');
+    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(2);
+    expect(playbackEngine.getNowPlaying()).toBe(thirdTrack);
+    expect(api.emit).toHaveBeenCalledWith('musicbot:error', expect.objectContaining({
+      message: expect.stringContaining('Auto-DJ B')
+    }));
+    expect(api.emit).toHaveBeenCalledWith('musicbot:playback-stopped', {});
+  });
+
+  test('ignores an untracked MPV error after playback is already idle', () => {
+    const { plugin, api } = createPluginWithQueue([]);
+    const playbackEngine = new (require('events'))();
+    playbackEngine.getNowPlaying = jest.fn(() => null);
+    plugin.playbackEngine = playbackEngine;
+    plugin._clearCrossfadeTimer = jest.fn();
+    plugin._emitError = jest.fn();
+    plugin._emitPlaybackStopped = jest.fn();
+    plugin._registerPlaybackEvents();
+
+    playbackEngine.emit('track-end', {
+      track: null,
+      reason: 'error',
+      error: 'Late untracked MPV error'
+    });
+
+    expect(plugin._clearCrossfadeTimer).not.toHaveBeenCalled();
+    expect(plugin._emitError).not.toHaveBeenCalled();
+    expect(plugin._emitPlaybackStopped).not.toHaveBeenCalled();
+    expect(api.emit).not.toHaveBeenCalledWith('musicbot:error', expect.anything());
   });
 
   test('returns a requested song to the front when MPV rejects its start command', async () => {
@@ -538,11 +738,11 @@ describe('Music Bot runtime and UI regressions', () => {
     }));
   });
 
-  test('surfaces an MPV playback error without advancing Auto-DJ to the next song', async () => {
+  test('routes an Auto-DJ MPV playback error through failure recovery without writing history', async () => {
     const failedTrack = { id: 'failed-track', title: 'Failed Track', requestedBy: 'AutoDJ' };
     const { plugin, api } = createPluginWithQueue([]);
     const playbackEngine = new (require('events'))();
-    playbackEngine.getNowPlaying = jest.fn(() => null);
+    playbackEngine.getNowPlaying = jest.fn(() => failedTrack);
     plugin.playbackEngine = playbackEngine;
     plugin.queueManager = {
       addToHistory: jest.fn(),
@@ -553,6 +753,7 @@ describe('Music Bot runtime and UI regressions', () => {
     plugin._stopPlaybackSync = jest.fn();
     plugin._clearCrossfadeTimer = jest.fn();
     plugin._playNextFromQueue = jest.fn(async () => ({ success: true }));
+    plugin._handleAutoDJPlaybackFailure = jest.fn(async () => null);
     plugin._emitPlaybackStopped = jest.fn();
     plugin._registerPlaybackEvents();
 
@@ -565,7 +766,12 @@ describe('Music Bot runtime and UI regressions', () => {
 
     expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
     expect(plugin.queueManager.addToHistory).not.toHaveBeenCalled();
-    expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledWith(expect.any(Error));
+    expect(plugin._handleAutoDJPlaybackFailure).toHaveBeenCalledTimes(1);
+    expect(plugin._handleAutoDJPlaybackFailure).toHaveBeenCalledWith(
+      failedTrack,
+      expect.any(String),
+      expect.any(Error)
+    );
     expect(api.emit).toHaveBeenCalledWith('musicbot:error', expect.objectContaining({
       message: expect.stringContaining('Failed to open stream')
     }));
@@ -733,6 +939,99 @@ describe('Music Bot runtime and UI regressions', () => {
     ]);
   });
 
+  test('persists Radio-Mix Auto-DJ settings with clamped mix values', async () => {
+    const { dom, fetchMock } = bootMusicBotUi();
+    doms.push(dom);
+    const mode = dom.window.document.getElementById('auto-dj-mode');
+    const mixHistoryPercent = dom.window.document.getElementById('auto-dj-mix-history-percent');
+    const repeatCooldownHours = dom.window.document.getElementById('auto-dj-repeat-cooldown-hours');
+    const save = dom.window.document.getElementById('auto-dj-save');
+
+    mode.value = 'mix';
+    mixHistoryPercent.value = '80';
+    repeatCooldownHours.value = '12';
+    save.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const togglePost = fetchMock.mock.calls.find(([url, options = {}]) => {
+      return url === '/api/plugins/music-bot/auto-dj/toggle' && options.method === 'POST';
+    });
+    expect(togglePost).toBeTruthy();
+    const payload = JSON.parse(togglePost[1].body);
+    expect(payload).toMatchObject({
+      mode: 'mix',
+      mixHistoryPercent: 80,
+      repeatCooldownHours: 12
+    });
+  });
+
+  test('preserves a zero Radio-Mix history percentage in the Auto-DJ save payload', async () => {
+    const { dom, fetchMock } = bootMusicBotUi();
+    doms.push(dom);
+    const mixHistoryPercent = dom.window.document.getElementById('auto-dj-mix-history-percent');
+    const save = dom.window.document.getElementById('auto-dj-save');
+
+    mixHistoryPercent.value = '0';
+    save.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const togglePost = fetchMock.mock.calls.find(([url, options = {}]) => {
+      return url === '/api/plugins/music-bot/auto-dj/toggle' && options.method === 'POST';
+    });
+    expect(togglePost).toBeTruthy();
+    const payload = JSON.parse(togglePost[1].body);
+    expect(payload.mixHistoryPercent).toBe(0);
+  });
+
+  test('restores a saved zero Radio-Mix history percentage', async () => {
+    const { dom } = bootMusicBotUi({
+      autoDjConfig: {
+        enabled: true,
+        mode: 'mix',
+        historyMinPlays: 1,
+        maxConsecutiveAutoDJ: 10,
+        announceAutoDJ: true,
+        mixHistoryPercent: 0,
+        repeatCooldownHours: 12,
+        playlistUrls: []
+      }
+    });
+    doms.push(dom);
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(dom.window.document.getElementById('auto-dj-mix-history-percent').value).toBe('0');
+  });
+
+  test('shows compact German Auto-DJ selection diagnostics without replacing the last result', async () => {
+    const { dom } = bootMusicBotUi({
+      autoDjStatus: {
+        enabled: true,
+        mode: 'mix',
+        historyMinPlays: 2,
+        mixHistoryPercent: 80,
+        repeatCooldownHours: 12,
+        maxConsecutiveAutoDJ: 10,
+        announceAutoDJ: true,
+        selectionSource: 'radio',
+        blockedCount: 3,
+        lastResult: { state: 'selected', message: 'Ausgewählt: Frischer Titel' }
+      }
+    });
+    doms.push(dom);
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const detail = dom.window.document.getElementById('auto-dj-detail').textContent;
+    expect(detail).toContain('Ausgewählt: Frischer Titel');
+    expect(detail).toContain('Quelle: radio');
+    expect(detail).toContain('Gesperrt: 3');
+  });
+
   test('restores saved Auto-DJ playlist URLs into the settings form', async () => {
     const { dom } = bootMusicBotUi({
       autoDjConfig: {
@@ -751,6 +1050,28 @@ describe('Music Bot runtime and UI regressions', () => {
 
     expect(dom.window.document.getElementById('auto-dj-playlist-urls').value)
       .toBe('https://youtube.com/playlist?list=PLScN1UM-Rlxo');
+  });
+
+  test('restores saved Radio-Mix Auto-DJ settings into the settings form', async () => {
+    const { dom } = bootMusicBotUi({
+      autoDjConfig: {
+        enabled: true,
+        mode: 'mix',
+        historyMinPlays: 1,
+        maxConsecutiveAutoDJ: 10,
+        announceAutoDJ: true,
+        mixHistoryPercent: 80,
+        repeatCooldownHours: 12,
+        playlistUrls: []
+      }
+    });
+    doms.push(dom);
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(dom.window.document.getElementById('auto-dj-mix-history-percent').value).toBe('80');
+    expect(dom.window.document.getElementById('auto-dj-repeat-cooldown-hours').value).toBe('12');
   });
 
   test('serves German Music Bot labels as UTF-8 text instead of mojibake', () => {

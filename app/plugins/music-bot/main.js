@@ -133,8 +133,10 @@ const DEFAULT_CONFIG = {
     mode: 'history',
     historyMinPlays: 2,
     historyShuffled: true,
+    mixHistoryPercent: 80,
     maxConsecutiveAutoDJ: 10,
     announceAutoDJ: true,
+    repeatCooldownHours: 12,
     playlistUrls: [],
     playlistFallbackToRandom: true
   },
@@ -174,6 +176,7 @@ class MusicBotPlugin extends EventEmitter {
     this._mpvRestartAttempts = 0;
     this._playbackSyncFailures = 0;
     this._recoveringPlayback = false;
+    this._autoDjRecoveryTracks = new WeakSet();
     this._pendingTrackAdvance = null;
     this._pendingSkipAdvance = null;
 
@@ -277,6 +280,7 @@ class MusicBotPlugin extends EventEmitter {
     this.config.moderation = this._mergeDeep(DEFAULT_CONFIG.moderation, this.config.moderation || {});
     this.config.monetization = this._mergeDeep(DEFAULT_CONFIG.monetization, this.config.monetization || {});
     this.config.audio = this._mergeDeep(DEFAULT_CONFIG.audio, this.config.audio || {});
+    this.config.autoDJ = this._normalizeAutoDJConfig(this.config.autoDJ);
     this.config.onboarding = this._normalizeOnboarding(this.config.onboarding);
     if (!Array.isArray(this.config.moderation.blockedKeywords)) {
       this.config.moderation.blockedKeywords = [];
@@ -827,6 +831,20 @@ class MusicBotPlugin extends EventEmitter {
     };
   }
 
+  _normalizeAutoDJConfig(value) {
+    const config = value && typeof value === 'object' ? { ...value } : {};
+    const normalizeInteger = (input, fallback, minimum, maximum) => {
+      const numeric = Number(input);
+      const normalized = Number.isFinite(numeric) ? Math.floor(numeric) : fallback;
+      return Math.min(maximum, Math.max(minimum, normalized));
+    };
+    return {
+      ...config,
+      mixHistoryPercent: normalizeInteger(config.mixHistoryPercent, 80, 0, 100),
+      repeatCooldownHours: normalizeInteger(config.repeatCooldownHours, 12, 1, 168)
+    };
+  }
+
   _getRequestCredits(username) {
     const key = String(username || '').toLowerCase();
     if (!key) return 0;
@@ -885,15 +903,30 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.playbackEngine.on('track-end', (info) => {
+      const activeTrack = this.playbackEngine.getNowPlaying?.();
+      if (info.reason === 'error' && !info.track && !activeTrack) {
+        return;
+      }
+      if (info.reason !== 'crossfade' && info.track?.requestedBy === 'AutoDJ' && activeTrack && activeTrack !== info.track) {
+        return;
+      }
       if (info.reason !== 'crossfade') {
         this._clearCrossfadeTimer();
       }
       if (info.reason === 'error') {
         const detail = info.error || `MPV end-file reason: ${info.mpvReason || 'unknown'}`;
         const message = `MPV konnte "${info.track?.title || 'den Titel'}" nicht abspielen: ${detail}`;
+        const playbackError = new Error(message);
         this.api.log(`[music-bot] ${message}`, 'error');
-        this.autoDJ?.markPlaybackFailed?.(new Error(message));
-        this._stopPlaybackSync();
+        if (info.track?.requestedBy === 'AutoDJ') {
+          Promise.resolve(this._handleAutoDJPlaybackFailure(info.track, 'mpv-track-end', playbackError))
+            .catch((recoveryError) => {
+              this.api.log(`[music-bot] AutoDJ track-end recovery failed: ${recoveryError.message}`, 'error');
+            });
+        } else {
+          this.autoDJ?.markPlaybackFailed?.(playbackError);
+          this._stopPlaybackSync();
+        }
         this._emitError(message);
         this._emitPlaybackStopped();
         return;
@@ -936,6 +969,14 @@ class MusicBotPlugin extends EventEmitter {
 
     this.playbackEngine.on('crashed', async () => {
       const current = this.playbackEngine.getNowPlaying();
+      if (current?.requestedBy === 'AutoDJ') {
+        const crashError = new Error(`mpv crashed while playing "${current.title || current.id}"`);
+        Promise.resolve(this._handleAutoDJPlaybackFailure(current, 'mpv-crash', crashError))
+          .catch((recoveryError) => {
+            this.api.log(`[music-bot] AutoDJ crash recovery failed: ${recoveryError.message}`, 'error');
+          });
+        return;
+      }
       this._mpvRestartAttempts += 1;
       if (this._mpvRestartAttempts > 3 || !current) {
         this.api.log('[music-bot] mpv crashed and could not be restarted', 'error');
@@ -1167,6 +1208,7 @@ class MusicBotPlugin extends EventEmitter {
       this.config.moderation = this._mergeDeep(DEFAULT_CONFIG.moderation, this.config.moderation || {});
       this.config.monetization = this._mergeDeep(DEFAULT_CONFIG.monetization, this.config.monetization || {});
       this.config.audio = this._mergeDeep(DEFAULT_CONFIG.audio, this.config.audio || {});
+      this.config.autoDJ = this._normalizeAutoDJConfig(this.config.autoDJ);
       if (!Array.isArray(this.config.moderation.blockedKeywords)) {
         this.config.moderation.blockedKeywords = [];
       }
@@ -1332,6 +1374,7 @@ class MusicBotPlugin extends EventEmitter {
     this.api.registerRoute('post', '/api/plugins/music-bot/auto-dj/toggle', async (req, res) => {
       const payload = req.body || {};
       this.config.autoDJ = this._mergeDeep(this.config.autoDJ, payload);
+      this.config.autoDJ = this._normalizeAutoDJConfig(this.config.autoDJ);
       this.autoDJ?.updateConfig(this.config.autoDJ);
       if (this.config.autoDJ.enabled) {
         this.autoDJ?.activate();
@@ -2321,10 +2364,30 @@ class MusicBotPlugin extends EventEmitter {
       }
       return track;
     } catch (error) {
+      this.autoDJ.recordFailedTrack?.(track, 'start-failed');
       this.autoDJ.markPlaybackFailed(error);
       this.api.log(`[music-bot] AutoDJ playback failed: ${error.message}`, 'error');
       return null;
     }
+  }
+
+  async _handleAutoDJPlaybackFailure(track, reason, error) {
+    if (!track || typeof track !== 'object') return null;
+    const activeTrack = this.playbackEngine?.getNowPlaying?.();
+    if (activeTrack !== track) {
+      this.api.log('[music-bot] Ignoring stale AutoDJ playback failure for ' + (track.id || track.title || 'unknown'), 'warn');
+      return null;
+    }
+    if (this._autoDjRecoveryTracks.has(track)) return null;
+    this._autoDjRecoveryTracks.add(track);
+    this._stopPlaybackSync();
+    this.autoDJ && this.autoDJ.recordFailedTrack && this.autoDJ.recordFailedTrack(track, reason);
+    this.autoDJ && this.autoDJ.markPlaybackFailed && this.autoDJ.markPlaybackFailed(error);
+    const preserveReplacementOutgoing = reason === 'ipc-confirmed'
+      && this.playbackEngine.rememberReplacementOutgoing?.(track);
+    this.playbackEngine.clearNowPlaying && this.playbackEngine.clearNowPlaying({ preserveReplacementOutgoing });
+    this.api.log('[music-bot] AutoDJ track failed (' + reason + '); selecting replacement for ' + (track.id || track.title || 'unknown'), 'warn');
+    return await this._maybePlayAutoDJ(true);
   }
 
   _buildStatusPayload() {
@@ -2393,19 +2456,16 @@ class MusicBotPlugin extends EventEmitter {
     const current = this.playbackEngine.getNowPlaying?.();
     if (!current || current.id !== track.id) return;
 
-    // The regular overlay poll has a deliberately short timeout. Auto-DJ
-    // streams can still be playing while an individual 500 ms IPC poll is
-    // late, so confirm with a longer probe before restarting MPV at 0:00.
     if (track.requestedBy === 'AutoDJ') {
       try {
         await this.playbackEngine.getPosition({ timeoutMs: 2000 });
         this._playbackSyncFailures = 0;
-        this.api.log(`[music-bot] Auto-DJ playback confirmed after a delayed IPC poll: "${track.title}"`, 'warn');
+        this.api.log(`[music-bot] autodj-recovery-confirmed-playing: "${track.title}"`, 'warn');
         this._startPlaybackSync();
-        return;
-      } catch (_) {
-        // A genuinely stalled player still follows the normal recovery path.
+      } catch (positionError) {
+        await this._handleAutoDJPlaybackFailure(track, 'ipc-confirmed', positionError);
       }
+      return;
     }
 
     this._recoveringPlayback = true;
