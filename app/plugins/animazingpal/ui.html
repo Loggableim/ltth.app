@@ -424,7 +424,7 @@
       <div class="flex items-center gap-4">
         <div class="text-3xl">🎭</div>
         <div>
-          <h1 class="text-2xl font-bold" data-i18n="navigation.animazingpal">AnimazingPal</h1>
+          <h1 class="text-2xl font-bold" data-i18n="plugins.animazingpal.navigation.animazingpal">AnimazingPal</h1>
           <p class="text-gray-400" data-i18n="plugins.animazingpal.labels.tiktok_to_avatar_integration_for_animaze_vtube_studio">TikTok-to-avatar integration for Animaze, VTube Studio and VSeeFace</p>
         </div>
       </div>
@@ -434,25 +434,25 @@
           <span id="statusText" data-i18n="plugins.animazingpal.labels.nicht_verbunden">Nicht verbunden</span>
         </div>
         <div class="text-sm text-gray-400">
-          Ziel: <span id="activePlatformName">Animaze</span>
+          <span data-i18n="plugins.animazingpal.ui.labels.target">Ziel:</span> <span id="activePlatformName" data-i18n="plugins.animazingpal.ui.platforms.animaze">Animaze</span>
         </div>
-        <button class="btn btn-primary" id="connectBtn" data-i18n="animazingpal.actions.connect">Verbinden</button>
-        <button class="btn btn-secondary" data-action="refresh">Aktualisieren</button>
+        <button class="btn btn-primary" id="connectBtn" data-i18n="plugins.animazingpal.animazingpal.actions.connect">Verbinden</button>
+        <button class="btn btn-secondary" data-action="refresh" data-i18n="plugins.animazingpal.ui.actions.refresh">Aktualisieren</button>
       </div>
     </div>
 
     <!-- Tabs -->
     <div class="flex flex-wrap gap-1 border-b border-gray-700 mb-4 overflow-x-auto pb-1" data-animazingpal-tabs>
-      <div class="tab active" data-tab="overview" data-i18n="animazingpal.tabs.overview">Übersicht</div>
+      <div class="tab active" data-tab="overview" data-i18n="plugins.animazingpal.animazingpal.tabs.overview">Übersicht</div>
       <div class="tab" data-tab="emotes" data-i18n="plugins.animazingpal.labels.emotes_aktionen">Emotes & Aktionen</div>
-      <div class="tab" data-tab="gifts" data-i18n="animazingpal.tabs.gifts">Gift Mappings</div>
+      <div class="tab" data-tab="gifts" data-i18n="plugins.animazingpal.animazingpal.tabs.gifts">Gift Mappings</div>
       <div class="tab" data-tab="events" data-i18n="plugins.animazingpal.labels.event_aktionen">Event Aktionen</div>
       <div class="tab" data-tab="logicmatrix" data-i18n="plugins.animazingpal.labels.logic_matrix">Logic Matrix</div>
-      <div class="tab" data-tab="personalities" data-i18n="animazingpal.tabs.personalities">Persönlichkeiten</div>
-      <div class="tab" data-tab="memories" data-i18n="animazingpal.tabs.memories">Erinnerungen</div>
+      <div class="tab" data-tab="personalities" data-i18n="plugins.animazingpal.animazingpal.tabs.personalities">Persönlichkeiten</div>
+      <div class="tab" data-tab="memories" data-i18n="plugins.animazingpal.animazingpal.tabs.memories">Erinnerungen</div>
       <div class="tab" data-tab="viewerbase">Viewerbase</div>
       <div class="tab" data-tab="livehost" data-i18n="plugins.animazingpal.labels.live_host">Live Host</div>
-      <div class="tab" data-tab="settings" data-i18n="animazingpal.tabs.settings">Einstellungen</div>
+      <div class="tab" data-tab="settings" data-i18n="plugins.animazingpal.animazingpal.tabs.settings">Einstellungen</div>
     </div>
 
     <!-- Tab Content: Overview -->
@@ -460,26 +460,26 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Connection Info -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4">Verbindung</h2>
+          <h2 class="text-xl font-bold mb-4" data-i18n="plugins.animazingpal.ui.sections.connection">Verbindung</h2>
           <div class="space-y-3">
             <div class="flex justify-between">
-              <span class="text-gray-400">Status:</span>
+              <span class="text-gray-400" data-i18n="plugins.animazingpal.ui.labels.status">Status:</span>
               <span id="connectionStatus" data-i18n="plugins.animazingpal.labels.nicht_verbunden_f18e3a">Nicht verbunden</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-400">Host:</span>
-              <span id="connectionHost">127.0.0.1:9000</span>
+              <span class="text-gray-400" data-i18n="plugins.animazingpal.ui.labels.host">Host:</span>
+              <span id="connectionHost" data-i18n="plugins.animazingpal.ui.defaults.host">127.0.0.1:9000</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-400">Avatare:</span>
-              <span id="avatarCount">0</span>
+              <span class="text-gray-400" data-i18n="plugins.animazingpal.ui.labels.avatars">Avatare:</span>
+              <span id="avatarCount" data-i18n="plugins.animazingpal.ui.defaults.zero">0</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-400">Emotes:</span>
-              <span id="emoteCount">0</span>
+              <span class="text-gray-400" data-i18n="plugins.animazingpal.ui.labels.emotes">Emotes:</span>
+              <span id="emoteCount" data-i18n="plugins.animazingpal.ui.defaults.zero">0</span>
             </div>
           </div>
-          <button class="btn btn-primary w-full mt-4" data-action="test-connection" data-i18n="animazingpal.brain.test_connection">Verbindung testen</button>
+          <button class="btn btn-primary w-full mt-4" data-action="test-connection" data-i18n="plugins.animazingpal.animazingpal.brain.test_connection">Verbindung testen</button>
         </div>
 
         <!-- Current Avatar -->
@@ -492,7 +492,7 @@
 
         <!-- Quick Actions -->
         <div class="card col-span-1 md:col-span-2">
-          <h2 class="text-xl font-bold mb-4">Schnellaktionen</h2>
+          <h2 class="text-xl font-bold mb-4" data-i18n="plugins.animazingpal.ui.sections.quick_actions">Schnellaktionen</h2>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <button class="grid-item text-center" data-action="calibrate">
               <div class="text-2xl mb-2">🎯</div>
@@ -508,7 +508,7 @@
             </button>
             <button class="grid-item text-center" data-action="refresh">
               <div class="text-2xl mb-2">🔄</div>
-              <div data-i18n="animazingpal.actions.refresh">Daten aktualisieren</div>
+              <div data-i18n="plugins.animazingpal.animazingpal.actions.refresh">Daten aktualisieren</div>
             </button>
           </div>
         </div>
@@ -520,7 +520,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Emotes -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4" id="emotesSectionTitle">Emotes</h2>
+          <h2 class="text-xl font-bold mb-4" id="emotesSectionTitle" data-i18n="plugins.animazingpal.ui.labels.emotes">Emotes</h2>
           <div id="emotesList" class="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
             <p class="text-gray-400 col-span-2" data-i18n="plugins.animazingpal.labels.keine_emotes_verfugbar">Keine Emotes verfügbar</p>
           </div>
@@ -528,7 +528,7 @@
 
         <!-- Special Actions -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4" id="specialActionsSectionTitle">Spezialaktionen</h2>
+          <h2 class="text-xl font-bold mb-4" id="specialActionsSectionTitle" data-i18n="plugins.animazingpal.ui.actions.special">Spezialaktionen</h2>
           <div id="specialActionsList" class="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
             <p class="text-gray-400 col-span-2" data-i18n="plugins.animazingpal.labels.keine_spezialaktionen_verfugbar">Keine Spezialaktionen verfügbar</p>
           </div>
@@ -536,7 +536,7 @@
 
         <!-- Poses -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4" id="posesSectionTitle">Posen</h2>
+          <h2 class="text-xl font-bold mb-4" id="posesSectionTitle" data-i18n="plugins.animazingpal.ui.actions.pose">Posen</h2>
           <div id="posesList" class="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
             <p class="text-gray-400 col-span-2" data-i18n="plugins.animazingpal.labels.keine_posen_verfugbar">Keine Posen verfügbar</p>
           </div>
@@ -556,29 +556,29 @@
     <div id="tab-gifts" class="tab-content hidden">
       <div class="card">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-bold" data-i18n="animazingpal.tabs.gifts">Gift Mappings</h2>
+          <h2 class="text-xl font-bold" data-i18n="plugins.animazingpal.animazingpal.tabs.gifts">Gift Mappings</h2>
           <button class="btn btn-success" data-action="add-gift-mapping" data-i18n="plugins.animazingpal.labels.mapping_hinzufugen">+ Mapping hinzufügen</button>
         </div>
         <p class="text-gray-400 mb-4" data-i18n="plugins.animazingpal.labels.verknupfe_tiktok_geschenke_mit_animaze_aktionen">Verknüpfe TikTok-Geschenke mit Animaze-Aktionen</p>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 rounded-lg border border-gray-700 bg-gray-900/60 p-3">
           <label class="block md:col-span-2">
             <span class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.gift_aus_katalog">Gift aus Katalog</span>
-            <select class="select" id="giftMappingGift">
+            <select class="select" id="giftMappingGift" aria-label="Gift aus Katalog" data-i18n-aria-label="plugins.animazingpal.runtime.aria.gift_mapping_gift">
               <option value="" data-i18n="plugins.animazingpal.labels.gift_aus_katalog_wahlen">Gift aus Katalog wählen...</option>
             </select>
           </label>
           <label class="block">
-            <span class="text-gray-400 text-sm">Aktionstyp</span>
-            <select class="select" id="giftMappingActionType">
-              <option value="emote">Emote</option>
-              <option value="specialAction">Spezialaktion</option>
-              <option value="pose">Pose</option>
+            <span class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.ui.labels.action_type">Aktionstyp</span>
+            <select class="select" id="giftMappingActionType" aria-label="Aktionstyp" data-i18n-aria-label="plugins.animazingpal.runtime.aria.gift_mapping_action_type">
+              <option value="emote" data-i18n="plugins.animazingpal.ui.actions.emote">Emote</option>
+              <option value="specialAction" data-i18n="plugins.animazingpal.ui.actions.special">Spezialaktion</option>
+              <option value="pose" data-i18n="plugins.animazingpal.ui.actions.pose">Pose</option>
               <option value="idle" data-i18n="plugins.animazingpal.labels.idle_animation_26ec95">Idle Animation</option>
             </select>
           </label>
           <label class="block">
-            <span class="text-gray-400 text-sm" data-i18n="animazingpal.events.action_value">Aktion</span>
-            <select class="select" id="giftMappingActionValue">
+            <span class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.animazingpal.events.action_value">Aktion</span>
+            <select class="select" id="giftMappingActionValue" aria-label="Aktion" data-i18n-aria-label="plugins.animazingpal.runtime.aria.gift_mapping_action_value">
               <option value="" data-i18n="plugins.animazingpal.labels.auswahlen_cc45d2">Auswählen...</option>
             </select>
           </label>
@@ -598,20 +598,20 @@
           <div class="space-y-3">
             <label class="flex items-center gap-2">
               <input type="checkbox" id="followEnabled">
-              <span data-i18n="animazingpal.events.enabled">Aktiviert</span>
+              <span data-i18n="plugins.animazingpal.animazingpal.events.enabled">Aktiviert</span>
             </label>
             <div>
-              <label class="text-gray-400 text-sm">Aktionstyp</label>
+              <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.ui.labels.action_type">Aktionstyp</label>
               <select class="select" id="followActionType">
                 <option value="" data-i18n="plugins.animazingpal.labels.keine_aktion">Keine Aktion</option>
-                <option value="emote">Emote</option>
-                <option value="specialAction">Spezialaktion</option>
-                <option value="pose">Pose</option>
+                <option value="emote" data-i18n="plugins.animazingpal.ui.actions.emote">Emote</option>
+                <option value="specialAction" data-i18n="plugins.animazingpal.ui.actions.special">Spezialaktion</option>
+                <option value="pose" data-i18n="plugins.animazingpal.ui.actions.pose">Pose</option>
                 <option value="idle" data-i18n="plugins.animazingpal.labels.idle_animation_149cbd">Idle Animation</option>
               </select>
             </div>
             <div>
-              <label class="text-gray-400 text-sm" data-i18n="animazingpal.events.action_value">Aktion</label>
+              <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.animazingpal.events.action_value">Aktion</label>
               <select class="select" id="followActionValue">
                 <option value="" data-i18n="plugins.animazingpal.labels.auswahlen_b1c803">Auswählen...</option>
               </select>
@@ -637,20 +637,20 @@
           <div class="space-y-3">
             <label class="flex items-center gap-2">
               <input type="checkbox" id="shareEnabled">
-              <span data-i18n="animazingpal.events.enabled">Aktiviert</span>
+              <span data-i18n="plugins.animazingpal.animazingpal.events.enabled">Aktiviert</span>
             </label>
             <div>
-              <label class="text-gray-400 text-sm">Aktionstyp</label>
+              <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.ui.labels.action_type">Aktionstyp</label>
               <select class="select" id="shareActionType">
                 <option value="" data-i18n="plugins.animazingpal.labels.keine_aktion_3dbbcc">Keine Aktion</option>
-                <option value="emote">Emote</option>
-                <option value="specialAction">Spezialaktion</option>
-                <option value="pose">Pose</option>
+                <option value="emote" data-i18n="plugins.animazingpal.ui.actions.emote">Emote</option>
+                <option value="specialAction" data-i18n="plugins.animazingpal.ui.actions.special">Spezialaktion</option>
+                <option value="pose" data-i18n="plugins.animazingpal.ui.actions.pose">Pose</option>
                 <option value="idle" data-i18n="plugins.animazingpal.labels.idle_animation_67902a">Idle Animation</option>
               </select>
             </div>
             <div>
-              <label class="text-gray-400 text-sm" data-i18n="animazingpal.events.action_value">Aktion</label>
+              <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.animazingpal.events.action_value">Aktion</label>
               <select class="select" id="shareActionValue">
                 <option value="" data-i18n="plugins.animazingpal.labels.auswahlen_da5558">Auswählen...</option>
               </select>
@@ -676,20 +676,20 @@
           <div class="space-y-3">
             <label class="flex items-center gap-2">
               <input type="checkbox" id="subscribeEnabled">
-              <span data-i18n="animazingpal.events.enabled">Aktiviert</span>
+              <span data-i18n="plugins.animazingpal.animazingpal.events.enabled">Aktiviert</span>
             </label>
             <div>
-              <label class="text-gray-400 text-sm">Aktionstyp</label>
+              <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.ui.labels.action_type">Aktionstyp</label>
               <select class="select" id="subscribeActionType">
                 <option value="" data-i18n="plugins.animazingpal.labels.keine_aktion_c4bb4b">Keine Aktion</option>
-                <option value="emote">Emote</option>
-                <option value="specialAction">Spezialaktion</option>
-                <option value="pose">Pose</option>
+                <option value="emote" data-i18n="plugins.animazingpal.ui.actions.emote">Emote</option>
+                <option value="specialAction" data-i18n="plugins.animazingpal.ui.actions.special">Spezialaktion</option>
+                <option value="pose" data-i18n="plugins.animazingpal.ui.actions.pose">Pose</option>
                 <option value="idle" data-i18n="plugins.animazingpal.labels.idle_animation">Idle Animation</option>
               </select>
             </div>
             <div>
-              <label class="text-gray-400 text-sm" data-i18n="animazingpal.events.action_value">Aktion</label>
+              <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.animazingpal.events.action_value">Aktion</label>
               <select class="select" id="subscribeActionValue">
                 <option value="" data-i18n="plugins.animazingpal.labels.auswahlen">Auswählen...</option>
               </select>
@@ -715,24 +715,24 @@
           <div class="space-y-3">
             <label class="flex items-center gap-2">
               <input type="checkbox" id="likeEnabled">
-              <span data-i18n="animazingpal.events.enabled">Aktiviert</span>
+              <span data-i18n="plugins.animazingpal.animazingpal.events.enabled">Aktiviert</span>
             </label>
             <div>
               <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.threshold_min_likes">Threshold (min. Likes)</label>
               <input type="number" class="input" id="likeThreshold" value="10" min="1">
             </div>
             <div>
-              <label class="text-gray-400 text-sm">Aktionstyp</label>
+              <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.ui.labels.action_type">Aktionstyp</label>
               <select class="select" id="likeActionType">
                 <option value="" data-i18n="plugins.animazingpal.labels.keine_aktion_b28d3a">Keine Aktion</option>
-                <option value="emote">Emote</option>
-                <option value="specialAction">Spezialaktion</option>
-                <option value="pose">Pose</option>
+                <option value="emote" data-i18n="plugins.animazingpal.ui.actions.emote">Emote</option>
+                <option value="specialAction" data-i18n="plugins.animazingpal.ui.actions.special">Spezialaktion</option>
+                <option value="pose" data-i18n="plugins.animazingpal.ui.actions.pose">Pose</option>
                 <option value="idle" data-i18n="plugins.animazingpal.labels.idle_animation_22d5a9">Idle Animation</option>
               </select>
             </div>
             <div>
-              <label class="text-gray-400 text-sm" data-i18n="animazingpal.events.action_value">Aktion</label>
+              <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.animazingpal.events.action_value">Aktion</label>
               <select class="select" id="likeActionValue">
                 <option value="" data-i18n="plugins.animazingpal.labels.auswahlen_c4de52">Auswählen...</option>
               </select>
@@ -754,20 +754,20 @@
           <div class="space-y-3">
             <label class="flex items-center gap-2">
               <input type="checkbox" id="giftEnabled">
-              <span data-i18n="animazingpal.events.enabled">Aktiviert</span>
+              <span data-i18n="plugins.animazingpal.animazingpal.events.enabled">Aktiviert</span>
             </label>
             <div>
-              <label class="text-gray-400 text-sm">Aktionstyp</label>
+              <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.ui.labels.action_type">Aktionstyp</label>
               <select class="select" id="giftActionType">
                 <option value="" data-i18n="plugins.animazingpal.labels.keine_aktion_910b3e">Keine Aktion</option>
-                <option value="emote">Emote</option>
-                <option value="specialAction">Spezialaktion</option>
-                <option value="pose">Pose</option>
+                <option value="emote" data-i18n="plugins.animazingpal.ui.actions.emote">Emote</option>
+                <option value="specialAction" data-i18n="plugins.animazingpal.ui.actions.special">Spezialaktion</option>
+                <option value="pose" data-i18n="plugins.animazingpal.ui.actions.pose">Pose</option>
                 <option value="idle" data-i18n="plugins.animazingpal.labels.idle_animation_931672">Idle Animation</option>
               </select>
             </div>
             <div>
-              <label class="text-gray-400 text-sm" data-i18n="animazingpal.events.action_value">Aktion</label>
+              <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.animazingpal.events.action_value">Aktion</label>
               <select class="select" id="giftActionValue">
                 <option value="" data-i18n="plugins.animazingpal.labels.auswahlen_e6b55a">Auswählen...</option>
               </select>
@@ -793,20 +793,20 @@
           <div class="space-y-3">
             <label class="flex items-center gap-2">
               <input type="checkbox" id="chatEnabled">
-              <span data-i18n="animazingpal.events.enabled">Aktiviert</span>
+              <span data-i18n="plugins.animazingpal.animazingpal.events.enabled">Aktiviert</span>
             </label>
             <div>
-              <label class="text-gray-400 text-sm">Aktionstyp</label>
+              <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.ui.labels.action_type">Aktionstyp</label>
               <select class="select" id="chatActionType">
                 <option value="" data-i18n="plugins.animazingpal.labels.keine_aktion_fb37b4">Keine Aktion</option>
-                <option value="emote">Emote</option>
-                <option value="specialAction">Spezialaktion</option>
-                <option value="pose">Pose</option>
+                <option value="emote" data-i18n="plugins.animazingpal.ui.actions.emote">Emote</option>
+                <option value="specialAction" data-i18n="plugins.animazingpal.ui.actions.special">Spezialaktion</option>
+                <option value="pose" data-i18n="plugins.animazingpal.ui.actions.pose">Pose</option>
                 <option value="idle" data-i18n="plugins.animazingpal.labels.idle_animation_1ec419">Idle Animation</option>
               </select>
             </div>
             <div>
-              <label class="text-gray-400 text-sm" data-i18n="animazingpal.events.action_value">Aktion</label>
+              <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.animazingpal.events.action_value">Aktion</label>
               <select class="select" id="chatActionValue">
                 <option value="" data-i18n="plugins.animazingpal.labels.auswahlen_628cce">Auswählen...</option>
               </select>
@@ -852,15 +852,15 @@
           <h3 class="text-lg font-bold mb-4" data-i18n="plugins.animazingpal.labels.logic_matrix_testen">Logic Matrix testen</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="text-gray-400 text-sm">Event-Typ</label>
+              <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.ui.labels.event_type">Event-Typ</label>
               <select class="select" id="testEventType">
                 <option value="" data-i18n="plugins.animazingpal.labels.auswahlen_8c6719">Auswählen...</option>
-                <option value="gift">Gift</option>
-                <option value="follow">Follow</option>
-                <option value="share">Share</option>
-                <option value="subscribe">Subscribe</option>
-                <option value="like">Like</option>
-                <option value="chat">Chat</option>
+                <option value="gift" data-i18n="plugins.animazingpal.ui.events.gift">Gift</option>
+                <option value="follow" data-i18n="plugins.animazingpal.ui.events.follow">Follow</option>
+                <option value="share" data-i18n="plugins.animazingpal.ui.events.share">Share</option>
+                <option value="subscribe" data-i18n="plugins.animazingpal.ui.events.subscribe">Subscribe</option>
+                <option value="like" data-i18n="plugins.animazingpal.ui.events.like">Like</option>
+                <option value="chat" data-i18n="plugins.animazingpal.ui.events.chat">Chat</option>
               </select>
             </div>
             <div>
@@ -868,9 +868,9 @@
               <textarea class="input" id="testEventData" rows="4" placeholder='{"username": "TestUser", "giftName": "Rose", "giftId": 5655}'></textarea>
             </div>
           </div>
-          <button class="btn btn-primary mt-4" id="testLogicMatrixBtn" data-i18n="animazingpal.actions.test">Testen</button>
+          <button class="btn btn-primary mt-4" id="testLogicMatrixBtn" data-i18n="plugins.animazingpal.animazingpal.actions.test">Testen</button>
           <div id="testLogicMatrixResults" class="mt-4 hidden">
-            <h4 class="font-bold mb-2">Ergebnisse:</h4>
+            <h4 class="font-bold mb-2" data-i18n="plugins.animazingpal.ui.labels.results">Ergebnisse:</h4>
             <div class="bg-gray-800 rounded-lg p-4">
               <pre id="testLogicMatrixOutput" class="text-sm text-gray-300 whitespace-pre-wrap"></pre>
             </div>
@@ -890,15 +890,15 @@
           <div class="flex gap-3 mb-4">
             <select id="personaSelector" class="select flex-1">
               <option value="" data-i18n="plugins.animazingpal.labels.persona_auswahlen">Persona auswählen...</option>
-              <option value="friendly_streamer" data-i18n="animazingpal.personalities.presets.friendly_streamer">Freundlicher Streamer</option>
-              <option value="gaming_pro" data-i18n="animazingpal.personalities.presets.gaming_pro">Gaming Pro</option>
-              <option value="entertainer" data-i18n="animazingpal.personalities.presets.entertainer">Entertainer</option>
-              <option value="chill_vibes" data-i18n="animazingpal.personalities.presets.chill_vibes">Chill Vibes</option>
-              <option value="anime_fan" data-i18n="animazingpal.personalities.presets.anime_fan">Anime Fan</option>
+              <option value="friendly_streamer" data-i18n="plugins.animazingpal.animazingpal.personalities.presets.friendly_streamer">Freundlicher Streamer</option>
+              <option value="gaming_pro" data-i18n="plugins.animazingpal.animazingpal.personalities.presets.gaming_pro">Gaming Pro</option>
+              <option value="entertainer" data-i18n="plugins.animazingpal.animazingpal.personalities.presets.entertainer">Entertainer</option>
+              <option value="chill_vibes" data-i18n="plugins.animazingpal.animazingpal.personalities.presets.chill_vibes">Chill Vibes</option>
+              <option value="anime_fan" data-i18n="plugins.animazingpal.animazingpal.personalities.presets.anime_fan">Anime Fan</option>
             </select>
             <button class="btn btn-success" id="createPersonaBtn" data-i18n="plugins.animazingpal.labels.erstellen">+ Erstellen</button>
-            <button class="btn btn-primary" id="editPersonaBtn" data-i18n="animazingpal.personalities.edit">Bearbeiten</button>
-            <button class="btn btn-danger" id="deletePersonaBtn" data-i18n="animazingpal.personalities.delete">Löschen</button>
+            <button class="btn btn-primary" id="editPersonaBtn" data-i18n="plugins.animazingpal.animazingpal.personalities.edit">Bearbeiten</button>
+            <button class="btn btn-danger" id="deletePersonaBtn" data-i18n="plugins.animazingpal.animazingpal.personalities.delete">Löschen</button>
           </div>
         </div>
 
@@ -907,16 +907,16 @@
           <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.aktive_personlichkeit">Aktive Persönlichkeit</label>
           <select id="activePersonality" class="select">
             <option value="" data-i18n="plugins.animazingpal.labels.keine_ausgewahlt">Keine ausgewählt</option>
-            <option value="friendly_streamer" data-i18n="animazingpal.personalities.presets.friendly_streamer">Freundlicher Streamer</option>
-            <option value="gaming_pro" data-i18n="animazingpal.personalities.presets.gaming_pro">Gaming Pro</option>
-            <option value="entertainer" data-i18n="animazingpal.personalities.presets.entertainer">Entertainer</option>
-            <option value="chill_vibes" data-i18n="animazingpal.personalities.presets.chill_vibes">Chill Vibes</option>
-            <option value="anime_fan" data-i18n="animazingpal.personalities.presets.anime_fan">Anime Fan</option>
+            <option value="friendly_streamer" data-i18n="plugins.animazingpal.animazingpal.personalities.presets.friendly_streamer">Freundlicher Streamer</option>
+            <option value="gaming_pro" data-i18n="plugins.animazingpal.animazingpal.personalities.presets.gaming_pro">Gaming Pro</option>
+            <option value="entertainer" data-i18n="plugins.animazingpal.animazingpal.personalities.presets.entertainer">Entertainer</option>
+            <option value="chill_vibes" data-i18n="plugins.animazingpal.animazingpal.personalities.presets.chill_vibes">Chill Vibes</option>
+            <option value="anime_fan" data-i18n="plugins.animazingpal.animazingpal.personalities.presets.anime_fan">Anime Fan</option>
           </select>
         </div>
 
         <!-- Memory Customization -->
-        <h3 class="text-lg font-bold mt-6 mb-4">Erinnerungs-Einstellungen</h3>
+        <h3 class="text-lg font-bold mt-6 mb-4" data-i18n="plugins.animazingpal.ui.sections.memory_settings">Erinnerungs-Einstellungen</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.max_kontext_erinnerungen">Max. Kontext-Erinnerungen</label>
@@ -924,7 +924,7 @@
             <p class="text-xs text-gray-500 mt-1" data-i18n="plugins.animazingpal.labels.anzahl_der_erinnerungen_die_in_chat_antworten_einbezogen">Anzahl der Erinnerungen, die in Chat-Antworten einbezogen werden</p>
           </div>
           <div>
-            <label class="text-gray-400 text-sm">Wichtigkeitsschwelle</label>
+            <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.ui.labels.importance_threshold">Wichtigkeitsschwelle</label>
             <input type="number" id="memoryImportanceThreshold" class="input" value="0.3" step="0.1" min="0" max="1">
             <p class="text-xs text-gray-500 mt-1" data-i18n="plugins.animazingpal.labels.minimale_wichtigkeit_fur_erinnerungen_0_0_1_0">Minimale Wichtigkeit für Erinnerungen (0.0 - 1.0)</p>
           </div>
@@ -953,7 +953,7 @@
           </label>
           <label class="flex items-center gap-2">
             <input type="checkbox" id="autoRespondFollows" checked>
-            <span data-i18n="animazingpal.brain.auto_respond_follows">Neue Follower begrüßen</span>
+            <span data-i18n="plugins.animazingpal.animazingpal.brain.auto_respond_follows">Neue Follower begrüßen</span>
           </label>
           <label class="flex items-center gap-2">
             <input type="checkbox" id="autoRespondShares">
@@ -965,7 +965,7 @@
             <p class="text-xs text-gray-500 mt-1" data-i18n="plugins.animazingpal.labels.0_3_30_der_chat_nachrichten_werden_beantwortet">0.3 = 30% der Chat-Nachrichten werden beantwortet</p>
           </div>
           <div>
-            <label class="text-gray-400 text-sm" data-i18n="animazingpal.brain.max_responses_minute">Max. Antworten pro Minute</label>
+            <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.animazingpal.brain.max_responses_minute">Max. Antworten pro Minute</label>
             <input type="number" id="maxResponsesPerMinute" class="input" value="10" min="1" max="60">
             <p class="text-xs text-gray-500 mt-1" data-i18n="plugins.animazingpal.labels.rate_limiting_fur_ki_antworten">Rate Limiting für KI-Antworten</p>
           </div>
@@ -978,11 +978,11 @@
     <!-- Tab Content: Memories -->
     <div id="tab-memories" class="tab-content hidden">
       <div class="card">
-        <h2 class="text-xl font-bold mb-4">Erinnerungs-Datenbank</h2>
+        <h2 class="text-xl font-bold mb-4" data-i18n="plugins.animazingpal.ui.sections.memory_database">Erinnerungs-Datenbank</h2>
 
         <!-- Search Controls -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-          <input type="text" placeholder="Suche nach Benutzer oder Erinnerung..." class="input" id="memorySearchInput">
+          <input type="text" placeholder="Suche nach Benutzer oder Erinnerung..." class="input" id="memorySearchInput" aria-label="Suche nach Benutzer oder Erinnerung" data-i18n-aria-label="plugins.animazingpal.runtime.aria.memory_search" data-i18n-placeholder="plugins.animazingpal.runtime.placeholder.memory_search">
           <select class="select" id="memoryFilterUser">
             <option value="" data-i18n="plugins.animazingpal.labels.alle_benutzer">Alle Benutzer</option>
           </select>
@@ -995,7 +995,7 @@
         </div>
 
         <div class="flex gap-3 mb-5">
-          <button class="btn btn-primary" id="memorySearchBtn">Suchen</button>
+          <button class="btn btn-primary" id="memorySearchBtn" data-i18n="plugins.animazingpal.ui.actions.search">Suchen</button>
           <button class="btn btn-secondary" id="memoryReloadBtn" data-i18n="plugins.animazingpal.labels.alle_laden">Alle laden</button>
           <button class="btn btn-danger" id="memoryArchiveBtn" data-i18n="plugins.animazingpal.labels.alte_archivieren">Alte archivieren</button>
         </div>
@@ -1033,14 +1033,14 @@
         <div class="card">
           <h2 class="text-xl font-bold mb-4" data-i18n="plugins.animazingpal.labels.viewerbase_status">Viewerbase Status</h2>
           <div class="space-y-3 text-sm">
-            <div class="flex justify-between"><span class="text-gray-400">Streamer</span><span id="viewerbaseStreamerId">-</span></div>
-            <div class="flex justify-between"><span class="text-gray-400">Viewer</span><span id="viewerbaseTotalUsers">0</span></div>
-            <div class="flex justify-between"><span class="text-gray-400" data-i18n="animazingpal.tabs.memories">Erinnerungen</span><span id="viewerbaseTotalMemories">0</span></div>
-            <div class="flex justify-between"><span class="text-gray-400">Konversationen</span><span id="viewerbaseTotalConversations">0</span></div>
-            <div class="flex justify-between"><span class="text-gray-400">Archive</span><span id="viewerbaseTotalArchives">0</span></div>
+            <div class="flex justify-between"><span class="text-gray-400" data-i18n="plugins.animazingpal.ui.roles.streamer">Streamer</span><span id="viewerbaseStreamerId">-</span></div>
+            <div class="flex justify-between"><span class="text-gray-400" data-i18n="plugins.animazingpal.ui.roles.viewer">Viewer</span><span id="viewerbaseTotalUsers" data-i18n="plugins.animazingpal.ui.defaults.zero">0</span></div>
+            <div class="flex justify-between"><span class="text-gray-400" data-i18n="plugins.animazingpal.animazingpal.tabs.memories">Erinnerungen</span><span id="viewerbaseTotalMemories" data-i18n="plugins.animazingpal.ui.defaults.zero">0</span></div>
+            <div class="flex justify-between"><span class="text-gray-400" data-i18n="plugins.animazingpal.ui.labels.conversations">Konversationen</span><span id="viewerbaseTotalConversations" data-i18n="plugins.animazingpal.ui.defaults.zero">0</span></div>
+            <div class="flex justify-between"><span class="text-gray-400" data-i18n="plugins.animazingpal.ui.labels.archive">Archive</span><span id="viewerbaseTotalArchives" data-i18n="plugins.animazingpal.ui.defaults.zero">0</span></div>
             <div class="flex justify-between"><span class="text-gray-400" data-i18n="plugins.animazingpal.labels.letzter_sync">Letzter Sync</span><span id="viewerbaseLastSyncAt">-</span></div>
-            <div class="flex justify-between"><span class="text-gray-400" data-i18n="plugins.animazingpal.labels.sync_status">Sync Status</span><span id="viewerbaseSyncStatus">idle</span></div>
-            <div class="flex justify-between"><span class="text-gray-400">Queue</span><span id="viewerbaseQueueLength">0</span></div>
+            <div class="flex justify-between"><span class="text-gray-400" data-i18n="plugins.animazingpal.labels.sync_status">Sync Status</span><span id="viewerbaseSyncStatus" data-i18n="plugins.animazingpal.ui.defaults.idle">idle</span></div>
+            <div class="flex justify-between"><span class="text-gray-400" data-i18n="plugins.animazingpal.ui.labels.queue">Queue</span><span id="viewerbaseQueueLength" data-i18n="plugins.animazingpal.ui.defaults.zero">0</span></div>
           </div>
           <div id="viewerbaseSyncError" class="mt-3 text-sm text-red-400 hidden"></div>
         </div>
@@ -1067,7 +1067,7 @@
             </div>
             <div>
               <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.auth_token">Auth Token</label>
-              <input type="password" class="input" id="viewerbaseAuthToken" placeholder="Optional">
+              <input type="password" class="input" id="viewerbaseAuthToken" placeholder="Optional" data-i18n-placeholder="plugins.animazingpal.runtime.placeholder.optional">
             </div>
             <div>
               <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.sync_timeout_ms">Sync Timeout (ms)</label>
@@ -1136,23 +1136,23 @@
     <!-- Tab Content: Settings -->
     <div id="tab-settings" class="tab-content hidden">
       <div class="card">
-        <h2 class="text-xl font-bold mb-4">Verbindungseinstellungen</h2>
+        <h2 class="text-xl font-bold mb-4" data-i18n="plugins.animazingpal.ui.sections.connection_settings">Verbindungseinstellungen</h2>
         <div class="mb-4">
-          <label class="text-gray-400 text-sm">Plattform</label>
+          <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.ui.labels.platform">Plattform</label>
           <select class="select" id="settingsPlatform">
-            <option value="animaze">Animaze</option>
+            <option value="animaze" data-i18n="plugins.animazingpal.ui.platforms.animaze">Animaze</option>
             <option value="vtube-studio" data-i18n="plugins.animazingpal.labels.vtube_studio">VTube Studio</option>
-            <option value="vseeface">VSeeFace</option>
+            <option value="vseeface" data-i18n="plugins.animazingpal.ui.platforms.vseeface">VSeeFace</option>
           </select>
           <p class="text-xs text-gray-500 mt-1" id="platformActionHint" data-i18n="plugins.animazingpal.labels.animaze_legacy_animaze_websocket_integration">Animaze: Legacy Animaze WebSocket integration</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div id="settingsHostRow">
-            <label class="text-gray-400 text-sm">Host</label>
+            <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.ui.labels.host_plain">Host</label>
             <input type="text" class="input" id="settingsHost" value="127.0.0.1">
           </div>
           <div id="settingsPortRow">
-            <label class="text-gray-400 text-sm">Port</label>
+            <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.ui.labels.port">Port</label>
             <input type="number" class="input" id="settingsPort" value="9000">
           </div>
           <div>
@@ -1169,7 +1169,7 @@
           </div>
           <div id="settingsAuthTokenRow" class="hidden md:col-span-2">
             <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.vtube_studio_auth_token">VTube Studio Auth Token</label>
-            <input type="password" class="input" id="settingsAuthToken" placeholder="Optional: nur für VTube Studio">
+            <input type="password" class="input" id="settingsAuthToken" placeholder="Optional: nur für VTube Studio" data-i18n-placeholder="plugins.animazingpal.runtime.placeholder.vtube_token_optional">
           </div>
           <label class="flex items-center gap-2">
             <input type="checkbox" id="settingsAutoConnect" checked>
@@ -1181,7 +1181,7 @@
           </label>
           <label class="flex items-center gap-2" id="settingsVerboseRow">
             <input type="checkbox" id="settingsVerbose">
-            <span data-i18n="animazingpal.settings.verbose_logging">Ausführliches Logging</span>
+            <span data-i18n="plugins.animazingpal.animazingpal.settings.verbose_logging">Ausführliches Logging</span>
           </label>
         </div>
         <button class="btn btn-primary mt-4" data-action="save-settings" data-i18n="plugins.animazingpal.labels.einstellungen_speichern_ea991a">Einstellungen speichern</button>
@@ -1198,7 +1198,7 @@
             <span data-i18n="plugins.animazingpal.labels.vrchat_bridge_aktivieren">VRChat Bridge aktivieren</span>
           </label>
           <div>
-            <label class="text-gray-400 text-sm">Ziel-Plugin</label>
+            <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.ui.labels.target_plugin">Ziel-Plugin</label>
             <input type="text" class="input" id="vrchatTargetPluginId" value="osc-bridge">
           </div>
           <label class="flex items-center gap-2">

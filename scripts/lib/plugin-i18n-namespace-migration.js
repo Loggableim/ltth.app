@@ -39,6 +39,12 @@ function migratePluginLocales(pluginId, locales) {
     usedLabels.add(label);
     keyMap[`generated.${legacyKey}`] = `labels.${label}`;
   });
+  Object.keys(source.en || {})
+    .filter((key) => key !== 'generated')
+    .sort()
+    .forEach((key) => {
+      keyMap[`${key}.`] = `${key}.`;
+    });
 
   const migrated = {};
   Object.entries(source).forEach(([locale, payload]) => {
@@ -67,6 +73,13 @@ function rewritePluginTranslationReferences(source, pluginId, keyMap) {
   return Object.entries(keyMap).reduce((result, [legacyKey, modernKey]) => {
     const target = `plugins.${pluginId}.${modernKey}`;
     const escapedKey = escapeRegExp(legacyKey);
+    if (legacyKey.endsWith('.')) {
+      const attribute = new RegExp(`(data-i18n(?:-[a-z-]+)?\\s*=\\s*[\"'])${escapedKey}([^\"']+)([\"'])`, 'g');
+      const call = new RegExp(`((?:window\\.)?i18n\\.t\\(\\s*[\"'])${escapedKey}([^\"']+)([\"'])`, 'g');
+      return result
+        .replace(attribute, `$1${target}$2$3`)
+        .replace(call, `$1${target}$2$3`);
+    }
     const attribute = new RegExp(`(data-i18n(?:-[a-z-]+)?\\s*=\\s*[\"'])${escapedKey}([\"'])`, 'g');
     const call = new RegExp(`((?:window\\.)?i18n\\.t\\(\\s*[\"'])${escapedKey}([\"'])`, 'g');
     return result.replace(attribute, `$1${target}$2`).replace(call, `$1${target}$2`);

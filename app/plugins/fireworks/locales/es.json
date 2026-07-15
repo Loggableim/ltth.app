@@ -281,6 +281,20 @@
         "text_appears_at_top_center_of_screen": "El texto aparece en la parte superior central de la pantalla.",
         "target_fps_60_fddd7b": "- FPS objetivo: 60",
         "lower_settings_help_prevent_stuttering_during_extreme_gift": "- Las configuraciones más bajas ayudan a prevenir la tartamudez durante el spam extremo de regalos"
+      },
+      "ui": {
+        "status": { "enabled": "Activado", "disabled": "Desactivado", "queue_on": "Cola activada", "queue_off": "Cola desactivada", "adaptive_on": "Adaptativo activado", "adaptive_off": "Adaptativo desactivado" },
+        "defaults": {
+          "zero": "0", "one": "1", "three": "3", "five": "5", "six": "6", "ten": "10", "twenty": "20", "thirty": "30", "fifty": "50",
+          "two_hundred": "200", "five_hundred": "500", "eight_hundred": "800", "one_thousand": "1000", "two_thousand": "2000", "three_thousand": "3000",
+          "one_x": "1 vez", "two_x": "2 veces", "three_x": "3 veces", "five_x": "5 veces", "ten_x": "10 veces", "five_per_second": "5/seg",
+          "burst": "Ráfaga", "landscape": "Horizontal", "portrait": "Vertical"
+        },
+        "impact": { "minimal": "Mínimo", "very_low": "Muy bajo", "low": "Bajo", "medium": "Medio", "high": "Alto", "very_high": "Muy alto", "ultra": "Ultra" },
+        "labels": { "range_to": "a", "center": "Centro", "neon": "Neón", "minimal": "Mínimo", "large": "Grande", "custom": "Personalizado", "bounce": "Rebote", "rotate": "Girar" },
+        "presets": { "ultra": "Máximo", "four_k": "4K – Máximo", "high": "Alto", "resolution_1440p": "1440p – Alto", "recommended": "Recomendado", "low": "Bajo", "resolution_720p": "720p – Bajo", "toaster": "Tostadora", "resolution_540p": "540p – Tostadora", "potato": "Patata", "resolution_360p": "360p – Patata" },
+        "summary": { "theme": "Tema: {theme}", "resolution": "{preset} · {orientation}", "performance": "{fps} FPS · {particles} partículas", "safety": "{queue} · {adaptive}" },
+        "themes": { "day": "Día", "contrast": "Alto contraste", "vision-impaired": "Modo visual", "cid": "CID", "night": "Noche" }
       }
     }
   }

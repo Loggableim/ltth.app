@@ -215,11 +215,11 @@
             <div class="card-title" data-i18n="plugins.streamalchemy.labels.statistics">📊 Statistics</div>
             <div class="stats-grid" id="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="streamalchemy.stats.total_items">Total Items</div>
+                    <div class="stat-label" data-i18n="plugins.streamalchemy.streamalchemy.stats.total_items">Total Items</div>
                     <div class="stat-value" id="stat-total-items">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="streamalchemy.stats.total_crafts">Total Crafts</div>
+                    <div class="stat-label" data-i18n="plugins.streamalchemy.streamalchemy.stats.total_crafts">Total Crafts</div>
                     <div class="stat-value" id="stat-total-crafts">-</div>
                 </div>
                 <div class="stat-card">
@@ -252,7 +252,7 @@
         <!-- Recent Items -->
         <div class="card">
             <div class="card-title" data-i18n="plugins.streamalchemy.labels.recent_items">🎁 Recent Items</div>
-            <div id="items-container" class="loading" data-i18n="streamalchemy.items.loading">Loading items...</div>
+            <div id="items-container" class="loading" data-i18n="plugins.streamalchemy.streamalchemy.items.loading">Loading items...</div>
         </div>
     </div>
 
@@ -321,7 +321,8 @@
             const container = document.getElementById('items-container');
 
             if (!items || items.length === 0) {
-                container.innerHTML = '<p class="loading">No items yet. Send gifts to generate items!</p>';
+                container.innerHTML = '<p class="loading" data-i18n="plugins.streamalchemy.ui.legacy.noItems">No items yet. Send gifts to generate items!</p>';
+                window.i18n?.updateDOM?.();
                 return;
             }
 
@@ -332,11 +333,11 @@
             table.innerHTML = `
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Rarity</th>
-                        <th>From Gift</th>
-                        <th>Created</th>
+                        <th data-i18n="plugins.streamalchemy.ui.legacy.name">Name</th>
+                        <th data-i18n="plugins.streamalchemy.ui.legacy.type">Type</th>
+                        <th data-i18n="plugins.streamalchemy.ui.legacy.rarity">Rarity</th>
+                        <th data-i18n="plugins.streamalchemy.ui.legacy.fromGift">From Gift</th>
+                        <th data-i18n="plugins.streamalchemy.ui.legacy.created">Created</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -354,6 +355,7 @@
 
             container.innerHTML = '';
             container.appendChild(table);
+            window.i18n?.updateDOM?.();
         }
 
         // Handle form submission

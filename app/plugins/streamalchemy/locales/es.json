@@ -208,6 +208,40 @@
         "crafting_window_ms": "Ventana de elaboración ms",
         "test_local_generation": "Probar la generación local",
         "comfyui_url": "URL cómoda de UI"
+      },
+      "ui": {
+        "app": {
+          "title": "StreamAlchemy",
+          "overview": "Resumen",
+          "items": "Objetos",
+          "recipes": "Recetas",
+          "generation": "Generaci\u00f3n",
+          "settings": "Configuraci\u00f3n",
+          "refresh": "Actualizar",
+          "source": "Fuente"
+        },
+        "navigation": {
+          "areas": "\u00c1reas de StreamAlchemy"
+        },
+        "metrics": {
+          "items": "Objetos",
+          "recipes": "Recetas",
+          "jobs": "Trabajos"
+        },
+        "styles": {
+          "pixel": "P\u00edxel"
+        },
+        "status": {
+          "unknown": "desconocido"
+        },
+        "legacy": {
+          "noItems": "A\u00fan no hay objetos. \u00a1Env\u00eda regalos para generar objetos!",
+          "name": "Nombre",
+          "type": "Tipo",
+          "rarity": "Rareza",
+          "fromGift": "Del regalo",
+          "created": "Creado"
+        }
       }
     }
   }

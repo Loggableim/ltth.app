@@ -35,6 +35,114 @@
               "search_mdns": "Recherchez OSCQuery à nouveau. VRChat annonce dynamiquement son port HTTP OSCQuery via mDNS ; il n’est donc pas forcément 9001.",
               "check_firewall": "Si la détection échoue encore, redémarrez VRChat après avoir activé OSC et autorisez le trafic local mDNS/localhost dans le pare-feu."
             }
+          },
+          "ui": {
+            "accessibility": {
+              "emote_slot": "Déclencher l'emote {slot}{availability}",
+              "remove_avatar": "Supprimer l'avatar {name}",
+              "remove_command": "Supprimer la commande {name}",
+              "remove_gift_mapping": "Supprimer l'association de cadeau {name}",
+              "standard_action": "Déclencher l'action {name}{availability}",
+              "switch_avatar": "Passer à l'avatar {name}"
+            },
+            "actions": {
+              "emote_slot": "Emote {slot}",
+              "remove": "Supprimer",
+              "switch": "Changer"
+            },
+            "alerts": {
+              "actions_refreshed": "✅ Actions actualisées !",
+              "advanced_settings_saved": "Paramètres avancés enregistrés ! Redémarrez le bridge pour appliquer les changements.",
+              "avatar_detected": "✅ Avatar détecté !\n\nID d'avatar : {avatarId}\nParamètres : {parameterCount}",
+              "avatar_switch_saved": "Paramètres de changement d'avatar enregistrés !",
+              "avatar_switched": "Avatar activé : {name}",
+              "avatars_saved": "Avatars enregistrés avec succès !",
+              "chat_commands_saved": "Paramètres des commandes de chat enregistrés !",
+              "commands_saved": "Commandes enregistrées avec succès ! Elles ont été réenregistrées auprès de GCCE.",
+              "config_saved": "Configuration enregistrée !",
+              "gift_mappings_saved": "Associations de cadeaux enregistrées avec succès !",
+              "new_avatar_detected": "✅ Nouvel avatar détecté et ajouté à la liste !\n\nID d'avatar : {avatarId}\nParamètres : {parameterCount}\n\nVous pouvez modifier le nom de l'avatar dans la gestion des avatars.",
+              "preset_saved": "Préréglage enregistré !",
+              "test_signal_sent": "Signal de test envoyé : {address} = {value}"
+            },
+            "availability": {
+              "unavailable": "(indisponible)"
+            },
+            "command_types": {
+              "custom": "Personnalisée",
+              "predefined": "Prédéfinie"
+            },
+            "data": {
+              "custom_command_description": "Commande personnalisée : {name}",
+              "unknown": "Inconnu"
+            },
+            "dialogs": {
+              "remove_command": "Supprimer la commande '/{name}' ?",
+              "remove_preset": "Supprimer le préréglage ?"
+            },
+            "empty": {
+              "avatars": "Aucun avatar n'est encore configuré. Ajoutez-en un ci-dessous.",
+              "commands": "Aucune commande n'est encore configurée.",
+              "gift_mappings": "Aucune association de cadeau n'est encore configurée. Ajoutez-en une ci-dessous.",
+              "presets": "Aucun préréglage enregistré"
+            },
+            "errors": {
+              "bridge_not_running": "Erreur : OSC-Bridge n'est pas actif",
+              "load_config": "Erreur lors du chargement de la configuration actuelle",
+              "refresh_actions": "Erreur lors de l'actualisation des actions : {error}",
+              "save_advanced_settings": "Erreur lors de l'enregistrement des paramètres avancés : {error}",
+              "save_avatar_switch": "Erreur lors de l'enregistrement des paramètres de changement d'avatar : {error}",
+              "save_avatars": "Erreur lors de l'enregistrement des avatars : {error}",
+              "save_chat_commands": "Erreur lors de l'enregistrement des paramètres de commandes de chat : {error}",
+              "save_commands": "Erreur lors de l'enregistrement des commandes : {error}",
+              "save_config": "Erreur lors de l'enregistrement de la configuration : {error}",
+              "save_gift_mappings": "Erreur lors de l'enregistrement des associations de cadeaux : {error}",
+              "send_osc": "Erreur lors de l'envoi du message OSC : {error}",
+              "start_bridge": "Erreur lors du démarrage du bridge : {error}",
+              "stop_bridge": "Erreur lors de l'arrêt du bridge : {error}",
+              "switch_avatar": "Erreur lors du changement d'avatar : {error}",
+              "test_signal": "Erreur : {error}",
+              "unknown": "Erreur inconnue"
+            },
+            "gift_catalog": {
+              "available_hint": "✅ {count} cadeaux disponibles. Les nouveaux cadeaux sont ajoutés automatiquement lorsqu'ils arrivent du direct.",
+              "count": "({count} cadeaux)",
+              "empty_hint": "💡 Les cadeaux sont détectés automatiquement lorsque les spectateurs les envoient pendant un direct. Connectez-vous à un direct TikTok pour remplir le catalogue.",
+              "empty_option": "(Aucun cadeau dans le catalogue ; connectez-vous au direct pour les détecter automatiquement)",
+              "option": "{name} (💎 {diamonds}) - ID : {id}",
+              "select_or_enter": "-- Sélectionnez un cadeau du catalogue ou saisissez-le manuellement ci-dessous --"
+            },
+            "loading": {
+              "actions": "🔄 Actualisation...",
+              "gift_catalog": "⏳ Chargement..."
+            },
+            "permissions": {
+              "all": "Tous",
+              "moderator": "Modérateur",
+              "subscriber": "Abonné"
+            },
+            "status": {
+              "error": "Erreur",
+              "running": "Actif",
+              "starting": "Démarrage...",
+              "stopped": "Arrêté"
+            },
+            "uptime": {
+              "hours": "{hours} h {minutes} min",
+              "minutes": "{minutes} min {seconds} s",
+              "seconds": "{seconds} s"
+            },
+            "validation": {
+              "avatar_id_prefix": "L'ID d'avatar doit commencer par \"avtr_\"",
+              "avatar_name_and_id_required": "Saisissez le nom et l'ID de l'avatar",
+              "command_exists": "La commande '/{name}' existe déjà",
+              "command_name_invalid": "Le nom de la commande ne peut contenir que des lettres, chiffres, traits de soulignement et tirets",
+              "command_name_required": "Saisissez un nom de commande",
+              "gift_id_or_name_required": "Saisissez l'ID ou le nom du cadeau (ou les deux pour une correspondance exacte)",
+              "osc_address_prefix": "L'adresse OSC doit commencer par /",
+              "osc_address_required": "Saisissez une adresse OSC",
+              "predefined_command_not_removable": "Les commandes prédéfinies ne peuvent pas être supprimées. Vous pouvez les désactiver à la place."
+            }
           }
         },
         "config": {
@@ -267,7 +375,18 @@
         "emote_slot": "Emplacement pour émoticônes",
         "emote_slots": "Emplacements d'émoticônes :",
         "command_configure_cooldowns_to_prevent_spam": "commande. Configurez les temps de recharge pour éviter le spam.",
-        "aktionen_aktualisieren": "🔄 Mettre à jour les promotions"
+        "aktionen_aktualisieren": "🔄 Mettre à jour les promotions",
+        "live_log": "Journal en direct",
+        "physbones_heading": "PhysBones :",
+        "vrchat_chatbox": "Chatbox VRChat",
+        "chatbox_typing_indicator": "Afficher l’indicateur de saisie pour les messages de chatbox externes",
+        "chatbox_notification_sound": "Jouer le son de notification dans VRChat",
+        "action_wave": "Saluer",
+        "action_celebrate": "Célébrer",
+        "action_dance": "Danser",
+        "action_hearts": "Cœurs",
+        "action_confetti": "Confettis",
+        "command_preview_example": "mycommand"
       }
     }
   }

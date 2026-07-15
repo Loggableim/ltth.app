@@ -1,8 +1,10 @@
 'use strict';
 
+const { applyOverlayEntryPoints } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+module.exports = Object.freeze(applyOverlayEntryPoints({
   "id": "emoji-rain",
   "route": "/plugins/emoji-rain/ui.html",
   "topic": {
@@ -168,11 +170,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/emoji-rain/ui"
+            "expected": {
+              "path": "/emoji-rain/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -283,11 +289,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": [200,304]
           },
           {
             "type": "url",
-            "expected": "/emoji-rain/ui"
+            "expected": {
+              "path": "/emoji-rain/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -352,7 +362,8 @@ module.exports = Object.freeze({
         },
         "action": {
           "type": "set-demo-value",
-          "stepId": "enable-obs-hud"
+          "stepId": "enable-obs-hud",
+          "inputSelector": "#obs_hud_enabled"
         },
         "expected": {
           "de": "Die Checkbox für das OBS HUD ist aktiviert.",
@@ -398,11 +409,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": [200,304]
           },
           {
             "type": "url",
-            "expected": "/emoji-rain/ui"
+            "expected": {
+              "path": "/emoji-rain/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -513,11 +528,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": [200,304]
           },
           {
             "type": "url",
-            "expected": "/emoji-rain/ui"
+            "expected": {
+              "path": "/emoji-rain/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -629,11 +648,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": [200,304]
           },
           {
             "type": "url",
-            "expected": "/emoji-rain/ui"
+            "expected": {
+              "path": "/emoji-rain/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -742,11 +765,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": [200,304]
           },
           {
             "type": "url",
-            "expected": "/emoji-rain/ui"
+            "expected": {
+              "path": "/emoji-rain/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -862,11 +889,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/emoji-rain/obs-hud"
+            "expected": {
+              "path": "/emoji-rain/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -893,4 +924,15 @@ module.exports = Object.freeze({
       }
     }
   ]
-});
+}, {
+  'verify-obs-hud': {
+    route: '/emoji-rain/ui',
+    selector: 'a[href="/emoji-rain/obs-hud"]',
+    copy: {
+      de: { title: 'OBS-HUD-URL in Emoji Rain prüfen', body: 'Prüfe den sichtbaren „Open OBS HUD“-Link und übernimm seine URL in eine temporäre Browser-Quelle der nicht sendenden OBS-Testszene. Verwende die zuvor gewählte Auflösung.', expected: 'Der sichtbare Link verweist auf den Emoji-Rain-HUD-Endpunkt; die erforderlichen Einstellungen bleiben im selben Produktbereich.' },
+      en: { title: 'Verify the OBS HUD URL in Emoji Rain', body: 'Check the visible “Open OBS HUD” link, then use its URL in a temporary browser source in the non-live OBS test scene. Use the resolution selected above.', expected: 'The visible link points to the Emoji Rain HUD endpoint and the required settings remain in the same product surface.' },
+      es: { title: 'Comprueba la URL del HUD de OBS en Emoji Rain', body: 'Comprueba el enlace visible «Open OBS HUD» y usa su URL en una fuente de navegador temporal de la escena de prueba de OBS que no está en directo. Usa la resolución elegida antes.', expected: 'El enlace visible apunta al endpoint del HUD de Emoji Rain y los ajustes necesarios permanecen en la misma superficie del producto.' },
+      fr: { title: 'Vérifiez l’URL du HUD OBS dans Emoji Rain', body: 'Vérifiez le lien visible « Open OBS HUD », puis utilisez son URL dans une source navigateur temporaire de la scène de test OBS hors diffusion. Utilisez la résolution choisie plus haut.', expected: 'Le lien visible mène au point d’accès du HUD Emoji Rain et les réglages requis restent dans la même interface produit.' }
+    }
+  }
+}));

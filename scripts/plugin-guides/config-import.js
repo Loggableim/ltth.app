@@ -1,8 +1,10 @@
 'use strict';
 
+const { exactLocalUrlExpectation } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+const guide = {
   "id": "config-import",
   "route": "/plugins/config-import/ui.html",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/config-import/ui.html"
+            "expected": {
+              "path": "/plugins/config-import/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +283,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/config-import/ui.html"
+            "expected": {
+              "path": "/plugins/config-import/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -298,7 +308,7 @@ module.exports = Object.freeze({
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },
@@ -387,11 +397,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/config-import/ui.html"
+            "expected": {
+              "path": "/plugins/config-import/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +511,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/config-import/ui.html"
+            "expected": {
+              "path": "/plugins/config-import/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -563,6 +581,7 @@ module.exports = Object.freeze({
           "type": "save-demo-config",
           "allowClick": true,
           "clickSelector": "#exportBtn",
+          "evidenceSelector": "#exportResultCard",
           "settleMs": 1000,
           "stepId": "backup-cleanup"
         },
@@ -610,11 +629,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/config-import/ui.html"
+            "expected": {
+              "path": "/plugins/config-import/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -636,4 +659,52 @@ module.exports = Object.freeze({
       }
     }
   ]
+};
+
+function applyWorkflowCorrections(corrections) {
+  for (const [id, correction] of Object.entries(corrections)) {
+    const step = guide.steps.find((candidate) => candidate.id === id);
+    if (!step) throw new Error(`Missing Config Import guide step: ${id}`);
+    const focusText = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.title]));
+    const expected = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.expected]));
+    step.copy = correction.copy;
+    step.capture = { ...step.capture, assertVisible: correction.selector, focusText, action: { ...correction.action, stepId: id }, expected };
+    step.workflow = {
+      ...step.workflow,
+      instructions: Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, { title: copy.title, body: copy.body, expected: copy.expected }])),
+      operations: [{ type: 'goto', route: step.capture.route }, { type: correction.action.type, selector: correction.selector }],
+      postconditions: [
+        { type: 'http-status', expected: 200 },
+        { type: 'url', expected: exactLocalUrlExpectation(step.capture.route) },
+        { type: 'visible', selector: correction.selector },
+        { type: 'console', expected: 'no-errors' }
+      ],
+      captureRule: { ...step.workflow.captureRule, selector: correction.selector, stateChange: false }
+    };
+  }
+}
+
+applyWorkflowCorrections({
+  'restore-inspection': {
+    selector: '#tab-import',
+    action: { type: 'open-plugin-surface' },
+    copy: {
+      de: { title: 'Import-Tab ohne Wiederherstellung pruefen', body: 'Oeffne den echten Import-Tab und lies die Upload- und Vorschauhinweise. Waehle keine Datei und starte keine Wiederherstellung.', expected: 'Der sichtbare Import-Tab erklaert den sicheren Vorschauweg, ohne Daten zu veraendern.', alt: 'Import-Tab von Config Import ohne Wiederherstellung' },
+      en: { title: 'Inspect the Import tab without restoring', body: 'Open the real Import tab and review its upload and preview guidance. Do not choose a file or start a restore.', expected: 'The visible Import tab explains the safe preview path without changing data.', alt: 'Config Import tab without a restore' },
+      es: { title: 'Revisa la pestana Importar sin restaurar', body: 'Abre la pestana real Importar y revisa las indicaciones de carga y vista previa. No elijas un archivo ni inicies una restauracion.', expected: 'La pestana Importar visible explica la vista previa segura sin cambiar datos.', alt: 'Pestana Importar de Config Import sin restauracion' },
+      fr: { title: 'Verifiez l onglet Importer sans restaurer', body: 'Ouvrez le vrai onglet Importer et lisez les indications de televersement et d apercu. Ne choisissez aucun fichier et ne lancez aucune restauration.', expected: 'L onglet Importer visible explique le parcours d apercu sur sans modifier de donnees.', alt: 'Onglet Importer de Config Import sans restauration' }
+    }
+  },
+  'test-export': {
+    selector: '#exportBtn',
+    action: { type: 'open-plugin-surface' },
+    copy: {
+      de: { title: 'Backup-Download vor dem Export pruefen', body: 'Pruefe den Download-Backup-Knopf und die zuvor gewaehlten Kategorien. Erzeuge in diesem Schritt keine Datei und lade keine Sicherung hoch.', expected: 'Der echte lokale Export-Einstieg ist sichtbar, ohne Daten zu schreiben oder herunterzuladen.', alt: 'Lokaler Export-Einstieg von Config Import' },
+      en: { title: 'Inspect backup download before export', body: 'Inspect the Download Backup button and the categories selected before it. This step creates no file and uploads no backup.', expected: 'The real local export entry point is visible without writing or downloading data.', alt: 'Config Import local export entry point' },
+      es: { title: 'Revisa la descarga de copia antes de exportar', body: 'Revisa el boton Descargar copia y las categorias elegidas antes de el. Este paso no crea archivos ni sube una copia.', expected: 'El punto de entrada de exportacion local real es visible sin escribir ni descargar datos.', alt: 'Punto de entrada local de exportacion de Config Import' },
+      fr: { title: 'Verifiez le telechargement de sauvegarde avant export', body: 'Verifiez le bouton Telecharger la sauvegarde et les categories choisies avant lui. Cette etape ne cree aucun fichier et nenvoie aucune sauvegarde.', expected: 'Le vrai point dentree dexport local est visible sans ecrire ni telecharger de donnees.', alt: 'Point dentree dexport local Config Import' }
+    }
+  }
 });
+
+module.exports = Object.freeze(guide);

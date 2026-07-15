@@ -465,25 +465,25 @@
                     <div class="stats-box">
                         <div class="stats-label" data-i18n="plugins.thermal-printer.labels.connection_status">Connection Status</div>
                         <div class="stats-value" id="connection-status">
-                            <span class="status-badge badge-secondary">Loading...</span>
+                            <span class="status-badge badge-secondary" data-i18n="plugins.thermal-printer.thermal_printer.status.loading">Loading...</span>
                         </div>
                     </div>
                     <div class="stats-box">
-                        <div class="stats-label" data-i18n="thermal_printer.status.queue_size">Queue Size</div>
+                        <div class="stats-label" data-i18n="plugins.thermal-printer.thermal_printer.status.queue_size">Queue Size</div>
                         <div class="stats-value" id="queue-size">0</div>
                     </div>
                 </div>
                 <div class="stats-grid">
                     <div class="stats-box">
-                        <div class="stats-label" data-i18n="thermal_printer.status.printed_jobs">Printed Jobs</div>
+                        <div class="stats-label" data-i18n="plugins.thermal-printer.thermal_printer.status.printed_jobs">Printed Jobs</div>
                         <div class="stats-value" id="printed-jobs">0</div>
                     </div>
                     <div class="stats-box">
-                        <div class="stats-label" data-i18n="thermal_printer.status.failed_jobs">Failed Jobs</div>
+                        <div class="stats-label" data-i18n="plugins.thermal-printer.thermal_printer.status.failed_jobs">Failed Jobs</div>
                         <div class="stats-value" id="failed-jobs">0</div>
                     </div>
                     <div class="stats-box">
-                        <div class="stats-label" data-i18n="thermal_printer.status.uptime">Uptime</div>
+                        <div class="stats-label" data-i18n="plugins.thermal-printer.thermal_printer.status.uptime">Uptime</div>
                         <div class="stats-value" id="uptime">0s</div>
                     </div>
                 </div>
@@ -502,7 +502,7 @@
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="enabled">
                             <label class="form-check-label" for="enabled">
-                                <strong data-i18n="thermal_printer.config.enable">Enable Thermal Printer</strong>
+                                <strong data-i18n="plugins.thermal-printer.thermal_printer.config.enable">Enable Thermal Printer</strong>
                             </label>
                         </div>
                     </div>
@@ -513,22 +513,22 @@
                     <h6 class="section-title"><span class="icon-plug"></span><span data-i18n="plugins.thermal-printer.labels.printer_connection">Printer Connection</span></h6>
 
                     <div class="form-group">
-                        <label for="printerType" class="form-label" data-i18n="thermal_printer.config.printer_type">Printer Type</label>
+                        <label for="printerType" class="form-label" data-i18n="plugins.thermal-printer.thermal_printer.config.printer_type">Printer Type</label>
                         <select class="form-select" id="printerType">
-                            <option value="usb" data-i18n="thermal_printer.config.usb">USB</option>
-                            <option value="network" data-i18n="thermal_printer.config.network">Network</option>
+                            <option value="usb" data-i18n="plugins.thermal-printer.thermal_printer.config.usb">USB</option>
+                            <option value="network" data-i18n="plugins.thermal-printer.thermal_printer.config.network">Network</option>
                         </select>
                     </div>
 
                     <!-- USB Settings -->
                     <div id="usb-settings">
                         <div class="form-group">
-                            <label for="usbVendorId" class="form-label" data-i18n="thermal_printer.config.usb_vendor_id">USB Vendor ID</label>
+                            <label for="usbVendorId" class="form-label" data-i18n="plugins.thermal-printer.thermal_printer.config.usb_vendor_id">USB Vendor ID</label>
                             <input type="text" class="form-control" id="usbVendorId" placeholder="0x04b8">
                             <small class="form-text" data-i18n="plugins.thermal-printer.labels.e_g_0x04b8_for_epson_leave_empty_for">e.g., 0x04b8 for Epson (leave empty for auto-detect)</small>
                         </div>
                         <div class="form-group">
-                            <label for="usbProductId" class="form-label" data-i18n="thermal_printer.config.usb_product_id">USB Product ID</label>
+                            <label for="usbProductId" class="form-label" data-i18n="plugins.thermal-printer.thermal_printer.config.usb_product_id">USB Product ID</label>
                             <input type="text" class="form-control" id="usbProductId" placeholder="0x0e15">
                             <small class="form-text" data-i18n="plugins.thermal-printer.labels.e_g_0x0e15_for_tm_t20_leave_empty">e.g., 0x0e15 for TM-T20 (leave empty for auto-detect)</small>
                         </div>
@@ -537,11 +537,11 @@
                     <!-- Network Settings -->
                     <div id="network-settings" style="display: none;">
                         <div class="form-group">
-                            <label for="networkHost" class="form-label" data-i18n="thermal_printer.config.network_host">Network Host/IP</label>
+                            <label for="networkHost" class="form-label" data-i18n="plugins.thermal-printer.thermal_printer.config.network_host">Network Host/IP</label>
                             <input type="text" class="form-control" id="networkHost" placeholder="192.168.1.100">
                         </div>
                         <div class="form-group">
-                            <label for="networkPort" class="form-label" data-i18n="thermal_printer.config.network_port">Network Port</label>
+                            <label for="networkPort" class="form-label" data-i18n="plugins.thermal-printer.thermal_printer.config.network_port">Network Port</label>
                             <input type="number" class="form-control" id="networkPort" placeholder="9100" min="1" max="65535">
                         </div>
                     </div>
@@ -554,19 +554,19 @@
                     <div class="form-group">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="printChats">
-                            <label class="form-check-label" for="printChats" data-i18n="thermal_printer.config.print_chats">Print Chat Messages</label>
+                            <label class="form-check-label" for="printChats" data-i18n="plugins.thermal-printer.thermal_printer.config.print_chats">Print Chat Messages</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="printGifts">
-                            <label class="form-check-label" for="printGifts" data-i18n="thermal_printer.config.print_gifts">Print Gifts</label>
+                            <label class="form-check-label" for="printGifts" data-i18n="plugins.thermal-printer.thermal_printer.config.print_gifts">Print Gifts</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="printFollows">
-                            <label class="form-check-label" for="printFollows" data-i18n="thermal_printer.config.print_follows">Print Follows</label>
+                            <label class="form-check-label" for="printFollows" data-i18n="plugins.thermal-printer.thermal_printer.config.print_follows">Print Follows</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="printShares">
-                            <label class="form-check-label" for="printShares" data-i18n="thermal_printer.config.print_shares">Print Shares</label>
+                            <label class="form-check-label" for="printShares" data-i18n="plugins.thermal-printer.thermal_printer.config.print_shares">Print Shares</label>
                         </div>
                     </div>
 
@@ -579,7 +579,7 @@
                     <div class="form-group">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="ignoreBotCommands">
-                            <label class="form-check-label" for="ignoreBotCommands" data-i18n="thermal_printer.config.ignore_bot_commands">
+                            <label class="form-check-label" for="ignoreBotCommands" data-i18n="plugins.thermal-printer.thermal_printer.config.ignore_bot_commands">
                                 Ignore Bot Commands (messages starting with '!')
                             </label>
                         </div>
@@ -593,18 +593,18 @@
                     <div class="form-group">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="autoCutPaper">
-                            <label class="form-check-label" for="autoCutPaper" data-i18n="thermal_printer.config.auto_cut">Auto-cut paper after each event</label>
+                            <label class="form-check-label" for="autoCutPaper" data-i18n="plugins.thermal-printer.thermal_printer.config.auto_cut">Auto-cut paper after each event</label>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="width" class="form-label" data-i18n="thermal_printer.config.paper_width">Paper Width (characters)</label>
+                        <label for="width" class="form-label" data-i18n="plugins.thermal-printer.thermal_printer.config.paper_width">Paper Width (characters)</label>
                         <input type="number" class="form-control" id="width" min="32" max="80">
                         <small class="form-text" data-i18n="plugins.thermal-printer.labels.typical_48_for_80mm_paper_32_for_58mm">Typical: 48 for 80mm paper, 32 for 58mm paper</small>
                     </div>
 
                     <div class="form-group">
-                        <label for="encoding" class="form-label" data-i18n="thermal_printer.config.encoding">Character Encoding</label>
+                        <label for="encoding" class="form-label" data-i18n="plugins.thermal-printer.thermal_printer.config.encoding">Character Encoding</label>
                         <select class="form-select" id="encoding">
                             <option value="GB18030" data-i18n="plugins.thermal-printer.labels.gb18030_default">GB18030 (Default)</option>
                             <option value="UTF-8">UTF-8</option>
@@ -618,22 +618,22 @@
                     <h6 class="section-title"><span class="icon-sliders"></span><span data-i18n="plugins.thermal-printer.labels.advanced_settings">Advanced Settings</span></h6>
 
                     <div class="form-group">
-                        <label for="reconnectAttempts" class="form-label" data-i18n="thermal_printer.config.reconnect_attempts">Reconnect Attempts</label>
+                        <label for="reconnectAttempts" class="form-label" data-i18n="plugins.thermal-printer.thermal_printer.config.reconnect_attempts">Reconnect Attempts</label>
                         <input type="number" class="form-control" id="reconnectAttempts" min="0">
                     </div>
 
                     <div class="form-group">
-                        <label for="reconnectDelay" class="form-label" data-i18n="thermal_printer.config.reconnect_delay">Reconnect Delay (ms)</label>
+                        <label for="reconnectDelay" class="form-label" data-i18n="plugins.thermal-printer.thermal_printer.config.reconnect_delay">Reconnect Delay (ms)</label>
                         <input type="number" class="form-control" id="reconnectDelay" min="0">
                     </div>
 
                     <div class="form-group">
-                        <label for="queueMaxSize" class="form-label" data-i18n="thermal_printer.config.queue_max_size">Max Queue Size</label>
+                        <label for="queueMaxSize" class="form-label" data-i18n="plugins.thermal-printer.thermal_printer.config.queue_max_size">Max Queue Size</label>
                         <input type="number" class="form-control" id="queueMaxSize" min="1">
                     </div>
 
                     <div class="form-group">
-                        <label for="printDelay" class="form-label" data-i18n="thermal_printer.config.print_delay">Print Delay (ms)</label>
+                        <label for="printDelay" class="form-label" data-i18n="plugins.thermal-printer.thermal_printer.config.print_delay">Print Delay (ms)</label>
                         <input type="number" class="form-control" id="printDelay" min="0">
                         <small class="form-text" data-i18n="plugins.thermal-printer.labels.delay_between_print_jobs_prevents_overloading">Delay between print jobs (prevents overloading)</small>
                     </div>
@@ -708,16 +708,35 @@
             togglePrinterSettings();
         }
 
+        function getStatusLabel(status) {
+            if (!window.i18n?.initialized) {
+                return {
+                    connected: 'Connected',
+                    reconnecting: 'Reconnecting...',
+                    disconnected: 'Disconnected'
+                }[status];
+            }
+            if (status === 'connected') return window.i18n.t('plugins.thermal-printer.thermal_printer.status.connected');
+            if (status === 'reconnecting') return window.i18n.t('plugins.thermal-printer.thermal_printer.status.reconnecting');
+            return window.i18n.t('plugins.thermal-printer.thermal_printer.status.disconnected');
+        }
+
+        function setStatusBadge(statusEl, style, status) {
+            const key = `plugins.thermal-printer.thermal_printer.status.${status}`;
+            statusEl.innerHTML = `<span class="status-badge badge-${style}" data-i18n="${key}">${getStatusLabel(status)}</span>`;
+            if (window.i18n?.initialized) window.i18n.updateDOM();
+        }
+
         // Update Status Display
         function updateStatus(status) {
             // Connection Status
             const statusEl = document.getElementById('connection-status');
             if (status.isConnected) {
-                statusEl.innerHTML = '<span class="status-badge badge-success">Connected</span>';
+                setStatusBadge(statusEl, 'success', 'connected');
             } else if (status.isReconnecting) {
-                statusEl.innerHTML = '<span class="status-badge badge-warning">Reconnecting...</span>';
+                setStatusBadge(statusEl, 'warning', 'reconnecting');
             } else {
-                statusEl.innerHTML = '<span class="status-badge badge-danger">Disconnected</span>';
+                setStatusBadge(statusEl, 'danger', 'disconnected');
             }
 
             // Queue Size

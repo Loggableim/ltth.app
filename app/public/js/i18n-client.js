@@ -14,8 +14,8 @@
 
 class I18nClient {
     constructor() {
-        this.currentLocale = 'en';
-        this.defaultLocale = 'en';
+        this.currentLocale = 'de';
+        this.defaultLocale = 'de';
         this.translations = {};
         this.listeners = [];
         this.initialized = false;

@@ -145,7 +145,7 @@ function sourceFiles(directory) {
 
 function uniqueIntegrations(entries) {
   const byKey = new Map();
-  for (const entry of entries) byKey.set(`${entry.type}:${entry.value}`, entry);
+  for (const entry of entries) byKey.set(`${entry.type}:${entry.method || ''}:${entry.value}`, entry);
   return [...byKey.values()].sort((left, right) => left.type.localeCompare(right.type) || left.value.localeCompare(right.value));
 }
 
@@ -153,16 +153,16 @@ function collectPluginIntegrationInventory(repoRoot, pluginId, route) {
   const directory = pluginSourceDirectory(repoRoot, pluginId, route);
   const source = sourceFiles(directory).map((file) => fs.readFileSync(file, 'utf8')).join('\n');
   const integrations = [];
-  const add = (type, value) => {
-    if (value) integrations.push({ type, value });
+  const add = (type, value, method = null) => {
+    if (value) integrations.push({ type, value, ...(method ? { method } : {}) });
   };
 
-  for (const match of source.matchAll(/registerRoute\(\s*['"](?:get|post|put|patch|delete)['"]\s*,\s*['"](\/api\/[^'"]+)/gi)) add('rest', match[1]);
+  for (const match of source.matchAll(/registerRoute\(\s*['"](get|post|put|patch|delete)['"]\s*,\s*['"](\/api\/[^'"]+)/gi)) add('rest', match[2], match[1].toUpperCase());
   for (const match of source.matchAll(/(?:socket|io)\.(?:on|emit)\(\s*['"]([^'"]+)/gi)) add('socket-event', match[1]);
   for (const match of source.matchAll(/register(?:Flow)?Action\(\s*['"]([^'"]+)/gi)) add('flow-action', match[1]);
   for (const match of source.matchAll(/register(?:Chat)?Command\(\s*['"]([^'"]+)/gi)) add('chat-command', match[1]);
   for (const match of source.matchAll(/\b(api\.(?:getPluginDataDir|getSetting|setSetting|deleteSetting)|(?:database|db)\.(?:get|set|run|prepare))\b/g)) add('storage', match[1]);
-  for (const match of source.matchAll(/registerRoute\(\s*['"](?:get|post|put|patch|delete)['"]\s*,\s*['"](\/api\/[^'"]*(?:import|export)[^'"]*)/gi)) add('import-export', match[1]);
+  for (const match of source.matchAll(/registerRoute\(\s*['"](get|post|put|patch|delete)['"]\s*,\s*['"](\/api\/[^'"]*(?:import|export)[^'"]*)/gi)) add('import-export', match[2], match[1].toUpperCase());
 
   return {
     directory,

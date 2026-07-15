@@ -1,8 +1,10 @@
 'use strict';
 
+const { applyOverlayEntryPoints } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+module.exports = Object.freeze(applyOverlayEntryPoints({
   "id": "visual-fx-frame-webgpu",
   "route": "/visual-fx-frame-webgpu/ui",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/visual-fx-frame-webgpu/ui"
+            "expected": {
+              "path": "/visual-fx-frame-webgpu/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +283,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": [200,304]
           },
           {
             "type": "url",
-            "expected": "/visual-fx-frame-webgpu/ui"
+            "expected": {
+              "path": "/visual-fx-frame-webgpu/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -387,11 +397,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": [200,304]
           },
           {
             "type": "url",
-            "expected": "/visual-fx-frame-webgpu/ui"
+            "expected": {
+              "path": "/visual-fx-frame-webgpu/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +511,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": [200,304]
           },
           {
             "type": "url",
-            "expected": "/visual-fx-frame-webgpu/ui"
+            "expected": {
+              "path": "/visual-fx-frame-webgpu/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -607,11 +625,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/visual-fx-frame-webgpu/overlay"
+            "expected": {
+              "path": "/visual-fx-frame-webgpu/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -717,11 +739,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": [200,304]
           },
           {
             "type": "url",
-            "expected": "/visual-fx-frame-webgpu/ui"
+            "expected": {
+              "path": "/visual-fx-frame-webgpu/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -743,4 +769,15 @@ module.exports = Object.freeze({
       }
     }
   ]
-});
+}, {
+  'frame-obs-source': {
+    route: '/visual-fx-frame-webgpu/ui',
+    selector: '#overlayUrl',
+    copy: {
+      de: { title: 'WebGPU-Frame-URL für OBS übernehmen', body: 'Prüfe die sichtbare WebGPU-Frame-URL in den Einstellungen, bevor du sie in einer nicht sendenden OBS-Testszene als Browser-Quelle einrichtest. Das Bild dokumentiert die echte OBS-Anleitung statt eines leeren Frame-Exports.', expected: 'Die sichtbare WebGPU-Overlay-URL und die folgenden OBS-Schritte sind klar.' },
+      en: { title: 'Use the WebGPU frame URL for OBS', body: 'Review the visible WebGPU frame URL in Settings before using it as a browser source in a non-live OBS test scene. The image documents the real OBS guidance instead of an empty frame export.', expected: 'The visible WebGPU overlay URL and the following OBS steps are clear.' },
+      es: { title: 'Usa la URL del marco WebGPU para OBS', body: 'Revisa la URL visible del marco WebGPU en Ajustes antes de usarla como fuente de navegador en una escena de prueba de OBS que no está en directo. La imagen documenta la guía real de OBS en lugar de un export vacío del marco.', expected: 'La URL visible del overlay WebGPU y los pasos siguientes de OBS están claros.' },
+      fr: { title: 'Utilisez l’URL du cadre WebGPU pour OBS', body: 'Vérifiez l’URL visible du cadre WebGPU dans les réglages avant de l’utiliser comme source navigateur dans une scène de test OBS hors diffusion. L’image documente le véritable guide OBS au lieu d’un export de cadre vide.', expected: 'L’URL visible de l’overlay WebGPU et les étapes OBS suivantes sont claires.' }
+    }
+  }
+}));

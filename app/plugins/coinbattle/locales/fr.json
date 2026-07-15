@@ -15,6 +15,96 @@
           "leaderboard": "Classement"
         }
       },
+      "runtime": {
+        "title": "{title} - Panneau d’administration",
+        "dialog": {
+          "end_match_confirm": "Voulez-vous vraiment terminer le match en cours ?",
+          "reset_settings_confirm": "Réinitialiser tous les réglages par défaut ?",
+          "end_pyramid_confirm": "Voulez-vous vraiment terminer la manche pyramide ?",
+          "delete_user_confirm": "Voulez-vous vraiment supprimer {nickname} de tous les classements ? Cette action est irréversible."
+        },
+        "aria": { "overlay_width": "Largeur de l’overlay", "overlay_height": "Hauteur de l’overlay" },
+        "placeholder": { "season_name": "ex. Hiver 2024" },
+        "status": { "active": "Actif", "paused": "En pause", "inactive": "Inactif" },
+        "action": { "pause": "⏸️ Mettre en pause", "resume": "▶️ Reprendre", "delete": "Supprimer" },
+        "table": {
+          "rank": "Rang",
+          "player": "Joueur",
+          "team": "Équipe",
+          "coins": "Pièces",
+          "gifts": "Cadeaux",
+          "matches": "Matchs",
+          "wins": "Victoires",
+          "nickname": "Pseudonyme",
+          "total_coins": "Pièces totales",
+          "actions": "Actions"
+        },
+        "history": {
+          "team_battle": "Bataille d’équipe",
+          "pyramid_battle": "Bataille de pyramide",
+          "solo": "Solo",
+          "match_number": "Match n°{id}",
+          "duration": "Durée",
+          "coins": "Pièces",
+          "export": "Exporter"
+        },
+        "season": {
+          "summary": "Saison : {name} ({startDate} - {endDate})",
+          "leaderboard_inactive": "Aucune saison active. Configurez une saison ci-dessus pour voir le classement de la saison.",
+          "active_label": "Saison active :",
+          "period_label": "Période :",
+          "active_missing": "Aucune saison active configurée",
+          "info_failed": "Erreur de chargement des informations de saison"
+        },
+        "load": {
+          "loading": "Chargement...",
+          "no_data": "Aucune donnée disponible",
+          "leaderboard_failed": "Erreur de chargement du classement",
+          "history_empty": "Aucun historique de match",
+          "history_failed": "Erreur de chargement de l’historique",
+          "no_active_match": "Aucun match actif",
+          "weekly_empty": "Aucune donnée disponible cette semaine",
+          "weekly_failed": "Erreur de chargement du classement hebdomadaire",
+          "season_empty": "Aucune donnée disponible pour cette saison",
+          "season_inactive": "Aucune saison active configurée",
+          "season_failed": "Erreur de chargement du classement de saison",
+          "users_empty": "Aucun utilisateur trouvé",
+          "users_failed": "Erreur de chargement des utilisateurs"
+        },
+        "toast": {
+          "backend_error": "Erreur : {message}",
+          "match_started": "Match commencé !",
+          "match_started_success": "Match démarré avec succès !",
+          "match_ended": "Match terminé !",
+          "match_ended_success": "Match terminé avec succès !",
+          "match_paused": "Match en pause",
+          "match_resumed": "Match repris",
+          "match_extended": "Match prolongé de {seconds}s",
+          "multiplier_activated": "Multiplicateur x{multiplier} activé !",
+          "multiplier_activated_for": "Multiplicateur x{multiplier} activé pendant {seconds} secondes !",
+          "multiplier_ended": "Multiplicateur terminé",
+          "pyramid_started": "Manche pyramide commencée !",
+          "pyramid_ended": "Manche pyramide terminée !",
+          "pyramid_leader": "🥊 {nickname} prend la tête !",
+          "pyramid_extended": "Pyramide prolongée de {seconds}s",
+          "settings_saved": "Réglages enregistrés !",
+          "settings_reset": "Réglages réinitialisés par défaut",
+          "url_copied": "URL copiée dans le presse-papiers !",
+          "copy_manually": "Copiez l’URL manuellement (Ctrl+C)",
+          "simulation_started": "Simulation démarrée !",
+          "simulation_stopped": "Simulation arrêtée !",
+          "match_exported": "Données du match exportées !",
+          "pyramid_settings_saved": "Réglages de la pyramide enregistrés !",
+          "positive_number_required": "Saisissez un nombre positif valide pour {setting}",
+          "likes_settings_saved": "Réglages des likes et interactions enregistrés !",
+          "pyramid_url_copied": "URL de la pyramide copiée !",
+          "pyramid_copy_manually": "Copiez manuellement (Ctrl+C)",
+          "user_deleted": "Utilisateur {nickname} supprimé avec succès",
+          "season_fields_required": "Remplissez tous les champs de la saison",
+          "season_end_after_start": "La date de fin doit être postérieure à la date de début",
+          "season_saved": "Saison enregistrée avec succès"
+        }
+      },
       "match": {
         "start": "Start Match",
         "end": "End Match",
@@ -377,7 +467,15 @@
         "layout_speichern": "💾 Disposition Speichern",
         "positioniere_alle_overlay_elemente_fur_verschiedene_auflosungen_nutze": "Positionnez tous les éléments de superposition pour différentes résolutions. Utilisez le système de grille (comme les navires en train de couler) pour un placement précis.",
         "number_of_rewarded_places": "Nombre de places récompensées",
-        "post_match_display_settings": "Paramètres d'affichage d'après-match"
+        "post_match_display_settings": "Paramètres d'affichage d'après-match",
+        "theme_night": "Nuit",
+        "theme_day": "Jour",
+        "theme_cid": "Cid",
+        "custom": "Personnalisé",
+        "loading": "Chargement…",
+        "coins_label": "Pièces :",
+        "element": "Élément",
+        "visible": "Visible"
       }
     }
   }

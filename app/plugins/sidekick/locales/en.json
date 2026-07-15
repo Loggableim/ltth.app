@@ -122,6 +122,47 @@
         "mute": "🔇 Mute",
         "gespeicherte_user": "Saved users",
         "letztes_transcript": "Last transcript:"
+      },
+      "ui": {
+        "status": { "active": "Active" },
+        "tabs": {
+          "status": "Status",
+          "settings": "Settings",
+          "memory": "Memory",
+          "analytics": "Analytics",
+          "events": "Events"
+        },
+        "connection": { "connect": "Connect", "disconnect": "Disconnect" },
+        "test": {
+          "message": "Test message:",
+          "messagePlaceholder": "Enter a message...",
+          "send": "Send"
+        },
+        "asr": {
+          "level": "Level",
+          "mediaDevicesUnavailable": "MediaDevices unavailable",
+          "noMicrophonesFound": "No microphones found"
+        },
+        "speechOutput": { "title": "Speech output" },
+        "outbox": { "separator": "Separator" },
+        "hostDecision": { "title": "Host decision logic" },
+        "empty": {
+          "loading": "Loading...",
+          "noUsers": "No users found",
+          "noEvents": "No events",
+          "noGifters": "No gifters",
+          "noResults": "No results"
+        },
+        "search": { "placeholder": "Search by nickname or ID...", "submit": "Search" },
+        "events": {
+          "chat": "Chat",
+          "gift": "Gift",
+          "follow": "Follow",
+          "share": "Share",
+          "subscribe": "Subscribe",
+          "join": "Join",
+          "like": "Like"
+        }
       }
     }
   }

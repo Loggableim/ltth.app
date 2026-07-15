@@ -172,11 +172,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/game-engine/ui.html"
+            "expected": {
+              "path": "/plugins/game-engine/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -282,11 +286,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/game-engine/ui.html"
+            "expected": {
+              "path": "/plugins/game-engine/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -303,7 +311,7 @@ module.exports = Object.freeze({
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },
@@ -392,11 +400,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/game-engine/ui.html"
+            "expected": {
+              "path": "/plugins/game-engine/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -509,11 +521,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/game-engine/ui.html"
+            "expected": {
+              "path": "/plugins/game-engine/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -619,11 +635,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/game-engine/overlay/game-hud.html"
+            "expected": {
+              "path": "/plugins/game-engine/overlay/game-hud.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -735,11 +755,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/game-engine/ui.html"
+            "expected": {
+              "path": "/plugins/game-engine/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",

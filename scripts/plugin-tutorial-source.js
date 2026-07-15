@@ -35,6 +35,55 @@ function assertGuideContract(guide) {
   }
 }
 
+function interactionCondition(step) {
+  const action = step.capture.action || {};
+  if (action.type === 'set-demo-value') {
+    return {
+      type: 'interaction',
+      selector: action.inputSelector || step.capture.assertVisible,
+      expected: { type: 'set-demo-value', changed: true }
+    };
+  }
+  if (action.allowClick) {
+    return {
+      type: 'interaction',
+      selector: action.clickSelector || step.capture.assertVisible,
+      expected: { type: action.type, changed: true }
+    };
+  }
+  if (action.prepare) {
+    return {
+      type: 'interaction',
+      selector: action.inputSelector || action.clickSelector || step.capture.assertVisible,
+      expected: { type: 'prepare', changed: true }
+    };
+  }
+  return null;
+}
+
+function captureEvidenceStep(step) {
+  const condition = interactionCondition(step);
+  const stateChange = Boolean(step.workflow.captureRule?.stateChange);
+  if (!stateChange) return step;
+  if (!condition) {
+    return {
+      ...step,
+      workflow: {
+        ...step.workflow,
+        captureRule: { ...step.workflow.captureRule, stateChange: false }
+      }
+    };
+  }
+  if (step.workflow.postconditions.some((postcondition) => postcondition.type === 'interaction')) return step;
+  return {
+    ...step,
+    workflow: {
+      ...step.workflow,
+      postconditions: [...step.workflow.postconditions, condition]
+    }
+  };
+}
+
 function buildGuides(repoRoot) {
   const catalog = loadPublishedPluginCatalog(repoRoot);
   const manifests = catalog.plugins;
@@ -53,7 +102,7 @@ function buildGuides(repoRoot) {
     assertGuideContract(contract);
     const name = contract.copy.en.title;
     const overlay = contract.overlay || null;
-    const steps = contract.steps;
+    const steps = contract.steps.map(captureEvidenceStep);
     const copy = contract.copy;
     return {
       id: record.id,

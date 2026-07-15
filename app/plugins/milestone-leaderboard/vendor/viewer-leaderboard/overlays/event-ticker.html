@@ -377,7 +377,7 @@
     <div class="ticker-header">
       <span class="ticker-icon">⭐</span>
       <span data-i18n="plugins.milestone-leaderboard.labels.live_xp_events">Live XP Events</span>
-      <span class="connection-status" id="connectionStatus">Connecting...</span>
+      <span class="connection-status" id="connectionStatus" data-i18n="plugins.milestone-leaderboard.ui.connection.connecting">Connecting...</span>
     </div>
     <div class="events-list" id="eventsList">
       <div class="empty-message" data-i18n="plugins.milestone-leaderboard.labels.waiting_for_events">Waiting for events...</div>
@@ -395,8 +395,8 @@
 
     <label data-i18n="plugins.milestone-leaderboard.labels.auto_scroll">Auto Scroll:</label>
     <select id="autoScroll">
-      <option value="true">Enabled</option>
-      <option value="false">Disabled</option>
+      <option value="true" data-i18n="plugins.milestone-leaderboard.ui.status.enabled">Enabled</option>
+      <option value="false" data-i18n="plugins.milestone-leaderboard.ui.status.disabled">Disabled</option>
     </select>
 
     <button onclick="applySettings()" data-i18n="plugins.milestone-leaderboard.labels.apply_settings">Apply Settings</button>

@@ -47,6 +47,75 @@
           }
         }
       },
+      "runtime": {
+        "navigation": { "label": "TTS navigation", "config_landing_label": "TTS configuration", "overview_label": "TTS overview" },
+        "status": {
+          "connecting": "Connecting to server...",
+          "loading_config": "Loading configuration...",
+          "loading_event_config": "Loading Event TTS configuration...",
+          "loading_voices": "Loading voices...",
+          "loading_statistics": "Loading statistics...",
+          "loading_plugin_status": "Loading plugin status...",
+          "loading_debug_logs": "Loading debug logs...",
+          "initialized": "Initialized successfully",
+          "init_failed": "Initialization failed: {message}"
+        },
+        "load": { "config_failed": "Failed to load configuration: {message}" },
+        "save": { "success": "Configuration saved successfully", "failed": "Failed to save configuration: {message}" },
+        "validation": {
+          "voice_name_required": "Please enter a voice name",
+          "reference_id_required": "Please enter a reference ID",
+          "voice_name_format": "Voice names may contain only letters, numbers, dashes and underscores (no spaces)",
+          "reference_id_format": "Reference ID must be a 32-character hexadecimal string"
+        },
+        "search": {
+          "users_label": "Search users",
+          "users_placeholder": "Search by username or user ID...",
+          "voices_label": "Search voices",
+          "voices_placeholder": "Search voices...",
+          "manual_username_placeholder": "Enter TikTok username..."
+        },
+        "input": {
+          "message_prefix_placeholder": "e.g., ! / .",
+          "fish_voice_name_placeholder": "e.g., my-german-voice",
+          "reference_id_placeholder": "32-character reference ID",
+          "session_id_placeholder": "Enter SessionID...",
+          "session_id_configured_placeholder": "SessionID configured (hidden for security)",
+          "test_text_placeholder": "Enter test text..."
+        },
+        "event_test": {
+          "load_failed": "Failed to load Event TTS configuration: {message}",
+          "saved": "Event TTS configuration saved successfully!",
+          "save_failed": "Failed to save Event TTS configuration: {message}",
+          "gift_queued": "Gift Event TTS test queued!",
+          "follow_queued": "Follow Event TTS test queued!",
+          "share_queued": "Share Event TTS test queued!",
+          "subscribe_queued": "Subscribe Event TTS test queued!",
+          "like_queued": "Like Event TTS test queued!",
+          "join_queued": "Join Event TTS test queued!",
+          "failed": "Event TTS test failed: {message}"
+        },
+        "voice_clone": {
+          "audio_input_label": "Audio sample for voice cloning",
+          "name_placeholder": "e.g. Stream Voice",
+          "file_too_large": "Audio file is too large. Maximum size is 5 MB.",
+          "consent_required": "Please fill all required fields and confirm consent",
+          "created": "Voice clone \"{voiceName}\" created successfully!",
+          "create_failed": "Failed to create voice clone: {message}",
+          "loading": "Loading voice clones...",
+          "empty": "No voice clones yet. Create your first one!",
+          "load_failed": "Failed to load voice clones",
+          "test_tooltip": "Test this voice",
+          "delete_tooltip": "Delete this voice",
+          "test_started": "Testing voice \"{voiceName}\"...",
+          "test_queued": "Voice test queued successfully!",
+          "test_failed": "Failed to test voice: {message}",
+          "delete_confirm": "Delete voice clone \"{voiceName}\"?\n\nThis action cannot be undone.",
+          "deleting": "Deleting voice \"{voiceName}\"...",
+          "deleted": "Voice \"{voiceName}\" deleted successfully!",
+          "delete_failed": "Failed to delete voice: {message}"
+        }
+      },
       "labels": {
         "search_users": "Search Users",
         "cooldown_s": "Cooldown (s)",
@@ -373,6 +442,64 @@
         "follow_events_fe377e": "Follow Events",
         "google_cloud_tts_fede7e": "Google Cloud TTS",
         "fast_low_resource_toaster_pcs": "Fast (Low-Resource / Toaster PCs)"
+      },
+      "ui": {
+        "common": {
+          "language": "Language",
+          "template": "Template",
+          "voice": "Voice"
+        },
+        "manual": {
+          "engine": "Engine",
+          "speak": "Speak"
+        },
+        "filters": {
+          "all": "All",
+          "whitelisted": "Whitelisted",
+          "blacklisted": "Blacklisted"
+        },
+        "help": {
+          "emptyVoiceUsesDefault": "Empty = use the default voice",
+          "fishAudioDiscovery": "fish.audio/discovery"
+        },
+        "languages": {
+          "english": "English",
+          "german": "German",
+          "italian": "Italian",
+          "dutch": "Dutch"
+        },
+        "providers": {
+          "speechify": "Speechify",
+          "elevenLabs": "ElevenLabs"
+        },
+        "logs": {
+          "autoScroll": "Auto-scroll",
+          "success": "Success",
+          "denied": "Denied",
+          "errors": "Errors",
+          "playback": "Playback",
+          "displayed": "Displayed:",
+          "enabled": "Enabled",
+          "active": "Active"
+        },
+        "modal": {
+          "reset": "Reset",
+          "emotion": {
+            "angry": "Angry",
+            "cheerful": "Cheerful",
+            "sad": "Sad",
+            "terrified": "Terrified",
+            "relaxed": "Relaxed",
+            "fearful": "Fearful",
+            "surprised": "Surprised",
+            "calm": "Calm",
+            "assertive": "Assertive",
+            "energetic": "Energetic",
+            "warm": "Warm",
+            "direct": "Direct",
+            "bright": "Bright"
+          }
+        }
       }
     }
   }

@@ -119,6 +119,31 @@ describe('Plugin store routes', () => {
     assert.strictEqual(response.body.accountPortalBaseUrl, 'https://ltth.app/auth');
   });
 
+  it('reports a signed-out store account without an HTTP error in the isolated docs profile', async () => {
+    const { app } = createTestApp(tempDir, {
+      LTTH_DOCS_CAPTURE: 'true'
+    });
+
+    const response = await request(app)
+      .get('/api/plugin-store/account')
+      .expect(200);
+
+    assert.strictEqual(response.body.success, true);
+    assert.strictEqual(response.body.account.authenticated, false);
+    assert.strictEqual(response.body.account.userId, null);
+    assert.strictEqual(response.body.closedStore, true);
+  });
+
+  it('continues to require Clerk auth for the store account outside the docs profile', async () => {
+    const { app } = createTestApp(tempDir);
+
+    const response = await request(app)
+      .get('/api/plugin-store/account')
+      .expect(401);
+
+    assert.strictEqual(response.body.code, 'AUTH_REQUIRED');
+  });
+
   it('requires Clerk auth for store listing and persists the local session cookie', async () => {
     const { app, authFixture } = createTestApp(tempDir);
 

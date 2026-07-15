@@ -6,7 +6,61 @@ function localized(de, en, es, fr) {
   return { de, en, es, fr };
 }
 
-function localizedWorkflow(name, topic, test, overlay) {
+function sourceAnchor(route, controls = [], integrations = []) {
+  const integrationOrder = ['rest', 'socket-event', 'flow-action', 'chat-command', 'import-export', 'storage'];
+  const integration = [...integrations].sort((left, right) => (
+    integrationOrder.indexOf(left.type) - integrationOrder.indexOf(right.type)
+    || left.value.localeCompare(right.value)
+  ))[0] || null;
+  return {
+    route,
+    control: controls[0] || null,
+    integration
+  };
+}
+
+function sourceControlReference(control, fallbackRoute, locale) {
+  if (!control) return '';
+  const route = control.route || fallbackRoute;
+  const label = control.label || control.selector;
+  const references = {
+    de: `Quellinventar auf ${route}: "${label}" (${control.selector}).`,
+    en: `Source inventory on ${route}: "${label}" (${control.selector}).`,
+    es: `Inventario fuente en ${route}: "${label}" (${control.selector}).`,
+    fr: `Inventaire source sur ${route} : "${label}" (${control.selector}).`
+  };
+  return references[locale];
+}
+
+function sourceIntegrationReference(integration, locale) {
+  if (!integration) return '';
+  const identifier = `${integration.method ? `${integration.method} ` : ''}${integration.value}`;
+  const references = {
+    de: `Im Plugin-Code deklarierte Schnittstelle: ${identifier}.`,
+    en: `Interface declared in the plugin code: ${identifier}.`,
+    es: `Interfaz declarada en el codigo del plugin: ${identifier}.`,
+    fr: `Interface declaree dans le code du plugin : ${identifier}.`
+  };
+  return references[locale];
+}
+
+function sourceReference(anchor, locale) {
+  const references = [
+    sourceControlReference(anchor.control, anchor.route, locale),
+    sourceIntegrationReference(anchor.integration, locale)
+  ].filter(Boolean);
+  const labels = {
+    de: `Lokale Guide-Route: ${anchor.route}.`,
+    en: `Local guide route: ${anchor.route}.`,
+    es: `Ruta local de la guia: ${anchor.route}.`,
+    fr: `Route locale du guide : ${anchor.route}.`
+  };
+  if (anchor.control) return references.join(' ');
+  if (references.length) return `${labels[locale]} ${references.join(' ')}`;
+  return labels[locale];
+}
+
+function localizedWorkflow(name, topic, test, overlay, anchor) {
   return {
     goldenPath: {
       title: localized(
@@ -16,10 +70,10 @@ function localizedWorkflow(name, topic, test, overlay) {
         `Configurer ${name} dans le profil de test`
       ),
       summary: localized(
-        `Öffne ${topic.de}, setze ausschließlich die sichtbaren Testwerte, speichere sie und prüfe das lokale Ergebnis.`,
-        `Open ${topic.en}, set only the visible test values, save them, and verify the local result.`,
-        `Abre ${topic.es}, establece solo los valores de prueba visibles, guárdalos y comprueba el resultado local.`,
-        `Ouvrez ${topic.fr}, définissez uniquement les valeurs de test visibles, enregistrez-les et vérifiez le résultat local.`
+        `Workflow-Referenz für ${topic.de}: ${sourceReference(anchor, 'de')}`,
+        `Workflow reference for ${topic.en}: ${sourceReference(anchor, 'en')}`,
+        `Referencia de flujo para ${topic.es}: ${sourceReference(anchor, 'es')}`,
+        `Référence du flux pour ${topic.fr} : ${sourceReference(anchor, 'fr')}`
       )
     },
     localTest: {
@@ -30,71 +84,59 @@ function localizedWorkflow(name, topic, test, overlay) {
         `Vérifier ${test.fr}`
       ),
       summary: localized(
-        'Der Test bleibt lokal; er verbindet weder ein Konto noch eine LIVE-Ausgabe.',
-        'The test remains local; it connects neither an account nor LIVE output.',
-        'La prueba permanece local; no conecta ninguna cuenta ni salida LIVE.',
-        'Le test reste local ; il ne connecte ni compte ni sortie LIVE.'
+        `Prüfreferenz für diesen Ablauf: ${sourceReference(anchor, 'de')}`,
+        `Verification reference for this workflow: ${sourceReference(anchor, 'en')}`,
+        `Referencia de verificación para este flujo: ${sourceReference(anchor, 'es')}`,
+        `Référence de vérification pour ce flux : ${sourceReference(anchor, 'fr')}`
       )
     },
     overlay: overlay ? {
       title: localized('Overlay sicher prüfen', 'Verify the overlay safely', 'Comprobar el overlay de forma segura', 'Vérifier l’overlay en sécurité'),
       summary: localized(
-        'Verwende die URL nur in einer nicht sendenden OBS-Testszene und entferne die temporäre Quelle anschließend.',
-        'Use the URL only in an OBS test scene that is not live, then remove the temporary source.',
-        'Usa la URL solo en una escena de prueba de OBS que no esté al aire y elimina después la fuente temporal.',
-        'Utilisez l’URL uniquement dans une scène de test OBS non diffusée, puis retirez la source temporaire.'
+        `Overlay-Referenz ${overlay}. ${sourceReference(anchor, 'de')}`,
+        `Overlay reference ${overlay}. ${sourceReference(anchor, 'en')}`,
+        `Referencia de overlay ${overlay}. ${sourceReference(anchor, 'es')}`,
+        `Référence d'overlay ${overlay}. ${sourceReference(anchor, 'fr')}`
       )
-    } : null
+  } : null
   };
 }
 
-function settingFromStep(step) {
-  const action = step.capture.action;
-  const isAction = ['save-demo-config', 'run-local-preview', 'reset-demo-state'].includes(action.type);
+function valueForAllLocales(value) {
+  return Object.fromEntries(LOCALES.map((locale) => [locale, value]));
+}
+
+function hasStaticControlValue(value) {
+  return typeof value === 'string' && !/^(?:text or value shown in the control|not declared)$/i.test(value);
+}
+
+function undeclaredControlValue(selector, route, kind) {
+  return localized(
+    `Kein statischer ${kind === 'defaultValue' ? 'Standardwert' : 'Optionswert'} für ${selector} auf ${route} im Quellmarkup deklariert.`,
+    `No static ${kind === 'defaultValue' ? 'default value' : 'option value'} is declared for ${selector} on ${route} in source markup.`,
+    `No se declara ningún ${kind === 'defaultValue' ? 'valor predeterminado' : 'valor de opción'} estático para ${selector} en ${route} en el marcado fuente.`,
+    `Aucune ${kind === 'defaultValue' ? 'valeur par défaut' : 'valeur d’option'} statique n'est déclarée pour ${selector} sur ${route} dans le balisage source.`
+  );
+}
+
+function workflowSettingFromStep(step, control = null, route) {
+  const sourceControl = control || {
+    selector: step.capture.assertVisible,
+    label: step.capture.assertVisible,
+    route
+  };
   return {
     selector: step.capture.assertVisible,
-    kind: isAction ? 'action' : 'control',
-    purpose: Object.fromEntries(LOCALES.map((locale) => [locale, step.copy[locale].body])),
-    defaultValue: localized(
-      'Ausgangswert des frisch erzeugten Testprofils.',
-      'Initial value in the newly created test profile.',
-      'Valor inicial del perfil de prueba recién creado.',
-      'Valeur initiale du profil de test nouvellement créé.'
-    ),
-    values: localized(
-      'Nur den sichtbaren Wert oder die sichtbare Aktion verwenden; keine Produktionsdaten eintragen.',
-      'Use only the visible value or action; do not enter production data.',
-      'Usa solo el valor o la acción visibles; no introduzcas datos de producción.',
-      'Utilisez uniquement la valeur ou l’action visible ; ne saisissez pas de données de production.'
-    ),
-    dependencies: localized(
-      `Schritt „${step.copy.de.title}“ muss in der lokalen Oberfläche sichtbar sein.`,
-      `The “${step.copy.en.title}” step must be visible in the local surface.`,
-      `El paso «${step.copy.es.title}» debe estar visible en la superficie local.`,
-      `L’étape « ${step.copy.fr.title} » doit être visible dans la surface locale.`
-    ),
+    kind: control?.kind || 'control',
+    purpose: Object.fromEntries(LOCALES.map((locale) => [locale, sourceControlReference(sourceControl, route, locale)])),
+    defaultValue: hasStaticControlValue(control?.defaultValue)
+      ? valueForAllLocales(control.defaultValue)
+      : undeclaredControlValue(sourceControl.selector, route, 'defaultValue'),
+    values: hasStaticControlValue(control?.values)
+      ? valueForAllLocales(control.values)
+      : undeclaredControlValue(sourceControl.selector, route, 'values'),
+    dependencies: Object.fromEntries(LOCALES.map((locale) => [locale, sourceControlReference(sourceControl, route, locale)])),
     stepId: step.id
-  };
-}
-
-function settingFromInventory(control) {
-  return {
-    selector: control.selector,
-    kind: control.kind,
-    purpose: localized(
-      `Das sichtbare Feld oder die Aktion „${control.label}“ wird im Testprofil dokumentiert.`,
-      `The visible “${control.label}” field or action is documented in the test profile.`,
-      `El campo o la accion visible «${control.label}» se documenta en el perfil de prueba.`,
-      `Le champ ou l action visible « ${control.label} » est documente dans le profil de test.`
-    ),
-    defaultValue: Object.fromEntries(LOCALES.map((locale) => [locale, control.defaultValue])),
-    values: Object.fromEntries(LOCALES.map((locale) => [locale, control.values])),
-    dependencies: localized(
-      `Sichtbar auf ${control.route}.`,
-      `Visible on ${control.route}.`,
-      `Visible en ${control.route}.`,
-      `Visible sur ${control.route}.`
-    )
   };
 }
 
@@ -115,38 +157,106 @@ function integrationDescription(type, value) {
   );
 }
 
-function createGuideDefinition({ name, version, entry, copy, steps, overlay, inventory = { controls: [] }, integrationInventory = { integrations: [] } }) {
-  const workflows = localizedWorkflow(name, entry.topic, entry.test, overlay);
-  const localTestSteps = steps.filter((step) => ['run-local-preview', 'save-demo-config'].includes(step.capture.action.type)).map((step) => step.id);
-  const overlaySteps = steps.filter((step) => step.capture.action.type === 'open-overlay-preview').map((step) => step.id);
-  const stepBySelector = new Map(steps.map((step) => [step.capture.assertVisible, step]));
-  const inventoryControls = inventory.controls || [];
-  const settingsReference = inventoryControls.filter((control) => control.kind !== 'link').map((control) => {
-    const step = stepBySelector.get(control.selector);
-    if (!step) return settingFromInventory(control);
-    return {
-      ...settingFromStep(step),
-      defaultValue: Object.fromEntries(LOCALES.map((locale) => [locale, control.defaultValue])),
-      values: Object.fromEntries(LOCALES.map((locale) => [locale, control.values]))
-    };
-  });
+function tutorialIntegrations(entries = []) {
+  const allowed = entries.filter((integration) => ['rest', 'flow-action', 'chat-command'].includes(integration.type));
+  const prioritized = [
+    ...allowed.filter((integration) => integration.type === 'rest' && /(?:config|settings|status)$/i.test(integration.value)),
+    ...allowed.filter((integration) => integration.type === 'flow-action' && /(?:trigger|test|run)/i.test(integration.value)),
+    ...allowed.filter((integration) => integration.type === 'chat-command'),
+    ...allowed
+  ];
+  const seen = new Set();
+  return prioritized.filter((integration) => {
+    const key = `${integration.type}:${integration.value}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 4);
+}
+
+function completeSettingReferences(steps, inventoryControls, controlBySelector, route) {
+  const settings = new Map();
   for (const step of steps) {
-    if (!settingsReference.some((setting) => setting.selector === step.capture.assertVisible)) settingsReference.push(settingFromStep(step));
+    settings.set(step.capture.assertVisible, workflowSettingFromStep(step, controlBySelector.get(step.capture.assertVisible), route));
   }
-  const visibleControls = inventoryControls.map((control) => {
-    const step = stepBySelector.get(control.selector);
-    return {
+  for (const control of inventoryControls) {
+    if (settings.has(control.selector)) continue;
+    const sourceDefault = hasStaticControlValue(control.defaultValue)
+      ? valueForAllLocales(control.defaultValue)
+      : undeclaredControlValue(control.selector, route, 'defaultValue');
+    const sourceValues = hasStaticControlValue(control.values)
+      ? valueForAllLocales(control.values)
+      : undeclaredControlValue(control.selector, route, 'values');
+    settings.set(control.selector, {
+      selector: control.selector,
+      kind: control.kind,
+      purpose: Object.fromEntries(LOCALES.map((locale) => [locale, sourceControlReference(control, route, locale)])),
+      defaultValue: sourceDefault,
+      values: sourceValues,
+      dependencies: Object.fromEntries(LOCALES.map((locale) => [locale, sourceControlReference(control, route, locale)]))
+    });
+  }
+  return [...settings.values()];
+}
+
+function completeVisibleControls(steps, inventoryControls) {
+  const controls = new Map();
+  for (const step of steps) {
+    controls.set(step.capture.assertVisible, {
+      selector: step.capture.assertVisible,
+      classification: 'documented',
+      section: `step-${step.id}`,
+      stepId: step.id
+    });
+  }
+  for (const control of inventoryControls) {
+    if (controls.has(control.selector)) continue;
+    controls.set(control.selector, {
       selector: control.selector,
       classification: 'documented',
-      section: step ? `step-${step.id}` : 'guide-settings',
-      stepId: step?.id || null
-    };
-  });
-  for (const step of steps) {
-    if (!visibleControls.some((control) => control.selector === step.capture.assertVisible)) {
-      visibleControls.push({ selector: step.capture.assertVisible, classification: 'documented', section: `step-${step.id}`, stepId: step.id });
-    }
+      section: 'guide-settings',
+      stepId: 'guide-settings'
+    });
   }
+  return [...controls.values()];
+}
+
+function completeIntegrations(entries = []) {
+  const seen = new Set();
+  return entries.filter((integration) => {
+    const key = `${integration.type}:${integration.method || ''}:${integration.value}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function localizedTroubleshooting(anchor) {
+  const text = (locale) => sourceReference(anchor, locale);
+  return {
+    symptom: localized(
+      'Quellreferenz der lokalen Konfiguration prüfen.',
+      'Review the local configuration source reference.',
+      'Revisa la referencia fuente de la configuración local.',
+      'Vérifiez la référence source de la configuration locale.'
+    ),
+    checks: Object.fromEntries(LOCALES.map((locale) => [locale, [sourceReference(anchor, locale)] ])),
+    resolution: Object.fromEntries(LOCALES.map((locale) => [locale, text(locale)]))
+  };
+}
+
+function createGuideDefinition({ name, version, entry, copy, steps, overlay, inventory = { controls: [] }, integrationInventory = { integrations: [] } }) {
+  const localTestSteps = steps.filter((step) => ['run-local-preview', 'save-demo-config'].includes(step.capture.action.type)).map((step) => step.id);
+  const overlaySteps = steps.filter((step) => step.capture.action.type === 'open-overlay-preview').map((step) => step.id);
+  const inventoryControls = inventory.controls || [];
+  const controlBySelector = new Map(inventoryControls.map((control) => [control.selector, control]));
+  const integrations = completeIntegrations(integrationInventory.integrations);
+  const anchor = sourceAnchor(entry.route, inventoryControls, integrations);
+  const workflows = localizedWorkflow(name, entry.topic, entry.test, overlay, anchor);
+  // The reference is derived from the shipped surface instead of silently
+  // dropping controls or interfaces that the shorter golden path omits.
+  const settingsReference = completeSettingReferences(steps, inventoryControls, controlBySelector, entry.route);
+  const visibleControls = completeVisibleControls(steps, inventoryControls);
 
   return {
     metadata: {
@@ -197,24 +307,14 @@ function createGuideDefinition({ name, version, entry, copy, steps, overlay, inv
           'URL d’overlay locale pour une source navigateur temporaire.'
         )
       }] : []),
-      ...(integrationInventory.integrations || []).map((integration) => ({
+      ...integrations.map((integration) => ({
         type: integration.type,
         value: integration.value,
+        ...(integration.method ? { method: integration.method } : {}),
         description: integrationDescription(integration.type, integration.value)
       }))
     ],
-    troubleshooting: [
-      {
-        symptom: localized(
-          `${name}: ${entry.topic.de} ist in der lokalen Oberfläche oder Vorschau leer.`,
-          `${name}: ${entry.topic.en} is empty in the local surface or preview.`,
-          `${name}: ${entry.topic.es} está vacío en la superficie local o vista previa.`,
-          `${name} : ${entry.topic.fr} est vide dans la surface locale ou l’aperçu.`
-        ),
-        checks: Object.fromEntries(LOCALES.map((locale) => [locale, [copy[locale].troubleshooting, copy[locale].requirements]])),
-        resolution: Object.fromEntries(LOCALES.map((locale) => [locale, copy[locale].troubleshooting]))
-      }
-    ],
+    troubleshooting: [localizedTroubleshooting(anchor)],
     visibleControls
   };
 }

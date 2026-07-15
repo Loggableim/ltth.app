@@ -167,11 +167,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/tts/ui/admin-panel.html"
+            "expected": {
+              "path": "/plugins/tts/ui/admin-panel.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +281,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/tts/ui/admin-panel.html"
+            "expected": {
+              "path": "/plugins/tts/ui/admin-panel.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -387,11 +395,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/tts/ui/admin-panel.html"
+            "expected": {
+              "path": "/plugins/tts/ui/admin-panel.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +509,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/tts/ui/admin-panel.html"
+            "expected": {
+              "path": "/plugins/tts/ui/admin-panel.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -607,11 +623,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/tts/ui/admin-panel.html"
+            "expected": {
+              "path": "/plugins/tts/ui/admin-panel.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",

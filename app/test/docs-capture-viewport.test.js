@@ -12,7 +12,10 @@ describe('docs screenshot capture viewport', () => {
     expect(source).toContain("window.scrollTo({ left: 0, top: window.scrollY, behavior: 'instant' })");
     expect(source).toContain("SCREENSHOT_WAIT_AFTER_LOAD_MS || 1500");
     expect(source).toContain('function screenshotClipForAnchor');
-    expect(source).toContain('const width = Math.min(viewport.clientWidth, 640);');
+    expect(source).toContain('const requestedWidth = crop?.width || 640;');
+    expect(source).toContain('const requestedHeight = crop?.height || 560;');
+    expect(source).toContain('const width = Math.min(viewport.clientWidth, requestedWidth);');
+    expect(source).toContain('asset.workflow.captureRule.imageCrop');
     expect(source).toContain('x: Math.round(Math.max(0, Math.min(anchorCenterX - (width / 2), maxX)))');
     expect(source).toContain("await page.screenshot({ path: target, type: 'png', clip: screenshotClip })");
   });
@@ -70,6 +73,31 @@ describe('docs screenshot capture viewport', () => {
     expect(source).toContain('location.url ? `${message.text()} (${location.url}:${location.lineNumber})` : message.text()');
   });
 
+  test('does not treat the deliberately blocked external request as a product console error', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('function isBlockedExternalRequestConsoleError(message) {');
+    expect(source).toContain("message.text().includes('net::ERR_BLOCKED_BY_CLIENT')");
+    expect(source).toContain('if (isBlockedExternalRequestConsoleError(message)) return;');
+  });
+
+  test('records only isolated local network requests and stores that evidence in every receipt', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('page.__docsCaptureNetwork = [];');
+    expect(source).toContain('if (!isAllowedCaptureNetworkUrl(request.url())) {');
+    expect(source).toContain("request.abort('blockedbyclient')");
+    expect(source).toContain('if (!/^https?:/i.test(url) || !isAllowedCaptureNetworkUrl(url)) return;');
+    expect(source).toContain('network: page.__docsCaptureNetwork');
+    expect(source).toContain("if (COLLECTION === 'docs' && !START_APP) {");
+  });
+
   test('does not rewrite shared font assets into plugin paths', () => {
     const source = fs.readFileSync(
       path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
@@ -120,6 +148,20 @@ describe('docs screenshot capture viewport', () => {
     expect(source).toContain("if (window.i18n && typeof window.i18n.setLocale === 'function') {");
     expect(source).toContain('await window.i18n.setLocale(lang);');
     expect(source).toContain('window.i18n.updateDOM?.();');
+    expect(source).toContain("if (window.I18n && typeof window.I18n.load === 'function') {");
+    expect(source).toContain('await window.I18n.load(lang);');
+    expect(source).toContain('window.I18n.apply?.();');
+  });
+
+  test('records checkbox interactions when the already-enabled control is exercised before it is restored', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('let exercised = false;');
+    expect(source).toContain('exercised = true;');
+    expect(source).toContain('changed: before.value !== after.value || before.checked !== after.checked || exercised');
   });
 
   test('uses the documented emoji example for the Emoji Rain input capture', () => {

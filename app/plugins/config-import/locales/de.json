@@ -54,6 +54,8 @@
           "dropBackup": "Sicherungs-ZIP hier ablegen",
           "browseFiles": "oder klicken, um Dateien auszuwählen",
           "removeFile": "Datei entfernen",
+          "pluginColumn": "Plugin",
+          "useSource": "Diese Quelle verwenden",
           "validateButton": "🔍 Prüfen & Vorschau",
           "previewTitle": "🔍 Importvorschau",
           "pluginDetails": "Plugin-Details",

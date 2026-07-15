@@ -1,8 +1,10 @@
 'use strict';
 
+const { applyOverlayEntryPoints } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+module.exports = Object.freeze(applyOverlayEntryPoints({
   "id": "talking-heads",
   "route": "/plugins/talking-heads/ui.html",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/talking-heads/ui.html"
+            "expected": {
+              "path": "/plugins/talking-heads/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +283,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/talking-heads/ui.html"
+            "expected": {
+              "path": "/plugins/talking-heads/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -298,7 +308,7 @@ module.exports = Object.freeze({
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },
@@ -387,11 +397,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/talking-heads/ui.html"
+            "expected": {
+              "path": "/plugins/talking-heads/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +511,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/talking-heads/ui.html"
+            "expected": {
+              "path": "/plugins/talking-heads/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -607,11 +625,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/talking-heads/overlay.html"
+            "expected": {
+              "path": "/plugins/talking-heads/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -717,11 +739,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/talking-heads/ui.html"
+            "expected": {
+              "path": "/plugins/talking-heads/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -743,4 +769,15 @@ module.exports = Object.freeze({
       }
     }
   ]
-});
+}, {
+  'heads-overlay': {
+    route: '/plugins/talking-heads/ui.html',
+    selector: '#testAnimationBtn',
+    copy: {
+      de: { title: 'Lokalen Animations-Test in Talking Heads finden', body: 'Wähle zuerst einen bereits eingerichteten Charakter und prüfe dann den sichtbaren Test-Animation-Button. Führe ihn nur in der nicht sendenden Testumgebung aus; die Anleitung erzeugt keinen erfundenen Avatar im Overlay.', expected: 'Der lokale Animations-Test ist sichtbar und beschreibt einen nachvollziehbaren Testschritt nach der Charaktereinrichtung.' },
+      en: { title: 'Find the local animation test in Talking Heads', body: 'First choose an already configured character, then review the visible Test Animation button. Run it only in the non-live test environment; this guide does not invent an avatar in the overlay.', expected: 'The local animation test is visible and describes a reproducible step after character setup.' },
+      es: { title: 'Encuentra la prueba local de animación en Talking Heads', body: 'Primero elige un personaje ya configurado y luego revisa el botón visible Test Animation. Ejecútalo solo en el entorno de prueba que no está en directo; esta guía no inventa un avatar en el overlay.', expected: 'La prueba local de animación está visible y describe un paso reproducible después de configurar el personaje.' },
+      fr: { title: 'Trouvez le test d’animation local dans Talking Heads', body: 'Choisissez d’abord un personnage déjà configuré, puis examinez le bouton visible Test Animation. Exécutez-le uniquement dans l’environnement de test hors diffusion ; ce guide n’invente pas d’avatar dans l’overlay.', expected: 'Le test d’animation local est visible et décrit une étape reproductible après la configuration du personnage.' }
+    }
+  }
+}));

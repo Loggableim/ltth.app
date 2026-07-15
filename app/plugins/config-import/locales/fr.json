@@ -54,6 +54,8 @@
           "dropBackup": "Déposez votre ZIP ici",
           "browseFiles": "ou cliquez pour parcourir les fichiers",
           "removeFile": "Supprimer le fichier",
+          "pluginColumn": "Extension",
+          "useSource": "Utiliser cette source",
           "validateButton": "🔍 Vérifier et prévisualiser",
           "previewTitle": "🔍 Aperçu de l’importation",
           "pluginDetails": "Détails des plugins",

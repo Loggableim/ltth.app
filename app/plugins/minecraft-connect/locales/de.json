@@ -114,6 +114,28 @@
           "test_success": "Aktion erfolgreich in Warteschlange eingereiht",
           "test_failed": "Einreihen der Aktion fehlgeschlagen",
           "not_connected": "Minecraft Mod nicht verbunden"
+        },
+        "ui": {
+          "actions": {
+            "refresh": "Aktualisieren"
+          },
+          "sections": {
+            "commands": "Befehle",
+            "setup": "Einrichtung"
+          },
+          "metrics": {
+            "queue": "Warteschlange"
+          },
+          "connection": {
+            "title": "Verbindung"
+          },
+          "themes": {
+            "switcher": "Theme-Auswahl",
+            "label": "Theme",
+            "day": "Tag",
+            "night": "Nacht",
+            "cid": "Cid"
+          }
         }
       },
       "labels": {

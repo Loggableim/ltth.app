@@ -51,7 +51,10 @@
           "min_coins": "Min. Coins (optional)",
           "add": "Zuordnung hinzufügen",
           "refresh_gifts": "Geschenke aktualisieren",
-          "current_mappings": "Aktuelle Zuordnungen:"
+          "current_mappings": "Aktuelle Zuordnungen:",
+          "filter": "Filter:",
+          "camera_filter": "Kamera:",
+          "sort": "Sortierung:"
         },
         "log": {
           "title": "Aktivitätsprotokoll",

@@ -47,6 +47,75 @@
           }
         }
       },
+      "runtime": {
+        "navigation": { "label": "Navegación de TTS", "config_landing_label": "Configuración de TTS", "overview_label": "Resumen de TTS" },
+        "status": {
+          "connecting": "Conectando al servidor...",
+          "loading_config": "Cargando configuración...",
+          "loading_event_config": "Cargando la configuración de eventos TTS...",
+          "loading_voices": "Cargando voces...",
+          "loading_statistics": "Cargando estadísticas...",
+          "loading_plugin_status": "Cargando el estado del complemento...",
+          "loading_debug_logs": "Cargando registros de depuración...",
+          "initialized": "Inicializado correctamente",
+          "init_failed": "Error de inicialización: {message}"
+        },
+        "load": { "config_failed": "No se pudo cargar la configuración: {message}" },
+        "save": { "success": "Configuración guardada correctamente", "failed": "No se pudo guardar la configuración: {message}" },
+        "validation": {
+          "voice_name_required": "Introduce un nombre de voz",
+          "reference_id_required": "Introduce un ID de referencia",
+          "voice_name_format": "Los nombres de voz solo pueden contener letras, números, guiones y guiones bajos (sin espacios)",
+          "reference_id_format": "El ID de referencia debe ser una cadena hexadecimal de 32 caracteres"
+        },
+        "search": {
+          "users_label": "Buscar usuarios",
+          "users_placeholder": "Buscar por nombre de usuario o ID de usuario...",
+          "voices_label": "Buscar voces",
+          "voices_placeholder": "Buscar voces...",
+          "manual_username_placeholder": "Introduce el nombre de usuario de TikTok..."
+        },
+        "input": {
+          "message_prefix_placeholder": "p. ej., ! / .",
+          "fish_voice_name_placeholder": "p. ej., mi-voz-alemana",
+          "reference_id_placeholder": "ID de referencia de 32 caracteres",
+          "session_id_placeholder": "Introduce SessionID...",
+          "session_id_configured_placeholder": "SessionID configurado (oculto por seguridad)",
+          "test_text_placeholder": "Introduce texto de prueba..."
+        },
+        "event_test": {
+          "load_failed": "No se pudo cargar la configuración de eventos TTS: {message}",
+          "saved": "¡Configuración de eventos TTS guardada correctamente!",
+          "save_failed": "No se pudo guardar la configuración de eventos TTS: {message}",
+          "gift_queued": "¡Prueba de TTS para regalo en cola!",
+          "follow_queued": "¡Prueba de TTS para seguimiento en cola!",
+          "share_queued": "¡Prueba de TTS para compartir en cola!",
+          "subscribe_queued": "¡Prueba de TTS para suscripción en cola!",
+          "like_queued": "¡Prueba de TTS para Me gusta en cola!",
+          "join_queued": "¡Prueba de TTS para unirse en cola!",
+          "failed": "La prueba de eventos TTS falló: {message}"
+        },
+        "voice_clone": {
+          "audio_input_label": "Muestra de audio para clonación de voz",
+          "name_placeholder": "p. ej., Voz de stream",
+          "file_too_large": "El archivo de audio es demasiado grande. El tamaño máximo es de 5 MB.",
+          "consent_required": "Completa todos los campos obligatorios y confirma el consentimiento",
+          "created": "¡Clon de voz \"{voiceName}\" creado correctamente!",
+          "create_failed": "No se pudo crear el clon de voz: {message}",
+          "loading": "Cargando clones de voz...",
+          "empty": "Aún no hay clones de voz. ¡Crea el primero!",
+          "load_failed": "No se pudieron cargar los clones de voz",
+          "test_tooltip": "Probar esta voz",
+          "delete_tooltip": "Eliminar esta voz",
+          "test_started": "Probando la voz \"{voiceName}\"...",
+          "test_queued": "¡Prueba de voz en cola correctamente!",
+          "test_failed": "No se pudo probar la voz: {message}",
+          "delete_confirm": "¿Eliminar el clon de voz \"{voiceName}\"?\n\nEsta acción no se puede deshacer.",
+          "deleting": "Eliminando la voz \"{voiceName}\"...",
+          "deleted": "¡Voz \"{voiceName}\" eliminada correctamente!",
+          "delete_failed": "No se pudo eliminar la voz: {message}"
+        }
+      },
       "labels": {
         "search_users": "Buscar usuarios",
         "cooldown_s": "Enfriamiento (s)",
@@ -373,6 +442,64 @@
         "follow_events_fe377e": "Seguir eventos",
         "google_cloud_tts_fede7e": "TTS de la nube de Google",
         "fast_low_resource_toaster_pcs": "Rápido (PC de bajos recursos/tostadora)"
+      },
+      "ui": {
+        "common": {
+          "language": "Idioma",
+          "template": "Plantilla",
+          "voice": "Voz"
+        },
+        "manual": {
+          "engine": "Motor",
+          "speak": "Hablar"
+        },
+        "filters": {
+          "all": "Todos",
+          "whitelisted": "Permitidos",
+          "blacklisted": "Bloqueados"
+        },
+        "help": {
+          "emptyVoiceUsesDefault": "Vacío = usar la voz predeterminada",
+          "fishAudioDiscovery": "fish.audio/discovery"
+        },
+        "languages": {
+          "english": "Inglés",
+          "german": "Alemán",
+          "italian": "Italiano",
+          "dutch": "Neerlandés"
+        },
+        "providers": {
+          "speechify": "Speechify",
+          "elevenLabs": "ElevenLabs"
+        },
+        "logs": {
+          "autoScroll": "Desplazamiento automático",
+          "success": "Éxito",
+          "denied": "Rechazado",
+          "errors": "Errores",
+          "playback": "Reproducción",
+          "displayed": "Mostrado:",
+          "enabled": "Activado",
+          "active": "Activo"
+        },
+        "modal": {
+          "reset": "Restablecer",
+          "emotion": {
+            "angry": "Enojado",
+            "cheerful": "Alegre",
+            "sad": "Triste",
+            "terrified": "Aterrorizado",
+            "relaxed": "Relajado",
+            "fearful": "Temeroso",
+            "surprised": "Sorprendido",
+            "calm": "Tranquilo",
+            "assertive": "Asertivo",
+            "energetic": "Enérgico",
+            "warm": "Cálido",
+            "direct": "Directo",
+            "bright": "Brillante"
+          }
+        }
       }
     }
   }

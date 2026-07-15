@@ -152,7 +152,7 @@
           "title": "Title",
           "description": "Description",
           "load_prompt": "Load prompt",
-          "effect_label": "Effect label"
+          "effect_label": "Efecto meteorol\u00f3gico"
         }
       },
       "buttons": {
@@ -245,6 +245,19 @@
         "weather_control_overlay": "Superposición de control del clima",
         "default_white": "Blanco predeterminado",
         "streak_bonus_threshold": "Umbral de bonificación por racha"
+      },
+      "ui": {
+        "commands": { "weather": "weather", "weatherlist": "weatherlist", "weatherstop": "weatherstop" },
+        "overlay": { "quest": "Misi\u00f3n", "streak": "Racha", "meter": "Medidor" },
+        "effects": {
+          "midday": "Mediod\u00eda", "sunset": "Atardecer", "precipitation": "Precipitaci\u00f3n",
+          "atmosphere": "Atm\u00f3sfera", "light": "Luz", "ambient": "Ambiente",
+          "impact": "Impacto", "digital": "Digital", "direction": "Direcci\u00f3n", "layer": "Capa"
+        },
+        "actions": { "play": "Reproducir", "stopEffect": "Detener efecto", "stop": "Detener" },
+        "advanced": { "title": "Avanzado" },
+        "triggers": { "effect": "Efecto", "intensity": "Intensidad", "duration": "Duraci\u00f3n", "likeInterval": "Intervalo de Me gusta" },
+        "active": { "noEffects": "El overlay no informa efectos activos." }
       }
     }
   }

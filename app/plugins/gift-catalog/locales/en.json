@@ -14,7 +14,8 @@
             "refresh": "Refresh",
             "close": "Close",
             "test": "Test",
-            "clear": "Clear"
+            "clear": "Clear",
+            "copy": "Copy"
           },
           "status": {
             "ready": "Ready",
@@ -28,6 +29,25 @@
             "failed": "Could not save settings.",
             "noData": "No data available.",
             "confirm": "Are you sure?"
+          },
+          "labels": {
+            "locale": "Locale",
+            "app_language": "App language (app_language)",
+            "browser_language": "Browser language (browser_language)",
+            "priority_region": "Priority region (priority_region)",
+            "tz_name": "Time zone (tz_name)",
+            "webcast_language": "Webcast language (webcast_language)"
+          },
+          "options": {
+            "none": "No selection",
+            "locale_de": "German (de)",
+            "locale_en": "English (en)",
+            "locale_es": "Spanish (es)",
+            "locale_fr": "French (fr)"
+          },
+          "messages": {
+            "no_gifts_available": "No gifts available.",
+            "load_catalog_first_for_live_mode": "Load the catalog first for live mode."
           }
         }
       },

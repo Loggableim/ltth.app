@@ -14,7 +14,10 @@
             "refresh": "Refresh",
             "close": "Close",
             "test": "Test",
-            "clear": "Clear"
+            "clear": "Clear",
+            "copy": "Copy",
+            "stop": "Stop",
+            "save_vrchat_output": "Save VRChat output"
           },
           "status": {
             "ready": "Ready",
@@ -28,6 +31,31 @@
             "failed": "Could not save settings.",
             "noData": "No data available.",
             "confirm": "Are you sure?"
+          },
+          "labels": {
+            "source_microphone": "Source microphone",
+            "stt_model": "STT model",
+            "caption_style": "Caption style",
+            "position": "Position",
+            "asr_provider": "ASR provider",
+            "model": "Model",
+            "translation_color": "Translation color"
+          },
+          "navigation": {
+            "status": "Status",
+            "admin": "Admin",
+            "capture": "Capture",
+            "multi_language": "Multi-language"
+          },
+          "options": {
+            "no_selection": "No selection",
+            "no_models": "No models",
+            "no_api_key": "No API key",
+            "center": "Center"
+          },
+          "help": {
+            "multilang_rows": "Multiple selected languages are shown automatically on separate lines.",
+            "vrchat_final_captions": "Only final original captions are sent after a 700 ms batch window. Long text is split automatically to fit the VRChat chatbox limit."
           }
         }
       },

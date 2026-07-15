@@ -122,6 +122,47 @@
         "mute": "🔇 Silencio",
         "gespeicherte_user": "Usuarios guardados",
         "letztes_transcript": "Última transcripción:"
+      },
+      "ui": {
+        "status": { "active": "Activo" },
+        "tabs": {
+          "status": "Estado",
+          "settings": "Configuraci\u00f3n",
+          "memory": "Memoria",
+          "analytics": "Anal\u00edticas",
+          "events": "Eventos"
+        },
+        "connection": { "connect": "Conectar", "disconnect": "Desconectar" },
+        "test": {
+          "message": "Mensaje de prueba:",
+          "messagePlaceholder": "Escriba un mensaje...",
+          "send": "Enviar"
+        },
+        "asr": {
+          "level": "Nivel",
+          "mediaDevicesUnavailable": "MediaDevices no est\u00e1 disponible",
+          "noMicrophonesFound": "No se encontraron micr\u00f3fonos"
+        },
+        "speechOutput": { "title": "Salida de voz" },
+        "outbox": { "separator": "Separador" },
+        "hostDecision": { "title": "L\u00f3gica de decisiones del anfitri\u00f3n" },
+        "empty": {
+          "loading": "Cargando...",
+          "noUsers": "No se encontraron usuarios",
+          "noEvents": "No hay eventos",
+          "noGifters": "No hay donantes",
+          "noResults": "No hay resultados"
+        },
+        "search": { "placeholder": "Buscar por apodo o ID...", "submit": "Buscar" },
+        "events": {
+          "chat": "Chat",
+          "gift": "Regalo",
+          "follow": "Seguir",
+          "share": "Compartir",
+          "subscribe": "Suscripci\u00f3n",
+          "join": "Unirse",
+          "like": "Me gusta"
+        }
       }
     }
   }

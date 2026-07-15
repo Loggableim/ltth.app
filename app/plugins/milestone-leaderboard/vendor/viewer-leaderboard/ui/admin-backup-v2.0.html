@@ -737,11 +737,11 @@
           <div class="nav-section-title">Overview</div>
           <a href="#" class="nav-item active" data-page="dashboard">
             <span class="nav-icon">📊</span>
-            <span>Dashboard</span>
+            <span data-i18n="plugins.milestone-leaderboard.ui.navigation.dashboard">Dashboard</span>
           </a>
           <a href="#" class="nav-item" data-page="leaderboard">
             <span class="nav-icon">🏆</span>
-            <span>Leaderboard</span>
+            <span data-i18n="plugins.milestone-leaderboard.ui.navigation.leaderboard">Leaderboard</span>
           </a>
         </div>
 
@@ -758,7 +758,7 @@
         </div>
 
         <div class="nav-section">
-          <div class="nav-section-title" data-i18n="gift_milestone.config.title">Configuration</div>
+          <div class="nav-section-title" data-i18n="plugins.milestone-leaderboard.gift_milestone.config.title">Configuration</div>
           <a href="#" class="nav-item" data-page="xp-settings">
             <span class="nav-icon">⚙️</span>
             <span data-i18n="plugins.milestone-leaderboard.labels.xp_settings_2371df">XP Settings</span>
@@ -781,7 +781,7 @@
           </a>
           <a href="#" class="nav-item" data-page="import-export">
             <span class="nav-icon">💾</span>
-            <span>Import/Export</span>
+            <span data-i18n="plugins.milestone-leaderboard.ui.navigation.import_export">Import/Export</span>
           </a>
         </div>
       </nav>
@@ -864,8 +864,8 @@
             <select class="form-select" style="width: auto; padding: 6px 12px; font-size: 0.875rem;" id="activityFilter">
               <option value="all" data-i18n="plugins.milestone-leaderboard.labels.all_activity">All Activity</option>
               <option value="chat" data-i18n="plugins.milestone-leaderboard.labels.chat_messages_d1cc1b">Chat Messages</option>
-              <option value="gift">Gifts</option>
-              <option value="follow">Follows</option>
+              <option value="gift" data-i18n="plugins.milestone-leaderboard.ui.event.gifts">Gifts</option>
+              <option value="follow" data-i18n="plugins.milestone-leaderboard.ui.event.follows">Follows</option>
               <option value="level_up" data-i18n="plugins.milestone-leaderboard.labels.level_ups">Level Ups</option>
             </select>
           </div>
@@ -911,13 +911,13 @@
               <table class="modern-table">
                 <thead>
                   <tr>
-                    <th style="width: 80px;">Rank</th>
-                    <th>Username</th>
-                    <th>Level</th>
-                    <th>Title</th>
+                    <th style="width: 80px;" data-i18n="plugins.milestone-leaderboard.ui.table.rank">Rank</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.username">Username</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.level">Level</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.title">Title</th>
                     <th>XP</th>
-                    <th>Progress</th>
-                    <th data-i18n="gift_milestone.actions.title">Actions</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.progress">Progress</th>
+                    <th data-i18n="plugins.milestone-leaderboard.gift_milestone.actions.title">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="leaderboardTable">
@@ -975,8 +975,8 @@
             <div class="form-group">
               <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.show_profile_picture">Show Profile Picture</label>
               <select class="form-select" id="xpBarShowPic">
-                <option value="true">Yes</option>
-                <option value="false">No</option>
+                <option value="true" data-i18n="plugins.milestone-leaderboard.ui.options.yes">Yes</option>
+                <option value="false" data-i18n="plugins.milestone-leaderboard.ui.options.no">No</option>
               </select>
             </div>
           </div>
@@ -1027,9 +1027,9 @@
               <div class="form-group">
                 <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.design_theme_c91a5c">Design Theme</label>
                 <select class="form-select" id="leaderboardTheme">
-                  <option value="">Standard</option>
-                  <option value="minimal">Minimal</option>
-                  <option value="transparent">Transparent</option>
+                  <option value="" data-i18n="plugins.milestone-leaderboard.ui.options.standard">Standard</option>
+                  <option value="minimal" data-i18n="plugins.milestone-leaderboard.ui.options.minimal">Minimal</option>
+                  <option value="transparent" data-i18n="plugins.milestone-leaderboard.ui.options.transparent">Transparent</option>
                 </select>
               </div>
               <div class="form-group">
@@ -1070,14 +1070,14 @@
 
             <div class="overlay-settings">
               <div class="form-group">
-                <label class="form-label" data-i18n="gift_milestone.config.animation_duration">Animation Duration (ms)</label>
+                <label class="form-label" data-i18n="plugins.milestone-leaderboard.gift_milestone.config.animation_duration">Animation Duration (ms)</label>
                 <input type="number" class="form-control" id="levelUpDuration" value="5000" min="2000" step="1000">
               </div>
               <div class="form-group">
                 <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.enable_sound_c01f14">Enable Sound</label>
                 <select class="form-select" id="levelUpSound">
-                  <option value="true">Yes</option>
-                  <option value="false">No</option>
+                  <option value="true" data-i18n="plugins.milestone-leaderboard.ui.options.yes">Yes</option>
+                  <option value="false" data-i18n="plugins.milestone-leaderboard.ui.options.no">No</option>
                 </select>
               </div>
               <div class="form-group">
@@ -1241,8 +1241,8 @@
                     <th data-i18n="plugins.milestone-leaderboard.labels.action_type_9763ab">Action Type</th>
                     <th data-i18n="plugins.milestone-leaderboard.labels.xp_amount_0ee04e">XP Amount</th>
                     <th data-i18n="plugins.milestone-leaderboard.labels.cooldown_seconds_6588b8">Cooldown (seconds)</th>
-                    <th>Enabled</th>
-                    <th data-i18n="gift_milestone.actions.title">Actions</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.status.enabled">Enabled</th>
+                    <th data-i18n="plugins.milestone-leaderboard.gift_milestone.actions.title">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="actionsTable">
@@ -1426,10 +1426,10 @@
                 <table class="modern-table" style="font-size: 0.85rem;">
                   <thead>
                     <tr>
-                      <th>Level</th>
+                      <th data-i18n="plugins.milestone-leaderboard.ui.table.level">Level</th>
                       <th data-i18n="plugins.milestone-leaderboard.labels.total_xp_required_a0b9a2">Total XP Required</th>
                       <th data-i18n="plugins.milestone-leaderboard.labels.xp_for_next_level">XP for Next Level</th>
-                      <th>Growth</th>
+                      <th data-i18n="plugins.milestone-leaderboard.ui.table.growth">Growth</th>
                     </tr>
                   </thead>
                   <tbody id="progressionPreviewTable">
@@ -1459,12 +1459,12 @@
               <table class="modern-table">
                 <thead>
                   <tr>
-                    <th>Level</th>
-                    <th>Title/Badge</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.level">Level</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.title_badge">Title/Badge</th>
                     <th data-i18n="plugins.milestone-leaderboard.labels.name_color">Name Color</th>
                     <th data-i18n="plugins.milestone-leaderboard.labels.custom_emote_f21068">Custom Emote</th>
-                    <th>Announcement</th>
-                    <th data-i18n="gift_milestone.actions.title">Actions</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.announcement">Announcement</th>
+                    <th data-i18n="plugins.milestone-leaderboard.gift_milestone.actions.title">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="levelRewardsTable">
@@ -1563,10 +1563,10 @@
               <table class="modern-table">
                 <thead>
                   <tr>
-                    <th>Date/Time</th>
-                    <th>Username</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.date_time">Date/Time</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.username">Username</th>
                     <th data-i18n="plugins.milestone-leaderboard.labels.xp_amount_f1a351">XP Amount</th>
-                    <th>Reason</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.reason">Reason</th>
                   </tr>
                 </thead>
                 <tbody id="recentAwardsTable">
@@ -1825,10 +1825,10 @@
                 <table class="modern-table">
                   <thead>
                     <tr>
-                      <th>Date/Time</th>
+                      <th data-i18n="plugins.milestone-leaderboard.ui.table.date_time">Date/Time</th>
                       <th data-i18n="plugins.milestone-leaderboard.labels.action_type">Action Type</th>
                       <th data-i18n="plugins.milestone-leaderboard.labels.xp_amount_84ddb3">XP Amount</th>
-                      <th>Details</th>
+                      <th data-i18n="plugins.milestone-leaderboard.ui.table.details">Details</th>
                     </tr>
                   </thead>
                   <tbody id="historyTable">
@@ -2031,7 +2031,7 @@
               <td colspan="7">
                 <div class="empty-state">
                   <div class="empty-state-icon">🏆</div>
-                  <div class="empty-state-text">No viewers yet</div>
+                  <div class="empty-state-text" data-i18n="plugins.milestone-leaderboard.ui.empty.no_viewers">No viewers yet</div>
                   <div class="empty-state-description">Viewers will appear here as they earn XP</div>
                 </div>
               </td>
@@ -2070,7 +2070,7 @@
                 <small class="form-text">${Number(progress).toFixed(1)}% to next level</small>
               </td>
               <td>
-                <button class="btn btn-sm btn-secondary" data-action="viewUserDetails" data-arg="${escapeHtml(viewer.username)}">
+                <button class="btn btn-sm btn-secondary" data-action="viewUserDetails" data-arg="${escapeHtml(viewer.username)}" data-i18n="plugins.milestone-leaderboard.ui.actions.view">
                   View
                 </button>
               </td>
@@ -2196,7 +2196,7 @@
                          ${action.enabled ? 'checked' : ''}>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-primary" data-action="updateAction" data-arg="${action.action_type}">
+                  <button class="btn btn-sm btn-primary" data-action="updateAction" data-arg="${action.action_type}" data-i18n="plugins.milestone-leaderboard.ui.actions.save">
                     💾 Save
                   </button>
                 </td>
@@ -2298,10 +2298,10 @@
                   <table class="modern-table">
                     <thead>
                       <tr>
-                        <th>Level</th>
-                        <th>XP Required</th>
-                        <th>Title</th>
-                        <th>Color</th>
+                        <th data-i18n="plugins.milestone-leaderboard.ui.table.level">Level</th>
+                        <th data-i18n="plugins.milestone-leaderboard.ui.table.xp_required">XP Required</th>
+                        <th data-i18n="plugins.milestone-leaderboard.ui.table.title">Title</th>
+                        <th data-i18n="plugins.milestone-leaderboard.ui.table.color">Color</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2322,7 +2322,7 @@
                     </tbody>
                   </table>
                 </div>
-                <p class="form-text" style="margin-top: 16px;">
+                <p class="form-text" style="margin-top: 16px;" data-i18n="plugins.milestone-leaderboard.ui.levels.editor_notice">
                   Showing first 20 levels. Advanced level configuration editor coming in a future update.
                 </p>
               </div>
@@ -2341,8 +2341,8 @@
         const page = document.getElementById('page-level-config');
         page.innerHTML = `
           <div class="page-header">
-            <h1 class="page-title">📈 Level Configuration</h1>
-            <p class="page-description">Customize level progression and rewards</p>
+            <h1 class="page-title" data-i18n="plugins.milestone-leaderboard.ui.levels.configuration">📈 Level Configuration</h1>
+            <p class="page-description" data-i18n="plugins.milestone-leaderboard.ui.levels.description">Customize level progression and rewards</p>
           </div>
           <div class="alert alert-warning">
             <span>⚠️</span>
@@ -3062,7 +3062,7 @@
           <td><input type="text" class="form-control" value="${reward.announcement_message || ''}" placeholder="Custom emote or message" data-field="announcement_message"></td>
           <td><input type="text" class="form-control" value="${reward.special_effects?.animation || ''}" placeholder="Animation key" data-field="animation"></td>
           <td>
-            <button class="btn btn-sm btn-success" data-action="saveLevelReward" data-arg="${reward.level}">💾 Save</button>
+            <button class="btn btn-sm btn-success" data-action="saveLevelReward" data-arg="${reward.level}" data-i18n="plugins.milestone-leaderboard.ui.actions.save">💾 Save</button>
             <button class="btn btn-sm btn-danger" data-action="deleteLevelReward" data-arg="${reward.level}">🗑️</button>
           </td>
         </tr>
@@ -3316,12 +3316,12 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Username</th>
-                <th>Bet</th>
-                <th>Field</th>
-                <th>Result</th>
-                <th>XP Change</th>
-                <th>Time</th>
+                <th data-i18n="plugins.milestone-leaderboard.ui.table.username">Username</th>
+                <th data-i18n="plugins.milestone-leaderboard.ui.table.bet">Bet</th>
+                <th data-i18n="plugins.milestone-leaderboard.ui.table.field">Field</th>
+                <th data-i18n="plugins.milestone-leaderboard.ui.table.result">Result</th>
+                <th data-i18n="plugins.milestone-leaderboard.ui.table.xp_change">XP Change</th>
+                <th data-i18n="plugins.milestone-leaderboard.ui.table.time">Time</th>
               </tr>
             </thead>
             <tbody>

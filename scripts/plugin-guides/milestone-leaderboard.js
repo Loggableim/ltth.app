@@ -167,11 +167,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/milestone-leaderboard/vendor/gift-milestone/ui.html"
+            "expected": {
+              "path": "/plugins/milestone-leaderboard/vendor/gift-milestone/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -282,11 +286,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/milestone-leaderboard/vendor/gift-milestone/ui.html"
+            "expected": {
+              "path": "/plugins/milestone-leaderboard/vendor/gift-milestone/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -397,11 +405,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/milestone-leaderboard/vendor/gift-milestone/ui.html"
+            "expected": {
+              "path": "/plugins/milestone-leaderboard/vendor/gift-milestone/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -507,11 +519,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/milestone-leaderboard/vendor/gift-milestone/ui.html"
+            "expected": {
+              "path": "/plugins/milestone-leaderboard/vendor/gift-milestone/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -617,11 +633,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html"
+            "expected": {
+              "path": "/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -727,11 +747,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/milestone-leaderboard/vendor/gift-milestone/ui.html"
+            "expected": {
+              "path": "/plugins/milestone-leaderboard/vendor/gift-milestone/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",

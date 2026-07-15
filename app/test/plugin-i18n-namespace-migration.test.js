@@ -12,7 +12,10 @@ describe('plugin i18n namespace migration', () => {
       fr: { generated: { a1: 'Enregistrer la configuration' }, settings: { title: 'Paramètres' } }
     });
 
-    expect(result.keyMap).toEqual({ 'generated.a1': 'labels.save_configuration' });
+    expect(result.keyMap).toEqual({
+      'generated.a1': 'labels.save_configuration',
+      'settings.': 'settings.'
+    });
     expect(result.locales.en).toEqual({
       plugins: {
         'emoji-rain': {
@@ -33,5 +36,21 @@ describe('plugin i18n namespace migration', () => {
     });
 
     expect(result).toBe('<button data-i18n="plugins.emoji-rain.labels.save_configuration">Save</button><span data-i18n="plugins.emoji-rain.settings.title">Settings</span>');
+  });
+
+  test('rewrites a legacy plugin-root prefix without touching similarly named text', () => {
+    const source = [
+      '<h1 data-i18n="visual_fx_frame_webgpu.plugin.name">Visual FX</h1>',
+      '<script>const example = "visual_fx_frame_webgpu.plugin.name";</script>'
+    ].join('');
+
+    const result = rewritePluginTranslationReferences(source, 'visual-fx-frame-webgpu', {
+      'visual_fx_frame_webgpu.': 'visual_fx_frame_webgpu.'
+    });
+
+    expect(result).toBe([
+      '<h1 data-i18n="plugins.visual-fx-frame-webgpu.visual_fx_frame_webgpu.plugin.name">Visual FX</h1>',
+      '<script>const example = "visual_fx_frame_webgpu.plugin.name";</script>'
+    ].join(''));
   });
 });

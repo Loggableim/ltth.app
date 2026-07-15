@@ -1,5 +1,6 @@
 ﻿const socket = io();
 let currentConfig = {};
+let lastStatus = null;
 
 function escapeHtml(text) {
     const div = document.createElement('div');
@@ -156,6 +157,7 @@ function toggleLogViewer(show) {
 
 // Status aktualisieren
 function updateStatus(status) {
+    lastStatus = status;
     const indicator = document.getElementById('status-indicator');
     const statusText = document.getElementById('status-text');
     const btnStart = document.getElementById('btn-start');
@@ -165,16 +167,16 @@ function updateStatus(status) {
 
     if (state === 'running' || status.isRunning) {
         indicator.className = 'status-indicator running';
-        statusText.textContent = 'Aktiv';
+        statusText.textContent = translateOscBridge('runtime.ui.status.running', 'Running');
     } else if (state === 'starting') {
         indicator.className = 'status-indicator running';
-        statusText.textContent = 'Startet...';
+        statusText.textContent = translateOscBridge('runtime.ui.status.starting', 'Starting...');
     } else if (state === 'error') {
         indicator.className = 'status-indicator stopped';
-        statusText.textContent = 'Fehler';
+        statusText.textContent = translateOscBridge('runtime.ui.status.error', 'Error');
     } else {
         indicator.className = 'status-indicator stopped';
-        statusText.textContent = 'Gestoppt';
+        statusText.textContent = translateOscBridge('runtime.ui.status.stopped', 'Stopped');
     }
 
     if (btnStart) btnStart.disabled = state === 'starting' || state === 'running';
@@ -190,11 +192,11 @@ function updateStatus(status) {
 
 function formatUptime(ms) {
     const seconds = Math.floor(ms / 1000);
-    if (seconds < 60) return `${seconds}s`;
+    if (seconds < 60) return translateOscBridge('runtime.ui.uptime.seconds', '{seconds}s', { seconds });
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ${seconds % 60}s`;
+    if (minutes < 60) return translateOscBridge('runtime.ui.uptime.minutes', '{minutes}m {seconds}s', { minutes, seconds: seconds % 60 });
     const hours = Math.floor(minutes / 60);
-    return `${hours}h ${minutes % 60}m`;
+    return translateOscBridge('runtime.ui.uptime.hours', '{hours}h {minutes}m', { hours, minutes: minutes % 60 });
 }
 
 // Config speichern
@@ -238,11 +240,11 @@ if (configForm) {
     const data = await response.json();
 
         if (data.success) {
-            alert('Konfiguration gespeichert!');
+            alert(translateOscBridge('runtime.ui.alerts.config_saved', 'Configuration saved!'));
             currentConfig = data.config;
             toggleLogViewer(currentConfig.verboseMode);
         } else {
-            alert('Fehler beim Speichern: ' + data.error);
+            alert(translateOscBridge('runtime.ui.errors.save_config', 'Error saving configuration: {error}', { error: data.error || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
         }
     });
 }
@@ -268,7 +270,7 @@ if (chatCommandsForm) {
         const getCurrentConfigData = await getCurrentConfigResponse.json();
         
         if (!getCurrentConfigData.success) {
-            alert('Error loading current configuration');
+            alert(translateOscBridge('runtime.ui.errors.load_config', 'Error loading current configuration'));
             return;
         }
 
@@ -292,10 +294,10 @@ if (chatCommandsForm) {
         const data = await response.json();
 
         if (data.success) {
-            alert('Chat command settings saved!');
+            alert(translateOscBridge('runtime.ui.alerts.chat_commands_saved', 'Chat command settings saved!'));
             currentConfig = data.config;
         } else {
-            alert('Error saving chat command settings: ' + data.error);
+            alert(translateOscBridge('runtime.ui.errors.save_chat_commands', 'Error saving chat command settings: {error}', { error: data.error || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
         }
     });
 }
@@ -329,7 +331,7 @@ if (advancedFeaturesForm) {
         const getCurrentConfigData = await getCurrentConfigResponse.json();
         
         if (!getCurrentConfigData.success) {
-            alert('Fehler beim Laden der aktuellen Konfiguration');
+            alert(translateOscBridge('runtime.ui.errors.load_config', 'Error loading current configuration'));
             return;
         }
 
@@ -370,10 +372,10 @@ if (advancedFeaturesForm) {
         const data = await response.json();
 
         if (data.success) {
-            alert('Erweiterte Einstellungen gespeichert! Bitte starten Sie die Bridge neu, damit die Änderungen wirksam werden.');
+            alert(translateOscBridge('runtime.ui.alerts.advanced_settings_saved', 'Advanced settings saved! Restart the bridge for the changes to take effect.'));
             currentConfig = data.config;
         } else {
-            alert('Fehler beim Speichern der erweiterten Einstellungen: ' + data.error);
+            alert(translateOscBridge('runtime.ui.errors.save_advanced_settings', 'Error saving advanced settings: {error}', { error: data.error || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
         }
     });
 }
@@ -399,7 +401,7 @@ if (avatarSwitchForm) {
         const getCurrentConfigData = await getCurrentConfigResponse.json();
         
         if (!getCurrentConfigData.success) {
-            alert('Error loading current configuration');
+            alert(translateOscBridge('runtime.ui.errors.load_config', 'Error loading current configuration'));
             return;
         }
 
@@ -425,10 +427,10 @@ if (avatarSwitchForm) {
         const data = await response.json();
 
         if (data.success) {
-            alert('Avatar switch settings saved!');
+            alert(translateOscBridge('runtime.ui.alerts.avatar_switch_saved', 'Avatar switch settings saved!'));
             currentConfig = data.config;
         } else {
-            alert('Error saving avatar switch settings: ' + data.error);
+            alert(translateOscBridge('runtime.ui.errors.save_avatar_switch', 'Error saving avatar switch settings: {error}', { error: data.error || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
         }
     });
 }
@@ -442,7 +444,7 @@ if (btnStart) {
         const data = await response.json();
 
         if (!data.success) {
-            alert('Fehler beim Starten: ' + data.error);
+            alert(translateOscBridge('runtime.ui.errors.start_bridge', 'Error starting bridge: {error}', { error: data.error || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
             addLog('error', `Start failed: ${data.error}`);
         }
         socket.emit('osc:get-status');
@@ -457,7 +459,7 @@ if (btnStop) {
         const data = await response.json();
 
         if (!data.success) {
-            alert('Fehler beim Stoppen: ' + data.error);
+            alert(translateOscBridge('runtime.ui.errors.stop_bridge', 'Error stopping bridge: {error}', { error: data.error || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
             addLog('error', `Stop failed: ${data.error}`);
         }
         socket.emit('osc:get-status');
@@ -472,9 +474,9 @@ if (btnTest) {
         const data = await response.json();
 
         if (data.success) {
-            alert(`Test-Signal gesendet: ${data.address} = ${data.value}`);
+            alert(translateOscBridge('runtime.ui.alerts.test_signal_sent', 'Test signal sent: {address} = {value}', { address: data.address, value: data.value }));
         } else {
-            alert('Fehler: ' + data.error);
+            alert(translateOscBridge('runtime.ui.errors.test_signal', 'Error: {error}', { error: data.error || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
         }
     });
 }
@@ -497,7 +499,7 @@ async function sendVRChatParam(action, slot) {
     const data = await response.json();
 
     if (!data.success) {
-        alert('Fehler: OSC-Bridge nicht aktiv');
+        alert(translateOscBridge('runtime.ui.errors.bridge_not_running', 'Error: OSC-Bridge is not running'));
     }
 }
 
@@ -577,7 +579,7 @@ if (btnSaveCustom) {
         const duration = parseInt(document.getElementById('custom-duration').value) || 0;
 
         if (!address) {
-            alert('Bitte geben Sie eine OSC-Adresse ein');
+            alert(translateOscBridge('runtime.ui.validation.osc_address_required', 'Please enter an OSC address'));
             return;
         }
 
@@ -588,7 +590,7 @@ if (btnSaveCustom) {
 // Send Custom OSC Message
 async function sendCustomOSC(address, value, duration = 0) {
     if (!address) {
-        alert('Bitte geben Sie eine OSC-Adresse ein');
+        alert(translateOscBridge('runtime.ui.validation.osc_address_required', 'Please enter an OSC address'));
         return;
     }
 
@@ -620,7 +622,7 @@ async function sendCustomOSC(address, value, duration = 0) {
             }, duration);
         }
     } else {
-        alert('Fehler beim Senden: ' + (data.error || 'OSC-Bridge nicht aktiv'));
+        alert(translateOscBridge('runtime.ui.errors.send_osc', 'Error sending OSC message: {error}', { error: data.error || translateOscBridge('runtime.ui.errors.bridge_not_running', 'OSC-Bridge is not running') }));
     }
 }
 
@@ -649,7 +651,7 @@ function saveCustomPreset(address, value, duration) {
     localStorage.setItem('osc-custom-presets', JSON.stringify(presets));
     
     loadCustomPresets();
-    alert('Preset gespeichert!');
+    alert(translateOscBridge('runtime.ui.alerts.preset_saved', 'Preset saved!'));
 }
 
 // Load Custom Presets from localStorage
@@ -660,7 +662,7 @@ function loadCustomPresets() {
     if (!container) return;
     
     if (presets.length === 0) {
-        container.innerHTML = '<p style="color: var(--color-text-muted); font-size: 0.9em;">Keine Presets gespeichert</p>';
+        container.innerHTML = `<p style="color: var(--color-text-muted); font-size: 0.9em;">${escapeHtml(translateOscBridge('runtime.ui.empty.presets', 'No presets saved'))}</p>`;
         return;
     }
 
@@ -686,7 +688,7 @@ function loadCustomPresets() {
         btn.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             const presetId = parseInt(btn.dataset.presetId);
-            if (confirm('Preset löschen?')) {
+            if (confirm(translateOscBridge('runtime.ui.dialogs.remove_preset', 'Remove preset?'))) {
                 deleteCustomPreset(presetId);
             }
         });
@@ -728,20 +730,22 @@ function populateGiftCatalogSelector() {
     if (!selector) return;
     
     // Clear existing options except the first one
-    selector.innerHTML = '<option value="">-- Select a gift from catalogue or enter manually below --</option>';
+    selector.innerHTML = `<option value="">${escapeHtml(translateOscBridge('runtime.ui.gift_catalog.select_or_enter', '-- Select a gift from catalogue or enter manually below --'))}</option>`;
     
     // Update count display
     if (countEl) {
-        countEl.textContent = giftCatalog.length > 0 ? `(${giftCatalog.length} gifts)` : '';
+        countEl.textContent = giftCatalog.length > 0
+            ? translateOscBridge('runtime.ui.gift_catalog.count', '({count} gifts)', { count: giftCatalog.length })
+            : '';
     }
     
     // Update hint based on catalog state
     if (hintEl) {
         if (giftCatalog.length === 0) {
-            hintEl.textContent = '💡 Gifts are auto-detected when viewers send them during a stream. Connect to a TikTok stream to populate the catalogue.';
+            hintEl.textContent = translateOscBridge('runtime.ui.gift_catalog.empty_hint', '💡 Gifts are auto-detected when viewers send them during a stream. Connect to a TikTok stream to populate the catalogue.');
             hintEl.style.color = 'var(--color-text-muted)';
         } else {
-            hintEl.textContent = `✅ ${giftCatalog.length} gifts available. New gifts are auto-added when received from stream.`;
+            hintEl.textContent = translateOscBridge('runtime.ui.gift_catalog.available_hint', '✅ {count} gifts available. New gifts are auto-added when received from stream.', { count: giftCatalog.length });
             hintEl.style.color = 'var(--color-accent-success)';
         }
     }
@@ -749,7 +753,7 @@ function populateGiftCatalogSelector() {
     if (giftCatalog.length === 0) {
         const option = document.createElement('option');
         option.value = '';
-        option.textContent = '(No gifts in catalogue - connect to stream to auto-detect gifts)';
+        option.textContent = translateOscBridge('runtime.ui.gift_catalog.empty_option', '(No gifts in catalogue - connect to stream to auto-detect gifts)');
         option.disabled = true;
         selector.appendChild(option);
         return;
@@ -764,7 +768,7 @@ function populateGiftCatalogSelector() {
             
             // Format: "Rose (💎 1) - ID: 5655"
             const diamondCount = gift.diamond_count || 0;
-            option.textContent = `${gift.name} (💎 ${diamondCount}) - ID: ${gift.id}`;
+            option.textContent = translateOscBridge('runtime.ui.gift_catalog.option', '{name} (💎 {diamonds}) - ID: {id}', { name: gift.name, diamonds: diamondCount, id: gift.id });
             
             selector.appendChild(option);
         });
@@ -790,7 +794,7 @@ function renderGiftMappings() {
     if (!tbody) return;
     
     if (giftMappings.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No gift mappings configured yet. Add one below.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="5" class="empty-state">${escapeHtml(translateOscBridge('runtime.ui.empty.gift_mappings', 'No gift mappings configured yet. Add one below.'))}</td></tr>`;
         return;
     }
     
@@ -808,7 +812,7 @@ function renderGiftMappings() {
                 <td>${escapedAction}</td>
                 <td><code style="font-size: 11px;">${params}</code></td>
                 <td>
-                    <button class="btn btn-danger btn-small btn-remove-gift-mapping" data-index="${index}">Remove</button>
+                    <button class="btn btn-danger btn-small btn-remove-gift-mapping" data-index="${index}" aria-label="${escapeHtml(translateOscBridge('runtime.ui.accessibility.remove_gift_mapping', 'Remove gift mapping {name}', { name: mapping.giftName || mapping.giftId || '' }))}">${escapeHtml(translateOscBridge('runtime.ui.actions.remove', 'Remove'))}</button>
                 </td>
             </tr>
         `;
@@ -838,7 +842,7 @@ function addGiftMapping() {
     const param = document.getElementById('new-gift-param').value;
     
     if (!giftId && !giftName) {
-        alert('Please enter either Gift ID or Gift Name (or both for exact match)');
+        alert(translateOscBridge('runtime.ui.validation.gift_id_or_name_required', 'Please enter either Gift ID or Gift Name (or both for exact match)'));
         return;
     }
     
@@ -886,13 +890,13 @@ async function saveGiftMappings() {
         const data = await response.json();
         
         if (data.success) {
-            alert('Gift mappings saved successfully!');
+            alert(translateOscBridge('runtime.ui.alerts.gift_mappings_saved', 'Gift mappings saved successfully!'));
         } else {
-            alert('Error saving gift mappings: ' + (data.error || 'Unknown error'));
+            alert(translateOscBridge('runtime.ui.errors.save_gift_mappings', 'Error saving gift mappings: {error}', { error: data.error || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
         }
     } catch (error) {
         console.error('Error saving gift mappings:', error);
-        alert('Error saving gift mappings: ' + error.message);
+        alert(translateOscBridge('runtime.ui.errors.save_gift_mappings', 'Error saving gift mappings: {error}', { error: error.message || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
     }
 }
 
@@ -919,7 +923,7 @@ function renderAvatars() {
     if (!tbody) return;
     
     if (avatars.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No avatars configured yet. Add one below.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="4" class="empty-state">${escapeHtml(translateOscBridge('runtime.ui.empty.avatars', 'No avatars configured yet. Add one below.'))}</td></tr>`;
         return;
     }
     
@@ -935,8 +939,8 @@ function renderAvatars() {
                 <td><code style="font-size: 11px;">${escapedId}</code></td>
                 <td>${escapedDesc}</td>
                 <td>
-                    <button class="btn btn-primary btn-small btn-switch-avatar" data-avatar-id="${escapedId}" data-avatar-name="${escapedName}">Switch</button>
-                    <button class="btn btn-danger btn-small btn-remove-avatar" data-index="${index}">Remove</button>
+                    <button class="btn btn-primary btn-small btn-switch-avatar" data-avatar-id="${escapedId}" data-avatar-name="${escapedName}" aria-label="${escapeHtml(translateOscBridge('runtime.ui.accessibility.switch_avatar', 'Switch to avatar {name}', { name: avatar.name || avatar.avatarId || '' }))}">${escapeHtml(translateOscBridge('runtime.ui.actions.switch', 'Switch'))}</button>
+                    <button class="btn btn-danger btn-small btn-remove-avatar" data-index="${index}" aria-label="${escapeHtml(translateOscBridge('runtime.ui.accessibility.remove_avatar', 'Remove avatar {name}', { name: avatar.name || avatar.avatarId || '' }))}">${escapeHtml(translateOscBridge('runtime.ui.actions.remove', 'Remove'))}</button>
                 </td>
             </tr>
         `;
@@ -967,12 +971,12 @@ function addAvatar() {
     const description = document.getElementById('new-avatar-desc').value;
     
     if (!name || !avatarId) {
-        alert('Please enter both Avatar Name and Avatar ID');
+        alert(translateOscBridge('runtime.ui.validation.avatar_name_and_id_required', 'Please enter both Avatar Name and Avatar ID'));
         return;
     }
     
     if (!avatarId.startsWith('avtr_')) {
-        alert('Avatar ID should start with "avtr_"');
+        alert(translateOscBridge('runtime.ui.validation.avatar_id_prefix', 'Avatar ID should start with "avtr_"'));
         return;
     }
     
@@ -1007,13 +1011,13 @@ async function saveAvatars() {
         const data = await response.json();
         
         if (data.success) {
-            alert('Avatars saved successfully!');
+            alert(translateOscBridge('runtime.ui.alerts.avatars_saved', 'Avatars saved successfully!'));
         } else {
-            alert('Error saving avatars: ' + (data.error || 'Unknown error'));
+            alert(translateOscBridge('runtime.ui.errors.save_avatars', 'Error saving avatars: {error}', { error: data.error || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
         }
     } catch (error) {
         console.error('Error saving avatars:', error);
-        alert('Error saving avatars: ' + error.message);
+        alert(translateOscBridge('runtime.ui.errors.save_avatars', 'Error saving avatars: {error}', { error: error.message || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
     }
 }
 
@@ -1028,13 +1032,13 @@ async function switchToAvatar(avatarId, avatarName) {
         const data = await response.json();
         
         if (data.success) {
-            alert(`Switched to avatar: ${avatarName}`);
+            alert(translateOscBridge('runtime.ui.alerts.avatar_switched', 'Switched to avatar: {name}', { name: avatarName }));
         } else {
-            alert('Error switching avatar: ' + (data.error || 'Unknown error'));
+            alert(translateOscBridge('runtime.ui.errors.switch_avatar', 'Error switching avatar: {error}', { error: data.error || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
         }
     } catch (error) {
         console.error('Error switching avatar:', error);
-        alert('Error switching avatar: ' + error.message);
+        alert(translateOscBridge('runtime.ui.errors.switch_avatar', 'Error switching avatar: {error}', { error: error.message || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
     }
 }
 
@@ -1061,14 +1065,16 @@ function renderCommands() {
     if (!tbody) return;
     
     if (commands.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No commands configured yet.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${escapeHtml(translateOscBridge('runtime.ui.empty.commands', 'No commands configured yet.'))}</td></tr>`;
         return;
     }
     
     tbody.innerHTML = commands.map((cmd, index) => {
         const escapedName = (cmd.name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const escapedDesc = (cmd.description || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const typeLabel = cmd.actionType === 'predefined' ? 'Predefined' : 'Custom';
+        const typeLabel = cmd.actionType === 'predefined'
+            ? translateOscBridge('runtime.ui.command_types.predefined', 'Predefined')
+            : translateOscBridge('runtime.ui.command_types.custom', 'Custom');
         const typeColor = cmd.actionType === 'predefined' ? 'var(--color-accent-primary)' : 'var(--color-accent-success)';
         
         return `
@@ -1080,14 +1086,14 @@ function renderCommands() {
                 <td>${escapedDesc}</td>
                 <td>
                     <select class="form-control cmd-permission-select" data-index="${index}" style="font-size: 12px; padding: 4px 8px;">
-                        <option value="all" ${cmd.permission === 'all' ? 'selected' : ''}>All</option>
-                        <option value="subscriber" ${cmd.permission === 'subscriber' ? 'selected' : ''}>Subscriber</option>
-                        <option value="moderator" ${cmd.permission === 'moderator' ? 'selected' : ''}>Moderator</option>
+                        <option value="all" ${cmd.permission === 'all' ? 'selected' : ''}>${escapeHtml(translateOscBridge('runtime.ui.permissions.all', 'All'))}</option>
+                        <option value="subscriber" ${cmd.permission === 'subscriber' ? 'selected' : ''}>${escapeHtml(translateOscBridge('runtime.ui.permissions.subscriber', 'Subscriber'))}</option>
+                        <option value="moderator" ${cmd.permission === 'moderator' ? 'selected' : ''}>${escapeHtml(translateOscBridge('runtime.ui.permissions.moderator', 'Moderator'))}</option>
                     </select>
                 </td>
                 <td><span style="color: ${typeColor}; font-size: 0.85em;">${typeLabel}</span></td>
                 <td>
-                    ${cmd.actionType === 'custom' ? `<button class="btn btn-danger btn-small btn-remove-command" data-index="${index}">Remove</button>` : '-'}
+                    ${cmd.actionType === 'custom' ? `<button class="btn btn-danger btn-small btn-remove-command" data-index="${index}" aria-label="${escapeHtml(translateOscBridge('runtime.ui.accessibility.remove_command', 'Remove command {name}', { name: cmd.name || '' }))}">${escapeHtml(translateOscBridge('runtime.ui.actions.remove', 'Remove'))}</button>` : '-'}
                 </td>
             </tr>
         `;
@@ -1120,11 +1126,11 @@ function setupCommandsEventDelegation() {
 
 function removeCommand(index) {
     if (commands[index].actionType === 'predefined') {
-        alert('Cannot remove predefined commands. You can disable them instead.');
+        alert(translateOscBridge('runtime.ui.validation.predefined_command_not_removable', 'Cannot remove predefined commands. You can disable them instead.'));
         return;
     }
     
-    if (confirm(`Remove command '/${commands[index].name}'?`)) {
+    if (confirm(translateOscBridge('runtime.ui.dialogs.remove_command', 'Remove command \'/{name}\'?', { name: commands[index].name }))) {
         commands.splice(index, 1);
         renderCommands();
     }
@@ -1141,14 +1147,14 @@ async function saveCommands() {
         const data = await response.json();
         
         if (data.success) {
-            alert('Commands saved successfully! Commands have been re-registered with GCCE.');
+            alert(translateOscBridge('runtime.ui.alerts.commands_saved', 'Commands saved successfully! Commands have been re-registered with GCCE.'));
             await loadCommands(); // Reload to get any updates
         } else {
-            alert('Error saving commands: ' + (data.error || 'Unknown error'));
+            alert(translateOscBridge('runtime.ui.errors.save_commands', 'Error saving commands: {error}', { error: data.error || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
         }
     } catch (error) {
         console.error('Error saving commands:', error);
-        alert('Error saving commands: ' + error.message);
+        alert(translateOscBridge('runtime.ui.errors.save_commands', 'Error saving commands: {error}', { error: error.message || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
     }
 }
 
@@ -1184,27 +1190,27 @@ function addCustomCommand() {
     
     // Validation
     if (!name) {
-        alert('Please enter a command name');
+        alert(translateOscBridge('runtime.ui.validation.command_name_required', 'Please enter a command name'));
         return;
     }
     
     if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
-        alert('Command name can only contain letters, numbers, underscores, and hyphens');
+        alert(translateOscBridge('runtime.ui.validation.command_name_invalid', 'Command name can only contain letters, numbers, underscores, and hyphens'));
         return;
     }
     
     if (commands.some(cmd => cmd.name.toLowerCase() === name.toLowerCase())) {
-        alert(`Command '/${name}' already exists`);
+        alert(translateOscBridge('runtime.ui.validation.command_exists', 'Command \'/{name}\' already exists', { name }));
         return;
     }
     
     if (!oscAddress) {
-        alert('Please enter an OSC address');
+        alert(translateOscBridge('runtime.ui.validation.osc_address_required', 'Please enter an OSC address'));
         return;
     }
     
     if (!oscAddress.startsWith('/')) {
-        alert('OSC address must start with /');
+        alert(translateOscBridge('runtime.ui.validation.osc_address_prefix', 'OSC address must start with /'));
         return;
     }
     
@@ -1218,7 +1224,7 @@ function addCustomCommand() {
         id: `custom_${Date.now()}`,
         name: name,
         enabled: true,
-        description: description || `Custom command: ${name}`,
+        description: description || translateOscBridge('runtime.ui.data.custom_command_description', 'Custom command: {name}', { name }),
         syntax: `/${name}`,
         permission: permission,
         category: 'VRChat',
@@ -1238,6 +1244,8 @@ function addCustomCommand() {
 // Initialize command management on page load
 if (typeof window !== 'undefined') {
     window.addEventListener('DOMContentLoaded', () => {
+        registerOscBridgeRuntimeI18n();
+        if (window.i18n?.ready) window.i18n.ready.then(rerenderOscBridgeRuntimeCopy);
         loadGiftCatalog();
         loadGiftMappings();
         loadAvatars();
@@ -1254,7 +1262,7 @@ if (typeof window !== 'undefined') {
             newCmdName.addEventListener('input', (e) => {
                 const preview = document.getElementById('cmd-preview');
                 if (preview) {
-                    preview.textContent = e.target.value || 'mycommand';
+                    preview.textContent = e.target.value || translateOscBridge('labels.command_preview_example', 'mycommand');
                 }
             });
         }
@@ -1279,8 +1287,8 @@ if (typeof window !== 'undefined') {
         const refreshBtn = document.getElementById('refresh-gift-catalog');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', async () => {
-                const originalText = '🔄 Refresh Catalogue';
-                refreshBtn.textContent = '⏳ Loading...';
+                const originalText = refreshBtn.textContent;
+                refreshBtn.textContent = translateOscBridge('runtime.ui.loading.gift_catalog', '⏳ Loading...');
                 refreshBtn.disabled = true;
                 
                 await loadGiftCatalog();
@@ -1382,6 +1390,22 @@ function translateOscBridge(key, fallback, params = {}) {
     return fallback.replace(/\{(\w+)\}/g, (match, name) => (
         Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
     ));
+}
+
+function rerenderOscBridgeRuntimeCopy() {
+    if (lastStatus) updateStatus(lastStatus);
+    loadCustomPresets();
+    populateGiftCatalogSelector();
+    renderGiftMappings();
+    renderAvatars();
+    renderCommands();
+    if (availableActions) displayAvailableActions(availableActions);
+}
+
+function registerOscBridgeRuntimeI18n() {
+    if (!window.i18n) return;
+    if (typeof window.i18n?.onChange === 'function') window.i18n.onChange(rerenderOscBridgeRuntimeCopy);
+    if (typeof window.i18n?.onLanguageChange === 'function') window.i18n.onLanguageChange(rerenderOscBridgeRuntimeCopy);
 }
 
 function formatDiagnostics(data) {
@@ -1528,11 +1552,11 @@ async function autoDetectAvatar() {
             displayAvailableActions(availableActions);
             
             if (data.isNew) {
-                alert(`✅ Neuer Avatar erkannt und zur Liste hinzugefügt!\n\nAvatar ID: ${data.avatarId}\nParameter: ${data.parameterCount}\n\nSie können den Avatar-Namen in der Avatar-Verwaltung anpassen.`);
+                alert(translateOscBridge('runtime.ui.alerts.new_avatar_detected', '✅ New avatar detected and added to the list!\n\nAvatar ID: {avatarId}\nParameters: {parameterCount}\n\nYou can change the avatar name in avatar management.', { avatarId: data.avatarId, parameterCount: data.parameterCount }));
                 // Reload avatars list
                 await loadAvatars();
             } else {
-                alert(`✅ Avatar erkannt!\n\nAvatar ID: ${data.avatarId}\nParameter: ${data.parameterCount}`);
+                alert(translateOscBridge('runtime.ui.alerts.avatar_detected', '✅ Avatar detected!\n\nAvatar ID: {avatarId}\nParameters: {parameterCount}', { avatarId: data.avatarId, parameterCount: data.parameterCount }));
             }
         } else {
             alert(formatDiagnostics(data));
@@ -1555,7 +1579,7 @@ async function refreshAvailableActions() {
     
     try {
         btn.disabled = true;
-        btn.textContent = '🔄 Aktualisiere...';
+        btn.textContent = translateOscBridge('runtime.ui.loading.actions', '🔄 Refreshing...');
         
         // Get current avatar
         const avatarResponse = await fetch('/api/osc/avatar/current');
@@ -1578,14 +1602,14 @@ async function refreshAvailableActions() {
             displayAvailableActions(availableActions);
             
             if (currentAvatarData) {
-                alert('✅ Aktionen aktualisiert!');
+                alert(translateOscBridge('runtime.ui.alerts.actions_refreshed', '✅ Actions refreshed!'));
             }
         } else {
-            alert('⚠️ ' + actionsData.error);
+            alert(translateOscBridge('runtime.ui.errors.refresh_actions', '⚠️ Error refreshing actions: {error}', { error: actionsData.error || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
         }
     } catch (error) {
         console.error('Error refreshing actions:', error);
-        alert('❌ Fehler beim Aktualisieren: ' + error.message);
+        alert(translateOscBridge('runtime.ui.errors.refresh_actions', '❌ Error refreshing actions: {error}', { error: error.message || translateOscBridge('runtime.ui.errors.unknown', 'Unknown error') }));
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
@@ -1647,13 +1671,14 @@ function displayStandardActions(standardActions) {
     container.innerHTML = Object.entries(standardActions).map(([name, available]) => {
         const emoji = actionEmojis[name] || '✨';
         const statusClass = available ? 'available' : 'unavailable';
-        const statusText = available ? '' : ' (nicht verfügbar)';
+        const statusText = available ? '' : ` ${translateOscBridge('runtime.ui.availability.unavailable', '(unavailable)')}`;
         
         return `
             <button class="param-btn ${statusClass}" 
                     ${available ? '' : 'disabled'}
                     data-action="std-action"
-                    data-param="${name.toLowerCase()}">
+                    data-param="${name.toLowerCase()}"
+                    aria-label="${escapeHtml(translateOscBridge('runtime.ui.accessibility.standard_action', 'Trigger action {name}{availability}', { name, availability: statusText }))}">
                 ${emoji} ${name}${statusText}
             </button>
         `;
@@ -1667,14 +1692,15 @@ function displayEmoteSlots(emoteSlots) {
     container.innerHTML = Object.entries(emoteSlots).map(([name, available]) => {
         const slotNum = name.replace('Emote', '');
         const statusClass = available ? 'available' : 'unavailable';
-        const statusText = available ? '' : ' (nicht verfügbar)';
+        const statusText = available ? '' : ` ${translateOscBridge('runtime.ui.availability.unavailable', '(unavailable)')}`;
         
         return `
             <button class="param-btn ${statusClass}" 
                     ${available ? '' : 'disabled'}
                     data-action="emote-slot"
-                    data-slot="${slotNum}">
-                😀 Emote ${slotNum}${statusText}
+                    data-slot="${slotNum}"
+                    aria-label="${escapeHtml(translateOscBridge('runtime.ui.accessibility.emote_slot', 'Trigger emote slot {slot}{availability}', { slot: slotNum, availability: statusText }))}">
+                😀 ${translateOscBridge('runtime.ui.actions.emote_slot', 'Emote {slot}', { slot: slotNum })}${statusText}
             </button>
         `;
     }).join('');
@@ -1694,9 +1720,9 @@ function displayCustomParameters(customParams) {
     section.style.display = 'block';
     
     container.innerHTML = customParams.map(param => {
-        const paramName = param.name || 'Unknown';
+        const paramName = param.name || translateOscBridge('runtime.ui.data.unknown', 'Unknown');
         const paramPath = param.path || '';
-        const paramType = param.type || 'unknown';
+        const paramType = param.type || translateOscBridge('runtime.ui.data.unknown', 'Unknown');
         
         return `
             <button class="param-btn available" 
@@ -1724,7 +1750,7 @@ function displayPhysBones(physbones) {
     section.style.display = 'block';
     
     container.innerHTML = physbones.map(bone => {
-        const boneName = bone.name || 'Unknown';
+        const boneName = bone.name || translateOscBridge('runtime.ui.data.unknown', 'Unknown');
         
         return `
             <button class="param-btn available" 

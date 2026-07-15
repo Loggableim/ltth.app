@@ -208,6 +208,40 @@
         "crafting_window_ms": "Crafting window ms",
         "test_local_generation": "Test local generation",
         "comfyui_url": "ComfyUI URL"
+      },
+      "ui": {
+        "app": {
+          "title": "StreamAlchemy",
+          "overview": "Overview",
+          "items": "Items",
+          "recipes": "Recipes",
+          "generation": "Generation",
+          "settings": "Settings",
+          "refresh": "Refresh",
+          "source": "Source"
+        },
+        "navigation": {
+          "areas": "StreamAlchemy areas"
+        },
+        "metrics": {
+          "items": "Items",
+          "recipes": "Recipes",
+          "jobs": "Jobs"
+        },
+        "styles": {
+          "pixel": "Pixel"
+        },
+        "status": {
+          "unknown": "unknown"
+        },
+        "legacy": {
+          "noItems": "No items yet. Send gifts to generate items!",
+          "name": "Name",
+          "type": "Type",
+          "rarity": "Rarity",
+          "fromGift": "From Gift",
+          "created": "Created"
+        }
       }
     }
   }

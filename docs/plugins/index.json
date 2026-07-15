@@ -543,8 +543,8 @@
     "id": "store-admin",
     "name": "LTTH App Store Admin",
     "category": "utility",
-    "access": "available",
-    "devStatus": "available",
+    "access": "working-beta",
+    "devStatus": "working-beta",
     "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/store-admin/store-card.png",

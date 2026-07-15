@@ -208,6 +208,40 @@
         "crafting_window_ms": "Fenêtre d'artisanat ms",
         "test_local_generation": "Tester la génération locale",
         "comfyui_url": "URL ComfyUI"
+      },
+      "ui": {
+        "app": {
+          "title": "StreamAlchemy",
+          "overview": "Vue d'ensemble",
+          "items": "Objets",
+          "recipes": "Recettes",
+          "generation": "G\u00e9n\u00e9ration",
+          "settings": "Param\u00e8tres",
+          "refresh": "Actualiser",
+          "source": "Source"
+        },
+        "navigation": {
+          "areas": "Sections StreamAlchemy"
+        },
+        "metrics": {
+          "items": "Objets",
+          "recipes": "Recettes",
+          "jobs": "T\u00e2ches"
+        },
+        "styles": {
+          "pixel": "Pixel"
+        },
+        "status": {
+          "unknown": "inconnu"
+        },
+        "legacy": {
+          "noItems": "Aucun objet pour le moment. Envoyez des cadeaux pour g\u00e9n\u00e9rer des objets !",
+          "name": "Nom",
+          "type": "Type",
+          "rarity": "Raret\u00e9",
+          "fromGift": "Du cadeau",
+          "created": "Cr\u00e9\u00e9"
+        }
       }
     }
   }

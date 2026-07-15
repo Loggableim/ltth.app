@@ -1,8 +1,10 @@
 'use strict';
 
+const { exactLocalUrlExpectation } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+const guide = {
   "id": "multicam",
   "route": "/plugins/multicam/ui.html",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/multicam/ui.html"
+            "expected": {
+              "path": "/plugins/multicam/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +283,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/multicam/ui.html"
+            "expected": {
+              "path": "/plugins/multicam/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -387,11 +397,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/multicam/ui.html"
+            "expected": {
+              "path": "/plugins/multicam/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +511,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/multicam/ui.html"
+            "expected": {
+              "path": "/plugins/multicam/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -607,11 +625,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/multicam/ui.html"
+            "expected": {
+              "path": "/plugins/multicam/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -633,4 +655,59 @@ module.exports = Object.freeze({
       }
     }
   ]
+};
+
+function applyWorkflowCorrections(corrections) {
+  for (const [id, correction] of Object.entries(corrections)) {
+    const step = guide.steps.find((candidate) => candidate.id === id);
+    if (!step) throw new Error(`Missing Multicam guide step: ${id}`);
+    const focusText = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.title]));
+    const expected = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.expected]));
+    step.copy = correction.copy;
+    step.capture = { ...step.capture, assertVisible: correction.selector, focusText, action: { ...correction.action, stepId: id }, expected };
+    step.workflow = {
+      ...step.workflow,
+      instructions: Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, { title: copy.title, body: copy.body, expected: copy.expected }])),
+      operations: [{ type: 'goto', route: step.capture.route }, { type: correction.action.type, selector: correction.selector }],
+      postconditions: [
+        { type: 'http-status', expected: 200 },
+        { type: 'url', expected: exactLocalUrlExpectation(step.capture.route) },
+        { type: 'visible', selector: correction.selector },
+        { type: 'console', expected: 'no-errors' }
+      ],
+      captureRule: {
+        ...step.workflow.captureRule,
+        selector: correction.selector,
+        stateChange: false,
+        ...(correction.imageCrop ? { imageCrop: correction.imageCrop } : {})
+      }
+    };
+  }
+}
+
+applyWorkflowCorrections({
+  'camera-source': {
+    selector: '#statusText',
+    action: { type: 'open-plugin-surface' },
+    imageCrop: { width: 500, height: 260 },
+    copy: {
+      de: { title: 'OBS-Verbindungsstatus pruefen', body: 'Pruefe nur den sichtbaren OBS-Verbindungsstatus. Druecke nicht OBS verbinden; diese Anleitung erstellt keine Verbindung zu einer laufenden OBS-Instanz.', expected: 'Der lokale Status ist sichtbar und die OBS-Verbindung bleibt unberuehrt.', alt: 'Lokaler OBS-Verbindungsstatus von Multicam' },
+      en: { title: 'Inspect the OBS connection status', body: 'Inspect only the visible OBS connection status. Do not press Connect OBS; this guide creates no connection to a running OBS instance.', expected: 'The local status is visible and the OBS connection remains untouched.', alt: 'Multicam local OBS connection status' },
+      es: { title: 'Revisa el estado de conexion de OBS', body: 'Revisa solo el estado visible de conexion de OBS. No pulses Conectar OBS; esta guia no crea ninguna conexion con una instancia de OBS en ejecucion.', expected: 'El estado local es visible y la conexion de OBS no se toca.', alt: 'Estado local de conexion de OBS de Multicam' },
+      fr: { title: 'Verifiez l etat de connexion OBS', body: 'Verifiez seulement l etat visible de connexion OBS. Nappuyez pas sur Connecter OBS; ce guide ne cree aucune connexion a une instance OBS en cours.', expected: 'L etat local est visible et la connexion OBS reste intacte.', alt: 'Etat local de connexion OBS de Multicam' }
+    }
+  },
+  'scene-rule': {
+    selector: '#sceneSelect',
+    action: { type: 'open-plugin-surface' },
+    imageCrop: { width: 500, height: 260 },
+    copy: {
+      de: { title: 'Szenenauswahl ohne OBS pruefen', body: 'Pruefe die Szenenauswahl im getrennten Startzustand. Ohne bewusst hergestellte OBS-Verbindung werden keine Szenen geladen und keine Quelle gewechselt.', expected: 'Die leere lokale Szenenauswahl ist sichtbar und der aktuelle OBS-Kontext bleibt unveraendert.', alt: 'Leere lokale Szenenauswahl von Multicam' },
+      en: { title: 'Inspect scene selection without OBS', body: 'Inspect the scene selector in its disconnected starting state. Without a deliberately created OBS connection, no scenes load and no source changes.', expected: 'The empty local scene selector is visible and the current OBS context remains unchanged.', alt: 'Empty Multicam local scene selector' },
+      es: { title: 'Revisa la seleccion de escena sin OBS', body: 'Revisa el selector de escena en su estado inicial desconectado. Sin una conexion OBS creada deliberadamente, no se cargan escenas ni cambia ninguna fuente.', expected: 'El selector local de escenas vacio es visible y el contexto OBS actual no cambia.', alt: 'Selector local vacio de escenas de Multicam' },
+      fr: { title: 'Verifiez la selection de scene sans OBS', body: 'Verifiez le selecteur de scene dans son etat initial deconnecte. Sans connexion OBS creee volontairement, aucune scene ne se charge et aucune source ne change.', expected: 'Le selecteur local de scenes vide est visible et le contexte OBS actuel reste inchange.', alt: 'Selecteur local vide de scenes Multicam' }
+    }
+  }
 });
+
+module.exports = Object.freeze(guide);

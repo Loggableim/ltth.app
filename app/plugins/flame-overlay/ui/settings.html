@@ -1532,7 +1532,7 @@
     <div class="container control-room-shell">
         <div class="page-brand">
             <div class="page-brand-copy">
-                <h1 data-i18n="flame_overlay.plugin.name">Visual FX Frame</h1>
+                <h1 data-i18n="plugins.flame-overlay.flame_overlay.plugin.name">Visual FX Frame</h1>
                 <p class="subtitle" data-i18n="plugins.flame-overlay.labels.broadcast_safe_webgl_frame_system_mit_klarer_layer">Broadcast-safe WebGL-Frame-System mit klarer Layer-Hierarchie, Live-Vorschau und direkten Trigger-Reaktionen fuer TikTok LIVE und OBS.</p>
             </div>
             <img class="page-brand-logo" data-brand-logo src="/plugins/flame-overlay/assets/branding/visual-fx-frame-logo.png" alt="Visual FX Frame">
@@ -1560,7 +1560,7 @@
                 <div class="form-group">
                     <label for="qualityMode" data-i18n="plugins.flame-overlay.labels.quality_mode_e47ab5">Quality Mode</label>
                     <select id="qualityMode">
-                        <option value="obs-safe">OBS-safe</option>
+                        <option value="obs-safe" data-i18n="plugins.flame-overlay.flame_overlay.ui.options.obsSafe">OBS-safe</option>
                         <option value="max-quality" data-i18n="plugins.flame-overlay.labels.max_quality">Max Quality</option>
                         <option value="low-load" data-i18n="plugins.flame-overlay.labels.low_load">Low Load</option>
                     </select>
@@ -1572,9 +1572,9 @@
                     <button class="visual-preset-btn" type="button" data-visual-preset="low-load" data-i18n="plugins.flame-overlay.labels.low_load_31131b">Low Load</button>
                 </div>
                 <div class="control-room-metrics">
-                    <div class="metric"><span class="metric-label">Profile</span><span class="metric-value" id="profileMetric">HDR</span></div>
-                    <div class="metric"><span class="metric-label">Render</span><span class="metric-value" id="qualityMetric">OBS</span></div>
-                    <div class="metric"><span class="metric-label">Trigger</span><span class="metric-value" id="triggerMetric" data-i18n="flame_overlay.ui.status.ready">Ready</span></div>
+                    <div class="metric"><span class="metric-label" data-i18n="plugins.flame-overlay.flame_overlay.ui.metrics.profile">Profile</span><span class="metric-value" id="profileMetric">HDR</span></div>
+                    <div class="metric"><span class="metric-label" data-i18n="plugins.flame-overlay.flame_overlay.ui.metrics.render">Render</span><span class="metric-value" id="qualityMetric">OBS</span></div>
+                    <div class="metric"><span class="metric-label" data-i18n="plugins.flame-overlay.flame_overlay.ui.metrics.trigger">Trigger</span><span class="metric-value" id="triggerMetric" data-i18n="plugins.flame-overlay.flame_overlay.ui.status.ready">Ready</span></div>
                 </div>
             </div>
         </div>
@@ -1597,11 +1597,11 @@
             </div>
         </div>
         <div class="tab-strip" role="toolbar" aria-label="Visual FX Einstellungen">
-            <button class="tab-btn active" type="button" data-tab-target="look" aria-pressed="true">Look</button>
-            <button class="tab-btn" type="button" data-tab-target="frame" aria-pressed="false">Frame</button>
-            <button class="tab-btn" type="button" data-tab-target="motion" aria-pressed="false">Motion</button>
-            <button class="tab-btn" type="button" data-tab-target="postfx" aria-pressed="false">Post-FX</button>
-            <button class="tab-btn" type="button" data-tab-target="trigger" aria-pressed="false">Trigger</button>
+            <button class="tab-btn active" type="button" data-tab-target="look" aria-pressed="true" data-i18n="plugins.flame-overlay.flame_overlay.ui.tabs.look">Look</button>
+            <button class="tab-btn" type="button" data-tab-target="frame" aria-pressed="false" data-i18n="plugins.flame-overlay.flame_overlay.ui.tabs.frame">Frame</button>
+            <button class="tab-btn" type="button" data-tab-target="motion" aria-pressed="false" data-i18n="plugins.flame-overlay.flame_overlay.ui.tabs.motion">Motion</button>
+            <button class="tab-btn" type="button" data-tab-target="postfx" aria-pressed="false" data-i18n="plugins.flame-overlay.flame_overlay.ui.tabs.postFx">Post-FX</button>
+            <button class="tab-btn" type="button" data-tab-target="trigger" aria-pressed="false" data-i18n="plugins.flame-overlay.flame_overlay.ui.tabs.trigger">Trigger</button>
         </div>
 
         <div id="status" class="status" role="status" aria-live="polite"></div>
@@ -1669,7 +1669,7 @@
                         <input type="number" id="frameHeight" min="10" max="100" value="100" step="1">
                     </div>
                 </div>
-                <button class="btn" id="applyFramePositionBtn" type="button" style="margin-top: 10px;">Anwenden</button>
+                <button class="btn" id="applyFramePositionBtn" type="button" style="margin-top: 10px;" data-i18n="plugins.flame-overlay.flame_overlay.ui.actions.apply">Anwenden</button>
             </div>
         </div>
 
@@ -1680,7 +1680,7 @@
             <div class="form-group">
                 <label for="presetName" data-i18n="plugins.flame-overlay.labels.aktuelle_einstellungen_als_preset_speichern">Aktuelle Einstellungen als Preset speichern:</label>
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="presetName" placeholder="Preset-Name (z.B. Hype Mode)" style="flex: 1;">
+                    <input type="text" id="presetName" placeholder="Preset-Name (z.B. Hype Mode)" data-i18n-placeholder="plugins.flame-overlay.flame_overlay.ui.placeholders.presetName" style="flex: 1;">
                     <button class="btn" id="savePresetBtn" type="button" data-i18n="plugins.flame-overlay.labels.speichern">💾 Speichern</button>
                 </div>
             </div>
@@ -1709,7 +1709,7 @@
                     <option value="2k-landscape" data-i18n="plugins.flame-overlay.labels.2k_landscape_2560_1440">2K Landscape (2560×1440)</option>
                     <option value="4k-portrait" data-i18n="plugins.flame-overlay.labels.4k_portrait_2160_3840">4K Portrait (2160×3840)</option>
                     <option value="4k-landscape" data-i18n="plugins.flame-overlay.labels.4k_landscape_3840_2160">4K Landscape (3840×2160)</option>
-                    <option value="custom">Custom</option>
+                    <option value="custom" data-i18n="plugins.flame-overlay.flame_overlay.ui.options.custom">Custom</option>
                 </select>
             </div>
 
@@ -1732,8 +1732,8 @@
             <div class="form-group">
                 <label for="frameMode" data-i18n="plugins.flame-overlay.labels.rahmen_position">Rahmen Position:</label>
                 <select id="frameMode">
-                    <option value="bottom">Unten</option>
-                    <option value="top">Oben</option>
+                    <option value="bottom" data-i18n="plugins.flame-overlay.flame_overlay.ui.options.bottom">Unten</option>
+                    <option value="top" data-i18n="plugins.flame-overlay.flame_overlay.ui.options.top">Oben</option>
                     <option value="sides" data-i18n="plugins.flame-overlay.labels.seiten_links_rechts">Seiten (Links & Rechts)</option>
                     <option value="all" data-i18n="plugins.flame-overlay.labels.rundherum_alle_kanten">Rundherum (Alle Kanten)</option>
                 </select>
@@ -1757,7 +1757,7 @@
             <h2 class="section-title" data-i18n="plugins.flame-overlay.labels.visual_appearance">🎨 Visual Appearance</h2>
 
             <div class="form-group">
-                <label for="flameColor">Akzentfarbe:</label>
+                <label for="flameColor" data-i18n="plugins.flame-overlay.flame_overlay.ui.settings.accentColor">Akzentfarbe:</label>
                 <input type="color" id="flameColor" value="#ff6600">
             </div>
 
@@ -1887,7 +1887,7 @@
             <h2 class="section-title" data-i18n="plugins.flame-overlay.labels.erweiterte_animation">🎬 Erweiterte Animation</h2>
 
             <div class="form-group">
-                <label for="animationEasing">Animations-Easing:</label>
+                <label for="animationEasing" data-i18n="plugins.flame-overlay.flame_overlay.ui.settings.animationEasing">Animations-Easing:</label>
                 <select id="animationEasing">
                     <option value="linear" data-i18n="plugins.flame-overlay.labels.linear_gleichma_ig">Linear (Gleichmäßig)</option>
                     <option value="sine" data-i18n="plugins.flame-overlay.labels.sine_wellenformig">Sine (Wellenförmig)</option>
@@ -2049,7 +2049,7 @@
             </div>
 
             <div class="form-group">
-                <label for="smokeColor">Rauch-Farbe:</label>
+                <label for="smokeColor" data-i18n="plugins.flame-overlay.flame_overlay.ui.settings.smokeColor">Rauch-Farbe:</label>
                 <input type="color" id="smokeColor" value="#333333">
                 <small style="color: #888;" data-i18n="plugins.flame-overlay.labels.grundfarbe_des_rauchs">Grundfarbe des Rauchs</small>
             </div>
@@ -2076,12 +2076,12 @@
                             <small style="color: #888;" data-i18n="plugins.flame-overlay.labels.reagiere_auf_tiktok_live_events_mit_klar_begrenzten">Reagiere auf TikTok LIVE Events mit klar begrenzten visuellen Signaturen fuer kleine und grosse Momente.</small>
                         </div>
                         <div class="form-group">
-                            <label>Preset:</label>
+                            <label data-i18n="plugins.flame-overlay.flame_overlay.ui.trigger.preset">Preset:</label>
                             <div class="preset-selector preset-selector-trigger" id="presetSelector">
-                                <button class="preset-btn active" data-preset="default">Default</button>
-                                <button class="preset-btn" data-preset="hype">Hype</button>
-                                <button class="preset-btn" data-preset="chill">Chill</button>
-                                <button class="preset-btn" data-preset="party">Party</button>
+                                <button class="preset-btn active" data-preset="default" data-i18n="plugins.flame-overlay.flame_overlay.ui.trigger.defaultPreset">Default</button>
+                                <button class="preset-btn" data-preset="hype" data-i18n="plugins.flame-overlay.flame_overlay.ui.trigger.hypePreset">Hype</button>
+                                <button class="preset-btn" data-preset="chill" data-i18n="plugins.flame-overlay.flame_overlay.ui.trigger.chillPreset">Chill</button>
+                                <button class="preset-btn" data-preset="party" data-i18n="plugins.flame-overlay.flame_overlay.ui.trigger.partyPreset">Party</button>
                             </div>
                             <small style="color: #888;" data-i18n="plugins.flame-overlay.labels.wahle_ein_preset_oder_passe_die_regeln_unten">Wähle ein Preset oder passe die Regeln unten individuell an. Das Ergebnis bleibt immer erst lesbar, dann laut.</small>
                         </div>
@@ -2097,9 +2097,9 @@
                         </div>
                         <div class="gift-catalog-panel">
                             <div class="gift-catalog-toolbar">
-                                <input type="search" id="giftCatalogSearch" placeholder="Geschenk suchen oder Coin-Bereich wie 99-499">
-                                <button class="btn btn-secondary" id="refreshGiftCatalogBtn" type="button" data-i18n="flame_overlay.ui.actions.refresh">Aktualisieren</button>
-                                <button class="btn btn-secondary" id="addGiftRangeRuleBtn" type="button">Coin-Regel</button>
+                                <input type="search" id="giftCatalogSearch" placeholder="Geschenk suchen oder Coin-Bereich wie 99-499" data-i18n-placeholder="plugins.flame-overlay.flame_overlay.ui.placeholders.giftSearch">
+                                <button class="btn btn-secondary" id="refreshGiftCatalogBtn" type="button" data-i18n="plugins.flame-overlay.flame_overlay.ui.actions.refresh">Aktualisieren</button>
+                                <button class="btn btn-secondary" id="addGiftRangeRuleBtn" type="button" data-i18n="plugins.flame-overlay.flame_overlay.ui.trigger.coinRule">Coin-Regel</button>
                             </div>
                             <div id="giftCatalogStatus" class="gift-catalog-empty" data-i18n="plugins.flame-overlay.labels.geschenkekatalog_wird_geladen">Geschenkekatalog wird geladen...</div>
                             <div id="giftCatalogGrid" class="gift-catalog-grid"></div>
@@ -2160,14 +2160,14 @@
                             <table class="trigger-table" id="triggerRulesTable">
                                 <thead>
                                     <tr>
-                                        <th style="width:40px;">An</th>
-                                        <th style="width:90px;">Event</th>
-                                        <th style="width:130px;">Bedingung</th>
-                                        <th style="width:130px;">Aktion</th>
+                                        <th style="width:40px;" data-i18n="plugins.flame-overlay.flame_overlay.ui.table.enabled">An</th>
+                                        <th style="width:90px;" data-i18n="plugins.flame-overlay.flame_overlay.ui.table.event">Event</th>
+                                        <th style="width:130px;" data-i18n="plugins.flame-overlay.flame_overlay.ui.table.condition">Bedingung</th>
+                                        <th style="width:130px;" data-i18n="plugins.flame-overlay.flame_overlay.ui.table.action">Aktion</th>
                                         <th style="width:70px;" data-i18n="plugins.flame-overlay.labels.dauer_ms">Dauer (ms)</th>
-                                        <th style="width:80px;">Effekt</th>
+                                        <th style="width:80px;" data-i18n="plugins.flame-overlay.flame_overlay.ui.table.effect">Effekt</th>
                                         <th style="width:45px;" data-i18n="plugins.flame-overlay.labels.intensitat">Intensität</th>
-                                        <th style="width:40px;">Farbe</th>
+                                        <th style="width:40px;" data-i18n="plugins.flame-overlay.flame_overlay.ui.table.color">Farbe</th>
                                         <th style="width:36px;"></th>
                                     </tr>
                                 </thead>
@@ -3541,7 +3541,8 @@
             const names = Object.keys(presets);
 
             if (names.length === 0) {
-                container.innerHTML = '<p style="color: #f3f4f6; font-size: 14px; line-height: 1.5;">Noch keine Presets gespeichert.</p>';
+                container.innerHTML = '<p style="color: #f3f4f6; font-size: 14px; line-height: 1.5;" data-i18n="plugins.flame-overlay.flame_overlay.ui.presets.empty">Noch keine Presets gespeichert.</p>';
+                window.i18n?.updateDOM?.();
                 return;
             }
 
@@ -3556,12 +3557,14 @@
                             <span style="color: #e5e7eb; font-size: 14px; line-height: 1.45; margin-left: 10px;">Gespeichert am ${escapeHtml(date)}</span>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button class="btn preset-load-btn" data-preset-name="${escapedName}" style="padding: 6px 12px; font-size: 12px;">📂 Laden</button>
-                            <button class="btn btn-secondary preset-delete-btn" data-preset-name="${escapedName}" aria-label="Preset ${escapedName} löschen" title="Preset löschen" style="padding: 6px 12px; font-size: 12px;">🗑️</button>
+                            <button class="btn preset-load-btn" data-preset-name="${escapedName}" style="padding: 6px 12px; font-size: 12px;" data-i18n="plugins.flame-overlay.flame_overlay.ui.presets.load">📂 Laden</button>
+                            <button class="btn btn-secondary preset-delete-btn" data-preset-name="${escapedName}" aria-label="Preset ${escapedName} löschen" title="Preset löschen" data-i18n-title="plugins.flame-overlay.flame_overlay.ui.presets.deleteTitle" style="padding: 6px 12px; font-size: 12px;">🗑️</button>
                         </div>
                     </div>
                 `;
             }).join('');
+
+            window.i18n?.updateDOM?.();
 
             // Attach event listeners via delegation
             container.querySelectorAll('.preset-load-btn').forEach(btn => {

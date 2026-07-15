@@ -261,10 +261,10 @@
         <div class="leaderboard-container" id="leaderboardContainer">
             <div class="leaderboard-header">
                 <div class="leaderboard-title" data-i18n="plugins.quiz-show.labels.leaderboard">🏆 Leaderboard</div>
-                <div class="leaderboard-type" id="leaderboardType">Season</div>
+                <div class="leaderboard-type" id="leaderboardType" data-i18n="plugins.quiz-show.ui.navigation.season">Season</div>
             </div>
             <ul class="leaderboard-list" id="leaderboardList">
-                <li class="no-data" data-i18n="plugins.quiz-show.labels.keine_eintrage_vorhanden">Keine Einträge vorhanden</li>
+                <li class="no-data" data-i18n="plugins.quiz-show.ui.empty.no_entries">Keine Einträge vorhanden</li>
             </ul>
         </div>
     </div>
@@ -326,7 +326,8 @@
 
                 // Render leaderboard
                 if (!leaderboard || leaderboard.length === 0) {
-                    listElement.innerHTML = '<li class="no-data">Keine Einträge vorhanden</li>';
+                    const emptyMessage = window.i18n?.t('plugins.quiz-show.ui.empty.no_entries') || 'Keine Einträge vorhanden';
+                    listElement.innerHTML = `<li class="no-data">${emptyMessage}</li>`;
                     return;
                 }
 

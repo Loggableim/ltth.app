@@ -3,11 +3,14 @@
 const fs = require('fs');
 const path = require('path');
 
-const CAPTURE_RUNTIME_DEPENDENCIES = {
-  animazingpal: ['tts'],
-  'game-engine': ['openshock'],
-  'quiz-show': ['tts']
-};
+// The normal loader intentionally keeps these implementations mutually
+// exclusive. A docs fixture enables every local provider for route parity,
+// but the guide currently under capture must retain its own implementation
+// so its documented API and UI aliases are registered by the real plugin.
+const MUTUALLY_EXCLUSIVE_PLUGIN_GROUPS = Object.freeze([
+  Object.freeze(['fireworks', 'webgpu-fireworks']),
+  Object.freeze(['emoji-rain', 'webgpu-emoji-rain'])
+]);
 
 function resolveDocsPluginSource(repoRoot, guideId) {
   const candidates = [
@@ -15,6 +18,29 @@ function resolveDocsPluginSource(repoRoot, guideId) {
     path.join(repoRoot, 'plugin-store', 'sources', guideId)
   ];
   return candidates.find((candidate) => fs.existsSync(path.join(candidate, 'plugin.json'))) || null;
+}
+
+function localDocsPluginSources(repoRoot) {
+  const sourceRoots = [
+    path.join(repoRoot, 'app', 'plugins'),
+    path.join(repoRoot, 'plugin-store', 'sources')
+  ];
+  const pluginSources = new Map();
+  for (const sourceRoot of sourceRoots) {
+    if (!fs.existsSync(sourceRoot)) continue;
+    for (const entry of fs.readdirSync(sourceRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const sourceDir = path.join(sourceRoot, entry.name);
+      const manifestPath = path.join(sourceDir, 'plugin.json');
+      if (!fs.existsSync(manifestPath)) continue;
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      if (!manifest.id) throw new Error(`Docs capture plugin manifest has no id: ${manifestPath}`);
+      // Prefer the shipped app plugin when both roots contain the same id,
+      // matching the normal runtime's plugin-source precedence.
+      if (!pluginSources.has(manifest.id)) pluginSources.set(manifest.id, sourceDir);
+    }
+  }
+  return [...pluginSources.entries()].sort(([left], [right]) => left.localeCompare(right));
 }
 
 function linkSharedAppDependency(fixtureAppRoot, sourceAppRoot, name) {
@@ -25,31 +51,6 @@ function linkSharedAppDependency(fixtureAppRoot, sourceAppRoot, name) {
     linkPath,
     process.platform === 'win32' ? 'junction' : 'dir'
   );
-}
-
-function linkStaticPluginAssets(repoRoot, fixtureRoot, copiedPluginIds) {
-  const sourceRoots = [
-    path.join(repoRoot, 'app', 'plugins'),
-    path.join(repoRoot, 'plugin-store', 'sources')
-  ];
-
-  for (const sourceRoot of sourceRoots) {
-    if (!fs.existsSync(sourceRoot)) continue;
-    for (const entry of fs.readdirSync(sourceRoot, { withFileTypes: true })) {
-      if (!entry.isDirectory() || copiedPluginIds.has(entry.name)) continue;
-      const assetsDir = path.join(sourceRoot, entry.name, 'assets');
-      if (!fs.existsSync(assetsDir)) continue;
-
-      const fixturePluginDir = path.join(fixtureRoot, entry.name);
-      const fixtureAssetsDir = path.join(fixturePluginDir, 'assets');
-      fs.mkdirSync(fixturePluginDir, { recursive: true });
-      if (!fs.existsSync(fixtureAssetsDir)) {
-        // The dashboard has a few always-rendered icon paths. Link only those
-        // static assets; no additional plugin manifest or runtime is loaded.
-        fs.symlinkSync(assetsDir, fixtureAssetsDir, process.platform === 'win32' ? 'junction' : 'dir');
-      }
-    }
-  }
 }
 
 function prepareDocsPluginFixture(repoRoot, profileDir, guideId) {
@@ -63,22 +64,38 @@ function prepareDocsPluginFixture(repoRoot, profileDir, guideId) {
   fs.mkdirSync(fixtureRoot, { recursive: true });
   linkSharedAppDependency(fixtureAppRoot, sourceAppRoot, 'modules');
   linkSharedAppDependency(fixtureAppRoot, sourceAppRoot, 'node_modules');
-  const enabledPluginIds = [guideId, ...(CAPTURE_RUNTIME_DEPENDENCIES[guideId] || [])];
-  for (const pluginId of enabledPluginIds) {
-    const pluginSourceDir = pluginId === guideId ? sourceDir : resolveDocsPluginSource(repoRoot, pluginId);
-    if (!pluginSourceDir) throw new Error(`Docs capture dependency is unavailable: ${pluginId}`);
+  // Dashboard and plugin surfaces share real plugin-local APIs. Mount every
+  // shipped local route provider in this throwaway profile so a guide never
+  // falls back to invented responses or fails because another local plugin
+  // was omitted. The profile itself remains per-guide and is deleted after
+  // capture, so no plugin state crosses guides or locales.
+  for (const [pluginId, pluginSourceDir] of localDocsPluginSources(repoRoot)) {
     const fixtureDir = path.join(fixtureRoot, pluginId);
     const manifestPath = path.join(fixtureDir, 'plugin.json');
     fs.cpSync(pluginSourceDir, fixtureDir, { recursive: true });
 
-    // The copies are ephemeral. Dependencies are explicitly declared local
-    // runtime surfaces, so their APIs are real without loading user state.
+    // These copies are ephemeral. Enabling each manifest registers its real
+    // local routes; the isolated profile prevents touching a user installation.
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     manifest.enabled = true;
     fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
   }
-  linkStaticPluginAssets(repoRoot, fixtureRoot, new Set(enabledPluginIds));
+
+  // Keep the selected member of an exclusive family enabled. This mirrors a
+  // user selecting the documented implementation in a clean profile, rather
+  // than letting the loader choose the legacy sibling by name.
+  for (const pluginIds of MUTUALLY_EXCLUSIVE_PLUGIN_GROUPS) {
+    if (!pluginIds.includes(guideId)) continue;
+    for (const pluginId of pluginIds) {
+      if (pluginId === guideId) continue;
+      const manifestPath = path.join(fixtureRoot, pluginId, 'plugin.json');
+      if (!fs.existsSync(manifestPath)) continue;
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      manifest.enabled = false;
+      fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+    }
+  }
   return fixtureRoot;
 }
 
-module.exports = { prepareDocsPluginFixture, resolveDocsPluginSource };
+module.exports = { localDocsPluginSources, prepareDocsPluginFixture, resolveDocsPluginSource };

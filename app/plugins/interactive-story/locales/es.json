@@ -28,6 +28,33 @@
             "failed": "No se pudo guardar la configuración.",
             "noData": "No hay datos disponibles.",
             "confirm": "¿Estás seguro?"
+          },
+          "language": {
+            "english": "English",
+            "german": "Deutsch"
+          },
+          "providers": {
+            "siliconflow": "SiliconFlow"
+          },
+          "voices": {
+            "label": "Voz",
+            "mrBeast": "MrBeast"
+          },
+          "votePatterns": {
+            "numbers": "1, 2, 3, 4"
+          },
+          "overlay": {
+            "sentenceBySentence": "Frase por frase",
+            "arial": "Arial",
+            "georgia": "Georgia",
+            "transparent": "Transparente"
+          },
+          "validation": {
+            "expectedApiKeyLength": "Se esperan: ~64 caracteres",
+            "apiKeyWhitespace": "\u00a1La clave de API contiene espacios en blanco!"
+          },
+          "themes": {
+            "furry": "Furry"
           }
         }
       },

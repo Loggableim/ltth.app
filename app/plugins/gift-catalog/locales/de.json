@@ -14,7 +14,8 @@
             "refresh": "Aktualisieren",
             "close": "Schließen",
             "test": "Testen",
-            "clear": "Leeren"
+            "clear": "Leeren",
+            "copy": "Kopieren"
           },
           "status": {
             "ready": "Bereit",
@@ -28,6 +29,25 @@
             "failed": "Einstellungen konnten nicht gespeichert werden.",
             "noData": "Keine Daten verfügbar.",
             "confirm": "Bist du sicher?"
+          },
+          "labels": {
+            "locale": "Sprache",
+            "app_language": "App-Sprache (app_language)",
+            "browser_language": "Browsersprache (browser_language)",
+            "priority_region": "Prioritätsregion (priority_region)",
+            "tz_name": "Zeitzone (tz_name)",
+            "webcast_language": "Webcast-Sprache (webcast_language)"
+          },
+          "options": {
+            "none": "Keine Auswahl",
+            "locale_de": "Deutsch (de)",
+            "locale_en": "Englisch (en)",
+            "locale_es": "Spanisch (es)",
+            "locale_fr": "Französisch (fr)"
+          },
+          "messages": {
+            "no_gifts_available": "Keine Geschenke verfügbar.",
+            "load_catalog_first_for_live_mode": "Lade zuerst den Katalog für den Live-Modus."
           }
         }
       },

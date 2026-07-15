@@ -1,8 +1,10 @@
 'use strict';
 
+const { exactLocalUrlExpectation } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+const guide = {
   "id": "coinbattle",
   "route": "/plugins/coinbattle/ui.html",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/coinbattle/ui.html"
+            "expected": {
+              "path": "/plugins/coinbattle/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +283,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/coinbattle/ui.html"
+            "expected": {
+              "path": "/plugins/coinbattle/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -387,11 +397,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/coinbattle/ui.html"
+            "expected": {
+              "path": "/plugins/coinbattle/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +511,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/coinbattle/ui.html"
+            "expected": {
+              "path": "/plugins/coinbattle/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -607,11 +625,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/coinbattle/ui.html"
+            "expected": {
+              "path": "/plugins/coinbattle/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -717,11 +739,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/coinbattle/ui.html"
+            "expected": {
+              "path": "/plugins/coinbattle/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -743,4 +769,42 @@ module.exports = Object.freeze({
       }
     }
   ]
+};
+
+function applyWorkflowCorrections(corrections) {
+  for (const [id, correction] of Object.entries(corrections)) {
+    const step = guide.steps.find((candidate) => candidate.id === id);
+    if (!step) throw new Error(`Missing CoinBattle guide step: ${id}`);
+    const focusText = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.title]));
+    const expected = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.expected]));
+    step.copy = correction.copy;
+    step.capture = { ...step.capture, assertVisible: correction.selector, focusText, action: { ...correction.action, stepId: id }, expected };
+    step.workflow = {
+      ...step.workflow,
+      instructions: Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, { title: copy.title, body: copy.body, expected: copy.expected }])),
+      operations: [{ type: 'goto', route: step.capture.route }, { type: correction.action.type, selector: correction.selector }],
+      postconditions: [
+        { type: 'http-status', expected: 200 },
+        { type: 'url', expected: exactLocalUrlExpectation(step.capture.route) },
+        { type: 'visible', selector: correction.selector },
+        { type: 'console', expected: 'no-errors' }
+      ],
+      captureRule: { ...step.workflow.captureRule, selector: correction.selector, stateChange: false }
+    };
+  }
+}
+
+applyWorkflowCorrections({
+  'battle-mode': {
+    selector: '#btn-start-simulation',
+    action: { type: 'open-plugin-surface' },
+    copy: {
+      de: { title: 'Offline-Simulationssteuerung pruefen', body: 'Pruefe den eingebauten Start-Simulation-Knopf und den Hinweis fuer Tests ohne TikTok LIVE. Starte die Simulation in dieser Dokumentationsaufnahme nicht.', expected: 'Die lokale Offline-Simulationssteuerung ist sichtbar, ohne einen Match- oder LIVE-Zustand zu aendern.', alt: 'CoinBattle Offline-Simulationssteuerung' },
+      en: { title: 'Inspect the offline simulation control', body: 'Inspect the built-in Start Simulation button and its test-without-TikTok-LIVE notice. Do not start the simulation in this documentation capture.', expected: 'The local offline simulation control is visible without changing a match or LIVE state.', alt: 'CoinBattle offline simulation control' },
+      es: { title: 'Revisa el control de simulacion offline', body: 'Revisa el boton integrado Iniciar simulacion y su aviso de pruebas sin TikTok LIVE. No inicies la simulacion en esta captura de documentacion.', expected: 'El control local de simulacion offline es visible sin cambiar un estado de partida ni LIVE.', alt: 'Control de simulacion offline de CoinBattle' },
+      fr: { title: 'Verifiez le controle de simulation hors ligne', body: 'Verifiez le bouton integré Demarrer la simulation et son indication de test sans TikTok LIVE. Ne demarrez pas la simulation dans cette capture documentaire.', expected: 'Le controle local de simulation hors ligne est visible sans modifier un etat de match ni LIVE.', alt: 'Controle de simulation hors ligne CoinBattle' }
+    }
+  }
 });
+
+module.exports = Object.freeze(guide);

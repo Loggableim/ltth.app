@@ -634,16 +634,16 @@
   <div class="container">
     <div class="brand-header">
       <img class="brand-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
-      <span id="status-badge" class="badge badge-success">Active</span>
+      <span id="status-badge" class="badge badge-success" data-i18n="plugins.sidekick.ui.status.active">Active</span>
     </div>
     <p style="color: var(--color-text-secondary); margin-bottom: 20px;" data-i18n="plugins.sidekick.labels.intelligenter_stream_assistent_mit_animazingpal_fish_audio_delegation">Intelligenter Stream-Assistent mit AnimazingPal + Fish.audio Delegation</p>
 
     <div class="tabs">
-      <button class="tab active" data-tab="status">Status</button>
-      <button class="tab" data-tab="settings">Einstellungen</button>
-      <button class="tab" data-tab="memory">Memory</button>
-      <button class="tab" data-tab="analytics">Analytics</button>
-      <button class="tab" data-tab="events">Events</button>
+      <button class="tab active" data-tab="status" data-i18n="plugins.sidekick.ui.tabs.status">Status</button>
+      <button class="tab" data-tab="settings" data-i18n="plugins.sidekick.ui.tabs.settings">Einstellungen</button>
+      <button class="tab" data-tab="memory" data-i18n="plugins.sidekick.ui.tabs.memory">Memory</button>
+      <button class="tab" data-tab="analytics" data-i18n="plugins.sidekick.ui.tabs.analytics">Analytics</button>
+      <button class="tab" data-tab="events" data-i18n="plugins.sidekick.ui.tabs.events">Events</button>
     </div>
 
     <!-- Status Tab -->
@@ -653,11 +653,11 @@
           <h3 data-i18n="plugins.sidekick.labels.verbindungen">🔌 Verbindungen</h3>
           <div class="inline-row" style="margin-top: 15px;">
             <span class="status-indicator" id="animaze-status-indicator"></span>
-            <span>AnimazingPal: <span id="animaze-status-text" data-i18n="sidekick.ui.status.disconnected">Disconnected</span></span>
+            <span>AnimazingPal: <span id="animaze-status-text" data-i18n="plugins.sidekick.sidekick.ui.status.disconnected">Disconnected</span></span>
           </div>
           <div class="inline-row" style="margin-top: 10px;">
-            <button id="btn-connect" class="btn-primary">Verbinden</button>
-            <button id="btn-disconnect" class="btn-secondary">Trennen</button>
+            <button id="btn-connect" class="btn-primary" data-i18n="plugins.sidekick.ui.connection.connect">Verbinden</button>
+            <button id="btn-disconnect" class="btn-secondary" data-i18n="plugins.sidekick.ui.connection.disconnect">Trennen</button>
           </div>
           <div style="margin-top: 15px;">
             <label>Queue: <span id="queue-length">0</span> Nachrichten</label>
@@ -675,10 +675,10 @@
             <button id="btn-reset" class="btn-danger" data-i18n="plugins.sidekick.labels.reset_session">🔄 Reset Session</button>
           </div>
           <div style="margin-top: 15px;">
-            <label for="test-message">Test-Nachricht:</label>
+            <label for="test-message" data-i18n="plugins.sidekick.ui.test.message">Test-Nachricht:</label>
             <div class="inline-row">
-              <input type="text" id="test-message" placeholder="Nachricht eingeben...">
-              <button id="btn-test" class="btn-primary">Senden</button>
+              <input type="text" id="test-message" placeholder="Nachricht eingeben..." data-i18n-placeholder="plugins.sidekick.ui.test.messagePlaceholder">
+              <button id="btn-test" class="btn-primary" data-i18n="plugins.sidekick.ui.test.send">Senden</button>
             </div>
           </div>
         </div>
@@ -750,7 +750,7 @@
             <p>Requests: <strong id="host-asr-requests">0</strong><span data-i18n="plugins.sidekick.labels.transkribiert"> · Transkribiert: </span><strong id="host-asr-transcribed">0</strong><span data-i18n="plugins.sidekick.labels.delegiert"> · Delegiert: </span><strong id="host-asr-delegated">0</strong></p>
             <p><span data-i18n="plugins.sidekick.labels.letzte_latenz">Letzte Latenz: </span><strong id="host-asr-latency">-</strong></p>
             <div class="inline-row">
-              <span>Level</span>
+              <span data-i18n="plugins.sidekick.ui.asr.level">Level</span>
               <div class="asr-meter"><div class="asr-meter-fill" id="host-asr-meter"></div></div>
             </div>
           </div>
@@ -806,7 +806,7 @@
     <!-- Settings Tab -->
     <div id="tab-settings" class="tab-content">
       <div class="card">
-        <h3>Sprachausgabe</h3>
+        <h3 data-i18n="plugins.sidekick.ui.speechOutput.title">Sprachausgabe</h3>
         <p style="color: var(--color-text-secondary); margin-bottom: 15px;" data-i18n="plugins.sidekick.labels.animazingpal_fish_audio_stimme_personlichkeit_viewer_profile_audio">AnimazingPal + Fish.audio. Stimme, Persönlichkeit, Viewer-Profile, Audio-Routing und Avatar-Lipsync werden zentral in AnimazingPal konfiguriert.</p>
         <div class="form-group">
           <label for="output-username" data-i18n="plugins.sidekick.labels.name_der_assistenz">Name der Assistenz</label>
@@ -886,14 +886,14 @@
             <input type="number" id="batch-max-chars" min="50" value="320">
           </div>
           <div class="form-group">
-            <label for="batch-separator">Separator</label>
+            <label for="batch-separator" data-i18n="plugins.sidekick.ui.outbox.separator">Separator</label>
             <input type="text" id="batch-separator" value=" • ">
           </div>
         </div>
       </div>
 
       <div class="card">
-        <h3>Host-Entscheidungslogik</h3>
+        <h3 data-i18n="plugins.sidekick.ui.hostDecision.title">Host-Entscheidungslogik</h3>
         <p style="color: var(--color-text-secondary); margin-bottom: 15px;" data-i18n="plugins.sidekick.labels.legt_fest_wie_der_host_entscheidet_ob_eine">Legt fest, wie der Host entscheidet, ob eine transkribierte Host-Aussage beantwortet wird.</p>
         <div class="grid">
           <div class="form-group">
@@ -948,15 +948,15 @@
       <div class="card">
         <h3 data-i18n="plugins.sidekick.labels.top_user_engagement">🏆 Top User (Engagement)</h3>
         <div class="user-list" id="top-users">
-          <p style="color: #666; padding: 20px; text-align: center;">Lade...</p>
+          <p style="color: #666; padding: 20px; text-align: center;" data-i18n="plugins.sidekick.ui.empty.loading">Lade...</p>
         </div>
       </div>
 
       <div class="card">
         <h3 data-i18n="plugins.sidekick.labels.user_suche">🔍 User Suche</h3>
         <div class="inline-row" style="margin-bottom: 15px;">
-          <input type="text" id="search-user" placeholder="Nickname oder ID suchen...">
-          <button id="btn-search" class="btn-primary">Suchen</button>
+          <input type="text" id="search-user" placeholder="Nickname oder ID suchen..." data-i18n-placeholder="plugins.sidekick.ui.search.placeholder">
+          <button id="btn-search" class="btn-primary" data-i18n="plugins.sidekick.ui.search.submit">Suchen</button>
         </div>
         <div class="user-list" id="search-results">
           <p style="color: #666; padding: 20px; text-align: center;" data-i18n="plugins.sidekick.labels.suchbegriff_eingeben">Suchbegriff eingeben...</p>
@@ -1024,7 +1024,7 @@
       <div class="card">
         <h3 data-i18n="plugins.sidekick.labels.top_gifter">🎯 Top Gifter</h3>
         <div class="user-list" id="top-gifters">
-          <p style="color: #666; padding: 20px; text-align: center;">Lade...</p>
+          <p style="color: #666; padding: 20px; text-align: center;" data-i18n="plugins.sidekick.ui.empty.loading">Lade...</p>
         </div>
       </div>
 
@@ -1045,13 +1045,13 @@
         <div class="inline-row" style="margin-bottom: 15px;">
           <select id="event-filter">
             <option value="" data-i18n="plugins.sidekick.labels.alle_events">Alle Events</option>
-            <option value="chat">Chat</option>
-            <option value="gift">Gift</option>
-            <option value="follow">Follow</option>
-            <option value="share">Share</option>
-            <option value="subscribe">Subscribe</option>
-            <option value="join">Join</option>
-            <option value="like">Like</option>
+            <option value="chat" data-i18n="plugins.sidekick.ui.events.chat">Chat</option>
+            <option value="gift" data-i18n="plugins.sidekick.ui.events.gift">Gift</option>
+            <option value="follow" data-i18n="plugins.sidekick.ui.events.follow">Follow</option>
+            <option value="share" data-i18n="plugins.sidekick.ui.events.share">Share</option>
+            <option value="subscribe" data-i18n="plugins.sidekick.ui.events.subscribe">Subscribe</option>
+            <option value="join" data-i18n="plugins.sidekick.ui.events.join">Join</option>
+            <option value="like" data-i18n="plugins.sidekick.ui.events.like">Like</option>
           </select>
           <button id="btn-refresh-events" class="btn-secondary" data-i18n="plugins.sidekick.labels.aktualisieren">🔄 Aktualisieren</button>
         </div>
@@ -1306,7 +1306,8 @@
     async function refreshAsrDevices() {
       const select = document.getElementById('host-asr-device');
       if (!navigator.mediaDevices?.enumerateDevices) {
-        select.innerHTML = '<option value="">MediaDevices nicht verfügbar</option>';
+        select.innerHTML = '<option value="" data-i18n="plugins.sidekick.ui.asr.mediaDevicesUnavailable">MediaDevices nicht verfügbar</option>';
+        window.i18n?.updateDOM?.();
         setAsrError('Browser unterstützt enumerateDevices nicht oder die Seite ist nicht sicher geladen.');
         return;
       }
@@ -1317,7 +1318,8 @@
       select.innerHTML = '';
 
       if (audioInputs.length === 0) {
-        select.innerHTML = '<option value="">Keine Mikrofone gefunden</option>';
+        select.innerHTML = '<option value="" data-i18n="plugins.sidekick.ui.asr.noMicrophonesFound">Keine Mikrofone gefunden</option>';
+        window.i18n?.updateDOM?.();
         updateAsrDeviceWarning();
         return;
       }
@@ -1927,7 +1929,8 @@
         if (data.success) {
           const container = document.getElementById('top-users');
           if (data.users.length === 0) {
-            container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">Keine User gefunden</p>';
+            container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;" data-i18n="plugins.sidekick.ui.empty.noUsers">Keine User gefunden</p>';
+            window.i18n?.updateDOM?.();
             return;
           }
           container.innerHTML = data.users.map((user, i) => `
@@ -1959,7 +1962,8 @@
         if (data.success) {
           const container = document.getElementById('event-log');
           if (data.events.length === 0) {
-            container.innerHTML = '<p style="color: #666; text-align: center;">Keine Events</p>';
+            container.innerHTML = '<p style="color: #666; text-align: center;" data-i18n="plugins.sidekick.ui.empty.noEvents">Keine Events</p>';
+            window.i18n?.updateDOM?.();
             return;
           }
           container.innerHTML = data.events.reverse().map(event => {
@@ -1990,7 +1994,8 @@
           const gifters = data.metrics.topGifters || [];
           const container = document.getElementById('top-gifters');
           if (gifters.length === 0) {
-            container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">Keine Gifter</p>';
+            container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;" data-i18n="plugins.sidekick.ui.empty.noGifters">Keine Gifter</p>';
+            window.i18n?.updateDOM?.();
           } else {
             container.innerHTML = gifters.map((user, i) => `
               <div class="user-item">
@@ -2050,7 +2055,8 @@
             </div>
           `).join('');
         } else {
-          container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">Keine Ergebnisse</p>';
+          container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;" data-i18n="plugins.sidekick.ui.empty.noResults">Keine Ergebnisse</p>';
+          window.i18n?.updateDOM?.();
         }
       } catch (err) {
         console.error('Failed to search users:', err);

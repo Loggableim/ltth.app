@@ -16,6 +16,10 @@
             "test": "Probar",
             "clear": "Borrar"
           },
+          "sources": {
+            "eulerstream": "Fuente de Eulerstream",
+            "tikfinity": "TikFinity"
+          },
           "status": {
             "ready": "Listo",
             "loading": "Cargando …",

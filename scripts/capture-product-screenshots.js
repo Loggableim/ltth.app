@@ -9,7 +9,21 @@ const { spawn } = require('child_process');
 const { buildSpec, LOCALES: PRODUCT_LOCALES } = require('./product-screenshot-spec');
 const { buildDocsSpec, LOCALES: DOCS_LOCALES } = require('./docs-screenshot-spec');
 const { prepareDocsPluginFixture } = require('./lib/docs-capture-plugin-fixture');
-const { createCaptureReceipt } = require('./lib/capture-receipt');
+const { createCaptureReceipt, isAllowedCaptureNetworkUrl } = require('./lib/capture-receipt');
+const {
+  assertWorkflowOperationsExecuted,
+  createBlockedNetworkEvidence,
+  INTERACTION_OPERATION_TYPES
+} = require('./lib/docs-capture-workflow-runner');
+const {
+  captureFailureContext: readBoundedFailureContext,
+  closeCaptureBrowser,
+  closeCapturePage,
+  isCaptureTimeout,
+  recoverCapturePage,
+  runWithTimeout,
+  stopCaptureAppChild
+} = require('./lib/docs-capture-lifecycle');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const APP_VERSION = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'app', 'package.json'), 'utf8')).version;
@@ -20,20 +34,38 @@ const EXTERNAL_BASE_URL = (process.env.SCREENSHOT_BASE_URL || '').replace(/\/$/,
 const TIMEOUT_MS = Number(process.env.SCREENSHOT_TIMEOUT_MS || 60000);
 const WAIT_AFTER_LOAD_MS = Number(process.env.SCREENSHOT_WAIT_AFTER_LOAD_MS || 1500);
 const ASSET_TIMEOUT_MS = Number(process.env.SCREENSHOT_ASSET_TIMEOUT_MS || 20000);
+const LIFECYCLE_TIMEOUT_MS = Number(process.env.SCREENSHOT_LIFECYCLE_TIMEOUT_MS || 5000);
+const FAILURE_CONTEXT_TIMEOUT_MS = Number(process.env.SCREENSHOT_FAILURE_CONTEXT_TIMEOUT_MS || 1000);
 const START_APP = process.env.SCREENSHOT_START_APP !== 'false';
 const RUNTIME_PLUGIN_ROUTE_PREFIXES = new Set(['flame-overlay', 'visual-fx-frame-webgpu']);
 const DOCUMENTATION_DEMO_INPUT_VALUES = Object.freeze({
   'emoji-rain/choose-emojis': '💧, ✨, 🎉'
 });
-const STORE_ADMIN_OPTIONAL_API_RESPONSES = Object.freeze({
-  '/api/plugin-store/account': { success: true, account: { authenticated: false } },
-  '/api/emoji-rain/status': { success: false, unavailable: true },
-  '/api/webgpu-emoji-rain/status': { success: false, unavailable: true },
-  '/api/data-source/status': { success: false, unavailable: true },
-  '/api/openshock/safety': { success: false, unavailable: true },
-  '/api/soundboard/gifts': [],
-  '/api/myinstants/categories': { success: false, results: [] }
-});
+const SUPPORTED_LOCAL_PREPARATIONS = new Set([
+  'create-demo-goal-overlay',
+  'create-demo-timer',
+  'create-demo-timer-overlay',
+  'open-fireworks-settings',
+  'open-flame-frame-tab',
+  'open-flame-motion-tab',
+  'open-goal-create-modal',
+  'open-milestone-tier-modal',
+  'open-minecraft-chat-tab',
+  'open-minecraft-setup-tab',
+  'open-music-bot-settings',
+  'open-openshock-safety-tab',
+  'open-quiz-overlay-config-tab',
+  'open-quiz-questions-tab',
+  'open-soundboard-event-sounds',
+  'open-soundboard-obs-overlay',
+  'open-spotlight-preview',
+  'open-spotlight-settings',
+  'open-store-admin-view',
+  'open-streamalchemy-settings',
+  'select-local-tikfinity',
+  'start-local-manual-game',
+  'start-local-quiz'
+]);
 
 function loadPuppeteer() {
   const candidates = [
@@ -73,13 +105,10 @@ function specHash(spec) {
 }
 
 function withTimeout(promise, label) {
-  let timeout;
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => {
-      timeout = setTimeout(() => reject(new Error(`Timed out after ${ASSET_TIMEOUT_MS}ms while capturing ${label}`)), ASSET_TIMEOUT_MS);
-    })
-  ]).finally(() => clearTimeout(timeout));
+  return runWithTimeout(promise, {
+    label: `capturing ${label}`,
+    timeoutMs: ASSET_TIMEOUT_MS
+  });
 }
 
 function rewritePluginAssetRequest(request) {
@@ -104,28 +133,19 @@ function rewritePluginAssetRequest(request) {
   return true;
 }
 
-function respondToStoreAdminOptionalApi(request, guideId) {
-  if (guideId !== 'store-admin') return false;
-  const url = new URL(request.url());
-  const body = STORE_ADMIN_OPTIONAL_API_RESPONSES[url.pathname];
-  if (body === undefined) return false;
-
-  // The signed-out Store workflow runs in an isolated profile with only its
-  // own plugin loaded. The dashboard nevertheless probes optional, unrelated
-  // plugin APIs while booting. Their unavailable state is not part of the
-  // Store UI, so make that absence explicit without starting extra runtimes.
-  request.respond({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify(body)
-  });
-  return true;
-}
-
-async function attachPluginAssetRewrite(page, guideId = null) {
+async function attachPluginAssetRewrite(page) {
   await page.setRequestInterception(true);
   page.on('request', (request) => {
-    if (!respondToStoreAdminOptionalApi(request, guideId) && !rewritePluginAssetRequest(request)) request.continue();
+    if (!isAllowedCaptureNetworkUrl(request.url())) {
+      page.__docsCaptureBlockedNetwork.push(createBlockedNetworkEvidence({
+        url: request.url(),
+        method: request.method(),
+        resourceType: request.resourceType()
+      }));
+      request.abort('blockedbyclient').catch(() => {});
+      return;
+    }
+    if (!rewritePluginAssetRequest(request)) request.continue();
   });
 }
 
@@ -171,6 +191,9 @@ function waitForServer(child, baseUrl) {
 }
 
 async function startIsolatedApp(profileName, guideId = null) {
+  if (COLLECTION === 'docs' && !START_APP) {
+    throw new Error('Documentation screenshots require an isolated local LTTH process');
+  }
   if (!START_APP) {
     if (!EXTERNAL_BASE_URL) throw new Error('SCREENSHOT_BASE_URL is required when SCREENSHOT_START_APP=false');
     return { baseUrl: EXTERNAL_BASE_URL, child: null, profileDir: null };
@@ -205,30 +228,31 @@ async function startIsolatedApp(profileName, guideId = null) {
     await waitForServer(child, baseUrl);
       return { baseUrl, child, profileDir, getStartupLog: () => startupLog };
   } catch (error) {
-    if (child.exitCode === null) child.kill();
-    if (profileDir.startsWith(path.join(os.tmpdir(), 'ltth-docs-capture-'))) fs.rmSync(profileDir, { recursive: true, force: true });
-    throw new Error(`${error.message}\n${startupLog || 'No startup output was emitted.'}`);
+    let cleanupDiagnostic = '';
+    try {
+      await stopIsolatedApp({ child, profileDir }, profileName);
+    } catch (cleanupError) {
+      cleanupDiagnostic = `\nStartup cleanup failed: ${cleanupError.message}`;
+    }
+    throw new Error(`${error.message}${cleanupDiagnostic}\n${startupLog || 'No startup output was emitted.'}`);
   }
 }
 
-async function stopIsolatedApp(app) {
-  if (app.child && app.child.exitCode === null) {
-    await new Promise((resolve) => {
-      let settled = false;
-      const finish = () => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timeout);
-        resolve();
-      };
-      const timeout = setTimeout(finish, 5000);
-      app.child.once('exit', finish);
-      app.child.kill();
-    });
+async function stopIsolatedApp(app, label = 'isolated LTTH app') {
+  let cleanupError = null;
+  try {
+    await stopCaptureAppChild(app.child, { label, timeoutMs: LIFECYCLE_TIMEOUT_MS });
+  } catch (error) {
+    cleanupError = error;
   }
-  if (app.profileDir && app.profileDir.startsWith(path.join(os.tmpdir(), 'ltth-docs-capture-'))) {
-    fs.rmSync(app.profileDir, { recursive: true, force: true });
+  try {
+    if (app.profileDir && app.profileDir.startsWith(path.join(os.tmpdir(), 'ltth-docs-capture-'))) {
+      fs.rmSync(app.profileDir, { recursive: true, force: true });
+    }
+  } catch (error) {
+    if (!cleanupError) cleanupError = error;
   }
+  if (cleanupError) throw cleanupError;
 }
 
 function applyCaptureDocumentSettings(lang) {
@@ -241,11 +265,35 @@ function applyCaptureDocumentSettings(lang) {
   }
   root.setAttribute('data-theme', 'cid');
   root.lang = lang;
+  root.dataset.lang = lang;
+}
+
+function isBlockedExternalRequestConsoleError(message) {
+  const location = message.location();
+  return message.type() === 'error'
+    && message.text().includes('net::ERR_BLOCKED_BY_CLIENT')
+    && /^https?:/i.test(location.url || '')
+    && !isAllowedCaptureNetworkUrl(location.url);
 }
 
 async function configurePage(page, locale) {
   page.__docsCaptureConsoleErrors = [];
+  page.__docsCaptureNetwork = [];
+  page.__docsCaptureBlockedNetwork = [];
+  page.on('request', (request) => {
+    const url = request.url();
+    // Requests outside the isolated app are aborted by the interception
+    // handler below. They never leave the browser, so only completed local
+    // app traffic belongs in the receipt's network evidence.
+    if (!/^https?:/i.test(url) || !isAllowedCaptureNetworkUrl(url)) return;
+    page.__docsCaptureNetwork.push({
+      url,
+      method: request.method(),
+      resourceType: request.resourceType()
+    });
+  });
   page.on('console', (message) => {
+    if (isBlockedExternalRequestConsoleError(message)) return;
     if (message.type() === 'error') {
       const location = message.location();
       page.__docsCaptureConsoleErrors.push(
@@ -312,11 +360,29 @@ async function assertRenderedAnchor(page, selector) {
   }, selector);
 }
 
+async function observeControlState(page, selector) {
+  return page.evaluate((controlSelector) => {
+    const control = document.querySelector(controlSelector);
+    if (!control) throw new Error(`Capture selector not found: ${controlSelector}`);
+    const style = getComputedStyle(control);
+    const rect = control.getBoundingClientRect();
+    return {
+      visible: style.display !== 'none' && style.visibility !== 'hidden' && rect.width >= 2 && rect.height >= 2,
+      text: (control.innerText || control.textContent || control.getAttribute('aria-label') || '').trim(),
+      value: 'value' in control ? control.value : null,
+      checked: 'checked' in control ? Boolean(control.checked) : null,
+      className: typeof control.className === 'string' ? control.className : '',
+      ariaExpanded: control.getAttribute('aria-expanded')
+    };
+  }, selector);
+}
+
 async function applySafeStepState(page, asset, locale) {
   // Screenshots never invoke a real device, external credential flow, print,
   // or production stream action. A guide may explicitly opt into one local
   // safe button action in its temporary profile; every other button remains
   // untouched.
+  const interactions = [];
   await page.evaluate(async (lang) => {
     document.documentElement.lang = lang;
     document.documentElement.setAttribute('data-theme', 'cid');
@@ -326,7 +392,15 @@ async function applySafeStepState(page, asset, locale) {
       await window.i18n.setLocale(lang);
       window.i18n.updateDOM?.();
     }
+    if (window.I18n && typeof window.I18n.load === 'function') {
+      await window.I18n.load(lang);
+      window.I18n.apply?.();
+    }
   }, locale);
+  const preparationSelector = asset.action?.inputSelector || asset.action?.clickSelector || asset.selector;
+  const preparationBefore = asset.action?.prepare
+    ? await observeControlState(page, preparationSelector).catch(() => null)
+    : null;
   if (asset.action && asset.action.prepare === 'create-demo-timer') {
     await page.evaluate(() => {
       const createTab = document.querySelector('.at-nav-btn[data-tab="create"]');
@@ -364,7 +438,8 @@ async function applySafeStepState(page, asset, locale) {
   }
   if (asset.action && asset.action.prepare === 'open-goal-create-modal') {
     await page.evaluate(() => {
-      const openModal = document.getElementById('create-first-goal-btn');
+      const openModal = document.getElementById('create-first-goal-btn')
+        || document.getElementById('create-goal-btn');
       if (!(openModal instanceof HTMLButtonElement) || openModal.disabled) {
         throw new Error('Goals create button is unavailable');
       }
@@ -373,6 +448,22 @@ async function applySafeStepState(page, asset, locale) {
     await page.waitForFunction(() => {
       const modal = document.getElementById('goal-modal');
       return Boolean(modal && modal.classList.contains('active') && getComputedStyle(modal).display !== 'none');
+    }, { timeout: 2000 });
+  }
+  if (asset.action && asset.action.prepare === 'open-music-bot-settings') {
+    await page.evaluate(() => {
+      const openSettings = document.getElementById('musicbot-onboarding-settings');
+      if (!(openSettings instanceof HTMLButtonElement) || openSettings.disabled) {
+        throw new Error('Music Bot settings button is unavailable');
+      }
+      openSettings.click();
+    });
+    await page.waitForFunction(() => {
+      const control = document.getElementById('duplicate-detection');
+      if (!control) return false;
+      const style = getComputedStyle(control);
+      const rect = control.getBoundingClientRect();
+      return style.display !== 'none' && style.visibility !== 'hidden' && rect.width >= 2 && rect.height >= 2;
     }, { timeout: 2000 });
   }
   if (asset.action && asset.action.prepare === 'open-milestone-tier-modal') {
@@ -615,22 +706,56 @@ async function applySafeStepState(page, asset, locale) {
   }
   if (asset.action && asset.action.type === 'set-demo-value') {
     const demoValue = DOCUMENTATION_DEMO_INPUT_VALUES[`${asset.guideId}/${asset.stepId}`] || 'LTTH docs demo';
-    await page.evaluate((selector, value) => {
+    const interaction = await page.evaluate((selector, value) => {
       const field = document.querySelector(selector);
-      if (!field || !['INPUT', 'TEXTAREA', 'SELECT'].includes(field.tagName)) return;
+      if (!field || !['INPUT', 'TEXTAREA', 'SELECT'].includes(field.tagName)) {
+        throw new Error(`Demo value target is not an editable control: ${selector}`);
+      }
+      const before = { value: field.value, checked: 'checked' in field ? Boolean(field.checked) : null };
+      let exercised = false;
       if (field.tagName === 'SELECT') {
-        const option = [...field.options].find((candidate) => !candidate.disabled && candidate.value) || field.options[0];
+        const option = [...field.options].find((candidate) => !candidate.disabled && candidate.value && candidate.value !== field.value)
+          || [...field.options].find((candidate) => !candidate.disabled && candidate.value)
+          || field.options[0];
         if (option) field.value = option.value;
       } else if (field.type === 'checkbox') {
+        // The default in a fresh profile can already be the desired enabled
+        // state. Exercise the shipped control through the opposite local
+        // state first, then leave the documented enabled state in place.
+        if (field.checked) {
+          field.checked = false;
+          field.dispatchEvent(new Event('input', { bubbles: true }));
+          field.dispatchEvent(new Event('change', { bubbles: true }));
+          exercised = true;
+        }
         field.checked = true;
       } else if (!['button', 'submit', 'password', 'file'].includes(field.type)) {
         field.value = value;
+      } else {
+        throw new Error(`Demo value target is not writable: ${selector}`);
       }
       field.dispatchEvent(new Event('input', { bubbles: true }));
       field.dispatchEvent(new Event('change', { bubbles: true }));
+      const after = { value: field.value, checked: 'checked' in field ? Boolean(field.checked) : null };
+      return {
+        type: 'set-demo-value',
+        selector,
+        status: 'performed',
+        observed: true,
+        before,
+        after,
+        changed: before.value !== after.value || before.checked !== after.checked || exercised
+      };
     }, asset.action.inputSelector || asset.selector, demoValue);
+    interactions.push(interaction);
   }
   if (asset.action && asset.action.allowClick) {
+    const selector = asset.action.clickSelector || asset.selector;
+    const evidenceSelector = asset.action.evidenceSelector || asset.selector || selector;
+    const before = await observeControlState(page, selector);
+    const evidenceBefore = evidenceSelector === selector
+      ? before
+      : await observeControlState(page, evidenceSelector);
     await page.evaluate((selector, actionType, guideId) => {
       const control = document.querySelector(selector);
       if (!control) throw new Error(`Capture selector not found: ${selector}`);
@@ -642,9 +767,72 @@ async function applySafeStepState(page, asset, locale) {
       }
       if (control.disabled) throw new Error(`Declared local action is disabled: ${selector}`);
       control.click();
-    }, asset.action.clickSelector || asset.selector, asset.action.type, asset.guideId);
+    }, selector, asset.action.type, asset.guideId);
     await new Promise((resolve) => setTimeout(resolve, asset.action.settleMs || 250));
+    const after = await observeControlState(page, selector);
+    const evidenceAfter = evidenceSelector === selector
+      ? after
+      : await observeControlState(page, evidenceSelector);
+    interactions.push({
+      type: asset.action.type,
+      selector,
+      status: 'performed',
+      observed: true,
+      before,
+      after,
+      evidence: {
+        selector: evidenceSelector,
+        before: evidenceBefore,
+        after: evidenceAfter
+      },
+      changed: JSON.stringify(before) !== JSON.stringify(after)
+        || JSON.stringify(evidenceBefore) !== JSON.stringify(evidenceAfter)
+    });
   }
+  if (asset.action && asset.action.prepare) {
+    if (!SUPPORTED_LOCAL_PREPARATIONS.has(asset.action.prepare)) {
+      throw new Error(`Unsupported local documentation preparation: ${asset.action.prepare}`);
+    }
+    const selector = asset.action.inputSelector || asset.action.clickSelector || asset.selector;
+    const observed = await observeControlState(page, selector);
+    if (!observed.visible) {
+      throw new Error(`Local documentation preparation ${asset.action.prepare} has no visible DOM evidence at ${selector}`);
+    }
+    interactions.push({
+      type: 'prepare',
+      selector,
+      status: 'performed',
+      observed: true,
+      name: asset.action.prepare,
+      before: preparationBefore,
+      changed: !preparationBefore || JSON.stringify(preparationBefore) !== JSON.stringify(observed),
+      after: observed
+    });
+    // Some safe local workflows are completely performed by their named
+    // preparation (for example starting a test-only quiz). Record that real
+    // preparation as the declared operation as well, so the receipt can prove
+    // both the prerequisite and the resulting local workflow without
+    // inventing a second button click.
+    if (!asset.action.allowClick
+      && asset.action.type !== 'set-demo-value'
+      && INTERACTION_OPERATION_TYPES.has(asset.action.type)) {
+      const evidenceSelector = asset.action.evidenceSelector || asset.selector || selector;
+      const evidenceAfter = evidenceSelector === selector
+        ? observed
+        : await observeControlState(page, evidenceSelector);
+      interactions.push({
+        type: asset.action.type,
+        selector: evidenceSelector,
+        status: 'performed',
+        observed: true,
+        preparation: asset.action.prepare,
+        before: preparationBefore,
+        after: evidenceAfter,
+        changed: !preparationBefore || JSON.stringify(preparationBefore) !== JSON.stringify(evidenceAfter)
+      });
+    }
+  }
+  return interactions;
 }
 
 async function prepareAdvancedTimerOverlay(page, baseUrl, asset, locale) {
@@ -657,7 +845,7 @@ async function prepareAdvancedTimerOverlay(page, baseUrl, asset, locale) {
     throw new Error(`HTTP ${setupResponse ? setupResponse.status() : 'no response'} while preparing Advanced Timer overlay`);
   }
   await new Promise((resolve) => setTimeout(resolve, WAIT_AFTER_LOAD_MS));
-  await applySafeStepState(page, {
+  const interactions = await applySafeStepState(page, {
     guideId: asset.guideId,
     action: {
       type: 'run-local-preview',
@@ -682,9 +870,10 @@ async function prepareAdvancedTimerOverlay(page, baseUrl, asset, locale) {
   overlayUrl.searchParams.set('timer', timerId);
   return {
     url: overlayUrl.toString(),
+    interactions,
     preparation: [
-      { type: 'create-demo-timer', selector: '#timer-form button[type="submit"]' },
-      { type: 'use-created-overlay-url', selector: '#timer-container', timerId }
+      { type: 'create-demo-timer', selector: '#timer-form button[type="submit"]', observed: true },
+      { type: 'use-created-overlay-url', selector: '#timer-container', timerId, observed: true }
     ]
   };
 }
@@ -699,7 +888,9 @@ async function prepareGoalsOverlay(page, baseUrl, asset, locale) {
     throw new Error(`HTTP ${setupResponse ? setupResponse.status() : 'no response'} while preparing Goal overlay`);
   }
   await new Promise((resolve) => setTimeout(resolve, WAIT_AFTER_LOAD_MS));
-  await applySafeStepState(page, { guideId: asset.guideId, action: { prepare: 'open-goal-create-modal' } }, locale);
+  const interactions = await applySafeStepState(page, { guideId: asset.guideId, action: { prepare: 'open-goal-create-modal' } }, locale);
+  const submitSelector = '#goal-form button[type="submit"]';
+  const beforeSubmit = await observeControlState(page, submitSelector);
   await page.evaluate(() => {
     const name = document.getElementById('goal-name');
     const target = document.getElementById('goal-target');
@@ -720,20 +911,33 @@ async function prepareGoalsOverlay(page, baseUrl, asset, locale) {
     const data = await response.json();
     return data.goals?.find((goal) => goal.name === 'LTTH docs goal')?.id || false;
   }, { timeout: 5000 }).then((handle) => handle.jsonValue());
+  const afterSubmit = await observeControlState(page, submitSelector);
+  interactions.push({
+    type: 'run-local-preview',
+    selector: submitSelector,
+    status: 'performed',
+    observed: true,
+    before: beforeSubmit,
+    after: afterSubmit,
+    changed: JSON.stringify(beforeSubmit) !== JSON.stringify(afterSubmit)
+  });
   const overlayUrl = new URL(urlFor(baseUrl, asset.route, locale));
   overlayUrl.searchParams.set('id', goalId);
   return {
     url: overlayUrl.toString(),
+    interactions,
     preparation: [
-      { type: 'create-demo-goal', selector: '#goal-form button[type="submit"]' },
-      { type: 'use-created-overlay-url', selector: '#goal-container', goalId }
+      { type: 'create-demo-goal', selector: '#goal-form button[type="submit"]', observed: true },
+      { type: 'use-created-overlay-url', selector: '#goal-container', goalId, observed: true }
     ]
   };
 }
 
-function screenshotClipForAnchor(viewport, anchorRect) {
-  const width = Math.min(viewport.clientWidth, 640);
-  const height = Math.min(viewport.height, 560);
+function screenshotClipForAnchor(viewport, anchorRect, crop = null) {
+  const requestedWidth = crop?.width || 640;
+  const requestedHeight = crop?.height || 560;
+  const width = Math.min(viewport.clientWidth, requestedWidth);
+  const height = Math.min(viewport.height, requestedHeight);
   const anchorCenterX = viewport.scrollX + anchorRect.left + (anchorRect.width / 2);
   const anchorCenter = viewport.scrollY + anchorRect.top + (anchorRect.height / 2);
   const maxX = Math.max(0, viewport.scrollWidth - width);
@@ -753,16 +957,18 @@ async function captureAsset(page, baseUrl, asset, locale) {
   // A browser page is reused inside one isolated plugin process. Console
   // evidence belongs to this workflow step only, never to a prior step.
   page.__docsCaptureConsoleErrors = [];
+  page.__docsCaptureNetwork = [];
+  page.__docsCaptureBlockedNetwork = [];
+  page.__docsCaptureInteractions = [];
   await page.setViewport(asset.viewport);
   // Overlay renderers can start live sockets, WebGL loops, or audio engines on
   // load. For documentation we preserve their shipped markup and styles while
   // preventing that unsafe runtime work in the isolated capture browser.
-  const needsOpenShockDemo = asset.guideId === 'openshock' && asset.action && asset.action.type === 'open-overlay-preview';
   // Interactive Story has a large, self-starting admin runtime that begins
   // status polling before a test story has been configured. The shipped HTML
   // already contains the complete configuration UI, so documenting its safe
   // empty state must not start that runtime or make a network request.
-  const staticOnly = needsOpenShockDemo || asset.guideId === 'interactive-story';
+  const staticOnly = asset.guideId === 'interactive-story';
   await page.setJavaScriptEnabled(!staticOnly);
   const advancedTimerOverlay = asset.action && asset.action.prepare === 'create-demo-timer-overlay'
     ? await prepareAdvancedTimerOverlay(page, baseUrl, asset, locale)
@@ -777,35 +983,43 @@ async function captureAsset(page, baseUrl, asset, locale) {
   // dashboard scripts are available so the documented, real signed-out panel
   // can render before a browser navigation begins.
   const prepareImmediately = asset.action && asset.action.prepare === 'open-store-admin-view';
+  page.__docsCaptureInteractions = [
+    ...(advancedTimerOverlay?.interactions || []),
+    ...(goalsOverlay?.interactions || [])
+  ];
   if (prepareImmediately) {
-    await applySafeStepState(page, asset, locale);
+    page.__docsCaptureInteractions.push(...await applySafeStepState(page, asset, locale));
   } else {
     await new Promise((resolve) => setTimeout(resolve, WAIT_AFTER_LOAD_MS));
   }
-  if (needsOpenShockDemo) {
-    await page.setJavaScriptEnabled(true);
-    await page.addScriptTag({ url: `${baseUrl}/plugins/openshock/overlay/openshock_overlay.js` });
-    await page.waitForFunction(() => typeof window.handleCommandSent === 'function', { timeout: 3000 });
-    await page.evaluate(() => window.handleCommandSent({
-      type: 'vibrate',
-      intensity: 20,
-      duration: 800,
-      deviceName: 'Offline demo device',
-      username: 'Demo user',
-      source: 'docs-demo'
-    }));
-  }
-  if (!prepareImmediately) await applySafeStepState(page, asset, locale);
+  if (!prepareImmediately) page.__docsCaptureInteractions.push(...await applySafeStepState(page, asset, locale));
   // Some shipped controls are created only after a real settings/preview
   // workflow. Run that workflow first, then let the generic tab helper reveal
   // a static parent pane if the anchor still needs it.
   const tabPreparation = await activateContainingTab(page, asset.selector);
+  // Some dashboard views load their own i18n client after the initial page
+  // setup. Reapply the requested locale after a real navigation/modal action
+  // and immediately before language evidence is recorded.
+  await page.evaluate(async (lang) => {
+    document.documentElement.lang = lang;
+    document.documentElement.dataset.lang = lang;
+    localStorage.setItem('app_locale', lang);
+    if (window.i18n && typeof window.i18n.setLocale === 'function') {
+      await window.i18n.setLocale(lang);
+      window.i18n.updateDOM?.();
+    }
+    if (window.I18n && typeof window.I18n.load === 'function') {
+      await window.I18n.load(lang);
+      window.I18n.apply?.();
+    }
+  }, locale);
   const preparation = [...(advancedTimerOverlay?.preparation || []), ...(goalsOverlay?.preparation || []), tabPreparation].filter(Boolean);
   const focus = await assertRenderedAnchor(page, asset.selector);
   await new Promise((resolve) => setTimeout(resolve, 100));
   const observedSelectors = [...new Set([
     asset.selector,
     asset.action?.inputSelector,
+    ...asset.workflow.operations.map((operation) => operation.selector),
     ...asset.workflow.postconditions.map((condition) => condition.selector)
   ].filter(Boolean))];
   const state = await page.evaluate((lang, anchorSelector, selectors) => {
@@ -850,7 +1064,13 @@ async function captureAsset(page, baseUrl, asset, locale) {
   if (state.lang !== locale) throw new Error(`Document language is ${state.lang || 'unset'}, expected ${locale}`);
   if (state.theme !== 'cid') throw new Error(`Theme is ${state.theme || 'unset'}, expected cid`);
   if (!state.anchorRect) throw new Error(`Capture anchor has no rendered geometry: ${asset.selector}`);
-  const screenshotClip = screenshotClipForAnchor(state.viewport, state.anchorRect);
+  const executedOperations = assertWorkflowOperationsExecuted({
+    workflow: asset.workflow,
+    state,
+    interactions: page.__docsCaptureInteractions,
+    preparation
+  });
+  const screenshotClip = screenshotClipForAnchor(state.viewport, state.anchorRect, asset.workflow.captureRule.imageCrop);
   const target = outputPath(asset, locale);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   await page.screenshot({ path: target, type: 'png', clip: screenshotClip });
@@ -917,6 +1137,7 @@ async function captureAsset(page, baseUrl, asset, locale) {
     selector: asset.selector,
     action: asset.action,
     workflow: asset.workflow,
+    executedOperations,
     httpStatus: response.status(),
     fixture: asset.fixture,
     focus,
@@ -935,8 +1156,12 @@ async function captureAsset(page, baseUrl, asset, locale) {
     state,
     preparation,
     sha256,
-    consoleErrors: page.__docsCaptureConsoleErrors
+    consoleErrors: page.__docsCaptureConsoleErrors,
+    network: page.__docsCaptureNetwork,
+    interactions: page.__docsCaptureInteractions
   });
+  output.receipt.executedOperations = executedOperations;
+  output.receipt.blockedNetwork = [...page.__docsCaptureBlockedNetwork];
   const failedPostconditions = output.receipt.postconditions.filter((condition) => !condition.passed);
   if (failedPostconditions.length) {
     throw new Error(`Workflow postconditions failed for ${asset.guideId}/${asset.stepId}: ${JSON.stringify(failedPostconditions)}`);
@@ -944,8 +1169,8 @@ async function captureAsset(page, baseUrl, asset, locale) {
   return output;
 }
 
-async function captureFailureContext(page) {
-  return page.evaluate(() => {
+async function captureFailureContext(page, label) {
+  return readBoundedFailureContext(() => page.evaluate(() => {
     const isVisible = (element) => {
       const style = getComputedStyle(element);
       const rect = element.getBoundingClientRect();
@@ -956,65 +1181,117 @@ async function captureFailureContext(page) {
       .map((element) => (element.innerText || element.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 240))
       .filter(Boolean)
       .slice(0, 3);
-  }).catch(() => []);
+  }), {
+    label,
+    timeoutMs: FAILURE_CONTEXT_TIMEOUT_MS
+  });
 }
 
 async function captureDocs(spec, assets, locales) {
   const puppeteer = loadPuppeteer();
   const executablePath = browserExecutablePath();
-  const browser = await puppeteer.launch({ headless: 'new', ...(executablePath ? { executablePath } : {}), args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const outputs = [];
   const failures = [];
-  try {
-    const createCapturePage = async (locale, guideId) => {
-      const page = await browser.newPage();
-      await attachPluginAssetRewrite(page, guideId);
-      await configurePage(page, locale);
-      return page;
-    };
-    const byGuide = new Map();
-    for (const asset of assets) {
-      const group = byGuide.get(asset.guideId) || [];
-      group.push(asset);
-      byGuide.set(asset.guideId, group);
-    }
-    for (const locale of locales) {
-      for (const [guideId, guideAssets] of byGuide) {
-        let app;
-        let page;
-        try {
-          console.log(`Capturing ${locale}/${guideId} (${guideAssets.length} steps)`);
-          app = await startIsolatedApp(`${guideId}-${locale}`, guideId);
-          page = await createCapturePage(locale, guideId);
-          for (const asset of guideAssets) {
-            try {
-              outputs.push(await withTimeout(captureAsset(page, app.baseUrl, asset, locale), `${locale}/${asset.id}`));
-            } catch (error) {
-              const context = await captureFailureContext(page);
-              const diagnostic = context.length ? ` Visible page message: ${context.join(' | ')}` : '';
-              const startupLog = app?.getStartupLog?.() || '';
-              const relevantLog = startupLog.split(/\r?\n/)
-                .filter((line) => /plugin|config-import|error|failed/i.test(line))
-                .slice(-30)
-                .join(' | ');
-              const startupDiagnostic = relevantLog ? ` Startup log: ${relevantLog}` : '';
-              failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: `${error.message}${diagnostic}${startupDiagnostic}` });
-              if (error.message.includes('Timed out after')) {
-                await page.close().catch(() => {});
-                page = await createCapturePage(locale, guideId);
-              }
+  const createCapturePage = async (browser, locale, label) => {
+    const page = await runWithTimeout(() => browser.newPage(), {
+      label: `creating capture page for ${label}`,
+      timeoutMs: LIFECYCLE_TIMEOUT_MS
+    });
+    await runWithTimeout(() => configurePage(page, locale), {
+      label: `configuring capture page for ${label}`,
+      timeoutMs: LIFECYCLE_TIMEOUT_MS
+    });
+    await runWithTimeout(() => attachPluginAssetRewrite(page), {
+      label: `configuring capture requests for ${label}`,
+      timeoutMs: LIFECYCLE_TIMEOUT_MS
+    });
+    return page;
+  };
+  const byGuide = new Map();
+  for (const asset of assets) {
+    const group = byGuide.get(asset.guideId) || [];
+    group.push(asset);
+    byGuide.set(asset.guideId, group);
+  }
+  for (const locale of locales) {
+    for (const [guideId, guideAssets] of byGuide) {
+      const guideLabel = `${locale}/${guideId}`;
+      let app;
+      let browser;
+      let page;
+      try {
+        console.log(`Capturing ${guideLabel} (${guideAssets.length} steps)`);
+        app = await startIsolatedApp(`${guideId}-${locale}`, guideId);
+        browser = await runWithTimeout(() => puppeteer.launch({
+          headless: 'new',
+          ...(executablePath ? { executablePath } : {}),
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        }), {
+          label: `starting capture browser for ${guideLabel}`,
+          timeoutMs: LIFECYCLE_TIMEOUT_MS
+        });
+        page = await createCapturePage(browser, locale, guideLabel);
+        for (const asset of guideAssets) {
+          try {
+            outputs.push(await withTimeout(captureAsset(page, app.baseUrl, asset, locale), `${locale}/${asset.id}`));
+          } catch (error) {
+            const timedOut = isCaptureTimeout(error);
+            const context = timedOut ? [] : await captureFailureContext(page, `${locale}/${asset.id}`);
+            const diagnostic = context.length ? ` Visible page message: ${context.join(' | ')}` : '';
+            const startupLog = app?.getStartupLog?.() || '';
+            const relevantLog = startupLog.split(/\r?\n/)
+              .filter((line) => /plugin|config-import|error|failed/i.test(line))
+              .slice(-30)
+              .join(' | ');
+            const startupDiagnostic = relevantLog ? ` Startup log: ${relevantLog}` : '';
+            failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: `${error.message}${diagnostic}${startupDiagnostic}` });
+            if (timedOut) {
+              page = await recoverCapturePage({
+                closePage: () => page.close(),
+                createPage: () => createCapturePage(browser, locale, guideLabel),
+                label: `${locale}/${asset.id}`,
+                timeoutMs: LIFECYCLE_TIMEOUT_MS
+              });
             }
           }
-        } catch (error) {
-          for (const asset of guideAssets) failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: `Isolated guide process failed: ${error.message}` });
-        } finally {
-          if (page) await page.close();
-          if (app) await stopIsolatedApp(app);
+        }
+      } catch (error) {
+        for (const asset of guideAssets) failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: `Capture guide session failed: ${error.message}` });
+      } finally {
+        const cleanupErrors = [];
+        if (page) {
+          try {
+            await closeCapturePage(() => page.close(), {
+              label: guideLabel,
+              timeoutMs: LIFECYCLE_TIMEOUT_MS
+            });
+          } catch (error) {
+            cleanupErrors.push(error);
+          }
+        }
+        if (browser) {
+          try {
+            await closeCaptureBrowser(browser, {
+              label: guideLabel,
+              timeoutMs: LIFECYCLE_TIMEOUT_MS
+            });
+          } catch (error) {
+            cleanupErrors.push(error);
+          }
+        }
+        if (app) {
+          try {
+            await stopIsolatedApp(app, guideLabel);
+          } catch (error) {
+            cleanupErrors.push(error);
+          }
+        }
+        if (cleanupErrors.length) {
+          const lifecycleError = cleanupErrors.map((error) => error.message).join(' | ');
+          for (const asset of guideAssets) failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: `Capture lifecycle cleanup failed: ${lifecycleError}` });
         }
       }
     }
-  } finally {
-    await browser.close();
   }
   return { outputs, failures };
 }
@@ -1030,9 +1307,9 @@ async function captureProduct(spec, assets, locales) {
   const failures = [];
   try {
     for (const locale of locales) {
-      const page = await browser.newPage();
-      await attachPluginAssetRewrite(page);
-      await configurePage(page, locale);
+          const page = await browser.newPage();
+          await configurePage(page, locale);
+          await attachPluginAssetRewrite(page);
       for (const asset of assets) {
         try { outputs.push(await captureAsset(page, app.baseUrl, asset, locale)); } catch (error) { failures.push({ locale, id: asset.id, route: asset.route, error: error.message }); }
       }
@@ -1055,7 +1332,19 @@ function compatibleDocsOutput(output, expectedById) {
     && JSON.stringify(output.action) === JSON.stringify(asset.action)
     && JSON.stringify(output.workflow) === JSON.stringify(asset.workflow)
     && JSON.stringify(output.receipt?.operations) === JSON.stringify(asset.workflow.operations)
+    && Array.isArray(output.receipt?.executedOperations)
+    && output.receipt.executedOperations.length === asset.workflow.operations.length
+    && output.receipt.executedOperations.every((operation) => operation?.observed === true)
     && output.receipt?.postconditions?.every((condition) => condition.passed === true)
+    && output.receipt?.schemaVersion === 2
+    && Array.isArray(output.receipt?.network)
+    && output.receipt.network.every((entry) => isAllowedCaptureNetworkUrl(entry.url))
+    && Array.isArray(output.receipt?.blockedNetwork)
+    && output.receipt.blockedNetwork.every((entry) => entry?.attempted === true
+      && entry.disposition === 'blocked'
+      && !isAllowedCaptureNetworkUrl(entry.url))
+    && Array.isArray(output.receipt?.console)
+    && output.receipt.console.length === 0
     && output.focus?.selector === asset.selector
     && output.screenshotClip
     && output.screenshotClip.width === Math.min(output.state?.viewport?.clientWidth || 0, 640)

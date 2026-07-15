@@ -2,7 +2,7 @@
 
 const { LOCALES, buildGuides } = require('./plugin-tutorial-source');
 
-const SPEC_VERSION = '2026-07-14-plugin-docs-v5';
+const SPEC_VERSION = '2026-07-15-plugin-docs-v6';
 
 function buildDocsSpec(repoRoot) {
   const guides = buildGuides(repoRoot);

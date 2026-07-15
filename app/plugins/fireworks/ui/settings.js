@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Listen for language changes from main app
         window.i18n.onChange(() => {
             window.i18n.updateDOM();
+            refreshLocalizedRuntimeState();
         });
     }
     
@@ -466,18 +467,15 @@ function readCurrentTheme() {
 }
 
 function formatThemeLabel(theme) {
-    switch (theme) {
-        case 'day':
-            return 'Day';
-        case 'contrast':
-            return 'High Contrast';
-        case 'vision-impaired':
-            return 'Vision';
-        case 'cid':
-            return 'CID';
-        default:
-            return 'Night';
-    }
+    const themes = {
+        day: 'Day',
+        contrast: 'High Contrast',
+        'vision-impaired': 'Vision',
+        cid: 'CID',
+        night: 'Night'
+    };
+    const key = Object.hasOwn(themes, theme) ? theme : 'night';
+    return translateFireworks(`plugins.fireworks.ui.themes.${key}`, themes[key]);
 }
 
 function setChipState(id, value, enabled = null) {
@@ -503,22 +501,60 @@ function updateOverviewSummary() {
     const queueEnabled = !!config.queueEnabled;
     const adaptiveEnabled = config.adaptivePerformance !== false;
 
-    setChipState('overview-enabled-state', config.enabled ? 'Enabled' : 'Disabled', config.enabled);
-    setChipState('overview-theme-state', `Theme: ${theme}`);
-    setChipState('overview-resolution-state', `${resolutionPreset} · ${orientation === 'portrait' ? 'Portrait' : 'Landscape'}`);
-    setChipState('overview-performance-state', `${targetFps} FPS · ${maxParticles.toLocaleString()} particles`);
-    setChipState('overview-safety-state', `${queueEnabled ? 'Queue on' : 'Queue off'} · ${adaptiveEnabled ? 'Adaptive on' : 'Adaptive off'}`);
+    const orientationLabel = getLocalizedOrientation(orientation);
+    const enabledLabel = translateFireworks(
+        config.enabled ? 'plugins.fireworks.ui.status.enabled' : 'plugins.fireworks.ui.status.disabled',
+        config.enabled ? 'Enabled' : 'Disabled'
+    );
+    const queueLabel = translateFireworks(
+        queueEnabled ? 'plugins.fireworks.ui.status.queue_on' : 'plugins.fireworks.ui.status.queue_off',
+        queueEnabled ? 'Queue on' : 'Queue off'
+    );
+    const adaptiveLabel = translateFireworks(
+        adaptiveEnabled ? 'plugins.fireworks.ui.status.adaptive_on' : 'plugins.fireworks.ui.status.adaptive_off',
+        adaptiveEnabled ? 'Adaptive on' : 'Adaptive off'
+    );
+
+    setChipState('overview-enabled-state', enabledLabel, config.enabled);
+    setChipState('overview-theme-state', translateFireworks('plugins.fireworks.ui.summary.theme', 'Theme: {theme}', { theme }));
+    setChipState('overview-resolution-state', translateFireworks('plugins.fireworks.ui.summary.resolution', '{preset} · {orientation}', { preset: resolutionPreset, orientation: orientationLabel }));
+    setChipState('overview-performance-state', translateFireworks('plugins.fireworks.ui.summary.performance', '{fps} FPS · {particles} particles', { fps: targetFps, particles: maxParticles.toLocaleString() }));
+    setChipState('overview-safety-state', translateFireworks('plugins.fireworks.ui.summary.safety', '{queue} · {adaptive}', { queue: queueLabel, adaptive: adaptiveLabel }));
+}
+
+function translateFireworks(key, fallback, params = {}) {
+    if (window.i18n?.initialized) return window.i18n.t(key, params);
+    return fallback;
+}
+
+function getLocalizedOrientation(orientation) {
+    const isPortrait = orientation === 'portrait';
+    return translateFireworks(
+        isPortrait ? 'plugins.fireworks.ui.defaults.portrait' : 'plugins.fireworks.ui.defaults.landscape',
+        isPortrait ? 'Portrait' : 'Landscape'
+    );
+}
+
+function refreshLocalizedRuntimeState() {
+    updateOverviewSummary();
+    updateResolutionInfo(config.resolutionPreset || '1080p', config.orientation || 'landscape');
+    updateInternalResolutionInfo(
+        config.resolutionPreset || '1080p',
+        config.internalMaxResolutionPreset || '4k',
+        config.internalMinResolutionPreset || '540p',
+        config.orientation || 'landscape'
+    );
 }
 
 function updateResolutionInfo(preset, orientation) {
     const resolutions = {
-        '360p': { landscape: '640x360', portrait: '360x640', impact: 'Minimal' },
-        '480p': { landscape: '854x480', portrait: '480x854', impact: 'Very Low' },
-        '540p': { landscape: '960x540', portrait: '540x960', impact: 'Low' },
-        '720p': { landscape: '1280x720', portrait: '720x1280', impact: 'Medium' },
-        '1080p': { landscape: '1920x1080', portrait: '1080x1920', impact: 'High' },
-        '1440p': { landscape: '2560x1440', portrait: '1440x2560', impact: 'Very High' },
-        '4k': { landscape: '3840x2160', portrait: '2160x3840', impact: 'Ultra' }
+        '360p': { landscape: '640x360', portrait: '360x640', impact: 'minimal', fallbackImpact: 'Minimal' },
+        '480p': { landscape: '854x480', portrait: '480x854', impact: 'very_low', fallbackImpact: 'Very Low' },
+        '540p': { landscape: '960x540', portrait: '540x960', impact: 'low', fallbackImpact: 'Low' },
+        '720p': { landscape: '1280x720', portrait: '720x1280', impact: 'medium', fallbackImpact: 'Medium' },
+        '1080p': { landscape: '1920x1080', portrait: '1080x1920', impact: 'high', fallbackImpact: 'High' },
+        '1440p': { landscape: '2560x1440', portrait: '1440x2560', impact: 'very_high', fallbackImpact: 'Very High' },
+        '4k': { landscape: '3840x2160', portrait: '2160x3840', impact: 'ultra', fallbackImpact: 'Ultra' }
     };
     
     const info = resolutions[preset] || resolutions['1080p'];
@@ -529,8 +565,8 @@ function updateResolutionInfo(preset, orientation) {
     const performanceEl = document.getElementById('performance-impact');
     
     if (currentResEl) currentResEl.textContent = resolution;
-    if (currentOrientEl) currentOrientEl.textContent = orientation === 'portrait' ? 'Portrait' : 'Landscape';
-    if (performanceEl) performanceEl.textContent = info.impact;
+    if (currentOrientEl) currentOrientEl.textContent = getLocalizedOrientation(orientation);
+    if (performanceEl) performanceEl.textContent = translateFireworks(`plugins.fireworks.ui.impact.${info.impact}`, info.fallbackImpact);
 }
 
 function getResolutionLabel(preset, orientation) {
@@ -1230,7 +1266,7 @@ function initializePresets() {
 async function applyPreset(presetName) {
     const preset = PRESETS[presetName];
     if (!preset) {
-        const msg = window.i18n ? window.i18n.t('fireworks.presets.not_found') : 'Preset not found';
+        const msg = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.not_found') : 'Preset not found';
         showToast(msg, 'error');
         return;
     }
@@ -1243,9 +1279,9 @@ async function applyPreset(presetName) {
             const presetResult = results.find(r => r.preset === presetName);
             
             if (presetResult && presetResult.avgFps < 30) {
-                const warningTitle = window.i18n ? window.i18n.t('fireworks.presets.warning_title') : 'Warning: This preset might lag on your system!';
-                const warningFps = window.i18n ? window.i18n.t('fireworks.presets.warning_fps').replace('{fps}', presetResult.avgFps.toFixed(1)) : `The benchmark measured an average FPS of ${presetResult.avgFps.toFixed(1)}.`;
-                const warningConfirm = window.i18n ? window.i18n.t('fireworks.presets.warning_confirm') : 'Do you want to use this setting anyway?';
+                const warningTitle = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.warning_title') : 'Warning: This preset might lag on your system!';
+                const warningFps = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.warning_fps').replace('{fps}', presetResult.avgFps.toFixed(1)) : `The benchmark measured an average FPS of ${presetResult.avgFps.toFixed(1)}.`;
+                const warningConfirm = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.warning_confirm') : 'Do you want to use this setting anyway?';
                 
                 const confirmed = confirm(
                     `⚠️ ${warningTitle}\n\n${warningFps}\n\n${warningConfirm}`
@@ -1269,7 +1305,7 @@ async function applyPreset(presetName) {
     // Save config
     await saveConfig();
     
-    const msg = window.i18n ? window.i18n.t('fireworks.presets.applied') : 'Preset applied!';
+    const msg = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.applied') : 'Preset applied!';
     showToast(`${msg} (${presetName.toUpperCase()})`, 'success');
     
     // Switch to settings tab to show changes
@@ -1322,7 +1358,7 @@ async function startBenchmark() {
     benchmarkWindow = window.open(overlayUrl, 'FireworksBenchmark', 'width=1920,height=1080');
     
     if (!benchmarkWindow) {
-        const msg = window.i18n ? window.i18n.t('fireworks.benchmark.popup_blocked') : 'Could not open benchmark window. Please allow pop-ups.';
+        const msg = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.benchmark.popup_blocked') : 'Could not open benchmark window. Please allow pop-ups.';
         showToast(msg, 'error');
         benchmarkRunning = false;
         resetBenchmarkUi();
@@ -1378,7 +1414,7 @@ function stopBenchmark() {
     resetBenchmarkUi();
     restoreBenchmarkPreset();
     
-    const msg = window.i18n ? window.i18n.t('fireworks.benchmark.cancelled') : 'Benchmark cancelled';
+    const msg = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.benchmark.cancelled') : 'Benchmark cancelled';
     showToast(msg, 'error');
 }
 
@@ -1569,8 +1605,8 @@ function displayBenchmarkResults() {
     recommendationsDiv.innerHTML = '';
     
     if (recommendations.length === 0) {
-        const msg = window.i18n ? window.i18n.t('fireworks.benchmark.no_good_presets') : 'No preset reaches 30 FPS. We recommend the "Potato" preset for your system.';
-        const applyText = window.i18n ? window.i18n.t('fireworks.presets.apply') : 'Apply';
+        const msg = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.benchmark.no_good_presets') : 'No preset reaches 30 FPS. We recommend the "Potato" preset for your system.';
+        const applyText = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.apply') : 'Apply';
         
         const btn = document.createElement('button');
         btn.className = 'w-full mt-4 bg-green-500 hover:bg-green-600 py-3 rounded-lg font-bold transition';
@@ -1589,9 +1625,9 @@ function displayBenchmarkResults() {
             const recDiv = document.createElement('div');
             recDiv.className = 'mb-4';
             
-            const bestChoice = window.i18n ? window.i18n.t('fireworks.benchmark.best_choice') : 'Best Choice';
-            const alternative = window.i18n ? window.i18n.t('fireworks.benchmark.alternative') : 'Alternative';
-            const applyText = window.i18n ? window.i18n.t('fireworks.presets.apply') : 'Apply';
+            const bestChoice = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.benchmark.best_choice') : 'Best Choice';
+            const alternative = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.benchmark.alternative') : 'Alternative';
+            const applyText = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.apply') : 'Apply';
             
             const rank = index === 0 ? `🥇 ${bestChoice}` : `🥈 ${alternative}`;
             

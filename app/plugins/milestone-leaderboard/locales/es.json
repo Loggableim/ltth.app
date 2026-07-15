@@ -774,6 +774,93 @@
         "test_user_profile_fefc70": "👤 Perfil de usuario de prueba",
         "import_data_ff64df": "Importar datos",
         "user_detail_ffb565": "Detalle del usuario"
+      },
+      "ui": {
+        "status": {
+          "disabled": "Desactivado",
+          "enabled": "Activado",
+          "loading": "Cargando..."
+        },
+        "connection": {
+          "connecting": "Conectando...",
+          "error_title": "⚠️ Error de conexión",
+          "error_message": "No se pudo conectar al servidor. Actualice la página."
+        },
+        "defaults": {
+          "one": "1"
+        },
+        "navigation": {
+          "dashboard": "Panel",
+          "leaderboard": "Clasificación",
+          "import_export": "Importar/Exportar",
+          "all_time": "Todo el tiempo",
+          "settings": "Configuración"
+        },
+        "event": {
+          "gifts": "Regalos",
+          "follows": "Seguimientos",
+          "like": "Me gusta",
+          "share": "Compartir",
+          "gift": "Regalo",
+          "follow": "Seguir",
+          "subscribe": "Suscribirse"
+        },
+        "table": {
+          "rank": "Puesto",
+          "username": "Nombre de usuario",
+          "level": "Nivel",
+          "title": "Título",
+          "progress": "Progreso",
+          "growth": "Crecimiento",
+          "title_badge": "Título/insignia",
+          "announcement": "Anuncio",
+          "date_time": "Fecha/hora",
+          "reason": "Motivo",
+          "details": "Detalles",
+          "xp_required": "XP necesarios",
+          "color": "Color",
+          "bet": "Apuesta",
+          "field": "Campo",
+          "result": "Resultado",
+          "xp_change": "Cambio de XP",
+          "time": "Hora",
+          "multiplier": "Multiplicador",
+          "user": "Usuario",
+          "streak": "Racha",
+          "amount": "Cantidad",
+          "coins": "Monedas"
+        },
+        "options": {
+          "yes": "Sí",
+          "no": "No",
+          "standard": "Estándar",
+          "minimal": "Mínimo",
+          "transparent": "Transparente",
+          "ten": "10",
+          "twenty_five": "25",
+          "fifty": "50",
+          "one_hundred": "100",
+          "all_types": "Todos los tipos"
+        },
+        "actions": {
+          "view": "Ver",
+          "save": "💾 Guardar",
+          "preview": "Vista previa",
+          "search": "Buscar",
+          "open": "Abrir"
+        },
+        "levels": {
+          "editor_notice": "Se muestran los primeros 20 niveles. Un editor avanzado llegará en una futura actualización.",
+          "configuration": "📈 Configuración de niveles",
+          "description": "Personaliza el progreso de niveles y las recompensas"
+        },
+        "empty": {
+          "no_viewers": "Aún no hay espectadores",
+          "no_users": "No se encontraron usuarios",
+          "no_badges": "Aún no hay insignias",
+          "waiting_for_gifts": "Esperando regalos en esta sesión...",
+          "no_champions": "Aún no hay campeones..."
+        }
       }
     }
   }

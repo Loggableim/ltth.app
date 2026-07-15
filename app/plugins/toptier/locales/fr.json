@@ -14,7 +14,8 @@
             "refresh": "Actualiser",
             "close": "Fermer",
             "test": "Tester",
-            "clear": "Effacer"
+            "clear": "Effacer",
+            "copy": "Copier"
           },
           "status": {
             "ready": "Prêt",
@@ -28,6 +29,33 @@
             "failed": "Impossible d’enregistrer les réglages.",
             "noData": "Aucune donnée disponible.",
             "confirm": "Voulez-vous continuer ?"
+          },
+          "navigation": {
+            "likes": "J’aime",
+            "gifts": "Cadeaux",
+            "decay": "Décroissance",
+            "controls": "Commandes"
+          },
+          "table": {
+            "rank": "Rang",
+            "user": "Utilisateur",
+            "change": "Variation"
+          },
+          "labels": {
+            "orientation": "Orientation",
+            "theme": "Thème",
+            "size": "Taille"
+          },
+          "options": {
+            "night": "Nuit",
+            "day": "Jour",
+            "cid": "Thème Cid",
+            "landscape": "Paysage",
+            "portrait": "Portrait",
+            "linear": "Linéaire",
+            "percentage": "Pourcentage",
+            "idle": "Inactif",
+            "step": "Palier"
           }
         }
       },

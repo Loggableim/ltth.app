@@ -757,8 +757,8 @@
         <!-- Tabs -->
         <div class="tabs">
             <button class="tab-btn active" data-tab="session" data-i18n="plugins.milestone-leaderboard.labels.current_session_b7e7b3">Current Session</button>
-            <button class="tab-btn" data-tab="alltime">All-Time</button>
-            <button class="tab-btn" data-tab="settings">Settings</button>
+            <button class="tab-btn" data-tab="alltime" data-i18n="plugins.milestone-leaderboard.ui.navigation.all_time">All-Time</button>
+            <button class="tab-btn" data-tab="settings" data-i18n="plugins.milestone-leaderboard.ui.navigation.settings">Settings</button>
         </div>
 
         <!-- Session Tab -->
@@ -774,9 +774,9 @@
                 <table class="leaderboard-table">
                     <thead>
                         <tr>
-                            <th>Rank</th>
-                            <th>User</th>
-                            <th>Coins</th>
+                            <th data-i18n="plugins.milestone-leaderboard.ui.table.rank">Rank</th>
+                            <th data-i18n="plugins.milestone-leaderboard.ui.table.user">User</th>
+                            <th data-i18n="plugins.milestone-leaderboard.ui.table.coins">Coins</th>
                             <th data-i18n="plugins.milestone-leaderboard.labels.gifts_count">Gifts Count</th>
                         </tr>
                     </thead>
@@ -799,9 +799,9 @@
                 <table class="leaderboard-table">
                     <thead>
                         <tr>
-                            <th>Rank</th>
-                            <th>User</th>
-                            <th data-i18n="gift_milestone.users.total_coins">Total Coins</th>
+                            <th data-i18n="plugins.milestone-leaderboard.ui.table.rank">Rank</th>
+                            <th data-i18n="plugins.milestone-leaderboard.ui.table.user">User</th>
+                            <th data-i18n="plugins.milestone-leaderboard.gift_milestone.users.total_coins">Total Coins</th>
                             <th data-i18n="plugins.milestone-leaderboard.labels.total_gifts">Total Gifts</th>
                         </tr>
                     </thead>
@@ -855,7 +855,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" data-i18n="gift_milestone.overlay.url">Overlay URL</label>
+                        <label class="form-label" data-i18n="plugins.milestone-leaderboard.gift_milestone.overlay.url">Overlay URL</label>
                         <input type="text" class="form-input" id="overlay-url" readonly>
                         <small style="color: var(--color-text-secondary);" data-i18n="plugins.milestone-leaderboard.labels.use_this_url_in_obs_browser_source">Use this URL in OBS Browser Source</small>
                     </div>
@@ -938,7 +938,7 @@
             if (!sessionData || sessionData.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" class="empty-state">
                     <div class="empty-icon">🎁</div>
-                    <p>Waiting for gifts in this session...</p>
+                    <p data-i18n="plugins.milestone-leaderboard.ui.empty.waiting_for_gifts">Waiting for gifts in this session...</p>
                 </td></tr>`;
                 return;
             }
@@ -960,7 +960,7 @@
             if (!alltimeData || alltimeData.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" class="empty-state">
                     <div class="empty-icon">🏆</div>
-                    <p>No champions yet...</p>
+                    <p data-i18n="plugins.milestone-leaderboard.ui.empty.no_champions">No champions yet...</p>
                 </td></tr>`;
                 return;
             }

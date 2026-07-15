@@ -1,8 +1,10 @@
 'use strict';
 
+const { exactLocalUrlExpectation } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+const guide = {
   "id": "fireworks",
   "route": "/plugins/fireworks/ui/settings.html",
   "topic": {
@@ -172,11 +174,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/fireworks/ui/settings.html"
+            "expected": {
+              "path": "/plugins/fireworks/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -287,11 +293,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/fireworks/ui/settings.html"
+            "expected": {
+              "path": "/plugins/fireworks/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -402,11 +412,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/fireworks/ui/settings.html"
+            "expected": {
+              "path": "/plugins/fireworks/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -515,11 +529,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/fireworks/ui/settings.html"
+            "expected": {
+              "path": "/plugins/fireworks/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -625,11 +643,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/fireworks/overlay.html"
+            "expected": {
+              "path": "/plugins/fireworks/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -743,11 +765,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/fireworks/ui/settings.html"
+            "expected": {
+              "path": "/plugins/fireworks/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -769,4 +795,55 @@ module.exports = Object.freeze({
       }
     }
   ]
+};
+
+function applyWorkflowCorrections(corrections) {
+  for (const [id, correction] of Object.entries(corrections)) {
+    const step = guide.steps.find((candidate) => candidate.id === id);
+    if (!step) throw new Error(`Missing Fireworks guide step: ${id}`);
+    const focusText = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.title]));
+    const expected = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.expected]));
+    const route = correction.route || step.capture.route;
+    step.copy = correction.copy;
+    step.capture = { ...step.capture, route, assertVisible: correction.selector, focusText, action: { ...correction.action, stepId: id }, expected };
+    step.workflow = {
+      ...step.workflow,
+      route,
+      instructions: Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, { title: copy.title, body: copy.body, expected: copy.expected }])),
+      operations: [{ type: 'goto', route }, { type: correction.action.type, selector: correction.selector }],
+      postconditions: [
+        { type: 'http-status', expected: 200 },
+        { type: 'url', expected: exactLocalUrlExpectation(route) },
+        { type: 'visible', selector: correction.selector },
+        { type: 'console', expected: 'no-errors' }
+      ],
+      captureRule: { ...step.workflow.captureRule, selector: correction.selector, stateChange: false }
+    };
+  }
+}
+
+applyWorkflowCorrections({
+  'effect-profile': {
+    selector: '#master-toggle',
+    action: { type: 'open-plugin-surface', prepare: 'open-fireworks-settings' },
+    copy: {
+      de: { title: 'Hauptschalter fuer Effekte pruefen', body: 'Oeffne die echten Fireworks-Einstellungen und pruefe nur den sichtbaren Hauptschalter. Schalte ihn nicht um, starte keinen Test und speichere keine Konfiguration.', expected: 'Der Hauptschalter der vorhandenen lokalen Einstellung ist sichtbar und unveraendert.', alt: 'Fireworks Hauptschalter fuer Effekte' },
+      en: { title: 'Inspect the effects master switch', body: 'Open the real Fireworks settings and inspect only the visible master switch. Do not toggle it, start a test, or save configuration.', expected: 'The master switch of the existing local setting is visible and unchanged.', alt: 'Fireworks effects master switch' },
+      es: { title: 'Revisa el interruptor maestro de efectos', body: 'Abre los ajustes reales de Fireworks y revisa solo el interruptor maestro visible. No lo cambies, no inicies una prueba ni guardes configuracion.', expected: 'El interruptor maestro de la configuracion local existente es visible y no cambia.', alt: 'Interruptor maestro de efectos de Fireworks' },
+      fr: { title: 'Verifiez l interrupteur principal des effets', body: 'Ouvrez les vrais reglages Fireworks et verifiez seulement l interrupteur principal visible. Ne le basculez pas, ne lancez pas de test et nenregistrez pas de configuration.', expected: 'L interrupteur principal du reglage local existant est visible et inchange.', alt: 'Interrupteur principal des effets Fireworks' }
+    }
+  },
+  'fireworks-overlay': {
+    route: '/plugins/fireworks/ui/settings.html',
+    selector: '#copy-overlay-url',
+    action: { type: 'open-plugin-surface' },
+    copy: {
+      de: { title: 'Fireworks-Overlay-URL für OBS kopieren', body: 'Prüfe den sichtbaren Button „Copy Overlay URL“ in den Fireworks-Einstellungen und übernimm die URL nur in eine nicht sendende OBS-Testszene. Das Bild dokumentiert den echten OBS-Einstieg statt eines leeren Overlays.', expected: 'Der Overlay-URL-Button ist sichtbar und trennt die OBS-Einrichtung klar vom lokalen Testfeuerwerk.', alt: 'Fireworks Overlay-URL für OBS' },
+      en: { title: 'Copy the Fireworks overlay URL for OBS', body: 'Review the visible “Copy Overlay URL” button in Fireworks Settings and use the URL only in a non-live OBS test scene. The image documents the real OBS entry point instead of an empty overlay.', expected: 'The overlay URL button is visible and clearly separates OBS setup from the local test firework.', alt: 'Fireworks overlay URL for OBS' },
+      es: { title: 'Copia la URL del overlay Fireworks para OBS', body: 'Revisa el botón visible «Copy Overlay URL» en los ajustes de Fireworks y usa la URL solo en una escena de prueba de OBS que no está en directo. La imagen documenta el acceso real a OBS en lugar de un overlay vacío.', expected: 'El botón de URL del overlay está visible y separa claramente la configuración OBS del fuego artificial de prueba local.', alt: 'URL del overlay Fireworks para OBS' },
+      fr: { title: 'Copiez l’URL de l’overlay Fireworks pour OBS', body: 'Examinez le bouton visible « Copy Overlay URL » dans les réglages Fireworks et utilisez l’URL uniquement dans une scène de test OBS hors diffusion. L’image documente le véritable point d’entrée OBS au lieu d’un overlay vide.', expected: 'Le bouton d’URL de l’overlay est visible et sépare clairement la configuration OBS du feu d’artifice de test local.', alt: 'URL de l’overlay Fireworks pour OBS' }
+    }
+  }
 });
+
+module.exports = Object.freeze(guide);

@@ -281,6 +281,20 @@
         "text_appears_at_top_center_of_screen": "Der Text erscheint oben in der Mitte des Bildschirms",
         "target_fps_60_fddd7b": "- Ziel-FPS: 60",
         "lower_settings_help_prevent_stuttering_during_extreme_gift": "- Niedrigere Einstellungen helfen, Ruckeln bei extremem Geschenk-Spam zu verhindern"
+      },
+      "ui": {
+        "status": { "enabled": "Aktiviert", "disabled": "Deaktiviert", "queue_on": "Warteschlange an", "queue_off": "Warteschlange aus", "adaptive_on": "Adaptiv an", "adaptive_off": "Adaptiv aus" },
+        "defaults": {
+          "zero": "0", "one": "1", "three": "3", "five": "5", "six": "6", "ten": "10", "twenty": "20", "thirty": "30", "fifty": "50",
+          "two_hundred": "200", "five_hundred": "500", "eight_hundred": "800", "one_thousand": "1000", "two_thousand": "2000", "three_thousand": "3000",
+          "one_x": "1-fach", "two_x": "2-fach", "three_x": "3-fach", "five_x": "5-fach", "ten_x": "10-fach", "five_per_second": "5/Sek.",
+          "burst": "Salve", "landscape": "Querformat", "portrait": "Hochformat"
+        },
+        "impact": { "minimal": "Minimal", "very_low": "Sehr niedrig", "low": "Niedrig", "medium": "Mittel", "high": "Hoch", "very_high": "Sehr hoch", "ultra": "Ultra" },
+        "labels": { "range_to": "bis", "center": "Mitte", "neon": "Neon", "minimal": "Minimal", "large": "Groß", "custom": "Benutzerdefiniert", "bounce": "Federnd", "rotate": "Drehen" },
+        "presets": { "ultra": "Höchste", "four_k": "4K – Höchste", "high": "Hoch", "resolution_1440p": "1440p – Hoch", "recommended": "Empfohlen", "low": "Niedrig", "resolution_720p": "720p – Niedrig", "toaster": "Toaster", "resolution_540p": "540p – Toaster", "potato": "Kartoffel", "resolution_360p": "360p – Kartoffel" },
+        "summary": { "theme": "Thema: {theme}", "resolution": "{preset} · {orientation}", "performance": "{fps} FPS · {particles} Partikel", "safety": "{queue} · {adaptive}" },
+        "themes": { "day": "Tag", "contrast": "Hoher Kontrast", "vision-impaired": "Sehmodus", "cid": "CID", "night": "Nacht" }
       }
     }
   }

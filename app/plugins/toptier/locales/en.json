@@ -14,7 +14,8 @@
             "refresh": "Refresh",
             "close": "Close",
             "test": "Test",
-            "clear": "Clear"
+            "clear": "Clear",
+            "copy": "Copy"
           },
           "status": {
             "ready": "Ready",
@@ -28,6 +29,33 @@
             "failed": "Could not save settings.",
             "noData": "No data available.",
             "confirm": "Are you sure?"
+          },
+          "navigation": {
+            "likes": "Likes",
+            "gifts": "Gifts",
+            "decay": "Decay",
+            "controls": "Controls"
+          },
+          "table": {
+            "rank": "Rank",
+            "user": "User",
+            "change": "Change"
+          },
+          "labels": {
+            "orientation": "Orientation",
+            "theme": "Theme",
+            "size": "Size"
+          },
+          "options": {
+            "night": "Night",
+            "day": "Day",
+            "cid": "Cid",
+            "landscape": "Landscape",
+            "portrait": "Portrait",
+            "linear": "Linear",
+            "percentage": "Percentage",
+            "idle": "Idle",
+            "step": "Step"
           }
         }
       },

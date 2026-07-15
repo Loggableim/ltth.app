@@ -790,7 +790,7 @@
         <button id="btn-refresh-devices" class="btn btn-secondary btn-sm" style="flex:0 0 auto;min-width:160px;" data-i18n="plugins.stt-ticker.labels.freigeben_aktualisieren">Freigeben & aktualisieren</button>
       </div>
       <div class="settings-row">
-        <label for="audio-device-select">Quell-Mikrofon</label>
+        <label for="audio-device-select" data-i18n="plugins.stt-ticker.stt_ticker.ui.labels.source_microphone">Quell-Mikrofon</label>
         <select id="audio-device-select" style="flex:1;"></select>
       </div>
       <p class="help-text" style="margin-top:8px;" data-i18n="plugins.stt-ticker.labels.die_auswahl_wird_gespeichert_und_beim_start_der">Die Auswahl wird gespeichert und beim Start der Aufnahme verwendet. Nach der ersten Freigabe erscheinen die Gerätenamen.</p>
@@ -798,7 +798,7 @@
 
     <div class="controls">
       <button id="btn-start" class="btn btn-primary" data-i18n="plugins.stt-ticker.labels.capture_starten">Capture starten</button>
-      <button id="btn-stop" class="btn btn-danger" disabled>Stop</button>
+      <button id="btn-stop" class="btn btn-danger" disabled data-i18n="plugins.stt-ticker.stt_ticker.ui.actions.stop">Stop</button>
     </div>
 
     </main>
@@ -811,7 +811,7 @@
       </div>
       <div class="inline-flex" style="gap:6px;">
         <input type="text" id="ml-overlay-url" readonly style="flex:1;font-family:monospace;font-size:12px;padding:6px 8px;cursor:text;" value="">
-        <button id="btn-copy-overlay-url" class="btn btn-small btn-primary" style="flex:0;">Kopieren</button>
+        <button id="btn-copy-overlay-url" class="btn btn-small btn-primary" style="flex:0;" data-i18n="plugins.stt-ticker.stt_ticker.ui.actions.copy">Kopieren</button>
       </div>
       <p class="help-text" style="margin-top:8px;" data-i18n="plugins.stt-ticker.labels.als_browser_source_in_obs_einfugen">Als Browser Source in OBS einfügen</p>
     </section>
@@ -825,7 +825,7 @@
       <h3 id="settings-toggle" data-i18n="plugins.stt-ticker.labels.multi_language_einstellungen">Multi-Language Einstellungen</h3>
       <div id="settings-body">
         <div class="settings-row">
-          <label>STT-Modell</label>
+          <label data-i18n="plugins.stt-ticker.stt_ticker.ui.labels.stt_model">STT-Modell</label>
           <select id="ml-asr-model" style="flex:1;">
             <option value="" data-i18n="plugins.stt-ticker.labels.modell_wahlen">Modell wählen</option>
           </select>
@@ -850,7 +850,7 @@
           <div id="lang-tags" class="lang-tag-list"></div>
         </div>
         <div style="margin-top:8px;">
-          <button id="btn-save-ml" class="btn btn-small btn-primary" data-i18n="stt_ticker.ui.actions.save">Speichern</button>
+          <button id="btn-save-ml" class="btn btn-small btn-primary" data-i18n="plugins.stt-ticker.stt_ticker.ui.actions.save">Speichern</button>
           <span id="ml-status" style="font-size:12px;color:#4CAF50;margin-left:8px;"></span>
         </div>
       </div>
@@ -883,6 +883,19 @@
     const CHUNK_DURATION_MS = 5000;
     const CHUNK_SAMPLES = Math.floor(SAMPLE_RATE * CHUNK_DURATION_MS / 1000);
     const API = window.location.origin;
+
+    function translateUi(key, fallback) {
+      const translation = window.i18n.t(key);
+      return translation && translation !== key ? translation : fallback;
+    }
+
+    function setSelectFallback(select, key, fallback) {
+      select.innerHTML = '';
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = translateUi(key, fallback);
+      select.appendChild(option);
+    }
 
     let audioContext = null;
     let scriptProcessor = null;
@@ -1292,6 +1305,7 @@
     }
 
     async function loadAsrModels() {
+      if (window.i18n?.ready) await window.i18n.ready;
       const dgModels = [], elModels = [];
       try {
         const dgRes = await fetch(API + '/api/stt-ticker/asr/deepgram/models');
@@ -1344,11 +1358,18 @@
           mlAsrModelEl.appendChild(opt);
         }
       } else {
-        mlAsrModelEl.innerHTML = '<option value="">' + (provider === 'fish.audio' ? 'Keine Auswahl' : 'Keine Modelle') + '</option>';
+        setSelectFallback(
+          mlAsrModelEl,
+          provider === 'fish.audio'
+            ? 'plugins.stt-ticker.stt_ticker.ui.options.no_selection'
+            : 'plugins.stt-ticker.stt_ticker.ui.options.no_models',
+          provider === 'fish.audio' ? 'Keine Auswahl' : 'Keine Modelle'
+        );
       }
     }
 
     async function loadSettings() {
+      if (window.i18n?.ready) await window.i18n.ready;
       try {
         const res = await fetch(API + '/api/stt-ticker/vad/settings');
         const data = await res.json();
@@ -1389,7 +1410,11 @@
             await loadModels();
           } else {
             log('Kein Ollama Key - Übersetzung deaktiviert', 'warn');
-            mlModelEl.innerHTML = '<option value="">Kein API-Key</option>';
+            setSelectFallback(
+              mlModelEl,
+              'plugins.stt-ticker.stt_ticker.ui.options.no_api_key',
+              'Kein API-Key'
+            );
           }
         }
       } catch (e) {

@@ -281,6 +281,20 @@
         "text_appears_at_top_center_of_screen": "Text appears at top-center of screen",
         "target_fps_60_fddd7b": "- Target FPS: 60",
         "lower_settings_help_prevent_stuttering_during_extreme_gift": "- Lower settings help prevent stuttering during extreme gift spam"
+      },
+      "ui": {
+        "status": { "enabled": "Enabled", "disabled": "Disabled", "queue_on": "Queue on", "queue_off": "Queue off", "adaptive_on": "Adaptive on", "adaptive_off": "Adaptive off" },
+        "defaults": {
+          "zero": "0", "one": "1", "three": "3", "five": "5", "six": "6", "ten": "10", "twenty": "20", "thirty": "30", "fifty": "50",
+          "two_hundred": "200", "five_hundred": "500", "eight_hundred": "800", "one_thousand": "1000", "two_thousand": "2000", "three_thousand": "3000",
+          "one_x": "1×", "two_x": "2×", "three_x": "3×", "five_x": "5×", "ten_x": "10×", "five_per_second": "5/sec",
+          "burst": "Burst", "landscape": "Landscape", "portrait": "Portrait"
+        },
+        "impact": { "minimal": "Minimal", "very_low": "Very low", "low": "Low", "medium": "Medium", "high": "High", "very_high": "Very high", "ultra": "Ultra" },
+        "labels": { "range_to": "to", "center": "Center", "neon": "Neon", "minimal": "Minimal", "large": "Large", "custom": "Custom", "bounce": "Bounce", "rotate": "Rotate" },
+        "presets": { "ultra": "Ultra", "four_k": "4K – Ultra", "high": "High", "resolution_1440p": "1440p – High", "recommended": "Recommended", "low": "Low", "resolution_720p": "720p – Low", "toaster": "Toaster", "resolution_540p": "540p – Toaster", "potato": "Potato", "resolution_360p": "360p – Potato" },
+        "summary": { "theme": "Theme: {theme}", "resolution": "{preset} · {orientation}", "performance": "{fps} FPS · {particles} particles", "safety": "{queue} · {adaptive}" },
+        "themes": { "day": "Day", "contrast": "High contrast", "vision-impaired": "Vision", "cid": "CID", "night": "Night" }
       }
     }
   }

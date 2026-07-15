@@ -14,7 +14,8 @@
             "refresh": "Refresh",
             "close": "Close",
             "test": "Test",
-            "clear": "Clear"
+            "clear": "Clear",
+            "apply": "Apply"
           },
           "status": {
             "ready": "Ready",
@@ -28,6 +29,54 @@
             "failed": "Could not save settings.",
             "noData": "No data available.",
             "confirm": "Are you sure?"
+          },
+          "metrics": {
+            "profile": "Profile",
+            "render": "Rendering",
+            "trigger": "Trigger"
+          },
+          "tabs": {
+            "look": "Look",
+            "frame": "Frame",
+            "motion": "Motion",
+            "postFx": "Post-FX",
+            "trigger": "Trigger"
+          },
+          "options": {
+            "obsSafe": "OBS-safe",
+            "custom": "Custom",
+            "top": "Top",
+            "bottom": "Bottom"
+          },
+          "settings": {
+            "accentColor": "Accent color:",
+            "animationEasing": "Animation easing:",
+            "smokeColor": "Smoke color:"
+          },
+          "trigger": {
+            "preset": "Preset:",
+            "defaultPreset": "Default",
+            "hypePreset": "Hype",
+            "chillPreset": "Chill",
+            "partyPreset": "Party",
+            "coinRule": "Coin rule"
+          },
+          "table": {
+            "enabled": "Enabled",
+            "event": "Event",
+            "condition": "Condition",
+            "action": "Action",
+            "effect": "Effect",
+            "color": "Color"
+          },
+          "presets": {
+            "empty": "No presets saved yet.",
+            "load": "\ud83d\udcc2 Load",
+            "deleteTitle": "Delete preset"
+          },
+          "placeholders": {
+            "presetName": "Preset name (for example, Hype mode)",
+            "giftSearch": "Search for a gift or coin range such as 99-499"
           }
         }
       },

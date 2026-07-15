@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="talking_heads_ui.title">Talking Heads - AI Avatar Animation</title>
+    <title data-i18n="plugins.talking-heads.talking_heads_ui.title">Talking Heads - AI Avatar Animation</title>
     <link rel="stylesheet" href="/css/tailwind.output.css">
     <link rel="stylesheet" href="/css/themes.css">
     <script>
@@ -686,9 +686,9 @@
         <div class="mb-6">
             <h1 class="text-3xl font-bold mb-2">
                 <i data-lucide="user-circle-2" class="inline-block w-8 h-8 mr-2"></i>
-                <span data-i18n="talking_heads_ui.title">Talking Heads - AI Avatar Animation</span>
+                <span data-i18n="plugins.talking-heads.talking_heads_ui.title">Talking Heads - AI Avatar Animation</span>
             </h1>
-            <p class="text-sm" style="color: var(--color-text-secondary);" data-i18n="talking_heads_ui.subtitle">
+            <p class="text-sm" style="color: var(--color-text-secondary);" data-i18n="plugins.talking-heads.talking_heads_ui.subtitle">
                 Dynamische 2D-Avatare für TikTok-User mit TTS-synchronisierter Animation
             </p>
         </div>
@@ -697,7 +697,7 @@
         <div class="config-section">
             <div class="section-title">
                 <i data-lucide="activity"></i>
-                <span data-i18n="talking_heads_ui.sections.status">Status & Einstellungen</span>
+                <span data-i18n="plugins.talking-heads.talking_heads_ui.sections.status">Status & Einstellungen</span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -705,30 +705,30 @@
                     <label class="toggle-switch">
                         <input type="checkbox" id="enabledSwitch">
                         <span class="toggle-slider"></span>
-                        <span class="toggle-label" data-i18n="talking_heads_ui.labels.plugin_enabled">Plugin aktiviert</span>
+                        <span class="toggle-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.plugin_enabled">Plugin aktiviert</span>
                     </label>
                 </div>
                 <div>
                     <label class="toggle-switch">
                         <input type="checkbox" id="debugLoggingSwitch">
                         <span class="toggle-slider"></span>
-                        <span class="toggle-label" data-i18n="talking_heads_ui.labels.debug_logging">Debug-Logging</span>
+                        <span class="toggle-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.debug_logging">Debug-Logging</span>
                     </label>
                 </div>
                 <div>
-                    <span id="apiStatus" class="status-badge badge-info" data-i18n="talking_heads_ui.labels.api_status_checking">Prüfe...</span>
+                    <span id="apiStatus" class="status-badge badge-info" data-i18n="plugins.talking-heads.talking_heads_ui.labels.api_status_checking">Prüfe...</span>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div class="form-group">
-                    <label class="form-label" data-i18n="talking_heads_ui.labels.image_provider">Bild-Engine</label>
+                    <label class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.image_provider">Bild-Engine</label>
                     <select id="imageProvider" class="form-select">
-                        <option value="auto" data-i18n="talking_heads_ui.options.provider_auto">Auto (OpenAI bevorzugt, SiliconFlow als Fallback)</option>
-                        <option value="openai" data-i18n="talking_heads_ui.options.provider_openai">OpenAI (DALL-E 3)</option>
-                        <option value="siliconflow" data-i18n="talking_heads_ui.options.provider_siliconflow">SiliconFlow (FLUX.1)</option>
+                        <option value="auto" data-i18n="plugins.talking-heads.talking_heads_ui.options.provider_auto">Auto (OpenAI bevorzugt, SiliconFlow als Fallback)</option>
+                        <option value="openai" data-i18n="plugins.talking-heads.talking_heads_ui.options.provider_openai">OpenAI (DALL-E 3)</option>
+                        <option value="siliconflow" data-i18n="plugins.talking-heads.talking_heads_ui.options.provider_siliconflow">SiliconFlow (FLUX.1)</option>
                     </select>
-                    <div class="form-help" data-i18n="talking_heads_ui.help.image_provider">Wähle den gewünschten Bildgenerator. Auto versucht zuerst OpenAI (falls API-Key gesetzt).</div>
+                    <div class="form-help" data-i18n="plugins.talking-heads.talking_heads_ui.help.image_provider">Wähle den gewünschten Bildgenerator. Auto versucht zuerst OpenAI (falls API-Key gesetzt).</div>
                 </div>
             </div>
 
@@ -742,7 +742,7 @@
 
             <div class="alert alert-info">
                 <strong data-i18n="plugins.talking-heads.labels.info_image_generation">Info: Image generation</strong><br><span data-i18n="plugins.talking-heads.labels.the_plugin_supports">
-                The plugin supports </span><strong data-i18n="talking_heads_ui.options.provider_openai">OpenAI (DALL-E 3)</strong> and <strong data-i18n="talking_heads_ui.options.provider_siliconflow">SiliconFlow (FLUX.1)</strong><span data-i18n="plugins.talking-heads.labels.store_the_api_key_in_the_global_settings">.
+                The plugin supports </span><strong data-i18n="plugins.talking-heads.talking_heads_ui.options.provider_openai">OpenAI (DALL-E 3)</strong> and <strong data-i18n="plugins.talking-heads.talking_heads_ui.options.provider_siliconflow">SiliconFlow (FLUX.1)</strong><span data-i18n="plugins.talking-heads.labels.store_the_api_key_in_the_global_settings">.
                 Store the API key in the global settings and select your preferred engine here.
             </span></div>
         </div>
@@ -751,11 +751,11 @@
         <div class="config-section">
             <div class="section-title">
                 <i data-lucide="palette"></i>
-                <span data-i18n="talking_heads_ui.sections.style">Avatar-Stil</span>
+                <span data-i18n="plugins.talking-heads.talking_heads_ui.sections.style">Avatar-Stil</span>
             </div>
 
             <div class="form-group">
-                <label class="form-label" data-i18n="talking_heads_ui.labels.select_style">Wählen Sie einen Stil für die Avatar-Generierung</label>
+                <label class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.select_style">Wählen Sie einen Stil für die Avatar-Generierung</label>
                 <div class="style-grid" id="styleGrid">
                     <!-- Populated by JavaScript -->
                 </div>
@@ -766,26 +766,26 @@
         <div class="config-section">
             <div class="section-title">
                 <i data-lucide="shield"></i>
-                <span data-i18n="talking_heads_ui.sections.permissions">Berechtigungen</span>
+                <span data-i18n="plugins.talking-heads.talking_heads_ui.sections.permissions">Berechtigungen</span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="form-group">
-                    <label class="form-label" data-i18n="talking_heads_ui.labels.permission_question">Wer erhält Talking Heads?</label>
+                    <label class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.permission_question">Wer erhält Talking Heads?</label>
                     <select id="rolePermission" class="form-select">
-                        <option value="all" data-i18n="talking_heads_ui.options.permission_all">Alle Zuschauer</option>
-                        <option value="team" data-i18n="talking_heads_ui.options.permission_team">Nur Team-Mitglieder</option>
-                        <option value="subscriber" data-i18n="talking_heads_ui.options.permission_subscriber">Nur Abonnenten/Superfans</option>
-                        <option value="custom_voice" data-i18n="talking_heads_ui.options.permission_custom_voice">Nur User mit TTS-Stimme</option>
-                        <option value="moderator" data-i18n="talking_heads_ui.options.permission_moderator">Nur Moderatoren</option>
-                        <option value="top_gifter" data-i18n="talking_heads_ui.options.permission_top_gifter">Nur Top Gifter</option>
+                        <option value="all" data-i18n="plugins.talking-heads.talking_heads_ui.options.permission_all">Alle Zuschauer</option>
+                        <option value="team" data-i18n="plugins.talking-heads.talking_heads_ui.options.permission_team">Nur Team-Mitglieder</option>
+                        <option value="subscriber" data-i18n="plugins.talking-heads.talking_heads_ui.options.permission_subscriber">Nur Abonnenten/Superfans</option>
+                        <option value="custom_voice" data-i18n="plugins.talking-heads.talking_heads_ui.options.permission_custom_voice">Nur User mit TTS-Stimme</option>
+                        <option value="moderator" data-i18n="plugins.talking-heads.talking_heads_ui.options.permission_moderator">Nur Moderatoren</option>
+                        <option value="top_gifter" data-i18n="plugins.talking-heads.talking_heads_ui.options.permission_top_gifter">Nur Top Gifter</option>
                     </select>
                 </div>
 
                 <div class="form-group" id="minTeamLevelWrapper" style="display: none;">
-                    <label class="form-label" data-i18n="talking_heads_ui.labels.min_team_level">Minimales Team-Level</label>
+                    <label class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.min_team_level">Minimales Team-Level</label>
                     <input type="number" id="minTeamLevel" class="form-input" min="0" max="6" value="0">
-                    <div class="form-help" data-i18n="talking_heads_ui.help.min_team_level">Level 0-6 (0 = alle Team-Mitglieder)</div>
+                    <div class="form-help" data-i18n="plugins.talking-heads.talking_heads_ui.help.min_team_level">Level 0-6 (0 = alle Team-Mitglieder)</div>
                 </div>
             </div>
 
@@ -807,22 +807,22 @@
         <div class="config-section">
             <div class="section-title">
                 <i data-lucide="film"></i>
-                <span data-i18n="talking_heads_ui.sections.animation">Animations-Einstellungen</span>
+                <span data-i18n="plugins.talking-heads.talking_heads_ui.sections.animation">Animations-Einstellungen</span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="form-group">
-                    <label class="form-label" data-i18n="talking_heads_ui.labels.fade_in">Fade-In Dauer (ms)</label>
+                    <label class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.fade_in">Fade-In Dauer (ms)</label>
                     <input type="number" id="fadeInDuration" class="form-input" min="0" max="2000" step="100" value="300">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" data-i18n="talking_heads_ui.labels.fade_out">Fade-Out Dauer (ms)</label>
+                    <label class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.fade_out">Fade-Out Dauer (ms)</label>
                     <input type="number" id="fadeOutDuration" class="form-input" min="0" max="2000" step="100" value="300">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" data-i18n="talking_heads_ui.labels.blink_interval">Blinzel-Intervall (ms)</label>
+                    <label class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.blink_interval">Blinzel-Intervall (ms)</label>
                     <input type="number" id="blinkInterval" class="form-input" min="1000" max="10000" step="500" value="3000">
                 </div>
             </div>
@@ -853,7 +853,7 @@
                     <label class="form-label" data-i18n="plugins.talking-heads.labels.obs_hud_url">OBS HUD URL</label>
                     <div class="flex gap-2">
                         <input type="text" id="obsHudUrl" class="form-input" readonly>
-                        <button class="btn btn-secondary" type="button" id="copyObsHudUrlBtn">Copy</button>
+                        <button class="btn btn-secondary" type="button" id="copyObsHudUrlBtn" data-i18n="plugins.talking-heads.labels.copy">Copy</button>
                     </div>
                     <div class="form-help" data-i18n="plugins.talking-heads.labels.1920x1080_hud_mit_webgl_spawn_animation">1920x1080 HUD mit WebGL Spawn Animation.</div>
                 </div>
@@ -870,7 +870,7 @@
                 <label class="toggle-switch">
                     <input type="checkbox" id="obsEnabled">
                     <span class="toggle-slider"></span>
-                    <span class="toggle-label" data-i18n="talking_heads_ui.labels.obs_enabled">OBS Integration aktivieren</span>
+                    <span class="toggle-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.obs_enabled">OBS Integration aktivieren</span>
                 </label>
             </div>
         </div>
@@ -882,7 +882,7 @@
                 <span data-i18n="plugins.talking-heads.labels.talking_head_tts_preview">Talking Head & TTS Preview</span>
             </div>
             <div class="form-group">
-                <label class="form-label">Vorschau-Text</label>
+                <label class="form-label" data-i18n="plugins.talking-heads.labels.preview_text">Vorschau-Text</label>
                 <input type="text" id="previewTtsText" class="form-input" placeholder="Hallo! Das ist ein Talking Heads Test.">
                 <div class="form-help" data-i18n="plugins.talking-heads.labels.spielt_die_lokale_tts_engine_ab_und_zeigt">Spielt die lokale TTS Engine ab und zeigt gleichzeitig das Talking Head im OBS HUD.</div>
             </div>
@@ -906,17 +906,17 @@
         <div class="config-section">
             <div class="section-title">
                 <i data-lucide="database"></i>
-                <span data-i18n="talking_heads_ui.sections.cache">Cache-Verwaltung</span>
+                <span data-i18n="plugins.talking-heads.talking_heads_ui.sections.cache">Cache-Verwaltung</span>
             </div>
 
             <div class="stats-grid mb-4">
                 <div class="stat-card">
                     <div class="stat-value" id="cacheCount">0</div>
-                    <div class="stat-label" data-i18n="talking_heads_ui.labels.cached_avatars">Gespeicherte Avatare</div>
+                    <div class="stat-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.cached_avatars">Gespeicherte Avatare</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="activeAnimations">0</div>
-                    <div class="stat-label" data-i18n="talking_heads_ui.labels.active_animations">Aktive Animationen</div>
+                    <div class="stat-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.active_animations">Aktive Animationen</div>
                 </div>
             </div>
 
@@ -925,21 +925,21 @@
                     <label class="toggle-switch">
                         <input type="checkbox" id="cacheEnabled">
                         <span class="toggle-slider"></span>
-                        <span class="toggle-label" data-i18n="talking_heads_ui.labels.cache_enabled">Avatar-Caching aktivieren</span>
+                        <span class="toggle-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.cache_enabled">Avatar-Caching aktivieren</span>
                     </label>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" data-i18n="talking_heads_ui.labels.cache_duration">Cache-Dauer (Tage)</label>
+                    <label class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.cache_duration">Cache-Dauer (Tage)</label>
                     <input type="number" id="cacheDuration" class="form-input" min="1" max="365" value="30">
-                    <div class="form-help" data-i18n="talking_heads_ui.help.cache_duration">Avatare werden nach dieser Zeit gelöscht</div>
+                    <div class="form-help" data-i18n="plugins.talking-heads.talking_heads_ui.help.cache_duration">Avatare werden nach dieser Zeit gelöscht</div>
                 </div>
             </div>
 
             <div>
                 <button class="btn btn-danger" id="clearCacheBtn">
                     <i data-lucide="trash-2" class="inline-block w-4 h-4 mr-2"></i>
-                    <span data-i18n="talking_heads_ui.buttons.clear_cache">Gesamten Cache leeren</span>
+                    <span data-i18n="plugins.talking-heads.talking_heads_ui.buttons.clear_cache">Gesamten Cache leeren</span>
                 </button>
             </div>
         </div>
@@ -1021,7 +1021,7 @@
                         <input type="text" id="userSearchInput" class="form-input" placeholder="Username eingeben...">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">User-Filter</label>
+                        <label class="form-label" data-i18n="plugins.talking-heads.labels.user_filter">User-Filter</label>
                         <select id="userFilterSelect" class="form-select">
                             <option value="active" selected data-i18n="plugins.talking-heads.labels.nur_aktiver_livestream_standard">Nur aktiver Livestream (Standard)</option>
                             <option value="all" data-i18n="plugins.talking-heads.labels.alle_user_global">Alle User (global)</option>
@@ -1052,7 +1052,7 @@
         <div class="config-section" id="activeAnimationsSection" style="display: none;">
             <div class="section-title">
                 <i data-lucide="play-circle"></i>
-                <span data-i18n="talking_heads_ui.sections.active_animations">Aktive Animationen</span>
+                <span data-i18n="plugins.talking-heads.talking_heads_ui.sections.active_animations">Aktive Animationen</span>
             </div>
             <div id="animationList" class="animation-list">
                 <!-- Populated by JavaScript -->
@@ -1063,9 +1063,9 @@
         <div class="config-section" id="debugLogSection" style="display: none;">
             <div class="section-title">
                 <i data-lucide="terminal"></i>
-                <span data-i18n="talking_heads_ui.sections.debug_log">Debug Log</span>
+                <span data-i18n="plugins.talking-heads.talking_heads_ui.sections.debug_log">Debug Log</span>
             </div>
-            <div class="alert alert-info" data-i18n-html="true" data-i18n="talking_heads_ui.alerts.debug_log">
+            <div class="alert alert-info" data-i18n-html="true" data-i18n="plugins.talking-heads.talking_heads_ui.alerts.debug_log">
                 <strong>ℹ️ Debug-Logs anzeigen</strong><br>
                 Debug-Logs werden in Echtzeit angezeigt. Die Logs enthalten detaillierte Informationen über API-Aufrufe, Cache-Zugriffe und Avatar-Generierung.
             </div>
@@ -1111,7 +1111,7 @@
 
             <!-- Sprite Mode Selector -->
             <div class="form-group">
-                <label class="form-label">Sprite-Modus</label>
+                <label class="form-label" data-i18n="plugins.talking-heads.labels.sprite_mode">Sprite-Modus</label>
                 <select class="form-select" id="spriteModeSelect">
                     <option value="auto" data-i18n="plugins.talking-heads.labels.auto_nur_ki_generierung">Auto (nur KI-Generierung)</option>
                     <option value="manual" data-i18n="plugins.talking-heads.labels.manuell_nur_eigene_sprites">Manuell (nur eigene Sprites)</option>
@@ -1184,13 +1184,13 @@
                 <label class="form-label" data-i18n="plugins.talking-heads.labels.sprite_set_einem_user_zuweisen">Sprite-Set einem User zuweisen</label>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
                     <div style="flex:1;min-width:160px;">
-                        <label class="form-label" style="font-size:0.75rem;">User</label>
+                        <label class="form-label" style="font-size:0.75rem;" data-i18n="plugins.talking-heads.labels.user">User</label>
                         <select class="form-select" id="manualAssignUserSelect">
                             <option value="" data-i18n="plugins.talking-heads.labels.user_wahlen">-- User wählen --</option>
                         </select>
                     </div>
                     <div style="flex:1;min-width:160px;">
-                        <label class="form-label" style="font-size:0.75rem;">Sprite-Set</label>
+                        <label class="form-label" style="font-size:0.75rem;" data-i18n="plugins.talking-heads.labels.sprite_set">Sprite-Set</label>
                         <select class="form-select" id="manualAssignSetSelect">
                             <option value="" data-i18n="plugins.talking-heads.labels.set_wahlen">-- Set wählen --</option>
                         </select>
@@ -1224,11 +1224,11 @@
                 <label class="form-label" data-i18n="plugins.talking-heads.labels.obs_browser_source_url">OBS Browser Source URL</label>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <input type="text" class="form-input" id="viewerBarUrlDisplay" readonly style="flex:1;font-family:monospace;font-size:0.8rem;">
-                    <button class="btn btn-secondary" id="copyViewerBarUrlBtn" style="padding:8px 12px;" title="URL kopieren">
+                    <button class="btn btn-secondary" id="copyViewerBarUrlBtn" style="padding:8px 12px;" title="URL kopieren" data-i18n-title="plugins.talking-heads.labels.copy_url">
                         <i data-lucide="copy" class="inline-block w-4 h-4"></i>
                     </button>
                     <a id="viewerBarPreviewLink" href="#" target="_blank">
-                        <button class="btn btn-secondary" style="padding:8px 12px;" title="Vorschau öffnen">
+                        <button class="btn btn-secondary" style="padding:8px 12px;" title="Vorschau öffnen" data-i18n-title="plugins.talking-heads.labels.open_preview">
                             <i data-lucide="external-link" class="inline-block w-4 h-4"></i>
                         </button>
                     </a>
@@ -1249,10 +1249,10 @@
 
             <!-- Scroll Direction -->
             <div class="form-group">
-                <label class="form-label">Scroll-Richtung</label>
+                <label class="form-label" data-i18n="plugins.talking-heads.labels.scroll_direction">Scroll-Richtung</label>
                 <select class="form-select" id="viewerBarScrollDirection">
                     <option value="left" data-i18n="plugins.talking-heads.labels.links_standard">Links (Standard)</option>
-                    <option value="right">Rechts</option>
+                    <option value="right" data-i18n="plugins.talking-heads.labels.right">Rechts</option>
                 </select>
             </div>
 
@@ -1306,7 +1306,7 @@
 
             <!-- Bar Background -->
             <div class="form-group">
-                <label class="form-label">Bar-Hintergrundfarbe</label>
+                <label class="form-label" data-i18n="plugins.talking-heads.labels.bar_background">Bar-Hintergrundfarbe</label>
                 <input type="text" class="form-input" id="viewerBarBackground" value="rgba(0,0,0,0.3)" placeholder="rgba(0,0,0,0.3)" style="width:250px;">
                 <div class="form-help" data-i18n="plugins.talking-heads.labels.css_farbe_z_b_rgba_0_0_0">CSS Farbe (z.B. rgba(0,0,0,0.5) oder #1a1a1a)</div>
             </div>
@@ -1323,15 +1323,15 @@
         <div class="flex justify-end gap-4 mb-6">
             <button class="btn btn-primary" id="testApiBtn">
                 <i data-lucide="check-circle" class="inline-block w-4 h-4 mr-2"></i>
-                <span data-i18n="talking_heads_ui.buttons.test_api">API testen</span>
+                <span data-i18n="plugins.talking-heads.talking_heads_ui.buttons.test_api">API testen</span>
             </button>
             <button class="btn btn-secondary" id="testGenerateBtn">
                 <i data-lucide="image" class="inline-block w-4 h-4 mr-2"></i>
-                <span data-i18n="talking_heads_ui.buttons.test_generate">Test-Avatar generieren</span>
+                <span data-i18n="plugins.talking-heads.talking_heads_ui.buttons.test_generate">Test-Avatar generieren</span>
             </button>
             <button class="btn btn-success" id="saveConfigBtn" disabled>
                 <i data-lucide="save" class="inline-block w-4 h-4 mr-2"></i>
-                <span data-i18n="talking_heads_ui.buttons.save_config">Konfiguration speichern</span>
+                <span data-i18n="plugins.talking-heads.talking_heads_ui.buttons.save_config">Konfiguration speichern</span>
             </button>
         </div>
     </div>
@@ -1491,7 +1491,7 @@
                                 <img src="${previewSrc}" alt="${set.setName}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--color-border);margin-bottom:6px;" onerror="this.style.display='none'">
                                 <div style="font-size:0.8rem;font-weight:600;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${set.setName}">${set.setName}</div>
                                 <div style="font-size:0.7rem;color:var(--color-text-secondary);margin-bottom:6px;">${set.setId}</div>
-                                <button class="btn btn-danger" data-set-id="${set.setId}" style="padding:4px 8px;font-size:0.75rem;">Löschen</button>
+                                <button class="btn btn-danger" data-set-id="${set.setId}" style="padding:4px 8px;font-size:0.75rem;" data-i18n="plugins.talking-heads.labels.delete">Löschen</button>
                             `;
                             card.querySelector('button').addEventListener('click', function () {
                                 deleteManualSet(this.getAttribute('data-set-id'));
@@ -1504,12 +1504,13 @@
                 // Rebuild selects
                 const setOptions = data.sets.map(s => `<option value="${s.setId}">${s.setName}</option>`).join('');
                 if (defaultSelect) {
-                    defaultSelect.innerHTML = '<option value="">-- Kein Standard --</option>' + setOptions;
+                    defaultSelect.innerHTML = '<option value="" data-i18n="plugins.talking-heads.labels.kein_standard">-- Kein Standard --</option>' + setOptions;
                     if (currentDefaultId) defaultSelect.value = currentDefaultId;
                 }
                 if (assignSetSelect) {
-                    assignSetSelect.innerHTML = '<option value="">-- Set wählen --</option>' + setOptions;
+                    assignSetSelect.innerHTML = '<option value="" data-i18n="plugins.talking-heads.labels.set_wahlen">-- Set wählen --</option>' + setOptions;
                 }
+                window.i18n?.updateDOM?.();
             } catch (_) {}
         }
 

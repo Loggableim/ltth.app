@@ -1,8 +1,10 @@
 'use strict';
 
+const { exactLocalUrlExpectation } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+const guide = {
   "id": "animazingpal",
   "route": "/plugins/animazingpal/ui.html",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/animazingpal/ui.html"
+            "expected": {
+              "path": "/plugins/animazingpal/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +283,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/animazingpal/ui.html"
+            "expected": {
+              "path": "/plugins/animazingpal/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -387,11 +397,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/animazingpal/ui.html"
+            "expected": {
+              "path": "/plugins/animazingpal/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +511,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/animazingpal/ui.html"
+            "expected": {
+              "path": "/plugins/animazingpal/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -607,11 +625,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/animazingpal/ui.html"
+            "expected": {
+              "path": "/plugins/animazingpal/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -633,4 +655,59 @@ module.exports = Object.freeze({
       }
     }
   ]
+};
+
+function applyWorkflowCorrections(corrections) {
+  for (const [id, correction] of Object.entries(corrections)) {
+    const step = guide.steps.find((candidate) => candidate.id === id);
+    if (!step) throw new Error(`Missing AnimazingPal guide step: ${id}`);
+    const focusText = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.title]));
+    const expected = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.expected]));
+    step.copy = correction.copy;
+    step.capture = { ...step.capture, assertVisible: correction.selector, focusText, action: { ...correction.action, stepId: id }, expected };
+    step.workflow = {
+      ...step.workflow,
+      instructions: Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, { title: copy.title, body: copy.body, expected: copy.expected }])),
+      operations: [{ type: 'goto', route: step.capture.route }, { type: correction.action.type, selector: correction.operationSelector || correction.action.inputSelector || correction.action.clickSelector || correction.selector }],
+      postconditions: [
+        { type: 'http-status', expected: 200 },
+        { type: 'url', expected: exactLocalUrlExpectation(step.capture.route) },
+        { type: 'visible', selector: correction.selector },
+        ...(correction.postconditions || []),
+        { type: 'console', expected: 'no-errors' }
+      ],
+      captureRule: { ...step.workflow.captureRule, selector: correction.selector, stateChange: correction.stateChange === true }
+    };
+  }
+}
+
+applyWorkflowCorrections({
+  'avatar-event-map': {
+    selector: '#giftMappingGift',
+    action: { type: 'open-plugin-surface' },
+    stateChange: false,
+    copy: {
+      de: { title: 'Geschenkzuordnung pruefen', body: 'Oeffne die Geschenkzuordnung und pruefe den leeren Katalogauswahl-Startzustand. Diese Anleitung verbindet weder Animaze noch einen LIVE-Dienst.', expected: 'Die lokale Geschenkauswahl ist sichtbar; ohne Katalogeintrag wird keine Zuordnung erfunden.', alt: 'Lokale Geschenkauswahl von AnimazingPal' },
+      en: { title: 'Inspect gift mapping', body: 'Open gift mapping and inspect its empty catalog-selection starting state. This guide does not connect Animaze or a LIVE service.', expected: 'The local gift selector is visible; no mapping is invented when no catalog entry exists.', alt: 'AnimazingPal local gift selector' },
+      es: { title: 'Revisa la asignacion de regalos', body: 'Abre la asignacion de regalos y revisa el estado inicial de seleccion de catalogo vacio. Esta guia no conecta Animaze ni un servicio LIVE.', expected: 'El selector local de regalos es visible; no se inventa una asignacion sin una entrada de catalogo.', alt: 'Selector local de regalos de AnimazingPal' },
+      fr: { title: 'Verifiez le mappage des cadeaux', body: 'Ouvrez le mappage des cadeaux et verifiez son etat initial de catalogue vide. Ce guide ne connecte ni Animaze ni un service LIVE.', expected: 'Le selecteur local de cadeaux est visible; aucun mappage nest invente sans entree de catalogue.', alt: 'Selecteur local de cadeaux AnimazingPal' }
+    }
+  },
+  'sample-event': {
+    selector: '#testEventData',
+    action: { type: 'set-demo-value' },
+    stateChange: true,
+    postconditions: [
+      { type: 'input-value', selector: '#testEventData', expected: 'LTTH docs demo' },
+      { type: 'interaction', selector: '#testEventData', expected: { type: 'set-demo-value', changed: true } }
+    ],
+    copy: {
+      de: { title: 'Lokales Beispielereignis vorbereiten', body: 'Trage nur einen lokalen Beispielwert in das JSON-Feld der Logic Matrix ein. Druecke weder Verbinden noch Testen; es wird kein Avatar oder Dienst angesprochen.', expected: 'Der lokale Beispielwert steht im JSON-Feld und kann vor jeder echten Ausfuehrung geprueft werden.', alt: 'Lokales JSON-Beispiel fuer die AnimazingPal Logic Matrix' },
+      en: { title: 'Prepare a local sample event', body: 'Enter only a local sample value in the Logic Matrix JSON field. Do not press Connect or Test; no avatar or service is contacted.', expected: 'The local sample value is present in the JSON field and can be reviewed before any real execution.', alt: 'Local JSON sample for the AnimazingPal Logic Matrix' },
+      es: { title: 'Prepara un evento de ejemplo local', body: 'Introduce solo un valor de ejemplo local en el campo JSON de Logic Matrix. No pulses Conectar ni Probar; no se contacta ningun avatar ni servicio.', expected: 'El valor de ejemplo local aparece en el campo JSON y puede revisarse antes de una ejecucion real.', alt: 'Ejemplo JSON local para AnimazingPal Logic Matrix' },
+      fr: { title: 'Preparez un evenement exemple local', body: 'Saisissez seulement une valeur exemple locale dans le champ JSON de Logic Matrix. Nappuyez ni sur Connecter ni sur Tester; aucun avatar ni service nest contacte.', expected: 'La valeur exemple locale est presente dans le champ JSON et peut etre verifiee avant toute execution reelle.', alt: 'Exemple JSON local pour AnimazingPal Logic Matrix' }
+    }
+  }
 });
+
+module.exports = Object.freeze(guide);

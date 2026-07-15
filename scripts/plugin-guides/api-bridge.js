@@ -167,11 +167,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/api-bridge/ui"
+            "expected": {
+              "path": "/api-bridge/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +281,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": [200,304]
           },
           {
             "type": "url",
-            "expected": "/api-bridge/ui"
+            "expected": {
+              "path": "/api-bridge/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -387,11 +395,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": [200,304]
           },
           {
             "type": "url",
-            "expected": "/api-bridge/ui"
+            "expected": {
+              "path": "/api-bridge/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +509,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": [200,304]
           },
           {
             "type": "url",
-            "expected": "/api-bridge/ui"
+            "expected": {
+              "path": "/api-bridge/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -607,11 +623,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": [200,304]
           },
           {
             "type": "url",
-            "expected": "/api-bridge/ui"
+            "expected": {
+              "path": "/api-bridge/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",

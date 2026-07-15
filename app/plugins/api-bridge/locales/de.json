@@ -28,6 +28,21 @@
             "failed": "Einstellungen konnten nicht gespeichert werden.",
             "noData": "Keine Daten verfügbar.",
             "confirm": "Bist du sicher?"
+          },
+          "contract": {
+            "eyebrow": "Lokale Referenz, nur lesend",
+            "title": "API-Bridge-Vertrag",
+            "lede": "Pr\u00fcfe diese lokalen Endpunkte, bevor du einen Client integrierst. Diese Seite sendet keine Aktionsanfrage.",
+            "endpoints": {
+              "info": "Ermittle die laufenden LTTH- und API-Bridge-Versionen.",
+              "actions": "Liste Aktions-IDs und ihre deklarierten Parameter auf. Das Lesen dieses Endpunkts hat keine Nebenwirkung.",
+              "events": "Pr\u00fcfe den letzten Ereigniseintrag; ein frisches Testprofil startet mit einer leeren Liste.",
+              "request": "Die Ausf\u00fchrung geh\u00f6rt in einen separat getesteten Client. Pr\u00fcfe den erforderlichen Body, ohne ihn hier zu senden."
+            },
+            "safety": {
+              "title": "Sichere Integrationsgrenze",
+              "body": "Verwende zuerst GET-Endpunkte. Zugangsdaten und produktive Aktions-IDs geh\u00f6ren weder in Screenshots noch in Testprofile; POST-Ausf\u00fchrung ist auf dieser Seite absichtlich nicht verf\u00fcgbar."
+            }
           }
         }
       },

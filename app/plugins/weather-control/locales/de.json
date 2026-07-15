@@ -152,7 +152,7 @@
           "title": "Geschenke",
           "description": "Geschenk-Zuordnung",
           "load_prompt": "Katalog laden",
-          "effect_label": "Effekt"
+          "effect_label": "Wettereffect"
         }
       },
       "buttons": {
@@ -245,6 +245,19 @@
         "weather_control_overlay": "Wetterkontroll-Overlay",
         "default_white": "Standardmäßig weiß",
         "streak_bonus_threshold": "Schwellenwert für Streak-Bonus"
+      },
+      "ui": {
+        "commands": { "weather": "weather", "weatherlist": "weatherlist", "weatherstop": "weatherstop" },
+        "overlay": { "quest": "Aufgabe", "streak": "Serie", "meter": "Messleiste" },
+        "effects": {
+          "midday": "Mittag", "sunset": "Sonnenuntergang", "precipitation": "Niederschlag",
+          "atmosphere": "Atmosph\u00e4re", "light": "Licht", "ambient": "Umgebung",
+          "impact": "Wirkung", "digital": "Digital", "direction": "Richtung", "layer": "Ebene"
+        },
+        "actions": { "play": "Abspielen", "stopEffect": "Effekt stoppen", "stop": "Stopp" },
+        "advanced": { "title": "Erweitert" },
+        "triggers": { "effect": "Effekt", "intensity": "Intensit\u00e4t", "duration": "Dauer", "likeInterval": "Like-Intervall" },
+        "active": { "noEffects": "Keine aktiven Effekte werden vom Overlay gemeldet." }
       }
     }
   }

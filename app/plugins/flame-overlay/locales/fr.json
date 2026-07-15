@@ -14,7 +14,8 @@
             "refresh": "Actualiser",
             "close": "Fermer",
             "test": "Tester",
-            "clear": "Effacer"
+            "clear": "Effacer",
+            "apply": "Appliquer"
           },
           "status": {
             "ready": "Prêt",
@@ -28,6 +29,54 @@
             "failed": "Impossible d’enregistrer les réglages.",
             "noData": "Aucune donnée disponible.",
             "confirm": "Voulez-vous continuer ?"
+          },
+          "metrics": {
+            "profile": "Profil",
+            "render": "Rendu",
+            "trigger": "D\u00e9clencheur"
+          },
+          "tabs": {
+            "look": "Apparence",
+            "frame": "Cadre",
+            "motion": "Mouvement",
+            "postFx": "Post-FX",
+            "trigger": "D\u00e9clencheur"
+          },
+          "options": {
+            "obsSafe": "Compatible OBS",
+            "custom": "Personnalis\u00e9",
+            "top": "Haut",
+            "bottom": "Bas"
+          },
+          "settings": {
+            "accentColor": "Couleur d'accent :",
+            "animationEasing": "Lissage d'animation :",
+            "smokeColor": "Couleur de fum\u00e9e :"
+          },
+          "trigger": {
+            "preset": "Pr\u00e9r\u00e9glage :",
+            "defaultPreset": "Par d\u00e9faut",
+            "hypePreset": "Hype",
+            "chillPreset": "D\u00e9tente",
+            "partyPreset": "F\u00eate",
+            "coinRule": "R\u00e8gle de pi\u00e8ces"
+          },
+          "table": {
+            "enabled": "Activ\u00e9",
+            "event": "\u00c9v\u00e9nement",
+            "condition": "Condition",
+            "action": "Action",
+            "effect": "Effet",
+            "color": "Couleur"
+          },
+          "presets": {
+            "empty": "Aucun pr\u00e9r\u00e9glage enregistr\u00e9.",
+            "load": "\ud83d\udcc2 Charger",
+            "deleteTitle": "Supprimer le pr\u00e9r\u00e9glage"
+          },
+          "placeholders": {
+            "presetName": "Nom du pr\u00e9r\u00e9glage (par exemple, mode Hype)",
+            "giftSearch": "Recherchez un cadeau ou une plage de pi\u00e8ces comme 99-499"
           }
         }
       },

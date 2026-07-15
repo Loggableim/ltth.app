@@ -1,8 +1,10 @@
 'use strict';
 
+const { exactLocalUrlExpectation } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+const guide = {
   "id": "music-bot",
   "route": "/plugins/music-bot/ui.html",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/music-bot/ui.html"
+            "expected": {
+              "path": "/plugins/music-bot/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +283,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/music-bot/ui.html"
+            "expected": {
+              "path": "/plugins/music-bot/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -387,11 +397,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/music-bot/ui.html"
+            "expected": {
+              "path": "/plugins/music-bot/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +511,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/music-bot/ui.html"
+            "expected": {
+              "path": "/plugins/music-bot/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -607,11 +625,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/music-bot/overlay.html"
+            "expected": {
+              "path": "/plugins/music-bot/overlay.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -717,11 +739,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/music-bot/ui.html"
+            "expected": {
+              "path": "/plugins/music-bot/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -743,4 +769,71 @@ module.exports = Object.freeze({
       }
     }
   ]
+};
+
+function applyWorkflowCorrections(corrections) {
+  for (const [id, correction] of Object.entries(corrections)) {
+    const step = guide.steps.find((candidate) => candidate.id === id);
+    if (!step) throw new Error(`Missing Music Bot guide step: ${id}`);
+    const focusText = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.title]));
+    const expected = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.expected]));
+    step.copy = correction.copy;
+    step.capture = { ...step.capture, assertVisible: correction.selector, focusText, action: { ...correction.action, stepId: id }, expected };
+    step.workflow = {
+      ...step.workflow,
+      instructions: Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, { title: copy.title, body: copy.body, expected: copy.expected }])),
+      operations: [{ type: 'goto', route: step.capture.route }, { type: correction.action.type, selector: correction.operationSelector || correction.action.inputSelector || correction.action.clickSelector || correction.selector }],
+      postconditions: [
+        { type: 'http-status', expected: 200 },
+        { type: 'url', expected: exactLocalUrlExpectation(step.capture.route) },
+        { type: 'visible', selector: correction.selector },
+        ...(correction.postconditions || []),
+        { type: 'console', expected: 'no-errors' }
+      ],
+      captureRule: { ...step.workflow.captureRule, selector: correction.selector, stateChange: correction.stateChange === true }
+    };
+  }
+}
+
+applyWorkflowCorrections({
+  'mpv-path': {
+    selector: '#mpv-path',
+    action: { type: 'open-local-settings', allowClick: true, clickSelector: '#musicbot-onboarding-settings' },
+    operationSelector: '#musicbot-onboarding-settings',
+    stateChange: true,
+    copy: {
+      de: { title: 'Lokalen MPV-Pfad pruefen', body: 'Oeffne die lokalen Einstellungen ueber Zu den Einstellungen und pruefe das optionale MPV-Pfad-Feld. Lasse es leer, wenn kein lokaler Player eingerichtet ist; starte keine Suche oder Wiedergabe.', expected: 'Das echte MPV-Pfad-Feld ist sichtbar, ohne einen Player zu starten oder eine URL aufzurufen.', alt: 'Lokales MPV-Pfad-Feld des Music Bot' },
+      en: { title: 'Inspect the local MPV path', body: 'Open local settings through Go to settings and inspect the optional MPV path field. Leave it empty when no local player is configured; start no search or playback.', expected: 'The real MPV path field is visible without starting a player or opening a URL.', alt: 'Music Bot local MPV path field' },
+      es: { title: 'Revisa la ruta MPV local', body: 'Abre los ajustes locales con Ir a ajustes y revisa el campo opcional de ruta MPV. Dejalo vacio si no hay reproductor local; no inicies busqueda ni reproduccion.', expected: 'El campo real de ruta MPV es visible sin iniciar un reproductor ni abrir una URL.', alt: 'Campo de ruta MPV local de Music Bot' },
+      fr: { title: 'Verifiez le chemin MPV local', body: 'Ouvrez les reglages locaux avec Aller aux reglages et verifiez le champ optionnel de chemin MPV. Laissez-le vide sans lecteur local; ne lancez ni recherche ni lecture.', expected: 'Le vrai champ de chemin MPV est visible sans demarrer de lecteur ni ouvrir d URL.', alt: 'Champ de chemin MPV local Music Bot' }
+    }
+  },
+  'queue-rule': {
+    selector: '#duplicate-detection',
+    action: { type: 'set-demo-value', prepare: 'open-music-bot-settings' },
+    stateChange: true,
+    postconditions: [
+      { type: 'input-value', selector: '#duplicate-detection', expected: 'non-empty' },
+      { type: 'interaction', selector: '#duplicate-detection', expected: { type: 'set-demo-value', changed: true } }
+    ],
+    copy: {
+      de: { title: 'Lokale Dublettenregel pruefen', body: 'Waehle nur eine vorhandene lokale Dublettenregel fuer die Queue. Gib keinen YouTube-Link ein und starte keine Suche, Anfrage oder Wiedergabe.', expected: 'Eine vorhandene lokale Dublettenregel ist ausgewaehlt und kann vor dem Speichern geprueft werden.', alt: 'Lokale Dublettenregel des Music Bot' },
+      en: { title: 'Inspect a local duplicate rule', body: 'Select only an existing local duplicate rule for the queue. Do not enter a YouTube link or start search, request, or playback.', expected: 'An existing local duplicate rule is selected and can be reviewed before saving.', alt: 'Music Bot local duplicate rule' },
+      es: { title: 'Revisa una regla local de duplicados', body: 'Selecciona solo una regla local existente de duplicados para la cola. No introduzcas un enlace de YouTube ni inicies busqueda, solicitud o reproduccion.', expected: 'Una regla local existente de duplicados queda seleccionada y puede revisarse antes de guardar.', alt: 'Regla local de duplicados de Music Bot' },
+      fr: { title: 'Verifiez une regle locale de doublons', body: 'Selectionnez seulement une regle locale existante de doublons pour la file. Nentrez aucun lien YouTube et ne lancez ni recherche, demande ni lecture.', expected: 'Une regle locale existante de doublons est selectionnee et peut etre verifiee avant enregistrement.', alt: 'Regle locale de doublons Music Bot' }
+    }
+  },
+  'sample-queue': {
+    selector: '#queue-list',
+    action: { type: 'open-plugin-surface' },
+    stateChange: false,
+    copy: {
+      de: { title: 'Leere lokale Queue pruefen', body: 'Pruefe die lokale Queue im frischen Testprofil. Gib keinen Link ein und druecke Song anfordern nicht, damit keine externe YouTube-Suche oder Wiedergabe beginnt.', expected: 'Die echte Queue-Oberflaeche ist sichtbar und bleibt ohne externe Anfrage leer.', alt: 'Leere lokale Music-Bot-Queue' },
+      en: { title: 'Inspect the empty local queue', body: 'Inspect the local queue in a fresh test profile. Do not enter a link or press Request song, so no external YouTube search or playback begins.', expected: 'The real queue surface is visible and remains empty without an external request.', alt: 'Empty Music Bot local queue' },
+      es: { title: 'Revisa la cola local vacia', body: 'Revisa la cola local en un perfil de prueba nuevo. No introduzcas un enlace ni pulses Solicitar cancion, para que no empiece una busqueda ni reproduccion externa de YouTube.', expected: 'La superficie real de cola es visible y permanece vacia sin una solicitud externa.', alt: 'Cola local vacia de Music Bot' },
+      fr: { title: 'Verifiez la file locale vide', body: 'Verifiez la file locale dans un profil de test neuf. Nentrez aucun lien et nappuyez pas sur Demander une chanson, afin quaucune recherche ni lecture YouTube externe ne commence.', expected: 'La vraie surface de file est visible et reste vide sans demande externe.', alt: 'File locale vide Music Bot' }
+    }
+  }
 });
+
+module.exports = Object.freeze(guide);

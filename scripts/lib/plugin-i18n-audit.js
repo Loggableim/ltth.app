@@ -14,8 +14,48 @@ const INVARIANT_UI_TEXT = new Set([
   'PupCid Standard',
   'Rainbow Live',
   'Retro Pixel',
-  'PNG, JPG, GIF, WebP, SVG'
+  'PNG, JPG, GIF, WebP, SVG',
+  'LTTH Music Bot',
+  'Auto-DJ',
+  'Cyberpunk',
+  'Minimal',
+  'Hype',
+  'Post-FX',
+  'Ultra',
+  'ElevenLabs',
+  'Speechify',
+  'Inter',
+  'Montserrat',
+  'Oswald',
+  'Poppins',
+  'Raleway',
+  'Roboto',
+  'Rose, GG',
+  'G',
+  'Normal',
+  'Emojis',
+  'FPS',
+  'Chat',
+  'Cid',
+  'English',
+  'Deutsch',
+  'Arial',
+  'Georgia',
+  'SiliconFlow',
+  'Furry',
+  'MrBeast',
+  'mycommand',
+  'StreamAlchemy',
+  'Solo',
+  'weather',
+  'weatherlist',
+  'weatherstop'
 ]);
+
+// The SI-derived symbol for milliseconds is language-independent. Keep this
+// intentionally narrow: longer unit labels such as "milliseconds" must still
+// be translated independently by every locale.
+const UNIVERSAL_TECHNICAL_UNIT_SYMBOLS = new Set(['ms']);
 
 const LOCALES = ['de', 'en', 'es', 'fr'];
 // Mojibake leaves UTF-8 continuation-byte code points after a Latin-1 lead
@@ -48,13 +88,24 @@ function isUserFacingText(value) {
 }
 
 function isInvariantUiText(value) {
-  const normalized = value.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+  const normalized = value.replace(/^[^\p{L}\p{N}]+/u, '').replace(/[：:]$/u, '').trim();
   return INVARIANT_UI_TEXT.has(value)
+    || INVARIANT_UI_TEXT.has(normalized)
+    || UNIVERSAL_TECHNICAL_UNIT_SYMBOLS.has(normalized)
     || value === '×'
+    || value === '&times;'
+    || value === '&#9654;'
+    || value === 'ℹ️'
+    || /^v?\d+(?:\.\d+){1,3}(?:[-+][\w.-]+)?$/i.test(normalized)
+    || /^\d+(?:p|k|x|\/s)$/i.test(normalized)
+    || /^[-+]?\d+(?:[.,]\d+)?(?:\s*(?:%|x|×|\/|→|-|–)\s*[-+]?\d+(?:[.,]\d+)?)*$/.test(normalized)
+    || /^[A-Za-z]$/.test(normalized)
     || /^(?:\[|\{)[\s\S]*(?:\]|\})$/.test(value)
     || /^(?:720p|1080p|1440p|4K)(?: Portrait)? \(\d+x\d+\)$/.test(normalized)
     || /^(?:\d{3,4}x\d{3,4}(?:\s*\(\dK\)|\s*->\s*\d{3,4}x\d{3,4})?|\d{3,4}p \(\d+x\d+\)|\d+ XP x\d+|!?[A-Za-z](?:, !?[A-Za-z]){1,5}|sk-\.\.\.|Times New Roman|OpenAI(?: \([^)]+\)| TTS \(Premium\))?|Speechify TTS \(Premium\)|Webhook|Audio)$/.test(normalized)
     || /^(?:[A-Z][A-Z0-9+._-]{1,}|\d+(?:\.\d+)?\s?(?:ms|s|fps|px|%|MB|GB|KB)|https?:\/\/\S+|\/\S+|[\w.-]+:\/\/\S+|[\w.-]+\.\w{2,})(?:\s*[|/,]\s*(?:[A-Z][A-Z0-9+._-]{1,}|\d+(?:\.\d+)?\s?(?:ms|s|fps|px|%|MB|GB|KB)))?$/.test(value)
+    || /^[\w.-]+\.\w{2,}(?:\/\S*)?$/.test(normalized)
+    || /^keyword\d+(?:\s+keyword\d+)*$/i.test(normalized)
     || /^(?:WebGPU|TikTok|TikFinity|LTTH|MPV|OSC|VRChat|OpenShock|Chatango|ChatPal)$/i.test(normalized);
 }
 

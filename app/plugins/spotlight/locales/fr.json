@@ -59,7 +59,14 @@
         "spotlight_subscriber": "Pleins feux - Abonné",
         "spotlight_chatter": "Pleins feux – Chat",
         "spotlight_follower": "Pleins feux – Suiveur",
-        "modern_live_overlays_for_recent_tiktok_activity_copy": "Superpositions en direct modernes pour l'activité récente de TikTok. Copiez les URL, les modes de prévisualisation, testez les flux d'événements et affinez l'apparence sans perdre aucune des fonctionnalités de superposition existantes."
+        "modern_live_overlays_for_recent_tiktok_activity_copy": "Superpositions en direct modernes pour l'activité récente de TikTok. Copiez les URL, les modes de prévisualisation, testez les flux d'événements et affinez l'apparence sans perdre aucune des fonctionnalités de superposition existantes.",
+        "modes": "Modes",
+        "workflow": "Flux de travail",
+        "compatibility": "Compatibilité",
+        "layout": "Mise en page",
+        "cancel": "Annuler",
+        "test": "Tester",
+        "close": "Fermer"
       }
     }
   }

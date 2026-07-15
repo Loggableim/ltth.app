@@ -1442,14 +1442,14 @@
                             <span class="hero-preview__orb hero-preview__orb--one"></span>
                             <span class="hero-preview__orb hero-preview__orb--two"></span>
                             <div class="hero-preview__core">
-                                <span class="hero-preview__chip">OBS HUD</span>
+                                <span class="hero-preview__chip" data-i18n="plugins.emoji-rain.labels.obs_hud">OBS HUD</span>
                                 <strong id="hero-preview-size" class="hero-preview__value">1920 &times; 1080</strong>
                                 <span id="hero-preview-mode" class="hero-preview__detail" data-i18n="plugins.emoji-rain.emoji_rain.hero.premium_stage">Premium Stage</span>
                             </div>
                         </div>
                         <div class="hero-preview__footer">
                             <div class="hero-preview__footer-item">
-                                <span class="hero-preview__footer-label">Preset</span>
+                                <span class="hero-preview__footer-label" data-i18n="plugins.emoji-rain.emoji_rain.ui.preset">Preset</span>
                                 <strong id="hero-preview-mode-copy" data-i18n="plugins.emoji-rain.emoji_rain.hero.premium_stage">Premium Stage</strong>
                             </div>
                             <div class="hero-preview__footer-item">
@@ -1457,7 +1457,7 @@
                                 <strong id="hero-preview-size-copy">1920 &times; 1080</strong>
                             </div>
                             <div class="hero-preview__footer-item">
-                                <span class="hero-preview__footer-label">Status</span>
+                                <span class="hero-preview__footer-label" data-i18n="plugins.emoji-rain.emoji_rain.ui.status">Status</span>
                                 <strong id="hero-preview-state-copy" data-i18n="plugins.emoji-rain.emoji_rain.hero.disabled">Deaktiviert</strong>
                             </div>
                         </div>
@@ -1621,7 +1621,7 @@
                     <div class="help-text" data-i18n="plugins.emoji-rain.labels.schatten_und_3d_tiefe">Schatten und 3D-Tiefe</div>
                 </div>
                 <div class="form-group">
-                    <label for="target_fps">Ziel-FPS</label>
+                    <label for="target_fps" data-i18n="plugins.emoji-rain.emoji_rain.ui.target_fps">Ziel-FPS</label>
                     <input type="number" id="target_fps" min="30" max="120" step="10" value="60">
                     <div class="help-text" data-i18n="plugins.emoji-rain.labels.performance_ziel_standard_60_fps">Performance-Ziel (Standard: 60 FPS)</div>
                 </div>
@@ -1706,7 +1706,7 @@
             </div>
 
             <div class="form-group">
-                <label>Benutzer-Emoji-Zuordnungen</label>
+                <label data-i18n="plugins.emoji-rain.emoji_rain.user_mappings.title">Benutzer-Emoji-Zuordnungen</label>
                 <div id="user-emoji-mappings" style="max-height: 300px; overflow-y: auto; padding: 15px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border); border-radius: 8px;">
                     <div style="text-align: center; color: var(--color-text-muted);" data-i18n="plugins.emoji-rain.emoji_rain.ui.no_mappings">No mappings</div>
                 </div>
@@ -1904,7 +1904,7 @@
                     <div class="help-text" data-i18n="plugins.emoji-rain.labels.0_trage_1_aggressiv">0 = träge, 1 = aggressiv</div>
                 </div>
                 <div class="form-group">
-                    <label for="target_fps_optimization">Ziel-FPS</label>
+                    <label for="target_fps_optimization" data-i18n="plugins.emoji-rain.emoji_rain.ui.target_fps">Ziel-FPS</label>
                     <input type="number" id="target_fps_optimization" min="30" max="120" step="10" value="60">
                     <div class="help-text" data-i18n="plugins.emoji-rain.labels.angestrebte_framerate">Angestrebte Framerate</div>
                 </div>
@@ -1944,12 +1944,12 @@
                     <span class="range-value" id="physics_gravity_y_value">1.0</span>
                 </div>
                 <div class="form-group">
-                    <label for="physics_air">Luftwiderstand</label>
+                    <label for="physics_air" data-i18n="plugins.emoji-rain.emoji_rain.physics.air_resistance">Luftwiderstand</label>
                     <input type="range" id="physics_air" min="0" max="0.2" step="0.01">
                     <span class="range-value" id="physics_air_value">0.02</span>
                 </div>
                 <div class="form-group">
-                    <label for="physics_friction">Reibung</label>
+                    <label for="physics_friction" data-i18n="plugins.emoji-rain.emoji_rain.physics.friction">Reibung</label>
                     <input type="range" id="physics_friction" min="0" max="1" step="0.05">
                     <span class="range-value" id="physics_friction_value">0.1</span>
                 </div>
@@ -1975,7 +1975,7 @@
                     <input type="number" id="emoji_max_size_px" min="20" max="200" step="5">
                 </div>
                 <div class="form-group">
-                    <label for="emoji_rotation_speed">Rotationsgeschwindigkeit</label>
+                    <label for="emoji_rotation_speed" data-i18n="plugins.emoji-rain.emoji_rain.physics.rotation_speed">Rotationsgeschwindigkeit</label>
                     <input type="range" id="emoji_rotation_speed" min="0" max="0.2" step="0.01">
                     <span class="range-value" id="emoji_rotation_speed_value">0.05</span>
                 </div>
@@ -2187,7 +2187,7 @@
                     <div class="help-text" data-i18n="plugins.emoji-rain.labels.standard_5_jedes_fuenfte_herz_ist_das_profilbild">Standard: 5. Jedes fuenfte Herz ist das Profilbild des Users.</div>
                 </div>
                 <div class="form-group">
-                    <label for="heart_balloon_pop_y">Platz-Hoehe</label>
+                    <label for="heart_balloon_pop_y" data-i18n="plugins.emoji-rain.emoji_rain.heart_balloons.pop_height">Platz-Hoehe</label>
                     <input type="range" id="heart_balloon_pop_y" min="0.25" max="0.75" step="0.05">
                     <span class="range-value" id="heart_balloon_pop_y_value">0.5</span>
                     <div class="help-text" data-i18n="plugins.emoji-rain.labels.0_5_bildschirmmitte">0.5 = Bildschirmmitte</div>

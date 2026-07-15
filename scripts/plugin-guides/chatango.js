@@ -167,11 +167,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/chatango/ui.html"
+            "expected": {
+              "path": "/plugins/chatango/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +281,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/chatango/ui.html"
+            "expected": {
+              "path": "/plugins/chatango/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -387,11 +395,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/chatango/ui.html"
+            "expected": {
+              "path": "/plugins/chatango/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +509,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/chatango/ui.html"
+            "expected": {
+              "path": "/plugins/chatango/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -563,6 +579,7 @@ module.exports = Object.freeze({
           "type": "run-local-preview",
           "allowClick": true,
           "clickSelector": "#btn-preview",
+          "evidenceSelector": "#preview-card",
           "stepId": "chatango-review"
         },
         "expected": {
@@ -609,15 +626,23 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/chatango/ui.html"
+            "expected": {
+              "path": "/plugins/chatango/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
             "selector": "#close-preview-btn"
+          },
+          {
+            "type": "visible",
+            "selector": "#preview-card"
           },
           {
             "type": "console",

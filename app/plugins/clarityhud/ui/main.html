@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title data-i18n="clarityhud.dashboard.title">ClarityHUD Dashboard</title>
+  <title data-i18n="plugins.clarityhud.clarityhud.dashboard.title">ClarityHUD Dashboard</title>
   <link rel="stylesheet" href="/css/themes.css">
     <script>
     (function () {
@@ -702,12 +702,15 @@
     }
 
     .close {
+      background: transparent;
+      border: 0;
       font-size: 32px;
       font-weight: 300;
       color: white;
       cursor: pointer;
       line-height: 1;
       opacity: 0.8;
+      padding: 0;
       transition: opacity 0.2s;
     }
 
@@ -1111,13 +1114,13 @@
     <div class="header">
       <div class="header-copy">
         <h1><span data-i18n="plugins.clarityhud.labels.clarityhud_dashboard">ClarityHUD Dashboard </span><span id="plugin-version" style="font-size: 12px; opacity: 0.6;">v1.1.0</span></h1>
-        <p data-i18n="clarityhud.dashboard.subtitle">Ultra-minimalistic, VR-optimized, and accessible HUD overlays for TikTok Live</p>
+        <p data-i18n="plugins.clarityhud.clarityhud.dashboard.subtitle">Ultra-minimalistic, VR-optimized, and accessible HUD overlays for TikTok Live</p>
         <div class="profile-toolbar">
           <button class="btn btn-info" data-action="export-profile" data-i18n="plugins.clarityhud.labels.export_profile">Export Profile</button>
           <button class="btn btn-info" data-action="import-profile" data-i18n="plugins.clarityhud.labels.import_profile">Import Profile</button>
           <button class="btn btn-primary" data-action="open-setup-wizard" data-i18n="plugins.clarityhud.labels.setup_wizard">Setup Wizard</button>
           <button class="btn btn-secondary" data-action="save-custom-preset" data-i18n="plugins.clarityhud.labels.save_preset">Save Preset</button>
-          <input type="file" id="profile-import-input" accept="application/json,.json" hidden>
+          <input type="file" id="profile-import-input" accept="application/json,.json" hidden aria-label="Import ClarityHUD profile" data-i18n-aria-label="plugins.clarityhud.runtime.aria.profile_import">
         </div>
       </div>
       <div class="header-brand">
@@ -1129,26 +1132,26 @@
       <!-- Chat HUD Section -->
       <div class="hud-section">
         <div class="hud-header">
-          <h2 data-i18n="clarityhud.chat_hud.title">Chat HUD</h2>
-          <p data-i18n="clarityhud.chat_hud.description">Minimalistic chat-only overlay with clean typography</p>
+          <h2 data-i18n="plugins.clarityhud.clarityhud.chat_hud.title">Chat HUD</h2>
+          <p data-i18n="plugins.clarityhud.clarityhud.chat_hud.description">Minimalistic chat-only overlay with clean typography</p>
         </div>
         <div class="hud-content">
           <div class="preview-container">
-            <iframe id="chat-preview" class="preview-frame" src="/overlay/clarity/chat"></iframe>
+            <iframe id="chat-preview" class="preview-frame" src="/overlay/clarity/chat" title="Chat HUD preview" data-i18n-title="plugins.clarityhud.runtime.aria.preview_chat"></iframe>
           </div>
 
           <div class="url-section">
-            <div class="url-label" data-i18n="clarityhud.labels.overlay_url">Overlay URL</div>
+            <div class="url-label" data-i18n="plugins.clarityhud.clarityhud.labels.overlay_url">Overlay URL</div>
             <div class="url-display">
-              <div class="url-text" id="chat-url">Loading...</div>
-              <button class="btn btn-info btn-icon" data-action="copy-url" data-type="chat" title="Copy URL">Copy</button>
+              <div class="url-text" id="chat-url" data-i18n="plugins.clarityhud.clarityhud.dashboard.loading">Loading...</div>
+              <button class="btn btn-info btn-icon" data-action="copy-url" data-type="chat" title="Copy URL" data-i18n-title="plugins.clarityhud.clarityhud.buttons.copy_url" data-i18n="plugins.clarityhud.clarityhud.buttons.copy">Copy</button>
             </div>
           </div>
 
           <div class="button-group">
-            <button class="btn btn-primary" id="chat-settings-btn" data-action="open-settings" data-type="chat" data-i18n="clarityhud.buttons.settings">Settings</button>
-            <button class="btn btn-success" data-action="test-event" data-type="chat" data-i18n="clarityhud.buttons.test_event">Test Event</button>
-            <button class="btn btn-secondary" data-action="refresh-preview" data-type="chat" data-i18n="clarityhud.buttons.refresh_preview">Refresh Preview</button>
+            <button class="btn btn-primary" id="chat-settings-btn" data-action="open-settings" data-type="chat" data-i18n="plugins.clarityhud.clarityhud.buttons.settings">Settings</button>
+            <button class="btn btn-success" data-action="test-event" data-type="chat" data-i18n="plugins.clarityhud.clarityhud.buttons.test_event">Test Event</button>
+            <button class="btn btn-secondary" data-action="refresh-preview" data-type="chat" data-i18n="plugins.clarityhud.clarityhud.buttons.refresh_preview">Refresh Preview</button>
           </div>
         </div>
       </div>
@@ -1156,26 +1159,26 @@
       <!-- Full Activity HUD Section -->
       <div class="hud-section">
         <div class="hud-header">
-          <h2 data-i18n="clarityhud.full_hud.title">Full Activity HUD</h2>
-          <p data-i18n="clarityhud.full_hud.description">Complete activity feed with layout modes and animations</p>
+          <h2 data-i18n="plugins.clarityhud.clarityhud.full_hud.title">Full Activity HUD</h2>
+          <p data-i18n="plugins.clarityhud.clarityhud.full_hud.description">Complete activity feed with layout modes and animations</p>
         </div>
         <div class="hud-content">
           <div class="preview-container">
-            <iframe id="full-preview" class="preview-frame" src="/overlay/clarity/full"></iframe>
+            <iframe id="full-preview" class="preview-frame" src="/overlay/clarity/full" title="Full Activity HUD preview" data-i18n-title="plugins.clarityhud.runtime.aria.preview_full"></iframe>
           </div>
 
           <div class="url-section">
-            <div class="url-label" data-i18n="clarityhud.labels.overlay_url">Overlay URL</div>
+            <div class="url-label" data-i18n="plugins.clarityhud.clarityhud.labels.overlay_url">Overlay URL</div>
             <div class="url-display">
-              <div class="url-text" id="full-url">Loading...</div>
-              <button class="btn btn-info btn-icon" data-action="copy-url" data-type="full" title="Copy URL">Copy</button>
+              <div class="url-text" id="full-url" data-i18n="plugins.clarityhud.clarityhud.dashboard.loading">Loading...</div>
+              <button class="btn btn-info btn-icon" data-action="copy-url" data-type="full" title="Copy URL" data-i18n-title="plugins.clarityhud.clarityhud.buttons.copy_url" data-i18n="plugins.clarityhud.clarityhud.buttons.copy">Copy</button>
             </div>
           </div>
 
           <div class="button-group">
-            <button class="btn btn-primary" data-action="open-settings" data-type="full" data-i18n="clarityhud.buttons.settings">Settings</button>
-            <button class="btn btn-success" data-action="test-event" data-type="full" data-i18n="clarityhud.buttons.test_event">Test Event</button>
-            <button class="btn btn-secondary" data-action="refresh-preview" data-type="full" data-i18n="clarityhud.buttons.refresh_preview">Refresh Preview</button>
+            <button class="btn btn-primary" data-action="open-settings" data-type="full" data-i18n="plugins.clarityhud.clarityhud.buttons.settings">Settings</button>
+            <button class="btn btn-success" data-action="test-event" data-type="full" data-i18n="plugins.clarityhud.clarityhud.buttons.test_event">Test Event</button>
+            <button class="btn btn-secondary" data-action="refresh-preview" data-type="full" data-i18n="plugins.clarityhud.clarityhud.buttons.refresh_preview">Refresh Preview</button>
           </div>
         </div>
       </div>
@@ -1183,30 +1186,30 @@
       <!-- Multi-Stream HUD Section -->
       <div class="hud-section">
         <div class="hud-header">
-          <h2 data-i18n="clarityhud.multi_hud.title">Multi-Stream HUD</h2>
+          <h2 data-i18n="plugins.clarityhud.clarityhud.multi_hud.title">Multi-Stream HUD</h2>
           <p data-i18n="plugins.clarityhud.labels.display_up_to_3_additional_tiktok_streams_alongside">Display up to 3 additional TikTok streams alongside your primary stream</p>
         </div>
         <div class="hud-content">
           <div class="preview-container">
-            <iframe id="multi-preview" class="preview-frame" src="/overlay/clarity/multi"></iframe>
+            <iframe id="multi-preview" class="preview-frame" src="/overlay/clarity/multi" title="Multi-Stream HUD preview" data-i18n-title="plugins.clarityhud.runtime.aria.preview_multi"></iframe>
           </div>
 
           <div class="url-section">
-            <div class="url-label" data-i18n="clarityhud.labels.overlay_url">Overlay URL</div>
+            <div class="url-label" data-i18n="plugins.clarityhud.clarityhud.labels.overlay_url">Overlay URL</div>
             <div class="url-display">
-              <div class="url-text" id="multi-url">Loading...</div>
-              <button class="btn btn-info btn-icon" data-action="copy-url" data-type="multi" title="Copy URL">Copy</button>
+              <div class="url-text" id="multi-url" data-i18n="plugins.clarityhud.clarityhud.dashboard.loading">Loading...</div>
+              <button class="btn btn-info btn-icon" data-action="copy-url" data-type="multi" title="Copy URL" data-i18n-title="plugins.clarityhud.clarityhud.buttons.copy_url" data-i18n="plugins.clarityhud.clarityhud.buttons.copy">Copy</button>
             </div>
           </div>
 
           <div id="multi-status" class="status-list">
-            <div class="status-item"><span data-i18n="plugins.clarityhud.labels.multi_stream_status">Multi-stream status</span><span>Loading...</span></div>
+            <div class="status-item"><span data-i18n="plugins.clarityhud.labels.multi_stream_status">Multi-stream status</span><span data-i18n="plugins.clarityhud.clarityhud.dashboard.loading">Loading...</span></div>
           </div>
 
           <div class="button-group">
-            <button class="btn btn-primary" data-action="open-settings" data-type="multi" data-i18n="clarityhud.buttons.settings">Settings</button>
-            <button class="btn btn-success" data-action="test-event" data-type="multi" data-i18n="clarityhud.buttons.test_event">Test Event</button>
-            <button class="btn btn-secondary" data-action="refresh-preview" data-type="multi" data-i18n="clarityhud.buttons.refresh_preview">Refresh Preview</button>
+            <button class="btn btn-primary" data-action="open-settings" data-type="multi" data-i18n="plugins.clarityhud.clarityhud.buttons.settings">Settings</button>
+            <button class="btn btn-success" data-action="test-event" data-type="multi" data-i18n="plugins.clarityhud.clarityhud.buttons.test_event">Test Event</button>
+            <button class="btn btn-secondary" data-action="refresh-preview" data-type="multi" data-i18n="plugins.clarityhud.clarityhud.buttons.refresh_preview">Refresh Preview</button>
           </div>
         </div>
       </div>
@@ -1219,21 +1222,21 @@
         </div>
         <div class="hud-content">
           <div class="preview-container">
-            <iframe id="stream-preview" class="preview-frame" src="/overlay/clarity/stream"></iframe>
+            <iframe id="stream-preview" class="preview-frame" src="/overlay/clarity/stream" title="Stream Overlay preview" data-i18n-title="plugins.clarityhud.runtime.aria.preview_stream"></iframe>
           </div>
 
           <div class="url-section">
-            <div class="url-label" data-i18n="clarityhud.labels.overlay_url">Overlay URL</div>
+            <div class="url-label" data-i18n="plugins.clarityhud.clarityhud.labels.overlay_url">Overlay URL</div>
             <div class="url-display">
-              <div class="url-text" id="stream-url">Loading...</div>
-              <button class="btn btn-info btn-icon" data-action="copy-url" data-type="stream" title="Copy URL">Copy</button>
+              <div class="url-text" id="stream-url" data-i18n="plugins.clarityhud.clarityhud.dashboard.loading">Loading...</div>
+              <button class="btn btn-info btn-icon" data-action="copy-url" data-type="stream" title="Copy URL" data-i18n-title="plugins.clarityhud.clarityhud.buttons.copy_url" data-i18n="plugins.clarityhud.clarityhud.buttons.copy">Copy</button>
             </div>
           </div>
 
           <div class="button-group">
-            <button class="btn btn-primary" data-action="open-settings" data-type="stream" data-i18n="clarityhud.buttons.settings">Settings</button>
+            <button class="btn btn-primary" data-action="open-settings" data-type="stream" data-i18n="plugins.clarityhud.clarityhud.buttons.settings">Settings</button>
             <button class="btn btn-success" data-action="test-event" data-type="stream" data-i18n="plugins.clarityhud.labels.test_all">Test All</button>
-            <button class="btn btn-secondary" data-action="refresh-preview" data-type="stream" data-i18n="clarityhud.buttons.refresh_preview">Refresh Preview</button>
+            <button class="btn btn-secondary" data-action="refresh-preview" data-type="stream" data-i18n="plugins.clarityhud.clarityhud.buttons.refresh_preview">Refresh Preview</button>
           </div>
         </div>
       </div>
@@ -1241,11 +1244,11 @@
   </div>
 
   <!-- Settings Modal -->
-  <div id="settings-modal" class="modal">
+  <div id="settings-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-heading">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Settings: <span id="modal-title"></span></h2>
-        <span class="close" id="close-settings-modal">&times;</span>
+        <h2 id="settings-modal-heading"><span data-i18n="plugins.clarityhud.runtime.modal.settings_for">Settings:</span> <span id="modal-title"></span></h2>
+        <button type="button" class="close" id="close-settings-modal" aria-label="Close settings" data-i18n-aria-label="plugins.clarityhud.runtime.aria.close_settings_modal">&times;</button>
       </div>
       <div class="modal-body">
         <div class="tabs" id="settings-tabs">
@@ -1256,32 +1259,32 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-warning" id="reset-defaults-btn" data-i18n="clarityhud.buttons.reset_defaults">
+        <button class="btn btn-warning" id="reset-defaults-btn" data-i18n="plugins.clarityhud.clarityhud.buttons.reset_defaults">
           Reset to Defaults
         </button>
         <div style="flex: 1;"></div>
-        <button class="btn btn-secondary" id="cancel-settings-btn" data-i18n="clarityhud.buttons.cancel">
+        <button class="btn btn-secondary" id="cancel-settings-btn" data-i18n="plugins.clarityhud.clarityhud.buttons.cancel">
           Cancel
         </button>
         <button class="btn btn-primary" id="save-settings-btn">
-          <span class="save-text" data-i18n="clarityhud.buttons.save">Save Settings</span>
+          <span class="save-text" data-i18n="plugins.clarityhud.clarityhud.buttons.save">Save Settings</span>
         </button>
       </div>
     </div>
   </div>
 
   <!-- Toast Notification -->
-  <div id="toast" class="toast">
-    <span class="toast-icon"></span>
+  <div id="toast" class="toast" role="status" aria-live="polite">
+    <span class="toast-icon" aria-hidden="true"></span>
     <span class="toast-message"></span>
   </div>
 
   <!-- Setup Wizard -->
-  <div id="setup-wizard-modal" class="modal">
+  <div id="setup-wizard-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="setup-wizard-heading">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 data-i18n="plugins.clarityhud.labels.setup_wizard_58d4e1">Setup Wizard</h2>
-        <span class="close" id="close-setup-wizard">&times;</span>
+        <h2 id="setup-wizard-heading" data-i18n="plugins.clarityhud.labels.setup_wizard_58d4e1">Setup Wizard</h2>
+        <button type="button" class="close" id="close-setup-wizard" aria-label="Close setup wizard" data-i18n-aria-label="plugins.clarityhud.runtime.aria.close_setup_wizard">&times;</button>
       </div>
       <div class="wizard-options">
         <button class="preset-btn" data-wizard-preset="vrchat-readable" data-i18n="plugins.clarityhud.labels.vrchat_readable">VRChat Readable</button>

@@ -129,7 +129,7 @@
         });
 
         // Reload states for active plugins (sets the actual on/off state)
-        await loadQuickActionButtonStates();
+        await loadQuickActionButtonStates(activePlugins);
 
         // Re-initialize Lucide icons
         if (typeof lucide !== 'undefined') {
@@ -166,7 +166,7 @@
         });
 
         // Load initial states for active plugins
-        await loadQuickActionButtonStates();
+        await loadQuickActionButtonStates(activePlugins);
 
         // Attach click handlers to all quick action buttons
         const allButtons = document.querySelectorAll('.quick-action-btn');
@@ -310,7 +310,7 @@
         });
     }
 
-    async function loadQuickActionButtonStates() {
+    async function loadQuickActionButtonStates(activePlugins = new Set()) {
         try {
             console.log('[Load Quick Action States] Fetching settings from /api/settings');
 
@@ -345,28 +345,33 @@
                 console.log(`[Load Quick Action States] Flows button set to: ${flowsBtn.getAttribute('data-state')}`);
             }
 
-            // Load the active EmojiRain edition state from its plugin-local API.
-            try {
-                const emojiRainResponse = await fetch('/api/emoji-rain/status');
-                const emojiRainData = await emojiRainResponse.json();
-                const emojiRainBtn = document.getElementById('quick-emoji-rain-btn');
-                if (emojiRainData.success) {
-                    setButtonState(emojiRainBtn, emojiRainData.enabled !== false ? 'on' : 'off');
+            // Probe only routes supplied by an active plugin. Emoji Rain editions
+            // are mutually exclusive, so probing both can otherwise request 404s.
+            if (activePlugins.has('emoji-rain')) {
+                try {
+                    const emojiRainResponse = await fetch('/api/emoji-rain/status');
+                    const emojiRainData = await emojiRainResponse.json();
+                    const emojiRainBtn = document.getElementById('quick-emoji-rain-btn');
+                    if (emojiRainData.success) {
+                        setButtonState(emojiRainBtn, emojiRainData.enabled !== false ? 'on' : 'off');
+                    }
+                } catch (error) {
+                    console.log('EmojiRain status not available');
                 }
-            } catch (error) {
-                console.log('EmojiRain status not available');
             }
 
             // Load WebGPU EmojiRain state from plugin
-            try {
-                const webgpuEmojiRainResponse = await fetch('/api/webgpu-emoji-rain/status');
-                const webgpuEmojiRainData = await webgpuEmojiRainResponse.json();
-                const webgpuEmojiRainBtn = document.getElementById('quick-webgpu-emoji-rain-btn');
-                if (webgpuEmojiRainData.success) {
-                    setButtonState(webgpuEmojiRainBtn, webgpuEmojiRainData.enabled !== false ? 'on' : 'off');
+            if (activePlugins.has('webgpu-emoji-rain')) {
+                try {
+                    const webgpuEmojiRainResponse = await fetch('/api/webgpu-emoji-rain/status');
+                    const webgpuEmojiRainData = await webgpuEmojiRainResponse.json();
+                    const webgpuEmojiRainBtn = document.getElementById('quick-webgpu-emoji-rain-btn');
+                    if (webgpuEmojiRainData.success) {
+                        setButtonState(webgpuEmojiRainBtn, webgpuEmojiRainData.enabled !== false ? 'on' : 'off');
+                    }
+                } catch (error) {
+                    console.log('WebGPU Emoji Rain status not available');
                 }
-            } catch (error) {
-                console.log('WebGPU Emoji Rain status not available');
             }
 
             // Load OSC-Bridge state
@@ -380,17 +385,19 @@
             }
 
             // Load OpenShock Emergency Stop state
-            try {
-                const openshockResponse = await fetch('/api/openshock/safety');
-                const openshockData = await openshockResponse.json();
-                const openshockStopBtn = document.getElementById('quick-openshock-stop-btn');
-                if (openshockData.success) {
-                    const emergencyActive = openshockData.settings?.emergencyStop?.enabled === true;
-                    setButtonState(openshockStopBtn, emergencyActive ? 'on' : 'off');
-                    console.log(`[Load Quick Action States] OpenShock Emergency Stop set to: ${emergencyActive ? 'on' : 'off'}`);
+            if (activePlugins.has('openshock')) {
+                try {
+                    const openshockResponse = await fetch('/api/openshock/safety');
+                    const openshockData = await openshockResponse.json();
+                    const openshockStopBtn = document.getElementById('quick-openshock-stop-btn');
+                    if (openshockData.success) {
+                        const emergencyActive = openshockData.settings?.emergencyStop?.enabled === true;
+                        setButtonState(openshockStopBtn, emergencyActive ? 'on' : 'off');
+                        console.log(`[Load Quick Action States] OpenShock Emergency Stop set to: ${emergencyActive ? 'on' : 'off'}`);
+                    }
+                } catch (error) {
+                    console.log('OpenShock status not available');
                 }
-            } catch (error) {
-                console.log('OpenShock status not available');
             }
 
         } catch (error) {

@@ -152,6 +152,72 @@
         "selected_sound": "Son sélectionné :",
         "manual_config_import_export": "Importation/Exportation manuelle de la configuration",
         "gif_image_seconds": "Secondes GIF/Image"
+      },
+      "ui": {
+        "navigation": {
+          "workspaceNavigation": "Navigation de l'espace de travail de la table de sons",
+          "overview": "Vue d'ensemble",
+          "library": "Biblioth\u00e8que"
+        },
+        "actions": {
+          "refresh": "Actualiser",
+          "copy": "Copier",
+          "clear": "Effacer",
+          "copyUrl": "Copier l'URL",
+          "openInNewTab": "Ouvrir dans un nouvel onglet",
+          "collapseSection": "R\u00e9duire la section"
+        },
+        "animation": {
+          "anchor": "Ancrage",
+          "center": "Centre",
+          "top": "Haut",
+          "left": "Gauche",
+          "right": "Droite",
+          "bottom": "Bas",
+          "fit": "Ajustement",
+          "contain": "Contenir",
+          "cover": "Couvrir",
+          "fill": "Remplir",
+          "none": "Aucune",
+          "video": "Vid\u00e9o",
+          "image": "Image"
+        },
+        "events": {
+          "follow": "Suivre",
+          "share": "Partager",
+          "volume": "Volume :",
+          "testSound": "Tester le son",
+          "testFollowSound": "Tester le son de suivi",
+          "testSubscribeSound": "Tester le son d'abonnement",
+          "testShareSound": "Tester le son de partage",
+          "testGiftSound": "Tester le son de cadeau",
+          "testLikeSound": "Tester le son J'aime"
+        },
+        "status": {
+          "unknown": "Inconnu",
+          "ready": "Pr\u00eat",
+          "checking": "V\u00e9rification...",
+          "autoplay": "Lecture automatique"
+        },
+        "table": {
+          "label": "Libell\u00e9",
+          "sound": "Son",
+          "animation": "Animation",
+          "actions": "Actions"
+        },
+        "placeholders": {
+          "loading": "Chargement...",
+          "soundUrl": "URL du son (MP3)",
+          "animationUrl": "URL de l'animation",
+          "animationUrlOptional": "URL de l'animation (facultatif)",
+          "animationVolume": "Volume de l'animation",
+          "searchGifts": "Rechercher des cadeaux par ID ou par nom...",
+          "filterGifts": "Saisissez du texte pour filtrer par ID de cadeau, libell\u00e9, son ou animation...",
+          "configImportExport": "Chargez ou collez ici le JSON d'animation de table de sons export\u00e9."
+        },
+        "accessibility": {
+          "closeGiftCatalogModal": "Fermer la bo\u00eete de dialogue du catalogue de cadeaux"
+        }
       }
     }
   }

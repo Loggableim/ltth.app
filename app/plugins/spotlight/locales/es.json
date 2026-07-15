@@ -59,7 +59,14 @@
         "spotlight_subscriber": "Destacado: suscriptor",
         "spotlight_chatter": "Destacado: charla",
         "spotlight_follower": "Destacado - Seguidor",
-        "modern_live_overlays_for_recent_tiktok_activity_copy": "Superposiciones en vivo modernas para la actividad reciente de TikTok. Copie URL, obtenga modos de vista previa, pruebe flujos de eventos y ajuste la apariencia sin perder ninguna de las funciones de superposición existentes."
+        "modern_live_overlays_for_recent_tiktok_activity_copy": "Superposiciones en vivo modernas para la actividad reciente de TikTok. Copie URL, obtenga modos de vista previa, pruebe flujos de eventos y ajuste la apariencia sin perder ninguna de las funciones de superposición existentes.",
+        "modes": "Modos",
+        "workflow": "Flujo de trabajo",
+        "compatibility": "Compatibilidad",
+        "layout": "Diseño",
+        "cancel": "Cancelar",
+        "test": "Probar",
+        "close": "Cerrar"
       }
     }
   }

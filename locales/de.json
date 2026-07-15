@@ -6907,13 +6907,13 @@
   "docs.plugin.definition.purpose": "Zweck und Zielgruppe",
   "docs.plugin.definition.activation": "Aktivierung und Navigation",
   "docs.plugin.definition.workflows": "Verifizierte Workflows",
-  "docs.plugin.definition.settings": "Referenz der sichtbaren Controls",
+  "docs.plugin.definition.settings": "Referenz der Workflow-Steuerelemente",
   "docs.plugin.definition.integrations": "Schnittstellen und Integrationen",
   "docs.plugin.definition.controls": "UI-Inventar",
   "docs.plugin.definition.defaultValue": "Standard im Testprofil",
   "docs.plugin.definition.values": "Werte und Grenzen",
-  "docs.plugin.definition.dependencies": "Abhaengigkeiten",
-  "docs.plugin.definition.checks": "Pruefschritte",
-  "docs.plugin.definition.resolution": "Loesung",
+  "docs.plugin.definition.dependencies": "Abhängigkeiten",
+  "docs.plugin.definition.checks": "Prüfschritte",
+  "docs.plugin.definition.resolution": "Lösung",
   "docs.plugin.definition.documentedIn": "Dokumentiert in"
 }

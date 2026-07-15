@@ -152,7 +152,7 @@
           "title": "Gift-to-Weather Mappings",
           "description": "Map specific TikTok gifts to weather effects. When a mapped gift is received, it will trigger the configured weather effect.",
           "load_prompt": "Click \"Load Gift Catalog\" to see available gifts",
-          "effect_label": "${translate('cards.gifts.effect_label') || 'Weather Effect'}"
+          "effect_label": "Weather Effect"
         }
       },
       "buttons": {
@@ -245,6 +245,19 @@
         "weather_control_overlay": "Weather Control Overlay",
         "default_white": "Default White",
         "streak_bonus_threshold": "Streak Bonus Threshold"
+      },
+      "ui": {
+        "commands": { "weather": "weather", "weatherlist": "weatherlist", "weatherstop": "weatherstop" },
+        "overlay": { "quest": "Quest", "streak": "Streak", "meter": "Meter" },
+        "effects": {
+          "midday": "Midday", "sunset": "Sunset", "precipitation": "Precipitation",
+          "atmosphere": "Atmosphere", "light": "Light", "ambient": "Ambient",
+          "impact": "Impact", "digital": "Digital", "direction": "Direction", "layer": "Layer"
+        },
+        "actions": { "play": "Play", "stopEffect": "Stop Effect", "stop": "Stop" },
+        "advanced": { "title": "Advanced" },
+        "triggers": { "effect": "Effect", "intensity": "Intensity", "duration": "Duration", "likeInterval": "Like Interval" },
+        "active": { "noEffects": "No active effects reported by the overlay." }
       }
     }
   }

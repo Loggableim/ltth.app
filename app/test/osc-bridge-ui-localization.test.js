@@ -6,7 +6,7 @@ describe('OSC-Bridge runtime localization', () => {
 
   test.each(['en', 'de', 'es', 'fr'])('%s translates OSCQuery discovery feedback', locale => {
     const translations = JSON.parse(fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8'));
-    const runtime = translations.osc_bridge.runtime.oscquery;
+    const runtime = translations.plugins['osc-bridge'].osc_bridge.runtime.oscquery;
 
     expect(runtime).toEqual(expect.objectContaining({
       unknown_error: expect.any(String),
@@ -18,9 +18,8 @@ describe('OSC-Bridge runtime localization', () => {
       found: expect.any(String),
       scanning: expect.any(String)
     }));
-    expect(translations.generated['cf0c3c65e548']).toContain('mDNS');
-    expect(translations.generated['3ec1fee24ad6']).toContain('mDNS');
-    expect(translations.generated['3ec1fee24ad6']).not.toContain('9001-9020');
+    expect(runtime.actions.search_mdns).toContain('mDNS');
+    expect(runtime.actions.search_mdns).not.toContain('9001-9020');
   });
 
   test('formats dynamic OSCQuery feedback through the shared i18n client', () => {

@@ -48,6 +48,9 @@
           "stopped": "Gestoppt",
           "completed": "Abgeschlossen"
         },
+        "stats": {
+          "total": "Gesamt"
+        },
         "messages": {
           "noTimers": "Noch keine Timer vorhanden",
           "createFirst": "Erstellen Sie Ihren ersten Timer",

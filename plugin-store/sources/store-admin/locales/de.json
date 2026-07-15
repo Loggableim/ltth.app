@@ -1,0 +1,51 @@
+{
+  "plugins": {
+    "store-admin": {
+      "ui": {
+        "title": "LTTH App-Store-Verwaltung",
+        "description": "Verwalte Beta-Lizenzen und den Zugriff auf Closed-Beta-Plugins für Clerk-Nutzende.",
+        "searchPlaceholder": "Nach E-Mail oder Nutzernamen suchen",
+        "searchUsers": "Nutzende suchen",
+        "checkAdminSession": "Admin-Sitzung prüfen",
+        "refresh": "Aktualisieren",
+        "storeHealth": "Store-Zustand",
+        "storeHealthDescription": "Lokale App-Store-Telemetrie und Installationszustand.",
+        "latestFeedback": "Neueste Rückmeldungen",
+        "latestFeedbackDescription": "Aktuelle Bewertungen aus der App-Store-Ansicht."
+      },
+      "users": {
+        "activeBetaLicense": "Aktive Beta-Lizenz",
+        "noActiveLicense": "Keine aktive Lizenz",
+        "noProfileName": "Kein Profilname",
+        "administrator": "Administrator",
+        "allClosedBeta": "Alle Closed Betas",
+        "saveAccess": "Zugriff speichern",
+        "claimBetaLicense": "Beta-Lizenz zuweisen",
+        "revokeLicense": "Lizenz widerrufen"
+      },
+      "metrics": {
+        "feedback": "Rückmeldungen",
+        "telemetry": "Telemetrie",
+        "installFailures": "Fehlgeschlagene Installationen",
+        "rollbacks": "Rücksetzungen"
+      },
+      "feedback": {
+        "unknown": "unbekannt",
+        "notAvailable": "k. A.",
+        "noMessage": "Keine Nachricht",
+        "empty": "Noch keine App-Store-Rückmeldungen."
+      },
+      "status": {
+        "loadingUsers": "Nutzende werden geladen …",
+        "usersLoaded": "{count} Nutzerprofil(e) geladen.",
+        "accessSaved": "Zugriff gespeichert.",
+        "licenseRevoked": "Lizenz widerrufen.",
+        "licenseClaimed": "Lizenz zugewiesen.",
+        "adminSessionOk": "Admin-Sitzung OK: {userId}"
+      },
+      "errors": {
+        "requestFailed": "Anfrage fehlgeschlagen"
+      }
+    }
+  }
+}

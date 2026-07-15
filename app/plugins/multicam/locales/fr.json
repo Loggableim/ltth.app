@@ -51,7 +51,10 @@
           "min_coins": "Pièces Min. (optionnel)",
           "add": "Ajouter un Mappage",
           "refresh_gifts": "Actualiser les Cadeaux",
-          "current_mappings": "Mappages Actuels:"
+          "current_mappings": "Mappages Actuels:",
+          "filter": "Filtre :",
+          "camera_filter": "Caméra :",
+          "sort": "Ordre de tri :"
         },
         "log": {
           "title": "Activity Log",

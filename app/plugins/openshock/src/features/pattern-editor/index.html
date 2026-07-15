@@ -288,6 +288,11 @@
         let patternEditor = null;
         let devices = [];
 
+        function translate(key, fallback) {
+            const translation = window.i18n?.t(key);
+            return translation && translation !== key ? translation : fallback;
+        }
+
         // Initialize on DOM load
         document.addEventListener('DOMContentLoaded', () => {
             console.log('[Pattern Editor] Initializing...');
@@ -370,7 +375,7 @@
             container.style.display = 'block';
 
             if (deviceList.length === 0) {
-                listContainer.innerHTML = '<p style="color: #aaa;">Keine Geräte gefunden</p>';
+                listContainer.innerHTML = `<p style="color: #aaa;">${translate('plugins.openshock.ui.empty_state.no_devices', 'No devices found')}</p>`;
                 return;
             }
 

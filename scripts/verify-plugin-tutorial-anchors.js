@@ -17,7 +17,9 @@ function sourceFileFor(route) {
   if (pathname === '/clarityhud/ui') return path.join(ROOT, 'app', 'plugins', 'clarityhud', 'ui', 'main.html');
   if (pathname === '/overlay/clarity/full') return path.join(ROOT, 'app', 'plugins', 'clarityhud', 'overlays', 'full.html');
   if (pathname === '/webgpu-fireworks/overlay') return path.join(ROOT, 'app', 'plugins', 'webgpu-fireworks', 'overlay.html');
+  if (pathname === '/webgpu-fireworks/ui') return path.join(ROOT, 'app', 'plugins', 'webgpu-fireworks', 'ui', 'settings.html');
   if (pathname === '/goals/overlay') return path.join(ROOT, 'app', 'plugins', 'goals', 'overlay', 'index.html');
+  if (pathname === '/flame-overlay/ui') return path.join(ROOT, 'app', 'plugins', 'flame-overlay', 'ui', 'settings.html');
   if (pathname === '/flame-overlay/overlay') return path.join(ROOT, 'app', 'plugins', 'flame-overlay', 'renderer', 'index.html');
   if (pathname === '/visual-fx-frame-webgpu/ui') return path.join(ROOT, 'plugin-store', 'sources', 'visual-fx-frame-webgpu', 'ui', 'settings.html');
   if (pathname === '/visual-fx-frame-webgpu/overlay') return path.join(ROOT, 'plugin-store', 'sources', 'visual-fx-frame-webgpu', 'renderer', 'index.html');
@@ -31,6 +33,13 @@ function sourceContainsSelector(source, selector) {
   if (id) return source.includes(`id="${id[1]}"`) || source.includes(`id='${id[1]}'`);
   const className = selector.match(/^\.([A-Za-z0-9_-]+)$/);
   if (className) return new RegExp(`class=["'][^"']*\\b${className[1]}\\b`).test(source) || source.includes(className[1]);
+  const href = selector.match(/^a\[href="([^"]+)"\]$/);
+  if (href) return source.includes(`href="${href[1]}"`) || source.includes(`href='${href[1]}'`);
+  if (selector === 'button[data-action="preview"][data-type="chatter"]') {
+    return source.includes('data-action="preview"')
+      && source.includes('data-type="${type.id}"')
+      && source.includes("id: 'chatter'");
+  }
   if (selector === '.plugin-mode-btn[data-plugin-mode="store"]') {
     return source.includes('plugin-mode-btn') && source.includes('data-plugin-mode="store"');
   }

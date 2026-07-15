@@ -795,9 +795,9 @@
         <div class="header fade-in">
             <div class="header-title">
                 <span class="icon">🌤️</span>
-                <h1 data-i18n-key="header.title">Weather Control</h1>
+                <h1 data-i18n-key="plugins.weather-control.header.title">Weather Control</h1>
             </div>
-            <a href="/dashboard.html" class="btn btn-secondary" id="backButton" data-i18n-key="header.back">
+            <a href="/dashboard.html" class="btn btn-secondary" id="backButton" data-i18n-key="plugins.weather-control.header.back">
                 <span>←</span>
                 Back to Dashboard
             </a>
@@ -810,19 +810,19 @@
         <div class="stats-grid fade-in">
             <div class="stat-card">
                 <div class="stat-value">13</div>
-                <div class="stat-label" data-i18n-key="stats.effects">Weather Effects</div>
+                <div class="stat-label" data-i18n-key="plugins.weather-control.stats.effects">Weather Effects</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="activeEffectsCount">0</div>
-                <div class="stat-label" data-i18n-key="stats.active">Active Effects</div>
+                <div class="stat-label" data-i18n-key="plugins.weather-control.stats.active">Active Effects</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="eventsTriggered">0</div>
-                <div class="stat-label" data-i18n-key="stats.events">Events Triggered</div>
+                <div class="stat-label" data-i18n-key="plugins.weather-control.stats.events">Events Triggered</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="connectionStatus">⚪</div>
-                <div class="stat-label" data-i18n-key="stats.connection">Connection</div>
+                <div class="stat-label" data-i18n-key="plugins.weather-control.stats.connection">Connection</div>
             </div>
         </div>
 
@@ -830,7 +830,7 @@
         <div class="card fade-in">
             <div class="card-header">
                 <span>👁️</span>
-                <h3 data-i18n-key="cards.preview.title">Live Weather Preview</h3>
+                <h3 data-i18n-key="plugins.weather-control.cards.preview.title">Live Weather Preview</h3>
             </div>
             <div class="card-body">
                 <div class="preview-container">
@@ -841,40 +841,40 @@
                     <div class="preview-controls">
                         <button class="btn btn-primary" id="togglePreviewBtn">
                             <span>▶️</span>
-                            <span id="togglePreviewText" data-i18n-key="buttons.preview_on">Start Preview</span>
+                            <span id="togglePreviewText" data-i18n-key="plugins.weather-control.buttons.preview_on">Start Preview</span>
                         </button>
                         <button class="btn btn-secondary" id="testRainEffectBtn">
                             <span>🌧️</span>
-                            <span data-i18n-key="buttons.test_rain">Test Rain Effect</span>
+                            <span data-i18n-key="plugins.weather-control.buttons.test_rain">Test Rain Effect</span>
                         </button>
                         <button class="btn btn-danger" id="stopAllPreviewBtn">
                             <span>⏹️</span>
-                            <span data-i18n-key="buttons.stop_all">Stop All</span>
+                            <span data-i18n-key="plugins.weather-control.buttons.stop_all">Stop All</span>
                         </button>
                     </div>
 
                     <div class="preview-stats">
                         <div class="preview-stat">
                             <div class="preview-stat-value" id="preview-fps">0</div>
-                            <div class="preview-stat-label" data-i18n-key="preview.fps">FPS</div>
+                            <div class="preview-stat-label" data-i18n-key="plugins.weather-control.preview.fps">FPS</div>
                         </div>
                         <div class="preview-stat">
                             <div class="preview-stat-value" id="preview-avg-fps">0</div>
-                            <div class="preview-stat-label" data-i18n-key="preview.avg_fps">Avg FPS</div>
+                            <div class="preview-stat-label" data-i18n-key="plugins.weather-control.preview.avg_fps">Avg FPS</div>
                         </div>
                         <div class="preview-stat">
                             <div class="preview-stat-value" id="preview-particles">0</div>
-                            <div class="preview-stat-label" data-i18n-key="preview.particles">Particles</div>
+                            <div class="preview-stat-label" data-i18n-key="plugins.weather-control.preview.particles">Particles</div>
                         </div>
                         <div class="preview-stat">
                             <div class="preview-stat-value" id="preview-active-effects">0</div>
-                            <div class="preview-stat-label" data-i18n-key="preview.active_effects">Active</div>
+                            <div class="preview-stat-label" data-i18n-key="plugins.weather-control.preview.active_effects">Active</div>
                         </div>
                     </div>
 
                     <div class="preview-warning" id="preview-warning">
                         <span>⚠️</span>
-                        <span data-i18n-key="preview.warning">Performance Warning: This configuration may lag on low-end systems</span>
+                        <span data-i18n-key="plugins.weather-control.preview.warning">Performance Warning: This configuration may lag on low-end systems</span>
                     </div>
                 </div>
             </div>
@@ -884,14 +884,14 @@
         <div class="card fade-in">
             <div class="card-header">
                 <span>⚙️</span>
-                <h3 data-i18n-key="cards.main.title">Main Settings</h3>
+                <h3 data-i18n-key="plugins.weather-control.cards.main.title">Main Settings</h3>
             </div>
             <div class="card-body">
                 <div class="grid grid-2">
                     <div class="form-group">
                         <label class="form-label">
                             <span style="display: flex; justify-content: space-between; align-items: center;">
-                                <span data-i18n-key="cards.main.enable">Enable Weather Control Plugin</span>
+                                <span data-i18n-key="plugins.weather-control.cards.main.enable">Enable Weather Control Plugin</span>
                                 <label class="switch">
                                     <input type="checkbox" id="enabled" checked>
                                     <span class="slider"></span>
@@ -903,7 +903,7 @@
                     <div class="form-group">
                         <label class="form-label">
                             <span style="display: flex; justify-content: space-between; align-items: center;">
-                                <span data-i18n-key="cards.main.use_global">Use Global Authentication</span>
+                                <span data-i18n-key="plugins.weather-control.cards.main.use_global">Use Global Authentication</span>
                                 <label class="switch">
                                     <input type="checkbox" id="useGlobalAuth" checked>
                                     <span class="slider"></span>
@@ -914,7 +914,7 @@
 
                     <div class="form-group">
                         <label class="form-label">
-                            <span data-i18n-key="cards.main.rate_limit">Rate Limit (requests/min)</span>
+                            <span data-i18n-key="plugins.weather-control.cards.main.rate_limit">Rate Limit (requests/min)</span>
                             <span class="range-value" id="rateLimitValue">10</span>
                         </label>
                         <div class="range-container">
@@ -923,10 +923,10 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" data-i18n-key="cards.main.overlay_url">Overlay URL</label>
+                        <label class="form-label" data-i18n-key="plugins.weather-control.cards.main.overlay_url">Overlay URL</label>
                         <div class="url-copy">
                             <input type="text" class="form-control" id="overlayUrl" readonly>
-                            <button class="btn btn-primary" id="copyOverlayUrlBtn" data-i18n-key="buttons.copy">
+                            <button class="btn btn-primary" id="copyOverlayUrlBtn" data-i18n-key="plugins.weather-control.buttons.copy">
                                 <span>📋</span>
                                 Copy
                             </button>
@@ -934,7 +934,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" data-i18n-key="settings.quality_preset">Quality Preset</label>
+                        <label class="form-label" data-i18n-key="plugins.weather-control.settings.quality_preset">Quality Preset</label>
                         <select class="form-select" id="qualityPreset">
                             <option value="low" data-i18n="plugins.weather-control.labels.low_100_max_particles">Low – 100 max particles</option>
                             <option value="medium" selected data-i18n="plugins.weather-control.labels.medium_300">Medium – 300</option>
@@ -945,7 +945,7 @@
                     <div class="form-group">
                         <label class="form-label">
                             <span style="display: flex; justify-content: space-between; align-items: center;">
-                                <span data-i18n-key="settings.adaptive_quality">Adaptive Quality</span>
+                                <span data-i18n-key="plugins.weather-control.settings.adaptive_quality">Adaptive Quality</span>
                                 <label class="switch">
                                     <input type="checkbox" id="adaptiveQuality" checked>
                                     <span class="slider"></span>
@@ -961,88 +961,88 @@
         <div class="card fade-in">
             <div class="card-header">
                 <i class="fas fa-comments"></i>
-                <h3 data-i18n-key="cards.chat.title">Chat Commands (GCCE Integration)</h3>
+                <h3 data-i18n-key="plugins.weather-control.cards.chat.title">Chat Commands (GCCE Integration)</h3>
             </div>
             <div class="card-body">
                 <div class="info-box" style="margin-bottom: 1rem;">
                     <i class="fas fa-info-circle"></i>
-                    <p data-i18n-key="cards.chat.info">Requires Global Chat Command Engine (GCCE) plugin to be enabled. Viewers can trigger weather effects via chat commands.</p>
+                    <p data-i18n-key="plugins.weather-control.cards.chat.info">Requires Global Chat Command Engine (GCCE) plugin to be enabled. Viewers can trigger weather effects via chat commands.</p>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">
                         <span style="display: flex; justify-content: space-between; align-items: center;">
-                            <span data-i18n-key="cards.chat.enable">Enable Chat Commands</span>
+                            <span data-i18n-key="plugins.weather-control.cards.chat.enable">Enable Chat Commands</span>
                             <label class="switch">
                                 <input type="checkbox" id="chatCommandsEnabled">
                                 <span class="slider"></span>
                             </label>
                         </span>
                     </label>
-                    <small class="form-text" data-i18n-key="cards.chat.enable_help">Allow viewers to trigger weather effects using /weather, /weatherlist, and /weatherstop commands.</small>
+                    <small class="form-text" data-i18n-key="plugins.weather-control.cards.chat.enable_help">Allow viewers to trigger weather effects using /weather, /weatherlist, and /weatherstop commands.</small>
                 </div>
 
                 <div id="chatCommandsDetails">
                     <div class="form-group">
                         <label class="form-label">
                             <span style="display: flex; justify-content: space-between; align-items: center;">
-                                <span data-i18n-key="cards.chat.require_permission">Require Permissions</span>
+                                <span data-i18n-key="plugins.weather-control.cards.chat.require_permission">Require Permissions</span>
                                 <label class="switch">
                                     <input type="checkbox" id="chatCommandsRequirePermission">
                                     <span class="slider"></span>
                                 </label>
                             </span>
                         </label>
-                        <small class="form-text" data-i18n-key="cards.chat.require_permission_help">Use the permission system below to control who can use weather commands.</small>
+                        <small class="form-text" data-i18n-key="plugins.weather-control.cards.chat.require_permission_help">Use the permission system below to control who can use weather commands.</small>
                     </div>
 
                     <div class="grid grid-2">
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="cards.chat.allow_intensity"><i class="fas fa-sliders-h"></i> Allow Intensity Control</span>
+                                    <span data-i18n-key="plugins.weather-control.cards.chat.allow_intensity"><i class="fas fa-sliders-h"></i> Allow Intensity Control</span>
                                     <label class="switch">
                                         <input type="checkbox" id="chatCommandsAllowIntensity">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="cards.chat.allow_intensity_help">Allow users to specify effect intensity (0.0-1.0).</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.cards.chat.allow_intensity_help">Allow users to specify effect intensity (0.0-1.0).</small>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="cards.chat.allow_duration"><i class="fas fa-clock"></i> Allow Duration Control</span>
+                                    <span data-i18n-key="plugins.weather-control.cards.chat.allow_duration"><i class="fas fa-clock"></i> Allow Duration Control</span>
                                     <label class="switch">
                                         <input type="checkbox" id="chatCommandsAllowDuration">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="cards.chat.allow_duration_help">Allow users to specify effect duration (1-60 seconds).</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.cards.chat.allow_duration_help">Allow users to specify effect duration (1-60 seconds).</small>
                         </div>
                     </div>
 
                     <div class="form-group" style="margin-top: 1rem;">
                         <h4 style="margin-bottom: 0.75rem; font-size: 1rem; color: var(--color-text-primary);">
-                            <i class="fas fa-terminal"></i> <span data-i18n-key="cards.chat.command_names_title">Custom Command Names</span>
+                            <i class="fas fa-terminal"></i> <span data-i18n-key="plugins.weather-control.cards.chat.command_names_title">Custom Command Names</span>
                         </h4>
                         <div class="grid grid-3">
                             <div class="form-group">
-                                <label class="form-label" data-i18n-key="cards.chat.command_weather">Weather Command</label>
-                                <input type="text" id="cmdNameWeather" class="form-input" placeholder="weather" maxlength="32" data-i18n-key="cards.chat.command_weather_placeholder">
-                                <small class="form-text" data-i18n-key="cards.chat.command_weather_help">Trigger effects command</small>
+                                <label class="form-label" data-i18n-key="plugins.weather-control.cards.chat.command_weather">Weather Command</label>
+                                <input type="text" id="cmdNameWeather" class="form-input" placeholder="weather" maxlength="32" data-i18n-key="plugins.weather-control.cards.chat.command_weather_placeholder">
+                                <small class="form-text" data-i18n-key="plugins.weather-control.cards.chat.command_weather_help">Trigger effects command</small>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" data-i18n-key="cards.chat.command_list">List Command</label>
-                                <input type="text" id="cmdNameWeatherlist" class="form-input" placeholder="weatherlist" maxlength="32" data-i18n-key="cards.chat.command_list_placeholder">
-                                <small class="form-text" data-i18n-key="cards.chat.command_list_help">List available effects</small>
+                                <label class="form-label" data-i18n-key="plugins.weather-control.cards.chat.command_list">List Command</label>
+                                <input type="text" id="cmdNameWeatherlist" class="form-input" placeholder="weatherlist" maxlength="32" data-i18n-key="plugins.weather-control.cards.chat.command_list_placeholder">
+                                <small class="form-text" data-i18n-key="plugins.weather-control.cards.chat.command_list_help">List available effects</small>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" data-i18n-key="cards.chat.command_stop">Stop Command</label>
-                                <input type="text" id="cmdNameWeatherstop" class="form-input" placeholder="weatherstop" maxlength="32" data-i18n-key="cards.chat.command_stop_placeholder">
-                                <small class="form-text" data-i18n-key="cards.chat.command_stop_help">Stop all effects</small>
+                                <label class="form-label" data-i18n-key="plugins.weather-control.cards.chat.command_stop">Stop Command</label>
+                                <input type="text" id="cmdNameWeatherstop" class="form-input" placeholder="weatherstop" maxlength="32" data-i18n-key="plugins.weather-control.cards.chat.command_stop_placeholder">
+                                <small class="form-text" data-i18n-key="plugins.weather-control.cards.chat.command_stop_help">Stop all effects</small>
                             </div>
                         </div>
                     </div>
@@ -1050,11 +1050,11 @@
                     <div class="info-box">
                         <i class="fas fa-terminal"></i>
                         <div>
-                            <strong data-i18n-key="cards.chat.command_usage_title">Command Usage:</strong>
+                            <strong data-i18n-key="plugins.weather-control.cards.chat.command_usage_title">Command Usage:</strong>
                             <ul style="margin: 0.5rem 0 0 1.5rem;">
-                                <li data-i18n-html="true" data-i18n-key="cards.chat.command_usage_weather"><code>/<span id="displayCmdWeather">weather</span> &lt;effect&gt;</code> - Trigger a weather effect</li>
-                                <li data-i18n-html="true" data-i18n-key="cards.chat.command_usage_list"><code>/<span id="displayCmdList">weatherlist</span></code> - List all available effects</li>
-                                <li data-i18n-html="true" data-i18n-key="cards.chat.command_usage_stop"><code>/<span id="displayCmdStop">weatherstop</span></code> - Stop all effects (subscribers only)</li>
+                                <li data-i18n-html="true" data-i18n-key="plugins.weather-control.cards.chat.command_usage_weather"><code>/<span id="displayCmdWeather" data-i18n-key="plugins.weather-control.ui.commands.weather">weather</span> &lt;effect&gt;</code> - Trigger a weather effect</li>
+                                <li data-i18n-html="true" data-i18n-key="plugins.weather-control.cards.chat.command_usage_list"><code>/<span id="displayCmdList" data-i18n-key="plugins.weather-control.ui.commands.weatherlist">weatherlist</span></code> - List all available effects</li>
+                                <li data-i18n-html="true" data-i18n-key="plugins.weather-control.cards.chat.command_usage_stop"><code>/<span id="displayCmdStop" data-i18n-key="plugins.weather-control.ui.commands.weatherstop">weatherstop</span></code> - Stop all effects (subscribers only)</li>
                             </ul>
                         </div>
                     </div>
@@ -1066,13 +1066,13 @@
         <div class="card fade-in">
             <div class="card-header">
                 <span>🛡️</span>
-                <h3 data-i18n-key="cards.permissions.title">Permission Settings</h3>
+                <h3 data-i18n-key="plugins.weather-control.cards.permissions.title">Permission Settings</h3>
             </div>
             <div class="card-body">
                 <div class="form-group">
                     <label class="form-label">
                         <span style="display: flex; justify-content: space-between; align-items: center;">
-                            <span data-i18n-key="cards.permissions.enable">Enable Permission System</span>
+                            <span data-i18n-key="plugins.weather-control.cards.permissions.enable">Enable Permission System</span>
                             <label class="switch">
                                 <input type="checkbox" id="permissionsEnabled">
                                 <span class="slider"></span>
@@ -1085,7 +1085,7 @@
                     <div class="form-group">
                         <label class="form-label">
                             <span style="display: flex; justify-content: space-between; align-items: center;">
-                                <span data-i18n-key="cards.permissions.allow_all">Allow All Users</span>
+                                <span data-i18n-key="plugins.weather-control.cards.permissions.allow_all">Allow All Users</span>
                                 <label class="switch">
                                     <input type="checkbox" id="allowAll">
                                     <span class="slider"></span>
@@ -1098,7 +1098,7 @@
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="cards.permissions.followers"><span>❤️</span> Followers</span>
+                                    <span data-i18n-key="plugins.weather-control.cards.permissions.followers"><span>❤️</span> Followers</span>
                                     <label class="switch">
                                         <input type="checkbox" id="allowFollowers">
                                         <span class="slider"></span>
@@ -1110,7 +1110,7 @@
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="cards.permissions.superfans"><span>⭐</span> Superfans</span>
+                                    <span data-i18n-key="plugins.weather-control.cards.permissions.superfans"><span>⭐</span> Superfans</span>
                                     <label class="switch">
                                         <input type="checkbox" id="allowSuperfans">
                                         <span class="slider"></span>
@@ -1122,7 +1122,7 @@
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="cards.permissions.subscribers"><span>👑</span> Subscribers</span>
+                                    <span data-i18n-key="plugins.weather-control.cards.permissions.subscribers"><span>👑</span> Subscribers</span>
                                     <label class="switch">
                                         <input type="checkbox" id="allowSubscribers">
                                         <span class="slider"></span>
@@ -1134,7 +1134,7 @@
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="cards.permissions.team_members"><span>👥</span> Team Members</span>
+                                    <span data-i18n-key="plugins.weather-control.cards.permissions.team_members"><span>👥</span> Team Members</span>
                                     <label class="switch">
                                         <input type="checkbox" id="allowTeamMembers">
                                         <span class="slider"></span>
@@ -1145,7 +1145,7 @@
 
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="cards.permissions.min_team_level">Min Team Level</span>
+                                <span data-i18n-key="plugins.weather-control.cards.permissions.min_team_level">Min Team Level</span>
                                 <span class="range-value" id="minTeamLevelValue">1</span>
                             </label>
                             <input type="range" class="range-slider" id="minTeamLevel" min="1" max="10" value="1">
@@ -1153,14 +1153,14 @@
 
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="cards.permissions.top_gifters">Top Gifters (Top N)</span>
+                                <span data-i18n-key="plugins.weather-control.cards.permissions.top_gifters">Top Gifters (Top N)</span>
                                 <span class="range-value" id="topGifterValue">10</span>
                             </label>
                             <input type="range" class="range-slider" id="topGifterThreshold" min="0" max="100" value="10">
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="cards.permissions.min_points">Minimum Points Required</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.cards.permissions.min_points">Minimum Points Required</label>
                             <input type="number" class="form-control" id="minPoints" min="0" value="0">
                         </div>
                     </div>
@@ -1301,7 +1301,7 @@
         <div class="card fade-in">
             <div class="card-header">
                 <span>🌈</span>
-                <h3 data-i18n-key="cards.effects.title">Weather Effects Configuration</h3>
+                <h3 data-i18n-key="plugins.weather-control.cards.effects.title">Weather Effects Configuration</h3>
             </div>
             <div class="card-body">
                 <div class="grid grid-2">
@@ -1310,7 +1310,7 @@
                         <div class="effect-header">
                             <div class="effect-title">
                                 <span style="color: #60a5fa; font-size: 1.5rem;">🌧️</span>
-                                <span data-i18n-key="effects.names.rain">Rain</span>
+                                <span data-i18n-key="plugins.weather-control.effects.names.rain">Rain</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" id="effect-rain-enabled" checked>
@@ -1319,30 +1319,30 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-rain-intensity-val">0.5</span>
                             </label>
                             <input type="range" class="range-slider" id="effect-rain-intensity" min="0" max="1" step="0.1" value="0.5">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
                             <input type="number" class="form-control" id="effect-rain-duration" value="10000" min="1000" max="60000">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
                                     <label class="switch">
                                         <input type="checkbox" id="effect-rain-permanent">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="rain">
                             <span>▶️</span>
-                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                            <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
 
@@ -1351,7 +1351,7 @@
                         <div class="effect-header">
                             <div class="effect-title">
                                 <span style="color: #93c5fd; font-size: 1.5rem;">❄️</span>
-                                <span data-i18n-key="effects.names.snow">Snow</span>
+                                <span data-i18n-key="plugins.weather-control.effects.names.snow">Snow</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" id="effect-snow-enabled" checked>
@@ -1360,30 +1360,30 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-snow-intensity-val">0.5</span>
                             </label>
                             <input type="range" class="range-slider" id="effect-snow-intensity" min="0" max="1" step="0.1" value="0.5">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
                             <input type="number" class="form-control" id="effect-snow-duration" value="10000" min="1000" max="60000">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
                                     <label class="switch">
                                         <input type="checkbox" id="effect-snow-permanent">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="snow">
                             <span>▶️</span>
-                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                            <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
 
@@ -1392,7 +1392,7 @@
                         <div class="effect-header">
                             <div class="effect-title">
                                 <span style="color: #818cf8; font-size: 1.5rem;">⛈️</span>
-                                <span data-i18n-key="effects.names.storm">Storm</span>
+                                <span data-i18n-key="plugins.weather-control.effects.names.storm">Storm</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" id="effect-storm-enabled" checked>
@@ -1401,30 +1401,30 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-storm-intensity-val">0.7</span>
                             </label>
                             <input type="range" class="range-slider" id="effect-storm-intensity" min="0" max="1" step="0.1" value="0.7">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
                             <input type="number" class="form-control" id="effect-storm-duration" value="8000" min="1000" max="60000">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
                                     <label class="switch">
                                         <input type="checkbox" id="effect-storm-permanent">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="storm">
                             <span>▶️</span>
-                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                            <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
 
@@ -1433,7 +1433,7 @@
                         <div class="effect-header">
                             <div class="effect-title">
                                 <span style="color: #94a3b8; font-size: 1.5rem;">🌫️</span>
-                                <span data-i18n-key="effects.names.fog">Fog</span>
+                                <span data-i18n-key="plugins.weather-control.effects.names.fog">Fog</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" id="effect-fog-enabled" checked>
@@ -1442,17 +1442,17 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-fog-intensity-val">0.4</span>
                             </label>
                             <input type="range" class="range-slider" id="effect-fog-intensity" min="0" max="1" step="0.1" value="0.4">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
                             <input type="number" class="form-control" id="effect-fog-duration" value="15000" min="1000" max="60000">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.fog_color">Fog Color Preset</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.fog_color">Fog Color Preset</label>
                             <select class="form-select" id="effect-fog-color">
                                 <option value="default" data-i18n="plugins.weather-control.labels.default_white">Default White</option>
                                 <option value="toxic" data-i18n="plugins.weather-control.labels.toxic_green">Toxic Green</option>
@@ -1464,18 +1464,18 @@
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
                                     <label class="switch">
                                         <input type="checkbox" id="effect-fog-permanent">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="fog">
                             <span>▶️</span>
-                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                            <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
 
@@ -1484,7 +1484,7 @@
                         <div class="effect-header">
                             <div class="effect-title">
                                 <span style="color: #fbbf24; font-size: 1.5rem;">⚡</span>
-                                <span data-i18n-key="effects.names.thunder">Thunder</span>
+                                <span data-i18n-key="plugins.weather-control.effects.names.thunder">Thunder</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" id="effect-thunder-enabled" checked>
@@ -1493,30 +1493,30 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-thunder-intensity-val">0.8</span>
                             </label>
                             <input type="range" class="range-slider" id="effect-thunder-intensity" min="0" max="1" step="0.1" value="0.8">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
                             <input type="number" class="form-control" id="effect-thunder-duration" value="5000" min="1000" max="60000">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
                                     <label class="switch">
                                         <input type="checkbox" id="effect-thunder-permanent">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="thunder">
                             <span>▶️</span>
-                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                            <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
 
@@ -1525,7 +1525,7 @@
                         <div class="effect-header">
                             <div class="effect-title">
                                 <span style="color: #fcd34d; font-size: 1.5rem;">☀️</span>
-                                <span data-i18n-key="effects.names.sunbeam">Sunbeam</span>
+                                <span data-i18n-key="plugins.weather-control.effects.names.sunbeam">Sunbeam</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" id="effect-sunbeam-enabled" checked>
@@ -1534,39 +1534,39 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-sunbeam-intensity-val">0.6</span>
                             </label>
                             <input type="range" class="range-slider" id="effect-sunbeam-intensity" min="0" max="1" step="0.1" value="0.6">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
                             <input type="number" class="form-control" id="effect-sunbeam-duration" value="12000" min="1000" max="60000">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.sunbeam_colortemp">Color Temperature</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.sunbeam_colortemp">Color Temperature</label>
                             <select class="form-select" id="effect-sunbeam-colortemp">
                                 <option value="golden" data-i18n="plugins.weather-control.labels.golden_hour">Golden Hour</option>
-                                <option value="midday">Midday</option>
-                                <option value="sunset">Sunset</option>
+                                <option value="midday" data-i18n-key="plugins.weather-control.ui.effects.midday">Midday</option>
+                                <option value="sunset" data-i18n-key="plugins.weather-control.ui.effects.sunset">Sunset</option>
                                 <option value="cool" data-i18n="plugins.weather-control.labels.cool_moonlight">Cool Moonlight</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
                                     <label class="switch">
                                         <input type="checkbox" id="effect-sunbeam-permanent">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="sunbeam">
                             <span>▶️</span>
-                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                            <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
 
@@ -1575,7 +1575,7 @@
                         <div class="effect-header">
                             <div class="effect-title">
                                 <span style="color: #c084fc; font-size: 1.5rem;">☁️</span>
-                                <span data-i18n-key="effects.names.glitchclouds">Glitch Clouds</span>
+                                <span data-i18n-key="plugins.weather-control.effects.names.glitchclouds">Glitch Clouds</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" id="effect-glitchclouds-enabled" checked>
@@ -1584,26 +1584,26 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-glitchclouds-intensity-val">0.7</span>
                             </label>
                             <input type="range" class="range-slider" id="effect-glitchclouds-intensity" min="0" max="1" step="0.1" value="0.7">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
                             <input type="number" class="form-control" id="effect-glitchclouds-duration" value="8000" min="1000" max="60000">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
                                     <label class="switch">
                                         <input type="checkbox" id="effect-glitchclouds-permanent">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <!-- Glitch Sub-Effect Toggles -->
                         <div class="form-group" style="border-top: 1px solid var(--color-border); padding-top: 0.75rem; margin-top: 0.5rem;">
@@ -1638,7 +1638,7 @@
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="glitchclouds">
                             <span>▶️</span>
-                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                            <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
 
@@ -1647,7 +1647,7 @@
                         <div class="effect-header">
                             <div class="effect-title">
                                 <span style="color: #818cf8; font-size: 1.5rem;">🌌</span>
-                                <span data-i18n-key="effects.names.aurora">Aurora Borealis</span>
+                                <span data-i18n-key="plugins.weather-control.effects.names.aurora">Aurora Borealis</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" id="effect-aurora-enabled" checked>
@@ -1656,30 +1656,30 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-aurora-intensity-val">0.6</span>
                             </label>
                             <input type="range" class="range-slider" id="effect-aurora-intensity" min="0" max="1" step="0.1" value="0.6">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
                             <input type="number" class="form-control" id="effect-aurora-duration" value="15000" min="1000" max="60000">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
                                     <label class="switch">
                                         <input type="checkbox" id="effect-aurora-permanent">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="aurora">
                             <span>▶️</span>
-                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                            <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
 
@@ -1688,7 +1688,7 @@
                         <div class="effect-header">
                             <div class="effect-title">
                                 <span style="color: #fbbf24; font-size: 1.5rem;">✨</span>
-                                <span data-i18n-key="effects.names.fireflies">Fireflies</span>
+                                <span data-i18n-key="plugins.weather-control.effects.names.fireflies">Fireflies</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" id="effect-fireflies-enabled" checked>
@@ -1697,30 +1697,30 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-fireflies-intensity-val">0.5</span>
                             </label>
                             <input type="range" class="range-slider" id="effect-fireflies-intensity" min="0" max="1" step="0.1" value="0.5">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
                             <input type="number" class="form-control" id="effect-fireflies-duration" value="12000" min="1000" max="60000">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
                                     <label class="switch">
                                         <input type="checkbox" id="effect-fireflies-permanent">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="fireflies">
                             <span>▶️</span>
-                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                            <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
 
@@ -1729,7 +1729,7 @@
                         <div class="effect-header">
                             <div class="effect-title">
                                 <span style="color: #f97316; font-size: 1.5rem;">☄️</span>
-                                <span data-i18n-key="effects.names.meteors">Meteor Shower</span>
+                                <span data-i18n-key="plugins.weather-control.effects.names.meteors">Meteor Shower</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" id="effect-meteors-enabled" checked>
@@ -1738,30 +1738,30 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-meteors-intensity-val">0.4</span>
                             </label>
                             <input type="range" class="range-slider" id="effect-meteors-intensity" min="0" max="1" step="0.1" value="0.4">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
                             <input type="number" class="form-control" id="effect-meteors-duration" value="8000" min="1000" max="60000">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
                                     <label class="switch">
                                         <input type="checkbox" id="effect-meteors-permanent">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="meteors">
                             <span>▶️</span>
-                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                            <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
 
@@ -1770,7 +1770,7 @@
                         <div class="effect-header">
                             <div class="effect-title">
                                 <span style="color: #f9a8d4; font-size: 1.5rem;">🌸</span>
-                                <span data-i18n-key="effects.names.sakura">Sakura Petals</span>
+                                <span data-i18n-key="plugins.weather-control.effects.names.sakura">Sakura Petals</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" id="effect-sakura-enabled" checked>
@@ -1779,30 +1779,30 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-sakura-intensity-val">0.6</span>
                             </label>
                             <input type="range" class="range-slider" id="effect-sakura-intensity" min="0" max="1" step="0.1" value="0.6">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
                             <input type="number" class="form-control" id="effect-sakura-duration" value="12000" min="1000" max="60000">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
                                     <label class="switch">
                                         <input type="checkbox" id="effect-sakura-permanent">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="sakura">
                             <span>▶️</span>
-                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                            <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
 
@@ -1811,7 +1811,7 @@
                         <div class="effect-header">
                             <div class="effect-title">
                                 <span style="color: #ef4444; font-size: 1.5rem;">🔥</span>
-                                <span data-i18n-key="effects.names.embers">Rising Embers</span>
+                                <span data-i18n-key="plugins.weather-control.effects.names.embers">Rising Embers</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" id="effect-embers-enabled" checked>
@@ -1820,30 +1820,30 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">
-                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-embers-intensity-val">0.5</span>
                             </label>
                             <input type="range" class="range-slider" id="effect-embers-intensity" min="0" max="1" step="0.1" value="0.5">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
                             <input type="number" class="form-control" id="effect-embers-duration" value="10000" min="1000" max="60000">
                         </div>
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
                                     <label class="switch">
                                         <input type="checkbox" id="effect-embers-permanent">
                                         <span class="slider"></span>
                                     </label>
                                 </span>
                             </label>
-                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                            <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="embers">
                             <span>▶️</span>
-                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                            <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
                 </div>
@@ -1854,28 +1854,28 @@
         <div class="card fade-in">
             <div class="card-header">
                 <span>*</span>
-                <h3 data-i18n-key="cards.tools.title">Weather Control Tools</h3>
+                <h3 data-i18n-key="plugins.weather-control.cards.tools.title">Weather Control Tools</h3>
             </div>
             <div class="card-body">
                 <div class="grid grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n-key="cards.tools.search">Search Effects</label>
+                        <label class="form-label" data-i18n-key="plugins.weather-control.cards.tools.search">Search Effects</label>
                         <input type="search" class="form-control" id="effectSearch" placeholder="rain, storm, heatwave">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n-key="cards.tools.category">Effect Category</label>
+                        <label class="form-label" data-i18n-key="plugins.weather-control.cards.tools.category">Effect Category</label>
                         <select class="form-select" id="effectCategoryFilter">
                             <option value="all" data-i18n="plugins.weather-control.labels.all_categories">All categories</option>
-                            <option value="precipitation">Precipitation</option>
-                            <option value="atmosphere">Atmosphere</option>
-                            <option value="light">Light</option>
-                            <option value="ambient">Ambient</option>
-                            <option value="impact">Impact</option>
-                            <option value="digital">Digital</option>
+                            <option value="precipitation" data-i18n-key="plugins.weather-control.ui.effects.precipitation">Precipitation</option>
+                            <option value="atmosphere" data-i18n-key="plugins.weather-control.ui.effects.atmosphere">Atmosphere</option>
+                            <option value="light" data-i18n-key="plugins.weather-control.ui.effects.light">Light</option>
+                            <option value="ambient" data-i18n-key="plugins.weather-control.ui.effects.ambient">Ambient</option>
+                            <option value="impact" data-i18n-key="plugins.weather-control.ui.effects.impact">Impact</option>
+                            <option value="digital" data-i18n-key="plugins.weather-control.ui.effects.digital">Digital</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n-key="cards.tools.preset">Effect Preset</label>
+                        <label class="form-label" data-i18n-key="plugins.weather-control.cards.tools.preset">Effect Preset</label>
                         <select class="form-select" id="presetSelect"></select>
                     </div>
                     <div class="form-group" style="display: flex; align-items: end; gap: 0.75rem;">
@@ -1888,7 +1888,7 @@
 
                 <div class="grid grid-2" style="margin-top: 1rem;">
                     <div class="form-group">
-                        <label class="form-label" data-i18n-key="cards.tools.sequence_name">Sequence Name</label>
+                        <label class="form-label" data-i18n-key="plugins.weather-control.cards.tools.sequence_name">Sequence Name</label>
                         <input type="text" class="form-control" id="sequenceName" value="Storm Build">
                     </div>
                     <div class="form-group" style="display: flex; align-items: end; gap: 0.75rem;">
@@ -1896,7 +1896,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" data-i18n-key="cards.tools.sequence_steps">Sequence Steps JSON</label>
+                    <label class="form-label" data-i18n-key="plugins.weather-control.cards.tools.sequence_steps">Sequence Steps JSON</label>
                     <textarea class="form-control" id="sequenceSteps" rows="5" data-i18n="plugins.weather-control.labels.action_fog_delay_0_intensity_0_35_duration">[
   {"action":"fog","delay":0,"intensity":0.35,"duration":8000},
   {"action":"rain","delay":2000,"intensity":0.55,"duration":10000},
@@ -1908,7 +1908,7 @@
                     <div class="form-group">
                         <label class="form-label">
                             <span style="display: flex; justify-content: space-between; align-items: center;">
-                                <span data-i18n-key="cards.audio.enable">Enable Weather Audio</span>
+                                <span data-i18n-key="plugins.weather-control.cards.audio.enable">Enable Weather Audio</span>
                                 <label class="switch">
                                     <input type="checkbox" id="audioEnabled">
                                     <span class="slider"></span>
@@ -1928,7 +1928,7 @@
         <div class="card fade-in">
             <div class="card-header">
                 <span>#</span>
-                <h3 data-i18n-key="cards.active.title">Active Weather Effects</h3>
+                <h3 data-i18n-key="plugins.weather-control.cards.active.title">Active Weather Effects</h3>
             </div>
             <div class="card-body">
                 <div id="activeEffectsList" class="grid grid-2">
@@ -1941,7 +1941,7 @@
         <div class="card fade-in">
             <div class="card-header">
                 <span>!</span>
-                <h3 data-i18n-key="cards.triggers.title">Event Triggers</h3>
+                <h3 data-i18n-key="plugins.weather-control.cards.triggers.title">Event Triggers</h3>
             </div>
             <div class="card-body">
                 <div class="grid grid-2" id="eventTriggerGrid"></div>
@@ -1952,23 +1952,23 @@
         <div class="card fade-in">
             <div class="card-header">
                 <span>🎁</span>
-                <h3 data-i18n-key="cards.gifts.title">Gift-to-Weather Mappings</h3>
+                <h3 data-i18n-key="plugins.weather-control.cards.gifts.title">Gift-to-Weather Mappings</h3>
             </div>
             <div class="card-body">
-                <p class="help-text" style="margin-bottom: 1.5rem;" data-i18n-key="cards.gifts.description">
+                <p class="help-text" style="margin-bottom: 1.5rem;" data-i18n-key="plugins.weather-control.cards.gifts.description">
                     Map specific TikTok gifts to weather effects. When a mapped gift is received, it will trigger the configured weather effect.
                 </p>
 
                 <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
-                    <button class="btn btn-primary" id="loadGiftCatalog" data-i18n-key="buttons.load_catalog">
+                    <button class="btn btn-primary" id="loadGiftCatalog" data-i18n-key="plugins.weather-control.buttons.load_catalog">
                         <span>🔄</span>
                         Load Gift Catalog
                     </button>
-                    <button class="btn btn-secondary" id="updateGiftCatalog" data-i18n-key="buttons.update_catalog">
+                    <button class="btn btn-secondary" id="updateGiftCatalog" data-i18n-key="plugins.weather-control.buttons.update_catalog">
                         <span>⟳</span>
                         Update Gift Catalog
                     </button>
-                    <button class="btn btn-secondary" id="refreshGiftMappings" data-i18n-key="buttons.refresh_mappings">
+                    <button class="btn btn-secondary" id="refreshGiftMappings" data-i18n-key="plugins.weather-control.buttons.refresh_mappings">
                         <span>🔄</span>
                         Refresh Mappings
                     </button>
@@ -1977,14 +1977,14 @@
 
                 <!-- Gift Mapping List -->
                 <div id="giftMappingList" style="margin-top: 1.5rem;">
-                    <p class="help-text" data-i18n-key="cards.gifts.load_prompt">Click "Load Gift Catalog" to see available gifts</p>
+                    <p class="help-text" data-i18n-key="plugins.weather-control.cards.gifts.load_prompt">Click "Load Gift Catalog" to see available gifts</p>
                 </div>
             </div>
         </div>
 
         <!-- Save Button -->
         <div style="text-align: center; margin-top: 2rem; margin-bottom: 2rem;">
-            <button class="btn btn-success btn-lg" id="saveConfig" data-i18n-key="buttons.save_config">
+            <button class="btn btn-success btn-lg" id="saveConfig" data-i18n-key="plugins.weather-control.buttons.save_config">
                 <span>💾</span>
                 Save Configuration
             </button>
@@ -2133,9 +2133,9 @@
                 'cards.chat.command_stop_placeholder': 'weatherstop',
                 'cards.chat.command_stop_help': 'Stop all effects',
                 'cards.chat.command_usage_title': 'Command Usage:',
-                'cards.chat.command_usage_weather': '<code>/<span id="displayCmdWeather">weather</span> &lt;effect&gt;</code> - Trigger a weather effect',
-                'cards.chat.command_usage_list': '<code>/<span id="displayCmdList">weatherlist</span></code> - List all available effects',
-                'cards.chat.command_usage_stop': '<code>/<span id="displayCmdStop">weatherstop</span></code> - Stop all effects (subscribers only)',
+                'cards.chat.command_usage_weather': '<code>/<span id="displayCmdWeather" data-i18n-key="plugins.weather-control.ui.commands.weather">weather</span> &lt;effect&gt;</code> - Trigger a weather effect',
+                'cards.chat.command_usage_list': '<code>/<span id="displayCmdList" data-i18n-key="plugins.weather-control.ui.commands.weatherlist">weatherlist</span></code> - List all available effects',
+                'cards.chat.command_usage_stop': '<code>/<span id="displayCmdStop" data-i18n-key="plugins.weather-control.ui.commands.weatherstop">weatherstop</span></code> - Stop all effects (subscribers only)',
                 'cards.permissions.title': 'Permission Settings',
                 'cards.permissions.enable': 'Enable Permission System',
                 'cards.permissions.allow_all': 'Allow All Users',
@@ -2246,9 +2246,9 @@
                 'cards.chat.command_stop_placeholder': 'weatherstop',
                 'cards.chat.command_stop_help': 'Alle Effekte stoppen',
                 'cards.chat.command_usage_title': 'Befehlsnutzung:',
-                'cards.chat.command_usage_weather': '<code>/<span id="displayCmdWeather">weather</span> &lt;effect&gt;</code> - Wettereffekt auslösen',
-                'cards.chat.command_usage_list': '<code>/<span id="displayCmdList">weatherlist</span></code> - Alle Effekte auflisten',
-                'cards.chat.command_usage_stop': '<code>/<span id="displayCmdStop">weatherstop</span></code> - Alle Effekte stoppen (nur Abonnenten)',
+                'cards.chat.command_usage_weather': '<code>/<span id="displayCmdWeather" data-i18n-key="plugins.weather-control.ui.commands.weather">weather</span> &lt;effect&gt;</code> - Wettereffekt auslösen',
+                'cards.chat.command_usage_list': '<code>/<span id="displayCmdList" data-i18n-key="plugins.weather-control.ui.commands.weatherlist">weatherlist</span></code> - Alle Effekte auflisten',
+                'cards.chat.command_usage_stop': '<code>/<span id="displayCmdStop" data-i18n-key="plugins.weather-control.ui.commands.weatherstop">weatherstop</span></code> - Alle Effekte stoppen (nur Abonnenten)',
                 'cards.permissions.title': 'Berechtigungseinstellungen',
                 'cards.permissions.enable': 'Berechtigungssystem aktivieren',
                 'cards.permissions.allow_all': 'Alle Nutzer erlauben',
@@ -2317,6 +2317,14 @@
         };
 
         function translate(key, params = {}) {
+            const namespacedKey = `plugins.weather-control.${key}`;
+            const sharedTranslation = window.i18n?.t?.(namespacedKey);
+            if (sharedTranslation && sharedTranslation !== namespacedKey) {
+                return Object.keys(params).reduce((text, param) => {
+                    return text.replace(new RegExp(`{{${param}}}`, 'g'), params[param]);
+                }, sharedTranslation);
+            }
+
             const locale = window.i18n?.currentLocale || localStorage.getItem('app_locale') || 'en';
             const fallbackLocale = 'en';
             const localeTexts = translations[locale] || translations[fallbackLocale] || {};
@@ -2390,7 +2398,7 @@
 
         function ensureHeatwaveCard() {
             if (document.getElementById('effect-heatwave-enabled')) return;
-            const effectsGrid = document.querySelector('[data-i18n-key="cards.effects.title"]')?.closest('.card')?.querySelector('.grid');
+            const effectsGrid = document.querySelector('[data-i18n-key="plugins.weather-control.cards.effects.title"]')?.closest('.card')?.querySelector('.grid');
             if (!effectsGrid) return;
 
             const card = document.createElement('div');
@@ -2399,7 +2407,7 @@
                 <div class="effect-header">
                     <div class="effect-title">
                         <span style="color: #f97316; font-size: 1.5rem;">~</span>
-                        <span data-i18n-key="effects.names.heatwave">Heatwave</span>
+                        <span data-i18n-key="plugins.weather-control.effects.names.heatwave">Heatwave</span>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="effect-heatwave-enabled" checked>
@@ -2408,30 +2416,30 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">
-                        <span data-i18n-key="effects.intensity">Intensity</span>
+                        <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
                         <span class="range-value" id="effect-heatwave-intensity-val">0.4</span>
                     </label>
                     <input type="range" class="range-slider" id="effect-heatwave-intensity" min="0" max="1" step="0.1" value="0.4">
                 </div>
                 <div class="form-group">
-                    <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                    <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
                     <input type="number" class="form-control" id="effect-heatwave-duration" value="8000" min="1000" max="60000">
                 </div>
                 <div class="form-group">
                     <label class="form-label">
                         <span style="display: flex; justify-content: space-between; align-items: center;">
-                            <span data-i18n-key="effects.permanent_label">Permanent</span>
+                            <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
                             <label class="switch">
                                 <input type="checkbox" id="effect-heatwave-permanent">
                                 <span class="slider"></span>
                             </label>
                         </span>
                     </label>
-                    <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                    <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                 </div>
                 <button class="btn btn-primary btn-sm w-100" data-test-effect="heatwave" type="button">
-                    <span>Play</span>
-                    <span data-i18n-key="effects.test_button">Test Effect</span>
+                    <span data-i18n-key="plugins.weather-control.ui.actions.play">Play</span>
+                    <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
                 </button>
             `;
             effectsGrid.appendChild(card);
@@ -2457,7 +2465,7 @@
                 wrapper.dataset.advancedFor = effect;
                 wrapper.innerHTML = `
                     <details style="margin-top: 1rem;">
-                        <summary class="form-label">Advanced</summary>
+                        <summary class="form-label" data-i18n-key="plugins.weather-control.ui.advanced.title">Advanced</summary>
                         <div class="grid grid-2" style="margin-top: 0.75rem;">
                             <div class="form-group">
                                 <label class="form-label">Opacity <span class="range-value" id="effect-${effect}-opacity-val">1.00</span></label>
@@ -2472,15 +2480,15 @@
                                 <input type="range" class="range-slider" id="effect-${effect}-wind" min="-1" max="1" step="0.05" value="0">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Direction</label>
+                                <label class="form-label" data-i18n-key="plugins.weather-control.ui.effects.direction">Direction</label>
                                 <input type="number" class="form-control" id="effect-${effect}-directionDeg" min="-180" max="180" value="0">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Layer</label>
+                                <label class="form-label" data-i18n-key="plugins.weather-control.ui.effects.layer">Layer</label>
                                 <input type="number" class="form-control" id="effect-${effect}-layer" min="0" max="100" value="${meta.layer || 50}">
                             </div>
                             <div class="form-group">
-                                <button class="btn btn-secondary btn-sm w-100" data-stop-effect="${effect}" type="button">Stop Effect</button>
+                                <button class="btn btn-secondary btn-sm w-100" data-stop-effect="${effect}" type="button" data-i18n-key="plugins.weather-control.ui.actions.stopEffect">Stop Effect</button>
                             </div>
                         </div>
                     </details>
@@ -2511,20 +2519,20 @@
                             </label>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Effect</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.ui.triggers.effect">Effect</label>
                             <select class="form-select" id="${controls.action}">${effectOptions}</select>
                         </div>
                         <div class="grid grid-2">
                             <div class="form-group">
-                                <label class="form-label">Intensity</label>
+                                <label class="form-label" data-i18n-key="plugins.weather-control.ui.triggers.intensity">Intensity</label>
                                 <input class="form-control" type="number" step="0.1" min="0" max="1" id="${controls.intensity}" value="${trigger.intensity ?? 0.5}">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Duration</label>
+                                <label class="form-label" data-i18n-key="plugins.weather-control.ui.triggers.duration">Duration</label>
                                 <input class="form-control" type="number" min="1000" max="60000" id="${controls.duration}" value="${trigger.duration ?? 8000}">
                             </div>
                         </div>
-                        ${triggerName === 'likeMilestone' ? `<div class="form-group"><label class="form-label">Like Interval</label><input class="form-control" type="number" min="1" id="${controls.interval}" value="${trigger.interval ?? 1000}"></div>` : ''}
+                        ${triggerName === 'likeMilestone' ? `<div class="form-group"><label class="form-label" data-i18n-key="plugins.weather-control.ui.triggers.likeInterval">Like Interval</label><input class="form-control" type="number" min="1" id="${controls.interval}" value="${trigger.interval ?? 1000}"></div>` : ''}
                     </div>
                 `;
             }).join('');
@@ -2587,7 +2595,8 @@
             const safeEffects = activeEffects.filter(effect => effect && effects.includes(effect.type));
             document.getElementById('activeEffectsCount').textContent = safeEffects.length;
             if (safeEffects.length === 0) {
-                list.innerHTML = '<p class="help-text">No active effects reported by the overlay.</p>';
+                list.innerHTML = '<p class="help-text" data-i18n-key="plugins.weather-control.ui.active.noEffects">No active effects reported by the overlay.</p>';
+                applyTranslations();
                 return;
             }
             list.innerHTML = safeEffects.map(effect => `
@@ -2597,7 +2606,7 @@
                         <span class="help-text">${effect.permanent ? 'Permanent' : `${effect.duration || 0} ms`}</span>
                     </div>
                     <div class="help-text">Intensity ${Number(effect.intensity || 0).toFixed(2)} | Layer ${effect.layer ?? '-'}</div>
-                    <button class="btn btn-danger btn-sm w-100" type="button" data-stop-effect="${effect.type}">Stop</button>
+                    <button class="btn btn-danger btn-sm w-100" type="button" data-stop-effect="${effect.type}" data-i18n-key="plugins.weather-control.ui.actions.stop">Stop</button>
                 </div>
             `).join('');
         }
@@ -3431,7 +3440,7 @@
                         </div>
 
                         <div class="form-group" style="margin-top: 1rem;">
-                            <label class="form-label" data-i18n-key="cards.gifts.effect_label">${translate('cards.gifts.effect_label') || 'Weather Effect'}</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.cards.gifts.effect_label">${translate('cards.gifts.effect_label') || 'Weather Effect'}</label>
                             <select class="form-select" id="gift-${gift.id}-effect">
                                 <option value="">-- ${translate('cards.gifts.no_mapping') || 'No Mapping'} --</option>
                                 ${effects.map(effect => `

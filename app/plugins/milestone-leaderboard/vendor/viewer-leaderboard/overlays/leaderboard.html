@@ -334,7 +334,7 @@
       <div class="subtitle" id="subtitle" data-i18n="plugins.milestone-leaderboard.labels.all_time_50efab">All Time</div>
     </div>
     <ul class="leaderboard-list" id="leaderboardList">
-      <li class="no-data">Loading...</li>
+      <li class="no-data" data-i18n="plugins.milestone-leaderboard.ui.status.loading">Loading...</li>
     </ul>
     <div class="update-time" id="updateTime"></div>
   </div>
@@ -416,7 +416,7 @@
       const list = document.getElementById('leaderboardList');
 
       if (!data || data.length === 0) {
-        list.innerHTML = '<li class="no-data">No viewers yet</li>';
+        list.innerHTML = '<li class="no-data" data-i18n="plugins.milestone-leaderboard.ui.empty.no_viewers">No viewers yet</li>';
         return;
       }
 

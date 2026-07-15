@@ -47,6 +47,75 @@
           }
         }
       },
+      "runtime": {
+        "navigation": { "label": "TTS-Navigation", "config_landing_label": "TTS-Konfiguration", "overview_label": "TTS-Übersicht" },
+        "status": {
+          "connecting": "Verbindung zum Server wird hergestellt...",
+          "loading_config": "Konfiguration wird geladen...",
+          "loading_event_config": "Event-TTS-Konfiguration wird geladen...",
+          "loading_voices": "Stimmen werden geladen...",
+          "loading_statistics": "Statistiken werden geladen...",
+          "loading_plugin_status": "Plugin-Status wird geladen...",
+          "loading_debug_logs": "Debug-Protokolle werden geladen...",
+          "initialized": "Erfolgreich initialisiert",
+          "init_failed": "Initialisierung fehlgeschlagen: {message}"
+        },
+        "load": { "config_failed": "Konfiguration konnte nicht geladen werden: {message}" },
+        "save": { "success": "Konfiguration erfolgreich gespeichert", "failed": "Konfiguration konnte nicht gespeichert werden: {message}" },
+        "validation": {
+          "voice_name_required": "Bitte einen Stimmen-Namen eingeben",
+          "reference_id_required": "Bitte eine Referenz-ID eingeben",
+          "voice_name_format": "Stimmen-Namen dürfen nur Buchstaben, Zahlen, Bindestriche und Unterstriche enthalten (keine Leerzeichen)",
+          "reference_id_format": "Die Referenz-ID muss eine 32-stellige hexadezimale Zeichenfolge sein"
+        },
+        "search": {
+          "users_label": "Benutzer suchen",
+          "users_placeholder": "Nach Benutzername oder Benutzer-ID suchen...",
+          "voices_label": "Stimmen suchen",
+          "voices_placeholder": "Stimmen suchen...",
+          "manual_username_placeholder": "TikTok-Benutzernamen eingeben..."
+        },
+        "input": {
+          "message_prefix_placeholder": "z. B. ! / .",
+          "fish_voice_name_placeholder": "z. B. meine-deutsche-stimme",
+          "reference_id_placeholder": "32-stellige Referenz-ID",
+          "session_id_placeholder": "SessionID eingeben...",
+          "session_id_configured_placeholder": "SessionID konfiguriert (aus Sicherheitsgründen verborgen)",
+          "test_text_placeholder": "Testtext eingeben..."
+        },
+        "event_test": {
+          "load_failed": "Event-TTS-Konfiguration konnte nicht geladen werden: {message}",
+          "saved": "Event-TTS-Konfiguration erfolgreich gespeichert!",
+          "save_failed": "Event-TTS-Konfiguration konnte nicht gespeichert werden: {message}",
+          "gift_queued": "Geschenk-Event-TTS-Test wurde eingereiht!",
+          "follow_queued": "Follow-Event-TTS-Test wurde eingereiht!",
+          "share_queued": "Share-Event-TTS-Test wurde eingereiht!",
+          "subscribe_queued": "Abo-Event-TTS-Test wurde eingereiht!",
+          "like_queued": "Like-Event-TTS-Test wurde eingereiht!",
+          "join_queued": "Join-Event-TTS-Test wurde eingereiht!",
+          "failed": "Event-TTS-Test fehlgeschlagen: {message}"
+        },
+        "voice_clone": {
+          "audio_input_label": "Audio-Beispiel für Voice Cloning",
+          "name_placeholder": "z. B. Stream-Stimme",
+          "file_too_large": "Die Audiodatei ist zu groß. Maximalgröße: 5 MB.",
+          "consent_required": "Bitte alle Pflichtfelder ausfüllen und die Einwilligung bestätigen",
+          "created": "Stimmklon \"{voiceName}\" erfolgreich erstellt!",
+          "create_failed": "Stimmklon konnte nicht erstellt werden: {message}",
+          "loading": "Stimmklone werden geladen...",
+          "empty": "Noch keine Stimmklone. Erstelle deinen ersten!",
+          "load_failed": "Stimmklone konnten nicht geladen werden",
+          "test_tooltip": "Diese Stimme testen",
+          "delete_tooltip": "Diese Stimme löschen",
+          "test_started": "Stimme \"{voiceName}\" wird getestet...",
+          "test_queued": "Stimmtest wurde erfolgreich eingereiht!",
+          "test_failed": "Stimme konnte nicht getestet werden: {message}",
+          "delete_confirm": "Stimmklon \"{voiceName}\" löschen?\n\nDiese Aktion kann nicht rückgängig gemacht werden.",
+          "deleting": "Stimme \"{voiceName}\" wird gelöscht...",
+          "deleted": "Stimme \"{voiceName}\" erfolgreich gelöscht!",
+          "delete_failed": "Stimme konnte nicht gelöscht werden: {message}"
+        }
+      },
       "labels": {
         "search_users": "Benutzer suchen",
         "cooldown_s": "Abklingzeit(en)",
@@ -373,6 +442,64 @@
         "follow_events_fe377e": "Verfolgen Sie Ereignisse",
         "google_cloud_tts_fede7e": "Google Cloud TTS",
         "fast_low_resource_toaster_pcs": "Schnell (Ressourcenarme/Toaster-PCs)"
+      },
+      "ui": {
+        "common": {
+          "language": "Sprache",
+          "template": "Vorlage",
+          "voice": "Stimme"
+        },
+        "manual": {
+          "engine": "Engine",
+          "speak": "Sprechen"
+        },
+        "filters": {
+          "all": "Alle",
+          "whitelisted": "Zugelassen",
+          "blacklisted": "Gesperrt"
+        },
+        "help": {
+          "emptyVoiceUsesDefault": "Leer = Standardstimme verwenden",
+          "fishAudioDiscovery": "fish.audio/discovery"
+        },
+        "languages": {
+          "english": "Englisch",
+          "german": "Deutsch",
+          "italian": "Italienisch",
+          "dutch": "Niederländisch"
+        },
+        "providers": {
+          "speechify": "Speechify",
+          "elevenLabs": "ElevenLabs"
+        },
+        "logs": {
+          "autoScroll": "Automatisch scrollen",
+          "success": "Erfolg",
+          "denied": "Abgelehnt",
+          "errors": "Fehler",
+          "playback": "Wiedergabe",
+          "displayed": "Angezeigt:",
+          "enabled": "Aktiviert",
+          "active": "Aktiv"
+        },
+        "modal": {
+          "reset": "Zurücksetzen",
+          "emotion": {
+            "angry": "Wütend",
+            "cheerful": "Fröhlich",
+            "sad": "Traurig",
+            "terrified": "Verängstigt",
+            "relaxed": "Entspannt",
+            "fearful": "Ängstlich",
+            "surprised": "Überrascht",
+            "calm": "Ruhig",
+            "assertive": "Selbstbewusst",
+            "energetic": "Energetisch",
+            "warm": "Warm",
+            "direct": "Direkt",
+            "bright": "Hell"
+          }
+        }
       }
     }
   }

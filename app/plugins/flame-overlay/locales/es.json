@@ -14,7 +14,8 @@
             "refresh": "Actualizar",
             "close": "Cerrar",
             "test": "Probar",
-            "clear": "Borrar"
+            "clear": "Borrar",
+            "apply": "Aplicar"
           },
           "status": {
             "ready": "Listo",
@@ -28,6 +29,54 @@
             "failed": "No se pudieron guardar los ajustes.",
             "noData": "No hay datos disponibles.",
             "confirm": "¿Seguro que quieres continuar?"
+          },
+          "metrics": {
+            "profile": "Perfil",
+            "render": "Renderizado",
+            "trigger": "Activador"
+          },
+          "tabs": {
+            "look": "Aspecto",
+            "frame": "Marco",
+            "motion": "Movimiento",
+            "postFx": "Post-FX",
+            "trigger": "Activador"
+          },
+          "options": {
+            "obsSafe": "Seguro para OBS",
+            "custom": "Personalizado",
+            "top": "Arriba",
+            "bottom": "Abajo"
+          },
+          "settings": {
+            "accentColor": "Color de acento:",
+            "animationEasing": "Suavizado de animaci\u00f3n:",
+            "smokeColor": "Color del humo:"
+          },
+          "trigger": {
+            "preset": "Preajuste:",
+            "defaultPreset": "Predeterminado",
+            "hypePreset": "Hype",
+            "chillPreset": "Relajado",
+            "partyPreset": "Fiesta",
+            "coinRule": "Regla de monedas"
+          },
+          "table": {
+            "enabled": "Activo",
+            "event": "Evento",
+            "condition": "Condici\u00f3n",
+            "action": "Acci\u00f3n",
+            "effect": "Efecto",
+            "color": "Color"
+          },
+          "presets": {
+            "empty": "A\u00fan no hay preajustes guardados.",
+            "load": "\ud83d\udcc2 Cargar",
+            "deleteTitle": "Eliminar preajuste"
+          },
+          "placeholders": {
+            "presetName": "Nombre del preajuste (por ejemplo, modo Hype)",
+            "giftSearch": "Busca un regalo o un rango de monedas como 99-499"
           }
         }
       },

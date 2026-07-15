@@ -196,19 +196,19 @@
             <div id="connection-status">
                 <div class="status-badge status-disconnected">
                     <span class="status-dot"></span>
-                    <span data-i18n="openshock.status.disconnected">Getrennt</span>
+                    <span data-i18n="plugins.openshock.openshock.status.disconnected">Getrennt</span>
                 </div>
             </div>
         </header>
 
         <!-- Tabs Navigation -->
         <div class="tabs">
-            <button class="tab-button active" data-tab="dashboard">Dashboard</button>
+            <button class="tab-button active" data-tab="dashboard" data-i18n="plugins.openshock.ui.navigation.dashboard">Dashboard</button>
             <button class="tab-button" data-tab="mapper" data-i18n="plugins.openshock.labels.event_mapper">Event Mapper</button>
             <button class="tab-button" data-tab="gifts" data-i18n="plugins.openshock.labels.gift_catalog">Gift Catalog</button>
-            <button class="tab-button" data-tab="safety">Safety</button>
-            <button class="tab-button" data-tab="patterns">Patterns</button>
-            <button class="tab-button" data-tab="advanced">Advanced</button>
+            <button class="tab-button" data-tab="safety" data-i18n="plugins.openshock.ui.navigation.safety">Safety</button>
+            <button class="tab-button" data-tab="patterns" data-i18n="plugins.openshock.ui.navigation.patterns">Patterns</button>
+            <button class="tab-button" data-tab="advanced" data-i18n="plugins.openshock.ui.navigation.advanced">Advanced</button>
         </div>
 
         <!-- Tab 1: Dashboard -->
@@ -228,7 +228,7 @@
                         <div class="stat-value" id="connectionState">Offline</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Devices</div>
+                        <div class="stat-label" data-i18n="plugins.openshock.ui.sections.devices">Devices</div>
                         <div class="stat-value" id="deviceCount">0</div>
                     </div>
                 </div>
@@ -258,7 +258,7 @@
             <!-- Devices List -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Devices</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.ui.sections.devices">Devices</h2>
                     <button class="btn btn-primary btn-sm" id="refreshDevices" data-i18n="plugins.openshock.labels.refresh">🔄 Refresh</button>
                 </div>
                 <div id="devicesList">
@@ -291,7 +291,7 @@
                 <!-- Statistics -->
                 <div class="card">
                     <div class="card-header">
-                        <h2 class="card-title">Statistics</h2>
+                        <h2 class="card-title" data-i18n="plugins.openshock.ui.sections.statistics">Statistics</h2>
                         <button class="btn btn-secondary btn-sm" id="resetStats" data-i18n="plugins.openshock.labels.reset">🔄 Reset</button>
                     </div>
                     <div class="grid-3">
@@ -403,11 +403,11 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Device</th>
+                            <th data-i18n="plugins.openshock.ui.labels.device">Device</th>
                             <th data-i18n="plugins.openshock.labels.max_intensity_d27060">Max Intensity</th>
                             <th data-i18n="plugins.openshock.labels.max_duration_ms_c8bb60">Max Duration (ms)</th>
                             <th data-i18n="plugins.openshock.labels.cooldown_ms">Cooldown (ms)</th>
-                            <th>Actions</th>
+                            <th data-i18n="plugins.openshock.ui.table.actions">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="deviceLimitsTable">
@@ -541,10 +541,10 @@
                     <h2 class="card-title" data-i18n="plugins.openshock.labels.debug_log">Debug Log</h2>
                     <div class="btn-group">
                         <select class="form-select form-select-auto" id="logFilter">
-                            <option value="all">All</option>
-                            <option value="info">Info</option>
-                            <option value="warning">Warning</option>
-                            <option value="error">Error</option>
+                            <option value="all" data-i18n="plugins.openshock.ui.events.all">All</option>
+                            <option value="info" data-i18n="plugins.openshock.ui.events.info">Info</option>
+                            <option value="warning" data-i18n="plugins.openshock.ui.events.warning">Warning</option>
+                            <option value="error" data-i18n="plugins.openshock.ui.events.error">Error</option>
                         </select>
                         <button class="btn btn-secondary btn-sm" id="clearDebugLog" data-i18n="plugins.openshock.labels.clear_8b3fc9">🗑️ Clear</button>
                         <button class="btn btn-secondary btn-sm" id="exportDebugLog" data-i18n="plugins.openshock.labels.export_b3a6c3">📥 Export</button>
@@ -563,8 +563,8 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Metric</th>
-                            <th>Value</th>
+                            <th data-i18n="plugins.openshock.ui.table.metric">Metric</th>
+                            <th data-i18n="plugins.openshock.ui.table.value">Value</th>
                         </tr>
                     </thead>
                     <tbody id="detailedStatsTable">
@@ -614,19 +614,19 @@
                 <div class="form-group">
                     <div class="form-checkbox">
                         <input type="checkbox" id="mappingEnabled" checked>
-                        <label class="form-label form-label-no-margin">Enabled</label>
+                        <label class="form-label form-label-no-margin" data-i18n="plugins.openshock.ui.labels.enabled">Enabled</label>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.openshock.labels.event_type">Event Type</label>
                     <select class="form-select" id="mappingEventType">
-                        <option value="gift">Gift</option>
+                        <option value="gift" data-i18n="plugins.openshock.ui.events.gift">Gift</option>
                         <option value="chat" data-i18n="plugins.openshock.labels.chat_message">Chat Message</option>
-                        <option value="follow">Follow</option>
-                        <option value="share">Share</option>
-                        <option value="like">Like</option>
-                        <option value="subscribe">Subscribe</option>
+                        <option value="follow" data-i18n="plugins.openshock.ui.events.follow">Follow</option>
+                        <option value="share" data-i18n="plugins.openshock.ui.events.share">Share</option>
+                        <option value="like" data-i18n="plugins.openshock.ui.events.like">Like</option>
+                        <option value="subscribe" data-i18n="plugins.openshock.ui.events.subscribe">Subscribe</option>
                     </select>
                 </div>
 
@@ -654,14 +654,14 @@
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.openshock.labels.action_type_eba4b3">Action Type</label>
                     <select class="form-select" id="mappingActionType">
-                        <option value="shock">Shock</option>
-                        <option value="vibrate">Vibrate</option>
-                        <option value="sound">Sound</option>
+                        <option value="shock" data-i18n="plugins.openshock.ui.actions.shock">Shock</option>
+                        <option value="vibrate" data-i18n="plugins.openshock.ui.actions.vibrate">Vibrate</option>
+                        <option value="sound" data-i18n="plugins.openshock.ui.actions.sound">Sound</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Device</label>
+                    <label class="form-label" data-i18n="plugins.openshock.ui.labels.device">Device</label>
                     <select class="form-select" id="mappingDevice">
                         <option value="" data-i18n="plugins.openshock.labels.select_device">Select Device...</option>
                     </select>
@@ -669,7 +669,7 @@
 
                 <div class="form-group">
                     <div class="slider-label">
-                        <span class="form-label">Intensity</span>
+                        <span class="form-label" data-i18n="plugins.openshock.ui.labels.intensity">Intensity</span>
                         <span class="slider-value" id="mappingIntensityValue">50</span>
                     </div>
                     <input type="range" id="mappingIntensity" min="1" max="100" value="50">
@@ -677,7 +677,7 @@
 
                 <div class="form-group">
                     <div class="slider-label">
-                        <span class="form-label" data-i18n="openshock.triggers.duration">Duration (ms)</span>
+                        <span class="form-label" data-i18n="plugins.openshock.openshock.triggers.duration">Duration (ms)</span>
                         <span class="slider-value" id="mappingDurationValue">1000</span>
                     </div>
                     <input type="range" id="mappingDuration" min="300" max="30000" step="100" value="1000">
@@ -689,10 +689,10 @@
                         <select class="form-select" id="mappingPattern">
                             <option value="" data-i18n="plugins.openshock.labels.none_single_pulse_2be0f2">None (Single pulse)</option>
                         </select>
-                        <button type="button" class="btn btn-sm btn-secondary" id="createPatternFromMapping" title="Create new pattern">
+                        <button type="button" class="btn btn-sm btn-secondary" id="createPatternFromMapping" title="Create new pattern" data-i18n-title="plugins.openshock.ui.tooltips.create_pattern">
                             ➕
                         </button>
-                        <button type="button" class="btn btn-sm btn-secondary" id="editPatternFromMapping" title="Edit selected pattern" style="display: none;">
+                        <button type="button" class="btn btn-sm btn-secondary" id="editPatternFromMapping" title="Edit selected pattern" data-i18n-title="plugins.openshock.ui.tooltips.edit_pattern" style="display: none;">
                             ✏️
                         </button>
                     </div>
@@ -754,12 +754,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Description</label>
+                    <label class="form-label" data-i18n="plugins.openshock.ui.labels.description">Description</label>
                     <input type="text" class="form-input" id="patternDescription" placeholder="Brief description of this pattern">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Steps</label>
+                    <label class="form-label" data-i18n="plugins.openshock.ui.labels.steps">Steps</label>
                     <div class="step-list" id="patternSteps">
                         <!-- Steps will be rendered here -->
                     </div>
@@ -775,21 +775,21 @@
                         <div class="form-group">
                             <label class="form-label" data-i18n="plugins.openshock.labels.action_type">Action Type</label>
                             <select class="form-select" id="stepType">
-                                <option value="shock">Shock</option>
-                                <option value="vibrate">Vibrate</option>
-                                <option value="sound">Sound</option>
-                                <option value="pause">Pause</option>
+                                <option value="shock" data-i18n="plugins.openshock.ui.actions.shock">Shock</option>
+                                <option value="vibrate" data-i18n="plugins.openshock.ui.actions.vibrate">Vibrate</option>
+                                <option value="sound" data-i18n="plugins.openshock.ui.actions.sound">Sound</option>
+                                <option value="pause" data-i18n="plugins.openshock.ui.actions.pause">Pause</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <div class="slider-label">
-                                <span class="form-label">Intensity</span>
+                                <span class="form-label" data-i18n="plugins.openshock.ui.labels.intensity">Intensity</span>
                                 <span class="slider-value" id="stepIntensityValue">50</span>
                             </div>
                             <input type="range" id="stepIntensity" min="1" max="100" value="50">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n="openshock.triggers.duration">Duration (ms)</label>
+                            <label class="form-label" data-i18n="plugins.openshock.openshock.triggers.duration">Duration (ms)</label>
                             <input type="number" class="form-input" id="stepDuration" value="500" min="100" step="100">
                         </div>
                         <div class="btn-group">
@@ -925,7 +925,7 @@
                     </div>
                     <div class="grid-4">
                         <div class="stat-card">
-                            <div class="stat-label">Steps</div>
+                            <div class="stat-label" data-i18n="plugins.openshock.ui.labels.steps">Steps</div>
                             <div class="stat-value" id="stepCount">0</div>
                         </div>
                         <div class="stat-card">

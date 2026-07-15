@@ -175,6 +175,23 @@
           "enabled": "Enabled",
           "performance": "Performance"
         },
+        "obs_hud": {
+          "metrics": {
+            "fps": "FPS:",
+            "emojis": "Emojis:",
+            "bodies": "Bodies:",
+            "memory": "Memory:",
+            "resolution": "Resolution:"
+          }
+        },
+        "physics": {
+          "air_resistance": "Air resistance",
+          "friction": "Friction",
+          "rotation_speed": "Rotation speed"
+        },
+        "heart_balloons": {
+          "pop_height": "Pop height"
+        },
         "ui": {
           "overlay": "TikTok Visual Effects Overlay",
           "visual_mode": "Visual Mode",
@@ -183,6 +200,8 @@
           "toaster_help": "Optimized for maximum performance on weak systems",
           "max_emojis": "Max. Emojis:",
           "target_fps": "Target FPS:",
+          "preset": "Preset",
+          "status": "Status",
           "rotation": "Rotation: Disabled",
           "wind": "Wind: Disabled",
           "effects": "Rainbow/Pixel/Glow: Disabled",

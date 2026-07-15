@@ -208,6 +208,40 @@
         "crafting_window_ms": "Crafting-Fenster ms",
         "test_local_generation": "Testen Sie die lokale Generierung",
         "comfyui_url": "ComfyUI-URL"
+      },
+      "ui": {
+        "app": {
+          "title": "StreamAlchemy",
+          "overview": "\u00dcbersicht",
+          "items": "Gegenst\u00e4nde",
+          "recipes": "Rezepte",
+          "generation": "Generierung",
+          "settings": "Einstellungen",
+          "refresh": "Aktualisieren",
+          "source": "Quelle"
+        },
+        "navigation": {
+          "areas": "StreamAlchemy-Bereiche"
+        },
+        "metrics": {
+          "items": "Gegenst\u00e4nde",
+          "recipes": "Rezepte",
+          "jobs": "Auftr\u00e4ge"
+        },
+        "styles": {
+          "pixel": "Pixel"
+        },
+        "status": {
+          "unknown": "unbekannt"
+        },
+        "legacy": {
+          "noItems": "Noch keine Gegenst\u00e4nde. Sende Geschenke, um Gegenst\u00e4nde zu erzeugen!",
+          "name": "Name",
+          "type": "Typ",
+          "rarity": "Seltenheit",
+          "fromGift": "Vom Geschenk",
+          "created": "Erstellt"
+        }
       }
     }
   }

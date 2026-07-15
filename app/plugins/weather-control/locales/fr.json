@@ -152,7 +152,7 @@
           "title": "Title",
           "description": "Description",
           "load_prompt": "Load prompt",
-          "effect_label": "Effect label"
+          "effect_label": "Effet m\u00e9t\u00e9orologique"
         }
       },
       "buttons": {
@@ -245,6 +245,19 @@
         "weather_control_overlay": "Superposition de contrôle météo",
         "default_white": "Blanc par défaut",
         "streak_bonus_threshold": "Seuil de bonus de séquence"
+      },
+      "ui": {
+        "commands": { "weather": "weather", "weatherlist": "weatherlist", "weatherstop": "weatherstop" },
+        "overlay": { "quest": "Qu\u00eate", "streak": "S\u00e9rie", "meter": "Jauge" },
+        "effects": {
+          "midday": "Midi", "sunset": "Coucher de soleil", "precipitation": "Pr\u00e9cipitations",
+          "atmosphere": "Atmosph\u00e8re", "light": "Lumi\u00e8re", "ambient": "Ambiance",
+          "impact": "Impact", "digital": "Num\u00e9rique", "direction": "Direction", "layer": "Calque"
+        },
+        "actions": { "play": "Lire", "stopEffect": "Arr\u00eater l'effet", "stop": "Arr\u00eater" },
+        "advanced": { "title": "Avanc\u00e9" },
+        "triggers": { "effect": "Effet", "intensity": "Intensit\u00e9", "duration": "Dur\u00e9e", "likeInterval": "Intervalle de J'aime" },
+        "active": { "noEffects": "Aucun effet actif n'est signal\u00e9 par l'overlay." }
       }
     }
   }

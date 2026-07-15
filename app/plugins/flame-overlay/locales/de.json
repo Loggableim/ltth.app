@@ -14,7 +14,8 @@
             "refresh": "Aktualisieren",
             "close": "Schließen",
             "test": "Testen",
-            "clear": "Leeren"
+            "clear": "Leeren",
+            "apply": "Anwenden"
           },
           "status": {
             "ready": "Bereit",
@@ -28,6 +29,54 @@
             "failed": "Einstellungen konnten nicht gespeichert werden.",
             "noData": "Keine Daten verfügbar.",
             "confirm": "Bist du sicher?"
+          },
+          "metrics": {
+            "profile": "Profil",
+            "render": "Rendering",
+            "trigger": "Ausl\u00f6ser"
+          },
+          "tabs": {
+            "look": "Aussehen",
+            "frame": "Rahmen",
+            "motion": "Bewegung",
+            "postFx": "Post-FX",
+            "trigger": "Ausl\u00f6ser"
+          },
+          "options": {
+            "obsSafe": "OBS-sicher",
+            "custom": "Benutzerdefiniert",
+            "top": "Oben",
+            "bottom": "Unten"
+          },
+          "settings": {
+            "accentColor": "Akzentfarbe:",
+            "animationEasing": "Animations-Easing:",
+            "smokeColor": "Rauchfarbe:"
+          },
+          "trigger": {
+            "preset": "Preset:",
+            "defaultPreset": "Standard",
+            "hypePreset": "Hype",
+            "chillPreset": "Entspannt",
+            "partyPreset": "Party",
+            "coinRule": "Coin-Regel"
+          },
+          "table": {
+            "enabled": "An",
+            "event": "Ereignis",
+            "condition": "Bedingung",
+            "action": "Aktion",
+            "effect": "Effekt",
+            "color": "Farbe"
+          },
+          "presets": {
+            "empty": "Noch keine Presets gespeichert.",
+            "load": "\ud83d\udcc2 Laden",
+            "deleteTitle": "Preset l\u00f6schen"
+          },
+          "placeholders": {
+            "presetName": "Preset-Name (z. B. Hype-Modus)",
+            "giftSearch": "Geschenk suchen oder Coin-Bereich wie 99-499"
           }
         }
       },

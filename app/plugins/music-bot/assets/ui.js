@@ -2,6 +2,13 @@
   const MIN_SONG_DURATION_LIMIT_SECONDS = 30;
   const MAX_SONG_DURATION_LIMIT_SECONDS = 7200;
   const DEFAULT_SONG_DURATION_LIMIT_SECONDS = 360;
+  const I18N_PREFIX = 'plugins.music-bot.music_bot.ui.controls.runtime';
+
+  function tr(key, fallback, params = {}) {
+    const fullKey = `${I18N_PREFIX}.${key}`;
+    const translated = window.i18n?.t(fullKey, params);
+    return translated && translated !== fullKey ? translated : fallback;
+  }
 
   function debounce(fn, delay = 200) {
     let timer = null;
@@ -279,21 +286,21 @@
   function buildOnboardingSteps(issues = []) {
     const baseSteps = [
       {
-        title: 'Einstellungen prüfen',
-        meta: 'Hier liegen mpv, yt-dlp, Request-Limits und die zentrale Queue-Konfiguration.'
+        title: tr('onboardingSettingsTitle', 'Einstellungen prüfen'),
+        meta: tr('onboardingSettingsMeta', 'Hier liegen mpv, yt-dlp, Request-Limits und die zentrale Queue-Konfiguration.')
       },
       {
-        title: 'OBS-Overlay sichern',
-        meta: 'Im Overlay-Tab findest du die Browser-Source-URL für Streamlabs oder OBS.'
+        title: tr('onboardingOverlayTitle', 'OBS-Overlay sichern'),
+        meta: tr('onboardingOverlayMeta', 'Im Overlay-Tab findest du die Browser-Source-URL für Streamlabs oder OBS.')
       },
       {
-        title: 'Player testen',
-        meta: 'Im Player kannst du einen ersten Song suchen und direkt in die Queue legen.'
+        title: tr('onboardingPlayerTitle', 'Player testen'),
+        meta: tr('onboardingPlayerMeta', 'Im Player kannst du einen ersten Song suchen und direkt in die Queue legen.')
       }
     ];
 
     const issueSteps = issues.slice(0, 2).map((issue) => ({
-      title: issue?.title || 'Setup-Hinweis',
+      title: issue?.title || tr('setupHint', 'Setup-Hinweis'),
       meta: issue?.description || ''
     }));
 
@@ -315,7 +322,7 @@
 
     onboardingPanel.hidden = false;
     if (onboardingStatus) {
-      onboardingStatus.textContent = currentSetupIssues.length ? 'Setup offen' : 'Bereit';
+      onboardingStatus.textContent = currentSetupIssues.length ? tr('setupOpen', 'Setup offen') : tr('ready', 'Bereit');
     }
     if (onboardingSteps) {
       onboardingSteps.innerHTML = buildOnboardingSteps(currentSetupIssues)
@@ -329,8 +336,8 @@
     }
     if (onboardingHelp) {
       onboardingHelp.textContent = currentSetupIssues.length
-        ? 'Wenn mpv fehlt, setze den Pfad unter Einstellungen. Wenn yt-dlp fehlt, bleibt die Suche eingeschränkt, bis du den Resolver anpasst.'
-        : 'Die Basis ist da. Starte mit den Einstellungen, kopiere danach die OBS-URL und teste einen ersten Request.';
+        ? tr('onboardingHelpWithIssues', 'Wenn mpv fehlt, setze den Pfad unter Einstellungen. Wenn yt-dlp fehlt, bleibt die Suche eingeschränkt, bis du den Resolver anpasst.')
+        : tr('onboardingHelpReady', 'Die Basis ist da. Starte mit den Einstellungen, kopiere danach die OBS-URL und teste einen ersten Request.');
     }
   }
 
@@ -339,7 +346,7 @@
     const list = Array.isArray(issues) ? issues : [];
     if (heroMpvStatus) {
       const mpvIssue = list.find((issue) => String(issue?.title || '').toLowerCase().includes('mpv'));
-      heroMpvStatus.textContent = mpvIssue ? 'Nicht installiert' : 'Bereit';
+      heroMpvStatus.textContent = mpvIssue ? tr('mpvNotInstalled', 'Nicht installiert') : tr('ready', 'Bereit');
     }
     if (!list.length) {
       setupIssuesBanner.style.display = 'none';
@@ -362,13 +369,13 @@
         const installButtonHtml = issue?.oneClickInstall && issue?.installAction === 'mpv'
           ? `<div class="setup-issue-actions">
               <button class="btn primary small" type="button" data-setup-action="install-mpv" ${installStatus?.state === 'installing' ? 'disabled' : ''}>
-                ${escapeHtml(issue.installButtonLabel || 'Installieren')}
+                ${escapeHtml(issue.installButtonLabel || tr('install', 'Installieren'))}
               </button>
             </div>`
           : '';
         return `
           <div class="setup-issue ${issue?.severity === 'error' ? 'error' : 'warning'}">
-            <strong>${icon} ${escapeHtml(issue?.title || 'Setup-Hinweis')}</strong><br>
+            <strong>${icon} ${escapeHtml(issue?.title || tr('setupHint', 'Setup-Hinweis'))}</strong><br>
             <span style="font-size:0.9em;">${escapeHtml(issue?.description || '')}</span>
             ${installButtonHtml}
             ${installStatusHtml}
@@ -409,19 +416,19 @@
 
     if (setupStatus?.mpvAvailable || installStatus?.state === 'installed') {
       stopMpvInstallPolling();
-      showToast('success', 'MPV Installation', 'mpv wurde gefunden und ist bereit.');
+      showToast('success', tr('mpvInstallation', 'MPV Installation'), tr('mpvReady', 'mpv wurde gefunden und ist bereit.'));
       return;
     }
 
     if (installStatus?.state === 'failed' || installStatus?.state === 'unavailable') {
       stopMpvInstallPolling();
-      showToast('error', 'MPV Installation', installStatus.message || 'Installation fehlgeschlagen.');
+      showToast('error', tr('mpvInstallation', 'MPV Installation'), installStatus.message || tr('installationFailed', 'Installation fehlgeschlagen.'));
       return;
     }
 
     if (mpvInstallPollAttempts >= 130) {
       stopMpvInstallPolling();
-      showToast('warn', 'MPV Installation', 'Die Installation laeuft ungewoehnlich lange. Pruefe den Paketmanager oder setze den mpv Pfad manuell.');
+      showToast('warn', tr('mpvInstallation', 'MPV Installation'), tr('installationSlow', 'Die Installation laeuft ungewoehnlich lange. Pruefe den Paketmanager oder setze den mpv Pfad manuell.'));
     }
   }
 
@@ -430,7 +437,7 @@
     mpvInstallPollTimer = setInterval(() => {
       pollMpvInstallStatus().catch((error) => {
         stopMpvInstallPolling();
-        showToast('error', 'MPV Installation', error?.message || 'Status konnte nicht geprueft werden.');
+        showToast('error', tr('mpvInstallation', 'MPV Installation'), error?.message || tr('statusCheckFailed', 'Status konnte nicht geprueft werden.'));
       });
     }, 3000);
     pollMpvInstallStatus().catch(() => {});
@@ -439,7 +446,7 @@
   async function installMpvFromSetup(button) {
     if (button) {
       button.disabled = true;
-      button.textContent = 'Installiere...';
+      button.textContent = tr('installing', 'Installiere...');
     }
 
     const result = await post('/install/mpv');
@@ -449,20 +456,20 @@
     }
 
     if (result?.mpvAvailable || status.state === 'installed') {
-      showToast('success', 'MPV Installation', status.message || 'mpv ist bereit.');
+      showToast('success', tr('mpvInstallation', 'MPV Installation'), status.message || tr('mpvReady', 'mpv ist bereit.'));
       return;
     }
 
     if (status.state === 'installing' || result?.pending) {
-      showToast('info', 'MPV Installation', status.message || 'Installation wurde gestartet. Status wird automatisch geprueft.');
+      showToast('info', tr('mpvInstallation', 'MPV Installation'), status.message || tr('installationStarted', 'Installation wurde gestartet. Status wird automatisch geprueft.'));
       startMpvInstallPolling();
       return;
     }
 
-    showToast('error', 'MPV Installation', result?.error || status.message || 'Installation konnte nicht gestartet werden.');
+    showToast('error', tr('mpvInstallation', 'MPV Installation'), result?.error || status.message || tr('installationStartFailed', 'Installation konnte nicht gestartet werden.'));
     if (button) {
       button.disabled = false;
-      button.textContent = 'MPV installieren';
+      button.textContent = tr('installMpv', 'MPV installieren');
     }
   }
 
@@ -479,9 +486,9 @@
     onboardingComplete.disabled = false;
     if (result?.success) {
       renderOnboarding(result.onboarding || { completed: true }, currentSetupIssues);
-      showToast('success', 'Assistent abgeschlossen', 'Clip bleibt still, bis du ihn wieder brauchst.');
+      showToast('success', tr('assistantCompleted', 'Assistent abgeschlossen'), tr('assistantCompletedMessage', 'Clip bleibt still, bis du ihn wieder brauchst.'));
     } else {
-      showToast('error', 'Setup', result?.error || 'Der Abschluss konnte nicht gespeichert werden.');
+      showToast('error', tr('setup', 'Einrichtung'), result?.error || tr('onboardingSaveFailed', 'Der Abschluss konnte nicht gespeichert werden.'));
     }
   }
 

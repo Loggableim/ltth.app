@@ -28,6 +28,21 @@
             "failed": "No se pudieron guardar los ajustes.",
             "noData": "No hay datos disponibles.",
             "confirm": "¿Seguro que quieres continuar?"
+          },
+          "contract": {
+            "eyebrow": "Referencia local de solo lectura",
+            "title": "Contrato de API Bridge",
+            "lede": "Inspecciona estos endpoints locales antes de integrar un cliente. Esta p\u00e1gina no env\u00eda solicitudes de acci\u00f3n.",
+            "endpoints": {
+              "info": "Identifica las versiones en ejecuci\u00f3n de LTTH y API Bridge.",
+              "actions": "Enumera los ID de acci\u00f3n y sus par\u00e1metros declarados. Leer este endpoint no tiene efectos.",
+              "events": "Revisa el evento m\u00e1s reciente; un perfil temporal nuevo empieza con una lista vac\u00eda.",
+              "request": "La ejecuci\u00f3n pertenece a un cliente probado por separado. Verifica el body requerido sin enviarlo aqu\u00ed."
+            },
+            "safety": {
+              "title": "L\u00edmite seguro de integraci\u00f3n",
+              "body": "Usa primero endpoints GET. Mant\u00e9n credenciales e ID de acciones de producci\u00f3n fuera de capturas y perfiles de prueba; la ejecuci\u00f3n POST no est\u00e1 disponible aqu\u00ed intencionadamente."
+            }
           }
         }
       },

@@ -167,11 +167,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/data-source/ui.html"
+            "expected": {
+              "path": "/plugins/data-source/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -233,6 +237,7 @@ module.exports = Object.freeze({
           "type": "select-local-source",
           "allowClick": true,
           "clickSelector": "#card-tikfinity",
+          "evidenceSelector": "#tikfinity-settings-card",
           "settleMs": 1000,
           "stepId": "local-source"
         },
@@ -280,11 +285,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/data-source/ui.html"
+            "expected": {
+              "path": "/plugins/data-source/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -393,11 +402,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/data-source/ui.html"
+            "expected": {
+              "path": "/plugins/data-source/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -460,6 +473,7 @@ module.exports = Object.freeze({
           "prepare": "select-local-tikfinity",
           "allowClick": true,
           "clickSelector": "#btn-save-tikfinity",
+          "evidenceSelector": "#toast",
           "settleMs": 1000,
           "stepId": "data-preview"
         },
@@ -511,15 +525,23 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/data-source/ui.html"
+            "expected": {
+              "path": "/plugins/data-source/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
             "selector": "#btn-save-tikfinity"
+          },
+          {
+            "type": "visible",
+            "selector": "#toast"
           },
           {
             "type": "console",
@@ -621,11 +643,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/data-source/ui.html"
+            "expected": {
+              "path": "/plugins/data-source/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -647,4 +673,79 @@ module.exports = Object.freeze({
       }
     }
   ]
+});
+
+const guide = module.exports;
+
+function correctReviewStep(id, { selector, action, copy, operations }) {
+  const step = guide.steps.find((candidate) => candidate.id === id);
+  if (!step) throw new Error(`Missing Data Source guide step: ${id}`);
+  const focusText = Object.fromEntries(Object.entries(copy).map(([locale, value]) => [locale, value.title]));
+  const expected = Object.fromEntries(Object.entries(copy).map(([locale, value]) => [locale, value.expected]));
+  step.copy = copy;
+  step.capture = {
+    ...step.capture,
+    assertVisible: selector,
+    focusText,
+    action: { ...action, stepId: id },
+    expected
+  };
+  step.workflow = {
+    ...step.workflow,
+    instructions: Object.fromEntries(Object.entries(copy).map(([locale, value]) => [locale, {
+      title: value.title,
+      body: value.body,
+      expected: value.expected
+    }])),
+    operations,
+    postconditions: [
+      { type: 'http-status', expected: 200 },
+      {
+        type: 'url',
+        expected: {
+          path: '/plugins/data-source/ui.html',
+          query: { lang: '$locale' },
+          exactQuery: true
+        }
+      },
+      { type: 'visible', selector },
+      { type: 'console', expected: 'no-errors' }
+    ],
+    captureRule: {
+      ...step.workflow.captureRule,
+      selector,
+      stateChange: false
+    }
+  };
+}
+
+correctReviewStep('field-map', {
+  selector: '#tikfinity-port',
+  action: { type: 'open-plugin-surface', prepare: 'select-local-tikfinity' },
+  operations: [
+    { type: 'goto', route: '/plugins/data-source/ui.html' },
+    { type: 'prepare', name: 'select-local-tikfinity' },
+    { type: 'open-plugin-surface', selector: '#tikfinity-port' }
+  ],
+  copy: {
+    de: { title: 'TikFinity-Port nach der Quellenauswahl pruefen', body: 'Oeffne die lokale TikFinity-Quelle und lies den sichtbaren WebSocket-Port. Aendere keinen Port und stelle keine Verbindung her.', expected: 'Der lokale Port ist nach der echten Quellenauswahl sichtbar, ohne eine Verbindung aufzubauen.', alt: 'Sichtbarer TikFinity-WebSocket-Port in Data Source' },
+    en: { title: 'Inspect the TikFinity port after selecting the source', body: 'Open the local TikFinity source and read the visible WebSocket port. Do not change the port or connect.', expected: 'The local port is visible after the real source selection without opening a connection.', alt: 'Visible TikFinity WebSocket port in Data Source' },
+    es: { title: 'Revisa el puerto TikFinity despues de elegir la fuente', body: 'Abre la fuente local TikFinity y lee el puerto WebSocket visible. No cambies el puerto ni establezcas una conexion.', expected: 'El puerto local es visible despues de elegir la fuente real sin abrir una conexion.', alt: 'Puerto WebSocket TikFinity visible en Data Source' },
+    fr: { title: 'Verifiez le port TikFinity apres le choix de source', body: 'Ouvrez la source TikFinity locale et lisez le port WebSocket visible. Ne modifiez pas le port et ne vous connectez pas.', expected: 'Le port local est visible apres le vrai choix de source sans ouvrir de connexion.', alt: 'Port WebSocket TikFinity visible dans Data Source' }
+  }
+});
+
+correctReviewStep('source-review', {
+  selector: '#status-badge',
+  action: { type: 'open-plugin-surface' },
+  operations: [
+    { type: 'goto', route: '/plugins/data-source/ui.html' },
+    { type: 'open-plugin-surface', selector: '#status-badge' }
+  ],
+  copy: {
+    de: { title: 'Aktive Datenquelle im Status pruefen', body: 'Lies das sichtbare Status-Badge nach dem lokalen Test. Dieser Schritt speichert nichts und verbindet sich nicht mit TikTok.', expected: 'Die aktive Datenquelle ist sichtbar, ohne eine Einstellung zu schreiben.', alt: 'Aktive Datenquelle im Data-Source-Status' },
+    en: { title: 'Inspect the active data source in status', body: 'Read the visible status badge after the local test. This step saves nothing and does not connect to TikTok.', expected: 'The active data source is visible without writing a setting.', alt: 'Active data source in the Data Source status' },
+    es: { title: 'Revisa la fuente de datos activa en el estado', body: 'Lee el indicador de estado visible despues de la prueba local. Este paso no guarda nada ni conecta con TikTok.', expected: 'La fuente de datos activa es visible sin escribir una configuracion.', alt: 'Fuente de datos activa en el estado de Data Source' },
+    fr: { title: 'Verifiez la source de donnees active dans le statut', body: 'Lisez le badge de statut visible apres le test local. Cette etape n enregistre rien et ne se connecte pas a TikTok.', expected: 'La source de donnees active est visible sans ecrire de reglage.', alt: 'Source de donnees active dans le statut Data Source' }
+  }
 });

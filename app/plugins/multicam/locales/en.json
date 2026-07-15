@@ -51,7 +51,10 @@
           "min_coins": "Min Coins (optional)",
           "add": "Add Mapping",
           "refresh_gifts": "Refresh Gifts",
-          "current_mappings": "Current Mappings:"
+          "current_mappings": "Current Mappings:",
+          "filter": "Filter:",
+          "camera_filter": "Camera:",
+          "sort": "Sort order:"
         },
         "log": {
           "title": "Activity Log",

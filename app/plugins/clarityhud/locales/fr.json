@@ -4,7 +4,8 @@
       "clarityhud": {
         "dashboard": {
           "title": "Tableau de bord ClarityHUD",
-          "subtitle": "Ultra-minimalistic, VR-optimized, and accessible HUD overlays for TikTok Live"
+          "subtitle": "Ultra-minimalistic, VR-optimized, and accessible HUD overlays for TikTok Live",
+          "loading": "Chargement..."
         },
         "chat_hud": {
           "title": "Chat HUD",
@@ -19,6 +20,7 @@
           "test_event": "Test Event",
           "refresh_preview": "Refresh Preview",
           "copy_url": "Copier l'URL",
+          "copy": "Copier",
           "save": "Enregistrer les Paramètres",
           "cancel": "Cancel",
           "reset_defaults": "Reset to Defaults"
@@ -136,6 +138,55 @@
         "events_0_e8b6f6": "Événements : 0",
         "obs_overlay_for_alerts_highlights_and_ticker_content": "Superposition OBS pour les alertes, les faits saillants et le contenu des tickers",
         "vrchat_readable": "VRChat lisible"
+      },
+      "runtime": {
+      "status": { "settings_updated": "Paramètres mis à jour depuis le serveur" },
+      "toast": {
+        "unknown_error": "Erreur inconnue",
+        "url_copied": "URL copiée dans le presse-papiers !",
+        "url_copy_failed": "Impossible de copier l'URL",
+        "preview_refreshed": "Aperçu actualisé",
+        "test_event_sent": "Événement de test envoyé à la superposition {dock}",
+        "test_failed": "Échec du test : {message}",
+        "test_event_failed": "Impossible d'envoyer l'événement de test",
+        "stream_settings_load_failed": "Impossible de charger les paramètres du flux : {message}",
+        "settings_load_failed": "Impossible de charger les paramètres : {message}",
+        "settings_load_failed_generic": "Impossible de charger les paramètres",
+        "stream_settings_saved": "Paramètres du flux enregistrés !",
+        "stream_settings_save_failed": "Impossible d'enregistrer les paramètres du flux : {message}",
+        "settings_saved": "Paramètres enregistrés !",
+        "settings_save_failed": "Impossible d'enregistrer les paramètres : {message}",
+        "profile_exported": "Profil exporté",
+        "profile_export_failed": "Impossible d'exporter le profil : {message}",
+        "profile_imported": "Profil importé",
+        "profile_import_failed": "Impossible d'importer le profil : {message}",
+        "preset_saved": "Préréglage enregistré",
+        "preset_save_failed": "Impossible d'enregistrer le préréglage : {message}",
+        "preset_applied": "Préréglage appliqué : {preset}",
+        "preset_apply_failed": "Impossible d'appliquer le préréglage : {message}",
+        "settings_reset": "Paramètres réinitialisés par défaut",
+        "settings_reset_failed": "Impossible de réinitialiser les paramètres : {message}"
+      },
+      "dialog": {
+        "preset_name": "Nom du préréglage",
+        "reset_confirm": "Voulez-vous vraiment réinitialiser tous les paramètres par défaut ? Cette action est irréversible."
+      },
+      "empty": { "no_additional_streams": "Aucun flux supplémentaire configuré", "unknown_tab": "Onglet inconnu" },
+      "stream": { "fallback": "Flux {number}" },
+      "dock": { "chat": "HUD de discussion", "full": "HUD d'activité complet", "multi": "HUD multi-flux", "stream": "Superposition de flux" },
+      "preset": { "highContrast": "Contraste élevé", "visionImpaired": "Déficience visuelle", "dyslexiaFriendly": "Adapté à la dyslexie", "motionSensitive": "Sensible aux mouvements" },
+      "tab": { "stream_settings": "Paramètres du flux", "streams": "Flux", "appearance": "Apparence", "events": "Événements", "layout": "Mise en page", "animation": "Animation", "styling": "Style", "accessibility": "Accessibilité" },
+      "action": { "saving": "Enregistrement..." },
+      "modal": { "settings_for": "Paramètres :" },
+      "aria": {
+        "close_settings_modal": "Fermer les paramètres",
+        "close_setup_wizard": "Fermer l'assistant de configuration",
+        "profile_import": "Importer un profil ClarityHUD",
+        "preview_chat": "Aperçu du HUD de discussion",
+        "preview_full": "Aperçu du HUD d'activité complet",
+        "preview_multi": "Aperçu du HUD multi-flux",
+        "preview_stream": "Aperçu de la superposition de flux"
+      }
       }
     }
   }

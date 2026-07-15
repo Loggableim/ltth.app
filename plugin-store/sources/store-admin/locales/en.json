@@ -1,0 +1,51 @@
+{
+  "plugins": {
+    "store-admin": {
+      "ui": {
+        "title": "LTTH App Store Admin",
+        "description": "Manage beta licenses and closed-beta plugin access for Clerk users.",
+        "searchPlaceholder": "Search by email or username",
+        "searchUsers": "Search users",
+        "checkAdminSession": "Check admin session",
+        "refresh": "Refresh",
+        "storeHealth": "Store Health",
+        "storeHealthDescription": "Local App Store telemetry and install health.",
+        "latestFeedback": "Latest Feedback",
+        "latestFeedbackDescription": "Recent reviews submitted through the App Store drawer."
+      },
+      "users": {
+        "activeBetaLicense": "Active beta license",
+        "noActiveLicense": "No active license",
+        "noProfileName": "No profile name",
+        "administrator": "Administrator",
+        "allClosedBeta": "All closed beta",
+        "saveAccess": "Save access",
+        "claimBetaLicense": "Claim beta license",
+        "revokeLicense": "Revoke license"
+      },
+      "metrics": {
+        "feedback": "Feedback",
+        "telemetry": "Telemetry",
+        "installFailures": "Install failures",
+        "rollbacks": "Rollbacks"
+      },
+      "feedback": {
+        "unknown": "unknown",
+        "notAvailable": "n/a",
+        "noMessage": "No message",
+        "empty": "No App Store feedback yet."
+      },
+      "status": {
+        "loadingUsers": "Loading users…",
+        "usersLoaded": "{count} user(s) loaded.",
+        "accessSaved": "Access saved.",
+        "licenseRevoked": "License revoked.",
+        "licenseClaimed": "License claimed.",
+        "adminSessionOk": "Admin session OK: {userId}"
+      },
+      "errors": {
+        "requestFailed": "Request failed"
+      }
+    }
+  }
+}

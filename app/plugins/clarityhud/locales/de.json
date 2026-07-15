@@ -4,7 +4,8 @@
       "clarityhud": {
         "dashboard": {
           "title": "ClarityHUD-Dashboard",
-          "subtitle": "Ultra-minimalistisch, VR-optimiert und zugängliche HUD-Overlays für TikTok Live"
+          "subtitle": "Ultra-minimalistisch, VR-optimiert und zugängliche HUD-Overlays für TikTok Live",
+          "loading": "Wird geladen..."
         },
         "chat_hud": {
           "title": "Chat-HUD",
@@ -23,6 +24,7 @@
           "test_event": "Test-Ereignis",
           "refresh_preview": "Vorschau aktualisieren",
           "copy_url": "URL kopieren",
+          "copy": "Kopieren",
           "save": "Einstellungen speichern",
           "cancel": "Abbrechen",
           "reset_defaults": "Auf Standardwerte zurücksetzen"
@@ -136,6 +138,55 @@
         "events_0_e8b6f6": "Ereignisse: 0",
         "obs_overlay_for_alerts_highlights_and_ticker_content": "OBS-Overlay für Warnungen, Highlights und Tickerinhalte",
         "vrchat_readable": "VRChat lesbar"
+      },
+      "runtime": {
+      "status": { "settings_updated": "Einstellungen vom Server aktualisiert" },
+      "toast": {
+        "unknown_error": "Unbekannter Fehler",
+        "url_copied": "URL in die Zwischenablage kopiert!",
+        "url_copy_failed": "URL konnte nicht kopiert werden",
+        "preview_refreshed": "Vorschau aktualisiert",
+        "test_event_sent": "Test-Ereignis an {dock} gesendet",
+        "test_failed": "Test fehlgeschlagen: {message}",
+        "test_event_failed": "Test-Ereignis konnte nicht gesendet werden",
+        "stream_settings_load_failed": "Stream-Einstellungen konnten nicht geladen werden: {message}",
+        "settings_load_failed": "Einstellungen konnten nicht geladen werden: {message}",
+        "settings_load_failed_generic": "Einstellungen konnten nicht geladen werden",
+        "stream_settings_saved": "Stream-Einstellungen gespeichert!",
+        "stream_settings_save_failed": "Stream-Einstellungen konnten nicht gespeichert werden: {message}",
+        "settings_saved": "Einstellungen gespeichert!",
+        "settings_save_failed": "Einstellungen konnten nicht gespeichert werden: {message}",
+        "profile_exported": "Profil exportiert",
+        "profile_export_failed": "Profil konnte nicht exportiert werden: {message}",
+        "profile_imported": "Profil importiert",
+        "profile_import_failed": "Profil konnte nicht importiert werden: {message}",
+        "preset_saved": "Preset gespeichert",
+        "preset_save_failed": "Preset konnte nicht gespeichert werden: {message}",
+        "preset_applied": "Preset angewendet: {preset}",
+        "preset_apply_failed": "Preset konnte nicht angewendet werden: {message}",
+        "settings_reset": "Einstellungen auf Standardwerte zurückgesetzt",
+        "settings_reset_failed": "Einstellungen konnten nicht zurückgesetzt werden: {message}"
+      },
+      "dialog": {
+        "preset_name": "Preset-Name",
+        "reset_confirm": "Möchtest du wirklich alle Einstellungen auf die Standardwerte zurücksetzen? Dies kann nicht rückgängig gemacht werden."
+      },
+      "empty": { "no_additional_streams": "Keine zusätzlichen Streams konfiguriert", "unknown_tab": "Unbekannter Tab" },
+      "stream": { "fallback": "Stream {number}" },
+      "dock": { "chat": "Chat-HUD", "full": "Vollständiges Aktivitäts-HUD", "multi": "Multi-Stream-HUD", "stream": "Stream-Overlay" },
+      "preset": { "highContrast": "Hoher Kontrast", "visionImpaired": "Sehbeeinträchtigung", "dyslexiaFriendly": "Legastheniefreundlich", "motionSensitive": "Bewegungssensibel" },
+      "tab": { "stream_settings": "Stream-Einstellungen", "streams": "Streams", "appearance": "Erscheinungsbild", "events": "Ereignisse", "layout": "Layout", "animation": "Animation", "styling": "Stil", "accessibility": "Barrierefreiheit" },
+      "action": { "saving": "Wird gespeichert..." },
+      "modal": { "settings_for": "Einstellungen:" },
+      "aria": {
+        "close_settings_modal": "Einstellungen schließen",
+        "close_setup_wizard": "Einrichtungsassistent schließen",
+        "profile_import": "ClarityHUD-Profil importieren",
+        "preview_chat": "Vorschau des Chat-HUD",
+        "preview_full": "Vorschau des Aktivitäts-HUD",
+        "preview_multi": "Vorschau des Multi-Stream-HUD",
+        "preview_stream": "Vorschau des Stream-Overlays"
+      }
       }
     }
   }

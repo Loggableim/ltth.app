@@ -1,8 +1,10 @@
 'use strict';
 
+const { applyOverlayEntryPoints } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+module.exports = Object.freeze(applyOverlayEntryPoints({
   "id": "weather-control",
   "route": "/plugins/weather-control/ui.html",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/weather-control/ui.html"
+            "expected": {
+              "path": "/plugins/weather-control/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +283,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/weather-control/ui.html"
+            "expected": {
+              "path": "/plugins/weather-control/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -306,72 +316,76 @@ module.exports = Object.freeze({
       "id": "lifecycle-rule",
       "copy": {
         "de": {
-          "title": "Lifecycle Rule im Testprofil konfigurieren",
-          "body": "Arbeite im sichtbaren Bereich Lifecycle Rule von Wettereffect, Intensität und Lebenszyklus. Verwende nur lokale Demo-Werte; keine Zugangsdaten, Geraete-ID oder LIVE-Ziel.",
-          "expected": "Der Demo-Wert ist sichtbar und kann vor dem Test geprüft werden.",
-          "alt": "Lifecycle Rule im Testprofil konfigurieren - Wettereffect, Intensität und Lebenszyklus"
+          "title": "Lokale Regenvorschau starten und wieder beenden",
+          "body": "Klicke auf den echten Button „Test Rain Effect“, um die lokale Vorschau zu starten. Beende sie danach mit „Stop All“; weder gespeicherte Wetterregeln noch eine LIVE-Szene werden geändert.",
+          "expected": "Der reale Button „Test Rain Effect“ ist sichtbar und startet nur die lokale Regenvorschau.",
+          "alt": "Lokale Regenvorschau starten und wieder beenden - Wettereffekt, Intensität und Lebenszyklus"
         },
         "en": {
-          "title": "Configure Lifecycle Rule in the test profile",
-          "body": "Work in the visible Lifecycle Rule area of weather effect, intensity, and lifecycle. Use local demo values only; never credentials, a device ID, or a LIVE target.",
-          "expected": "The demo value is visible and can be reviewed before testing.",
-          "alt": "Configure Lifecycle Rule in the test profile - weather effect, intensity, and lifecycle"
+          "title": "Start and stop the local rain preview",
+          "body": "Click the real “Test Rain Effect” button to start the local preview. Then use “Stop All” to clean it up; no saved weather rule or LIVE scene is changed.",
+          "expected": "The real “Test Rain Effect” button is visible and starts only the local rain preview.",
+          "alt": "Start and stop the local rain preview - weather effect, intensity, and lifecycle"
         },
         "es": {
-          "title": "Configura Lifecycle Rule en el perfil de prueba",
-          "body": "Trabaja en el area visible Lifecycle Rule de efecto meteorológico, intensidad y ciclo de vida. Usa solo valores demo locales; nunca credenciales, ID de dispositivo ni destino LIVE.",
-          "expected": "El valor demo queda visible y puede revisarse antes de probar.",
-          "alt": "Configura Lifecycle Rule en el perfil de prueba - efecto meteorológico, intensidad y ciclo de vida"
+          "title": "Inicia y detén la vista previa local de lluvia",
+          "body": "Haz clic en el botón real «Test Rain Effect» para iniciar la vista previa local. Después usa «Stop All» para limpiarla; no se cambia ninguna regla meteorológica guardada ni escena LIVE.",
+          "expected": "El botón real «Test Rain Effect» es visible e inicia solo la vista previa local de lluvia.",
+          "alt": "Inicia y detén la vista previa local de lluvia - efecto meteorológico, intensidad y ciclo de vida"
         },
         "fr": {
-          "title": "Configurez Lifecycle Rule dans le profil de test",
-          "body": "Travaillez dans la zone visible Lifecycle Rule de effet météo, intensité et cycle de vie. Utilisez uniquement des valeurs demo locales, jamais identifiants, ID appareil ou cible LIVE.",
-          "expected": "La valeur démo est visible et peut être vérifiée avant le test.",
-          "alt": "Configurez Lifecycle Rule dans le profil de test - effet météo, intensité et cycle de vie"
+          "title": "Démarrez puis arrêtez l'aperçu local de pluie",
+          "body": "Cliquez sur le vrai bouton « Test Rain Effect » pour démarrer l'aperçu local. Utilisez ensuite « Stop All » pour le nettoyer ; aucune règle météo enregistrée ni scène LIVE n'est modifiée.",
+          "expected": "Le vrai bouton « Test Rain Effect » est visible et ne démarre que l'aperçu local de pluie.",
+          "alt": "Démarrez puis arrêtez l'aperçu local de pluie - effet météo, intensité et cycle de vie"
         }
       },
       "capture": {
         "route": "/plugins/weather-control/ui.html",
         "assertVisible": "#testRainEffectBtn",
         "focusText": {
-          "de": "Lifecycle Rule im Testprofil konfigurieren",
-          "en": "Configure Lifecycle Rule in the test profile",
-          "es": "Configura Lifecycle Rule en el perfil de prueba",
-          "fr": "Configurez Lifecycle Rule dans le profil de test"
+          "de": "Lokale Regenvorschau starten und wieder beenden",
+          "en": "Start and stop the local rain preview",
+          "es": "Inicia y detén la vista previa local de lluvia",
+          "fr": "Démarrez puis arrêtez l'aperçu local de pluie"
         },
         "action": {
-          "type": "set-demo-value",
+          "type": "run-local-preview",
+          "allowClick": true,
+          "clickSelector": "#testRainEffectBtn",
+          "evidenceSelector": "#statusAlert",
+          "settleMs": 750,
           "stepId": "lifecycle-rule"
         },
         "expected": {
-          "de": "Der Demo-Wert ist sichtbar und kann vor dem Test geprüft werden.",
-          "en": "The demo value is visible and can be reviewed before testing.",
-          "es": "El valor demo queda visible y puede revisarse antes de probar.",
-          "fr": "La valeur démo est visible et peut être vérifiée avant le test."
+          "de": "Der reale Button „Test Rain Effect“ ist sichtbar und startet nur die lokale Regenvorschau.",
+          "en": "The real “Test Rain Effect” button is visible and starts only the local rain preview.",
+          "es": "El botón real «Test Rain Effect» es visible e inicia solo la vista previa local de lluvia.",
+          "fr": "Le vrai bouton « Test Rain Effect » est visible et ne démarre que l'aperçu local de pluie."
         }
       },
       "workflow": {
         "route": "/plugins/weather-control/ui.html",
         "instructions": {
           "de": {
-            "title": "Lifecycle Rule im Testprofil konfigurieren",
-            "body": "Arbeite im sichtbaren Bereich Lifecycle Rule von Wettereffect, Intensität und Lebenszyklus. Verwende nur lokale Demo-Werte; keine Zugangsdaten, Geraete-ID oder LIVE-Ziel.",
-            "expected": "Der Demo-Wert ist sichtbar und kann vor dem Test geprüft werden."
+            "title": "Lokale Regenvorschau starten und wieder beenden",
+            "body": "Klicke auf den echten Button „Test Rain Effect“, um die lokale Vorschau zu starten. Beende sie danach mit „Stop All“; weder gespeicherte Wetterregeln noch eine LIVE-Szene werden geändert.",
+            "expected": "Der reale Button „Test Rain Effect“ ist sichtbar und startet nur die lokale Regenvorschau."
           },
           "en": {
-            "title": "Configure Lifecycle Rule in the test profile",
-            "body": "Work in the visible Lifecycle Rule area of weather effect, intensity, and lifecycle. Use local demo values only; never credentials, a device ID, or a LIVE target.",
-            "expected": "The demo value is visible and can be reviewed before testing."
+            "title": "Start and stop the local rain preview",
+            "body": "Click the real “Test Rain Effect” button to start the local preview. Then use “Stop All” to clean it up; no saved weather rule or LIVE scene is changed.",
+            "expected": "The real “Test Rain Effect” button is visible and starts only the local rain preview."
           },
           "es": {
-            "title": "Configura Lifecycle Rule en el perfil de prueba",
-            "body": "Trabaja en el area visible Lifecycle Rule de efecto meteorológico, intensidad y ciclo de vida. Usa solo valores demo locales; nunca credenciales, ID de dispositivo ni destino LIVE.",
-            "expected": "El valor demo queda visible y puede revisarse antes de probar."
+            "title": "Inicia y detén la vista previa local de lluvia",
+            "body": "Haz clic en el botón real «Test Rain Effect» para iniciar la vista previa local. Después usa «Stop All» para limpiarla; no se cambia ninguna regla meteorológica guardada ni escena LIVE.",
+            "expected": "El botón real «Test Rain Effect» es visible e inicia solo la vista previa local de lluvia."
           },
           "fr": {
-            "title": "Configurez Lifecycle Rule dans le profil de test",
-            "body": "Travaillez dans la zone visible Lifecycle Rule de effet météo, intensité et cycle de vie. Utilisez uniquement des valeurs demo locales, jamais identifiants, ID appareil ou cible LIVE.",
-            "expected": "La valeur démo est visible et peut être vérifiée avant le test."
+            "title": "Démarrez puis arrêtez l'aperçu local de pluie",
+            "body": "Cliquez sur le vrai bouton « Test Rain Effect » pour démarrer l'aperçu local. Utilisez ensuite « Stop All » pour le nettoyer ; aucune règle météo enregistrée ni scène LIVE n'est modifiée.",
+            "expected": "Le vrai bouton « Test Rain Effect » est visible et ne démarre que l'aperçu local de pluie."
           }
         },
         "operations": [
@@ -380,22 +394,30 @@ module.exports = Object.freeze({
             "route": "/plugins/weather-control/ui.html"
           },
           {
-            "type": "set-demo-value",
+            "type": "run-local-preview",
             "selector": "#testRainEffectBtn"
           }
         ],
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/weather-control/ui.html"
+            "expected": {
+              "path": "/plugins/weather-control/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
             "selector": "#testRainEffectBtn"
+          },
+          {
+            "type": "visible",
+            "selector": "#statusAlert"
           },
           {
             "type": "console",
@@ -500,11 +522,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/weather-control/ui.html"
+            "expected": {
+              "path": "/plugins/weather-control/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -610,11 +636,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/weather-control/overlay.html"
+            "expected": {
+              "path": "/plugins/weather-control/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -639,72 +669,76 @@ module.exports = Object.freeze({
       "id": "weather-reset",
       "copy": {
         "de": {
-          "title": "Weather Reset sicher zuruecksetzen",
-          "body": "Entferne nur die Demo-Werte fuer Weather Reset, bevor du Wettereffect, Intensität und Lebenszyklus produktiv vorbereitest.",
-          "expected": "Das Testprofil bleibt ohne produktive Auswirkung.",
-          "alt": "Weather Reset sicher zuruecksetzen - Wettereffect, Intensität und Lebenszyklus"
+          "title": "Lokale Regenvorschau sauber beenden",
+          "body": "Klicke nach dem Regen-Test auf den echten Button „Stop All“. Er beendet nur laufende Vorschau-Effekte und speichert oder löscht keine Wetterkonfiguration.",
+          "expected": "Der reale Button „Stop All“ ist als Aufräumaktion für die lokale Vorschau sichtbar.",
+          "alt": "Lokale Regenvorschau sauber beenden - Wettereffekt, Intensität und Lebenszyklus"
         },
         "en": {
-          "title": "Reset Weather Reset safely",
-          "body": "Remove only the demo values for Weather Reset before preparing weather effect, intensity, and lifecycle for production.",
-          "expected": "The test profile remains free of production impact.",
-          "alt": "Reset Weather Reset safely - weather effect, intensity, and lifecycle"
+          "title": "Cleanly stop the local rain preview",
+          "body": "After the rain test, click the real “Stop All” button. It stops only running preview effects and neither saves nor deletes weather configuration.",
+          "expected": "The real “Stop All” button is visible as the cleanup action for the local preview.",
+          "alt": "Cleanly stop the local rain preview - weather effect, intensity, and lifecycle"
         },
         "es": {
-          "title": "Restablece Weather Reset con seguridad",
-          "body": "Elimina solo los valores demo de Weather Reset antes de preparar efecto meteorológico, intensidad y ciclo de vida para produccion.",
-          "expected": "El perfil de prueba permanece sin impacto de producción.",
-          "alt": "Restablece Weather Reset con seguridad - efecto meteorológico, intensidad y ciclo de vida"
+          "title": "Detén limpiamente la vista previa local de lluvia",
+          "body": "Después de probar la lluvia, haz clic en el botón real «Stop All». Solo detiene los efectos de vista previa en curso y no guarda ni elimina configuración meteorológica.",
+          "expected": "El botón real «Stop All» es visible como acción de limpieza de la vista previa local.",
+          "alt": "Detén limpiamente la vista previa local de lluvia - efecto meteorológico, intensidad y ciclo de vida"
         },
         "fr": {
-          "title": "Reinitialisez Weather Reset en securite",
-          "body": "Supprimez uniquement les valeurs demo de Weather Reset avant de preparer effet météo, intensité et cycle de vie pour la production.",
-          "expected": "Le profil de test reste sans impact de production.",
-          "alt": "Reinitialisez Weather Reset en securite - effet météo, intensité et cycle de vie"
+          "title": "Arrêtez proprement l'aperçu local de pluie",
+          "body": "Après le test de pluie, cliquez sur le vrai bouton « Stop All ». Il arrête uniquement les effets d'aperçu en cours et n'enregistre ni ne supprime aucune configuration météo.",
+          "expected": "Le vrai bouton « Stop All » est visible comme action de nettoyage de l'aperçu local.",
+          "alt": "Arrêtez proprement l'aperçu local de pluie - effet météo, intensité et cycle de vie"
         }
       },
       "capture": {
         "route": "/plugins/weather-control/ui.html",
         "assertVisible": "#stopAllPreviewBtn",
         "focusText": {
-          "de": "Weather Reset sicher zuruecksetzen",
-          "en": "Reset Weather Reset safely",
-          "es": "Restablece Weather Reset con seguridad",
-          "fr": "Reinitialisez Weather Reset en securite"
+          "de": "Lokale Regenvorschau sauber beenden",
+          "en": "Cleanly stop the local rain preview",
+          "es": "Detén limpiamente la vista previa local de lluvia",
+          "fr": "Arrêtez proprement l'aperçu local de pluie"
         },
         "action": {
-          "type": "reset-demo-state",
+          "type": "run-local-preview",
+          "allowClick": true,
+          "clickSelector": "#stopAllPreviewBtn",
+          "evidenceSelector": "#statusAlert",
+          "settleMs": 250,
           "stepId": "weather-reset"
         },
         "expected": {
-          "de": "Das Testprofil bleibt ohne produktive Auswirkung.",
-          "en": "The test profile remains free of production impact.",
-          "es": "El perfil de prueba permanece sin impacto de producción.",
-          "fr": "Le profil de test reste sans impact de production."
+          "de": "Der reale Button „Stop All“ ist als Aufräumaktion für die lokale Vorschau sichtbar.",
+          "en": "The real “Stop All” button is visible as the cleanup action for the local preview.",
+          "es": "El botón real «Stop All» es visible como acción de limpieza de la vista previa local.",
+          "fr": "Le vrai bouton « Stop All » est visible comme action de nettoyage de l'aperçu local."
         }
       },
       "workflow": {
         "route": "/plugins/weather-control/ui.html",
         "instructions": {
           "de": {
-            "title": "Weather Reset sicher zuruecksetzen",
-            "body": "Entferne nur die Demo-Werte fuer Weather Reset, bevor du Wettereffect, Intensität und Lebenszyklus produktiv vorbereitest.",
-            "expected": "Das Testprofil bleibt ohne produktive Auswirkung."
+            "title": "Lokale Regenvorschau sauber beenden",
+            "body": "Klicke nach dem Regen-Test auf den echten Button „Stop All“. Er beendet nur laufende Vorschau-Effekte und speichert oder löscht keine Wetterkonfiguration.",
+            "expected": "Der reale Button „Stop All“ ist als Aufräumaktion für die lokale Vorschau sichtbar."
           },
           "en": {
-            "title": "Reset Weather Reset safely",
-            "body": "Remove only the demo values for Weather Reset before preparing weather effect, intensity, and lifecycle for production.",
-            "expected": "The test profile remains free of production impact."
+            "title": "Cleanly stop the local rain preview",
+            "body": "After the rain test, click the real “Stop All” button. It stops only running preview effects and neither saves nor deletes weather configuration.",
+            "expected": "The real “Stop All” button is visible as the cleanup action for the local preview."
           },
           "es": {
-            "title": "Restablece Weather Reset con seguridad",
-            "body": "Elimina solo los valores demo de Weather Reset antes de preparar efecto meteorológico, intensidad y ciclo de vida para produccion.",
-            "expected": "El perfil de prueba permanece sin impacto de producción."
+            "title": "Detén limpiamente la vista previa local de lluvia",
+            "body": "Después de probar la lluvia, haz clic en el botón real «Stop All». Solo detiene los efectos de vista previa en curso y no guarda ni elimina configuración meteorológica.",
+            "expected": "El botón real «Stop All» es visible como acción de limpieza de la vista previa local."
           },
           "fr": {
-            "title": "Reinitialisez Weather Reset en securite",
-            "body": "Supprimez uniquement les valeurs demo de Weather Reset avant de preparer effet météo, intensité et cycle de vie pour la production.",
-            "expected": "Le profil de test reste sans impact de production."
+            "title": "Arrêtez proprement l'aperçu local de pluie",
+            "body": "Après le test de pluie, cliquez sur le vrai bouton « Stop All ». Il arrête uniquement les effets d'aperçu en cours et n'enregistre ni ne supprime aucune configuration météo.",
+            "expected": "Le vrai bouton « Stop All » est visible comme action de nettoyage de l'aperçu local."
           }
         },
         "operations": [
@@ -713,22 +747,30 @@ module.exports = Object.freeze({
             "route": "/plugins/weather-control/ui.html"
           },
           {
-            "type": "reset-demo-state",
+            "type": "run-local-preview",
             "selector": "#stopAllPreviewBtn"
           }
         ],
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/weather-control/ui.html"
+            "expected": {
+              "path": "/plugins/weather-control/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
             "selector": "#stopAllPreviewBtn"
+          },
+          {
+            "type": "visible",
+            "selector": "#statusAlert"
           },
           {
             "type": "console",
@@ -746,4 +788,15 @@ module.exports = Object.freeze({
       }
     }
   ]
-});
+}, {
+  'weather-overlay': {
+    route: '/plugins/weather-control/ui.html',
+    selector: '#overlayUrl',
+    copy: {
+      de: { title: 'Weather-Control-Overlay-URL für OBS übernehmen', body: 'Prüfe die sichtbare Overlay-URL in Weather Control, bevor du sie in einer nicht sendenden OBS-Testszene als Browser-Quelle einrichtest. Das Bild zeigt die echte URL und den Kopier-Einstieg statt einer leeren Wetterfläche.', expected: 'Die sichtbare Overlay-URL kann gezielt für die OBS-Testquelle übernommen werden.' },
+      en: { title: 'Use the Weather Control overlay URL for OBS', body: 'Review the visible overlay URL in Weather Control before using it as a browser source in a non-live OBS test scene. The image shows the real URL and copy entry point instead of an empty weather surface.', expected: 'The visible overlay URL can be deliberately used for the OBS test source.' },
+      es: { title: 'Usa la URL del overlay Weather Control para OBS', body: 'Revisa la URL visible del overlay en Weather Control antes de usarla como fuente de navegador en una escena de prueba de OBS que no está en directo. La imagen muestra la URL real y el acceso para copiarla en lugar de una superficie meteorológica vacía.', expected: 'La URL visible del overlay puede usarse de forma intencionada para la fuente de prueba OBS.' },
+      fr: { title: 'Utilisez l’URL de l’overlay Weather Control pour OBS', body: 'Vérifiez l’URL visible de l’overlay dans Weather Control avant de l’utiliser comme source navigateur dans une scène de test OBS hors diffusion. L’image montre l’URL réelle et le point d’entrée de copie au lieu d’une surface météo vide.', expected: 'L’URL visible de l’overlay peut être utilisée volontairement pour la source de test OBS.' }
+    }
+  }
+}));

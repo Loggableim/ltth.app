@@ -1,8 +1,10 @@
 'use strict';
 
+const { exactLocalUrlExpectation } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+const guide = {
   "id": "gift-catalog",
   "route": "/plugins/gift-catalog/ui.html",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/gift-catalog/ui.html"
+            "expected": {
+              "path": "/plugins/gift-catalog/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +283,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/gift-catalog/ui.html"
+            "expected": {
+              "path": "/plugins/gift-catalog/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -387,11 +397,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/gift-catalog/ui.html"
+            "expected": {
+              "path": "/plugins/gift-catalog/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +511,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/gift-catalog/ui.html"
+            "expected": {
+              "path": "/plugins/gift-catalog/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -607,11 +625,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/gift-catalog/ui.html"
+            "expected": {
+              "path": "/plugins/gift-catalog/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -633,4 +655,42 @@ module.exports = Object.freeze({
       }
     }
   ]
+};
+
+function applyWorkflowCorrections(corrections) {
+  for (const [id, correction] of Object.entries(corrections)) {
+    const step = guide.steps.find((candidate) => candidate.id === id);
+    if (!step) throw new Error(`Missing Gift Catalog guide step: ${id}`);
+    const focusText = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.title]));
+    const expected = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.expected]));
+    step.copy = correction.copy;
+    step.capture = { ...step.capture, assertVisible: correction.selector, focusText, action: { ...correction.action, stepId: id }, expected };
+    step.workflow = {
+      ...step.workflow,
+      instructions: Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, { title: copy.title, body: copy.body, expected: copy.expected }])),
+      operations: [{ type: 'goto', route: step.capture.route }, { type: correction.action.type, selector: correction.selector }],
+      postconditions: [
+        { type: 'http-status', expected: 200 },
+        { type: 'url', expected: exactLocalUrlExpectation(step.capture.route) },
+        { type: 'visible', selector: correction.selector },
+        { type: 'console', expected: 'no-errors' }
+      ],
+      captureRule: { ...step.workflow.captureRule, selector: correction.selector, stateChange: false }
+    };
+  }
+}
+
+applyWorkflowCorrections({
+  'coin-threshold': {
+    selector: '#run-refresh-form',
+    action: { type: 'open-plugin-surface' },
+    copy: {
+      de: { title: 'Lokalen Aktualisierungs-Einstieg pruefen', body: 'Pruefe den Knopf Run current form und den zugehoerigen Hinweis. Fuehre die Aktualisierung nicht aus, weil sie je nach Konfiguration externe Katalogdaten abrufen kann.', expected: 'Der lokale Aktualisierungs-Einstieg ist sichtbar; es wird keine Katalogabfrage gestartet.', alt: 'Lokaler Aktualisierungs-Einstieg des Gift Catalog' },
+      en: { title: 'Inspect the local refresh entry point', body: 'Inspect the Run current form button and its related guidance. Do not run the refresh because it can retrieve external catalog data depending on configuration.', expected: 'The local refresh entry point is visible and no catalog request starts.', alt: 'Gift Catalog local refresh entry point' },
+      es: { title: 'Revisa el punto de actualizacion local', body: 'Revisa el boton Ejecutar formulario actual y su indicacion relacionada. No ejecutes la actualizacion porque puede obtener datos externos de catalogo segun la configuracion.', expected: 'El punto de actualizacion local es visible y no inicia ninguna solicitud de catalogo.', alt: 'Punto de actualizacion local de Gift Catalog' },
+      fr: { title: 'Verifiez le point dentree de rafraichissement local', body: 'Verifiez le bouton Executer le formulaire actuel et son indication associee. Ne lancez pas le rafraichissement car il peut recuperer des donnees de catalogue externes selon la configuration.', expected: 'Le point dentree de rafraichissement local est visible et aucune requete de catalogue ne demarre.', alt: 'Point dentree de rafraichissement local Gift Catalog' }
+    }
+  }
 });
+
+module.exports = Object.freeze(guide);

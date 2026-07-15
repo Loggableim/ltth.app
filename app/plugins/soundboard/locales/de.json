@@ -152,6 +152,72 @@
         "selected_sound": "Ausgewählter Sound:",
         "manual_config_import_export": "Manueller Konfigurationsimport/-export",
         "gif_image_seconds": "GIF/Bild-Sekunden"
+      },
+      "ui": {
+        "navigation": {
+          "workspaceNavigation": "Navigation des Soundboard-Arbeitsbereichs",
+          "overview": "\u00dcbersicht",
+          "library": "Bibliothek"
+        },
+        "actions": {
+          "refresh": "Aktualisieren",
+          "copy": "Kopieren",
+          "clear": "Leeren",
+          "copyUrl": "URL kopieren",
+          "openInNewTab": "In neuem Tab \u00f6ffnen",
+          "collapseSection": "Abschnitt einklappen"
+        },
+        "animation": {
+          "anchor": "Anker",
+          "center": "Mitte",
+          "top": "Oben",
+          "left": "Links",
+          "right": "Rechts",
+          "bottom": "Unten",
+          "fit": "Anpassung",
+          "contain": "Einpassen",
+          "cover": "Zuschneiden",
+          "fill": "Ausf\u00fcllen",
+          "none": "Keine",
+          "video": "Video",
+          "image": "Bild"
+        },
+        "events": {
+          "follow": "Folgen",
+          "share": "Teilen",
+          "volume": "Lautst\u00e4rke:",
+          "testSound": "Sound testen",
+          "testFollowSound": "Folgen-Sound testen",
+          "testSubscribeSound": "Abo-Sound testen",
+          "testShareSound": "Teilen-Sound testen",
+          "testGiftSound": "Geschenk-Sound testen",
+          "testLikeSound": "Like-Sound testen"
+        },
+        "status": {
+          "unknown": "Unbekannt",
+          "ready": "Bereit",
+          "checking": "Wird gepr\u00fcft...",
+          "autoplay": "Automatische Wiedergabe"
+        },
+        "table": {
+          "label": "Bezeichnung",
+          "sound": "Sound",
+          "animation": "Animation",
+          "actions": "Aktionen"
+        },
+        "placeholders": {
+          "loading": "Wird geladen...",
+          "soundUrl": "Sound-URL (MP3)",
+          "animationUrl": "Animations-URL",
+          "animationUrlOptional": "Animations-URL (optional)",
+          "animationVolume": "Animationslautst\u00e4rke",
+          "searchGifts": "Geschenke nach ID oder Name suchen...",
+          "filterGifts": "Zum Filtern nach Geschenk-ID, Bezeichnung, Sound oder Animation tippen...",
+          "configImportExport": "Exportierte Soundboard-Animations-JSON laden oder hier einf\u00fcgen."
+        },
+        "accessibility": {
+          "closeGiftCatalogModal": "Geschenkkatalog-Dialog schlie\u00dfen"
+        }
       }
     }
   }

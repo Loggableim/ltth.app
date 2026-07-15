@@ -268,7 +268,7 @@
 <body>
   <div id="profileCard" class="profile-card">
     <div class="rank-badge" id="rankBadge" style="display: none;"><span data-i18n="plugins.milestone-leaderboard.labels.rank">
-      🏆 Rank #</span><span id="rankNumber">1</span>
+      🏆 Rank #</span><span id="rankNumber" data-i18n="plugins.milestone-leaderboard.ui.defaults.one">1</span>
     </div>
 
     <div class="profile-header">
@@ -276,7 +276,7 @@
         👤
       </div>
       <div class="profile-info">
-        <div class="profile-username" id="username">Username</div>
+        <div class="profile-username" id="username" data-i18n="plugins.milestone-leaderboard.ui.table.username">Username</div>
         <div class="profile-title" id="title">Newcomer</div>
       </div>
       <div class="profile-level" id="level" data-i18n="plugins.milestone-leaderboard.labels.level_1">Level 1</div>
@@ -352,7 +352,9 @@
     } catch (error) {
       console.error('Failed to initialize socket.io:', error);
       // Display error message
-      document.body.innerHTML = '<div style="color: red; text-align: center; padding: 50px; font-family: sans-serif;"><h2>⚠️ Connection Error</h2><p>Failed to connect to server. Please refresh the page.</p></div>';
+      const errorTitle = window.i18n?.t('plugins.milestone-leaderboard.ui.connection.error_title') || '⚠️ Connection Error';
+      const errorMessage = window.i18n?.t('plugins.milestone-leaderboard.ui.connection.error_message') || 'Failed to connect to server. Please refresh the page.';
+      document.body.innerHTML = `<div style="color: red; text-align: center; padding: 50px; font-family: sans-serif;"><h2>${errorTitle}</h2><p>${errorMessage}</p></div>`;
     }
 
     const profileCard = document.getElementById('profileCard');

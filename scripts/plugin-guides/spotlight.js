@@ -1,8 +1,10 @@
 'use strict';
 
+const { applyOverlayEntryPoints } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+module.exports = Object.freeze(applyOverlayEntryPoints({
   "id": "spotlight",
   "route": "/plugins/spotlight/ui/main.html",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/spotlight/ui/main.html"
+            "expected": {
+              "path": "/plugins/spotlight/ui/main.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -196,73 +202,75 @@ module.exports = Object.freeze({
       "id": "event-style",
       "copy": {
         "de": {
-          "title": "Chatter-Design im echten Settings-Dialog pruefen",
-          "body": "Oeffne auf der Chatter-Karte „Settings“ und waehle dort eine vorhandene Design-Variante. Speichere erst nach einer eigenen Pruefung; die Aufnahme aendert keine produktive Overlay-Konfiguration.",
-          "expected": "Der echte Settings-Dialog zeigt die fuer Chatter verfuegbaren Designfelder.",
-          "alt": "Chatter-Design im echten Settings-Dialog pruefen - Ereignistyp, Anzeigedauer und Spotlight-Stil"
+          "title": "Chatter-Design im echten Settings-Dialog auswählen",
+          "body": "Öffne auf der Chatter-Karte „Settings“ und prüfe das echte Feld „Choose a Design Style“. Die Dokumentation wählt darin nur eine vorhandene Variante im frischen Testprofil und speichert nichts.",
+          "expected": "Das echte Auswahlfeld „Choose a Design Style“ zeigt eine verfügbare Chatter-Variante.",
+          "alt": "Chatter-Design im echten Settings-Dialog auswählen - Ereignistyp, Anzeigedauer und Spotlight-Stil"
         },
         "en": {
-          "title": "Review the Chatter design in the real Settings dialog",
-          "body": "On the Chatter card, open “Settings” and choose one of the available design variants. Save only after your own review; the capture does not change a production overlay configuration.",
-          "expected": "The real Settings dialog shows the design fields available for Chatter.",
-          "alt": "Review the Chatter design in the real Settings dialog - event type, display duration, and spotlight style"
+          "title": "Select the Chatter design in the real Settings dialog",
+          "body": "On the Chatter card, open “Settings” and inspect the real “Choose a Design Style” field. The documentation selects only an available variant in a fresh test profile and does not save it.",
+          "expected": "The real “Choose a Design Style” selector shows an available Chatter variant.",
+          "alt": "Select the Chatter design in the real Settings dialog - event type, display duration, and spotlight style"
         },
         "es": {
-          "title": "Revisa el diseno Chatter en el dialogo real de ajustes",
-          "body": "En la tarjeta Chatter, abre «Settings» y elige una variante de diseno disponible. Guarda solo tras revisarla; la captura no cambia una configuracion de overlay de produccion.",
-          "expected": "El dialogo real muestra los campos de diseno disponibles para Chatter.",
-          "alt": "Revisa el diseno Chatter en el dialogo real de ajustes - tipo de evento, duración de visualización y estilo Spotlight"
+          "title": "Selecciona el diseño Chatter en el diálogo real de ajustes",
+          "body": "En la tarjeta Chatter, abre «Settings» y revisa el campo real «Choose a Design Style». La documentación solo elige una variante disponible en un perfil de prueba nuevo y no la guarda.",
+          "expected": "El selector real «Choose a Design Style» muestra una variante Chatter disponible.",
+          "alt": "Selecciona el diseño Chatter en el diálogo real de ajustes - tipo de evento, duración de visualización y estilo Spotlight"
         },
         "fr": {
-          "title": "Verifiez le design Chatter dans la vraie boite de reglages",
-          "body": "Sur la carte Chatter, ouvrez « Settings » et choisissez une variante de design disponible. Enregistrez seulement apres verification ; la capture ne modifie aucune configuration overlay de production.",
-          "expected": "La vraie boite de reglages affiche les champs de design disponibles pour Chatter.",
-          "alt": "Verifiez le design Chatter dans la vraie boite de reglages - type d’événement, durée d’affichage et style Spotlight"
+          "title": "Choisissez le design Chatter dans la vraie boîte de réglages",
+          "body": "Sur la carte Chatter, ouvrez « Settings » et vérifiez le vrai champ « Choose a Design Style ». La documentation ne sélectionne qu'une variante disponible dans un profil de test neuf et ne l'enregistre pas.",
+          "expected": "Le vrai sélecteur « Choose a Design Style » affiche une variante Chatter disponible.",
+          "alt": "Choisissez le design Chatter dans la vraie boîte de réglages - type d’événement, durée d’affichage et style Spotlight"
         }
       },
       "capture": {
         "route": "/plugins/spotlight/ui/main.html",
-        "assertVisible": "#settings-form-container",
+        "assertVisible": "#designVariant",
         "focusText": {
-          "de": "Chatter-Design im echten Settings-Dialog pruefen",
-          "en": "Review the Chatter design in the real Settings dialog",
-          "es": "Revisa el diseno Chatter en el dialogo real de ajustes",
-          "fr": "Verifiez le design Chatter dans la vraie boite de reglages"
+          "de": "Chatter-Design im echten Settings-Dialog auswählen",
+          "en": "Select the Chatter design in the real Settings dialog",
+          "es": "Selecciona el diseño Chatter en el diálogo real de ajustes",
+          "fr": "Choisissez le design Chatter dans la vraie boîte de réglages"
         },
         "action": {
           "type": "set-demo-value",
           "prepare": "open-spotlight-settings",
+          "inputSelector": "#designVariant",
+          "controlType": "select",
           "stepId": "event-style"
         },
         "expected": {
-          "de": "Der echte Settings-Dialog zeigt die fuer Chatter verfuegbaren Designfelder.",
-          "en": "The real Settings dialog shows the design fields available for Chatter.",
-          "es": "El dialogo real muestra los campos de diseno disponibles para Chatter.",
-          "fr": "La vraie boite de reglages affiche les champs de design disponibles pour Chatter."
+          "de": "Das echte Auswahlfeld „Choose a Design Style“ zeigt eine verfügbare Chatter-Variante.",
+          "en": "The real “Choose a Design Style” selector shows an available Chatter variant.",
+          "es": "El selector real «Choose a Design Style» muestra una variante Chatter disponible.",
+          "fr": "Le vrai sélecteur « Choose a Design Style » affiche une variante Chatter disponible."
         }
       },
       "workflow": {
         "route": "/plugins/spotlight/ui/main.html",
         "instructions": {
           "de": {
-            "title": "Chatter-Design im echten Settings-Dialog pruefen",
-            "body": "Oeffne auf der Chatter-Karte „Settings“ und waehle dort eine vorhandene Design-Variante. Speichere erst nach einer eigenen Pruefung; die Aufnahme aendert keine produktive Overlay-Konfiguration.",
-            "expected": "Der echte Settings-Dialog zeigt die fuer Chatter verfuegbaren Designfelder."
+            "title": "Chatter-Design im echten Settings-Dialog auswählen",
+            "body": "Öffne auf der Chatter-Karte „Settings“ und prüfe das echte Feld „Choose a Design Style“. Die Dokumentation wählt darin nur eine vorhandene Variante im frischen Testprofil und speichert nichts.",
+            "expected": "Das echte Auswahlfeld „Choose a Design Style“ zeigt eine verfügbare Chatter-Variante."
           },
           "en": {
-            "title": "Review the Chatter design in the real Settings dialog",
-            "body": "On the Chatter card, open “Settings” and choose one of the available design variants. Save only after your own review; the capture does not change a production overlay configuration.",
-            "expected": "The real Settings dialog shows the design fields available for Chatter."
+            "title": "Select the Chatter design in the real Settings dialog",
+            "body": "On the Chatter card, open “Settings” and inspect the real “Choose a Design Style” field. The documentation selects only an available variant in a fresh test profile and does not save it.",
+            "expected": "The real “Choose a Design Style” selector shows an available Chatter variant."
           },
           "es": {
-            "title": "Revisa el diseno Chatter en el dialogo real de ajustes",
-            "body": "En la tarjeta Chatter, abre «Settings» y elige una variante de diseno disponible. Guarda solo tras revisarla; la captura no cambia una configuracion de overlay de produccion.",
-            "expected": "El dialogo real muestra los campos de diseno disponibles para Chatter."
+            "title": "Selecciona el diseño Chatter en el diálogo real de ajustes",
+            "body": "En la tarjeta Chatter, abre «Settings» y revisa el campo real «Choose a Design Style». La documentación solo elige una variante disponible en un perfil de prueba nuevo y no la guarda.",
+            "expected": "El selector real «Choose a Design Style» muestra una variante Chatter disponible."
           },
           "fr": {
-            "title": "Verifiez le design Chatter dans la vraie boite de reglages",
-            "body": "Sur la carte Chatter, ouvrez « Settings » et choisissez une variante de design disponible. Enregistrez seulement apres verification ; la capture ne modifie aucune configuration overlay de production.",
-            "expected": "La vraie boite de reglages affiche les champs de design disponibles pour Chatter."
+            "title": "Choisissez le design Chatter dans la vraie boîte de réglages",
+            "body": "Sur la carte Chatter, ouvrez « Settings » et vérifiez le vrai champ « Choose a Design Style ». La documentation ne sélectionne qu'une variante disponible dans un profil de test neuf et ne l'enregistre pas.",
+            "expected": "Le vrai sélecteur « Choose a Design Style » affiche une variante Chatter disponible."
           }
         },
         "operations": [
@@ -276,21 +284,25 @@ module.exports = Object.freeze({
           },
           {
             "type": "set-demo-value",
-            "selector": "#settings-form-container"
+            "selector": "#designVariant"
           }
         ],
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/spotlight/ui/main.html"
+            "expected": {
+              "path": "/plugins/spotlight/ui/main.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
-            "selector": "#settings-form-container"
+            "selector": "#designVariant"
           },
           {
             "type": "console",
@@ -298,7 +310,7 @@ module.exports = Object.freeze({
           }
         ],
         "captureRule": {
-          "selector": "#settings-form-container",
+          "selector": "#designVariant",
           "viewport": {
             "width": 1440,
             "height": 900
@@ -311,73 +323,73 @@ module.exports = Object.freeze({
       "id": "display-duration",
       "copy": {
         "de": {
-          "title": "Keinen erfundenen Display-Timer konfigurieren",
-          "body": "Spotlight bietet in diesem Dialog keine separate „Display Duration“. Nutze stattdessen die echten Animations- und Trigger-Einstellungen; die Sichtbarkeit wird vom ausgelosten Overlay-Ereignis bestimmt.",
-          "expected": "Der sichtbare Speichern-Button bestaetigt den echten Abschluss des Settings-Workflows.",
-          "alt": "Keinen erfundenen Display-Timer konfigurieren - Ereignistyp, Anzeigedauer und Spotlight-Stil"
+          "title": "Die echte Fade-Dauer prüfen",
+          "body": "Im Settings-Dialog steuert das echte Feld „Fade Duration“ die Dauer der Ein- und Ausblendung. Prüfe es vor dem Speichern; dieser Dokumentationsschritt ändert keinen Wert.",
+          "expected": "Das echte Eingabefeld „Fade Duration“ ist im Chatter-Settings-Dialog sichtbar.",
+          "alt": "Die echte Fade-Dauer prüfen - Ereignistyp, Anzeigedauer und Spotlight-Stil"
         },
         "en": {
-          "title": "Do not configure an invented display timer",
-          "body": "Spotlight has no separate “Display Duration” in this dialog. Use the real animation and trigger settings instead; visibility is determined by the triggered overlay event.",
-          "expected": "The visible Save button marks the real end of the Settings workflow.",
-          "alt": "Do not configure an invented display timer - event type, display duration, and spotlight style"
+          "title": "Review the real fade duration",
+          "body": "In the Settings dialog, the real “Fade Duration” field controls the fade-in and fade-out duration. Review it before saving; this documentation step does not change a value.",
+          "expected": "The real “Fade Duration” input is visible in the Chatter Settings dialog.",
+          "alt": "Review the real fade duration - event type, display duration, and spotlight style"
         },
         "es": {
-          "title": "No configures un temporizador de pantalla inventado",
-          "body": "Spotlight no ofrece una «Display Duration» separada en este dialogo. Usa los ajustes reales de animacion y disparador; la visibilidad depende del evento de overlay activado.",
-          "expected": "El boton Guardar visible marca el final real del flujo de ajustes.",
-          "alt": "No configures un temporizador de pantalla inventado - tipo de evento, duración de visualización y estilo Spotlight"
+          "title": "Revisa la duración real de fundido",
+          "body": "En el diálogo de ajustes, el campo real «Fade Duration» controla la duración de entrada y salida. Revísalo antes de guardar; este paso de documentación no cambia ningún valor.",
+          "expected": "La entrada real «Fade Duration» es visible en los ajustes de Chatter.",
+          "alt": "Revisa la duración real de fundido - tipo de evento, duración de visualización y estilo Spotlight"
         },
         "fr": {
-          "title": "Ne configurez pas de minuteur d affichage invente",
-          "body": "Spotlight ne propose pas de « Display Duration » separee dans cette boite. Utilisez les vrais reglages d animation et de declencheur ; la visibilite depend de l evenement overlay declenche.",
-          "expected": "Le bouton Enregistrer visible marque la vraie fin du workflow de reglages.",
-          "alt": "Ne configurez pas de minuteur d affichage invente - type d’événement, durée d’affichage et style Spotlight"
+          "title": "Vérifiez la vraie durée de fondu",
+          "body": "Dans la boîte de réglages, le vrai champ « Fade Duration » règle la durée des fondus d'entrée et de sortie. Vérifiez-le avant d'enregistrer ; cette étape de documentation ne modifie aucune valeur.",
+          "expected": "La vraie saisie « Fade Duration » est visible dans les réglages Chatter.",
+          "alt": "Vérifiez la vraie durée de fondu - type d’événement, durée d’affichage et style Spotlight"
         }
       },
       "capture": {
         "route": "/plugins/spotlight/ui/main.html",
-        "assertVisible": "#save-settings-btn",
+        "assertVisible": "#fadeDuration",
         "focusText": {
-          "de": "Keinen erfundenen Display-Timer konfigurieren",
-          "en": "Do not configure an invented display timer",
-          "es": "No configures un temporizador de pantalla inventado",
-          "fr": "Ne configurez pas de minuteur d affichage invente"
+          "de": "Die echte Fade-Dauer prüfen",
+          "en": "Review the real fade duration",
+          "es": "Revisa la duración real de fundido",
+          "fr": "Vérifiez la vraie durée de fondu"
         },
         "action": {
-          "type": "set-demo-value",
+          "type": "open-plugin-surface",
           "prepare": "open-spotlight-settings",
           "stepId": "display-duration"
         },
         "expected": {
-          "de": "Der sichtbare Speichern-Button bestaetigt den echten Abschluss des Settings-Workflows.",
-          "en": "The visible Save button marks the real end of the Settings workflow.",
-          "es": "El boton Guardar visible marca el final real del flujo de ajustes.",
-          "fr": "Le bouton Enregistrer visible marque la vraie fin du workflow de reglages."
+          "de": "Das echte Eingabefeld „Fade Duration“ ist im Chatter-Settings-Dialog sichtbar.",
+          "en": "The real “Fade Duration” input is visible in the Chatter Settings dialog.",
+          "es": "La entrada real «Fade Duration» es visible en los ajustes de Chatter.",
+          "fr": "La vraie saisie « Fade Duration » est visible dans les réglages Chatter."
         }
       },
       "workflow": {
         "route": "/plugins/spotlight/ui/main.html",
         "instructions": {
           "de": {
-            "title": "Keinen erfundenen Display-Timer konfigurieren",
-            "body": "Spotlight bietet in diesem Dialog keine separate „Display Duration“. Nutze stattdessen die echten Animations- und Trigger-Einstellungen; die Sichtbarkeit wird vom ausgelosten Overlay-Ereignis bestimmt.",
-            "expected": "Der sichtbare Speichern-Button bestaetigt den echten Abschluss des Settings-Workflows."
+            "title": "Die echte Fade-Dauer prüfen",
+            "body": "Im Settings-Dialog steuert das echte Feld „Fade Duration“ die Dauer der Ein- und Ausblendung. Prüfe es vor dem Speichern; dieser Dokumentationsschritt ändert keinen Wert.",
+            "expected": "Das echte Eingabefeld „Fade Duration“ ist im Chatter-Settings-Dialog sichtbar."
           },
           "en": {
-            "title": "Do not configure an invented display timer",
-            "body": "Spotlight has no separate “Display Duration” in this dialog. Use the real animation and trigger settings instead; visibility is determined by the triggered overlay event.",
-            "expected": "The visible Save button marks the real end of the Settings workflow."
+            "title": "Review the real fade duration",
+            "body": "In the Settings dialog, the real “Fade Duration” field controls the fade-in and fade-out duration. Review it before saving; this documentation step does not change a value.",
+            "expected": "The real “Fade Duration” input is visible in the Chatter Settings dialog."
           },
           "es": {
-            "title": "No configures un temporizador de pantalla inventado",
-            "body": "Spotlight no ofrece una «Display Duration» separada en este dialogo. Usa los ajustes reales de animacion y disparador; la visibilidad depende del evento de overlay activado.",
-            "expected": "El boton Guardar visible marca el final real del flujo de ajustes."
+            "title": "Revisa la duración real de fundido",
+            "body": "En el diálogo de ajustes, el campo real «Fade Duration» controla la duración de entrada y salida. Revísalo antes de guardar; este paso de documentación no cambia ningún valor.",
+            "expected": "La entrada real «Fade Duration» es visible en los ajustes de Chatter."
           },
           "fr": {
-            "title": "Ne configurez pas de minuteur d affichage invente",
-            "body": "Spotlight ne propose pas de « Display Duration » separee dans cette boite. Utilisez les vrais reglages d animation et de declencheur ; la visibilite depend de l evenement overlay declenche.",
-            "expected": "Le bouton Enregistrer visible marque la vraie fin du workflow de reglages."
+            "title": "Vérifiez la vraie durée de fondu",
+            "body": "Dans la boîte de réglages, le vrai champ « Fade Duration » règle la durée des fondus d'entrée et de sortie. Vérifiez-le avant d'enregistrer ; cette étape de documentation ne modifie aucune valeur.",
+            "expected": "La vraie saisie « Fade Duration » est visible dans les réglages Chatter."
           }
         },
         "operations": [
@@ -390,22 +402,26 @@ module.exports = Object.freeze({
             "name": "open-spotlight-settings"
           },
           {
-            "type": "set-demo-value",
-            "selector": "#save-settings-btn"
+            "type": "open-plugin-surface",
+            "selector": "#fadeDuration"
           }
         ],
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/spotlight/ui/main.html"
+            "expected": {
+              "path": "/plugins/spotlight/ui/main.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
-            "selector": "#save-settings-btn"
+            "selector": "#fadeDuration"
           },
           {
             "type": "console",
@@ -413,12 +429,12 @@ module.exports = Object.freeze({
           }
         ],
         "captureRule": {
-          "selector": "#save-settings-btn",
+          "selector": "#fadeDuration",
           "viewport": {
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },
@@ -515,11 +531,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/spotlight/ui/main.html"
+            "expected": {
+              "path": "/plugins/spotlight/ui/main.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -634,11 +654,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/spotlight/ui/main.html"
+            "expected": {
+              "path": "/plugins/spotlight/ui/main.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -749,11 +773,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/spotlight/ui/main.html"
+            "expected": {
+              "path": "/plugins/spotlight/ui/main.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -775,4 +803,15 @@ module.exports = Object.freeze({
       }
     }
   ]
-});
+}, {
+  'spotlight-overlay': {
+    route: '/plugins/spotlight/ui/main.html',
+    selector: 'button[data-action="preview"][data-type="chatter"]',
+    copy: {
+      de: { title: 'Chatter-Vorschau über die Karte öffnen', body: 'Nutze in der nicht sendenden OBS-Testszene den sichtbaren Preview-Button der Chatter-Karte. Der Screenshot dokumentiert diesen echten Einstieg statt eines leeren Overlay-Iframes.', expected: 'Der Chatter-Preview-Einstieg ist sichtbar und kann anschließend bewusst in der Testszene verwendet werden.' },
+      en: { title: 'Open the Chatter preview from its card', body: 'In the non-live OBS test scene, use the visible Preview button on the Chatter card. The screenshot documents this real entry point rather than an empty overlay iframe.', expected: 'The Chatter preview entry point is visible and can then be used deliberately in the test scene.' },
+      es: { title: 'Abre la vista previa de Chatter desde su tarjeta', body: 'En la escena de prueba de OBS que no está en directo, usa el botón Preview visible de la tarjeta Chatter. La captura documenta este acceso real en lugar de un iframe de overlay vacío.', expected: 'La entrada de vista previa de Chatter está visible y puede usarse después de forma consciente en la escena de prueba.' },
+      fr: { title: 'Ouvrez l’aperçu Chatter depuis sa carte', body: 'Dans la scène de test OBS hors diffusion, utilisez le bouton Preview visible de la carte Chatter. La capture documente ce véritable point d’entrée plutôt qu’un iframe overlay vide.', expected: 'Le point d’entrée de l’aperçu Chatter est visible et peut ensuite être utilisé délibérément dans la scène de test.' }
+    }
+  }
+}));

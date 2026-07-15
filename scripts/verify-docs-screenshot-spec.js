@@ -9,7 +9,7 @@ const ROOT = path.resolve(__dirname, '..');
 const guides = buildGuides(ROOT);
 const spec = buildDocsSpec(ROOT);
 
-assert.match(SPEC_VERSION, /v5$/, 'the docs capture manifest must use the required 1440 by 900 workflow receipt format');
+assert.match(SPEC_VERSION, /v6$/, 'the docs capture manifest must use the required 1440 by 900 workflow receipt format');
 assert.deepStrictEqual(spec.locales, LOCALES, 'the capture spec must include all four locales');
 assert.strictEqual(spec.assets.length, guides.reduce((total, guide) => total + guide.steps.length, 0), 'every named tutorial step needs exactly one capture asset');
 

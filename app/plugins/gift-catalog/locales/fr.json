@@ -14,7 +14,8 @@
             "refresh": "Actualiser",
             "close": "Fermer",
             "test": "Tester",
-            "clear": "Effacer"
+            "clear": "Effacer",
+            "copy": "Copier"
           },
           "status": {
             "ready": "Prêt",
@@ -28,6 +29,25 @@
             "failed": "Impossible d’enregistrer les réglages.",
             "noData": "Aucune donnée disponible.",
             "confirm": "Voulez-vous continuer ?"
+          },
+          "labels": {
+            "locale": "Paramètres régionaux",
+            "app_language": "Langue de l’application (app_language)",
+            "browser_language": "Langue du navigateur (browser_language)",
+            "priority_region": "Région prioritaire (priority_region)",
+            "tz_name": "Fuseau horaire (tz_name)",
+            "webcast_language": "Langue de la diffusion (webcast_language)"
+          },
+          "options": {
+            "none": "Aucune sélection",
+            "locale_de": "Allemand (de)",
+            "locale_en": "Anglais (en)",
+            "locale_es": "Espagnol (es)",
+            "locale_fr": "Français (fr)"
+          },
+          "messages": {
+            "no_gifts_available": "Aucun cadeau disponible.",
+            "load_catalog_first_for_live_mode": "Chargez d’abord le catalogue pour le mode en direct."
           }
         }
       },

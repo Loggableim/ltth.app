@@ -59,10 +59,14 @@ function loadPublishedPluginCatalog(repoRoot) {
     }
   }
 
-  const storeAdmin = storePlugins.find((plugin) => plugin.id === 'store-admin');
-  if (!storeAdmin || !sourceById.has('store-admin')) {
+  const storeAdminMetadata = storePlugins.find((plugin) => plugin.id === 'store-admin');
+  if (!storeAdminMetadata || !sourceById.has('store-admin')) {
     throw new Error('Store Admin must have store-source and plugin-store.json records');
   }
+  const storeAdmin = {
+    ...sourceById.get('store-admin'),
+    ...storeAdminMetadata
+  };
 
   const plugins = [...appManifests, ...storeSourceManifests]
     .filter((manifest) => manifest.id !== 'store-admin')

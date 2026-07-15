@@ -7,6 +7,7 @@
         "status": {
           "connected": "Connected",
           "disconnected": "Disconnected",
+          "loading": "Cargando...",
           "reconnecting": "Reconnecting...",
           "queue_size": "Queue Size",
           "printed_jobs": "Printed Jobs",

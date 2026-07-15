@@ -28,6 +28,21 @@
             "failed": "Impossible d’enregistrer les réglages.",
             "noData": "Aucune donnée disponible.",
             "confirm": "Voulez-vous continuer ?"
+          },
+          "contract": {
+            "eyebrow": "R\u00e9f\u00e9rence locale en lecture seule",
+            "title": "Contrat API Bridge",
+            "lede": "Inspectez ces endpoints locaux avant d'int\u00e9grer un client. Cette page n'envoie aucune demande d'action.",
+            "endpoints": {
+              "info": "Identifiez les versions LTTH et API Bridge en cours.",
+              "actions": "Listez les identifiants d'action et leurs param\u00e8tres d\u00e9clar\u00e9s. La lecture de cet endpoint est sans effet.",
+              "events": "Examinez le dernier \u00e9v\u00e9nement ; un profil temporaire neuf commence avec une liste vide.",
+              "request": "L'ex\u00e9cution appartient \u00e0 un client test\u00e9 s\u00e9par\u00e9ment. V\u00e9rifiez le corps requis sans l'envoyer ici."
+            },
+            "safety": {
+              "title": "Limite d'int\u00e9gration s\u00fbre",
+              "body": "Utilisez d'abord les endpoints GET. Gardez les identifiants et les ID d'actions de production hors des captures et profils de test ; l'ex\u00e9cution POST n'est volontairement pas disponible sur cette page."
+            }
           }
         }
       },

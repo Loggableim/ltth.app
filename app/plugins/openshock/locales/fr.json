@@ -441,6 +441,307 @@
         "max_duration_override_ms_fd3663": "Remplacement de la durée maximale (ms)",
         "emergency_stop_fe6265": "🛑 ARRÊT D'URGENCE",
         "per_device_cooldown_ms_feb2d5": "Temps de recharge par appareil (ms)"
+      },
+      "ui": {
+        "navigation": {
+          "dashboard": "Tableau de bord",
+          "safety": "Sécurité",
+          "patterns": "Modèles",
+          "advanced": "Avancé"
+        },
+        "sections": {
+          "devices": "Appareils",
+          "statistics": "Statistiques"
+        },
+        "labels": {
+          "device": "Appareil",
+          "enabled": "Activé",
+          "description": "Description",
+          "steps": "Étapes",
+          "intensity": "Intensité",
+          "duration": "Durée",
+          "action": "Action",
+          "code": "Code",
+          "method": "Méthode",
+          "pattern": "Modèle",
+          "preview": "Aperçu"
+        },
+        "status": {
+          "active": "Actif"
+        },
+        "events": {
+          "all": "Tous",
+          "info": "Informations",
+          "warning": "Avertissement",
+          "error": "Erreur",
+          "gift": "Cadeau",
+          "follow": "Abonnement",
+          "share": "Partage",
+          "like": "J’aime",
+          "subscribe": "S’abonner"
+        },
+        "actions": {
+          "shock": "Choc",
+          "vibrate": "Vibrer",
+          "sound": "Son",
+          "pause": "Pause",
+          "select": "Sélectionner"
+        },
+        "tooltips": {
+          "create_pattern": "Créer un nouveau modèle",
+          "edit_pattern": "Modifier le modèle sélectionné"
+        },
+        "table": {
+          "actions": "Actions",
+          "metric": "Indicateur",
+          "value": "Valeur"
+        },
+        "queue": {
+          "processing": "Traitement en cours"
+        },
+        "overlay": {
+          "queue": "File d’attente:",
+          "active": "Actif:",
+          "today": "Aujourd’hui:",
+          "pattern": "Modèle:",
+          "duration": "Durée:",
+          "intensity": "Intensité:"
+        },
+        "empty_state": {
+          "no_devices": "Aucun appareil trouvé"
+        }
+      },
+      "runtime": {
+        "buttons": {
+          "refresh_catalog": "Actualiser le catalogue",
+          "refresh_devices": "Actualiser les appareils",
+          "refreshing": "Actualisation...",
+          "sending": "Envoi...",
+          "test_connection": "Tester la connexion",
+          "test_shock": "Choc de test (1 s, 100 %)",
+          "testing": "Test en cours..."
+        },
+        "connection": {
+          "api_connected": "API connectée",
+          "api_disconnected": "API déconnectée",
+          "connected": "Connecté",
+          "disconnected": "Déconnecté",
+          "error": "Erreur",
+          "failed_with_error": "Échec de la connexion : {error}",
+          "offline": "Hors ligne",
+          "online": "En ligne",
+          "provider_connected": "{provider} - Connecté ({count} appareil(s))",
+          "provider_disconnected": "{provider} - Non connecté",
+          "successful": "Connexion réussie !",
+          "successful_load_failed": "Connexion réussie, mais les appareils n'ont pas pu être chargés"
+        },
+        "devices": {
+          "paused": "En pause",
+          "refresh_failed": "Erreur lors de l'actualisation des appareils",
+          "refreshed_with_count": "Appareils actualisés - {count} appareil(s) chargé(s)",
+          "select": "Sélectionnez un appareil...",
+          "select_for_test": "Sélectionnez un appareil pour le choc de test",
+          "select_required": "Sélectionnez un appareil",
+          "settings_save_failed": "Erreur lors de l'enregistrement des réglages API : {error}",
+          "settings_saved_load_error": "Réglages enregistrés, mais les appareils n'ont pas pu être chargés : {error}",
+          "settings_saved_load_failed": "Réglages enregistrés, mais les appareils n'ont pas pu être chargés",
+          "settings_saved_no_devices": "Réglages enregistrés, mais aucun appareil n'a été trouvé",
+          "settings_saved_with_count": "Réglages enregistrés et {count} appareil(s) chargé(s)",
+          "share_code_add_failed": "Erreur lors de l'ajout du ShareCode : {error}",
+          "share_code_added": "ShareCode \"{code}\" ajouté",
+          "share_code_required": "Saisissez un ShareCode",
+          "test_shock_failed": "Erreur lors de l'envoi du choc de test : {error}",
+          "test_shock_sent": "Choc de test envoyé avec succès !"
+        },
+        "errors": {
+          "load_data": "Erreur lors du chargement des données Hybrid Shock",
+          "save_with_reason": "Erreur lors de l'enregistrement : {error}",
+          "statistics_reset": "Erreur lors de la réinitialisation des statistiques",
+          "unknown": "Erreur inconnue"
+        },
+        "mapping": {
+          "all_gifts": "Tous les cadeaux",
+          "created": "Association créée",
+          "delete_failed": "Erreur lors de la suppression de l'association",
+          "deleted": "Association supprimée avec succès",
+          "dialog_add": "Ajouter une association d'événement",
+          "dialog_edit": "Modifier l'association d'événement",
+          "disabled": "Association désactivée",
+          "empty": "Aucune association configurée. Cliquez sur \"Ajouter une association\" pour en créer une.",
+          "enabled": "Association activée",
+          "export_failed": "Erreur lors de l'export des associations",
+          "exported": "Associations exportées avec succès",
+          "gift_catalog_empty": "Aucun cadeau dans le catalogue. Connectez-vous à TikTok LIVE pour le remplir.",
+          "gift_catalog_refresh_failed": "Erreur lors de l'actualisation du catalogue de cadeaux",
+          "gift_catalog_refreshed": "Catalogue de cadeaux actualisé - {count} cadeau(x) chargé(s)",
+          "import_failed": "Erreur lors de l'import des associations",
+          "imported": "Associations importées avec succès",
+          "toggle_failed": "Erreur lors du changement de l'association",
+          "updated": "Association actualisée"
+        },
+        "pattern": {
+          "add_step": "Ajouter une étape au modèle",
+          "created": "Modèle \"{name}\" créé",
+          "delete_failed": "Erreur lors de la suppression du modèle",
+          "deleted": "Modèle supprimé",
+          "dialog_create": "Créer un nouveau modèle",
+          "dialog_edit": "Modifier le modèle",
+          "draw_curve_required": "Dessinez d'abord une courbe",
+          "empty": "Aucun modèle créé. Cliquez sur \"Nouveau modèle\" pour en créer un.",
+          "execute_failed": "Erreur lors de l'exécution du modèle",
+          "executing": "Le modèle est en cours d'exécution",
+          "export_failed": "Erreur lors de l'export des modèles",
+          "exported": "Modèles exportés",
+          "import_failed": "Erreur lors de l'import des modèles",
+          "imported": "Modèles importés avec succès",
+          "loaded_into_editor": "Modèle chargé dans l'éditeur. Cliquez sur Enregistrer pour le conserver.",
+          "name_required": "Saisissez un nom de modèle",
+          "preview": "Aperçu : {steps} étapes, {duration} ms au total",
+          "preview_empty": "Ajoutez des étapes pour l'aperçu",
+          "single_pulse": "Aucun (impulsion unique)",
+          "step_duplicated": "Étape {step} dupliquée",
+          "step_loaded_for_edit": "Étape chargée pour modification. Ajustez les valeurs et cliquez sur \"Mettre à jour l'étape\".",
+          "move_up": "Déplacer vers le haut",
+          "move_down": "Déplacer vers le bas",
+          "duplicate_step": "Dupliquer l'étape",
+          "edit_step": "Modifier l'étape",
+          "delete_step": "Supprimer l'étape",
+          "steps_empty": "Aucune étape ajoutée. Ajoutez la première ci-dessus.",
+          "steps_required": "Le modèle doit comporter au moins une étape",
+          "template_required": "Sélectionnez d'abord un type de modèle",
+          "update_step": "Mettre à jour l'étape",
+          "updated": "Modèle \"{name}\" actualisé"
+        },
+        "placeholders": {
+          "api_key": "Saisissez votre clé API OpenShock",
+          "api_key_already_saved": "La clé API est déjà enregistrée. Saisissez-en une nouvelle pour la modifier.",
+          "api_key_configured": "Clé API enregistrée (masquée)",
+          "pishock_api_key": "Saisissez votre clé API PiShock"
+        },
+        "queue": {
+          "clear_failed": "Erreur lors du vidage de la file",
+          "cleared": "File vidée avec succès",
+          "no_commands": "Aucune commande exécutée pour le moment.",
+          "pause_failed": "Erreur lors de la mise en pause de la file",
+          "paused": "File en pause",
+          "processing_no": "Non",
+          "processing_yes": "Oui",
+          "resume_failed": "Erreur lors de la reprise de la file",
+          "resumed": "File reprise"
+        },
+        "safety": {
+          "button_emergency_stop": "ARRÊT D'URGENCE",
+          "button_stopped": "Arrêté",
+          "configuration_save_failed": "Erreur lors de l'enregistrement de la configuration de sécurité",
+          "configuration_saved": "Configuration de sécurité enregistrée",
+          "emergency_stop_activated": "ARRÊT D'URGENCE ACTIVÉ",
+          "emergency_stop_clear_failed": "Erreur lors de la désactivation de l'arrêt d'urgence",
+          "emergency_stop_cleared": "Arrêt d'urgence désactivé - système réactivé",
+          "emergency_stop_trigger_failed": "Erreur lors de l'activation de l'arrêt d'urgence",
+          "emergency_tooltip": "Arrêt d'urgence - arrête immédiatement tous les chocs et bloque les commandes suivantes",
+          "reactivate_tooltip": "Cliquez pour réactiver le système"
+        },
+        "status": {
+          "command_log_cleared": "Journal des commandes vidé",
+          "command_log_exported": "Journal des commandes exporté",
+          "loaded": "Plugin Hybrid Shock chargé avec succès",
+          "statistics_reset": "Statistiques réinitialisées avec succès"
+        },
+        "accessibility": {
+          "delete_share_code": "Supprimer le ShareCode {code}",
+          "test_vibrate": "Tester la vibration",
+          "test_shock": "Tester le choc",
+          "test_sound": "Tester le son"
+        },
+        "zappiehell": {
+          "accessibility": {
+            "copy_overlay_url": "Copier l'URL de l'overlay",
+            "delete_chain": "Supprimer la chaîne d'événements {name}",
+            "delete_goal": "Supprimer l'objectif {name}",
+            "delete_step": "Supprimer l'étape {step}",
+            "edit_chain": "Modifier la chaîne d'événements {name}",
+            "edit_goal": "Modifier l'objectif {name}",
+            "edit_step": "Modifier l'étape {step}",
+            "reset_goal": "Réinitialiser l'objectif {name}",
+            "test_chain": "Tester la chaîne d'événements {name}"
+          },
+          "buttons": {
+            "delete": "Supprimer",
+            "edit": "Modifier",
+            "reset": "Réinitialiser",
+            "test": "Tester"
+          },
+          "chains": {
+            "delete_confirm": "Voulez-vous vraiment supprimer cette chaîne d'événements ?",
+            "created": "Chaîne d'événements créée",
+            "deleted": "Chaîne d'événements supprimée",
+            "empty": "Aucune chaîne d'événements configurée.",
+            "execution_started": "Exécution de la chaîne d'événements démarrée",
+            "modal_create": "Ajouter une chaîne d'événements",
+            "modal_edit": "Modifier la chaîne d'événements",
+            "no_description": "Aucune description",
+            "preview_empty": "Aucune étape",
+            "steps": "Étapes",
+            "test_confirm": "Exécuter maintenant cette chaîne d'événements en test ?",
+            "updated": "Chaîne d'événements mise à jour",
+            "validation_name_required": "Saisissez un nom pour la chaîne d'événements"
+          },
+          "debug": {
+            "data_loaded": "Données de l'onglet ZappieHell chargées",
+            "listeners_initialized": "Écouteurs d'événements ZappieHell initialisés"
+          },
+          "errors": {
+            "delete_chain": "Impossible de supprimer la chaîne d'événements : {error}",
+            "delete_goal": "Impossible de supprimer l'objectif : {error}",
+            "execute_chain": "Impossible d'exécuter la chaîne d'événements : {error}",
+            "invalid_webhook_json": "JSON invalide dans le corps du webhook : {error}",
+            "load_chains": "Impossible de charger les chaînes d'événements : {error}",
+            "load_goals": "Impossible de charger les objectifs : {error}",
+            "reset_goal": "Impossible de réinitialiser l'objectif : {error}",
+            "save_chain": "Impossible d'enregistrer la chaîne d'événements : {error}",
+            "save_goal": "Impossible d'enregistrer l'objectif : {error}"
+          },
+          "goals": {
+            "chain": "Chaîne",
+            "coins": "pièces",
+            "current": "Actuel",
+            "delete_confirm": "Voulez-vous vraiment supprimer cet objectif ?",
+            "deleted": "Objectif supprimé",
+            "empty": "Aucun objectif configuré.",
+            "inactive": "Inactif",
+            "modal_create": "Ajouter un objectif",
+            "modal_edit": "Modifier l'objectif",
+            "no_chain": "Aucune chaîne",
+            "no_chain_option": "-- Aucune chaîne --",
+            "reset": "Objectif réinitialisé",
+            "reset_confirm": "Réinitialiser cet objectif à 0 pièces ?",
+            "target": "Cible",
+            "unknown_chain": "Chaîne inconnue",
+            "validation_required": "Remplissez tous les champs obligatoires",
+            "active": "Actif",
+            "created": "Objectif créé",
+            "updated": "Objectif mis à jour"
+          },
+          "overlay": {
+            "copied": "URL de l'overlay copiée dans le presse-papiers !"
+          },
+          "steps": {
+            "delete_confirm": "Supprimer cette étape ?",
+            "direct_command": "-- Commande directe --",
+            "empty": "Aucune étape ajoutée. Cliquez sur \"Ajouter une étape\" pour commencer.",
+            "first_available": "-- Premier disponible --",
+            "modal_create": "Ajouter une étape de chaîne d'événements",
+            "modal_edit": "Modifier l'étape de chaîne d'événements",
+            "pattern_id": "ID de modèle : {id}",
+            "type_audio": "Action audio/TTS",
+            "type_delay": "Délai ({duration} ms)",
+            "type_delay_short": "Délai",
+            "type_openshock": "Action Hybrid Shock",
+            "type_overlay": "Overlay",
+            "type_webhook": "Action webhook ({url})",
+            "type_webhook_short": "Webhook"
+          }
+        }
       }
     }
   }

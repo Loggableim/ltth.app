@@ -11,6 +11,15 @@ describe('docs capture receipt verifier', () => {
     expect(source).toContain('assert.deepStrictEqual(output.workflow, asset.workflow');
     expect(source).toContain('assert.deepStrictEqual(output.receipt?.operations, asset.workflow.operations');
     expect(source).toContain('assert.ok(output.receipt?.postconditions?.every((condition) => condition.passed === true)');
+    expect(source).toContain('assert.strictEqual(output.receipt?.schemaVersion, 2');
+    expect(source).toContain('asset.workflow.captureRule.imageCrop');
+    expect(source).toContain('assert.ok(Array.isArray(output.receipt?.network)');
+    expect(source).toContain('isAllowedCaptureNetworkUrl(entry.url)');
+    expect(source).toContain('assert.deepStrictEqual(output.receipt?.console, []');
+    expect(source).toContain('assert.ok(Array.isArray(output.receipt?.interactions)');
+    expect(source).toContain('assert.ok(png.bytes > 2048');
+    expect(source).toContain('assert.ok(png.colors > 1 && png.contrast > 0');
+    expect(source).not.toContain('mayStartEmpty');
   });
 
   test('allows only declared local creation workflows for overlays that require a generated id', () => {

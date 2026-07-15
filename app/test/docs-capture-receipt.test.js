@@ -11,12 +11,15 @@ describe('documentation capture receipts', () => {
     expect(manifest.outputs.length).toBe(manifest.assets.length * manifest.locales.length);
     for (const output of manifest.outputs) {
       expect(output.receipt).toEqual(expect.objectContaining({
-        schemaVersion: 1,
+        schemaVersion: 2,
         plugin: output.guideId,
         language: output.locale,
         route: output.route,
         operations: expect.any(Array),
         postconditions: expect.any(Array),
+        network: expect.any(Array),
+        console: [],
+        interactions: expect.any(Array),
         screenshotPath: output.path,
         sha256: output.sha256,
         appVersion: expect.any(String)

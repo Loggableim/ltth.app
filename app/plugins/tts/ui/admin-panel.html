@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="tts.admin_panel.title">TTS Admin Panel</title>
+    <title data-i18n="plugins.tts.tts.admin_panel.title">TTS Admin Panel</title>
     <link rel="stylesheet" href="/css/tailwind.output.css">
     <link rel="stylesheet" href="/css/themes.css">
     <script>(function () {
@@ -1328,12 +1328,12 @@
     </div>
 
     <div class="tts-layout">
-        <aside class="tts-sidebar" aria-label="TTS navigation">
+        <aside class="tts-sidebar" aria-label="TTS navigation" data-i18n-aria-label="plugins.tts.runtime.navigation.label">
             <div class="tts-sidebar-brand">
                 <img src="/ltthttsicon.png" alt="LTTH TTS" data-brand-icon>
                 <div class="tts-sidebar-copy">
                     <div class="tts-sidebar-kicker" data-i18n="plugins.tts.labels.ltth_suite">LTTH Suite</div>
-                    <div class="tts-sidebar-title" data-i18n="tts.plugin.name">Text-to-Speech System</div>
+                    <div class="tts-sidebar-title" data-i18n="plugins.tts.tts.plugin.name">Text-to-Speech System</div>
                     <div class="tts-sidebar-subtitle" data-i18n="plugins.tts.labels.desktop_first_control_surface_for_the_tts_plugin">Desktop-first control surface for the TTS plugin.</div>
                 </div>
             </div>
@@ -1341,34 +1341,34 @@
             <div class="tts-sidebar-group">
                 <div class="tts-sidebar-group-title" data-i18n="plugins.tts.labels.core_funktionen">Core Funktionen</div>
                 <button class="tab-button tts-nav-button active" data-tab="config" id="sidebar-tab-config" type="button">
-                    <span class="tts-nav-label" data-i18n="tts.admin_panel.tabs.config">Konfiguration</span>
+                    <span class="tts-nav-label" data-i18n="plugins.tts.tts.admin_panel.tabs.config">Konfiguration</span>
                 </button>
                 <button class="tab-button tts-nav-button" data-tab="users" id="sidebar-tab-users" type="button">
-                    <span class="tts-nav-label" data-i18n="tts.admin_panel.tabs.users">User Management</span>
+                    <span class="tts-nav-label" data-i18n="plugins.tts.tts.admin_panel.tabs.users">User Management</span>
                 </button>
                 <button class="tab-button tts-nav-button" data-tab="voice-clones" id="sidebar-tab-voice-clones" type="button">
                     <span class="tts-nav-label" data-i18n="plugins.tts.labels.voice_clones">Voice Clones</span>
                 </button>
                 <button class="tab-button tts-nav-button" data-tab="event-triggers" id="sidebar-tab-event-triggers" type="button">
-                    <span class="tts-nav-label" data-i18n="tts.admin_panel.tabs.event_triggers">Event Triggers</span>
+                    <span class="tts-nav-label" data-i18n="plugins.tts.tts.admin_panel.tabs.event_triggers">Event Triggers</span>
                 </button>
                 <button class="tab-button tts-nav-button" data-tab="queue" id="sidebar-tab-queue" type="button">
-                    <span class="tts-nav-label" data-i18n="tts.admin_panel.tabs.queue">Queue & Playback</span>
+                    <span class="tts-nav-label" data-i18n="plugins.tts.tts.admin_panel.tabs.queue">Queue & Playback</span>
                 </button>
             </div>
 
             <div class="tts-sidebar-group">
                 <div class="tts-sidebar-group-title" data-i18n="plugins.tts.labels.analyse_debug">Analyse & Debug</div>
                 <button class="tab-button tts-nav-button" data-tab="stats" id="sidebar-tab-stats" type="button">
-                    <span class="tts-nav-label" data-i18n="tts.admin_panel.tabs.stats">Statistiken</span>
+                    <span class="tts-nav-label" data-i18n="plugins.tts.tts.admin_panel.tabs.stats">Statistiken</span>
                 </button>
                 <button class="tab-button tts-nav-button" data-tab="debug" id="sidebar-tab-debug" type="button">
-                    <span class="tts-nav-label" data-i18n="tts.admin_panel.tabs.debug">Debug Logs</span>
+                    <span class="tts-nav-label" data-i18n="plugins.tts.tts.admin_panel.tabs.debug">Debug Logs</span>
                 </button>
             </div>
 
             <div class="tts-sidebar-footer">
-                <div class="tts-status-chip"><span class="tts-status-dot"></span><span data-i18n="tts.ui.status.ready">Bereit</span></div>
+                <div class="tts-status-chip"><span class="tts-status-dot"></span><span data-i18n="plugins.tts.tts.ui.status.ready">Bereit</span></div>
                 <button id="saveConfigBtnSidebar" class="tts-save-btn" type="button" data-i18n="plugins.tts.labels.konfiguration_speichern">Konfiguration speichern</button>
             </div>
         </aside>
@@ -1376,17 +1376,17 @@
         <main class="tts-main">
             <div class="container mx-auto w-full max-w-none p-6 tts-main-inner">
         <!-- Header -->
-        <section id="tts-config-landing" class="tts-config-landing" aria-label="TTS configuration landing">
+        <section id="tts-config-landing" class="tts-config-landing" aria-label="TTS configuration landing" data-i18n-aria-label="plugins.tts.runtime.navigation.config_landing_label">
             <section class="tts-hero">
-                <section class="tts-summary-grid tts-hero-summary" aria-label="TTS overview">
+                <section class="tts-summary-grid tts-hero-summary" aria-label="TTS overview" data-i18n-aria-label="plugins.tts.runtime.navigation.overview_label">
                     <div class="tts-summary-card">
                         <div class="tts-summary-label" data-i18n="plugins.tts.labels.fallback_engines">Fallback Engines</div>
-                        <div id="overviewFallbackEngines" class="tts-summary-value">0</div>
+                        <output id="overviewFallbackEngines" class="tts-summary-value">0</output>
                         <div class="tts-summary-detail" data-i18n="plugins.tts.labels.engines_enabled_as_failover_options">Engines enabled as failover options</div>
                     </div>
                     <div class="tts-summary-card">
                         <div class="tts-summary-label" data-i18n="plugins.tts.labels.queue_lange">Queue Länge</div>
-                        <div id="overviewQueueLength" class="tts-summary-value">0</div>
+                        <output id="overviewQueueLength" class="tts-summary-value">0</output>
                         <div class="tts-summary-detail" data-i18n="plugins.tts.labels.current_live_queue_length">Current live queue length</div>
                     </div>
                     <div class="tts-summary-card">
@@ -1403,7 +1403,7 @@
                 <div class="tts-hero-logo-stage">
                     <img class="tts-hero-logo tts-logo" data-brand-logo src="/ltthttslogo.png" alt="LTTH TTS">
                     <p class="tts-hero-subtitle" data-i18n="plugins.tts.labels.alles_fur_dein_tts_an_einem_ort_konfiguration">Alles für dein TTS an einem Ort: Konfiguration, Queue, Berechtigungen und Live-Debugging.</p>
-                    <span id="init-status" class="tts-pill tts-hero-status" data-i18n="tts.admin_panel.initializing">Initializing...</span>
+                    <span id="init-status" class="tts-pill tts-hero-status" data-i18n="plugins.tts.tts.admin_panel.initializing">Initializing...</span>
                 </div>
             </section>
         </section>
@@ -1411,13 +1411,13 @@
         <!-- Tabs -->
         <div class="tts-tabbar mb-6 border-b border-gray-700">
             <nav class="flex space-x-4">
-                <button data-tab="config" id="tab-config" class="tab-button px-4 py-2 font-medium border-b-2 border-blue-500 text-blue-400" data-i18n="tts.admin_panel.tabs.config">Configuration</button>
-                <button data-tab="users" id="tab-users" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.users">User Management</button>
+                <button data-tab="config" id="tab-config" class="tab-button px-4 py-2 font-medium border-b-2 border-blue-500 text-blue-400" data-i18n="plugins.tts.tts.admin_panel.tabs.config">Configuration</button>
+                <button data-tab="users" id="tab-users" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="plugins.tts.tts.admin_panel.tabs.users">User Management</button>
                 <button data-tab="voice-clones" id="tab-voice-clones" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="plugins.tts.labels.voice_clones_9a25c6">Voice Clones</button>
-                <button data-tab="event-triggers" id="tab-event-triggers" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.event_triggers">Event Triggers</button>
-                <button data-tab="queue" id="tab-queue" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.queue">Queue & Playback</button>
-                <button data-tab="stats" id="tab-stats" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.stats">Statistics</button>
-                <button data-tab="debug" id="tab-debug" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.debug">Debug Logs</button>
+                <button data-tab="event-triggers" id="tab-event-triggers" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="plugins.tts.tts.admin_panel.tabs.event_triggers">Event Triggers</button>
+                <button data-tab="queue" id="tab-queue" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="plugins.tts.tts.admin_panel.tabs.queue">Queue & Playback</button>
+                <button data-tab="stats" id="tab-stats" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="plugins.tts.tts.admin_panel.tabs.stats">Statistics</button>
+                <button data-tab="debug" id="tab-debug" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="plugins.tts.tts.admin_panel.tabs.debug">Debug Logs</button>
             </nav>
         </div>
         </section>
@@ -1494,14 +1494,14 @@
                                 <div class="flex items-center space-x-2 bg-gray-700 rounded p-3">
                                     <input type="checkbox" id="enableSpeechifyFallback" class="w-4 h-4">
                                     <label for="enableSpeechifyFallback" class="text-sm flex-1">
-                                        <span class="font-medium">Speechify</span>
+                                        <span class="font-medium" data-i18n="plugins.tts.ui.providers.speechify">Speechify</span>
                                         <span class="text-xs text-gray-400 block" data-i18n="plugins.tts.labels.1000_voices_60_languages">1000+ voices, 60+ languages</span>
                                     </label>
                                 </div>
                                 <div class="flex items-center space-x-2 bg-gray-700 rounded p-3">
                                     <input type="checkbox" id="enableElevenlabsFallback" class="w-4 h-4">
                                     <label for="enableElevenlabsFallback" class="text-sm flex-1">
-                                        <span class="font-medium">ElevenLabs</span>
+                                        <span class="font-medium" data-i18n="plugins.tts.ui.providers.elevenLabs">ElevenLabs</span>
                                         <span class="text-xs text-gray-400 block" data-i18n="plugins.tts.labels.ultra_realistic_ai_voices">Ultra-realistic AI voices</span>
                                     </label>
                                 </div>
@@ -1550,12 +1550,12 @@
 
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium mb-2">Volume: <span id="volumeValue">80</span>%</label>
+                            <label class="block text-sm font-medium mb-2">Volume: <output id="volumeValue">80</output>%</label>
                             <input type="range" id="volume" min="0" max="100" value="80" class="w-full">
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium mb-2">Speed: <span id="speedValue">1.0</span>x</label>
+                            <label class="block text-sm font-medium mb-2">Speed: <output id="speedValue">1.0</output>x</label>
                             <input type="range" id="speed" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full">
                         </div>
 
@@ -1565,7 +1565,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium mb-2"><span data-i18n="plugins.tts.labels.duck_volume">Duck Volume: </span><span id="duckVolumeValue">30</span>%</label>
+                            <label class="block text-sm font-medium mb-2"><span data-i18n="plugins.tts.labels.duck_volume">Duck Volume: </span><output id="duckVolumeValue">30</output>%</label>
                             <input type="range" id="duckVolume" min="0" max="100" value="30" class="w-full">
                         </div>
                     </div>
@@ -1599,9 +1599,9 @@
 
                         <div class="flex items-center space-x-2">
                             <input type="checkbox" id="stripEmojis" class="w-4 h-4">
-                            <label for="stripEmojis" class="text-sm" data-i18n="tts.admin_panel.config.strip_emojis">Strip emojis from TTS text</label>
+                            <label for="stripEmojis" class="text-sm" data-i18n="plugins.tts.tts.admin_panel.config.strip_emojis">Strip emojis from TTS text</label>
                         </div>
-                        <p class="text-xs text-gray-400 mt-1" data-i18n="tts.admin_panel.config.strip_emojis_desc">When enabled, emojis will be removed from messages before they are spoken, preventing the TTS engine from reading emoji names aloud.</p>
+                        <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.tts.admin_panel.config.strip_emojis_desc">When enabled, emojis will be removed from messages before they are spoken, preventing the TTS engine from reading emoji names aloud.</p>
 
                         <div class="flex items-center space-x-2">
                             <input type="checkbox" id="announceUsername" class="w-4 h-4">
@@ -1611,7 +1611,7 @@
 
                         <div>
                             <label class="block text-sm font-medium mb-2" data-i18n="plugins.tts.labels.message_prefix_filter">Message Prefix Filter</label>
-                            <input type="text" id="messagePrefixFilter" placeholder="e.g., ! / ." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="messagePrefixFilter" placeholder="e.g., ! / ." data-i18n-placeholder="plugins.tts.runtime.input.message_prefix_placeholder" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
                             <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.labels.messages_starting_with_these_characters_will_be_ignored">Messages starting with these characters will be ignored. Separate multiple prefixes with spaces (e.g., "! / .")</p>
                         </div>
                     </div>
@@ -1625,7 +1625,7 @@
                             <label class="block text-sm font-medium mb-2" data-i18n="plugins.tts.labels.fallback_language_default_if_detection_uncertain">Fallback Language (Default if Detection Uncertain)</label>
                             <select id="fallbackLanguage" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
                                 <option value="de" data-i18n="plugins.tts.labels.deutsch_german">Deutsch (German)</option>
-                                <option value="en">English</option>
+                                <option value="en" data-i18n="plugins.tts.ui.languages.english">English</option>
                                 <option value="es" data-i18n="plugins.tts.labels.espanol_spanish">Español (Spanish)</option>
                                 <option value="fr" data-i18n="plugins.tts.labels.francais_french">Français (French)</option>
                                 <option value="it" data-i18n="plugins.tts.labels.italiano_italian_46def0">Italiano (Italian)</option>
@@ -1645,7 +1645,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium mb-2"><span data-i18n="plugins.tts.labels.confidence_threshold">Confidence Threshold: </span><span id="confidenceThresholdValue">90</span>%</label>
+                            <label class="block text-sm font-medium mb-2"><span data-i18n="plugins.tts.labels.confidence_threshold">Confidence Threshold: </span><output id="confidenceThresholdValue">90</output>%</label>
                             <input type="range" id="languageConfidenceThreshold" min="0.5" max="1.0" step="0.05" value="0.90" class="w-full">
                             <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.labels.minimum_confidence_required_to_use_detected_language_recommended">Minimum confidence required to use detected language (recommended: 90%)</p>
                         </div>
@@ -1669,19 +1669,19 @@
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                                 <div>
                                     <label class="block text-sm font-medium mb-2" data-i18n="plugins.tts.labels.voice_name">Voice Name *</label>
-                                    <input type="text" id="fishCustomVoiceName" placeholder="e.g., my-german-voice" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 text-sm">
+                                    <input type="text" id="fishCustomVoiceName" placeholder="e.g., my-german-voice" data-i18n-placeholder="plugins.tts.runtime.input.fish_voice_name_placeholder" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 text-sm">
                                     <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.labels.internal_identifier_no_spaces">Internal identifier (no spaces)</p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium mb-2" data-i18n="plugins.tts.labels.reference_id">Reference ID *</label>
-                                    <input type="text" id="fishCustomVoiceReferenceId" placeholder="2d4039641d67419fa132ca59fa2f61ad" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 text-sm font-mono">
+                                    <input type="text" id="fishCustomVoiceReferenceId" placeholder="2d4039641d67419fa132ca59fa2f61ad" data-i18n-placeholder="plugins.tts.runtime.input.reference_id_placeholder" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 text-sm font-mono">
                                     <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.labels.32_character_hex_id">32-character hex ID</p>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium mb-2">Language</label>
+                                    <label class="block text-sm font-medium mb-2" data-i18n="plugins.tts.ui.common.language">Language</label>
                                     <select id="fishCustomVoiceLang" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 text-sm">
                                         <option value="de" data-i18n="plugins.tts.labels.deutsch_german_9d91d0">Deutsch (German)</option>
-                                        <option value="en">English</option>
+                                        <option value="en" data-i18n="plugins.tts.ui.languages.english">English</option>
                                 <option value="es" data-i18n="plugins.tts.labels.espanol_spanish_94b48b">Español (Spanish)</option>
                                 <option value="fr" data-i18n="plugins.tts.labels.francais_french_923767">Français (French)</option>
                                         <option value="it" data-i18n="plugins.tts.labels.italiano_italian">Italiano (Italian)</option>
@@ -1711,7 +1711,7 @@
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded p-3 mt-4">
                             <p class="text-sm text-gray-300 mb-2"><strong data-i18n="plugins.tts.labels.how_to_find_fish_audio_voice_ids">How to find Fish.audio voice IDs:</strong></p>
                             <ol class="text-xs text-gray-400 space-y-1 ml-4 list-decimal">
-                                <li><span data-i18n="plugins.tts.labels.go_to">Go to </span><a href="https://fish.audio/discovery" target="_blank" class="text-blue-400 hover:text-blue-300 underline">fish.audio/discovery</a></li>
+                                <li><span data-i18n="plugins.tts.labels.go_to">Go to </span><a href="https://fish.audio/discovery" target="_blank" class="text-blue-400 hover:text-blue-300 underline" data-i18n="plugins.tts.ui.help.fishAudioDiscovery">fish.audio/discovery</a></li>
                                 <li data-i18n="plugins.tts.labels.find_a_voice_you_like_and_click_on">Find a voice you like and click on it</li>
                                 <li><span data-i18n="plugins.tts.labels.look_in_the_url">Look in the URL: </span><code class="bg-gray-800 px-1 py-0.5 rounded text-xs">fish.audio/model/<strong class="text-blue-400">reference_id]</strong></code></li>
                                 <li data-i18n="plugins.tts.labels.copy_the_32_character_hexadecimal_id_and_paste">Copy the 32-character hexadecimal ID and paste it above</li>
@@ -1796,7 +1796,7 @@
                                             <i class="fas fa-eye"></i>
                                         </button>
                                     </div>
-                                    <input id="tiktokSessionId" type="password" placeholder="Enter SessionID..." class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                                    <input id="tiktokSessionId" type="password" placeholder="Enter SessionID..." data-i18n-placeholder="plugins.tts.runtime.input.session_id_placeholder" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500">
                                     <p class="text-xs text-gray-400 mt-2" data-i18n="plugins.tts.labels.used_only_by_legacy_tiktok_session_setups_leave">Used only by legacy TikTok session setups. Leave it empty if you do not rely on the old SessionID flow.</p>
                                 </div>
                             </div>
@@ -1825,7 +1825,7 @@
                     <form id="voiceCloneForm" class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium mb-2" for="voiceCloneAudio" data-i18n="plugins.tts.labels.audio_sample">Audio Sample</label>
-                            <input type="file" id="voiceCloneAudio" accept="audio/*" class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-sm">
+                        <input type="file" id="voiceCloneAudio" accept="audio/*" class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-sm" data-i18n-aria-label="plugins.tts.runtime.voice_clone.audio_input_label">
                             <p class="text-xs text-gray-400 mt-2" data-i18n="plugins.tts.labels.max_5_mb_clean_speech_with_minimal_background">Max 5 MB. Clean speech with minimal background noise produces the best clone.</p>
                         </div>
 
@@ -1840,18 +1840,18 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium mb-2" for="voiceCloneName" data-i18n="plugins.tts.labels.voice_name_8a9aea">Voice Name</label>
-                                <input type="text" id="voiceCloneName" placeholder="e.g. Stream Voice" class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                                <input type="text" id="voiceCloneName" placeholder="e.g. Stream Voice" data-i18n-placeholder="plugins.tts.runtime.voice_clone.name_placeholder" class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-2" for="voiceCloneLanguage">Language</label>
+                                <label class="block text-sm font-medium mb-2" for="voiceCloneLanguage" data-i18n="plugins.tts.ui.common.language">Language</label>
                                 <select id="voiceCloneLanguage" class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500">
-                                    <option value="de">Deutsch</option>
-                                    <option value="en">English</option>
+                                    <option value="de" data-i18n="plugins.tts.ui.languages.german">Deutsch</option>
+                                    <option value="en" data-i18n="plugins.tts.ui.languages.english">English</option>
                                     <option value="es" data-i18n="plugins.tts.labels.espanol">Español</option>
                                     <option value="fr" data-i18n="plugins.tts.labels.francais">Français</option>
-                                    <option value="it">Italiano</option>
+                                    <option value="it" data-i18n="plugins.tts.ui.languages.italian">Italiano</option>
                                     <option value="pt" data-i18n="plugins.tts.labels.portugues">Português</option>
-                                    <option value="nl">Nederlands</option>
+                                    <option value="nl" data-i18n="plugins.tts.ui.languages.dutch">Nederlands</option>
                                 </select>
                             </div>
                         </div>
@@ -1878,7 +1878,7 @@
                             <h2 class="text-2xl font-bold" data-i18n="plugins.tts.labels.existing_voice_clones">Existing Voice Clones</h2>
                             <p class="text-gray-400 text-sm mt-1" data-i18n="plugins.tts.labels.test_reuse_or_delete_cloned_voices_from_this">Test, reuse or delete cloned voices from this list.</p>
                         </div>
-                        <button id="refreshVoiceClonesBtn" type="button" class="tts-ghost-button rounded-lg px-4 py-2 text-sm transition hover:bg-gray-600" data-i18n="tts.ui.actions.refresh">
+                        <button id="refreshVoiceClonesBtn" type="button" class="tts-ghost-button rounded-lg px-4 py-2 text-sm transition hover:bg-gray-600" data-i18n="plugins.tts.tts.ui.actions.refresh">
                             Refresh
                         </button>
                     </div>
@@ -1926,7 +1926,7 @@
                                     <option value="" data-i18n="plugins.tts.labels.standard_voice_verwenden">Standard Voice verwenden</option>
                                     <!-- Populated dynamically -->
                                 </select>
-                                <p class="text-xs text-gray-400 mt-1">Leer = Default Voice nutzen</p>
+                                <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.ui.help.emptyVoiceUsesDefault">Leer = Default Voice nutzen</p>
                             </div>
 
                                     <label for="eventTTSPriority" class="text-sm" data-i18n="plugins.tts.labels.prioritat_uber_chat_tts">Priorität über Chat-TTS</label>
@@ -1958,7 +1958,7 @@
                             </div>
                             <div class="space-y-2">
                                 <div>
-                                    <label class="block text-xs font-medium mb-1">Template</label>
+                                    <label class="block text-xs font-medium mb-1" data-i18n="plugins.tts.ui.common.template">Template</label>
                                     <input type="text" id="eventTTSGiftTemplate" value="{username} hat {giftName} geschenkt!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                     <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.labels.variablen_username_nickname_giftname_giftcount_coins">Variablen: {username}, {nickname}, {giftName}, {giftCount}, {coins}</p>
                                 </div>
@@ -1973,7 +1973,7 @@
                                     </div>
                                 </div>
                                 <div class="mt-2">
-                                    <button id="testGiftBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition" data-i18n="tts.ui.actions.test">Test
+                                    <button id="testGiftBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition" data-i18n="plugins.tts.tts.ui.actions.test">Test
                                     </button>
                                 </div>
                             </div>
@@ -1990,7 +1990,7 @@
                             </div>
                             <div class="space-y-2">
                                 <div>
-                                    <label class="block text-xs font-medium mb-1">Template</label>
+                                    <label class="block text-xs font-medium mb-1" data-i18n="plugins.tts.ui.common.template">Template</label>
                                     <input type="text" id="eventTTSFollowTemplate" value="{username} folgt dir jetzt!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                     <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.labels.variablen_username_nickname">Variablen: {username}, {nickname}</p>
                                 </div>
@@ -1999,7 +1999,7 @@
                                     <input type="number" id="eventTTSFollowCooldown" value="5" min="0" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                 </div>
                                 <div class="mt-2">
-                                    <button id="testFollowBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition" data-i18n="tts.ui.actions.test">Test
+                                    <button id="testFollowBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition" data-i18n="plugins.tts.tts.ui.actions.test">Test
                                     </button>
                                 </div>
                             </div>
@@ -2016,7 +2016,7 @@
                             </div>
                             <div class="space-y-2">
                                 <div>
-                                    <label class="block text-xs font-medium mb-1">Template</label>
+                                    <label class="block text-xs font-medium mb-1" data-i18n="plugins.tts.ui.common.template">Template</label>
                                     <input type="text" id="eventTTSShareTemplate" value="{username} hat den Stream geteilt!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                     <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.labels.variablen_username_nickname_8b1352">Variablen: {username}, {nickname}</p>
                                 </div>
@@ -2025,7 +2025,7 @@
                                     <input type="number" id="eventTTSShareCooldown" value="10" min="0" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                 </div>
                                 <div class="mt-2">
-                                    <button id="testShareBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition" data-i18n="tts.ui.actions.test">Test
+                                    <button id="testShareBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition" data-i18n="plugins.tts.tts.ui.actions.test">Test
                                     </button>
                                 </div>
                             </div>
@@ -2042,7 +2042,7 @@
                             </div>
                             <div class="space-y-2">
                                 <div>
-                                    <label class="block text-xs font-medium mb-1">Template</label>
+                                    <label class="block text-xs font-medium mb-1" data-i18n="plugins.tts.ui.common.template">Template</label>
                                     <input type="text" id="eventTTSSubscribeTemplate" value="{username} hat abonniert!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                     <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.labels.variablen_username_nickname_c977fa">Variablen: {username}, {nickname}</p>
                                 </div>
@@ -2051,7 +2051,7 @@
                                     <input type="number" id="eventTTSSubscribeCooldown" value="0" min="0" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                 </div>
                                 <div class="mt-2">
-                                    <button id="testSubscribeBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition" data-i18n="tts.ui.actions.test">Test
+                                    <button id="testSubscribeBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition" data-i18n="plugins.tts.tts.ui.actions.test">Test
                                     </button>
                                 </div>
                             </div>
@@ -2068,7 +2068,7 @@
                             </div>
                             <div class="space-y-2">
                                 <div>
-                                    <label class="block text-xs font-medium mb-1">Template</label>
+                                    <label class="block text-xs font-medium mb-1" data-i18n="plugins.tts.ui.common.template">Template</label>
                                     <input type="text" id="eventTTSLikeTemplate" value="{username} liked!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                     <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.labels.variablen_username_nickname_likecount">Variablen: {username}, {nickname}, {likeCount}</p>
                                 </div>
@@ -2083,7 +2083,7 @@
                                     </div>
                                 </div>
                                 <div class="mt-2">
-                                    <button id="testLikeBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition" data-i18n="tts.ui.actions.test">Test
+                                    <button id="testLikeBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition" data-i18n="plugins.tts.tts.ui.actions.test">Test
                                     </button>
                                 </div>
                             </div>
@@ -2100,7 +2100,7 @@
                             </div>
                             <div class="space-y-2">
                                 <div>
-                                    <label class="block text-xs font-medium mb-1">Template</label>
+                                    <label class="block text-xs font-medium mb-1" data-i18n="plugins.tts.ui.common.template">Template</label>
                                     <input type="text" id="eventTTSJoinTemplate" value="{username} ist beigetreten!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                     <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.labels.variablen_username_nickname_6fbdc6">Variablen: {username}, {nickname}</p>
                                 </div>
@@ -2109,7 +2109,7 @@
                                     <input type="number" id="eventTTSJoinCooldown" value="60" min="0" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                 </div>
                                 <div class="mt-2">
-                                    <button id="testJoinBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition" data-i18n="tts.ui.actions.test">Test
+                                    <button id="testJoinBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition" data-i18n="plugins.tts.tts.ui.actions.test">Test
                                     </button>
                                 </div>
                             </div>
@@ -2148,7 +2148,7 @@
                                 </div>
                                 <div class="space-y-2">
                                     <div>
-                                        <label class="block text-xs font-medium mb-1">Template</label>
+                                        <label class="block text-xs font-medium mb-1" data-i18n="plugins.tts.ui.common.template">Template</label>
                                         <input type="text" id="tier1Template" value="{username} sendet {giftName}!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                     </div>
                                     <div>
@@ -2172,7 +2172,7 @@
                                 </div>
                                 <div class="space-y-2">
                                     <div>
-                                        <label class="block text-xs font-medium mb-1">Template</label>
+                                        <label class="block text-xs font-medium mb-1" data-i18n="plugins.tts.ui.common.template">Template</label>
                                         <input type="text" id="tier2Template" value="{username} schenkt {giftName}! Vielen Dank!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                     </div>
                                     <div>
@@ -2196,7 +2196,7 @@
                                 </div>
                                 <div class="space-y-2">
                                     <div>
-                                        <label class="block text-xs font-medium mb-1">Template</label>
+                                        <label class="block text-xs font-medium mb-1" data-i18n="plugins.tts.ui.common.template">Template</label>
                                         <input type="text" id="tier3Template" value="Wow! {username} schenkt {giftName}! Das ist großzügig!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                     </div>
                                     <div>
@@ -2220,7 +2220,7 @@
                                 </div>
                                 <div class="space-y-2">
                                     <div>
-                                        <label class="block text-xs font-medium mb-1">Template</label>
+                                        <label class="block text-xs font-medium mb-1" data-i18n="plugins.tts.ui.common.template">Template</label>
                                         <input type="text" id="tier4Template" value="UNGLAUBLICH! {username} schenkt {giftName} für {coins} Coins! WAHNSINN!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                     </div>
                                     <div>
@@ -2291,7 +2291,7 @@
                             </div>
                         </div>
                         <div class="mt-3">
-                            <label class="block text-sm font-medium mb-2">Template</label>
+                            <label class="block text-sm font-medium mb-2" data-i18n="plugins.tts.ui.common.template">Template</label>
                             <input type="text" id="comboStreakTemplate" value="{username} ist auf einer Combo-Streak! {comboCount} Gifts in Folge!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm">
                             <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.labels.variablen_username_nickname_combocount_totalcoins">Variablen: {username}, {nickname}, {comboCount}, {totalCoins}</p>
                         </div>
@@ -2312,7 +2312,7 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium mb-2">Template</label>
+                                <label class="block text-sm font-medium mb-2" data-i18n="plugins.tts.ui.common.template">Template</label>
                                 <input type="text" id="topGifterTemplate" value="Unser Top Gifter ist {username} mit {totalCoins} Coins! Danke für die Unterstützung!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm">
                                 <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.labels.variablen_username_nickname_totalcoins_giftcount">Variablen: {username}, {nickname}, {totalCoins}, {giftCount}</p>
                             </div>
@@ -2417,7 +2417,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium mb-2" data-i18n="plugins.tts.labels.username_tiktok_uniqueid">Username (TikTok uniqueId)</label>
-                        <input type="text" id="manualUsername" list="recentUsersList" placeholder="Enter TikTok username..." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" autocomplete="off">
+                        <input type="text" id="manualUsername" list="recentUsersList" placeholder="Enter TikTok username..." data-i18n-placeholder="plugins.tts.runtime.search.manual_username_placeholder" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" autocomplete="off">
                         <datalist id="recentUsersList">
                             <!-- Populated dynamically with recent chat users -->
                         </datalist>
@@ -2425,7 +2425,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-2">Engine</label>
+                        <label class="block text-sm font-medium mb-2" data-i18n="plugins.tts.ui.manual.engine">Engine</label>
                         <select id="manualEngine" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
                             <option value="tiktok" data-i18n="plugins.tts.labels.tiktok_tts_free_de9ec2">TikTok TTS (Free)</option>
                             <option value="google" data-i18n="plugins.tts.labels.google_cloud_tts_fede7e">Google Cloud TTS</option>
@@ -2438,7 +2438,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-2">Voice</label>
+                        <label class="block text-sm font-medium mb-2" data-i18n="plugins.tts.ui.common.voice">Voice</label>
                         <select id="manualVoice" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
                             <!-- Populated dynamically -->
                         </select>
@@ -2455,11 +2455,11 @@
             <!-- User List -->
             <div class="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold" data-i18n="tts.admin_panel.tabs.users">User Management</h2>
+                    <h2 class="text-2xl font-bold" data-i18n="plugins.tts.tts.admin_panel.tabs.users">User Management</h2>
                     <div class="space-x-2">
-                        <button data-filter="all" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">All</button>
-                        <button data-filter="whitelisted" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">Whitelisted</button>
-                        <button data-filter="blacklisted" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">Blacklisted</button>
+                        <button data-filter="all" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600" data-i18n="plugins.tts.ui.filters.all">All</button>
+                        <button data-filter="whitelisted" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600" data-i18n="plugins.tts.ui.filters.whitelisted">Whitelisted</button>
+                        <button data-filter="blacklisted" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600" data-i18n="plugins.tts.ui.filters.blacklisted">Blacklisted</button>
                         <button data-filter="voice_assigned" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600" data-i18n="plugins.tts.labels.voice_assigned">Voice Assigned</button>
                     </div>
                 </div>
@@ -2467,7 +2467,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
                     <div class="lg:col-span-2">
                         <label class="block text-sm font-medium mb-2" for="userSearchInput" data-i18n="plugins.tts.labels.search_users">Search Users</label>
-                        <input id="userSearchInput" type="search" placeholder="Search by username or user ID..." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" autocomplete="off">
+                        <input id="userSearchInput" type="search" placeholder="Search by username or user ID..." data-i18n-placeholder="plugins.tts.runtime.search.users_placeholder" data-i18n-aria-label="plugins.tts.runtime.search.users_label" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" autocomplete="off">
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-2" for="userResultsLimit" data-i18n="plugins.tts.labels.results_limit">Results Limit</label>
@@ -2482,7 +2482,7 @@
 
                 <div class="flex items-center justify-between gap-3 mb-4 text-sm text-gray-400">
                     <div id="userResultsInfo" data-i18n="plugins.tts.labels.loading_users">Loading users...</div>
-                    <button id="refreshUsersBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded text-sm" data-i18n="tts.ui.actions.refresh">Refresh</button>
+                    <button id="refreshUsersBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded text-sm" data-i18n="plugins.tts.tts.ui.actions.refresh">Refresh</button>
                 </div>
 
                 <div id="userList" class="space-y-2">
@@ -2518,8 +2518,8 @@
 
                     <div class="mt-6">
                         <h3 class="text-xl font-bold mb-2" data-i18n="plugins.tts.labels.test_tts">Test TTS</h3>
-                        <input type="text" id="testText" placeholder="Enter test text..." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 mb-2">
-                        <button id="testTTSBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Speak
+                        <input type="text" id="testText" placeholder="Enter test text..." data-i18n-placeholder="plugins.tts.runtime.input.test_text_placeholder" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 mb-2">
+                        <button id="testTTSBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" data-i18n="plugins.tts.ui.manual.speak">Speak
                         </button>
                     </div>
                 </div>
@@ -2556,7 +2556,7 @@
                     <div class="flex items-center space-x-2">
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" id="autoScrollLogs" checked class="w-4 h-4">
-                            <span class="text-sm">Auto-scroll</span>
+                            <span class="text-sm" data-i18n="plugins.tts.ui.logs.autoScroll">Auto-scroll</span>
                         </label>
                         <button id="clearLogsBtn" class="tts-btn-warning bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-2 px-4 rounded" data-i18n="plugins.tts.labels.clear_logs">Clear Logs</button>
                         <button id="toggleDebugBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
@@ -2567,15 +2567,15 @@
 
                 <!-- Filter Buttons -->
                 <div class="mb-4 flex flex-wrap gap-2">
-                    <button data-category="all" class="log-filter-btn px-3 py-1 bg-blue-600 text-white rounded text-sm font-medium">All</button>
+                    <button data-category="all" class="log-filter-btn px-3 py-1 bg-blue-600 text-white rounded text-sm font-medium" data-i18n="plugins.tts.ui.filters.all">All</button>
                     <button data-category="INIT" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">INIT</button>
                     <button data-category="TIKTOK_EVENT" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm" data-i18n="plugins.tts.labels.tiktok_events">TikTok Events</button>
                     <button data-category="SPEAK_START" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm" data-i18n="plugins.tts.labels.speak_start">Speak Start</button>
                     <button data-category="SPEAK_STEP" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm" data-i18n="plugins.tts.labels.pipeline_steps">Pipeline Steps</button>
-                    <button data-category="SPEAK_SUCCESS" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Success</button>
-                    <button data-category="SPEAK_DENIED" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Denied</button>
-                    <button data-category="SPEAK_ERROR" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Errors</button>
-                    <button data-category="PLAYBACK" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Playback</button>
+                    <button data-category="SPEAK_SUCCESS" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm" data-i18n="plugins.tts.ui.logs.success">Success</button>
+                    <button data-category="SPEAK_DENIED" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm" data-i18n="plugins.tts.ui.logs.denied">Denied</button>
+                    <button data-category="SPEAK_ERROR" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm" data-i18n="plugins.tts.ui.logs.errors">Errors</button>
+                    <button data-category="PLAYBACK" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm" data-i18n="plugins.tts.ui.logs.playback">Playback</button>
                 </div>
 
                 <!-- Status Info -->
@@ -2583,19 +2583,19 @@
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
                             <span class="text-gray-400" data-i18n="plugins.tts.labels.total_logs">Total Logs:</span>
-                            <span id="totalLogsCount" class="ml-2 font-bold text-white">0</span>
+                            <output id="totalLogsCount" class="ml-2 font-bold text-white">0</output>
                         </div>
                         <div>
-                            <span class="text-gray-400">Displayed:</span>
-                            <span id="displayedLogsCount" class="ml-2 font-bold text-white">0</span>
+                            <span class="text-gray-400" data-i18n="plugins.tts.ui.logs.displayed">Displayed:</span>
+                            <output id="displayedLogsCount" class="ml-2 font-bold text-white">0</output>
                         </div>
                         <div>
                             <span class="text-gray-400" data-i18n="plugins.tts.labels.debug_mode">Debug Mode:</span>
-                            <span id="debugModeStatus" class="ml-2 font-bold text-green-500">Enabled</span>
+                            <span id="debugModeStatus" class="ml-2 font-bold text-green-500" data-i18n="plugins.tts.ui.logs.enabled">Enabled</span>
                         </div>
                         <div>
                             <span class="text-gray-400" data-i18n="plugins.tts.labels.live_updates">Live Updates:</span>
-                            <span id="liveUpdateStatus" class="ml-2 font-bold text-green-500 pulse">Active</span>
+                            <span id="liveUpdateStatus" class="ml-2 font-bold text-green-500 pulse" data-i18n="plugins.tts.ui.logs.active">Active</span>
                         </div>
                     </div>
                 </div>
@@ -2659,7 +2659,7 @@
             </div>
 
             <div class="mb-4">
-                <label class="block text-sm font-bold mb-2">Engine</label>
+                <label class="block text-sm font-bold mb-2" data-i18n="plugins.tts.ui.manual.engine">Engine</label>
                 <select id="modalEngine" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
                     <option value="tiktok" data-i18n="plugins.tts.labels.tiktok_tts_free">TikTok TTS (Free)</option>
                     <option value="google" data-i18n="plugins.tts.labels.google_cloud_tts_premium">Google Cloud TTS (Premium)</option>
@@ -2676,19 +2676,19 @@
                 <label class="block text-sm font-bold mb-2" data-i18n="plugins.tts.labels.emotion_speechify_only_ed25c2">Emotion (Speechify only)</label>
                 <select id="modalEmotion" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
                     <option value="" data-i18n="plugins.tts.labels.none_neutral">None (Neutral)</option>
-                    <option value="angry">Angry</option>
-                    <option value="cheerful">Cheerful</option>
-                    <option value="sad">Sad</option>
-                    <option value="terrified">Terrified</option>
-                    <option value="relaxed">Relaxed</option>
-                    <option value="fearful">Fearful</option>
-                    <option value="surprised">Surprised</option>
-                    <option value="calm">Calm</option>
-                    <option value="assertive">Assertive</option>
-                    <option value="energetic">Energetic</option>
-                    <option value="warm">Warm</option>
-                    <option value="direct">Direct</option>
-                    <option value="bright">Bright</option>
+                    <option value="angry" data-i18n="plugins.tts.ui.modal.emotion.angry">Angry</option>
+                    <option value="cheerful" data-i18n="plugins.tts.ui.modal.emotion.cheerful">Cheerful</option>
+                    <option value="sad" data-i18n="plugins.tts.ui.modal.emotion.sad">Sad</option>
+                    <option value="terrified" data-i18n="plugins.tts.ui.modal.emotion.terrified">Terrified</option>
+                    <option value="relaxed" data-i18n="plugins.tts.ui.modal.emotion.relaxed">Relaxed</option>
+                    <option value="fearful" data-i18n="plugins.tts.ui.modal.emotion.fearful">Fearful</option>
+                    <option value="surprised" data-i18n="plugins.tts.ui.modal.emotion.surprised">Surprised</option>
+                    <option value="calm" data-i18n="plugins.tts.ui.modal.emotion.calm">Calm</option>
+                    <option value="assertive" data-i18n="plugins.tts.ui.modal.emotion.assertive">Assertive</option>
+                    <option value="energetic" data-i18n="plugins.tts.ui.modal.emotion.energetic">Energetic</option>
+                    <option value="warm" data-i18n="plugins.tts.ui.modal.emotion.warm">Warm</option>
+                    <option value="direct" data-i18n="plugins.tts.ui.modal.emotion.direct">Direct</option>
+                    <option value="bright" data-i18n="plugins.tts.ui.modal.emotion.bright">Bright</option>
                 </select>
             </div>
 
@@ -2699,7 +2699,7 @@
                     <input type="range" id="modalVolumeGainSlider" min="0" max="300" step="5" value="100" class="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                     <input type="number" id="modalVolumeGainInput" min="0" max="300" step="1" value="100" class="w-20 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-center">
                     <span class="text-gray-400">%</span>
-                    <button id="modalVolumeGainReset" class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm">Reset
+                    <button id="modalVolumeGainReset" class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm" data-i18n="plugins.tts.ui.modal.reset">Reset
                     </button>
                 </div>
                 <p class="text-xs text-gray-400 mt-1" data-i18n="plugins.tts.labels.adjust_volume_for_this_user_100_normal_300">Adjust volume for this user (100% = normal, 300% = maximum)</p>
@@ -2707,7 +2707,7 @@
 
             <div class="mb-4">
                 <label class="block text-sm font-bold mb-2" data-i18n="plugins.tts.labels.search_voice">Search Voice</label>
-                <input type="text" id="modalVoiceSearch" placeholder="Search voices..." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 mb-2">
+                    <input type="text" id="modalVoiceSearch" placeholder="Search voices..." data-i18n-placeholder="plugins.tts.runtime.search.voices_placeholder" data-i18n-aria-label="plugins.tts.runtime.search.voices_label" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 mb-2">
             </div>
 
             <div class="mb-4">
@@ -2718,7 +2718,7 @@
             </div>
 
             <div class="flex justify-end space-x-3">
-                <button id="modalCancelBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded" data-i18n="tts.ui.actions.cancel">Cancel
+                <button id="modalCancelBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded" data-i18n="plugins.tts.tts.ui.actions.cancel">Cancel
                 </button>
                 <h2 class="text-2xl font-bold" data-i18n="plugins.tts.labels.assign_voice_302ef3">Assign Voice</h2>
                 </button>
@@ -2739,25 +2739,9 @@
             window.i18n = new I18nClient();
             await window.i18n.init();
 
-            const applyTranslations = () => {
-                document.querySelectorAll('[data-i18n]').forEach((el) => {
-                    const key = el.getAttribute('data-i18n');
-                    const translation = window.i18n.t(key);
-
-                    if (translation !== key) {
-                        if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
-                            el.setAttribute('placeholder', translation);
-                        } else {
-                            const emojiMatch = el.textContent.match(/^([\u{1F300}-\u{1F9FF}]+\s*)/u);
-                            el.textContent = emojiMatch ? emojiMatch[1] + translation : translation;
-                        }
-                    }
-                });
-            };
-
-            applyTranslations();
+            window.i18n.updateDOM();
             window.i18n.onLanguageChange(() => {
-                applyTranslations();
+                window.i18n.updateDOM();
             });
 
             console.log('TTS Admin Panel: i18n initialized');

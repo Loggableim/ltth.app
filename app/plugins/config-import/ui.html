@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="config-import.ui.pageTitle">Config Backup &amp; Restore - Pup Cid's Little TikTool Helper</title>
+    <title data-i18n="plugins.config-import.config-import.ui.pageTitle">Config Backup &amp; Restore - Pup Cid's Little TikTool Helper</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function() {
@@ -520,7 +520,7 @@
                 <span>📦</span>
                 <span id="selectedFileName"></span>
                 <span id="selectedFileSize" style="color:var(--color-text-muted,#888);"></span>
-                <span class="remove" id="clearFileBtn" title="Remove file">✕</span>
+                <span class="remove" id="clearFileBtn" title="Remove file" data-i18n-title="plugins.config-import.config-import.ui.removeFile">✕</span>
             </div>
 
             <div style="margin-top:16px;">
@@ -548,9 +548,9 @@
                 <table class="preview-table" id="pluginTable">
                     <thead>
                         <tr>
-                            <th>Plugin</th>
+                            <th data-i18n="plugins.config-import.config-import.ui.pluginColumn">Plugin</th>
                             <th data-i18n="plugins.config-import.labels.new_keys">New Keys</th>
-                            <th>Conflicts</th>
+                            <th data-i18n="plugins.config-import.config-import.ui.conflicts">Conflicts</th>
                             <th data-i18n="plugins.config-import.labels.data_files">Data Files</th>
                         </tr>
                     </thead>
@@ -1203,12 +1203,14 @@
                         <div class="legacy-candidate-title">${escHtml(label)}</div>
                         <div class="legacy-candidate-path">${escHtml(candidate.actualPath || candidatePath)}</div>
                         <div class="legacy-candidate-summary">${escHtml(summary)}</div>
-                        <button class="btn btn-secondary legacy-use-candidate" data-path="${escHtml(candidatePath)}">
+                        <button class="btn btn-secondary legacy-use-candidate" data-path="${escHtml(candidatePath)}" data-i18n="plugins.config-import.config-import.ui.useSource">
                             Use this source
                         </button>
                     </div>
                 `;
             }).join('');
+
+            if (window.i18n?.ready) window.i18n.ready.then(() => window.i18n.updateDOM());
 
             list.querySelectorAll('.legacy-use-candidate').forEach(button => {
                 button.addEventListener('click', () => {

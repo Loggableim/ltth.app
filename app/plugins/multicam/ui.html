@@ -803,27 +803,27 @@
         <div class="status-bar">
             <div class="status-indicator">
                 <div class="status-dot" id="statusDot"></div>
-                <span class="status-text" id="statusText" data-i18n="multicam.status.disconnected">Getrennt</span>
+                <span class="status-text" id="statusText" data-i18n="plugins.multicam.multicam.status.disconnected">Getrennt</span>
             </div>
             <div class="current-scene" id="currentScene"><span data-i18n="plugins.multicam.labels.current_scene">
                 Aktuelle Szene: </span><strong>-</strong>
             </div>
             <div class="button-group">
-                <button class="success" id="obs-connect-btn" data-i18n="multicam.connection.connect">OBS verbinden</button>
-                <button class="danger" id="obs-disconnect-btn">Trennen</button>
+                <button class="success" id="obs-connect-btn" data-i18n="plugins.multicam.multicam.connection.connect">OBS verbinden</button>
+                <button class="danger" id="obs-disconnect-btn" data-i18n="plugins.multicam.multicam.connection.disconnect">Trennen</button>
             </div>
         </div>
 
         <!-- Scene Switcher + Hot Buttons -->
         <div class="control-group">
-            <h2>Szenen-Switcher</h2>
+            <h2 data-i18n="plugins.multicam.multicam.switcher.title">Szenen-Switcher</h2>
             <div class="scene-switcher-compact">
                 <select id="sceneSelect">
                     <option value="" data-i18n="plugins.multicam.labels.szene_wahlen">Szene wählen...</option>
                 </select>
-                <button class="primary" id="switch-scene-btn">Wechseln</button>
+                <button class="primary" id="switch-scene-btn" data-i18n="plugins.multicam.multicam.switcher.switch">Wechseln</button>
             </div>
-            <h3 style="margin-top: 15px;">Schnellzugriff</h3>
+            <h3 style="margin-top: 15px;" data-i18n="plugins.multicam.multicam.hot_buttons.title">Schnellzugriff</h3>
             <div class="hot-buttons" id="hotButtons"></div>
         </div>
 
@@ -838,7 +838,7 @@
             <!-- Filter / Controls -->
             <div class="gift-catalog-controls">
                 <div class="filter-group">
-                    <label for="filter-tier">Filter:</label>
+                    <label for="filter-tier" data-i18n="plugins.multicam.multicam.gift_mapping.filter">Filter:</label>
                     <select id="filter-tier">
                         <option value="all" data-i18n="plugins.multicam.labels.alle_geschenke">Alle Geschenke</option>
                         <option value="mapped" data-i18n="plugins.multicam.labels.nur_zugeordnete">Nur zugeordnete</option>
@@ -850,13 +850,13 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="filter-scene">Kamera:</label>
+                    <label for="filter-scene" data-i18n="plugins.multicam.multicam.gift_mapping.camera_filter">Kamera:</label>
                     <select id="filter-scene">
                         <option value="all" data-i18n="plugins.multicam.labels.alle_kameras">Alle Kameras</option>
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="sort-gifts">Sortierung:</label>
+                    <label for="sort-gifts" data-i18n="plugins.multicam.multicam.gift_mapping.sort">Sortierung:</label>
                     <select id="sort-gifts">
                         <option value="coins-desc" data-i18n="plugins.multicam.labels.coins_absteigend">Coins (absteigend)</option>
                         <option value="coins-asc" data-i18n="plugins.multicam.labels.coins_aufsteigend">Coins (aufsteigend)</option>
@@ -865,9 +865,9 @@
                     </select>
                 </div>
                 <div class="stats" id="catalogStats">
-                    <span id="mappedCount">0</span> / <span id="totalCount">0</span> zugeordnet
+                    <output id="mappedCount">0</output> / <output id="totalCount">0</output> <span data-i18n="plugins.multicam.labels.geschenke_zugeordnet">zugeordnet</span>
                 </div>
-                <button id="refreshCatalogBtn" title="Geschenkekatalog neu laden" style="padding: 6px 12px; font-size: 13px;">🔄</button>
+                <button id="refreshCatalogBtn" title="Geschenkekatalog neu laden" data-i18n-title="plugins.multicam.multicam.gift_mapping.refresh_gifts" style="padding: 6px 12px; font-size: 13px;">🔄</button>
             </div>
 
             <!-- Gift Grid Container -->
@@ -878,7 +878,7 @@
             <!-- Save Bar -->
             <div class="save-bar" id="saveBar">
                 <div class="save-info">
-                    <span id="changeCount">0</span><span data-i18n="plugins.multicam.labels.anderungen"> Änderungen — </span><strong id="mappedDisplay">0</strong><span data-i18n="plugins.multicam.labels.geschenke_zugeordnet"> Geschenke zugeordnet
+                    <output id="changeCount">0</output><span data-i18n="plugins.multicam.labels.anderungen"> Änderungen — </span><output id="mappedDisplay">0</output><span data-i18n="plugins.multicam.labels.geschenke_zugeordnet"> Geschenke zugeordnet
                 </span></div>
                 <div class="button-group">
                     <span class="save-status" id="saveStatus"></span>

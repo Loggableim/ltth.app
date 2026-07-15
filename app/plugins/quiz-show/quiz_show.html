@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="quiz_show.title">Pup Cid's Little Quiz Show Plugin</title>
+    <title data-i18n="plugins.quiz-show.quiz_show.title">Pup Cid's Little Quiz Show Plugin</title>
     <link rel="stylesheet" href="/quiz-show/quiz_show.css">
     <link rel="stylesheet" href="/css/themes.css">
     <script src="/socket.io/socket.io.js"></script>
@@ -81,31 +81,31 @@
         <!-- Tab Navigation -->
         <div class="tabs">
             <button class="tab-button active" data-tab="dashboard">
-                <span> Dashboard</span>
+                <span data-i18n="plugins.quiz-show.ui.navigation.dashboard"> Dashboard</span>
             </button>
             <button class="tab-button" data-tab="questions">
-                <span data-i18n="quiz_show.questions.title"> Fragen</span>
+                <span data-i18n="plugins.quiz-show.quiz_show.questions.title"> Fragen</span>
             </button>
             <button class="tab-button" data-tab="ai-packages">
-                <span data-i18n="quiz_show.ai_packages.title"> AI Fragenpakete</span>
+                <span data-i18n="plugins.quiz-show.quiz_show.ai_packages.title"> AI Fragenpakete</span>
             </button>
             <button class="tab-button" data-tab="settings">
-                <span> Einstellungen</span>
+                <span data-i18n="plugins.quiz-show.ui.navigation.settings"> Einstellungen</span>
             </button>
             <button class="tab-button" data-tab="leaderboard">
-                <span data-i18n="quiz_show.leaderboard.title"> Leaderboard</span>
+                <span data-i18n="plugins.quiz-show.quiz_show.leaderboard.title"> Leaderboard</span>
             </button>
             <button class="tab-button" data-tab="overlay-config">
                 <span data-i18n="plugins.quiz-show.labels.overlay_konfiguration"> Overlay Konfiguration</span>
             </button>
             <button class="tab-button" data-tab="gift-jokers">
-                <span>Gift-Joker</span>
+                <span data-i18n="plugins.quiz-show.ui.navigation.gift_jokers">Gift-Joker</span>
             </button>
             <button class="tab-button" data-tab="expansion">
-                <span>Erweiterungen</span>
+                <span data-i18n="plugins.quiz-show.ui.navigation.extensions">Erweiterungen</span>
             </button>
             <button class="tab-button hidden" data-tab="gift-jokers-legacy">
-                <span> Gift-Joker</span>
+                <span data-i18n="plugins.quiz-show.ui.navigation.gift_jokers"> Gift-Joker</span>
             </button>
         </div>
 
@@ -128,11 +128,11 @@
                         <h2 data-i18n="plugins.quiz-show.labels.aktuelle_frage">Aktuelle Frage</h2>
                         <div class="panel-controls">
                             <select id="gameModeSelect" class="form-control" style="width: auto; display: inline-block; margin-right: 10px;">
-                                <option value="classic">Klassisch</option>
+                                <option value="classic" data-i18n="plugins.quiz-show.ui.game_modes.classic">Klassisch</option>
                                 <option value="fastestFinger" data-i18n="plugins.quiz-show.labels.schnellste_finger">Schnellste Finger</option>
-                                <option value="elimination">Elimination</option>
-                                <option value="marathon">Marathon</option>
-                                <option value="duel">Duel</option>
+                                <option value="elimination" data-i18n="plugins.quiz-show.ui.game_modes.elimination">Elimination</option>
+                                <option value="marathon" data-i18n="plugins.quiz-show.ui.game_modes.marathon">Marathon</option>
+                                <option value="duel" data-i18n="plugins.quiz-show.ui.game_modes.duel">Duel</option>
                             </select>
                             <div class="category-filter-container">
                                 <button type="button" id="categoryFilterButton" class="category-filter-button">
@@ -152,8 +152,8 @@
                                 </div>
                             </div>
                             <button id="startQuizBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.quiz_starten"> Quiz Starten</button>
-                            <button id="nextQuestionBtn" class="btn btn-secondary" disabled data-i18n="quiz_show.game.next_question"> Nächste Frage</button>
-                            <button id="stopQuizBtn" class="btn btn-danger" disabled> Stoppen</button>
+                            <button id="nextQuestionBtn" class="btn btn-secondary" disabled data-i18n="plugins.quiz-show.quiz_show.game.next_question"> Nächste Frage</button>
+                            <button id="stopQuizBtn" class="btn btn-danger" disabled data-i18n="plugins.quiz-show.ui.actions.stop"> Stoppen</button>
                         </div>
                     </div>
                     <div class="panel-body">
@@ -170,7 +170,7 @@
                                 <div id="timerBar" class="timer-bar"></div>
                             </div>
                             <div class="timer-text">
-                                <span id="timeRemaining">30</span><span data-i18n="plugins.quiz-show.labels.s_verbleibend">s verbleibend
+                                <span id="timeRemaining" data-i18n="plugins.quiz-show.ui.defaults.round_duration">30</span><span data-i18n="plugins.quiz-show.labels.s_verbleibend">s verbleibend
                             </span></div>
                         </div>
                     </div>
@@ -202,8 +202,8 @@
                         </div>
                         <div class="dashboard-mini-leaderboard">
                             <div class="dashboard-mini-leaderboard__header">
-                                <h3 data-i18n="quiz_show.leaderboard.title">Leaderboard</h3>
-                                <span class="dashboard-mini-leaderboard__badge">Season</span>
+                                <h3 data-i18n="plugins.quiz-show.quiz_show.leaderboard.title">Leaderboard</h3>
+                                <span class="dashboard-mini-leaderboard__badge" data-i18n="plugins.quiz-show.ui.navigation.season">Season</span>
                             </div>
                             <div id="dashboardLeaderboardPreview" class="dashboard-mini-leaderboard__list">
                                 <p class="no-data" data-i18n="plugins.quiz-show.labels.keine_eintrage_f4a26a">Keine Eintr&auml;ge</p>
@@ -250,8 +250,8 @@
   }
 ]'></textarea>
                             <div class="button-group">
-                                <button id="uploadQuestionsBtn" class="btn btn-primary"> Hochladen</button>
-                                <button id="exportQuestionsBtn" class="btn btn-secondary"> Exportieren</button>
+                                <button id="uploadQuestionsBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.ui.actions.upload"> Hochladen</button>
+                                <button id="exportQuestionsBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.ui.actions.export"> Exportieren</button>
                             </div>
                         </div>
                     </div>
@@ -264,7 +264,7 @@
                     </div>
                     <div class="panel-body">
                         <div class="form-group">
-                            <label>Frage:</label>
+                            <label data-i18n="plugins.quiz-show.ui.questions.label">Frage:</label>
                             <input type="text" id="questionInput" class="form-control" placeholder="Was ist...?">
                         </div>
 
@@ -290,29 +290,29 @@
                         <div class="form-group">
                             <label data-i18n="plugins.quiz-show.labels.richtige_antwort_d45a43">Richtige Antwort:</label>
                             <select id="correctAnswer" class="form-control">
-                                <option value="0">A</option>
-                                <option value="1">B</option>
-                                <option value="2">C</option>
-                                <option value="3">D</option>
+                                <option value="0" data-i18n="plugins.quiz-show.ui.questions.answer_a">A</option>
+                                <option value="1" data-i18n="plugins.quiz-show.ui.questions.answer_b">B</option>
+                                <option value="2" data-i18n="plugins.quiz-show.ui.questions.answer_c">C</option>
+                                <option value="3" data-i18n="plugins.quiz-show.ui.questions.answer_d">D</option>
                             </select>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Kategorie:</label>
+                                <label data-i18n="plugins.quiz-show.ui.questions.category">Kategorie:</label>
                                 <input type="text" id="questionCategory" class="form-control" placeholder="Allgemein" list="categoryList">
                                 <datalist id="categoryList">
                                     <!-- Categories will be populated dynamically -->
                                 </datalist>
                             </div>
                             <div class="form-group">
-                                <label>Schwierigkeit:</label>
+                                <label data-i18n="plugins.quiz-show.ui.questions.difficulty">Schwierigkeit:</label>
                                 <select id="questionDifficulty" class="form-control">
-                                    <option value="1"> Leicht</option>
-                                    <option value="2" selected> Mittel</option>
-                                    <option value="3"> Schwer</option>
-                                    <option value="4"> Experte</option>
-                                    <option value="5"> Master</option>
+                                    <option value="1" data-i18n="plugins.quiz-show.ui.difficulty.easy"> Leicht</option>
+                                    <option value="2" selected data-i18n="plugins.quiz-show.ui.difficulty.medium"> Mittel</option>
+                                    <option value="3" data-i18n="plugins.quiz-show.ui.difficulty.hard"> Schwer</option>
+                                    <option value="4" data-i18n="plugins.quiz-show.ui.difficulty.expert"> Experte</option>
+                                    <option value="5" data-i18n="plugins.quiz-show.ui.difficulty.master"> Master</option>
                                 </select>
                             </div>
                         </div>
@@ -356,14 +356,14 @@
                 <div class="panel-body">
                     <!-- Info about OpenAI Configuration -->
                     <div class="info-message" style="margin-bottom: 20px; padding: 15px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px;">
-                        <strong data-i18n="quiz_show.ai_packages.config.title"> OpenAI Konfiguration</strong><br><span data-i18n="plugins.quiz-show.labels.der_openai_api_schlussel_wird_jetzt_zentral_im">
+                        <strong data-i18n="plugins.quiz-show.quiz_show.ai_packages.config.title"> OpenAI Konfiguration</strong><br><span data-i18n="plugins.quiz-show.labels.der_openai_api_schlussel_wird_jetzt_zentral_im">
                         Der OpenAI API-Schlüssel wird jetzt zentral im </span><strong>Haupteinstellungspanel</strong><span data-i18n="plugins.quiz-show.labels.einstellungen_openai_api_configuration_verwaltet"> (Einstellungen  OpenAI API Configuration) verwaltet.
                     </span></div>
 
                     <!-- Generate Question Package Section -->
                     <div class="panel" style="margin-bottom: 20px;">
                         <div class="panel-header">
-                            <h3 data-i18n="quiz_show.ai_packages.generate.title">Neues Fragenpaket Generieren</h3>
+                            <h3 data-i18n="plugins.quiz-show.quiz_show.ai_packages.generate.title">Neues Fragenpaket Generieren</h3>
                         </div>
                         <div class="panel-body">
                             <div id="generateWarning" class="warning-message" style="margin-bottom: 15px; display: none;" data-i18n="plugins.quiz-show.labels.bitte_konfigurieren_sie_zuerst_ihren_openai_api_schlussel">
@@ -383,7 +383,7 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="packageSize" data-i18n="quiz_show.ai_packages.generate.package_size">Anzahl Fragen</label>
+                                    <label for="packageSize" data-i18n="plugins.quiz-show.quiz_show.ai_packages.generate.package_size">Anzahl Fragen</label>
                                     <input
                                         type="number"
                                         id="packageSize"
@@ -395,7 +395,7 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="packageName" data-i18n="quiz_show.ai_packages.generate.package_name">Paketname (optional)</label>
+                                    <label for="packageName" data-i18n="plugins.quiz-show.quiz_show.ai_packages.generate.package_name">Paketname (optional)</label>
                                     <input
                                         type="text"
                                         id="packageName"
@@ -405,16 +405,16 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="packageLanguage">Sprache</label>
+                                    <label for="packageLanguage" data-i18n="plugins.quiz-show.ui.language.label">Sprache</label>
                                     <select id="packageLanguage" class="form-control">
-                                        <option value="de">Deutsch</option>
-                                        <option value="en">English</option>
+                                        <option value="de" data-i18n="plugins.quiz-show.ui.language.german">Deutsch</option>
+                                        <option value="en" data-i18n="plugins.quiz-show.ui.language.english">English</option>
                                         <option value="es" data-i18n="plugins.quiz-show.labels.espanol">Español</option>
                                         <option value="fr" data-i18n="plugins.quiz-show.labels.francais_b3fb1c">Français</option>
-                                        <option value="it">Italiano</option>
+                                        <option value="it" data-i18n="plugins.quiz-show.ui.language.italian">Italiano</option>
                                         <option value="pt" data-i18n="plugins.quiz-show.labels.portugues">Português</option>
-                                        <option value="nl">Nederlands</option>
-                                        <option value="pl">Polski</option>
+                                        <option value="nl" data-i18n="plugins.quiz-show.ui.language.dutch">Nederlands</option>
+                                        <option value="pl" data-i18n="plugins.quiz-show.ui.language.polish">Polski</option>
                                         <option value="ru" data-i18n="plugins.quiz-show.labels.label_f52753">Русский</option>
                                         <option value="tr" data-i18n="plugins.quiz-show.labels.turkce_585237">Türkçe</option>
                                         <option value="ja" data-i18n="plugins.quiz-show.labels.label_b556ff">日本語</option>
@@ -432,13 +432,13 @@
                                     <li data-i18n="plugins.quiz-show.labels.17_schwer">~17% Schwer (</li>
                                     <li data-i18n="plugins.quiz-show.labels.16_expert">~16% Expert (</li>
                                 </ul>
-                                <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #666;" data-i18n="quiz_show.ai_packages.generate.duplicate_info">
+                                <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #666;" data-i18n="plugins.quiz-show.quiz_show.ai_packages.generate.duplicate_info">
                                     Vorhandene Fragen in der Kategorie werden automatisch erkannt, um Duplikate zu vermeiden.
                                 </p>
                             </div>
 
                             <div class="form-actions">
-                                <button id="generatePackageBtn" class="btn btn-success" data-i18n="quiz_show.ai_packages.generate.button"> Fragenpaket Generieren</button>
+                                <button id="generatePackageBtn" class="btn btn-success" data-i18n="plugins.quiz-show.quiz_show.ai_packages.generate.button"> Fragenpaket Generieren</button>
                             </div>
                             <div id="generateMessage" class="message hidden" style="margin-top: 10px;"></div>
                             <div id="generationProgress" class="progress-container hidden" style="margin-top: 15px;">
@@ -456,7 +456,7 @@
                             <h3 data-i18n="plugins.quiz-show.labels.batch_fragenpakete_generieren"> Batch Fragenpakete Generieren</h3>
                         </div>
                         <div class="panel-body">
-                            <div id="batchGenerateWarning" class="warning-message" style="margin-bottom: 15px; display: none;" data-i18n="quiz_show.ai_packages.generate.warning">
+                            <div id="batchGenerateWarning" class="warning-message" style="margin-bottom: 15px; display: none;" data-i18n="plugins.quiz-show.quiz_show.ai_packages.generate.warning">
                                   Bitte konfigurieren Sie zuerst Ihren OpenAI API-Schlüssel oben.
                             </div>
 
@@ -488,16 +488,16 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="batchPackageLanguage">Sprache</label>
+                                <label for="batchPackageLanguage" data-i18n="plugins.quiz-show.ui.language.label">Sprache</label>
                                 <select id="batchPackageLanguage" class="form-control" style="max-width: 200px;">
-                                    <option value="de">Deutsch</option>
-                                    <option value="en">English</option>
+                                    <option value="de" data-i18n="plugins.quiz-show.ui.language.german">Deutsch</option>
+                                    <option value="en" data-i18n="plugins.quiz-show.ui.language.english">English</option>
                                     <option value="es" data-i18n="plugins.quiz-show.labels.espanol_b9c597">Español</option>
                                     <option value="fr" data-i18n="plugins.quiz-show.labels.francais">Français</option>
-                                    <option value="it">Italiano</option>
+                                    <option value="it" data-i18n="plugins.quiz-show.ui.language.italian">Italiano</option>
                                     <option value="pt" data-i18n="plugins.quiz-show.labels.portugues_5719d0">Português</option>
-                                    <option value="nl">Nederlands</option>
-                                    <option value="pl">Polski</option>
+                                    <option value="nl" data-i18n="plugins.quiz-show.ui.language.dutch">Nederlands</option>
+                                    <option value="pl" data-i18n="plugins.quiz-show.ui.language.polish">Polski</option>
                                     <option value="ru" data-i18n="plugins.quiz-show.labels.label_564957">Русский</option>
                                     <option value="tr" data-i18n="plugins.quiz-show.labels.turkce_b95de6">Türkçe</option>
                                     <option value="ja" data-i18n="plugins.quiz-show.labels.label_b36e4e">日本語</option>
@@ -524,7 +524,7 @@
                                 <div style="background: #f3f4f6; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                         <strong>Fortschritt:</strong>
-                                        <span id="batchProgressText">0 / 0</span>
+                                        <span id="batchProgressText" data-i18n="plugins.quiz-show.ui.status.progress">0 / 0</span>
                                     </div>
                                     <div class="progress-bar" style="height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden;">
                                         <div class="progress-fill" id="batchProgressBar" style="height: 100%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); width: 0%; transition: width 0.3s ease;"></div>
@@ -539,7 +539,7 @@
                     <!-- Question Packages List -->
                     <div class="panel">
                         <div class="panel-header">
-                            <h3 data-i18n="quiz_show.ai_packages.list.title"> Verfügbare Fragenpakete</h3>
+                            <h3 data-i18n="plugins.quiz-show.quiz_show.ai_packages.list.title"> Verfügbare Fragenpakete</h3>
                             <div class="panel-controls">
                                 <span id="packageCount" class="badge" data-i18n="plugins.quiz-show.labels.0_pakete">0 Pakete</span>
                             </div>
@@ -549,7 +549,7 @@
                                 <strong> Tipp:</strong><span data-i18n="plugins.quiz-show.labels.select_one_or_more_packages_to_use_only"> Wählen Sie ein oder mehrere Pakete aus, um nur Fragen aus diesen Paketen im Quiz zu verwenden. Wenn keine Pakete ausgewählt sind, werden alle Fragen verwendet.
                             </span></div>
                             <div id="packagesList" class="packages-list">
-                                <p class="no-data" data-i18n="quiz_show.ai_packages.list.no_packages">Keine Pakete vorhanden. Generieren Sie Ihr erstes Paket oben!</p>
+                                <p class="no-data" data-i18n="plugins.quiz-show.quiz_show.ai_packages.list.no_packages">Keine Pakete vorhanden. Generieren Sie Ihr erstes Paket oben!</p>
                             </div>
                         </div>
                     </div>
@@ -633,7 +633,7 @@
                         </div>
 
                         <div class="form-group checkbox-group">
-                            <label title="Ultra-Kompakt-Modus: Frage zuerst lesen, dann Antworten anzeigen (passt in 600x350)">
+                            <label title="Ultra-Kompakt-Modus: Frage zuerst lesen, dann Antworten anzeigen (passt in 600x350)" data-i18n-title="plugins.quiz-show.ui.tooltips.ultra_compact">
                                 <input type="checkbox" id="ultraKompaktModus">
                                 <span data-i18n="plugins.quiz-show.labels.ultra_kompakt_modus_600x350">Ultra-Kompakt-Modus (600x350)</span>
                             </label>
@@ -666,7 +666,7 @@
                         </div>
 
                         <div class="form-group checkbox-group">
-                            <label title="Aktiviert den 50:50 Joker - entfernt zwei falsche Antwortoptionen">
+                            <label title="Aktiviert den 50:50 Joker - entfernt zwei falsche Antwortoptionen" data-i18n-title="plugins.quiz-show.ui.tooltips.joker_fifty">
                                 <input type="checkbox" id="joker50Enabled" checked>
                                 <span data-i18n="plugins.quiz-show.labels.50_50_joker_aktiviert_joker50">50:50 Joker aktiviert (!joker50)</span>
                             </label>
@@ -674,7 +674,7 @@
                         </div>
 
                         <div class="form-group checkbox-group">
-                            <label title="Aktiviert den Info Joker - zeigt eine falsche Antwort zur Orientierung">
+                            <label title="Aktiviert den Info Joker - zeigt eine falsche Antwort zur Orientierung" data-i18n-title="plugins.quiz-show.ui.tooltips.joker_info">
                                 <input type="checkbox" id="jokerInfoEnabled" checked>
                                 <span data-i18n="plugins.quiz-show.labels.info_joker_aktiviert_jokerinfo">Info Joker aktiviert (!jokerInfo)</span>
                             </label>
@@ -682,7 +682,7 @@
                         </div>
 
                         <div class="form-group checkbox-group">
-                            <label title="Aktiviert den Zeit Joker - verlängert die verfügbare Zeit zum Antworten">
+                            <label title="Aktiviert den Zeit Joker - verlängert die verfügbare Zeit zum Antworten" data-i18n-title="plugins.quiz-show.ui.tooltips.joker_time">
                                 <input type="checkbox" id="jokerTimeEnabled" checked>
                                 <span data-i18n="plugins.quiz-show.labels.zeit_joker_aktiviert_jokertime">Zeit Joker aktiviert (!jokerTime)</span>
                             </label>
@@ -708,7 +708,7 @@
                         </span></div>
 
                         <!-- Answer Commands -->
-                        <h3 style="margin-bottom: 15px; font-size: 16px; font-weight: 600;">Antwort-Befehle</h3>
+                        <h3 style="margin-bottom: 15px; font-size: 16px; font-weight: 600;" data-i18n="plugins.quiz-show.ui.commands.answer">Antwort-Befehle</h3>
 
                         <div class="form-group checkbox-group">
                             <label>
@@ -743,10 +743,10 @@
                         </div>
 
                         <!-- Joker Commands -->
-                        <h3 style="margin-top: 25px; margin-bottom: 15px; font-size: 16px; font-weight: 600;">Joker-Befehle</h3>
+                        <h3 style="margin-top: 25px; margin-bottom: 15px; font-size: 16px; font-weight: 600;" data-i18n="plugins.quiz-show.ui.commands.joker">Joker-Befehle</h3>
 
                         <div class="form-group">
-                            <label>Joker-Command-Prefix:</label>
+                            <label data-i18n="plugins.quiz-show.ui.commands.joker_prefix">Joker-Command-Prefix:</label>
                             <select id="jokerCommandPrefix" class="form-control">
                                 <option value="!joker" data-i18n="plugins.quiz-show.labels.joker_standard">!joker (Standard)</option>
                                 <option value="/joker">/joker</option>
@@ -765,7 +765,7 @@
                         </div>
 
                         <!-- Command Permissions -->
-                        <h3 style="margin-top: 25px; margin-bottom: 15px; font-size: 16px; font-weight: 600;">Berechtigungen</h3>
+                        <h3 style="margin-top: 25px; margin-bottom: 15px; font-size: 16px; font-weight: 600;" data-i18n="plugins.quiz-show.ui.sections.permissions">Berechtigungen</h3>
 
                         <div class="form-group">
                             <label data-i18n="plugins.quiz-show.labels.minimale_berechtigung_fur_antworten">Minimale Berechtigung für Antworten:</label>
@@ -779,7 +779,7 @@
                         </div>
 
                         <!-- Integration Status -->
-                        <h3 style="margin-top: 25px; margin-bottom: 15px; font-size: 16px; font-weight: 600;">Integration</h3>
+                        <h3 style="margin-top: 25px; margin-bottom: 15px; font-size: 16px; font-weight: 600;" data-i18n="plugins.quiz-show.ui.sections.integration">Integration</h3>
 
                         <div class="form-group checkbox-group">
                             <label>
@@ -802,7 +802,7 @@
                     </div>
                     <div class="panel-body">
                         <div class="form-group checkbox-group">
-                            <label title="Aktiviert die automatische Vorlesefunktion für Fragen">
+                            <label title="Aktiviert die automatische Vorlesefunktion für Fragen" data-i18n-title="plugins.quiz-show.ui.tooltips.tts">
                                 <input type="checkbox" id="ttsEnabled">
                                 <span data-i18n="plugins.quiz-show.labels.tts_aktiviert_fragen_vorlesen">TTS Aktiviert (Fragen vorlesen)</span>
                             </label>
@@ -811,7 +811,7 @@
                         <div class="form-group">
                             <label title="Wählen Sie die Stimme für die Sprachausgabe" data-i18n="plugins.quiz-show.labels.tts_stimme">TTS Stimme:</label>
                             <select id="ttsVoice" class="form-control">
-                                <option value="default">Standard</option>
+                                <option value="default" data-i18n="plugins.quiz-show.ui.options.standard">Standard</option>
                                 <option value="de-DE-Standard-A" data-i18n="plugins.quiz-show.labels.deutsch_weiblich_a">Deutsch (Weiblich A)</option>
                                 <option value="de-DE-Standard-B" data-i18n="plugins.quiz-show.labels.deutsch_mannlich_b">Deutsch (Männlich B)</option>
                                 <option value="de-DE-Standard-C" data-i18n="plugins.quiz-show.labels.deutsch_weiblich_c">Deutsch (Weiblich C)</option>
@@ -927,7 +927,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label>Animationsstil:</label>
+                            <label data-i18n="plugins.quiz-show.ui.animation.style">Animationsstil:</label>
                             <select id="voterIconAnimation" class="form-control">
                                 <option value="fade" selected data-i18n="plugins.quiz-show.labels.einblenden_fade">Einblenden (Fade)</option>
                                 <option value="slide" data-i18n="plugins.quiz-show.labels.einsliden_slide">Einsliden (Slide)</option>
@@ -935,11 +935,11 @@
                         </div>
 
                         <div class="form-group">
-                            <label>Positionierung:</label>
+                            <label data-i18n="plugins.quiz-show.ui.layout.position">Positionierung:</label>
                             <select id="voterIconPosition" class="form-control">
                                 <option value="above" selected data-i18n="plugins.quiz-show.labels.uber_der_antwort">Über der Antwort</option>
                                 <option value="beside" data-i18n="plugins.quiz-show.labels.neben_der_antwort">Neben der Antwort</option>
-                                <option value="embedded">Eingebettet</option>
+                                <option value="embedded" data-i18n="plugins.quiz-show.ui.layout.embedded">Eingebettet</option>
                             </select>
                         </div>
 
@@ -1015,7 +1015,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label>KI-Provider:</label>
+                            <label data-i18n="plugins.quiz-show.ui.ai.provider">KI-Provider:</label>
                             <select id="llmProvider" class="form-control">
                                 <option value="openai" data-i18n="plugins.quiz-show.labels.openai_api_key_erforderlich">OpenAI (API-Key erforderlich)</option>
                                 <option value="ollama" data-i18n="plugins.quiz-show.labels.ollama_lokal_kein_api_key_notig">Ollama (Lokal, kein API-Key nötig)</option>
@@ -1023,12 +1023,12 @@
                         </div>
 
                         <div class="form-group" id="llmApiKeyGroup">
-                            <label for="llmApiKey">API-Key:</label>
+                            <label for="llmApiKey" data-i18n="plugins.quiz-show.ui.ai.api_key">API-Key:</label>
                             <input type="password" id="llmApiKey" class="form-control" placeholder="sk-... oder leer lassen für Ollama">
                         </div>
 
                         <div class="form-group">
-                            <label for="llmModel">Modell:</label>
+                            <label for="llmModel" data-i18n="plugins.quiz-show.ui.ai.model">Modell:</label>
                             <input type="text" id="llmModel" class="form-control" placeholder="z.B. gpt-5-mini, llama3.2, mistral">
                             <div class="help-text small" data-i18n="plugins.quiz-show.labels.openai_gpt_5_mini_gpt_4o_mini_ollama">OpenAI: gpt-5-mini, gpt-4o-mini | Ollama: llama3.2, mistral, qwen2.5</div>
                         </div>
@@ -1043,14 +1043,14 @@
                             <div class="form-group">
                                 <label for="llmLanguage" data-i18n="plugins.quiz-show.labels.sprache_der_fragen">Sprache der Fragen:</label>
                                 <select id="llmLanguage" class="form-control">
-                                    <option value="de">Deutsch</option>
-                                    <option value="en">English</option>
+                                    <option value="de" data-i18n="plugins.quiz-show.ui.language.german">Deutsch</option>
+                                    <option value="en" data-i18n="plugins.quiz-show.ui.language.english">English</option>
                                     <option value="es" data-i18n="plugins.quiz-show.labels.espanol_be5d80">Español</option>
                                     <option value="fr" data-i18n="plugins.quiz-show.labels.francais_f53a66">Français</option>
-                                    <option value="it">Italiano</option>
+                                    <option value="it" data-i18n="plugins.quiz-show.ui.language.italian">Italiano</option>
                                     <option value="pt" data-i18n="plugins.quiz-show.labels.portugues_aad906">Português</option>
-                                    <option value="nl">Nederlands</option>
-                                    <option value="pl">Polski</option>
+                                    <option value="nl" data-i18n="plugins.quiz-show.ui.language.dutch">Nederlands</option>
+                                    <option value="pl" data-i18n="plugins.quiz-show.ui.language.polish">Polski</option>
                                     <option value="ru" data-i18n="plugins.quiz-show.labels.label_6a9523">Русский</option>
                                     <option value="tr" data-i18n="plugins.quiz-show.labels.turkce">Türkçe</option>
                                     <option value="ja" data-i18n="plugins.quiz-show.labels.label_cb790d">日本語</option>
@@ -1059,12 +1059,12 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="llmDifficulty">Schwierigkeitsgrad:</label>
+                                <label for="llmDifficulty" data-i18n="plugins.quiz-show.ui.questions.difficulty_level">Schwierigkeitsgrad:</label>
                                 <select id="llmDifficulty" class="form-control">
-                                    <option value="1"> Leicht</option>
-                                    <option value="2" selected> Mittel</option>
-                                    <option value="3"> Schwer</option>
-                                    <option value="4"> Experte</option>
+                                    <option value="1" data-i18n="plugins.quiz-show.ui.difficulty.easy"> Leicht</option>
+                                    <option value="2" selected data-i18n="plugins.quiz-show.ui.difficulty.medium"> Mittel</option>
+                                    <option value="3" data-i18n="plugins.quiz-show.ui.difficulty.hard"> Schwer</option>
+                                    <option value="4" data-i18n="plugins.quiz-show.ui.difficulty.expert"> Experte</option>
                                 </select>
                             </div>
                         </div>
@@ -1090,15 +1090,15 @@
         <div id="leaderboard" class="tab-content">
             <div class="panel">
                 <div class="panel-header">
-                    <h2 data-i18n="quiz_show.leaderboard.title"> Leaderboard</h2>
+                    <h2 data-i18n="plugins.quiz-show.quiz_show.leaderboard.title"> Leaderboard</h2>
                     <div class="panel-controls">
                         <select id="seasonSelect" class="form-control" style="width: auto; display: inline-block; margin-right: 10px;">
                             <option value="active" data-i18n="plugins.quiz-show.labels.aktuelle_saison">Aktuelle Saison</option>
                             <!-- Seasons will be populated dynamically -->
                         </select>
                         <button id="newSeasonBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.neue_saison"> Neue Saison</button>
-                        <button id="exportLeaderboardBtn" class="btn btn-secondary"> Exportieren</button>
-                        <button id="importLeaderboardBtn" class="btn btn-secondary"> Importieren</button>
+                        <button id="exportLeaderboardBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.ui.actions.export"> Exportieren</button>
+                        <button id="importLeaderboardBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.ui.actions.import"> Importieren</button>
                         <button id="resetLeaderboardBtn" class="btn btn-danger" data-i18n="plugins.quiz-show.labels.zurucksetzen"> Zurücksetzen</button>
                     </div>
                 </div>
@@ -1107,9 +1107,9 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Platz</th>
-                                    <th>Username</th>
-                                    <th data-i18n="quiz_show.leaderboard.score">Punkte</th>
+                                    <th data-i18n="plugins.quiz-show.ui.leaderboard.rank">Platz</th>
+                                    <th data-i18n="plugins.quiz-show.ui.leaderboard.username">Username</th>
+                                    <th data-i18n="plugins.quiz-show.quiz_show.leaderboard.score">Punkte</th>
                                 </tr>
                             </thead>
                             <tbody id="leaderboardBody">
@@ -1127,7 +1127,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h3 data-i18n="plugins.quiz-show.labels.leaderboard_importieren">Leaderboard Importieren</h3>
-                        <button class="modal-close">&times;</button>
+                        <button class="modal-close" data-i18n="plugins.quiz-show.ui.actions.close">&times;</button>
                     </div>
                     <div class="modal-body">
                         <textarea id="importLeaderboardJson" class="json-input" placeholder='[
@@ -1139,8 +1139,8 @@
 ]'></textarea>
                     </div>
                     <div class="modal-footer">
-                        <button id="confirmImportBtn" class="btn btn-primary">Importieren</button>
-                        <button id="cancelImportBtn" class="btn btn-secondary">Abbrechen</button>
+                        <button id="confirmImportBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.ui.actions.import">Importieren</button>
+                        <button id="cancelImportBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.ui.actions.cancel">Abbrechen</button>
                     </div>
                 </div>
             </div>
@@ -1153,7 +1153,7 @@
                 <div class="panel-header">
                     <h2 data-i18n="plugins.quiz-show.labels.overlay_konfiguration_d05390"> Overlay Konfiguration</h2>
                     <div class="panel-controls">
-                        <button id="openOverlayBtn" class="btn btn-secondary" data-i18n="quiz_show.overlay.open"> Overlay öffnen</button>
+                        <button id="openOverlayBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.quiz_show.overlay.open"> Overlay öffnen</button>
                         <button id="openSplitscreenOverlayBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.splitscreen_offnen"> Splitscreen öffnen</button>
                         <button id="openLeaderboardOverlayBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.leaderboard_offnen"> Leaderboard öffnen</button>
                         <button id="refreshPreviewBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.vorschau_aktualisieren"> Vorschau aktualisieren</button>
@@ -1202,7 +1202,7 @@
                                         <input type="text" id="layoutName" class="form-control" placeholder="Mein Custom Layout">
                                     </div>
                                     <div class="form-group">
-                                        <label>Ausrichtung</label>
+                                        <label data-i18n="plugins.quiz-show.ui.layout.orientation">Ausrichtung</label>
                                         <select id="layoutOrientation" class="form-control">
                                             <option value="horizontal" data-i18n="plugins.quiz-show.labels.horizontal_landscape">Horizontal (Landscape)</option>
                                             <option value="vertical" data-i18n="plugins.quiz-show.labels.vertikal_portrait">Vertikal (Portrait)</option>
@@ -1239,38 +1239,38 @@
                                     <table class="element-config-table">
                                         <thead>
                                             <tr>
-                                                <th>Element</th>
+                                                <th data-i18n="plugins.quiz-show.ui.layout.element">Element</th>
                                                 <th data-i18n="plugins.quiz-show.labels.spalte_x">Spalte (X)</th>
                                                 <th data-i18n="plugins.quiz-show.labels.zeile_y">Zeile (Y)</th>
                                                 <th data-i18n="plugins.quiz-show.labels.gro_e_ff06a4">Größe</th>
-                                                <th>Sichtbar</th>
+                                                <th data-i18n="plugins.quiz-show.ui.layout.visible">Sichtbar</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr data-element="question">
-                                                <td><strong data-i18n="quiz_show.questions.question_text"> Frage</strong></td>
+                                                <td><strong data-i18n="plugins.quiz-show.quiz_show.questions.question_text"> Frage</strong></td>
                                                 <td>
                                                     <select class="grid-column" data-element="question">
-                                                        <option value="A">A</option>
-                                                        <option value="B">B</option>
-                                                        <option value="C" selected>C</option>
-                                                        <option value="D">D</option>
-                                                        <option value="E">E</option>
-                                                        <option value="F">F</option>
-                                                        <option value="G">G</option>
-                                                        <option value="H">H</option>
-                                                        <option value="I">I</option>
-                                                        <option value="J">J</option>
-                                                        <option value="K">K</option>
-                                                        <option value="L">L</option>
-                                                        <option value="M">M</option>
-                                                        <option value="N">N</option>
-                                                        <option value="O">O</option>
-                                                        <option value="P">P</option>
-                                                        <option value="Q">Q</option>
-                                                        <option value="R">R</option>
-                                                        <option value="S">S</option>
-                                                        <option value="T">T</option>
+                                                        <option value="A" data-i18n="plugins.quiz-show.ui.grid.column_a">A</option>
+                                                        <option value="B" data-i18n="plugins.quiz-show.ui.grid.column_b">B</option>
+                                                        <option value="C" selected data-i18n="plugins.quiz-show.ui.grid.column_c">C</option>
+                                                        <option value="D" data-i18n="plugins.quiz-show.ui.grid.column_d">D</option>
+                                                        <option value="E" data-i18n="plugins.quiz-show.ui.grid.column_e">E</option>
+                                                        <option value="F" data-i18n="plugins.quiz-show.ui.grid.column_f">F</option>
+                                                        <option value="G" data-i18n="plugins.quiz-show.ui.grid.column_g">G</option>
+                                                        <option value="H" data-i18n="plugins.quiz-show.ui.grid.column_h">H</option>
+                                                        <option value="I" data-i18n="plugins.quiz-show.ui.grid.column_i">I</option>
+                                                        <option value="J" data-i18n="plugins.quiz-show.ui.grid.column_j">J</option>
+                                                        <option value="K" data-i18n="plugins.quiz-show.ui.grid.column_k">K</option>
+                                                        <option value="L" data-i18n="plugins.quiz-show.ui.grid.column_l">L</option>
+                                                        <option value="M" data-i18n="plugins.quiz-show.ui.grid.column_m">M</option>
+                                                        <option value="N" data-i18n="plugins.quiz-show.ui.grid.column_n">N</option>
+                                                        <option value="O" data-i18n="plugins.quiz-show.ui.grid.column_o">O</option>
+                                                        <option value="P" data-i18n="plugins.quiz-show.ui.grid.column_p">P</option>
+                                                        <option value="Q" data-i18n="plugins.quiz-show.ui.grid.column_q">Q</option>
+                                                        <option value="R" data-i18n="plugins.quiz-show.ui.grid.column_r">R</option>
+                                                        <option value="S" data-i18n="plugins.quiz-show.ui.grid.column_s">S</option>
+                                                        <option value="T" data-i18n="plugins.quiz-show.ui.grid.column_t">T</option>
                                                     </select>
                                                 </td>
                                                 <td>
@@ -1292,26 +1292,26 @@
                                                 <td><strong> Antworten</strong></td>
                                                 <td>
                                                     <select class="grid-column" data-element="answers">
-                                                        <option value="A">A</option>
-                                                        <option value="B">B</option>
-                                                        <option value="C" selected>C</option>
-                                                        <option value="D">D</option>
-                                                        <option value="E">E</option>
-                                                        <option value="F">F</option>
-                                                        <option value="G">G</option>
-                                                        <option value="H">H</option>
-                                                        <option value="I">I</option>
-                                                        <option value="J">J</option>
-                                                        <option value="K">K</option>
-                                                        <option value="L">L</option>
-                                                        <option value="M">M</option>
-                                                        <option value="N">N</option>
-                                                        <option value="O">O</option>
-                                                        <option value="P">P</option>
-                                                        <option value="Q">Q</option>
-                                                        <option value="R">R</option>
-                                                        <option value="S">S</option>
-                                                        <option value="T">T</option>
+                                                        <option value="A" data-i18n="plugins.quiz-show.ui.grid.column_a">A</option>
+                                                        <option value="B" data-i18n="plugins.quiz-show.ui.grid.column_b">B</option>
+                                                        <option value="C" selected data-i18n="plugins.quiz-show.ui.grid.column_c">C</option>
+                                                        <option value="D" data-i18n="plugins.quiz-show.ui.grid.column_d">D</option>
+                                                        <option value="E" data-i18n="plugins.quiz-show.ui.grid.column_e">E</option>
+                                                        <option value="F" data-i18n="plugins.quiz-show.ui.grid.column_f">F</option>
+                                                        <option value="G" data-i18n="plugins.quiz-show.ui.grid.column_g">G</option>
+                                                        <option value="H" data-i18n="plugins.quiz-show.ui.grid.column_h">H</option>
+                                                        <option value="I" data-i18n="plugins.quiz-show.ui.grid.column_i">I</option>
+                                                        <option value="J" data-i18n="plugins.quiz-show.ui.grid.column_j">J</option>
+                                                        <option value="K" data-i18n="plugins.quiz-show.ui.grid.column_k">K</option>
+                                                        <option value="L" data-i18n="plugins.quiz-show.ui.grid.column_l">L</option>
+                                                        <option value="M" data-i18n="plugins.quiz-show.ui.grid.column_m">M</option>
+                                                        <option value="N" data-i18n="plugins.quiz-show.ui.grid.column_n">N</option>
+                                                        <option value="O" data-i18n="plugins.quiz-show.ui.grid.column_o">O</option>
+                                                        <option value="P" data-i18n="plugins.quiz-show.ui.grid.column_p">P</option>
+                                                        <option value="Q" data-i18n="plugins.quiz-show.ui.grid.column_q">Q</option>
+                                                        <option value="R" data-i18n="plugins.quiz-show.ui.grid.column_r">R</option>
+                                                        <option value="S" data-i18n="plugins.quiz-show.ui.grid.column_s">S</option>
+                                                        <option value="T" data-i18n="plugins.quiz-show.ui.grid.column_t">T</option>
                                                     </select>
                                                 </td>
                                                 <td>
@@ -1333,26 +1333,26 @@
                                                 <td><strong> Timer</strong></td>
                                                 <td>
                                                     <select class="grid-column" data-element="timer">
-                                                        <option value="A">A</option>
-                                                        <option value="B">B</option>
-                                                        <option value="C">C</option>
-                                                        <option value="D">D</option>
-                                                        <option value="E">E</option>
-                                                        <option value="F">F</option>
-                                                        <option value="G">G</option>
-                                                        <option value="H">H</option>
-                                                        <option value="I">I</option>
-                                                        <option value="J">J</option>
-                                                        <option value="K">K</option>
-                                                        <option value="L">L</option>
-                                                        <option value="M">M</option>
-                                                        <option value="N">N</option>
-                                                        <option value="O" selected>O</option>
-                                                        <option value="P">P</option>
-                                                        <option value="Q">Q</option>
-                                                        <option value="R">R</option>
-                                                        <option value="S">S</option>
-                                                        <option value="T">T</option>
+                                                        <option value="A" data-i18n="plugins.quiz-show.ui.grid.column_a">A</option>
+                                                        <option value="B" data-i18n="plugins.quiz-show.ui.grid.column_b">B</option>
+                                                        <option value="C" data-i18n="plugins.quiz-show.ui.grid.column_c">C</option>
+                                                        <option value="D" data-i18n="plugins.quiz-show.ui.grid.column_d">D</option>
+                                                        <option value="E" data-i18n="plugins.quiz-show.ui.grid.column_e">E</option>
+                                                        <option value="F" data-i18n="plugins.quiz-show.ui.grid.column_f">F</option>
+                                                        <option value="G" data-i18n="plugins.quiz-show.ui.grid.column_g">G</option>
+                                                        <option value="H" data-i18n="plugins.quiz-show.ui.grid.column_h">H</option>
+                                                        <option value="I" data-i18n="plugins.quiz-show.ui.grid.column_i">I</option>
+                                                        <option value="J" data-i18n="plugins.quiz-show.ui.grid.column_j">J</option>
+                                                        <option value="K" data-i18n="plugins.quiz-show.ui.grid.column_k">K</option>
+                                                        <option value="L" data-i18n="plugins.quiz-show.ui.grid.column_l">L</option>
+                                                        <option value="M" data-i18n="plugins.quiz-show.ui.grid.column_m">M</option>
+                                                        <option value="N" data-i18n="plugins.quiz-show.ui.grid.column_n">N</option>
+                                                        <option value="O" selected data-i18n="plugins.quiz-show.ui.grid.column_o">O</option>
+                                                        <option value="P" data-i18n="plugins.quiz-show.ui.grid.column_p">P</option>
+                                                        <option value="Q" data-i18n="plugins.quiz-show.ui.grid.column_q">Q</option>
+                                                        <option value="R" data-i18n="plugins.quiz-show.ui.grid.column_r">R</option>
+                                                        <option value="S" data-i18n="plugins.quiz-show.ui.grid.column_s">S</option>
+                                                        <option value="T" data-i18n="plugins.quiz-show.ui.grid.column_t">T</option>
                                                     </select>
                                                 </td>
                                                 <td>
@@ -1371,29 +1371,29 @@
                                                 </td>
                                             </tr>
                                             <tr data-element="leaderboard">
-                                                <td><strong data-i18n="quiz_show.leaderboard.title"> Leaderboard</strong></td>
+                                                <td><strong data-i18n="plugins.quiz-show.quiz_show.leaderboard.title"> Leaderboard</strong></td>
                                                 <td>
                                                     <select class="grid-column" data-element="leaderboard">
-                                                        <option value="A">A</option>
-                                                        <option value="B">B</option>
-                                                        <option value="C">C</option>
-                                                        <option value="D">D</option>
-                                                        <option value="E">E</option>
-                                                        <option value="F">F</option>
-                                                        <option value="G">G</option>
-                                                        <option value="H">H</option>
-                                                        <option value="I">I</option>
-                                                        <option value="J">J</option>
-                                                        <option value="K">K</option>
-                                                        <option value="L">L</option>
-                                                        <option value="M">M</option>
-                                                        <option value="N">N</option>
-                                                        <option value="O" selected>O</option>
-                                                        <option value="P">P</option>
-                                                        <option value="Q">Q</option>
-                                                        <option value="R">R</option>
-                                                        <option value="S">S</option>
-                                                        <option value="T">T</option>
+                                                        <option value="A" data-i18n="plugins.quiz-show.ui.grid.column_a">A</option>
+                                                        <option value="B" data-i18n="plugins.quiz-show.ui.grid.column_b">B</option>
+                                                        <option value="C" data-i18n="plugins.quiz-show.ui.grid.column_c">C</option>
+                                                        <option value="D" data-i18n="plugins.quiz-show.ui.grid.column_d">D</option>
+                                                        <option value="E" data-i18n="plugins.quiz-show.ui.grid.column_e">E</option>
+                                                        <option value="F" data-i18n="plugins.quiz-show.ui.grid.column_f">F</option>
+                                                        <option value="G" data-i18n="plugins.quiz-show.ui.grid.column_g">G</option>
+                                                        <option value="H" data-i18n="plugins.quiz-show.ui.grid.column_h">H</option>
+                                                        <option value="I" data-i18n="plugins.quiz-show.ui.grid.column_i">I</option>
+                                                        <option value="J" data-i18n="plugins.quiz-show.ui.grid.column_j">J</option>
+                                                        <option value="K" data-i18n="plugins.quiz-show.ui.grid.column_k">K</option>
+                                                        <option value="L" data-i18n="plugins.quiz-show.ui.grid.column_l">L</option>
+                                                        <option value="M" data-i18n="plugins.quiz-show.ui.grid.column_m">M</option>
+                                                        <option value="N" data-i18n="plugins.quiz-show.ui.grid.column_n">N</option>
+                                                        <option value="O" selected data-i18n="plugins.quiz-show.ui.grid.column_o">O</option>
+                                                        <option value="P" data-i18n="plugins.quiz-show.ui.grid.column_p">P</option>
+                                                        <option value="Q" data-i18n="plugins.quiz-show.ui.grid.column_q">Q</option>
+                                                        <option value="R" data-i18n="plugins.quiz-show.ui.grid.column_r">R</option>
+                                                        <option value="S" data-i18n="plugins.quiz-show.ui.grid.column_s">S</option>
+                                                        <option value="T" data-i18n="plugins.quiz-show.ui.grid.column_t">T</option>
                                                     </select>
                                                 </td>
                                                 <td>
@@ -1415,26 +1415,26 @@
                                                 <td><strong data-i18n="plugins.quiz-show.labels.joker_info"> Joker Info</strong></td>
                                                 <td>
                                                     <select class="grid-column" data-element="jokerInfo">
-                                                        <option value="A">A</option>
-                                                        <option value="B">B</option>
-                                                        <option value="C" selected>C</option>
-                                                        <option value="D">D</option>
-                                                        <option value="E">E</option>
-                                                        <option value="F">F</option>
-                                                        <option value="G">G</option>
-                                                        <option value="H">H</option>
-                                                        <option value="I">I</option>
-                                                        <option value="J">J</option>
-                                                        <option value="K">K</option>
-                                                        <option value="L">L</option>
-                                                        <option value="M">M</option>
-                                                        <option value="N">N</option>
-                                                        <option value="O">O</option>
-                                                        <option value="P">P</option>
-                                                        <option value="Q">Q</option>
-                                                        <option value="R">R</option>
-                                                        <option value="S">S</option>
-                                                        <option value="T">T</option>
+                                                        <option value="A" data-i18n="plugins.quiz-show.ui.grid.column_a">A</option>
+                                                        <option value="B" data-i18n="plugins.quiz-show.ui.grid.column_b">B</option>
+                                                        <option value="C" selected data-i18n="plugins.quiz-show.ui.grid.column_c">C</option>
+                                                        <option value="D" data-i18n="plugins.quiz-show.ui.grid.column_d">D</option>
+                                                        <option value="E" data-i18n="plugins.quiz-show.ui.grid.column_e">E</option>
+                                                        <option value="F" data-i18n="plugins.quiz-show.ui.grid.column_f">F</option>
+                                                        <option value="G" data-i18n="plugins.quiz-show.ui.grid.column_g">G</option>
+                                                        <option value="H" data-i18n="plugins.quiz-show.ui.grid.column_h">H</option>
+                                                        <option value="I" data-i18n="plugins.quiz-show.ui.grid.column_i">I</option>
+                                                        <option value="J" data-i18n="plugins.quiz-show.ui.grid.column_j">J</option>
+                                                        <option value="K" data-i18n="plugins.quiz-show.ui.grid.column_k">K</option>
+                                                        <option value="L" data-i18n="plugins.quiz-show.ui.grid.column_l">L</option>
+                                                        <option value="M" data-i18n="plugins.quiz-show.ui.grid.column_m">M</option>
+                                                        <option value="N" data-i18n="plugins.quiz-show.ui.grid.column_n">N</option>
+                                                        <option value="O" data-i18n="plugins.quiz-show.ui.grid.column_o">O</option>
+                                                        <option value="P" data-i18n="plugins.quiz-show.ui.grid.column_p">P</option>
+                                                        <option value="Q" data-i18n="plugins.quiz-show.ui.grid.column_q">Q</option>
+                                                        <option value="R" data-i18n="plugins.quiz-show.ui.grid.column_r">R</option>
+                                                        <option value="S" data-i18n="plugins.quiz-show.ui.grid.column_s">S</option>
+                                                        <option value="T" data-i18n="plugins.quiz-show.ui.grid.column_t">T</option>
                                                     </select>
                                                 </td>
                                                 <td>
@@ -1493,10 +1493,10 @@
                         <div class="accordion-inner">
                             <div class="form-grid-2col">
                                 <div class="form-group">
-                                    <label>Theme:</label>
+                                    <label data-i18n="plugins.quiz-show.ui.hud.theme">Theme:</label>
                                     <select id="hudTheme" class="form-control">
-                                        <option value="night">Night</option>
-                                        <option value="day">Day</option>
+                                        <option value="night" data-i18n="plugins.quiz-show.ui.hud.night">Night</option>
+                                        <option value="day" data-i18n="plugins.quiz-show.ui.hud.day">Day</option>
                                         <option value="contrast" data-i18n="plugins.quiz-show.labels.high_contrast">High Contrast</option>
                                         <option value="vision-impaired" data-i18n="plugins.quiz-show.labels.vision_impaired_80f6d8">Vision Impaired</option>
                                     </select>
@@ -1506,13 +1506,13 @@
                                     <label data-i18n="plugins.quiz-show.labels.antworten_layout">Antworten Layout:</label>
                                     <select id="answersLayout" class="form-control">
                                         <option value="grid" data-i18n="plugins.quiz-show.labels.grid_2x2">Grid (2x2)</option>
-                                        <option value="vertical">Vertikal</option>
-                                        <option value="horizontal">Horizontal</option>
+                                        <option value="vertical" data-i18n="plugins.quiz-show.ui.layout.vertical">Vertikal</option>
+                                        <option value="horizontal" data-i18n="plugins.quiz-show.ui.layout.horizontal">Horizontal</option>
                                     </select>
                                 </div>
 
                                 <div class="form-group">
-                                    <label>Timer-Variante:</label>
+                                    <label data-i18n="plugins.quiz-show.ui.hud.timer_variant">Timer-Variante:</label>
                                     <select id="timerVariant" class="form-control">
                                         <option value="circular" selected data-i18n="plugins.quiz-show.labels.circular_svg">Circular SVG</option>
                                         <option value="bar" data-i18n="plugins.quiz-show.labels.progress_bar">Progress Bar</option>
@@ -1523,15 +1523,15 @@
                             </div>
 
                             <div class="form-group">
-                                <label>Animations-Geschwindigkeit:</label>
+                                <label data-i18n="plugins.quiz-show.ui.hud.animation_speed">Animations-Geschwindigkeit:</label>
                                 <input type="range" id="animationSpeed" min="0.5" max="2" step="0.1" value="1" class="form-range">
-                                <div class="range-value"><span id="animationSpeedValue">1.0</span>x</div>
+                                <div class="range-value"><span id="animationSpeedValue" data-i18n="plugins.quiz-show.ui.hud.animation_speed_value">1.0</span>x</div>
                             </div>
 
                             <div class="form-group">
                                 <label data-i18n="plugins.quiz-show.labels.glow_intensitat">Glow-Intensität:</label>
                                 <input type="range" id="glowIntensity" min="0" max="2" step="0.1" value="1" class="form-range">
-                                <div class="range-value"><span id="glowIntensityValue">1.0</span>x</div>
+                                <div class="range-value"><span id="glowIntensityValue" data-i18n="plugins.quiz-show.ui.hud.animation_speed_value">1.0</span>x</div>
                             </div>
 
                             <div class="button-group">
@@ -1546,14 +1546,14 @@
                 <div class="accordion-section">
                     <button class="accordion-header" data-section="animations">
                         <span class="accordion-icon"></span>
-                        <span class="accordion-title">Animationen</span>
+                        <span class="accordion-title" data-i18n="plugins.quiz-show.ui.hud.animations">Animationen</span>
                         <span class="accordion-arrow"></span>
                     </button>
                     <div class="accordion-content" data-content="animations">
                         <div class="accordion-inner">
                             <div class="form-grid-2col">
                                 <div class="form-group">
-                                    <label>Frage-Einblendung:</label>
+                                    <label data-i18n="plugins.quiz-show.ui.hud.question_appearance">Frage-Einblendung:</label>
                                     <select id="questionAnimation" class="form-control">
                                         <option value="slide-in-left" data-i18n="plugins.quiz-show.labels.slide_in_left">Slide In Left</option>
                                         <option value="slide-in-right" data-i18n="plugins.quiz-show.labels.slide_in_right">Slide In Right</option>
@@ -1602,7 +1602,7 @@
                     </button>
                     <div class="accordion-content" data-content="colors">
                         <div class="accordion-inner">
-                            <h3>Farben</h3>
+                            <h3 data-i18n="plugins.quiz-show.ui.hud.colors">Farben</h3>
                             <div class="color-grid">
                                 <div class="form-group">
                                     <label data-i18n="plugins.quiz-show.labels.primarfarbe">Primärfarbe:</label>
@@ -1613,28 +1613,28 @@
                                     <input type="color" id="colorSecondary" value="#8b5cf6" class="form-control color-input">
                                 </div>
                                 <div class="form-group">
-                                    <label>Erfolg:</label>
+                                    <label data-i18n="plugins.quiz-show.ui.hud.success">Erfolg:</label>
                                     <input type="color" id="colorSuccess" value="#10b981" class="form-control color-input">
                                 </div>
                                 <div class="form-group">
-                                    <label>Warnung:</label>
+                                    <label data-i18n="plugins.quiz-show.ui.hud.warning">Warnung:</label>
                                     <input type="color" id="colorWarning" value="#f59e0b" class="form-control color-input">
                                 </div>
                                 <div class="form-group">
-                                    <label>Fehler:</label>
+                                    <label data-i18n="plugins.quiz-show.ui.hud.error">Fehler:</label>
                                     <input type="color" id="colorDanger" value="#ef4444" class="form-control color-input">
                                 </div>
                             </div>
 
-                            <h3 style="margin-top: 25px;">Schriftarten</h3>
+                            <h3 style="margin-top: 25px;" data-i18n="plugins.quiz-show.ui.hud.fonts">Schriftarten</h3>
                             <div class="form-grid-2col">
                                 <div class="form-group">
-                                    <label>Schriftfamilie:</label>
+                                    <label data-i18n="plugins.quiz-show.ui.hud.font_family">Schriftfamilie:</label>
                                     <select id="fontFamily" class="form-control">
                                         <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" selected data-i18n="plugins.quiz-show.labels.system_standard">System Standard</option>
-                                        <option value="'Arial', sans-serif">Arial</option>
-                                        <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
-                                        <option value="'Georgia', serif">Georgia</option>
+                                        <option value="'Arial', sans-serif" data-i18n="plugins.quiz-show.ui.fonts.arial">Arial</option>
+                                        <option value="'Helvetica Neue', Helvetica, sans-serif" data-i18n="plugins.quiz-show.ui.fonts.helvetica">Helvetica</option>
+                                        <option value="'Georgia', serif" data-i18n="plugins.quiz-show.ui.fonts.georgia">Georgia</option>
                                         <option value="'Times New Roman', serif" data-i18n="plugins.quiz-show.labels.times_new_roman">Times New Roman</option>
                                         <option value="'Courier New', monospace" data-i18n="plugins.quiz-show.labels.courier_new">Courier New</option>
                                         <option value="'Comic Sans MS', cursive" data-i18n="plugins.quiz-show.labels.comic_sans">Comic Sans</option>
@@ -1723,7 +1723,7 @@
             <div class="content-grid">
                 <div class="panel full-width">
                     <div class="panel-header">
-                        <h2> Gift-Einstellungen</h2>
+                        <h2 data-i18n="plugins.quiz-show.ui.gifts.settings"> Gift-Einstellungen</h2>
                     </div>
                     <div class="panel-body">
                         <div class="help-text" data-i18n="plugins.quiz-show.labels.konfigurieren_sie_tiktok_geschenke_fur_quiz_start_und">
@@ -1797,8 +1797,8 @@
                                     <th data-i18n="plugins.quiz-show.labels.geschenk_id_abd689">Geschenk ID</th>
                                     <th data-i18n="plugins.quiz-show.labels.geschenk_name_ce1422">Geschenk Name</th>
                                     <th data-i18n="plugins.quiz-show.labels.joker_typ">Joker Typ</th>
-                                    <th>Status</th>
-                                    <th>Aktionen</th>
+                                    <th data-i18n="plugins.quiz-show.ui.table.status">Status</th>
+                                    <th data-i18n="plugins.quiz-show.ui.table.actions">Aktionen</th>
                                 </tr>
                             </thead>
                             <tbody id="giftJokerTableBody">
@@ -1942,8 +1942,8 @@
                         <div class="form-group">
                             <label data-i18n="plugins.quiz-show.labels.spielende_anzeige_typ">Spielende-Anzeige Typ</label>
                             <select id="leaderboardEndGameDisplayType" class="form-control">
-                                <option value="round">Runden-Leaderboard</option>
-                                <option value="season">Season-Leaderboard</option>
+                                <option value="round" data-i18n="plugins.quiz-show.ui.leaderboard.round">Runden-Leaderboard</option>
+                                <option value="season" data-i18n="plugins.quiz-show.ui.leaderboard.season">Season-Leaderboard</option>
                             </select>
                             <small style="color: #666; display: block; margin-top: 5px;" data-i18n="plugins.quiz-show.labels.was_beim_beenden_des_gesamten_quiz_angezeigt_werden">
                                 Was beim Beenden des gesamten Quiz angezeigt werden soll
@@ -1959,7 +1959,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label>Animationsstil</label>
+                            <label data-i18n="plugins.quiz-show.ui.animation.style">Animationsstil</label>
                             <select id="leaderboardAnimationStyle" class="form-control">
                                 <option value="fade" data-i18n="plugins.quiz-show.labels.einblenden_fade_d85b4f">Einblenden (Fade)</option>
                                 <option value="slide" data-i18n="plugins.quiz-show.labels.hereingleiten_slide">Hereingleiten (Slide)</option>
@@ -1977,14 +1977,14 @@
         <div id="expansion" class="tab-content">
             <div class="settings-grid expansion-grid">
                 <div class="panel">
-                    <h2>Setup-Wizard</h2>
+                    <h2 data-i18n="plugins.quiz-show.ui.setup.wizard">Setup-Wizard</h2>
                     <div class="form-group">
                         <label data-i18n="plugins.quiz-show.labels.aktueller_schritt">Aktueller Schritt</label>
                         <select id="setupWizardStep" class="form-control">
-                            <option value="questions" data-i18n="quiz_show.questions.title">Fragen</option>
-                            <option value="categories">Kategorien</option>
-                            <option value="overlay" data-i18n="quiz_show.overlay.title">Overlay</option>
-                            <option value="sounds">Sounds</option>
+                            <option value="questions" data-i18n="plugins.quiz-show.quiz_show.questions.title">Fragen</option>
+                            <option value="categories" data-i18n="plugins.quiz-show.ui.setup.categories">Kategorien</option>
+                            <option value="overlay" data-i18n="plugins.quiz-show.quiz_show.overlay.title">Overlay</option>
+                            <option value="sounds" data-i18n="plugins.quiz-show.ui.setup.sounds">Sounds</option>
                             <option value="show" data-i18n="plugins.quiz-show.labels.erste_show">Erste Show</option>
                         </select>
                     </div>
@@ -1997,7 +1997,7 @@
                 </div>
 
                 <div class="panel">
-                    <h2>Plugin-Health</h2>
+                    <h2 data-i18n="plugins.quiz-show.ui.health.title">Plugin-Health</h2>
                     <div id="quizHealthPanel" class="health-grid"></div>
                     <button id="refreshHealthBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.health_aktualisieren">Health aktualisieren</button>
                 </div>
@@ -2049,7 +2049,7 @@
                 </div>
 
                 <div class="panel">
-                    <h2>Duel-Modus</h2>
+                    <h2 data-i18n="plugins.quiz-show.ui.duel.title">Duel-Modus</h2>
                     <div class="form-grid compact">
                         <input type="text" id="duelLeftLabel" class="form-control" value="Team A">
                         <input type="text" id="duelRightLabel" class="form-control" value="Team B">
@@ -2066,10 +2066,10 @@
                 <div class="panel">
                     <h2 data-i18n="plugins.quiz-show.labels.theme_accessibility">Theme & Accessibility</h2>
                     <div class="form-group">
-                        <label>Theme-Preset</label>
+                        <label data-i18n="plugins.quiz-show.ui.theme.preset">Theme-Preset</label>
                         <select id="hudThemePreset" class="form-control">
-                            <option value="night">Night</option>
-                            <option value="day">Day</option>
+                            <option value="night" data-i18n="plugins.quiz-show.ui.hud.night">Night</option>
+                            <option value="day" data-i18n="plugins.quiz-show.ui.hud.day">Day</option>
                             <option value="contrast" data-i18n="plugins.quiz-show.labels.high_contrast_76a4cf">High Contrast</option>
                             <option value="vision-impaired" data-i18n="plugins.quiz-show.labels.vision_impaired">Vision Impaired</option>
                         </select>
@@ -2083,11 +2083,11 @@
                         <span data-i18n="plugins.quiz-show.labels.high_contrast_erzwingen">High Contrast erzwingen</span>
                     </label>
                     <div class="form-group">
-                        <label>Avatar-Performance</label>
+                        <label data-i18n="plugins.quiz-show.ui.avatar.performance">Avatar-Performance</label>
                         <select id="avatarPerformanceMode" class="form-control">
-                            <option value="full">Voll</option>
-                            <option value="balanced">Ausbalanciert</option>
-                            <option value="minimal">Minimal</option>
+                            <option value="full" data-i18n="plugins.quiz-show.ui.avatar.full">Voll</option>
+                            <option value="balanced" data-i18n="plugins.quiz-show.ui.avatar.balanced">Ausbalanciert</option>
+                            <option value="minimal" data-i18n="plugins.quiz-show.ui.avatar.minimal">Minimal</option>
                         </select>
                     </div>
                     <label class="toggle-label">
@@ -2098,7 +2098,7 @@
                 </div>
 
                 <div class="panel">
-                    <h2>Sound-Upload</h2>
+                    <h2 data-i18n="plugins.quiz-show.ui.sound.upload">Sound-Upload</h2>
                     <div class="form-grid compact">
                         <input type="text" id="soundEventName" class="form-control" placeholder="event_name">
                         <input type="number" id="soundVolume" class="form-control" min="0" max="1" step="0.1" value="1">
@@ -2121,11 +2121,11 @@
                     </label>
                     <div id="achievementRulesList" class="compact-list"></div>
                     <div class="form-group">
-                        <label>Season-Automation</label>
+                        <label data-i18n="plugins.quiz-show.ui.season.automation">Season-Automation</label>
                         <select id="seasonAutomationMode" class="form-control">
-                            <option value="manual">Manuell</option>
-                            <option value="weekly">Woechentlich</option>
-                            <option value="monthly">Monatlich</option>
+                            <option value="manual" data-i18n="plugins.quiz-show.ui.season.manual">Manuell</option>
+                            <option value="weekly" data-i18n="plugins.quiz-show.ui.season.weekly">Woechentlich</option>
+                            <option value="monthly" data-i18n="plugins.quiz-show.ui.season.monthly">Monatlich</option>
                         </select>
                     </div>
                     <div class="form-group">

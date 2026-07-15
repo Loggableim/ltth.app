@@ -202,17 +202,17 @@
               <table class="table table-dark table-striped table-hover">
                 <thead>
                   <tr>
-                    <th>Rank</th>
-                    <th>Username</th>
-                    <th>Level</th>
-                    <th>Title</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.rank">Rank</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.username">Username</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.level">Level</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.title">Title</th>
                     <th>XP</th>
-                    <th>Progress</th>
-                    <th data-i18n="gift_milestone.actions.title">Actions</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.progress">Progress</th>
+                    <th data-i18n="plugins.milestone-leaderboard.gift_milestone.actions.title">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="leaderboardTable">
-                  <tr><td colspan="7" class="text-center">Loading...</td></tr>
+                  <tr><td colspan="7" class="text-center" data-i18n="plugins.milestone-leaderboard.ui.status.loading">Loading...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -232,12 +232,12 @@
                     <th data-i18n="plugins.milestone-leaderboard.labels.action_type_bf29e1">Action Type</th>
                     <th data-i18n="plugins.milestone-leaderboard.labels.xp_amount_fa8fc6">XP Amount</th>
                     <th data-i18n="plugins.milestone-leaderboard.labels.cooldown_seconds">Cooldown (seconds)</th>
-                    <th>Enabled</th>
-                    <th data-i18n="gift_milestone.actions.title">Actions</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.status.enabled">Enabled</th>
+                    <th data-i18n="plugins.milestone-leaderboard.gift_milestone.actions.title">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="actionsTable">
-                  <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                  <tr><td colspan="5" class="text-center" data-i18n="plugins.milestone-leaderboard.ui.status.loading">Loading...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -315,7 +315,7 @@
 
               <div id="logarithmicSettings" style="display:none;">
                 <div class="mb-3">
-                  <label for="logMultiplier" class="form-label">Multiplier</label>
+                  <label for="logMultiplier" class="form-label" data-i18n="plugins.milestone-leaderboard.ui.table.multiplier">Multiplier</label>
                   <input type="number" class="form-control" id="logMultiplier" min="100" step="50" value="500">
                   <small class="form-text text-muted" data-i18n="plugins.milestone-leaderboard.labels.scaling_factor_for_logarithmic_growth">Scaling factor for logarithmic growth</small>
                 </div>
@@ -344,11 +344,11 @@
               <table class="table table-dark table-striped table-sm">
                 <thead style="position: sticky; top: 0; background: var(--color-bg-secondary); z-index: 10;">
                   <tr>
-                    <th style="width: 80px;">Level</th>
+                    <th style="width: 80px;" data-i18n="plugins.milestone-leaderboard.ui.table.level">Level</th>
                     <th data-i18n="plugins.milestone-leaderboard.labels.xp_required">XP Required</th>
                     <th data-i18n="plugins.milestone-leaderboard.labels.custom_title_optional">Custom Title (Optional)</th>
                     <th data-i18n="plugins.milestone-leaderboard.labels.custom_color_optional">Custom Color (Optional)</th>
-                    <th style="width: 100px;" data-i18n="gift_milestone.actions.title">Actions</th>
+                    <th style="width: 100px;" data-i18n="plugins.milestone-leaderboard.gift_milestone.actions.title">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="customLevelsTable">
@@ -366,10 +366,10 @@
               <table class="table table-dark table-striped table-sm">
                 <thead style="position: sticky; top: 0; background: var(--color-bg-secondary); z-index: 10;">
                   <tr>
-                    <th>Level</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.table.level">Level</th>
                     <th data-i18n="plugins.milestone-leaderboard.labels.total_xp_required">Total XP Required</th>
                     <th data-i18n="plugins.milestone-leaderboard.labels.xp_from_previous_level">XP from Previous Level</th>
-                    <th>Preview</th>
+                    <th data-i18n="plugins.milestone-leaderboard.ui.actions.preview">Preview</th>
                   </tr>
                 </thead>
                 <tbody id="levelPreviewTable">
@@ -388,7 +388,7 @@
           <div class="card-body">
             <form id="manualAwardForm">
               <div class="mb-3">
-                <label for="awardUsername" class="form-label">Username</label>
+                <label for="awardUsername" class="form-label" data-i18n="plugins.milestone-leaderboard.ui.table.username">Username</label>
                 <input type="text" class="form-control" id="awardUsername" required>
               </div>
               <div class="mb-3">
@@ -445,7 +445,7 @@
           <div class="card-header" data-i18n="plugins.milestone-leaderboard.labels.viewer_history">📊 Viewer History</div>
           <div class="card-body">
             <div class="mb-3">
-              <label for="historyUsername" class="form-label">Username</label>
+              <label for="historyUsername" class="form-label" data-i18n="plugins.milestone-leaderboard.ui.table.username">Username</label>
               <div class="input-group">
                 <input type="text" class="form-control" id="historyUsername" placeholder="Enter username">
                 <button class="btn btn-primary" id="loadHistoryBtn" data-i18n="plugins.milestone-leaderboard.labels.load_history_179c15">Load History</button>
@@ -456,10 +456,10 @@
                 <table class="table table-dark table-striped table-sm">
                   <thead style="position: sticky; top: 0; background: var(--color-bg-secondary); z-index: 10;">
                     <tr>
-                      <th>Date/Time</th>
+                      <th data-i18n="plugins.milestone-leaderboard.ui.table.date_time">Date/Time</th>
                       <th data-i18n="plugins.milestone-leaderboard.labels.action_type_da4603">Action Type</th>
                       <th data-i18n="plugins.milestone-leaderboard.labels.xp_amount_14baf2">XP Amount</th>
-                      <th>Details</th>
+                      <th data-i18n="plugins.milestone-leaderboard.ui.table.details">Details</th>
                     </tr>
                   </thead>
                   <tbody id="historyTable">
@@ -481,7 +481,7 @@
           <h5 class="modal-title" data-i18n="plugins.milestone-leaderboard.labels.viewer_details">Viewer Details</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body" id="viewerModalBody">
+        <div class="modal-body" id="viewerModalBody" data-i18n="plugins.milestone-leaderboard.ui.status.loading">
           Loading...
         </div>
       </div>

@@ -1,8 +1,10 @@
 'use strict';
 
+const { exactLocalUrlExpectation } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+const guide = {
   "id": "clarityhud",
   "route": "/clarityhud/ui",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/clarityhud/ui"
+            "expected": {
+              "path": "/clarityhud/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +283,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/clarityhud/ui"
+            "expected": {
+              "path": "/clarityhud/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -387,11 +397,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/clarityhud/ui"
+            "expected": {
+              "path": "/clarityhud/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +511,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/clarityhud/ui"
+            "expected": {
+              "path": "/clarityhud/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -607,11 +625,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/clarityhud/ui"
+            "expected": {
+              "path": "/clarityhud/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -720,11 +742,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/clarityhud/ui"
+            "expected": {
+              "path": "/clarityhud/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -746,4 +772,56 @@ module.exports = Object.freeze({
       }
     }
   ]
+};
+
+function applyWorkflowCorrections(corrections) {
+  for (const [id, correction] of Object.entries(corrections)) {
+    const step = guide.steps.find((candidate) => candidate.id === id);
+    if (!step) throw new Error(`Missing ClarityHUD guide step: ${id}`);
+    const focusText = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.title]));
+    const expected = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.expected]));
+    step.copy = correction.copy;
+    step.capture = { ...step.capture, assertVisible: correction.selector, focusText, action: { ...correction.action, stepId: id }, expected };
+    step.workflow = {
+      ...step.workflow,
+      instructions: Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, { title: copy.title, body: copy.body, expected: copy.expected }])),
+      operations: [{ type: 'goto', route: step.capture.route }, { type: correction.action.type, selector: correction.operationSelector || correction.action.inputSelector || correction.action.clickSelector || correction.selector }],
+      postconditions: [
+        { type: 'http-status', expected: 200 },
+        { type: 'url', expected: exactLocalUrlExpectation(step.capture.route) },
+        { type: 'visible', selector: correction.selector },
+        ...(correction.postconditions || []),
+        { type: 'console', expected: 'no-errors' }
+      ],
+      captureRule: { ...step.workflow.captureRule, selector: correction.selector, stateChange: correction.stateChange === true }
+    };
+  }
+}
+
+applyWorkflowCorrections({
+  'hud-modules': {
+    selector: '#chat-url',
+    action: { type: 'open-plugin-surface' },
+    stateChange: false,
+    postconditions: [{ type: 'text', selector: '#chat-url', expected: '/overlay/clarity/chat' }],
+    copy: {
+      de: { title: 'Lokale Chat-HUD-URL pruefen', body: 'Pruefe die angezeigte lokale Chat-HUD-URL. Kopiere sie erst spaeter in eine nicht sendende OBS-Testszenenquelle; in diesem Schritt wird nichts verbunden.', expected: 'Die lokale Route /overlay/clarity/chat wird sichtbar angezeigt.', alt: 'Lokale Chat-HUD-URL von ClarityHUD' },
+      en: { title: 'Inspect the local Chat HUD URL', body: 'Inspect the displayed local Chat HUD URL. Copy it to a non-live OBS test-scene source only later; this step connects nothing.', expected: 'The local /overlay/clarity/chat route is visibly displayed.', alt: 'ClarityHUD local Chat HUD URL' },
+      es: { title: 'Revisa la URL local de Chat HUD', body: 'Revisa la URL local mostrada de Chat HUD. Copiala a una fuente de escena de prueba de OBS no emitida solo mas tarde; este paso no conecta nada.', expected: 'La ruta local /overlay/clarity/chat aparece visible.', alt: 'URL local de Chat HUD de ClarityHUD' },
+      fr: { title: 'Verifiez l URL locale Chat HUD', body: 'Verifiez l URL locale affichee de Chat HUD. Copiez-la plus tard seulement dans une source de scene de test OBS non diffusee; cette etape ne connecte rien.', expected: 'La route locale /overlay/clarity/chat est affichee.', alt: 'URL locale Chat HUD de ClarityHUD' }
+    }
+  },
+  'chat-region': {
+    selector: '#chat-preview',
+    action: { type: 'open-plugin-surface' },
+    stateChange: false,
+    copy: {
+      de: { title: 'Eingebettete Chat-Vorschau pruefen', body: 'Betrachte die eingebaute Chat-Vorschau im lokalen Dashboard. Keine Testnachricht und kein LIVE-Ereignis werden erzeugt.', expected: 'Der echte lokale Vorschau-Frame ist sichtbar, auch wenn er ohne Ereignisse leer bleibt.', alt: 'Eingebettete lokale ClarityHUD Chat-Vorschau' },
+      en: { title: 'Inspect the embedded Chat preview', body: 'View the built-in Chat preview in the local dashboard. No test message or LIVE event is created.', expected: 'The real local preview frame is visible, even when it remains empty without events.', alt: 'Embedded local ClarityHUD Chat preview' },
+      es: { title: 'Revisa la vista previa de Chat integrada', body: 'Mira la vista previa de Chat integrada en el panel local. No se crea ningun mensaje de prueba ni evento LIVE.', expected: 'El frame de vista previa local real es visible, incluso si queda vacio sin eventos.', alt: 'Vista previa local integrada de Chat de ClarityHUD' },
+      fr: { title: 'Verifiez l apercu Chat integre', body: 'Regardez l apercu Chat integre dans le tableau de bord local. Aucun message de test ni evenement LIVE nest cree.', expected: 'Le vrai cadre d apercu local est visible, meme sil reste vide sans evenement.', alt: 'Apercu Chat local integre de ClarityHUD' }
+    }
+  }
 });
+
+module.exports = Object.freeze(guide);

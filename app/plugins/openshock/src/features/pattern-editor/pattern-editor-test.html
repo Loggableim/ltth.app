@@ -421,6 +421,11 @@
         let devices = [];
         let selectedPattern = null;
 
+        function translate(key, fallback) {
+            const translation = window.i18n?.t(key);
+            return translation && translation !== key ? translation : fallback;
+        }
+
         // Logging
         function log(message, type = 'info') {
             const logContainer = document.getElementById('logContainer');
@@ -435,7 +440,12 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             log('Pattern Editor initialisiert', 'success');
-            renderPatternLibrary();
+            if (window.i18n?.ready) {
+                window.i18n.ready.then(() => renderPatternLibrary());
+            } else {
+                renderPatternLibrary();
+            }
+            window.i18n?.onLanguageChange(() => renderPatternLibrary());
 
             // Connect button
             document.getElementById('connectBtn').addEventListener('click', async () => {
@@ -485,7 +495,7 @@
         function renderDevices() {
             const container = document.getElementById('deviceList');
             if (devices.length === 0) {
-                container.innerHTML = '<p style="color: #aaa;">Keine Geräte gefunden</p>';
+                container.innerHTML = `<p style="color: #aaa;">${translate('plugins.openshock.ui.empty_state.no_devices', 'No devices found')}</p>`;
                 return;
             }
 
@@ -523,7 +533,7 @@
                             <span class="pattern-icon">${preset.icon}</span>
                             <h4 class="pattern-name">${preset.name}</h4>
                             <button class="btn btn-primary" onclick="selectPattern('${preset.id}')">
-                                Auswählen
+                                ${translate('plugins.openshock.ui.actions.select', 'Select')}
                             </button>
                         </div>
                     `).join('')}

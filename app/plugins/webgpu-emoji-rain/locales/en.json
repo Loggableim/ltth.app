@@ -246,7 +246,14 @@
           "test_rain": "Test Emoji Rain",
           "test_gift_ball": "Test Gift Ball",
           "test_heart_balloons": "Test Heart Balloons",
-          "gpu_collisions": "GPU Collisions"
+          "gpu_collisions": "GPU Collisions",
+          "preset_label": "Preset",
+          "status_label": "Status",
+          "user_emoji_mappings": "User emoji mappings",
+          "physics_air_resistance": "Air resistance",
+          "physics_friction": "Friction",
+          "emoji_rotation_speed": "Rotation speed",
+          "heart_balloon_pop_height": "Pop height"
         }
       },
       "labels": {

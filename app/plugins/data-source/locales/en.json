@@ -16,6 +16,10 @@
             "test": "Test",
             "clear": "Clear"
           },
+          "sources": {
+            "eulerstream": "Eulerstream source",
+            "tikfinity": "TikFinity"
+          },
           "status": {
             "ready": "Ready",
             "loading": "Loading…",

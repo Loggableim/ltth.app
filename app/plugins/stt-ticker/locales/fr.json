@@ -14,7 +14,10 @@
             "refresh": "Actualiser",
             "close": "Fermer",
             "test": "Tester",
-            "clear": "Effacer"
+            "clear": "Effacer",
+            "copy": "Copier",
+            "stop": "Arrêter",
+            "save_vrchat_output": "Enregistrer la sortie VRChat"
           },
           "status": {
             "ready": "Prêt",
@@ -28,6 +31,31 @@
             "failed": "Impossible d’enregistrer les réglages.",
             "noData": "Aucune donnée disponible.",
             "confirm": "Voulez-vous continuer ?"
+          },
+          "labels": {
+            "source_microphone": "Microphone source",
+            "stt_model": "Modèle STT",
+            "caption_style": "Style des sous-titres",
+            "position": "Position",
+            "asr_provider": "Fournisseur ASR",
+            "model": "Modèle",
+            "translation_color": "Couleur de traduction"
+          },
+          "navigation": {
+            "status": "Statut",
+            "admin": "Administration",
+            "capture": "Capture",
+            "multi_language": "Multilingue"
+          },
+          "options": {
+            "no_selection": "Aucune sélection",
+            "no_models": "Aucun modèle",
+            "no_api_key": "Aucune clé API",
+            "center": "Centre"
+          },
+          "help": {
+            "multilang_rows": "Les langues sélectionnées s’affichent automatiquement sur des lignes distinctes.",
+            "vrchat_final_captions": "Seuls les sous-titres originaux finaux sont envoyés après un regroupement de 700 ms. Les textes longs sont automatiquement découpés pour respecter la limite de la boîte de discussion VRChat."
           }
         }
       },

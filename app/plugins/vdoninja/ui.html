@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="vdoninja.title">VDO.Ninja Multi-Guest Manager</title>
+    <title data-i18n="plugins.vdoninja.vdoninja.title">VDO.Ninja Multi-Guest Manager</title>
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/css/tailwind.output.css">
     <script>
@@ -967,11 +967,11 @@
                     <div id="createRoomForm">
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label" data-i18n="vdoninja.room.name">Room Name</label>
+                                <label class="form-label" data-i18n="plugins.vdoninja.vdoninja.room.name">Room Name</label>
                                 <input type="text" id="roomNameInput" class="form-input" placeholder="My TikTok Stream">
                             </div>
                             <div class="form-group">
-                                <label class="form-label" data-i18n="vdoninja.room.max_guests">Max Guests</label>
+                                <label class="form-label" data-i18n="plugins.vdoninja.vdoninja.room.max_guests">Max Guests</label>
                                 <input type="number" id="maxGuestsInput" class="form-input" value="6" min="1" max="12">
                             </div>
                         </div>
@@ -984,25 +984,25 @@
                     <div id="activeRoomInfo" style="display: none;">
                         <div class="room-info">
                             <div class="room-info-row">
-                                <span class="room-info-label" data-i18n="vdoninja.room.info.name">Room Name:</span>
+                                <span class="room-info-label" data-i18n="plugins.vdoninja.vdoninja.room.info.name">Room Name:</span>
                                 <span id="activeRoomName" class="room-info-value">-</span>
                             </div>
                             <div class="room-info-row">
-                                <span class="room-info-label" data-i18n="vdoninja.room.info.director_url">Director URL (for OBS):</span>
+                                <span class="room-info-label" data-i18n="plugins.vdoninja.vdoninja.room.info.director_url">Director URL (for OBS):</span>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     <span id="directorUrl" class="room-info-value">-</span>
                                     <button class="copy-btn" data-copy-target="directorUrl" data-i18n="plugins.vdoninja.labels.copy_831d1e">📋 Copy</button>
                                 </div>
                             </div>
                             <div class="room-info-row">
-                                <span class="room-info-label" data-i18n="vdoninja.room.info.guest_invite_url">Guest Invite URL:</span>
+                                <span class="room-info-label" data-i18n="plugins.vdoninja.vdoninja.room.info.guest_invite_url">Guest Invite URL:</span>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     <span id="guestInviteUrl" class="room-info-value">-</span>
                                     <button class="copy-btn" data-copy-target="guestInviteUrl" data-i18n="plugins.vdoninja.labels.copy">📋 Copy</button>
                                 </div>
                             </div>
                             <div class="room-info-row">
-                                <span class="room-info-label" data-i18n="vdoninja.room.info.connected_guests">Connected Guests:</span>
+                                <span class="room-info-label" data-i18n="plugins.vdoninja.vdoninja.room.info.connected_guests">Connected Guests:</span>
                                 <span id="guestCount">0 / 6</span>
                             </div>
                         </div>
@@ -1046,8 +1046,8 @@
                 <div id="guestsContainer">
                     <div class="empty-state">
                         <div class="empty-state-icon">👤</div>
-                        <p data-i18n="vdoninja.guests.empty">No guests connected yet</p>
-                        <p style="font-size: 0.875rem; margin-top: 0.5rem;" data-i18n="vdoninja.guests.empty_hint">Share the Guest Invite URL to add guests to your room</p>
+                        <p data-i18n="plugins.vdoninja.vdoninja.guests.empty">No guests connected yet</p>
+                        <p style="font-size: 0.875rem; margin-top: 0.5rem;" data-i18n="plugins.vdoninja.vdoninja.guests.empty_hint">Share the Guest Invite URL to add guests to your room</p>
                     </div>
                 </div>
             </div>
@@ -1067,7 +1067,7 @@
                             <div class="layout-cell"></div>
                             <div class="layout-cell"></div>
                         </div>
-                        <div data-i18n="vdoninja.layout.grid_2x2">Grid 2x2</div>
+                        <div data-i18n="plugins.vdoninja.vdoninja.layout.grid_2x2">Grid 2x2</div>
                     </div>
                     <div class="layout-btn" data-layout="Grid 3x2">
                         <div class="layout-preview grid-3x2">
@@ -1078,13 +1078,13 @@
                             <div class="layout-cell"></div>
                             <div class="layout-cell"></div>
                         </div>
-                        <div data-i18n="vdoninja.layout.grid_3x2">Grid 3x2</div>
+                        <div data-i18n="plugins.vdoninja.vdoninja.layout.grid_3x2">Grid 3x2</div>
                     </div>
                     <div class="layout-btn" data-layout="Solo">
                         <div class="layout-preview solo">
                             <div class="layout-cell"></div>
                         </div>
-                        <div data-i18n="vdoninja.layout.solo">Solo</div>
+                        <div data-i18n="plugins.vdoninja.vdoninja.layout.solo">Solo</div>
                     </div>
                 </div>
             </div>
@@ -1363,10 +1363,11 @@
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">👤</div>
-                        <p>No guests connected yet</p>
-                        <p style="font-size: 0.875rem; margin-top: 0.5rem;">Share the Guest Invite URL to add guests to your room</p>
+                        <p data-i18n="plugins.vdoninja.vdoninja.guests.empty">No guests connected yet</p>
+                        <p style="font-size: 0.875rem; margin-top: 0.5rem;" data-i18n="plugins.vdoninja.vdoninja.guests.empty_hint">Share the Guest Invite URL to add guests to your room</p>
                     </div>
                 `;
+                window.i18n?.updateDOM?.();
                 return;
             }
 
@@ -1385,10 +1386,10 @@
                                 onclick="toggleVideo(${guest.slot})">
                             ${guest.videoEnabled ? '📹' : '📵'} Video
                         </button>
-                        <button class="control-btn" onclick="soloGuest(${guest.slot})">
+                        <button class="control-btn" onclick="soloGuest(${guest.slot})" data-i18n="plugins.vdoninja.vdoninja.guests.controls.solo">
                             ⭐ Solo
                         </button>
-                        <button class="control-btn" onclick="kickGuest(${guest.slot})">
+                        <button class="control-btn" onclick="kickGuest(${guest.slot})" data-i18n="plugins.vdoninja.vdoninja.guests.controls.kick">
                             ❌ Kick
                         </button>
                     </div>
@@ -1404,6 +1405,7 @@
             `).join('');
 
             container.innerHTML = `<div class="guest-grid">${guestCards}</div>`;
+            window.i18n?.updateDOM?.();
         }
 
         function toggleAudio(slot) {

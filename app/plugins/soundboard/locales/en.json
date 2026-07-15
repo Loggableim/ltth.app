@@ -152,6 +152,72 @@
         "selected_sound": "Selected Sound:",
         "manual_config_import_export": "Manual Config Import / Export",
         "gif_image_seconds": "GIF/Image Seconds"
+      },
+      "ui": {
+        "navigation": {
+          "workspaceNavigation": "Soundboard workspace navigation",
+          "overview": "Overview",
+          "library": "Library"
+        },
+        "actions": {
+          "refresh": "Refresh",
+          "copy": "Copy",
+          "clear": "Clear",
+          "copyUrl": "Copy URL",
+          "openInNewTab": "Open in new tab",
+          "collapseSection": "Collapse section"
+        },
+        "animation": {
+          "anchor": "Anchor",
+          "center": "Center",
+          "top": "Top",
+          "left": "Left",
+          "right": "Right",
+          "bottom": "Bottom",
+          "fit": "Fit",
+          "contain": "Contain",
+          "cover": "Cover",
+          "fill": "Fill",
+          "none": "None",
+          "video": "Video",
+          "image": "Image"
+        },
+        "events": {
+          "follow": "Follow",
+          "share": "Share",
+          "volume": "Volume:",
+          "testSound": "Test Sound",
+          "testFollowSound": "Test Follow sound",
+          "testSubscribeSound": "Test Subscribe sound",
+          "testShareSound": "Test Share sound",
+          "testGiftSound": "Test Gift sound",
+          "testLikeSound": "Test Like sound"
+        },
+        "status": {
+          "unknown": "Unknown",
+          "ready": "Ready",
+          "checking": "Checking...",
+          "autoplay": "Autoplay"
+        },
+        "table": {
+          "label": "Label",
+          "sound": "Sound",
+          "animation": "Animation",
+          "actions": "Actions"
+        },
+        "placeholders": {
+          "loading": "Loading...",
+          "soundUrl": "Sound URL (MP3)",
+          "animationUrl": "Animation URL",
+          "animationUrlOptional": "Animation URL (optional)",
+          "animationVolume": "Animation Volume",
+          "searchGifts": "Search gifts by ID or name...",
+          "filterGifts": "Type to filter by gift ID, label, sound, or animation...",
+          "configImportExport": "Load or paste exported soundboard animation JSON here."
+        },
+        "accessibility": {
+          "closeGiftCatalogModal": "Close gift catalog modal"
+        }
       }
     }
   }

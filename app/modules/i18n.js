@@ -17,12 +17,17 @@ function readJsonFile(filePath) {
 }
 
 class I18n {
-  constructor(defaultLocale = 'en') {
+  constructor(defaultLocale = 'de', { localesDir, pluginRoots } = {}) {
     this.defaultLocale = defaultLocale;
     this.currentLocale = defaultLocale;
     this.translations = {};
     this.translationOrigins = {};
     this.supportedLocales = ['en', 'de', 'es', 'fr'];
+    this.localesDir = localesDir || path.join(__dirname, '..', 'locales');
+    this.pluginRoots = pluginRoots || [
+      path.join(__dirname, '..', 'plugins'),
+      path.join(__dirname, '..', '..', 'plugin-store', 'sources')
+    ];
     this.loadTranslations();
   }
 
@@ -35,7 +40,7 @@ class I18n {
    * Load all translation files
    */
   loadTranslations() {
-    const localesDir = path.join(__dirname, '..', 'locales');
+    const localesDir = this.localesDir;
 
     // Create locales directory if it doesn't exist
     if (!fs.existsSync(localesDir)) {
@@ -72,62 +77,64 @@ class I18n {
    * rendering English labels just because the plugin is currently inactive.
    */
   loadPluginTranslations() {
-    const pluginsDir = path.join(__dirname, '..', 'plugins');
-
-    if (!fs.existsSync(pluginsDir)) {
-      return;
-    }
-
     try {
-      const plugins = fs.readdirSync(pluginsDir);
+      const pluginsDirectories = this.pluginRoots.filter(fs.existsSync);
 
-      for (const plugin of plugins) {
-        const manifestPath = path.join(pluginsDir, plugin, 'plugin.json');
-        const pluginLocalesDir = path.join(pluginsDir, plugin, 'locales');
-        let pluginId = plugin;
+      for (const pluginsDir of pluginsDirectories) {
+        const plugins = fs.readdirSync(pluginsDir, { withFileTypes: true })
+          .filter((entry) => entry.isDirectory())
+          .map((entry) => entry.name);
 
-        if (fs.existsSync(manifestPath)) {
-          try {
-            const manifest = readJsonFile(manifestPath);
-            if (typeof manifest.id === 'string' && manifest.id.trim()) pluginId = manifest.id.trim();
-          } catch (error) {
-            console.error(`Failed to read manifest for plugin ${plugin}:`, error.message);
+        for (const plugin of plugins) {
+          const manifestPath = path.join(pluginsDir, plugin, 'plugin.json');
+          const pluginLocalesDir = path.join(pluginsDir, plugin, 'locales');
+          let pluginId = plugin;
+
+          if (fs.existsSync(manifestPath)) {
+            try {
+              const manifest = readJsonFile(manifestPath);
+              if (typeof manifest.id === 'string' && manifest.id.trim()) pluginId = manifest.id.trim();
+            } catch (error) {
+              console.error(`Failed to read manifest for plugin ${plugin}:`, error.message);
+            }
           }
-        }
 
-        if (fs.existsSync(pluginLocalesDir)) {
-          for (const locale of this.supportedLocales) {
-            const pluginLocalePath = path.join(pluginLocalesDir, `${locale}.json`);
+          if (fs.existsSync(pluginLocalesDir)) {
+            for (const locale of this.supportedLocales) {
+              const pluginLocalePath = path.join(pluginLocalesDir, `${locale}.json`);
 
-            if (fs.existsSync(pluginLocalePath)) {
-              try {
-                const pluginTranslations = readJsonFile(pluginLocalePath);
+              if (fs.existsSync(pluginLocalePath)) {
+                try {
+                  const pluginTranslations = readJsonFile(pluginLocalePath);
 
-                // Merge plugin translations into main translations
-                if (!this.translations[locale]) {
-                  this.translations[locale] = {};
+                  // Merge plugin translations into main translations
+                  if (!this.translations[locale]) {
+                    this.translations[locale] = {};
+                  }
+
+                  const namespacedTranslations = pluginTranslations.plugins
+                    && pluginTranslations.plugins[pluginId]
+                    ? pluginTranslations
+                    : { plugins: { [pluginId]: pluginTranslations } };
+
+                  this.translations[locale] = this.mergeTranslationSource(
+                    locale,
+                    namespacedTranslations,
+                    pluginLocalePath
+                  );
+
+                  console.log(`✅ Loaded ${locale} translations for plugin: ${plugin}`);
+                } catch (error) {
+                  if (error.message.startsWith('Translation collision at ')) throw error;
+                  console.error(`Failed to load ${locale} translations for plugin ${plugin}:`, error.message);
                 }
-
-                const namespacedTranslations = pluginTranslations.plugins
-                  && pluginTranslations.plugins[pluginId]
-                  ? pluginTranslations
-                  : { plugins: { [pluginId]: pluginTranslations } };
-
-                this.translations[locale] = this.mergeTranslationSource(
-                  locale,
-                  namespacedTranslations,
-                  pluginLocalePath
-                );
-
-                console.log(`✅ Loaded ${locale} translations for plugin: ${plugin}`);
-              } catch (error) {
-                console.error(`Failed to load ${locale} translations for plugin ${plugin}:`, error.message);
               }
             }
           }
         }
       }
     } catch (error) {
+      if (error.message.startsWith('Translation collision at ')) throw error;
       console.error('Error loading plugin translations:', error.message);
     }
   }
@@ -290,7 +297,7 @@ class I18n {
    */
   init(req, res, next) {
     // Get locale from query, header, or default
-    const requested = req.query.lang || req.headers['accept-language']?.split(',')[0] || 'en';
+    const requested = req.query.lang || req.headers['accept-language']?.split(',')[0] || 'de';
     const locale = globalI18n.normalizeLocale(requested);
 
     // Attach i18n to request
@@ -303,6 +310,7 @@ class I18n {
 }
 
 // Create global instance
-const globalI18n = new I18n('en');
+const globalI18n = new I18n('de');
 
 module.exports = globalI18n;
+module.exports.I18n = I18n;

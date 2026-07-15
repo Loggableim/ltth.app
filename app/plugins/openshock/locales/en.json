@@ -441,6 +441,307 @@
         "max_duration_override_ms_fd3663": "Max Duration Override (ms)",
         "emergency_stop_fe6265": "🛑 EMERGENCY STOP",
         "per_device_cooldown_ms_feb2d5": "Per-Device Cooldown (ms)"
+      },
+      "ui": {
+        "navigation": {
+          "dashboard": "Dashboard",
+          "safety": "Safety",
+          "patterns": "Patterns",
+          "advanced": "Advanced"
+        },
+        "sections": {
+          "devices": "Devices",
+          "statistics": "Statistics"
+        },
+        "labels": {
+          "device": "Device",
+          "enabled": "Enabled",
+          "description": "Description",
+          "steps": "Steps",
+          "intensity": "Intensity",
+          "duration": "Duration",
+          "action": "Action",
+          "code": "Code",
+          "method": "Method",
+          "pattern": "Pattern",
+          "preview": "Preview"
+        },
+        "status": {
+          "active": "Active"
+        },
+        "events": {
+          "all": "All",
+          "info": "Info",
+          "warning": "Warning",
+          "error": "Error",
+          "gift": "Gift",
+          "follow": "Follow",
+          "share": "Share",
+          "like": "Like",
+          "subscribe": "Subscribe"
+        },
+        "actions": {
+          "shock": "Shock",
+          "vibrate": "Vibrate",
+          "sound": "Sound",
+          "pause": "Pause",
+          "select": "Select"
+        },
+        "tooltips": {
+          "create_pattern": "Create new pattern",
+          "edit_pattern": "Edit selected pattern"
+        },
+        "table": {
+          "actions": "Actions",
+          "metric": "Metric",
+          "value": "Value"
+        },
+        "queue": {
+          "processing": "Processing now"
+        },
+        "overlay": {
+          "queue": "Queue:",
+          "active": "Active:",
+          "today": "Today:",
+          "pattern": "Pattern:",
+          "duration": "Duration:",
+          "intensity": "Intensity:"
+        },
+        "empty_state": {
+          "no_devices": "No devices found"
+        }
+      },
+      "runtime": {
+        "buttons": {
+          "refresh_catalog": "Refresh catalog",
+          "refresh_devices": "Refresh devices",
+          "refreshing": "Refreshing...",
+          "sending": "Sending...",
+          "test_connection": "Test connection",
+          "test_shock": "Test shock (1s, 100%)",
+          "testing": "Testing..."
+        },
+        "connection": {
+          "api_connected": "API connected",
+          "api_disconnected": "API disconnected",
+          "connected": "Connected",
+          "disconnected": "Disconnected",
+          "error": "Error",
+          "failed_with_error": "Connection failed: {error}",
+          "offline": "Offline",
+          "online": "Online",
+          "provider_connected": "{provider} – Connected ({count} device(s))",
+          "provider_disconnected": "{provider} – Not connected",
+          "successful": "Connection successful!",
+          "successful_load_failed": "Connection successful but devices could not be loaded"
+        },
+        "devices": {
+          "paused": "Paused",
+          "refresh_failed": "Error refreshing devices",
+          "refreshed_with_count": "Devices refreshed – {count} device(s) loaded",
+          "select": "Select a device...",
+          "select_for_test": "Please select a device for the test shock",
+          "select_required": "Please select a device",
+          "settings_save_failed": "Error saving API settings: {error}",
+          "settings_saved_load_error": "Settings saved but devices could not be loaded: {error}",
+          "settings_saved_load_failed": "Settings saved but devices could not be loaded",
+          "settings_saved_no_devices": "Settings saved but no devices were found",
+          "settings_saved_with_count": "Settings saved and {count} device(s) loaded",
+          "share_code_add_failed": "Error adding ShareCode: {error}",
+          "share_code_added": "ShareCode \"{code}\" added",
+          "share_code_required": "Please enter a ShareCode",
+          "test_shock_failed": "Error sending test shock: {error}",
+          "test_shock_sent": "Test shock sent successfully!"
+        },
+        "errors": {
+          "load_data": "Error loading Hybrid Shock data",
+          "save_with_reason": "Error saving: {error}",
+          "statistics_reset": "Error resetting statistics",
+          "unknown": "Unknown error"
+        },
+        "mapping": {
+          "all_gifts": "All gifts",
+          "created": "Mapping created",
+          "delete_failed": "Error deleting mapping",
+          "deleted": "Mapping deleted successfully",
+          "dialog_add": "Add event mapping",
+          "dialog_edit": "Edit event mapping",
+          "disabled": "Mapping disabled",
+          "empty": "No mappings configured. Click \"Add Mapping\" to create one.",
+          "enabled": "Mapping enabled",
+          "export_failed": "Error exporting mappings",
+          "exported": "Mappings exported successfully",
+          "gift_catalog_empty": "No gifts found in the catalog. Connect to TikTok LIVE to populate it.",
+          "gift_catalog_refresh_failed": "Error refreshing gift catalog",
+          "gift_catalog_refreshed": "Gift catalog refreshed – {count} gifts loaded",
+          "import_failed": "Error importing mappings",
+          "imported": "Mappings imported successfully",
+          "toggle_failed": "Error toggling mapping",
+          "updated": "Mapping updated"
+        },
+        "pattern": {
+          "add_step": "Add step to pattern",
+          "created": "Pattern \"{name}\" created",
+          "delete_failed": "Error deleting pattern",
+          "deleted": "Pattern deleted",
+          "dialog_create": "Create new pattern",
+          "dialog_edit": "Edit pattern",
+          "draw_curve_required": "Please draw a curve first",
+          "empty": "No patterns created yet. Click \"New Pattern\" to create one.",
+          "execute_failed": "Error executing pattern",
+          "executing": "Pattern is running",
+          "export_failed": "Error exporting patterns",
+          "exported": "Patterns exported",
+          "import_failed": "Error importing patterns",
+          "imported": "Patterns imported successfully",
+          "loaded_into_editor": "Pattern loaded into editor. Click Save to store it.",
+          "name_required": "Please enter a pattern name",
+          "preview": "Preview: {steps} steps, {duration}ms total",
+          "preview_empty": "Add steps for preview",
+          "single_pulse": "None (single pulse)",
+          "step_duplicated": "Step {step} duplicated",
+          "step_loaded_for_edit": "Step loaded for editing. Adjust the values and click \"Update step\".",
+          "move_up": "Move up",
+          "move_down": "Move down",
+          "duplicate_step": "Duplicate step",
+          "edit_step": "Edit step",
+          "delete_step": "Delete step",
+          "steps_empty": "No steps added yet. Add your first step above.",
+          "steps_required": "Pattern must have at least one step",
+          "template_required": "Select a template type first",
+          "update_step": "Update step",
+          "updated": "Pattern \"{name}\" updated"
+        },
+        "placeholders": {
+          "api_key": "Enter your OpenShock API key",
+          "api_key_already_saved": "API key is already saved. Enter a new key to change it.",
+          "api_key_configured": "API key saved (hidden)",
+          "pishock_api_key": "Enter your PiShock API key"
+        },
+        "queue": {
+          "clear_failed": "Error clearing queue",
+          "cleared": "Queue cleared successfully",
+          "no_commands": "No commands executed yet.",
+          "pause_failed": "Error pausing queue",
+          "paused": "Queue paused",
+          "processing_no": "No",
+          "processing_yes": "Yes",
+          "resume_failed": "Error resuming queue",
+          "resumed": "Queue resumed"
+        },
+        "safety": {
+          "button_emergency_stop": "EMERGENCY STOP",
+          "button_stopped": "Stopped",
+          "configuration_save_failed": "Error saving safety configuration",
+          "configuration_saved": "Safety configuration saved",
+          "emergency_stop_activated": "EMERGENCY STOP ACTIVATED",
+          "emergency_stop_clear_failed": "Error clearing emergency stop",
+          "emergency_stop_cleared": "Emergency stop cleared – system reactivated",
+          "emergency_stop_trigger_failed": "Error triggering emergency stop",
+          "emergency_tooltip": "Emergency Stop – immediately stops all shocks and disables further commands",
+          "reactivate_tooltip": "Click to reactivate system"
+        },
+        "status": {
+          "command_log_cleared": "Command log cleared",
+          "command_log_exported": "Command log exported",
+          "loaded": "Hybrid Shock plugin loaded successfully",
+          "statistics_reset": "Statistics reset successfully"
+        },
+        "accessibility": {
+          "delete_share_code": "Delete ShareCode {code}",
+          "test_vibrate": "Test vibrate",
+          "test_shock": "Test shock",
+          "test_sound": "Test sound"
+        },
+        "zappiehell": {
+          "accessibility": {
+            "copy_overlay_url": "Copy overlay URL",
+            "delete_chain": "Delete event chain {name}",
+            "delete_goal": "Delete goal {name}",
+            "delete_step": "Delete step {step}",
+            "edit_chain": "Edit event chain {name}",
+            "edit_goal": "Edit goal {name}",
+            "edit_step": "Edit step {step}",
+            "reset_goal": "Reset goal {name}",
+            "test_chain": "Test event chain {name}"
+          },
+          "buttons": {
+            "delete": "Delete",
+            "edit": "Edit",
+            "reset": "Reset",
+            "test": "Test"
+          },
+          "chains": {
+            "delete_confirm": "Are you sure you want to delete this event chain?",
+            "created": "Event chain created",
+            "deleted": "Event chain deleted",
+            "empty": "No event chains configured yet.",
+            "execution_started": "Event chain execution started",
+            "modal_create": "Add event chain",
+            "modal_edit": "Edit event chain",
+            "no_description": "No description",
+            "preview_empty": "No steps",
+            "steps": "Steps",
+            "test_confirm": "Execute this event chain now as a test?",
+            "updated": "Event chain updated",
+            "validation_name_required": "Please enter an event chain name"
+          },
+          "debug": {
+            "data_loaded": "ZappieHell tab data loaded",
+            "listeners_initialized": "ZappieHell event listeners initialized"
+          },
+          "errors": {
+            "delete_chain": "Failed to delete event chain: {error}",
+            "delete_goal": "Failed to delete goal: {error}",
+            "execute_chain": "Failed to execute event chain: {error}",
+            "invalid_webhook_json": "Invalid JSON in webhook body: {error}",
+            "load_chains": "Failed to load event chains: {error}",
+            "load_goals": "Failed to load goals: {error}",
+            "reset_goal": "Failed to reset goal: {error}",
+            "save_chain": "Failed to save event chain: {error}",
+            "save_goal": "Failed to save goal: {error}"
+          },
+          "goals": {
+            "chain": "Chain",
+            "coins": "coins",
+            "current": "Current",
+            "delete_confirm": "Are you sure you want to delete this goal?",
+            "deleted": "Goal deleted",
+            "empty": "No goals configured yet.",
+            "inactive": "Inactive",
+            "modal_create": "Add goal",
+            "modal_edit": "Edit goal",
+            "no_chain": "No chain",
+            "no_chain_option": "-- No chain --",
+            "reset": "Goal reset",
+            "reset_confirm": "Reset this goal to 0 coins?",
+            "target": "Target",
+            "unknown_chain": "Unknown chain",
+            "validation_required": "Please fill in all required fields",
+            "active": "Active",
+            "created": "Goal created",
+            "updated": "Goal updated"
+          },
+          "overlay": {
+            "copied": "Overlay URL copied to clipboard!"
+          },
+          "steps": {
+            "delete_confirm": "Remove this step?",
+            "direct_command": "-- Direct command --",
+            "empty": "No steps added yet. Click \"Add Step\" to begin.",
+            "first_available": "-- First available --",
+            "modal_create": "Add event chain step",
+            "modal_edit": "Edit event chain step",
+            "pattern_id": "Pattern ID: {id}",
+            "type_audio": "Audio/TTS action",
+            "type_delay": "Delay ({duration}ms)",
+            "type_delay_short": "Delay",
+            "type_openshock": "Hybrid Shock action",
+            "type_overlay": "Overlay",
+            "type_webhook": "Webhook action ({url})",
+            "type_webhook_short": "Webhook"
+          }
+        }
       }
     }
   }

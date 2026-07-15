@@ -774,6 +774,93 @@
         "test_user_profile_fefc70": "👤 Test User Profile",
         "import_data_ff64df": "Import Data",
         "user_detail_ffb565": "User Detail"
+      },
+      "ui": {
+        "status": {
+          "disabled": "Disabled",
+          "enabled": "Enabled",
+          "loading": "Loading..."
+        },
+        "connection": {
+          "connecting": "Connecting...",
+          "error_title": "⚠️ Connection error",
+          "error_message": "Failed to connect to the server. Please refresh the page."
+        },
+        "defaults": {
+          "one": "1"
+        },
+        "navigation": {
+          "dashboard": "Dashboard",
+          "leaderboard": "Leaderboard",
+          "import_export": "Import/Export",
+          "all_time": "All-time",
+          "settings": "Settings"
+        },
+        "event": {
+          "gifts": "Gifts",
+          "follows": "Follows",
+          "like": "Like",
+          "share": "Share",
+          "gift": "Gift",
+          "follow": "Follow",
+          "subscribe": "Subscribe"
+        },
+        "table": {
+          "rank": "Rank",
+          "username": "Username",
+          "level": "Level",
+          "title": "Title",
+          "progress": "Progress",
+          "growth": "Growth",
+          "title_badge": "Title/badge",
+          "announcement": "Announcement",
+          "date_time": "Date/time",
+          "reason": "Reason",
+          "details": "Details",
+          "xp_required": "XP required",
+          "color": "Color",
+          "bet": "Bet",
+          "field": "Field",
+          "result": "Result",
+          "xp_change": "XP change",
+          "time": "Time",
+          "multiplier": "Multiplier",
+          "user": "User",
+          "streak": "Streak",
+          "amount": "Amount",
+          "coins": "Coins"
+        },
+        "options": {
+          "yes": "Yes",
+          "no": "No",
+          "standard": "Standard",
+          "minimal": "Minimal",
+          "transparent": "Transparent",
+          "ten": "10",
+          "twenty_five": "25",
+          "fifty": "50",
+          "one_hundred": "100",
+          "all_types": "All types"
+        },
+        "actions": {
+          "view": "View",
+          "save": "💾 Save",
+          "preview": "Preview",
+          "search": "Search",
+          "open": "Open"
+        },
+        "levels": {
+          "editor_notice": "Showing the first 20 levels. An advanced level editor is planned for a future update.",
+          "configuration": "📈 Level configuration",
+          "description": "Customize level progression and rewards"
+        },
+        "empty": {
+          "no_viewers": "No viewers yet",
+          "no_users": "No users found",
+          "no_badges": "No badges yet",
+          "waiting_for_gifts": "Waiting for gifts in this session...",
+          "no_champions": "No champions yet..."
+        }
       }
     }
   }

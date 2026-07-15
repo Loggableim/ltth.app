@@ -103,6 +103,31 @@ describe('documentation capture real workflows', () => {
     }
   );
 
+  test.each([
+    ['config-import', 'export-scope'],
+    ['openshock', 'device-placeholder'],
+    ['goals', 'goal-reset'],
+    ['game-engine', 'game-mode'],
+    ['talking-heads', 'character-select'],
+    ['toptier', 'ranking-rule']
+  ])(
+    'does not falsely require a state change for the review-only %s/%s screenshot',
+    (pluginId, stepId) => {
+      expect(step(pluginId, stepId).workflow.captureRule.stateChange).toBe(false);
+    }
+  );
+
+  test.each([
+    ['goals', 'goal-target'],
+    ['goals', 'reset-rule'],
+    ['openshock', 'safe-limit']
+  ])(
+    'keeps the actual editable %s/%s workflow state-changing',
+    (pluginId, stepId) => {
+      expect(step(pluginId, stepId).workflow.captureRule.stateChange).toBe(true);
+    }
+  );
+
   test('opens the real Minecraft configuration tabs before documenting fields inside them', () => {
     expect(step('minecraft-connect', 'offline-address').capture.action).toMatchObject({ prepare: 'open-minecraft-setup-tab' });
     expect(step('minecraft-connect', 'event-format').capture.action).toMatchObject({ prepare: 'open-minecraft-chat-tab' });
@@ -144,12 +169,54 @@ describe('documentation capture real workflows', () => {
     expect(step('store-admin', 'store-review').capture.assertVisible).toBe('[data-store-account-signin]');
   });
 
-  test('opens the actual Spotlight modals before documenting their controls and preview', () => {
-    expect(step('spotlight', 'event-style').capture).toMatchObject({ assertVisible: '#settings-form-container', action: { prepare: 'open-spotlight-settings' } });
-    expect(step('spotlight', 'display-duration').capture).toMatchObject({ assertVisible: '#save-settings-btn', action: { prepare: 'open-spotlight-settings' } });
+  test('keeps Spotlight documentation on visible product controls instead of an empty preview frame', () => {
+    expect(step('spotlight', 'event-style').capture).toMatchObject({ assertVisible: '#designVariant', action: { type: 'set-demo-value', prepare: 'open-spotlight-settings', inputSelector: '#designVariant' } });
+    expect(step('spotlight', 'display-duration').capture).toMatchObject({ assertVisible: '#fadeDuration', action: { type: 'open-plugin-surface', prepare: 'open-spotlight-settings' } });
     expect(step('spotlight', 'chatter-preview').capture.action).toMatchObject({ prepare: 'open-spotlight-preview', allowClick: true, clickSelector: '#preview-test-btn' });
-    expect(step('spotlight', 'spotlight-overlay').capture).toMatchObject({ route: '/plugins/spotlight/ui/main.html', assertVisible: '#preview-frame' });
+    expect(step('spotlight', 'spotlight-overlay').capture).toMatchObject({
+      route: '/plugins/spotlight/ui/main.html',
+      assertVisible: 'button[data-action="preview"][data-type="chatter"]',
+      action: { type: 'open-plugin-surface' }
+    });
     expect(step('spotlight', 'spotlight-reset').capture.action).toMatchObject({ prepare: 'open-spotlight-preview' });
+  });
+
+  test.each([
+    ['emoji-rain', 'verify-obs-hud', '/emoji-rain/ui', 'a[href="/emoji-rain/obs-hud"]'],
+    ['spotlight', 'spotlight-overlay', '/plugins/spotlight/ui/main.html', 'button[data-action="preview"][data-type="chatter"]'],
+    ['streamalchemy', 'alchemy-overlay', '/plugins/streamalchemy/ui.html', 'a[href="/streamalchemy/overlay"]'],
+    ['talking-heads', 'heads-overlay', '/plugins/talking-heads/ui.html', '#testAnimationBtn'],
+    ['flame-overlay', 'frame-obs-source', '/flame-overlay/ui', '#overlayUrl'],
+    ['visual-fx-frame-webgpu', 'frame-obs-source', '/visual-fx-frame-webgpu/ui', '#overlayUrl'],
+    ['webgpu-fireworks', 'gpu-fireworks-overlay', '/webgpu-fireworks/ui', '#copy-overlay-url'],
+    ['fireworks', 'fireworks-overlay', '/plugins/fireworks/ui/settings.html', '#copy-overlay-url'],
+    ['weather-control', 'weather-overlay', '/plugins/weather-control/ui.html', '#overlayUrl'],
+    ['webgpu-emoji-rain', 'gpu-rain-overlay', '/plugins/webgpu-emoji-rain/ui.html', '#obs-hud-setup']
+  ])(
+    'uses a visible settings control for %s/%s instead of an empty overlay export',
+    (pluginId, stepId, route, assertVisible) => {
+      const overlayStep = step(pluginId, stepId);
+      expect(overlayStep.capture).toMatchObject({
+        route,
+        assertVisible,
+        action: { type: 'open-plugin-surface' }
+      });
+      expect(overlayStep.capture.action.type).not.toBe('open-overlay-preview');
+      expect(overlayStep.capture.action.allowEmptySurface).not.toBe(true);
+      expect(overlayStep.workflow.captureRule.stateChange).toBe(false);
+    }
+  );
+
+  test('opens the actual Music Bot settings panel before documenting duplicate detection', () => {
+    expect(step('music-bot', 'queue-rule').capture.action).toMatchObject({
+      type: 'set-demo-value',
+      prepare: 'open-music-bot-settings'
+    });
+  });
+
+  test('uses tighter direct crops for the adjacent, but distinct, Multicam status and scene controls', () => {
+    expect(step('multicam', 'camera-source').workflow.captureRule.imageCrop).toEqual({ width: 500, height: 260 });
+    expect(step('multicam', 'scene-rule').workflow.captureRule.imageCrop).toEqual({ width: 500, height: 260 });
   });
 
   test.each(['alchemy-card', 'automation-rule', 'action-chain', 'rule-dry-run'])(
@@ -158,6 +225,10 @@ describe('documentation capture real workflows', () => {
       expect(step('streamalchemy', stepId).capture.action).toMatchObject({ prepare: 'open-streamalchemy-settings' });
     }
   );
+
+  test('uses a tight, distinct crop for the StreamAlchemy overlay link', () => {
+    expect(step('streamalchemy', 'alchemy-overlay').workflow.captureRule.imageCrop).toEqual({ width: 420, height: 260 });
+  });
 
   test.each(['fireworks-card', 'effect-profile', 'audio-limit'])(
     'opens the real Fireworks settings tab before documenting %s',
@@ -192,6 +263,13 @@ describe('documentation capture real workflows', () => {
     });
   });
 
+  test('uses WebGPU Emoji Rain’s own local test control instead of its shared save button', () => {
+    expect(step('webgpu-emoji-rain', 'gpu-rain-test').capture).toMatchObject({
+      assertVisible: '#test-emoji-rain-btn',
+      action: { type: 'run-local-preview', allowClick: true, clickSelector: '#test-emoji-rain-btn' }
+    });
+  });
+
   test('uses the documented comma-separated emoji sample instead of generic text', () => {
     const emojiList = step('emoji-rain', 'choose-emojis');
     expect(emojiList.workflow.postconditions).toEqual(expect.arrayContaining([
@@ -210,5 +288,24 @@ describe('documentation capture real workflows', () => {
       action: { prepare: 'start-local-manual-game', cleanupSelector: '#end-manual-game' }
     });
     expect(step('game-engine', 'queue-reset').capture.action).toMatchObject({ prepare: 'start-local-manual-game' });
+  });
+
+  test('keeps AnimazingPal connection settings as a review-only capture when no settings save is executed', () => {
+    const mappingReview = step('animazingpal', 'mapping-review');
+
+    expect(mappingReview.capture).toMatchObject({
+      assertVisible: '#tab-settings',
+      action: { type: 'open-plugin-surface' }
+    });
+    expect(mappingReview.workflow.captureRule.stateChange).toBe(false);
+  });
+
+  test('refreshes the real ClarityHUD full preview and records the iframe result', () => {
+    expect(step('clarityhud', 'full-hud-preview').capture.action).toMatchObject({
+      type: 'run-local-preview',
+      allowClick: true,
+      clickSelector: 'button[data-action="refresh-preview"][data-type="full"]',
+      evidenceSelector: '#full-preview'
+    });
   });
 });

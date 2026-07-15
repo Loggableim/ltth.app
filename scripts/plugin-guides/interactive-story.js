@@ -1,8 +1,10 @@
 'use strict';
 
+const { exactLocalUrlExpectation } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+const guide = {
   "id": "interactive-story",
   "route": "/plugins/interactive-story/ui.html?demo=1",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/interactive-story/ui.html?demo=1"
+            "expected": {
+              "path": "/plugins/interactive-story/ui.html",
+              "query": {"demo":"1","lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +283,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/interactive-story/ui.html?demo=1"
+            "expected": {
+              "path": "/plugins/interactive-story/ui.html",
+              "query": {"demo":"1","lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -387,11 +397,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/interactive-story/ui.html?demo=1"
+            "expected": {
+              "path": "/plugins/interactive-story/ui.html",
+              "query": {"demo":"1","lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +511,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/interactive-story/ui.html?demo=1"
+            "expected": {
+              "path": "/plugins/interactive-story/ui.html",
+              "query": {"demo":"1","lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -607,11 +625,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/interactive-story/ui.html?demo=1"
+            "expected": {
+              "path": "/plugins/interactive-story/ui.html",
+              "query": {"demo":"1","lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -717,11 +739,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/interactive-story/ui.html?demo=1"
+            "expected": {
+              "path": "/plugins/interactive-story/ui.html",
+              "query": {"demo":"1","lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -743,4 +769,48 @@ module.exports = Object.freeze({
       }
     }
   ]
+};
+
+function applyWorkflowCorrections(corrections) {
+  for (const [id, correction] of Object.entries(corrections)) {
+    const step = guide.steps.find((candidate) => candidate.id === id);
+    if (!step) throw new Error(`Missing Interactive Story guide step: ${id}`);
+    const focusText = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.title]));
+    const expected = Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, copy.expected]));
+    step.copy = correction.copy;
+    step.capture = { ...step.capture, assertVisible: correction.selector, focusText, action: { ...correction.action, stepId: id }, expected };
+    step.workflow = {
+      ...step.workflow,
+      instructions: Object.fromEntries(Object.entries(correction.copy).map(([locale, copy]) => [locale, { title: copy.title, body: copy.body, expected: copy.expected }])),
+      operations: [{ type: 'goto', route: step.capture.route }, { type: correction.action.type, selector: correction.selector }],
+      postconditions: [
+        { type: 'http-status', expected: 200 },
+        { type: 'url', expected: exactLocalUrlExpectation(step.capture.route) },
+        { type: 'visible', selector: correction.selector },
+        ...(correction.postconditions || []),
+        { type: 'console', expected: 'no-errors' }
+      ],
+      captureRule: { ...step.workflow.captureRule, selector: correction.selector, stateChange: correction.stateChange === true }
+    };
+  }
+}
+
+applyWorkflowCorrections({
+  'vote-rule': {
+    selector: '#voteKeywordPattern',
+    action: { type: 'set-demo-value' },
+    stateChange: true,
+    postconditions: [
+      { type: 'input-value', selector: '#voteKeywordPattern', expected: 'non-empty' },
+      { type: 'interaction', selector: '#voteKeywordPattern', expected: { type: 'set-demo-value', changed: true } }
+    ],
+    copy: {
+      de: { title: 'Lokales Abstimmungs-Schluesselwort pruefen', body: 'Waehle nur ein vorhandenes lokales Muster fuer Abstimmungs-Schluesselwoerter. Keine API-Schluessel, Story-Generierung oder Chat-Abstimmung wird gestartet.', expected: 'Ein vorhandenes Muster ist im Abstimmungsfeld ausgewaehlt und kann vor dem Speichern geprueft werden.', alt: 'Lokale Auswahl des Abstimmungs-Schluesselwortmusters' },
+      en: { title: 'Inspect a local vote-keyword pattern', body: 'Select only an existing local vote-keyword pattern. No API key, story generation, or chat vote is started.', expected: 'An existing pattern is selected in the voting field and can be reviewed before saving.', alt: 'Local vote-keyword pattern selection' },
+      es: { title: 'Revisa un patron local de palabra de voto', body: 'Selecciona solo un patron local existente de palabra de voto. No se inicia ninguna clave API, generacion de historia ni voto de chat.', expected: 'Un patron existente queda seleccionado en el campo de votacion y puede revisarse antes de guardar.', alt: 'Seleccion local de patron de palabra de voto' },
+      fr: { title: 'Verifiez un modele local de mot-cle de vote', body: 'Selectionnez seulement un modele local existant de mot-cle de vote. Aucune cle API, generation dhistoire ni vote de chat nest demarre.', expected: 'Un modele existant est selectionne dans le champ de vote et peut etre verifie avant enregistrement.', alt: 'Selection locale de modele de mot-cle de vote' }
+    }
+  }
 });
+
+module.exports = Object.freeze(guide);

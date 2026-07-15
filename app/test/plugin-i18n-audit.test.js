@@ -2,7 +2,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { auditPluginLocales } = require('../../scripts/lib/plugin-i18n-audit');
+const { auditPluginLocales, isInvariantUiText } = require('../../scripts/lib/plugin-i18n-audit');
 
 const locales = ['de', 'en', 'es', 'fr'];
 
@@ -49,6 +49,27 @@ describe('plugin i18n audit', () => {
     });
 
     expect(auditPluginLocales(pluginsRoot).errors).toEqual([]);
+  });
+
+  test('permits stable product, font, URL, and placeholder examples', () => {
+    [
+      'LTTH Music Bot',
+      'ElevenLabs',
+      'Inter',
+      'fish.audio/discovery',
+      'keyword1\nkeyword2',
+      '0 / 6',
+      '0.5',
+      'v1.1.0',
+      '1440p',
+      '5/s',
+      'Emojis',
+      'FPS:',
+      'SiliconFlow',
+      'weatherstop',
+      '&times;'
+    ].forEach((value) => expect(isInvariantUiText(value)).toBe(true));
+    expect(isInvariantUiText('Save changes')).toBe(false);
   });
 
   test('accepts legitimate French accented words while still rejecting mojibake', () => {

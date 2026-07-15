@@ -1,8 +1,10 @@
 'use strict';
 
+const { applyOverlayEntryPoints } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+module.exports = Object.freeze(applyOverlayEntryPoints({
   "id": "streamalchemy",
   "route": "/plugins/streamalchemy/ui.html",
   "topic": {
@@ -172,11 +174,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/streamalchemy/ui.html"
+            "expected": {
+              "path": "/plugins/streamalchemy/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -287,11 +293,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/streamalchemy/ui.html"
+            "expected": {
+              "path": "/plugins/streamalchemy/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -402,11 +412,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/streamalchemy/ui.html"
+            "expected": {
+              "path": "/plugins/streamalchemy/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -517,11 +531,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/streamalchemy/ui.html"
+            "expected": {
+              "path": "/plugins/streamalchemy/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -627,11 +645,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/streamalchemy/overlay.html"
+            "expected": {
+              "path": "/plugins/streamalchemy/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -737,11 +759,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/streamalchemy/ui.html"
+            "expected": {
+              "path": "/plugins/streamalchemy/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -763,4 +789,16 @@ module.exports = Object.freeze({
       }
     }
   ]
-});
+}, {
+  'alchemy-overlay': {
+    route: '/plugins/streamalchemy/ui.html',
+    selector: 'a[href="/streamalchemy/overlay"]',
+    imageCrop: { width: 420, height: 260 },
+    copy: {
+      de: { title: 'Alchemy-Overlay-Link in den Einstellungen öffnen', body: 'Öffne den sichtbaren Alchemy-Overlay-Link zunächst nur aus den Einstellungen und richte ihn bei Bedarf in einer nicht sendenden OBS-Testszene ein. Ein Rendering wird erst durch ein lokales Regelereignis ausgelöst.', expected: 'Der sichtbare Link führt zum Alchemy-Overlay und macht den nächsten OBS-Schritt nachvollziehbar.' },
+      en: { title: 'Open the Alchemy overlay link from Settings', body: 'First open the visible Alchemy overlay link from Settings and, if needed, add it in a non-live OBS test scene. Rendering starts only after a local rule event.', expected: 'The visible link leads to the Alchemy overlay and makes the next OBS step clear.' },
+      es: { title: 'Abre el enlace del overlay Alchemy desde Ajustes', body: 'Abre primero el enlace visible del overlay Alchemy desde Ajustes y, si hace falta, añádelo en una escena de prueba de OBS que no está en directo. El renderizado solo empieza después de un evento local de regla.', expected: 'El enlace visible lleva al overlay Alchemy y deja claro el siguiente paso de OBS.' },
+      fr: { title: 'Ouvrez le lien de l’overlay Alchemy depuis les réglages', body: 'Ouvrez d’abord le lien visible de l’overlay Alchemy depuis les réglages et, si nécessaire, ajoutez-le dans une scène de test OBS hors diffusion. Le rendu ne commence qu’après un événement de règle local.', expected: 'Le lien visible mène à l’overlay Alchemy et rend la prochaine étape OBS compréhensible.' }
+    }
+  }
+}));

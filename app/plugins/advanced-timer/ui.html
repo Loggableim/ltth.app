@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="ui.title">Advanced Timer - Multi-Timer System</title>
+    <title data-i18n="plugins.advanced-timer.ui.title">Advanced Timer - Multi-Timer System</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function() {
@@ -549,16 +549,16 @@
         <div class="sidebar-brand">
             <img class="at-sidebar-brand-icon" src="/advanced-timer/assets/advanced-timer-icon.png" alt="Advanced Timer">
             <div>
-                <div class="at-sidebar-brand-title" data-i18n="plugin.name">Advanced Timer</div>
+                <div class="at-sidebar-brand-title" data-i18n="plugins.advanced-timer.plugin.name">Advanced Timer</div>
                 <div class="at-sidebar-brand-subtitle" data-i18n="plugins.advanced-timer.labels.multi_timer_control_center">Multi-timer control center</div>
             </div>
         </div>
         <div class="at-sidebar-note" data-i18n="plugins.advanced-timer.labels.wide_screen_ready_timers_rules_rotators_profiles_stay">Wide-screen ready. Timers, rules, rotators, profiles stay available.</div>
         <nav class="at-sidebar-nav" aria-label="Advanced Timer sections">
-            <button class="at-nav-btn active" data-tab="timers" data-i18n="ui.tabs.timers">Timers</button>
-            <button class="at-nav-btn" data-tab="create" data-i18n="ui.tabs.create">Create Timer</button>
-            <button class="at-nav-btn" data-tab="profiles" data-i18n="ui.tabs.profiles">Profiles</button>
-            <button class="at-nav-btn" data-tab="help" data-i18n="ui.tabs.help">Help</button>
+            <button class="at-nav-btn active" data-tab="timers" data-i18n="plugins.advanced-timer.ui.tabs.timers">Timers</button>
+            <button class="at-nav-btn" data-tab="create" data-i18n="plugins.advanced-timer.ui.tabs.create">Create Timer</button>
+            <button class="at-nav-btn" data-tab="profiles" data-i18n="plugins.advanced-timer.ui.tabs.profiles">Profiles</button>
+            <button class="at-nav-btn" data-tab="help" data-i18n="plugins.advanced-timer.ui.tabs.help">Help</button>
         </nav>
     </aside>
 
@@ -573,15 +573,15 @@
                     <p class="at-page-subtitle" data-i18n="plugins.advanced-timer.labels.control_every_active_timer_inspect_states_copy_overlay">Control every active timer, inspect states, copy overlay URLs and jump into advanced event rules without losing the full feature set.</p>
                 </div>
                 <div class="at-tab-hero-actions">
-                    <button class="btn btn-secondary" data-tab="profiles" data-i18n="ui.tabs.profiles">Profiles</button>
-                    <button class="btn btn-primary" data-tab="create" data-i18n="ui.buttons.newTimer">New Timer</button>
+                    <button class="btn btn-secondary" data-tab="profiles" data-i18n="plugins.advanced-timer.ui.tabs.profiles">Profiles</button>
+                    <button class="btn btn-primary" data-tab="create" data-i18n="plugins.advanced-timer.ui.buttons.newTimer">New Timer</button>
                 </div>
             </section>
             <section class="at-dashboard-stats" aria-label="Timer summary">
-                <div class="at-stat-card"><span class="at-stat-label">Total</span><strong id="at-stat-total">0</strong></div>
-                <div class="at-stat-card"><span class="at-stat-label" data-i18n="ui.states.running">Running</span><strong id="at-stat-running">0</strong></div>
-                <div class="at-stat-card"><span class="at-stat-label" data-i18n="ui.states.paused">Paused</span><strong id="at-stat-paused">0</strong></div>
-                <div class="at-stat-card"><span class="at-stat-label" data-i18n="ui.states.stopped">Stopped</span><strong id="at-stat-stopped">0</strong></div>
+                <div class="at-stat-card"><span class="at-stat-label" data-i18n="plugins.advanced-timer.ui.stats.total">Total</span><strong id="at-stat-total">0</strong></div>
+                <div class="at-stat-card"><span class="at-stat-label" data-i18n="plugins.advanced-timer.ui.states.running">Running</span><strong id="at-stat-running">0</strong></div>
+                <div class="at-stat-card"><span class="at-stat-label" data-i18n="plugins.advanced-timer.ui.states.paused">Paused</span><strong id="at-stat-paused">0</strong></div>
+                <div class="at-stat-card"><span class="at-stat-label" data-i18n="plugins.advanced-timer.ui.states.stopped">Stopped</span><strong id="at-stat-stopped">0</strong></div>
             </section>
             <div id="timers-container" class="at-timers-grid"></div>
         </div>
@@ -598,11 +598,11 @@
             </section>
             <form id="timer-form">
                 <div class="at-form-group">
-                    <label class="at-form-label" data-i18n="ui.labels.timerName">Timer Name</label>
+                    <label class="at-form-label" data-i18n="plugins.advanced-timer.ui.labels.timerName">Timer Name</label>
                     <input type="text" class="at-form-control" id="timer-name" placeholder="My Timer" required>
                 </div>
                 <div class="at-form-group">
-                    <label class="at-form-label" data-i18n="ui.labels.timerMode">Timer Mode</label>
+                    <label class="at-form-label" data-i18n="plugins.advanced-timer.ui.labels.timerMode">Timer Mode</label>
                     <select class="at-form-control" id="timer-mode" required>
                         <option value="countdown" data-i18n="plugins.advanced-timer.labels.countdown_count_down_from_a_time">Countdown - count down from a time</option>
                         <option value="countup" data-i18n="plugins.advanced-timer.labels.count_up_count_up_to_a_target">Count Up - count up to a target</option>
@@ -613,11 +613,11 @@
                 </div>
                 <div class="at-form-row">
                     <div class="at-form-group" id="initial-duration-group">
-                        <label class="at-form-label" data-i18n="ui.labels.initialDuration">Initial Duration (seconds)</label>
+                        <label class="at-form-label" data-i18n="plugins.advanced-timer.ui.labels.initialDuration">Initial Duration (seconds)</label>
                         <input type="number" class="at-form-control" id="initial-duration" min="1" value="300">
                     </div>
                     <div class="at-form-group" id="target-value-group" style="display:none;">
-                        <label class="at-form-label" data-i18n="ui.labels.targetValue">Target Value (seconds)</label>
+                        <label class="at-form-label" data-i18n="plugins.advanced-timer.ui.labels.targetValue">Target Value (seconds)</label>
                         <input type="number" class="at-form-control" id="target-value" min="0" value="300">
                     </div>
                 </div>
@@ -626,8 +626,8 @@
                     <p data-i18n="plugins.advanced-timer.labels.after_creating_the_timer_you_can_set_per">After creating the timer you can set Per Coin, Per Like, Per Follow etc. directly on the timer card - no separate event rules needed for basic interactions.</p>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
-                    <button type="submit" class="btn btn-primary" data-i18n="ui.tabs.create">Create Timer</button>
-                    <button type="button" class="btn btn-secondary" data-tab="timers" data-i18n="ui.buttons.cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="plugins.advanced-timer.ui.tabs.create">Create Timer</button>
+                    <button type="button" class="btn btn-secondary" data-tab="timers" data-i18n="plugins.advanced-timer.ui.buttons.cancel">Cancel</button>
                 </div>
             </form>
         </div>
@@ -638,7 +638,7 @@
                     <div class="at-page-brand">
                         <img class="at-page-brand-logo" data-brand-logo src="/advanced-timer/assets/advanced-timer-logo.png" alt="Advanced Timer">
                     </div>
-                    <h1 class="at-page-title" data-i18n="ui.tabs.profiles">Profiles</h1>
+                    <h1 class="at-page-title" data-i18n="plugins.advanced-timer.ui.tabs.profiles">Profiles</h1>
                     <p class="at-page-subtitle" data-i18n="plugins.advanced-timer.labels.save_reapply_and_move_between_timer_setups_without">Save, reapply and move between timer setups without rebuilding your structure.</p>
                 </div>
                 <div class="at-tab-hero-actions">
@@ -659,7 +659,7 @@
                 </div>
             </section>
             <div class="at-info-box">
-                <div class="at-info-box-title" data-i18n="ui.help.modesTitle">Timer Modes</div>
+                <div class="at-info-box-title" data-i18n="plugins.advanced-timer.ui.help.modesTitle">Timer Modes</div>
                 <p><strong>Countdown:</strong><span data-i18n="plugins.advanced-timer.labels.counts_down_to_zero_great_for_subathon_timers"> Counts down to zero - great for subathon timers</span></p>
                 <p><strong data-i18n="plugins.advanced-timer.labels.count_up">Count Up:</strong><span data-i18n="plugins.advanced-timer.labels.counts_up_to_a_target_value"> Counts up to a target value</span></p>
                 <p><strong>Stopwatch:</strong><span data-i18n="plugins.advanced-timer.labels.counts_up_indefinitely"> Counts up indefinitely</span></p>

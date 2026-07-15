@@ -4,7 +4,8 @@
       "clarityhud": {
         "dashboard": {
           "title": "ClarityHUD Dashboard",
-          "subtitle": "Ultra-minimalistic, VR-optimized, and accessible HUD overlays for TikTok Live"
+          "subtitle": "Ultra-minimalistic, VR-optimized, and accessible HUD overlays for TikTok Live",
+          "loading": "Loading..."
         },
         "chat_hud": {
           "title": "Chat HUD",
@@ -23,6 +24,7 @@
           "test_event": "Test Event",
           "refresh_preview": "Refresh Preview",
           "copy_url": "Copy URL",
+          "copy": "Copy",
           "save": "Save Settings",
           "cancel": "Cancel",
           "reset_defaults": "Reset to Defaults"
@@ -136,6 +138,55 @@
         "events_0_e8b6f6": "Events: 0",
         "obs_overlay_for_alerts_highlights_and_ticker_content": "OBS overlay for alerts, highlights, and ticker content",
         "vrchat_readable": "VRChat Readable"
+      },
+      "runtime": {
+      "status": { "settings_updated": "Settings updated from server" },
+      "toast": {
+        "unknown_error": "Unknown error",
+        "url_copied": "URL copied to clipboard!",
+        "url_copy_failed": "Failed to copy URL",
+        "preview_refreshed": "Preview refreshed",
+        "test_event_sent": "Test event sent to {dock} overlay",
+        "test_failed": "Test failed: {message}",
+        "test_event_failed": "Error sending test event",
+        "stream_settings_load_failed": "Could not load stream settings: {message}",
+        "settings_load_failed": "Could not load settings: {message}",
+        "settings_load_failed_generic": "Could not load settings",
+        "stream_settings_saved": "Stream settings saved successfully!",
+        "stream_settings_save_failed": "Could not save stream settings: {message}",
+        "settings_saved": "Settings saved successfully!",
+        "settings_save_failed": "Could not save settings: {message}",
+        "profile_exported": "Profile exported",
+        "profile_export_failed": "Could not export profile: {message}",
+        "profile_imported": "Profile imported",
+        "profile_import_failed": "Could not import profile: {message}",
+        "preset_saved": "Preset saved",
+        "preset_save_failed": "Could not save preset: {message}",
+        "preset_applied": "Applied {preset} preset",
+        "preset_apply_failed": "Could not apply preset: {message}",
+        "settings_reset": "Settings reset to defaults",
+        "settings_reset_failed": "Could not reset settings: {message}"
+      },
+      "dialog": {
+        "preset_name": "Preset name",
+        "reset_confirm": "Are you sure you want to reset all settings to defaults? This cannot be undone."
+      },
+      "empty": { "no_additional_streams": "No additional streams configured", "unknown_tab": "Unknown tab" },
+      "stream": { "fallback": "Stream {number}" },
+      "dock": { "chat": "Chat HUD", "full": "Full Activity HUD", "multi": "Multi-Stream HUD", "stream": "Stream Overlay" },
+      "preset": { "highContrast": "High Contrast", "visionImpaired": "Vision Impaired", "dyslexiaFriendly": "Dyslexia-Friendly", "motionSensitive": "Motion Sensitive" },
+      "tab": { "stream_settings": "Stream Settings", "streams": "Streams", "appearance": "Appearance", "events": "Events", "layout": "Layout", "animation": "Animation", "styling": "Styling", "accessibility": "Accessibility" },
+      "action": { "saving": "Saving..." },
+      "modal": { "settings_for": "Settings:" },
+      "aria": {
+        "close_settings_modal": "Close settings",
+        "close_setup_wizard": "Close setup wizard",
+        "profile_import": "Import ClarityHUD profile",
+        "preview_chat": "Chat HUD preview",
+        "preview_full": "Full Activity HUD preview",
+        "preview_multi": "Multi-Stream HUD preview",
+        "preview_stream": "Stream Overlay preview"
+      }
       }
     }
   }

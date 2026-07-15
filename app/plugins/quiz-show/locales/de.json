@@ -511,6 +511,184 @@
         "gro_e_ff06a4": "Größe",
         "gro_500x120": "Groß (500x120)",
         "16_expert": "~16% Expert ("
+      },
+      "ui": {
+        "navigation": {
+          "dashboard": "Dashboard",
+          "settings": "Einstellungen",
+          "gift_jokers": "Geschenk-Joker",
+          "extensions": "Erweiterungen",
+          "season": "Saison"
+        },
+        "game_modes": {
+          "classic": "Klassisch",
+          "elimination": "Elimination",
+          "marathon": "Marathon",
+          "duel": "Duell"
+        },
+        "actions": {
+          "stop": "Stoppen",
+          "upload": "Hochladen",
+          "export": "Exportieren",
+          "import": "Importieren",
+          "cancel": "Abbrechen",
+          "close": "×"
+        },
+        "defaults": {
+          "round_duration": "30"
+        },
+        "questions": {
+          "label": "Frage:",
+          "category": "Kategorie:",
+          "difficulty": "Schwierigkeit:",
+          "difficulty_level": "Schwierigkeitsgrad:",
+          "answer_a": "Antwort A",
+          "answer_b": "Antwort B",
+          "answer_c": "Antwort C",
+          "answer_d": "Antwort D"
+        },
+        "difficulty": {
+          "easy": "Leicht",
+          "medium": "Mittel",
+          "hard": "Schwer",
+          "expert": "Experte",
+          "master": "Meister"
+        },
+        "language": {
+          "label": "Sprache",
+          "german": "Deutsch",
+          "english": "Englisch",
+          "italian": "Italienisch",
+          "dutch": "Niederländisch",
+          "polish": "Polnisch"
+        },
+        "status": {
+          "progress": "0 / 0"
+        },
+        "commands": {
+          "answer": "Antwort-Befehle",
+          "joker": "Joker-Befehle",
+          "joker_prefix": "Joker-Befehlspräfix:"
+        },
+        "sections": {
+          "permissions": "Berechtigungen",
+          "integration": "Integration"
+        },
+        "options": {
+          "standard": "Standard"
+        },
+        "animation": {
+          "style": "Animationsstil:"
+        },
+        "layout": {
+          "position": "Positionierung:",
+          "embedded": "Eingebettet",
+          "orientation": "Ausrichtung",
+          "element": "Element",
+          "visible": "Sichtbar",
+          "vertical": "Vertikal",
+          "horizontal": "Horizontal"
+        },
+        "ai": {
+          "provider": "KI-Anbieter:",
+          "api_key": "API-Schlüssel:",
+          "model": "Modell:"
+        },
+        "leaderboard": {
+          "rank": "Platz",
+          "username": "Benutzername",
+          "round": "Runden-Bestenliste",
+          "season": "Saison-Bestenliste"
+        },
+        "hud": {
+          "theme": "Theme:",
+          "night": "Nacht",
+          "day": "Tag",
+          "timer_variant": "Timer-Variante:",
+          "animation_speed": "Animationsgeschwindigkeit:",
+          "animation_speed_value": "1.0",
+          "animations": "Animationen",
+          "question_appearance": "Frage-Einblendung:",
+          "colors": "Farben",
+          "success": "Erfolg:",
+          "warning": "Warnung:",
+          "error": "Fehler:",
+          "fonts": "Schriftarten",
+          "font_family": "Schriftfamilie:"
+        },
+        "fonts": {
+          "arial": "Arial-Schrift",
+          "helvetica": "Helvetica-Schrift",
+          "georgia": "Georgia-Schrift"
+        },
+        "gifts": {
+          "settings": "Geschenk-Einstellungen"
+        },
+        "table": {
+          "status": "Status",
+          "actions": "Aktionen"
+        },
+        "setup": {
+          "wizard": "Einrichtungsassistent",
+          "categories": "Kategorien",
+          "sounds": "Sounds"
+        },
+        "health": {
+          "title": "Plugin-Status"
+        },
+        "duel": {
+          "title": "Duell-Modus"
+        },
+        "theme": {
+          "preset": "Theme-Voreinstellung"
+        },
+        "avatar": {
+          "performance": "Avatar-Leistung",
+          "full": "Voll",
+          "balanced": "Ausgewogen",
+          "minimal": "Minimal"
+        },
+        "sound": {
+          "upload": "Sound-Upload"
+        },
+        "season": {
+          "automation": "Saison-Automatisierung",
+          "manual": "Manuell",
+          "weekly": "Wöchentlich",
+          "monthly": "Monatlich"
+        },
+        "empty": {
+          "no_entries": "Keine Einträge vorhanden"
+        },
+        "tooltips": {
+          "ultra_compact": "Ultra-Kompakt-Modus: Frage zuerst lesen, dann Antworten anzeigen (passt in 600x350).",
+          "joker_fifty": "Aktiviert den 50:50-Joker und entfernt zwei falsche Antwortoptionen.",
+          "joker_info": "Aktiviert den Info-Joker und zeigt eine falsche Antwort als Hinweis.",
+          "joker_time": "Aktiviert den Zeit-Joker und verlängert die verfügbare Antwortzeit.",
+          "tts": "Aktiviert die automatische Vorlesefunktion für Fragen."
+        },
+        "grid": {
+          "column_a": "Spalte A",
+          "column_b": "Spalte B",
+          "column_c": "Spalte C",
+          "column_d": "Spalte D",
+          "column_e": "Spalte E",
+          "column_f": "Spalte F",
+          "column_g": "Spalte G",
+          "column_h": "Spalte H",
+          "column_i": "Spalte I",
+          "column_j": "Spalte J",
+          "column_k": "Spalte K",
+          "column_l": "Spalte L",
+          "column_m": "Spalte M",
+          "column_n": "Spalte N",
+          "column_o": "Spalte O",
+          "column_p": "Spalte P",
+          "column_q": "Spalte Q",
+          "column_r": "Spalte R",
+          "column_s": "Spalte S",
+          "column_t": "Spalte T"
+        }
       }
     }
   }

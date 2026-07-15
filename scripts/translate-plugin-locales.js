@@ -5,6 +5,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { loadPublishedPluginCatalog } = require('./lib/published-plugin-catalog');
 const {
   LOCALES,
   applyLocaleValue,
@@ -15,13 +16,17 @@ const {
   splitBatchTranslation
 } = require('./lib/plugin-locale-translation');
 
-const pluginsRoot = path.join(__dirname, '..', 'app', 'plugins');
+const repoRoot = path.join(__dirname, '..');
 const cachePath = path.join(os.tmpdir(), 'ltth-plugin-locale-translation-cache.json');
 const limitArg = process.argv.find((argument) => argument.startsWith('--limit='));
 const limit = limitArg ? Number(limitArg.slice('--limit='.length)) : Number.POSITIVE_INFINITY;
 const concurrencyArg = process.argv.find((argument) => argument.startsWith('--concurrency='));
 const concurrency = Math.max(1, Math.min(6, Number(concurrencyArg ? concurrencyArg.slice('--concurrency='.length) : 3)) || 3);
 const dryRun = process.argv.includes('--dry-run');
+const pluginArg = process.argv.find((argument) => argument.startsWith('--plugin='));
+const requestedPluginIds = pluginArg
+  ? new Set(pluginArg.slice('--plugin='.length).split(',').map((id) => id.trim()).filter(Boolean))
+  : null;
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/, ''));
@@ -131,15 +136,23 @@ async function mapConcurrent(values, mapper) {
 
 async function main() {
   const cache = readCache();
-  const pluginIds = fs.readdirSync(pluginsRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(pluginsRoot, entry.name, 'locales')))
-    .map((entry) => entry.name)
-    .sort();
+  const pluginRecords = loadPublishedPluginCatalog(repoRoot).plugins
+    .map((plugin) => ({
+      id: plugin.id,
+      localesDir: path.join(path.dirname(plugin.manifestPath), 'locales')
+    }))
+    .filter((plugin) => fs.existsSync(plugin.localesDir))
+    .filter((plugin) => !requestedPluginIds || requestedPluginIds.has(plugin.id))
+    .sort((left, right) => left.id.localeCompare(right.id));
+  if (requestedPluginIds) {
+    const found = new Set(pluginRecords.map((plugin) => plugin.id));
+    const unknown = [...requestedPluginIds].filter((id) => !found.has(id));
+    if (unknown.length) throw new Error(`Unknown or untranslated plugin id(s): ${unknown.join(', ')}`);
+  }
   const work = [];
   const bundles = new Map();
 
-  pluginIds.forEach((pluginId) => {
-    const localesDir = path.join(pluginsRoot, pluginId, 'locales');
+  pluginRecords.forEach(({ id: pluginId, localesDir }) => {
     const localePaths = Object.fromEntries(LOCALES.map((locale) => [locale, path.join(localesDir, `${locale}.json`)]));
     if (LOCALES.some((locale) => !fs.existsSync(localePaths[locale]))) return;
     const locales = Object.fromEntries(LOCALES.map((locale) => [locale, readJson(localePaths[locale])]));

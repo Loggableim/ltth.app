@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.cdb7e4af5cda">LTTH App Store Admin</title>
+  <title data-i18n="plugins.store-admin.ui.title">LTTH App Store Admin</title>
   <style>
     :root {
       --bg: #10151f;
@@ -134,13 +134,13 @@
 </head>
 <body>
   <main>
-    <h1 data-i18n="generated.784570a5dbe7">LTTH App Store Admin</h1>
-    <p data-i18n="generated.6b3dd8431525">Manage beta licenses and closed-beta plugin access for Clerk users.</p>
+    <h1 data-i18n="plugins.store-admin.ui.title">LTTH App Store Admin</h1>
+    <p data-i18n="plugins.store-admin.ui.description">Manage beta licenses and closed-beta plugin access for Clerk users.</p>
 
     <section class="toolbar">
-      <input id="search" type="search" placeholder="Search by email or username" value="loggableim@gmail.com">
-      <button id="searchBtn" type="button" data-i18n="generated.618f890766e3">Search users</button>
-      <button id="meBtn" class="secondary" type="button" data-i18n="generated.884d6defdb65">Check admin session</button>
+      <input id="search" type="search" data-i18n-placeholder="plugins.store-admin.ui.searchPlaceholder" placeholder="Search by email or username" value="loggableim@gmail.com">
+      <button id="searchBtn" type="button" data-i18n="plugins.store-admin.ui.searchUsers">Search users</button>
+      <button id="meBtn" class="secondary" type="button" data-i18n="plugins.store-admin.ui.checkAdminSession">Check admin session</button>
     </section>
 
     <div id="status" class="status"></div>
@@ -149,20 +149,20 @@
       <article class="card">
         <div class="user-head">
           <div>
-            <h2 data-i18n="generated.e26d89d43bc4">Store Health</h2>
-            <p data-i18n="generated.3273e2d8dbdd">Local App Store telemetry and install health.</p>
+            <h2 data-i18n="plugins.store-admin.ui.storeHealth">Store Health</h2>
+            <p data-i18n="plugins.store-admin.ui.storeHealthDescription">Local App Store telemetry and install health.</p>
           </div>
-          <button id="refreshHealthBtn" class="secondary" type="button">Refresh</button>
+          <button id="refreshHealthBtn" class="secondary" type="button" data-i18n="plugins.store-admin.ui.refresh">Refresh</button>
         </div>
         <div id="healthMetrics" class="metric-grid"></div>
       </article>
       <article class="card">
         <div class="user-head">
           <div>
-            <h2 data-i18n="generated.16be928cd7c8">Latest Feedback</h2>
-            <p data-i18n="generated.fd38590093b2">Recent reviews submitted through the App Store drawer.</p>
+            <h2 data-i18n="plugins.store-admin.ui.latestFeedback">Latest Feedback</h2>
+            <p data-i18n="plugins.store-admin.ui.latestFeedbackDescription">Recent reviews submitted through the App Store drawer.</p>
           </div>
-          <button id="refreshFeedbackBtn" class="secondary" type="button">Refresh</button>
+          <button id="refreshFeedbackBtn" class="secondary" type="button" data-i18n="plugins.store-admin.ui.refresh">Refresh</button>
         </div>
         <div id="feedbackList" class="feedback-list"></div>
       </article>
@@ -171,6 +171,7 @@
     <section id="users" class="grid"></section>
   </main>
 
+  <script src="/js/i18n-client.js"></script>
   <script src="/js/clerk-store-auth.js"></script>
   <script>
     const CLOSED_BETA_PLUGINS = [
@@ -185,6 +186,17 @@
     const searchEl = document.getElementById('search');
     const healthMetricsEl = document.getElementById('healthMetrics');
     const feedbackListEl = document.getElementById('feedbackList');
+    let latestUsers = [];
+    let latestHealth = null;
+    let latestFeedback = [];
+
+    function t(key, params = {}, fallback = key) {
+      const fullKey = `plugins.store-admin.${key}`;
+      const translated = window.i18n && typeof window.i18n.t === 'function'
+        ? window.i18n.t(fullKey, params)
+        : fullKey;
+      return translated === fullKey ? fallback : translated;
+    }
 
     function setStatus(message) {
       statusEl.textContent = message || '';
@@ -207,39 +219,42 @@
       });
       const data = await response.json();
       if (!data.success) {
-        throw new Error(data.error || data.code || 'Request failed');
+        throw new Error(data.error || data.code || t('errors.requestFailed', {}, 'Request failed'));
       }
       return data;
     }
 
     function renderUsers(users) {
+      latestUsers = users;
       usersEl.innerHTML = users.map(user => {
         const groups = new Set(user.access.groups || []);
         const plugins = new Set(user.access.closedBetaPlugins || []);
-        const license = user.license && user.license.active ? 'Active beta license' : 'No active license';
+        const license = user.license && user.license.active
+          ? t('users.activeBetaLicense', {}, 'Active beta license')
+          : t('users.noActiveLicense', {}, 'No active license');
         return `
           <article class="card" data-user-id="${user.id}">
             <div class="user-head">
               <div>
                 <div class="email">${escapeHtml(user.email || user.id)}</div>
-                <p>${escapeHtml(user.username || [user.firstName, user.lastName].filter(Boolean).join(' ') || 'No profile name')}</p>
+                <p>${escapeHtml(user.username || [user.firstName, user.lastName].filter(Boolean).join(' ') || t('users.noProfileName', {}, 'No profile name'))}</p>
               </div>
               <div class="pill-row">
-                <span class="pill ${user.license && user.license.active ? 'ok' : ''}">${license}</span>
+                <span class="pill ${user.license && user.license.active ? 'ok' : ''}">${escapeHtml(license)}</span>
                 ${(user.access.groups || []).map(group => `<span class="pill">${escapeHtml(group)}</span>`).join('')}
               </div>
             </div>
             <div class="checks">
-              <label class="check"><input type="checkbox" data-group="admin" ${groups.has('admin') ? 'checked' : ''}> Admin</label>
-              <label class="check"><input type="checkbox" data-group="closed-beta" ${groups.has('closed-beta') ? 'checked' : ''}> All closed beta</label>
+              <label class="check"><input type="checkbox" data-group="admin" ${groups.has('admin') ? 'checked' : ''}> ${escapeHtml(t('users.administrator', {}, 'Administrator'))}</label>
+              <label class="check"><input type="checkbox" data-group="closed-beta" ${groups.has('closed-beta') ? 'checked' : ''}> ${escapeHtml(t('users.allClosedBeta', {}, 'All closed beta'))}</label>
               ${CLOSED_BETA_PLUGINS.map(id => `
                 <label class="check"><input type="checkbox" data-plugin="${id}" ${plugins.has(id) ? 'checked' : ''}> ${escapeHtml(id)}</label>
               `).join('')}
             </div>
             <div class="actions">
-              <button type="button" data-action="save-access">Save access</button>
-              <button type="button" class="secondary" data-action="claim-license">Claim beta license</button>
-              <button type="button" class="danger" data-action="revoke-license">Revoke license</button>
+              <button type="button" data-action="save-access">${escapeHtml(t('users.saveAccess', {}, 'Save access'))}</button>
+              <button type="button" class="secondary" data-action="claim-license">${escapeHtml(t('users.claimBetaLicense', {}, 'Claim beta license'))}</button>
+              <button type="button" class="danger" data-action="revoke-license">${escapeHtml(t('users.revokeLicense', {}, 'Revoke license'))}</button>
             </div>
           </article>
         `;
@@ -247,14 +262,15 @@
     }
 
     function renderHealth(summary) {
+      latestHealth = summary;
       const plugins = summary.plugins || {};
       const installFailures = Object.values(plugins).reduce((sum, item) => sum + Number(item.installFailureCount || 0), 0);
       const rollbackCount = Object.values(plugins).reduce((sum, item) => sum + Number(item.rollbackCount || 0), 0);
       healthMetricsEl.innerHTML = [
-        ['Feedback', summary.feedbackCount || 0],
-        ['Telemetry', summary.telemetryCount || 0],
-        ['Install failures', installFailures],
-        ['Rollbacks', rollbackCount]
+        [t('metrics.feedback', {}, 'Feedback'), summary.feedbackCount || 0],
+        [t('metrics.telemetry', {}, 'Telemetry'), summary.telemetryCount || 0],
+        [t('metrics.installFailures', {}, 'Install failures'), installFailures],
+        [t('metrics.rollbacks', {}, 'Rollbacks'), rollbackCount]
       ].map(([label, value]) => `
         <div class="metric">
           <strong>${escapeHtml(value)}</strong>
@@ -264,14 +280,15 @@
     }
 
     function renderFeedback(feedback) {
+      latestFeedback = feedback;
       feedbackListEl.innerHTML = feedback.length > 0
         ? feedback.map(item => `
           <div class="feedback-item">
-            <strong>${escapeHtml(item.pluginId || 'unknown')} · ${escapeHtml(item.rating || 'n/a')}/5</strong>
-            <span>${escapeHtml(item.message || item.kind || 'No message')}</span>
+            <strong>${escapeHtml(item.pluginId || t('feedback.unknown', {}, 'unknown'))} · ${escapeHtml(item.rating || t('feedback.notAvailable', {}, 'n/a'))}/5</strong>
+            <span>${escapeHtml(item.message || item.kind || t('feedback.noMessage', {}, 'No message'))}</span>
           </div>
         `).join('')
-        : '<p>No App Store feedback yet.</p>';
+        : `<p>${escapeHtml(t('feedback.empty', {}, 'No App Store feedback yet.'))}</p>`;
     }
 
     function escapeHtml(value) {
@@ -286,10 +303,10 @@
 
     async function searchUsers() {
       const query = encodeURIComponent(searchEl.value.trim());
-      setStatus('Loading users...');
-      const data = await apiFetch(`/api/store-admin/usersíq=${query}`);
+      setStatus(t('status.loadingUsers', {}, 'Loading users…'));
+      const data = await apiFetch(`/api/store-admin/users?q=${query}`);
       renderUsers(data.users || []);
-      setStatus(`${data.users.length} user(s) loaded.`);
+      setStatus(t('status.usersLoaded', { count: data.users.length }, `${data.users.length} user(s) loaded.`));
     }
 
     async function loadHealth() {
@@ -310,7 +327,7 @@
         method: 'POST',
         body: JSON.stringify({ groups, closedBetaPlugins })
       });
-      setStatus('Access saved.');
+      setStatus(t('status.accessSaved', {}, 'Access saved.'));
       await searchUsers();
     }
 
@@ -320,7 +337,9 @@
         method: 'POST',
         body: JSON.stringify({ action })
       });
-      setStatus(action === 'revoke' ? 'License revoked.' : 'License claimed.');
+      setStatus(action === 'revoke'
+        ? t('status.licenseRevoked', {}, 'License revoked.')
+        : t('status.licenseClaimed', {}, 'License claimed.'));
       await searchUsers();
     }
 
@@ -331,7 +350,7 @@
     document.getElementById('meBtn').addEventListener('click', async () => {
       try {
         const data = await apiFetch('/api/store-admin/me');
-        setStatus(`Admin session OK: ${data.account.userId}`);
+        setStatus(t('status.adminSessionOk', { userId: data.account.userId }, `Admin session OK: ${data.account.userId}`));
       } catch (error) {
         setStatus(error.message);
       }
@@ -356,11 +375,26 @@
       task.catch(error => setStatus(error.message));
     });
 
-    Promise.all([
-      searchUsers(),
-      loadHealth(),
-      loadFeedback()
-    ]).catch(error => setStatus(error.message));
+    function refreshTranslatedResults() {
+      if (latestUsers.length) renderUsers(latestUsers);
+      if (latestHealth) renderHealth(latestHealth);
+      if (latestFeedback.length || feedbackListEl.textContent) renderFeedback(latestFeedback);
+    }
+
+    function initialize() {
+      Promise.all([
+        searchUsers(),
+        loadHealth(),
+        loadFeedback()
+      ]).catch(error => setStatus(error.message));
+    }
+
+    if (window.i18n && window.i18n.ready) {
+      window.i18n.ready.then(initialize);
+      window.i18n.onChange(refreshTranslatedResults);
+    } else {
+      initialize();
+    }
   </script>
 </body>
 </html>

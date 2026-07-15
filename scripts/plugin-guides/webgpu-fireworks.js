@@ -1,8 +1,10 @@
 'use strict';
 
+const { applyOverlayEntryPoints } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+module.exports = Object.freeze(applyOverlayEntryPoints({
   "id": "webgpu-fireworks",
   "route": "/webgpu-fireworks/ui",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/webgpu-fireworks/ui/settings.html"
+            "expected": {
+              "path": "/plugins/webgpu-fireworks/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -196,72 +202,72 @@ module.exports = Object.freeze({
       "id": "gpu-quality",
       "copy": {
         "de": {
-          "title": "WebGPU-Qualitaetsprofil im Testprofil konfigurieren",
-          "body": "Arbeite im sichtbaren Bereich WebGPU-Qualitaetsprofil von WebGPU-Qualität, Auslöser und Performance-Grenze. Verwende nur lokale Demo-Werte; keine Zugangsdaten, Geraete-ID oder LIVE-Ziel.",
-          "expected": "Der Demo-Wert ist sichtbar und kann vor dem Test geprüft werden.",
-          "alt": "WebGPU-Qualitaetsprofil im Testprofil konfigurieren - WebGPU-Qualität, Auslöser und Performance-Grenze"
+          "title": "Den echten visuellen WebGPU-Stil prüfen",
+          "body": "Prüfe die echten Stil-Karten Premium Hybrid, Realistic und Stylized Neon. Der Lauf verändert keinen Stil; der Runtime-Status darunter zeigt, welcher visuelle Stil aktuell gemeldet wird.",
+          "expected": "Die echten Stil-Karten und der Runtime-Status für den visuellen Stil sind sichtbar.",
+          "alt": "Den echten visuellen WebGPU-Stil prüfen - WebGPU-Qualität, Auslöser und Performance-Grenze"
         },
         "en": {
-          "title": "Configure WebGPU quality profile in the test profile",
-          "body": "Work in the visible WebGPU quality profile area of WebGPU quality, trigger, and performance limit. Use local demo values only; never credentials, a device ID, or a LIVE target.",
-          "expected": "The demo value is visible and can be reviewed before testing.",
-          "alt": "Configure WebGPU quality profile in the test profile - WebGPU quality, trigger, and performance limit"
+          "title": "Review the real visual WebGPU style",
+          "body": "Review the real Premium Hybrid, Realistic, and Stylized Neon style cards. This run changes no style; the runtime status below reports the visual style currently in use.",
+          "expected": "The real style cards and the runtime status for the visual style are visible.",
+          "alt": "Review the real visual WebGPU style - WebGPU quality, trigger, and performance limit"
         },
         "es": {
-          "title": "Configura perfil de calidad WebGPU en el perfil de prueba",
-          "body": "Trabaja en el area visible perfil de calidad WebGPU de calidad WebGPU, disparador y límite de rendimiento. Usa solo valores demo locales; nunca credenciales, ID de dispositivo ni destino LIVE.",
-          "expected": "El valor demo queda visible y puede revisarse antes de probar.",
-          "alt": "Configura perfil de calidad WebGPU en el perfil de prueba - calidad WebGPU, disparador y límite de rendimiento"
+          "title": "Revisa el estilo visual WebGPU real",
+          "body": "Revisa las tarjetas reales Premium Hybrid, Realistic y Stylized Neon. Esta ejecución no cambia ningún estilo; el estado de runtime inferior informa del estilo visual en uso.",
+          "expected": "Las tarjetas de estilo reales y el estado de runtime del estilo visual son visibles.",
+          "alt": "Revisa el estilo visual WebGPU real - calidad WebGPU, disparador y límite de rendimiento"
         },
         "fr": {
-          "title": "Configurez profil de qualite WebGPU dans le profil de test",
-          "body": "Travaillez dans la zone visible profil de qualite WebGPU de qualité WebGPU, déclencheur et limite de performance. Utilisez uniquement des valeurs demo locales, jamais identifiants, ID appareil ou cible LIVE.",
-          "expected": "La valeur démo est visible et peut être vérifiée avant le test.",
-          "alt": "Configurez profil de qualite WebGPU dans le profil de test - qualité WebGPU, déclencheur et limite de performance"
+          "title": "Vérifiez le vrai style visuel WebGPU",
+          "body": "Vérifiez les vraies cartes Premium Hybrid, Realistic et Stylized Neon. Cette exécution ne modifie aucun style ; l'état runtime inférieur indique le style visuel actuellement utilisé.",
+          "expected": "Les vraies cartes de style et l'état runtime du style visuel sont visibles.",
+          "alt": "Vérifiez le vrai style visuel WebGPU - qualité WebGPU, déclencheur et limite de performance"
         }
       },
       "capture": {
         "route": "/plugins/webgpu-fireworks/ui/settings.html",
-        "assertVisible": "#webgpu-visual-style",
+        "assertVisible": "#visual-style-options",
         "focusText": {
-          "de": "WebGPU-Qualitaetsprofil im Testprofil konfigurieren",
-          "en": "Configure WebGPU quality profile in the test profile",
-          "es": "Configura perfil de calidad WebGPU en el perfil de prueba",
-          "fr": "Configurez profil de qualite WebGPU dans le profil de test"
+          "de": "Den echten visuellen WebGPU-Stil prüfen",
+          "en": "Review the real visual WebGPU style",
+          "es": "Revisa el estilo visual WebGPU real",
+          "fr": "Vérifiez le vrai style visuel WebGPU"
         },
         "action": {
-          "type": "set-demo-value",
+          "type": "open-plugin-surface",
           "stepId": "gpu-quality"
         },
         "expected": {
-          "de": "Der Demo-Wert ist sichtbar und kann vor dem Test geprüft werden.",
-          "en": "The demo value is visible and can be reviewed before testing.",
-          "es": "El valor demo queda visible y puede revisarse antes de probar.",
-          "fr": "La valeur démo est visible et peut être vérifiée avant le test."
+          "de": "Die echten Stil-Karten und der Runtime-Status für den visuellen Stil sind sichtbar.",
+          "en": "The real style cards and the runtime status for the visual style are visible.",
+          "es": "Las tarjetas de estilo reales y el estado de runtime del estilo visual son visibles.",
+          "fr": "Les vraies cartes de style et l'état runtime du style visuel sont visibles."
         }
       },
       "workflow": {
         "route": "/plugins/webgpu-fireworks/ui/settings.html",
         "instructions": {
           "de": {
-            "title": "WebGPU-Qualitaetsprofil im Testprofil konfigurieren",
-            "body": "Arbeite im sichtbaren Bereich WebGPU-Qualitaetsprofil von WebGPU-Qualität, Auslöser und Performance-Grenze. Verwende nur lokale Demo-Werte; keine Zugangsdaten, Geraete-ID oder LIVE-Ziel.",
-            "expected": "Der Demo-Wert ist sichtbar und kann vor dem Test geprüft werden."
+            "title": "Den echten visuellen WebGPU-Stil prüfen",
+            "body": "Prüfe die echten Stil-Karten Premium Hybrid, Realistic und Stylized Neon. Der Lauf verändert keinen Stil; der Runtime-Status darunter zeigt, welcher visuelle Stil aktuell gemeldet wird.",
+            "expected": "Die echten Stil-Karten und der Runtime-Status für den visuellen Stil sind sichtbar."
           },
           "en": {
-            "title": "Configure WebGPU quality profile in the test profile",
-            "body": "Work in the visible WebGPU quality profile area of WebGPU quality, trigger, and performance limit. Use local demo values only; never credentials, a device ID, or a LIVE target.",
-            "expected": "The demo value is visible and can be reviewed before testing."
+            "title": "Review the real visual WebGPU style",
+            "body": "Review the real Premium Hybrid, Realistic, and Stylized Neon style cards. This run changes no style; the runtime status below reports the visual style currently in use.",
+            "expected": "The real style cards and the runtime status for the visual style are visible."
           },
           "es": {
-            "title": "Configura perfil de calidad WebGPU en el perfil de prueba",
-            "body": "Trabaja en el area visible perfil de calidad WebGPU de calidad WebGPU, disparador y límite de rendimiento. Usa solo valores demo locales; nunca credenciales, ID de dispositivo ni destino LIVE.",
-            "expected": "El valor demo queda visible y puede revisarse antes de probar."
+            "title": "Revisa el estilo visual WebGPU real",
+            "body": "Revisa las tarjetas reales Premium Hybrid, Realistic y Stylized Neon. Esta ejecución no cambia ningún estilo; el estado de runtime inferior informa del estilo visual en uso.",
+            "expected": "Las tarjetas de estilo reales y el estado de runtime del estilo visual son visibles."
           },
           "fr": {
-            "title": "Configurez profil de qualite WebGPU dans le profil de test",
-            "body": "Travaillez dans la zone visible profil de qualite WebGPU de qualité WebGPU, déclencheur et limite de performance. Utilisez uniquement des valeurs demo locales, jamais identifiants, ID appareil ou cible LIVE.",
-            "expected": "La valeur démo est visible et peut être vérifiée avant le test."
+            "title": "Vérifiez le vrai style visuel WebGPU",
+            "body": "Vérifiez les vraies cartes Premium Hybrid, Realistic et Stylized Neon. Cette exécution ne modifie aucun style ; l'état runtime inférieur indique le style visuel actuellement utilisé.",
+            "expected": "Les vraies cartes de style et l'état runtime du style visuel sont visibles."
           }
         },
         "operations": [
@@ -270,18 +276,26 @@ module.exports = Object.freeze({
             "route": "/plugins/webgpu-fireworks/ui/settings.html"
           },
           {
-            "type": "set-demo-value",
-            "selector": "#webgpu-visual-style"
+            "type": "open-plugin-surface",
+            "selector": "#visual-style-options"
           }
         ],
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/webgpu-fireworks/ui/settings.html"
+            "expected": {
+              "path": "/plugins/webgpu-fireworks/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
+          },
+          {
+            "type": "visible",
+            "selector": "#visual-style-options"
           },
           {
             "type": "visible",
@@ -293,12 +307,12 @@ module.exports = Object.freeze({
           }
         ],
         "captureRule": {
-          "selector": "#webgpu-visual-style",
+          "selector": "#visual-style-options",
           "viewport": {
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },
@@ -387,11 +401,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/webgpu-fireworks/ui/settings.html"
+            "expected": {
+              "path": "/plugins/webgpu-fireworks/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -500,11 +518,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/webgpu-fireworks/ui/settings.html"
+            "expected": {
+              "path": "/plugins/webgpu-fireworks/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -610,11 +632,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/webgpu-fireworks/overlay.html"
+            "expected": {
+              "path": "/webgpu-fireworks/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -720,11 +746,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/webgpu-fireworks/ui/settings.html"
+            "expected": {
+              "path": "/plugins/webgpu-fireworks/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -746,4 +776,15 @@ module.exports = Object.freeze({
       }
     }
   ]
-});
+}, {
+  'gpu-fireworks-overlay': {
+    route: '/webgpu-fireworks/ui',
+    selector: '#copy-overlay-url',
+    copy: {
+      de: { title: 'WebGPU-Fireworks-Overlay-URL für OBS kopieren', body: 'Prüfe den sichtbaren Button „Copy Overlay URL“ in den WebGPU-Fireworks-Einstellungen und übernimm die URL nur in eine nicht sendende OBS-Testszene. Das Bild dokumentiert den echten OBS-Einstieg statt eines leeren Overlays.', expected: 'Der Overlay-URL-Button ist sichtbar und trennt die OBS-Einrichtung klar vom lokalen Testfeuerwerk.' },
+      en: { title: 'Copy the WebGPU Fireworks overlay URL for OBS', body: 'Review the visible “Copy Overlay URL” button in WebGPU Fireworks Settings and use the URL only in a non-live OBS test scene. The image documents the real OBS entry point instead of an empty overlay.', expected: 'The overlay URL button is visible and clearly separates OBS setup from the local test firework.' },
+      es: { title: 'Copia la URL del overlay WebGPU Fireworks para OBS', body: 'Revisa el botón visible «Copy Overlay URL» en los ajustes de WebGPU Fireworks y usa la URL solo en una escena de prueba de OBS que no está en directo. La imagen documenta el acceso real a OBS en lugar de un overlay vacío.', expected: 'El botón de URL del overlay está visible y separa claramente la configuración OBS del fuego artificial de prueba local.' },
+      fr: { title: 'Copiez l’URL de l’overlay WebGPU Fireworks pour OBS', body: 'Examinez le bouton visible « Copy Overlay URL » dans les réglages WebGPU Fireworks et utilisez l’URL uniquement dans une scène de test OBS hors diffusion. L’image documente le véritable point d’entrée OBS au lieu d’un overlay vide.', expected: 'Le bouton d’URL de l’overlay est visible et sépare clairement la configuration OBS du feu d’artifice de test local.' }
+    }
+  }
+}));

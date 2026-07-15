@@ -54,6 +54,8 @@
           "dropBackup": "Suelta aquí tu ZIP de copia",
           "browseFiles": "o haz clic para buscar archivos",
           "removeFile": "Quitar archivo",
+          "pluginColumn": "Plugin",
+          "useSource": "Usar esta fuente",
           "validateButton": "🔍 Validar y previsualizar",
           "previewTitle": "🔍 Vista previa de importación",
           "pluginDetails": "Detalles de plugins",

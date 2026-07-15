@@ -246,7 +246,14 @@
           "test_rain": "Emoji Rain testen",
           "test_gift_ball": "Geschenk-Kugel testen",
           "test_heart_balloons": "Herzballons testen",
-          "gpu_collisions": "GPU-Kollisionen"
+          "gpu_collisions": "GPU-Kollisionen",
+          "preset_label": "Voreinstellung",
+          "status_label": "Status",
+          "user_emoji_mappings": "Benutzer-Emoji-Zuordnungen",
+          "physics_air_resistance": "Luftwiderstand",
+          "physics_friction": "Reibung",
+          "emoji_rotation_speed": "Rotationsgeschwindigkeit",
+          "heart_balloon_pop_height": "Platz-Höhe"
         }
       },
       "labels": {

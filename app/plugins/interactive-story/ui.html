@@ -3297,7 +3297,7 @@
 
         <div class="page-meta">
 
-          <span class="pill" id="statusPill" data-i18n-key="hero.status.ready">Ready for your next stream</span>
+          <span class="pill" id="statusPill" data-i18n-key="plugins.interactive-story.hero.status.ready">Ready for your next stream</span>
 
         </div>
 
@@ -3309,17 +3309,17 @@
 
           <span class="theme-dot"></span>
 
-          <span data-i18n-key="hero.theme_synced">Theme synced with dashboard</span>
+          <span data-i18n-key="plugins.interactive-story.hero.theme_synced">Theme synced with dashboard</span>
 
         </div>
 
-        <label class="language-label" for="languageSelect" data-i18n-key="hero.language_label">Language</label>
+        <label class="language-label" for="languageSelect" data-i18n-key="plugins.interactive-story.hero.language_label">Language</label>
 
         <select id="languageSelect" class="form-select form-select-compact">
 
-          <option value="en">English</option>
+          <option value="en" data-i18n="plugins.interactive-story.interactive_story.ui.language.english">English</option>
 
-          <option value="de">Deutsch</option>
+          <option value="de" data-i18n="plugins.interactive-story.interactive_story.ui.language.german">Deutsch</option>
 
         </select>
 
@@ -3331,12 +3331,12 @@
       <div class="hero-copy">
         <div class="hero-heading-row">
           <h1 data-i18n="plugins.interactive-story.labels.interactive_story">Interactive Story</h1>
-          <span class="hero-state-badge" id="storyStateBadge" data-i18n="interactive_story.ui.status.ready">Bereit</span>
+          <span class="hero-state-badge" id="storyStateBadge" data-i18n="plugins.interactive-story.interactive_story.ui.status.ready">Bereit</span>
         </div>
         <p class="hero-subtitle" data-i18n="plugins.interactive-story.labels.ai_generierte_stories_mit_chat_voting_bildern_tts">AI-generierte Stories mit Chat-Voting, Bildern, TTS und OBS-Overlay.</p>
       </div>
       <div class="hero-actions">
-        <button class="btn btn-secondary hero-overlay-btn" id="heroOpenOverlayBtn" data-i18n-key="cards.overlay.open">Open Overlay</button>
+        <button class="btn btn-secondary hero-overlay-btn" id="heroOpenOverlayBtn" data-i18n-key="plugins.interactive-story.cards.overlay.open">Open Overlay</button>
       </div>
     </section>
 
@@ -3346,7 +3346,7 @@
 
     <div class="card" id="statusCard">
 
-      <div class="card-header" data-i18n-key="cards.status.title">
+      <div class="card-header" data-i18n-key="plugins.interactive-story.cards.status.title">
 
         Live Status
 
@@ -3363,13 +3363,13 @@
 
           <div class="status-item">
 
-            <span class="status-label" data-i18n-key="cards.status.plugin">Plugin Status</span>
+            <span class="status-label" data-i18n-key="plugins.interactive-story.cards.status.plugin">Plugin Status</span>
 
             <span class="status-value" id="pluginStatus">
 
               <span class="status-indicator status-inactive"></span>
 
-              <span data-i18n-key="cards.status.loading">Loading...</span>
+              <span data-i18n-key="plugins.interactive-story.cards.status.loading">Loading...</span>
 
             </span>
 
@@ -3377,15 +3377,15 @@
 
           <div class="status-item">
 
-            <span class="status-label" data-i18n-key="cards.status.session">Active Session</span>
+            <span class="status-label" data-i18n-key="plugins.interactive-story.cards.status.session">Active Session</span>
 
-            <span class="status-value" id="sessionStatus" data-i18n-key="cards.status.none">None</span>
+            <span class="status-value" id="sessionStatus" data-i18n-key="plugins.interactive-story.cards.status.none">None</span>
 
           </div>
 
           <div class="status-item">
 
-            <span class="status-label" data-i18n-key="cards.status.chapter">Current Chapter</span>
+            <span class="status-label" data-i18n-key="plugins.interactive-story.cards.status.chapter">Current Chapter</span>
 
             <span class="status-value" id="chapterStatus">-</span>
 
@@ -3393,9 +3393,9 @@
 
           <div class="status-item">
 
-            <span class="status-label" data-i18n-key="cards.status.voting">Voting</span>
+            <span class="status-label" data-i18n-key="plugins.interactive-story.cards.status.voting">Voting</span>
 
-            <span class="status-value" id="votingStatus" data-i18n-key="cards.status.inactive">Inactive</span>
+            <span class="status-value" id="votingStatus" data-i18n-key="plugins.interactive-story.cards.status.inactive">Inactive</span>
 
           </div>
 
@@ -3411,7 +3411,7 @@
 
     <div class="card" id="configurationCard">
 
-      <div class="card-header" data-i18n-key="cards.configuration.title">
+      <div class="card-header" data-i18n-key="plugins.interactive-story.cards.configuration.title">
 
         Story Setup
 
@@ -3505,7 +3505,7 @@
 
             <div class="config-section-content">
 
-              <div class="alert alert-info mb-3" data-i18n-key="cards.configuration.api_info">
+              <div class="alert alert-info mb-3" data-i18n-key="plugins.interactive-story.cards.configuration.api_info">
 
                 <strong>API Key Configuration</strong><br>
 
@@ -3521,13 +3521,13 @@
 
               <div class="mb-3">
 
-                <button type="button" class="btn btn-primary" id="testApiKeyBtn" data-i18n-key="cards.configuration.test_api_key">
+                <button type="button" class="btn btn-primary" id="testApiKeyBtn" data-i18n-key="plugins.interactive-story.cards.configuration.test_api_key">
 
                   Test API Key
 
                 </button>
 
-                <small class="form-text text-muted ml-2" data-i18n-key="cards.configuration.test_hint">Click to validate your API key</small>
+                <small class="form-text text-muted ml-2" data-i18n-key="plugins.interactive-story.cards.configuration.test_hint">Click to validate your API key</small>
 
                 <div id="apiKeyTestResult" class="mt-2" style="display: none;"></div>
 
@@ -3541,7 +3541,7 @@
 
               <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.providers.llm">LLM Provider</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.providers.llm">LLM Provider</label>
 
                   <select class="form-select" id="llmProvider">
 
@@ -3551,7 +3551,7 @@
 
                     <option value="ollama" data-i18n="plugins.interactive-story.labels.ollama_cloud_local">Ollama Cloud / Local</option>
 
-                    <option value="siliconflow">SiliconFlow</option>
+                    <option value="siliconflow" data-i18n="plugins.interactive-story.interactive_story.ui.providers.siliconflow">SiliconFlow</option>
 
                   </select>
 
@@ -3561,13 +3561,13 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.providers.image">Image Provider</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.providers.image">Image Provider</label>
 
                   <select class="form-select" id="imageProvider">
 
                     <option value="openai" data-i18n="plugins.interactive-story.labels.openai_dall_e">OpenAI (DALL-E)</option>
 
-                    <option value="siliconflow">SiliconFlow</option>
+                    <option value="siliconflow" data-i18n="plugins.interactive-story.interactive_story.ui.providers.siliconflow">SiliconFlow</option>
 
                   </select>
 
@@ -3575,7 +3575,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.providers.tts">TTS Provider</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.providers.tts">TTS Provider</label>
 
                   <select class="form-select" id="ttsProvider">
 
@@ -3595,7 +3595,7 @@
 
                 <div class="mb-3" id="openRouterApiKeyGroup" style="display: none;">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.providers.openrouter_key">OpenRouter API Key</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.providers.openrouter_key">OpenRouter API Key</label>
 
                   <input type="password" class="form-control" id="openRouterApiKey" placeholder="sk-or-...">
 
@@ -3613,7 +3613,7 @@
 
                 <div class="mb-3" id="ollamaBaseUrlGroup" style="display: none;">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.providers.ollama_url">Ollama Base URL</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.providers.ollama_url">Ollama Base URL</label>
 
                   <input type="text" class="form-control" id="ollamaBaseUrl" placeholder="https://ollama.com/api/v1">
 
@@ -3623,7 +3623,7 @@
 
                 <div class="mb-3" id="ollamaApiKeyGroup" style="display: none;">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.providers.ollama_key">Ollama API Key</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.providers.ollama_key">Ollama API Key</label>
 
                   <input type="password" class="form-control" id="ollamaApiKey" placeholder="Optional for local Ollama">
 
@@ -3641,7 +3641,7 @@
 
                 <div class="mb-3" id="openaiModelGroup">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.models.openai_llm">OpenAI LLM Model</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.models.openai_llm">OpenAI LLM Model</label>
 
                   <select class="form-select" id="openaiModel">
 
@@ -3659,7 +3659,7 @@
 
                 <div class="mb-3" id="openrouterModelGroup" style="display: none;">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.models.openrouter_llm">OpenRouter Model</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.models.openrouter_llm">OpenRouter Model</label>
 
                   <select class="form-select" id="openRouterModel">
 
@@ -3675,7 +3675,7 @@
 
                 <div class="mb-3" id="ollamaModelGroup" style="display: none;">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.models.ollama_llm">Ollama Model</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.models.ollama_llm">Ollama Model</label>
 
                   <input type="text" class="form-control" id="ollamaModel" list="ollamaModelSuggestions" placeholder="qwen3.5:cloud">
 
@@ -3697,7 +3697,7 @@
 
                 <div class="mb-3" id="siliconflowModelGroup" style="display: none;">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.models.silicon_llm">SiliconFlow LLM Model</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.models.silicon_llm">SiliconFlow LLM Model</label>
 
                   <select class="form-select" id="defaultModel">
 
@@ -3713,7 +3713,7 @@
 
                 <div class="mb-3" id="openaiImageModelGroup">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.models.openai_image">OpenAI Image Model</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.models.openai_image">OpenAI Image Model</label>
 
                   <select class="form-select" id="openaiImageModel">
 
@@ -3727,7 +3727,7 @@
 
                 <div class="mb-3" id="siliconflowImageModelGroup" style="display: none;">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.models.silicon_image">SiliconFlow Image Model</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.models.silicon_image">SiliconFlow Image Model</label>
 
                   <select class="form-select" id="defaultImageModel">
 
@@ -3789,7 +3789,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label">Voice</label>
+                  <label class="form-label" data-i18n="plugins.interactive-story.interactive_story.ui.voices.label">Voice</label>
 
                   <select class="form-select" id="ttsVoiceId">
 
@@ -3871,7 +3871,7 @@
 
                       <option value="henry" data-i18n="plugins.interactive-story.labels.henry_deep_male">Henry (Deep Male)</option>
 
-                      <option value="mrbeast">MrBeast</option>
+                      <option value="mrbeast" data-i18n="plugins.interactive-story.interactive_story.ui.voices.mrBeast">MrBeast</option>
 
                     </optgroup>
 
@@ -3903,7 +3903,7 @@
 
                 <label class="form-check-label" for="autoGenerateTTS">
 
-                  <strong data-i18n-key="cards.configuration.voting.auto_tts">Enable TTS Narration</strong>
+                  <strong data-i18n-key="plugins.interactive-story.cards.configuration.voting.auto_tts">Enable TTS Narration</strong>
 
                 </label>
 
@@ -3935,13 +3935,13 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.story.language">Story Language</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.story.language">Story Language</label>
 
                   <select class="form-select" id="storyLanguage">
 
                     <option value="German" data-i18n="plugins.interactive-story.labels.deutsch_german">Deutsch (German)</option>
 
-                    <option value="English">English</option>
+                    <option value="English" data-i18n="plugins.interactive-story.interactive_story.ui.language.english">English</option>
 
                     <option value="Spanish" data-i18n="plugins.interactive-story.labels.espanol_spanish">Español (Spanish)</option>
 
@@ -3957,7 +3957,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.voting.max_chapters">Max Chapters</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.voting.max_chapters">Max Chapters</label>
 
                   <input type="number" class="form-control" id="maxChapters" min="3" max="20" value="5">
 
@@ -3967,7 +3967,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.voting.choices">Number of Choices</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.voting.choices">Number of Choices</label>
 
                   <input type="number" class="form-control" id="numChoices" min="3" max="6" value="4">
 
@@ -3981,7 +3981,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.voting.duration">Voting Duration (seconds)</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.voting.duration">Voting Duration (seconds)</label>
 
                   <input type="number" class="form-control" id="votingDuration" min="15" max="300" value="60">
 
@@ -3989,7 +3989,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.voting.pattern">Vote Keyword Pattern</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.voting.pattern">Vote Keyword Pattern</label>
 
                   <select class="form-select" id="voteKeywordPattern">
 
@@ -3997,7 +3997,7 @@
 
                     <option value="letter" data-i18n="plugins.interactive-story.labels.a_b_c_d">A, B, C, D</option>
 
-                    <option value="number">1, 2, 3, 4</option>
+                    <option value="number" data-i18n="plugins.interactive-story.interactive_story.ui.votePatterns.numbers">1, 2, 3, 4</option>
 
                     <option value="antwort" data-i18n="plugins.interactive-story.labels.antwort_1_2_3">Antwort 1, 2, 3...</option>
 
@@ -4013,7 +4013,7 @@
 
                   <label class="form-check-label" for="autoGenerateImages">
 
-                    <span data-i18n-key="cards.configuration.voting.auto_images">Auto-generate Images</span>
+                    <span data-i18n-key="plugins.interactive-story.cards.configuration.voting.auto_images">Auto-generate Images</span>
 
                   </label>
 
@@ -4029,7 +4029,7 @@
 
                 <label class="form-check-label" for="caseSensitiveVoting">
 
-                  <strong data-i18n-key="cards.configuration.voting.case_sensitive">Case-Sensitive Voting</strong>
+                  <strong data-i18n-key="plugins.interactive-story.cards.configuration.voting.case_sensitive">Case-Sensitive Voting</strong>
 
                 </label>
 
@@ -4059,7 +4059,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.overlay.orientation">Orientation</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.overlay.orientation">Orientation</label>
 
                   <select class="form-select" id="overlayOrientation">
 
@@ -4073,7 +4073,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.overlay.resolution">Resolution</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.overlay.resolution">Resolution</label>
 
                   <select class="form-select" id="overlayResolution">
 
@@ -4091,13 +4091,13 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.overlay.display_mode">Display Mode</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.overlay.display_mode">Display Mode</label>
 
                   <select class="form-select" id="overlayDisplayMode">
 
                     <option value="full" data-i18n="plugins.interactive-story.labels.full_chapter">Full Chapter</option>
 
-                    <option value="sentence">Sentence-by-Sentence</option>
+                    <option value="sentence" data-i18n="plugins.interactive-story.interactive_story.ui.overlay.sentenceBySentence">Sentence-by-Sentence</option>
 
                     <option value="scroll" data-i18n="plugins.interactive-story.labels.star_wars_scroll_tts_synced">Star Wars Scroll (TTS Synced)</option>
 
@@ -4113,15 +4113,15 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.overlay.font_family">Font Family</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.overlay.font_family">Font Family</label>
 
                   <select class="form-select" id="overlayFontFamily">
 
                     <option value="Segoe UI, Tahoma, Geneva, Verdana, sans-serif" data-i18n="plugins.interactive-story.labels.segoe_ui_default">Segoe UI (Default)</option>
 
-                    <option value="Arial, Helvetica, sans-serif">Arial</option>
+                    <option value="Arial, Helvetica, sans-serif" data-i18n="plugins.interactive-story.interactive_story.ui.overlay.arial">Arial</option>
 
-                    <option value="Georgia, serif">Georgia</option>
+                    <option value="Georgia, serif" data-i18n="plugins.interactive-story.interactive_story.ui.overlay.georgia">Georgia</option>
 
                     <option value="'Times New Roman', serif" data-i18n="plugins.interactive-story.labels.times_new_roman">Times New Roman</option>
 
@@ -4131,7 +4131,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.overlay.text_size">Text Size (em)</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.overlay.text_size">Text Size (em)</label>
 
                   <input type="number" class="form-control" id="overlayFontSize" min="0.5" max="3" step="0.1" value="1.3">
 
@@ -4139,7 +4139,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.overlay.title_size">Title Size (em)</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.overlay.title_size">Title Size (em)</label>
 
                   <input type="number" class="form-control" id="overlayTitleFontSize" min="1" max="5" step="0.1" value="2.5">
 
@@ -4153,7 +4153,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.overlay.text_color">Text Color</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.overlay.text_color">Text Color</label>
 
                   <input type="color" class="form-control" id="overlayTextColor" value="#ffffff">
 
@@ -4161,7 +4161,7 @@
 
                 <div class="mb-3">
 
-                  <label class="form-label" data-i18n-key="cards.configuration.overlay.title_color">Title Color</label>
+                  <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.overlay.title_color">Title Color</label>
 
                   <input type="color" class="form-control" id="overlayTitleColor" value="#e94560">
 
@@ -4191,7 +4191,7 @@
 
                   <option value="linear-gradient(135deg, rgba(15,52,96,0.5) 0%, rgba(0,0,0,0.9) 100%)" data-i18n="plugins.interactive-story.labels.blue_gradient">Blue Gradient</option>
 
-                  <option value="rgba(0,0,0,0)">Transparent</option>
+                  <option value="rgba(0,0,0,0)" data-i18n="plugins.interactive-story.interactive_story.ui.overlay.transparent">Transparent</option>
 
                 </select>
 
@@ -4333,7 +4333,7 @@
 
                   <label class="form-check-label" for="offlineMode">
 
-                    <strong data-i18n-key="cards.configuration.voting.offline_mode">Offline/Test Mode</strong>
+                    <strong data-i18n-key="plugins.interactive-story.cards.configuration.voting.offline_mode">Offline/Test Mode</strong>
 
                   </label>
 
@@ -4347,7 +4347,7 @@
 
                   <label class="form-check-label" for="manualMode">
 
-                    <strong data-i18n-key="cards.configuration.voting.manual_mode">Manual Mode</strong>
+                    <strong data-i18n-key="plugins.interactive-story.cards.configuration.voting.manual_mode">Manual Mode</strong>
 
                   </label>
 
@@ -4361,7 +4361,7 @@
 
                   <label class="form-check-label" for="manualModeTTS">
 
-                    <strong data-i18n-key="cards.configuration.voting.manual_tts">Use TTS in Manual Mode</strong>
+                    <strong data-i18n-key="plugins.interactive-story.cards.configuration.voting.manual_tts">Use TTS in Manual Mode</strong>
 
                   </label>
 
@@ -4379,7 +4379,7 @@
 
                   <label class="form-check-label" for="debugLogging">
 
-                    <strong data-i18n-key="cards.configuration.voting.debug_logging">Debug Logging</strong>
+                    <strong data-i18n-key="plugins.interactive-story.cards.configuration.voting.debug_logging">Debug Logging</strong>
 
                   </label>
 
@@ -4393,7 +4393,7 @@
 
                   <label class="form-check-label" for="apiLogging">
 
-                    <strong data-i18n-key="cards.configuration.voting.api_logging">API Request Logging</strong>
+                    <strong data-i18n-key="plugins.interactive-story.cards.configuration.voting.api_logging">API Request Logging</strong>
 
                   </label>
 
@@ -4409,7 +4409,7 @@
 
 
 
-          <button type="submit" class="btn btn-primary" data-i18n-key="cards.configuration.save">
+          <button type="submit" class="btn btn-primary" data-i18n-key="plugins.interactive-story.cards.configuration.save">
 
             Save Configuration
 
@@ -4427,7 +4427,7 @@
 
     <div class="card" id="overlayCard">
 
-      <div class="card-header" data-i18n-key="cards.overlay.title">
+      <div class="card-header" data-i18n-key="plugins.interactive-story.cards.overlay.title">
 
         OBS Overlay
 
@@ -4437,19 +4437,19 @@
 
         <div class="mb-3">
 
-          <label class="form-label" data-i18n-key="cards.overlay.url_label">Overlay URL for OBS Browser Source:</label>
+          <label class="form-label" data-i18n-key="plugins.interactive-story.cards.overlay.url_label">Overlay URL for OBS Browser Source:</label>
 
           <div class="input-group">
 
             <input type="text" class="form-control" id="overlayUrl" readonly value="">
 
-            <button class="btn btn-outline-primary" id="copyOverlayUrlBtn" data-i18n-key="cards.overlay.copy">Copy</button>
+            <button class="btn btn-outline-primary" id="copyOverlayUrlBtn" data-i18n-key="plugins.interactive-story.cards.overlay.copy">Copy</button>
 
-            <button class="btn btn-primary" id="openOverlayBtn" data-i18n-key="cards.overlay.open">Open</button>
+            <button class="btn btn-primary" id="openOverlayBtn" data-i18n-key="plugins.interactive-story.cards.overlay.open">Open</button>
 
           </div>
 
-          <small class="text-muted" data-i18n-key="cards.overlay.hint">
+          <small class="text-muted" data-i18n-key="plugins.interactive-story.cards.overlay.hint">
 
             Add this URL as a Browser Source in OBS (Recommended size: 1920x1080)
 
@@ -4463,7 +4463,7 @@
 
           <button class="btn btn-secondary btn-sm" id="toggleOverlayPreviewBtn">
 
-            <span id="previewToggleIcon" aria-hidden="true">&#9654;</span> <span id="previewToggleText" data-i18n-key="cards.overlay.preview.show">Show preview</span>
+            <span id="previewToggleIcon" aria-hidden="true">&#9654;</span> <span id="previewToggleText" data-i18n-key="plugins.interactive-story.cards.overlay.preview.show">Show preview</span>
 
           </button>
 
@@ -4489,7 +4489,7 @@
 
           </div>
 
-          <small class="text-muted d-block mt-2" data-i18n-key="cards.overlay.preview_hint">
+          <small class="text-muted d-block mt-2" data-i18n-key="plugins.interactive-story.cards.overlay.preview_hint">
 
             This preview is rendered at 50% of the 1920x1080 overlay view.
 
@@ -4551,7 +4551,7 @@
 
     <div class="card" id="storyControls">
 
-      <div class="card-header" data-i18n-key="cards.story_controls.title">
+      <div class="card-header" data-i18n-key="plugins.interactive-story.cards.story_controls.title">
 
         Story Controls
 
@@ -4561,13 +4561,13 @@
 
         <div id="startStorySection">
 
-          <h5 data-i18n-key="cards.story_controls.start_new">Start New Story</h5>
+          <h5 data-i18n-key="plugins.interactive-story.cards.story_controls.start_new">Start New Story</h5>
 
           <div class="row mb-3">
 
             <div class="col-12">
 
-              <label class="form-label" data-i18n-key="cards.story_controls.select_theme">Select Theme:</label>
+              <label class="form-label" data-i18n-key="plugins.interactive-story.cards.story_controls.select_theme">Select Theme:</label>
 
               <div class="row" id="themeSelector">
 
@@ -4583,15 +4583,15 @@
 
           <div class="mb-3">
 
-            <label class="form-label" data-i18n-key="cards.story_controls.custom_outline">Custom Outline (optional)</label>
+            <label class="form-label" data-i18n-key="plugins.interactive-story.cards.story_controls.custom_outline">Custom Outline (optional)</label>
 
-            <textarea class="form-control" id="storyOutline" rows="3" placeholder="Leave blank for auto-generated outline" data-i18n-target="placeholder" data-i18n-key="cards.story_controls.custom_outline_placeholder"></textarea>
+            <textarea class="form-control" id="storyOutline" rows="3" placeholder="Leave blank for auto-generated outline" data-i18n-target="placeholder" data-i18n-key="plugins.interactive-story.cards.story_controls.custom_outline_placeholder"></textarea>
 
           </div>
 
 
 
-          <button class="btn btn-success btn-lg" id="startStoryBtn" data-i18n-key="cards.story_controls.start_btn">
+          <button class="btn btn-success btn-lg" id="startStoryBtn" data-i18n-key="plugins.interactive-story.cards.story_controls.start_btn">
 
             Start Story
 
@@ -4605,9 +4605,9 @@
 
           <div class="d-flex justify-content-between align-items-center mb-3">
 
-            <h5 data-i18n-key="cards.story_controls.active_story">Active Story</h5>
+            <h5 data-i18n-key="plugins.interactive-story.cards.story_controls.active_story">Active Story</h5>
 
-            <button class="btn btn-danger" id="endStoryBtn" data-i18n-key="cards.story_controls.end_story">
+            <button class="btn btn-danger" id="endStoryBtn" data-i18n-key="plugins.interactive-story.cards.story_controls.end_story">
 
               End Story
 
@@ -4627,7 +4627,7 @@
 
             <div class="alert alert-info">
 
-              <strong data-i18n-key="cards.story_controls.manual_title">Manual Mode:</strong> <span data-i18n-key="cards.story_controls.manual_body">Manually advance through each round</span>
+              <strong data-i18n-key="plugins.interactive-story.cards.story_controls.manual_title">Manual Mode:</strong> <span data-i18n-key="plugins.interactive-story.cards.story_controls.manual_body">Manually advance through each round</span>
 
             </div>
 
@@ -4635,13 +4635,13 @@
 
             <div class="mb-3">
 
-              <h6 data-i18n-key="cards.story_controls.manual_current_round">Current Round:</h6>
+              <h6 data-i18n-key="plugins.interactive-story.cards.story_controls.manual_current_round">Current Round:</h6>
 
               <div id="manualModeChapterInfo" class="p-3 bg-dark rounded">
 
-                <div><strong data-i18n-key="cards.story_controls.manual_chapter">Chapter:</strong> <span id="manualChapterNumber">-</span></div>
+                <div><strong data-i18n-key="plugins.interactive-story.cards.story_controls.manual_chapter">Chapter:</strong> <span id="manualChapterNumber">-</span></div>
 
-                <div><strong data-i18n-key="cards.story_controls.manual_voting_active">Voting Active:</strong> <span id="manualVotingStatus">-</span></div>
+                <div><strong data-i18n-key="plugins.interactive-story.cards.story_controls.manual_voting_active">Voting Active:</strong> <span id="manualVotingStatus">-</span></div>
 
               </div>
 
@@ -4651,7 +4651,7 @@
 
             <div id="manualModeVoting" style="display: none;">
 
-              <h6 data-i18n-key="cards.story_controls.manual_voting_results">Current Voting Results:</h6>
+              <h6 data-i18n-key="plugins.interactive-story.cards.story_controls.manual_voting_results">Current Voting Results:</h6>
 
               <div id="manualVotingResults" class="mb-3"></div>
 
@@ -4661,13 +4661,13 @@
 
             <div class="d-flex gap-2">
 
-              <button class="btn btn-primary" id="manualAdvanceBtn" disabled data-i18n-key="cards.story_controls.manual_advance">
+              <button class="btn btn-primary" id="manualAdvanceBtn" disabled data-i18n-key="plugins.interactive-story.cards.story_controls.manual_advance">
 
                 Advance to Next Round
 
               </button>
 
-              <button class="btn btn-secondary" id="manualShowResultsBtn" data-i18n-key="cards.story_controls.manual_show_results">
+              <button class="btn btn-secondary" id="manualShowResultsBtn" data-i18n-key="plugins.interactive-story.cards.story_controls.manual_show_results">
 
                 Show Voting Results
 
@@ -4685,7 +4685,7 @@
 
             <div class="alert alert-info">
 
-              <strong data-i18n-key="cards.story_controls.offline_title">Offline/Test Mode:</strong> <span data-i18n-key="cards.story_controls.offline_body">Choose the next path manually</span>
+              <strong data-i18n-key="plugins.interactive-story.cards.story_controls.offline_title">Offline/Test Mode:</strong> <span data-i18n-key="plugins.interactive-story.cards.story_controls.offline_body">Choose the next path manually</span>
 
             </div>
 
@@ -4697,13 +4697,13 @@
 
           <div class="mt-3">
 
-            <button class="btn btn-primary" id="forceVoteEndBtn" style="display: none;" data-i18n-key="cards.story_controls.force_vote">
+            <button class="btn btn-primary" id="forceVoteEndBtn" style="display: none;" data-i18n-key="plugins.interactive-story.cards.story_controls.force_vote">
 
               Force Vote End
 
             </button>
 
-            <button class="btn btn-secondary" id="regenerateImageBtn" data-i18n-key="cards.story_controls.regenerate_image">
+            <button class="btn btn-secondary" id="regenerateImageBtn" data-i18n-key="plugins.interactive-story.cards.story_controls.regenerate_image">
 
               Regenerate Image
 
@@ -4723,7 +4723,7 @@
 
     <div class="card" id="memoryCard" style="display: none;">
 
-      <div class="card-header" data-i18n-key="cards.memory.title">
+      <div class="card-header" data-i18n-key="plugins.interactive-story.cards.memory.title">
 
         Story Memory / Lore Database
 
@@ -4735,7 +4735,7 @@
 
           <div class="col-md-4">
 
-            <h6 data-i18n-key="cards.memory.characters">Characters</h6>
+            <h6 data-i18n-key="plugins.interactive-story.cards.memory.characters">Characters</h6>
 
             <div id="charactersList"></div>
 
@@ -4743,7 +4743,7 @@
 
           <div class="col-md-4">
 
-            <h6 data-i18n-key="cards.memory.locations">Locations</h6>
+            <h6 data-i18n-key="plugins.interactive-story.cards.memory.locations">Locations</h6>
 
             <div id="locationsList"></div>
 
@@ -4751,7 +4751,7 @@
 
           <div class="col-md-4">
 
-            <h6 data-i18n-key="cards.memory.items">Items</h6>
+            <h6 data-i18n-key="plugins.interactive-story.cards.memory.items">Items</h6>
 
             <div id="itemsList"></div>
 
@@ -4769,7 +4769,7 @@
 
     <div class="card" id="topVotersCard" style="display: none;">
 
-      <div class="card-header" data-i18n-key="cards.voters.title">
+      <div class="card-header" data-i18n-key="plugins.interactive-story.cards.voters.title">
 
         Top Voters
 
@@ -4789,11 +4789,11 @@
 
     <div class="card" id="debugLogCard" style="display: none;">
 
-      <div class="card-header" data-i18n-key="cards.debug.title">
+      <div class="card-header" data-i18n-key="plugins.interactive-story.cards.debug.title">
 
         Debug Logs
 
-        <button class="btn btn-sm btn-outline-light float-end" id="clearLogsBtn" data-i18n-key="cards.debug.clear">
+        <button class="btn btn-sm btn-outline-light float-end" id="clearLogsBtn" data-i18n-key="plugins.interactive-story.cards.debug.clear">
 
           Clear
 
@@ -4805,7 +4805,7 @@
 
         <div id="debugLogDisplay" style="max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.85em;">
 
-          <div class="text-muted" data-i18n-key="cards.debug.empty">No logs available yet</div>
+          <div class="text-muted" data-i18n-key="plugins.interactive-story.cards.debug.empty">No logs available yet</div>
 
         </div>
 
@@ -5762,6 +5762,8 @@
 
 
       applyTranslations(currentLocale);
+
+      window.i18n?.updateDOM?.();
 
       updateProviderHelp(document.getElementById('llmProvider')?.value || 'openai');
 
@@ -6978,7 +6980,7 @@
 
               if (result.details.keyLength !== 64 && result.provider && result.provider.toLowerCase() !== 'openai') {
 
-                html += ` <span style="color: #ffc107;">Expected: ~64 characters</span>`;
+                html += ` <span style="color: #ffc107;" data-i18n="plugins.interactive-story.interactive_story.ui.validation.expectedApiKeyLength">Expected: ~64 characters</span>`;
 
               }
 
@@ -6988,7 +6990,7 @@
 
               if (result.details.hasWhitespace) {
 
-                html += `<span style="color: #ffc107;">API key contains whitespace!</span><br>`;
+                html += `<span style="color: #ffc107;" data-i18n="plugins.interactive-story.interactive_story.ui.validation.apiKeyWhitespace">API key contains whitespace!</span><br>`;
 
               }
 
@@ -7013,6 +7015,7 @@
 
 
           resultDiv.innerHTML = html;
+          window.i18n?.updateDOM?.();
 
         }
 
@@ -7874,7 +7877,7 @@
 
         col.className = 'col-md-4 mb-3';
 
-        const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">Furry</span>' : '';
+        const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2" data-i18n="plugins.interactive-story.interactive_story.ui.themes.furry">Furry</span>' : '';
 
         col.innerHTML = `
 
@@ -7895,6 +7898,9 @@
         themeSelector.appendChild(col);
 
       });
+
+
+      window.i18n?.updateDOM?.();
 
 
 
@@ -7964,13 +7970,13 @@
 
 
 
-        for (const theme of themes) {
+      for (const theme of themes) {
 
           const col = document.createElement('div');
 
           col.className = 'col-md-4 mb-3';
 
-          const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">Furry</span>' : '';
+          const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2" data-i18n="plugins.interactive-story.interactive_story.ui.themes.furry">Furry</span>' : '';
 
           col.innerHTML = `
 
@@ -7991,6 +7997,9 @@
           themeSelector.appendChild(col);
 
         }
+
+
+        window.i18n?.updateDOM?.();
 
 
 
@@ -8038,7 +8047,7 @@
 
             col.className = 'col-md-4 mb-3';
 
-            const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">Furry</span>' : '';
+            const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2" data-i18n="plugins.interactive-story.interactive_story.ui.themes.furry">Furry</span>' : '';
 
             col.innerHTML = `
 
@@ -8059,6 +8068,9 @@
             themeSelector.appendChild(col);
 
           }
+
+
+          window.i18n?.updateDOM?.();
 
 
 

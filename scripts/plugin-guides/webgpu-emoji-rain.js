@@ -1,8 +1,10 @@
 'use strict';
 
+const { applyOverlayEntryPoints } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+module.exports = Object.freeze(applyOverlayEntryPoints({
   "id": "webgpu-emoji-rain",
   "route": "/plugins/webgpu-emoji-rain/ui.html",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/webgpu-emoji-rain/ui.html"
+            "expected": {
+              "path": "/plugins/webgpu-emoji-rain/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +283,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/webgpu-emoji-rain/ui.html"
+            "expected": {
+              "path": "/plugins/webgpu-emoji-rain/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -387,11 +397,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/webgpu-emoji-rain/ui.html"
+            "expected": {
+              "path": "/plugins/webgpu-emoji-rain/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -442,7 +456,7 @@ module.exports = Object.freeze({
       },
       "capture": {
         "route": "/plugins/webgpu-emoji-rain/ui.html",
-        "assertVisible": "#save-config-btn",
+        "assertVisible": "#test-emoji-rain-btn",
         "focusText": {
           "de": "GPU Rain Test lokal testen",
           "en": "Test GPU Rain Test locally",
@@ -451,6 +465,8 @@ module.exports = Object.freeze({
         },
         "action": {
           "type": "run-local-preview",
+          "allowClick": true,
+          "clickSelector": "#test-emoji-rain-btn",
           "stepId": "gpu-rain-test"
         },
         "expected": {
@@ -491,21 +507,25 @@ module.exports = Object.freeze({
           },
           {
             "type": "run-local-preview",
-            "selector": "#save-config-btn"
+            "selector": "#test-emoji-rain-btn"
           }
         ],
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/webgpu-emoji-rain/ui.html"
+            "expected": {
+              "path": "/plugins/webgpu-emoji-rain/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
-            "selector": "#save-config-btn"
+            "selector": "#test-emoji-rain-btn"
           },
           {
             "type": "console",
@@ -513,7 +533,7 @@ module.exports = Object.freeze({
           }
         ],
         "captureRule": {
-          "selector": "#save-config-btn",
+          "selector": "#test-emoji-rain-btn",
           "viewport": {
             "width": 1440,
             "height": 900
@@ -607,11 +627,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/webgpu-emoji-rain/overlay.html"
+            "expected": {
+              "path": "/plugins/webgpu-emoji-rain/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -717,11 +741,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/webgpu-emoji-rain/ui.html"
+            "expected": {
+              "path": "/plugins/webgpu-emoji-rain/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -743,4 +771,15 @@ module.exports = Object.freeze({
       }
     }
   ]
-});
+}, {
+  'gpu-rain-overlay': {
+    route: '/plugins/webgpu-emoji-rain/ui.html',
+    selector: '#obs-hud-setup',
+    copy: {
+      de: { title: 'WebGPU-Emoji-Rain-HUD-Link für OBS übernehmen', body: 'Prüfe den sichtbaren „Open OBS HUD“-Link in WebGPU Emoji Rain und übernimm seine URL nur in eine nicht sendende OBS-Testszene. Das Bild dokumentiert den echten HUD-Einstieg statt eines leeren GPU-Exports.', expected: 'Der sichtbare HUD-Link führt zum WebGPU-Emoji-Rain-Endpunkt und erklärt den nächsten OBS-Schritt.' },
+      en: { title: 'Use the WebGPU Emoji Rain HUD link for OBS', body: 'Review the visible “Open OBS HUD” link in WebGPU Emoji Rain and use its URL only in a non-live OBS test scene. The image documents the real HUD entry point instead of an empty GPU export.', expected: 'The visible HUD link leads to the WebGPU Emoji Rain endpoint and explains the next OBS step.' },
+      es: { title: 'Usa el enlace HUD de WebGPU Emoji Rain para OBS', body: 'Revisa el enlace visible «Open OBS HUD» en WebGPU Emoji Rain y usa su URL solo en una escena de prueba de OBS que no está en directo. La imagen documenta el acceso real al HUD en lugar de un export GPU vacío.', expected: 'El enlace HUD visible lleva al endpoint de WebGPU Emoji Rain y explica el siguiente paso de OBS.' },
+      fr: { title: 'Utilisez le lien HUD WebGPU Emoji Rain pour OBS', body: 'Vérifiez le lien visible « Open OBS HUD » dans WebGPU Emoji Rain et utilisez son URL uniquement dans une scène de test OBS hors diffusion. L’image documente le véritable point d’entrée HUD au lieu d’un export GPU vide.', expected: 'Le lien HUD visible mène au point d’accès WebGPU Emoji Rain et explique la prochaine étape OBS.' }
+    }
+  }
+}));

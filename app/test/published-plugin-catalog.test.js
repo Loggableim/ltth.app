@@ -14,5 +14,6 @@ describe('published plugin catalog', () => {
     expect(catalog.guideIds).toEqual([...catalog.guideIds].sort());
     expect(catalog.manifestIds).toHaveLength(37);
     expect(catalog.storeIds).toContain('visual-fx-frame-webgpu');
+    expect(catalog.storeAdmin.manifestPath).toMatch(/plugin-store[\\/]sources[\\/]store-admin[\\/]plugin\.json$/);
   });
 });

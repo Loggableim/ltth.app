@@ -14,7 +14,10 @@
             "refresh": "Aktualisieren",
             "close": "Schließen",
             "test": "Testen",
-            "clear": "Leeren"
+            "clear": "Leeren",
+            "copy": "Kopieren",
+            "stop": "Stopp",
+            "save_vrchat_output": "VRChat-Ausgabe speichern"
           },
           "status": {
             "ready": "Bereit",
@@ -28,6 +31,31 @@
             "failed": "Einstellungen konnten nicht gespeichert werden.",
             "noData": "Keine Daten verfügbar.",
             "confirm": "Bist du sicher?"
+          },
+          "labels": {
+            "source_microphone": "Quell-Mikrofon",
+            "stt_model": "STT-Modell",
+            "caption_style": "Untertitel-Stil",
+            "position": "Position",
+            "asr_provider": "ASR-Provider",
+            "model": "Modell",
+            "translation_color": "Übersetzungs-Farbe"
+          },
+          "navigation": {
+            "status": "Status",
+            "admin": "Admin",
+            "capture": "Capture",
+            "multi_language": "Mehrsprachig"
+          },
+          "options": {
+            "no_selection": "Keine Auswahl",
+            "no_models": "Keine Modelle",
+            "no_api_key": "Kein API-Key",
+            "center": "Mitte"
+          },
+          "help": {
+            "multilang_rows": "Mehrere gewählte Sprachen werden automatisch als eigene Zeilen angezeigt.",
+            "vrchat_final_captions": "Sendet nur finale Original-Untertitel nach 700 ms Bündelung. Lange Texte werden automatisch auf das VRChat-Chatbox-Limit aufgeteilt."
           }
         }
       },

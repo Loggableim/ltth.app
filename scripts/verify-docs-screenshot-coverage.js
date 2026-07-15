@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const { LOCALES, buildDocsSpec } = require('./docs-screenshot-spec');
+const { isAllowedCaptureNetworkUrl } = require('./lib/capture-receipt');
 
 const ROOT = path.resolve(__dirname, '..');
 const manifestPath = path.join(ROOT, 'screenshots', 'docs-capture-manifest.json');
@@ -88,7 +89,7 @@ for (const locale of LOCALES) {
 assert.strictEqual((manifest.outputs || []).length, expected.size, `Expected ${expected.size} current tutorial captures`);
 
 const seen = new Set();
-const hashesByGuideLocale = new Map();
+  const hashesByLocale = new Map();
 for (const output of manifest.outputs || []) {
   const key = `${output.locale}:${output.id}`;
   const expectedEntry = expected.get(key);
@@ -105,6 +106,24 @@ for (const output of manifest.outputs || []) {
   assert.ok(output.receipt, `${key} is missing its CaptureReceipt`);
   assert.deepStrictEqual(output.receipt?.operations, asset.workflow.operations, `${key} receipt operations drifted`);
   assert.ok(output.receipt?.postconditions?.every((condition) => condition.passed === true), `${key} has an unfulfilled receipt postcondition`);
+  assert.strictEqual(output.receipt?.schemaVersion, 2, `${key} must use CaptureReceipt schema 2`);
+  assert.ok(Array.isArray(output.receipt?.network), `${key} is missing network evidence`);
+  assert.ok(output.receipt.network.every((entry) => isAllowedCaptureNetworkUrl(entry.url)), `${key} contacted a non-local origin`);
+  assert.deepStrictEqual(output.receipt?.console, [], `${key} has browser console errors`);
+  assert.ok(Array.isArray(output.receipt?.interactions), `${key} is missing executed interaction evidence`);
+  if (asset.workflow.captureRule?.stateChange) {
+    const interactionConditions = asset.workflow.postconditions.filter((condition) => condition.type === 'interaction');
+    assert.ok(interactionConditions.length, `${key} declares a state change without an interaction postcondition`);
+    for (const condition of interactionConditions) {
+      const expected = condition.expected || {};
+      assert.ok(output.receipt.interactions.some((interaction) => (
+        interaction.status === 'performed'
+        && interaction.selector === condition.selector
+        && interaction.type === expected.type
+        && (expected.changed === undefined || interaction.changed === expected.changed)
+      )), `${key} is missing the declared executed interaction`);
+    }
+  }
   assert.strictEqual(output.state?.lang, locale, `${key} document language is not localized`);
   assert.strictEqual(output.state?.i18n, locale, `${key} plugin i18n language is not localized`);
   assert.strictEqual(output.state?.theme, 'cid', `${key} was not captured in the Cid theme`);
@@ -145,29 +164,23 @@ for (const output of manifest.outputs || []) {
   // recorded crop bounds and the PNG dimensions instead of requiring a full
   // viewport screenshot with unreadably small controls.
   assert.ok(output.screenshotClip, `${key} did not record its product crop`);
-  assert.strictEqual(output.screenshotClip.width, Math.min(output.state?.viewport?.clientWidth || 0, 640), `${key} crop width is wrong`);
-  assert.strictEqual(output.screenshotClip.height, Math.min(output.state?.viewport?.height || 0, 560), `${key} crop height is wrong`);
+  const imageCrop = asset.workflow.captureRule.imageCrop || {};
+  assert.strictEqual(output.screenshotClip.width, Math.min(output.state?.viewport?.clientWidth || 0, imageCrop.width || 640), `${key} crop width is wrong`);
+  assert.strictEqual(output.screenshotClip.height, Math.min(output.state?.viewport?.height || 0, imageCrop.height || 560), `${key} crop height is wrong`);
   assert.strictEqual(png.width, output.screenshotClip.width, `${key} screenshot width is wrong`);
   assert.strictEqual(png.height, output.screenshotClip.height, `${key} screenshot height is wrong`);
-  // A real browser-source route may intentionally be transparent or empty
-  // until the user triggers a local test event. Do not reject that truthful
-  // starting state merely because PNG compression makes it small; ordinary UI
-  // captures still need visible detail and contrast.
-  const mayStartEmpty = asset.action?.type === 'open-overlay-preview' || asset.action?.allowEmptySurface === true;
-  assert.ok(png.bytes > (mayStartEmpty ? 1800 : 2048), `${key} screenshot is blank or implausibly small`);
-  if (!mayStartEmpty) {
-    // The sampled output can be a deliberately dark high-contrast plugin UI.
-    // Reject only a genuinely uniform surface; detailed legibility is checked
-    // from real product anchors and the raw capture, not synthetic styling.
-    assert.ok(png.colors > 1 && png.contrast > 0, `${key} screenshot is visually blank or lacks meaningful contrast`);
-  }
+  // Documentation screenshots must show a real product surface. A transparent
+  // or uniform overlay is not a usable workflow image, even when an event would
+  // make it render later. The sampled output can be deliberately dark, so only
+  // reject genuinely uniform or implausibly small images here.
+  assert.ok(png.bytes > 2048, `${key} screenshot is blank or implausibly small`);
+  assert.ok(png.colors > 1 && png.contrast > 0, `${key} screenshot is visually blank or lacks meaningful contrast`);
   const hash = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
   assert.strictEqual(output.sha256, hash, `${key} manifest hash does not match screenshot`);
-  const guideLocale = `${locale}:${asset.guideId}`;
-  const guideHashes = hashesByGuideLocale.get(guideLocale) || new Set();
-  assert.ok(!guideHashes.has(hash), `${key} duplicates a different step image in the same guide and locale`);
-  guideHashes.add(hash);
-  hashesByGuideLocale.set(guideLocale, guideHashes);
+  const localeHashes = hashesByLocale.get(locale) || new Set();
+  assert.ok(!localeHashes.has(hash), `${key} duplicates a different tutorial screenshot in the same locale`);
+  localeHashes.add(hash);
+  hashesByLocale.set(locale, localeHashes);
 }
 
 assert.strictEqual(seen.size, expected.size, 'Not every guide step and locale was captured');

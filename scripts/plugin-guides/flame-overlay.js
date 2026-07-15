@@ -1,8 +1,10 @@
 'use strict';
 
+const { applyOverlayEntryPoints } = require('../lib/guide-overlay-entry-points');
+
 // Complete editorial and workflow contract for this plugin. The build
 // consumes this module directly; it does not generate guide prose.
-module.exports = Object.freeze({
+module.exports = Object.freeze(applyOverlayEntryPoints({
   "id": "flame-overlay",
   "route": "/plugins/flame-overlay/ui/settings.html",
   "topic": {
@@ -167,11 +169,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/flame-overlay/ui/settings.html"
+            "expected": {
+              "path": "/plugins/flame-overlay/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -282,11 +288,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/flame-overlay/ui/settings.html"
+            "expected": {
+              "path": "/plugins/flame-overlay/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -397,11 +407,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/flame-overlay/ui/settings.html"
+            "expected": {
+              "path": "/plugins/flame-overlay/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -507,11 +521,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/flame-overlay/ui/settings.html"
+            "expected": {
+              "path": "/plugins/flame-overlay/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -617,11 +635,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/flame-overlay/overlay"
+            "expected": {
+              "path": "/flame-overlay/ui",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -727,11 +749,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/flame-overlay/ui/settings.html"
+            "expected": {
+              "path": "/plugins/flame-overlay/ui/settings.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -753,4 +779,15 @@ module.exports = Object.freeze({
       }
     }
   ]
-});
+}, {
+  'frame-obs-source': {
+    route: '/flame-overlay/ui',
+    selector: '#overlayUrl',
+    copy: {
+      de: { title: 'Flame-Overlay-URL für OBS übernehmen', body: 'Prüfe die sichtbare Flame-Overlay-URL in den Einstellungen, bevor du sie in einer nicht sendenden OBS-Testszene als Browser-Quelle einrichtest. Das Bild zeigt die echte OBS-Anleitung, nicht einen leeren Rahmenexport.', expected: 'Die sichtbare Overlay-URL und die folgenden OBS-Schritte sind eindeutig.' },
+      en: { title: 'Use the Flame Overlay URL for OBS', body: 'Review the visible Flame Overlay URL in Settings before using it as a browser source in a non-live OBS test scene. The image shows the real OBS setup guidance, not an empty frame export.', expected: 'The visible overlay URL and the following OBS steps are unambiguous.' },
+      es: { title: 'Usa la URL de Flame Overlay para OBS', body: 'Revisa la URL visible de Flame Overlay en Ajustes antes de usarla como fuente de navegador en una escena de prueba de OBS que no está en directo. La imagen muestra la guía real de configuración de OBS, no un export vacío del marco.', expected: 'La URL visible del overlay y los pasos siguientes de OBS son inequívocos.' },
+      fr: { title: 'Utilisez l’URL Flame Overlay pour OBS', body: 'Vérifiez l’URL Flame Overlay visible dans les réglages avant de l’utiliser comme source navigateur dans une scène de test OBS hors diffusion. L’image montre le véritable guide de configuration OBS, pas un export de cadre vide.', expected: 'L’URL visible de l’overlay et les étapes OBS suivantes sont sans ambiguïté.' }
+    }
+  }
+}));

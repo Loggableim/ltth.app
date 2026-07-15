@@ -728,26 +728,26 @@
   <div class="shell">
     <aside class="sidebar">
       <div class="brand">
-        <h1>StreamAlchemy</h1>
+        <h1 data-i18n="plugins.streamalchemy.ui.app.title">StreamAlchemy</h1>
         <p data-i18n="plugins.streamalchemy.labels.relaunch_runtime">Relaunch Runtime</p>
       </div>
-      <nav class="nav" aria-label="StreamAlchemy Bereiche">
-        <button class="active" data-target="overview">Overview</button>
-        <button data-target="items">Items</button>
-        <button data-target="recipes">Recipes</button>
-        <button data-target="generation-jobs">Generation</button>
-        <button data-target="settings">Settings</button>
+      <nav class="nav" aria-label="StreamAlchemy Bereiche" data-i18n-aria-label="plugins.streamalchemy.ui.navigation.areas">
+        <button class="active" data-target="overview" data-i18n="plugins.streamalchemy.ui.app.overview">Overview</button>
+        <button data-target="items" data-i18n="plugins.streamalchemy.ui.app.items">Items</button>
+        <button data-target="recipes" data-i18n="plugins.streamalchemy.ui.app.recipes">Recipes</button>
+        <button data-target="generation-jobs" data-i18n="plugins.streamalchemy.ui.app.generation">Generation</button>
+        <button data-target="settings" data-i18n="plugins.streamalchemy.ui.app.settings">Settings</button>
       </nav>
     </aside>
 
     <main>
       <div class="topline">
         <div>
-          <h2 id="viewTitle">Overview</h2>
+          <h2 id="viewTitle" data-i18n="plugins.streamalchemy.ui.app.overview">Overview</h2>
           <p id="viewSubtitle" data-i18n="plugins.streamalchemy.labels.live_status_for_inventory_cached_recipes_generation_providers">Live status for inventory, cached recipes, generation providers, and local model readiness.</p>
         </div>
         <div class="actions">
-          <button class="button" id="refreshBtn" type="button">Refresh</button>
+          <button class="button" id="refreshBtn" type="button" data-i18n="plugins.streamalchemy.ui.app.refresh">Refresh</button>
           <a class="button" href="/streamalchemy/overlay" target="_blank" rel="noreferrer">Overlay</a>
         </div>
       </div>
@@ -756,9 +756,9 @@
 
       <section class="view active" data-view="overview">
         <div class="metric-grid">
-          <div class="metric"><span>Items</span><strong id="metricItems">0</strong></div>
-          <div class="metric"><span>Recipes</span><strong id="metricRecipes">0</strong></div>
-          <div class="metric"><span>Jobs</span><strong id="metricJobs">0</strong></div>
+          <div class="metric"><span data-i18n="plugins.streamalchemy.ui.metrics.items">Items</span><strong id="metricItems">0</strong></div>
+          <div class="metric"><span data-i18n="plugins.streamalchemy.ui.metrics.recipes">Recipes</span><strong id="metricRecipes">0</strong></div>
+          <div class="metric"><span data-i18n="plugins.streamalchemy.ui.metrics.jobs">Jobs</span><strong id="metricJobs">0</strong></div>
           <div class="metric"><span data-i18n="plugins.streamalchemy.labels.ready_providers">Ready Providers</span><strong id="metricProvider">0</strong></div>
         </div>
         <div class="layout">
@@ -801,12 +801,12 @@
             </label>
             <label><span data-i18n="plugins.streamalchemy.labels.default_style">Default style
               </span><select id="defaultStyle">
-                <option value="rpg" data-i18n="streamalchemy.styles.rpg">RPG</option>
-                <option value="fantasy" data-i18n="streamalchemy.styles.fantasy">Fantasy</option>
-                <option value="pixel">Pixel</option>
-                <option value="anime" data-i18n="streamalchemy.styles.anime">Anime</option>
-                <option value="cyberpunk" data-i18n="streamalchemy.styles.cyberpunk">Cyberpunk</option>
-                <option value="cartoon" data-i18n="streamalchemy.styles.cartoon">Cartoon</option>
+                <option value="rpg" data-i18n="plugins.streamalchemy.streamalchemy.styles.rpg">RPG</option>
+                <option value="fantasy" data-i18n="plugins.streamalchemy.streamalchemy.styles.fantasy">Fantasy</option>
+                <option value="pixel" data-i18n="plugins.streamalchemy.ui.styles.pixel">Pixel</option>
+                <option value="anime" data-i18n="plugins.streamalchemy.streamalchemy.styles.anime">Anime</option>
+                <option value="cyberpunk" data-i18n="plugins.streamalchemy.streamalchemy.styles.cyberpunk">Cyberpunk</option>
+                <option value="cartoon" data-i18n="plugins.streamalchemy.streamalchemy.styles.cartoon">Cartoon</option>
               </select>
             </label>
             <label><span data-i18n="plugins.streamalchemy.labels.generation_mode">Generation mode
@@ -847,7 +847,7 @@
                 <div class="name" data-i18n="plugins.streamalchemy.labels.local_model_installer">Local model installer</div>
                 <div class="muted" id="localModelPath">-</div>
               </div>
-              <span class="status" id="localModelState">unknown</span>
+              <span class="status" id="localModelState" data-i18n="plugins.streamalchemy.ui.status.unknown">unknown</span>
             </div>
             <div class="progress-track" aria-hidden="true">
               <div class="progress-bar" id="localModelProgress"></div>
@@ -872,7 +872,7 @@
           </div>
 
           <div class="actions" style="margin-top: 16px;">
-            <button class="button primary" type="submit" data-i18n="streamalchemy.general.save">Save Settings</button>
+            <button class="button primary" type="submit" data-i18n="plugins.streamalchemy.streamalchemy.general.save">Save Settings</button>
           </div>
         </form>
       </section>
@@ -1134,10 +1134,12 @@
           <div class="muted">${escapeHtml(preset.notes)}</div>
           <div class="actions" style="justify-content: flex-start;">
             <button class="button preset-use-btn" type="button" data-preset-id="${escapeHtml(preset.id)}">${preset.id === currentId ? 'Selected' : 'Use this model'}</button>
-            <a class="button" href="${escapeHtml(preset.sourceUrl)}" target="_blank" rel="noreferrer">Source</a>
+            <a class="button" href="${escapeHtml(preset.sourceUrl)}" target="_blank" rel="noreferrer" data-i18n="plugins.streamalchemy.ui.app.source">Source</a>
           </div>
         </article>
       `).join('');
+
+      window.i18n?.updateDOM?.();
 
       list.querySelectorAll('.preset-use-btn').forEach(button => {
         button.addEventListener('click', () => {

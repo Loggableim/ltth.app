@@ -37,6 +37,18 @@ let isPageUnloading = false;
 let socketReady = false;
 let abortControllers = new Set();
 
+function translateRuntime(key, params = {}, fallback = key) {
+    if (window.i18n && typeof window.i18n.t === 'function') {
+        const translated = window.i18n.t(key, params);
+        if (translated && translated !== key) return translated;
+    }
+    return fallback;
+}
+
+function runtimeFailure(key, error, fallback) {
+    return translateRuntime(key, { message: error?.message || '' }, fallback);
+}
+
 // ============================================================================
 // SOCKET.IO INITIALIZATION
 // ============================================================================
@@ -197,34 +209,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
         // Initialize Socket.io and wait for connection or timeout
-        if (statusEl) statusEl.textContent = 'Connecting to server...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.connecting', {}, 'Connecting to server...');
         await initializeSocket();
         console.log('✓ Socket.io initialization complete');
 
         // Load configuration
-        if (statusEl) statusEl.textContent = 'Loading configuration...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.loading_config', {}, 'Loading configuration...');
         await loadConfig();
         console.log('✓ Config loaded');
 
         // Load Event TTS configuration
-        if (statusEl) statusEl.textContent = 'Loading Event TTS configuration...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.loading_event_config', {}, 'Loading Event TTS configuration...');
         try {
             await loadEventTTSConfig();
             console.log('✓ Event TTS config loaded');
         } catch (error) {
             if (!isPageUnloading && error.name !== 'AbortError') {
                 console.error('✗ Event TTS config load failed:', error);
-                showNotification('Failed to load Event TTS config (non-critical)', 'warning');
+                showNotification(translateRuntime('plugins.tts.runtime.event_test.load_failed', {}, 'Failed to load Event TTS config (non-critical)'), 'warning');
             }
         }
 
         // Load voices
-        if (statusEl) statusEl.textContent = 'Loading voices...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.loading_voices', {}, 'Loading voices...');
         await loadVoices();
         console.log('✓ Voices loaded');
 
         // Load statistics (non-critical)
-        if (statusEl) statusEl.textContent = 'Loading statistics...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.loading_statistics', {}, 'Loading statistics...');
         try {
             await loadStats();
             console.log('✓ Stats loaded');
@@ -236,7 +248,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Load plugin status (including debug mode)
-        if (statusEl) statusEl.textContent = 'Loading plugin status...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.loading_plugin_status', {}, 'Loading plugin status...');
         try {
             await loadPluginStatus();
             console.log('✓ Plugin status loaded');
@@ -247,7 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Load debug logs (non-critical)
-        if (statusEl) statusEl.textContent = 'Loading debug logs...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.loading_debug_logs', {}, 'Loading debug logs...');
         try {
             await loadDebugLogs();
             updateDebugModeUI();
@@ -278,16 +290,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Success!
         console.log('✓ TTS Admin Panel initialized successfully');
-        if (statusEl) statusEl.innerHTML = '<span class="text-green-500">✓ Initialized successfully</span>';
+        if (statusEl) statusEl.innerHTML = `<span class="text-green-500">✓ ${escapeHtml(translateRuntime('plugins.tts.runtime.status.initialized', {}, 'Initialized successfully'))}</span>`;
         if (debugInfo) debugInfo.style.display = 'none';
 
     } catch (error) {
         if (!isPageUnloading) {
             console.error('✗ Initialization failed:', error);
             if (statusEl) {
-                statusEl.innerHTML = `<span class="text-red-500">✗ Init failed: ${escapeHtml(error.message || 'Unbekannter Fehler')}</span>`;
+                statusEl.innerHTML = `<span class="text-red-500">✗ ${escapeHtml(runtimeFailure('plugins.tts.runtime.status.init_failed', error, `Init failed: ${error.message || 'Unknown error'}`))}</span>`;
             }
-            showNotification(`Initialization failed: ${error.message}`, 'error');
+            showNotification(runtimeFailure('plugins.tts.runtime.status.init_failed', error, `Initialization failed: ${error.message}`), 'error');
         }
         // Hide the loading banner even on error - the status element shows the error state
         if (debugInfo) debugInfo.style.display = 'none';
@@ -524,7 +536,7 @@ async function loadConfig() {
 
     } catch (error) {
         console.error('Failed to load config:', error);
-        showNotification(`Failed to load configuration: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.load.config_failed', error, `Failed to load configuration: ${error.message}`), 'error');
         throw error; // Re-throw for initialization to catch
     }
 }
@@ -602,13 +614,13 @@ function populateConfig(config) {
     if (tiktokSessionInput) {
         if (config.tiktokSessionId) {
             if (config.tiktokSessionId === '***HIDDEN***') {
-                tiktokSessionInput.placeholder = 'SessionID configured (hidden for security)';
+                tiktokSessionInput.placeholder = translateRuntime('plugins.tts.runtime.input.session_id_configured_placeholder', {}, 'SessionID configured (hidden for security)');
                 tiktokSessionInput.value = '';
             } else {
                 tiktokSessionInput.value = config.tiktokSessionId;
             }
         } else {
-            tiktokSessionInput.placeholder = 'Enter SessionID...';
+            tiktokSessionInput.placeholder = translateRuntime('plugins.tts.runtime.input.session_id_placeholder', {}, 'Enter SessionID...');
             tiktokSessionInput.value = '';
         }
     }
@@ -693,7 +705,7 @@ async function saveConfig() {
         // Save Event TTS configuration as well
         await saveEventTTSConfig();
         
-        showNotification('Configuration saved successfully', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.save.success', {}, 'Configuration saved successfully'), 'success');
         
         // Re-render Fish.audio custom voices list after save
         // to ensure UI reflects the server's state
@@ -711,7 +723,7 @@ async function saveConfig() {
 
     } catch (error) {
         console.error('Failed to save config:', error);
-        showNotification(`Failed to save configuration: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.save.failed', error, `Failed to save configuration: ${error.message}`), 'error');
     }
 }
 
@@ -771,27 +783,27 @@ function addFishCustomVoice() {
 
     // Validation
     if (!name) {
-        showNotification('Please enter a voice name', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.validation.voice_name_required', {}, 'Please enter a voice name'), 'error');
         nameInput.focus();
         return;
     }
 
     if (!referenceId) {
-        showNotification('Please enter a reference ID', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.validation.reference_id_required', {}, 'Please enter a reference ID'), 'error');
         referenceIdInput.focus();
         return;
     }
 
     // Validate voice name format (no spaces, alphanumeric + dashes/underscores)
     if (!/^[a-z0-9-_]+$/i.test(name)) {
-        showNotification('Voice name can only contain letters, numbers, dashes, and underscores (no spaces)', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.validation.voice_name_format', {}, 'Voice name can only contain letters, numbers, dashes, and underscores (no spaces)'), 'error');
         nameInput.focus();
         return;
     }
 
     // Validate reference ID format (32-character hexadecimal)
     if (!/^[a-f0-9]{32}$/i.test(referenceId)) {
-        showNotification('Reference ID must be a 32-character hexadecimal string', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.validation.reference_id_format', {}, 'Reference ID must be a 32-character hexadecimal string'), 'error');
         referenceIdInput.focus();
         return;
     }
@@ -2528,7 +2540,7 @@ async function loadEventTTSConfig() {
         
     } catch (error) {
         console.error('Failed to load Event TTS config:', error);
-        showNotification(`Failed to load Event TTS config: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.load_failed', error, `Failed to load Event TTS config: ${error.message}`), 'error');
     }
 }
 
@@ -2697,12 +2709,12 @@ async function saveEventTTSConfig() {
             throw new Error(data.error || 'Failed to save Event TTS config');
         }
         
-        showNotification('Event TTS configuration saved successfully!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.saved', {}, 'Event TTS configuration saved successfully!'), 'success');
         console.log('Event TTS config saved successfully');
         
     } catch (error) {
         console.error('Failed to save Event TTS config:', error);
-        showNotification(`Failed to save Event TTS config: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.save_failed', error, `Failed to save Event TTS config: ${error.message}`), 'error');
     }
 }
 
@@ -2728,11 +2740,11 @@ async function testGiftEvent() {
             throw new Error(data.error || 'Failed to test Gift Event TTS');
         }
         
-        showNotification('Gift Event TTS test queued!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.gift_queued', {}, 'Gift Event TTS test queued!'), 'success');
         
     } catch (error) {
         console.error('Failed to test Gift Event TTS:', error);
-        showNotification(`Failed to test Gift Event TTS: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.failed', error, `Failed to test Gift Event TTS: ${error.message}`), 'error');
     }
 }
 
@@ -2758,11 +2770,11 @@ async function testFollowEvent() {
             throw new Error(data.error || 'Failed to test Follow Event TTS');
         }
         
-        showNotification('Follow Event TTS test queued!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.follow_queued', {}, 'Follow Event TTS test queued!'), 'success');
         
     } catch (error) {
         console.error('Failed to test Follow Event TTS:', error);
-        showNotification(`Failed to test Follow Event TTS: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.failed', error, `Failed to test Follow Event TTS: ${error.message}`), 'error');
     }
 }
 
@@ -2788,11 +2800,11 @@ async function testShareEvent() {
             throw new Error(data.error || 'Failed to test Share Event TTS');
         }
         
-        showNotification('Share Event TTS test queued!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.share_queued', {}, 'Share Event TTS test queued!'), 'success');
         
     } catch (error) {
         console.error('Failed to test Share Event TTS:', error);
-        showNotification(`Failed to test Share Event TTS: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.failed', error, `Failed to test Share Event TTS: ${error.message}`), 'error');
     }
 }
 
@@ -2818,11 +2830,11 @@ async function testSubscribeEvent() {
             throw new Error(data.error || 'Failed to test Subscribe Event TTS');
         }
         
-        showNotification('Subscribe Event TTS test queued!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.subscribe_queued', {}, 'Subscribe Event TTS test queued!'), 'success');
         
     } catch (error) {
         console.error('Failed to test Subscribe Event TTS:', error);
-        showNotification(`Failed to test Subscribe Event TTS: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.failed', error, `Failed to test Subscribe Event TTS: ${error.message}`), 'error');
     }
 }
 
@@ -2848,11 +2860,11 @@ async function testLikeEvent() {
             throw new Error(data.error || 'Failed to test Like Event TTS');
         }
         
-        showNotification('Like Event TTS test queued!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.like_queued', {}, 'Like Event TTS test queued!'), 'success');
         
     } catch (error) {
         console.error('Failed to test Like Event TTS:', error);
-        showNotification(`Failed to test Like Event TTS: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.failed', error, `Failed to test Like Event TTS: ${error.message}`), 'error');
     }
 }
 
@@ -2878,11 +2890,11 @@ async function testJoinEvent() {
             throw new Error(data.error || 'Failed to test Join Event TTS');
         }
         
-        showNotification('Join Event TTS test queued!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.join_queued', {}, 'Join Event TTS test queued!'), 'success');
         
     } catch (error) {
         console.error('Failed to test Join Event TTS:', error);
-        showNotification(`Failed to test Join Event TTS: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.failed', error, `Failed to test Join Event TTS: ${error.message}`), 'error');
     }
 }
 
@@ -3380,7 +3392,7 @@ function handleAudioFileSelect(event) {
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-        showNotification('Audio file is too large. Maximum size is 5MB.', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.voice_clone.file_too_large', {}, 'Audio file is too large. Maximum size is 5MB.'), 'error');
         event.target.value = '';
         if (preview) preview.classList.add('hidden');
         return;
@@ -3431,7 +3443,7 @@ async function handleVoiceCloneCreate(event) {
 
     // Validate inputs
     if (!nameInput?.value || !audioInput?.files?.[0] || !consentCheckbox?.checked) {
-        showNotification('Please fill all required fields and confirm consent', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.voice_clone.consent_required', {}, 'Please fill all required fields and confirm consent'), 'error');
         return;
     }
 
@@ -3466,14 +3478,14 @@ async function handleVoiceCloneCreate(event) {
 
         if (data.success) {
             // Success
-            showNotification(`Voice clone "${voiceName}" created successfully!`, 'success');
+            showNotification(translateRuntime('plugins.tts.runtime.voice_clone.created', { voiceName }, `Voice clone "${voiceName}" created successfully!`), 'success');
             
             // Show success message
             if (resultDiv) {
                 resultDiv.innerHTML = `
                     <div class="bg-green-900 border-l-4 border-green-500 p-3 rounded">
                         <p class="text-sm text-green-100">
-                            ✅ Voice clone created successfully! Voice ID: <code class="bg-green-800 px-2 py-1 rounded">${data.voice.voice_id}</code>
+                            ✅ ${escapeHtml(translateRuntime('plugins.tts.runtime.voice_clone.created', { voiceName }, `Voice clone "${voiceName}" created successfully!`))} <code class="bg-green-800 px-2 py-1 rounded">${escapeHtml(data.voice.voice_id)}</code>
                         </p>
                     </div>
                 `;
@@ -3492,14 +3504,14 @@ async function handleVoiceCloneCreate(event) {
         }
     } catch (error) {
         console.error('Failed to create voice clone:', error);
-        showNotification(`Failed to create voice clone: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.voice_clone.create_failed', error, `Failed to create voice clone: ${error.message}`), 'error');
         
         // Show error message
         if (resultDiv) {
             resultDiv.innerHTML = `
                 <div class="bg-red-900 border-l-4 border-red-500 p-3 rounded">
                     <p class="text-sm text-red-100">
-                        ❌ ${error.message}
+                        ❌ ${escapeHtml(error.message)}
                     </p>
                 </div>
             `;
@@ -3525,7 +3537,7 @@ async function loadVoiceClones() {
         listContainer.innerHTML = `
             <div class="text-center text-gray-400 py-8">
                 <i class="fas fa-spinner fa-spin text-3xl mb-2"></i>
-                <p>Loading voice clones...</p>
+                    <p data-i18n="plugins.tts.runtime.voice_clone.loading">${escapeHtml(translateRuntime('plugins.tts.runtime.voice_clone.loading', {}, 'Loading voice clones...'))}</p>
             </div>
         `;
 
@@ -3538,7 +3550,7 @@ async function loadVoiceClones() {
                 listContainer.innerHTML = `
                     <div class="text-center text-gray-400 py-8">
                         <i class="fas fa-microphone text-4xl mb-2 opacity-50"></i>
-                        <p>No voice clones yet. Create your first one!</p>
+                        <p data-i18n="plugins.tts.runtime.voice_clone.empty">${escapeHtml(translateRuntime('plugins.tts.runtime.voice_clone.empty', {}, 'No voice clones yet. Create your first one!'))}</p>
                     </div>
                 `;
             } else {
@@ -3565,13 +3577,15 @@ async function loadVoiceClones() {
                                 <div class="flex flex-col space-y-2">
                                     <button 
                                         class="voice-clone-test-btn bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded"
-                                        title="Test this voice"
+                                        title="${escapeHtml(translateRuntime('plugins.tts.runtime.voice_clone.test_tooltip', {}, 'Test this voice'))}"
+                                        data-i18n-title="plugins.tts.runtime.voice_clone.test_tooltip"
                                     >
                                         🔊 Test
                                     </button>
                                     <button 
                                         class="voice-clone-delete-btn bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded"
-                                        title="Delete this voice"
+                                        title="${escapeHtml(translateRuntime('plugins.tts.runtime.voice_clone.delete_tooltip', {}, 'Delete this voice'))}"
+                                        data-i18n-title="plugins.tts.runtime.voice_clone.delete_tooltip"
                                     >
                                         🗑️ Delete
                                     </button>
@@ -3592,7 +3606,7 @@ async function loadVoiceClones() {
         listContainer.innerHTML = `
             <div class="text-center text-red-400 py-8">
                 <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
-                <p>Failed to load voice clones</p>
+                    <p data-i18n="plugins.tts.runtime.voice_clone.load_failed">${escapeHtml(translateRuntime('plugins.tts.runtime.voice_clone.load_failed', {}, 'Failed to load voice clones'))}</p>
                 <p class="text-sm mt-2">${escapeHtml(error.message)}</p>
             </div>
         `;
@@ -3644,7 +3658,7 @@ async function testVoiceClone(voiceId, voiceName) {
         // Use a default test text instead of prompt for better UX and security
         const testText = 'Hello! This is a test of my custom voice clone.';
 
-        showNotification(`Testing voice "${voiceName}"...`, 'info');
+        showNotification(translateRuntime('plugins.tts.runtime.voice_clone.test_started', { voiceName }, `Testing voice "${voiceName}"...`), 'info');
 
         const response = await fetchJSON('/api/tts/speak', {
             method: 'POST',
@@ -3660,13 +3674,13 @@ async function testVoiceClone(voiceId, voiceName) {
         });
 
         if (response.success) {
-            showNotification('Voice test queued successfully!', 'success');
+            showNotification(translateRuntime('plugins.tts.runtime.voice_clone.test_queued', {}, 'Voice test queued successfully!'), 'success');
         } else {
             throw new Error(response.error || 'Failed to test voice');
         }
     } catch (error) {
         console.error('Failed to test voice clone:', error);
-        showNotification(`Failed to test voice: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.voice_clone.test_failed', error, `Failed to test voice: ${error.message}`), 'error');
     }
 }
 
@@ -3677,25 +3691,25 @@ async function testVoiceClone(voiceId, voiceName) {
 async function deleteVoiceClone(voiceId, voiceName) {
     // For now, keep confirm() for simplicity, but ideally would use a modal
     // This is acceptable as it's only used in admin interface
-    if (!confirm(`Are you sure you want to delete the voice clone "${voiceName}"?\n\nThis action cannot be undone.`)) {
+    if (!confirm(translateRuntime('plugins.tts.runtime.voice_clone.delete_confirm', { voiceName }, `Are you sure you want to delete the voice clone "${voiceName}"?\n\nThis action cannot be undone.`))) {
         return;
     }
 
     try {
-        showNotification(`Deleting voice "${voiceName}"...`, 'info');
+        showNotification(translateRuntime('plugins.tts.runtime.voice_clone.deleting', { voiceName }, `Deleting voice "${voiceName}"...`), 'info');
 
         const response = await fetchJSON(`/api/tts/voice-clones/${voiceId}`, {
             method: 'DELETE'
         });
 
         if (response.success) {
-            showNotification(`Voice "${voiceName}" deleted successfully!`, 'success');
+            showNotification(translateRuntime('plugins.tts.runtime.voice_clone.deleted', { voiceName }, `Voice "${voiceName}" deleted successfully!`), 'success');
             await loadVoiceClones();
         } else {
             throw new Error(response.error || 'Failed to delete voice clone');
         }
     } catch (error) {
         console.error('Failed to delete voice clone:', error);
-        showNotification(`Failed to delete voice: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.voice_clone.delete_failed', error, `Failed to delete voice: ${error.message}`), 'error');
     }
 }

@@ -35,6 +35,114 @@
               "search_mdns": "Search OSCQuery again. VRChat advertises its OSCQuery HTTP port dynamically via mDNS, so it is not necessarily 9001.",
               "check_firewall": "If discovery still fails, restart VRChat after enabling OSC and allow local mDNS/localhost traffic through the firewall."
             }
+          },
+          "ui": {
+            "accessibility": {
+              "emote_slot": "Trigger emote slot {slot}{availability}",
+              "remove_avatar": "Remove avatar {name}",
+              "remove_command": "Remove command {name}",
+              "remove_gift_mapping": "Remove gift mapping {name}",
+              "standard_action": "Trigger action {name}{availability}",
+              "switch_avatar": "Switch to avatar {name}"
+            },
+            "actions": {
+              "emote_slot": "Emote {slot}",
+              "remove": "Remove",
+              "switch": "Switch"
+            },
+            "alerts": {
+              "actions_refreshed": "✅ Actions refreshed!",
+              "advanced_settings_saved": "Advanced settings saved! Restart the bridge for the changes to take effect.",
+              "avatar_detected": "✅ Avatar detected!\n\nAvatar ID: {avatarId}\nParameters: {parameterCount}",
+              "avatar_switch_saved": "Avatar switch settings saved!",
+              "avatar_switched": "Switched to avatar: {name}",
+              "avatars_saved": "Avatars saved successfully!",
+              "chat_commands_saved": "Chat command settings saved!",
+              "commands_saved": "Commands saved successfully! Commands have been re-registered with GCCE.",
+              "config_saved": "Configuration saved!",
+              "gift_mappings_saved": "Gift mappings saved successfully!",
+              "new_avatar_detected": "✅ New avatar detected and added to the list!\n\nAvatar ID: {avatarId}\nParameters: {parameterCount}\n\nYou can change the avatar name in avatar management.",
+              "preset_saved": "Preset saved!",
+              "test_signal_sent": "Test signal sent: {address} = {value}"
+            },
+            "availability": {
+              "unavailable": "(unavailable)"
+            },
+            "command_types": {
+              "custom": "Custom",
+              "predefined": "Predefined"
+            },
+            "data": {
+              "custom_command_description": "Custom command: {name}",
+              "unknown": "Unknown"
+            },
+            "dialogs": {
+              "remove_command": "Remove command '/{name}'?",
+              "remove_preset": "Remove preset?"
+            },
+            "empty": {
+              "avatars": "No avatars configured yet. Add one below.",
+              "commands": "No commands configured yet.",
+              "gift_mappings": "No gift mappings configured yet. Add one below.",
+              "presets": "No presets saved"
+            },
+            "errors": {
+              "bridge_not_running": "Error: OSC-Bridge is not running",
+              "load_config": "Error loading current configuration",
+              "refresh_actions": "Error refreshing actions: {error}",
+              "save_advanced_settings": "Error saving advanced settings: {error}",
+              "save_avatar_switch": "Error saving avatar switch settings: {error}",
+              "save_avatars": "Error saving avatars: {error}",
+              "save_chat_commands": "Error saving chat command settings: {error}",
+              "save_commands": "Error saving commands: {error}",
+              "save_config": "Error saving configuration: {error}",
+              "save_gift_mappings": "Error saving gift mappings: {error}",
+              "send_osc": "Error sending OSC message: {error}",
+              "start_bridge": "Error starting bridge: {error}",
+              "stop_bridge": "Error stopping bridge: {error}",
+              "switch_avatar": "Error switching avatar: {error}",
+              "test_signal": "Error: {error}",
+              "unknown": "Unknown error"
+            },
+            "gift_catalog": {
+              "available_hint": "✅ {count} gifts available. New gifts are auto-added when received from stream.",
+              "count": "({count} gifts)",
+              "empty_hint": "💡 Gifts are auto-detected when viewers send them during a stream. Connect to a TikTok stream to populate the catalogue.",
+              "empty_option": "(No gifts in catalogue - connect to stream to auto-detect gifts)",
+              "option": "{name} (💎 {diamonds}) - ID: {id}",
+              "select_or_enter": "-- Select a gift from catalogue or enter manually below --"
+            },
+            "loading": {
+              "actions": "🔄 Refreshing...",
+              "gift_catalog": "⏳ Loading..."
+            },
+            "permissions": {
+              "all": "All",
+              "moderator": "Moderator",
+              "subscriber": "Subscriber"
+            },
+            "status": {
+              "error": "Error",
+              "running": "Running",
+              "starting": "Starting...",
+              "stopped": "Stopped"
+            },
+            "uptime": {
+              "hours": "{hours}h {minutes}m",
+              "minutes": "{minutes}m {seconds}s",
+              "seconds": "{seconds}s"
+            },
+            "validation": {
+              "avatar_id_prefix": "Avatar ID should start with \"avtr_\"",
+              "avatar_name_and_id_required": "Please enter both Avatar Name and Avatar ID",
+              "command_exists": "Command '/{name}' already exists",
+              "command_name_invalid": "Command name can only contain letters, numbers, underscores, and hyphens",
+              "command_name_required": "Please enter a command name",
+              "gift_id_or_name_required": "Please enter either Gift ID or Gift Name (or both for exact match)",
+              "osc_address_prefix": "OSC address must start with /",
+              "osc_address_required": "Please enter an OSC address",
+              "predefined_command_not_removable": "Cannot remove predefined commands. You can disable them instead."
+            }
           }
         },
         "config": {
@@ -267,7 +375,18 @@
         "emote_slot": "Emote Slot",
         "emote_slots": "Emote slots:",
         "command_configure_cooldowns_to_prevent_spam": "command. Configure cooldowns to prevent spam.",
-        "aktionen_aktualisieren": "🔄 Update promotions"
+        "aktionen_aktualisieren": "🔄 Update promotions",
+        "live_log": "Live log",
+        "physbones_heading": "PhysBones:",
+        "vrchat_chatbox": "VRChat Chatbox",
+        "chatbox_typing_indicator": "Show typing indicator for external chatbox messages",
+        "chatbox_notification_sound": "Play notification sound in VRChat",
+        "action_wave": "Wave",
+        "action_celebrate": "Celebrate",
+        "action_dance": "Dance",
+        "action_hearts": "Hearts",
+        "action_confetti": "Confetti",
+        "command_preview_example": "mycommand"
       }
     }
   }

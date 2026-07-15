@@ -6976,14 +6976,14 @@
   "docs.plugin.breadcrumb.label": "Fil d’Ariane",
   "docs.plugin.definition.purpose": "Objectif et public",
   "docs.plugin.definition.activation": "Activation et navigation",
-  "docs.plugin.definition.workflows": "Flux verifies",
-  "docs.plugin.definition.settings": "Reference des controles visibles",
-  "docs.plugin.definition.integrations": "Interfaces et integrations",
-  "docs.plugin.definition.controls": "Inventaire de l interface",
+  "docs.plugin.definition.workflows": "Flux vérifiés",
+  "docs.plugin.definition.settings": "Référence des contrôles du flux",
+  "docs.plugin.definition.integrations": "Interfaces et intégrations",
+  "docs.plugin.definition.controls": "Inventaire de l’interface",
   "docs.plugin.definition.defaultValue": "Valeur du profil de test",
   "docs.plugin.definition.values": "Valeurs et limites",
-  "docs.plugin.definition.dependencies": "Dependances",
-  "docs.plugin.definition.checks": "Verifications",
-  "docs.plugin.definition.resolution": "Resolution",
-  "docs.plugin.definition.documentedIn": "Documente dans"
+  "docs.plugin.definition.dependencies": "Dépendances",
+  "docs.plugin.definition.checks": "Vérifications",
+  "docs.plugin.definition.resolution": "Résolution",
+  "docs.plugin.definition.documentedIn": "Documenté dans"
 }

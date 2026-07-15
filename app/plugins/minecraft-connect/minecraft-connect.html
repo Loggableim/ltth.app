@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="minecraft_connect.title">Minecraft Connect</title>
+    <title data-i18n="plugins.minecraft-connect.minecraft_connect.title">Minecraft Connect</title>
     <link rel="stylesheet" href="/plugins/minecraft-connect/minecraft-connect.css?v=3">
     <link rel="stylesheet" href="/css/themes.css">
     <style>
@@ -191,53 +191,53 @@
         <header class="mc-hero">
             <div class="mc-hero-copy">
                 <img class="mc-hero-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
-                <p class="mc-kicker" data-i18n="minecraft_connect.title">Minecraft Connect</p>
+                <p class="mc-kicker" data-i18n="plugins.minecraft-connect.minecraft_connect.title">Minecraft Connect</p>
                 <p class="mc-hero-subtitle" data-i18n="plugins.minecraft-connect.labels.a_ltth_control_surface_for_tiktok_to_minecraft">A LTTH control surface for TikTok to Minecraft automation, powered by the existing bridge, queue, and mapping engine.</p>
                 <div class="mc-status-row">
                     <div class="mc-status-indicator">
                         <div class="mc-status-dot" id="statusDot"></div>
-                        <span id="statusText" data-i18n="minecraft_connect.status.disconnected">Disconnected</span>
+                        <span id="statusText" data-i18n="plugins.minecraft-connect.minecraft_connect.status.disconnected">Disconnected</span>
                     </div>
                     <span class="mc-status-meta" id="connectionMeta" data-i18n="plugins.minecraft-connect.labels.waiting_for_dashboard_state">Waiting for dashboard state</span>
                 </div>
             </div>
             <div class="mc-hero-panel">
-                <div class="mc-theme-switcher" aria-label="Theme switcher">
-                    <button class="mc-theme-chip" data-theme-option="day">Day</button>
-                    <button class="mc-theme-chip" data-theme-option="night">Night</button>
-                    <button class="mc-theme-chip" data-theme-option="cid">Cid</button>
+                <div class="mc-theme-switcher" aria-label="Theme switcher" data-i18n-aria-label="plugins.minecraft-connect.minecraft_connect.ui.themes.switcher">
+                    <button class="mc-theme-chip" data-theme-option="day" data-i18n="plugins.minecraft-connect.minecraft_connect.ui.themes.day">Day</button>
+                    <button class="mc-theme-chip" data-theme-option="night" data-i18n="plugins.minecraft-connect.minecraft_connect.ui.themes.night">Night</button>
+                    <button class="mc-theme-chip" data-theme-option="cid" data-i18n="plugins.minecraft-connect.minecraft_connect.ui.themes.cid">Cid</button>
                     <button class="mc-theme-chip" data-theme-option="contrast" data-i18n="plugins.minecraft-connect.labels.high_contrast_de938d">High Contrast</button>
                     <button class="mc-theme-chip" data-theme-option="vision-impaired" data-i18n="plugins.minecraft-connect.labels.vision_impaired_ddbfc3">Vision Impaired</button>
                 </div>
-                <button class="mc-btn mc-btn-secondary" id="refreshDashboardBtn">Refresh</button>
-                <button class="mc-btn mc-btn-primary" id="testActionBtn" data-i18n="minecraft_connect.actions.test">Test Action</button>
+                <button class="mc-btn mc-btn-secondary" id="refreshDashboardBtn" data-i18n="plugins.minecraft-connect.minecraft_connect.ui.actions.refresh">Refresh</button>
+                <button class="mc-btn mc-btn-primary" id="testActionBtn" data-i18n="plugins.minecraft-connect.minecraft_connect.actions.test">Test Action</button>
             </div>
         </header>
 
         <div class="mc-metrics-grid">
             <article class="mc-metric-card">
-                <span class="mc-metric-label" data-i18n="minecraft_connect.settings.stats.total_events">Total Events</span>
+                <span class="mc-metric-label" data-i18n="plugins.minecraft-connect.minecraft_connect.settings.stats.total_events">Total Events</span>
                 <strong class="mc-metric-value" id="statTotalEvents">0</strong>
             </article>
             <article class="mc-metric-card">
-                <span class="mc-metric-label" data-i18n="minecraft_connect.settings.stats.total_actions">Total Actions</span>
+                <span class="mc-metric-label" data-i18n="plugins.minecraft-connect.minecraft_connect.settings.stats.total_actions">Total Actions</span>
                 <strong class="mc-metric-value" id="statTotalActions">0</strong>
             </article>
             <article class="mc-metric-card">
-                <span class="mc-metric-label">Queue</span>
+                <span class="mc-metric-label" data-i18n="plugins.minecraft-connect.minecraft_connect.ui.metrics.queue">Queue</span>
                 <strong class="mc-metric-value" id="statQueueSize">0</strong>
             </article>
             <article class="mc-metric-card">
-                <span class="mc-metric-label" data-i18n="minecraft_connect.tabs.actions">Available Actions</span>
+                <span class="mc-metric-label" data-i18n="plugins.minecraft-connect.minecraft_connect.tabs.actions">Available Actions</span>
                 <strong class="mc-metric-value" id="statAvailableActions">0</strong>
             </article>
         </div>
 
         <nav class="mc-tabs">
-            <button class="mc-tab active" data-tab="commands">Commands</button>
-            <button class="mc-tab" data-tab="chat" data-i18n="minecraft_connect.mappings.triggers.chat">Chat</button>
+            <button class="mc-tab active" data-tab="commands" data-i18n="plugins.minecraft-connect.minecraft_connect.ui.sections.commands">Commands</button>
+            <button class="mc-tab" data-tab="chat" data-i18n="plugins.minecraft-connect.minecraft_connect.mappings.triggers.chat">Chat</button>
             <button class="mc-tab" data-tab="giftbars" data-i18n="plugins.minecraft-connect.labels.gift_bars">Gift bars</button>
-            <button class="mc-tab" data-tab="setup">Setup</button>
+            <button class="mc-tab" data-tab="setup" data-i18n="plugins.minecraft-connect.minecraft_connect.ui.sections.setup">Setup</button>
         </nav>
 
         <div class="mc-shell">
@@ -245,7 +245,7 @@
                 <section id="commands-tab" class="mc-tab-panel active">
                     <div class="mc-panel-header">
                         <div>
-                            <h2>Commands</h2>
+                            <h2 data-i18n="plugins.minecraft-connect.minecraft_connect.ui.sections.commands">Commands</h2>
                             <p data-i18n="plugins.minecraft-connect.labels.console_commands_and_mapped_actions_triggered_by_tiktok">Console commands and mapped actions triggered by TikTok events.</p>
                         </div>
                         <button class="mc-btn mc-btn-primary" id="addCommandBtn" data-i18n="plugins.minecraft-connect.labels.add_command_ca4072">Add command</button>
@@ -272,7 +272,7 @@
                             </div>
                             <div class="mc-action-grid" id="actionsList">
                                 <div class="mc-empty-state">
-                                    <p data-i18n="minecraft_connect.actions.empty">No Minecraft connection detected.</p>
+                                    <p data-i18n="plugins.minecraft-connect.minecraft_connect.actions.empty">No Minecraft connection detected.</p>
                                     <p class="mc-text-muted" data-i18n="plugins.minecraft-connect.labels.install_and_run_the_fabric_mod_to_see">Install and run the Fabric mod to see available actions.</p>
                                 </div>
                             </div>
@@ -283,7 +283,7 @@
                 <section id="chat-tab" class="mc-tab-panel">
                     <div class="mc-panel-header">
                         <div>
-                            <h2 data-i18n="minecraft_connect.mappings.triggers.chat">Chat</h2>
+                            <h2 data-i18n="plugins.minecraft-connect.minecraft_connect.mappings.triggers.chat">Chat</h2>
                             <p data-i18n="plugins.minecraft-connect.labels.relay_tiktok_chat_into_minecraft_and_filter_what">Relay TikTok chat into Minecraft and filter what gets passed through.</p>
                         </div>
                         <button class="mc-btn mc-btn-primary" id="saveChatBtn" data-i18n="plugins.minecraft-connect.labels.save_chat">Save chat</button>
@@ -383,7 +383,7 @@
                 <section id="setup-tab" class="mc-tab-panel">
                     <div class="mc-panel-header">
                         <div>
-                            <h2>Setup</h2>
+                            <h2 data-i18n="plugins.minecraft-connect.minecraft_connect.ui.sections.setup">Setup</h2>
                             <p data-i18n="plugins.minecraft-connect.labels.connection_safety_overlay_and_theme_controls_live_here">Connection, safety, overlay, and theme controls live here.</p>
                         </div>
                         <button class="mc-btn mc-btn-primary" id="saveSetupBtn" data-i18n="plugins.minecraft-connect.labels.save_setup">Save setup</button>
@@ -392,7 +392,7 @@
                     <div class="mc-grid-two">
                         <div class="mc-card">
                             <div class="mc-card-head">
-                                <h3>Connection</h3>
+                                <h3 data-i18n="plugins.minecraft-connect.minecraft_connect.ui.connection.title">Connection</h3>
                                 <span class="mc-card-note" data-i18n="plugins.minecraft-connect.labels.bridge_and_mod_status">Bridge and mod status</span>
                             </div>
                             <div class="mc-form-group">
@@ -450,11 +450,11 @@
                                 <input type="number" id="overlayDuration" class="mc-input" min="1000" max="10000" value="3000">
                             </div>
                             <div class="mc-theme-picker">
-                                <span class="mc-card-note">Theme</span>
+                                <span class="mc-card-note" data-i18n="plugins.minecraft-connect.minecraft_connect.ui.themes.label">Theme</span>
                                 <div class="mc-theme-switcher">
-                                    <button class="mc-theme-chip" data-theme-option="day">Day</button>
-                                    <button class="mc-theme-chip" data-theme-option="night">Night</button>
-                                    <button class="mc-theme-chip" data-theme-option="cid">Cid</button>
+                                    <button class="mc-theme-chip" data-theme-option="day" data-i18n="plugins.minecraft-connect.minecraft_connect.ui.themes.day">Day</button>
+                                    <button class="mc-theme-chip" data-theme-option="night" data-i18n="plugins.minecraft-connect.minecraft_connect.ui.themes.night">Night</button>
+                                    <button class="mc-theme-chip" data-theme-option="cid" data-i18n="plugins.minecraft-connect.minecraft_connect.ui.themes.cid">Cid</button>
                                     <button class="mc-theme-chip" data-theme-option="contrast" data-i18n="plugins.minecraft-connect.labels.high_contrast">High Contrast</button>
                                     <button class="mc-theme-chip" data-theme-option="vision-impaired" data-i18n="plugins.minecraft-connect.labels.vision_impaired">Vision Impaired</button>
                                 </div>
@@ -477,19 +477,19 @@
                     <label data-i18n="plugins.minecraft-connect.labels.tiktok_event_trigger">TikTok event trigger</label>
                     <select id="mappingTrigger" class="mc-input">
                         <option value="" data-i18n="plugins.minecraft-connect.labels.select_trigger">Select trigger...</option>
-                        <option value="gift" data-i18n="minecraft_connect.mappings.triggers.gift">Gift</option>
-                        <option value="follow" data-i18n="minecraft_connect.mappings.triggers.follow">Follow</option>
-                        <option value="like" data-i18n="minecraft_connect.mappings.triggers.like">Like</option>
-                        <option value="share" data-i18n="minecraft_connect.mappings.triggers.share">Share</option>
-                        <option value="chat" data-i18n="minecraft_connect.mappings.triggers.chat">Chat</option>
-                        <option value="subscribe" data-i18n="minecraft_connect.mappings.triggers.subscribe">Subscribe</option>
+                        <option value="gift" data-i18n="plugins.minecraft-connect.minecraft_connect.mappings.triggers.gift">Gift</option>
+                        <option value="follow" data-i18n="plugins.minecraft-connect.minecraft_connect.mappings.triggers.follow">Follow</option>
+                        <option value="like" data-i18n="plugins.minecraft-connect.minecraft_connect.mappings.triggers.like">Like</option>
+                        <option value="share" data-i18n="plugins.minecraft-connect.minecraft_connect.mappings.triggers.share">Share</option>
+                        <option value="chat" data-i18n="plugins.minecraft-connect.minecraft_connect.mappings.triggers.chat">Chat</option>
+                        <option value="subscribe" data-i18n="plugins.minecraft-connect.minecraft_connect.mappings.triggers.subscribe">Subscribe</option>
                     </select>
                 </div>
 
                 <div class="mc-form-group">
-                    <label data-i18n="minecraft_connect.mappings.conditions">Conditions (optional)</label>
+                    <label data-i18n="plugins.minecraft-connect.minecraft_connect.mappings.conditions">Conditions (optional)</label>
                     <div id="conditionsList"></div>
-                    <button class="mc-btn mc-btn-secondary mc-btn-small" id="addConditionBtn" data-i18n="minecraft_connect.mappings.add_condition">Add Condition</button>
+                    <button class="mc-btn mc-btn-secondary mc-btn-small" id="addConditionBtn" data-i18n="plugins.minecraft-connect.minecraft_connect.mappings.add_condition">Add Condition</button>
                 </div>
 
                 <div class="mc-form-group">
@@ -500,7 +500,7 @@
                 </div>
 
                 <div class="mc-form-group" id="parametersGroup" style="display: none;">
-                    <label data-i18n="minecraft_connect.mappings.parameters">Parameters</label>
+                    <label data-i18n="plugins.minecraft-connect.minecraft_connect.mappings.parameters">Parameters</label>
                     <div id="parametersList"></div>
                     <small class="mc-text-muted" data-i18n="plugins.minecraft-connect.labels.use_placeholders_like_uniqueid_giftname_giftcount_comment_for">Use placeholders like {uniqueId}, {giftName}, {giftCount}, {comment} for dynamic values.</small>
                 </div>
@@ -513,8 +513,8 @@
                 </div>
             </div>
             <div class="mc-modal-footer">
-                <button class="mc-btn mc-btn-secondary" id="modalCancel" data-i18n="minecraft_connect.modal.cancel">Cancel</button>
-                <button class="mc-btn mc-btn-primary" id="modalSave" data-i18n="minecraft_connect.modal.save">Save</button>
+                <button class="mc-btn mc-btn-secondary" id="modalCancel" data-i18n="plugins.minecraft-connect.minecraft_connect.modal.cancel">Cancel</button>
+                <button class="mc-btn mc-btn-primary" id="modalSave" data-i18n="plugins.minecraft-connect.minecraft_connect.modal.save">Save</button>
             </div>
         </div>
     </div>

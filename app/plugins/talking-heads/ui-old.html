@@ -30,7 +30,7 @@
                             <div class="col-md-3">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="enabledSwitch">
-                                    <label class="form-check-label" for="enabledSwitch" data-i18n="talking_heads_ui.labels.plugin_enabled">
+                                    <label class="form-check-label" for="enabledSwitch" data-i18n="plugins.talking-heads.talking_heads_ui.labels.plugin_enabled">
                                         Plugin aktiviert
                                     </label>
                                 </div>
@@ -44,7 +44,7 @@
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <span id="apiStatus" class="badge bg-secondary">Unbekannt</span>
+                                <span id="apiStatus" class="badge bg-secondary" data-i18n="plugins.talking-heads.labels.api_status_unknown">Unbekannt</span>
                             </div>
                             <div class="col-md-3">
                                 <span id="cacheStats" class="text-muted" data-i18n="plugins.talking-heads.labels.cache_0_avatare">Cache: 0 Avatare</span>
@@ -124,7 +124,7 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="defaultStyle" class="form-label">Standard-Stil</label>
+                                <label for="defaultStyle" class="form-label" data-i18n="plugins.talking-heads.labels.default_style">Standard-Stil</label>
                                 <select class="form-select" id="defaultStyle">
                                     <option value="furry" data-i18n="plugins.talking-heads.labels.furry_tierischer_charakter">Furry - Tierischer Charakter</option>
                                     <option value="tech" data-i18n="plugins.talking-heads.labels.tech_futuristisch">Tech - Futuristisch</option>
@@ -157,18 +157,18 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="rolePermission" class="form-label" data-i18n="talking_heads_ui.labels.permission_question">Wer erhält Talking Heads?</label>
+                                <label for="rolePermission" class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.permission_question">Wer erhält Talking Heads?</label>
                                 <select class="form-select" id="rolePermission">
-                                    <option value="all" data-i18n="talking_heads_ui.options.permission_all">Alle Zuschauer</option>
-                                    <option value="team" data-i18n="talking_heads_ui.options.permission_team">Nur Team-Mitglieder</option>
-                                    <option value="subscriber" data-i18n="talking_heads_ui.options.permission_subscriber">Nur Abonnenten/Superfans</option>
-                                    <option value="custom_voice" data-i18n="talking_heads_ui.options.permission_custom_voice">Nur User mit TTS-Stimme</option>
-                                    <option value="moderator" data-i18n="talking_heads_ui.options.permission_moderator">Nur Moderatoren</option>
-                                    <option value="top_gifter" data-i18n="talking_heads_ui.options.permission_top_gifter">Nur Top Gifter</option>
+                                    <option value="all" data-i18n="plugins.talking-heads.talking_heads_ui.options.permission_all">Alle Zuschauer</option>
+                                    <option value="team" data-i18n="plugins.talking-heads.talking_heads_ui.options.permission_team">Nur Team-Mitglieder</option>
+                                    <option value="subscriber" data-i18n="plugins.talking-heads.talking_heads_ui.options.permission_subscriber">Nur Abonnenten/Superfans</option>
+                                    <option value="custom_voice" data-i18n="plugins.talking-heads.talking_heads_ui.options.permission_custom_voice">Nur User mit TTS-Stimme</option>
+                                    <option value="moderator" data-i18n="plugins.talking-heads.talking_heads_ui.options.permission_moderator">Nur Moderatoren</option>
+                                    <option value="top_gifter" data-i18n="plugins.talking-heads.talking_heads_ui.options.permission_top_gifter">Nur Top Gifter</option>
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3" id="minTeamLevelWrapper" style="display: none;">
-                                <label for="minTeamLevel" class="form-label" data-i18n="talking_heads_ui.labels.min_team_level">Minimales Team-Level</label>
+                                <label for="minTeamLevel" class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.min_team_level">Minimales Team-Level</label>
                                 <input type="number" class="form-control" id="minTeamLevel"
                                        min="0" max="6" value="0">
                             </div>
@@ -188,17 +188,17 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label for="fadeInDuration" class="form-label" data-i18n="talking_heads_ui.labels.fade_in">Fade-In Dauer (ms)</label>
+                                <label for="fadeInDuration" class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.fade_in">Fade-In Dauer (ms)</label>
                                 <input type="number" class="form-control" id="fadeInDuration"
                                        min="0" max="2000" step="100" value="300">
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="fadeOutDuration" class="form-label" data-i18n="talking_heads_ui.labels.fade_out">Fade-Out Dauer (ms)</label>
+                                <label for="fadeOutDuration" class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.fade_out">Fade-Out Dauer (ms)</label>
                                 <input type="number" class="form-control" id="fadeOutDuration"
                                        min="0" max="2000" step="100" value="300">
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="blinkInterval" class="form-label" data-i18n="talking_heads_ui.labels.blink_interval">Blinzel-Intervall (ms)</label>
+                                <label for="blinkInterval" class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.blink_interval">Blinzel-Intervall (ms)</label>
                                 <input type="number" class="form-control" id="blinkInterval"
                                        min="1000" max="10000" step="500" value="3000">
                             </div>
@@ -207,7 +207,7 @@
                             <div class="col-md-6">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="obsEnabled">
-                                    <label class="form-check-label" for="obsEnabled" data-i18n="talking_heads_ui.labels.obs_enabled">
+                                    <label class="form-check-label" for="obsEnabled" data-i18n="plugins.talking-heads.talking_heads_ui.labels.obs_enabled">
                                         OBS Integration aktivieren
                                     </label>
                                 </div>
@@ -230,13 +230,13 @@
                             <div class="col-md-6 mb-3">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="cacheEnabled">
-                                    <label class="form-check-label" for="cacheEnabled" data-i18n="talking_heads_ui.labels.cache_enabled">
+                                    <label class="form-check-label" for="cacheEnabled" data-i18n="plugins.talking-heads.talking_heads_ui.labels.cache_enabled">
                                         Avatar-Caching aktivieren
                                     </label>
                                 </div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="cacheDuration" class="form-label" data-i18n="talking_heads_ui.labels.cache_duration">Cache-Dauer (Tage)</label>
+                                <label for="cacheDuration" class="form-label" data-i18n="plugins.talking-heads.talking_heads_ui.labels.cache_duration">Cache-Dauer (Tage)</label>
                                 <input type="number" class="form-control" id="cacheDuration"
                                        min="1" max="365" value="30">
                             </div>

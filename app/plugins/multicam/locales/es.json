@@ -51,7 +51,10 @@
           "min_coins": "Monedas Mínimas (opcional)",
           "add": "Agregar Mapeo",
           "refresh_gifts": "Actualizar Regalos",
-          "current_mappings": "Mapeos Actuales:"
+          "current_mappings": "Mapeos Actuales:",
+          "filter": "Filtro:",
+          "camera_filter": "Cámara:",
+          "sort": "Orden:"
         },
         "log": {
           "title": "Activity Log",

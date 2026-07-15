@@ -24,6 +24,17 @@
     }, 3000);
   }
 
+  function getSourceLabel(source) {
+    if (source === 'tikfinity') {
+      return window.i18n?.initialized
+        ? window.i18n.t('plugins.data-source.data_source.ui.sources.tikfinity')
+        : 'TikFinity';
+    }
+    return window.i18n?.initialized
+      ? window.i18n.t('plugins.data-source.data_source.ui.sources.eulerstream')
+      : 'Eulerstream';
+  }
+
   function updateUI(source, settings) {
     currentSource = source;
 
@@ -32,7 +43,8 @@
     cardTikfinity.classList.toggle('active', source === 'tikfinity');
 
     // Badge
-    statusBadge.textContent = source === 'tikfinity' ? 'TikFinity' : 'Eulerstream';
+    statusBadge.setAttribute('data-i18n', `plugins.data-source.data_source.ui.sources.${source}`);
+    statusBadge.textContent = getSourceLabel(source);
     statusBadge.className = 'status-badge ' + source;
 
     // TikFinity settings visibility
@@ -59,6 +71,10 @@
   }
 
   fetchStatus();
+
+  window.i18n?.onLanguageChange(function () {
+    updateUI(currentSource);
+  });
 
   // ── Source card clicks ──────────────────────────────────────────
   function onSourceCardClick(e) {

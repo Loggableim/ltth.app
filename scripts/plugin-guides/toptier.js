@@ -167,11 +167,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/toptier/ui.html"
+            "expected": {
+              "path": "/plugins/toptier/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +281,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/toptier/ui.html"
+            "expected": {
+              "path": "/plugins/toptier/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -298,7 +306,7 @@ module.exports = Object.freeze({
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },
@@ -306,72 +314,75 @@ module.exports = Object.freeze({
       "id": "tier-threshold",
       "copy": {
         "de": {
-          "title": "Tier Threshold im Testprofil konfigurieren",
-          "body": "Arbeite im sichtbaren Bereich Tier Threshold von Ranking-Regel, Schwelle und Anzeigestil. Verwende nur lokale Demo-Werte; keine Zugangsdaten, Geraete-ID oder LIVE-Ziel.",
-          "expected": "Der Demo-Wert ist sichtbar und kann vor dem Test geprüft werden.",
-          "alt": "Tier Threshold im Testprofil konfigurieren - Ranking-Regel, Schwelle und Anzeigestil"
+          "title": "Den echten Overlay-Test lokal auslösen",
+          "body": "Klicke auf den echten Button „Test Overlay“. Er sendet nur die lokale Testmeldung an den internen Aktivitätsfeed; weder eine OBS-Quelle noch LIVE-Daten werden geändert.",
+          "expected": "Der reale Button „Test Overlay“ ist sichtbar und kann eine lokale Testmeldung auslösen.",
+          "alt": "Den echten Overlay-Test lokal auslösen - Ranking-Regel, Schwelle und Anzeigestil"
         },
         "en": {
-          "title": "Configure Tier Threshold in the test profile",
-          "body": "Work in the visible Tier Threshold area of ranking rule, threshold, and display style. Use local demo values only; never credentials, a device ID, or a LIVE target.",
-          "expected": "The demo value is visible and can be reviewed before testing.",
-          "alt": "Configure Tier Threshold in the test profile - ranking rule, threshold, and display style"
+          "title": "Trigger the real overlay test locally",
+          "body": "Click the real “Test Overlay” button. It sends only a local test notice to the internal activity feed; no OBS source or LIVE data is changed.",
+          "expected": "The real “Test Overlay” button is visible and can trigger a local test notice.",
+          "alt": "Trigger the real overlay test locally - ranking rule, threshold, and display style"
         },
         "es": {
-          "title": "Configura Tier Threshold en el perfil de prueba",
-          "body": "Trabaja en el area visible Tier Threshold de regla de ranking, umbral y estilo de visualización. Usa solo valores demo locales; nunca credenciales, ID de dispositivo ni destino LIVE.",
-          "expected": "El valor demo queda visible y puede revisarse antes de probar.",
-          "alt": "Configura Tier Threshold en el perfil de prueba - regla de ranking, umbral y estilo de visualización"
+          "title": "Activa localmente la prueba real de overlay",
+          "body": "Haz clic en el botón real «Test Overlay». Solo envía un aviso de prueba local al feed interno de actividad; no cambia ninguna fuente OBS ni datos LIVE.",
+          "expected": "El botón real «Test Overlay» es visible y puede activar un aviso de prueba local.",
+          "alt": "Activa localmente la prueba real de overlay - regla de ranking, umbral y estilo de visualización"
         },
         "fr": {
-          "title": "Configurez Tier Threshold dans le profil de test",
-          "body": "Travaillez dans la zone visible Tier Threshold de règle de classement, seuil et style d’affichage. Utilisez uniquement des valeurs demo locales, jamais identifiants, ID appareil ou cible LIVE.",
-          "expected": "La valeur démo est visible et peut être vérifiée avant le test.",
-          "alt": "Configurez Tier Threshold dans le profil de test - règle de classement, seuil et style d’affichage"
+          "title": "Déclenchez le vrai test d'overlay localement",
+          "body": "Cliquez sur le vrai bouton « Test Overlay ». Il envoie uniquement un avis de test local au flux d'activité interne ; aucune source OBS ni donnée LIVE n'est modifiée.",
+          "expected": "Le vrai bouton « Test Overlay » est visible et peut déclencher un avis de test local.",
+          "alt": "Déclenchez le vrai test d'overlay localement - règle de classement, seuil et style d’affichage"
         }
       },
       "capture": {
         "route": "/plugins/toptier/ui.html",
         "assertVisible": "#test-overlay",
         "focusText": {
-          "de": "Tier Threshold im Testprofil konfigurieren",
-          "en": "Configure Tier Threshold in the test profile",
-          "es": "Configura Tier Threshold en el perfil de prueba",
-          "fr": "Configurez Tier Threshold dans le profil de test"
+          "de": "Den echten Overlay-Test lokal auslösen",
+          "en": "Trigger the real overlay test locally",
+          "es": "Activa localmente la prueba real de overlay",
+          "fr": "Déclenchez le vrai test d'overlay localement"
         },
         "action": {
-          "type": "set-demo-value",
+          "type": "run-local-preview",
+          "allowClick": true,
+          "clickSelector": "#test-overlay",
+          "settleMs": 250,
           "stepId": "tier-threshold"
         },
         "expected": {
-          "de": "Der Demo-Wert ist sichtbar und kann vor dem Test geprüft werden.",
-          "en": "The demo value is visible and can be reviewed before testing.",
-          "es": "El valor demo queda visible y puede revisarse antes de probar.",
-          "fr": "La valeur démo est visible et peut être vérifiée avant le test."
+          "de": "Der reale Button „Test Overlay“ ist sichtbar und kann eine lokale Testmeldung auslösen.",
+          "en": "The real “Test Overlay” button is visible and can trigger a local test notice.",
+          "es": "El botón real «Test Overlay» es visible y puede activar un aviso de prueba local.",
+          "fr": "Le vrai bouton « Test Overlay » est visible et peut déclencher un avis de test local."
         }
       },
       "workflow": {
         "route": "/plugins/toptier/ui.html",
         "instructions": {
           "de": {
-            "title": "Tier Threshold im Testprofil konfigurieren",
-            "body": "Arbeite im sichtbaren Bereich Tier Threshold von Ranking-Regel, Schwelle und Anzeigestil. Verwende nur lokale Demo-Werte; keine Zugangsdaten, Geraete-ID oder LIVE-Ziel.",
-            "expected": "Der Demo-Wert ist sichtbar und kann vor dem Test geprüft werden."
+            "title": "Den echten Overlay-Test lokal auslösen",
+            "body": "Klicke auf den echten Button „Test Overlay“. Er sendet nur die lokale Testmeldung an den internen Aktivitätsfeed; weder eine OBS-Quelle noch LIVE-Daten werden geändert.",
+            "expected": "Der reale Button „Test Overlay“ ist sichtbar und kann eine lokale Testmeldung auslösen."
           },
           "en": {
-            "title": "Configure Tier Threshold in the test profile",
-            "body": "Work in the visible Tier Threshold area of ranking rule, threshold, and display style. Use local demo values only; never credentials, a device ID, or a LIVE target.",
-            "expected": "The demo value is visible and can be reviewed before testing."
+            "title": "Trigger the real overlay test locally",
+            "body": "Click the real “Test Overlay” button. It sends only a local test notice to the internal activity feed; no OBS source or LIVE data is changed.",
+            "expected": "The real “Test Overlay” button is visible and can trigger a local test notice."
           },
           "es": {
-            "title": "Configura Tier Threshold en el perfil de prueba",
-            "body": "Trabaja en el area visible Tier Threshold de regla de ranking, umbral y estilo de visualización. Usa solo valores demo locales; nunca credenciales, ID de dispositivo ni destino LIVE.",
-            "expected": "El valor demo queda visible y puede revisarse antes de probar."
+            "title": "Activa localmente la prueba real de overlay",
+            "body": "Haz clic en el botón real «Test Overlay». Solo envía un aviso de prueba local al feed interno de actividad; no cambia ninguna fuente OBS ni datos LIVE.",
+            "expected": "El botón real «Test Overlay» es visible y puede activar un aviso de prueba local."
           },
           "fr": {
-            "title": "Configurez Tier Threshold dans le profil de test",
-            "body": "Travaillez dans la zone visible Tier Threshold de règle de classement, seuil et style d’affichage. Utilisez uniquement des valeurs demo locales, jamais identifiants, ID appareil ou cible LIVE.",
-            "expected": "La valeur démo est visible et peut être vérifiée avant le test."
+            "title": "Déclenchez le vrai test d'overlay localement",
+            "body": "Cliquez sur le vrai bouton « Test Overlay ». Il envoie uniquement un avis de test local au flux d'activité interne ; aucune source OBS ni donnée LIVE n'est modifiée.",
+            "expected": "Le vrai bouton « Test Overlay » est visible et peut déclencher un avis de test local."
           }
         },
         "operations": [
@@ -380,18 +391,22 @@ module.exports = Object.freeze({
             "route": "/plugins/toptier/ui.html"
           },
           {
-            "type": "set-demo-value",
+            "type": "run-local-preview",
             "selector": "#test-overlay"
           }
         ],
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/toptier/ui.html"
+            "expected": {
+              "path": "/plugins/toptier/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -497,11 +512,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/toptier/ui.html"
+            "expected": {
+              "path": "/plugins/toptier/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -607,11 +626,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/toptier/overlay.html"
+            "expected": {
+              "path": "/plugins/toptier/overlay.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -717,11 +740,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/toptier/ui.html"
+            "expected": {
+              "path": "/plugins/toptier/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",

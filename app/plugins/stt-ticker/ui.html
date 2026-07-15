@@ -1120,7 +1120,7 @@
         <img class="stt-brand__icon" src="/ltthttsicon.png" alt="STT Ticker Icon">
         <div class="stt-brand__copy">
           <div class="stt-brand__eyebrow">LTTH.app</div>
-          <div class="stt-brand__title" data-i18n="stt_ticker.plugin.name">STT Ticker</div>
+          <div class="stt-brand__title" data-i18n="plugins.stt-ticker.stt_ticker.plugin.name">STT Ticker</div>
           <div class="stt-brand__subtitle" data-i18n="plugins.stt-ticker.labels.live_captions_translation_and_overlay_control">Live captions, translation and overlay control</div>
         </div>
       </div>
@@ -1132,7 +1132,7 @@
         <button class="tab-btn" data-tab="tab-overlay"><span class="tab-chip">OV</span><span class="tab-label">Overlay</span></button>
         <button class="tab-btn" data-tab="tab-asr"><span class="tab-chip">AS</span><span class="tab-label" data-i18n="plugins.stt-ticker.labels.asr_sprache_c5c7ed">ASR & Sprache</span></button>
         <button class="tab-btn" data-tab="tab-translation"><span class="tab-chip">TR</span><span class="tab-label" data-i18n="plugins.stt-ticker.labels.ubersetzung">Übersetzung</span></button>
-        <button class="tab-btn" data-tab="tab-multilang"><span class="tab-chip">ML</span><span class="tab-label">Multi-Language</span></button>
+        <button class="tab-btn" data-tab="tab-multilang"><span class="tab-chip">ML</span><span class="tab-label" data-i18n="plugins.stt-ticker.stt_ticker.ui.navigation.multi_language">Multi-Language</span></button>
         <button class="tab-btn" data-tab="tab-vrchat"><span class="tab-chip">VR</span><span class="tab-label">VRChat</span></button>
       </div>
 
@@ -1155,7 +1155,7 @@
         <div class="hero-brand">
           <img class="hero-logo" data-brand-logo src="/sttlogo.png" alt="STT Ticker">
           <div class="hero-copy">
-            <h1 data-i18n="stt_ticker.plugin.name">STT Ticker</h1>
+            <h1 data-i18n="plugins.stt-ticker.stt_ticker.plugin.name">STT Ticker</h1>
             <p data-i18n="plugins.stt-ticker.labels.live_untertitel_ubersetzung_und_accessibility_fur_deinen_stream">Live Untertitel, Übersetzung und Accessibility für deinen Stream. Die Oberfläche bleibt auf breiten Displays übersichtlich und theme-sicher.</p>
           </div>
           <div class="badge badge-green" data-i18n="plugins.stt-ticker.labels.live_active">Live / Active</div>
@@ -1169,7 +1169,7 @@
       <section class="metrics-grid">
         <div class="stat"><div class="stat-value" id="stat-enabled">-</div><div class="stat-label">Enabled</div></div>
         <div class="stat"><div class="stat-value" id="stat-provider">-</div><div class="stat-label" data-i18n="plugins.stt-ticker.labels.asr_provider">ASR Provider</div></div>
-        <div class="stat"><div class="stat-value" id="stat-translation">-</div><div class="stat-label">Translation</div></div>
+        <div class="stat"><div class="stat-value" id="stat-translation">-</div><div class="stat-label" data-i18n="plugins.stt-ticker.labels.ubersetzung_71d65d">Translation</div></div>
         <div class="stat"><div class="stat-value" id="stat-segments">0</div><div class="stat-label" data-i18n="plugins.stt-ticker.labels.buffer_segments">Buffer Segments</div></div>
       </section>
 
@@ -1203,7 +1203,7 @@
         <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:12px;cursor:text;">
         <div class="grid-2" style="margin-top:10px;">
           <div>
-            <label>Untertitel-Stil</label>
+            <label data-i18n="plugins.stt-ticker.stt_ticker.ui.labels.caption_style">Untertitel-Stil</label>
             <select id="design-select">
               <option value="classic" data-i18n="plugins.stt-ticker.labels.classic_tv_untertitel">Classic (TV-Untertitel)</option>
               <option value="modern" data-i18n="plugins.stt-ticker.labels.modern_clean_blur">Modern (Clean, Blur)</option>
@@ -1213,10 +1213,10 @@
               <option value="compact" data-i18n="plugins.stt-ticker.labels.compact_klein">Compact (Klein)</option>
               <option value="cinematic" data-i18n="plugins.stt-ticker.labels.cinematic_film">Cinematic (Film)</option>
             </select>
-            <p class="help-text">Mehrere gewählte Sprachen werden automatisch als eigene Zeilen angezeigt.</p>
+            <p class="help-text" data-i18n="plugins.stt-ticker.stt_ticker.ui.help.multilang_rows">Mehrere gewählte Sprachen werden automatisch als eigene Zeilen angezeigt.</p>
           </div>
           <div>
-            <label>Position</label>
+            <label data-i18n="plugins.stt-ticker.stt_ticker.ui.labels.position">Position</label>
             <select id="position-select">
               <option value="bottom-center" data-i18n="plugins.stt-ticker.labels.unten_mitte">Unten Mitte</option>
               <option value="bottom-left" data-i18n="plugins.stt-ticker.labels.unten_links">Unten Links</option>
@@ -1224,7 +1224,7 @@
               <option value="top-center" data-i18n="plugins.stt-ticker.labels.oben_mitte">Oben Mitte</option>
               <option value="top-left" data-i18n="plugins.stt-ticker.labels.oben_links">Oben Links</option>
               <option value="top-right" data-i18n="plugins.stt-ticker.labels.oben_rechts">Oben Rechts</option>
-              <option value="middle-center">Mitte</option>
+              <option value="middle-center" data-i18n="plugins.stt-ticker.stt_ticker.ui.options.center">Mitte</option>
             </select>
           </div>
           <div>
@@ -1257,7 +1257,7 @@
           </div>
           <div class="inline-flex">
             <input type="password" id="asr-deepgramApiKey" placeholder="z.B. 1234567890abcdef..." style="flex:1;min-width:200px;font-family:monospace;">
-            <button id="btn-test-deepgram" class="btn btn-secondary btn-sm" data-i18n="stt_ticker.ui.actions.test">Test</button>
+            <button id="btn-test-deepgram" class="btn btn-secondary btn-sm" data-i18n="plugins.stt-ticker.stt_ticker.ui.actions.test">Test</button>
             <span id="deepgram-test-status" style="font-size:11px;"></span>
           </div>
           <p class="help-text">Deepgram: <a href="https://console.deepgram.com" target="_blank" style="color:#64B5F6;">console.deepgram.com</a><span data-i18n="plugins.stt-ticker.labels.free_tier_200"> (Free-Tier: $200)</span></p>
@@ -1270,7 +1270,7 @@
           </div>
           <div class="inline-flex">
             <input type="password" id="asr-elevenlabsApiKey" placeholder="sk_..." style="flex:1;min-width:200px;font-family:monospace;">
-            <button id="btn-test-elevenlabs" class="btn btn-secondary btn-sm" data-i18n="stt_ticker.ui.actions.test">Test</button>
+            <button id="btn-test-elevenlabs" class="btn btn-secondary btn-sm" data-i18n="plugins.stt-ticker.stt_ticker.ui.actions.test">Test</button>
             <span id="elevenlabs-test-status" style="font-size:11px;"></span>
           </div>
           <p class="help-text">ElevenLabs: <a href="https://elevenlabs.io/docs/quickstart" target="_blank" style="color:#64B5F6;">elevenlabs.io</a><span data-i18n="plugins.stt-ticker.labels.lokale_asr_nutzung"> - lokale ASR-Nutzung</span></p>
@@ -1294,7 +1294,7 @@
         <div class="card-title" data-i18n="plugins.stt-ticker.labels.asr_provider_sprache">ASR-Provider & Sprache</div>
         <div class="grid-2">
           <div>
-            <label>ASR-Provider</label>
+            <label data-i18n="plugins.stt-ticker.stt_ticker.ui.labels.asr_provider">ASR-Provider</label>
             <select id="asr-provider">
               <option value="auto" data-i18n="plugins.stt-ticker.labels.auto_deepgram_elevenlabs_wenn_key_da_sonst_fish">Auto - Deepgram/ElevenLabs wenn Key da, sonst Fish.audio</option>
               <option value="deepgram" data-i18n="plugins.stt-ticker.labels.deepgram_0_26_h">Deepgram (~$0.26/h)</option>
@@ -1303,7 +1303,7 @@
             </select>
           </div>
           <div>
-            <label>STT-Modell</label>
+            <label data-i18n="plugins.stt-ticker.stt_ticker.ui.labels.stt_model">STT-Modell</label>
             <select id="asr-model-select">
               <option value="" data-i18n="plugins.stt-ticker.labels.modell_wahlen_f5d623">Modell w&auml;hlen</option>
             </select>
@@ -1375,11 +1375,11 @@
         </div>
         <div class="grid-2">
           <div>
-            <label>Modell</label>
+            <label data-i18n="plugins.stt-ticker.stt_ticker.ui.labels.model">Modell</label>
             <select id="translation-model"><option value="" data-i18n="plugins.stt-ticker.labels.modelle_laden_bb0784">Modelle laden...</option></select>
           </div>
           <div>
-            <label>Uebersetzungs-Farbe</label>
+            <label data-i18n="plugins.stt-ticker.stt_ticker.ui.labels.translation_color">Uebersetzungs-Farbe</label>
             <input type="color" id="translation-color" value="#ffd700">
           </div>
           <div>
@@ -1401,7 +1401,7 @@
 
     <!-- ==================== TAB 5: Multi-Language ==================== -->
     <div id="tab-multilang" class="tab-content">
-      <div class="section-heading">Multi-Language</div>
+      <div class="section-heading" data-i18n="plugins.stt-ticker.stt_ticker.ui.navigation.multi_language">Multi-Language</div>
       <div class="card">
         <div class="card-title" data-i18n="plugins.stt-ticker.labels.multi_language_output_n_zeilen">Multi-Language Output (N Zeilen)</div>
         <p class="help-text"><span data-i18n="plugins.stt-ticker.labels.je_zeile_eine_sprache_zeile_1_original_zeile">Je Zeile eine Sprache. Zeile 1 = Original, Zeile 2..N = Uebersetzungen.</span><br>
@@ -1439,9 +1439,9 @@
           <input type="checkbox" id="vrchat-chatbox-enabled">
           An VRChat-Chatbox senden
         </label>
-        <p class="help-text">Sendet nur finale Original-Untertitel nach 700 ms Bündelung. Lange Texte werden automatisch auf das VRChat-Chatbox-Limit aufgeteilt.</p>
+        <p class="help-text" data-i18n="plugins.stt-ticker.stt_ticker.ui.help.vrchat_final_captions">Sendet nur finale Original-Untertitel nach 700 ms Bündelung. Lange Texte werden automatisch auf das VRChat-Chatbox-Limit aufgeteilt.</p>
         <div class="btn-row">
-          <button id="btn-save-vrchat-chatbox" class="btn btn-primary btn-sm">VRChat-Ausgabe speichern</button>
+          <button id="btn-save-vrchat-chatbox" class="btn btn-primary btn-sm" data-i18n="plugins.stt-ticker.stt_ticker.ui.actions.save_vrchat_output">VRChat-Ausgabe speichern</button>
           <span id="vrchat-chatbox-status" style="font-size:12px;"></span>
         </div>
       </div>
@@ -1450,6 +1450,19 @@
 
   <script>
     const BASE = window.location.origin;
+
+    function translateUi(key, fallback) {
+      const translation = window.i18n.t(key);
+      return translation && translation !== key ? translation : fallback;
+    }
+
+    function setSelectFallback(select, key, fallback) {
+      select.innerHTML = '';
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = translateUi(key, fallback);
+      select.appendChild(option);
+    }
 
     // ===== Tabs =====
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1701,6 +1714,7 @@
 
     // Laedt Deepgram + ElevenLabs Modelle und befuelle das STT-Modell-Dropdown
     async function loadAsrModels() {
+      if (window.i18n?.ready) await window.i18n.ready;
       const dgModels = [], elModels = [];
       try {
         const dgRes = await fetch('/api/stt-ticker/asr/deepgram/models');
@@ -1739,7 +1753,13 @@
           select.appendChild(opt);
         }
       } else {
-        select.innerHTML = '<option value="">' + (provider === 'fish.audio' ? 'Keine Auswahl' : 'Keine Modelle') + '</option>';
+        setSelectFallback(
+          select,
+          provider === 'fish.audio'
+            ? 'plugins.stt-ticker.stt_ticker.ui.options.no_selection'
+            : 'plugins.stt-ticker.stt_ticker.ui.options.no_models',
+          provider === 'fish.audio' ? 'Keine Auswahl' : 'Keine Modelle'
+        );
       }
     }
 

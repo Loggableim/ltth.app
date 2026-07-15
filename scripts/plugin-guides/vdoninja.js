@@ -167,11 +167,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/vdoninja/ui.html"
+            "expected": {
+              "path": "/plugins/vdoninja/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -277,11 +281,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/vdoninja/ui.html"
+            "expected": {
+              "path": "/plugins/vdoninja/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -306,72 +314,72 @@ module.exports = Object.freeze({
       "id": "guest-layout",
       "copy": {
         "de": {
-          "title": "Vor dem Raumstart ein vorhandenes Gastlayout waehlen",
-          "body": "Pruefe die vorhandenen Layout-Vorgaben wie Grid oder Solo. Waehle ein Layout erst fuer einen aktiven Raum; die Ansicht verbindet dabei keinen Gast.",
-          "expected": "Die echten Layout-Vorgaben sind sichtbar, ohne einen Gast zu verbinden.",
-          "alt": "Vor dem Raumstart ein vorhandenes Gastlayout waehlen - Raumname, Gastlayout und Browserquelle"
+          "title": "Gastlayouts nur lesend prüfen",
+          "body": "Prüfe die echten Layout-Karten Grid 2x2, Grid 3x2 und Solo nur visuell. Klicke sie im Dokumentationslauf nicht an: Eine Auswahl sendet eine Layout-Änderung an einen aktiven Raum.",
+          "expected": "Die echten Layout-Karten sind sichtbar, ohne einen Raum, Gast oder eine externe Quelle zu ändern.",
+          "alt": "Gastlayouts nur lesend prüfen - Raumname, Gastlayout und Browserquelle"
         },
         "en": {
-          "title": "Choose an available guest layout before starting a room",
-          "body": "Review the available layout presets such as Grid or Solo. Select one only for an active room; viewing these presets does not connect a guest.",
-          "expected": "The real layout presets are visible without connecting a guest.",
-          "alt": "Choose an available guest layout before starting a room - room name, guest layout, and browser source"
+          "title": "Review guest layouts read-only",
+          "body": "Inspect the real Grid 2x2, Grid 3x2, and Solo layout cards only. Do not click them during the documentation run: selecting one sends a layout change to an active room.",
+          "expected": "The real layout cards are visible without changing a room, guest, or external source.",
+          "alt": "Review guest layouts read-only - room name, guest layout, and browser source"
         },
         "es": {
-          "title": "Elige un diseno de invitados disponible antes de iniciar una sala",
-          "body": "Revisa los preajustes disponibles como Grid o Solo. Elige uno solo para una sala activa; revisar los preajustes no conecta invitados.",
-          "expected": "Los preajustes reales estan visibles sin conectar invitados.",
-          "alt": "Elige un diseno de invitados disponible antes de iniciar una sala - nombre de sala, diseño de invitados y fuente de navegador"
+          "title": "Revisa los diseños de invitados en modo de solo lectura",
+          "body": "Inspecciona solo las tarjetas reales Grid 2x2, Grid 3x2 y Solo. No hagas clic en ellas durante la documentación: seleccionar una envía un cambio de diseño a una sala activa.",
+          "expected": "Las tarjetas de diseño reales son visibles sin cambiar una sala, invitado ni fuente externa.",
+          "alt": "Revisa los diseños de invitados en modo de solo lectura - nombre de sala, diseño de invitados y fuente de navegador"
         },
         "fr": {
-          "title": "Choisissez une disposition dinvites disponible avant de demarrer une salle",
-          "body": "Verifiez les predefinis disponibles, comme Grid ou Solo. Choisissez-en un seulement pour une salle active ; les consulter ne connecte aucun invite.",
-          "expected": "Les vrais predefinis de disposition sont visibles sans connecter dinvite.",
-          "alt": "Choisissez une disposition dinvites disponible avant de demarrer une salle - nom de salle, disposition des invités et source navigateur"
+          "title": "Vérifiez les dispositions d'invités en lecture seule",
+          "body": "Inspectez uniquement les vraies cartes Grid 2x2, Grid 3x2 et Solo. Ne cliquez pas dessus pendant la documentation : une sélection envoie un changement de disposition à une salle active.",
+          "expected": "Les vraies cartes de disposition sont visibles sans modifier une salle, un invité ou une source externe.",
+          "alt": "Vérifiez les dispositions d'invités en lecture seule - nom de salle, disposition des invités et source navigateur"
         }
       },
       "capture": {
         "route": "/plugins/vdoninja/ui.html",
         "assertVisible": ".layout-grid",
         "focusText": {
-          "de": "Vor dem Raumstart ein vorhandenes Gastlayout waehlen",
-          "en": "Choose an available guest layout before starting a room",
-          "es": "Elige un diseno de invitados disponible antes de iniciar una sala",
-          "fr": "Choisissez une disposition dinvites disponible avant de demarrer une salle"
+          "de": "Gastlayouts nur lesend prüfen",
+          "en": "Review guest layouts read-only",
+          "es": "Revisa los diseños de invitados en modo de solo lectura",
+          "fr": "Vérifiez les dispositions d'invités en lecture seule"
         },
         "action": {
-          "type": "set-demo-value",
+          "type": "open-plugin-surface",
           "stepId": "guest-layout"
         },
         "expected": {
-          "de": "Die echten Layout-Vorgaben sind sichtbar, ohne einen Gast zu verbinden.",
-          "en": "The real layout presets are visible without connecting a guest.",
-          "es": "Los preajustes reales estan visibles sin conectar invitados.",
-          "fr": "Les vrais predefinis de disposition sont visibles sans connecter dinvite."
+          "de": "Die echten Layout-Karten sind sichtbar, ohne einen Raum, Gast oder eine externe Quelle zu ändern.",
+          "en": "The real layout cards are visible without changing a room, guest, or external source.",
+          "es": "Las tarjetas de diseño reales son visibles sin cambiar una sala, invitado ni fuente externa.",
+          "fr": "Les vraies cartes de disposition sont visibles sans modifier une salle, un invité ou une source externe."
         }
       },
       "workflow": {
         "route": "/plugins/vdoninja/ui.html",
         "instructions": {
           "de": {
-            "title": "Vor dem Raumstart ein vorhandenes Gastlayout waehlen",
-            "body": "Pruefe die vorhandenen Layout-Vorgaben wie Grid oder Solo. Waehle ein Layout erst fuer einen aktiven Raum; die Ansicht verbindet dabei keinen Gast.",
-            "expected": "Die echten Layout-Vorgaben sind sichtbar, ohne einen Gast zu verbinden."
+            "title": "Gastlayouts nur lesend prüfen",
+            "body": "Prüfe die echten Layout-Karten Grid 2x2, Grid 3x2 und Solo nur visuell. Klicke sie im Dokumentationslauf nicht an: Eine Auswahl sendet eine Layout-Änderung an einen aktiven Raum.",
+            "expected": "Die echten Layout-Karten sind sichtbar, ohne einen Raum, Gast oder eine externe Quelle zu ändern."
           },
           "en": {
-            "title": "Choose an available guest layout before starting a room",
-            "body": "Review the available layout presets such as Grid or Solo. Select one only for an active room; viewing these presets does not connect a guest.",
-            "expected": "The real layout presets are visible without connecting a guest."
+            "title": "Review guest layouts read-only",
+            "body": "Inspect the real Grid 2x2, Grid 3x2, and Solo layout cards only. Do not click them during the documentation run: selecting one sends a layout change to an active room.",
+            "expected": "The real layout cards are visible without changing a room, guest, or external source."
           },
           "es": {
-            "title": "Elige un diseno de invitados disponible antes de iniciar una sala",
-            "body": "Revisa los preajustes disponibles como Grid o Solo. Elige uno solo para una sala activa; revisar los preajustes no conecta invitados.",
-            "expected": "Los preajustes reales estan visibles sin conectar invitados."
+            "title": "Revisa los diseños de invitados en modo de solo lectura",
+            "body": "Inspecciona solo las tarjetas reales Grid 2x2, Grid 3x2 y Solo. No hagas clic en ellas durante la documentación: seleccionar una envía un cambio de diseño a una sala activa.",
+            "expected": "Las tarjetas de diseño reales son visibles sin cambiar una sala, invitado ni fuente externa."
           },
           "fr": {
-            "title": "Choisissez une disposition dinvites disponible avant de demarrer une salle",
-            "body": "Verifiez les predefinis disponibles, comme Grid ou Solo. Choisissez-en un seulement pour une salle active ; les consulter ne connecte aucun invite.",
-            "expected": "Les vrais predefinis de disposition sont visibles sans connecter dinvite."
+            "title": "Vérifiez les dispositions d'invités en lecture seule",
+            "body": "Inspectez uniquement les vraies cartes Grid 2x2, Grid 3x2 et Solo. Ne cliquez pas dessus pendant la documentation : une sélection envoie un changement de disposition à une salle active.",
+            "expected": "Les vraies cartes de disposition sont visibles sans modifier une salle, un invité ou une source externe."
           }
         },
         "operations": [
@@ -380,18 +388,22 @@ module.exports = Object.freeze({
             "route": "/plugins/vdoninja/ui.html"
           },
           {
-            "type": "set-demo-value",
+            "type": "open-plugin-surface",
             "selector": ".layout-grid"
           }
         ],
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/vdoninja/ui.html"
+            "expected": {
+              "path": "/plugins/vdoninja/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -408,7 +420,7 @@ module.exports = Object.freeze({
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },
@@ -497,11 +509,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/vdoninja/ui.html"
+            "expected": {
+              "path": "/plugins/vdoninja/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -526,72 +542,72 @@ module.exports = Object.freeze({
       "id": "obs-guest-source",
       "copy": {
         "de": {
-          "title": "Die echte OBS-Browserquellen-Reihenfolge beachten",
-          "body": "Nach dem Erstellen eines Raums zeigt die App die Director URL. Kopiere genau diese URL in eine OBS-Browserquelle mit 1920x1080; die Startansicht zeigt absichtlich noch keine erfundene URL.",
-          "expected": "Die eingebaute Quick Guide beschreibt die reale Reihenfolge: Raum, Director-URL, Gast-Einladung und Steuerung.",
-          "alt": "Die echte OBS-Browserquellen-Reihenfolge beachten - Raumname, Gastlayout und Browserquelle"
+          "title": "Die OBS-Reihenfolge nur lesend prüfen",
+          "body": "Lies die eingebaute Quick Guide in der leeren Startansicht. Dieser Schritt erstellt keinen Raum, kopiert keine Director-URL und fügt keine Browserquelle hinzu; bei einer später bewusst eingerichteten Sitzung wird nur die dann angezeigte URL verwendet.",
+          "expected": "Die Quick Guide ist sichtbar und beschreibt die Reihenfolge Raum, Director-URL, Gast-Einladung und Steuerung ohne erfundene URL.",
+          "alt": "Die OBS-Reihenfolge nur lesend prüfen - Raumname, Gastlayout und Browserquelle"
         },
         "en": {
-          "title": "Follow the real OBS browser-source order",
-          "body": "After creating a room, the app shows the Director URL. Copy that exact URL into an OBS Browser Source at 1920x1080; the starting view deliberately shows no invented URL.",
-          "expected": "The built-in Quick Guide gives the real order: room, Director URL, guest invite, and control.",
-          "alt": "Follow the real OBS browser-source order - room name, guest layout, and browser source"
+          "title": "Review the OBS order read-only",
+          "body": "Read the built-in Quick Guide in the empty starting view. This step creates no room, copies no Director URL, and adds no browser source; a later intentionally configured session uses only the URL it then displays.",
+          "expected": "The Quick Guide is visible and gives the order room, Director URL, guest invite, and control without an invented URL.",
+          "alt": "Review the OBS order read-only - room name, guest layout, and browser source"
         },
         "es": {
-          "title": "Sigue el orden real para la fuente de navegador de OBS",
-          "body": "Tras crear una sala, la app muestra la Director URL. Copia esa URL exacta en una fuente de navegador OBS de 1920x1080; la vista inicial no muestra una URL inventada.",
-          "expected": "La Quick Guide integrada indica el orden real: sala, Director URL, invitacion de invitados y control.",
-          "alt": "Sigue el orden real para la fuente de navegador de OBS - nombre de sala, diseño de invitados y fuente de navegador"
+          "title": "Revisa el orden de OBS en modo de solo lectura",
+          "body": "Lee la Quick Guide integrada en la vista inicial vacía. Este paso no crea una sala, no copia ninguna Director URL ni añade una fuente de navegador; una sesión posterior configurada de forma consciente usa solo la URL que entonces muestra.",
+          "expected": "La Quick Guide es visible e indica el orden sala, Director URL, invitación de invitados y control sin URL inventada.",
+          "alt": "Revisa el orden de OBS en modo de solo lectura - nombre de sala, diseño de invitados y fuente de navegador"
         },
         "fr": {
-          "title": "Suivez le vrai ordre pour la source navigateur OBS",
-          "body": "Apres creation dune salle, lapp affiche la Director URL. Copiez cette URL exacte dans une source navigateur OBS en 1920x1080 ; la vue initiale naffiche volontairement aucune URL inventee.",
-          "expected": "Le Quick Guide integre donne lordre reel : salle, Director URL, invitation dinvites et controle.",
-          "alt": "Suivez le vrai ordre pour la source navigateur OBS - nom de salle, disposition des invités et source navigateur"
+          "title": "Vérifiez l'ordre OBS en lecture seule",
+          "body": "Lisez le Quick Guide intégré dans la vue de départ vide. Cette étape ne crée aucune salle, ne copie aucune Director URL et n'ajoute aucune source navigateur ; une session ultérieure configurée intentionnellement n'utilise que l'URL alors affichée.",
+          "expected": "Le Quick Guide est visible et donne l'ordre salle, Director URL, invitation d'invités et contrôle sans URL inventée.",
+          "alt": "Vérifiez l'ordre OBS en lecture seule - nom de salle, disposition des invités et source navigateur"
         }
       },
       "capture": {
         "route": "/plugins/vdoninja/ui.html",
         "assertVisible": ".alert-info",
         "focusText": {
-          "de": "Die echte OBS-Browserquellen-Reihenfolge beachten",
-          "en": "Follow the real OBS browser-source order",
-          "es": "Sigue el orden real para la fuente de navegador de OBS",
-          "fr": "Suivez le vrai ordre pour la source navigateur OBS"
+          "de": "Die OBS-Reihenfolge nur lesend prüfen",
+          "en": "Review the OBS order read-only",
+          "es": "Revisa el orden de OBS en modo de solo lectura",
+          "fr": "Vérifiez l'ordre OBS en lecture seule"
         },
         "action": {
-          "type": "set-demo-value",
+          "type": "open-plugin-surface",
           "stepId": "obs-guest-source"
         },
         "expected": {
-          "de": "Die eingebaute Quick Guide beschreibt die reale Reihenfolge: Raum, Director-URL, Gast-Einladung und Steuerung.",
-          "en": "The built-in Quick Guide gives the real order: room, Director URL, guest invite, and control.",
-          "es": "La Quick Guide integrada indica el orden real: sala, Director URL, invitacion de invitados y control.",
-          "fr": "Le Quick Guide integre donne lordre reel : salle, Director URL, invitation dinvites et controle."
+          "de": "Die Quick Guide ist sichtbar und beschreibt die Reihenfolge Raum, Director-URL, Gast-Einladung und Steuerung ohne erfundene URL.",
+          "en": "The Quick Guide is visible and gives the order room, Director URL, guest invite, and control without an invented URL.",
+          "es": "La Quick Guide es visible e indica el orden sala, Director URL, invitación de invitados y control sin URL inventada.",
+          "fr": "Le Quick Guide est visible et donne l'ordre salle, Director URL, invitation d'invités et contrôle sans URL inventée."
         }
       },
       "workflow": {
         "route": "/plugins/vdoninja/ui.html",
         "instructions": {
           "de": {
-            "title": "Die echte OBS-Browserquellen-Reihenfolge beachten",
-            "body": "Nach dem Erstellen eines Raums zeigt die App die Director URL. Kopiere genau diese URL in eine OBS-Browserquelle mit 1920x1080; die Startansicht zeigt absichtlich noch keine erfundene URL.",
-            "expected": "Die eingebaute Quick Guide beschreibt die reale Reihenfolge: Raum, Director-URL, Gast-Einladung und Steuerung."
+            "title": "Die OBS-Reihenfolge nur lesend prüfen",
+            "body": "Lies die eingebaute Quick Guide in der leeren Startansicht. Dieser Schritt erstellt keinen Raum, kopiert keine Director-URL und fügt keine Browserquelle hinzu; bei einer später bewusst eingerichteten Sitzung wird nur die dann angezeigte URL verwendet.",
+            "expected": "Die Quick Guide ist sichtbar und beschreibt die Reihenfolge Raum, Director-URL, Gast-Einladung und Steuerung ohne erfundene URL."
           },
           "en": {
-            "title": "Follow the real OBS browser-source order",
-            "body": "After creating a room, the app shows the Director URL. Copy that exact URL into an OBS Browser Source at 1920x1080; the starting view deliberately shows no invented URL.",
-            "expected": "The built-in Quick Guide gives the real order: room, Director URL, guest invite, and control."
+            "title": "Review the OBS order read-only",
+            "body": "Read the built-in Quick Guide in the empty starting view. This step creates no room, copies no Director URL, and adds no browser source; a later intentionally configured session uses only the URL it then displays.",
+            "expected": "The Quick Guide is visible and gives the order room, Director URL, guest invite, and control without an invented URL."
           },
           "es": {
-            "title": "Sigue el orden real para la fuente de navegador de OBS",
-            "body": "Tras crear una sala, la app muestra la Director URL. Copia esa URL exacta en una fuente de navegador OBS de 1920x1080; la vista inicial no muestra una URL inventada.",
-            "expected": "La Quick Guide integrada indica el orden real: sala, Director URL, invitacion de invitados y control."
+            "title": "Revisa el orden de OBS en modo de solo lectura",
+            "body": "Lee la Quick Guide integrada en la vista inicial vacía. Este paso no crea una sala, no copia ninguna Director URL ni añade una fuente de navegador; una sesión posterior configurada de forma consciente usa solo la URL que entonces muestra.",
+            "expected": "La Quick Guide es visible e indica el orden sala, Director URL, invitación de invitados y control sin URL inventada."
           },
           "fr": {
-            "title": "Suivez le vrai ordre pour la source navigateur OBS",
-            "body": "Apres creation dune salle, lapp affiche la Director URL. Copiez cette URL exacte dans une source navigateur OBS en 1920x1080 ; la vue initiale naffiche volontairement aucune URL inventee.",
-            "expected": "Le Quick Guide integre donne lordre reel : salle, Director URL, invitation dinvites et controle."
+            "title": "Vérifiez l'ordre OBS en lecture seule",
+            "body": "Lisez le Quick Guide intégré dans la vue de départ vide. Cette étape ne crée aucune salle, ne copie aucune Director URL et n'ajoute aucune source navigateur ; une session ultérieure configurée intentionnellement n'utilise que l'URL alors affichée.",
+            "expected": "Le Quick Guide est visible et donne l'ordre salle, Director URL, invitation d'invités et contrôle sans URL inventée."
           }
         },
         "operations": [
@@ -600,18 +616,22 @@ module.exports = Object.freeze({
             "route": "/plugins/vdoninja/ui.html"
           },
           {
-            "type": "set-demo-value",
+            "type": "open-plugin-surface",
             "selector": ".alert-info"
           }
         ],
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/vdoninja/ui.html"
+            "expected": {
+              "path": "/plugins/vdoninja/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",
@@ -628,7 +648,7 @@ module.exports = Object.freeze({
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },
@@ -717,11 +737,15 @@ module.exports = Object.freeze({
         "postconditions": [
           {
             "type": "http-status",
-            "expected": "< 400"
+            "expected": 200
           },
           {
             "type": "url",
-            "expected": "/plugins/vdoninja/ui.html"
+            "expected": {
+              "path": "/plugins/vdoninja/ui.html",
+              "query": {"lang":"$locale"},
+              "exactQuery": true
+            }
           },
           {
             "type": "visible",

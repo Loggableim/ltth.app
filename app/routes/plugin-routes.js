@@ -33,6 +33,15 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     const storeAuth = options.storeAuth || createRequireStoreAuth({ env, logger });
     const storeAuthConfig = options.storeAuthConfig || (() => buildStoreAuthConfig(env));
     const storeAccountResponse = options.storeAccountResponse || ((req) => buildStoreAccountResponse(req, env));
+    const docsCaptureStoreAccount = (req, res, next) => {
+        // The isolated documentation profile deliberately has no local store
+        // session. Its dashboard needs an explicit signed-out account response,
+        // rather than an expected 401 that appears as a browser-console error.
+        next();
+    };
+    const storeAccountAuth = env.LTTH_DOCS_CAPTURE === 'true'
+        ? docsCaptureStoreAccount
+        : storeAuth;
     const claimBetaLicense = options.claimBetaLicense || ((req) => claimBetaLicenseForStoreAccount(req.storeAccount || {}, { env, logger }));
     // Multer für ZIP-Upload konfigurieren
     const pluginUploadDir = path.join(__dirname, '..', 'plugins', '_uploads');
@@ -88,7 +97,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     /**
      * GET /api/plugin-store/account - Authenticated store account status.
      */
-    app.get('/api/plugin-store/account', limiter, storeAuth, (req, res) => {
+    app.get('/api/plugin-store/account', limiter, storeAccountAuth, (req, res) => {
         res.json(storeAccountResponse(req));
     });
 

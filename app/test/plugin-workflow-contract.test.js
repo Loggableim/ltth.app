@@ -2,6 +2,7 @@ const path = require('path');
 
 const { LOCALES, buildGuides } = require('../../scripts/plugin-tutorial-source');
 const { buildDocsSpec } = require('../../scripts/docs-screenshot-spec');
+const { collectGuideUiInventory } = require('../../scripts/lib/plugin-guide-ui-inventory');
 
 describe('plugin WorkflowStep contracts', () => {
   const repoRoot = path.join(__dirname, '..', '..');
@@ -37,6 +38,52 @@ describe('plugin WorkflowStep contracts', () => {
       for (const step of guide.steps) {
         const asset = spec.assets.find((candidate) => candidate.guideId === guide.id && candidate.stepId === step.id);
         expect(asset.workflow).toEqual(step.workflow);
+      }
+    }
+  });
+
+  test('does not claim a state change without an executable interaction and outcome receipt', () => {
+    for (const guide of buildGuides(repoRoot)) {
+      for (const step of guide.steps) {
+        const action = step.capture.action;
+        const executable = Boolean(action.type === 'set-demo-value' || action.allowClick || action.prepare);
+        if (!step.workflow.captureRule.stateChange) {
+          expect(step.workflow.postconditions.some((condition) => condition.type === 'interaction')).toBe(false);
+          continue;
+        }
+        expect(executable).toBe(true);
+        expect(step.workflow.postconditions).toEqual(expect.arrayContaining([
+          expect.objectContaining({ type: 'interaction' })
+        ]));
+      }
+    }
+  });
+
+  test('uses editable product controls for every injected demo value', () => {
+    const controlsByRoute = new Map();
+    const controlsFor = (route) => {
+      if (!controlsByRoute.has(route)) {
+        controlsByRoute.set(route, collectGuideUiInventory(repoRoot, {
+          definition: { activation: { route } }
+        }).controls);
+      }
+      return controlsByRoute.get(route);
+    };
+
+    for (const guide of buildGuides(repoRoot)) {
+      for (const step of guide.steps) {
+        if (step.capture.action.type !== 'set-demo-value') continue;
+        const selector = step.capture.action.inputSelector || step.capture.assertVisible;
+        const staticControl = controlsFor(step.capture.route).find((control) => (
+          control.selector === selector && control.kind === 'control'
+        ));
+        if (staticControl) continue;
+
+        // Some settings dialogs create their editable controls only after the
+        // documented preparation action. The guide must name the native
+        // control type explicitly; the anchor verifier checks that the dialog
+        // implementation really owns the selector.
+        expect(step.capture.action.controlType).toMatch(/^(?:input|textarea|select)$/);
       }
     }
   });

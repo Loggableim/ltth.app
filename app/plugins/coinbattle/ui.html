@@ -819,8 +819,8 @@
             <div class="header-copy">
                 <div class="header-copy-row">
                     <div class="header-copy-text">
-                        <h1 data-i18n="ui.title">CoinBattle</h1>
-                        <p data-i18n="ui.subtitle">Live battle operations, refined for wide-screen dashboards</p>
+                        <h1 data-i18n="plugins.coinbattle.ui.title">CoinBattle</h1>
+                        <p data-i18n="plugins.coinbattle.ui.subtitle">Live battle operations, refined for wide-screen dashboards</p>
                     </div>
                 </div>
             </div>
@@ -830,10 +830,10 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" data-tab="control" data-i18n="ui.tabs.control">Control</button>
-            <button class="tab" data-tab="settings" data-i18n="ui.tabs.settings">Settings</button>
-            <button class="tab" data-tab="leaderboard" data-i18n="ui.tabs.leaderboard">Leaderboard</button>
-            <button class="tab" data-tab="history" data-i18n="ui.tabs.history">History</button>
+            <button class="tab active" data-tab="control" data-i18n="plugins.coinbattle.ui.tabs.control">Control</button>
+            <button class="tab" data-tab="settings" data-i18n="plugins.coinbattle.ui.tabs.settings">Settings</button>
+            <button class="tab" data-tab="leaderboard" data-i18n="plugins.coinbattle.ui.tabs.leaderboard">Leaderboard</button>
+            <button class="tab" data-tab="history" data-i18n="plugins.coinbattle.ui.tabs.history">History</button>
         </div>
 
         <!-- Control Tab -->
@@ -853,18 +853,18 @@
             <div class="grid grid-4">
                 <div class="stat-card">
                     <div class="stat-label" data-i18n="plugins.coinbattle.labels.match_status">Match Status</div>
-                    <div class="stat-value" id="match-status-text" data-i18n="multiplier.inactive">Inactive</div>
+                    <div class="stat-value" id="match-status-text" data-i18n="plugins.coinbattle.multiplier.inactive">Inactive</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label" data-i18n="plugins.coinbattle.labels.time_remaining">Time Remaining</div>
                     <div class="stat-value info" id="time-remaining">--:--</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="history.totalCoins">Total Coins</div>
+                    <div class="stat-label" data-i18n="plugins.coinbattle.history.totalCoins">Total Coins</div>
                     <div class="stat-value success" id="total-coins">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="history.participants">Participants</div>
+                    <div class="stat-label" data-i18n="plugins.coinbattle.history.participants">Participants</div>
                     <div class="stat-value warning" id="participant-count">0</div>
                 </div>
             </div>
@@ -873,9 +873,9 @@
                 <div class="card-title" data-i18n="plugins.coinbattle.labels.match_timer">Match Timer</div>
                 <div class="timer-display" id="timer-display">00:00</div>
                 <div class="btn-group">
-                    <button class="btn btn-success" id="btn-start-match" data-i18n="match.start">Start Match</button>
-                    <button class="btn btn-danger" id="btn-end-match" disabled data-i18n="match.end">End Match</button>
-                    <button class="btn btn-warning" id="btn-pause-match" disabled data-i18n="match.pause">Pause</button>
+                    <button class="btn btn-success" id="btn-start-match" data-i18n="plugins.coinbattle.match.start">Start Match</button>
+                    <button class="btn btn-danger" id="btn-end-match" disabled data-i18n="plugins.coinbattle.match.end">End Match</button>
+                    <button class="btn btn-warning" id="btn-pause-match" disabled data-i18n="plugins.coinbattle.match.pause">Pause</button>
                     <button class="btn btn-warning" id="btn-extend-match" disabled data-i18n="plugins.coinbattle.labels.extend_60s">Extend +60s</button>
                 </div>
             </div>
@@ -894,13 +894,13 @@
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.coinbattle.labels.match_mode">Match Mode</label>
                         <select class="form-select" id="match-mode">
-                            <option value="solo" data-i18n="modes.solo">Solo</option>
+                            <option value="solo" data-i18n="plugins.coinbattle.modes.solo">Solo</option>
                             <option value="team" data-i18n="plugins.coinbattle.labels.team_battle">Team Battle</option>
                             <option value="pyramid" data-i18n="plugins.coinbattle.labels.pyramid_battle_c477b6">Pyramid Battle</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="multiplier.duration">Duration (seconds)</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.multiplier.duration">Duration (seconds)</label>
                         <input type="number" class="form-input" id="match-duration" value="300" min="30" step="30">
                     </div>
                 </div>
@@ -915,13 +915,13 @@
                     Test layouts and animations without TikTok Live connection
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-secondary" id="btn-start-simulation" data-i18n="simulation.start">Start Simulation</button>
-                    <button class="btn btn-danger" id="btn-stop-simulation" disabled data-i18n="simulation.stop">Stop Simulation</button>
+                    <button class="btn btn-secondary" id="btn-start-simulation" data-i18n="plugins.coinbattle.simulation.start">Start Simulation</button>
+                    <button class="btn btn-danger" id="btn-stop-simulation" disabled data-i18n="plugins.coinbattle.simulation.stop">Stop Simulation</button>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title" data-i18n="leaderboard.title">Current Match Leaderboard</div>
+                <div class="card-title" data-i18n="plugins.coinbattle.leaderboard.title">Current Match Leaderboard</div>
                 <div id="current-leaderboard">
                     <p class="loading" data-i18n="plugins.coinbattle.labels.no_active_match">No active match</p>
                 </div>
@@ -936,7 +936,7 @@
                     <div class="form-group">
                         <label class="form-checkbox">
                             <input type="checkbox" id="setting-autostart">
-                            <span data-i18n="pyramid.autoStart">Auto-start on first gift</span>
+                            <span data-i18n="plugins.coinbattle.pyramid.autoStart">Auto-start on first gift</span>
                         </label>
                     </div>
                     <div class="form-group">
@@ -960,11 +960,11 @@
                 </div>
                 <div class="grid grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="settings.extensionThreshold">Extension Threshold (coins)</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.settings.extensionThreshold">Extension Threshold (coins)</label>
                         <input type="number" class="form-input" id="setting-extension-threshold" value="15" min="1">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="settings.extensionDuration">Extension Duration (seconds)</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.settings.extensionDuration">Extension Duration (seconds)</label>
                         <input type="number" class="form-input" id="setting-extension-duration" value="60" min="10" step="10">
                     </div>
                 </div>
@@ -975,9 +975,9 @@
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.coinbattle.labels.team_assignment_method">Team Assignment Method</label>
                     <select class="form-select" id="setting-team-assignment">
-                        <option value="random" data-i18n="teams.random">Random</option>
+                        <option value="random" data-i18n="plugins.coinbattle.teams.random">Random</option>
                         <option value="alternate" data-i18n="plugins.coinbattle.labels.alternate_balance">Alternate (Balance)</option>
-                        <option value="manual" data-i18n="teams.manual">Manual</option>
+                        <option value="manual" data-i18n="plugins.coinbattle.teams.manual">Manual</option>
                     </select>
                 </div>
             </div>
@@ -1029,49 +1029,49 @@
                     <div class="form-group">
                         <label class="form-checkbox">
                             <input type="checkbox" id="setting-pyramid-enabled">
-                            <span data-i18n="pyramid.enabled">Enable Pyramid Mode</span>
+                            <span data-i18n="plugins.coinbattle.pyramid.enabled">Enable Pyramid Mode</span>
                         </label>
                     </div>
                     <div class="form-group">
                         <label class="form-checkbox">
                             <input type="checkbox" id="setting-pyramid-autostart" checked>
-                            <span data-i18n="pyramid.autoStart">Auto-start on first gift</span>
+                            <span data-i18n="plugins.coinbattle.pyramid.autoStart">Auto-start on first gift</span>
                         </label>
                     </div>
                 </div>
                 <div class="grid grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="pyramid.rowCount">Number of Rows</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.pyramid.rowCount">Number of Rows</label>
                         <select class="form-select" id="setting-pyramid-rows">
-                            <option value="2" data-i18n="pyramid.rows.2">2 rows (1+2 = 3 slots)</option>
-                            <option value="3" data-i18n="pyramid.rows.3">3 rows (1+2+4 = 7 slots)</option>
-                            <option value="4" selected data-i18n="pyramid.rows.4">4 rows (1+2+4+6 = 13 slots)</option>
+                            <option value="2" data-i18n="plugins.coinbattle.pyramid.rows.2">2 rows (1+2 = 3 slots)</option>
+                            <option value="3" data-i18n="plugins.coinbattle.pyramid.rows.3">3 rows (1+2+4 = 7 slots)</option>
+                            <option value="4" selected data-i18n="plugins.coinbattle.pyramid.rows.4">4 rows (1+2+4+6 = 13 slots)</option>
                             <option value="5" data-i18n="plugins.coinbattle.labels.5_rows_1_2_4_6_8_21">5 rows (1+2+4+6+8 = 21 slots)</option>
                             <option value="6" data-i18n="plugins.coinbattle.labels.6_rows_1_2_4_6_8_10">6 rows (1+2+4+6+8+10 = 31 slots)</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="pyramid.roundDuration">Round Duration (seconds)</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.pyramid.roundDuration">Round Duration (seconds)</label>
                         <input type="number" class="form-input" id="setting-pyramid-duration" value="120" min="30" step="30">
                     </div>
                 </div>
                 <div class="grid grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="pyramid.extensionPerCoin">Extension per Coin (seconds)</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.pyramid.extensionPerCoin">Extension per Coin (seconds)</label>
                         <input type="number" class="form-input" id="setting-pyramid-extension" value="0.5" min="0" max="5" step="0.1">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="pyramid.maxExtension">Max Extension (seconds)</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.pyramid.maxExtension">Max Extension (seconds)</label>
                         <input type="number" class="form-input" id="setting-pyramid-max-extension" value="300" min="0" step="30">
                     </div>
                 </div>
                 <div class="grid grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="pyramid.coinsPerPoint">Points per Coin</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.pyramid.coinsPerPoint">Points per Coin</label>
                         <input type="number" class="form-input" id="setting-pyramid-coins-per-point" value="100" min="1">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="pyramid.likesPerPoint">Points per Like</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.pyramid.likesPerPoint">Points per Like</label>
                         <input type="number" class="form-input" id="setting-pyramid-likes-per-point" value="1" min="1">
                     </div>
                 </div>
@@ -1120,8 +1120,8 @@
                     <label class="form-label" data-i18n="plugins.coinbattle.labels.pyramid_overlay_url">Pyramid Overlay URL</label>
                     <div class="overlay-url">
                         <input type="text" class="form-input" id="pyramid-overlay-url" readonly>
-                        <button class="btn btn-sm" id="btn-copy-pyramid-url">Copy</button>
-                        <button class="btn btn-sm btn-secondary" id="btn-preview-pyramid" data-i18n="overlay.preview">Preview</button>
+                        <button class="btn btn-sm" id="btn-copy-pyramid-url" data-i18n="plugins.coinbattle.overlay.copy">Copy</button>
+                        <button class="btn btn-sm btn-secondary" id="btn-preview-pyramid" data-i18n="plugins.coinbattle.overlay.preview">Preview</button>
                     </div>
                 </div>
                 <div class="btn-group">
@@ -1135,11 +1135,11 @@
                 <div class="card-title" data-i18n="plugins.coinbattle.labels.display_settings">Display Settings</div>
                 <div class="grid grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="settings.theme">Theme</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.settings.theme">Theme</label>
                         <select class="form-select" id="setting-theme">
-                            <option value="night">Night</option>
-                            <option value="day">Day</option>
-                            <option value="cid">Cid</option>
+                            <option value="night" data-i18n="plugins.coinbattle.labels.theme_night">Night</option>
+                            <option value="day" data-i18n="plugins.coinbattle.labels.theme_day">Day</option>
+                            <option value="cid" data-i18n="plugins.coinbattle.labels.theme_cid">Cid</option>
                             <option value="contrast" data-i18n="plugins.coinbattle.labels.high_contrast">High Contrast</option>
                             <option value="vision-impaired" data-i18n="plugins.coinbattle.labels.vision_impaired">Vision Impaired</option>
                         </select>
@@ -1147,20 +1147,20 @@
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.coinbattle.labels.leaderboard_skin">Leaderboard Skin</label>
                         <select class="form-select" id="setting-skin">
-                            <option value="gold" data-i18n="skins.gold">Gold</option>
-                            <option value="futuristic" data-i18n="skins.futuristic">Futuristic</option>
-                            <option value="retro" data-i18n="skins.retro">Retro</option>
+                            <option value="gold" data-i18n="plugins.coinbattle.skins.gold">Gold</option>
+                            <option value="futuristic" data-i18n="plugins.coinbattle.skins.futuristic">Futuristic</option>
+                            <option value="retro" data-i18n="plugins.coinbattle.skins.retro">Retro</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="settings.layout">Layout</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.settings.layout">Layout</label>
                         <select class="form-select" id="setting-layout">
-                            <option value="fullscreen" data-i18n="layouts.fullscreen">Fullscreen</option>
-                            <option value="compact" data-i18n="layouts.compact">Compact</option>
+                            <option value="fullscreen" data-i18n="plugins.coinbattle.layouts.fullscreen">Fullscreen</option>
+                            <option value="compact" data-i18n="plugins.coinbattle.layouts.compact">Compact</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="settings.fontSize">Font Size</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.settings.fontSize">Font Size</label>
                         <input type="number" class="form-input" id="setting-fontsize" value="16" min="12" max="32">
                     </div>
                     <div class="form-group">
@@ -1171,14 +1171,14 @@
                             <option value="2560x1440" data-i18n="plugins.coinbattle.labels.2560_x_1440_16_9">2560 x 1440 (16:9)</option>
                             <option value="3840x2160" data-i18n="plugins.coinbattle.labels.3840_x_2160_4k">3840 x 2160 (4K)</option>
                             <option value="1080x1920" data-i18n="plugins.coinbattle.labels.1080_x_1920_portrait">1080 x 1920 (Portrait)</option>
-                            <option value="custom">Custom</option>
+                            <option value="custom" data-i18n="plugins.coinbattle.labels.custom">Custom</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.coinbattle.labels.custom_overlay_size">Custom Overlay Size</label>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                            <input type="number" class="form-input" id="setting-overlay-width" value="1920" min="320" max="7680" step="1" aria-label="Overlay width">
-                            <input type="number" class="form-input" id="setting-overlay-height" value="1080" min="240" max="4320" step="1" aria-label="Overlay height">
+                            <input type="number" class="form-input" id="setting-overlay-width" value="1920" min="320" max="7680" step="1" aria-label="Overlay width" data-i18n-aria-label="plugins.coinbattle.runtime.aria.overlay_width">
+                            <input type="number" class="form-input" id="setting-overlay-height" value="1080" min="240" max="4320" step="1" aria-label="Overlay height" data-i18n-aria-label="plugins.coinbattle.runtime.aria.overlay_height">
                         </div>
                     </div>
                 </div>
@@ -1277,11 +1277,11 @@
             <div class="card">
                 <div class="card-title" data-i18n="plugins.coinbattle.labels.overlay_configuration">Overlay Configuration</div>
                 <div class="form-group">
-                    <label class="form-label" data-i18n="overlay.url">OBS Browser Source URL</label>
+                    <label class="form-label" data-i18n="plugins.coinbattle.overlay.url">OBS Browser Source URL</label>
                     <div class="overlay-url">
                         <input type="text" class="form-input" id="overlay-url" readonly>
-                        <button class="btn btn-sm" id="btn-copy-url">Copy</button>
-                        <button class="btn btn-sm btn-secondary" id="btn-preview-overlay" data-i18n="overlay.preview">Preview</button>
+                        <button class="btn btn-sm" id="btn-copy-url" data-i18n="plugins.coinbattle.overlay.copy">Copy</button>
+                        <button class="btn btn-sm btn-secondary" id="btn-preview-overlay" data-i18n="plugins.coinbattle.overlay.preview">Preview</button>
                     </div>
                 </div>
             </div>
@@ -1296,8 +1296,8 @@
         <div id="leaderboard-tab" class="tab-content">
             <!-- Season Management Card -->
             <div class="card">
-                <div class="card-title" data-i18n="season.title">Season Configuration</div>
-                <div class="alert alert-info" style="margin-bottom: 16px;" data-i18n="season.description">
+                <div class="card-title" data-i18n="plugins.coinbattle.season.title">Season Configuration</div>
+                <div class="alert alert-info" style="margin-bottom: 16px;" data-i18n="plugins.coinbattle.season.description">
                     Configure season leaderboard date range. Only one season can be active at a time.
                 </div>
 
@@ -1307,36 +1307,36 @@
 
                 <div class="grid grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="season.name">Season Name</label>
-                        <input type="text" class="form-input" id="season-name" placeholder="e.g., Winter 2024">
+                        <label class="form-label" data-i18n="plugins.coinbattle.season.name">Season Name</label>
+                        <input type="text" class="form-input" id="season-name" placeholder="e.g., Winter 2024" data-i18n-placeholder="plugins.coinbattle.runtime.placeholder.season_name">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="season.startDate">Start Date</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.season.startDate">Start Date</label>
                         <input type="date" class="form-input" id="season-start-date">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="season.endDate">End Date</label>
+                        <label class="form-label" data-i18n="plugins.coinbattle.season.endDate">End Date</label>
                         <input type="date" class="form-input" id="season-end-date">
                     </div>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-success" id="btn-save-season" data-i18n="season.createUpdate">Create/Update Season</button>
+                    <button class="btn btn-success" id="btn-save-season" data-i18n="plugins.coinbattle.season.createUpdate">Create/Update Season</button>
                 </div>
             </div>
 
             <!-- Leaderboard Type Selector -->
             <div class="card">
-                <div class="card-title" data-i18n="leaderboard.title">Leaderboards</div>
+                <div class="card-title" data-i18n="plugins.coinbattle.leaderboard.title">Leaderboards</div>
                 <div class="tabs" style="border-bottom: none; margin-bottom: 16px;">
-                    <button class="tab active" data-leaderboard="lifetime" data-i18n="leaderboard.lifetime">Lifetime</button>
-                    <button class="tab" data-leaderboard="weekly" data-i18n="leaderboard.weekly">Weekly</button>
-                    <button class="tab" data-leaderboard="season" data-i18n="leaderboard.season">Season</button>
-                    <button class="tab" data-leaderboard="manage" data-i18n="leaderboard.manageUsers">Manage Users</button>
+                    <button class="tab active" data-leaderboard="lifetime" data-i18n="plugins.coinbattle.leaderboard.lifetime">Lifetime</button>
+                    <button class="tab" data-leaderboard="weekly" data-i18n="plugins.coinbattle.leaderboard.weekly">Weekly</button>
+                    <button class="tab" data-leaderboard="season" data-i18n="plugins.coinbattle.leaderboard.season">Season</button>
+                    <button class="tab" data-leaderboard="manage" data-i18n="plugins.coinbattle.leaderboard.manageUsers">Manage Users</button>
                 </div>
 
                 <div id="lifetime-leaderboard-view" class="leaderboard-view">
                     <div id="lifetime-leaderboard">
-                        <p class="loading">Loading...</p>
+                        <p class="loading" data-i18n="plugins.coinbattle.labels.loading">Loading...</p>
                     </div>
                 </div>
 
@@ -1345,7 +1345,7 @@
                         Shows top players from the last 7 days
                     </div>
                     <div id="weekly-leaderboard">
-                        <p class="loading">Loading...</p>
+                        <p class="loading" data-i18n="plugins.coinbattle.labels.loading">Loading...</p>
                     </div>
                 </div>
 
@@ -1354,7 +1354,7 @@
                         Configure a season above to see season leaderboard
                     </div>
                     <div id="season-leaderboard">
-                        <p class="loading">Loading...</p>
+                        <p class="loading" data-i18n="plugins.coinbattle.labels.loading">Loading...</p>
                     </div>
                 </div>
 
@@ -1363,7 +1363,7 @@
                         <strong data-i18n="plugins.coinbattle.labels.warning">⚠️ Warning:</strong><span data-i18n="plugins.coinbattle.labels.deleting_a_user_will_permanently_remove_them_and"> Deleting a user will permanently remove them and all their data from all leaderboards. This action cannot be undone.
                     </span></div>
                     <div id="users-list">
-                        <p class="loading">Loading...</p>
+                        <p class="loading" data-i18n="plugins.coinbattle.labels.loading">Loading...</p>
                     </div>
                 </div>
             </div>
@@ -1372,9 +1372,9 @@
         <!-- History Tab -->
         <div id="history-tab" class="tab-content">
             <div class="card">
-                <div class="card-title" data-i18n="history.title">Match History</div>
+                <div class="card-title" data-i18n="plugins.coinbattle.history.title">Match History</div>
                 <div id="match-history">
-                    <p class="loading">Loading...</p>
+                    <p class="loading" data-i18n="plugins.coinbattle.labels.loading">Loading...</p>
                 </div>
             </div>
         </div>

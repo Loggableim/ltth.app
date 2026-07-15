@@ -14,7 +14,8 @@
             "refresh": "Actualizar",
             "close": "Cerrar",
             "test": "Probar",
-            "clear": "Borrar"
+            "clear": "Borrar",
+            "copy": "Copiar"
           },
           "status": {
             "ready": "Listo",
@@ -28,6 +29,33 @@
             "failed": "No se pudieron guardar los ajustes.",
             "noData": "No hay datos disponibles.",
             "confirm": "¿Seguro que quieres continuar?"
+          },
+          "navigation": {
+            "likes": "Me gusta",
+            "gifts": "Regalos",
+            "decay": "Decaimiento",
+            "controls": "Controles"
+          },
+          "table": {
+            "rank": "Puesto",
+            "user": "Usuario",
+            "change": "Cambio"
+          },
+          "labels": {
+            "orientation": "Orientación",
+            "theme": "Tema",
+            "size": "Tamaño"
+          },
+          "options": {
+            "night": "Noche",
+            "day": "Día",
+            "cid": "Tema Cid",
+            "landscape": "Horizontal",
+            "portrait": "Vertical",
+            "linear": "Lineal",
+            "percentage": "Porcentaje",
+            "idle": "Inactivo",
+            "step": "Paso"
           }
         }
       },

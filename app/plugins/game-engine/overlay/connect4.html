@@ -639,11 +639,11 @@
     <div id="game-info">
       <div class="player-info" id="player1-info">
         <span class="player-color" id="player1-color"></span>
-        <span id="player1-name">Player 1</span>
+        <span id="player1-name" data-i18n="plugins.game-engine.game_engine.display_texts.connect4.label_player1">Player 1</span>
       </div>
       <div class="player-info" id="player2-info">
         <span class="player-color" id="player2-color"></span>
-        <span id="player2-name">Player 2</span>
+        <span id="player2-name" data-i18n="plugins.game-engine.game_engine.display_texts.connect4.label_player2">Player 2</span>
       </div>
     </div>
   </div>
@@ -661,18 +661,18 @@
     </div>
     <div id="test-game-controls" style="display: none;">
       <div style="margin-bottom: 10px;">
-        <strong><span data-i18n="plugins.game-engine.labels.current_player">Current Player: </span><span id="test-current-player">1</span></strong>
+        <strong><span data-i18n="plugins.game-engine.labels.current_player">Current Player: </span><span id="test-current-player" data-i18n="plugins.game-engine.ui.common.one">1</span></strong>
       </div>
       <div style="margin-bottom: 10px;">
         <label style="display: block; margin-bottom: 5px; font-size: 12px;" data-i18n="plugins.game-engine.labels.drop_piece_in_column">Drop Piece in Column:</label>
         <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">
-          <button class="test-column-btn" data-column="A" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">A</button>
-          <button class="test-column-btn" data-column="B" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">B</button>
-          <button class="test-column-btn" data-column="C" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">C</button>
-          <button class="test-column-btn" data-column="D" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">D</button>
-          <button class="test-column-btn" data-column="E" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">E</button>
-          <button class="test-column-btn" data-column="F" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">F</button>
-          <button class="test-column-btn" data-column="G" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">G</button>
+          <button class="test-column-btn" data-column="A" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;" data-i18n="plugins.game-engine.ui.common.column_a">A</button>
+          <button class="test-column-btn" data-column="B" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;" data-i18n="plugins.game-engine.ui.common.column_b">B</button>
+          <button class="test-column-btn" data-column="C" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;" data-i18n="plugins.game-engine.ui.common.column_c">C</button>
+          <button class="test-column-btn" data-column="D" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;" data-i18n="plugins.game-engine.ui.common.column_d">D</button>
+          <button class="test-column-btn" data-column="E" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;" data-i18n="plugins.game-engine.ui.common.column_e">E</button>
+          <button class="test-column-btn" data-column="F" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;" data-i18n="plugins.game-engine.ui.common.column_f">F</button>
+          <button class="test-column-btn" data-column="G" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;" data-i18n="plugins.game-engine.ui.common.column_g">G</button>
         </div>
       </div>
       <div>
@@ -1242,7 +1242,7 @@
         resultText.appendChild(drawText);
         playAudioFile('/game-engine/sounds/default/game over.mp3');
       } else {
-        resultText.innerHTML = '<span>Spiel beendet</span>';
+        resultText.innerHTML = '<span data-i18n="plugins.game-engine.ui.connect4.game_finished">Spiel beendet</span>';
       }
 
       // Show XP reward if viewer won/lost

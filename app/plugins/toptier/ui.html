@@ -1597,7 +1597,7 @@
         <div class="tt-status-chip" id="status-connection" data-status="disconnected">
           <span class="tt-status-chip__dot"></span>
           <div class="tt-status-chip__content">
-            <div class="tt-status-chip__label" data-i18n="toptier.ui.status.connected">Connected</div>
+            <div class="tt-status-chip__label" data-i18n="plugins.toptier.toptier.ui.status.connected">Connected</div>
             <div class="tt-status-chip__value" data-i18n="plugins.toptier.labels.api_offline">API offline</div>
             <div class="tt-status-chip__subvalue" data-i18n="plugins.toptier.labels.waiting_for_socket">Waiting for socket</div>
           </div>
@@ -1678,12 +1678,12 @@
   <nav class="tt-tabs" aria-label="Top Tier sections">
     <button type="button" class="tt-tab-btn is-active" data-tab="live" data-i18n="plugins.toptier.labels.live_boards">Live Boards</button>
     <button type="button" class="tt-tab-btn" data-tab="obs" data-i18n="plugins.toptier.labels.obs_urls">OBS URLs</button>
-    <button type="button" class="tt-tab-btn" data-tab="likes-cfg">Likes</button>
-    <button type="button" class="tt-tab-btn" data-tab="gifts-cfg">Gifts</button>
-    <button type="button" class="tt-tab-btn" data-tab="decay-cfg">Decay</button>
+    <button type="button" class="tt-tab-btn" data-tab="likes-cfg" data-i18n="plugins.toptier.toptier.ui.navigation.likes">Likes</button>
+    <button type="button" class="tt-tab-btn" data-tab="gifts-cfg" data-i18n="plugins.toptier.toptier.ui.navigation.gifts">Gifts</button>
+    <button type="button" class="tt-tab-btn" data-tab="decay-cfg" data-i18n="plugins.toptier.toptier.ui.navigation.decay">Decay</button>
     <button type="button" class="tt-tab-btn" data-tab="overlay-cfg">Overlay</button>
     <button type="button" class="tt-tab-btn" data-tab="sound-chat" data-i18n="plugins.toptier.labels.sound_chat">Sound &amp; Chat</button>
-    <button type="button" class="tt-tab-btn" data-tab="controls">Controls</button>
+    <button type="button" class="tt-tab-btn" data-tab="controls" data-i18n="plugins.toptier.toptier.ui.navigation.controls">Controls</button>
   </nav>
 
   <div class="tt-panels">
@@ -1719,10 +1719,10 @@
                 <table class="tt-board-table">
                   <thead>
                     <tr>
-                      <th>Rank</th>
-                      <th>User</th>
+                      <th data-i18n="plugins.toptier.toptier.ui.table.rank">Rank</th>
+                      <th data-i18n="plugins.toptier.toptier.ui.table.user">User</th>
                       <th data-i18n="plugins.toptier.labels.likes_points">Likes Points</th>
-                      <th>Change</th>
+                      <th data-i18n="plugins.toptier.toptier.ui.table.change">Change</th>
                     </tr>
                   </thead>
                   <tbody id="likes-tbody"></tbody>
@@ -1742,10 +1742,10 @@
                 <table class="tt-board-table">
                   <thead>
                     <tr>
-                      <th>Rank</th>
-                      <th>User</th>
+                      <th data-i18n="plugins.toptier.toptier.ui.table.rank">Rank</th>
+                      <th data-i18n="plugins.toptier.toptier.ui.table.user">User</th>
                       <th data-i18n="plugins.toptier.labels.gift_coins_e6bf87">Gift Coins</th>
-                      <th>Change</th>
+                      <th data-i18n="plugins.toptier.toptier.ui.table.change">Change</th>
                     </tr>
                   </thead>
                   <tbody id="gifts-tbody"></tbody>
@@ -1788,7 +1788,7 @@
           <article class="tt-card">
             <div class="tt-card__head">
               <div class="tt-card__titlewrap">
-                <div class="tt-card__title"><i data-lucide="settings-2"></i> Controls</div>
+                <div class="tt-card__title"><i data-lucide="settings-2"></i><span data-i18n="plugins.toptier.toptier.ui.navigation.controls"> Controls</span></div>
                 <div class="tt-card__subtitle" data-i18n="plugins.toptier.labels.quick_actions_safety_toggles_and_overlay_checks">Quick actions, safety toggles and overlay checks</div>
               </div>
             </div>
@@ -1828,18 +1828,18 @@
                   <div class="tt-form-control">
                     <label for="ov-theme" data-i18n="plugins.toptier.labels.overlay_theme">Overlay Theme</label>
                     <select id="ov-theme">
-                      <option value="night">Night</option>
-                      <option value="day">Day</option>
+                      <option value="night" data-i18n="plugins.toptier.toptier.ui.options.night">Night</option>
+                      <option value="day" data-i18n="plugins.toptier.toptier.ui.options.day">Day</option>
                       <option value="contrast" data-i18n="plugins.toptier.labels.high_contrast_888311">High Contrast</option>
                       <option value="vision-impaired" data-i18n="plugins.toptier.labels.vision_impaired_fd1b61">Vision Impaired</option>
-                      <option value="cid">Cid</option>
+                      <option value="cid" data-i18n="plugins.toptier.toptier.ui.options.cid">Cid</option>
                     </select>
                   </div>
                   <div class="tt-form-control">
-                    <label for="ov-orientation">Orientation</label>
+                    <label for="ov-orientation" data-i18n="plugins.toptier.toptier.ui.labels.orientation">Orientation</label>
                     <select id="ov-orientation">
-                      <option value="landscape" selected>Landscape</option>
-                      <option value="portrait">Portrait</option>
+                      <option value="landscape" selected data-i18n="plugins.toptier.toptier.ui.options.landscape">Landscape</option>
+                      <option value="portrait" data-i18n="plugins.toptier.toptier.ui.options.portrait">Portrait</option>
                     </select>
                   </div>
                 </div>
@@ -1866,20 +1866,20 @@
         <div class="tt-card__body">
           <div class="tt-form-grid" style="margin-bottom: 14px;">
             <div class="tt-form-control">
-              <label for="obs-orientation">Orientation</label>
+            <label for="obs-orientation" data-i18n="plugins.toptier.toptier.ui.labels.orientation">Orientation</label>
               <select id="obs-orientation">
-                <option value="landscape">Landscape</option>
-                <option value="portrait">Portrait</option>
+                <option value="landscape" data-i18n="plugins.toptier.toptier.ui.options.landscape">Landscape</option>
+                <option value="portrait" data-i18n="plugins.toptier.toptier.ui.options.portrait">Portrait</option>
               </select>
             </div>
             <div class="tt-form-control">
-              <label for="obs-theme">Theme</label>
+              <label for="obs-theme" data-i18n="plugins.toptier.toptier.ui.labels.theme">Theme</label>
               <select id="obs-theme">
-                <option value="night">Night</option>
-                <option value="day">Day</option>
+                <option value="night" data-i18n="plugins.toptier.toptier.ui.options.night">Night</option>
+                <option value="day" data-i18n="plugins.toptier.toptier.ui.options.day">Day</option>
                 <option value="contrast" data-i18n="plugins.toptier.labels.high_contrast">High Contrast</option>
                 <option value="vision-impaired" data-i18n="plugins.toptier.labels.vision_impaired">Vision Impaired</option>
-                <option value="cid">Cid</option>
+                <option value="cid" data-i18n="plugins.toptier.toptier.ui.options.cid">Cid</option>
               </select>
             </div>
           </div>
@@ -1979,10 +1979,10 @@
               <label for="decay-type" data-i18n="plugins.toptier.labels.decay_type">Decay type</label>
               <select id="decay-type">
                 <option value="none" data-i18n="plugins.toptier.labels.no_decay">No decay</option>
-                <option value="linear">Linear</option>
-                <option value="percentage">Percentage</option>
-                <option value="idle">Idle</option>
-                <option value="step">Step</option>
+                <option value="linear" data-i18n="plugins.toptier.toptier.ui.options.linear">Linear</option>
+                <option value="percentage" data-i18n="plugins.toptier.toptier.ui.options.percentage">Percentage</option>
+                <option value="idle" data-i18n="plugins.toptier.toptier.ui.options.idle">Idle</option>
+                <option value="step" data-i18n="plugins.toptier.toptier.ui.options.step">Step</option>
               </select>
             </div>
             <div class="tt-form-control">
@@ -2026,7 +2026,7 @@
           <div class="tt-variant-grid" id="variant-grid" style="margin-bottom: 16px;"></div>
           <div class="tt-form-grid">
             <div class="tt-form-control">
-              <label for="ov-size">Size</label>
+              <label for="ov-size" data-i18n="plugins.toptier.toptier.ui.labels.size">Size</label>
               <select id="ov-size">
                 <option value="S" data-i18n="plugins.toptier.labels.s_small">S (Small)</option>
                 <option value="M" selected data-i18n="plugins.toptier.labels.m_normal">M (Normal)</option>
@@ -2108,7 +2108,7 @@
       <article class="tt-card">
         <div class="tt-card__head">
           <div class="tt-card__titlewrap">
-            <div class="tt-card__title"><i data-lucide="settings"></i> Controls</div>
+            <div class="tt-card__title"><i data-lucide="settings"></i><span data-i18n="plugins.toptier.toptier.ui.navigation.controls"> Controls</span></div>
             <div class="tt-card__subtitle" data-i18n="plugins.toptier.labels.session_state_stream_identity_and_the_reset_actions">Session state, stream identity and the reset actions are grouped here.</div>
           </div>
         </div>
@@ -2196,6 +2196,11 @@
     previousRanks: { likes: new Map(), gifts: new Map() },
     activeTab: 'live'
   };
+
+  function translateUi(key, fallback) {
+    const translation = window.i18n.t(key);
+    return translation && translation !== key ? translation : fallback;
+  }
 
   const socket = io();
 
@@ -2496,7 +2501,7 @@
         <div class="tt-url-row">
           <div class="tt-url-row__label">${escHtml(item.label)}</div>
           <div class="tt-url-row__code">${escHtml(url)}</div>
-          <button type="button" class="tt-url-chip__button tt-url-chip__button--copy" data-url="${escAttr(url)}">Copy</button>
+          <button type="button" class="tt-url-chip__button tt-url-chip__button--copy" data-url="${escAttr(url)}">${escHtml(translateUi('plugins.toptier.toptier.ui.actions.copy', 'Copy'))}</button>
         </div>
       `;
     }).join('');
@@ -2626,7 +2631,7 @@
           <div class="tt-url-chip">
             <div class="tt-url-chip__label">${escHtml(label)}</div>
             <div class="tt-url-chip__url">${escHtml(url)}</div>
-            <button type="button" class="tt-url-chip__button" data-copy-url="${escAttr(url)}">Copy</button>
+            <button type="button" class="tt-url-chip__button" data-copy-url="${escAttr(url)}">${escHtml(translateUi('plugins.toptier.toptier.ui.actions.copy', 'Copy'))}</button>
           </div>
         `;
       }).join('');
@@ -3102,7 +3107,15 @@
     renderIcons();
   }
 
-  init();
+  if (window.i18n?.ready) {
+    window.i18n.ready.then(init);
+    window.i18n.onLanguageChange(() => {
+      buildObsUrls();
+      renderQuickUrls();
+    });
+  } else {
+    init();
+  }
 })();
 </script>
 </body>

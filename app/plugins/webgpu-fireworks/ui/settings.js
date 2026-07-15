@@ -10,6 +10,11 @@ let rendererStatusTimer = null;
 let paletteSaveTimer = null;
 let palettePreviewTimer = null;
 
+function t(key, fallback) {
+    const translated = window.i18n?.t?.(key);
+    return translated && translated !== key ? translated : fallback;
+}
+
 // Benchmark configuration constants
 const BENCHMARK_CONFIG = {
     WINDOW_LOAD_DELAY: 2000,      // Wait 2s for overlay window to fully load
@@ -32,6 +37,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Listen for language changes from main app
         window.i18n.onChange(() => {
             window.i18n.updateDOM();
+            updateOverviewSummary();
+            loadRendererStatus();
+            renderGiftStyleMappings();
         });
     }
 
@@ -122,7 +130,7 @@ async function loadConfig() {
         }
     } catch (e) {
         console.error('[Fireworks Settings] Failed to load config:', e);
-        showToast('Failed to load configuration', 'error');
+        showToast(t('plugins.webgpu-fireworks.ui.configuration_load_failed', 'Failed to load configuration'), 'error');
     }
 }
 
@@ -152,24 +160,24 @@ async function loadRendererStatus() {
         const particles = document.getElementById('webgpu-particle-state');
         const reason = document.getElementById('webgpu-runtime-reason');
         if (state) {
-            state.textContent = `${String(renderer.state || 'offline').toUpperCase()} · WEBGPU`;
+            state.textContent = `${t(`plugins.webgpu-fireworks.ui.renderer_state_${String(renderer.state || 'offline').toLowerCase()}`, String(renderer.state || 'offline').toUpperCase())} · WEBGPU`;
             state.className = renderer.state === 'ready' ? 'text-green-300' : renderer.state === 'initializing' ? 'text-yellow-200' : 'text-red-300';
         }
         if (adapter) {
             const info = renderer.adapter || {};
-            adapter.textContent = info.description || info.device || info.vendor || 'Not connected';
+            adapter.textContent = info.description || info.device || info.vendor || t('plugins.webgpu-fireworks.ui.not_connected', 'Not connected');
         }
-        if (audio) audio.textContent = String(renderer.audioStatus || 'unknown').toUpperCase();
-        if (audioBackend) audioBackend.textContent = String(renderer.audioBackend || 'none').toUpperCase();
-        if (audioLibrary) audioLibrary.textContent = `${Number(renderer.loadedSounds || 0)} loaded / ${Number(renderer.failedSounds || 0)} failed`;
-        if (audioLastPlayed) audioLastPlayed.textContent = renderer.lastPlayed || 'None';
-        if (crackleState) crackleState.textContent = String(renderer.crackleState || 'idle').toUpperCase();
-        if (audioProfile) audioProfile.textContent = renderer.lastAudioProfile || 'None';
+        if (audio) audio.textContent = t(`plugins.webgpu-fireworks.ui.audio_status_${String(renderer.audioStatus || 'unknown').toLowerCase()}`, String(renderer.audioStatus || 'unknown').toUpperCase());
+        if (audioBackend) audioBackend.textContent = t(`plugins.webgpu-fireworks.ui.audio_backend_${String(renderer.audioBackend || 'none').toLowerCase()}`, String(renderer.audioBackend || 'none').toUpperCase());
+        if (audioLibrary) audioLibrary.textContent = `${Number(renderer.loadedSounds || 0)} ${t('plugins.webgpu-fireworks.ui.loaded', 'loaded')} / ${Number(renderer.failedSounds || 0)} ${t('plugins.webgpu-fireworks.ui.failed', 'failed')}`;
+        if (audioLastPlayed) audioLastPlayed.textContent = renderer.lastPlayed || t('plugins.webgpu-fireworks.ui.none', 'None');
+        if (crackleState) crackleState.textContent = t(`plugins.webgpu-fireworks.ui.crackle_state_${String(renderer.crackleState || 'idle').toLowerCase()}`, String(renderer.crackleState || 'idle').toUpperCase());
+        if (audioProfile) audioProfile.textContent = renderer.lastAudioProfile || t('plugins.webgpu-fireworks.ui.none', 'None');
         if (audioVoices) {
             const voices = renderer.activeVoices || {};
-            audioVoices.textContent = `L${Number(voices.launch || 0)} / B${Number(voices.bang || 0)} / C${Number(voices.crackle || 0)} (${Number(voices.total || 0)} total)`;
+            audioVoices.textContent = `L${Number(voices.launch || 0)} / B${Number(voices.bang || 0)} / C${Number(voices.crackle || 0)} (${Number(voices.total || 0)} ${t('plugins.webgpu-fireworks.ui.total', 'total')})`;
         }
-        if (audioEvents) audioEvents.textContent = `${Number(renderer.missedAudioEvents || 0)} missed / ${Number(renderer.audioEvictions || 0)} evicted`;
+        if (audioEvents) audioEvents.textContent = `${Number(renderer.missedAudioEvents || 0)} ${t('plugins.webgpu-fireworks.ui.missed', 'missed')} / ${Number(renderer.audioEvictions || 0)} ${t('plugins.webgpu-fireworks.ui.evicted', 'evicted')}`;
         if (audioPeak) audioPeak.textContent = renderer.audioPeak !== null && renderer.audioPeak !== undefined && Number.isFinite(Number(renderer.audioPeak))
             ? `${Number(renderer.audioPeak).toFixed(1)} dBFS`
             : '-';
@@ -178,7 +186,7 @@ async function loadRendererStatus() {
             const lastEvent = events.length > 0 ? events[events.length - 1] : null;
             timelineSync.textContent = lastEvent
                 ? `${lastEvent.type || 'event'} ${Number.isFinite(Number(lastEvent.driftMs)) ? `${Number(lastEvent.driftMs) >= 0 ? '+' : ''}${Number(lastEvent.driftMs).toFixed(1)} ms` : lastEvent.state || ''}`.trim()
-                : 'No events';
+                : t('plugins.webgpu-fireworks.ui.no_events', 'No events');
         }
         if (finaleActive) {
             finaleActive.textContent = renderer.finaleActive
@@ -189,7 +197,7 @@ async function loadRendererStatus() {
         if (finaleQueue) finaleQueue.textContent = String(Number(renderer.finaleQueueLength || 0));
         if (visualStyle) visualStyle.textContent = formatVisualStyle(renderer.visualStyle || config.visualStyle);
         if (frameTime) frameTime.textContent = Number.isFinite(Number(renderer.gpuFrameMs)) ? `${Number(renderer.gpuFrameMs).toFixed(2)} ms` : '-';
-        if (particles) particles.textContent = `${Number(renderer.activeParticles || 0).toLocaleString()} active · ${Number(renderer.droppedParticles || 0).toLocaleString()} dropped`;
+        if (particles) particles.textContent = `${Number(renderer.activeParticles || 0).toLocaleString()} ${t('plugins.webgpu-fireworks.ui.active', 'active')} · ${Number(renderer.droppedParticles || 0).toLocaleString()} ${t('plugins.webgpu-fireworks.ui.dropped', 'dropped')}`;
         if (reason) {
             reason.hidden = !renderer.reason || renderer.state === 'ready';
             reason.textContent = renderer.reason || '';
@@ -228,14 +236,14 @@ async function saveConfig(showSuccessToast = true) {
                 updateUI();
             }
             if (showSuccessToast) {
-                showToast('Settings saved successfully!', 'success');
+                showToast(t('plugins.webgpu-fireworks.ui.settings_saved', 'Settings saved successfully!'), 'success');
             }
         } else {
-            showToast('Failed to save settings', 'error');
+            showToast(t('plugins.webgpu-fireworks.ui.settings_save_failed', 'Failed to save settings'), 'error');
         }
     } catch (e) {
         console.error('[Fireworks Settings] Failed to save config:', e);
-        showToast('Failed to save settings', 'error');
+        showToast(t('plugins.webgpu-fireworks.ui.settings_save_failed', 'Failed to save settings'), 'error');
     }
 }
 
@@ -256,10 +264,10 @@ async function triggerTest() {
             })
         });
 
-        showToast('Firework triggered', 'success');
+        showToast(t('plugins.webgpu-fireworks.ui.firework_triggered', 'Firework triggered'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger test:', e);
-        showToast('Failed to trigger test', 'error');
+        showToast(t('plugins.webgpu-fireworks.ui.test_trigger_failed', 'Failed to trigger test'), 'error');
     }
 }
 
@@ -279,10 +287,10 @@ async function triggerFinale() {
             })
         });
 
-        showToast('Finale triggered!', 'success');
+        showToast(t('plugins.webgpu-fireworks.ui.finale_triggered', 'Finale triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger finale:', e);
-        showToast('Failed to trigger finale', 'error');
+        showToast(t('plugins.webgpu-fireworks.ui.finale_trigger_failed', 'Failed to trigger finale'), 'error');
     }
 }
 
@@ -297,10 +305,10 @@ async function testFollowerFireworks() {
             })
         });
 
-        showToast('Follower fireworks triggered!', 'success');
+        showToast(t('plugins.webgpu-fireworks.ui.follower_triggered', 'Follower fireworks triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger follower test:', e);
-        showToast('Failed to trigger follower test', 'error');
+        showToast(t('plugins.webgpu-fireworks.ui.follower_trigger_failed', 'Failed to trigger follower test'), 'error');
     }
 }
 
@@ -628,22 +636,22 @@ function updateOverviewSummary() {
     const queueEnabled = !!config.queueEnabled;
     const adaptiveEnabled = config.adaptivePerformance !== false;
 
-    setChipState('overview-enabled-state', config.enabled ? 'Enabled' : 'Disabled', config.enabled);
-    setChipState('overview-theme-state', `Style: ${formatVisualStyle(config.visualStyle)} / ${theme}`);
-    setChipState('overview-resolution-state', `${resolutionPreset} · ${orientation === 'portrait' ? 'Portrait' : 'Landscape'}`);
-    setChipState('overview-performance-state', `${targetFps} FPS · ${maxParticles.toLocaleString()} particles`);
-    setChipState('overview-safety-state', `${queueEnabled ? 'Queue on' : 'Queue off'} · ${adaptiveEnabled ? 'Adaptive on' : 'Adaptive off'}`);
+    setChipState('overview-enabled-state', config.enabled ? t('plugins.webgpu-fireworks.ui.enabled', 'Enabled') : t('plugins.webgpu-fireworks.ui.disabled', 'Disabled'), config.enabled);
+    setChipState('overview-theme-state', `${t('plugins.webgpu-fireworks.ui.style', 'Style')}: ${formatVisualStyle(config.visualStyle)} / ${theme}`);
+    setChipState('overview-resolution-state', `${resolutionPreset} · ${orientation === 'portrait' ? t('plugins.webgpu-fireworks.ui.portrait', 'Portrait') : t('plugins.webgpu-fireworks.ui.landscape', 'Landscape')}`);
+    setChipState('overview-performance-state', `${targetFps} FPS · ${maxParticles.toLocaleString()} ${t('plugins.webgpu-fireworks.ui.particles', 'particles')}`);
+    setChipState('overview-safety-state', `${queueEnabled ? t('plugins.webgpu-fireworks.ui.queue_on', 'Queue on') : t('plugins.webgpu-fireworks.ui.queue_off', 'Queue off')} · ${adaptiveEnabled ? t('plugins.webgpu-fireworks.ui.adaptive_on', 'Adaptive on') : t('plugins.webgpu-fireworks.ui.adaptive_off', 'Adaptive off')}`);
 }
 
 function updateResolutionInfo(preset, orientation) {
     const resolutions = {
-        '360p': { landscape: '640x360', portrait: '360x640', impact: 'Minimal' },
-        '480p': { landscape: '854x480', portrait: '480x854', impact: 'Very Low' },
-        '540p': { landscape: '960x540', portrait: '540x960', impact: 'Low' },
-        '720p': { landscape: '1280x720', portrait: '720x1280', impact: 'Medium' },
-        '1080p': { landscape: '1920x1080', portrait: '1080x1920', impact: 'High' },
-        '1440p': { landscape: '2560x1440', portrait: '1440x2560', impact: 'Very High' },
-        '4k': { landscape: '3840x2160', portrait: '2160x3840', impact: 'Ultra' }
+        '360p': { landscape: '640x360', portrait: '360x640', impact: t('plugins.webgpu-fireworks.ui.impact_minimal', 'Minimal') },
+        '480p': { landscape: '854x480', portrait: '480x854', impact: t('plugins.webgpu-fireworks.ui.impact_very_low', 'Very Low') },
+        '540p': { landscape: '960x540', portrait: '540x960', impact: t('plugins.webgpu-fireworks.ui.impact_low', 'Low') },
+        '720p': { landscape: '1280x720', portrait: '720x1280', impact: t('plugins.webgpu-fireworks.ui.impact_medium', 'Medium') },
+        '1080p': { landscape: '1920x1080', portrait: '1080x1920', impact: t('plugins.webgpu-fireworks.ui.high', 'High') },
+        '1440p': { landscape: '2560x1440', portrait: '1440x2560', impact: t('plugins.webgpu-fireworks.ui.impact_very_high', 'Very High') },
+        '4k': { landscape: '3840x2160', portrait: '2160x3840', impact: t('plugins.webgpu-fireworks.ui.preset_ultra', 'Ultra') }
     };
 
     const info = resolutions[preset] || resolutions['1080p'];
@@ -654,7 +662,7 @@ function updateResolutionInfo(preset, orientation) {
     const performanceEl = document.getElementById('performance-impact');
 
     if (currentResEl) currentResEl.textContent = resolution;
-    if (currentOrientEl) currentOrientEl.textContent = orientation === 'portrait' ? 'Portrait' : 'Landscape';
+    if (currentOrientEl) currentOrientEl.textContent = orientation === 'portrait' ? t('plugins.webgpu-fireworks.ui.portrait', 'Portrait') : t('plugins.webgpu-fireworks.ui.landscape', 'Landscape');
     if (performanceEl) performanceEl.textContent = info.impact;
 }
 
@@ -738,7 +746,7 @@ function setupEventListeners() {
     document.getElementById('copy-webgpu-origin')?.addEventListener('click', async () => {
         const origin = document.getElementById('webgpu-origin')?.value || window.location.origin;
         await navigator.clipboard.writeText(origin);
-        showToast('WebGPU origin copied!', 'success');
+        showToast(t('plugins.webgpu-fireworks.ui.origin_copied', 'WebGPU origin copied!'), 'success');
     });
 
     // Test buttons
@@ -1036,7 +1044,7 @@ function setupEventListeners() {
     document.getElementById('copy-overlay-url').addEventListener('click', () => {
         const url = window.location.origin + '/webgpu-fireworks/overlay';
         navigator.clipboard.writeText(url).then(() => {
-            showToast('Overlay URL copied to clipboard!', 'success');
+            showToast(t('plugins.webgpu-fireworks.ui.overlay_url_copied', 'Overlay URL copied to clipboard!'), 'success');
         });
     });
 
@@ -1086,8 +1094,8 @@ function renderColorSwatches() {
     if (status) {
         const count = Array.isArray(config.themeColors) ? config.themeColors.length : 0;
         status.textContent = config.colorMode === 'theme'
-            ? `Theme palette active - ${count} color${count === 1 ? '' : 's'}`
-            : `${count} theme color${count === 1 ? '' : 's'} saved - select Theme Colors to use them`;
+            ? `${t('plugins.webgpu-fireworks.ui.palette_active', 'Theme palette active')}: ${count} ${t(count === 1 ? 'plugins.webgpu-fireworks.ui.color' : 'plugins.webgpu-fireworks.ui.colors_count', count === 1 ? 'color' : 'colors')}`
+            : `${count} ${t(count === 1 ? 'plugins.webgpu-fireworks.ui.color' : 'plugins.webgpu-fireworks.ui.colors_count', count === 1 ? 'theme color' : 'theme colors')} ${t('plugins.webgpu-fireworks.ui.palette_saved', 'saved — select Theme Colors to use them')}`;
     }
 }
 
@@ -1105,7 +1113,7 @@ function getConfiguredPreviewColors() {
 function commitThemeColor(value) {
     const color = /^#[0-9A-Fa-f]{6}$/.test(value || '') ? value.toUpperCase() : null;
     if (!color) {
-        showToast('Enter a valid six-digit hex color', 'error');
+        showToast(t('plugins.webgpu-fireworks.ui.invalid_hex_color', 'Enter a valid six-digit hex color'), 'error');
         return false;
     }
     const colors = Array.isArray(config.themeColors)
@@ -1113,7 +1121,7 @@ function commitThemeColor(value) {
         : [];
     if (!colors.includes(color)) {
         if (colors.length >= 12) {
-            showToast('The theme palette supports up to 12 colors', 'error');
+            showToast(t('plugins.webgpu-fireworks.ui.palette_limit', 'The theme palette supports up to 12 colors'), 'error');
             return false;
         }
         colors.push(color);
@@ -1186,7 +1194,7 @@ function addColorSwatch(color) {
     swatch.title = `${color} - click to remove`;
     swatch.addEventListener('click', () => {
         if ((config.themeColors || []).length <= 1) {
-            showToast('The theme palette needs at least one color', 'error');
+            showToast(t('plugins.webgpu-fireworks.ui.palette_requires_color', 'The theme palette needs at least one color'), 'error');
             return;
         }
         config.themeColors = (config.themeColors || []).filter(item => item !== color);
@@ -1236,10 +1244,10 @@ async function triggerTestShape(shape, intensity = 1.5) {
             })
         });
 
-        showToast(`${shape} firework triggered!`, 'success');
+        showToast(`${shape}: ${t('plugins.webgpu-fireworks.ui.firework_triggered', 'Firework triggered')}`, 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger test:', e);
-        showToast('Failed to trigger test', 'error');
+        showToast(t('plugins.webgpu-fireworks.ui.test_trigger_failed', 'Failed to trigger test'), 'error');
     }
 }
 
@@ -1266,10 +1274,10 @@ async function triggerTestCrackle() {
         });
         const result = await response.json();
         if (!response.ok || !result.success) throw new Error(result.error || 'Crackling test failed');
-        showToast('Complete crackling rocket triggered!', 'success');
+        showToast(t('plugins.webgpu-fireworks.ui.crackling_rocket_triggered', 'Complete crackling rocket triggered!'), 'success');
     } catch (error) {
         console.error('[Fireworks Settings] Failed to trigger crackling test:', error);
-        showToast('Failed to trigger crackling rocket', 'error');
+        showToast(t('plugins.webgpu-fireworks.ui.crackling_rocket_failed', 'Failed to trigger crackling rocket'), 'error');
     }
 }
 
@@ -1306,10 +1314,10 @@ async function triggerTestTier(tier) {
             })
         });
 
-        showToast(`${tier} tier firework triggered!`, 'success');
+        showToast(`${tier}: ${t('plugins.webgpu-fireworks.ui.firework_triggered', 'Firework triggered')}`, 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger tier test:', e);
-        showToast('Failed to trigger tier test', 'error');
+        showToast(t('plugins.webgpu-fireworks.ui.tier_test_failed', 'Failed to trigger tier test'), 'error');
     }
 }
 
@@ -1323,10 +1331,10 @@ async function triggerTestRandom() {
             headers: { 'Content-Type': 'application/json' }
         });
 
-        showToast('Random firework triggered!', 'success');
+        showToast(t('plugins.webgpu-fireworks.ui.random_firework_triggered', 'Random firework triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger random:', e);
-        showToast('Failed to trigger random', 'error');
+        showToast(t('plugins.webgpu-fireworks.ui.random_firework_failed', 'Failed to trigger random'), 'error');
     }
 }
 
@@ -1360,10 +1368,10 @@ async function triggerTestAvatar() {
             })
         });
 
-        showToast('Avatar firework test triggered!', 'success');
+        showToast(t('plugins.webgpu-fireworks.ui.avatar_test_triggered', 'Avatar firework test triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger avatar test:', e);
-        showToast('Failed to trigger avatar test', 'error');
+        showToast(t('plugins.webgpu-fireworks.ui.avatar_test_failed', 'Failed to trigger avatar test'), 'error');
     } finally {
         if (avatarUrl) {
             setTimeout(() => URL.revokeObjectURL(avatarUrl), 60000);
@@ -1509,7 +1517,7 @@ function initializePresets() {
 async function applyPreset(presetName) {
     const preset = PRESETS[presetName];
     if (!preset) {
-        const msg = window.i18n ? window.i18n.t('webgpu_fireworks.presets.not_found') : 'Preset not found';
+        const msg = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.presets.not_found') : 'Preset not found';
         showToast(msg, 'error');
         return;
     }
@@ -1522,9 +1530,9 @@ async function applyPreset(presetName) {
             const presetResult = results.find(r => r.preset === presetName);
 
             if (presetResult && presetResult.avgFps < 30) {
-                const warningTitle = window.i18n ? window.i18n.t('webgpu_fireworks.presets.warning_title') : 'Warning: This preset might lag on your system!';
-                const warningFps = window.i18n ? window.i18n.t('webgpu_fireworks.presets.warning_fps').replace('{fps}', presetResult.avgFps.toFixed(1)) : `The benchmark measured an average FPS of ${presetResult.avgFps.toFixed(1)}.`;
-                const warningConfirm = window.i18n ? window.i18n.t('webgpu_fireworks.presets.warning_confirm') : 'Do you want to use this setting anyway?';
+                const warningTitle = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.presets.warning_title') : 'Warning: This preset might lag on your system!';
+                const warningFps = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.presets.warning_fps').replace('{fps}', presetResult.avgFps.toFixed(1)) : `The benchmark measured an average FPS of ${presetResult.avgFps.toFixed(1)}.`;
+                const warningConfirm = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.presets.warning_confirm') : 'Do you want to use this setting anyway?';
 
                 const confirmed = confirm(
                     `⚠️ ${warningTitle}\n\n${warningFps}\n\n${warningConfirm}`
@@ -1548,7 +1556,7 @@ async function applyPreset(presetName) {
     // Save config
     await saveConfig();
 
-    const msg = window.i18n ? window.i18n.t('webgpu_fireworks.presets.applied') : 'Preset applied!';
+    const msg = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.presets.applied') : 'Preset applied!';
     showToast(`${msg} (${presetName.toUpperCase()})`, 'success');
 
     // Switch to settings tab to show changes
@@ -1601,7 +1609,7 @@ async function startBenchmark() {
     benchmarkWindow = window.open(overlayUrl, 'FireworksBenchmark', 'width=1920,height=1080');
 
     if (!benchmarkWindow) {
-        const msg = window.i18n ? window.i18n.t('webgpu_fireworks.benchmark.popup_blocked') : 'Could not open benchmark window. Please allow pop-ups.';
+        const msg = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.benchmark.popup_blocked') : 'Could not open benchmark window. Please allow pop-ups.';
         showToast(msg, 'error');
         benchmarkRunning = false;
         resetBenchmarkUi();
@@ -1638,7 +1646,7 @@ async function startBenchmark() {
         }
     } catch (e) {
         console.error('Benchmark failed:', e);
-        showToast('Benchmark failed', 'error');
+        showToast(t('plugins.webgpu-fireworks.ui.benchmark_failed', 'Benchmark failed'), 'error');
     } finally {
         await restoreBenchmarkPreset();
         closeBenchmarkWindow();
@@ -1657,7 +1665,7 @@ function stopBenchmark() {
     resetBenchmarkUi();
     restoreBenchmarkPreset();
 
-    const msg = window.i18n ? window.i18n.t('webgpu_fireworks.benchmark.cancelled') : 'Benchmark cancelled';
+    const msg = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.benchmark.cancelled') : 'Benchmark cancelled';
     showToast(msg, 'error');
 }
 
@@ -1836,8 +1844,8 @@ function displayBenchmarkResults() {
                 <span class="text-2xl font-bold ${colorClass}">${result.avgFps.toFixed(1)} FPS</span>
             </div>
             <div class="text-sm text-gray-400 space-y-1">
-                <div>Min: ${result.minFps.toFixed(1)} FPS | Max: ${result.maxFps.toFixed(1)} FPS</div>
-                <div>Resolution: ${result.config.resolutionPreset} | Particles: ${result.config.maxParticles}</div>
+                <div>${t('plugins.webgpu-fireworks.ui.minimum', 'Min')}: ${result.minFps.toFixed(1)} FPS | ${t('plugins.webgpu-fireworks.ui.maximum', 'Max')}: ${result.maxFps.toFixed(1)} FPS</div>
+                <div>${t('plugins.webgpu-fireworks.ui.resolution', 'Resolution')}: ${result.config.resolutionPreset} | ${t('plugins.webgpu-fireworks.ui.particles_label', 'Particles')}: ${result.config.maxParticles}</div>
             </div>
         `;
 
@@ -1851,13 +1859,13 @@ function displayBenchmarkResults() {
     recommendationsDiv.innerHTML = '';
 
     if (recommendations.length === 0) {
-        const msg = window.i18n ? window.i18n.t('webgpu_fireworks.benchmark.no_good_presets') : 'No preset reaches 30 FPS. We recommend the "Potato" preset for your system.';
-        const applyText = window.i18n ? window.i18n.t('webgpu_fireworks.presets.apply') : 'Apply';
+        const msg = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.benchmark.no_good_presets') : 'No preset reaches 30 FPS. We recommend the "Potato" preset for your system.';
+        const applyText = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.presets.apply') : 'Apply';
 
         const btn = document.createElement('button');
         btn.className = 'w-full mt-4 bg-green-500 hover:bg-green-600 py-3 rounded-lg font-bold transition';
         btn.dataset.preset = 'potato';
-        btn.textContent = `🥔 Potato ${applyText}`;
+        btn.textContent = `🥔 ${t('plugins.webgpu-fireworks.ui.preset_potato', 'Potato')} ${applyText}`;
         btn.addEventListener('click', () => applyPreset('potato'));
 
         const para = document.createElement('p');
@@ -1871,9 +1879,9 @@ function displayBenchmarkResults() {
             const recDiv = document.createElement('div');
             recDiv.className = 'mb-4';
 
-            const bestChoice = window.i18n ? window.i18n.t('webgpu_fireworks.benchmark.best_choice') : 'Best Choice';
-            const alternative = window.i18n ? window.i18n.t('webgpu_fireworks.benchmark.alternative') : 'Alternative';
-            const applyText = window.i18n ? window.i18n.t('webgpu_fireworks.presets.apply') : 'Apply';
+            const bestChoice = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.benchmark.best_choice') : 'Best Choice';
+            const alternative = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.benchmark.alternative') : 'Alternative';
+            const applyText = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.presets.apply') : 'Apply';
 
             const rank = index === 0 ? `🥇 ${bestChoice}` : `🥈 ${alternative}`;
 
@@ -1929,22 +1937,22 @@ function renderGiftStyleMappings() {
         const row = document.createElement('div');
         row.className = 'flex items-center justify-between gap-2 bg-black/20 rounded px-3 py-2';
         const label = document.createElement('span');
-        label.textContent = `${giftId}: ${mapping.shape || 'burst'} / ${mapping.visualStyle ? formatVisualStyle(mapping.visualStyle) : 'Global style'}`;
+        label.textContent = `${giftId}: ${mapping.shape || 'burst'} / ${mapping.visualStyle ? formatVisualStyle(mapping.visualStyle) : t('plugins.webgpu-fireworks.ui.global_style', 'Global style')}`;
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.className = 'text-red-300 font-bold';
-        remove.textContent = 'Remove';
+        remove.textContent = t('plugins.webgpu-fireworks.ui.remove', 'Remove');
         remove.addEventListener('click', () => removeGiftStyleMapping(giftId));
         row.append(label, remove);
         root.appendChild(row);
     }
-    if (!root.childElementCount) root.textContent = 'No gift-specific overrides.';
+    if (!root.childElementCount) root.textContent = t('plugins.webgpu-fireworks.ui.no_gift_overrides', 'No gift-specific overrides.');
 }
 
 async function saveGiftStyleMapping() {
     const giftId = document.getElementById('gift-style-id')?.value.trim();
     if (!giftId) {
-        showToast('Gift ID is required', 'error');
+        showToast(t('plugins.webgpu-fireworks.ui.gift_id_required', 'Gift ID is required'), 'error');
         return;
     }
     const existing = config.giftShapeMappings?.[giftId] || {};
@@ -1960,7 +1968,7 @@ async function saveGiftStyleMapping() {
         })
     });
     const data = await response.json();
-    if (!data.success) throw new Error(data.error || 'Gift mapping could not be saved');
+    if (!data.success) throw new Error(data.error || t('plugins.webgpu-fireworks.ui.gift_mapping_save_failed', 'Gift mapping could not be saved'));
     config.giftShapeMappings = {
         ...(config.giftShapeMappings || {}),
         [giftId]: {
@@ -1970,13 +1978,13 @@ async function saveGiftStyleMapping() {
         }
     };
     renderGiftStyleMappings();
-    showToast('Gift style override saved', 'success');
+    showToast(t('plugins.webgpu-fireworks.ui.gift_override_saved', 'Gift style override saved'), 'success');
 }
 
 async function removeGiftStyleMapping(giftId) {
     const response = await fetch(`/api/webgpu-fireworks/gift-mappings/${encodeURIComponent(giftId)}`, { method: 'DELETE' });
     const data = await response.json();
-    if (!data.success) throw new Error(data.error || 'Gift mapping could not be removed');
+    if (!data.success) throw new Error(data.error || t('plugins.webgpu-fireworks.ui.gift_mapping_remove_failed', 'Gift mapping could not be removed'));
     delete config.giftShapeMappings[giftId];
     renderGiftStyleMappings();
 }

@@ -59,7 +59,14 @@
         "spotlight_subscriber": "Spotlight - Subscriber",
         "spotlight_chatter": "Spotlight - Chatter",
         "spotlight_follower": "Spotlight - Follower",
-        "modern_live_overlays_for_recent_tiktok_activity_copy": "Modern live overlays for recent TikTok activity. Copy URLs, preview modes, test event flows, and fine-tune the appearance without losing any of the existing overlay features."
+        "modern_live_overlays_for_recent_tiktok_activity_copy": "Modern live overlays for recent TikTok activity. Copy URLs, preview modes, test event flows, and fine-tune the appearance without losing any of the existing overlay features.",
+        "modes": "Modes",
+        "workflow": "Workflow",
+        "compatibility": "Compatibility",
+        "layout": "Layout",
+        "cancel": "Cancel",
+        "test": "Test",
+        "close": "Close"
       }
     }
   }

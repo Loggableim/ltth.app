@@ -6977,7 +6977,7 @@
   "docs.plugin.definition.purpose": "Purpose and audience",
   "docs.plugin.definition.activation": "Activation and navigation",
   "docs.plugin.definition.workflows": "Verified workflows",
-  "docs.plugin.definition.settings": "Visible-control reference",
+  "docs.plugin.definition.settings": "Workflow control reference",
   "docs.plugin.definition.integrations": "Interfaces and integrations",
   "docs.plugin.definition.controls": "UI inventory",
   "docs.plugin.definition.defaultValue": "Test-profile default",

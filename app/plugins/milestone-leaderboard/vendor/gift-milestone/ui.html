@@ -913,7 +913,7 @@
 <body>
     <div class="container">
         <h1 data-i18n="plugins.milestone-leaderboard.labels.gift_milestone_celebration">🎯 Gift Milestone Celebration</h1>
-        <p class="subtitle" data-i18n="gift_milestone.subtitle">Verfolge pro Benutzer, wie viele Coins ausgegeben wurden - streamübergreifend gespeichert</p>
+        <p class="subtitle" data-i18n="plugins.milestone-leaderboard.gift_milestone.subtitle">Verfolge pro Benutzer, wie viele Coins ausgegeben wurden - streamübergreifend gespeichert</p>
 
         <div class="nav-buttons">
             <a href="/" class="nav-button" target="_blank" data-i18n="plugins.milestone-leaderboard.labels.dashboard_a2e4da">🏠 Dashboard</a>
@@ -928,14 +928,14 @@
                     <input type="checkbox" id="enableToggle">
                     <span class="slider"></span>
                 </label>
-                <span id="statusText" style="font-size: 1.2em; font-weight: 600;">Deaktiviert</span>
+                <span id="statusText" style="font-size: 1.2em; font-weight: 600;" data-i18n="plugins.milestone-leaderboard.ui.status.disabled">Deaktiviert</span>
             </div>
         </div>
 
         <!-- Tier Management -->
         <div class="section">
             <h2 data-i18n="plugins.milestone-leaderboard.labels.meilenstein_stufen_tiers">🏆 Meilenstein-Stufen (Tiers)</h2>
-            <p class="help-text" style="margin-bottom: 15px;" data-i18n="gift_milestone.tiers.description">
+            <p class="help-text" style="margin-bottom: 15px;" data-i18n="plugins.milestone-leaderboard.gift_milestone.tiers.description">
                 Definiere benutzerdefinierte Meilenstein-Stufen. Wenn Benutzer diese Coin-Schwellenwerte erreichen, wird eine Celebration ausgelöst.
             </p>
 
@@ -947,7 +947,7 @@
         <!-- User Statistics -->
         <div class="section">
             <h2 data-i18n="plugins.milestone-leaderboard.labels.benutzer_statistiken">👥 Benutzer-Statistiken</h2>
-            <p class="help-text" style="margin-bottom: 15px;" data-i18n="gift_milestone.users.description">
+            <p class="help-text" style="margin-bottom: 15px;" data-i18n="plugins.milestone-leaderboard.gift_milestone.users.description">
                 Zeigt an, welche Benutzer wie viele Coins ausgegeben haben (streamübergreifend). Die Zählung wird NICHT bei jedem Stream zurückgesetzt.
             </p>
 
@@ -962,21 +962,21 @@
         <!-- Configuration -->
         <div class="section">
             <h2 data-i18n="plugins.milestone-leaderboard.labels.konfiguration">⚙️ Konfiguration</h2>
-            <p class="help-text" style="margin-bottom: 15px;" data-i18n="gift_milestone.config.description">
+            <p class="help-text" style="margin-bottom: 15px;" data-i18n="plugins.milestone-leaderboard.gift_milestone.config.description">
                 Globale Einstellungen für Meilenstein-Celebrations. Die Standard-Medien werden verwendet, wenn eine Stufe keine eigenen Medien hat.
             </p>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="playbackMode" data-i18n="gift_milestone.config.playback_mode">Wiedergabe-Modus</label>
+                    <label for="playbackMode" data-i18n="plugins.milestone-leaderboard.gift_milestone.config.playback_mode">Wiedergabe-Modus</label>
                     <select id="playbackMode">
-                        <option value="exclusive" data-i18n="gift_milestone.config.playback_exclusive">Exklusiv (pausiert andere Alerts)</option>
-                        <option value="parallel" data-i18n="gift_milestone.config.playback_parallel">Parallel (läuft gleichzeitig)</option>
+                        <option value="exclusive" data-i18n="plugins.milestone-leaderboard.gift_milestone.config.playback_exclusive">Exklusiv (pausiert andere Alerts)</option>
+                        <option value="parallel" data-i18n="plugins.milestone-leaderboard.gift_milestone.config.playback_parallel">Parallel (läuft gleichzeitig)</option>
                     </select>
                     <div class="help-text" data-i18n="plugins.milestone-leaderboard.labels.exklusiv_pausiert_tts_und_andere_alerts_wahrend_der">Exklusiv pausiert TTS und andere Alerts während der Animation</div>
                 </div>
                 <div class="form-group">
-                    <label for="audioVolume" data-i18n="gift_milestone.config.audio_volume">Audio-Lautstärke (%)</label>
+                    <label for="audioVolume" data-i18n="plugins.milestone-leaderboard.gift_milestone.config.audio_volume">Audio-Lautstärke (%)</label>
                     <input type="number" id="audioVolume" min="0" max="100" value="80">
                     <div class="help-text" data-i18n="plugins.milestone-leaderboard.labels.lautstarke_fur_milestone_audio_0_100">Lautstärke für Milestone-Audio (0-100%)</div>
                 </div>
@@ -984,7 +984,7 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="animationDuration" data-i18n="gift_milestone.config.animation_duration">Animation-Dauer (ms)</label>
+                    <label for="animationDuration" data-i18n="plugins.milestone-leaderboard.gift_milestone.config.animation_duration">Animation-Dauer (ms)</label>
                     <input type="number" id="animationDuration" min="0" step="1000" value="0">
                     <div class="help-text" data-i18n="plugins.milestone-leaderboard.labels.0_automatisch_medienlange_sonst_timeout_in_millisekunden">0 = Automatisch (Medienlänge), sonst Timeout in Millisekunden</div>
                 </div>
@@ -1046,18 +1046,18 @@
     <!-- Tier Edit Modal -->
     <div class="modal" id="tierModal">
         <div class="modal-content">
-            <div class="modal-header" id="tierModalTitle" data-i18n="gift_milestone.tiers.add">Neue Stufe hinzufügen</div>
+            <div class="modal-header" id="tierModalTitle" data-i18n="plugins.milestone-leaderboard.gift_milestone.tiers.add">Neue Stufe hinzufügen</div>
             <div class="form-group">
-                <label for="tierName" data-i18n="gift_milestone.tiers.name">Stufen-Name</label>
+                <label for="tierName" data-i18n="plugins.milestone-leaderboard.gift_milestone.tiers.name">Stufen-Name</label>
                 <input type="text" id="tierName" placeholder="z.B. Bronze, Silber, Gold...">
             </div>
             <div class="form-group">
-                <label for="tierLevel" data-i18n="gift_milestone.tiers.level">Stufen-Level (Reihenfolge)</label>
+                <label for="tierLevel" data-i18n="plugins.milestone-leaderboard.gift_milestone.tiers.level">Stufen-Level (Reihenfolge)</label>
                 <input type="number" id="tierLevel" min="1" value="1">
                 <div class="help-text" data-i18n="plugins.milestone-leaderboard.labels.niedrigere_werte_werden_zuerst_erreicht">Niedrigere Werte werden zuerst erreicht</div>
             </div>
             <div class="form-group">
-                <label for="tierThreshold" data-i18n="gift_milestone.tiers.threshold">Coin-Schwellenwert</label>
+                <label for="tierThreshold" data-i18n="plugins.milestone-leaderboard.gift_milestone.tiers.threshold">Coin-Schwellenwert</label>
                 <input type="number" id="tierThreshold" min="100" step="100" value="1000">
                 <div class="help-text" data-i18n="plugins.milestone-leaderboard.labels.anzahl_der_coins_die_benotigt_werden_um_diese">Anzahl der Coins, die benötigt werden, um diese Stufe zu erreichen</div>
             </div>

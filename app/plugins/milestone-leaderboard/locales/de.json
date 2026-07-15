@@ -774,6 +774,93 @@
         "test_user_profile_fefc70": "👤 Testen Sie das Benutzerprofil",
         "import_data_ff64df": "Daten importieren",
         "user_detail_ffb565": "Benutzerdetails"
+      },
+      "ui": {
+        "status": {
+          "disabled": "Deaktiviert",
+          "enabled": "Aktiviert",
+          "loading": "Wird geladen..."
+        },
+        "connection": {
+          "connecting": "Verbindung wird hergestellt...",
+          "error_title": "⚠️ Verbindungsfehler",
+          "error_message": "Verbindung zum Server fehlgeschlagen. Bitte aktualisieren Sie die Seite."
+        },
+        "defaults": {
+          "one": "1"
+        },
+        "navigation": {
+          "dashboard": "Dashboard",
+          "leaderboard": "Bestenliste",
+          "import_export": "Import/Export",
+          "all_time": "Gesamt",
+          "settings": "Einstellungen"
+        },
+        "event": {
+          "gifts": "Geschenke",
+          "follows": "Follows",
+          "like": "Like",
+          "share": "Teilen",
+          "gift": "Geschenk",
+          "follow": "Folgen",
+          "subscribe": "Abonnieren"
+        },
+        "table": {
+          "rank": "Rang",
+          "username": "Benutzername",
+          "level": "Level",
+          "title": "Titel",
+          "progress": "Fortschritt",
+          "growth": "Wachstum",
+          "title_badge": "Titel/Abzeichen",
+          "announcement": "Ankündigung",
+          "date_time": "Datum/Uhrzeit",
+          "reason": "Grund",
+          "details": "Details",
+          "xp_required": "Benötigte XP",
+          "color": "Farbe",
+          "bet": "Einsatz",
+          "field": "Feld",
+          "result": "Ergebnis",
+          "xp_change": "XP-Änderung",
+          "time": "Zeit",
+          "multiplier": "Multiplikator",
+          "user": "Benutzer",
+          "streak": "Serie",
+          "amount": "Menge",
+          "coins": "Coins"
+        },
+        "options": {
+          "yes": "Ja",
+          "no": "Nein",
+          "standard": "Standard",
+          "minimal": "Minimal",
+          "transparent": "Transparent",
+          "ten": "10",
+          "twenty_five": "25",
+          "fifty": "50",
+          "one_hundred": "100",
+          "all_types": "Alle Typen"
+        },
+        "actions": {
+          "view": "Ansehen",
+          "save": "💾 Speichern",
+          "preview": "Vorschau",
+          "search": "Suchen",
+          "open": "Öffnen"
+        },
+        "levels": {
+          "editor_notice": "Die ersten 20 Level werden angezeigt. Ein erweiterter Level-Editor ist für ein künftiges Update geplant.",
+          "configuration": "📈 Level-Konfiguration",
+          "description": "Level-Fortschritt und Belohnungen anpassen"
+        },
+        "empty": {
+          "no_viewers": "Noch keine Zuschauer",
+          "no_users": "Keine Benutzer gefunden",
+          "no_badges": "Noch keine Abzeichen",
+          "waiting_for_gifts": "Warte auf Geschenke in dieser Sitzung...",
+          "no_champions": "Noch keine Champions..."
+        }
       }
     }
   }

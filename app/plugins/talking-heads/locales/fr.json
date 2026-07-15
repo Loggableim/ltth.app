@@ -189,7 +189,21 @@
         "sprite_set_einem_user_zuweisen": "Attribuer un jeu de sprites à un utilisateur",
         "dashboard_settings_tts_api_keys_siliconflow_api_key": ": Tableau de bord > Paramètres > Clés API TTS > Clé API SiliconFlow",
         "1920x1080_hud_mit_webgl_spawn_animation": "HUD 1920x1080 avec animation d'apparition WebGL.",
-        "vorschau_abspielen": "Lire l'aperçu"
+        "vorschau_abspielen": "Lire l'aperçu",
+        "api_status_unknown": "Inconnu",
+        "default_style": "Style par défaut",
+        "copy": "Copier",
+        "preview_text": "Texte d’aperçu",
+        "user_filter": "Filtre utilisateur",
+        "sprite_mode": "Mode de sprites",
+        "user": "Utilisateur",
+        "sprite_set": "Jeu de sprites",
+        "scroll_direction": "Sens de défilement",
+        "right": "Droite",
+        "bar_background": "Couleur de fond de la barre",
+        "delete": "Supprimer",
+        "copy_url": "Copier l’URL",
+        "open_preview": "Ouvrir l’aperçu"
       }
     }
   }

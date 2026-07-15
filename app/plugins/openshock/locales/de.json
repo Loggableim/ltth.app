@@ -441,6 +441,307 @@
         "max_duration_override_ms_fd3663": "Überschreibung der maximalen Dauer (ms)",
         "emergency_stop_fe6265": "🛑 EMERGENCY STOP",
         "per_device_cooldown_ms_feb2d5": "Per-Device Cooldown (ms)"
+      },
+      "ui": {
+        "navigation": {
+          "dashboard": "Übersicht",
+          "safety": "Sicherheit",
+          "patterns": "Muster",
+          "advanced": "Erweitert"
+        },
+        "sections": {
+          "devices": "Geräte",
+          "statistics": "Statistiken"
+        },
+        "labels": {
+          "device": "Gerät",
+          "enabled": "Aktiviert",
+          "description": "Beschreibung",
+          "steps": "Schritte",
+          "intensity": "Intensität",
+          "duration": "Dauer",
+          "action": "Aktion",
+          "code": "Code",
+          "method": "Methode",
+          "pattern": "Muster",
+          "preview": "Vorschau"
+        },
+        "status": {
+          "active": "Aktiv"
+        },
+        "events": {
+          "all": "Alle",
+          "info": "Hinweis",
+          "warning": "Warnung",
+          "error": "Fehler",
+          "gift": "Geschenk",
+          "follow": "Follow",
+          "share": "Teilen",
+          "like": "Like",
+          "subscribe": "Abonnieren"
+        },
+        "actions": {
+          "shock": "Schock",
+          "vibrate": "Vibrieren",
+          "sound": "Ton",
+          "pause": "Pause",
+          "select": "Auswählen"
+        },
+        "tooltips": {
+          "create_pattern": "Neues Muster erstellen",
+          "edit_pattern": "Ausgewähltes Muster bearbeiten"
+        },
+        "table": {
+          "actions": "Aktionen",
+          "metric": "Kennzahl",
+          "value": "Wert"
+        },
+        "queue": {
+          "processing": "Aktuell in Verarbeitung"
+        },
+        "overlay": {
+          "queue": "Warteschlange:",
+          "active": "Aktiv:",
+          "today": "Heute:",
+          "pattern": "Muster:",
+          "duration": "Dauer:",
+          "intensity": "Intensität:"
+        },
+        "empty_state": {
+          "no_devices": "Keine Geräte gefunden"
+        }
+      },
+      "runtime": {
+        "buttons": {
+          "refresh_catalog": "Katalog aktualisieren",
+          "refresh_devices": "Geräte aktualisieren",
+          "refreshing": "Wird aktualisiert...",
+          "sending": "Wird gesendet...",
+          "test_connection": "Verbindung testen",
+          "test_shock": "Testschock (1 s, 100 %)",
+          "testing": "Wird getestet..."
+        },
+        "connection": {
+          "api_connected": "API verbunden",
+          "api_disconnected": "API getrennt",
+          "connected": "Verbunden",
+          "disconnected": "Nicht verbunden",
+          "error": "Fehler",
+          "failed_with_error": "Verbindung fehlgeschlagen: {error}",
+          "offline": "Offline",
+          "online": "Online",
+          "provider_connected": "{provider} - Verbunden ({count} Gerät(e))",
+          "provider_disconnected": "{provider} - Nicht verbunden",
+          "successful": "Verbindung erfolgreich!",
+          "successful_load_failed": "Verbindung erfolgreich, aber Geräte konnten nicht geladen werden"
+        },
+        "devices": {
+          "paused": "Pausiert",
+          "refresh_failed": "Fehler beim Aktualisieren der Geräte",
+          "refreshed_with_count": "Geräte aktualisiert - {count} Gerät(e) geladen",
+          "select": "Gerät auswählen...",
+          "select_for_test": "Bitte wählen Sie ein Gerät für den Testschock aus",
+          "select_required": "Bitte wählen Sie ein Gerät aus",
+          "settings_save_failed": "Fehler beim Speichern der API-Einstellungen: {error}",
+          "settings_saved_load_error": "Einstellungen gespeichert, aber Geräte konnten nicht geladen werden: {error}",
+          "settings_saved_load_failed": "Einstellungen gespeichert, aber Geräte konnten nicht geladen werden",
+          "settings_saved_no_devices": "Einstellungen gespeichert, aber keine Geräte gefunden",
+          "settings_saved_with_count": "Einstellungen gespeichert und {count} Gerät(e) geladen",
+          "share_code_add_failed": "Fehler beim Hinzufügen des ShareCode: {error}",
+          "share_code_added": "ShareCode \"{code}\" hinzugefügt",
+          "share_code_required": "Bitte geben Sie einen ShareCode ein",
+          "test_shock_failed": "Fehler beim Senden des Testschocks: {error}",
+          "test_shock_sent": "Testschock erfolgreich gesendet!"
+        },
+        "errors": {
+          "load_data": "Fehler beim Laden der Hybrid-Shock-Daten",
+          "save_with_reason": "Fehler beim Speichern: {error}",
+          "statistics_reset": "Fehler beim Zurücksetzen der Statistik",
+          "unknown": "Unbekannter Fehler"
+        },
+        "mapping": {
+          "all_gifts": "Alle Geschenke",
+          "created": "Zuordnung erstellt",
+          "delete_failed": "Fehler beim Löschen der Zuordnung",
+          "deleted": "Zuordnung erfolgreich gelöscht",
+          "dialog_add": "Ereigniszuordnung hinzufügen",
+          "dialog_edit": "Ereigniszuordnung bearbeiten",
+          "disabled": "Zuordnung deaktiviert",
+          "empty": "Keine Zuordnungen konfiguriert. Klicken Sie auf \"Zuordnung hinzufügen\", um eine zu erstellen.",
+          "enabled": "Zuordnung aktiviert",
+          "export_failed": "Fehler beim Exportieren der Zuordnungen",
+          "exported": "Zuordnungen erfolgreich exportiert",
+          "gift_catalog_empty": "Keine Geschenke im Katalog. Verbinden Sie sich mit TikTok LIVE, um ihn zu füllen.",
+          "gift_catalog_refresh_failed": "Fehler beim Aktualisieren des Geschenkkatalogs",
+          "gift_catalog_refreshed": "Geschenkkatalog aktualisiert - {count} Geschenke geladen",
+          "import_failed": "Fehler beim Importieren der Zuordnungen",
+          "imported": "Zuordnungen erfolgreich importiert",
+          "toggle_failed": "Fehler beim Umschalten der Zuordnung",
+          "updated": "Zuordnung aktualisiert"
+        },
+        "pattern": {
+          "add_step": "Schritt zum Muster hinzufügen",
+          "created": "Muster \"{name}\" erstellt",
+          "delete_failed": "Fehler beim Löschen des Musters",
+          "deleted": "Muster gelöscht",
+          "dialog_create": "Neues Muster erstellen",
+          "dialog_edit": "Muster bearbeiten",
+          "draw_curve_required": "Bitte zeichnen Sie zuerst eine Kurve",
+          "empty": "Noch keine Muster erstellt. Klicken Sie auf \"Neues Muster\", um eines zu erstellen.",
+          "execute_failed": "Fehler beim Ausführen des Musters",
+          "executing": "Muster wird ausgeführt",
+          "export_failed": "Fehler beim Exportieren der Muster",
+          "exported": "Muster exportiert",
+          "import_failed": "Fehler beim Importieren der Muster",
+          "imported": "Muster erfolgreich importiert",
+          "loaded_into_editor": "Muster in den Editor geladen. Klicken Sie auf Speichern, um es abzulegen.",
+          "name_required": "Bitte geben Sie einen Musternamen ein",
+          "preview": "Vorschau: {steps} Schritte, insgesamt {duration} ms",
+          "preview_empty": "Fügen Sie Schritte für die Vorschau hinzu",
+          "single_pulse": "Keines (einzelner Impuls)",
+          "step_duplicated": "Schritt {step} dupliziert",
+          "step_loaded_for_edit": "Schritt zum Bearbeiten geladen. Passen Sie die Werte an und klicken Sie auf \"Schritt aktualisieren\".",
+          "move_up": "Nach oben",
+          "move_down": "Nach unten",
+          "duplicate_step": "Schritt duplizieren",
+          "edit_step": "Schritt bearbeiten",
+          "delete_step": "Schritt löschen",
+          "steps_empty": "Noch keine Schritte hinzugefügt. Fügen Sie oben den ersten Schritt hinzu.",
+          "steps_required": "Das Muster muss mindestens einen Schritt enthalten",
+          "template_required": "Wählen Sie zuerst einen Vorlagentyp aus",
+          "update_step": "Schritt aktualisieren",
+          "updated": "Muster \"{name}\" aktualisiert"
+        },
+        "placeholders": {
+          "api_key": "Ihren OpenShock-API-Schlüssel eingeben",
+          "api_key_already_saved": "Der API-Schlüssel ist bereits gespeichert. Geben Sie einen neuen Schlüssel ein, um ihn zu ändern.",
+          "api_key_configured": "API-Schlüssel gespeichert (ausgeblendet)",
+          "pishock_api_key": "Ihren PiShock-API-Schlüssel eingeben"
+        },
+        "queue": {
+          "clear_failed": "Fehler beim Leeren der Warteschlange",
+          "cleared": "Warteschlange erfolgreich geleert",
+          "no_commands": "Noch keine Befehle ausgeführt.",
+          "pause_failed": "Fehler beim Pausieren der Warteschlange",
+          "paused": "Warteschlange pausiert",
+          "processing_no": "Nein",
+          "processing_yes": "Ja",
+          "resume_failed": "Fehler beim Fortsetzen der Warteschlange",
+          "resumed": "Warteschlange fortgesetzt"
+        },
+        "safety": {
+          "button_emergency_stop": "NOT-AUS",
+          "button_stopped": "Angehalten",
+          "configuration_save_failed": "Fehler beim Speichern der Sicherheitskonfiguration",
+          "configuration_saved": "Sicherheitskonfiguration gespeichert",
+          "emergency_stop_activated": "NOT-AUS AKTIVIERT",
+          "emergency_stop_clear_failed": "Fehler beim Aufheben des Not-Aus",
+          "emergency_stop_cleared": "Not-Aus aufgehoben - System reaktiviert",
+          "emergency_stop_trigger_failed": "Fehler beim Auslösen des Not-Aus",
+          "emergency_tooltip": "Not-Aus - stoppt sofort alle Schocks und deaktiviert weitere Befehle",
+          "reactivate_tooltip": "Klicken Sie, um das System zu reaktivieren"
+        },
+        "status": {
+          "command_log_cleared": "Befehlsprotokoll geleert",
+          "command_log_exported": "Befehlsprotokoll exportiert",
+          "loaded": "Hybrid-Shock-Plugin erfolgreich geladen",
+          "statistics_reset": "Statistik erfolgreich zurückgesetzt"
+        },
+        "accessibility": {
+          "delete_share_code": "ShareCode {code} löschen",
+          "test_vibrate": "Vibrieren testen",
+          "test_shock": "Schock testen",
+          "test_sound": "Ton testen"
+        },
+        "zappiehell": {
+          "accessibility": {
+            "copy_overlay_url": "Overlay-URL kopieren",
+            "delete_chain": "Ereigniskette {name} löschen",
+            "delete_goal": "Ziel {name} löschen",
+            "delete_step": "Schritt {step} löschen",
+            "edit_chain": "Ereigniskette {name} bearbeiten",
+            "edit_goal": "Ziel {name} bearbeiten",
+            "edit_step": "Schritt {step} bearbeiten",
+            "reset_goal": "Ziel {name} zurücksetzen",
+            "test_chain": "Ereigniskette {name} testen"
+          },
+          "buttons": {
+            "delete": "Löschen",
+            "edit": "Bearbeiten",
+            "reset": "Zurücksetzen",
+            "test": "Testen"
+          },
+          "chains": {
+            "delete_confirm": "Möchten Sie diese Ereigniskette wirklich löschen?",
+            "created": "Ereigniskette erstellt",
+            "deleted": "Ereigniskette gelöscht",
+            "empty": "Noch keine Ereignisketten konfiguriert.",
+            "execution_started": "Ausführung der Ereigniskette gestartet",
+            "modal_create": "Ereigniskette hinzufügen",
+            "modal_edit": "Ereigniskette bearbeiten",
+            "no_description": "Keine Beschreibung",
+            "preview_empty": "Keine Schritte",
+            "steps": "Schritte",
+            "test_confirm": "Diese Ereigniskette jetzt als Test ausführen?",
+            "updated": "Ereigniskette aktualisiert",
+            "validation_name_required": "Bitte geben Sie einen Namen für die Ereigniskette ein"
+          },
+          "debug": {
+            "data_loaded": "ZappieHell-Tabdaten geladen",
+            "listeners_initialized": "ZappieHell-Event-Listener initialisiert"
+          },
+          "errors": {
+            "delete_chain": "Ereigniskette konnte nicht gelöscht werden: {error}",
+            "delete_goal": "Ziel konnte nicht gelöscht werden: {error}",
+            "execute_chain": "Ereigniskette konnte nicht ausgeführt werden: {error}",
+            "invalid_webhook_json": "Ungültiges JSON im Webhook-Body: {error}",
+            "load_chains": "Ereignisketten konnten nicht geladen werden: {error}",
+            "load_goals": "Ziele konnten nicht geladen werden: {error}",
+            "reset_goal": "Ziel konnte nicht zurückgesetzt werden: {error}",
+            "save_chain": "Ereigniskette konnte nicht gespeichert werden: {error}",
+            "save_goal": "Ziel konnte nicht gespeichert werden: {error}"
+          },
+          "goals": {
+            "chain": "Kette",
+            "coins": "Münzen",
+            "current": "Aktuell",
+            "delete_confirm": "Möchten Sie dieses Ziel wirklich löschen?",
+            "deleted": "Ziel gelöscht",
+            "empty": "Noch keine Ziele konfiguriert.",
+            "inactive": "Inaktiv",
+            "modal_create": "Ziel hinzufügen",
+            "modal_edit": "Ziel bearbeiten",
+            "no_chain": "Keine Kette",
+            "no_chain_option": "-- Keine Kette --",
+            "reset": "Ziel zurückgesetzt",
+            "reset_confirm": "Dieses Ziel auf 0 Münzen zurücksetzen?",
+            "target": "Ziel",
+            "unknown_chain": "Unbekannte Kette",
+            "validation_required": "Bitte füllen Sie alle Pflichtfelder aus",
+            "active": "Aktiv",
+            "created": "Ziel erstellt",
+            "updated": "Ziel aktualisiert"
+          },
+          "overlay": {
+            "copied": "Overlay-URL in die Zwischenablage kopiert!"
+          },
+          "steps": {
+            "delete_confirm": "Diesen Schritt entfernen?",
+            "direct_command": "-- Direkter Befehl --",
+            "empty": "Noch keine Schritte hinzugefügt. Klicken Sie auf \"Schritt hinzufügen\", um zu beginnen.",
+            "first_available": "-- Erster verfügbarer --",
+            "modal_create": "Ereignisketten-Schritt hinzufügen",
+            "modal_edit": "Ereignisketten-Schritt bearbeiten",
+            "pattern_id": "Muster-ID: {id}",
+            "type_audio": "Audio-/TTS-Aktion",
+            "type_delay": "Verzögerung ({duration} ms)",
+            "type_delay_short": "Verzögerung",
+            "type_openshock": "Hybrid-Shock-Aktion",
+            "type_overlay": "Overlay",
+            "type_webhook": "Webhook-Aktion ({url})",
+            "type_webhook_short": "Webhook"
+          }
+        }
       }
     }
   }

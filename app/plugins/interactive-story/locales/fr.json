@@ -28,6 +28,33 @@
             "failed": "Impossible d’enregistrer les paramètres.",
             "noData": "Aucune donnée disponible.",
             "confirm": "Confirmer ?"
+          },
+          "language": {
+            "english": "English",
+            "german": "Deutsch"
+          },
+          "providers": {
+            "siliconflow": "SiliconFlow"
+          },
+          "voices": {
+            "label": "Voix",
+            "mrBeast": "MrBeast"
+          },
+          "votePatterns": {
+            "numbers": "1, 2, 3, 4"
+          },
+          "overlay": {
+            "sentenceBySentence": "Phrase par phrase",
+            "arial": "Arial",
+            "georgia": "Georgia",
+            "transparent": "Transparent"
+          },
+          "validation": {
+            "expectedApiKeyLength": "Attendu : environ 64 caract\u00e8res",
+            "apiKeyWhitespace": "La cl\u00e9 API contient des espaces !"
+          },
+          "themes": {
+            "furry": "Furry"
           }
         }
       },

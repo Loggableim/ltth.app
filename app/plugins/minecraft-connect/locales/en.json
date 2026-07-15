@@ -114,6 +114,28 @@
           "test_success": "Action queued successfully",
           "test_failed": "Failed to queue action",
           "not_connected": "Minecraft mod not connected"
+        },
+        "ui": {
+          "actions": {
+            "refresh": "Refresh"
+          },
+          "sections": {
+            "commands": "Commands",
+            "setup": "Setup"
+          },
+          "metrics": {
+            "queue": "Queue"
+          },
+          "connection": {
+            "title": "Connection"
+          },
+          "themes": {
+            "switcher": "Theme switcher",
+            "label": "Theme",
+            "day": "Day",
+            "night": "Night",
+            "cid": "Cid"
+          }
         }
       },
       "labels": {

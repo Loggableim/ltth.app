@@ -3,6 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 const { LOCALES, buildGuides } = require('./plugin-tutorial-source');
+const { collectGuideUiInventory, collectPluginIntegrationInventory } = require('./lib/plugin-guide-ui-inventory');
+const { auditGuideDefinitions, formatGuideContractAudit } = require('./lib/guide-definition-validation');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'docs', 'plugins');
@@ -40,10 +42,10 @@ function localizedStatus(locale, status) {
 
 function definitionLabels(locale) {
   return {
-    de: { purpose: 'Zweck und Zielgruppe', activation: 'Aktivierung und Navigation', workflows: 'Verifizierte Workflows', settings: 'Referenz der sichtbaren Controls', integrations: 'Schnittstellen und Integrationen', controls: 'UI-Inventar', defaultValue: 'Standard im Testprofil', values: 'Werte und Grenzen', dependencies: 'Abhaengigkeiten', checks: 'Pruefschritte', resolution: 'Loesung', documentedIn: 'Dokumentiert in' },
-    en: { purpose: 'Purpose and audience', activation: 'Activation and navigation', workflows: 'Verified workflows', settings: 'Visible-control reference', integrations: 'Interfaces and integrations', controls: 'UI inventory', defaultValue: 'Test-profile default', values: 'Values and limits', dependencies: 'Dependencies', checks: 'Checks', resolution: 'Resolution', documentedIn: 'Documented in' },
-    es: { purpose: 'Objetivo y publico', activation: 'Activacion y navegacion', workflows: 'Flujos verificados', settings: 'Referencia de controles visibles', integrations: 'Interfaces e integraciones', controls: 'Inventario de la UI', defaultValue: 'Valor del perfil de prueba', values: 'Valores y limites', dependencies: 'Dependencias', checks: 'Comprobaciones', resolution: 'Solucion', documentedIn: 'Documentado en' },
-    fr: { purpose: 'Objectif et public', activation: 'Activation et navigation', workflows: 'Flux verifies', settings: 'Reference des controles visibles', integrations: 'Interfaces et integrations', controls: 'Inventaire de l interface', defaultValue: 'Valeur du profil de test', values: 'Valeurs et limites', dependencies: 'Dependances', checks: 'Verifications', resolution: 'Resolution', documentedIn: 'Documente dans' }
+    de: { purpose: 'Zweck und Zielgruppe', activation: 'Aktivierung und Navigation', workflows: 'Verifizierte Workflows', settings: 'Referenz der Workflow-Steuerelemente', integrations: 'Schnittstellen und Integrationen', controls: 'UI-Inventar', defaultValue: 'Standard im Testprofil', values: 'Werte und Grenzen', dependencies: 'Abhängigkeiten', checks: 'Prüfschritte', resolution: 'Lösung', documentedIn: 'Dokumentiert in' },
+    en: { purpose: 'Purpose and audience', activation: 'Activation and navigation', workflows: 'Verified workflows', settings: 'Workflow control reference', integrations: 'Interfaces and integrations', controls: 'UI inventory', defaultValue: 'Test-profile default', values: 'Values and limits', dependencies: 'Dependencies', checks: 'Checks', resolution: 'Resolution', documentedIn: 'Documented in' },
+    es: { purpose: 'Objetivo y público', activation: 'Activación y navegación', workflows: 'Flujos verificados', settings: 'Referencia de controles del flujo', integrations: 'Interfaces e integraciones', controls: 'Inventario de la UI', defaultValue: 'Valor del perfil de prueba', values: 'Valores y límites', dependencies: 'Dependencias', checks: 'Comprobaciones', resolution: 'Solución', documentedIn: 'Documentado en' },
+    fr: { purpose: 'Objectif et public', activation: 'Activation et navigation', workflows: 'Flux vérifiés', settings: 'Référence des contrôles du flux', integrations: 'Interfaces et intégrations', controls: 'Inventaire de l’interface', defaultValue: 'Valeur du profil de test', values: 'Valeurs et limites', dependencies: 'Dépendances', checks: 'Vérifications', resolution: 'Résolution', documentedIn: 'Documenté dans' }
   }[locale];
 }
 
@@ -115,7 +117,7 @@ function definitionMarkup(guide, values) {
   const detail = (name, value) => `<p><strong data-i18n="${label(name)}">${escapeHtml(de[label(name)])}</strong> <span data-i18n="${value}">${escapeHtml(de[value])}</span></p>`;
   const workflows = definition.workflows.map((workflow) => `<article class="plugin-doc-reference-item" data-workflow-id="${escapeHtml(workflow.id)}"><h3 data-i18n="${key(guide.id, `workflows.${workflow.id}.title`)}">${escapeHtml(de[key(guide.id, `workflows.${workflow.id}.title`)])}</h3><p data-i18n="${key(guide.id, `workflows.${workflow.id}.summary`)}">${escapeHtml(de[key(guide.id, `workflows.${workflow.id}.summary`)])}</p><ol>${workflow.stepIds.map((stepId) => `<li><a href="#step-${escapeHtml(stepId)}">${escapeHtml(stepId)}</a></li>`).join('')}</ol></article>`).join('');
   const settings = definition.settingsReference.map((setting, index) => `<article class="plugin-doc-reference-item" data-control-selector="${escapeHtml(setting.selector)}"><h3><code>${escapeHtml(setting.selector)}</code></h3>${detail('defaultValue', key(guide.id, `settings.${index}.defaultValue`))}${detail('values', key(guide.id, `settings.${index}.values`))}${detail('dependencies', key(guide.id, `settings.${index}.dependencies`))}<p data-i18n="${key(guide.id, `settings.${index}.purpose`)}">${escapeHtml(de[key(guide.id, `settings.${index}.purpose`)])}</p></article>`).join('');
-  const integrations = definition.integrations.map((integration, index) => `<li><code>${escapeHtml(integration.value)}</code> - <span data-i18n="${key(guide.id, `integrations.${index}.description`)}">${escapeHtml(de[key(guide.id, `integrations.${index}.description`)])}</span></li>`).join('');
+  const integrations = definition.integrations.map((integration, index) => `<li>${integration.method ? `<code>${escapeHtml(integration.method)}</code> ` : ''}<code>${escapeHtml(integration.value)}</code> - <span data-i18n="${key(guide.id, `integrations.${index}.description`)}">${escapeHtml(de[key(guide.id, `integrations.${index}.description`)])}</span></li>`).join('');
   const controls = definition.visibleControls.map((control, index) => `<li><code>${escapeHtml(control.selector)}</code> - <span data-i18n="docs.plugin.definition.documentedIn">${escapeHtml(de['docs.plugin.definition.documentedIn'])}</span> <a href="#${escapeHtml(control.section)}" data-i18n="${key(guide.id, `controls.${index}.mapping`)}">${escapeHtml(de[key(guide.id, `controls.${index}.mapping`)])}</a></li>`).join('');
   const troubleshooting = definition.troubleshooting.map((entry, index) => `<article class="plugin-doc-reference-item"><h3 data-i18n="${key(guide.id, `troubleshooting.${index}.symptom`)}">${escapeHtml(de[key(guide.id, `troubleshooting.${index}.symptom`)])}</h3>${detail('checks', key(guide.id, `troubleshooting.${index}.checks`))}${detail('resolution', key(guide.id, `troubleshooting.${index}.resolution`))}</article>`).join('');
   return `<section class="plugin-doc-section" id="guide-purpose" data-guide-section="purpose"><h2 data-i18n="docs.plugin.definition.purpose">${escapeHtml(de['docs.plugin.definition.purpose'])}</h2><p data-i18n="${key(guide.id, 'purpose')}">${escapeHtml(de[key(guide.id, 'purpose')])}</p><p data-i18n="${key(guide.id, 'audience')}">${escapeHtml(de[key(guide.id, 'audience')])}</p></section><section class="plugin-doc-section" id="guide-activation" data-guide-section="activation"><h2 data-i18n="docs.plugin.definition.activation">${escapeHtml(de['docs.plugin.definition.activation'])}</h2><p data-i18n="${key(guide.id, 'activation.navigation')}">${escapeHtml(de[key(guide.id, 'activation.navigation')])}</p><p><code>${escapeHtml(definition.activation.route)}</code></p></section><section class="plugin-doc-section" id="guide-workflows" data-guide-section="workflows"><h2 data-i18n="docs.plugin.definition.workflows">${escapeHtml(de['docs.plugin.definition.workflows'])}</h2>${workflows}</section><section class="plugin-doc-section" id="guide-settings" data-guide-section="settings"><h2 data-i18n="docs.plugin.definition.settings">${escapeHtml(de['docs.plugin.definition.settings'])}</h2>${settings}</section><section class="plugin-doc-section" id="guide-integrations" data-guide-section="integrations"><h2 data-i18n="docs.plugin.definition.integrations">${escapeHtml(de['docs.plugin.definition.integrations'])}</h2><ul>${integrations}</ul></section><section class="plugin-doc-section" id="guide-controls" data-guide-section="controls"><h2 data-i18n="docs.plugin.definition.controls">${escapeHtml(de['docs.plugin.definition.controls'])}</h2><ul>${controls}</ul></section><section class="plugin-doc-section" id="guide-troubleshooting" data-guide-section="troubleshooting"><h2 data-i18n="docs.plugin.troubleshooting">${escapeHtml(de['docs.plugin.troubleshooting'])}</h2>${troubleshooting}</section>`;
@@ -176,7 +178,20 @@ function guideLocaleBundle(values) {
   return Object.fromEntries(Object.entries(values).filter(([name]) => name.startsWith('docs.plugin.')));
 }
 
+function auditGuideContracts(guides) {
+  return auditGuideDefinitions(guides, {
+    inventoryForGuide: (guide) => collectGuideUiInventory(ROOT, guide),
+    integrationInventoryForGuide: (guide) => collectPluginIntegrationInventory(ROOT, guide.id, guide.definition.activation.route)
+  });
+}
+
 function main() {
+  if (process.argv.includes('--audit-contracts')) {
+    const audit = auditGuideContracts(buildGuides(ROOT));
+    console.log(formatGuideContractAudit(audit));
+    if (!audit.compliant) process.exitCode = 1;
+    return;
+  }
   const guides = buildGuides(ROOT);
   const values = buildLocales(guides);
   const byId = new Map(guides.map((guide) => [guide.id, guide]));

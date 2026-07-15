@@ -281,6 +281,20 @@
         "text_appears_at_top_center_of_screen": "Le texte apparaît en haut au centre de l'écran",
         "target_fps_60_fddd7b": "- FPS cible : 60",
         "lower_settings_help_prevent_stuttering_during_extreme_gift": "- Des paramètres plus bas aident à éviter le bégaiement lors de spams de cadeaux extrêmes"
+      },
+      "ui": {
+        "status": { "enabled": "Activé", "disabled": "Désactivé", "queue_on": "File activée", "queue_off": "File désactivée", "adaptive_on": "Adaptatif activé", "adaptive_off": "Adaptatif désactivé" },
+        "defaults": {
+          "zero": "0", "one": "1", "three": "3", "five": "5", "six": "6", "ten": "10", "twenty": "20", "thirty": "30", "fifty": "50",
+          "two_hundred": "200", "five_hundred": "500", "eight_hundred": "800", "one_thousand": "1000", "two_thousand": "2000", "three_thousand": "3000",
+          "one_x": "1 fois", "two_x": "2 fois", "three_x": "3 fois", "five_x": "5 fois", "ten_x": "10 fois", "five_per_second": "5/s",
+          "burst": "Salve", "landscape": "Paysage", "portrait": "Portrait"
+        },
+        "impact": { "minimal": "Minimal", "very_low": "Très faible", "low": "Faible", "medium": "Moyen", "high": "Élevé", "very_high": "Très élevé", "ultra": "Ultra" },
+        "labels": { "range_to": "à", "center": "Centre", "neon": "Néon", "minimal": "Minimal", "large": "Grand", "custom": "Personnalisé", "bounce": "Rebond", "rotate": "Rotation" },
+        "presets": { "ultra": "Très élevé", "four_k": "4K – Très élevé", "high": "Élevé", "resolution_1440p": "1440p – Élevé", "recommended": "Recommandé", "low": "Faible", "resolution_720p": "720p – Faible", "toaster": "Grille-pain", "resolution_540p": "540p – Grille-pain", "potato": "Patate", "resolution_360p": "360p – Patate" },
+        "summary": { "theme": "Thème : {theme}", "resolution": "{preset} · {orientation}", "performance": "{fps} FPS · {particles} particules", "safety": "{queue} · {adaptive}" },
+        "themes": { "day": "Jour", "contrast": "Contraste élevé", "vision-impaired": "Mode visuel", "cid": "CID", "night": "Nuit" }
       }
     }
   }

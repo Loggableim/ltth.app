@@ -14,7 +14,8 @@
             "refresh": "Aktualisieren",
             "close": "Schließen",
             "test": "Testen",
-            "clear": "Leeren"
+            "clear": "Leeren",
+            "copy": "Kopieren"
           },
           "status": {
             "ready": "Bereit",
@@ -28,6 +29,33 @@
             "failed": "Einstellungen konnten nicht gespeichert werden.",
             "noData": "Keine Daten verfügbar.",
             "confirm": "Bist du sicher?"
+          },
+          "navigation": {
+            "likes": "Likes",
+            "gifts": "Geschenke",
+            "decay": "Abbau",
+            "controls": "Steuerung"
+          },
+          "table": {
+            "rank": "Rang",
+            "user": "Benutzer",
+            "change": "Änderung"
+          },
+          "labels": {
+            "orientation": "Ausrichtung",
+            "theme": "Thema",
+            "size": "Größe"
+          },
+          "options": {
+            "night": "Nacht",
+            "day": "Tag",
+            "cid": "Cid-Theme",
+            "landscape": "Querformat",
+            "portrait": "Hochformat",
+            "linear": "Linear",
+            "percentage": "Prozentual",
+            "idle": "Inaktiv",
+            "step": "Stufe"
           }
         }
       },
