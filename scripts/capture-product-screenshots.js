@@ -397,7 +397,10 @@ async function applySafeStepState(page, asset, locale) {
       window.I18n.apply?.();
     }
   }, locale);
-  const preparationSelector = asset.action?.inputSelector || asset.action?.clickSelector || asset.selector;
+  const preparationSelector = asset.action?.preparationEvidenceSelector
+    || asset.action?.inputSelector
+    || asset.action?.clickSelector
+    || asset.selector;
   const preparationBefore = asset.action?.prepare
     ? await observeControlState(page, preparationSelector).catch(() => null)
     : null;
@@ -704,6 +707,52 @@ async function applySafeStepState(page, asset, locale) {
       throw new Error(`Game Engine manual session did not render controls: ${JSON.stringify(state)}`);
     }
   }
+  if (asset.action && asset.action.prepare) {
+    if (!SUPPORTED_LOCAL_PREPARATIONS.has(asset.action.prepare)) {
+      throw new Error(`Unsupported local documentation preparation: ${asset.action.prepare}`);
+    }
+    const selector = asset.action.preparationEvidenceSelector
+      || asset.action.inputSelector
+      || asset.action.clickSelector
+      || asset.selector;
+    const observed = await observeControlState(page, selector);
+    if (!observed.visible) {
+      throw new Error(`Local documentation preparation ${asset.action.prepare} has no visible DOM evidence at ${selector}`);
+    }
+    interactions.push({
+      type: 'prepare',
+      selector,
+      status: 'performed',
+      observed: true,
+      name: asset.action.prepare,
+      before: preparationBefore,
+      changed: !preparationBefore || JSON.stringify(preparationBefore) !== JSON.stringify(observed),
+      after: observed
+    });
+    // Some safe local workflows are completely performed by their named
+    // preparation (for example starting a test-only quiz). Record that real
+    // preparation as the declared operation as well, so the receipt can prove
+    // both the prerequisite and the resulting local workflow without
+    // inventing a second button click.
+    if (!asset.action.allowClick
+      && asset.action.type !== 'set-demo-value'
+      && INTERACTION_OPERATION_TYPES.has(asset.action.type)) {
+      const evidenceSelector = asset.action.evidenceSelector || asset.selector || selector;
+      const evidenceAfter = evidenceSelector === selector
+        ? observed
+        : await observeControlState(page, evidenceSelector);
+      interactions.push({
+        type: asset.action.type,
+        selector: evidenceSelector,
+        status: 'performed',
+        observed: true,
+        preparation: asset.action.prepare,
+        before: preparationBefore,
+        after: evidenceAfter,
+        changed: !preparationBefore || JSON.stringify(preparationBefore) !== JSON.stringify(evidenceAfter)
+      });
+    }
+  }
   if (asset.action && asset.action.type === 'set-demo-value') {
     const demoValue = DOCUMENTATION_DEMO_INPUT_VALUES[`${asset.guideId}/${asset.stepId}`] || 'LTTH docs demo';
     const interaction = await page.evaluate((selector, value) => {
@@ -756,6 +805,21 @@ async function applySafeStepState(page, asset, locale) {
     const evidenceBefore = evidenceSelector === selector
       ? before
       : await observeControlState(page, evidenceSelector);
+    const dialogConfirmation = asset.action.confirmDialog === true
+      ? new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error(`Local documentation confirmation did not open for ${selector}`)), 2000);
+        page.once('dialog', async (dialog) => {
+          try {
+            await dialog.accept();
+            clearTimeout(timeout);
+            resolve();
+          } catch (error) {
+            clearTimeout(timeout);
+            reject(error);
+          }
+        });
+      })
+      : null;
     await page.evaluate((selector, actionType, guideId) => {
       const control = document.querySelector(selector);
       if (!control) throw new Error(`Capture selector not found: ${selector}`);
@@ -768,6 +832,7 @@ async function applySafeStepState(page, asset, locale) {
       if (control.disabled) throw new Error(`Declared local action is disabled: ${selector}`);
       control.click();
     }, selector, asset.action.type, asset.guideId);
+    if (dialogConfirmation) await dialogConfirmation;
     await new Promise((resolve) => setTimeout(resolve, asset.action.settleMs || 250));
     const after = await observeControlState(page, selector);
     const evidenceAfter = evidenceSelector === selector
@@ -788,49 +853,6 @@ async function applySafeStepState(page, asset, locale) {
       changed: JSON.stringify(before) !== JSON.stringify(after)
         || JSON.stringify(evidenceBefore) !== JSON.stringify(evidenceAfter)
     });
-  }
-  if (asset.action && asset.action.prepare) {
-    if (!SUPPORTED_LOCAL_PREPARATIONS.has(asset.action.prepare)) {
-      throw new Error(`Unsupported local documentation preparation: ${asset.action.prepare}`);
-    }
-    const selector = asset.action.inputSelector || asset.action.clickSelector || asset.selector;
-    const observed = await observeControlState(page, selector);
-    if (!observed.visible) {
-      throw new Error(`Local documentation preparation ${asset.action.prepare} has no visible DOM evidence at ${selector}`);
-    }
-    interactions.push({
-      type: 'prepare',
-      selector,
-      status: 'performed',
-      observed: true,
-      name: asset.action.prepare,
-      before: preparationBefore,
-      changed: !preparationBefore || JSON.stringify(preparationBefore) !== JSON.stringify(observed),
-      after: observed
-    });
-    // Some safe local workflows are completely performed by their named
-    // preparation (for example starting a test-only quiz). Record that real
-    // preparation as the declared operation as well, so the receipt can prove
-    // both the prerequisite and the resulting local workflow without
-    // inventing a second button click.
-    if (!asset.action.allowClick
-      && asset.action.type !== 'set-demo-value'
-      && INTERACTION_OPERATION_TYPES.has(asset.action.type)) {
-      const evidenceSelector = asset.action.evidenceSelector || asset.selector || selector;
-      const evidenceAfter = evidenceSelector === selector
-        ? observed
-        : await observeControlState(page, evidenceSelector);
-      interactions.push({
-        type: asset.action.type,
-        selector: evidenceSelector,
-        status: 'performed',
-        observed: true,
-        preparation: asset.action.prepare,
-        before: preparationBefore,
-        after: evidenceAfter,
-        changed: !preparationBefore || JSON.stringify(preparationBefore) !== JSON.stringify(evidenceAfter)
-      });
-    }
   }
   return interactions;
 }

@@ -821,6 +821,24 @@ applyWorkflowCorrections({
       es: { title: 'Revisa la vista previa de Chat integrada', body: 'Mira la vista previa de Chat integrada en el panel local. No se crea ningun mensaje de prueba ni evento LIVE.', expected: 'El frame de vista previa local real es visible, incluso si queda vacio sin eventos.', alt: 'Vista previa local integrada de Chat de ClarityHUD' },
       fr: { title: 'Verifiez l apercu Chat integre', body: 'Regardez l apercu Chat integre dans le tableau de bord local. Aucun message de test ni evenement LIVE nest cree.', expected: 'Le vrai cadre d apercu local est visible, meme sil reste vide sans evenement.', alt: 'Apercu Chat local integre de ClarityHUD' }
     }
+  },
+  'full-hud-preview': {
+    selector: '#full-preview',
+    action: {
+      type: 'run-local-preview',
+      allowClick: true,
+      clickSelector: 'button[data-action="refresh-preview"][data-type="full"]',
+      evidenceSelector: '#toast',
+      settleMs: 750
+    },
+    operationSelector: 'button[data-action="refresh-preview"][data-type="full"]',
+    stateChange: true,
+    copy: {
+      de: { title: 'Full-HUD-Vorschau lokal aktualisieren', body: 'Klicke auf die echte Aktualisieren-Schaltflaeche der Full-HUD-Vorschau. Dadurch wird nur der lokale Vorschau-Frame im isolierten Profil neu geladen; keine LIVE-Quelle wird verbunden.', expected: 'Der echte Full-HUD-Frame wurde lokal aktualisiert und bleibt sichtbar.', alt: 'Aktualisierte lokale ClarityHUD-Full-HUD-Vorschau' },
+      en: { title: 'Refresh the Full HUD preview locally', body: 'Click the real refresh control for the Full HUD preview. It reloads only the local preview frame in the isolated profile; no LIVE source is connected.', expected: 'The real Full HUD frame was refreshed locally and remains visible.', alt: 'Refreshed local ClarityHUD Full HUD preview' },
+      es: { title: 'Actualiza la vista previa Full HUD localmente', body: 'Haz clic en el control real de actualizar de la vista previa Full HUD. Solo recarga el frame de vista previa local en el perfil aislado; no conecta ninguna fuente LIVE.', expected: 'El frame Full HUD real se actualizo localmente y sigue visible.', alt: 'Vista previa Full HUD local de ClarityHUD actualizada' },
+      fr: { title: 'Actualisez l apercu Full HUD localement', body: 'Cliquez sur le vrai controle d actualisation de l apercu Full HUD. Il recharge uniquement le cadre d apercu local du profil isole ; aucune source LIVE nest connectee.', expected: 'Le vrai cadre Full HUD a ete actualise localement et reste visible.', alt: 'Apercu Full HUD local ClarityHUD actualise' }
+    }
   }
 });
 

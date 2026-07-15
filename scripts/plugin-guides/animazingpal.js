@@ -707,6 +707,17 @@ applyWorkflowCorrections({
       es: { title: 'Prepara un evento de ejemplo local', body: 'Introduce solo un valor de ejemplo local en el campo JSON de Logic Matrix. No pulses Conectar ni Probar; no se contacta ningun avatar ni servicio.', expected: 'El valor de ejemplo local aparece en el campo JSON y puede revisarse antes de una ejecucion real.', alt: 'Ejemplo JSON local para AnimazingPal Logic Matrix' },
       fr: { title: 'Preparez un evenement exemple local', body: 'Saisissez seulement une valeur exemple locale dans le champ JSON de Logic Matrix. Nappuyez ni sur Connecter ni sur Tester; aucun avatar ni service nest contacte.', expected: 'La valeur exemple locale est presente dans le champ JSON et peut etre verifiee avant toute execution reelle.', alt: 'Exemple JSON local pour AnimazingPal Logic Matrix' }
     }
+  },
+  'mapping-review': {
+    selector: '#tab-settings',
+    action: { type: 'open-plugin-surface' },
+    stateChange: false,
+    copy: {
+      de: { title: 'Zuordnungs-Einstellungen pruefen', body: 'Pruefe die sichtbare Registerkarte Einstellungen der lokalen Zuordnung. Dieser Schritt speichert nichts, verbindet keinen Avatar und sendet kein LIVE-Ereignis.', expected: 'Die echte Einstellungsregisterkarte ist sichtbar und kann vor einer bewussten Speicherung geprueft werden.', alt: 'Sichtbare AnimazingPal-Einstellungen fuer die Zuordnungspruefung' },
+      en: { title: 'Inspect mapping settings', body: 'Inspect the visible local mapping Settings tab. This step saves nothing, connects no avatar, and sends no LIVE event.', expected: 'The real Settings tab is visible and can be reviewed before any deliberate save.', alt: 'Visible AnimazingPal settings for mapping review' },
+      es: { title: 'Revisa los ajustes de asignacion', body: 'Revisa la pestana visible de ajustes de asignacion local. Este paso no guarda nada, no conecta avatares ni envia eventos LIVE.', expected: 'La pestana real de ajustes queda visible y puede revisarse antes de guardar deliberadamente.', alt: 'Ajustes visibles de AnimazingPal para revisar la asignacion' },
+      fr: { title: 'Verifiez les reglages de mappage', body: 'Verifiez l onglet Reglages visible du mappage local. Cette etape n enregistre rien, ne connecte aucun avatar et n envoie aucun evenement LIVE.', expected: 'Le vrai onglet Reglages est visible et peut etre verifie avant tout enregistrement volontaire.', alt: 'Reglages AnimazingPal visibles pour verifier le mappage' }
+    }
   }
 });
 

@@ -355,6 +355,7 @@ module.exports = Object.freeze({
         "action": {
           "type": "run-local-preview",
           "prepare": "start-local-quiz",
+          "preparationEvidenceSelector": "#timerDisplay",
           "cleanupSelector": "#stopQuizBtn",
           "stepId": "answer-window"
         },
@@ -465,7 +466,7 @@ module.exports = Object.freeze({
       },
       "capture": {
         "route": "/plugins/quiz-show/quiz_show.html",
-        "assertVisible": "#startQuizBtn",
+        "assertVisible": "#currentQuestionDisplay",
         "focusText": {
           "de": "Sample Question lokal testen",
           "en": "Test Sample Question locally",
@@ -475,6 +476,7 @@ module.exports = Object.freeze({
         "action": {
           "type": "run-local-preview",
           "prepare": "start-local-quiz",
+          "preparationEvidenceSelector": "#timerDisplay",
           "cleanupSelector": "#stopQuizBtn",
           "stepId": "sample-question"
         },
@@ -520,7 +522,7 @@ module.exports = Object.freeze({
           },
           {
             "type": "run-local-preview",
-            "selector": "#startQuizBtn"
+            "selector": "#currentQuestionDisplay"
           }
         ],
         "postconditions": [
@@ -538,7 +540,12 @@ module.exports = Object.freeze({
           },
           {
             "type": "visible",
-            "selector": "#startQuizBtn"
+            "selector": "#currentQuestionDisplay"
+          },
+          {
+            "type": "text",
+            "selector": "#currentQuestionDisplay",
+            "expected": "Which workflow stays local?"
           },
           {
             "type": "console",
@@ -546,7 +553,7 @@ module.exports = Object.freeze({
           }
         ],
         "captureRule": {
-          "selector": "#startQuizBtn",
+          "selector": "#currentQuestionDisplay",
           "viewport": {
             "width": 1440,
             "height": 900
@@ -704,7 +711,7 @@ module.exports = Object.freeze({
       },
       "capture": {
         "route": "/plugins/quiz-show/quiz_show.html",
-        "assertVisible": "#stopQuizBtn",
+        "assertVisible": "#startQuizBtn",
         "focusText": {
           "de": "Quiz Reset sicher zuruecksetzen",
           "en": "Reset Quiz Reset safely",
@@ -714,7 +721,11 @@ module.exports = Object.freeze({
         "action": {
           "type": "reset-demo-state",
           "prepare": "start-local-quiz",
-          "cleanupSelector": "#stopQuizBtn",
+          "preparationEvidenceSelector": "#timerDisplay",
+          "allowClick": true,
+          "clickSelector": "#stopQuizBtn",
+          "evidenceSelector": "#timerDisplay",
+          "confirmDialog": true,
           "stepId": "quiz-reset"
         },
         "expected": {
@@ -777,7 +788,7 @@ module.exports = Object.freeze({
           },
           {
             "type": "visible",
-            "selector": "#stopQuizBtn"
+            "selector": "#startQuizBtn"
           },
           {
             "type": "console",
@@ -785,7 +796,7 @@ module.exports = Object.freeze({
           }
         ],
         "captureRule": {
-          "selector": "#stopQuizBtn",
+          "selector": "#startQuizBtn",
           "viewport": {
             "width": 1440,
             "height": 900

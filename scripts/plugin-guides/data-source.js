@@ -719,22 +719,6 @@ function correctReviewStep(id, { selector, action, copy, operations }) {
   };
 }
 
-correctReviewStep('field-map', {
-  selector: '#tikfinity-port',
-  action: { type: 'open-plugin-surface', prepare: 'select-local-tikfinity' },
-  operations: [
-    { type: 'goto', route: '/plugins/data-source/ui.html' },
-    { type: 'prepare', name: 'select-local-tikfinity' },
-    { type: 'open-plugin-surface', selector: '#tikfinity-port' }
-  ],
-  copy: {
-    de: { title: 'TikFinity-Port nach der Quellenauswahl pruefen', body: 'Oeffne die lokale TikFinity-Quelle und lies den sichtbaren WebSocket-Port. Aendere keinen Port und stelle keine Verbindung her.', expected: 'Der lokale Port ist nach der echten Quellenauswahl sichtbar, ohne eine Verbindung aufzubauen.', alt: 'Sichtbarer TikFinity-WebSocket-Port in Data Source' },
-    en: { title: 'Inspect the TikFinity port after selecting the source', body: 'Open the local TikFinity source and read the visible WebSocket port. Do not change the port or connect.', expected: 'The local port is visible after the real source selection without opening a connection.', alt: 'Visible TikFinity WebSocket port in Data Source' },
-    es: { title: 'Revisa el puerto TikFinity despues de elegir la fuente', body: 'Abre la fuente local TikFinity y lee el puerto WebSocket visible. No cambies el puerto ni establezcas una conexion.', expected: 'El puerto local es visible despues de elegir la fuente real sin abrir una conexion.', alt: 'Puerto WebSocket TikFinity visible en Data Source' },
-    fr: { title: 'Verifiez le port TikFinity apres le choix de source', body: 'Ouvrez la source TikFinity locale et lisez le port WebSocket visible. Ne modifiez pas le port et ne vous connectez pas.', expected: 'Le port local est visible apres le vrai choix de source sans ouvrir de connexion.', alt: 'Port WebSocket TikFinity visible dans Data Source' }
-  }
-});
-
 correctReviewStep('source-review', {
   selector: '#status-badge',
   action: { type: 'open-plugin-surface' },

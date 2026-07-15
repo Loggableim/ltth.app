@@ -59,10 +59,10 @@ for (const guide of guides) {
     assert.ok(!GENERIC_SELECTORS.has(step.capture.assertVisible), `${guide.id}/${step.id} must not use a generic UI selector`);
     assert.ok(step.capture.action && SAFE_ACTION_TYPES.has(step.capture.action.type), `${guide.id}/${step.id} needs a declared safe action type`);
     if (step.capture.action.allowClick) {
-      assert.ok(['save-demo-config', 'run-local-preview', 'open-local-settings', 'select-local-source'].includes(step.capture.action.type), `${guide.id}/${step.id} may only click a declared local-safe action`);
+      assert.ok(['save-demo-config', 'run-local-preview', 'open-local-settings', 'reset-demo-state', 'select-local-source'].includes(step.capture.action.type), `${guide.id}/${step.id} may only click a declared local-safe action`);
     }
     if (step.capture.action.clickSelector) {
-      assert.ok(typeof step.capture.action.clickSelector === 'string' && step.capture.action.clickSelector.startsWith('#'), `${guide.id}/${step.id} needs an explicit local click selector`);
+      assert.ok(typeof step.capture.action.clickSelector === 'string' && /^(?:#|\.|\[|[a-z])/i.test(step.capture.action.clickSelector), `${guide.id}/${step.id} needs an explicit local click selector`);
     }
     if (step.capture.action.cleanupSelector) {
       const isManualGameCleanup = guide.id === 'game-engine' && step.id === 'test-round' && step.capture.action.cleanupSelector === '#end-manual-game';

@@ -135,9 +135,11 @@ describe('documentation capture real workflows', () => {
 
   test('creates a local Quiz Show question before documenting a running round', () => {
     expect(step('quiz-show', 'question-pool').capture.action).toMatchObject({ prepare: 'open-quiz-questions-tab' });
-    expect(step('quiz-show', 'answer-window').capture.action).toMatchObject({ type: 'run-local-preview', prepare: 'start-local-quiz', cleanupSelector: '#stopQuizBtn' });
-    expect(step('quiz-show', 'sample-question').capture.action).toMatchObject({ type: 'run-local-preview', prepare: 'start-local-quiz', cleanupSelector: '#stopQuizBtn' });
-    expect(step('quiz-show', 'quiz-reset').capture.action).toMatchObject({ prepare: 'start-local-quiz', cleanupSelector: '#stopQuizBtn' });
+    expect(step('quiz-show', 'answer-window').capture.action).toMatchObject({ type: 'run-local-preview', prepare: 'start-local-quiz', preparationEvidenceSelector: '#timerDisplay', cleanupSelector: '#stopQuizBtn' });
+    expect(step('quiz-show', 'sample-question').capture).toMatchObject({ assertVisible: '#currentQuestionDisplay' });
+    expect(step('quiz-show', 'sample-question').capture.action).toMatchObject({ type: 'run-local-preview', prepare: 'start-local-quiz', preparationEvidenceSelector: '#timerDisplay', cleanupSelector: '#stopQuizBtn' });
+    expect(step('quiz-show', 'quiz-reset').capture).toMatchObject({ assertVisible: '#startQuizBtn' });
+    expect(step('quiz-show', 'quiz-reset').capture.action).toMatchObject({ type: 'reset-demo-state', prepare: 'start-local-quiz', preparationEvidenceSelector: '#timerDisplay', allowClick: true, clickSelector: '#stopQuizBtn', evidenceSelector: '#timerDisplay', confirmDialog: true });
   });
 
   test('documents the Quiz Show overlay configuration entry point rather than an empty overlay', () => {
@@ -300,12 +302,12 @@ describe('documentation capture real workflows', () => {
     expect(mappingReview.workflow.captureRule.stateChange).toBe(false);
   });
 
-  test('refreshes the real ClarityHUD full preview and records the iframe result', () => {
+  test('refreshes the real ClarityHUD full preview and records its real status result', () => {
     expect(step('clarityhud', 'full-hud-preview').capture.action).toMatchObject({
       type: 'run-local-preview',
       allowClick: true,
       clickSelector: 'button[data-action="refresh-preview"][data-type="full"]',
-      evidenceSelector: '#full-preview'
+      evidenceSelector: '#toast'
     });
   });
 });

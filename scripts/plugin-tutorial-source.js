@@ -54,7 +54,7 @@ function interactionCondition(step) {
   if (action.prepare) {
     return {
       type: 'interaction',
-      selector: action.inputSelector || action.clickSelector || step.capture.assertVisible,
+      selector: action.preparationEvidenceSelector || action.inputSelector || action.clickSelector || step.capture.assertVisible,
       expected: { type: 'prepare', changed: true }
     };
   }
