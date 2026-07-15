@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visual FX Frame WEBGPU</title>
+  <style>
+    html, body, canvas { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; }
+    canvas { display: block; }
+    #webgpu-debug { position: fixed; left: 12px; bottom: 12px; display: none; max-width: 70vw; padding: 8px 12px; border-radius: 8px; background: rgba(12, 18, 30, 0.9); color: #f8fafc; font: 12px/1.4 system-ui; }
+    #webgpu-debug.visible { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="visualFxCanvas"></canvas>
+  <div id="webgpu-debug" role="status" aria-live="polite"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/visual-fx-frame-webgpu/default-config.js"></script>
+  <script src="/visual-fx-frame-webgpu/adaptive-quality.js"></script>
+  <script src="/visual-fx-frame-webgpu/gpu-resources.js"></script>
+  <script src="/visual-fx-frame-webgpu/effect-pipelines.js"></script>
+  <script src="/visual-fx-frame-webgpu/hdr-post-processor.js"></script>
+  <script src="/visual-fx-frame-webgpu/webgpu-effects-engine.js"></script>
+  <script src="/visual-fx-frame-webgpu/overlay-controller.js"></script>
+</body>
+</html>

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.28] - 2026-07-15
+
+### Added
+
+- **Visual FX Frame WEBGPU Beta**: Bundled the independent, disabled-by-default Visual FX Frame WEBGPU 1.2.0 runtime plugin. Its subscriber open-beta Plugin Store package remains available for WebGPU-capable OBS browser sources.
+
+### Fixed
+
+- **Goals Stream Lifecycle**: Goals now reset exactly once for each confirmed TikTok LIVE stream identity and ignore reconnects to the same LIVE room.
+
+### Changed
+
+- **Launcher Defaults**: High-contrast mode, keeping the launcher open, and the Stable update channel are now the tracked defaults.
+
 ## [1.3.27] - 2026-07-11
 
 ### Added

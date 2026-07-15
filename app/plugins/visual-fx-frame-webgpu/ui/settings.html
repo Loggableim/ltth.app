@@ -1,0 +1,4314 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="generated.94e9cdb0fb95">Visual FX Frame WEBGPU - Einstellungen</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function() {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const logoByTheme = {
+                day: '/plugins/visual-fx-frame-webgpu/assets/branding/visual-fx-frame-webgpu-logo.png',
+                night: '/plugins/visual-fx-frame-webgpu/assets/branding/visual-fx-frame-webgpu-logo.png',
+                contrast: '/plugins/visual-fx-frame-webgpu/assets/branding/visual-fx-frame-webgpu-logo.png',
+                'vision-impaired': '/plugins/visual-fx-frame-webgpu/assets/branding/visual-fx-frame-webgpu-logo.png',
+                cid: '/plugins/visual-fx-frame-webgpu/assets/branding/visual-fx-frame-webgpu-logo.png'
+            };
+            const fileLogoByTheme = {
+                day: '../assets/branding/visual-fx-frame-webgpu-logo.png',
+                night: '../assets/branding/visual-fx-frame-webgpu-logo.png',
+                contrast: '../assets/branding/visual-fx-frame-webgpu-logo.png',
+                'vision-impaired': '../assets/branding/visual-fx-frame-webgpu-logo.png',
+                cid: '../assets/branding/visual-fx-frame-webgpu-logo.png'
+            };
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
+            }
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                const logo = document.querySelector('[data-brand-logo]');
+                if (logo) {
+                    const nextSrc = location.protocol === 'file:'
+                        ? new URL(fileLogoByTheme[theme] || fileLogoByTheme.night, location.href).href
+                        : (logoByTheme[theme] || logoByTheme.night);
+                    if (logo.getAttribute('src') !== nextSrc) {
+                        logo.setAttribute('src', nextSrc);
+                    }
+                }
+            }
+            syncTheme();
+            document.addEventListener('DOMContentLoaded', syncTheme);
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+        }
+
+        .page-brand {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .page-brand-logo {
+            width: min(420px, 100%);
+            max-height: 116px;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        html[data-theme="vision-impaired"] .page-brand-logo {
+            width: min(120px, 24vw);
+        }
+
+        html[data-theme="cid"] .page-brand-logo {
+            width: min(108px, 20vw);
+        }
+
+        h1 {
+            color: #8b5cf6;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .section {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .section-title {
+            color: #ff9933;
+            font-size: 18px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ff6600;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #ff6600;
+        }
+
+        input[type="color"] {
+            width: 100%;
+            height: 50px;
+            padding: 5px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #444;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #ff6600;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #ff6600;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider-value {
+            min-width: 60px;
+            text-align: right;
+            color: #ff9933;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #ff6600;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: #ff6600;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.3s;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            background: #ff8533;
+        }
+
+        .btn-secondary {
+            background: #555;
+        }
+
+        .btn-secondary:hover {
+            background: #666;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+            font-size: 1.22rem;
+            line-height: 1.82;
+        }
+
+        html[data-theme="vision-impaired"] .container,
+        html[data-theme="vision-impaired"] .control-room-shell {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="vision-impaired"] h1,
+        html[data-theme="vision-impaired"] .section-title,
+        html[data-theme="vision-impaired"] .info-box h3 {
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] h1 {
+            font-size: clamp(2.6rem, 4vw, 4.2rem);
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+        }
+
+        html[data-theme="vision-impaired"] .subtitle {
+            font-size: 1.14rem;
+            line-height: 1.88;
+            color: #fff7cc;
+            max-width: none;
+            width: 100%;
+        }
+
+        html[data-theme="vision-impaired"] .frame-position-controls h3,
+        html[data-theme="vision-impaired"] .frame-position-controls p,
+        html[data-theme="vision-impaired"] #presetList p,
+        html[data-theme="vision-impaired"] #triggerStatusBox span,
+        html[data-theme="vision-impaired"] #triggerLogContainer p {
+            font-size: 1.16rem !important;
+            line-height: 1.78 !important;
+        }
+
+        html[data-theme="vision-impaired"] .section,
+        html[data-theme="vision-impaired"] .preview-container,
+        html[data-theme="vision-impaired"] .frame-position-controls,
+        html[data-theme="vision-impaired"] .info-box {
+            background: #000;
+            border: 3px solid #facc15;
+            box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.12);
+        }
+
+        html[data-theme="vision-impaired"] .trigger-workspace {
+            --trigger-bg: #000;
+            --trigger-bg-soft: rgba(250, 204, 21, 0.08);
+            --trigger-border: rgba(250, 204, 21, 0.55);
+            --trigger-border-strong: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card,
+        html[data-theme="vision-impaired"] .gift-catalog-panel {
+            background: #000;
+            border-color: rgba(250, 204, 21, 0.5);
+            box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.12);
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card-hero {
+            background:
+                radial-gradient(circle at top right, rgba(250, 204, 21, 0.18), transparent 32%),
+                linear-gradient(180deg, #000, #050505);
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card-header {
+            border-bottom-color: rgba(250, 204, 21, 0.3);
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card-meta {
+            background: rgba(250, 204, 21, 0.08);
+            border-color: rgba(250, 204, 21, 0.3);
+            color: #fff1bf;
+        }
+
+        html[data-theme="vision-impaired"] .control-room-hero,
+        html[data-theme="vision-impaired"] .broadcast-stack {
+            grid-template-columns: 1fr;
+        }
+
+        html[data-theme="vision-impaired"] .preview-container,
+        html[data-theme="vision-impaired"] .frame-position-controls {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="vision-impaired"] label,
+        html[data-theme="vision-impaired"] .subtitle,
+        html[data-theme="vision-impaired"] .info-box p,
+        html[data-theme="vision-impaired"] .slider-value,
+        html[data-theme="vision-impaired"] .frame-position-input label,
+        html[data-theme="vision-impaired"] small {
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] label,
+        html[data-theme="vision-impaired"] .frame-position-input label {
+            font-size: 1.08rem;
+            line-height: 1.66;
+        }
+
+        html[data-theme="vision-impaired"] .section-title {
+            font-size: 1.82rem;
+            line-height: 1.18;
+            letter-spacing: 0.01em;
+        }
+
+        html[data-theme="vision-impaired"] .info-box p,
+        html[data-theme="vision-impaired"] .trigger-card p,
+        html[data-theme="vision-impaired"] .trigger-card small,
+        html[data-theme="vision-impaired"] .gift-catalog-toolbar small,
+        html[data-theme="vision-impaired"] .frame-position-input small,
+        html[data-theme="vision-impaired"] .trigger-status-box p {
+            font-size: 1.08rem;
+            line-height: 1.72;
+        }
+
+        html[data-theme="vision-impaired"] .slider-value {
+            font-size: 1.08rem;
+            min-width: 80px;
+        }
+
+        html[data-theme="vision-impaired"] .btn,
+        html[data-theme="vision-impaired"] .preview-controls button {
+            background: #000;
+            color: #fff;
+            border: 2px solid #facc15;
+            font-size: 1.12rem;
+            min-height: 50px;
+        }
+
+        html[data-theme="vision-impaired"] .btn:hover,
+        html[data-theme="vision-impaired"] .preview-controls button:hover {
+            background: #111;
+        }
+
+        html[data-theme="vision-impaired"] .preview-controls button.active {
+            background: #facc15;
+            color: #000;
+        }
+
+        html[data-theme="vision-impaired"] .preset-btn,
+        html[data-theme="vision-impaired"] .preview-mode-btn {
+            font-size: 1.08rem;
+            min-height: 48px;
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card h3,
+        html[data-theme="vision-impaired"] .info-box h3 {
+            font-size: 1.58rem;
+            line-height: 1.18;
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card-kicker,
+        html[data-theme="vision-impaired"] .trigger-card-meta {
+            font-size: 1.08rem;
+            letter-spacing: 0.02em;
+        }
+
+        html[data-theme="vision-impaired"] input[type="text"],
+        html[data-theme="vision-impaired"] input[type="number"],
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="vision-impaired"] input[type="color"],
+        html[data-theme="vision-impaired"] input[type="range"] {
+            background: #000;
+            color: #fff;
+            border-color: #facc15;
+            min-height: 52px;
+            font-size: 1.16rem;
+        }
+
+        html[data-theme="vision-impaired"] .checkbox-group {
+            background: #050505 !important;
+            border-color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .checkbox-group label {
+            font-size: 1.12rem !important;
+        }
+
+        .info-box {
+            background: #333;
+            border-left: 4px solid #ff6600;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+
+        .info-box h3 {
+            color: #ff9933;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .info-box p {
+            color: #bbb;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .info-box code {
+            background: #1a1a1a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #ff9933;
+            font-family: 'Courier New', monospace;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status.success {
+            background: #2d5016;
+            color: #a3e635;
+            border: 1px solid #4d7c0f;
+        }
+
+        .status.error {
+            background: #5c1a1a;
+            color: #ef4444;
+            border: 1px solid #991b1b;
+        }
+
+        /* Preview Styles */
+        :root {
+            --aspect-ratio-portrait: 177.78%; /* 9:16 */
+            --aspect-ratio-landscape: 56.25%; /* 16:9 */
+        }
+
+        .preview-container {
+            position: relative;
+            background: #1a1a1a;
+            border: 2px solid #444;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .preview-wrapper {
+            position: relative;
+            width: 100%;
+            padding-bottom: var(--aspect-ratio-portrait);
+            background: repeating-conic-gradient(#2a2a2a 0% 25%, #1a1a1a 0% 50%) 50% / 20px 20px;
+        }
+
+        .preview-wrapper.landscape {
+            padding-bottom: var(--aspect-ratio-landscape);
+        }
+
+        .preview-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .preview-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .preview-controls button {
+            padding: 8px 16px;
+            background: #444;
+            color: #e0e0e0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .preview-controls button:hover {
+            background: #555;
+        }
+
+        .preview-controls button.active {
+            background: #ff6600;
+            color: white;
+        }
+
+        .frame-position-controls {
+            background: #333;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+
+        .frame-position-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .frame-position-input {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .frame-position-input label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 0;
+        }
+
+        .frame-position-input input {
+            padding: 6px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .frame-position-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Trigger System Styles (v3.0.0) */
+        .trigger-workspace {
+            --trigger-bg: rgba(18, 21, 28, 0.95);
+            --trigger-bg-soft: rgba(255, 255, 255, 0.04);
+            --trigger-border: rgba(255, 140, 61, 0.16);
+            --trigger-border-strong: rgba(255, 140, 61, 0.32);
+        }
+
+        .trigger-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
+            gap: 16px;
+            align-items: start;
+        }
+
+        .trigger-column {
+            display: grid;
+            gap: 16px;
+            align-content: start;
+        }
+
+        .trigger-card {
+            background: linear-gradient(180deg, rgba(22, 25, 32, 0.96), rgba(14, 16, 21, 0.98));
+            border: 1px solid var(--trigger-border);
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .trigger-card-hero {
+            background:
+                radial-gradient(circle at top right, rgba(255, 122, 26, 0.12), transparent 30%),
+                linear-gradient(180deg, rgba(22, 25, 32, 0.96), rgba(14, 16, 21, 0.98));
+        }
+
+        .trigger-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .trigger-card-kicker {
+            display: inline-flex;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: rgba(255, 122, 26, 0.08);
+            border: 1px solid rgba(255, 122, 26, 0.2);
+            color: #ffc88f;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .trigger-card h3 {
+            margin: 0;
+            color: #fff5ea;
+            font-size: 17px;
+            line-height: 1.2;
+        }
+
+        .trigger-card-meta {
+            font-size: 12px;
+            color: #9aa3b2;
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            white-space: nowrap;
+        }
+
+        .trigger-master-row small {
+            display: block;
+            margin-top: 10px;
+        }
+
+        .preset-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .preset-selector-trigger {
+            margin-bottom: 0;
+        }
+
+        .preset-btn {
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            color: #d7d9df;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+        }
+
+        .preset-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 122, 26, 0.08);
+            border-color: rgba(255, 140, 61, 0.4);
+            color: #ffe0c4;
+        }
+
+        .preset-btn.active {
+            background: linear-gradient(135deg, rgba(255, 122, 26, 0.95), rgba(255, 86, 0, 0.95));
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 10px 22px rgba(255, 104, 13, 0.24);
+        }
+
+        .gift-catalog-panel {
+            background: rgba(15, 18, 24, 0.9);
+            border: 1px solid var(--trigger-border);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        .gift-catalog-toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .gift-catalog-toolbar input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(8, 10, 14, 0.96);
+            border: 1px solid rgba(255, 140, 61, 0.16);
+            border-radius: 12px;
+            color: #e8edf5;
+        }
+
+        .gift-catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 10px;
+            max-height: 320px;
+            overflow: auto;
+            padding-right: 4px;
+        }
+
+        .gift-chip {
+            display: grid;
+            grid-template-columns: 34px 1fr;
+            gap: 8px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 10px;
+            color: #e8edf5;
+            cursor: pointer;
+            text-align: left;
+            transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+        }
+
+        .gift-chip:hover {
+            transform: translateY(-1px);
+            border-color: rgba(255, 140, 61, 0.45);
+            background: rgba(255, 122, 26, 0.08);
+        }
+
+        .gift-chip img,
+        .gift-chip-placeholder {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            object-fit: cover;
+            background: rgba(10, 12, 16, 0.96);
+            display: grid;
+            place-items: center;
+            color: #ffbb66;
+            font-size: 18px;
+        }
+
+        .gift-chip-name {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .gift-chip-coins {
+            display: block;
+            color: #ffbb66;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .gift-catalog-empty {
+            color: #96a0af;
+            font-size: 13px;
+            padding: 12px;
+            text-align: center;
+            border: 1px dashed rgba(255, 255, 255, 0.16);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .trigger-policy-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 8px;
+        }
+
+        .trigger-table-shell {
+            overflow: auto;
+            border: 1px solid rgba(255, 140, 61, 0.18);
+            border-radius: 16px;
+            background: rgba(10, 12, 16, 0.84);
+            max-height: 520px;
+        }
+
+        .trigger-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            font-size: 13px;
+            margin-top: 0;
+            min-width: 840px;
+        }
+
+        .trigger-table th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: linear-gradient(180deg, rgba(20, 23, 30, 0.98), rgba(16, 18, 24, 0.98));
+            color: #ffbb77;
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255, 122, 26, 0.24);
+            letter-spacing: 0.03em;
+        }
+
+        .trigger-table td {
+            padding: 8px 6px;
+            vertical-align: middle;
+            background: rgba(255, 255, 255, 0.025);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .trigger-table tr td:first-child {
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px 0 0 12px;
+        }
+
+        .trigger-table tr td:last-child {
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 0 12px 12px 0;
+        }
+
+        .trigger-table tr:hover td {
+            background: rgba(255, 122, 26, 0.06);
+        }
+
+        .trigger-table input[type="checkbox"] {
+            accent-color: #ff7a1a;
+        }
+
+        .trigger-table input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        .trigger-table select,
+        .trigger-table input[type="text"],
+        .trigger-table input[type="number"] {
+            width: 100%;
+            padding: 8px 10px;
+            font-size: 12px;
+            background: rgba(8, 10, 14, 0.96);
+            border: 1px solid rgba(255, 140, 61, 0.16);
+            border-radius: 10px;
+            color: #e8edf5;
+        }
+
+        .trigger-table input[type="color"] {
+            width: 38px;
+            height: 32px;
+            padding: 2px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 1px solid rgba(109, 119, 139, 0.26);
+            background: rgba(8, 10, 14, 0.96);
+        }
+
+        .trigger-row-remove {
+            background: rgba(127, 29, 29, 0.92);
+            color: #fecaca;
+            border: 1px solid rgba(239, 68, 68, 0.24);
+            border-radius: 10px;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .trigger-row-remove:hover {
+            background: rgba(153, 27, 27, 0.96);
+        }
+
+        .trigger-actions-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 2px;
+        }
+
+        .btn-add-rule {
+            background: rgba(255, 255, 255, 0.04);
+            color: #d8f4e8;
+            border: 1px solid rgba(255, 140, 61, 0.22);
+            padding: 10px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .btn-add-rule:hover {
+            background: rgba(255, 122, 26, 0.12);
+            color: #ffffff;
+        }
+
+        .btn-save-triggers {
+            background: linear-gradient(135deg, rgba(255, 122, 26, 0.96), rgba(255, 86, 0, 0.96));
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .btn-save-triggers:hover {
+            filter: brightness(1.04);
+        }
+
+        .chat-commands-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .chat-command-badge {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            padding: 7px 10px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            color: #ffd7b5;
+        }
+
+        .test-buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .btn-test {
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            color: #f1dfca;
+            border: 1px solid rgba(255, 140, 61, 0.16);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 12px;
+            text-align: center;
+            transition: transform 0.16s ease, background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+        }
+
+        .btn-test:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 122, 26, 0.1);
+            color: white;
+            border-color: rgba(255, 140, 61, 0.4);
+        }
+
+        .trigger-status-box {
+            background: rgba(12, 14, 19, 0.88);
+            border: 1px solid var(--trigger-border);
+            border-radius: 16px;
+            padding: 14px;
+            margin-top: 14px;
+        }
+
+        .trigger-status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .trigger-active-count {
+            background: linear-gradient(135deg, rgba(255, 122, 26, 0.96), rgba(255, 86, 0, 0.96));
+            color: white;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .trigger-log-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 7px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 12px;
+            color: #aab3c1;
+        }
+
+        .trigger-log-item:last-child {
+            border-bottom: none;
+        }
+
+        .trigger-log-type {
+            color: #ffbb77;
+            font-weight: 700;
+        }
+
+        .trigger-stop-btn {
+            margin-top: 12px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            color: #e7edf7;
+            border: 1px solid rgba(255, 140, 61, 0.18);
+        }
+
+        .trigger-stop-btn:hover {
+            background: rgba(255, 122, 26, 0.1);
+            color: white;
+            border-color: rgba(255, 140, 61, 0.36);
+        }
+
+        .trigger-status-box #triggerLogContainer {
+            min-height: 36px;
+        }
+
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top, rgba(124, 58, 237, 0.18), transparent 30%),
+                radial-gradient(circle at 80% 8%, rgba(34, 211, 238, 0.12), transparent 22%),
+                linear-gradient(180deg, #090b0f 0%, #11151c 44%, #08090c 100%);
+        }
+
+        .control-room-shell {
+            max-width: none;
+            width: 100%;
+        }
+
+        .control-room-hero {
+            display: grid;
+            grid-template-columns: minmax(360px, 1fr) minmax(560px, 1.1fr);
+            gap: 18px;
+            align-items: stretch;
+            margin-bottom: 18px;
+        }
+
+        .control-room-panel,
+        .section,
+        .info-box,
+        .gift-catalog-panel,
+        .trigger-status-box {
+            background: linear-gradient(180deg, rgba(22, 25, 32, 0.96), rgba(14, 16, 21, 0.98));
+            border: 1px solid rgba(255, 140, 61, 0.18);
+            box-shadow: 0 18px 55px rgba(0, 0, 0, 0.36);
+        }
+
+        .control-room-panel {
+            border-radius: 18px;
+            padding: 24px;
+        }
+
+        .hero-copy {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .hero-kicker {
+            display: inline-flex;
+            align-self: flex-start;
+            padding: 7px 11px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 122, 26, 0.24);
+            background: rgba(255, 122, 26, 0.08);
+            color: #ffc88f;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .control-room-title {
+            color: #fff5ea;
+            font-size: clamp(30px, 4.2vw, 46px);
+            line-height: 1.02;
+            margin-bottom: 0;
+        }
+
+        .control-room-subtitle {
+            color: #aeb7c6;
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 0;
+            max-width: none;
+            width: 100%;
+        }
+
+        html[data-theme="cid"] .control-room-subtitle {
+            max-width: none;
+            width: 100%;
+            color: #d1e7d1;
+        }
+
+        .hero-highlights {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .hero-chip,
+        .chat-command-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .hero-chip {
+            background: rgba(255, 122, 26, 0.1);
+            color: #ffe0c4;
+            border: 1px solid rgba(255, 122, 26, 0.2);
+        }
+
+        .hero-hint {
+            color: #aeb7c6;
+            font-size: 13px;
+            line-height: 1.6;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(255, 122, 26, 0.06);
+            border: 1px solid rgba(255, 122, 26, 0.16);
+        }
+
+        .preset-strip,
+        .tab-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .preset-strip {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .visual-preset-btn,
+        .tab-btn {
+            border: 1px solid rgba(255, 153, 51, 0.28);
+            background: rgba(255, 255, 255, 0.045);
+            color: #f6d6a8;
+            border-radius: 12px;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+        }
+
+        .visual-preset-btn:hover,
+        .tab-btn:hover {
+            transform: translateY(-1px);
+            border-color: rgba(255, 159, 67, 0.65);
+            background: rgba(255, 123, 0, 0.16);
+            color: #ffffff;
+        }
+
+        .tab-btn.active,
+        .visual-preset-btn.active {
+            border-color: transparent;
+            background: linear-gradient(135deg, rgba(255, 122, 26, 0.98), rgba(255, 86, 0, 0.98));
+            color: #ffffff;
+            box-shadow: 0 12px 26px rgba(255, 104, 13, 0.25);
+        }
+
+        .control-room-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .metric {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .metric-label {
+            color: #7f8998;
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .metric-value {
+            color: #fff3df;
+            display: block;
+            font-size: 17px;
+            font-weight: 800;
+            margin-top: 4px;
+        }
+
+        .tab-pane.hidden {
+            display: none;
+        }
+
+        .section {
+            border-radius: 16px;
+        }
+
+        .section-title {
+            border-bottom-color: rgba(255, 102, 0, 0.42);
+            color: #fff4e7;
+        }
+
+        .preview-container {
+            border-radius: 16px;
+            overflow: hidden;
+            width: 100%;
+            max-width: none;
+        }
+
+        .frame-position-controls {
+            width: 100%;
+            max-width: none;
+        }
+
+        .preview-wrapper {
+            background:
+                radial-gradient(circle at center, rgba(255, 122, 26, 0.08), transparent 44%),
+                repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 16px),
+                linear-gradient(180deg, rgba(26, 29, 37, 0.96), rgba(9, 10, 13, 0.96));
+        }
+
+        .broadcast-stack {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .broadcast-card {
+            padding: 18px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, rgba(19, 22, 29, 0.92), rgba(12, 14, 18, 0.96));
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            min-height: 150px;
+        }
+
+        .broadcast-card h3 {
+            margin: 0 0 8px;
+            font-size: 16px;
+            color: #fff2e8;
+        }
+
+        .broadcast-card p {
+            margin: 0;
+            color: #aeb7c6;
+            line-height: 1.6;
+            font-size: 13px;
+        }
+
+        .card-tag {
+            display: inline-flex;
+            margin-bottom: 12px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: rgba(255, 122, 26, 0.1);
+            color: #ffc88f;
+            border: 1px solid rgba(255, 122, 26, 0.18);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .hero-actions .btn {
+            margin-right: 0;
+        }
+
+        @media (max-width: 980px) {
+            .control-room-hero,
+            .broadcast-stack {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .trigger-table {
+                font-size: 11px;
+            }
+
+            .test-buttons-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .gift-catalog-toolbar,
+            .preset-strip,
+            .control-room-metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .tab-strip {
+                position: static;
+            }
+        }
+
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: #111827;
+            color: #e5e7eb;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .section,
+        html[data-theme="vision-impaired"] .section,
+        html[data-theme="contrast"] .hero-card,
+        html[data-theme="vision-impaired"] .hero-card {
+            background: #000;
+            color: #fff;
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] h1,
+        html[data-theme="vision-impaired"] .section-title,
+        html[data-theme="vision-impaired"] .hero-title {
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .subtitle,
+        html[data-theme="vision-impaired"] .control-room-subtitle,
+        html[data-theme="vision-impaired"] .hero-hint,
+        html[data-theme="vision-impaired"] .broadcast-card p,
+        html[data-theme="vision-impaired"] .card p,
+        html[data-theme="vision-impaired"] .trigger-card-meta,
+        html[data-theme="vision-impaired"] .trigger-card-kicker,
+        html[data-theme="vision-impaired"] .hero-chip {
+            font-size: 1.16rem;
+            line-height: 1.72;
+        }
+
+        html[data-theme="vision-impaired"] .control-room-subtitle {
+            max-width: none;
+            width: 100%;
+        }
+
+        html[data-theme="vision-impaired"] input,
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="vision-impaired"] .btn,
+        html[data-theme="vision-impaired"] .action-btn {
+            border-width: 3px;
+            font-size: 1.12rem;
+        }
+
+        html[data-theme="vision-impaired"] .control-room-hero {
+            gap: 22px;
+        }
+
+        html[data-theme="vision-impaired"] .hero-kicker {
+            font-size: 12px;
+        }
+
+        html[data-theme="vision-impaired"] .control-room-title {
+            font-size: clamp(34px, 4.8vw, 54px);
+        }
+
+        html[data-theme="vision-impaired"] .hero-hint {
+            font-size: 1.14rem;
+        }
+
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
+    </style>
+    <script src="/js/i18n-client.js"></script>
+</head>
+<body>
+    <div class="container control-room-shell">
+        <div class="page-brand">
+            <div class="page-brand-copy">
+                <h1 data-i18n="visual_fx_frame_webgpu.plugin.name">Visual FX Frame WEBGPU</h1>
+                <p class="subtitle" data-i18n="generated.3e61ab77961b">Broadcast-safe WebGPU-Frame-System mit klarer Layer-Hierarchie, Live-Vorschau und direkten Trigger-Reaktionen fuer TikTok LIVE und OBS.</p>
+            </div>
+            <img class="page-brand-logo" data-brand-logo src="/plugins/visual-fx-frame-webgpu/assets/branding/visual-fx-frame-webgpu-logo.png" alt="Visual FX Frame WEBGPU">
+        </div>
+
+        <div class="control-room-hero">
+            <div class="control-room-panel hero-copy">
+                <div>
+                    <div class="hero-kicker" data-i18n="generated.596c5ee8558f">Visual FX Studio</div>
+                    <h2 class="control-room-title" data-i18n="generated.96ecad7f7689">Visual FX Frame WEBGPU Control Room</h2>
+                    <p class="control-room-subtitle" data-i18n="generated.40eb129cb018">Die Ausgabe ist auf Lesbarkeit getrimmt: ein ruhiger Base Layer, kurze Accent-Reaktionen und seltene Impact-Momente fuer grosse TikTok-Events.</p>
+                </div>
+                <div class="hero-highlights">
+                    <span class="hero-chip" data-i18n="generated.e2ba01df69c6">Base Layer</span>
+                    <span class="hero-chip" data-i18n="generated.b91fadb40289">Accent Layer</span>
+                    <span class="hero-chip" data-i18n="generated.10f82f1eb846">Impact Layer</span>
+                    <span class="hero-chip" data-i18n="generated.f2b3e30d8d09">OBS Safe</span>
+                </div>
+                <div class="hero-hint" data-i18n="generated.b1dbf5a8aadc">
+                    Content bleibt in der Mitte frei, waehrend die Effekte an den Kanten, im Rahmen und bei Triggern mit kurzer Laufzeit reagieren.
+                </div>
+            </div>
+
+            <div class="control-room-panel">
+                <div class="form-group">
+                    <label for="qualityMode" data-i18n="generated.e47ab5edfc41">Quality Mode</label>
+                    <select id="qualityMode">
+                        <option value="obs-safe">OBS-safe</option>
+                        <option value="max-quality" data-i18n="generated.0228c017f207">Max Quality</option>
+                        <option value="low-load" data-i18n="generated.305fa1f146fe">Low Load</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="visualStyle" data-i18n="visual_fx_frame_webgpu.webgpu.visualStyle">Visual Style</label>
+                    <select id="visualStyle">
+                        <option value="realistic">Realistic</option>
+                        <option value="neon">Premium Neon</option>
+                        <option value="hybrid">Hybrid</option>
+                    </select>
+                </div>
+                <div class="preset-strip">
+                    <button class="visual-preset-btn" type="button" data-visual-preset="inferno-forge" data-i18n="visual_fx_frame_webgpu.webgpu.variants.inferno">Inferno Forge</button>
+                    <button class="visual-preset-btn" type="button" data-visual-preset="neon-pulse" data-i18n="visual_fx_frame_webgpu.webgpu.variants.neon">Neon Pulse</button>
+                    <button class="visual-preset-btn" type="button" data-visual-preset="storm-portal" data-i18n="visual_fx_frame_webgpu.webgpu.variants.storm">Storm Portal</button>
+                </div>
+                <div class="control-room-metrics">
+                    <div class="metric"><span class="metric-label">Profile</span><span class="metric-value" id="profileMetric">HDR</span></div>
+                    <div class="metric"><span class="metric-label">Render</span><span class="metric-value" id="qualityMetric">OBS</span></div>
+                    <div class="metric"><span class="metric-label">Trigger</span><span class="metric-value" id="triggerMetric" data-i18n="visual_fx_frame_webgpu.ui.status.ready">Ready</span></div>
+                </div>
+                <div class="control-room-panel webgpu-runtime-panel" aria-live="polite">
+                    <span class="card-tag">WEBGPU RUNTIME</span>
+                    <div class="control-room-metrics">
+                        <div class="metric"><span class="metric-label" data-i18n="visual_fx_frame_webgpu.webgpu.runtime">Runtime</span><span class="metric-value" id="webgpuRuntimeState">initializing</span></div>
+                        <div class="metric"><span class="metric-label" data-i18n="visual_fx_frame_webgpu.webgpu.adapter">Adapter</span><span class="metric-value" id="webgpuAdapter">—</span></div>
+                        <div class="metric"><span class="metric-label">FPS</span><span class="metric-value" id="webgpuFps">—</span></div>
+                        <div class="metric"><span class="metric-label">CPU</span><span class="metric-value" id="webgpuCpuTime">—</span></div>
+                        <div class="metric"><span class="metric-label">GPU</span><span class="metric-value" id="webgpuGpuTime">—</span></div>
+                        <div class="metric"><span class="metric-label">Scale</span><span class="metric-value" id="webgpuRenderScale">—</span></div>
+                    </div>
+                    <p class="hero-hint" id="webgpuBudgets">Particles — · Field — · Bloom — · Lightning —</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="broadcast-stack">
+            <div class="broadcast-card">
+                <div class="card-tag">Base</div>
+                <h3 data-i18n="generated.8580b9087f56">Stable frame first</h3>
+                <p data-i18n="generated.89bd9a31fc99">Der Grundzustand bleibt ruhig, sauber und permanent lesbar. So wirkt das Overlay auch in langen Sessions nicht ueberladen.</p>
+            </div>
+            <div class="broadcast-card">
+                <div class="card-tag">Accent</div>
+                <h3 data-i18n="generated.5c4b544dfc0e">Short reaction bursts</h3>
+                <p data-i18n="generated.938846ed1d68">Follows, Likes und kleine Gifts loesen kurze Pulse und Farbimpulse aus, ohne die Content-Zone zu verdecken.</p>
+            </div>
+            <div class="broadcast-card">
+                <div class="card-tag">Impact</div>
+                <h3 data-i18n="generated.ace65d176db0">Peak moments only</h3>
+                <p data-i18n="generated.7bf105b3e4c4">Grosse Gifts, Shares oder manuelle Tests ziehen Lightning und starke Bloom-Spikes nur fuer wenige Sekunden.</p>
+            </div>
+        </div>
+        <div class="tab-strip" role="toolbar" aria-label="Visual FX Einstellungen">
+            <button class="tab-btn active" type="button" data-tab-target="look" aria-pressed="true">Look</button>
+            <button class="tab-btn" type="button" data-tab-target="frame" aria-pressed="false">Frame</button>
+            <button class="tab-btn" type="button" data-tab-target="motion" aria-pressed="false">Motion</button>
+            <button class="tab-btn" type="button" data-tab-target="postfx" aria-pressed="false">Post-FX</button>
+            <button class="tab-btn" type="button" data-tab-target="trigger" aria-pressed="false">Trigger</button>
+        </div>
+
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+
+        <!-- Resolution Settings -->
+        <div class="section tab-pane" data-tab="look">
+            <h2 class="section-title" data-i18n="generated.225e39662a64">🎭 Visual Mode</h2>
+
+            <div class="form-group">
+                <label for="effectType" data-i18n="generated.32dda7f2b2c1">Wähle die Rolle des Overlays:</label>
+                <select id="effectType">
+                    <option value="flames" data-i18n="generated.d3db1b428e05">Core Glow - Base Layer</option>
+                    <option value="particles" data-i18n="generated.807ad1800729">Particle Burst - Accent</option>
+                    <option value="energy" data-i18n="generated.3ba288514709">Energy Waves - Rhythm</option>
+                    <option value="lightning" data-i18n="generated.7411183297b1">Lightning - Impact</option>
+                </select>
+            </div>
+
+            <p class="hero-hint" data-i18n="generated.eb60b880d87a">
+                Jeder Modus hat eine klare Aufgabe: Grundstimmung, Reaktions-Peak oder Impact-Moment. So bleibt die Mitte ruhig und die Kanten liefern die Energie.
+            </p>
+        </div>
+
+        <!-- Real-time Preview -->
+        <div class="section tab-pane" data-tab="look">
+            <h2 class="section-title" data-i18n="generated.a33d3d58adba">👁️ Echtzeit-Vorschau</h2>
+
+            <p class="hero-hint" data-i18n="generated.12e631152b94">
+                Die Vorschau zeigt die Layer-Hierarchie in Echtzeit. Achte darauf, dass die Content-Zone frei bleibt und nur die Aussenkanten leben.
+            </p>
+
+            <div class="preview-controls">
+                <button id="previewToggle" type="button" data-i18n="generated.277a71c090c8">▶️ Vorschau starten</button>
+                <button id="previewRefreshBtn" type="button" data-i18n="generated.28cc29b4ae18">🔄 Neu laden</button>
+                <button id="previewFullscreenBtn" type="button" data-i18n="generated.e26847a05f20">⛶ Vollbild</button>
+            </div>
+
+            <div class="preview-container" id="previewContainer" style="display: none;">
+                <div class="preview-wrapper" id="previewWrapper">
+                    <iframe id="previewIframe" class="preview-iframe" src="about:blank" title="Visual FX Frame WEBGPU preview"></iframe>
+                </div>
+            </div>
+
+            <!-- Frame Positioning Controls -->
+            <div class="frame-position-controls" id="framePositionControls" style="display: none;">
+                <h3 style="color: #ff9933; font-size: 14px; margin-bottom: 10px;" data-i18n="generated.0c94f7c73db2">📍 Rahmen-Positionierung (in %)</h3>
+                <p style="color: #888; font-size: 12px; margin-bottom: 10px;" data-i18n="generated.8b950339a759">
+                    Definiere Position und Groesse so, dass Kamera, Facecam oder Gameplay nicht mit dem Effekt kollidieren.
+                </p>
+                <div class="frame-position-grid">
+                    <div class="frame-position-input">
+                        <label for="frameX" data-i18n="generated.ed1975a99830">X-Position (%)</label>
+                        <input type="number" id="frameX" min="0" max="100" value="0" step="1">
+                    </div>
+                    <div class="frame-position-input">
+                        <label for="frameY" data-i18n="generated.c3d0f258e338">Y-Position (%)</label>
+                        <input type="number" id="frameY" min="0" max="100" value="0" step="1">
+                    </div>
+                    <div class="frame-position-input">
+                        <label for="frameWidth" data-i18n="generated.b038c6e3b280">Breite (%)</label>
+                        <input type="number" id="frameWidth" min="10" max="100" value="100" step="1">
+                    </div>
+                    <div class="frame-position-input">
+                        <label for="frameHeight" data-i18n="generated.7b9aa70a9cc6">Höhe (%)</label>
+                        <input type="number" id="frameHeight" min="10" max="100" value="100" step="1">
+                    </div>
+                </div>
+                <button class="btn" id="applyFramePositionBtn" type="button" style="margin-top: 10px;">Anwenden</button>
+            </div>
+        </div>
+
+        <!-- Presets Section -->
+        <div class="section tab-pane" data-tab="look">
+            <h2 class="section-title" data-i18n="generated.f4a18e88bac0">💾 Presets</h2>
+
+            <div class="form-group">
+                <label for="presetName" data-i18n="generated.03e17af40b8d">Aktuelle Einstellungen als Preset speichern:</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="presetName" placeholder="Preset-Name (z.B. Hype Mode)" style="flex: 1;">
+                    <button class="btn" id="savePresetBtn" type="button" data-i18n="generated.c780bd28ce22">💾 Speichern</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label data-i18n="generated.38b34b864555">Gespeicherte Presets:</label>
+                <div id="presetList" style="margin-top: 10px;">
+                    <p style="color: #888; font-size: 13px;" data-i18n="generated.66c6dd7f2242">Lade Presets...</p>
+                </div>
+            </div>
+            <p class="hero-hint" data-i18n="generated.bc85f73b7c5d">Presets sichern komplette Looks fuer unterschiedliche Show-Phasen: ruhig, sauber, hektisch oder maximal laut.</p>
+        </div>
+
+        <!-- Resolution Settings -->
+        <div class="section tab-pane" data-tab="frame">
+            <h2 class="section-title" data-i18n="generated.4424291dcd0d">📐 Auflösung & Format</h2>
+
+            <div class="form-group">
+                <label for="resolutionPreset" data-i18n="generated.4d858a045dd2">Resolution Preset:</label>
+                <select id="resolutionPreset">
+                    <option value="tiktok-portrait" data-i18n="generated.78b808d379c4">TikTok Portrait (720×1280)</option>
+                    <option value="tiktok-landscape" data-i18n="generated.cef3b32c981c">TikTok Landscape (1280×720)</option>
+                    <option value="hd-portrait" data-i18n="generated.4e63dd9bf844">HD Portrait (1080×1920)</option>
+                    <option value="hd-landscape" data-i18n="generated.3f8b0446a994">HD Landscape (1920×1080)</option>
+                    <option value="2k-portrait" data-i18n="generated.0edd31ed8b4a">2K Portrait (1440×2560)</option>
+                    <option value="2k-landscape" data-i18n="generated.09a5fe43ee2c">2K Landscape (2560×1440)</option>
+                    <option value="4k-portrait" data-i18n="generated.a0f91199013b">4K Portrait (2160×3840)</option>
+                    <option value="4k-landscape" data-i18n="generated.34a41670e047">4K Landscape (3840×2160)</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </div>
+
+            <div class="grid-2" id="customResolutionGroup" style="display: none;">
+                <div class="form-group">
+                    <label for="customWidth" data-i18n="generated.d09885b8fb91">Breite (px):</label>
+                    <input type="number" id="customWidth" min="100" max="3840" value="720">
+                </div>
+                <div class="form-group">
+                    <label for="customHeight" data-i18n="generated.7883cfff8d11">Höhe (px):</label>
+                    <input type="number" id="customHeight" min="100" max="2160" value="1280">
+                </div>
+            </div>
+        </div>
+
+        <!-- Frame Settings -->
+        <div class="section tab-pane" data-tab="frame">
+            <h2 class="section-title" data-i18n="generated.48ebb48a49f1">🖼️ Rahmen Einstellungen</h2>
+
+            <div class="form-group">
+                <label for="frameMode" data-i18n="generated.7cea29442fa0">Rahmen Position:</label>
+                <select id="frameMode">
+                    <option value="bottom">Unten</option>
+                    <option value="top">Oben</option>
+                    <option value="sides" data-i18n="generated.3d78d54c152b">Seiten (Links & Rechts)</option>
+                    <option value="all" data-i18n="generated.527da5f2d024">Rundherum (Alle Kanten)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="frameThickness">Rahmenbreite: <span class="slider-value" id="frameThicknessValue" data-i18n="generated.879767286397">150 px</span></label>
+                <input type="range" id="frameThickness" min="5" max="500" value="150" step="5">
+            </div>
+
+            <div class="form-group">
+                <label for="frameStyle">Rahmenstil:</label>
+                <select id="frameStyle">
+                    <optgroup label="Basis">
+                        <option value="classic">Classic</option><option value="organic">Organic</option>
+                        <option value="double">Double</option><option value="segmented">Segmented</option>
+                        <option value="portal">Portal</option>
+                    </optgroup>
+                    <optgroup id="premiumFrameStyles" label="Premium VFX">
+                        <option value="solar-forge">Solar Forge</option>
+                        <option value="prism-reactor">Prism Reactor</option>
+                        <option value="arcane-bloom">Arcane Bloom</option>
+                        <option value="tempest-rift">Tempest Rift</option>
+                        <option value="quantum-circuit">Quantum Circuit</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-group"><label for="frameGap">Rahmenabstand: <span id="frameGapValue" class="slider-value">10 px</span></label><input type="range" id="frameGap" min="0" max="100" value="10" step="1"></div>
+            <div class="form-group"><label for="segmentCount">Segmente: <span id="segmentCountValue" class="slider-value">18</span></label><input type="range" id="segmentCount" min="4" max="64" value="18" step="1"></div>
+            <div id="premiumDesignControls" aria-live="polite">
+                <div class="form-group premium-design-panel" data-frame-design="solar-forge" hidden>
+                    <label for="designControl-emberFlow">Glutfluss <span id="designControl-emberFlowValue" class="slider-value">0.72</span></label><input id="designControl-emberFlow" type="range" min="0" max="1" step="0.01" value="0.72">
+                    <label for="designControl-moltenCrust">Schmelzkruste <span id="designControl-moltenCrustValue" class="slider-value">0.64</span></label><input id="designControl-moltenCrust" type="range" min="0" max="1" step="0.01" value="0.64">
+                </div>
+                <div class="form-group premium-design-panel" data-frame-design="prism-reactor" hidden>
+                    <label for="designControl-refraction">Brechungsstärke <span id="designControl-refractionValue" class="slider-value">0.68</span></label><input id="designControl-refraction" type="range" min="0" max="1" step="0.01" value="0.68">
+                    <label for="designControl-sweepSpeed">Sweep-Geschwindigkeit <span id="designControl-sweepSpeedValue" class="slider-value">0.55</span></label><input id="designControl-sweepSpeed" type="range" min="0" max="1" step="0.01" value="0.55">
+                </div>
+                <div class="form-group premium-design-panel" data-frame-design="arcane-bloom" hidden>
+                    <label for="designControl-runeDensity">Runendichte <span id="designControl-runeDensityValue" class="slider-value">0.62</span></label><input id="designControl-runeDensity" type="range" min="0" max="1" step="0.01" value="0.62">
+                    <label for="designControl-orbitSpeed">Orbit-Tempo <span id="designControl-orbitSpeedValue" class="slider-value">0.50</span></label><input id="designControl-orbitSpeed" type="range" min="0" max="1" step="0.01" value="0.50">
+                </div>
+                <div class="form-group premium-design-panel" data-frame-design="tempest-rift" hidden>
+                    <label for="designControl-arcCount">Bogenanzahl <span id="designControl-arcCountValue" class="slider-value">0.58</span></label><input id="designControl-arcCount" type="range" min="0" max="1" step="0.01" value="0.58">
+                    <label for="designControl-riftTurbulence">Riss-Turbulenz <span id="designControl-riftTurbulenceValue" class="slider-value">0.60</span></label><input id="designControl-riftTurbulence" type="range" min="0" max="1" step="0.01" value="0.60">
+                </div>
+                <div class="form-group premium-design-panel" data-frame-design="quantum-circuit" hidden>
+                    <label for="designControl-traceDensity">Leiterbahndichte <span id="designControl-traceDensityValue" class="slider-value">0.60</span></label><input id="designControl-traceDensity" type="range" min="0" max="1" step="0.01" value="0.60">
+                    <label for="designControl-hudSweep">HUD-Sweep <span id="designControl-hudSweepValue" class="slider-value">0.50</span></label><input id="designControl-hudSweep" type="range" min="0" max="1" step="0.01" value="0.50">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="maskOnlyEdges" checked>
+                    <label for="maskOnlyEdges" data-i18n="generated.e86586a3a9cf">Nur Kanten maskieren (weicherer Übergang)</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visual Appearance -->
+        <div class="section tab-pane" data-tab="look">
+            <h2 class="section-title" data-i18n="generated.369869f9db43">🎨 Visual Appearance</h2>
+
+            <div class="form-group">
+                <label for="flameColor">Akzentfarbe:</label>
+                <input type="color" id="flameColor" value="#ff6600">
+            </div>
+            <div class="form-group"><label for="secondaryColor">Sekundärfarbe:</label><input type="color" id="secondaryColor" value="#ffd36a"></div>
+
+            <div class="form-group">
+                <label for="backgroundTint" data-i18n="generated.ddcd0f4db57a">Hintergrund Tint:</label>
+                <input type="color" id="backgroundTint" value="#000000">
+            </div>
+
+            <div class="form-group">
+                <label for="backgroundTintOpacity"><span data-i18n="generated.e83643870b2e">Hintergrund Transparenz: </span><span class="slider-value" id="backgroundTintOpacityValue">0.0</span></label>
+                <input type="range" id="backgroundTintOpacity" min="0" max="1" value="0" step="0.1">
+            </div>
+        </div>
+
+        <!-- Motion -->
+        <div class="section tab-pane" data-tab="motion">
+            <h2 class="section-title" data-i18n="generated.e770b01a1a97">⚡ Animation</h2>
+
+            <div class="form-group">
+                <label for="flameSpeed"><span data-i18n="generated.bbd44a46ef9e">Animation Geschwindigkeit: </span><span class="slider-value" id="flameSpeedValue">0.5</span></label>
+                <input type="range" id="flameSpeed" min="0.1" max="2.0" value="0.5" step="0.1">
+            </div>
+
+            <div class="form-group">
+                <label for="flameIntensity"><span data-i18n="generated.724d4aa58eeb">Motion Intensität (Turbulenz): </span><span class="slider-value" id="flameIntensityValue">1.3</span></label>
+                <input type="range" id="flameIntensity" min="0.5" max="3.0" value="1.3" step="0.1">
+            </div>
+
+            <div class="form-group">
+                <label for="flameBrightness">Helligkeit: <span class="slider-value" id="flameBrightnessValue">0.25</span></label>
+                <input type="range" id="flameBrightness" min="0.1" max="1.0" value="0.25" step="0.05">
+            </div>
+        </div>
+
+        <!-- Visual Effects -->
+        <div class="section tab-pane" data-tab="look">
+            <h2 class="section-title" data-i18n="generated.e826273cd2ca">✨ Visuelle Effekte</h2>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="enableGlow" checked>
+                    <label for="enableGlow" data-i18n="generated.f223e3a63761">Glow-Effekt aktivieren</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="enableAdditiveBlend" checked>
+                    <label for="enableAdditiveBlend" data-i18n="generated.22defc2fa13a">Additive Blending (stärkere Highlights)</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="highDPI" checked>
+                    <label for="highDPI" data-i18n="generated.3926c3002a4a">High DPI Support (bessere Qualität auf 4K)</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quality Settings -->
+        <div class="section tab-pane" data-tab="look">
+            <h2 class="section-title" data-i18n="generated.52c3373a8b82">🎯 Qualitätseinstellungen</h2>
+
+            <div class="form-group">
+                <label for="noiseOctaves"><span data-i18n="generated.7c06e831979d">Rausch-Oktaven (Detail-Stufen): </span><span class="slider-value" id="noiseOctavesValue">8</span></label>
+                <input type="range" id="noiseOctaves" min="4" max="12" value="8" step="1">
+                <small style="color: #888;" data-i18n="generated.afe966170171">Höhere Werte = mehr Details, aber niedrigere Performance</small>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="useHighQualityTextures" checked>
+                    <label for="useHighQualityTextures" data-i18n="generated.28f37ef45df0">Hochqualitative Texturen verwenden</label>
+                </div>
+                <small style="color: #888;" data-i18n="generated.b7960b63bd09">Verbessert die visuelle Qualität auf Kosten von mehr GPU-Speicher</small>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="detailScaleAuto" checked>
+                    <label for="detailScaleAuto" data-i18n="generated.c96085f2518f">Automatische Detail-Skalierung</label>
+                </div>
+                <small style="color: #888;" data-i18n="generated.7661d9cf796a">Passt Details automatisch an die Auflösung an</small>
+            </div>
+        </div>
+
+        <div class="section tab-pane" data-tab="look">
+            <h2 class="section-title" data-i18n="generated.d826a8e27b91">Cinematic HDR Material</h2>
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="sparkEnabled" checked>
+                    <label for="sparkEnabled" data-i18n="generated.68a5f6fc0a63">Cinematic Sparks / Embers</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="sparkDensity"><span data-i18n="generated.057ddf11be38">Spark Density: </span><span class="slider-value" id="sparkDensityValue">0.78</span></label>
+                <input type="range" id="sparkDensity" min="0" max="2" value="0.78" step="0.02">
+            </div>
+        </div>
+        <!-- Edge Settings -->
+        <div class="section tab-pane" data-tab="frame">
+            <h2 class="section-title" data-i18n="generated.dcbc8d58ca49">✂️ Kanten-Einstellungen</h2>
+
+            <div class="form-group">
+                <label for="edgeFeather">Kanten-Weichzeichnung: <span class="slider-value" id="edgeFeatherValue">0.30</span></label>
+                <input type="range" id="edgeFeather" min="0" max="1" value="0.3" step="0.05">
+                <small style="color: #888;" data-i18n="generated.de2c9c2dd250">Steuert wie weich die Effekte an den Kanten auslaufen</small>
+            </div>
+
+            <div class="form-group">
+                <label for="frameCurve"><span data-i18n="generated.dea922c45328">Rahmen-Krümmung: </span><span class="slider-value" id="frameCurveValue">0.00</span></label>
+                <input type="range" id="frameCurve" min="0" max="1" value="0" step="0.05">
+                <small style="color: #888;" data-i18n="generated.38379c2585da">Fügt eine organische Krümmung zum Rahmen hinzu</small>
+            </div>
+
+            <div class="form-group">
+                <label for="frameNoiseAmount">Rahmen-Rauschen: <span class="slider-value" id="frameNoiseAmountValue">0.00</span></label>
+                <input type="range" id="frameNoiseAmount" min="0" max="1" value="0" step="0.05">
+                <small style="color: #888;" data-i18n="generated.df818ce486b8">Fügt Rauschen an den Rahmenkanten für organischeren Look hinzu</small>
+            </div>
+        </div>
+
+        <!-- Animation Advanced -->
+        <div class="section tab-pane" data-tab="motion">
+            <h2 class="section-title" data-i18n="generated.82f7f48cd618">🎬 Erweiterte Animation</h2>
+
+            <div class="form-group">
+                <label for="animationEasing">Animations-Easing:</label>
+                <select id="animationEasing">
+                    <option value="linear" data-i18n="generated.64b6d2eb10c9">Linear (Gleichmäßig)</option>
+                    <option value="sine" data-i18n="generated.040cb9473763">Sine (Wellenförmig)</option>
+                    <option value="quad" data-i18n="generated.94dff13cc34e">Quad (Beschleunigend)</option>
+                    <option value="elastic" data-i18n="generated.4fce6a9ded8f">Elastic (Elastisch)</option>
+                </select>
+                <small style="color: #888;" data-i18n="generated.927a382aaee0">Bestimmt die Bewegungskurve der Animationen</small>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="pulseEnabled">
+                    <label for="pulseEnabled" data-i18n="generated.0165c10bf04d">Puls-Effekt aktivieren</label>
+                </div>
+                <small style="color: #888;" data-i18n="generated.909895abef3f">Die Animation pulsiert rhythmisch</small>
+            </div>
+
+            <div class="form-group">
+                <label for="pulseAmount"><span data-i18n="generated.46fd5089b9b0">Puls-Intensität: </span><span class="slider-value" id="pulseAmountValue">0.20</span></label>
+                <input type="range" id="pulseAmount" min="0" max="1" value="0.2" step="0.05">
+            </div>
+
+            <div class="form-group">
+                <label for="pulseSpeed">Puls-Geschwindigkeit: <span class="slider-value" id="pulseSpeedValue">1.0</span></label>
+                <input type="range" id="pulseSpeed" min="0.1" max="3" value="1" step="0.1">
+            </div>
+            <div class="form-group"><label for="pulsePattern">Puls-Muster:</label><select id="pulsePattern"><option value="breathe">Breathe</option><option value="heartbeat">Heartbeat</option><option value="ripple">Ripple</option></select></div>
+        </div>
+
+        <!-- Bloom Section -->
+        <div class="section tab-pane" data-tab="postfx">
+            <h2 class="section-title" data-i18n="generated.356f9c60c0de">💫 Bloom-Effekt (Leuchten)</h2>
+
+            <div class="form-group">
+                <div class="checkbox-group" style="background: #333; padding: 15px; border-radius: 8px; border: 2px solid #ff6600;">
+                    <input type="checkbox" id="bloomEnabled">
+                    <label for="bloomEnabled" style="font-size: 16px; font-weight: bold; color: #ff9933;" data-i18n="generated.0e379350f210">✨ Bloom aktivieren (starkes Leuchten)</label>
+                </div>
+                <small style="color: #888;" data-i18n="generated.a6011d9a0c59">Erzeugt einen intensiven Glow-Effekt um helle Bereiche</small>
+            </div>
+
+            <div class="form-group">
+                <label for="bloomIntensity"><span data-i18n="generated.b58c31625d9d">Bloom-Intensität: </span><span class="slider-value" id="bloomIntensityValue">0.8</span></label>
+                <input type="range" id="bloomIntensity" min="0" max="2" value="0.8" step="0.1">
+                <small style="color: #888;" data-i18n="generated.307af151a587">Stärke des Bloom-Effekts</small>
+            </div>
+
+            <div class="form-group">
+                <label for="bloomThreshold">Bloom-Schwellwert: <span class="slider-value" id="bloomThresholdValue">0.60</span></label>
+                <input type="range" id="bloomThreshold" min="0" max="1" value="0.6" step="0.05">
+                <small style="color: #888;" data-i18n="generated.9dc40a3efa3c">Ab welcher Helligkeit der Bloom-Effekt einsetzt</small>
+            </div>
+
+            <div class="form-group">
+                <label for="bloomRadius">Bloom-Radius: <span class="slider-value" id="bloomRadiusValue">4</span></label>
+                <input type="range" id="bloomRadius" min="1" max="10" value="4" step="1">
+                <small style="color: #888;" data-i18n="generated.438dc8dbf251">Reichweite des Bloom-Effekts</small>
+            </div>
+        </div>
+
+        <!-- Layers Section -->
+        <div class="section tab-pane" data-tab="postfx">
+            <h2 class="section-title" data-i18n="generated.209a5314a0ae">📚 Ebenen & Tiefe</h2>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="layersEnabled" checked>
+                    <label for="layersEnabled" data-i18n="generated.7ad14c9114c9">Mehrere Ebenen aktivieren</label>
+                </div>
+                <small style="color: #888;" data-i18n="generated.956f8ad17f8f">Erzeugt Tiefe durch mehrere Schichten</small>
+            </div>
+
+            <div class="form-group">
+                <label for="layerCount"><span data-i18n="generated.beeca3dbfe06">Anzahl Ebenen: </span><span class="slider-value" id="layerCountValue">3</span></label>
+                <input type="range" id="layerCount" min="1" max="3" value="3" step="1">
+                <small style="color: #888;" data-i18n="generated.42e082e217c6">Mehr Ebenen = mehr Tiefe, aber niedrigere Performance</small>
+            </div>
+
+            <div class="form-group">
+                <label for="layerParallax">Parallax-Effekt: <span class="slider-value" id="layerParallaxValue">0.30</span></label>
+                <input type="range" id="layerParallax" min="0" max="1" value="0.3" step="0.05">
+                <small style="color: #888;" data-i18n="generated.296420859e49">Stärke des 3D-Tiefeneffekts zwischen Ebenen</small>
+            </div>
+        </div>
+
+        <!-- Post-FX Section -->
+        <div class="section tab-pane" data-tab="postfx">
+            <h2 class="section-title" data-i18n="generated.e0c01a5045f3">🎨 Nachbearbeitungs-Effekte</h2>
+
+            <div class="form-group">
+                <label for="chromaticAberration"><span data-i18n="generated.05ba648d9b33">Chromatische Aberration: </span><span class="slider-value" id="chromaticAberrationValue">0.005</span></label>
+                <input type="range" id="chromaticAberration" min="0" max="0.02" value="0.005" step="0.001">
+                <small style="color: #888;" data-i18n="generated.fd138c619dff">Farbverschiebung an Kanten (Retro-Kamera-Effekt)</small>
+            </div>
+
+            <div class="form-group">
+                <label for="filmGrain"><span data-i18n="generated.4635ee607eae">Film-Körnung: </span><span class="slider-value" id="filmGrainValue">0.03</span></label>
+                <input type="range" id="filmGrain" min="0" max="0.1" value="0.03" step="0.01">
+                <small style="color: #888;" data-i18n="generated.58fd6609190e">Analoges Film-Rauschen für organischeren Look</small>
+            </div>
+
+            <div class="form-group">
+                <label for="depthIntensity"><span data-i18n="generated.2b463877e548">Tiefen-Intensität: </span><span class="slider-value" id="depthIntensityValue">0.50</span></label>
+                <input type="range" id="depthIntensity" min="0" max="1" value="0.5" step="0.05">
+                <small style="color: #888;" data-i18n="generated.ca7507570ef1">Stärke des Tiefeneffekts im gesamten Bild</small>
+            </div>
+        </div>
+
+        <div class="section tab-pane" data-tab="postfx">
+            <h2 class="section-title" data-i18n="generated.7d30fe7a7a06">Cinematic HDR Post-FX</h2>
+            <div class="form-group">
+                <label for="cinematicContrast"><span data-i18n="generated.c2f50d0fe838">Cinematic Contrast: </span><span class="slider-value" id="cinematicContrastValue">1.18</span></label>
+                <input type="range" id="cinematicContrast" min="0" max="2" value="1.18" step="0.02">
+            </div>
+
+            <div class="form-group">
+                <label for="coreWhiteness"><span data-i18n="generated.25a55e0db37b">Hot Core Whiteness: </span><span class="slider-value" id="coreWhitenessValue">0.72</span></label>
+                <input type="range" id="coreWhiteness" min="0" max="1" value="0.72" step="0.02">
+            </div>
+
+            <div class="form-group">
+                <label for="emberTrailAmount"><span data-i18n="generated.95dcb0f6f94f">Ember Trail: </span><span class="slider-value" id="emberTrailAmountValue">0.42</span></label>
+                <input type="range" id="emberTrailAmount" min="0" max="1" value="0.42" step="0.02">
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="heatDistortionEnabled" checked>
+                    <label for="heatDistortionEnabled" data-i18n="generated.ec49e4b7a793">Heat Distortion</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="heatDistortionStrength"><span data-i18n="generated.676e730b103e">Heat Distortion Strength: </span><span class="slider-value" id="heatDistortionStrengthValue">0.32</span></label>
+                <input type="range" id="heatDistortionStrength" min="0" max="1" value="0.32" step="0.02">
+            </div>
+        </div>
+        <!-- Smoke Section -->
+        <div class="section tab-pane" data-tab="postfx">
+            <h2 class="section-title" data-i18n="generated.8ed026041349">💨 Rauch-Effekt</h2>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="smokeEnabled">
+                    <label for="smokeEnabled" data-i18n="generated.d5de744c8366">Rauch-Effekt aktivieren</label>
+                </div>
+                <small style="color: #888;" data-i18n="generated.b048a579f4bc">Fügt atmosphärischen Rauch hinzu</small>
+            </div>
+
+            <div class="form-group">
+                <label for="smokeIntensity"><span data-i18n="generated.aecebbd5c8ef">Rauch-Intensität: </span><span class="slider-value" id="smokeIntensityValue">0.40</span></label>
+                <input type="range" id="smokeIntensity" min="0" max="1" value="0.4" step="0.05">
+                <small style="color: #888;" data-i18n="generated.74784689e563">Dichte des Rauch-Effekts</small>
+            </div>
+
+            <div class="form-group">
+                <label for="smokeSpeed">Rauch-Geschwindigkeit: <span class="slider-value" id="smokeSpeedValue">0.30</span></label>
+                <input type="range" id="smokeSpeed" min="0.1" max="1" value="0.3" step="0.05">
+                <small style="color: #888;" data-i18n="generated.fde3668ccce7">Geschwindigkeit der Rauch-Animation</small>
+            </div>
+
+            <div class="form-group">
+                <label for="smokeColor">Rauch-Farbe:</label>
+                <input type="color" id="smokeColor" value="#333333">
+                <small style="color: #888;" data-i18n="generated.310d4c372079">Grundfarbe des Rauchs</small>
+            </div>
+        </div>
+
+        <!-- Trigger System (v3.0.0) -->
+        <div class="section tab-pane trigger-workspace" data-tab="trigger">
+            <h2 class="section-title" data-i18n="generated.363406f37a8b">🎮 Triggers</h2>
+
+            <div class="trigger-grid">
+                <div class="trigger-column">
+                    <div class="trigger-card trigger-card-hero">
+                        <div class="trigger-card-header">
+                            <div>
+                                <div class="trigger-card-kicker">Policy</div>
+                                <h3 data-i18n="generated.cf3d03b12913">Trigger state</h3>
+                            </div>
+                        </div>
+                        <div class="form-group trigger-master-row">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="triggersEnabled" checked>
+                                <label for="triggersEnabled" data-i18n="generated.82b004e4047f">Triggers aktiviert</label>
+                            </div>
+                            <small style="color: #888;" data-i18n="generated.3398a7a9d1ff">Reagiere auf TikTok LIVE Events mit klar begrenzten visuellen Signaturen fuer kleine und grosse Momente.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Preset:</label>
+                            <div class="preset-selector preset-selector-trigger" id="presetSelector">
+                                <button class="preset-btn active" data-preset="default">Default</button>
+                                <button class="preset-btn" data-preset="hype">Hype</button>
+                                <button class="preset-btn" data-preset="chill">Chill</button>
+                                <button class="preset-btn" data-preset="party">Party</button>
+                            </div>
+                            <small style="color: #888;" data-i18n="generated.3210c48d113f">Wähle ein Preset oder passe die Regeln unten individuell an. Das Ergebnis bleibt immer erst lesbar, dann laut.</small>
+                        </div>
+                    </div>
+
+                    <div class="trigger-card">
+                        <div class="trigger-card-header">
+                            <div>
+                                <div class="trigger-card-kicker">Catalog</div>
+                                <h3 data-i18n="generated.cf95ffcd64f4">Gift mapping</h3>
+                            </div>
+                            <div class="trigger-card-meta" data-i18n="generated.30e43df63f79">Reward, Accent, Impact</div>
+                        </div>
+                        <div class="gift-catalog-panel">
+                            <div class="gift-catalog-toolbar">
+                                <input type="search" id="giftCatalogSearch" placeholder="Geschenk suchen oder Coin-Bereich wie 99-499">
+                                <button class="btn btn-secondary" id="refreshGiftCatalogBtn" type="button" data-i18n="visual_fx_frame_webgpu.ui.actions.refresh">Aktualisieren</button>
+                                <button class="btn btn-secondary" id="addGiftRangeRuleBtn" type="button">Coin-Regel</button>
+                            </div>
+                            <div id="giftCatalogStatus" class="gift-catalog-empty" data-i18n="generated.51c7ba85c422">Geschenkekatalog wird geladen...</div>
+                            <div id="giftCatalogGrid" class="gift-catalog-grid"></div>
+                        </div>
+                        <small style="color: #888;" data-i18n="generated.b96423af6edf">Der Katalog dient als Trigger-Landkarte fuer Reward-, Accent- und Impact-Regeln.</small>
+                    </div>
+
+                    <div class="trigger-card">
+                        <div class="trigger-card-header">
+                            <div>
+                                <div class="trigger-card-kicker">Policy</div>
+                                <h3 data-i18n="generated.796b33f64ef2">Cooldown & chat</h3>
+                            </div>
+                        </div>
+                        <div class="trigger-policy-grid">
+                            <div class="form-group">
+                                <label for="triggerCooldown">Trigger-Cooldown: <span class="slider-value" id="triggerCooldownValue">2000</span> ms</label>
+                                <input type="range" id="triggerCooldown" min="0" max="10000" value="2000" step="100">
+                                <small style="color: #888;" data-i18n="generated.bdb8f1dcc465">Mindestabstand zwischen Triggern gleichen Typs (Anti-Spam)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="triggerMaxStack"><span data-i18n="generated.f8d414ad66be">Max. gleichzeitige Triggers: </span><span class="slider-value" id="triggerMaxStackValue">5</span></label>
+                                <input type="range" id="triggerMaxStack" min="1" max="20" value="5" step="1">
+                                <small style="color: #888;" data-i18n="generated.d95e8142aa1c">Maximale Anzahl gleichzeitig aktiver Trigger-Effekte</small>
+                            </div>
+                        </div>
+                        <div class="form-group trigger-chat-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="chatColorCommands" checked>
+                                <label for="chatColorCommands" data-i18n="generated.fffb6f41dac1">Chat-Farbbefehle aktivieren</label>
+                            </div>
+                            <small style="color: #888;" data-i18n="generated.d6f5bc61d5e7">Viewer können via Chat-Nachricht die Effektfarbe ändern</small>
+                            <div class="chat-commands-list" id="chatCommandsList">
+                                <span class="chat-command-badge" data-i18n="generated.a67fda938668">!red → 🔴</span>
+                                <span class="chat-command-badge" data-i18n="generated.30a62eb09dff">!blue → 🔵</span>
+                                <span class="chat-command-badge" data-i18n="generated.dabe89575516">!green → 🟢</span>
+                                <span class="chat-command-badge" data-i18n="generated.2617dcacbeb0">!purple → 🟣</span>
+                                <span class="chat-command-badge" data-i18n="generated.0afbebc56626">!pink → 💗</span>
+                                <span class="chat-command-badge" data-i18n="generated.af3ef5fc9c80">!gold → 🟡</span>
+                                <span class="chat-command-badge" data-i18n="generated.dd2c8d8b8f80">!cyan → 🩵</span>
+                                <span class="chat-command-badge" data-i18n="generated.1263a56e3900">!orange → 🟠</span>
+                                <span class="chat-command-badge" data-i18n="generated.de67a1608593">!white → ⚪</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trigger-column">
+                    <div class="trigger-card">
+                        <div class="trigger-card-header">
+                            <div>
+                                <div class="trigger-card-kicker">Rules</div>
+                                <h3 data-i18n="generated.7a98d79ca8ca">Trigger table</h3>
+                            </div>
+                            <div class="trigger-card-meta" data-i18n="generated.c2dfef816d75">Active rule set</div>
+                        </div>
+                        <div class="trigger-table-shell">
+                            <table class="trigger-table" id="triggerRulesTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width:40px;">An</th>
+                                        <th style="width:90px;">Event</th>
+                                        <th style="width:130px;">Bedingung</th>
+                                        <th style="width:130px;">Aktion</th>
+                                        <th style="width:70px;" data-i18n="generated.cfb2feb31274">Dauer (ms)</th>
+                                        <th style="width:80px;">Effekt</th>
+                                        <th style="width:45px;" data-i18n="generated.684bca4933cc">Intensität</th>
+                                        <th style="width:40px;">Farbe</th>
+                                        <th style="width:36px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="triggerRulesBody">
+                                    <!-- Dynamically filled by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="trigger-actions-row">
+                            <button class="btn-add-rule" id="addRuleBtn" data-i18n="generated.47ac4ba8328b">＋ Regel hinzufügen</button>
+                            <button class="btn-save-triggers" id="saveTriggerRulesBtn" type="button" data-i18n="generated.549ccc34c48a">💾 Trigger-Regeln speichern</button>
+                        </div>
+                    </div>
+
+                    <div class="trigger-card">
+                        <div class="trigger-card-header">
+                            <div>
+                                <div class="trigger-card-kicker">Actions</div>
+                                <h3 data-i18n="generated.9b0649dd7c33">Test & status</h3>
+                            </div>
+                        </div>
+                        <div class="test-buttons-grid">
+                            <button class="btn-test" data-trigger-type="gift-small" data-i18n="generated.3325c2fcfaec">🎁 Gift (klein)</button>
+                            <button class="btn-test" data-trigger-type="gift-medium" data-i18n="generated.efdfe890c0cc">🎁 Gift (mittel)</button>
+                            <button class="btn-test" data-trigger-type="gift-big" data-i18n="generated.7233e08091ce">🎁 Gift (groß)</button>
+                            <button class="btn-test" data-trigger-type="follow" data-i18n="generated.9ab0e811e60a">👤 Follow</button>
+                            <button class="btn-test" data-trigger-type="like-burst" data-i18n="generated.0e45c2cc4fa7">❤️ Like Burst</button>
+                            <button class="btn-test" data-trigger-type="share" data-i18n="generated.50be88b44195">📤 Share</button>
+                            <button class="btn-test" data-trigger-type="subscribe" data-i18n="generated.b6a1904461bf">⭐ Subscribe</button>
+                            <button class="btn-test" data-trigger-type="chat-red" data-i18n="generated.c44098ea68a0">💬 Chat !red</button>
+                        </div>
+
+                        <div class="trigger-status-box" id="triggerStatusBox">
+                            <div class="trigger-status-header">
+                                <span style="color: #ccc; font-size: 13px;" data-i18n="generated.6abbb547bc3e">📊 Trigger-Status</span>
+                                <span class="trigger-active-count" id="activeTriggerCount" data-i18n="generated.da5eb3dc7974">0 aktiv</span>
+                            </div>
+                            <div id="triggerLogContainer">
+                                <p style="color: #666; font-size: 12px; text-align: center; padding: 8px 0;" data-i18n="generated.8a77a429ced2">Noch keine Trigger ausgelöst</p>
+                            </div>
+                        </div>
+
+                        <button class="btn-test trigger-stop-btn" id="stopActiveTriggersBtn" type="button" data-i18n="generated.3f8e00309844">Stop Effects</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="section">
+            <button class="btn" id="saveConfigBtn" type="button" data-i18n="generated.f362d5ba30a6">💾 Einstellungen speichern</button>
+            <button class="btn btn-secondary" id="reloadConfigBtn" type="button" data-i18n="generated.096b497654bf">🔄 Neu laden</button>
+            <button class="btn btn-secondary" id="openOverlayBtn" type="button" data-i18n="generated.04bfc76d5fc0">👁️ Overlay öffnen</button>
+            <button class="btn btn-secondary" id="importFlameOverlayBtn" type="button" data-i18n="visual_fx_frame_webgpu.webgpu.import">Import Visual FX Frame</button>
+            <div class="checkbox-group" style="margin-top: 14px;">
+                <input type="checkbox" id="overwriteImportedPresets">
+                <label for="overwriteImportedPresets">Include and overwrite named presets</label>
+            </div>
+        </div>
+
+        <!-- Installation Guide -->
+        <div class="info-box">
+            <h3 data-i18n="generated.103048a58f38">📋 OBS Browser Source Einrichtung</h3>
+            <p><strong>1.</strong><span data-i18n="generated.1e77262a5061"> In OBS eine neue Browser Source erstellen</span></p>
+            <p><strong>2.</strong><span data-i18n="generated.5c12ff262540"> URL eingeben: </span><code id="overlayUrl">http://localhost:3000/visual-fx-frame-webgpu/overlay</code></p>
+            <p><strong>3.</strong><span data-i18n="generated.3da00babbd51"> Breite und Höhe entsprechend deiner Auswahl einstellen</span></p>
+            <p><strong>4.</strong><span data-i18n="generated.36ee393bf667"> "Shutdown source when not visible" deaktivieren (für bessere Performance)</span></p>
+            <p><strong>5.</strong><span data-i18n="generated.99fcd647baee"> Transparenter Hintergrund ist bereits aktiviert und OBS-safe ✅</span></p>
+        </div>
+
+        <div class="info-box">
+            <h3 data-i18n="generated.e03f82b771e5">💡 Tipps</h3>
+            <p>• <strong data-i18n="generated.d84723b6b59f">Base Layer:</strong><span data-i18n="generated.f37d1e7305a0"> Halte die Grundbewegung ruhig und die Kanten sauber, damit der Stream immer lesbar bleibt.</span></p>
+            <p>• <strong data-i18n="generated.f3067f914442">Accent Layer:</strong><span data-i18n="generated.6b5a6b2c3708"> Nutze kurze Pulse und Partikel fuer kleine Geschenke, Likes und Follow-Spikes.</span></p>
+            <p>• <strong data-i18n="generated.84a118f633a8">Impact Layer:</strong><span data-i18n="generated.99a5088dcd18"> Reserviere Lightning und starke Bloom-Spikes fuer die wirklich grossen Momente.</span></p>
+            <p>• <strong data-i18n="generated.0652ff1f219c">Quality Mode:</strong><span data-i18n="generated.48485ae99c06"> OBS-safe ist der Default, Low Load ist die Notbremse fuer schwache Hardware.</span></p>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/visual-fx-frame-webgpu/default-config.js"></script>
+    <script>
+        // Configuration constants
+        const LANDSCAPE_PRESETS = ['tiktok-landscape', 'hd-landscape', '2k-landscape', '4k-landscape'];
+        const RESOLUTION_PRESETS = {
+            'tiktok-portrait': { width: 720, height: 1280 },
+            'tiktok-landscape': { width: 1280, height: 720 },
+            'hd-portrait': { width: 1080, height: 1920 },
+            'hd-landscape': { width: 1920, height: 1080 },
+            '2k-portrait': { width: 1440, height: 2560 },
+            '2k-landscape': { width: 2560, height: 1440 },
+            '4k-portrait': { width: 2160, height: 3840 },
+            '4k-landscape': { width: 3840, height: 2160 }
+        };
+        const REALTIME_UPDATE_ELEMENTS = ['effectType', 'frameMode', 'frameStyle', 'flameColor', 'secondaryColor', 'backgroundTint',
+                                          'enableGlow', 'enableAdditiveBlend', 'maskOnlyEdges', 'highDPI',
+                                          'useHighQualityTextures', 'detailScaleAuto', 'animationEasing',
+                                          'pulseEnabled', 'pulsePattern', 'bloomEnabled', 'layersEnabled', 'smokeEnabled', 'smokeColor',
+                                          'qualityMode', 'sparkEnabled', 'heatDistortionEnabled'];
+        const CUSTOM_RESOLUTION_INPUTS = ['customWidth', 'customHeight'];
+        let currentVisualVariant = 'custom';
+        let applyingVisualPreset = false;
+        const DESIGN_CONTROL_META = {
+            'solar-forge': ['emberFlow', 'moltenCrust'],
+            'prism-reactor': ['refraction', 'sweepSpeed'],
+            'arcane-bloom': ['runeDensity', 'orbitSpeed'],
+            'tempest-rift': ['arcCount', 'riftTurbulence'],
+            'quantum-circuit': ['traceDensity', 'hudSweep']
+        };
+
+        function markVisualVariantCustom() {
+            if (applyingVisualPreset) return;
+            currentVisualVariant = 'custom';
+            document.querySelectorAll('.visual-preset-btn').forEach(button => button.classList.remove('active'));
+            document.getElementById('profileMetric').textContent = 'CUSTOM';
+        }
+
+        function collectDesignControls() {
+            const controls = {};
+            for (const [style, keys] of Object.entries(DESIGN_CONTROL_META)) {
+                controls[style] = {};
+                for (const key of keys) {
+                    controls[style][key] = Math.max(0, Math.min(1, parseFloat(document.getElementById(`designControl-${key}`).value) || 0));
+                }
+            }
+            return controls;
+        }
+
+        function updateDesignControlVisibility() {
+            const activeStyle = document.getElementById('frameStyle').value;
+            document.querySelectorAll('.premium-design-panel').forEach(panel => {
+                panel.hidden = panel.dataset.frameDesign !== activeStyle;
+            });
+        }
+
+        function getNumberInputValue(id, fallback) {
+            const value = parseInt(document.getElementById(id).value, 10);
+            return Number.isFinite(value) ? value : fallback;
+        }
+
+        function getSelectedResolution() {
+            const preset = document.getElementById('resolutionPreset').value;
+            if (preset === 'custom') {
+                return {
+                    width: getNumberInputValue('customWidth', 720),
+                    height: getNumberInputValue('customHeight', 1280)
+                };
+            }
+            return RESOLUTION_PRESETS[preset] || RESOLUTION_PRESETS['tiktok-portrait'];
+        }
+
+        const VISUAL_PRESETS = {
+            'inferno-forge': { visualVariant: 'inferno-forge', visualStyle: 'realistic', effectType: 'flames', qualityMode: 'obs-safe', frameStyle: 'organic', frameThickness: 30, frameGap: 6, segmentCount: 18, flameColor: '#ff4d00', secondaryColor: '#ffd36a', flameIntensity: 1.65, flameSpeed: 0.8, flameBrightness: 0.48, pulseEnabled: true, pulsePattern: 'breathe', pulseAmount: 0.16, pulseSpeed: 0.7, edgeFeather: 0.32, frameNoiseAmount: 0.32, bloomEnabled: true, bloomIntensity: 0.85, sparkEnabled: true, sparkDensity: 0.72, smokeEnabled: true, smokeIntensity: 0.28, coreWhiteness: 0.18 },
+            'neon-pulse': { visualVariant: 'neon-pulse', visualStyle: 'neon', effectType: 'energy', qualityMode: 'max-quality', frameStyle: 'double', frameThickness: 14, frameGap: 12, segmentCount: 20, flameColor: '#00e5ff', secondaryColor: '#ff2bd6', flameIntensity: 1.35, flameSpeed: 1.1, flameBrightness: 0.55, pulseEnabled: true, pulsePattern: 'ripple', pulseAmount: 0.42, pulseSpeed: 1.4, edgeFeather: 0.24, frameNoiseAmount: 0.08, bloomEnabled: true, bloomIntensity: 1.1, chromaticAberration: 0.008, coreWhiteness: 0.24 },
+            'storm-portal': { visualVariant: 'storm-portal', visualStyle: 'hybrid', effectType: 'lightning', qualityMode: 'obs-safe', frameStyle: 'portal', frameThickness: 10, frameGap: 6, segmentCount: 24, flameColor: '#6aa8ff', secondaryColor: '#d59cff', flameIntensity: 1.5, flameSpeed: 0.9, flameBrightness: 0.52, pulseEnabled: true, pulsePattern: 'heartbeat', pulseAmount: 0.34, pulseSpeed: 0.9, edgeFeather: 0.28, frameNoiseAmount: 0.22, bloomEnabled: true, bloomIntensity: 1.0, sparkEnabled: true, sparkDensity: 0.45, heatDistortionStrength: 0.08, coreWhiteness: 0.32 }
+        };
+
+        function setFieldValue(id, value) {
+            const element = document.getElementById(id);
+            if (!element || value === undefined) return;
+            if (element.type === 'checkbox') {
+                element.checked = Boolean(value);
+            } else {
+                element.value = value;
+            }
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        function applyVisualPreset(name) {
+            const preset = VISUAL_PRESETS[name];
+            if (!preset) return;
+            applyingVisualPreset = true;
+            for (const [key, value] of Object.entries(preset)) {
+                setFieldValue(key, value);
+            }
+            applyingVisualPreset = false;
+            currentVisualVariant = name;
+            const profileLabels = {
+                'inferno-forge': 'INFERNO',
+                'neon-pulse': 'NEON',
+                'storm-portal': 'STORM'
+            };
+            document.getElementById('profileMetric').textContent = profileLabels[name] || 'HDR';
+            document.querySelectorAll('.visual-preset-btn').forEach(button => {
+                button.classList.toggle('active', button.dataset.visualPreset === name);
+            });
+        }
+
+        function activateTab(name) {
+            document.querySelectorAll('.tab-btn').forEach(button => {
+                const active = button.dataset.tabTarget === name;
+                button.classList.toggle('active', active);
+                button.setAttribute('aria-pressed', String(active));
+            });
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.toggle('hidden', pane.dataset.tab !== name);
+            });
+        }
+
+        function focusAdjacentTab(event) {
+            const buttons = Array.from(document.querySelectorAll('.tab-btn'));
+            const currentIndex = buttons.indexOf(event.currentTarget);
+            if (currentIndex < 0) return;
+
+            let nextIndex = null;
+            if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % buttons.length;
+            if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+            if (event.key === 'Home') nextIndex = 0;
+            if (event.key === 'End') nextIndex = buttons.length - 1;
+            if (nextIndex === null) return;
+
+            event.preventDefault();
+            buttons[nextIndex].focus();
+            activateTab(buttons[nextIndex].dataset.tabTarget);
+        }
+
+        // Initialize socket.io with error handling
+        let socket = null;
+        try {
+            if (typeof io !== 'undefined') {
+                socket = io();
+                socket.on('connect_error', (error) => {
+                    console.warn('Socket.io connection error:', error);
+                });
+
+                // Listen for config updates to refresh preview
+                socket.on('visual-fx-frame-webgpu:config-update', (data) => {
+                    console.log('Config updated via socket:', data);
+                    if (isPreviewActive()) {
+                        // Preview will auto-update via its own socket listener
+                    }
+                });
+
+                // Live trigger status updates
+                socket.on('visual-fx-frame-webgpu:trigger-status', (data) => {
+                    updateTriggerStatus(data);
+                });
+            } else {
+                console.warn('Socket.io not loaded - some features may not work');
+            }
+        } catch (error) {
+            console.error('Failed to initialize socket.io:', error);
+        }
+
+        // =============================================
+        // Trigger System (v3.0.0)
+        // =============================================
+
+        const EFFECT_OPTIONS = ['flames', 'particles', 'energy', 'lightning'];
+        const ACTION_OPTIONS = ['flash', 'pulse', 'intensity-boost', 'color-change', 'color-flash', 'effect-switch', 'dramatic'];
+        const EVENT_OPTIONS = ['gift', 'follow', 'like', 'share', 'chat', 'subscribe'];
+        let giftCatalog = [];
+
+        // App-internal feature tests. The backend simulates TikTok events so
+        // rules, fallbacks, cooldown bypass, and renderer dispatch are tested together.
+        const TEST_TRIGGER_TYPES = new Set([
+            'gift-small',
+            'gift-medium',
+            'gift-big',
+            'follow',
+            'like-burst',
+            'share',
+            'subscribe',
+            'chat-red'
+        ]);
+
+        /**
+         * Build a trigger rule table row element
+         * @param {object} rule - Rule data
+         * @param {number} index - Row index
+         * @returns {HTMLTableRowElement}
+         */
+        function buildRuleRow(rule, index) {
+            const tr = document.createElement('tr');
+
+            // Enabled checkbox
+            const tdEnabled = document.createElement('td');
+            tdEnabled.innerHTML = `<input type="checkbox" class="rule-enabled" ${rule.enabled ? 'checked' : ''}>`;
+            tr.appendChild(tdEnabled);
+
+            // Event select
+            const tdEvent = document.createElement('td');
+            const eventSel = document.createElement('select');
+            eventSel.className = 'rule-event';
+            EVENT_OPTIONS.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt;
+                o.textContent = opt;
+                if (opt === rule.event) o.selected = true;
+                eventSel.appendChild(o);
+            });
+            tdEvent.appendChild(eventSel);
+            tr.appendChild(tdEvent);
+
+            // Condition text
+            const tdCond = document.createElement('td');
+            const condInput = document.createElement('input');
+            condInput.type = 'text';
+            condInput.className = 'rule-condition';
+            condInput.value = rule.condition || 'any';
+            condInput.placeholder = 'any';
+            tdCond.appendChild(condInput);
+            tr.appendChild(tdCond);
+
+            // Action select
+            const tdAction = document.createElement('td');
+            const actionSel = document.createElement('select');
+            actionSel.className = 'rule-action';
+            ACTION_OPTIONS.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt;
+                o.textContent = opt;
+                if (opt === rule.action) o.selected = true;
+                actionSel.appendChild(o);
+            });
+            tdAction.appendChild(actionSel);
+            tr.appendChild(tdAction);
+
+            // Duration
+            const tdDur = document.createElement('td');
+            const durInput = document.createElement('input');
+            durInput.type = 'number';
+            durInput.className = 'rule-duration';
+            durInput.value = rule.duration || 1000;
+            durInput.min = 100;
+            durInput.step = 100;
+            tdDur.appendChild(durInput);
+            tr.appendChild(tdDur);
+
+            // Effect (optional)
+            const tdEffect = document.createElement('td');
+            const effectSel = document.createElement('select');
+            effectSel.className = 'rule-effect';
+            effectSel.innerHTML = '<option value="">–</option>';
+            EFFECT_OPTIONS.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt;
+                o.textContent = opt;
+                if (opt === rule.effect) o.selected = true;
+                effectSel.appendChild(o);
+            });
+            tdEffect.appendChild(effectSel);
+            tr.appendChild(tdEffect);
+
+            // Amount/Intensity (optional)
+            const tdAmount = document.createElement('td');
+            const amountInput = document.createElement('input');
+            amountInput.type = 'number';
+            amountInput.className = 'rule-amount';
+            amountInput.value = rule.amount !== undefined ? rule.amount : (rule.intensity !== undefined ? rule.intensity : '');
+            amountInput.step = 0.1;
+            amountInput.min = 0;
+            amountInput.max = 3;
+            amountInput.placeholder = '–';
+            tdAmount.appendChild(amountInput);
+            tr.appendChild(tdAmount);
+
+            // Color (optional)
+            const tdColor = document.createElement('td');
+            const colorInput = document.createElement('input');
+            colorInput.type = 'color';
+            colorInput.className = 'rule-color';
+            colorInput.value = rule.color || '#ff6600';
+            // Only show for color actions
+            colorInput.style.display = ['color-change', 'color-flash'].includes(rule.action) ? 'block' : 'none';
+            actionSel.addEventListener('change', () => {
+                colorInput.style.display = ['color-change', 'color-flash'].includes(actionSel.value) ? 'block' : 'none';
+            });
+            tdColor.appendChild(colorInput);
+            tr.appendChild(tdColor);
+
+            // Remove button
+            const tdRemove = document.createElement('td');
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'trigger-row-remove';
+            removeBtn.type = 'button';
+            removeBtn.textContent = '✕';
+            removeBtn.setAttribute('aria-label', 'Trigger-Regel entfernen');
+            removeBtn.title = 'Trigger-Regel entfernen';
+            removeBtn.addEventListener('click', () => tr.remove());
+            tdRemove.appendChild(removeBtn);
+            tr.appendChild(tdRemove);
+
+            return tr;
+        }
+
+        /**
+         * Read trigger rules from the table DOM
+         * @returns {Array}
+         */
+        function collectTriggerRules() {
+            const rows = document.querySelectorAll('#triggerRulesBody tr');
+            const rules = [];
+            rows.forEach((tr, i) => {
+                const action = tr.querySelector('.rule-action').value;
+                const amountVal = tr.querySelector('.rule-amount').value;
+                const colorVal = tr.querySelector('.rule-color').value;
+                const effectVal = tr.querySelector('.rule-effect').value;
+
+                const rule = {
+                    id: tr.dataset.ruleId || `rule-${i}`,
+                    event: tr.querySelector('.rule-event').value,
+                    condition: tr.querySelector('.rule-condition').value || 'any',
+                    action,
+                    duration: parseInt(tr.querySelector('.rule-duration').value) || 1000,
+                    enabled: tr.querySelector('.rule-enabled').checked
+                };
+
+                if (effectVal) rule.effect = effectVal;
+                if (amountVal !== '') {
+                    if (action === 'pulse') rule.intensity = parseFloat(amountVal);
+                    else rule.amount = parseFloat(amountVal);
+                }
+                if (['color-change', 'color-flash'].includes(action)) rule.color = colorVal;
+
+                rules.push(rule);
+            });
+            return rules;
+        }
+
+        /**
+         * Render trigger rules into the table
+         * @param {Array} rules - Array of rule objects
+         */
+        function renderTriggerRules(rules) {
+            const tbody = document.getElementById('triggerRulesBody');
+            tbody.innerHTML = '';
+            (rules || []).forEach((rule, i) => {
+                const tr = buildRuleRow(rule, i);
+                tr.dataset.ruleId = rule.id || `rule-${i}`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function appendTriggerRule(rule) {
+            const tbody = document.getElementById('triggerRulesBody');
+            const tr = buildRuleRow(rule, tbody.rows.length);
+            tr.dataset.ruleId = rule.id || `rule-${Date.now()}`;
+            tbody.appendChild(tr);
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        }
+
+        function getGiftName(gift) {
+            return gift.name || gift.giftName || gift.gift_name || gift.title || 'Unbenannt';
+        }
+
+        function getGiftId(gift) {
+            return gift.id || gift.giftId || gift.gift_id || gift.uid || '';
+        }
+
+        function getGiftCoins(gift) {
+            const values = [
+                gift.coins,
+                gift.coinCount,
+                gift.giftCoins,
+                gift.gift_coins,
+                gift.diamondCount,
+                gift.diamond_count,
+                gift.diamonds,
+                gift.cost,
+                gift.value
+            ];
+            for (const value of values) {
+                const number = Number(value);
+                if (Number.isFinite(number) && number > 0) return number;
+            }
+            return 0;
+        }
+
+        function getGiftImage(gift) {
+            return gift.imageUrl || gift.image_url || gift.icon || gift.iconUrl || gift.url || gift.thumbnail || '';
+        }
+
+        function parseGiftRange(value) {
+            const match = String(value || '').trim().match(/^(\d+)(?:\s*[-.]{1,2}\s*(\d+))?$/);
+            if (!match) return null;
+            const min = Number(match[1]);
+            const max = match[2] ? Number(match[2]) : null;
+            if (!Number.isFinite(min) || (max !== null && !Number.isFinite(max))) return null;
+            return { min, max };
+        }
+
+        async function loadGiftCatalog() {
+            const status = document.getElementById('giftCatalogStatus');
+            const grid = document.getElementById('giftCatalogGrid');
+            if (!status || !grid) return;
+
+            status.style.display = 'block';
+            status.textContent = 'Geschenkekatalog wird geladen...';
+            grid.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/visual-fx-frame-webgpu/gift-catalog');
+                const data = await response.json();
+                const gifts = Array.isArray(data.gifts) ? data.gifts : data.catalog;
+                giftCatalog = data.success && Array.isArray(gifts) ? gifts : [];
+                renderGiftCatalog();
+            } catch (error) {
+                giftCatalog = [];
+                status.textContent = 'Geschenkekatalog konnte nicht geladen werden.';
+                console.error('Failed to load gift catalog:', error);
+            }
+        }
+
+        async function refreshGiftCatalog() {
+            const status = document.getElementById('giftCatalogStatus');
+            if (status) {
+                status.style.display = 'block';
+                status.textContent = 'Geschenkekatalog wird aktualisiert...';
+            }
+
+            try {
+                await fetch('/api/gift-catalog/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            } catch (error) {
+                console.warn('Gift catalog update endpoint failed, loading cached catalog:', error);
+            }
+
+            await loadGiftCatalog();
+        }
+
+        function renderGiftCatalog() {
+            const status = document.getElementById('giftCatalogStatus');
+            const grid = document.getElementById('giftCatalogGrid');
+            const search = document.getElementById('giftCatalogSearch')?.value.trim().toLowerCase() || '';
+            if (!status || !grid) return;
+
+            const range = parseGiftRange(search);
+            const filtered = giftCatalog
+                .filter(gift => {
+                    const name = getGiftName(gift).toLowerCase();
+                    const coins = getGiftCoins(gift);
+                    if (range) return coins >= range.min && (range.max === null || coins <= range.max);
+                    return !search || name.includes(search) || String(coins).includes(search);
+                })
+                .sort((a, b) => getGiftCoins(a) - getGiftCoins(b))
+                .slice(0, 80);
+
+            if (!giftCatalog.length) {
+                status.style.display = 'block';
+                status.textContent = 'Kein Geschenkekatalog verfuegbar. Verbinde zuerst einen TikTok Stream und aktualisiere dann.';
+                grid.innerHTML = '';
+                return;
+            }
+
+            if (!filtered.length) {
+                status.style.display = 'block';
+                status.textContent = 'Keine Geschenke fuer diese Suche gefunden.';
+                grid.innerHTML = '';
+                return;
+            }
+
+            status.style.display = 'none';
+            grid.innerHTML = filtered.map((gift, index) => {
+                const name = getGiftName(gift);
+                const coins = getGiftCoins(gift);
+                const image = getGiftImage(gift);
+                const imageHtml = image
+                    ? `<img src="${escapeHtml(image)}" alt="">`
+                    : '<span class="gift-chip-placeholder">G</span>';
+                return `<button class="gift-chip" type="button" data-gift-index="${index}">
+                    ${imageHtml}
+                    <span>
+                        <span class="gift-chip-name">${escapeHtml(name)}</span>
+                        <span class="gift-chip-coins">${coins || '?'} Coins</span>
+                    </span>
+                </button>`;
+            }).join('');
+
+            grid.querySelectorAll('.gift-chip').forEach((button, index) => {
+                button.addEventListener('click', () => addGiftRule(filtered[index]));
+            });
+        }
+
+        function addGiftRule(gift) {
+            const name = getGiftName(gift);
+            const id = getGiftId(gift);
+            const coins = getGiftCoins(gift);
+            const condition = id ? `giftId == "${String(id).replace(/"/g, '"')}"` : `giftName == "${name.replace(/"/g, '"')}"`;
+            const action = coins >= 500 ? 'dramatic' : (coins >= 100 ? 'intensity-boost' : 'flash');
+            appendTriggerRule({
+                id: `gift-${id || name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
+                event: 'gift',
+                condition,
+                action,
+                effect: coins >= 500 ? 'lightning' : '',
+                amount: coins >= 100 && coins < 500 ? 0.5 : undefined,
+                duration: coins >= 500 ? 8000 : (coins >= 100 ? 5000 : 1200),
+                enabled: true
+            });
+            showStatus(`Geschenk-Regel fuer ${name} hinzugefuegt`, 'success');
+        }
+
+        function addGiftRangeRule() {
+            const value = document.getElementById('giftCatalogSearch')?.value || '99-499';
+            const range = parseGiftRange(value) || { min: 99, max: 499 };
+            const label = range.max === null ? `${range.min}+` : `${range.min}-${range.max}`;
+            appendTriggerRule({
+                id: `gift-coins-${label}-${Date.now()}`,
+                event: 'gift',
+                condition: range.max === null ? `coins >= ${range.min}` : `coins >= ${range.min} && coins <= ${range.max}`,
+                action: 'dramatic',
+                effect: 'particles',
+                duration: 5000,
+                enabled: true
+            });
+            showStatus(`Coin-Regel ${label} hinzugefuegt`, 'success');
+        }
+
+        /**
+         * Load trigger rules from backend
+         */
+        async function loadTriggerRules() {
+            try {
+                const response = await fetch('/api/visual-fx-frame-webgpu/triggers');
+                const data = await response.json();
+                if (data.success) {
+                    renderTriggerRules(data.rules);
+                }
+            } catch (error) {
+                console.error('Failed to load trigger rules:', error);
+            }
+        }
+
+        /**
+         * Save trigger rules to backend
+         */
+        async function saveTriggerRules() {
+            try {
+                const triggerConfig = {
+                    triggerRules: collectTriggerRules(),
+                    triggersEnabled: document.getElementById('triggersEnabled').checked,
+                    chatColorCommands: document.getElementById('chatColorCommands').checked,
+                    triggerCooldown: parseInt(document.getElementById('triggerCooldown').value),
+                    triggerMaxStack: parseInt(document.getElementById('triggerMaxStack').value),
+                    triggerPreset: 'custom'
+                };
+                const response = await fetch('/api/visual-fx-frame-webgpu/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(triggerConfig)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showStatus('✅ Trigger-Regeln gespeichert!', 'success');
+                    // Mark preset as custom
+                    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                } else {
+                    showStatus('❌ Fehler: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Fehler beim Speichern: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Apply a named preset
+         * @param {string} name - Preset name
+         */
+        async function applyPreset(name) {
+            try {
+                const response = await fetch(`/api/visual-fx-frame-webgpu/trigger-preset/${name}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    // Reload trigger rules from updated config
+                    if (data.config && data.config.triggerRules) {
+                        renderTriggerRules(data.config.triggerRules);
+                        const cooldown = data.config.triggerCooldown || 2000;
+                        const maxStack = data.config.triggerMaxStack || 5;
+                        document.getElementById('triggerCooldown').value = cooldown;
+                        document.getElementById('triggerCooldownValue').textContent = cooldown;
+                        document.getElementById('triggerMaxStack').value = maxStack;
+                        document.getElementById('triggerMaxStackValue').textContent = maxStack;
+                    }
+                    // Update preset button states
+                    document.querySelectorAll('.preset-btn').forEach(b => {
+                        b.classList.toggle('active', b.dataset.preset === name);
+                    });
+                    showStatus(`✅ Preset '${name}' aktiviert`, 'success');
+                } else {
+                    showStatus('❌ Fehler: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Preset-Fehler: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Send a test trigger to the backend
+         * @param {string} triggerType - Key from TEST_TRIGGER_TYPES
+         */
+        async function sendTestTrigger(triggerType) {
+            if (!TEST_TRIGGER_TYPES.has(triggerType)) return;
+            try {
+                const response = await fetch('/api/visual-fx-frame-webgpu/test-event', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: triggerType })
+                });
+                const data = await response.json();
+                if (data.success && data.accepted === false) {
+                    showStatus(`Test '${triggerType}' ohne Effekt: ${data.reason || 'keine passende Regel'}`, 'error');
+                    return;
+                }
+                if (!data.success) {
+                    showStatus('❌ Test-Fehler: ' + data.error, 'error');
+                } else {
+                    showStatus(`🧪 Test-Trigger '${triggerType}' gesendet`, 'success');
+                }
+            } catch (error) {
+                showStatus('❌ Test-Fehler: ' + error.message, 'error');
+            }
+        }
+
+        async function clearActiveTriggers() {
+            try {
+                const response = await fetch('/api/visual-fx-frame-webgpu/clear-triggers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (!data.success) {
+                    showStatus('Stop-Fehler: ' + data.error, 'error');
+                } else {
+                    showStatus('Aktive Overlay-Effekte gestoppt', 'success');
+                }
+            } catch (error) {
+                showStatus('Stop-Fehler: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * Update the live trigger status display
+         * @param {object} data - Status object with activeTriggers and recentTriggers
+         */
+        function updateTriggerStatus(data) {
+            data = data || {};
+            const countEl = document.getElementById('activeTriggerCount');
+            const logContainer = document.getElementById('triggerLogContainer');
+
+            if (countEl) {
+                countEl.textContent = `${data.activeTriggers || 0} aktiv`;
+            }
+
+            if (!logContainer) return;
+
+            logContainer.textContent = '';
+            const recentTriggers = Array.isArray(data.recentTriggers) ? data.recentTriggers : [];
+
+            if (recentTriggers.length === 0) {
+                const empty = document.createElement('p');
+                empty.style.color = '#666';
+                empty.style.fontSize = '12px';
+                empty.style.textAlign = 'center';
+                empty.style.padding = '8px 0';
+                empty.textContent = 'Noch keine Trigger ausgelöst';
+                logContainer.appendChild(empty);
+                return;
+            }
+
+            recentTriggers.forEach(t => {
+                const item = document.createElement('div');
+                item.className = 'trigger-log-item';
+
+                const type = document.createElement('span');
+                type.className = 'trigger-log-type';
+                type.textContent = t.type || '';
+
+                const source = document.createElement('span');
+                source.style.color = '#888';
+                source.textContent = t.source || '';
+
+                const time = document.createElement('span');
+                time.style.color = '#666';
+                time.textContent = new Date(t.time).toLocaleTimeString('de-DE', { hour12: false });
+
+                item.append(type, source, time);
+                logContainer.appendChild(item);
+            });
+        }
+
+        // Preset button click handlers
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                applyPreset(btn.dataset.preset);
+            });
+        });
+
+        // Add Rule button
+        document.getElementById('addRuleBtn').addEventListener('click', () => {
+            const newRule = { id: `rule-new-${Date.now()}`, event: 'gift', condition: 'any', action: 'flash', duration: 1000, enabled: true };
+            appendTriggerRule(newRule);
+        });
+
+        // Save trigger rules button
+        document.getElementById('saveTriggerRulesBtn').addEventListener('click', saveTriggerRules);
+
+        // Test trigger buttons
+        document.querySelectorAll('.btn-test').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.triggerType) sendTestTrigger(btn.dataset.triggerType);
+            });
+        });
+
+        document.getElementById('stopActiveTriggersBtn')?.addEventListener('click', clearActiveTriggers);
+        document.getElementById('refreshGiftCatalogBtn')?.addEventListener('click', refreshGiftCatalog);
+        document.getElementById('addGiftRangeRuleBtn')?.addEventListener('click', addGiftRangeRule);
+        document.getElementById('giftCatalogSearch')?.addEventListener('input', renderGiftCatalog);
+        document.getElementById('previewToggle').addEventListener('click', togglePreview);
+        document.getElementById('previewRefreshBtn').addEventListener('click', refreshPreview);
+        document.getElementById('previewFullscreenBtn').addEventListener('click', toggleFullscreen);
+        document.getElementById('applyFramePositionBtn').addEventListener('click', applyFramePosition);
+        document.getElementById('savePresetBtn').addEventListener('click', savePreset);
+        document.getElementById('saveConfigBtn').addEventListener('click', saveConfig);
+        document.getElementById('reloadConfigBtn').addEventListener('click', loadConfig);
+        document.getElementById('openOverlayBtn').addEventListener('click', openOverlay);
+        document.getElementById('importFlameOverlayBtn').addEventListener('click', importFlameOverlaySettings);
+
+        document.querySelectorAll('.visual-preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => applyVisualPreset(btn.dataset.visualPreset));
+        });
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => activateTab(btn.dataset.tabTarget));
+            btn.addEventListener('keydown', focusAdjacentTab);
+        });
+
+        // Cooldown/MaxStack sliders
+        document.getElementById('triggerCooldown').addEventListener('input', (e) => {
+            document.getElementById('triggerCooldownValue').textContent = e.target.value;
+        });
+        document.getElementById('triggerMaxStack').addEventListener('input', (e) => {
+            document.getElementById('triggerMaxStackValue').textContent = e.target.value;
+        });
+
+        // Preview state
+        let previewActive = false;
+
+        // Check if preview is active
+        function isPreviewActive() {
+            return previewActive;
+        }
+
+        // Toggle preview on/off
+        function togglePreview() {
+            const container = document.getElementById('previewContainer');
+            const iframe = document.getElementById('previewIframe');
+            const toggle = document.getElementById('previewToggle');
+            const positionControls = document.getElementById('framePositionControls');
+
+            if (!previewActive) {
+                // Start preview
+                iframe.src = '/visual-fx-frame-webgpu/overlay';
+                container.style.display = 'block';
+                positionControls.style.display = 'block';
+                toggle.textContent = '⏸️ Vorschau stoppen';
+                previewActive = true;
+                updatePreviewAspectRatio();
+            } else {
+                // Stop preview
+                iframe.src = 'about:blank';
+                container.style.display = 'none';
+                positionControls.style.display = 'none';
+                toggle.textContent = '▶️ Vorschau starten';
+                previewActive = false;
+            }
+        }
+
+        // Refresh preview
+        function refreshPreview() {
+            const iframe = document.getElementById('previewIframe');
+            if (previewActive) {
+                // Reliable iframe reload
+                const currentSrc = iframe.src;
+                iframe.src = 'about:blank';
+                setTimeout(() => {
+                    iframe.src = currentSrc;
+                }, 50);
+            }
+        }
+
+        // Toggle fullscreen preview
+        function toggleFullscreen() {
+            const container = document.getElementById('previewContainer');
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => {
+                    console.error('Error attempting to enable fullscreen:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Update preview aspect ratio based on resolution
+        function updatePreviewAspectRatio() {
+            const wrapper = document.getElementById('previewWrapper');
+            const resolution = getSelectedResolution();
+            const width = Math.max(1, resolution.width);
+            const height = Math.max(1, resolution.height);
+            const aspectPercent = (height / width) * 100;
+
+            wrapper.classList.toggle('landscape', width > height);
+            wrapper.style.paddingBottom = `${aspectPercent}%`;
+        }
+
+        // Apply frame position
+        function applyFramePosition() {
+            // collectConfig already includes framePositions from the input fields
+            const config = collectConfig();
+
+            // Save complete config
+            fetch('/api/visual-fx-frame-webgpu/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      showStatus('✅ Rahmenposition aktualisiert!', 'success');
+                  } else {
+                      showStatus('❌ Fehler: ' + (data.error || 'Unbekannter Fehler'), 'error');
+                  }
+              })
+              .catch(error => {
+                  showStatus('❌ Fehler beim Speichern: ' + error.message, 'error');
+              });
+        }
+
+        // Update slider value displays and trigger real-time updates
+        document.querySelectorAll('input[type="range"]').forEach(slider => {
+            slider.addEventListener('input', (e) => {
+                markVisualVariantCustom();
+                const valueSpan = document.getElementById(e.target.id + 'Value');
+                if (valueSpan) {
+                    let value = e.target.value;
+                    if (e.target.id === 'frameThickness') {
+                        value += ' px';
+                    } else if (e.target.id === 'chromaticAberration') {
+                        value = parseFloat(value).toFixed(3);
+                    } else if (['edgeFeather', 'frameCurve', 'frameNoiseAmount', 'pulseAmount',
+                               'bloomThreshold', 'layerParallax', 'filmGrain', 'depthIntensity',
+                               'smokeIntensity', 'smokeSpeed', 'sparkDensity', 'cinematicContrast',
+                               'coreWhiteness', 'emberTrailAmount', 'heatDistortionStrength'].includes(e.target.id)) {
+                        value = parseFloat(value).toFixed(2);
+                    } else if (['noiseOctaves', 'bloomRadius', 'layerCount'].includes(e.target.id)) {
+                        value = parseInt(value);
+                    }
+                    valueSpan.textContent = value;
+                }
+
+                // Auto-update preview in real-time
+                if (previewActive && !applyingVisualPreset) {
+                    debouncedSaveConfig();
+                }
+            });
+        });
+
+        // Debounced save for real-time updates
+        let saveTimeout = null;
+        function debouncedSaveConfig() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveConfigSilent();
+            }, 300);
+        }
+
+        // Save config without showing status message (for real-time updates)
+        async function saveConfigSilent() {
+            try {
+                const config = collectConfig();
+
+                const response = await fetch('/api/visual-fx-frame-webgpu/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+
+                await response.json();
+            } catch (error) {
+                console.error('Error saving config:', error);
+            }
+        }
+
+        // Collect config from form
+        function collectConfig() {
+            // Get and validate frame position values
+            const frameX = Math.max(0, Math.min(100, parseFloat(document.getElementById('frameX').value) || 0));
+            const frameY = Math.max(0, Math.min(100, parseFloat(document.getElementById('frameY').value) || 0));
+            const frameWidth = Math.max(10, Math.min(100, parseFloat(document.getElementById('frameWidth').value) || 100));
+            const frameHeight = Math.max(10, Math.min(100, parseFloat(document.getElementById('frameHeight').value) || 100));
+
+            return {
+                renderer: 'webgpu',
+                effectType: document.getElementById('effectType').value,
+                qualityMode: document.getElementById('qualityMode').value,
+                visualStyle: document.getElementById('visualStyle').value,
+                visualVariant: currentVisualVariant,
+                resolutionPreset: document.getElementById('resolutionPreset').value,
+                customWidth: parseInt(document.getElementById('customWidth').value),
+                customHeight: parseInt(document.getElementById('customHeight').value),
+                frameMode: document.getElementById('frameMode').value,
+                frameStyle: document.getElementById('frameStyle').value,
+                frameThickness: parseFloat(document.getElementById('frameThickness').value),
+                frameGap: parseFloat(document.getElementById('frameGap').value),
+                segmentCount: parseInt(document.getElementById('segmentCount').value),
+                designControls: collectDesignControls(),
+                maskOnlyEdges: document.getElementById('maskOnlyEdges').checked,
+                flameColor: document.getElementById('flameColor').value,
+                secondaryColor: document.getElementById('secondaryColor').value,
+                backgroundTint: document.getElementById('backgroundTint').value,
+                backgroundTintOpacity: parseFloat(document.getElementById('backgroundTintOpacity').value),
+                flameSpeed: parseFloat(document.getElementById('flameSpeed').value),
+                flameIntensity: parseFloat(document.getElementById('flameIntensity').value),
+                flameBrightness: parseFloat(document.getElementById('flameBrightness').value),
+                enableGlow: document.getElementById('enableGlow').checked,
+                enableAdditiveBlend: document.getElementById('enableAdditiveBlend').checked,
+                highDPI: document.getElementById('highDPI').checked,
+                // Quality Settings
+                noiseOctaves: parseInt(document.getElementById('noiseOctaves').value),
+                useHighQualityTextures: document.getElementById('useHighQualityTextures').checked,
+                detailScaleAuto: document.getElementById('detailScaleAuto').checked,
+                sparkEnabled: document.getElementById('sparkEnabled').checked,
+                sparkDensity: parseFloat(document.getElementById('sparkDensity').value),
+                // Edge Settings
+                edgeFeather: parseFloat(document.getElementById('edgeFeather').value),
+                frameCurve: parseFloat(document.getElementById('frameCurve').value),
+                frameNoiseAmount: parseFloat(document.getElementById('frameNoiseAmount').value),
+                // Animation Advanced
+                animationEasing: document.getElementById('animationEasing').value,
+                pulseEnabled: document.getElementById('pulseEnabled').checked,
+                pulsePattern: document.getElementById('pulsePattern').value,
+                pulseAmount: parseFloat(document.getElementById('pulseAmount').value),
+                pulseSpeed: parseFloat(document.getElementById('pulseSpeed').value),
+                // Bloom
+                bloomEnabled: document.getElementById('bloomEnabled').checked,
+                bloomIntensity: parseFloat(document.getElementById('bloomIntensity').value),
+                bloomThreshold: parseFloat(document.getElementById('bloomThreshold').value),
+                bloomRadius: parseInt(document.getElementById('bloomRadius').value),
+                // Layers
+                layersEnabled: document.getElementById('layersEnabled').checked,
+                layerCount: parseInt(document.getElementById('layerCount').value),
+                layerParallax: parseFloat(document.getElementById('layerParallax').value),
+                // Post-FX
+                chromaticAberration: parseFloat(document.getElementById('chromaticAberration').value),
+                filmGrain: parseFloat(document.getElementById('filmGrain').value),
+                depthIntensity: parseFloat(document.getElementById('depthIntensity').value),
+                cinematicContrast: parseFloat(document.getElementById('cinematicContrast').value),
+                coreWhiteness: parseFloat(document.getElementById('coreWhiteness').value),
+                emberTrailAmount: parseFloat(document.getElementById('emberTrailAmount').value),
+                heatDistortionEnabled: document.getElementById('heatDistortionEnabled').checked,
+                heatDistortionStrength: parseFloat(document.getElementById('heatDistortionStrength').value),
+                // Smoke
+                smokeEnabled: document.getElementById('smokeEnabled').checked,
+                smokeIntensity: parseFloat(document.getElementById('smokeIntensity').value),
+                smokeSpeed: parseFloat(document.getElementById('smokeSpeed').value),
+                smokeColor: document.getElementById('smokeColor').value,
+                // Trigger settings
+                triggersEnabled: document.getElementById('triggersEnabled').checked,
+                chatColorCommands: document.getElementById('chatColorCommands').checked,
+                triggerCooldown: parseInt(document.getElementById('triggerCooldown').value),
+                triggerMaxStack: parseInt(document.getElementById('triggerMaxStack').value),
+                // Currently single-frame only, but array structure supports future multi-frame feature
+                framePositions: [{
+                    x: frameX,
+                    y: frameY,
+                    width: frameWidth,
+                    height: frameHeight
+                }]
+            };
+        }
+
+        // Toggle custom resolution inputs and trigger updates
+        document.getElementById('resolutionPreset').addEventListener('change', (e) => {
+            const customGroup = document.getElementById('customResolutionGroup');
+            customGroup.style.display = e.target.value === 'custom' ? 'grid' : 'none';
+            updatePreviewAspectRatio();
+
+            // Auto-update preview
+            if (previewActive) {
+                debouncedSaveConfig();
+            }
+        });
+
+        // Add real-time listeners to select, checkbox, and color inputs
+        REALTIME_UPDATE_ELEMENTS.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('change', () => {
+                    markVisualVariantCustom();
+                    if (id === 'frameStyle') updateDesignControlVisibility();
+                    if (previewActive && !applyingVisualPreset) {
+                        debouncedSaveConfig();
+                    }
+                });
+            }
+        });
+
+        // Add real-time listeners to custom resolution inputs
+        CUSTOM_RESOLUTION_INPUTS.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', () => {
+                    updatePreviewAspectRatio();
+                    if (previewActive) {
+                        debouncedSaveConfig();
+                    }
+                });
+            }
+        });
+
+        // Load configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/visual-fx-frame-webgpu/config');
+                const data = await response.json();
+
+                if (data.success) {
+                    const config = {
+                        ...(window.VISUAL_FX_DEFAULT_CONFIG || {}),
+                        ...data.config
+                    };
+
+                    // Effect Type
+                    document.getElementById('effectType').value = config.effectType || 'flames';
+                    document.getElementById('qualityMode').value = config.qualityMode || 'obs-safe';
+                    document.getElementById('visualStyle').value = config.visualStyle || 'hybrid';
+                    currentVisualVariant = config.visualVariant || 'custom';
+                    document.querySelectorAll('.visual-preset-btn').forEach(button => {
+                        button.classList.toggle('active', button.dataset.visualPreset === currentVisualVariant);
+                    });
+                    document.getElementById('qualityMetric').textContent = (config.qualityMode || 'obs-safe') === 'max-quality' ? 'MAX' : ((config.qualityMode || 'obs-safe') === 'low-load' ? 'LOW' : 'OBS');
+
+                    // Resolution
+                    document.getElementById('resolutionPreset').value = config.resolutionPreset || 'tiktok-portrait';
+                    document.getElementById('customWidth').value = config.customWidth || 720;
+                    document.getElementById('customHeight').value = config.customHeight || 1280;
+
+                    // Frame
+                    document.getElementById('frameMode').value = config.frameMode || 'bottom';
+                    document.getElementById('frameStyle').value = config.frameStyle || 'classic';
+                    document.getElementById('frameThickness').value = config.frameThickness || 150;
+                    document.getElementById('frameThicknessValue').textContent = (config.frameThickness || 150) + ' px';
+                    document.getElementById('frameGap').value = config.frameGap ?? 10;
+                    document.getElementById('frameGapValue').textContent = `${config.frameGap ?? 10} px`;
+                    document.getElementById('segmentCount').value = config.segmentCount ?? 18;
+                    document.getElementById('segmentCountValue').textContent = config.segmentCount ?? 18;
+                    for (const [style, keys] of Object.entries(DESIGN_CONTROL_META)) {
+                        for (const key of keys) {
+                            const value = config.designControls?.[style]?.[key] ?? window.VISUAL_FX_DEFAULT_CONFIG.designControls[style][key];
+                            document.getElementById(`designControl-${key}`).value = value;
+                            document.getElementById(`designControl-${key}Value`).textContent = Number(value).toFixed(2);
+                        }
+                    }
+                    updateDesignControlVisibility();
+                    document.getElementById('maskOnlyEdges').checked = config.maskOnlyEdges !== false;
+
+                    // Appearance
+                    document.getElementById('flameColor').value = config.flameColor || '#ff6600';
+                    document.getElementById('secondaryColor').value = config.secondaryColor || '#ffd36a';
+                    document.getElementById('backgroundTint').value = config.backgroundTint || '#000000';
+                    document.getElementById('backgroundTintOpacity').value = config.backgroundTintOpacity || 0;
+                    document.getElementById('backgroundTintOpacityValue').textContent = config.backgroundTintOpacity || 0;
+
+                    // Animation
+                    document.getElementById('flameSpeed').value = config.flameSpeed || 0.5;
+                    document.getElementById('flameSpeedValue').textContent = config.flameSpeed || 0.5;
+                    document.getElementById('flameIntensity').value = config.flameIntensity || 1.48;
+                    document.getElementById('flameIntensityValue').textContent = config.flameIntensity || 1.48;
+                    document.getElementById('flameBrightness').value = config.flameBrightness || 0.46;
+                    document.getElementById('flameBrightnessValue').textContent = config.flameBrightness || 0.46;
+
+                    // Effects
+                    document.getElementById('enableGlow').checked = config.enableGlow !== false;
+                    document.getElementById('enableAdditiveBlend').checked = config.enableAdditiveBlend !== false;
+                    document.getElementById('highDPI').checked = config.highDPI !== false;
+
+                    // Quality Settings
+                    document.getElementById('noiseOctaves').value = config.noiseOctaves || 9;
+                    document.getElementById('noiseOctavesValue').textContent = config.noiseOctaves || 9;
+                    document.getElementById('useHighQualityTextures').checked = config.useHighQualityTextures !== false;
+                    document.getElementById('detailScaleAuto').checked = config.detailScaleAuto !== false;
+                    document.getElementById('sparkEnabled').checked = config.sparkEnabled !== false;
+                    document.getElementById('sparkDensity').value = config.sparkDensity !== undefined ? config.sparkDensity : 0.78;
+                    document.getElementById('sparkDensityValue').textContent = (config.sparkDensity !== undefined ? config.sparkDensity : 0.78).toFixed(2);
+
+                    // Edge Settings
+                    document.getElementById('edgeFeather').value = config.edgeFeather !== undefined ? config.edgeFeather : 0.52;
+                    document.getElementById('edgeFeatherValue').textContent = (config.edgeFeather !== undefined ? config.edgeFeather : 0.52).toFixed(2);
+                    document.getElementById('frameCurve').value = config.frameCurve !== undefined ? config.frameCurve : 0.14;
+                    document.getElementById('frameCurveValue').textContent = (config.frameCurve !== undefined ? config.frameCurve : 0.14).toFixed(2);
+                    document.getElementById('frameNoiseAmount').value = config.frameNoiseAmount !== undefined ? config.frameNoiseAmount : 0.18;
+                    document.getElementById('frameNoiseAmountValue').textContent = (config.frameNoiseAmount !== undefined ? config.frameNoiseAmount : 0.18).toFixed(2);
+
+                    // Animation Advanced
+                    document.getElementById('animationEasing').value = config.animationEasing || 'linear';
+                    document.getElementById('pulseEnabled').checked = config.pulseEnabled || false;
+                    document.getElementById('pulsePattern').value = config.pulsePattern || 'breathe';
+                    document.getElementById('pulseAmount').value = config.pulseAmount !== undefined ? config.pulseAmount : 0.2;
+                    document.getElementById('pulseAmountValue').textContent = (config.pulseAmount !== undefined ? config.pulseAmount : 0.2).toFixed(2);
+                    document.getElementById('pulseSpeed').value = config.pulseSpeed || 1.0;
+                    document.getElementById('pulseSpeedValue').textContent = config.pulseSpeed || 1.0;
+
+                    // Bloom
+                    document.getElementById('bloomEnabled').checked = config.bloomEnabled || false;
+                    document.getElementById('bloomIntensity').value = config.bloomIntensity !== undefined ? config.bloomIntensity : 1.05;
+                    document.getElementById('bloomIntensityValue').textContent = config.bloomIntensity !== undefined ? config.bloomIntensity : 1.05;
+                    document.getElementById('bloomThreshold').value = config.bloomThreshold !== undefined ? config.bloomThreshold : 0.52;
+                    document.getElementById('bloomThresholdValue').textContent = (config.bloomThreshold !== undefined ? config.bloomThreshold : 0.52).toFixed(2);
+                    document.getElementById('bloomRadius').value = config.bloomRadius || 5;
+                    document.getElementById('bloomRadiusValue').textContent = config.bloomRadius || 5;
+
+                    // Layers
+                    document.getElementById('layersEnabled').checked = config.layersEnabled !== false;
+                    document.getElementById('layerCount').value = config.layerCount || 3;
+                    document.getElementById('layerCountValue').textContent = config.layerCount || 3;
+                    document.getElementById('layerParallax').value = config.layerParallax !== undefined ? config.layerParallax : 0.3;
+                    document.getElementById('layerParallaxValue').textContent = (config.layerParallax !== undefined ? config.layerParallax : 0.3).toFixed(2);
+
+                    // Post-FX
+                    document.getElementById('chromaticAberration').value = config.chromaticAberration !== undefined ? config.chromaticAberration : 0.006;
+                    document.getElementById('chromaticAberrationValue').textContent = (config.chromaticAberration !== undefined ? config.chromaticAberration : 0.006).toFixed(3);
+                    document.getElementById('filmGrain').value = config.filmGrain !== undefined ? config.filmGrain : 0.025;
+                    document.getElementById('filmGrainValue').textContent = (config.filmGrain !== undefined ? config.filmGrain : 0.025).toFixed(2);
+                    document.getElementById('depthIntensity').value = config.depthIntensity !== undefined ? config.depthIntensity : 0.78;
+                    document.getElementById('depthIntensityValue').textContent = (config.depthIntensity !== undefined ? config.depthIntensity : 0.78).toFixed(2);
+                    document.getElementById('cinematicContrast').value = config.cinematicContrast !== undefined ? config.cinematicContrast : 1.18;
+                    document.getElementById('cinematicContrastValue').textContent = (config.cinematicContrast !== undefined ? config.cinematicContrast : 1.18).toFixed(2);
+                    document.getElementById('coreWhiteness').value = config.coreWhiteness !== undefined ? config.coreWhiteness : 0.72;
+                    document.getElementById('coreWhitenessValue').textContent = (config.coreWhiteness !== undefined ? config.coreWhiteness : 0.72).toFixed(2);
+                    document.getElementById('emberTrailAmount').value = config.emberTrailAmount !== undefined ? config.emberTrailAmount : 0.42;
+                    document.getElementById('emberTrailAmountValue').textContent = (config.emberTrailAmount !== undefined ? config.emberTrailAmount : 0.42).toFixed(2);
+                    document.getElementById('heatDistortionEnabled').checked = config.heatDistortionEnabled !== false;
+                    document.getElementById('heatDistortionStrength').value = config.heatDistortionStrength !== undefined ? config.heatDistortionStrength : 0.32;
+                    document.getElementById('heatDistortionStrengthValue').textContent = (config.heatDistortionStrength !== undefined ? config.heatDistortionStrength : 0.32).toFixed(2);
+
+                    // Smoke
+                    document.getElementById('smokeEnabled').checked = config.smokeEnabled || false;
+                    document.getElementById('smokeIntensity').value = config.smokeIntensity !== undefined ? config.smokeIntensity : 0.48;
+                    document.getElementById('smokeIntensityValue').textContent = (config.smokeIntensity !== undefined ? config.smokeIntensity : 0.48).toFixed(2);
+                    document.getElementById('smokeSpeed').value = config.smokeSpeed !== undefined ? config.smokeSpeed : 0.28;
+                    document.getElementById('smokeSpeedValue').textContent = (config.smokeSpeed !== undefined ? config.smokeSpeed : 0.28).toFixed(2);
+                    document.getElementById('smokeColor').value = config.smokeColor || '#2d2623';
+
+                    // Frame position
+                    if (config.framePositions && config.framePositions.length > 0) {
+                        document.getElementById('frameX').value = config.framePositions[0].x || 0;
+                        document.getElementById('frameY').value = config.framePositions[0].y || 0;
+                        document.getElementById('frameWidth').value = config.framePositions[0].width || 100;
+                        document.getElementById('frameHeight').value = config.framePositions[0].height || 100;
+                    }
+
+                    // Trigger settings
+                    document.getElementById('triggersEnabled').checked = config.triggersEnabled !== false;
+                    document.getElementById('chatColorCommands').checked = config.chatColorCommands !== false;
+                    const cooldown = config.triggerCooldown !== undefined ? config.triggerCooldown : 2000;
+                    document.getElementById('triggerCooldown').value = cooldown;
+                    document.getElementById('triggerCooldownValue').textContent = cooldown;
+                    const maxStack = config.triggerMaxStack !== undefined ? config.triggerMaxStack : 5;
+                    document.getElementById('triggerMaxStack').value = maxStack;
+                    document.getElementById('triggerMaxStackValue').textContent = maxStack;
+
+                    // Update preset button active state
+                    const currentPreset = config.triggerPreset || 'default';
+                    document.querySelectorAll('.preset-btn').forEach(b => {
+                        b.classList.toggle('active', b.dataset.preset === currentPreset);
+                    });
+
+                    // Load trigger rules into table
+                    loadTriggerRules();
+                    loadGiftCatalog();
+
+                    // Trigger custom resolution visibility
+                    document.getElementById('resolutionPreset').dispatchEvent(new Event('change'));
+
+                    showStatus('Konfiguration geladen', 'success');
+
+                    // Refresh preset list
+                    loadPresets();
+                }
+            } catch (error) {
+                showStatus('Fehler beim Laden: ' + error.message, 'error');
+            }
+        }
+
+        // Save configuration
+        async function saveConfig() {
+            try {
+                const config = collectConfig();
+
+                const response = await fetch('/api/visual-fx-frame-webgpu/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('✅ Einstellungen gespeichert!', 'success');
+                } else {
+                    showStatus('Fehler: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('Fehler beim Speichern: ' + error.message, 'error');
+            }
+        }
+
+        function metricText(value, suffix = '') {
+            return value !== null && value !== undefined && Number.isFinite(Number(value))
+                ? `${Number(value).toFixed(1)}${suffix}`
+                : '—';
+        }
+
+        async function loadWebGPUStatus() {
+            try {
+                const response = await fetch('/api/visual-fx-frame-webgpu/status');
+                const payload = await response.json();
+                if (!response.ok || !payload.success) throw new Error(payload.error || `HTTP ${response.status}`);
+                const renderer = payload.renderer || {};
+                const adapter = renderer.adapter || {};
+                const budgets = renderer.budgets || {};
+                document.getElementById('webgpuRuntimeState').textContent = renderer.state || 'initializing';
+                document.getElementById('webgpuAdapter').textContent = adapter.description || adapter.device || 'WebGPU adapter';
+                document.getElementById('webgpuFps').textContent = metricText(renderer.fps);
+                document.getElementById('webgpuCpuTime').textContent = metricText(renderer.cpuFrameTimeMs, ' ms');
+                document.getElementById('webgpuGpuTime').textContent = metricText(renderer.gpuFrameTimeMs, ' ms');
+                document.getElementById('webgpuRenderScale').textContent = metricText((renderer.renderScale || 0) * 100, '%');
+                document.getElementById('webgpuBudgets').textContent = `Particles ${budgets.maxParticles || '—'} · Field ${budgets.fieldResolution || '—'} · Bloom ${budgets.bloomLevels || '—'} · Lightning ${budgets.lightningBranches || '—'}`;
+            } catch (error) {
+                document.getElementById('webgpuRuntimeState').textContent = 'error';
+                document.getElementById('webgpuBudgets').textContent = error.message;
+            }
+        }
+
+        async function importFlameOverlaySettings() {
+            try {
+                const previewResponse = await fetch('/api/visual-fx-frame-webgpu/import/flame-overlay');
+                const preview = await previewResponse.json();
+                if (!previewResponse.ok || !preview.available) {
+                    throw new Error(preview.error || 'No Visual FX Frame settings were found.');
+                }
+                const overwritePresets = document.getElementById('overwriteImportedPresets').checked;
+                const accepted = window.confirm(`Import ${preview.fieldsImported} compatible fields from Visual FX Frame?${overwritePresets ? ' Named presets will be overwritten.' : ''}`);
+                if (!accepted) return;
+                const response = await fetch('/api/visual-fx-frame-webgpu/import/flame-overlay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ confirm: true, overwritePresets })
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.error || 'Import failed.');
+                showStatus(`Imported ${result.fieldsImported} fields${result.presetsImported ? ' and presets' : ''}.`, 'success');
+                await loadConfig();
+                await loadWebGPUStatus();
+            } catch (error) {
+                showStatus(`Import failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Open overlay in new window
+        function openOverlay() {
+            const resolution = getSelectedResolution();
+            window.open(
+                '/visual-fx-frame-webgpu/overlay',
+                'VisualFXFrame',
+                `width=${resolution.width},height=${resolution.height}`
+            );
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = 'status ' + type;
+            statusEl.style.display = 'block';
+
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 3000);
+        }
+
+        // ===== Preset Management =====
+
+        // Safely escape HTML to prevent XSS when inserting preset names into innerHTML
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Load and display presets
+        async function loadPresets() {
+            try {
+                const response = await fetch('/api/visual-fx-frame-webgpu/presets');
+                const data = await response.json();
+                if (data.success) {
+                    renderPresetList(data.presets);
+                }
+            } catch (error) {
+                console.error('Error loading presets:', error);
+            }
+        }
+
+        function renderPresetList(presets) {
+            const container = document.getElementById('presetList');
+            const names = Object.keys(presets);
+
+            if (names.length === 0) {
+                container.innerHTML = '<p style="color: #f3f4f6; font-size: 14px; line-height: 1.5;">Noch keine Presets gespeichert.</p>';
+                return;
+            }
+
+            container.innerHTML = names.map(name => {
+                const preset = presets[name];
+                const date = new Date(preset.createdAt).toLocaleDateString('de-DE');
+                const escapedName = escapeHtml(name);
+                return `
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: #333; padding: 10px 15px; border-radius: 4px; margin-bottom: 8px;">
+                        <div>
+                            <strong style="color: #ff9933;">${escapedName}</strong>
+                            <span style="color: #e5e7eb; font-size: 14px; line-height: 1.45; margin-left: 10px;">Gespeichert am ${escapeHtml(date)}</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn preset-load-btn" data-preset-name="${escapedName}" style="padding: 6px 12px; font-size: 12px;">📂 Laden</button>
+                            <button class="btn btn-secondary preset-delete-btn" data-preset-name="${escapedName}" aria-label="Preset ${escapedName} löschen" title="Preset löschen" style="padding: 6px 12px; font-size: 12px;">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Attach event listeners via delegation
+            container.querySelectorAll('.preset-load-btn').forEach(btn => {
+                btn.addEventListener('click', () => loadPreset(btn.dataset.presetName));
+            });
+            container.querySelectorAll('.preset-delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => deletePreset(btn.dataset.presetName));
+            });
+        }
+
+        async function savePreset() {
+            const name = document.getElementById('presetName').value.trim();
+            if (!name) {
+                showStatus('❌ Bitte gib einen Preset-Namen ein!', 'error');
+                return;
+            }
+
+            try {
+                // Save current config first
+                await saveConfigSilent();
+
+                const response = await fetch(`/api/visual-fx-frame-webgpu/presets/${encodeURIComponent(name)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showStatus(`✅ Preset "${name}" gespeichert!`, 'success');
+                    document.getElementById('presetName').value = '';
+                    loadPresets();
+                } else {
+                    showStatus('❌ ' + (data.error || 'Fehler'), 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Fehler: ' + error.message, 'error');
+            }
+        }
+
+        async function loadPreset(name) {
+            try {
+                const response = await fetch(`/api/visual-fx-frame-webgpu/presets/${encodeURIComponent(name)}/load`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showStatus(`✅ Preset "${name}" geladen!`, 'success');
+                    loadConfig();
+                } else {
+                    showStatus('❌ ' + (data.error || 'Fehler'), 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Fehler: ' + error.message, 'error');
+            }
+        }
+
+        async function deletePreset(name) {
+            if (!confirm(`Preset "${name}" wirklich löschen?`)) return;
+
+            try {
+                const response = await fetch(`/api/visual-fx-frame-webgpu/presets/${encodeURIComponent(name)}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showStatus(`✅ Preset "${name}" gelöscht!`, 'success');
+                    loadPresets();
+                } else {
+                    showStatus('❌ ' + (data.error || 'Fehler'), 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Fehler: ' + error.message, 'error');
+            }
+        }
+
+        // Update overlay URL based on current location
+        const overlayUrl = window.location.origin + '/visual-fx-frame-webgpu/overlay';
+            document.getElementById('overlayUrl').textContent = overlayUrl;
+
+        // Load config on page load
+        activateTab('look');
+        loadConfig();
+        loadWebGPUStatus();
+        setInterval(loadWebGPUStatus, 2000);
+    </script>
+
+<style id="final-flame-preset-contrast">
+html[data-theme="day"] .visual-preset-btn,
+html[data-theme="night"] .visual-preset-btn {
+  background: #111827 !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  border: 2px solid #f6d6a8 !important;
+}
+html[data-theme="contrast"] .visual-preset-btn,
+html[data-theme="vision-impaired"] .visual-preset-btn {
+  background: #000000 !important;
+  color: #ffd400 !important;
+  -webkit-text-fill-color: #ffd400 !important;
+  border: 3px solid #ffd400 !important;
+  min-height: 48px;
+}
+</style>
+<style id="final-flame-section-button-contrast">
+html[data-theme="day"] .section,
+html[data-theme="day"] .tab-pane {
+  background: #ffffff !important;
+  color: #10203a !important;
+  -webkit-text-fill-color: #10203a !important;
+  border: 2px solid #cbd5e1 !important;
+}
+
+html[data-theme="day"] .btn,
+html[data-theme="night"] .btn,
+html[data-theme="contrast"] .btn,
+html[data-theme="vision-impaired"] .btn {
+  background: #b45309 !important;
+  color: #fff4e7 !important;
+  -webkit-text-fill-color: #fff4e7 !important;
+  border: 2px solid #facc15 !important;
+}
+
+html[data-theme="vision-impaired"] .btn {
+  min-height: 48px;
+  font-size: 1.05rem;
+}
+</style>
+<style id="final-flame-day-controls-contrast">
+html[data-theme="day"] button,
+html[data-theme="day"] input,
+html[data-theme="day"] select,
+html[data-theme="day"] textarea {
+  background: #ffffff !important;
+  color: #10203a !important;
+  -webkit-text-fill-color: #10203a !important;
+  border: 2px solid #64748b !important;
+}
+
+html[data-theme="day"] .btn,
+html[data-theme="night"] .btn,
+html[data-theme="contrast"] .btn,
+html[data-theme="vision-impaired"] .btn,
+html[data-theme="day"] #savePresetBtn,
+html[data-theme="night"] #savePresetBtn,
+html[data-theme="contrast"] #savePresetBtn,
+html[data-theme="vision-impaired"] #savePresetBtn,
+html[data-theme="day"] #saveConfigBtn,
+html[data-theme="night"] #saveConfigBtn,
+html[data-theme="contrast"] #saveConfigBtn,
+html[data-theme="vision-impaired"] #saveConfigBtn {
+  background: #92400e !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 2px solid #facc15 !important;
+}
+</style>
+<style id="final-flame-day-secondary-buttons">
+html[data-theme="day"] button:not(#savePresetBtn):not(#saveConfigBtn),
+html[data-theme="day"] .btn:not(#savePresetBtn):not(#saveConfigBtn) {
+  background: #e2e8f0 !important;
+  color: #10203a !important;
+  -webkit-text-fill-color: #10203a !important;
+  border: 2px solid #64748b !important;
+}
+</style>
+<style id="visual-fx-frame-branding-overrides">
+:root {
+  --vfx-accent: #8b5cf6;
+  --vfx-accent-2: #22d3ee;
+  --vfx-text: #e5eefc;
+  --vfx-muted: #aab6d6;
+  --vfx-border: rgba(148, 163, 184, 0.24);
+  --vfx-surface: rgba(10, 14, 24, 0.9);
+  --vfx-surface-strong: rgba(7, 10, 18, 0.96);
+  --vfx-shadow: 0 18px 50px rgba(4, 8, 20, 0.35);
+}
+
+body {
+  font-family: "Segoe UI Variable Text", "Segoe UI", "Aptos", Tahoma, sans-serif !important;
+  background:
+    radial-gradient(circle at top left, rgba(139, 92, 246, 0.22), transparent 28%),
+    radial-gradient(circle at top right, rgba(34, 211, 238, 0.16), transparent 22%),
+    linear-gradient(180deg, #090d18 0%, #0e1422 44%, #080b11 100%) !important;
+  color: var(--vfx-text) !important;
+}
+
+.container.control-room-shell {
+  max-width: 1760px;
+  margin: 0 auto;
+  padding-bottom: 28px;
+}
+
+.page-brand {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 24px;
+  align-items: center;
+  padding: 20px 22px;
+  margin-bottom: 20px;
+}
+
+.page-brand-logo {
+  width: min(320px, 100%);
+  max-height: 100px;
+  justify-self: end;
+  filter: drop-shadow(0 18px 30px rgba(16, 9, 48, 0.35));
+}
+
+h1 {
+  color: #f8faff !important;
+  font-size: clamp(2rem, 2vw + 1rem, 3rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.page-brand-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.page-brand-copy .subtitle {
+  margin-bottom: 0;
+}
+
+.page-brand-copy h1 {
+  margin: 0;
+  font-size: clamp(2.3rem, 2.4vw + 1rem, 3.6rem);
+}
+
+@media (max-width: 1280px) {
+  .page-brand {
+    grid-template-columns: 1fr;
+  }
+
+  .page-brand-logo {
+    width: min(320px, 100%);
+    justify-self: start;
+  }
+}
+
+.subtitle {
+  max-width: 88ch;
+  line-height: 1.55;
+  color: var(--vfx-muted) !important;
+}
+
+.control-room-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(360px, 0.9fr);
+  gap: 18px;
+  align-items: stretch;
+  margin-top: 2px;
+  margin-bottom: 18px;
+}
+
+.control-room-panel,
+.page-brand,
+.broadcast-card,
+.section,
+.info-box,
+.trigger-card,
+.preview-container,
+.preview-wrapper,
+.frame-position-controls {
+  border: 1px solid var(--vfx-border) !important;
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--vfx-surface), var(--vfx-surface-strong)) !important;
+  box-shadow: var(--vfx-shadow);
+  backdrop-filter: blur(16px);
+}
+
+.control-room-panel {
+  padding: 18px;
+}
+
+.hero-copy {
+  padding: 18px;
+}
+
+.hero-kicker,
+.card-tag,
+.trigger-card-kicker,
+.trigger-card-meta {
+  color: #7dd3fc;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.control-room-title {
+  color: #ffffff !important;
+  font-size: clamp(2rem, 3vw, 3.4rem);
+  line-height: 1.05;
+  margin: 8px 0 10px;
+}
+
+.control-room-subtitle,
+.hero-hint,
+.broadcast-card p,
+.info-box p,
+.trigger-card p,
+.trigger-card small,
+.gift-catalog-toolbar small,
+.frame-position-input small,
+.trigger-status-box p,
+small {
+  color: var(--vfx-muted) !important;
+}
+
+label {
+  color: #dbeafe !important;
+}
+
+.hero-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.hero-chip,
+.metric,
+.tab-btn,
+.visual-preset-btn,
+.preview-controls button,
+.btn,
+.btn-secondary,
+.btn-add-rule,
+.btn-save-triggers,
+.btn-test {
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.hero-chip,
+.metric {
+  background: rgba(15, 23, 42, 0.72) !important;
+  color: #eef2ff !important;
+}
+
+.tab-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 0 16px;
+}
+
+.tab-btn {
+  background: rgba(15, 23, 42, 0.68) !important;
+  color: #dbeafe !important;
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(34, 211, 238, 0.92)) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 16px 36px rgba(91, 33, 182, 0.36);
+}
+
+.section-title {
+  color: #f5f3ff !important;
+  border-bottom: 2px solid rgba(34, 211, 238, 0.35) !important;
+}
+
+.visual-preset-btn {
+  background: linear-gradient(180deg, rgba(23, 32, 53, 0.95), rgba(12, 18, 31, 0.95)) !important;
+  color: #eef2ff !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+}
+
+.visual-preset-btn.active,
+.visual-preset-btn:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(34, 211, 238, 0.95)) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="search"],
+select,
+input[type="color"],
+input[type="range"] {
+  background: rgba(9, 13, 23, 0.92) !important;
+  color: #f8fbff !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+select:focus {
+  border-color: rgba(34, 211, 238, 0.9) !important;
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+
+input[type="range"]::-webkit-slider-thumb,
+input[type="range"]::-moz-range-thumb {
+  background: linear-gradient(135deg, #8b5cf6, #22d3ee) !important;
+}
+
+.btn,
+.preview-controls button,
+.btn-add-rule,
+.btn-save-triggers,
+.btn-test {
+  background: linear-gradient(135deg, #8b5cf6, #22d3ee) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+}
+
+.btn-secondary,
+.preview-controls button:not(.active) {
+  background: rgba(15, 23, 42, 0.82) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #eef2ff !important;
+}
+
+.broadcast-card {
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(14, 18, 30, 0.88), rgba(10, 13, 22, 0.94)) !important;
+}
+
+.broadcast-card h3,
+.trigger-card h3,
+.info-box h3 {
+  color: #ffffff !important;
+}
+
+.preview-wrapper {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.14), transparent 25%),
+    radial-gradient(circle at 80% 80%, rgba(34, 211, 238, 0.14), transparent 25%),
+    linear-gradient(180deg, rgba(15, 20, 32, 0.96), rgba(8, 10, 16, 0.98)) !important;
+}
+
+.preview-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.preview-controls button {
+  min-height: 44px;
+}
+
+#presetList > div,
+.gift-catalog-panel,
+.trigger-table-shell,
+.trigger-status-box {
+  background: rgba(8, 12, 20, 0.8) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+#presetList > div {
+  border-radius: 16px !important;
+}
+
+#presetList strong {
+  color: #a78bfa !important;
+}
+
+#presetList span,
+#presetList p {
+  color: #dbeafe !important;
+}
+
+#framePositionControls h3,
+#bloomEnabled + label,
+#status {
+  color: #f8fafc !important;
+}
+
+#framePositionControls p,
+#giftCatalogStatus,
+.gift-catalog-empty {
+  color: #aab6d6 !important;
+}
+
+html[data-theme="day"] body {
+  background: linear-gradient(180deg, #eef3ff 0%, #f8fbff 100%) !important;
+  color: #10203a !important;
+}
+
+html[data-theme="day"] .section,
+html[data-theme="day"] .info-box,
+html[data-theme="day"] .broadcast-card,
+html[data-theme="day"] .page-brand,
+html[data-theme="day"] .control-room-panel,
+html[data-theme="day"] .control-room-hero,
+html[data-theme="day"] .trigger-card,
+html[data-theme="day"] .preview-container,
+html[data-theme="day"] .preview-wrapper,
+html[data-theme="day"] .frame-position-controls {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #10203a !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+}
+
+html[data-theme="day"] h1,
+html[data-theme="day"] .control-room-title,
+html[data-theme="day"] .section-title {
+  color: #0f172a !important;
+}
+
+html[data-theme="day"] .subtitle,
+html[data-theme="day"] .control-room-subtitle,
+html[data-theme="day"] .hero-hint,
+html[data-theme="day"] .broadcast-card p,
+html[data-theme="day"] .info-box p,
+html[data-theme="day"] .trigger-card p,
+html[data-theme="day"] .trigger-card small,
+html[data-theme="day"] small {
+  color: #475569 !important;
+}
+
+html[data-theme="day"] label,
+html[data-theme="day"] .frame-position-input label,
+html[data-theme="day"] .checkbox-group label {
+  color: #1f2937 !important;
+}
+
+html[data-theme="day"] .tab-btn,
+html[data-theme="day"] .visual-preset-btn,
+html[data-theme="day"] .hero-chip,
+html[data-theme="day"] .metric {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="contrast"] body,
+html[data-theme="vision-impaired"] body {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="contrast"] .section,
+html[data-theme="contrast"] .info-box,
+html[data-theme="contrast"] .broadcast-card,
+html[data-theme="contrast"] .page-brand,
+html[data-theme="contrast"] .control-room-panel,
+html[data-theme="contrast"] .control-room-hero,
+html[data-theme="contrast"] .trigger-card,
+html[data-theme="contrast"] .preview-container,
+html[data-theme="contrast"] .preview-wrapper,
+html[data-theme="contrast"] .frame-position-controls,
+html[data-theme="vision-impaired"] .section,
+html[data-theme="vision-impaired"] .info-box,
+html[data-theme="vision-impaired"] .broadcast-card,
+html[data-theme="vision-impaired"] .page-brand,
+html[data-theme="vision-impaired"] .control-room-panel,
+html[data-theme="vision-impaired"] .control-room-hero,
+html[data-theme="vision-impaired"] .trigger-card,
+html[data-theme="vision-impaired"] .preview-container,
+html[data-theme="vision-impaired"] .preview-wrapper,
+html[data-theme="vision-impaired"] .frame-position-controls {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffd400 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="contrast"] .section-title,
+html[data-theme="vision-impaired"] .section-title,
+html[data-theme="contrast"] .control-room-title,
+html[data-theme="vision-impaired"] .control-room-title,
+html[data-theme="contrast"] h1,
+html[data-theme="vision-impaired"] h1 {
+  color: #ffd400 !important;
+}
+
+html[data-theme="contrast"] .subtitle,
+html[data-theme="contrast"] .control-room-subtitle,
+html[data-theme="contrast"] .hero-hint,
+html[data-theme="vision-impaired"] .subtitle,
+html[data-theme="vision-impaired"] .control-room-subtitle,
+html[data-theme="vision-impaired"] .hero-hint,
+html[data-theme="contrast"] .broadcast-card p,
+html[data-theme="vision-impaired"] .broadcast-card p,
+html[data-theme="contrast"] .trigger-card p,
+html[data-theme="vision-impaired"] .trigger-card p,
+html[data-theme="contrast"] .trigger-card small,
+html[data-theme="vision-impaired"] .trigger-card small,
+html[data-theme="contrast"] small,
+html[data-theme="vision-impaired"] small {
+  color: #ffffff !important;
+}
+
+html[data-theme="contrast"] label,
+html[data-theme="vision-impaired"] label,
+html[data-theme="cid"] label {
+  color: #ffffff !important;
+}
+
+html[data-theme="cid"] body {
+  background:
+    radial-gradient(circle at top, rgba(139, 92, 246, 0.22), transparent 30%),
+    radial-gradient(circle at 85% 12%, rgba(34, 211, 238, 0.12), transparent 24%),
+    linear-gradient(180deg, #090b11 0%, #11151d 48%, #06070b 100%) !important;
+}
+
+html[data-theme="cid"] .section,
+html[data-theme="cid"] .info-box,
+html[data-theme="cid"] .broadcast-card,
+html[data-theme="cid"] .page-brand,
+html[data-theme="cid"] .control-room-panel,
+html[data-theme="cid"] .control-room-hero,
+html[data-theme="cid"] .trigger-card,
+html[data-theme="cid"] .preview-container,
+html[data-theme="cid"] .preview-wrapper,
+html[data-theme="cid"] .frame-position-controls {
+  background: rgba(9, 13, 22, 0.92) !important;
+  color: #eef2ff !important;
+  border-color: rgba(139, 92, 246, 0.28) !important;
+}
+
+html[data-theme="cid"] .tab-btn.active,
+html[data-theme="cid"] .visual-preset-btn.active {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.96), rgba(34, 211, 238, 0.96)) !important;
+}
+
+html[data-theme="vision-impaired"] .page-brand-logo,
+html[data-theme="cid"] .page-brand-logo {
+  max-height: 120px;
+}
+</style>
+</body>
+</html>
