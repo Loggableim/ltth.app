@@ -77,6 +77,28 @@ async function readZipEntry(zipPath, entryName) {
 }
 
 describe('Official plugin store registry', () => {
+  it('publishes the Schnorrbecher package with a matching manifest and checksum', async () => {
+    const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
+    const storePlugin = registry.plugins.find((plugin) => plugin.id === 'schnorrbecher');
+    const sourceManifest = JSON.parse(fs.readFileSync(
+      path.join(repoRoot, 'app', 'plugins', 'schnorrbecher', 'plugin.json'),
+      'utf8'
+    ));
+
+    assert(storePlugin, 'Schnorrbecher must exist in the official store registry');
+    assert.strictEqual(storePlugin.version, sourceManifest.version);
+    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/schnorrbecher-1.0.0.zip');
+
+    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'schnorrbecher-1.0.0.zip');
+    assert(fs.existsSync(packagePath), 'Schnorrbecher package must exist');
+    const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex');
+    assert.strictEqual(storePlugin.sha256, digest);
+
+    const packagedManifest = JSON.parse((await readZipEntry(packagePath, 'plugin.json')).toString('utf8'));
+    assert.strictEqual(packagedManifest.id, 'schnorrbecher');
+    assert.strictEqual(packagedManifest.version, sourceManifest.version);
+  });
+
   it('publishes the Hybridshock 1.2.0 package with matching manifest and documentation metadata', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const hybridShock = registry.plugins.find((plugin) => plugin.id === 'openshock');
