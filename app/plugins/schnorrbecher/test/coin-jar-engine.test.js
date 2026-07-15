@@ -1,12 +1,13 @@
 const CoinJarEngine = require('../lib/coin-jar-engine');
 
-function createEngine(overrides = {}) {
+function createEngine(overrides = {}, initialState = {}) {
   const state = {
     sessionId: null,
     totalCoinValue: 0,
     visualCoinCount: 0,
     lastProcessedEventIds: [],
-    updatedAt: 0
+    updatedAt: 0,
+    ...initialState
   };
   const timers = [];
   const emitted = [];
@@ -162,5 +163,37 @@ describe('CoinJarEngine', () => {
     engine.addValue(200, { eventId: 'persistent-1' });
     expect(engine.handleStreamSession({ streamIdentity: 'room:persistent', isNewStream: true })).toBe(false);
     expect(state.totalCoinValue).toBe(200);
+  });
+
+  test('clears stale state when the session-mode plugin starts', () => {
+    const { engine, state } = createEngine({
+      getConfig: () => ({ persistenceMode: 'session', resetOnNewStream: true })
+    }, {
+      totalCoinValue: 500,
+      visualCoinCount: 23,
+      lastProcessedEventIds: ['old-session-event']
+    });
+
+    expect(engine.syncPayload()).toMatchObject({ totalCoinValue: 0, visualCoinCount: 0 });
+    expect(state).toMatchObject({ totalCoinValue: 0, visualCoinCount: 0, lastProcessedEventIds: [] });
+  });
+
+  test('retains the real value of a huge gift while capping its visual coins', () => {
+    const { engine, state } = createEngine();
+    const result = engine.addValue(1000000000, { eventId: 'huge-1' });
+
+    expect(result.visualCoins).toBe(100);
+    expect(state.totalCoinValue).toBe(1000000000);
+  });
+
+  test('resets both an empty jar and a jar containing 200 coins', () => {
+    const empty = createEngine();
+    expect(empty.engine.reset('empty')).toMatchObject({ totalCoinValue: 0, visualCoinCount: 0 });
+
+    const filled = createEngine();
+    filled.engine.addValue(200, { eventId: 'two-hundred' });
+    expect(filled.state.totalCoinValue).toBe(200);
+    expect(filled.engine.reset('filled')).toMatchObject({ totalCoinValue: 0, visualCoinCount: 0 });
+    expect(filled.state.totalCoinValue).toBe(0);
   });
 });
