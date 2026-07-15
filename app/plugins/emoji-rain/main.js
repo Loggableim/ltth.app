@@ -104,6 +104,7 @@ class EmojiRainPlugin {
       '#c56cf0',
       '#ff7eb3'
     ];
+    this.lastHeartBalloonStreamIdentity = null;
   }
 
   async init() {
@@ -716,6 +717,28 @@ class EmojiRainPlugin {
     this.heartBalloonColorIndex++;
     this.heartBalloonUserColors.set(key, color);
     return color;
+  }
+
+  handleHeartBalloonStreamSession(data = {}, { requireIsNewStream = false } = {}) {
+    if (data.isNewStream === false || (requireIsNewStream && data.isNewStream !== true)) {
+      return false;
+    }
+
+    const streamIdentity = data.streamIdentity || (
+      data.username && data.roomId
+        ? `${String(data.username).toLowerCase()}:${data.roomId}`
+        : null
+    );
+    if (!streamIdentity || streamIdentity === this.lastHeartBalloonStreamIdentity) {
+      return false;
+    }
+
+    this.heartBalloonUserColors.clear();
+    this.heartBalloonColorIndex = 0;
+    this.spawnQueue = [];
+    this.lastHeartBalloonStreamIdentity = streamIdentity;
+    this.api.emit('emoji-rain:clear', {});
+    return true;
   }
 
   getProfilePictureUrl(data = {}) {
@@ -2354,6 +2377,13 @@ class EmojiRainPlugin {
   }
 
   registerTikTokEventHandlers() {
+    this.api.registerTikTokEvent('streamSessionStarted', (data) => {
+      this.handleHeartBalloonStreamSession(data);
+    });
+    this.api.registerTikTokEvent('connected', (data) => {
+      this.handleHeartBalloonStreamSession(data, { requireIsNewStream: true });
+    });
+
     // Gift Event
     this.api.registerTikTokEvent('gift', (data) => {
       this.spawnEmojiRain('gift', data);

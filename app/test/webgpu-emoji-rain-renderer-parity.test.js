@@ -112,7 +112,8 @@ async function loadAdapter({ mappings = {} } = {}) {
     context,
     renderer: context.__webgpuEmojiRain.renderer,
     socket,
-    socketHandlers
+    socketHandlers,
+    fetch: contextObject.fetch
   };
 }
 
@@ -215,6 +216,20 @@ describe('WebGPU EmojiRain renderer parity', () => {
     expect(renderer.setSpeed).toHaveBeenCalledWith(2.25);
     expect(renderer.setTheme).toHaveBeenCalledWith('neon');
     expect(renderer.setBoundingBox).toHaveBeenCalledWith({ x: 0.1, y: 0.15, width: 0.75, height: 0.7 });
+  });
+
+  test('adapter rehydrates runtime state after Socket.IO reconnect', async () => {
+    const { socketHandlers, fetch } = await loadAdapter();
+    fetch.mockClear();
+
+    expect(socketHandlers.connect).toEqual(expect.any(Function));
+    socketHandlers.connect();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(fetch).toHaveBeenCalledWith('/api/webgpu-emoji-rain/config', { cache: 'no-store' });
+    expect(fetch).toHaveBeenCalledWith('/api/webgpu-emoji-rain/user-mappings', { cache: 'no-store' });
+    expect(fetch).toHaveBeenCalledWith('/api/webgpu-emoji-rain/overlay/state', { cache: 'no-store' });
   });
 
   test('adapter preserves gift, sticker, profile and superfan semantics', async () => {

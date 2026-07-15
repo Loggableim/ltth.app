@@ -1,7 +1,7 @@
 {
   "id": "emoji-rain",
   "name": "EmojiRain",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Physics-based EmojiRain using Matter.js and DOM sprites. Includes custom emoji sets, user mappings, uploads, SuperFan bursts, heart balloons, gift balls, presets, GCCE commands, Flow actions, and TikTok LIVE integration.",
   "author": "Pup Cid",
   "entry": "main.js",

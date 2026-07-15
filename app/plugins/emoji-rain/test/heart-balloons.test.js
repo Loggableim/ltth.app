@@ -6,6 +6,7 @@ class MockAPI {
   constructor(config = {}) {
     this.logs = [];
     this.emissions = [];
+    this.tikTokHandlers = {};
     this.config = {
       enabled: true,
       emoji_set: ['heart'],
@@ -55,7 +56,9 @@ class MockAPI {
   }
 
   registerRoute() {}
-  registerTikTokEvent() {}
+  registerTikTokEvent(event, handler) {
+    this.tikTokHandlers[event] = handler;
+  }
   registerFlowAction() {}
 }
 
@@ -77,6 +80,24 @@ describe('EmojiRain - Herzballons', () => {
 
     expect(first).toBe(second);
     expect(first).not.toBe(other);
+  });
+
+  test('clears the overlay and heart colors for a confirmed new stream only once', () => {
+    const api = new MockAPI();
+    const plugin = new EmojiRainPlugin(api);
+    plugin.registerTikTokEventHandlers();
+    plugin.getHeartBalloonColor('viewer-one');
+    plugin.spawnQueue.push({ count: 3 });
+
+    api.tikTokHandlers.streamSessionStarted({ streamIdentity: 'streamer:room-2' });
+
+    expect(plugin.heartBalloonUserColors.size).toBe(0);
+    expect(plugin.heartBalloonColorIndex).toBe(0);
+    expect(plugin.spawnQueue).toEqual([]);
+    expect(api.emissions).toEqual([{ event: 'emoji-rain:clear', data: {} }]);
+
+    api.tikTokHandlers.streamSessionStarted({ streamIdentity: 'streamer:room-2' });
+    expect(api.emissions).toHaveLength(1);
   });
 
   test('triggerHeartBalloons emits heart-balloon spawn data', () => {
