@@ -14,9 +14,14 @@ describe('Schnorrbecher OBS overlay markup', () => {
     expect(html).toContain('src="/socket.io/socket.io.js"');
     expect(css).toContain('background: transparent');
     expect(css).toContain('overflow: hidden');
-    expect(css).toContain('border-top: 0');
+    expect(css).toContain('border: 0;');
+    expect(css).toContain('background-image: var(--jar-artwork);');
+    expect(css).toContain('box-shadow: none;');
     expect(css).toContain('--jar-artwork');
     expect(css).toContain('.gift-sprite');
+    expect(css).not.toContain('border-right: 5px solid');
+    expect(css).not.toContain('.jar-rim');
+    expect(html).not.toContain('class="jar-rim"');
     expect(css).not.toContain('background: radial-gradient(circle at 32% 28%');
   });
 });
