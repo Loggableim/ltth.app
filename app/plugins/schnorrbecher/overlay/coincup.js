@@ -60,6 +60,16 @@
     return Math.round(clamp(base * safeScale, 34, 180));
   }
 
+  function calculateSpillBounds(viewport, thickness = 24) {
+    const width = Math.max(1, finiteNumber(viewport?.width, 1920));
+    const height = Math.max(1, finiteNumber(viewport?.height, 1080));
+    return {
+      floor: { x: width / 2, y: height + thickness / 2, width: width + thickness * 2, height: thickness },
+      left: { x: -thickness / 2, y: height / 2, width: thickness, height: height + thickness * 2 },
+      right: { x: width + thickness / 2, y: height / 2, width: thickness, height: height + thickness * 2 }
+    };
+  }
+
   function planVisualCoins(payload, config, currentCount) {
     const maximum = Math.max(1, Math.floor(finiteNumber(config.maxPhysicalIcons, 300)));
     const requested = Math.max(1, Math.floor(finiteNumber(payload.visualCoins, 1)));
@@ -174,10 +184,14 @@
       for (const wall of this.walls) Composite.remove(this.engine.world, wall);
       const thickness = 24;
       const centerY = (this.bounds.top + this.bounds.bottom) / 2;
+      const spill = calculateSpillBounds(this._viewport(), thickness);
       this.walls = [
         Bodies.rectangle(this.bounds.left - thickness / 2, centerY, thickness, this.bounds.height + thickness, { isStatic: true }),
         Bodies.rectangle(this.bounds.right + thickness / 2, centerY, thickness, this.bounds.height + thickness, { isStatic: true }),
-        Bodies.rectangle(this.bounds.centerX, this.bounds.bottom + thickness / 2, this.bounds.width + thickness * 2, thickness, { isStatic: true })
+        Bodies.rectangle(this.bounds.centerX, this.bounds.bottom + thickness / 2, this.bounds.width + thickness * 2, thickness, { isStatic: true }),
+        Bodies.rectangle(spill.floor.x, spill.floor.y, spill.floor.width, spill.floor.height, { isStatic: true }),
+        Bodies.rectangle(spill.left.x, spill.left.y, spill.left.width, spill.left.height, { isStatic: true }),
+        Bodies.rectangle(spill.right.x, spill.right.y, spill.right.width, spill.right.height, { isStatic: true })
       ];
       Composite.add(this.engine.world, this.walls);
     }
@@ -484,7 +498,7 @@
     }
   }
 
-  const exports = { calculateJarBounds, calculateCoinSize, planVisualCoins, CoinJarOverlay };
+  const exports = { calculateJarBounds, calculateCoinSize, calculateSpillBounds, planVisualCoins, CoinJarOverlay };
   if (typeof module !== 'undefined' && module.exports) module.exports = exports;
   root.CoinJarOverlay = CoinJarOverlay;
   root.CoinJarOverlayHelpers = exports;
