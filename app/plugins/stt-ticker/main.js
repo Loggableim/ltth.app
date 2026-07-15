@@ -236,9 +236,10 @@ class SttTickerPlugin {
         this._emitStatus();
         // Status mit Provider-Info zurückgeben
         const provider = this.asrPipeline ? this.asrPipeline.getStatus() : {};
+        const safeConfig = this._getSafeConfig();
         res.json({
           success: true,
-          asr: this.config.asr,
+          asr: safeConfig.asr,
           vad: this.config.vad,
           dualLanguage: this.config.dualLanguage,
           langDetect: this.config.langDetect,
@@ -299,7 +300,13 @@ class SttTickerPlugin {
           if (this.translator) this.translator.updateConfig(this.config);
           this._emitStatus();
         }
-        res.json({ success: true, multiLanguage: this.config.multiLanguage, translation: this.config.translation, asr: this.config.asr });
+        const safeConfig = this._getSafeConfig();
+        res.json({
+          success: true,
+          multiLanguage: this.config.multiLanguage,
+          translation: safeConfig.translation,
+          asr: safeConfig.asr
+        });
       } catch (error) {
         res.status(500).json({ success: false, error: error.message });
       }
@@ -309,7 +316,10 @@ class SttTickerPlugin {
     this.api.registerRoute('post', '/api/stt-ticker/asr/test-deepgram', async (req, res) => {
       try {
         const body = req.body || {};
-        const key = (body.apiKey && body.apiKey.trim()) || (this.config.asr && this.config.asr.deepgramApiKey) || '';
+        const requestedKey = String(body.apiKey || '').trim();
+        const key = requestedKey && requestedKey !== '__KEEP__'
+          ? requestedKey
+          : (this.config.asr && this.config.asr.deepgramApiKey) || '';
         if (!key.trim()) {
           return res.json({ success: false, error: 'Kein Deepgram-Key konfiguriert' });
         }
@@ -331,7 +341,10 @@ class SttTickerPlugin {
     this.api.registerRoute('post', '/api/stt-ticker/asr/test-elevenlabs', async (req, res) => {
       try {
         const body = req.body || {};
-        const key = (body.apiKey && body.apiKey.trim()) || (this.config.asr && this.config.asr.elevenlabsApiKey) || '';
+        const requestedKey = String(body.apiKey || '').trim();
+        const key = requestedKey && requestedKey !== '__KEEP__'
+          ? requestedKey
+          : (this.config.asr && this.config.asr.elevenlabsApiKey) || '';
         if (!key.trim()) {
           return res.json({ success: false, error: 'Kein ElevenLabs-Key konfiguriert' });
         }
@@ -409,7 +422,22 @@ class SttTickerPlugin {
     // Translator-Modelle abrufen (von Ollama Cloud API oder Fallback-Liste)
     this.api.registerRoute('get', '/api/stt-ticker/translator/models', async (req, res) => {
       try {
-        const apiKey = req.query.apiKey || this.config.translation?.apiKey;
+        const requestedKey = String(req.query?.apiKey || '').trim();
+        const apiKey = requestedKey && requestedKey !== '__KEEP__'
+          ? requestedKey
+          : this.config.translation?.apiKey;
+        const models = this.translator ? await this.translator.fetchModels(apiKey) : [];
+        res.json({ success: true, models });
+      } catch (error) {
+        res.json({ success: false, error: error.message, models: [] });
+      }
+    });
+    this.api.registerRoute('post', '/api/stt-ticker/translator/models', async (req, res) => {
+      try {
+        const requestedKey = String(req.body?.apiKey || '').trim();
+        const apiKey = requestedKey && requestedKey !== '__KEEP__'
+          ? requestedKey
+          : this.config.translation?.apiKey;
         const models = this.translator ? await this.translator.fetchModels(apiKey) : [];
         res.json({ success: true, models });
       } catch (error) {
@@ -892,7 +920,17 @@ class SttTickerPlugin {
   _getSafeConfig() {
     if (!this.config) return {};
     const safe = JSON.parse(JSON.stringify(this.config));
-    // API-Key NICHT maskieren — die UI ist nur für den Admin sichtbar
+    if (safe.asr) {
+      for (const keyName of ['deepgramApiKey', 'elevenlabsApiKey', 'fishaudioApiKey']) {
+        const configuredName = `${keyName}Configured`;
+        safe.asr[configuredName] = Boolean(this.config.asr?.[keyName]);
+        safe.asr[keyName] = safe.asr[configuredName] ? '__KEEP__' : '';
+      }
+    }
+    if (safe.translation) {
+      safe.translation.apiKeyConfigured = Boolean(this.config.translation?.apiKey);
+      safe.translation.apiKey = safe.translation.apiKeyConfigured ? '__KEEP__' : '';
+    }
     return safe;
   }
 

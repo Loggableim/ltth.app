@@ -919,7 +919,7 @@
     // Translation Config (vom Server)
     let translationConfig = {
       enabled: false,
-      apiKey: '',
+      configured: false,
       model: 'deepseek-v4-flash'
     };
 
@@ -1270,12 +1270,9 @@
       }
     }
 
-    async function loadModels(apiKey) {
+    async function loadModels() {
       try {
-        const url = apiKey
-          ? API + '/api/stt-ticker/translator/models?apiKey=' + encodeURIComponent(apiKey)
-          : API + '/api/stt-ticker/translator/models';
-        const res = await fetch(url);
+        const res = await fetch(API + '/api/stt-ticker/translator/models');
         const data = await res.json();
         if (!data.success || !data.models) return;
         mlModelEl.innerHTML = '';
@@ -1384,25 +1381,12 @@
           const tc = cfg.translation || {};
 
           translationConfig.enabled = tc.enabled || false;
-          translationConfig.apiKey = tc.apiKey || '';
+          translationConfig.configured = statusData.status.translation?.configured === true;
           translationConfig.model = tc.model || 'deepseek-v4-flash';
 
-          // Fallback: Ollama-Key aus globalen Dashboard-Settings holen
-          // (tts_ollama_api_key wird im Dashboard unter "API Keys" gespeichert)
-          if (!translationConfig.apiKey) {
-            try {
-              const globalRes = await fetch(API + '/api/settings');
-              const globalData = await globalRes.json();
-              if (globalData && globalData.tts_ollama_api_key) {
-                translationConfig.apiKey = globalData.tts_ollama_api_key;
-                log('Ollama Key aus globalen Settings geladen');
-              }
-            } catch (e) { /* ignore */ }
-          }
-
-          if (translationConfig.apiKey) {
+          if (translationConfig.configured) {
             log('Ollama Key vorhanden - lade Modelle...');
-            await loadModels(translationConfig.apiKey);
+            await loadModels();
           } else {
             log('Kein Ollama Key - Übersetzung deaktiviert', 'warn');
             mlModelEl.innerHTML = '<option value="">Kein API-Key</option>';

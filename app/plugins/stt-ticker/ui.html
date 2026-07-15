@@ -1567,12 +1567,11 @@
         const apiKeyField = document.getElementById('translation-apiKey');
         const keyStatus = document.getElementById('translation-key-status');
         if (!apiKeyField.dataset.loaded) {
-          apiKeyField.value = tc.apiKey || '';
+          apiKeyField.value = tc.apiKeyConfigured ? '__KEEP__' : '';
           apiKeyField.dataset.loaded = '1';
         }
-        if (tc.apiKey && tc.apiKey.length > 0) {
-          const masked = tc.apiKey.length > 8 ? tc.apiKey.slice(0,4) + '***' + tc.apiKey.slice(-4) : '***';
-          keyStatus.textContent = '(gespeichert: ' + masked + ')';
+        if (tc.apiKeyConfigured) {
+          keyStatus.textContent = '(gespeichert)';
           keyStatus.style.color = '#4CAF50';
         } else {
           keyStatus.textContent = '(nicht gesetzt)';
@@ -1674,19 +1673,19 @@
 
       const dgKeyField = document.getElementById('asr-deepgramApiKey');
       if (dgKeyField && !dgKeyField.dataset.loaded) {
-        dgKeyField.value = asr.deepgramApiKey || '';
+        dgKeyField.value = asr.deepgramApiKeyConfigured ? '__KEEP__' : '';
         dgKeyField.dataset.loaded = '1';
       }
 
       const elKeyField = document.getElementById('asr-elevenlabsApiKey');
       if (elKeyField && !elKeyField.dataset.loaded) {
-        elKeyField.value = asr.elevenlabsApiKey || '';
+        elKeyField.value = asr.elevenlabsApiKeyConfigured ? '__KEEP__' : '';
         elKeyField.dataset.loaded = '1';
       }
 
       const fishKeyField = document.getElementById('asr-fishaudioApiKey');
       if (fishKeyField && !fishKeyField.dataset.loaded) {
-        fishKeyField.value = asr.fishaudioApiKey || '';
+        fishKeyField.value = asr.fishaudioApiKeyConfigured ? '__KEEP__' : '';
         fishKeyField.dataset.loaded = '1';
       }
 
@@ -1930,6 +1929,11 @@
         if (data.success) {
           statusEl.textContent = 'ASR-Settings gespeichert';
           statusEl.style.color = '#4CAF50';
+          [dgKeyField, elKeyField, fishKeyField].forEach(field => {
+            if (field && field.value.trim() && field.value.trim() !== '__KEEP__') {
+              field.value = '__KEEP__';
+            }
+          });
           setTimeout(() => { statusEl.textContent = ''; }, 3000);
           refreshStatus();
         } else {
@@ -1998,8 +2002,12 @@
     async function loadModels(selectedModel) {
       try {
         const apiKey = document.getElementById('translation-apiKey').value;
-        const url = '/api/stt-ticker/translator/models' + (apiKey ? '?apiKey=' + encodeURIComponent(apiKey) : '');
-        const res = await fetch(url);
+        const requestedKey = apiKey && apiKey !== '__KEEP__' ? apiKey : '';
+        const res = await fetch('/api/stt-ticker/translator/models', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestedKey ? { apiKey: requestedKey } : {})
+        });
         const data = await res.json();
         if (!data.success || !data.models) return;
         const select = document.getElementById('translation-model');
@@ -2080,18 +2088,13 @@
       const statusEl = document.getElementById('deepgram-test-status');
       const keyField = document.getElementById('asr-deepgramApiKey');
       const keyToTest = (keyField && keyField.value && keyField.value !== '__KEEP__') ? keyField.value : '';
-      if (!keyToTest) {
-        statusEl.textContent = 'Kein Key zum Testen';
-        statusEl.style.color = '#f44336';
-        return;
-      }
       statusEl.textContent = 'Teste...';
       statusEl.style.color = 'var(--stt-status-warning, #facc15)';
       try {
         const res = await fetch('/api/stt-ticker/asr/test-deepgram', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey: keyToTest })
+          body: JSON.stringify(keyToTest ? { apiKey: keyToTest } : {})
         });
         const data = await res.json();
         if (data.success) {
@@ -2111,18 +2114,13 @@
       const statusEl = document.getElementById('elevenlabs-test-status');
       const keyField = document.getElementById('asr-elevenlabsApiKey');
       const keyToTest = (keyField && keyField.value && keyField.value !== '__KEEP__') ? keyField.value : '';
-      if (!keyToTest) {
-        statusEl.textContent = 'Kein Key zum Testen';
-        statusEl.style.color = '#f44336';
-        return;
-      }
       statusEl.textContent = 'Teste...';
       statusEl.style.color = 'var(--stt-status-warning, #facc15)';
       try {
         const res = await fetch('/api/stt-ticker/asr/test-elevenlabs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey: keyToTest })
+          body: JSON.stringify(keyToTest ? { apiKey: keyToTest } : {})
         });
         const data = await res.json();
         if (data.success) {
