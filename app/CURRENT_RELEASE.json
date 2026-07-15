@@ -1,5 +1,5 @@
 {
   "version": "1.3.28",
-  "updated_at": "2026-07-14T23:49:45.7793639Z",
-  "notes": "LTTH Version 1.3.28 Release Notes\n\nVersion 1.3.28 bundles the disabled Visual FX Frame WEBGPU beta with the runtime, keeps its subscriber open-beta store package available, and resets Goals exactly once for each confirmed TikTok LIVE stream.\n\n- NEW: Visual FX Frame WEBGPU 1.2.0 ships as an independent disabled working beta for WebGPU-capable OBS browser sources\n- FIXED: Goals reset once per confirmed stream identity and ignore reconnects to the same LIVE room\n- IMPROVED: Launcher defaults use high contrast, remain open, and follow the Stable update channel\n- IMPROVED: Public release metadata and download surfaces bumped to 1.3.28\n"
+  "updated_at": "2026-07-15T00:03:02.483701+00:00",
+  "notes": "LTTH Version 1.3.28 Release Notes\n\nVersion 1.3.28 bundles the Visual FX Frame WEBGPU beta, makes Goals reset once per confirmed LIVE stream, and refreshes launcher defaults.\n\n- NEW: Visual FX Frame WEBGPU 1.2.0 ships as an independent disabled working beta and remains available as a subscriber open-beta Plugin Store package\n- FIXED: Goals reset once per confirmed TikTok LIVE stream identity and ignore reconnects to the same LIVE room\n- IMPROVED: Launcher defaults use high contrast, remain open, and follow the Stable update channel\n- IMPROVED: Public release metadata and download surfaces bumped to 1.3.28\n"
 }

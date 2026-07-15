@@ -1,0 +1,8 @@
+LTTH Version 1.3.28 Release Notes
+
+Version 1.3.28 bundles the Visual FX Frame WEBGPU beta, makes Goals reset once per confirmed LIVE stream, and refreshes launcher defaults.
+
+- NEW: Visual FX Frame WEBGPU 1.2.0 ships as an independent disabled working beta and remains available as a subscriber open-beta Plugin Store package
+- FIXED: Goals reset once per confirmed TikTok LIVE stream identity and ignore reconnects to the same LIVE room
+- IMPROVED: Launcher defaults use high contrast, remain open, and follow the Stable update channel
+- IMPROVED: Public release metadata and download surfaces bumped to 1.3.28
