@@ -2393,6 +2393,21 @@ class MusicBotPlugin extends EventEmitter {
     const current = this.playbackEngine.getNowPlaying?.();
     if (!current || current.id !== track.id) return;
 
+    // The regular overlay poll has a deliberately short timeout. Auto-DJ
+    // streams can still be playing while an individual 500 ms IPC poll is
+    // late, so confirm with a longer probe before restarting MPV at 0:00.
+    if (track.requestedBy === 'AutoDJ') {
+      try {
+        await this.playbackEngine.getPosition({ timeoutMs: 2000 });
+        this._playbackSyncFailures = 0;
+        this.api.log(`[music-bot] Auto-DJ playback confirmed after a delayed IPC poll: "${track.title}"`, 'warn');
+        this._startPlaybackSync();
+        return;
+      } catch (_) {
+        // A genuinely stalled player still follows the normal recovery path.
+      }
+    }
+
     this._recoveringPlayback = true;
     this._playbackSyncFailures = 0;
     this._stopPlaybackSync();

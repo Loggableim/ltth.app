@@ -223,6 +223,31 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
   });
 
+  test('keeps an Auto-DJ track playing when a longer position probe confirms MPV is healthy', async () => {
+    const current = {
+      id: 'auto-dj-current',
+      title: 'Auto-DJ Current',
+      requestedBy: 'AutoDJ',
+      url: 'https://example.test/current.mp3'
+    };
+    const { plugin } = createPluginWithQueue([]);
+    plugin.playbackEngine = {
+      getNowPlaying: jest.fn(() => current),
+      getPosition: jest.fn(async () => 42),
+      restart: jest.fn(async () => current),
+      play: jest.fn(async () => {})
+    };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._startPlaybackSync = jest.fn();
+
+    await plugin._recoverStalledPlayback(current, new Error('mpv did not acknowledge command: get_property'));
+
+    expect(plugin.playbackEngine.getPosition).toHaveBeenCalledWith({ timeoutMs: 2000 });
+    expect(plugin.playbackEngine.restart).not.toHaveBeenCalled();
+    expect(plugin.playbackEngine.play).not.toHaveBeenCalled();
+    expect(plugin._startPlaybackSync).toHaveBeenCalledTimes(1);
+  });
+
   test('returns a requested song to the front when MPV rejects its start command', async () => {
     const queued = [{ id: 'requested', title: 'Requested Song', url: 'https://example.test/requested.mp3' }];
     const { plugin } = createPluginWithQueue(queued);
