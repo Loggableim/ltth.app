@@ -121,4 +121,18 @@ describe('Schnorrbecher plugin integration', () => {
     api.socketEvents.get('coinJar.telemetry')({}, { physicalCoinCount: 200, pendingSpawns: 7 });
     expect(plugin.getStatus()).toMatchObject({ physicalCoinCount: 200, pendingSpawns: 7 });
   });
+
+  test('synchronizes the same state to two concurrently opened overlays', () => {
+    plugin._handleAdd({ value: 500, eventId: 'shared-state' });
+    const firstOverlay = { emit: jest.fn() };
+    const secondOverlay = { emit: jest.fn() };
+
+    api.socketEvents.get('coinJar.sync.request')(firstOverlay);
+    api.socketEvents.get('coinJar.sync.request')(secondOverlay);
+
+    const firstPayload = firstOverlay.emit.mock.calls[0][1];
+    const secondPayload = secondOverlay.emit.mock.calls[0][1];
+    expect(firstPayload.totalCoinValue).toBe(500);
+    expect(secondPayload).toEqual(firstPayload);
+  });
 });

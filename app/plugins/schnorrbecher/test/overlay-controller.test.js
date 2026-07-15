@@ -1,6 +1,7 @@
 const {
   calculateJarBounds,
   calculateCoinSize,
+  calculateSpillBounds,
   planVisualCoins,
   CoinJarOverlay
 } = require('../overlay/coincup');
@@ -29,6 +30,14 @@ describe('CoinJarOverlay planning', () => {
       spawnCount: 5,
       compact: true,
       overflow: true
+    });
+  });
+
+  test('keeps side-spilled gifts inside the visible scene', () => {
+    expect(calculateSpillBounds({ width: 1920, height: 1080 })).toMatchObject({
+      floor: { x: 960, y: 1092, width: 1968, height: 24 },
+      left: { x: -12, y: 540 },
+      right: { x: 1932, y: 540 }
     });
   });
 

@@ -49,6 +49,16 @@ class CoinJarEngine {
     this.generation = 0;
     this.lastStreamIdentity = null;
     this.manualSequence = 0;
+
+    // Session data deliberately does not survive a plugin or server restart.
+    // The JSON store is still used while the process is alive so browser
+    // sources can synchronize, but stale data must be discarded on startup.
+    if (this.getConfig().persistenceMode === 'session') {
+      this.state = this.store.clearState
+        ? normalizeState(this.store.clearState())
+        : normalizeState(DEFAULT_STATE);
+      this.completedEventIds.clear();
+    }
   }
 
   static calculateVisualCoins(value) {
