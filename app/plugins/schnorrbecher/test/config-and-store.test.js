@@ -34,6 +34,12 @@ describe('Schnorrbecher configuration and store', () => {
     });
   });
 
+  test('uses a safe classic glass style unless a supported style is selected', () => {
+    expect(normalizeConfig({}).jarStyle).toBe('classic');
+    expect(normalizeConfig({ jarStyle: 'arcade' }).jarStyle).toBe('arcade');
+    expect(normalizeConfig({ jarStyle: 'unknown' }).jarStyle).toBe('classic');
+  });
+
   test('persists state atomically and clears it to defaults', () => {
     const store = new CoinJarStore(dataDir);
     store.saveState({

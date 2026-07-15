@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "description": "TikTok-LIVE Coin Jar mit Matter.js-OBS-Overlay.",
   "author": "LTTH",
+  "icon": "/plugins/schnorrbecher/assets/branding/schnorrbecher-icon.png",
+  "logo": "/plugins/schnorrbecher/assets/branding/schnorrbecher-logo.png",
   "entry": "main.js",
   "enabled": false,
   "type": "overlay",

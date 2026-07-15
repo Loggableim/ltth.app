@@ -1,4 +1,6 @@
 const { JSDOM } = require('jsdom');
+const fs = require('fs');
+const path = require('path');
 const { SchnorrbecherAdmin } = require('../ui');
 
 describe('Schnorrbecher admin UI', () => {
@@ -47,5 +49,14 @@ describe('Schnorrbecher admin UI', () => {
       '/api/coin-jar/reset',
       '/api/coin-jar/event-cache/clear'
     ]));
+  });
+
+  test('offers the three generated glass styles in the configuration form', () => {
+    const ui = fs.readFileSync(path.join(__dirname, '..', 'ui.html'), 'utf8');
+
+    expect(ui).toContain('name="jarStyle"');
+    expect(ui).toContain('value="classic"');
+    expect(ui).toContain('value="mason"');
+    expect(ui).toContain('value="arcade"');
   });
 });

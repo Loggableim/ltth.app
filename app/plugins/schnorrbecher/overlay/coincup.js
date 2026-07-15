@@ -3,6 +3,7 @@
 
   const DEFAULT_RENDER_CONFIG = {
     enabled: true,
+    jarStyle: 'classic',
     jarWidth: 460,
     jarHeight: 580,
     jarX: 50,
@@ -27,6 +28,12 @@
     counterColor: '#ffffff'
   };
 
+  const JAR_ASSET_BY_STYLE = Object.freeze({
+    classic: '/plugins/schnorrbecher/assets/jars/classic.png',
+    mason: '/plugins/schnorrbecher/assets/jars/mason.png',
+    arcade: '/plugins/schnorrbecher/assets/jars/arcade.png'
+  });
+
   function clamp(value, minimum, maximum) {
     return Math.max(minimum, Math.min(maximum, value));
   }
@@ -34,6 +41,10 @@
   function finiteNumber(value, fallback) {
     const number = Number(value);
     return Number.isFinite(number) ? number : fallback;
+  }
+
+  function normalizeJarStyle(value) {
+    return Object.prototype.hasOwnProperty.call(JAR_ASSET_BY_STYLE, value) ? value : 'classic';
   }
 
   function calculateJarBounds(viewport, config) {
@@ -203,10 +214,15 @@
       this.config.spawnMultiplier = clamp(finiteNumber(this.config.spawnMultiplier, 1), 0.1, 5);
       this.config.spawnDelayMs = Math.floor(clamp(finiteNumber(this.config.spawnDelayMs, 80), 20, 1000));
       this.config.jarOpacity = clamp(finiteNumber(this.config.jarOpacity, 0.22), 0, 1);
+      this.config.jarStyle = normalizeJarStyle(this.config.jarStyle);
       const { scene, jar, jarLabel, counter, debug } = this.elements;
       if (scene?.style) {
         scene.style.setProperty('--jar-border-color', this.config.jarBorderColor || DEFAULT_RENDER_CONFIG.jarBorderColor);
         scene.style.setProperty('--jar-opacity', this.config.jarOpacity);
+      }
+      if (jar?.style) {
+        jar.dataset.jarStyle = this.config.jarStyle;
+        jar.style.setProperty('--jar-artwork', `url("${JAR_ASSET_BY_STYLE[this.config.jarStyle]}")`);
       }
       if (jarLabel) jarLabel.textContent = this.config.jarLabel || '';
       if (counter?.style) {
@@ -240,7 +256,7 @@
       for (let index = 0; index < count; index += 1) {
         this._createCoin({
           totalValue: Math.max(1, finiteNumber(payload.totalCoinValue, 1) / Math.max(1, count)),
-          giftName: 'Coin',
+          giftName: 'Gift',
           visualCoins: 1,
           generation: this.generation
         }, { settled: true, overflow: false, tier: index > 180 ? 1 : 0 });
@@ -286,7 +302,7 @@
         y: result.y + body.position.y / group.length
       }), { x: 0, y: 0 });
       for (const body of group) this._removeBody(body);
-      this._createCoin({ totalValue: 10, giftName: 'Compressed Coin', visualCoins: 1 }, {
+      this._createCoin({ totalValue: 10, giftName: 'Compressed Gift', visualCoins: 1 }, {
         settled: true,
         tier,
         position: average,
@@ -348,7 +364,7 @@
     _createSprite(payload, size, tier) {
       if (!this.elements.sprites || !this.document?.createElement) return null;
       const element = this.document.createElement('div');
-      element.className = `coin-sprite coin-tier-${tier}`;
+      element.className = `gift-sprite gift-tier-${tier}`;
       element.style.width = `${size}px`;
       element.style.height = `${size}px`;
       element.setAttribute('aria-label', payload.giftName || 'Gift');
@@ -358,13 +374,13 @@
         image.alt = '';
         image.addEventListener('error', () => {
           image.remove();
-          element.classList.add('coin-fallback');
-          element.textContent = '✦';
+          element.classList.add('gift-fallback');
+          element.textContent = '🎁';
         }, { once: true });
         element.appendChild(image);
       } else {
-        element.classList.add('coin-fallback');
-        element.textContent = '✦';
+        element.classList.add('gift-fallback');
+        element.textContent = '🎁';
       }
       this.elements.sprites.appendChild(element);
       return element;
