@@ -372,6 +372,11 @@ class GoalsPlugin extends EventEmitter {
     }
 
     resolveFireworksPlugin() {
+        const webgpuPlugin = this.api.getPlugin ? this.api.getPlugin('webgpu-fireworks') : null;
+        if (webgpuPlugin && typeof webgpuPlugin.triggerFinale === 'function') {
+            return { id: 'webgpu-fireworks', plugin: webgpuPlugin };
+        }
+
         const stablePlugin = this.api.getPlugin ? this.api.getPlugin('fireworks') : null;
         if (stablePlugin && typeof stablePlugin.triggerFinale === 'function') {
             return { id: 'fireworks', plugin: stablePlugin };
