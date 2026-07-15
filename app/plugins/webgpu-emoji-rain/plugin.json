@@ -6,7 +6,7 @@
   "author": "Pup Cid",
   "entry": "main.js",
   "logo": "/plugins/webgpu-emoji-rain/assets/sidebar-logo-wide.png",
-  "enabled": false,
+  "enabled": true,
   "devStatus": "development-beta",
   "permissions": [
     "socket.io",
