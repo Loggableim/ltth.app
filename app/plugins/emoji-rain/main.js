@@ -362,6 +362,30 @@ class EmojiRainPlugin {
           },
           handler: async (args, context) => await this.handleBeansCommand(args, context)
         },
+        ...[
+          { name: 'miau', emoji: '🐱', label: 'cat', description: 'Trigger cat emoji burst' },
+          { name: 'rawr', emoji: '🦖', label: 'dinosaur', description: 'Trigger dinosaur emoji burst' },
+          { name: 'woof', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji burst' },
+          { name: 'wuff', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji burst' }
+        ].map(({ name, emoji, label, description }) => ({
+          name,
+          description,
+          syntax: `/${name}`,
+          permission: 'all',
+          enabled: true,
+          minArgs: 0,
+          maxArgs: 0,
+          category: 'Effects',
+          cooldown: {
+            user: 60000,
+            global: 15000
+          },
+          handler: async (args, context) => await this.handleAnimalCommand({
+            emoji,
+            source: `/${name}`,
+            label
+          }, context)
+        })),
         {
           name: 'storm',
           description: 'Trigger heavy emoji storm',
@@ -561,7 +585,7 @@ class EmojiRainPlugin {
 
     // SuperFan burst
     this.triggerEmojiRain({
-      emoji: '⭐',
+      emoji: '🐾',
       count: 30,
       intensity: 1.5,
       duration: 0,
@@ -575,7 +599,47 @@ class EmojiRainPlugin {
 
     return {
       success: true,
-      message: `${context.username} triggered a SuperFan burst! ⭐`,
+      message: `${context.username} triggered a SuperFan paw burst! 🐾`,
+      displayOverlay: true
+    };
+  }
+
+  async handleAnimalCommand({ emoji, source, label }, context) {
+    const config = this.api.getDatabase().getEmojiRainConfig();
+
+    if (!config.enabled) {
+      return {
+        success: false,
+        message: 'Emoji rain is currently disabled',
+        displayOverlay: true
+      };
+    }
+
+    if (!this.checkAntiSpam(context.username)) {
+      this.metrics.droppedEvents++;
+      return {
+        success: false,
+        message: 'Please wait before using this command again',
+        displayOverlay: true
+      };
+    }
+
+    this.triggerEmojiRain({
+      emoji,
+      count: 30,
+      intensity: 1.5,
+      duration: 0,
+      burst: true,
+      username: context.username,
+      reason: 'command',
+      source
+    });
+
+    this.metrics.commandTriggers++;
+
+    return {
+      success: true,
+      message: `${context.username} triggered a ${label} burst! ${emoji}`,
       displayOverlay: true
     };
   }

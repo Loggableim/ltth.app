@@ -120,12 +120,17 @@ In der Admin-UI unter "🎭 Sticker Regen Konfiguration":
 #### `/beans`
 **Permission**: subscriber  
 **Cooldown**: 30s per user, 5s global  
-**Beschreibung**: SuperFan-Burst-Effekt mit 30 Sternen.
+**Beschreibung**: SuperFan-Burst-Effekt mit 30 Pfötchen.
 
 **Beispiel**:
 ```
-/beans → ⭐⭐⭐ SuperFan Burst!
+/beans → 🐾🐾🐾 SuperFan Pfötchen-Burst!
 ```
+
+#### `/miau`, `/rawr`, `/woof`, `/wuff`
+**Permission**: all<br>
+**Cooldown**: 60s per user, 15s global<br>
+**Beschreibung**: Lösen jeweils einen 30er-Burst aus: 🐱, 🦖 beziehungsweise 🐶.
 
 #### `/storm [emoji]`
 **Permission**: vip  
@@ -587,6 +592,7 @@ bleibt, um vom Publikum wahrgenommen zu werden.
 - `/rain`: 10s user, 2s global
 - `/emoji`: 10s user, 2s global
 - `/beans`: 30s user, 5s global (subscriber only)
+- `/miau`, `/rawr`, `/woof`, `/wuff`: 60s user, 15s global
 - `/storm`: 60s user, 10s global (VIP only)
 - `/rainstop`: 5s user, 1s global (moderator only)
 
