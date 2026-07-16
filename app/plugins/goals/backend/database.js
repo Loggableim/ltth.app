@@ -43,6 +43,7 @@ class GoalsDatabase {
                     firework_duration INTEGER DEFAULT 5000,
                     firework_theme TEXT DEFAULT NULL,
                     firework_encounter_mode TEXT DEFAULT 'finale',
+                    firework_finale_length TEXT DEFAULT 'inherit',
                     firework_quality_profile TEXT DEFAULT 'high',
                     firework_hud_label TEXT DEFAULT NULL,
                     firework_progress_enabled INTEGER DEFAULT 1,
@@ -148,6 +149,10 @@ class GoalsDatabase {
                 sql: "ALTER TABLE goals ADD COLUMN firework_encounter_mode TEXT DEFAULT 'finale'"
             },
             {
+                name: 'firework_finale_length',
+                sql: "ALTER TABLE goals ADD COLUMN firework_finale_length TEXT DEFAULT 'inherit'"
+            },
+            {
                 name: 'firework_quality_profile',
                 sql: "ALTER TABLE goals ADD COLUMN firework_quality_profile TEXT DEFAULT 'high'"
             },
@@ -199,6 +204,7 @@ class GoalsDatabase {
             firework_duration = 5000,
             firework_theme = null,
             firework_encounter_mode = 'finale',
+            firework_finale_length = 'inherit',
             firework_quality_profile = 'high',
             firework_hud_label = null,
             firework_progress_enabled = 1,
@@ -216,7 +222,7 @@ class GoalsDatabase {
                 template_id, animation_on_update, animation_on_reach,
                 on_reach_action, on_reach_increment, reset_on_stream_end,
                 firework_enabled, firework_intensity, firework_duration,
-                firework_theme, firework_encounter_mode, firework_quality_profile,
+                firework_theme, firework_encounter_mode, firework_finale_length, firework_quality_profile,
                 firework_hud_label, firework_progress_enabled, firework_progress_milestones,
                 theme_json,
                 overlay_width, overlay_height
@@ -229,7 +235,7 @@ class GoalsDatabase {
             on_reach_action, on_reach_increment,
             reset_on_stream_end === 0 || reset_on_stream_end === '0' || reset_on_stream_end === false ? 0 : 1,
             firework_enabled ? 1 : 0, firework_intensity, firework_duration,
-            firework_theme, firework_encounter_mode, firework_quality_profile,
+            firework_theme, firework_encounter_mode, firework_finale_length, firework_quality_profile,
             firework_hud_label, firework_progress_enabled ? 1 : 0, firework_progress_milestones,
             serializedTheme,
             overlay_width, overlay_height
@@ -310,7 +316,7 @@ class GoalsDatabase {
             'start_value', 'template_id', 'animation_on_update', 'animation_on_reach',
             'on_reach_action', 'on_reach_increment', 'reset_on_stream_end',
             'firework_enabled', 'firework_intensity', 'firework_duration',
-            'firework_theme', 'firework_encounter_mode', 'firework_quality_profile',
+            'firework_theme', 'firework_encounter_mode', 'firework_finale_length', 'firework_quality_profile',
             'firework_hud_label', 'firework_progress_enabled', 'firework_progress_milestones',
             'overlay_width', 'overlay_height'
         ];

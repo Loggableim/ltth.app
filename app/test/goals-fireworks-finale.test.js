@@ -32,6 +32,7 @@ describe('Goals firework finale integration', () => {
       'firework_duration',
       'firework_theme',
       'firework_encounter_mode',
+      'firework_finale_length',
       'firework_quality_profile',
       'firework_hud_label',
       'firework_progress_enabled',
@@ -48,6 +49,7 @@ describe('Goals firework finale integration', () => {
       firework_duration: 8000,
       firework_theme: 'neon-reactor',
       firework_encounter_mode: 'raid',
+      firework_finale_length: 'long',
       firework_quality_profile: 'ultra',
       firework_hud_label: 'Goal Breaker',
       firework_progress_enabled: 1,
@@ -59,6 +61,7 @@ describe('Goals firework finale integration', () => {
     expect(created.firework_duration).toBe(8000);
     expect(created.firework_theme).toBe('neon-reactor');
     expect(created.firework_encounter_mode).toBe('raid');
+    expect(created.firework_finale_length).toBe('long');
     expect(created.firework_quality_profile).toBe('ultra');
     expect(created.firework_hud_label).toBe('Goal Breaker');
     expect(created.firework_progress_enabled).toBe(1);
@@ -70,6 +73,7 @@ describe('Goals firework finale integration', () => {
       firework_duration: 3000,
       firework_theme: 'inferno-siege',
       firework_encounter_mode: 'finale',
+      firework_finale_length: 'short',
       firework_quality_profile: 'high',
       firework_hud_label: 'Final Push',
       firework_progress_enabled: 0,
@@ -81,10 +85,35 @@ describe('Goals firework finale integration', () => {
     expect(updated.firework_duration).toBe(3000);
     expect(updated.firework_theme).toBe('inferno-siege');
     expect(updated.firework_encounter_mode).toBe('finale');
+    expect(updated.firework_finale_length).toBe('short');
     expect(updated.firework_quality_profile).toBe('high');
     expect(updated.firework_hud_label).toBe('Final Push');
     expect(updated.firework_progress_enabled).toBe(0);
     expect(updated.firework_progress_milestones).toBe('50,90');
+  });
+
+  test('adds finale length to existing goals without migrating legacy finale or duration values', () => {
+    const sqlite = new Database(':memory:');
+    sqlite.exec(`
+      CREATE TABLE goals (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        goal_type TEXT NOT NULL,
+        enabled INTEGER DEFAULT 1,
+        firework_encounter_mode TEXT DEFAULT 'finale',
+        firework_duration INTEGER DEFAULT 5000
+      );
+      INSERT INTO goals (id, name, goal_type, firework_encounter_mode, firework_duration)
+      VALUES ('legacy_goal', 'Legacy Goal', 'likes', 'finale', 7000);
+    `);
+
+    const goalsDb = new GoalsDatabase(createApi(sqlite));
+    goalsDb.initialize();
+
+    const legacyGoal = goalsDb.getGoal('legacy_goal');
+    expect(legacyGoal.firework_encounter_mode).toBe('finale');
+    expect(legacyGoal.firework_duration).toBe(7000);
+    expect(legacyGoal.firework_finale_length).toBe('inherit');
   });
 
   test('persists per-goal OBS overlay theme colors', () => {
@@ -207,9 +236,75 @@ describe('Goals firework finale integration', () => {
     plugin.eventHandlers.setGoalValue(goal.id, 100);
     machine.onUpdateAnimationEnd();
 
-    expect(webgpuFireworks.triggerFinale).toHaveBeenCalledWith(4, 7000);
+    expect(webgpuFireworks.triggerFinale).toHaveBeenCalledWith({
+      intensity: 4,
+      style: 'inherit',
+      length: 'inherit',
+      eventId: 'goal:goal_live_likes_webgpu_fireworks:100'
+    });
     expect(webgpuFireworks.triggerFinale).toHaveBeenCalledTimes(1);
     expect(legacyFireworks.triggerFinale).not.toHaveBeenCalled();
+  });
+
+  test('passes curated per-goal style and length overrides to WebGPU with a stable event id', () => {
+    const sqlite = new Database(':memory:');
+    const webgpuFireworks = { triggerFinale: jest.fn() };
+    const plugin = new GoalsPlugin(createApi(sqlite, new Map([['webgpu-fireworks', webgpuFireworks]])));
+
+    plugin.db.initialize();
+    const goal = plugin.db.createGoal({
+      id: 'goal_curated_finale',
+      name: 'Curated Finale',
+      goal_type: 'coin',
+      target_value: 2500,
+      firework_enabled: 1,
+      firework_intensity: 6,
+      firework_encounter_mode: 'sky-ballet',
+      firework_finale_length: 'long'
+    });
+
+    expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
+    expect(webgpuFireworks.triggerFinale).toHaveBeenCalledWith({
+      intensity: 6,
+      style: 'sky-ballet',
+      length: 'long',
+      eventId: 'goal:goal_curated_finale:2500'
+    });
+
+    plugin.clearGoalFireworkMilestones(goal.id);
+    expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
+    expect(webgpuFireworks.triggerFinale).toHaveBeenLastCalledWith(expect.objectContaining({
+      eventId: 'goal:goal_curated_finale:2500'
+    }));
+  });
+
+  test('maps invalid and legacy goal finale selectors to global WebGPU defaults without using duration', () => {
+    const sqlite = new Database(':memory:');
+    const webgpuFireworks = { triggerFinale: jest.fn() };
+    const plugin = new GoalsPlugin(createApi(sqlite, new Map([['webgpu-fireworks', webgpuFireworks]])));
+
+    plugin.db.initialize();
+    const legacyGoal = plugin.db.createGoal({
+      id: 'goal_legacy_inherit',
+      name: 'Legacy Inherit',
+      goal_type: 'likes',
+      target_value: 500,
+      firework_enabled: 1,
+      firework_intensity: 2.5,
+      firework_duration: 28000,
+      firework_encounter_mode: 'finale',
+      firework_finale_length: 'invalid-length'
+    });
+
+    plugin.triggerGoalFireworkFinale(legacyGoal.id);
+
+    expect(webgpuFireworks.triggerFinale).toHaveBeenCalledWith({
+      intensity: 2.5,
+      style: 'inherit',
+      length: 'inherit',
+      eventId: 'goal:goal_legacy_inherit:500'
+    });
+    expect(webgpuFireworks.triggerFinale).not.toHaveBeenCalledWith(2.5, 28000);
   });
 
   test('turns goal progress milestones into stable firework triggers before the finale', () => {
@@ -253,14 +348,23 @@ describe('Goals firework finale integration', () => {
     expect(fireworksPlugin.triggerFinale).not.toHaveBeenCalled();
   });
 
-  test('keeps firework duration and intensity controls hidden until the checkbox is enabled', () => {
+  test('shows finale style and length overrides while retaining duration only as hidden compatibility data', () => {
     const uiHtml = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'goals', 'ui.html'), 'utf8');
     const uiJs = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'goals', 'ui.js'), 'utf8');
 
     expect(uiHtml).toContain('id="goal-firework-enabled"');
     expect(uiHtml).toContain('id="goal-firework-options" style="display: none;"');
     expect(uiHtml).toContain('id="goal-firework-intensity"');
-    expect(uiHtml).toContain('id="goal-firework-duration"');
+    expect(uiHtml).toContain('id="goal-firework-duration" type="hidden"');
+    expect(uiHtml).toContain('id="goal-firework-encounter"');
+    expect(uiHtml).toContain('id="goal-firework-finale-length"');
+    expect(uiHtml).toContain('<option value="inherit">Globalen Standard verwenden</option>');
+    for (const style of ['auto', 'classic-crescendo', 'symmetric-salute', 'sky-ballet', 'thunder-finale']) {
+      expect(uiHtml).toContain(`<option value="${style}">`);
+    }
+    for (const length of ['short', 'medium', 'long']) {
+      expect(uiHtml).toContain(`<option value="${length}">`);
+    }
     expect(uiHtml).toContain('id="goal-firework-progress-enabled"');
     expect(uiHtml).toContain('id="goal-firework-progress-milestones"');
 
@@ -268,6 +372,9 @@ describe('Goals firework finale integration', () => {
     expect(uiJs).toContain('firework_enabled');
     expect(uiJs).toContain('firework_intensity');
     expect(uiJs).toContain('firework_duration');
+    expect(uiJs).toContain('firework_encounter_mode');
+    expect(uiJs).toContain('firework_finale_length');
+    expect(uiJs).toContain("goal.firework_encounter_mode === 'finale'");
     expect(uiJs).toContain('firework_progress_enabled');
     expect(uiJs).toContain('firework_progress_milestones');
   });

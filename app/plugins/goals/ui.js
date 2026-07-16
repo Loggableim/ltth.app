@@ -185,7 +185,8 @@ function openCreateModal() {
     document.getElementById('goal-firework-intensity').value = '3';
     document.getElementById('goal-firework-duration').value = '5';
     setOptionalInputValue('goal-firework-theme', '');
-    setOptionalInputValue('goal-firework-encounter', 'finale');
+    setOptionalInputValue('goal-firework-encounter', 'inherit');
+    setOptionalInputValue('goal-firework-finale-length', 'inherit');
     setOptionalInputValue('goal-firework-quality', 'high');
     setOptionalInputValue('goal-firework-hud-label', '');
     document.getElementById('goal-firework-progress-enabled').checked = true;
@@ -227,6 +228,13 @@ function editGoal(id) {
     document.getElementById('goal-firework-enabled').checked = Number(goal.firework_enabled) === 1;
     document.getElementById('goal-firework-intensity').value = clampNumber(goal.firework_intensity, 1, 10, 3);
     document.getElementById('goal-firework-duration').value = clampNumber((goal.firework_duration || 5000) / 1000, 1, 30, 5);
+    setOptionalInputValue(
+        'goal-firework-encounter',
+        goal.firework_encounter_mode === 'finale'
+            ? 'inherit'
+            : normalizeGoalFireworkStyle(goal.firework_encounter_mode)
+    );
+    setOptionalInputValue('goal-firework-finale-length', normalizeGoalFireworkLength(goal.firework_finale_length));
     document.getElementById('goal-firework-progress-enabled').checked = Number(goal.firework_progress_enabled) !== 0;
     document.getElementById('goal-firework-progress-milestones').value = goal.firework_progress_milestones || '25,50,75';
     document.getElementById('goal-width').value = goal.overlay_width;
@@ -277,6 +285,8 @@ async function saveGoal(e) {
         firework_enabled: document.getElementById('goal-firework-enabled').checked ? 1 : 0,
         firework_intensity: clampNumber(document.getElementById('goal-firework-intensity').value, 1, 10, 3),
         firework_duration: Math.round(clampNumber(document.getElementById('goal-firework-duration').value, 1, 30, 5) * 1000),
+        firework_encounter_mode: normalizeGoalFireworkStyle(document.getElementById('goal-firework-encounter')?.value),
+        firework_finale_length: normalizeGoalFireworkLength(document.getElementById('goal-firework-finale-length')?.value),
         firework_progress_enabled: document.getElementById('goal-firework-progress-enabled').checked ? 1 : 0,
         firework_progress_milestones: document.getElementById('goal-firework-progress-milestones').value.trim() || '25,50,75',
         theme: buildGoalThemeFromForm(),
@@ -380,6 +390,21 @@ function setOptionalInputValue(id, value) {
     if (field) {
         field.value = value;
     }
+}
+
+function normalizeGoalFireworkStyle(value) {
+    const allowed = new Set([
+        'auto',
+        'classic-crescendo',
+        'symmetric-salute',
+        'sky-ballet',
+        'thunder-finale'
+    ]);
+    return allowed.has(value) ? value : 'inherit';
+}
+
+function normalizeGoalFireworkLength(value) {
+    return ['short', 'medium', 'long'].includes(value) ? value : 'inherit';
 }
 
 function buildGoalThemeFromForm() {

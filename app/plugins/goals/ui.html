@@ -1545,10 +1545,27 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" data-i18n="generated.c57a6ef10158">Feuerwerk-Dauer (Sekunden)</label>
-                            <input type="number" class="form-input" id="goal-firework-duration" value="5" min="1" max="30" step="0.5">
+                            <label class="form-label">Finale-Showstil</label>
+                            <select class="form-select" id="goal-firework-encounter">
+                                <option value="inherit">Globalen Standard verwenden</option>
+                                <option value="auto">Auto</option>
+                                <option value="classic-crescendo">Classic Crescendo</option>
+                                <option value="symmetric-salute">Symmetric Salute</option>
+                                <option value="sky-ballet">Sky Ballet</option>
+                                <option value="thunder-finale">Thunder Finale</option>
+                            </select>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Finale-Länge</label>
+                        <select class="form-select" id="goal-firework-finale-length">
+                            <option value="inherit">Globalen Standard verwenden</option>
+                            <option value="short">Kurz (10 s)</option>
+                            <option value="medium">Mittel (18 s)</option>
+                            <option value="long">Lang (28 s)</option>
+                        </select>
+                    </div>
+                    <input id="goal-firework-duration" type="hidden" value="5">
                     <div class="form-group">
                         <label class="checkbox-row">
                             <input type="checkbox" id="goal-firework-progress-enabled" checked>
