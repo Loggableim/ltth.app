@@ -1165,7 +1165,8 @@ class WebGPUFireworksEngine {
         Promise.resolve(this.handleTrigger({
             ...data,
             deferAssets: true,
-            trackGiftLaunch: true
+            trackGiftLaunch: true,
+            forceRocket: true
         })).catch(error => {
             console.error('[WebGPU Fireworks] Gift launch failed:', error);
             this.setStatus({ giftError: error.message || String(error) });

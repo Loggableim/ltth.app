@@ -625,6 +625,23 @@ describe('WebGPU choreographed finale runtime', () => {
     expect([...engine.effectPlans.values()].map(effect => effect.explosion.assets.giftTexture)).toEqual([17, 17, 17]);
   });
 
+  test('keeps high-combo gifts as visible rockets during an active finale', () => {
+    const engine = makeRuntime(10000);
+    engine.currentFinale = { id: 'gift-show', runtimeToken: 'gift-show:1', phase: 'highlight' };
+
+    engine.handleIncomingTrigger({
+      id: 'high-combo-gift', reason: 'gift', userId: 'superfan', giftId: 'lion',
+      username: 'Superfan', coins: 1000, combo: 12, crackleEnabled: false
+    });
+
+    const plan = engine.effectPlans.get('high-combo-gift');
+    expect(plan).toBeDefined();
+    expect(plan.launch.skipRocket).toBe(false);
+    expect(engine.timelineQueue).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'launch', plan })
+    ]));
+  });
+
   test('a low gift arriving at the token boundary cannot jump an older high-value bundle', () => {
     let now = 1000;
     const engine = makeRuntime(now);
