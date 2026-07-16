@@ -574,6 +574,14 @@ class EmojiRainPlugin {
       };
     }
 
+    if (config.animal_commands_superfans_only !== false && !this.isAnimalCommandSuperFan(context)) {
+      return {
+        success: false,
+        message: 'This animal command is only available to SuperFans',
+        displayOverlay: true
+      };
+    }
+
     if (!this.checkAntiSpam(context.username)) {
       this.metrics.droppedEvents++;
       return {
@@ -589,7 +597,7 @@ class EmojiRainPlugin {
       count: 30,
       intensity: 1.5,
       duration: 0,
-      burst: true,
+      burst: false,
       username: context.username,
       reason: 'command',
       source: '/beans'
@@ -615,6 +623,14 @@ class EmojiRainPlugin {
       };
     }
 
+    if (config.animal_commands_superfans_only !== false && !this.isAnimalCommandSuperFan(context)) {
+      return {
+        success: false,
+        message: 'This animal command is only available to SuperFans',
+        displayOverlay: true
+      };
+    }
+
     if (!this.checkAntiSpam(context.username)) {
       this.metrics.droppedEvents++;
       return {
@@ -629,7 +645,7 @@ class EmojiRainPlugin {
       count: 30,
       intensity: 1.5,
       duration: 0,
-      burst: true,
+      burst: false,
       username: context.username,
       reason: 'command',
       source
@@ -642,6 +658,10 @@ class EmojiRainPlugin {
       message: `${context.username} triggered a ${label} burst! ${emoji}`,
       displayOverlay: true
     };
+  }
+
+  isAnimalCommandSuperFan(context = {}) {
+    return Number(context?.userData?.teamMemberLevel) >= 1;
   }
 
   async handleStormCommand(args, context) {
