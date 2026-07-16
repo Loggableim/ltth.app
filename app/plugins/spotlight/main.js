@@ -411,7 +411,9 @@ class SpotlightPlugin {
 
     return {
       uniqueId: `testuser_${Date.now()}`,
-      nickname: `Test ${this.eventTypes[type].label}`,
+      // A test handle is user data, not UI copy. The overlay localizes the
+      // event label itself from the active locale.
+      nickname: `testuser-${Date.now()}`,
       profilePictureUrl: '',
       timestamp: new Date().toISOString(),
       eventType: type,

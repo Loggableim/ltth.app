@@ -510,7 +510,7 @@
 
   <div class="frame-wrap">
     <div class="frame-shell active" data-view="ui">
-      <iframe src="/stt-ticker/ui" title="STT Ticker Admin"></iframe>
+      <iframe src="/stt-ticker/ui" title="STT Ticker Admin" data-i18n-title="plugins.stt-ticker.form_controls.admin_iframe_title"></iframe>
     </div>
     <div class="frame-shell" data-view="capture">
       <div class="capture-panel">
@@ -532,6 +532,14 @@
     const tabs = Array.from(document.querySelectorAll('.tab-btn'));
     const frames = Array.from(document.querySelectorAll('.frame-shell'));
     const statusText = document.getElementById('statusText');
+
+    function translateUi(key, fallback, params = {}) {
+      const translation = window.i18n?.t(key, params);
+      const value = translation && translation !== key ? translation : fallback;
+      return String(value).replace(/\{\{?(\w+)\}?\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+      ));
+    }
 
     const setActiveTab = (tabName) => {
       tabs.forEach((btn) => {
@@ -560,15 +568,34 @@
         const response = await fetch('/api/stt-ticker/status');
         const data = await response.json();
         if (!data.success) {
-          statusText.textContent = 'Status konnte nicht geladen werden';
+          statusText.textContent = translateUi(
+            'plugins.stt-ticker.stt_ticker.ui.messages.status_unavailable',
+            'Could not load status'
+          );
           return;
         }
         const cfg = data.status || {};
         const asr = cfg.asr || {};
         const trans = cfg.translation || {};
-        statusText.textContent = `Status: enabled=${cfg.enabled ? 'on' : 'off'} | asr=${asr.provider || 'auto'} | translation=${trans.enabled ? 'on' : 'off'}`;
+        statusText.textContent = translateUi(
+          'plugins.stt-ticker.stt_ticker.ui.messages.status_summary',
+          'Status: enabled={enabled} | asr={provider} | translation={translation}',
+          {
+            enabled: cfg.enabled
+              ? translateUi('plugins.stt-ticker.stt_ticker.ui.messages.status_on', 'on')
+              : translateUi('plugins.stt-ticker.stt_ticker.ui.messages.status_off', 'off'),
+            provider: asr.provider || translateUi('plugins.stt-ticker.stt_ticker.ui.messages.status_auto', 'auto'),
+            translation: trans.enabled
+              ? translateUi('plugins.stt-ticker.stt_ticker.ui.messages.status_on', 'on')
+              : translateUi('plugins.stt-ticker.stt_ticker.ui.messages.status_off', 'off')
+          }
+        );
       } catch (error) {
-        statusText.textContent = 'Status Error: ' + error.message;
+        statusText.textContent = translateUi(
+          'plugins.stt-ticker.stt_ticker.ui.messages.status_error',
+          'Status error: {message}',
+          { message: error.message }
+        );
       }
     });
 
@@ -579,7 +606,10 @@
           iframe.src = iframe.src;
         }
       });
-      statusText.textContent = 'Aktive Ansicht neu geladen';
+      statusText.textContent = translateUi(
+        'plugins.stt-ticker.stt_ticker.ui.messages.active_view_reloaded',
+        'Active view reloaded'
+      );
     });
 
     const startTab = new URLSearchParams(window.location.search).get('tab') || 'ui';

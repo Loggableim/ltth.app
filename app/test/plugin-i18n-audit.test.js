@@ -102,6 +102,33 @@ describe('plugin i18n audit', () => {
     expect(errors).toContain('emoji-rain: nonlocalized UI copy at plugins.emoji-rain.settings.title');
   });
 
+  test('reports a long English UI sentence copied into one target locale', () => {
+    const copied = 'Configure your browser source before starting the overlay preview in OBS.';
+    writePluginFixture(pluginsRoot, 'emoji-rain', {
+      de: { plugins: { 'emoji-rain': { settings: { preview: copied } } } },
+      en: { plugins: { 'emoji-rain': { settings: { preview: copied } } } },
+      es: { plugins: { 'emoji-rain': { settings: { preview: 'Configura la fuente del navegador antes de iniciar la vista previa en OBS.' } } } },
+      fr: { plugins: { 'emoji-rain': { settings: { preview: 'Configurez la source de navigateur avant de lancer l aperçu dans OBS.' } } } }
+    });
+
+    expect(auditPluginLocales(pluginsRoot).errors).toContain(
+      'emoji-rain/de: English UI copy at plugins.emoji-rain.settings.preview'
+    );
+  });
+
+  test('reports a short English control copied into one target locale', () => {
+    writePluginFixture(pluginsRoot, 'emoji-rain', {
+      de: { plugins: { 'emoji-rain': { controls: { remove: 'Löschen' } } } },
+      en: { plugins: { 'emoji-rain': { controls: { remove: 'Delete' } } } },
+      es: { plugins: { 'emoji-rain': { controls: { remove: 'Delete' } } } },
+      fr: { plugins: { 'emoji-rain': { controls: { remove: 'Supprimer' } } } }
+    });
+
+    expect(auditPluginLocales(pluginsRoot).errors).toContain(
+      'emoji-rain/es: English UI copy at plugins.emoji-rain.controls.remove'
+    );
+  });
+
   test('reports cross-plugin key collisions that would overwrite a translation at runtime', () => {
     writePluginFixture(pluginsRoot, 'first-plugin', {
       de: { shared: { title: 'Erstes' } },

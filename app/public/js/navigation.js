@@ -1075,12 +1075,17 @@
                         Zum erneuten Starten den Launcher neu starten.
                     </p>
                     <div class="shutdown-modal-actions">
-                        <button id="shutdown-cancel-btn" class="shutdown-btn-cancel">Abbrechen</button>
-                        <button id="shutdown-confirm-btn" class="shutdown-btn-confirm">🛑 Herunterfahren</button>
+                        <button id="shutdown-cancel-btn" class="shutdown-btn-cancel" data-i18n="common.cancel">Cancel</button>
+                        <button id="shutdown-confirm-btn" class="shutdown-btn-confirm"><span aria-hidden="true">🛑</span> <span data-i18n="common.dashboard.shutdown">Shut down</span></button>
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
+            if (window.i18n?.ready) {
+                window.i18n.ready.then(() => window.i18n.updateDOM());
+            } else if (window.i18n?.updateDOM) {
+                window.i18n.updateDOM();
+            }
 
             document.getElementById('shutdown-cancel-btn').addEventListener('click', hideShutdownConfirmModal);
             document.getElementById('shutdown-confirm-btn').addEventListener('click', performShutdown);

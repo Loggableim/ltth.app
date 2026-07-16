@@ -52,10 +52,10 @@ const INVARIANT_UI_TEXT = new Set([
   'weatherstop'
 ]);
 
-// The SI-derived symbol for milliseconds is language-independent. Keep this
-// intentionally narrow: longer unit labels such as "milliseconds" must still
-// be translated independently by every locale.
-const UNIVERSAL_TECHNICAL_UNIT_SYMBOLS = new Set(['ms']);
+// Unit symbols are language-independent. Keep this intentionally narrow:
+// longer unit labels such as "milliseconds" must still be translated
+// independently by every locale.
+const UNIVERSAL_TECHNICAL_UNIT_SYMBOLS = new Set(['ms', 'px']);
 
 const LOCALES = ['de', 'en', 'es', 'fr'];
 // Mojibake leaves UTF-8 continuation-byte code points after a Latin-1 lead
@@ -107,6 +107,13 @@ function isInvariantUiText(value) {
     || /^[\w.-]+\.\w{2,}(?:\/\S*)?$/.test(normalized)
     || /^keyword\d+(?:\s+keyword\d+)*$/i.test(normalized)
     || /^(?:WebGPU|TikTok|TikFinity|LTTH|MPV|OSC|VRChat|OpenShock|Chatango|ChatPal)$/i.test(normalized);
+}
+
+function isCopiedEnglishUiText(targetValue, englishValue) {
+  return typeof targetValue === 'string'
+    && targetValue === englishValue
+    && isUserFacingText(englishValue)
+    && !isInvariantUiText(englishValue);
 }
 
 function auditPluginLocales(pluginsRoot) {
@@ -183,6 +190,13 @@ function auditPluginLocales(pluginsRoot) {
         if (values.every((value) => value === values[0]) && isUserFacingText(values[0]) && !isInvariantUiText(values[0])) {
           errors.push(`${pluginId}: nonlocalized UI copy at ${key}`);
         }
+
+        const englishValue = valuesByLocale.en[key];
+        ['de', 'es', 'fr'].forEach((locale) => {
+          if (isCopiedEnglishUiText(valuesByLocale[locale][key], englishValue)) {
+            errors.push(`${pluginId}/${locale}: English UI copy at ${key}`);
+          }
+        });
       }
     });
   });
@@ -190,4 +204,4 @@ function auditPluginLocales(pluginsRoot) {
   return { errors: [...new Set(errors)].sort(), plugins };
 }
 
-module.exports = { LOCALES, flattenTranslations, isInvariantUiText, auditPluginLocales };
+module.exports = { LOCALES, flattenTranslations, isInvariantUiText, isCopiedEnglishUiText, auditPluginLocales };

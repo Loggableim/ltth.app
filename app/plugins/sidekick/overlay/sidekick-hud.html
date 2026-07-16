@@ -202,19 +202,19 @@
     <div class="stats-grid">
       <div class="stat-item">
         <div class="stat-value" id="stat-chats">0</div>
-        <div class="stat-label">Chat/Min</div>
+        <div class="stat-label" data-i18n="plugins.sidekick.ui.overlay.chatPerMinute">Chat/min</div>
       </div>
       <div class="stat-item">
         <div class="stat-value" id="stat-gifts">0</div>
-        <div class="stat-label">Gifts</div>
+        <div class="stat-label" data-i18n="plugins.sidekick.ui.overlay.gifts">Gifts</div>
       </div>
       <div class="stat-item">
         <div class="stat-value" id="stat-follows">0</div>
-        <div class="stat-label">Follows</div>
+        <div class="stat-label" data-i18n="plugins.sidekick.ui.overlay.follows">Follows</div>
       </div>
       <div class="stat-item">
         <div class="stat-value" id="stat-viewers">0</div>
-        <div class="stat-label">Viewer</div>
+        <div class="stat-label" data-i18n="plugins.sidekick.ui.overlay.viewers">Viewers</div>
       </div>
     </div>
 
@@ -256,6 +256,14 @@
 
     // Recent events buffer
     const recentEvents = [];
+
+    function translateOverlay(key, fallback, params = {}) {
+      const translated = window.i18n?.t?.(key, params);
+      if (translated && translated !== key) return translated;
+      return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+      ));
+    }
 
     // Update status
     function updateStatus(status) {
@@ -301,7 +309,7 @@
             if (event.payload?.comment?.length > 30) content += '...';
             break;
           case 'gift':
-            content = event.payload?.giftName || 'Gift';
+            content = event.payload?.giftName || translateOverlay('plugins.sidekick.ui.overlay.gift', 'Gift');
             break;
           default:
             content = '';
@@ -354,6 +362,8 @@
 
     // Socket events
     socket.on('sidekick:status', updateStatus);
+
+    window.i18n?.onLanguageChange?.(() => renderEvents());
 
     // Initial load
     fetchStatus();

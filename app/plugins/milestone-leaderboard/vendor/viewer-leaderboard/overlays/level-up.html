@@ -306,6 +306,7 @@
     }
     </style>
     <script src="/js/i18n-client.js"></script>
+    <script src="/plugins/viewer-leaderboard/viewer-xp-i18n.js"></script>
 </head>
 <body>
   <div class="level-up-container" id="levelUpContainer">
@@ -381,7 +382,7 @@
       if (data.rewards) {
         const rewardTitle = document.createElement('div');
         rewardTitle.className = 'reward-title';
-        rewardTitle.textContent = '🎁 Belohnungen';
+        rewardTitle.textContent = ViewerXpI18n.text('rewards', '🎁 Rewards');
         rewardsEl.appendChild(rewardTitle);
 
         if (data.rewards.title) {
@@ -394,7 +395,7 @@
         if (data.rewards.name_color) {
           const badge = document.createElement('div');
           badge.className = 'reward-badge';
-          badge.textContent = `🎨 Neue Farbe`;
+          badge.textContent = ViewerXpI18n.text('new_color', '🎨 New color');
           badge.style.color = data.rewards.name_color;
           rewardsEl.appendChild(badge);
         }

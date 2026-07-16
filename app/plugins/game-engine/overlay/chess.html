@@ -400,7 +400,7 @@
         <strong><span data-i18n="plugins.game-engine.labels.current_turn">Current Turn: </span><span id="test-current-turn" data-i18n="plugins.game-engine.game_engine.display_texts.chess.label_white">White</span></strong>
       </div>
       <label data-i18n="plugins.game-engine.labels.move_e_g_e4_nf3">Move (e.g., e4, Nf3):</label>
-      <input type="text" id="test-move-input" placeholder="Enter move">
+      <input type="text" id="test-move-input" placeholder="Enter move" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.enter_move">
       <button class="btn-start" id="test-make-move" data-i18n="plugins.game-engine.labels.make_move">Make Move</button>
       <button class="btn-danger" id="test-end-chess" data-i18n="plugins.game-engine.labels.end_game">End Game</button>
     </div>
@@ -444,6 +444,12 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    function runtimeText(key, params = {}) {
+      const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
+      const translated = window.i18n?.t?.(normalizedKey, params);
+      return translated && translated !== normalizedKey ? translated : '';
+    }
+
     const socket = io({ auth: { role: 'overlay' } });
 
     // Check if test mode is enabled
@@ -828,7 +834,7 @@
         if (data.winner) {
           const winnerInfo = data.winner === 'white' ? gameState.whitePlayer : gameState.blackPlayer;
           const dt = config._displayTexts || {};
-          const winLabel = dt.labelWin || '🏆 {player} gewinnt!';
+          const winLabel = dt.labelWin || runtimeText('plugins.game-engine.runtime.chess.winner', { player: '{player}' });
           title.textContent = winLabel.replace('{player}', winnerInfo.nickname);
           title.style.color = data.winner === 'white' ? '#4CAF50' : '#2196F3';
           winnerName.textContent = winnerInfo.nickname;
@@ -839,9 +845,9 @@
           }
         } else {
           const dt = config._displayTexts || {};
-          title.textContent = dt.labelDraw || '🤝 Remis!';
+          title.textContent = dt.labelDraw || runtimeText('plugins.game-engine.runtime.chess.draw');
           title.style.color = '#FFC107';
-          winnerName.textContent = dt.labelDraw || '🤝 Remis!';
+          winnerName.textContent = dt.labelDraw || runtimeText('plugins.game-engine.runtime.chess.draw');
           winnerName.style.color = '#FFC107';
         }
 
@@ -854,7 +860,7 @@
           'repetition': 'by Threefold Repetition',
           'insufficient_material': 'Insufficient Material',
           'fifty_move_rule': 'by Fifty-Move Rule',
-          'draw_agreement': dt.labelDraw || '🤝 Remis!'
+          'draw_agreement': dt.labelDraw || runtimeText('plugins.game-engine.runtime.chess.draw')
         };
         reason.textContent = reasonText[data.reason] || data.reason;
 
@@ -887,13 +893,15 @@
       // For now, we'll display a message that chess test mode requires the backend UI
 
       document.getElementById('test-start-chess').addEventListener('click', () => {
-        alert('Chess test mode requires using the Admin UI (game-engine/ui) to start manual games.\n\nThis overlay test mode is currently only fully supported for Connect4, Plinko, and Wheel.');
+        alert(runtimeText('plugins.game-engine.runtime.chess.test_mode_notice'));
       });
 
       // Update turn display when moves are made
       socket.on('game-engine:move-made', (data) => {
         if (data.sessionId === testSessionId && data.gameType === 'chess') {
-          const turn = data.state.turn === 'w' ? 'White' : 'Black';
+          const turn = data.state.turn === 'w'
+            ? runtimeText('plugins.game-engine.runtime.chess.white')
+            : runtimeText('plugins.game-engine.runtime.chess.black');
           document.getElementById('test-current-turn').textContent = turn;
         }
       });

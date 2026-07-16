@@ -648,7 +648,6 @@
       padding: 2px 0;
     }
     </style>
-    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
   <div id="overlay-root" class="pos-bottom-left">
@@ -742,6 +741,16 @@
       };
       const allowedThemes = new Set(['default', 'cyberpunk', 'minimal', 'neon']);
       const allowedDesigns = new Set(['compact', 'fullwidth', 'minimal', 'card']);
+      const I18N_PREFIX = 'plugins.music-bot.music_bot.ui.controls.overlay';
+
+      function tr(key, fallback, params = {}) {
+        const fullKey = `${I18N_PREFIX}.${key}`;
+        const translated = window.i18n?.t(fullKey, params);
+        if (translated && translated !== fullKey) return translated;
+        return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+          Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : match
+        ));
+      }
 
       const params = new URLSearchParams(window.location.search);
       const position = allowedPositions.has(params.get('position')) ? params.get('position') : 'bottom-left';
@@ -825,8 +834,8 @@
 
         fill.style.width = `${percent}%`;
         label.textContent = data.skipped
-          ? `⏭ Song wird übersprungen!`
-          : `Vote Skip: ${votes}/${required}`;
+          ? tr('songSkipping', '⏭ Song wird übersprungen!')
+          : tr('voteSkip', 'Vote Skip: {votes}/{required}', { votes, required });
 
         if (data.skipped) {
           bar.classList.add('active');
@@ -921,7 +930,7 @@
 
         currentTrack = {
           id: payload.id || currentTrack?.id || null,
-          title: payload.title || 'Unbekannter Titel',
+          title: payload.title || tr('unknownTitle', 'Unbekannter Titel'),
           artist: payload.artist || '',
           requestedBy: payload.requestedBy || '',
           requesterAvatar: payload.requesterAvatar || null,
@@ -987,7 +996,7 @@
           if (r.artist) r.artist.textContent = currentTrack.artist || ' ';
           if (r.requester) {
             r.requester.textContent = currentTrack.requestedBy
-              ? `Requested by @${currentTrack.requestedBy}` : '';
+              ? tr('requestedBy', 'Angefragt von @{requester}', { requester: currentTrack.requestedBy }) : '';
           }
           if (r.thumb) {
             r.thumb.classList.add('artwork');
@@ -1052,7 +1061,7 @@
 
         if (design === 'fullwidth' && r.queueCount) {
           const qLen = currentQueue.length;
-          r.queueCount.textContent = qLen > 0 ? `🎵 +${qLen} in Queue` : '';
+          r.queueCount.textContent = qLen > 0 ? tr('queueCount', '🎵 +{count} in Warteschlange', { count: qLen }) : '';
         }
         if (design === 'card' && r.queuePreview && r.queueItems) {
           const cardPreviewSongs = currentQueue.slice(0, UP_NEXT_LIMIT);
@@ -1110,7 +1119,7 @@
           r.avatar.removeAttribute('src');
         }
         if (design === 'minimal' && r.text) {
-          r.text.textContent = '🎵 Waiting for music...';
+              r.text.textContent = tr('waitingForMusic', '🎵 Warte auf Musik...');
           r.text.classList.remove('scrolling');
         }
       }

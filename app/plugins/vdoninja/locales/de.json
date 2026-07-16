@@ -1,6 +1,9 @@
 {
   "plugins": {
     "vdoninja": {
+      "form_controls": {
+        "director_control_room_title": "Regieraum"
+      },
       "vdoninja": {
         "title": "VDO.Ninja Multi-Gast-Manager",
         "status": {
@@ -10,79 +13,72 @@
         "room": {
           "title": "Raumverwaltung",
           "name": "Raumname",
-          "name_placeholder": "Mein TikTok Stream",
-          "max_guests": "Max. Gäste",
+          "name_placeholder": "Mein TikTok-Livestream",
+          "max_guests": "Maximale Gäste",
           "create": "Raum erstellen",
           "close": "Raum schließen",
           "info": {
             "name": "Raumname:",
-            "director_url": "Regisseur-URL (für OBS):",
-            "guest_invite_url": "Gast-Einladungs-URL:",
+            "director_url": "Regie-URL (für OBS):",
+            "guest_invite_url": "Einladungs-URL für Gäste:",
             "connected_guests": "Verbundene Gäste:"
           },
           "copy": "Kopieren"
         },
         "guests": {
           "title": "Gäste-Steuerung",
-          "mute_all": "Alle stumm",
-          "unmute_all": "Alle laut",
+          "mute_all": "Alle stummschalten",
+          "unmute_all": "Stummschaltung für alle aufheben",
           "empty": "Noch keine Gäste verbunden",
-          "empty_hint": "Teile die Gast-Einladungs-URL, um Gäste zu deinem Raum hinzuzufügen",
-          "slot": "Platz",
+          "empty_hint": "Teile die Einladungs-URL für Gäste, um sie diesem Raum hinzuzufügen.",
+          "slot": "Platz {slot}",
           "controls": {
-            "mute": "Stumm",
-            "unmute": "Laut",
-            "hide": "Verstecken",
-            "show": "Zeigen",
+            "audio": "Ton",
+            "video": "Kamera",
+            "mute": "Stummschalten",
+            "unmute": "Stummschaltung aufheben",
+            "hide": "Ausblenden",
+            "show": "Anzeigen",
             "kick": "Entfernen",
-            "solo": "Solo",
-            "volume": "Lautstärke"
+            "solo": "Einzeln",
+            "volume": "Lautstärke: {value}%"
           }
         },
         "layout": {
           "title": "Layout-Vorlagen",
-          "grid_2x2": "Raster 2x2",
-          "grid_3x2": "Raster 3x2",
-          "solo": "Solo"
+          "grid_2x2": "Raster 2×2",
+          "grid_3x2": "Raster 3×2",
+          "solo": "Einzelansicht"
         },
         "director": {
-          "title": "Regisseur-Kontrollraum",
-          "hide": "Verstecken",
-          "show": "Zeigen"
+          "title": "Regie-Kontrollraum",
+          "hide": "Ausblenden",
+          "show": "Anzeigen"
         },
         "guide": {
           "title": "Kurzanleitung:",
-          "step1": "1. Erstelle einen Raum, um zu beginnen",
-          "step2": "2. Füge die Regisseur-URL als Browser-Quelle in OBS hinzu (1920x1080)",
-          "step3": "3. Teile die Gast-Einladungs-URL mit deinen Gästen",
-          "step4": "4. Steuere Gäste in Echtzeit von diesem Dashboard"
+          "step1": "1. Erstelle einen Raum, um zu beginnen.",
+          "step2": "2. Füge die Regie-URL als Browser-Quelle in OBS hinzu (1920×1080).",
+          "step3": "3. Teile die Einladungs-URL für Gäste mit deinen Gästen.",
+          "step4": "4. Steuere Gäste in Echtzeit über dieses Dashboard."
         },
         "messages": {
           "room_created": "Raum erfolgreich erstellt!",
           "room_closed": "Raum erfolgreich geschlossen!",
-          "guest_kicked": "Gast aus dem Raum entfernt",
-          "copied": "In die Zwischenablage kopiert!",
-          "error": "Ein Fehler ist aufgetreten"
+          "guest_kicked": "Gast wurde aus dem Raum entfernt.",
+          "copied": "Kopiert!",
+          "error": "Ein Fehler ist aufgetreten.",
+          "room_name_required": "Bitte gib einen Raumnamen ein.",
+          "room_create_failed": "Der Raum konnte nicht erstellt werden.",
+          "room_create_failed_detail": "Der Raum konnte nicht erstellt werden: {error}",
+          "room_close_confirm": "Diesen Raum wirklich schließen?",
+          "room_close_failed": "Der Raum konnte nicht geschlossen werden.",
+          "room_close_failed_detail": "Der Raum konnte nicht geschlossen werden: {error}",
+          "guest_kick_confirm": "{name} aus dem Raum entfernen?",
+          "guest_kick_reason": "Vom Host entfernt",
+          "copy_failed": "Die Zwischenablage konnte nicht beschrieben werden.",
+          "not_available": "Nicht verfügbar"
         }
-      },
-      "labels": {
-        "director_control_room": "🎬 Direktor-Kontrollraum",
-        "3_share_the_guest_invite_url_with_your": "3. Teile die Gast-Einladungs-URL mit deinen Gästen",
-        "4_control_guests_in_real_time_from_this": "4. Steuere Gäste in Echtzeit von diesem Dashboard",
-        "create_room": "✨ Raum schaffen",
-        "i_quick_guide": "ℹ️ Kurzanleitung:",
-        "close_room": "🔒 Raum schließen",
-        "copy": "📋 Kopieren",
-        "copy_831d1e": "📋 Kopieren",
-        "hide": "▼ Ausblenden",
-        "layout_presets": "🎨 Layout-Voreinstellungen",
-        "room_management": "🏠 Raumverwaltung",
-        "guest_controls": "👥 Gaststeuerung",
-        "1_create_a_room_to_get_started": "1. Erstelle einen Raum, um zu beginnen",
-        "vdo_ninja_multi_guest_manager": "VDO.Ninja Multi-Gast-Manager",
-        "unmute_all": "🔊 Stummschaltung für alle aufheben",
-        "2_add_the_director_url_to_obs_as": "2. Füge die Regisseur-URL als Browser-Quelle in OBS hinzu (1920x1080)",
-        "mute_all": "🔇 Alle stumm schalten"
       }
     }
   }

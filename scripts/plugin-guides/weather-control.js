@@ -29,6 +29,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
   "safety": "obs",
   "mode": "ui",
   "overlay": "/plugins/weather-control/overlay.html",
+  "overlayWorkflowStepIds": ["weather-overlay"],
   "related": [
     "webgpu-fireworks",
     "emoji-rain"

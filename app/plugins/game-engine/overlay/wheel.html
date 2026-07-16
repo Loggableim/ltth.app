@@ -519,6 +519,12 @@
   <audio id="lost-sound" preload="auto"></audio>
 
   <script>
+    function runtimeText(key, params = {}) {
+      const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
+      const translated = window.i18n?.t?.(normalizedKey, params);
+      return translated && translated !== normalizedKey ? translated : '';
+    }
+
     // Configuration
     let config = {
       segments: [],
@@ -1049,7 +1055,7 @@
 
       // Handle shock segment
       if (isShock) {
-        congratsText.textContent = '⚡ SHOCK!';
+        congratsText.textContent = runtimeText('plugins.game-engine.runtime.wheel.shock');
         prizeText.textContent = `${prize} (${shockIntensity}%)`;
         prizeText.style.color = getComputedStyle(document.documentElement).getPropertyValue('--shock-color-primary').trim() || '#FF6B00';
         winAnnouncement.classList.add('shock');
@@ -1063,7 +1069,7 @@
         // Use custom Niete text from settings or default
         const nieteText = config.settings.nieteText || 'Leider kein Gewinn!';
         const dt = config._displayTexts || {};
-        congratsText.textContent = dt.labelNiete || '💔 Niete!';
+        congratsText.textContent = dt.labelNiete || runtimeText('plugins.game-engine.runtime.wheel.no_prize');
         prizeText.textContent = nieteText;
         prizeText.style.color = prizeColor || '#90A4AE';
         winAnnouncement.classList.add('niete');
@@ -1072,7 +1078,7 @@
       } else {
         // Regular win
         const dt = config._displayTexts || {};
-        congratsText.textContent = dt.labelWin || '🎊 Gewonnen!';
+        congratsText.textContent = dt.labelWin || runtimeText('plugins.game-engine.runtime.wheel.won');
         prizeText.textContent = prize;
         prizeText.style.color = prizeColor || '#FFD700';
         winAnnouncement.classList.remove('niete');
@@ -1175,7 +1181,7 @@
      */
     function showInfoScreen() {
       const settings = config.settings || {};
-      infoScreenText.textContent = settings.infoScreenText || 'Um deinen Gewinn abzuholen, besuche discord.gg/deinserver';
+      infoScreenText.textContent = settings.infoScreenText || runtimeText('plugins.game-engine.runtime.wheel.info_screen');
       infoScreen.classList.add('visible');
 
       // Hide after delay
@@ -1232,9 +1238,11 @@
      * Show player info
      */
     function showPlayerInfo(nickname, profilePictureUrl, giftName) {
-      playerName.textContent = nickname || 'Spieler';
+      playerName.textContent = nickname || runtimeText('plugins.game-engine.runtime.hud.player');
       playerAvatar.src = profilePictureUrl || 'https://via.placeholder.com/50';
-      giftInfo.textContent = giftName ? `🎁 ${giftName}` : '🎡 Dreht das Rad';
+      giftInfo.textContent = giftName
+        ? `🎁 ${giftName}`
+        : runtimeText('plugins.game-engine.runtime.wheel.spinning');
 
       playerInfo.classList.add('visible');
       wheelWrapper.classList.add('visible');
@@ -1335,8 +1343,8 @@
       idleMessage.style.display = '';
 
       // Update title and subtitle
-      idleMessageTitle.textContent = settings.idleMessageTitle || '🎡 Warte auf Spieler...';
-      idleMessageSubtitle.textContent = settings.idleMessageSubtitle || 'Sende ein Geschenk, um das Glücksrad zu drehen!';
+      idleMessageTitle.textContent = settings.idleMessageTitle || runtimeText('plugins.game-engine.runtime.wheel.waiting_for_player');
+      idleMessageSubtitle.textContent = settings.idleMessageSubtitle || runtimeText('plugins.game-engine.runtime.wheel.send_gift');
     }
 
     /**
@@ -1670,9 +1678,9 @@
       }
 
       // Show error message in announcement area (with safe fallbacks)
-      winnerName.textContent = data.nickname || data.username || 'Spieler';
-      congratsText.textContent = '❌ Fehler';
-      prizeText.textContent = data.message || 'Spin konnte nicht durchgeführt werden';
+      winnerName.textContent = data.nickname || data.username || runtimeText('plugins.game-engine.runtime.hud.player');
+      congratsText.textContent = runtimeText('plugins.game-engine.runtime.common.error');
+      prizeText.textContent = data.message || runtimeText('plugins.game-engine.runtime.wheel.spin_failed');
       prizeText.style.color = '#FF6B6B';
       winAnnouncement.classList.remove('niete');
       winAnnouncement.classList.remove('shock');
@@ -1768,11 +1776,11 @@
             console.log('Test spin triggered:', data);
           } else {
             console.error('Failed to trigger test spin:', data.error);
-            alert('Failed to trigger test spin: ' + (data.error || data.message));
+            alert(runtimeText('plugins.game-engine.runtime.wheel.test_spin_failed', { error: data.error || data.message }));
           }
         } catch (error) {
           console.error('Error triggering test spin:', error);
-          alert('Error triggering test spin: ' + error.message);
+          alert(runtimeText('plugins.game-engine.runtime.wheel.test_spin_error', { error: error.message }));
         }
       });
     }

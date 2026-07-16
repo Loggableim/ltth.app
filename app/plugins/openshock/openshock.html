@@ -436,11 +436,11 @@
                 <div class="grid-2">
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.openshock.labels.whitelist_usernames_comma_separated">Whitelist (usernames, comma separated)</label>
-                        <input type="text" class="form-input" id="whitelist" placeholder="user1, user2, user3">
+                        <input type="text" class="form-input" id="whitelist" placeholder="user1, user2, user3" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.user_allowlist">
                     </div>
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.openshock.labels.blacklist_usernames_comma_separated_98e353">Blacklist (usernames, comma separated)</label>
-                        <input type="text" class="form-input" id="blacklist" placeholder="baduser1, baduser2">
+                        <input type="text" class="form-input" id="blacklist" placeholder="baduser1, baduser2" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.user_blocklist">
                     </div>
                 </div>
                 <button class="btn btn-primary" id="saveUserLimits" data-i18n="plugins.openshock.labels.save_user_limits_fd1c79">💾 Save User Limits</button>
@@ -511,7 +511,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.openshock.labels.api_key">API Key</label>
-                    <input type="password" class="form-input" id="apiKey" placeholder="Enter your OpenShock API key">
+                    <input type="password" class="form-input" id="apiKey" placeholder="Enter your OpenShock API key" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.openshock_api_key">
                 </div>
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.openshock.labels.base_url">Base URL</label>
@@ -608,7 +608,7 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.openshock.labels.mapping_name_eeb68f">Mapping Name</label>
-                    <input type="text" class="form-input" id="mappingName" placeholder="e.g., Rose Gift Shock">
+                    <input type="text" class="form-input" id="mappingName" placeholder="e.g., Rose Gift Shock" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.gift_mapping_name">
                 </div>
 
                 <div class="form-group">
@@ -638,7 +638,7 @@
                             <option value="" data-i18n="plugins.openshock.labels.all_gifts">All Gifts</option>
                         </select>
                         <small class="form-help-text" data-i18n="plugins.openshock.labels.or_enter_custom_name_below">Or enter custom name below:</small>
-                        <input type="text" class="form-input" id="mappingGiftName" placeholder="e.g., Rose, TikTok (leave empty to use selection above)">
+                        <input type="text" class="form-input" id="mappingGiftName" placeholder="e.g., Rose, TikTok (leave empty to use selection above)" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.gift_mapping_gift">
                     </div>
                     <div class="form-group" id="conditionMinCoins">
                         <label class="form-label" data-i18n="plugins.openshock.labels.min_coins_31a19c">Min Coins</label>
@@ -646,7 +646,7 @@
                     </div>
                     <div class="form-group hidden" id="conditionMessagePattern">
                         <label class="form-label" data-i18n="plugins.openshock.labels.message_pattern_regex_f62c86">Message Pattern (regex)</label>
-                        <input type="text" class="form-input" id="mappingMessagePattern" placeholder="e.g., ^!shock">
+                        <input type="text" class="form-input" id="mappingMessagePattern" placeholder="e.g., ^!shock" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.command_pattern">
                     </div>
                 </div>
 
@@ -750,12 +750,12 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.openshock.labels.pattern_name_cba3f3">Pattern Name</label>
-                    <input type="text" class="form-input" id="patternName" placeholder="e.g., Escalating Shock">
+                    <input type="text" class="form-input" id="patternName" placeholder="e.g., Escalating Shock" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.escalating_pattern">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.openshock.ui.labels.description">Description</label>
-                    <input type="text" class="form-input" id="patternDescription" placeholder="Brief description of this pattern">
+                    <input type="text" class="form-input" id="patternDescription" placeholder="Brief description of this pattern" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.pattern_description">
                 </div>
 
                 <div class="form-group">
@@ -850,7 +850,7 @@
                 <div class="grid-2">
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.openshock.labels.pattern_name">Pattern Name</label>
-                        <input type="text" class="form-input" id="curvePatternName" placeholder="My Custom Pattern">
+                        <input type="text" class="form-input" id="curvePatternName" placeholder="My Custom Pattern" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.custom_pattern_name">
                     </div>
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.openshock.labels.template_curves">Template Curves</label>

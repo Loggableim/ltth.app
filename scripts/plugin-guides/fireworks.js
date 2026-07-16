@@ -29,6 +29,7 @@ const guide = {
   "safety": "obs",
   "mode": "ui",
   "overlay": "/plugins/fireworks/overlay.html",
+  "overlayWorkflowStepIds": ["fireworks-overlay"],
   "related": [
     "webgpu-fireworks",
     "flame-overlay"

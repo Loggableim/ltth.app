@@ -1324,7 +1324,7 @@
       </div>
     </div>
 
-    <nav class="tabs" aria-label="Game Engine Navigation">
+    <nav class="tabs" aria-label="Game Engine Navigation" data-i18n-aria-label="plugins.game-engine.form_controls.accessibility.navigation">
       <div class="sidebar-brand">
         <img class="sidebar-brand-icon" src="/plugins/game-engine/assets/branding/ltth-game-engine-icon.png?v=20260707-2" alt="LTTH Game Engine Icon">
         <div class="sidebar-brand-copy">
@@ -1485,12 +1485,12 @@
 
         <div class="form-group">
           <label data-i18n="plugins.game-engine.game_engine.player_one">Player 1 name:</label>
-          <input type="text" id="manual-player1-name" value="Test Spieler 1" placeholder="Name des ersten Spielers">
+          <input type="text" id="manual-player1-name" value="Test Spieler 1" placeholder="Name des ersten Spielers" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.manual_player_one">
         </div>
 
         <div class="form-group">
           <label data-i18n="plugins.game-engine.game_engine.player_two">Player 2 name:</label>
-          <input type="text" id="manual-player2-name" value="Test Spieler 2" placeholder="Name des zweiten Spielers">
+          <input type="text" id="manual-player2-name" value="Test Spieler 2" placeholder="Name des zweiten Spielers" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.manual_player_two">
         </div>
 
         <button id="start-manual-game" class="btn" data-i18n="plugins.game-engine.labels.test_spiel_starten">🎮 Test-Spiel starten</button>
@@ -1618,7 +1618,7 @@
 
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.chat_befehl_zum_starten">Chat-Befehl zum Starten:</label>
-          <input type="text" id="c4ChatCommand" value="c4start" placeholder="c4start" pattern="^[a-zA-Z0-9_-]+$" title="Nur Buchstaben, Zahlen, Unterstrich und Bindestrich erlaubt">
+          <input type="text" id="c4ChatCommand" value="c4start" placeholder="c4start" pattern="^[a-zA-Z0-9_-]+$" title="Nur Buchstaben, Zahlen, Unterstrich und Bindestrich erlaubt" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.connect4_chat_command">
           <small data-i18n="plugins.game-engine.labels.definiere_den_chat_befehl_zum_starten_eines_connect4">Definiere den Chat-Befehl zum Starten eines Connect4-Spiels (ohne / Präfix). Nur alphanumerische Zeichen, Unterstrich und Bindestrich erlaubt.</small>
         </div>
 
@@ -1655,9 +1655,9 @@
           <label data-i18n="plugins.game-engine.labels.anzuzeigende_leaderboards">Anzuzeigende Leaderboards:</label>
           <div>
             <label><input type="checkbox" id="leaderboardDaily" checked><span data-i18n="plugins.game-engine.labels.daily"> Täglich</span></label>
-            <label><input type="checkbox" id="leaderboardSeason" checked> Saison</label>
-            <label><input type="checkbox" id="leaderboardLifetime" checked> Allzeit</label>
-            <label><input type="checkbox" id="leaderboardELORotation" checked> ELO</label>
+            <label><input type="checkbox" id="leaderboardSeason" checked><span data-i18n="plugins.game-engine.game_engine.connect4.leaderboard_season"> Saison</span></label>
+            <label><input type="checkbox" id="leaderboardLifetime" checked><span data-i18n="plugins.game-engine.game_engine.connect4.leaderboard_lifetime"> Allzeit</span></label>
+            <label><input type="checkbox" id="leaderboardELORotation" checked><span data-i18n="plugins.game-engine.game_engine.connect4.leaderboard_elo"> ELO</span></label>
           </div>
         </div>
 
@@ -1687,31 +1687,31 @@
 
         <div class="form-group">
           <label data-i18n="plugins.game-engine.ui.connect4.title">Titel:</label>
-          <input type="text" id="connect4-display-title" placeholder="🔵 CONNECT 4" style="width:100%;">
+          <input type="text" id="connect4-display-title" placeholder="🔵 CONNECT 4" style="width:100%;" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.connect4_display_title">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.label_spieler_1">Label Spieler 1:</label>
-          <input type="text" id="connect4-display-player1" placeholder="Spieler 1" style="width:100%;">
+          <input type="text" id="connect4-display-player1" placeholder="Spieler 1" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.connect4.label_player1">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.label_spieler_2">Label Spieler 2:</label>
-          <input type="text" id="connect4-display-player2" placeholder="Spieler 2" style="width:100%;">
+          <input type="text" id="connect4-display-player2" placeholder="Spieler 2" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.connect4.label_player2">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_dein_zug_aeeadc">Text: Dein Zug:</label>
-          <input type="text" id="connect4-display-your-turn" placeholder="Du bist dran! Tippe A-G" style="width:100%;">
+          <input type="text" id="connect4-display-your-turn" placeholder="Du bist dran! Tippe A-G" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.connect4.label_your_turn">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_warte_auf_gegner">Text: Warte auf Gegner:</label>
-          <input type="text" id="connect4-display-waiting" placeholder="Warte auf Gegner..." style="width:100%;">
+          <input type="text" id="connect4-display-waiting" placeholder="Warte auf Gegner..." style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.connect4.label_waiting">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_gewinn_player_wird_durch_spielernamen_ersetzt">Text: Gewinn ({player} wird durch Spielernamen ersetzt):</label>
-          <input type="text" id="connect4-display-win" placeholder="🏆 {player} gewinnt!" style="width:100%;">
+          <input type="text" id="connect4-display-win" placeholder="🏆 {player} gewinnt!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.connect4.label_win">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_unentschieden">Text: Unentschieden:</label>
-          <input type="text" id="connect4-display-draw" placeholder="🤝 Unentschieden!" style="width:100%;">
+          <input type="text" id="connect4-display-draw" placeholder="🤝 Unentschieden!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.connect4.label_draw">
         </div>
 
         <button id="saveSettingsBtn" data-i18n="plugins.game-engine.game_engine.save_settings">Save settings</button>
@@ -1894,35 +1894,35 @@
 
         <div class="form-group">
           <label data-i18n="plugins.game-engine.ui.connect4.title">Titel:</label>
-          <input type="text" id="chess-display-title" placeholder="♟️ SCHACH" style="width:100%;">
+          <input type="text" id="chess-display-title" placeholder="♟️ SCHACH" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.chess.title">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.label_wei">Label Weiß:</label>
-          <input type="text" id="chess-display-white" placeholder="Weiß" style="width:100%;">
+          <input type="text" id="chess-display-white" placeholder="Weiß" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.chess.label_white">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.label_schwarz">Label Schwarz:</label>
-          <input type="text" id="chess-display-black" placeholder="Schwarz" style="width:100%;">
+          <input type="text" id="chess-display-black" placeholder="Schwarz" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.chess.label_black">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_dein_zug">Text: Dein Zug:</label>
-          <input type="text" id="chess-display-your-turn" placeholder="Dein Zug" style="width:100%;">
+          <input type="text" id="chess-display-your-turn" placeholder="Dein Zug" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.chess.label_your_turn">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_schach">Text: Schach:</label>
-          <input type="text" id="chess-display-check" placeholder="⚠️ Schach!" style="width:100%;">
+          <input type="text" id="chess-display-check" placeholder="⚠️ Schach!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.chess.label_check">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_schachmatt">Text: Schachmatt:</label>
-          <input type="text" id="chess-display-checkmate" placeholder="♚ Schachmatt!" style="width:100%;">
+          <input type="text" id="chess-display-checkmate" placeholder="♚ Schachmatt!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.chess.label_checkmate">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_remis">Text: Remis:</label>
-          <input type="text" id="chess-display-draw" placeholder="🤝 Remis!" style="width:100%;">
+          <input type="text" id="chess-display-draw" placeholder="🤝 Remis!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.chess.label_draw">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_gewinn_player_spielername">Text: Gewinn ({player} = Spielername):</label>
-          <input type="text" id="chess-display-win" placeholder="🏆 {player} gewinnt!" style="width:100%;">
+          <input type="text" id="chess-display-win" placeholder="🏆 {player} gewinnt!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.connect4.label_win">
         </div>
 
         <button id="saveChessSettingsBtn" data-i18n="plugins.game-engine.labels.schach_einstellungen_speichern">Schach-Einstellungen speichern</button>
@@ -1991,7 +1991,7 @@
         <div class="form-group">
           <label data-i18n="plugins.game-engine.ui.plinko.board_name">Board-Name:</label>
           <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="text" id="plinko-board-name" placeholder="Board-Name eingeben...">
+            <input type="text" id="plinko-board-name" placeholder="Board-Name eingeben..." data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.plinko_board_name">
             <button id="updatePlinkoBoardNameBtn" class="secondary" data-i18n="plugins.game-engine.labels.name_speichern">💾 Name speichern</button>
           </div>
         </div>
@@ -1999,7 +1999,7 @@
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.chat_befehl_optional">Chat-Befehl (optional):</label>
           <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="text" id="plinko-board-chat-command" placeholder="z.B. /plinko">
+            <input type="text" id="plinko-board-chat-command" placeholder="z.B. /plinko" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.plinko_chat_command">
             <button id="updatePlinkoBoardChatCommandBtn" class="secondary" data-i18n="plugins.game-engine.labels.befehl_speichern">💾 Befehl speichern</button>
           </div>
           <small style="color: #888;" data-i18n="plugins.game-engine.labels.zuschauer_konnen_diesen_befehl_nutzen_um_drops_auf">Zuschauer können diesen Befehl nutzen, um Drops auf diesem Board zu triggern.</small>
@@ -2107,15 +2107,15 @@
 
         <div class="form-group">
           <label data-i18n="plugins.game-engine.ui.connect4.title">Titel:</label>
-          <input type="text" id="plinko-display-title" placeholder="🎰 PLINKO" style="width:100%;">
+          <input type="text" id="plinko-display-title" placeholder="🎰 PLINKO" style="width:100%;" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.plinko_display_title">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_ball_gedropt">Text: Ball gedropt:</label>
-          <input type="text" id="plinko-display-drop" placeholder="⬇️ Ball wird gedropt!" style="width:100%;">
+          <input type="text" id="plinko-display-drop" placeholder="⬇️ Ball wird gedropt!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.plinko.label_drop">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_gewinn_ec87e0">Text: Gewinn:</label>
-          <input type="text" id="plinko-display-win" placeholder="🎉 Gewonnen!" style="width:100%;">
+          <input type="text" id="plinko-display-win" placeholder="🎉 Gewonnen!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.plinko.label_win">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.multiplikator_prafix">Multiplikator-Präfix:</label>
@@ -2123,7 +2123,7 @@
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_warteschlange_cf2afd">Text: Warteschlange:</label>
-          <input type="text" id="plinko-display-queued" placeholder="⏳ Warteschlange..." style="width:100%;">
+          <input type="text" id="plinko-display-queued" placeholder="⏳ Warteschlange..." style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.plinko.label_queued">
         </div>
 
         <button id="savePlinkoSettingsBtn" data-i18n="plugins.game-engine.labels.plinko_einstellungen_speichern">🎰 Plinko-Einstellungen speichern</button>
@@ -2143,7 +2143,7 @@
         <div class="form-group" style="display: flex; gap: 10px; align-items: flex-end;">
           <div style="flex: 1;">
             <label data-i18n="plugins.game-engine.labels.geschenk_name_oder_id_72953d">Geschenk-Name oder ID:</label>
-            <input type="text" id="plinko-new-gift-mapping" placeholder="z.B. Rose oder 5655">
+            <input type="text" id="plinko-new-gift-mapping" placeholder="z.B. Rose oder 5655" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.gift_or_id">
           </div>
           <button id="addPlinkoGiftMappingBtn" class="secondary" data-i18n="plugins.game-engine.labels.geschenk_hinzufugen">➕ Geschenk hinzufügen</button>
         </div>
@@ -2236,7 +2236,7 @@
 
         <div class="form-group">
           <label data-i18n="plugins.game-engine.ui.common.player_name">Spieler-Name:</label>
-          <input type="text" id="test-player-name" value="TestUser" placeholder="Name des Test-Spielers" style="width: 100%;">
+          <input type="text" id="test-player-name" value="TestUser" placeholder="Name des Test-Spielers" style="width: 100%;" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.test_player_name">
         </div>
 
         <div class="form-group">
@@ -2344,7 +2344,7 @@
 
         <div class="form-group">
           <label data-i18n="plugins.game-engine.ui.wheel.name">Wheel-Name:</label>
-          <input type="text" id="wheel-name-input" value="Standard Wheel" placeholder="Name des Wheels">
+          <input type="text" id="wheel-name-input" value="Standard Wheel" placeholder="Name des Wheels" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.wheel_name">
           <p style="color: #888; font-size: 12px; margin-top: 5px;" data-i18n="plugins.game-engine.labels.ein_beschreibender_name_fur_dieses_wheel_z_b">
             Ein beschreibender Name für dieses Wheel (z.B. "Rose Wheel", "VIP Wheel")
           </p>
@@ -2369,7 +2369,7 @@
           <label data-i18n="plugins.game-engine.labels.chat_command_optional">Chat-Command (optional):</label>
           <div style="display: flex; gap: 10px; align-items: center;">
             <span style="color: #888;">/</span>
-            <input type="text" id="wheel-chat-command" placeholder="z.B. spin oder wheel" style="flex: 1;">
+            <input type="text" id="wheel-chat-command" placeholder="z.B. spin oder wheel" style="flex: 1;" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.wheel_chat_command">
           </div>
           <p style="color: #888; font-size: 12px; margin-top: 5px;" data-i18n="plugins.game-engine.labels.zuschauer_konnen_dieses_wheel_mit_dem_command_im">
             Zuschauer können dieses Wheel mit dem Command im Chat auslösen (z.B. /spin)
@@ -2388,7 +2388,7 @@
         <div class="form-group" style="display: flex; gap: 10px; align-items: flex-end;">
           <div style="flex: 1;">
             <label data-i18n="plugins.game-engine.labels.geschenk_name_oder_id">Geschenk-Name oder ID:</label>
-            <input type="text" id="wheel-new-gift-trigger" placeholder="z.B. Rose oder 5655">
+            <input type="text" id="wheel-new-gift-trigger" placeholder="z.B. Rose oder 5655" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.gift_or_id">
           </div>
           <button id="addWheelGiftTriggerBtn" class="secondary" data-i18n="plugins.game-engine.labels.geschenk_hinzufugen_5c34ce">➕ Geschenk hinzufügen</button>
         </div>
@@ -2515,7 +2515,7 @@
 
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.niete_text_wird_angezeigt_statt_gewinn">Niete-Text (wird angezeigt statt Gewinn):</label>
-          <input type="text" id="wheel-niete-text" value="Leider kein Gewinn!" placeholder="z.B. Leider kein Gewinn!">
+          <input type="text" id="wheel-niete-text" value="Leider kein Gewinn!" placeholder="z.B. Leider kein Gewinn!" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.wheel_no_prize_text">
           <p style="color: #888; font-size: 12px; margin-top: 5px;" data-i18n="plugins.game-engine.labels.dieser_text_wird_angezeigt_wenn_ein_segment_als">
             Dieser Text wird angezeigt, wenn ein Segment als "Niete" markiert ist.
           </p>
@@ -2538,7 +2538,7 @@
 
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.idle_nachricht_titel">Idle-Nachricht Titel:</label>
-          <input type="text" id="wheel-idle-message-title" value="🎡 Warte auf Spieler..." placeholder="z.B. 🎡 Warte auf Spieler...">
+          <input type="text" id="wheel-idle-message-title" value="🎡 Warte auf Spieler..." placeholder="z.B. 🎡 Warte auf Spieler..." data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.wheel_idle_title">
           <p style="color: #888; font-size: 12px; margin-top: 5px;" data-i18n="plugins.game-engine.labels.der_haupttitel_der_idle_nachricht_erste_zeile">
             Der Haupttitel der Idle-Nachricht (erste Zeile)
           </p>
@@ -2546,7 +2546,7 @@
 
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.idle_nachricht_untertitel">Idle-Nachricht Untertitel:</label>
-          <input type="text" id="wheel-idle-message-subtitle" value="Sende ein Geschenk, um das Glücksrad zu drehen!" placeholder="z.B. Sende ein Geschenk, um das Glücksrad zu drehen!">
+          <input type="text" id="wheel-idle-message-subtitle" value="Sende ein Geschenk, um das Glücksrad zu drehen!" placeholder="z.B. Sende ein Geschenk, um das Glücksrad zu drehen!" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.wheel_idle_subtitle">
           <p style="color: #888; font-size: 12px; margin-top: 5px;" data-i18n="plugins.game-engine.labels.der_untertitel_der_idle_nachricht_zweite_zeile">
             Der Untertitel der Idle-Nachricht (zweite Zeile)
           </p>
@@ -2590,27 +2590,27 @@
 
         <div class="form-group">
           <label data-i18n="plugins.game-engine.ui.connect4.title">Titel:</label>
-          <input type="text" id="wheel-display-title" placeholder="🎡 GLÜCKSRAD" style="width:100%;">
+          <input type="text" id="wheel-display-title" placeholder="🎡 GLÜCKSRAD" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.wheel.title">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_dreht_sich">Text: Dreht sich:</label>
-          <input type="text" id="wheel-display-spin" placeholder="🔄 Dreht sich..." style="width:100%;">
+          <input type="text" id="wheel-display-spin" placeholder="🔄 Dreht sich..." style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.wheel.label_spin">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_ergebnis">Text: Ergebnis:</label>
-          <input type="text" id="wheel-display-result" placeholder="🎉 Ergebnis:" style="width:100%;">
+          <input type="text" id="wheel-display-result" placeholder="🎉 Ergebnis:" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.wheel.label_result">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_niete">Text: Niete:</label>
-          <input type="text" id="wheel-display-niete" placeholder="💔 Niete!" style="width:100%;">
+          <input type="text" id="wheel-display-niete" placeholder="💔 Niete!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.wheel.label_niete">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_gewinn">Text: Gewinn:</label>
-          <input type="text" id="wheel-display-win" placeholder="🎊 Gewonnen!" style="width:100%;">
+          <input type="text" id="wheel-display-win" placeholder="🎊 Gewonnen!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.wheel.label_win">
         </div>
         <div class="form-group">
           <label data-i18n="plugins.game-engine.labels.text_warteschlange">Text: Warteschlange:</label>
-          <input type="text" id="wheel-display-queued" placeholder="⏳ In der Warteschlange..." style="width:100%;">
+          <input type="text" id="wheel-display-queued" placeholder="⏳ In der Warteschlange..." style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.wheel.label_queued">
         </div>
 
         <button id="saveWheelSettingsBtn" data-i18n="plugins.game-engine.labels.wheel_einstellungen_speichern">🎡 Wheel-Einstellungen speichern</button>
@@ -2681,7 +2681,7 @@
 
         <div class="form-group">
           <label data-i18n="plugins.game-engine.ui.common.test_player_name">Test-Spielername:</label>
-          <input type="text" id="wheel-test-player" value="TestSpieler" placeholder="Name des Testspielers">
+          <input type="text" id="wheel-test-player" value="TestSpieler" placeholder="Name des Testspielers" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.wheel_test_player">
         </div>
 
         <button id="triggerTestSpinBtn" data-i18n="plugins.game-engine.labels.test_spin_starten">🎡 Test-Spin starten</button>
@@ -2741,14 +2741,14 @@
         <div class="form-group">
           <label data-i18n="plugins.game-engine.ui.common.name">Name:</label>
           <div style="display:flex;gap:8px;">
-            <input type="text" id="slot-machine-name" placeholder="Name der Slot-Maschine..." style="flex:1;">
+            <input type="text" id="slot-machine-name" placeholder="Name der Slot-Maschine..." style="flex:1;" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.slot_machine_name">
             <button id="updateSlotNameBtn" class="secondary" data-i18n="plugins.game-engine.labels.speichern_b5bae2">💾 Speichern</button>
           </div>
         </div>
         <div class="form-group">
           <label><span data-i18n="plugins.game-engine.labels.chat_befehl_z_b">Chat-Befehl (z.B. </span><code>!spin</code>):</label>
           <div style="display:flex;gap:8px;">
-            <input type="text" id="slot-chat-command" placeholder="z.B. !spin" style="flex:1;">
+            <input type="text" id="slot-chat-command" placeholder="z.B. !spin" style="flex:1;" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.slot_chat_command">
             <button id="updateSlotChatCommandBtn" class="secondary" data-i18n="plugins.game-engine.labels.speichern">💾 Speichern</button>
           </div>
         </div>
@@ -2874,40 +2874,40 @@
             <label data-i18n="plugins.game-engine.ui.chess.background_color">Hintergrundfarbe:</label>
             <div style="display:flex;gap:8px;align-items:center;">
               <input type="color" id="slot-design-bg-color" value="#1a0a2e" style="width:48px;height:36px;padding:2px;cursor:pointer;">
-              <input type="text" id="slot-design-bg-color-text" value="#1a0a2e" style="flex:1;font-size:13px;" placeholder="#1a0a2e">
+              <input type="text" id="slot-design-bg-color-text" value="#1a0a2e" style="flex:1;font-size:13px;" placeholder="#1a0a2e" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.slot_background_color">
             </div>
           </div>
           <div class="form-group">
             <label data-i18n="plugins.game-engine.ui.slot.frame_color">Rahmenfarbe:</label>
             <div style="display:flex;gap:8px;align-items:center;">
               <input type="color" id="slot-design-border-color" value="#FFD700" style="width:48px;height:36px;padding:2px;cursor:pointer;">
-              <input type="text" id="slot-design-border-color-text" value="#FFD700" style="flex:1;font-size:13px;" placeholder="#FFD700">
+              <input type="text" id="slot-design-border-color-text" value="#FFD700" style="flex:1;font-size:13px;" placeholder="#FFD700" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.slot_border_color">
             </div>
           </div>
           <div class="form-group">
             <label data-i18n="plugins.game-engine.ui.slot.reel_background_color">Reel-Hintergrundfarbe:</label>
             <div style="display:flex;gap:8px;align-items:center;">
               <input type="color" id="slot-design-reel-bg-color" value="#0d0620" style="width:48px;height:36px;padding:2px;cursor:pointer;">
-              <input type="text" id="slot-design-reel-bg-color-text" value="#0d0620" style="flex:1;font-size:13px;" placeholder="#0d0620">
+              <input type="text" id="slot-design-reel-bg-color-text" value="#0d0620" style="flex:1;font-size:13px;" placeholder="#0d0620" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.slot_reel_background_color">
             </div>
           </div>
           <div class="form-group">
             <label data-i18n="plugins.game-engine.ui.slot.text_color">Textfarbe:</label>
             <div style="display:flex;gap:8px;align-items:center;">
               <input type="color" id="slot-design-text-color" value="#ffffff" style="width:48px;height:36px;padding:2px;cursor:pointer;">
-              <input type="text" id="slot-design-text-color-text" value="#ffffff" style="flex:1;font-size:13px;" placeholder="#ffffff">
+              <input type="text" id="slot-design-text-color-text" value="#ffffff" style="flex:1;font-size:13px;" placeholder="#ffffff" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.slot_text_color">
             </div>
           </div>
           <div class="form-group">
             <label data-i18n="plugins.game-engine.ui.slot.win_jackpot_color">Gewinn-/Jackpot-Farbe:</label>
             <div style="display:flex;gap:8px;align-items:center;">
               <input type="color" id="slot-design-win-color" value="#FFD700" style="width:48px;height:36px;padding:2px;cursor:pointer;">
-              <input type="text" id="slot-design-win-color-text" value="#FFD700" style="flex:1;font-size:13px;" placeholder="#FFD700">
+              <input type="text" id="slot-design-win-color-text" value="#FFD700" style="flex:1;font-size:13px;" placeholder="#FFD700" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.slot_border_color">
             </div>
           </div>
           <div class="form-group">
             <label data-i18n="plugins.game-engine.ui.slot.title_text">Titel-Text:</label>
-            <input type="text" id="slot-design-title-text" value="🎰 SLOT MACHINE" placeholder="🎰 SLOT MACHINE" style="width:100%;">
+            <input type="text" id="slot-design-title-text" value="🎰 SLOT MACHINE" placeholder="🎰 SLOT MACHINE" style="width:100%;" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.slot_display_title">
           </div>
         </div>
         <!-- Win result labels -->
@@ -2916,27 +2916,27 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <div class="form-group">
               <label style="color:#aaa;" data-i18n="plugins.game-engine.labels.kein_gewinn_loss">😔 Kein Gewinn (loss):</label>
-              <input type="text" id="slot-label-loss" placeholder="😔 Kein Gewinn" style="width:100%;">
+              <input type="text" id="slot-label-loss" placeholder="😔 Kein Gewinn" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.slot.label_loss">
             </div>
             <div class="form-group">
               <label style="color:#FF6B6B;" data-i18n="plugins.game-engine.labels.fast_near_miss">😬 Fast! (near_miss):</label>
-              <input type="text" id="slot-label-near-miss" placeholder="😬 Fast!" style="width:100%;">
+              <input type="text" id="slot-label-near-miss" placeholder="😬 Fast!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.slot_near_miss">
             </div>
             <div class="form-group">
               <label style="color:#90EE90;" data-i18n="plugins.game-engine.labels.kleiner_gewinn_small_win">🎉 Kleiner Gewinn (small_win):</label>
-              <input type="text" id="slot-label-small-win" placeholder="🎉 Kleiner Gewinn!" style="width:100%;">
+              <input type="text" id="slot-label-small-win" placeholder="🎉 Kleiner Gewinn!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.slot.label_small_win">
             </div>
             <div class="form-group">
               <label style="color:#FFD700;" data-i18n="plugins.game-engine.labels.gewinn_medium_win">🎊 Gewinn (medium_win):</label>
-              <input type="text" id="slot-label-medium-win" placeholder="🎊 Gewinn!" style="width:100%;">
+              <input type="text" id="slot-label-medium-win" placeholder="🎊 Gewinn!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.slot.label_medium_win">
             </div>
             <div class="form-group">
               <label style="color:#FF9500;" data-i18n="plugins.game-engine.labels.gro_er_gewinn_big_win">🔥 Großer Gewinn (big_win):</label>
-              <input type="text" id="slot-label-big-win" placeholder="🔥 Großer Gewinn!" style="width:100%;">
+              <input type="text" id="slot-label-big-win" placeholder="🔥 Großer Gewinn!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.game_engine.display_texts.slot.label_big_win">
             </div>
             <div class="form-group">
               <label style="color:#FFD700;" data-i18n="plugins.game-engine.labels.jackpot_jackpot">🏆 Jackpot (jackpot):</label>
-              <input type="text" id="slot-label-jackpot" placeholder="🏆 JACKPOT!" style="width:100%;">
+              <input type="text" id="slot-label-jackpot" placeholder="🏆 JACKPOT!" style="width:100%;" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.slot_jackpot">
             </div>
           </div>
         </div>
@@ -3073,7 +3073,7 @@
         </p>
         <div id="slot-gift-mappings-container"></div>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">
-          <input type="text" id="slot-new-gift-name" placeholder="Gift-ID oder Name..." style="flex:1;">
+          <input type="text" id="slot-new-gift-name" placeholder="Gift-ID oder Name..." style="flex:1;" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.gift_id_or_name">
           <select id="slot-new-gift-odds-profile">
             <option value="gift_common" data-i18n="plugins.game-engine.ui.slot.tier_gift_common">gift_common</option>
             <option value="gift_rare" data-i18n="plugins.game-engine.ui.slot.tier_gift_rare">gift_rare</option>
@@ -3400,11 +3400,11 @@
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
           <div class="form-group">
             <label data-i18n="plugins.game-engine.ui.arena.gift_id">Geschenk-ID:</label>
-            <input type="text" id="arena-new-gift-id" placeholder="z.B. 5655">
+            <input type="text" id="arena-new-gift-id" placeholder="z.B. 5655" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.gift_id_example">
           </div>
           <div class="form-group">
             <label data-i18n="plugins.game-engine.ui.arena.gift_name">Geschenk-Name:</label>
-            <input type="text" id="arena-new-gift-name" placeholder="z.B. Rose">
+            <input type="text" id="arena-new-gift-name" placeholder="z.B. Rose" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.gift_name_example">
           </div>
           <div class="form-group">
             <label data-i18n="plugins.game-engine.ui.arena.weapon">Waffe:</label>
@@ -3585,19 +3585,19 @@
           </div>
           <div class="form-group">
             <label data-i18n="plugins.game-engine.ui.connect4.title">Titel:</label>
-            <input type="text" id="arena-display-title" placeholder="LIVE ARENA">
+            <input type="text" id="arena-display-title" placeholder="LIVE ARENA" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.arena_display_title">
           </div>
           <div class="form-group">
             <label data-i18n="plugins.game-engine.ui.arena.fever_text">Fever-Text:</label>
-            <input type="text" id="arena-display-fever" placeholder="FEVER MODE">
+            <input type="text" id="arena-display-fever" placeholder="FEVER MODE" data-i18n-placeholder="plugins.game-engine.labels.fever_mode">
           </div>
           <div class="form-group">
             <label data-i18n="plugins.game-engine.ui.arena.empty_text">Leer-Text:</label>
-            <input type="text" id="arena-display-empty" placeholder="Waiting for live activity">
+            <input type="text" id="arena-display-empty" placeholder="Waiting for live activity" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.arena_empty">
           </div>
           <div class="form-group" style="grid-column:1 / -1;">
             <label data-i18n="plugins.game-engine.labels.eigene_rotator_texte_eine_zeile_pro_meldung">Eigene Rotator-Texte (eine Zeile pro Meldung):</label>
-            <textarea id="arena-info-rotator-messages" rows="4" placeholder="Beta test - expect bugs"></textarea>
+            <textarea id="arena-info-rotator-messages" rows="4" placeholder="Beta test - expect bugs" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.arena_info_messages"></textarea>
           </div>
         </div>
 
@@ -3970,7 +3970,7 @@
 
         <div class="form-group" id="command-trigger-group" style="display: none;">
           <label data-i18n="plugins.game-engine.ui.triggers.chat_command_label">Chat-Befehl:</label>
-          <input type="text" id="commandTriggerValue" placeholder="z.B. !play">
+          <input type="text" id="commandTriggerValue" placeholder="z.B. !play" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.arena_command">
         </div>
 
         <button id="addTriggerBtn" data-i18n="plugins.game-engine.game_engine.triggers.add_trigger">Trigger hinzufügen</button>
@@ -4305,7 +4305,7 @@
         <h3 data-i18n="plugins.game-engine.labels.geschenk_katalog">🎁 Geschenk-Katalog</h3>
         <div style="display:flex;gap:10px;align-items:center;">
           <button type="button" class="secondary" id="refreshGiftCatalogModalBtn" data-i18n="plugins.game-engine.labels.katalog_aktualisieren_98f3c0">Katalog aktualisieren</button>
-          <button class="modal-close" id="closeGiftCatalogBtn">✕</button>
+          <button class="modal-close" id="closeGiftCatalogBtn" aria-label="Schließen" title="Schließen" data-i18n-aria-label="plugins.game-engine.game_engine.common.close" data-i18n-title="plugins.game-engine.game_engine.common.close">✕</button>
         </div>
       </div>
       <div class="catalog-info" id="catalog-info" data-i18n="plugins.game-engine.labels.lade_geschenk_katalog">
@@ -4384,6 +4384,16 @@
       msgEl.textContent = message;
       msgEl.classList.add('show');
       setTimeout(() => msgEl.classList.remove('show'), 3000);
+    }
+
+    function setLocalizedHtml(element, markup) {
+      element.innerHTML = markup;
+      if (window.i18n?.initialized) window.i18n.updateDOM();
+    }
+
+    function runtimeText(key, params = {}) {
+      const translated = window.i18n?.t?.(key, params);
+      return translated && translated !== key ? translated : '';
     }
 
     // Color picker preview updates
@@ -4690,8 +4700,8 @@
         const data = await response.json();
 
         if (!data.success) {
-          infoDiv.innerHTML = '<span style="color: #f44336;" data-i18n="plugins.game-engine.ui.catalog.load_error">Fehler beim Laden des Katalogs</span>';
-          gridDiv.innerHTML = '';
+          setLocalizedHtml(infoDiv, '<span style="color: #f44336;" data-i18n="plugins.game-engine.ui.catalog.load_error">Fehler beim Laden des Katalogs</span>');
+          setLocalizedHtml(gridDiv, '');
           return;
         }
 
@@ -4699,8 +4709,8 @@
         const lastUpdate = data.lastUpdate;
 
         if (giftCatalog.length === 0) {
-          infoDiv.innerHTML = '<span style="color: #FFC107;" data-i18n="plugins.game-engine.ui.catalog.empty_connect_refresh">⚠️ Keine Geschenke im Katalog. Verbinde mit einem Stream und klicke "Katalog aktualisieren"</span>';
-          gridDiv.innerHTML = '';
+          setLocalizedHtml(infoDiv, '<span style="color: #FFC107;" data-i18n="plugins.game-engine.ui.catalog.empty_connect_refresh">⚠️ Keine Geschenke im Katalog. Verbinde mit einem Stream und klicke "Katalog aktualisieren"</span>');
+          setLocalizedHtml(gridDiv, '');
           return;
         }
 
@@ -4708,7 +4718,7 @@
         infoDiv.replaceChildren();
         const catalogCount = document.createElement('span');
         catalogCount.style.color = '#4CAF50';
-        catalogCount.textContent = `✅ ${giftCatalog.length} Geschenke verfügbar`;
+        catalogCount.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.catalog_available', { count: giftCatalog.length });
         const separator = document.createElement('span');
         separator.style.margin = '0 10px';
         separator.textContent = '•';
@@ -4718,7 +4728,7 @@
         infoDiv.append(catalogCount, separator, catalogUpdated);
 
         // Render gift grid
-        gridDiv.innerHTML = '';
+        setLocalizedHtml(gridDiv, '');
         giftCatalog.forEach(gift => {
           const giftCard = document.createElement('div');
           giftCard.className = 'gift-card';
@@ -4741,7 +4751,7 @@
           giftName.textContent = String(gift.name || '');
           const giftId = document.createElement('div');
           giftId.className = 'gift-id';
-          giftId.textContent = `ID: ${gift.id}`;
+          giftId.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.gift_id', { id: gift.id });
           giftCard.append(giftName, giftId);
           gridDiv.appendChild(giftCard);
         });
@@ -4759,7 +4769,7 @@
         });
       } catch (error) {
         console.error('Failed to load gift catalog:', error);
-        infoDiv.innerHTML = '<span style="color: #f44336;" data-i18n="plugins.game-engine.ui.catalog.load_error_icon">❌ Fehler beim Laden des Katalogs</span>';
+        setLocalizedHtml(infoDiv, '<span style="color: #f44336;" data-i18n="plugins.game-engine.ui.catalog.load_error_icon">❌ Fehler beim Laden des Katalogs</span>');
       }
     }
 
@@ -4770,7 +4780,7 @@
       // Update display
       const displayDiv = document.getElementById('selected-gift-display');
       const nameSpan = document.getElementById('selected-gift-name');
-      nameSpan.textContent = `${gift.name} (ID: ${gift.id})`;
+      nameSpan.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.gift_name_with_id', { name: gift.name, id: gift.id });
       displayDiv.style.display = 'block';
 
       // Close modal
@@ -4782,7 +4792,7 @@
     async function refreshGiftCatalog() {
       const infoDiv = document.getElementById('catalog-info');
 
-      infoDiv.innerHTML = '<span style="color: #64B5F6;" data-i18n="plugins.game-engine.ui.catalog.refreshing">🔄 Aktualisiere Katalog...</span>';
+      setLocalizedHtml(infoDiv, '<span style="color: #64B5F6;" data-i18n="plugins.game-engine.ui.catalog.refreshing">🔄 Aktualisiere Katalog...</span>');
 
       try {
         const response = await fetch('/api/gift-catalog/update', {
@@ -4850,10 +4860,10 @@
         const triggers = await res.json();
 
         const listEl = document.getElementById('trigger-list');
-        listEl.innerHTML = '';
+        setLocalizedHtml(listEl, '');
 
         if (triggers.length === 0) {
-          listEl.innerHTML = '<p data-i18n="plugins.game-engine.ui.triggers.none">Keine Trigger konfiguriert</p>';
+          setLocalizedHtml(listEl, '<p data-i18n="plugins.game-engine.ui.triggers.none">Keine Trigger konfiguriert</p>');
           return;
         }
 
@@ -4891,7 +4901,7 @@
           const removeButton = document.createElement('button');
           removeButton.className = 'danger remove-trigger-btn';
           removeButton.dataset.triggerId = String(trigger.id);
-          removeButton.textContent = 'Entfernen';
+          removeButton.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.remove');
           item.append(description, removeButton);
           listEl.appendChild(item);
         });
@@ -4975,36 +4985,36 @@
         if (!text || text.trim() === '') {
           console.warn('Empty response from stats API');
           const gridEl = document.getElementById('stats-grid');
-          gridEl.innerHTML = '<p data-i18n="plugins.game-engine.ui.stats.none">Keine Statistiken verfügbar</p>';
+          setLocalizedHtml(gridEl, '<p data-i18n="plugins.game-engine.ui.stats.none">Keine Statistiken verfügbar</p>');
           return;
         }
 
         const stats = JSON.parse(text);
 
         const gridEl = document.getElementById('stats-grid');
-        gridEl.innerHTML = '';
+        setLocalizedHtml(gridEl, '');
 
         if (stats) {
-          gridEl.innerHTML = `
+          setLocalizedHtml(gridEl, `
             <div class="stat-card">
               <div class="stat-value">${stats.total_games || 0}</div>
-              <div class="stat-label">Gesamt Spiele</div>
+              <div class="stat-label">${runtimeText('plugins.game-engine.ui.runtime.dashboard.stats_total_games')}</div>
             </div>
             <div class="stat-card">
               <div class="stat-value">${stats.completed_games || 0}</div>
-              <div class="stat-label">Abgeschlossene Spiele</div>
+              <div class="stat-label">${runtimeText('plugins.game-engine.ui.runtime.dashboard.stats_completed_games')}</div>
             </div>
             <div class="stat-card">
               <div class="stat-value">${stats.active_games || 0}</div>
-              <div class="stat-label">Aktive Spiele</div>
+              <div class="stat-label">${runtimeText('plugins.game-engine.ui.runtime.dashboard.stats_active_games')}</div>
             </div>
-          `;
+          `);
         }
       } catch (error) {
         console.error('Failed to load stats:', error);
         const gridEl = document.getElementById('stats-grid');
         if (gridEl) {
-          gridEl.innerHTML = '<p data-i18n="plugins.game-engine.ui.stats.load_error">Fehler beim Laden der Statistiken</p>';
+          setLocalizedHtml(gridEl, '<p data-i18n="plugins.game-engine.ui.stats.load_error">Fehler beim Laden der Statistiken</p>');
         }
       }
     }
@@ -5029,7 +5039,7 @@
         return;
       }
 
-      if (confirm('Möchtest du das Spiel wirklich abbrechen?')) {
+      if (confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.cancel_game_confirm'))) {
         socket.emit('game-engine:cancel-game', {
           sessionId: currentSessionId
         });
@@ -5045,12 +5055,16 @@
       const state = data.state;
       const currentPlayer = state.currentPlayer === 1 ? state.player1 : state.player2;
 
-      document.getElementById('game-status').textContent =
-        `Am Zug: ${currentPlayer.nickname || currentPlayer.username} (${currentPlayer.role === 'streamer' ? 'Du' : 'Zuschauer'})`;
+      document.getElementById('game-status').textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.current_turn', {
+        player: currentPlayer.nickname || currentPlayer.username,
+        role: currentPlayer.role === 'streamer'
+          ? runtimeText('plugins.game-engine.ui.runtime.dashboard.streamer')
+          : runtimeText('plugins.game-engine.ui.runtime.dashboard.viewer')
+      });
 
       // Update board preview (simple text representation for now)
       const boardEl = document.getElementById('board-preview');
-      boardEl.innerHTML = '<pre>' + getBoardText(state.board, state.player1.color, state.player2.color) + '</pre>';
+      setLocalizedHtml(boardEl, '<pre>' + getBoardText(state.board, state.player1.color, state.player2.color) + '</pre>');
     }
 
     // Get board as text
@@ -5461,7 +5475,7 @@
         const data = await res.json();
 
         if (data.length === 0) {
-          display.innerHTML = '<p data-i18n="plugins.game-engine.ui.chess.elo_empty">Noch keine ELO-Daten verfügbar.</p>';
+          setLocalizedHtml(display, '<p data-i18n="plugins.game-engine.ui.chess.elo_empty">Noch keine ELO-Daten verfügbar.</p>');
           return;
         }
 
@@ -5505,7 +5519,7 @@
         table.append(header, body);
         display.replaceChildren(table);
       } catch (error) {
-        display.innerHTML = '<p data-i18n="plugins.game-engine.ui.chess.elo_load_error">Fehler beim Laden der ELO-Rangliste.</p>';
+        setLocalizedHtml(display, '<p data-i18n="plugins.game-engine.ui.chess.elo_load_error">Fehler beim Laden der ELO-Rangliste.</p>');
         console.error('Failed to load ELO leaderboard:', error);
       }
     }
@@ -5563,7 +5577,7 @@
         return;
       }
 
-      if (!confirm('Media-Datei wirklich löschen?')) return;
+      if (!confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.delete_media_confirm'))) return;
 
       try {
         const response = await fetch(`/api/game-engine/media/connect4/${eventType}`, {
@@ -5600,7 +5614,7 @@
         // Clear all displays and show default info
         eventTypes.forEach(({ displayId }) => {
           const display = document.getElementById(displayId);
-          if (display) display.innerHTML = '<span style="color: #4CAF50;" data-i18n="plugins.game-engine.ui.audio.default_active">✓ Standard-Sound aktiv</span>';
+          if (display) setLocalizedHtml(display, '<span style="color: #4CAF50;" data-i18n="plugins.game-engine.ui.audio.default_active">✓ Standard-Sound aktiv</span>');
         });
 
         // Show custom media if configured
@@ -5609,10 +5623,13 @@
           if (eventType) {
             const display = document.getElementById(eventType.displayId);
             if (display) {
-              display.innerHTML = '';
+              setLocalizedHtml(display, '');
               const label = document.createElement('span');
               label.style.color = '#FFC107';
-              label.textContent = `📁 Custom: ${(m.file_path || '').split('/').pop()} (${m.media_type || ''})`;
+              label.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.custom_media', {
+                filename: (m.file_path || '').split('/').pop(),
+                mediaType: m.media_type || ''
+              });
               display.appendChild(label);
             }
           }
@@ -5679,16 +5696,16 @@
 
           const setting = settings[type];
           if (setting && setting.isCustom && setting.filename) {
-            display.innerHTML = '';
+            setLocalizedHtml(display, '');
             const label = document.createElement('span');
             label.style.color = '#2196F3';
-            label.textContent = `Custom: ${setting.filename}`;
+            label.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.custom_audio', { filename: setting.filename });
             display.appendChild(label);
           } else {
-            display.innerHTML = '';
+            setLocalizedHtml(display, '');
             const label = document.createElement('span');
             label.style.color = '#4CAF50';
-            label.textContent = `Standard: ${defaultName}`;
+            label.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.default_audio', { filename: defaultName });
             display.appendChild(label);
           }
         });
@@ -5838,11 +5855,11 @@
         const machines = await resp.json();
         const sel = document.getElementById('media-slot-machine-selector');
         if (!sel) return;
-        sel.innerHTML = '';
+        setLocalizedHtml(sel, '');
         machines.forEach(m => {
           const opt = document.createElement('option');
           opt.value = m.id;
-          opt.textContent = m.name + (m.enabled ? '' : ' (deaktiviert)');
+          opt.textContent = m.name + (m.enabled ? '' : runtimeText('plugins.game-engine.ui.runtime.dashboard.disabled_suffix'));
           sel.appendChild(opt);
         });
         if (machines.length > 0) {
@@ -5868,7 +5885,7 @@
         audioSettings = await resp.json();
       } catch (e) { /* use defaults */ }
 
-      container.innerHTML = '';
+      setLocalizedHtml(container, '');
       for (const { type, label, sync } of SLOT_AUDIO_TYPES) {
         const setting = audioSettings[type] || {};
         const isCustom = setting.isCustom && setting.filename;
@@ -5877,10 +5894,10 @@
         const div = document.createElement('div');
         div.className = 'form-group';
         div.style.cssText = 'margin-bottom:14px;padding:10px;background:#1a1a2e;border-radius:6px;border-left:4px solid ' + (isCustom ? '#2196F3' : '#444') + ';';
-        div.innerHTML = `
+        setLocalizedHtml(div, `
           <label style="display:block;margin-bottom:6px;">${label}${sync ? ' <span style="color:#4CAF50;font-size:11px;" data-i18n="plugins.game-engine.ui.audio.sync_capable">(sync-fähig)</span>' : ''}:</label>
           <div style="color:#888;font-size:12px;margin-bottom:5px;">
-            ${isCustom ? `<span style="color:#2196F3;">Custom: ${escapeHtml(setting.filename)}${durationInfo}</span>` : '<span style="color:#4CAF50;" data-i18n="plugins.game-engine.ui.audio.default_no_upload">Standard (kein Upload)</span>'}
+            ${isCustom ? `<span style="color:#2196F3;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.custom_audio_with_duration', { filename: escapeHtml(setting.filename), duration: durationInfo })}</span>` : '<span style="color:#4CAF50;" data-i18n="plugins.game-engine.ui.audio.default_no_upload">Standard (kein Upload)</span>'}
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <input type="file" id="slotAudio_${type}" accept="audio/*" style="flex:1;min-width:160px;">
@@ -5888,7 +5905,7 @@
             <button type="button" class="secondary slot-audio-upload-btn" data-machine="${escapeHtml(machineId)}" data-type="${type}" data-sync="${sync}" style="padding:6px 12px;" data-i18n="plugins.game-engine.ui.audio.upload">⬆️ Upload</button>
             ${isCustom ? `<button type="button" class="danger slot-audio-reset-btn" data-machine="${escapeHtml(machineId)}" data-type="${type}" style="padding:6px 12px;" data-i18n="plugins.game-engine.ui.audio.reset_default">↩ Standard</button>` : ''}
           </div>
-        `;
+        `);
         container.appendChild(div);
       }
     }
@@ -5947,7 +5964,7 @@
       if (e.target.classList.contains('slot-audio-reset-btn')) {
         const machineId = e.target.dataset.machine;
         const audioType = e.target.dataset.type;
-        if (!confirm(`Sound "${audioType}" wirklich auf Standard zurücksetzen?`)) return;
+        if (!confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.reset_sound_confirm', { audioType }))) return;
         try {
           const resp = await fetch('/api/game-engine/slot/audio/reset', {
             method: 'POST',
@@ -6222,11 +6239,11 @@
 
       const entries = Object.entries(mappings || {});
       if (!entries.length) {
-        container.innerHTML = '<div class="arena-mapping-meta">Noch keine Geschenk-Waffen gebunden.</div>';
+        setLocalizedHtml(container, `<div class="arena-mapping-meta">${runtimeText('plugins.game-engine.ui.runtime.dashboard.no_gift_weapons')}</div>`);
         return;
       }
 
-      container.innerHTML = entries.map(([giftKey, mapping]) => {
+      setLocalizedHtml(container, entries.map(([giftKey, mapping]) => {
         const weapon = mapping.weaponType || mapping.type || 'speed';
         const tier = mapping.tier || 'small';
         const name = mapping.giftName ? ` - ${escapeHtml(mapping.giftName)}` : '';
@@ -6237,13 +6254,19 @@
           <div class="arena-mapping-row">
             <div>
               <strong>${escapeHtml(giftKey)}${name}</strong>
-              <div class="arena-mapping-meta">${escapeHtml(weapon)} / ${escapeHtml(tier)} - Power ${power}, ${duration}s, +${growth} Wachstum</div>
+              <div class="arena-mapping-meta">${runtimeText('plugins.game-engine.ui.runtime.dashboard.arena_mapping_meta', {
+                weapon: escapeHtml(weapon),
+                tier: escapeHtml(tier),
+                power,
+                duration,
+                growth
+              })}</div>
             </div>
             <span class="arena-mapping-meta" data-i18n="plugins.game-engine.ui.triggers.gift_id_or_name">Gift-ID/Name</span>
             <button type="button" class="danger arena-remove-gift-weapon" data-gift-key="${escapeHtml(giftKey)}" data-i18n="plugins.game-engine.ui.common.remove">Entfernen</button>
           </div>
         `;
-      }).join('');
+      }).join(''));
     }
 
     async function addArenaGiftWeaponMapping() {
@@ -6622,11 +6645,11 @@
         slotMachines = await resp.json();
         const selector = document.getElementById('slot-machine-selector');
         if (!selector) return;
-        selector.innerHTML = '';
+        setLocalizedHtml(selector, '');
         slotMachines.forEach(m => {
           const opt = document.createElement('option');
           opt.value = m.id;
-          opt.textContent = m.name + (m.enabled ? '' : ' (deaktiviert)');
+          opt.textContent = m.name + (m.enabled ? '' : runtimeText('plugins.game-engine.ui.runtime.dashboard.disabled_suffix'));
           selector.appendChild(opt);
         });
         if (slotMachines.length > 0) {
@@ -6767,7 +6790,7 @@
         audioSettings = await resp.json();
       } catch (e) { /* use defaults */ }
 
-      container.innerHTML = '';
+      setLocalizedHtml(container, '');
       for (const { type, label, sync } of SLOT_AUDIO_TYPES) {
         const setting = audioSettings[type] || {};
         const isCustom = setting.isCustom && setting.filename;
@@ -6775,7 +6798,7 @@
 
         const div = document.createElement('div');
         div.style.cssText = 'margin-bottom:10px;padding:8px;background:#1a1a2e;border-radius:6px;border-left:3px solid ' + (isCustom ? '#2196F3' : '#444') + ';';
-        div.innerHTML = `
+        setLocalizedHtml(div, `
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <span style="flex:1;font-size:13px;">${label}${sync ? ' <span style="color:#4CAF50;font-size:11px;" data-i18n="plugins.game-engine.ui.audio.sync">(sync)</span>' : ''}</span>
             <span style="font-size:12px;color:${isCustom ? '#2196F3' : '#666'};">${isCustom ? '📁 ' + escapeHtml(setting.filename) + durationInfo : '– Standard –'}</span>
@@ -6783,7 +6806,7 @@
             <button type="button" class="secondary" style="padding:4px 10px;font-size:12px;"
               onclick="(async()=>{
                 const f=document.getElementById('slotTabAudio_${type}').files[0];
-                if(!f){showMessage('Datei auswählen','error');return;}
+                if(!f){showMessage(runtimeText('plugins.game-engine.ui.runtime.dashboard.file_required'),'error');return;}
                 ${sync ? `
                 let dms=null;
                 try{dms=await new Promise((res)=>{const u=URL.createObjectURL(f);const a=new Audio(u);a.onloadedmetadata=()=>{URL.revokeObjectURL(u);res(Math.round(a.duration*1000))};a.onerror=()=>{URL.revokeObjectURL(u);res(null)}});}catch(e){}
@@ -6791,13 +6814,13 @@
                 const fd=new FormData();fd.append('audio',f);fd.append('audioType','${type}');fd.append('machineId','${machineId}');if(dms)fd.append('durationMs',dms);
                 const r=await fetch('/api/game-engine/slot/audio/upload',{method:'POST',body:fd});
                 const d=await r.json();
-                if(d.success){showMessage('Sound hochgeladen!');renderSlotSoundManagement(${machineId});if(${sync}&&currentSlotMachineId)await loadSlotConfig(currentSlotMachineId);}
-                else showMessage('Fehler: '+d.error,'error');
+                if(d.success){showMessage(runtimeText('plugins.game-engine.ui.runtime.dashboard.sound_uploaded'));renderSlotSoundManagement(${machineId});if(${sync}&&currentSlotMachineId)await loadSlotConfig(currentSlotMachineId);}
+                else showMessage(runtimeText('plugins.game-engine.ui.runtime.dashboard.error_with_message',{error:d.error}),'error');
               })()">⬆️</button>
             ${isCustom ? `<button type="button" class="danger" style="padding:4px 10px;font-size:12px;"
-              onclick="(async()=>{if(!confirm('Sound zurücksetzen?'))return;const r=await fetch('/api/game-engine/slot/audio/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({machineId:'${machineId}',audioType:'${type}'})});const d=await r.json();if(d.success){showMessage('Zurückgesetzt');renderSlotSoundManagement(${machineId});}else showMessage('Fehler: '+d.error,'error');})()">↩</button>` : ''}
+              onclick="(async()=>{if(!confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.reset_slot_sound_confirm')))return;const r=await fetch('/api/game-engine/slot/audio/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({machineId:'${machineId}',audioType:'${type}'})});const d=await r.json();if(d.success){showMessage(runtimeText('plugins.game-engine.ui.runtime.dashboard.sound_reset'));renderSlotSoundManagement(${machineId});}else showMessage(runtimeText('plugins.game-engine.ui.runtime.dashboard.error_with_message', { error: d.error }), 'error');})()">↩</button>` : ''}
           </div>
-        `;
+        `);
         container.appendChild(div);
       }
     }
@@ -6816,16 +6839,16 @@
       const modal = document.createElement('div');
       modal.id = 'slot-emoji-picker-modal';
       modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;';
-      modal.innerHTML = `
+      setLocalizedHtml(modal, `
         <div style="background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:20px;width:520px;max-width:95vw;max-height:80vh;overflow-y:auto;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
             <span style="font-size:16px;font-weight:700;color:#eee;" data-i18n="plugins.game-engine.ui.slot.emoji_picker_title">🎰 Emoji für Symbol wählen</span>
-            <button type="button" id="slot-emoji-picker-close" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;">✕</button>
+            <button type="button" id="slot-emoji-picker-close" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;" aria-label="Schließen" title="Schließen" data-i18n-aria-label="plugins.game-engine.game_engine.common.close" data-i18n-title="plugins.game-engine.game_engine.common.close">✕</button>
           </div>
-          <input type="text" id="slot-emoji-search" placeholder="Suchen… (z.B. Herz, Stern)" style="width:100%;padding:8px;margin-bottom:12px;box-sizing:border-box;background:#0d0d1a;border:1px solid #444;color:#eee;border-radius:6px;">
+          <input type="text" id="slot-emoji-search" placeholder="Suchen… (z.B. Herz, Stern)" style="width:100%;padding:8px;margin-bottom:12px;box-sizing:border-box;background:#0d0d1a;border:1px solid #444;color:#eee;border-radius:6px;" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.emoji_search">
           <div id="slot-emoji-picker-body"></div>
         </div>
-      `;
+      `);
       document.body.appendChild(modal);
 
       modal.querySelector('#slot-emoji-picker-close').addEventListener('click', () => {
@@ -6841,7 +6864,7 @@
 
       function renderEmojiGrid(filter) {
         const body = modal.querySelector('#slot-emoji-picker-body');
-        body.innerHTML = '';
+        setLocalizedHtml(body, '');
         const f = (filter || '').toLowerCase();
         for (const [cat, emojis] of Object.entries(EMOJI_CATEGORIES)) {
           const show = !f || cat.toLowerCase().includes(f);
@@ -6891,21 +6914,21 @@
       const modal = document.createElement('div');
       modal.id = 'slot-gift-symbol-picker-modal';
       modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;';
-      modal.innerHTML = `
+      setLocalizedHtml(modal, `
         <div style="background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:20px;width:660px;max-width:96vw;max-height:85vh;display:flex;flex-direction:column;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0;">
             <span style="font-size:16px;font-weight:700;color:#eee;" data-i18n="plugins.game-engine.ui.slot.gift_picker_title">🎁 Geschenk als Symbol wählen</span>
-            <button type="button" id="slot-gift-picker-close" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;">✕</button>
+            <button type="button" id="slot-gift-picker-close" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;" aria-label="Schließen" title="Schließen" data-i18n-aria-label="plugins.game-engine.game_engine.common.close" data-i18n-title="plugins.game-engine.game_engine.common.close">✕</button>
           </div>
           <div id="slot-gift-picker-info" style="font-size:12px;color:#aaa;margin-bottom:10px;flex-shrink:0;"></div>
-          <input type="text" id="slot-gift-picker-search" placeholder="Geschenk suchen…" style="width:100%;padding:8px;margin-bottom:12px;box-sizing:border-box;background:#0d0d1a;border:1px solid #444;color:#eee;border-radius:6px;flex-shrink:0;">
+          <input type="text" id="slot-gift-picker-search" placeholder="Geschenk suchen…" style="width:100%;padding:8px;margin-bottom:12px;box-sizing:border-box;background:#0d0d1a;border:1px solid #444;color:#eee;border-radius:6px;flex-shrink:0;" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.gift_search">
           <div id="slot-gift-picker-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;overflow-y:auto;padding-right:4px;"></div>
           <div style="margin-top:12px;flex-shrink:0;">
             <button type="button" id="slot-gift-picker-refresh" class="secondary" style="font-size:12px;padding:6px 14px;" data-i18n="plugins.game-engine.ui.catalog.refresh">🔄 Katalog aktualisieren</button>
             <span style="font-size:11px;color:#666;margin-left:10px;" data-i18n="plugins.game-engine.ui.catalog.requires_live">Nur verfügbar wenn mit TikTok-Stream verbunden</span>
           </div>
         </div>
-      `;
+      `);
       document.body.appendChild(modal);
 
       modal.querySelector('#slot-gift-picker-close').addEventListener('click', () => {
@@ -6917,12 +6940,12 @@
       });
       modal.querySelector('#slot-gift-picker-refresh').addEventListener('click', async () => {
         const infoEl = document.getElementById('slot-gift-picker-info');
-        if (infoEl) infoEl.innerHTML = '<span style="color:#FFC107;" data-i18n="plugins.game-engine.ui.catalog.refreshing_short">🔄 Aktualisiere…</span>';
+        if (infoEl) setLocalizedHtml(infoEl, '<span style="color:#FFC107;" data-i18n="plugins.game-engine.ui.catalog.refreshing_short">🔄 Aktualisiere…</span>');
         try {
           const r = await fetch('/api/gift-catalog/refresh', { method: 'POST' });
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
         } catch(err) {
-          if (infoEl) infoEl.innerHTML = `<span style="color:#f44336;">❌ Aktualisierung fehlgeschlagen: ${escapeHtml(err.message)}</span>`;
+          if (infoEl) setLocalizedHtml(infoEl, `<span style="color:#f44336;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.error_with_message', { error: escapeHtml(err.message) })}</span>`);
           return;
         }
         await loadSlotGiftPickerData();
@@ -6934,44 +6957,44 @@
       const gridEl   = document.getElementById('slot-gift-picker-grid');
       const searchEl = document.getElementById('slot-gift-picker-search');
       if (!infoEl || !gridEl) return;
-      infoEl.innerHTML = '<span style="color:#aaa;" data-i18n="plugins.game-engine.ui.catalog.loading">⏳ Lade Katalog…</span>';
-      gridEl.innerHTML = '';
+      setLocalizedHtml(infoEl, '<span style="color:#aaa;" data-i18n="plugins.game-engine.ui.catalog.loading">⏳ Lade Katalog…</span>');
+      setLocalizedHtml(gridEl, '');
       try {
         const res  = await fetch('/api/gift-catalog');
         const data = await res.json();
         if (!data.success || !data.catalog?.length) {
-          infoEl.innerHTML = '<span style="color:#FFC107;" data-i18n="plugins.game-engine.ui.catalog.empty_connect_refresh_typographic">⚠️ Keine Geschenke im Katalog. Verbinde mit einem Stream und klicke „Katalog aktualisieren".</span>';
+          setLocalizedHtml(infoEl, '<span style="color:#FFC107;" data-i18n="plugins.game-engine.ui.catalog.empty_connect_refresh_typographic">⚠️ Keine Geschenke im Katalog. Verbinde mit einem Stream und klicke „Katalog aktualisieren".</span>');
           return;
         }
         const catalog    = data.catalog;
         const lastUpdate = data.lastUpdate ? new Date(data.lastUpdate).toLocaleString('de-DE') : '—';
-        infoEl.innerHTML = `<span style="color:#4CAF50;">✅ ${catalog.length} Geschenke</span> <span style="color:#666;margin-left:8px;">Stand: ${lastUpdate}</span>`;
+        setLocalizedHtml(infoEl, `<span style="color:#4CAF50;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.gift_catalog_count', { count: catalog.length })}</span> <span style="color:#666;margin-left:8px;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.last_updated', { date: lastUpdate })}</span>`);
         if (searchEl) searchEl.oninput = () => renderGiftGrid(catalog, searchEl.value.toLowerCase());
         renderGiftGrid(catalog, filter || '');
       } catch (err) {
-        infoEl.innerHTML = `<span style="color:#f44336;">❌ Fehler: ${escapeHtml(err.message)}</span>`;
+        setLocalizedHtml(infoEl, `<span style="color:#f44336;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.error_with_message', { error: escapeHtml(err.message) })}</span>`);
       }
     }
 
     function renderGiftGrid(catalog, filter) {
       const gridEl = document.getElementById('slot-gift-picker-grid');
       if (!gridEl) return;
-      gridEl.innerHTML = '';
+      setLocalizedHtml(gridEl, '');
       const filtered = filter ? catalog.filter(g => g.name?.toLowerCase().includes(filter)) : catalog;
       if (!filtered.length) {
-        gridEl.innerHTML = '<div style="color:#888;grid-column:1/-1;text-align:center;padding:20px;">Keine Treffer</div>';
+        setLocalizedHtml(gridEl, `<div style="color:#888;grid-column:1/-1;text-align:center;padding:20px;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.no_search_results')}</div>`);
         return;
       }
       filtered.forEach(gift => {
         const card = document.createElement('div');
         card.style.cssText = 'background:#0d0d1a;border:1px solid #222;border-radius:8px;padding:8px;cursor:pointer;text-align:center;transition:border-color 0.15s;';
-        card.innerHTML = gift.image_url
+        setLocalizedHtml(card, gift.image_url
           ? `<img src="${escapeHtml(gift.image_url)}" style="width:52px;height:52px;object-fit:contain;display:block;margin:0 auto 6px;" alt="">`
-          : `<div style="font-size:36px;margin-bottom:6px;">🎁</div>`;
-        card.innerHTML += `
+          : `<div style="font-size:36px;margin-bottom:6px;">🎁</div>`);
+        setLocalizedHtml(card, `${card.innerHTML}
           <div style="font-size:11px;color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(gift.name)}">${escapeHtml(gift.name)}</div>
-          <div style="font-size:10px;color:#555;">ID: ${escapeHtml(String(gift.id))}</div>
-        `;
+          <div style="font-size:10px;color:#555;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.gift_id', { id: escapeHtml(String(gift.id)) })}</div>
+        `);
         card.addEventListener('mouseenter', () => { card.style.borderColor = '#4CAF50'; });
         card.addEventListener('mouseleave', () => { card.style.borderColor = '#222'; });
         card.addEventListener('click', () => {
@@ -6998,7 +7021,7 @@
     function renderSlotSymbols(symbols) {
       const container = document.getElementById('slot-symbols-container');
       if (!container) return;
-      container.innerHTML = '';
+      setLocalizedHtml(container, '');
       symbols.forEach((sym, idx) => {
         const shockActive = !!sym.isShock;
         const hasImage = !!(sym.imageUrl);
@@ -7012,25 +7035,25 @@
           return `<option value="${escapeHtml(device.id)}" ${sel}>${escapeHtml(device.name)} (${escapeHtml(device.model || 'Unknown')})</option>`;
         }).join('');
 
-        row.innerHTML = `
+        setLocalizedHtml(row, `
           <div style="display:flex;gap:6px;align-items:center;">
             <span class="sym-preview" style="width:36px;height:36px;text-align:center;font-size:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border-radius:4px;background:#0d0d1a;">
               ${hasImage ? `<img src="${escapeHtml(sym.imageUrl)}" style="width:32px;height:32px;object-fit:contain;" alt="">` : escapeHtml(sym.emoji || '❓')}
             </span>
             <div style="display:flex;gap:4px;align-items:center;width:auto;">
-              <input type="text" value="${escapeHtml(sym.emoji || '')}" placeholder="Emoji" style="width:52px;" data-field="emoji">
+              <input type="text" value="${escapeHtml(sym.emoji || '')}" placeholder="Emoji" style="width:52px;" data-field="emoji" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.emoji">
               <button type="button" class="slot-sym-emoji-pick-btn secondary" style="padding:3px 7px;font-size:14px;" title="Emoji aus Picker wählen" aria-label="Emoji aus Picker wählen" data-i18n-aria-label="plugins.game-engine.ui.slot.choose_emoji_picker" data-i18n-title="plugins.game-engine.ui.slot.choose_emoji_picker">😀</button>
               <button type="button" class="slot-sym-gift-pick-btn secondary" style="padding:3px 7px;font-size:12px;white-space:nowrap;" title="Geschenk-Grafik als Symbol verwenden" aria-label="Geschenk-Grafik als Symbol verwenden" data-i18n-aria-label="plugins.game-engine.ui.slot.use_gift_image_symbol" data-i18n-title="plugins.game-engine.ui.slot.use_gift_image_symbol">🎁</button>
             </div>
             <input type="text" value="${escapeHtml(sym.id || '')}" placeholder="ID" style="width:80px;" data-field="id">
-            <input type="text" value="${escapeHtml(sym.label || '')}" placeholder="Label" style="flex:1;" data-field="label">
+            <input type="text" value="${escapeHtml(sym.label || '')}" placeholder="Label" style="flex:1;" data-field="label" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.label">
             <div style="width:70px;">
               <label style="display:block;font-size:11px;color:#aaa;margin-bottom:2px;" data-i18n="plugins.game-engine.ui.slot.weight">Gewicht:</label>
               <input type="number" value="${sym.weight || 1}" min="1" max="1000" style="width:100%;" data-field="weight">
             </div>
             <div style="width:60px;text-align:center;">
               <label style="display:block;font-size:11px;color:#aaa;margin-bottom:2px;" title="OpenShock bei 3x diesem Symbol" data-i18n-title="plugins.game-engine.ui.slot.openshock_on_three">⚡ Zap:</label>
-              <input type="checkbox" ${shockActive ? 'checked' : ''} data-field="isShock" style="width:20px;height:20px;cursor:pointer;" title="OpenShock auslösen wenn 3x dieses Symbol erscheint">
+              <input type="checkbox" ${shockActive ? 'checked' : ''} data-field="isShock" style="width:20px;height:20px;cursor:pointer;" title="OpenShock auslösen wenn 3x dieses Symbol erscheint" data-i18n-title="plugins.game-engine.form_controls.titles.openshock_on_three">
             </div>
           </div>
           <!-- Image upload section -->
@@ -7065,7 +7088,7 @@
               </select>
             </div>
           </div>
-        `;
+        `);
 
         // Toggle shock config section visibility
         const checkbox = row.querySelector('[data-field="isShock"]');
@@ -7101,7 +7124,7 @@
                 row.querySelector('[data-field="imageUrl"]').value = data.imageUrl;
                 // Update preview
                 const preview = row.querySelector('.sym-preview');
-                if (preview) preview.innerHTML = `<img src="${escapeHtml(data.imageUrl)}" style="width:32px;height:32px;object-fit:contain;" alt="">`;
+                if (preview) setLocalizedHtml(preview, `<img src="${escapeHtml(data.imageUrl)}" style="width:32px;height:32px;object-fit:contain;" alt="">`);
                 // Bug 3a: auto-save config after upload so imageUrl is persisted
                 if (currentSlotMachineId && currentSlotConfig) {
                   const updatedSymbols = getSlotSymbolsFromForm();
@@ -7147,7 +7170,7 @@
             // Restore emoji preview
             const emojiVal = row.querySelector('[data-field="emoji"]')?.value || '❓';
             const preview = row.querySelector('.sym-preview');
-            if (preview) preview.innerHTML = escapeHtml(emojiVal);
+            if (preview) setLocalizedHtml(preview, escapeHtml(emojiVal));
             clearBtn.remove();
             showMessage('Bild entfernt');
           });
@@ -7165,7 +7188,7 @@
               const imageUrlField = row.querySelector('[data-field="imageUrl"]');
               if (!imageUrlField?.value) {
                 const preview = row.querySelector('.sym-preview');
-                if (preview) preview.innerHTML = escapeHtml(chosen);
+                if (preview) setLocalizedHtml(preview, escapeHtml(chosen));
               }
             }
           });
@@ -7184,7 +7207,7 @@
                 const imageUrlField = row.querySelector('[data-field="imageUrl"]');
                 if (imageUrlField) imageUrlField.value = gift.imageUrl;
                 const preview = row.querySelector('.sym-preview');
-                if (preview) preview.innerHTML = `<img src="${escapeHtml(gift.imageUrl)}" style="width:32px;height:32px;object-fit:contain;" alt="">`;
+                if (preview) setLocalizedHtml(preview, `<img src="${escapeHtml(gift.imageUrl)}" style="width:32px;height:32px;object-fit:contain;" alt="">`);
                 showMessage(`🎁 "${gift.name}" Grafik übernommen`);
               } else {
                 showMessage(`🎁 "${gift.name}" als Symbol-Label eingetragen (kein Bild verfügbar)`);
@@ -7234,12 +7257,12 @@
     function renderSlotGiftMappings(mappings) {
       const container = document.getElementById('slot-gift-mappings-container');
       if (!container) return;
-      container.innerHTML = '';
+      setLocalizedHtml(container, '');
       Object.entries(mappings).forEach(([key, val]) => {
         const oddsProfile = typeof val === 'object' ? (val.oddsProfile || 'gift_common') : val;
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;';
-        row.innerHTML = `
+        setLocalizedHtml(row, `
           <span style="flex:1;font-family:monospace;">${escapeHtml(key)}</span>
           <select data-key="${escapeHtml(key)}" class="slot-gift-odds-select">
             <option value="chat" ${oddsProfile==='chat'?'selected':''} data-i18n="plugins.game-engine.ui.common.chat">chat</option>
@@ -7247,7 +7270,7 @@
             <option value="gift_rare" ${oddsProfile==='gift_rare'?'selected':''} data-i18n="plugins.game-engine.ui.slot.tier_gift_rare">gift_rare</option>
           </select>
           <button class="danger slot-gift-remove-btn" data-key="${escapeHtml(key)}" style="padding:4px 8px;">✕</button>
-        `;
+        `);
         container.appendChild(row);
       });
       container.querySelectorAll('.slot-gift-remove-btn').forEach(btn => {
@@ -7270,18 +7293,18 @@
     function renderSlotRewardRules(rules) {
       const container = document.getElementById('slot-reward-rules-container');
       if (!container) return;
-      container.innerHTML = '';
+      setLocalizedHtml(container, '');
       rules.forEach((rule, idx) => {
         const cats = (rule.outcomeCategories || []).join(',');
         const row = document.createElement('div');
         row.style.cssText = 'background:#1a1a2e;padding:10px;border-radius:6px;margin-bottom:8px;';
-        row.innerHTML = `
+        setLocalizedHtml(row, `
           <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px;">
-            <input type="text" value="${escapeHtml(cats)}" placeholder="Kategorien (z.B. jackpot,big_win)" style="flex:1;" data-rule-idx="${idx}" data-rule-field="categories">
+            <input type="text" value="${escapeHtml(cats)}" placeholder="Kategorien (z.B. jackpot,big_win)" style="flex:1;" data-rule-idx="${idx}" data-rule-field="categories" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.gift_categories">
             <select data-rule-idx="${idx}" data-rule-field="action" style="width:130px;">
               <option value="audio" ${rule.action==='audio'?'selected':''} data-i18n="plugins.game-engine.ui.slot.reward_audio">audio</option>
               <option value="overlay" ${rule.action==='overlay'?'selected':''} data-i18n="plugins.game-engine.ui.slot.reward_overlay">overlay</option>
-              <option value="openshock" ${rule.action==='openshock'?'selected':''}>openshock</option>
+              <option value="openshock" ${rule.action==='openshock'?'selected':''}>${runtimeText('plugins.game-engine.ui.runtime.dashboard.openshock_action')}</option>
               <option value="xp" ${rule.action==='xp'?'selected':''} data-i18n="plugins.game-engine.ui.slot.reward_xp">xp</option>
               <option value="chat" ${rule.action==='chat'?'selected':''} data-i18n="plugins.game-engine.ui.common.chat">chat</option>
               <option value="free_spin" ${rule.action==='free_spin'?'selected':''} data-i18n="plugins.game-engine.ui.slot.reward_free_spin">free_spin</option>
@@ -7289,7 +7312,7 @@
             <button class="danger slot-rule-remove-btn" data-idx="${idx}" style="padding:4px 8px;">✕</button>
           </div>
           <textarea rows="2" style="width:100%;font-family:monospace;font-size:12px;background:#0d0d1a;border:1px solid #333;color:#ccc;padding:6px;border-radius:4px;" data-rule-idx="${idx}" data-rule-field="params" placeholder='{"audioType":"jackpot"}'>${escapeHtml(JSON.stringify(rule.params || {}))}</textarea>
-        `;
+        `);
         container.appendChild(row);
       });
       container.querySelectorAll('.slot-rule-remove-btn').forEach(btn => {
@@ -7328,22 +7351,22 @@
         const stats = await resp.json();
         const container = document.getElementById('slot-stats-container');
         if (!container) return;
-        container.innerHTML = `
+        setLocalizedHtml(container, `
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
             <div style="background:#1a1a2e;padding:12px;border-radius:8px;text-align:center;">
               <div style="font-size:1.8rem;font-weight:700;color:#64B5F6;">${stats.totalSpins || 0}</div>
-              <div style="color:#888;font-size:13px;">Spins gesamt</div>
+              <div style="color:#888;font-size:13px;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.slot_stats_total_spins')}</div>
             </div>
             <div style="background:#1a1a2e;padding:12px;border-radius:8px;text-align:center;">
               <div style="font-size:1.8rem;font-weight:700;color:#4CAF50;">${stats.totalWins || 0}</div>
-              <div style="color:#888;font-size:13px;">Gewinne</div>
+              <div style="color:#888;font-size:13px;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.slot_stats_wins')}</div>
             </div>
             <div style="background:#1a1a2e;padding:12px;border-radius:8px;text-align:center;">
               <div style="font-size:1.8rem;font-weight:700;color:#FFD700;">${stats.totalJackpots || 0}</div>
-              <div style="color:#888;font-size:13px;">Jackpots</div>
+              <div style="color:#888;font-size:13px;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.slot_stats_jackpots')}</div>
             </div>
           </div>
-        `;
+        `);
       } catch(e) { console.error('Error loading slot stats:', e); }
     }
 
@@ -7360,7 +7383,7 @@
     const createSlotBtn = document.getElementById('createSlotMachineBtn');
     if (createSlotBtn) {
       createSlotBtn.addEventListener('click', async () => {
-        const name = prompt('Name der neuen Slot-Maschine:');
+        const name = prompt(runtimeText('plugins.game-engine.ui.runtime.dashboard.slot_machine_name_prompt'));
         if (!name) return;
         await fetch('/api/game-engine/slots', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name }) });
         await loadSlotMachines();
@@ -7372,7 +7395,7 @@
     if (deleteSlotBtn) {
       deleteSlotBtn.addEventListener('click', async () => {
         if (!currentSlotMachineId) return;
-        if (!confirm('Slot-Maschine wirklich löschen?')) return;
+        if (!confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.delete_slot_machine_confirm'))) return;
         await fetch(`/api/game-engine/slots/${currentSlotMachineId}`, { method: 'DELETE' });
         await loadSlotMachines();
       });
@@ -7619,22 +7642,22 @@
       loadGiftCatalogSymbolsBtn.addEventListener('click', async () => {
         const statusEl = document.getElementById('slot-gift-catalog-status');
         const gridEl   = document.getElementById('slot-gift-catalog-grid');
-        if (statusEl) statusEl.textContent = '⏳ Lade Katalog…';
-        if (gridEl) gridEl.innerHTML = '';
+        if (statusEl) statusEl.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.catalog_loading');
+        if (gridEl) setLocalizedHtml(gridEl, '');
         try {
           const resp = await fetch('/api/game-engine/slot/gift-catalog');
           const data = await resp.json();
           if (!data.success) throw new Error(data.error || 'Unbekannter Fehler');
           const gifts = data.gifts || [];
           if (gifts.length === 0) {
-            if (statusEl) statusEl.textContent = '⚠️ Keine Geschenke im Katalog. Verbinde mit einem TikTok-Stream, um den Katalog zu füllen.';
+            if (statusEl) statusEl.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.catalog_empty_connect');
             return;
           }
-          if (statusEl) statusEl.textContent = `${gifts.length} Geschenke gefunden – klicke auf ein Geschenk um es als Symbol hinzuzufügen:`;
+          if (statusEl) statusEl.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.catalog_gifts_found', { count: gifts.length });
           gifts.forEach(gift => {
             const tile = document.createElement('div');
             tile.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:pointer;padding:6px 8px;border-radius:8px;border:1px solid #333;background:#1a1a2e;width:72px;text-align:center;transition:background 0.15s;';
-            tile.title = `${gift.label} hinzufügen`;
+            tile.title = runtimeText('plugins.game-engine.ui.runtime.dashboard.add_gift', { gift: gift.label });
             tile.onmouseover = () => { tile.style.background = '#2a2a4e'; };
             tile.onmouseout  = () => { tile.style.background = '#1a1a2e'; };
 
@@ -7679,7 +7702,7 @@
             if (gridEl) gridEl.appendChild(tile);
           });
         } catch (err) {
-          if (statusEl) statusEl.innerHTML = `<span style="color:#f44336;">❌ Fehler: ${escapeHtml(err.message)}</span>`;
+          if (statusEl) setLocalizedHtml(statusEl, `<span style="color:#f44336;">❌ Fehler: ${escapeHtml(err.message)}</span>`);
         }
       });
     }
@@ -7842,11 +7865,18 @@
           const result = await resp.json();
           if (resultEl) {
             resultEl.style.display = 'block';
-            resultEl.textContent = `Ergebnis: ${result.category || 'unknown'} | Gewinn: ${result.isWin ? '✅' : '❌'} | Spin-ID: ${result.spinId || '?'}`;
+            resultEl.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.slot_result', {
+              category: result.category || runtimeText('plugins.game-engine.ui.runtime.dashboard.unknown'),
+              win: result.isWin ? '✅' : '❌',
+              spinId: result.spinId || '?'
+            });
           }
           await loadSlotStats(currentSlotMachineId);
         } catch(e) {
-          if (resultEl) { resultEl.style.display = 'block'; resultEl.textContent = 'Fehler: ' + e.message; }
+          if (resultEl) {
+            resultEl.style.display = 'block';
+            resultEl.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.error_with_message', { error: e.message });
+          }
         }
       });
     }
@@ -7926,7 +7956,7 @@
           // Show manual game controls
           document.getElementById('manual-game-controls').style.display = 'block';
           document.getElementById('manual-session-id').textContent = data.sessionId;
-          document.getElementById('manual-game-status').textContent = 'Läuft';
+          document.getElementById('manual-game-status').textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.game_running');
 
           // Disable start button
           startManualGameBtn.disabled = true;
@@ -7963,7 +7993,7 @@
 
           // Update current player
           if (data.nextPlayer) {
-            document.getElementById('manual-current-player').textContent = 'Spieler ' + data.nextPlayer;
+            document.getElementById('manual-current-player').textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.player_number', { number: data.nextPlayer });
           }
 
           // If game ended, reset
@@ -7987,7 +8017,7 @@
         return;
       }
 
-      if (!confirm('Möchtest du das Test-Spiel wirklich beenden?')) {
+      if (!confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.end_manual_game_confirm'))) {
         return;
       }
 
@@ -8019,7 +8049,7 @@
       document.getElementById('manual-game-controls').style.display = 'none';
       document.getElementById('manual-session-id').textContent = '-';
       document.getElementById('manual-current-player').textContent = '-';
-      document.getElementById('manual-game-status').textContent = 'Beendet';
+      document.getElementById('manual-game-status').textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.game_ended');
       startManualGameBtn.disabled = false;
     }
 
@@ -8086,12 +8116,12 @@
 
         // Update board selector dropdown
         const selector = document.getElementById('plinko-board-selector');
-        selector.innerHTML = '';
+        setLocalizedHtml(selector, '');
 
         allPlinkoBoards.forEach(board => {
           const option = document.createElement('option');
           option.value = board.id;
-          option.textContent = `${board.name}${board.enabled ? '' : ' (deaktiviert)'}`;
+          option.textContent = `${board.name}${board.enabled ? '' : runtimeText('plugins.game-engine.ui.runtime.dashboard.disabled_suffix')}`;
           selector.appendChild(option);
         });
 
@@ -8159,7 +8189,7 @@
 
     function renderPlinkoSlots() {
       const container = document.getElementById('plinko-slots-container');
-      container.innerHTML = '';
+      setLocalizedHtml(container, '');
 
       plinkoConfig.slots.forEach((slot, index) => {
         const slotDiv = document.createElement('div');
@@ -8184,9 +8214,9 @@
           return `<option value="${escapedId}" ${isSelected ? 'selected' : ''}>${escapedName} (${escapedModel})</option>`;
         }).join('');
 
-        slotDiv.innerHTML = `
+        setLocalizedHtml(slotDiv, `
           <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-            <div style="width: 50px; text-align: center; color: #aaa; font-weight: bold;">Slot ${index + 1}</div>
+            <div style="width: 50px; text-align: center; color: #aaa; font-weight: bold;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.slot_number', { number: index + 1 })}</div>
             <div style="flex: 1;">
               <label style="display: block; font-size: 12px; color: #aaa; margin-bottom: 3px;" data-i18n="plugins.game-engine.ui.plinko.multiplier">Multiplikator:</label>
               <input type="number" class="plinko-slot-multiplier" data-index="${index}" value="${slot.multiplier}" min="0" max="100" step="0.1" style="width: 100%;">
@@ -8234,16 +8264,16 @@
                           data-index="${index}"
                           style="width: 100%; min-height: 80px;"
                           aria-label="OpenShock Geräte auswählen"
-                          aria-describedby="device-help-${index}">
+                          aria-describedby="device-help-${index}" data-i18n-aria-label="plugins.game-engine.form_controls.accessibility.openshock_device_selection">
                     ${deviceOptionsHtml || '<option disabled data-i18n="plugins.game-engine.ui.openshock.no_devices">Keine Geräte verfügbar</option>'}
                   </select>
-                  <small id="device-help-${index}" style="color: #bbb; font-size: 10px; display: block; margin-top: 3px;">Mehrere auswählen: Strg+Klick (Windows) / Cmd+Klick (Mac)</small>
+                  <small id="device-help-${index}" style="color: #bbb; font-size: 10px; display: block; margin-top: 3px;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.multi_select_help')}</small>
                   <button type="button" class="plinko-refresh-devices" data-index="${index}" style="margin-top: 5px; padding: 5px 10px; font-size: 10px; width: 100%;" data-i18n="plugins.game-engine.ui.openshock.reload_devices">🔄 Geräte neu laden</button>
                 </div>
               </div>
             </div>
           </div>
-        `;
+        `);
         container.appendChild(slotDiv);
 
         // Add toggle listener for OpenShock section
@@ -8265,13 +8295,13 @@
 
     function renderPlinkoGiftMappings() {
       const container = document.getElementById('plinko-gift-mappings-container');
-      container.innerHTML = '';
+      setLocalizedHtml(container, '');
 
       const mappings = plinkoConfig.giftMappings || {};
       const keys = Object.keys(mappings);
 
       if (keys.length === 0) {
-        container.innerHTML = '<p style="color: #aaa;" data-i18n="plugins.game-engine.ui.plinko.no_gift_mappings">Keine Geschenk-Mappings konfiguriert.</p>';
+        setLocalizedHtml(container, '<p style="color: #aaa;" data-i18n="plugins.game-engine.ui.plinko.no_gift_mappings">Keine Geschenk-Mappings konfiguriert.</p>');
         return;
       }
 
@@ -8289,12 +8319,12 @@
         const logoHtml = imgUrl
           ? `<img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(displayName)}" style="width:40px;height:40px;object-fit:contain;border-radius:6px;background:#1a1a2e;padding:3px;flex-shrink:0;">`
           : `<div style="width:40px;height:40px;background:#1a1a2e;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎁</div>`;
-        mappingDiv.innerHTML = `
+        setLocalizedHtml(mappingDiv, `
           <div style="display:flex;align-items:center;gap:10px;min-width:160px;flex:1;">
             ${logoHtml}
             <div>
               <strong style="font-size:14px;color:#eee;">${escapeHtml(displayName)}</strong>
-              <div style="font-size:11px;color:#888;">ID: ${escapeHtml(giftKey)}</div>
+              <div style="font-size:11px;color:#888;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.gift_id', { id: escapeHtml(giftKey) })}</div>
             </div>
           </div>
           <div style="flex: 1; min-width: 90px;">
@@ -8313,7 +8343,7 @@
             <input type="number" class="plinko-gift-ball-count" data-gift-key="${escapeHtml(giftKey)}" value="${ballCount}" min="1" max="50" style="width: 100%;">
           </div>
           <button class="danger plinko-remove-gift-mapping" data-gift-key="${escapeHtml(giftKey)}" style="width: auto; padding: 10px;">🗑️</button>
-        `;
+        `);
         container.appendChild(mappingDiv);
       });
     }
@@ -8467,7 +8497,7 @@
 
     // Create new plinko board
     document.getElementById('createPlinkoBoardBtn')?.addEventListener('click', async () => {
-      const name = prompt('Name für das neue Plinko-Board:');
+      const name = prompt(runtimeText('plugins.game-engine.ui.runtime.dashboard.plinko_board_name_prompt'));
       if (name && name.trim()) {
         try {
           const res = await fetch('/api/game-engine/plinko/boards', {
@@ -8496,7 +8526,7 @@
       if (!currentPlinkoBoardId) return;
 
       const boardName = plinkoConfig?.name || 'dieses Board';
-      if (confirm(`Board "${boardName}" wirklich löschen?`)) {
+      if (confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.delete_board_confirm', { boardName }))) {
         try {
           const res = await fetch(`/api/game-engine/plinko/boards/${currentPlinkoBoardId}`, {
             method: 'DELETE'
@@ -8666,7 +8696,7 @@
       if (e.target.classList.contains('plinko-remove-gift-mapping')) {
         const giftKey = e.target.dataset.giftKey;
         const displayName = plinkoConfig.giftMappings?.[giftKey]?.giftName || giftKey;
-        if (confirm(`Geschenk-Mapping "${displayName}" wirklich entfernen?`)) {
+        if (confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.delete_gift_mapping_confirm', { displayName }))) {
           delete plinkoConfig.giftMappings[giftKey];
           renderPlinkoGiftMappings();
         }
@@ -8767,7 +8797,7 @@
         const res = await fetch('/api/game-engine/plinko/boards');
         const boards = await res.json();
         const selector = document.getElementById('test-board-selector');
-        selector.innerHTML = '';
+        setLocalizedHtml(selector, '');
         boards.forEach(board => {
           const option = document.createElement('option');
           option.value = board.id;
@@ -8847,7 +8877,7 @@
 
     // Clear test history
     document.getElementById('test-clear-history-btn')?.addEventListener('click', async () => {
-      if (!confirm('Alle Test-Transaktionen löschen?')) return;
+      if (!confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.clear_test_transactions_confirm'))) return;
 
       try {
         const res = await fetch('/api/game-engine/plinko/test/history', { method: 'DELETE' });
@@ -8903,7 +8933,7 @@
         const history = await res.json();
 
         const tbody = document.getElementById('test-history-tbody');
-        tbody.innerHTML = '';
+        setLocalizedHtml(tbody, '');
 
         history.forEach(tx => {
           const row = document.createElement('tr');
@@ -8914,18 +8944,18 @@
           const profitColor = profit >= 0 ? '#4CAF50' : '#f44336';
           const profitSign = profit >= 0 ? '+' : '';
 
-          row.innerHTML = `
+          setLocalizedHtml(row, `
             <td style="padding: 10px;">${time}</td>
             <td style="padding: 10px;">${tx.user}</td>
             <td style="padding: 10px; text-align: right;">${tx.bet} XP</td>
             <td style="padding: 10px; text-align: right;">${tx.multiplier.toFixed(2)}x</td>
             <td style="padding: 10px; text-align: right; color: ${profitColor}; font-weight: bold;">${profitSign}${profit} XP</td>
-          `;
+          `);
           tbody.appendChild(row);
         });
 
         if (history.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #888;">Noch keine Test-Drops</td></tr>';
+          setLocalizedHtml(tbody, `<tr><td colspan="5" style="padding: 20px; text-align: center; color: #888;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.no_test_drops')}</td></tr>`);
         }
       } catch (error) {
         console.error('Error loading test history:', error);
@@ -8953,12 +8983,16 @@
 
         // Populate wheel selector
         const selector = document.getElementById('wheel-selector');
-        selector.innerHTML = '';
+        setLocalizedHtml(selector, '');
 
         allWheels.forEach(wheel => {
           const option = document.createElement('option');
           option.value = wheel.id;
-          option.textContent = `${wheel.name} (ID: ${wheel.id})${!wheel.enabled ? ' [Deaktiviert]' : ''}`;
+          option.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.wheel_with_id', {
+            name: wheel.name,
+            id: wheel.id,
+            disabled: !wheel.enabled ? runtimeText('plugins.game-engine.ui.runtime.dashboard.disabled_bracket') : ''
+          });
           selector.appendChild(option);
         });
 
@@ -8993,7 +9027,7 @@
         currentWheelId = wheelConfig.id;
 
         // Update wheel name display
-        document.getElementById('current-wheel-name').textContent = wheelConfig.name || 'Unnamed Wheel';
+        document.getElementById('current-wheel-name').textContent = wheelConfig.name || runtimeText('plugins.game-engine.ui.runtime.dashboard.unnamed_wheel');
 
         // Load name and enabled status
         document.getElementById('wheel-name-input').value = wheelConfig.name || '';
@@ -9049,7 +9083,10 @@
     }
 
     async function createNewWheel() {
-      const name = prompt('Name für das neue Wheel:', 'Neues Wheel');
+      const name = prompt(
+        runtimeText('plugins.game-engine.ui.runtime.dashboard.wheel_name_prompt'),
+        runtimeText('plugins.game-engine.ui.runtime.dashboard.new_wheel_default')
+      );
       if (!name) return;
 
       try {
@@ -9082,7 +9119,9 @@
       }
 
       const wheel = allWheels.find(w => w.id === currentWheelId);
-      if (!confirm(`Wheel "${wheel?.name || 'Unnamed'}" wirklich löschen?\n\nAlle Trigger für dieses Wheel gehen verloren!`)) {
+      if (!confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.delete_wheel_confirm', {
+        wheelName: wheel?.name || runtimeText('plugins.game-engine.ui.runtime.dashboard.unnamed_wheel')
+      }))) {
         return;
       }
 
@@ -9107,7 +9146,7 @@
 
     function renderWheelSegments() {
       const container = document.getElementById('wheel-segments-container');
-      container.innerHTML = '';
+      setLocalizedHtml(container, '');
 
       if (!wheelConfig || !wheelConfig.segments) return;
 
@@ -9117,8 +9156,8 @@
         segmentDiv.draggable = true;
         segmentDiv.dataset.index = index;
         segmentDiv.style.cssText = 'display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding: 10px; background: #3a3a4e; border-radius: 5px; cursor: move; transition: all 0.2s; flex-wrap: wrap;';
-        segmentDiv.innerHTML = `
-          <div style="width: 30px; text-align: center; color: #888; cursor: grab; user-select: none;" class="drag-handle" title="Ziehen zum Verschieben">
+        setLocalizedHtml(segmentDiv, `
+          <div style="width: 30px; text-align: center; color: #888; cursor: grab; user-select: none;" class="drag-handle" title="Ziehen zum Verschieben" data-i18n-title="plugins.game-engine.form_controls.titles.drag_to_reorder">
             ⋮⋮
           </div>
           <div style="width: 40px; text-align: center; color: #aaa; font-weight: bold;">
@@ -9126,11 +9165,11 @@
           </div>
           <div style="flex: 2; min-width: 120px;">
             <label style="display: block; font-size: 12px; color: #aaa; margin-bottom: 3px;" data-i18n="plugins.game-engine.ui.wheel.prize_text">Text (Preis):</label>
-            <input type="text" class="wheel-segment-text" data-index="${index}" value="${segment.text || ''}" placeholder="z.B. Shoutout!" style="width: 100%;">
+            <input type="text" class="wheel-segment-text" data-index="${index}" value="${segment.text || ''}" placeholder="z.B. Shoutout!" style="width: 100%;" data-i18n-placeholder="plugins.game-engine.form_controls.placeholders.shoutout">
           </div>
           <div style="width: 80px;">
             <label style="display: block; font-size: 12px; color: #aaa; margin-bottom: 3px;" data-i18n="plugins.game-engine.ui.wheel.xp_bonus">XP Bonus:</label>
-            <input type="number" class="wheel-segment-xp" data-index="${index}" value="${segment.xpReward || 0}" min="0" max="100000" step="10" style="width: 100%;" placeholder="0" title="XP die automatisch vergeben werden">
+            <input type="number" class="wheel-segment-xp" data-index="${index}" value="${segment.xpReward || 0}" min="0" max="100000" step="10" style="width: 100%;" placeholder="0" title="XP die automatisch vergeben werden" data-i18n-title="plugins.game-engine.form_controls.titles.xp_automatic_award">
           </div>
           <div style="flex: 1; min-width: 60px;">
             <label style="display: block; font-size: 12px; color: #aaa; margin-bottom: 3px;" data-i18n="plugins.game-engine.ui.plinko.color">Farbe:</label>
@@ -9142,7 +9181,7 @@
           </div>
           <div style="width: 80px;">
             <label style="display: block; font-size: 12px; color: #aaa; margin-bottom: 3px;" data-i18n="plugins.game-engine.ui.wheel.audio">🔊 Audio:</label>
-            <select class="wheel-segment-audio" data-index="${index}" style="width: 100%; padding: 5px; background: #1a1a2e; border: 1px solid #444; border-radius: 5px; color: #eee;" title="Gewinn-Audio für dieses Segment">
+            <select class="wheel-segment-audio" data-index="${index}" style="width: 100%; padding: 5px; background: #1a1a2e; border: 1px solid #444; border-radius: 5px; color: #eee;" title="Gewinn-Audio für dieses Segment" data-i18n-title="plugins.game-engine.form_controls.titles.segment_win_audio">
               <option value="1" ${Number(segment.prizeAudio || 1) === 1 ? 'selected' : ''} data-i18n="plugins.game-engine.ui.wheel.prize_1">Preis 1</option>
               <option value="2" ${Number(segment.prizeAudio || 1) === 2 ? 'selected' : ''} data-i18n="plugins.game-engine.ui.wheel.prize_2">Preis 2</option>
               <option value="3" ${Number(segment.prizeAudio || 1) === 3 ? 'selected' : ''} data-i18n="plugins.game-engine.ui.wheel.prize_3">Preis 3</option>
@@ -9150,19 +9189,19 @@
           </div>
           <div style="width: 60px; text-align: center;">
             <label style="display: block; font-size: 12px; color: #aaa; margin-bottom: 3px;" data-i18n="plugins.game-engine.ui.wheel.no_prize">Niete:</label>
-            <input type="checkbox" class="wheel-segment-niete" data-index="${index}" ${segment.isNiete ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer;" title="Als Niete (kein Gewinn) markieren">
+            <input type="checkbox" class="wheel-segment-niete" data-index="${index}" ${segment.isNiete ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer;" title="Als Niete (kein Gewinn) markieren" data-i18n-title="plugins.game-engine.form_controls.titles.mark_no_prize">
           </div>
           <div style="width: 60px; text-align: center;">
             <label style="display: block; font-size: 12px; color: #aaa; margin-bottom: 3px;" data-i18n="plugins.game-engine.ui.wheel.shock">⚡ Shock:</label>
-            <input type="checkbox" class="wheel-segment-shock" data-index="${index}" ${segment.isShock ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer;" title="Shock via OpenShock auslösen" aria-label="Shock aktivieren für Segment ${index + 1}">
+            <input type="checkbox" class="wheel-segment-shock" data-index="${index}" ${segment.isShock ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer;" title="Shock via OpenShock auslösen" aria-label="Shock aktivieren für Segment ${index + 1}" data-i18n-title="plugins.game-engine.form_controls.titles.openshock_trigger">
           </div>
           <div style="width: 80px;">
             <label style="display: block; font-size: 12px; color: #aaa; margin-bottom: 3px;" data-i18n="plugins.game-engine.ui.wheel.intensity">Intensität:</label>
-            <input type="number" class="wheel-segment-shock-intensity" data-index="${index}" value="${segment.shockIntensity || 50}" min="1" max="100" style="width: 100%;" placeholder="50" title="Shock-Intensität (1-100)" aria-label="Shock-Intensität für Segment ${index + 1}" ${!segment.isShock ? 'disabled' : ''}>
+            <input type="number" class="wheel-segment-shock-intensity" data-index="${index}" value="${segment.shockIntensity || 50}" min="1" max="100" style="width: 100%;" placeholder="50" title="Shock-Intensität (1-100)" aria-label="Shock-Intensität für Segment ${index + 1}" ${!segment.isShock ? 'disabled' : ''} data-i18n-title="plugins.game-engine.form_controls.titles.shock_intensity">
           </div>
           <div style="width: 80px;">
             <label style="display: block; font-size: 12px; color: #aaa; margin-bottom: 3px;" data-i18n="plugins.game-engine.ui.openshock.duration_ms">Dauer (ms):</label>
-            <input type="number" class="wheel-segment-shock-duration" data-index="${index}" value="${segment.shockDuration || 1000}" min="300" max="30000" step="100" style="width: 100%;" placeholder="1000" title="Shock-Dauer in Millisekunden (300-30000)" aria-label="Shock-Dauer für Segment ${index + 1}" ${!segment.isShock ? 'disabled' : ''}>
+            <input type="number" class="wheel-segment-shock-duration" data-index="${index}" value="${segment.shockDuration || 1000}" min="300" max="30000" step="100" style="width: 100%;" placeholder="1000" title="Shock-Dauer in Millisekunden (300-30000)" aria-label="Shock-Dauer für Segment ${index + 1}" ${!segment.isShock ? 'disabled' : ''} data-i18n-title="plugins.game-engine.form_controls.titles.shock_duration">
           </div>
           <div style="width: 80px; height: 40px; border-radius: 5px; background: ${segment.color || '#4CAF50'}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; text-shadow: 0 0 3px rgba(0,0,0,0.5); font-size: 10px; text-align: center; padding: 2px; overflow: hidden; ${segment.isNiete ? 'opacity: 0.6;' : ''}">
             ${segment.isShock ? '⚡' : (segment.isNiete ? '😢' : (segment.xpReward > 0 ? `⭐${segment.xpReward}` : ''))}${segment.isShock ? (segment.shockIntensity || 50) : (segment.xpReward > 0 ? '' : (segment.text || 'Preis').substring(0, 8))}
@@ -9196,7 +9235,7 @@
               </select>
             </div>
           </div>
-        `;
+        `);
 
         // Add drag and drop event listeners
         segmentDiv.addEventListener('dragstart', handleDragStart);
@@ -9341,7 +9380,7 @@
 
       const segmentText = wheelConfig.segments[index].text || `Segment ${index + 1}`;
 
-      if (confirm(`Segment "${segmentText}" wirklich löschen?`)) {
+      if (confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.delete_segment_confirm', { segmentText }))) {
         wheelConfig.segments.splice(index, 1);
         renderWheelSegments();
         showMessage('Segment gelöscht');
@@ -9350,25 +9389,25 @@
 
     function renderWheelGiftTriggers() {
       const container = document.getElementById('wheel-gift-triggers-container');
-      container.innerHTML = '';
+      setLocalizedHtml(container, '');
 
       const triggers = wheelConfig?.giftTriggers || {};
       const keys = Object.keys(triggers);
 
       if (keys.length === 0) {
-        container.innerHTML = '<p style="color: #aaa;" data-i18n="plugins.game-engine.ui.wheel.no_gift_triggers">Keine Geschenk-Trigger konfiguriert. Füge Geschenke hinzu, um dieses Wheel zu aktivieren.</p>';
+        setLocalizedHtml(container, '<p style="color: #aaa;" data-i18n="plugins.game-engine.ui.wheel.no_gift_triggers">Keine Geschenk-Trigger konfiguriert. Füge Geschenke hinzu, um dieses Wheel zu aktivieren.</p>');
         return;
       }
 
       keys.forEach(giftKey => {
         const triggerDiv = document.createElement('div');
         triggerDiv.style.cssText = 'display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding: 10px; background: #3a3a4e; border-radius: 5px;';
-        triggerDiv.innerHTML = `
+        setLocalizedHtml(triggerDiv, `
           <div style="flex: 1;">
             <span style="color: #FFD700;">🎁</span> ${giftKey}
           </div>
           <button class="danger wheel-remove-gift-trigger" data-gift="${giftKey}" style="width: auto; padding: 8px 12px;" data-i18n="plugins.game-engine.ui.wheel.remove_icon">🗑️ Entfernen</button>
-        `;
+        `);
         container.appendChild(triggerDiv);
       });
     }
@@ -9500,11 +9539,15 @@
           stats.popularPrizes.forEach((prize, index) => {
             const item = document.createElement('span');
             item.style.marginRight = '15px';
-            item.textContent = `${index + 1}. ${prize.prize_text || ''} (${prize.count || 0}x)`;
+            item.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.popular_prize', {
+              rank: index + 1,
+              prize: prize.prize_text || '',
+              count: prize.count || 0
+            });
             popularContainer.appendChild(item);
           });
         } else {
-          popularContainer.innerHTML = '<span style="color: #666;" data-i18n="plugins.game-engine.ui.stats.no_data">Noch keine Daten</span>';
+          setLocalizedHtml(popularContainer, '<span style="color: #666;" data-i18n="plugins.game-engine.ui.stats.no_data">Noch keine Daten</span>');
         }
       } catch (error) {
         console.error('Error loading Wheel stats:', error);
@@ -9520,7 +9563,7 @@
         const tbody = document.getElementById('wheel-wins-table-body');
 
         if (!wins || wins.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #666;">Keine Gewinne gefunden</td></tr>';
+          setLocalizedHtml(tbody, `<tr><td colspan="6" style="padding: 20px; text-align: center; color: #666;">${runtimeText('plugins.game-engine.ui.runtime.dashboard.no_wins_found')}</td></tr>`);
           return;
         }
 
@@ -9572,7 +9615,7 @@
     }
 
     async function editWheelWin(winId, currentPrize) {
-      const newPrize = prompt('Neuen Gewinntext eingeben:', decodeURIComponent(currentPrize));
+      const newPrize = prompt(runtimeText('plugins.game-engine.ui.runtime.dashboard.edit_prize_prompt'), decodeURIComponent(currentPrize));
       if (newPrize === null || newPrize.trim() === '') return;
 
       try {
@@ -9595,7 +9638,7 @@
     }
 
     async function deleteWheelWin(winId) {
-      if (!confirm('Diesen Gewinn wirklich löschen?')) return;
+      if (!confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.delete_prize_confirm'))) return;
 
       try {
         const res = await fetch(`/api/game-engine/wheel/win/${winId}`, {
@@ -9615,8 +9658,8 @@
     }
 
     async function resetAllWheelWins() {
-      if (!confirm('⚠️ ACHTUNG: Alle Gewinne werden unwiderruflich gelöscht!\n\nBist du sicher?')) return;
-      if (!confirm('🔴 LETZTE WARNUNG: Diese Aktion kann nicht rückgängig gemacht werden!\n\nWirklich ALLE Gewinne löschen?')) return;
+      if (!confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.reset_wins_first_confirm'))) return;
+      if (!confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.reset_wins_final_confirm'))) return;
 
       try {
         const res = await fetch('/api/game-engine/wheel/reset-wins', {
@@ -9797,7 +9840,7 @@
       wheelGiftTriggersContainer.addEventListener('click', async (e) => {
         if (e.target.classList.contains('wheel-remove-gift-trigger')) {
           const giftKey = e.target.dataset.gift;
-          if (confirm(`Geschenk "${giftKey}" wirklich entfernen?`)) {
+          if (confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.delete_gift_confirm', { giftKey }))) {
             delete wheelConfig.giftTriggers[giftKey];
 
             try {
@@ -9823,7 +9866,7 @@
       wheelWinsTableBody.addEventListener('click', (e) => {
         if (e.target.classList.contains('wheel-pay-btn')) {
           const winId = e.target.dataset.winId;
-          if (confirm('Gewinn als ausgezahlt markieren?')) {
+          if (confirm(runtimeText('plugins.game-engine.ui.runtime.dashboard.mark_prize_paid_confirm'))) {
             markPrizeAsPaid(winId);
           }
         } else if (e.target.classList.contains('wheel-edit-btn')) {
@@ -10022,10 +10065,10 @@
       };
 
       if (isCustom && filename) {
-        statusEl.textContent = `Custom: ${filename}`;
+        statusEl.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.custom_audio', { filename });
         statusEl.style.color = '#2196F3';
       } else {
-        statusEl.textContent = `Standard: ${defaultNames[audioType]}`;
+        statusEl.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.default_audio', { filename: defaultNames[audioType] });
         statusEl.style.color = '#4CAF50';
       }
     }
@@ -10137,14 +10180,16 @@
 
           if (toggle) {
             toggle.checked = useUnified;
-            label.textContent = useUnified ? 'Unified' : 'Legacy';
+            label.textContent = useUnified
+              ? runtimeText('plugins.game-engine.ui.overlay.unified')
+              : runtimeText('plugins.game-engine.ui.overlay.legacy');
             const url = useUnified
               ? `${OVERLAY_BASE_URL}/overlay/game-engine/unified`
               : `${OVERLAY_BASE_URL}/overlay/game-engine/${gameType}`;
             if ('value' in urlSpan) {
               urlSpan.value = url;
             } else {
-              urlSpan.textContent = `URL: ${url}`;
+              urlSpan.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.overlay_url', { url });
             }
           }
         });
@@ -10187,14 +10232,16 @@
         const label = document.getElementById(`overlay-label-${game}`);
         const urlSpan = document.getElementById(`overlay-url-${game}-mode`) || document.getElementById(`overlay-url-${game}`);
 
-        label.textContent = e.target.checked ? 'Unified' : 'Legacy';
+        label.textContent = e.target.checked
+          ? runtimeText('plugins.game-engine.ui.overlay.unified')
+          : runtimeText('plugins.game-engine.ui.overlay.legacy');
         const url = e.target.checked
           ? `${OVERLAY_BASE_URL}/overlay/game-engine/unified`
           : `${OVERLAY_BASE_URL}/overlay/game-engine/${game}`;
         if ('value' in urlSpan) {
           urlSpan.value = url;
         } else {
-          urlSpan.textContent = `URL: ${url}`;
+          urlSpan.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.overlay_url', { url });
         }
       });
     });

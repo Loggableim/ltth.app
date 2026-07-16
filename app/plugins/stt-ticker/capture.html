@@ -884,9 +884,12 @@
     const CHUNK_SAMPLES = Math.floor(SAMPLE_RATE * CHUNK_DURATION_MS / 1000);
     const API = window.location.origin;
 
-    function translateUi(key, fallback) {
-      const translation = window.i18n.t(key);
-      return translation && translation !== key ? translation : fallback;
+    function translateUi(key, fallback, params = {}) {
+      const translation = window.i18n?.t(key, params);
+      const value = translation && translation !== key ? translation : fallback;
+      return String(value).replace(/\{\{?(\w+)\}?\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+      ));
     }
 
     function setSelectFallback(select, key, fallback) {
@@ -978,7 +981,7 @@
       if (includeEmpty) {
         const placeholder = document.createElement('option');
         placeholder.value = '';
-        placeholder.textContent = 'Sprache wählen...';
+        placeholder.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.choose_language', 'Choose a language…');
         selectEl.appendChild(placeholder);
       }
       for (const [code, label] of LANGUAGE_OPTIONS) {
@@ -1120,14 +1123,21 @@
         badge.style.color = line.color || '#fff';
         const textSpan = document.createElement('span');
         textSpan.className = 'line-text';
-        textSpan.textContent = line.text || 'wartet auf Übersetzung...';
+        textSpan.textContent = line.text || translateUi(
+          'plugins.stt-ticker.stt_ticker.ui.messages.translation_pending',
+          'Waiting for translation…'
+        );
         textSpan.style.color = line.color || '#fff';
         div.appendChild(badge);
         div.appendChild(textSpan);
         previewLinesEl.appendChild(div);
         count++;
       }
-      previewLangCountEl.textContent = '(' + count + ' Zeilen)';
+      previewLangCountEl.textContent = translateUi(
+        'plugins.stt-ticker.stt_ticker.ui.messages.line_count',
+        '({count} lines)',
+        { count }
+      );
     }
 
     function renderLangTags() {
@@ -1173,9 +1183,9 @@
     }
 
     function getSelectedAudioDeviceLabel() {
-      if (!audioDeviceSelectEl) return 'Systemstandard';
+      if (!audioDeviceSelectEl) return translateUi('plugins.stt-ticker.stt_ticker.ui.messages.system_default', 'System default');
       const option = audioDeviceSelectEl.selectedOptions && audioDeviceSelectEl.selectedOptions[0];
-      return option ? (option.textContent || 'Systemstandard') : 'Systemstandard';
+      return option ? (option.textContent || translateUi('plugins.stt-ticker.stt_ticker.ui.messages.system_default', 'System default')) : translateUi('plugins.stt-ticker.stt_ticker.ui.messages.system_default', 'System default');
     }
 
     async function refreshAudioDevices() {
@@ -1210,7 +1220,7 @@
 
       const defaultOption = document.createElement('option');
       defaultOption.value = '';
-      defaultOption.textContent = 'Systemstandard-Mikrofon';
+      defaultOption.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.system_microphone', 'System default microphone');
       audioDeviceSelectEl.appendChild(defaultOption);
 
       let audioInputs = [];
@@ -1230,7 +1240,7 @@
       if (audioInputs.length === 0) {
         const infoOption = document.createElement('option');
         infoOption.value = '__none__';
-        infoOption.textContent = 'Keine weiteren Eingabegeräte gefunden';
+        infoOption.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.no_input_devices', 'No additional input devices found');
         infoOption.disabled = true;
         audioDeviceSelectEl.appendChild(infoOption);
         audioDeviceSelectEl.disabled = false;
@@ -1244,7 +1254,11 @@
       audioInputs.forEach(function(device, index) {
         const option = document.createElement('option');
         option.value = device.deviceId;
-        option.textContent = device.label || ('Mikrofon ' + (index + 1));
+        option.textContent = device.label || translateUi(
+          'plugins.stt-ticker.stt_ticker.ui.messages.microphone_name',
+          'Microphone {index}',
+          { index: index + 1 }
+        );
         if (device.deviceId === targetDeviceId) option.selected = true;
         audioDeviceSelectEl.appendChild(option);
       });
@@ -1389,7 +1403,10 @@
           renderLangTags();
           updatePreviewFromConfig();
           if (currentOutputLangs.length === 0) {
-            document.getElementById('ml-status').textContent = 'Keine Zielsprache gewählt – normale Untertitelanzeige aktiv.';
+            document.getElementById('ml-status').textContent = translateUi(
+              'plugins.stt-ticker.stt_ticker.ui.messages.no_target_language',
+              'No target language selected — standard captions are active.'
+            );
             document.getElementById('ml-status').style.color = 'var(--stt-status-warning, #facc15)';
           }
           log('Multi-Language: ' + currentOutputLangs.length + ' Zielsprachen');
@@ -1452,11 +1469,11 @@
           if (data.translation && data.translation.model) {
             translationConfig.model = data.translation.model;
           }
-          document.getElementById('ml-status').textContent = 'Gespeichert';
+          document.getElementById('ml-status').textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.saved', 'Saved');
           setTimeout(function() { document.getElementById('ml-status').textContent = ''; }, 2000);
           log('Multi-Language gespeichert: ' + outputLangs.length + ' Sprachen');
         } else {
-          document.getElementById('ml-status').textContent = data.error || 'Fehler';
+          document.getElementById('ml-status').textContent = data.error || translateUi('plugins.stt-ticker.stt_ticker.ui.messages.error', 'Error');
         }
       } catch (e) {
         document.getElementById('ml-status').textContent = e.message;
@@ -1695,11 +1712,11 @@
     document.getElementById('btn-add-lang').addEventListener('click', function() {
       var lang = mlAddLangEl.value;
       if (!lang) {
-        document.getElementById('ml-status').textContent = 'Bitte Sprache wählen';
+        document.getElementById('ml-status').textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.choose_language', 'Choose a language');
         return;
       }
       if (currentOutputLangs.indexOf(lang) !== -1) {
-        document.getElementById('ml-status').textContent = 'Bereits vorhanden';
+        document.getElementById('ml-status').textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.already_added', 'Already added');
         return;
       }
       currentOutputLangs.push(lang);

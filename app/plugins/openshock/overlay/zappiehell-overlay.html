@@ -254,6 +254,15 @@
         let socket = null;
         let pendingUtterances = [];
 
+        function zappieOverlayText(key, fallback, params = {}) {
+            const translationKey = `plugins.openshock.runtime.overlays.zappiehell.${key}`;
+            const translated = window.i18n?.t(translationKey, params);
+            const value = translated && translated !== translationKey ? translated : fallback;
+            return String(value).replace(/\{(\w+)\}/g, (match, name) => (
+                Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+            ));
+        }
+
         // Helpers
         function getGoalProgress(goal) {
             const targetCoins = Math.max(0, Number(goal.targetCoins) || 0);
@@ -443,7 +452,9 @@
                         <span class="goal-icon">⚡</span>
                         <span>${escapeHtml(goal.name)}</span>
                     </div>
-                    <div class="goal-type">${goal.type === 'stream' ? '🔴 Stream' : '🌐 Global'}</div>
+                    <div class="goal-type">${goal.type === 'stream'
+                        ? `🔴 ${zappieOverlayText('stream', 'Stream')}`
+                        : `🌐 ${zappieOverlayText('global', 'Global')}`}</div>
                 </div>
                 <div class="goal-progress">
                     <div class="progress-bar-wrapper">
@@ -454,10 +465,12 @@
                 <div class="goal-stats">
                     <div class="stat-item">
                         <span class="coin-icon">💎</span>
-                        <span class="stat-total">${formatNumber(currentCoins)} / ${formatNumber(targetCoins)} coins</span>
+                        <span class="stat-total">${zappieOverlayText('coin_progress', '{current} / {target} coins', {
+                            current: formatNumber(currentCoins), target: formatNumber(targetCoins)
+                        })}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-remaining">${formatNumber(remainingCoins)} to go</span>
+                        <span class="stat-remaining">${zappieOverlayText('remaining', '{count} to go', { count: formatNumber(remainingCoins) })}</span>
                     </div>
                 </div>
             `;
@@ -485,10 +498,12 @@
             const totalText = card.querySelector('.stat-total');
             const remainingText = card.querySelector('.stat-remaining');
             if (totalText) {
-                totalText.textContent = `${formatNumber(currentCoins)} / ${formatNumber(targetCoins)} coins`;
+                totalText.textContent = zappieOverlayText('coin_progress', '{current} / {target} coins', {
+                    current: formatNumber(currentCoins), target: formatNumber(targetCoins)
+                });
             }
             if (remainingText) {
-                remainingText.textContent = `${formatNumber(remainingCoins)} to go`;
+                remainingText.textContent = zappieOverlayText('remaining', '{count} to go', { count: formatNumber(remainingCoins) });
             }
 
             // Update completion status

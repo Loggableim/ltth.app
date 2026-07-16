@@ -37,6 +37,22 @@ function requireCaptureOptions({ sceneName, overlayUrl, width, height }) {
   if (!Number.isInteger(height) || height <= 0) throw new Error('OBS capture height must be a positive integer');
 }
 
+async function requireInactiveOutput(obs, stage) {
+  const [streamStatus, recordStatus] = await Promise.all([
+    obs.call('GetStreamStatus'),
+    obs.call('GetRecordStatus')
+  ]);
+  const output = {
+    stage,
+    streamActive: Boolean(streamStatus?.outputActive),
+    recordActive: Boolean(recordStatus?.outputActive)
+  };
+  if (output.streamActive || output.recordActive) {
+    throw new Error('OBS stream or recording output is active');
+  }
+  return output;
+}
+
 class ObsDocsCaptureSession {
   constructor(obs, { sourceName = TEMPORARY_SOURCE_NAME } = {}) {
     if (!obs || typeof obs.call !== 'function') throw new TypeError('An OBS WebSocket client with call() is required');
@@ -50,15 +66,12 @@ class ObsDocsCaptureSession {
     if (sceneName !== TUTORIAL_SCENE_NAME) {
       throw new Error('OBS documentation capture is restricted to the tutorial scene');
     }
-    const [streamStatus, recordStatus] = await Promise.all([
-      this.obs.call('GetStreamStatus'),
-      this.obs.call('GetRecordStatus')
-    ]);
-    if (streamStatus?.outputActive || recordStatus?.outputActive) {
-      throw new Error('OBS stream or recording output is active');
-    }
+    const outputChecks = [await requireInactiveOutput(this.obs, 'before-mutation')];
 
     const initialSceneItems = snapshotSceneItems(await this.obs.call('GetSceneItemList', { sceneName }));
+    if (initialSceneItems.length !== 0) {
+      throw new Error('OBS tutorial scene must be empty before documentation capture');
+    }
     const initialSources = sourceNames({ sceneItems: initialSceneItems });
     if (initialSources.includes(this.sourceName)) {
       throw new Error(`Temporary OBS source already exists: ${this.sourceName}`);
@@ -111,6 +124,8 @@ class ObsDocsCaptureSession {
         });
       }
 
+      outputChecks.push(await requireInactiveOutput(this.obs, 'before-screenshots'));
+
       const sourceScreenshot = await this.obs.call('GetSourceScreenshot', {
         sourceName: this.sourceName,
         imageFormat: 'png',
@@ -143,7 +158,8 @@ class ObsDocsCaptureSession {
         temporarySceneItemRemoved: false,
         temporaryInputRemoved: false,
         streamActive: false,
-        recordActive: false
+        recordActive: false,
+        outputChecks
       };
       return receipt;
     } catch (error) {
@@ -152,6 +168,12 @@ class ObsDocsCaptureSession {
     } finally {
       if (sourceCreated) {
         let cleanupError = null;
+        try {
+          const beforeCleanup = await requireInactiveOutput(this.obs, 'before-cleanup');
+          if (receipt) receipt.outputChecks.push(beforeCleanup);
+        } catch (error) {
+          cleanupError = error;
+        }
         try {
           if (!Number.isInteger(temporarySceneItemId)) {
             throw new Error('Temporary OBS browser source scene item could not be identified for cleanup');

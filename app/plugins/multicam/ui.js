@@ -16,6 +16,14 @@ let currentFilter = 'all';
 let currentSceneFilter = 'all';
 let currentSort = 'coins-desc';
 
+function t(key, fallback, params = {}) {
+    const translation = window.i18n?.t(key, params);
+    if (translation && translation !== key) return translation;
+    return String(fallback).replace(/\{\{?(\w+)\}?\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+}
+
 // ===== SOCKET EVENTS =====
 socket.on('connect', () => {
     console.log('Socket connected');
@@ -43,16 +51,16 @@ function updateState(data) {
 
     if (state.connected) {
         statusDot.classList.add('connected');
-        statusText.textContent = 'Mit OBS verbunden';
+        statusText.textContent = t('plugins.multicam.multicam.status.connected', 'Mit OBS verbunden');
     } else {
         statusDot.classList.remove('connected');
-        statusText.textContent = 'Getrennt';
+        statusText.textContent = t('plugins.multicam.multicam.status.disconnected', 'Getrennt');
     }
 
     if (state.currentScene) {
-        currentScene.innerHTML = `Aktuelle Szene: <strong>${state.currentScene}</strong>`;
+        currentScene.innerHTML = `${t('plugins.multicam.multicam.current_scene', 'Aktuelle Szene:')} <strong>${state.currentScene}</strong>`;
     } else {
-        currentScene.innerHTML = `Aktuelle Szene: <strong>-</strong>`;
+        currentScene.innerHTML = `${t('plugins.multicam.multicam.current_scene', 'Aktuelle Szene:')} <strong>-</strong>`;
     }
 
     updateSceneSelect(state.scenes);
@@ -60,7 +68,7 @@ function updateState(data) {
 
 function updateSceneSelect(scenes) {
     const select = document.getElementById('sceneSelect');
-    select.innerHTML = '<option value="">Szene wählen...</option>';
+    select.innerHTML = `<option value="">${t('plugins.multicam.multicam.switcher.select_scene', 'Szene wählen...')}</option>`;
     for (const scene of scenes) {
         const opt = document.createElement('option');
         opt.value = scene;
@@ -71,7 +79,7 @@ function updateSceneSelect(scenes) {
     // Auch den Kamera-Filter befüllen
     const filterScene = document.getElementById('filter-scene');
     const currentVal = filterScene.value;
-    filterScene.innerHTML = '<option value="all">Alle Kameras</option>';
+    filterScene.innerHTML = `<option value="all">${t('plugins.multicam.labels.alle_kameras', 'Alle Kameras')}</option>`;
     for (const scene of scenes) {
         const opt = document.createElement('option');
         opt.value = scene;
@@ -111,15 +119,15 @@ async function loadConfig() {
 
 async function loadGiftMappings() {
     const container = document.getElementById('giftGridContainer');
-    container.innerHTML = '<div class="loading-spinner">Lade Geschenkekatalog...</div>';
+    container.innerHTML = `<div class="loading-spinner">${t('plugins.multicam.multicam.gift_mapping.loading', 'Lade Geschenkekatalog...')}</div>`;
 
     // Timeout: nach 15 Sekunden Fehlermeldung anzeigen
     const timeout = setTimeout(() => {
         container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">⏱️</div>
-                <p>Server antwortet nicht. Stelle sicher, dass der LTTH-Server läuft und ein TikTok-Stream verbunden ist.</p>
-                <button onclick="loadGiftMappings()" style="margin-top: 12px;">🔄 Erneut laden</button>
+                <div class="empty-state">
+                    <div class="empty-icon">⏱️</div>
+                    <p>${t('plugins.multicam.multicam.runtime.server_unreachable', 'Server antwortet nicht. Stelle sicher, dass der LTTH-Server läuft und ein TikTok-Stream verbunden ist.')}</p>
+                    <button onclick="loadGiftMappings()" style="margin-top: 12px;">${t('plugins.multicam.multicam.runtime.retry_load', '🔄 Erneut laden')}</button>
             </div>`;
     }, 15000);
 
@@ -136,28 +144,28 @@ async function loadGiftMappings() {
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon">⚠️</div>
-                    <p>Fehler vom Server: ${data.error || 'Unbekannter Fehler'}</p>
-                    <button onclick="loadGiftMappings()" style="margin-top: 12px;">🔄 Erneut laden</button>
+                    <p>${t('plugins.multicam.multicam.runtime.server_error', 'Fehler vom Server: {error}', { error: data.error || t('plugins.multicam.multicam.runtime.unknown_error', 'Unbekannter Fehler') })}</p>
+                    <button onclick="loadGiftMappings()" style="margin-top: 12px;">${t('plugins.multicam.multicam.runtime.retry_load', '🔄 Erneut laden')}</button>
                 </div>`;
         }
     } catch (e) {
         clearTimeout(timeout);
         console.error('Failed to load gift mappings:', e);
         container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">⚠️</div>
-                <p>Fehler beim Laden des Geschenkekatalogs. Stelle sicher, dass der LTTH-Server läuft und ein TikTok-Stream verbunden ist.</p>
-                <button onclick="loadGiftMappings()" style="margin-top: 12px;">🔄 Erneut laden</button>
+                <div class="empty-state">
+                    <div class="empty-icon">⚠️</div>
+                    <p>${t('plugins.multicam.multicam.runtime.catalog_load_failed', 'Fehler beim Laden des Geschenkekatalogs. Stelle sicher, dass der LTTH-Server läuft und ein TikTok-Stream verbunden ist.')}</p>
+                    <button onclick="loadGiftMappings()" style="margin-top: 12px;">${t('plugins.multicam.multicam.runtime.retry_load', '🔄 Erneut laden')}</button>
             </div>`;
     }
 }
 
 // ===== GIFT CATALOG RENDERING =====
 function getTier(coins) {
-    if (coins >= 10000) return { key: 'whale', label: '🐋 Whale (10.000+)', className: 'tier-whale' };
-    if (coins >= 1000) return { key: 'large', label: '🔥 Groß (1.000-9.999)', className: 'tier-large' };
-    if (coins >= 100) return { key: 'medium', label: '💎 Mittel (100-999)', className: 'tier-medium' };
-    return { key: 'small', label: '🪙 Klein (1-99)', className: 'tier-small' };
+    if (coins >= 10000) return { key: 'whale', label: t('plugins.multicam.multicam.runtime.tier_whale', '🐋 Whale (10.000+)'), className: 'tier-whale' };
+    if (coins >= 1000) return { key: 'large', label: t('plugins.multicam.multicam.runtime.tier_large', '🔥 Groß (1.000-9.999)'), className: 'tier-large' };
+    if (coins >= 100) return { key: 'medium', label: t('plugins.multicam.multicam.runtime.tier_medium', '💎 Mittel (100-999)'), className: 'tier-medium' };
+    return { key: 'small', label: t('plugins.multicam.multicam.runtime.tier_small', '🪙 Klein (1-99)'), className: 'tier-small' };
 }
 
 function filterGifts(gifts) {
@@ -218,9 +226,9 @@ function renderGiftCatalog() {
 
     if (!giftData || giftData.length === 0) {
         container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">🎁</div>
-                <p>Keine Geschenke im Katalog. Verbinde einen TikTok-Stream, um den Katalog zu laden.</p>
+                <div class="empty-state">
+                    <div class="empty-icon">🎁</div>
+                    <p>${t('plugins.multicam.multicam.runtime.empty_catalog', 'Keine Geschenke im Katalog. Verbinde einen TikTok-Stream, um den Katalog zu laden.')}</p>
             </div>`;
         updateStats();
         return;
@@ -246,7 +254,7 @@ function renderGiftCatalog() {
         html += `<div class="tier-header ${tier.className}">
             <span class="tier-icon">${tier.label.split(' ')[0]}</span>
             <span>${tier.label}</span>
-            <span class="tier-count">${tierGifts.length} Geschenke</span>
+            <span class="tier-count">${t('plugins.multicam.multicam.runtime.gift_count', '{count} Geschenke', { count: tierGifts.length })}</span>
         </div>`;
 
         html += '<div class="gift-grid">';
@@ -257,7 +265,7 @@ function renderGiftCatalog() {
     }
 
     if (filtered.length === 0) {
-        html = `<div class="empty-state"><div class="empty-icon">🔍</div><p>Keine Geschenke entsprechen dem aktuellen Filter.</p></div>`;
+        html = `<div class="empty-state"><div class="empty-icon">🔍</div><p>${t('plugins.multicam.multicam.runtime.no_filtered_gifts', 'Keine Geschenke entsprechen dem aktuellen Filter.')}</p></div>`;
     }
 
     container.innerHTML = html;
@@ -289,12 +297,12 @@ function renderGiftCard(gift) {
                 <select class="gift-scene-picker ${isMapped ? 'mapped-option' : ''}"
                         data-gift-name="${gift.name}"
                         onchange="onSceneChange('${gift.name}', this.value)">
-                    <option value="">— Keine Zuordnung —</option>
+                    <option value="">${t('plugins.multicam.multicam.runtime.no_mapping', '— Keine Zuordnung —')}</option>
                     ${sceneOptions}
                 </select>
             </div>
             <div class="gift-coins-input">
-                <label>min. Coins:</label>
+                <label>${t('plugins.multicam.multicam.runtime.minimum_coins', 'Min. Coins:')}</label>
                 <input type="number" class="gift-min-coins"
                        data-gift-name="${gift.name}"
                        value="${minCoins}" min="0" step="1"
@@ -353,7 +361,9 @@ function updateSaveBar() {
     const changed = countChanges();
     document.getElementById('changeCount').textContent = changed;
     document.getElementById('mappedDisplay').textContent = mapped;
-    document.getElementById('saveStatus').textContent = changed > 0 ? '🟡 Ungespeicherte Änderungen' : '✅ Alle Änderungen gespeichert';
+    document.getElementById('saveStatus').textContent = changed > 0
+        ? t('plugins.multicam.multicam.runtime.unsaved_changes', '🟡 Ungespeicherte Änderungen')
+        : t('plugins.multicam.multicam.runtime.all_changes_saved', '✅ Alle Änderungen gespeichert');
     document.getElementById('saveStatus').className = 'save-status' + (changed > 0 ? '' : '');
 }
 
@@ -368,7 +378,7 @@ async function saveMappings() {
     const btn = document.getElementById('saveMappingsBtn');
     const status = document.getElementById('saveStatus');
     btn.disabled = true;
-    status.textContent = '⏳ Speichere...';
+    status.textContent = t('plugins.multicam.multicam.runtime.saving', '⏳ Speichere...');
     status.className = 'save-status';
 
     try {
@@ -388,24 +398,24 @@ async function saveMappings() {
         const data = await res.json();
         if (data.success) {
             originalMappings = JSON.parse(JSON.stringify(cleanMappings));
-            status.textContent = '✅ Gespeichert!';
+            status.textContent = t('plugins.multicam.multicam.runtime.saved', '✅ Gespeichert!');
             status.className = 'save-status';
             updateSaveBar();
             // Katalog neu rendern
             renderGiftCatalog();
         } else {
-            status.textContent = `❌ Fehler: ${data.error}`;
+            status.textContent = t('plugins.multicam.multicam.runtime.error', '❌ Fehler: {error}', { error: data.error });
             status.className = 'save-status error';
         }
     } catch (e) {
-        status.textContent = `❌ Fehler: ${e.message}`;
+        status.textContent = t('plugins.multicam.multicam.runtime.error', '❌ Fehler: {error}', { error: e.message });
         status.className = 'save-status error';
     }
     btn.disabled = false;
 }
 
 function resetMappings() {
-    if (!confirm('Alle nicht gespeicherten Änderungen verwerfen?')) return;
+    if (!confirm(t('plugins.multicam.multicam.runtime.discard_unsaved_changes', 'Alle nicht gespeicherten Änderungen verwerfen?'))) return;
     pendingMappings = JSON.parse(JSON.stringify(originalMappings));
     renderGiftCatalog();
     updateSaveBar();
@@ -432,7 +442,7 @@ async function executeHotButton(btn) {
             body: JSON.stringify({ action: btn.action, args: btn })
         });
         const data = await res.json();
-        if (!data.success) alert(`Fehler: ${data.error}`);
+        if (!data.success) alert(t('plugins.multicam.multicam.runtime.error', '❌ Fehler: {error}', { error: data.error }));
     } catch (e) {
         console.error('Hot button error:', e);
     }
@@ -443,7 +453,7 @@ async function connect() {
     try {
         const res = await fetch('/api/multicam/connect', { method: 'POST' });
         const data = await res.json();
-        if (!data.success) alert(`Verbindung fehlgeschlagen: ${data.error}`);
+        if (!data.success) alert(t('plugins.multicam.multicam.runtime.connection_failed', 'Verbindung fehlgeschlagen: {error}', { error: data.error }));
     } catch (e) {
         console.error('Connect error:', e);
     }
@@ -460,7 +470,7 @@ async function disconnect() {
 async function switchToSelected() {
     const select = document.getElementById('sceneSelect');
     const sceneName = select.value;
-    if (!sceneName) { alert('Bitte eine Szene wählen'); return; }
+    if (!sceneName) { alert(t('plugins.multicam.multicam.runtime.select_scene', 'Bitte eine Szene wählen')); return; }
     try {
         const res = await fetch('/api/multicam/action', {
             method: 'POST',
@@ -468,7 +478,7 @@ async function switchToSelected() {
             body: JSON.stringify({ action: 'switchScene', args: { target: sceneName } })
         });
         const data = await res.json();
-        if (!data.success) alert(`Fehler: ${data.error}`);
+        if (!data.success) alert(t('plugins.multicam.multicam.runtime.error', '❌ Fehler: {error}', { error: data.error }));
     } catch (e) {
         console.error('Switch error:', e);
     }
@@ -516,6 +526,20 @@ document.getElementById('sort-gifts').addEventListener('change', (e) => {
     currentSort = e.target.value;
     renderGiftCatalog();
 });
+
+function rerenderLocalizedUi() {
+    updateState(state);
+    renderGiftCatalog();
+    updateSaveBar();
+}
+
+if (window.i18n && typeof window.i18n.onChange === 'function') {
+    window.i18n.onChange(rerenderLocalizedUi);
+}
+
+if (window.i18n && typeof window.i18n.onLanguageChange === 'function') {
+    window.i18n.onLanguageChange(rerenderLocalizedUi);
+}
 
 // ===== INIT =====
 loadState();

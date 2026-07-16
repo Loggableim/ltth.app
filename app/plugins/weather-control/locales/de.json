@@ -1,6 +1,9 @@
 {
   "plugins": {
     "weather-control": {
+      "form_controls": {
+        "effect_search_placeholder": "z. B. rain, storm, heatwave"
+      },
       "weather_control": {
         "title": "Wetterkontrolle",
         "subtitle": "Stream-Wettereffekte",
@@ -25,7 +28,7 @@
           "snow": "Schnee",
           "storm": "Sturm",
           "fog": "Nebel",
-          "wind": "Wind",
+      "wind": "Windböen",
           "thunder": "Donner",
           "sunbeam": "Sonnenstrahl",
           "glitchclouds": "Glitch-Wolken",
@@ -121,7 +124,7 @@
           "enable": "Aktivieren",
           "allow_all": "Alle erlauben",
           "followers": "Follower",
-          "superfans": "Superfans",
+          "superfans": "Top-Fans",
           "subscribers": "Abonnenten",
           "team_members": "Teammitglieder",
           "min_team_level": "Mindest-Teamlevel",
@@ -152,11 +155,17 @@
           "title": "Geschenke",
           "description": "Geschenk-Zuordnung",
           "load_prompt": "Katalog laden",
-          "effect_label": "Wettereffect"
+          "effect_label": "Wettereffekt",
+          "no_mapping": "Keine Zuordnung",
+          "enabled": "Aktiviert",
+          "save": "Speichern",
+          "delete": "Löschen",
+          "delete_confirm": "Möchtest du diese Geschenkzuordnung wirklich löschen?"
         }
       },
       "buttons": {
         "preview_on": "Vorschau starten",
+        "preview_off": "Vorschau stoppen",
         "test_rain": "Regen testen",
         "stop_all": "Alle stoppen",
         "copy": "Kopieren",
@@ -193,16 +202,16 @@
           "heatwave": "Hitzewelle"
         },
         "intensity": "Intensität",
-        "duration_ms": "Duration ms",
-        "permanent_label": "Permanent label",
-        "permanent_help": "Permanent help",
-        "test_button": "Test button",
-        "fog_color": "Fog color",
-        "sunbeam_colortemp": "Sunbeam colortemp"
+        "duration_ms": "Dauer (ms)",
+        "permanent_label": "Dauerhaft",
+        "permanent_help": "Der Effekt läuft weiter, bis du ihn manuell stoppst.",
+        "test_button": "Effekt testen",
+        "fog_color": "Nebel-Farbvorlage",
+        "sunbeam_colortemp": "Farbtemperatur"
       },
       "labels": {
         "cool_moonlight": "Kühles Mondlicht",
-        "ultra_800": "Ultra – 800",
+        "ultra_800": "Ultraqualität – 800",
         "golden_hour": "Goldene Stunde",
         "import_config": "Konfiguration importieren",
         "audio_volume": "Audiolautstärke",
@@ -226,6 +235,8 @@
         "high_500": "Hoch – 500",
         "refresh_state": "Status aktualisieren",
         "rgb_shift": "RGB-Verschiebung",
+        "glitch_displacement": "Verschiebung",
+        "glitch_scanlines": "Abtastlinien",
         "action_fog_delay_0_intensity_0_35_duration": "[ {\"action\":\"fog\",\"delay\":0,\"intensity\":0.35,\"duration\":8000}, {\"action\":\"rain\",\"delay\":2000,\"intensity\":0.55,\"duration\":10000}, {\"action\":\"thunder\",\"delay\":5500,\"intensity\":0.8,\"duration\":5000} ]",
         "blood_red": "Blutrot",
         "reward_cooldown_ms": "Belohnungsabklingzeit (ms)",
@@ -252,12 +263,76 @@
         "effects": {
           "midday": "Mittag", "sunset": "Sonnenuntergang", "precipitation": "Niederschlag",
           "atmosphere": "Atmosph\u00e4re", "light": "Licht", "ambient": "Umgebung",
-          "impact": "Wirkung", "digital": "Digital", "direction": "Richtung", "layer": "Ebene"
+          "impact": "Wirkung", "digital": "Digitaler Effekt", "direction": "Richtung", "layer": "Ebene"
         },
         "actions": { "play": "Abspielen", "stopEffect": "Effekt stoppen", "stop": "Stopp" },
-        "advanced": { "title": "Erweitert" },
-        "triggers": { "effect": "Effekt", "intensity": "Intensit\u00e4t", "duration": "Dauer", "likeInterval": "Like-Intervall" },
+        "advanced": { "title": "Erweitert", "opacity": "Deckkraft", "particle_scale": "Partikelgröße", "wind": "Windstärke" },
+        "triggers": { "effect": "Effekt", "intensity": "Intensit\u00e4t", "duration": "Dauer", "likeInterval": "Like-Intervall", "follow": "Folgen", "share": "Teilen", "subscribe": "Abonnement", "likeMilestone": "Like-Meilenstein" },
         "active": { "noEffects": "Keine aktiven Effekte werden vom Overlay gemeldet." }
+      },
+      "status": {
+        "config_loaded": "Konfiguration erfolgreich geladen",
+        "error_loading_config": "Fehler beim Laden der Konfiguration: {error}",
+        "config_saved": "Konfiguration erfolgreich gespeichert!",
+        "error_saving_config": "Fehler beim Speichern der Konfiguration: {error}",
+        "saving_config": "Wird gespeichert...",
+        "overlay_copied": "Overlay-URL wurde in die Zwischenablage kopiert!",
+        "effect_triggered": "Effekt {effect} wurde ausgelöst!",
+        "effect_trigger_error": "Fehler beim Auslösen des Effekts: {error}",
+        "gift_catalog_loading": "Geschenkkatalog wird geladen...",
+        "gift_catalog_empty": "Der Geschenkkatalog ist leer. Verbinde zuerst einen TikTok-Stream.",
+        "gift_catalog_loaded": "Geschenkkatalog geladen: {count} Geschenke",
+        "gift_catalog_error": "Fehler beim Laden des Geschenkkatalogs: {error}",
+        "gift_catalog_updating": "Geschenkkatalog wird aktualisiert...",
+        "gift_catalog_updated": "Geschenkkatalog wurde aktualisiert",
+        "gift_mappings_refreshed": "Geschenkzuordnungen wurden aktualisiert",
+        "gift_mapping_saved": "Geschenkzuordnung gespeichert!",
+        "gift_mapping_deleted": "Geschenkzuordnung gelöscht!",
+        "gift_mapping_error": "Fehler beim Speichern der Zuordnung: {error}",
+        "select_effect": "Bitte wähle einen Wettereffekt",
+        "permanent_effects_active": "Dauerhafte Effekte aktiv: {effects}"
+      },
+      "runtime": {
+        "ui": {
+          "duration_ms": "Dauer: {duration} ms",
+          "effect_details": "Intensität {intensity} | Ebene {layer}",
+          "preview_effect": "{effect} wird in der Vorschau getestet",
+          "preview_stopped": "Alle Vorschau-Effekte wurden gestoppt",
+          "api_key_missing": "API-Schlüssel ist nicht konfiguriert. Prüfe die Einstellungen.",
+          "gift_cost": "{count} Diamanten | ID: {id}",
+          "invalid_sequence_json": "Die Sequenzschritte enthalten ungültiges JSON: {error}",
+          "reset_failed": "Die Gamification konnte nicht zurückgesetzt werden",
+          "overlay_url_unavailable": "Die Overlay-URL ist nicht verfügbar",
+          "presets": {
+            "cozy_rain": "Gemütlicher Regen",
+            "boss_storm": "Boss-Sturm",
+            "winter_chill": "Winterkälte",
+            "cyber_glitch": "Cyber-Glitch"
+          }
+        },
+        "overlay": {
+          "connected": "Verbunden",
+          "disconnected": "Verbindung getrennt",
+          "reconnected": "Erneut verbunden",
+          "connecting": "Verbindung wird hergestellt",
+          "reconnecting": "Wiederverbindung {attempt}",
+          "init_failed": "Initialisierung fehlgeschlagen: {error}",
+          "quest": "Aufgabe",
+          "reward": "Belohnung",
+          "next_reward": "{reward} @ {meter}",
+          "meter_disabled": "Messleiste deaktiviert",
+          "streak_disabled": "Serie deaktiviert",
+          "debug_title": "Weather-Control-Debug",
+          "debug_socket": "Verbindung: {status}",
+          "socket_connected": "verbunden",
+          "socket_disconnected": "getrennt",
+          "debug_fps": "FPS: {fps} / Ø {average}",
+          "debug_quality": "Qualität: {quality}",
+          "debug_particles": "Partikel: {count}",
+          "debug_active": "Aktiv: {effects}",
+          "debug_queue": "Warteschlange: {count}",
+          "debug_events": "Ereignisse: {count}"
+        }
       }
     }
   }

@@ -6,6 +6,10 @@ function localized(de, en, es, fr) {
   return { de, en, es, fr };
 }
 
+function controlLabel(control, locale) {
+  return control?.labels?.[locale] || control?.label || control?.selector || '';
+}
+
 function sourceAnchor(route, controls = [], integrations = []) {
   const integrationOrder = ['rest', 'socket-event', 'flow-action', 'chat-command', 'import-export', 'storage'];
   const integration = [...integrations].sort((left, right) => (
@@ -19,15 +23,91 @@ function sourceAnchor(route, controls = [], integrations = []) {
   };
 }
 
-function sourceControlReference(control, fallbackRoute, locale) {
+function sourceControlReference(control, fallbackRoute, locale, context = 'purpose') {
   if (!control) return '';
   const route = control.route || fallbackRoute;
-  const label = control.label || control.selector;
+  const label = controlLabel(control, locale);
+  const identity = `„${label}“ (${control.selector})`;
+  const englishIdentity = `“${label}” (${control.selector})`;
+  const values = String(control.values || '');
+  const toggle = values === 'checked, unchecked';
+  const range = /^-?\d+(?:\.\d+)?\s+to\s+-?\d+(?:\.\d+)?$/i.test(values);
+  const fixedChoices = values && values !== 'text or value shown in the control' && values !== 'not declared';
+  const purpose = {
+    de: control.kind === 'action'
+      ? `${identity} führt auf ${route} die zugehörige Produktaktion aus.`
+      : control.kind === 'link'
+        ? `${identity} öffnet auf ${route} den verknüpften Produktbereich.`
+        : toggle
+          ? `${identity} schaltet das zugehörige Verhalten auf ${route} ein oder aus.`
+          : range
+            ? `${identity} begrenzt den Eingabewert auf den deklarierten Bereich ${values}.`
+            : fixedChoices
+              ? `${identity} bietet auf ${route} diese statisch definierten Werte: ${values}.`
+              : `${identity} nimmt auf ${route} den für diese Plugin-Konfiguration benötigten Freitext oder Wert entgegen.`,
+    en: control.kind === 'action'
+      ? `${englishIdentity} runs the related product action on ${route}.`
+      : control.kind === 'link'
+        ? `${englishIdentity} opens the linked product area on ${route}.`
+        : toggle
+          ? `${englishIdentity} turns its related behaviour on or off on ${route}.`
+          : range
+            ? `${englishIdentity} limits input to the declared range ${values}.`
+            : fixedChoices
+              ? `${englishIdentity} offers these statically declared values on ${route}: ${values}.`
+              : `${englishIdentity} accepts the free-form value required by this plugin configuration on ${route}.`,
+    es: control.kind === 'action'
+      ? `«${label}» (${control.selector}) ejecuta la acción correspondiente del producto en ${route}.`
+      : control.kind === 'link'
+        ? `«${label}» (${control.selector}) abre el área vinculada del producto en ${route}.`
+        : toggle
+          ? `«${label}» (${control.selector}) activa o desactiva el comportamiento asociado en ${route}.`
+          : range
+            ? `«${label}» (${control.selector}) limita la entrada al intervalo declarado ${values}.`
+            : fixedChoices
+              ? `«${label}» (${control.selector}) ofrece en ${route} estos valores declarados estáticamente: ${values}.`
+              : `«${label}» (${control.selector}) acepta el valor libre necesario para esta configuración del plugin en ${route}.`,
+    fr: control.kind === 'action'
+      ? `« ${label} » (${control.selector}) exécute l’action produit associée sur ${route}.`
+      : control.kind === 'link'
+        ? `« ${label} » (${control.selector}) ouvre la zone produit liée sur ${route}.`
+        : toggle
+          ? `« ${label} » (${control.selector}) active ou désactive le comportement associé sur ${route}.`
+          : range
+            ? `« ${label} » (${control.selector}) limite la saisie à la plage déclarée ${values}.`
+            : fixedChoices
+              ? `« ${label} » (${control.selector}) propose sur ${route} ces valeurs déclarées statiquement : ${values}.`
+              : `« ${label} » (${control.selector}) accepte la valeur libre requise par cette configuration de plugin sur ${route}.`
+  };
   const references = {
-    de: `Quellinventar auf ${route}: "${label}" (${control.selector}).`,
-    en: `Source inventory on ${route}: "${label}" (${control.selector}).`,
-    es: `Inventario fuente en ${route}: "${label}" (${control.selector}).`,
-    fr: `Inventaire source sur ${route} : "${label}" (${control.selector}).`
+    de: context === 'dependencies'
+      ? `${identity} steht auf ${route} in dieser Konfigurationsansicht bereit; weitere statische Abhängigkeiten sind nicht deklariert.`
+      : control.kind === 'action'
+        ? `Mit ${identity} auf ${route} führst du die zugehörige Aktion aus.`
+        : control.kind === 'link'
+          ? `Über ${identity} auf ${route} öffnest du den verknüpften Bereich.`
+          : purpose.de,
+    en: context === 'dependencies'
+      ? `${englishIdentity} is available on ${route} in this configuration view; no additional static dependency is declared.`
+      : control.kind === 'action'
+        ? `Use ${englishIdentity} on ${route} to run its action.`
+        : control.kind === 'link'
+          ? `Use ${englishIdentity} on ${route} to open the linked area.`
+          : purpose.en,
+    es: context === 'dependencies'
+      ? `«${label}» (${control.selector}) está disponible en ${route} dentro de esta vista de configuración; no se declara otra dependencia estática.`
+      : control.kind === 'action'
+        ? `Usa «${label}» (${control.selector}) en ${route} para ejecutar la acción correspondiente.`
+        : control.kind === 'link'
+          ? `Usa «${label}» (${control.selector}) en ${route} para abrir el área vinculada.`
+          : purpose.es,
+    fr: context === 'dependencies'
+      ? `« ${label} » (${control.selector}) est disponible sur ${route} dans cette vue de configuration ; aucune autre dépendance statique n’est déclarée.`
+      : control.kind === 'action'
+        ? `Utilisez « ${label} » (${control.selector}) sur ${route} pour exécuter l’action correspondante.`
+        : control.kind === 'link'
+          ? `Utilisez « ${label} » (${control.selector}) sur ${route} pour ouvrir la zone associée.`
+          : purpose.fr
   };
   return references[locale];
 }
@@ -70,10 +150,10 @@ function localizedWorkflow(name, topic, test, overlay, anchor) {
         `Configurer ${name} dans le profil de test`
       ),
       summary: localized(
-        `Workflow-Referenz für ${topic.de}: ${sourceReference(anchor, 'de')}`,
-        `Workflow reference for ${topic.en}: ${sourceReference(anchor, 'en')}`,
-        `Referencia de flujo para ${topic.es}: ${sourceReference(anchor, 'es')}`,
-        `Référence du flux pour ${topic.fr} : ${sourceReference(anchor, 'fr')}`
+        `Der Golden Path für ${topic.de} beginnt auf ${anchor.route}; ${sourceReference(anchor, 'de')}`,
+        `The golden path for ${topic.en} starts on ${anchor.route}; ${sourceReference(anchor, 'en')}`,
+        `La ruta principal para ${topic.es} comienza en ${anchor.route}; ${sourceReference(anchor, 'es')}`,
+        `Le parcours principal pour ${topic.fr} commence sur ${anchor.route} ; ${sourceReference(anchor, 'fr')}`
       )
     },
     localTest: {
@@ -84,38 +164,65 @@ function localizedWorkflow(name, topic, test, overlay, anchor) {
         `Vérifier ${test.fr}`
       ),
       summary: localized(
-        `Prüfreferenz für diesen Ablauf: ${sourceReference(anchor, 'de')}`,
-        `Verification reference for this workflow: ${sourceReference(anchor, 'en')}`,
-        `Referencia de verificación para este flujo: ${sourceReference(anchor, 'es')}`,
-        `Référence de vérification pour ce flux : ${sourceReference(anchor, 'fr')}`
+        `Der lokale Test für ${topic.de} läuft auf ${anchor.route}; ${sourceReference(anchor, 'de')}`,
+        `The local test for ${topic.en} runs on ${anchor.route}; ${sourceReference(anchor, 'en')}`,
+        `La prueba local de ${topic.es} se realiza en ${anchor.route}; ${sourceReference(anchor, 'es')}`,
+        `Le test local de ${topic.fr} s’exécute sur ${anchor.route} ; ${sourceReference(anchor, 'fr')}`
       )
     },
     overlay: overlay ? {
       title: localized('Overlay sicher prüfen', 'Verify the overlay safely', 'Comprobar el overlay de forma segura', 'Vérifier l’overlay en sécurité'),
       summary: localized(
-        `Overlay-Referenz ${overlay}. ${sourceReference(anchor, 'de')}`,
-        `Overlay reference ${overlay}. ${sourceReference(anchor, 'en')}`,
-        `Referencia de overlay ${overlay}. ${sourceReference(anchor, 'es')}`,
-        `Référence d'overlay ${overlay}. ${sourceReference(anchor, 'fr')}`
+        `Für ${topic.de} führt die reale Overlay-URL ${overlay} zur lokalen Vorschau. ${sourceReference(anchor, 'de')}`,
+        `For ${topic.en}, the real overlay URL ${overlay} opens the local preview. ${sourceReference(anchor, 'en')}`,
+        `Para ${topic.es}, la URL real del overlay ${overlay} abre la vista previa local. ${sourceReference(anchor, 'es')}`,
+        `Pour ${topic.fr}, l’URL réelle de l’overlay ${overlay} ouvre l’aperçu local. ${sourceReference(anchor, 'fr')}`
       )
   } : null
   };
-}
-
-function valueForAllLocales(value) {
-  return Object.fromEntries(LOCALES.map((locale) => [locale, value]));
 }
 
 function hasStaticControlValue(value) {
   return typeof value === 'string' && !/^(?:text or value shown in the control|not declared)$/i.test(value);
 }
 
-function undeclaredControlValue(selector, route, kind) {
+function undeclaredControlValue(control, route, kind) {
+  const selector = control.selector;
+  const isDefault = kind === 'defaultValue';
   return localized(
-    `Kein statischer ${kind === 'defaultValue' ? 'Standardwert' : 'Optionswert'} für ${selector} auf ${route} im Quellmarkup deklariert.`,
-    `No static ${kind === 'defaultValue' ? 'default value' : 'option value'} is declared for ${selector} on ${route} in source markup.`,
-    `No se declara ningún ${kind === 'defaultValue' ? 'valor predeterminado' : 'valor de opción'} estático para ${selector} en ${route} en el marcado fuente.`,
-    `Aucune ${kind === 'defaultValue' ? 'valeur par défaut' : 'valeur d’option'} statique n'est déclarée pour ${selector} sur ${route} dans le balisage source.`
+    isDefault
+      ? `„${controlLabel(control, 'de')}“ (${selector}) auf ${route} startet ohne vorgegebenen Wert; lege ihn beim Einrichten fest.`
+      : `Für „${controlLabel(control, 'de')}“ (${selector}) auf ${route} gibt es keine feste Auswahlliste; verwende einen zur Einrichtung passenden Wert.`,
+    isDefault
+      ? `“${controlLabel(control, 'en')}” (${selector}) on ${route} starts without a preset value; choose it during setup.`
+      : `“${controlLabel(control, 'en')}” (${selector}) on ${route} has no fixed option list; use the value that fits your setup.`,
+    isDefault
+      ? `«${controlLabel(control, 'es')}» (${selector}) en ${route} se inicia sin un valor predefinido; establécelo durante la configuración.`
+      : `«${controlLabel(control, 'es')}» (${selector}) en ${route} no tiene una lista fija de opciones; usa el valor que encaje con tu configuración.`,
+    isDefault
+      ? `« ${controlLabel(control, 'fr')} » (${selector}) sur ${route} démarre sans valeur prédéfinie ; définissez-la pendant la configuration.`
+      : `« ${controlLabel(control, 'fr')} » (${selector}) sur ${route} ne propose pas de liste d’options fixe ; utilisez la valeur adaptée à votre configuration.`
+  );
+}
+
+function localizedControlValue(control, route, kind) {
+  const value = control[kind];
+  if (!hasStaticControlValue(value)) return undeclaredControlValue(control, route, kind);
+  const isDefault = kind === 'defaultValue';
+  const text = String(value);
+  return localized(
+    isDefault
+      ? `Vorgegebener Wert für „${controlLabel(control, 'de')}“ (${control.selector}) auf ${route}: „${text}“.`
+      : `Für „${controlLabel(control, 'de')}“ (${control.selector}) auf ${route} sind diese Werte vorgesehen: ${text}.`,
+    isDefault
+      ? `Preset value for “${controlLabel(control, 'en')}” (${control.selector}) on ${route}: “${text}”.`
+      : `Available values for “${controlLabel(control, 'en')}” (${control.selector}) on ${route}: ${text}.`,
+    isDefault
+      ? `Valor predefinido de «${controlLabel(control, 'es')}» (${control.selector}) en ${route}: «${text}».`
+      : `Valores disponibles para «${controlLabel(control, 'es')}» (${control.selector}) en ${route}: ${text}.`,
+    isDefault
+      ? `Valeur prédéfinie de « ${controlLabel(control, 'fr')} » (${control.selector}) sur ${route} : « ${text} ».`
+      : `Valeurs disponibles pour « ${controlLabel(control, 'fr')} » (${control.selector}) sur ${route} : ${text}.`
   );
 }
 
@@ -129,25 +236,22 @@ function workflowSettingFromStep(step, control = null, route) {
     selector: step.capture.assertVisible,
     kind: control?.kind || 'control',
     purpose: Object.fromEntries(LOCALES.map((locale) => [locale, sourceControlReference(sourceControl, route, locale)])),
-    defaultValue: hasStaticControlValue(control?.defaultValue)
-      ? valueForAllLocales(control.defaultValue)
-      : undeclaredControlValue(sourceControl.selector, route, 'defaultValue'),
-    values: hasStaticControlValue(control?.values)
-      ? valueForAllLocales(control.values)
-      : undeclaredControlValue(sourceControl.selector, route, 'values'),
-    dependencies: Object.fromEntries(LOCALES.map((locale) => [locale, sourceControlReference(sourceControl, route, locale)])),
+    defaultValue: localizedControlValue(sourceControl, route, 'defaultValue'),
+    values: localizedControlValue(sourceControl, route, 'values'),
+    dependencies: Object.fromEntries(LOCALES.map((locale) => [locale, sourceControlReference(sourceControl, route, locale, 'dependencies')])),
     stepId: step.id
   };
 }
 
-function integrationDescription(type, value) {
+function integrationDescription(type, value, method = null) {
+  const identifier = method ? `${method} ${value}` : value;
   const labels = {
-    rest: localized('Öffentlicher lokaler REST-Endpunkt aus dem Plugin-Code; der Guide sendet keine Anfrage.', 'Public local REST endpoint from the plugin code; the guide sends no request.', 'Endpoint REST local público del código del plugin; la guía no envía solicitudes.', 'Endpoint REST local public issu du code du plugin ; le guide n’envoie aucune requête.'),
-    'socket-event': localized('Socket-Ereignis, das im Plugin-Code registriert ist.', 'Socket event registered in the plugin code.', 'Evento de socket registrado en el código del plugin.', 'Événement socket enregistré dans le code du plugin.'),
-    'flow-action': localized('Flow-Aktion, die das Plugin für lokale Automatisierungen registriert.', 'Flow action registered by the plugin for local automations.', 'Acción de flujo registrada por el plugin para automatizaciones locales.', 'Action de flux enregistrée par le plugin pour les automatisations locales.'),
-    'chat-command': localized('Chat-Befehl, der vom Plugin-Code registriert wird.', 'Chat command registered by the plugin code.', 'Comando de chat registrado por el código del plugin.', 'Commande de chat enregistrée par le code du plugin.'),
-    storage: localized('Persistenzzugriff, der im Plugin-Code verwendet wird.', 'Persistence access used by the plugin code.', 'Acceso de persistencia usado por el código del plugin.', 'Accès de persistance utilisé par le code du plugin.'),
-    'import-export': localized('Import-/Export-Endpunkt aus dem Plugin-Code; im Guide nur als Referenz, nicht ausgeführt.', 'Import/export endpoint from the plugin code; reference only, never executed by the guide.', 'Endpoint de importación/exportación del código del plugin; solo referencia, la guía no lo ejecuta.', 'Endpoint d’import/export issu du code du plugin ; uniquement une référence, jamais exécutée par le guide.')
+    rest: localized(`Lokale REST-Referenz ${identifier}. Der Guide zeigt sie nur an und sendet keine Anfrage.`, `Local REST reference ${identifier}. The guide lists it only and sends no request.`, `Referencia REST local ${identifier}. La guía solo la muestra y no envía ninguna solicitud.`, `Référence REST locale ${identifier}. Le guide l’affiche uniquement et n’envoie aucune requête.`),
+    'socket-event': localized(`Socket-Ereignis ${identifier}. Es beschreibt ein vom Plugin registriertes Signal.`, `Socket event ${identifier}. It identifies a signal registered by the plugin.`, `Evento de socket ${identifier}. Identifica una señal registrada por el plugin.`, `Événement socket ${identifier}. Il identifie un signal enregistré par le plugin.`),
+    'flow-action': localized(`Flow-Aktion ${identifier}. Sie steht für lokale Automatisierungen bereit.`, `Flow action ${identifier}. It is available for local automations.`, `Acción de flujo ${identifier}. Está disponible para automatizaciones locales.`, `Action de flux ${identifier}. Elle est disponible pour les automatisations locales.`),
+    'chat-command': localized(`Chat-Befehl ${identifier}. Das Plugin verarbeitet ihn als registrierten Befehl.`, `Chat command ${identifier}. The plugin handles it as a registered command.`, `Comando de chat ${identifier}. El plugin lo procesa como un comando registrado.`, `Commande de chat ${identifier}. Le plugin la traite comme une commande enregistrée.`),
+    storage: localized(`Persistenzzugriff ${identifier}. Er wird für lokale Plugin-Daten verwendet.`, `Persistence access ${identifier}. It is used for local plugin data.`, `Acceso de persistencia ${identifier}. Se usa para datos locales del plugin.`, `Accès de persistance ${identifier}. Il est utilisé pour les données locales du plugin.`),
+    'import-export': localized(`Import-/Export-Referenz ${identifier}. Der Guide dokumentiert sie, führt sie aber nicht aus.`, `Import/export reference ${identifier}. The guide documents it but does not execute it.`, `Referencia de importación/exportación ${identifier}. La guía la documenta, pero no la ejecuta.`, `Référence d’import/export ${identifier}. Le guide la documente sans l’exécuter.`)
   };
   return labels[type] || localized(
     `Verifizierter Integrationswert aus dem Plugin-Code: ${value}.`,
@@ -174,32 +278,29 @@ function tutorialIntegrations(entries = []) {
   }).slice(0, 4);
 }
 
-function completeSettingReferences(steps, inventoryControls, controlBySelector, route) {
+function completeSettingReferences(steps, inventoryControls, controlBySelector, route, guideId) {
   const settings = new Map();
   for (const step of steps) {
     settings.set(step.capture.assertVisible, workflowSettingFromStep(step, controlBySelector.get(step.capture.assertVisible), route));
   }
   for (const control of inventoryControls) {
     if (settings.has(control.selector)) continue;
-    const sourceDefault = hasStaticControlValue(control.defaultValue)
-      ? valueForAllLocales(control.defaultValue)
-      : undeclaredControlValue(control.selector, route, 'defaultValue');
-    const sourceValues = hasStaticControlValue(control.values)
-      ? valueForAllLocales(control.values)
-      : undeclaredControlValue(control.selector, route, 'values');
+    if (inventoryControlException(guideId, control)) continue;
+    const sourceDefault = localizedControlValue(control, route, 'defaultValue');
+    const sourceValues = localizedControlValue(control, route, 'values');
     settings.set(control.selector, {
       selector: control.selector,
       kind: control.kind,
       purpose: Object.fromEntries(LOCALES.map((locale) => [locale, sourceControlReference(control, route, locale)])),
       defaultValue: sourceDefault,
       values: sourceValues,
-      dependencies: Object.fromEntries(LOCALES.map((locale) => [locale, sourceControlReference(control, route, locale)]))
+      dependencies: Object.fromEntries(LOCALES.map((locale) => [locale, sourceControlReference(control, route, locale, 'dependencies')]))
     });
   }
   return [...settings.values()];
 }
 
-function completeVisibleControls(steps, inventoryControls) {
+function completeVisibleControls(steps, inventoryControls, guideId) {
   const controls = new Map();
   for (const step of steps) {
     controls.set(step.capture.assertVisible, {
@@ -211,11 +312,14 @@ function completeVisibleControls(steps, inventoryControls) {
   }
   for (const control of inventoryControls) {
     if (controls.has(control.selector)) continue;
+    const exception = inventoryControlException(guideId, control);
     controls.set(control.selector, {
       selector: control.selector,
-      classification: 'documented',
-      section: 'guide-settings',
-      stepId: 'guide-settings'
+      ...(exception || {
+        classification: 'documented',
+        section: 'guide-settings',
+        stepId: 'guide-settings'
+      })
     });
   }
   return [...controls.values()];
@@ -231,23 +335,89 @@ function completeIntegrations(entries = []) {
   });
 }
 
-function localizedTroubleshooting(anchor) {
-  const text = (locale) => sourceReference(anchor, locale);
+const INTERNAL_INVENTORY_CONTROLS = new Set([
+  'config-import:#impUserConfigs',
+  'store-admin:#window-close-btn',
+  'store-admin:#window-maximize-btn',
+  'store-admin:#window-minimize-btn',
+  'music-bot:#request-input',
+  'milestone-leaderboard:#audioInput',
+  'milestone-leaderboard:#gifInput',
+  'milestone-leaderboard:#tierAudioInput',
+  'milestone-leaderboard:#tierVideoInput',
+  'milestone-leaderboard:#videoInput'
+]);
+
+const DECORATIVE_INVENTORY_CONTROLS = new Set([
+  'gift-catalog:#preset-de',
+  'gift-catalog:#preset-jp',
+  'gift-catalog:#preset-us',
+  'fireworks:#add-color',
+  'gcce:#media-url-input',
+  'gcce:#rotator-accent-color',
+  'gcce:#rotator-bg-color',
+  'game-engine:#test-bet-slider',
+  'stt-ticker:#overlay-url',
+  'tts:#modalVolumeGainInput'
+]);
+
+function inventoryControlException(guideId, control) {
+  const key = `${guideId}:${control.selector}`;
+  if (INTERNAL_INVENTORY_CONTROLS.has(key)) {
+    return {
+      classification: 'internal',
+      section: 'guide-controls',
+      reason: localized(
+        'Technisches oder im Browser verborgenes Eingabeelement; die sichtbare Bedienung ist separat beschriftet.',
+        'Technical or browser-hidden input; its visible operation is labeled separately.',
+        'Elemento de entrada técnico u oculto en el navegador; su operación visible se etiqueta por separado.',
+        'Élément de saisie technique ou masqué dans le navigateur ; son opération visible est libellée séparément.'
+      )
+    };
+  }
+  if (DECORATIVE_INVENTORY_CONTROLS.has(key)) {
+    return {
+      classification: 'decorative',
+      section: 'guide-controls',
+      reason: localized(
+        'Technischer Wert, Regionscode oder Symbol; keine eigenständige einstellbare Funktion.',
+        'Technical value, region code, or symbol; not an independently configurable function.',
+        'Valor técnico, código regional o símbolo; no es una función configurable independiente.',
+        'Valeur technique, code régional ou symbole ; ce n’est pas une fonction configurable indépendante.'
+      )
+    };
+  }
+  return null;
+}
+
+function localizedTroubleshooting(copy, anchor) {
+  const resolution = {
+    de: `Öffne ${anchor.route}, prüfe den im Symptom genannten Zustand und wiederhole anschließend den lokalen Test. ${sourceReference(anchor, 'de')}`,
+    en: `Open ${anchor.route}, verify the state named in the symptom, then repeat the local test. ${sourceReference(anchor, 'en')}`,
+    es: `Abre ${anchor.route}, verifica el estado indicado en el síntoma y repite la prueba local. ${sourceReference(anchor, 'es')}`,
+    fr: `Ouvrez ${anchor.route}, vérifiez l’état cité dans le symptôme, puis répétez le test local. ${sourceReference(anchor, 'fr')}`
+  };
   return {
-    symptom: localized(
-      'Quellreferenz der lokalen Konfiguration prüfen.',
-      'Review the local configuration source reference.',
-      'Revisa la referencia fuente de la configuración local.',
-      'Vérifiez la référence source de la configuration locale.'
-    ),
+    symptom: Object.fromEntries(LOCALES.map((locale) => [locale, copy[locale].troubleshooting])),
     checks: Object.fromEntries(LOCALES.map((locale) => [locale, [sourceReference(anchor, locale)] ])),
-    resolution: Object.fromEntries(LOCALES.map((locale) => [locale, text(locale)]))
+    resolution
   };
 }
 
 function createGuideDefinition({ name, version, entry, copy, steps, overlay, inventory = { controls: [] }, integrationInventory = { integrations: [] } }) {
   const localTestSteps = steps.filter((step) => ['run-local-preview', 'save-demo-config'].includes(step.capture.action.type)).map((step) => step.id);
-  const overlaySteps = steps.filter((step) => step.capture.action.type === 'open-overlay-preview').map((step) => step.id);
+  const overlaySteps = [...new Set([
+    ...steps.filter((step) => step.capture.action.type === 'open-overlay-preview').map((step) => step.id),
+    ...(entry.overlayWorkflowStepIds || [])
+  ])];
+  for (const stepId of overlaySteps) {
+    if (!steps.some((step) => step.id === stepId)) {
+      throw new Error(`${entry.id || name} declares unknown overlay workflow step ${stepId}`);
+    }
+  }
+  if (overlay && !overlaySteps.length) {
+    throw new Error(`${entry.id || name} declares an overlay without a source-backed workflow step`);
+  }
   const inventoryControls = inventory.controls || [];
   const controlBySelector = new Map(inventoryControls.map((control) => [control.selector, control]));
   const integrations = completeIntegrations(integrationInventory.integrations);
@@ -255,8 +425,8 @@ function createGuideDefinition({ name, version, entry, copy, steps, overlay, inv
   const workflows = localizedWorkflow(name, entry.topic, entry.test, overlay, anchor);
   // The reference is derived from the shipped surface instead of silently
   // dropping controls or interfaces that the shorter golden path omits.
-  const settingsReference = completeSettingReferences(steps, inventoryControls, controlBySelector, entry.route);
-  const visibleControls = completeVisibleControls(steps, inventoryControls);
+  const settingsReference = completeSettingReferences(steps, inventoryControls, controlBySelector, entry.route, entry.id);
+  const visibleControls = completeVisibleControls(steps, inventoryControls, entry.id);
 
   return {
     metadata: {
@@ -291,30 +461,30 @@ function createGuideDefinition({ name, version, entry, copy, steps, overlay, inv
         type: 'local-surface',
         value: entry.route,
         description: localized(
-          'Lokale Konfigurationsoberfläche im isolierten Testprofil.',
-          'Local configuration surface in the isolated test profile.',
-          'Superficie de configuración local en el perfil de prueba aislado.',
-          'Surface de configuration locale dans le profil de test isolé.'
+          `Lokale Konfigurationsoberfläche ${entry.route} im isolierten Testprofil.`,
+          `Local configuration surface ${entry.route} in the isolated test profile.`,
+          `Superficie de configuración local ${entry.route} en el perfil de prueba aislado.`,
+          `Surface de configuration locale ${entry.route} dans le profil de test isolé.`
         )
       },
       ...(overlay ? [{
         type: 'overlay-url',
         value: overlay,
         description: localized(
-          'Lokale Overlay-URL für eine temporäre Browserquelle.',
-          'Local overlay URL for a temporary browser source.',
-          'URL de overlay local para una fuente de navegador temporal.',
-          'URL d’overlay locale pour une source navigateur temporaire.'
+          `Lokale Overlay-URL ${overlay} für eine temporäre Browserquelle.`,
+          `Local overlay URL ${overlay} for a temporary browser source.`,
+          `URL de overlay local ${overlay} para una fuente de navegador temporal.`,
+          `URL d’overlay locale ${overlay} pour une source navigateur temporaire.`
         )
       }] : []),
       ...integrations.map((integration) => ({
         type: integration.type,
         value: integration.value,
         ...(integration.method ? { method: integration.method } : {}),
-        description: integrationDescription(integration.type, integration.value)
+        description: integrationDescription(integration.type, integration.value, integration.method)
       }))
     ],
-    troubleshooting: [localizedTroubleshooting(anchor)],
+    troubleshooting: [localizedTroubleshooting(copy, anchor)],
     visibleControls
   };
 }

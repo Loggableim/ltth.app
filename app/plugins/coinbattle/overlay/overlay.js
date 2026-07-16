@@ -21,6 +21,17 @@
       .replace(/'/g, '&#039;');
   }
 
+  function translateOverlay(key, fallback, params = {}) {
+    const fullKey = `plugins.coinbattle.${key}`;
+    const translated = window.i18n?.t?.(fullKey, params);
+    if (translated && translated !== fullKey) {
+      return translated;
+    }
+    return fallback.replace(/\{(\w+)\}/g, (match, name) => (
+      Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+  }
+
   // Socket.io connection
   const socket = io();
 
@@ -47,7 +58,10 @@
     teamScores: null,
     multiplier: { active: false },
     previousLeaderboard: [],
-    teamNames: { red: { name: 'RED TEAM', imageUrl: null }, blue: { name: 'BLUE TEAM', imageUrl: null } }
+    teamNames: {
+      red: { name: translateOverlay('runtime.overlay.red_team', 'RED TEAM'), imageUrl: null },
+      blue: { name: translateOverlay('runtime.overlay.blue_team', 'BLUE TEAM'), imageUrl: null }
+    }
   };
 
   // Pyramid state
@@ -330,7 +344,10 @@
   function handleMatchState(state) {
     // Preserve previousLeaderboard when updating state
     const previousLeaderboard = currentState.previousLeaderboard || [];
-    const previousTeamNames = currentState.teamNames || { red: { name: 'RED TEAM', imageUrl: null }, blue: { name: 'BLUE TEAM', imageUrl: null } };
+    const previousTeamNames = currentState.teamNames || {
+      red: { name: translateOverlay('runtime.overlay.red_team', 'RED TEAM'), imageUrl: null },
+      blue: { name: translateOverlay('runtime.overlay.blue_team', 'BLUE TEAM'), imageUrl: null }
+    };
     currentState = state;
     currentState.previousLeaderboard = currentState.previousLeaderboard || previousLeaderboard;
     currentState.teamNames = currentState.teamNames || previousTeamNames;
@@ -465,8 +482,8 @@
     const blueImageEl = document.getElementById('team-blue-image');
     
     if (currentState.teamNames && redNameEl && blueNameEl && redImageEl && blueImageEl) {
-      redNameEl.textContent = currentState.teamNames.red.name || 'RED TEAM';
-      blueNameEl.textContent = currentState.teamNames.blue.name || 'BLUE TEAM';
+      redNameEl.textContent = currentState.teamNames.red.name || translateOverlay('runtime.overlay.red_team', 'RED TEAM');
+      blueNameEl.textContent = currentState.teamNames.blue.name || translateOverlay('runtime.overlay.blue_team', 'BLUE TEAM');
       
       if (currentState.teamNames.red.imageUrl) {
         redImageEl.src = currentState.teamNames.red.imageUrl;
@@ -525,7 +542,7 @@
         }
         const avatarImg = avatarContainer.querySelector('.team-player-avatar');
         if (avatarImg) {
-          avatarImg.title = player.nickname || player.unique_id || 'Unknown';
+          avatarImg.title = player.nickname || player.unique_id || translateOverlay('runtime.overlay.unknown_player', 'Unknown');
           container.appendChild(avatarImg);
         }
       } catch (error) {
@@ -545,7 +562,10 @@
    */
   function updateTeamNames(data) {
     if (!currentState.teamNames) {
-      currentState.teamNames = { red: { name: 'RED TEAM', imageUrl: null }, blue: { name: 'BLUE TEAM', imageUrl: null } };
+      currentState.teamNames = {
+        red: { name: translateOverlay('runtime.overlay.red_team', 'RED TEAM'), imageUrl: null },
+        blue: { name: translateOverlay('runtime.overlay.blue_team', 'BLUE TEAM'), imageUrl: null }
+      };
     }
     
     if (data.team === 'red') {
@@ -833,7 +853,7 @@
     if (data.badges && data.badges.length > 0) {
       const badge = data.badges[0];
       icon.textContent = badge.icon || '🏆';
-      title.textContent = 'Achievement Unlocked!';
+      title.textContent = translateOverlay('runtime.overlay.achievement_unlocked', 'Achievement Unlocked!');
       name.textContent = badge.name;
 
       container.style.display = 'block';
@@ -855,7 +875,9 @@
     let winner = null;
     if (data.winner && data.winner.winner_team) {
       // Team winner
-      winnerName.textContent = `${data.winner.winner_team.toUpperCase()} TEAM WINS!`;
+      winnerName.textContent = translateOverlay('runtime.overlay.team_wins', '{team} TEAM WINS!', {
+        team: data.winner.winner_team.toUpperCase()
+      });
       winnerCoins.textContent = data.winner.winner_team === 'red' 
         ? data.teamScores.red.toLocaleString()
         : data.teamScores.blue.toLocaleString();
@@ -1051,7 +1073,7 @@
       // Name (escaped via textContent)
       const nameDiv = document.createElement('div');
       nameDiv.className = 'koth-king-name';
-      nameDiv.textContent = king.nickname || king.unique_id || 'Unknown';
+      nameDiv.textContent = king.nickname || king.unique_id || translateOverlay('runtime.overlay.unknown_player', 'Unknown');
       kingContainer.appendChild(nameDiv);
       
       // Coins
@@ -1085,7 +1107,7 @@
       // Name (escaped via textContent)
       const nameDiv = document.createElement('div');
       nameDiv.className = 'koth-challenger-name';
-      nameDiv.textContent = challenger.nickname || challenger.unique_id || 'Unknown';
+      nameDiv.textContent = challenger.nickname || challenger.unique_id || translateOverlay('runtime.overlay.unknown_player', 'Unknown');
       infoDiv.appendChild(nameDiv);
       
       // Coins
@@ -1427,7 +1449,7 @@
     // Name
     const nameEl = document.createElement('div');
     nameEl.className = 'pyramid-name';
-    nameEl.textContent = player.nickname || player.uniqueId || 'Unknown';
+    nameEl.textContent = player.nickname || player.uniqueId || translateOverlay('runtime.overlay.unknown_player', 'Unknown');
     slotEl.appendChild(nameEl);
     
     // Score
@@ -1536,7 +1558,9 @@
     
     const textEl = knockoutEl.querySelector('.knockout-text');
     if (textEl && data.newLeader) {
-      textEl.textContent = `🥊 ${data.newLeader.nickname} TAKES THE LEAD!`;
+      textEl.textContent = translateOverlay('runtime.overlay.takes_lead', '🥊 {nickname} TAKES THE LEAD!', {
+        nickname: data.newLeader.nickname
+      });
     }
     
     knockoutEl.style.display = 'block';
@@ -1580,7 +1604,7 @@
     
     const winnerStats = container.querySelector('.winner-stats');
     
-    winnerName.textContent = winner.nickname || winner.uniqueId || 'Winner';
+    winnerName.textContent = winner.nickname || winner.uniqueId || translateOverlay('runtime.overlay.winner', 'Winner');
     winnerCoins.textContent = formatPoints(winner.points || 0);
     
     // Add XP display if XP rewards are enabled and winner has XP
@@ -1596,7 +1620,7 @@
       // Create elements safely to prevent XSS
       const labelSpan = document.createElement('span');
       labelSpan.className = 'stat-label';
-      labelSpan.textContent = 'XP Earned:';
+      labelSpan.textContent = translateOverlay('runtime.overlay.xp_earned', 'XP Earned:');
       
       const valueSpan = document.createElement('span');
       valueSpan.className = 'stat-value';
@@ -1717,22 +1741,22 @@
         entry.style.animationDelay = `${index * 0.5}s`;
         
         const placement = winner.placement || (index + 1);
-        const placementText = placement === 1 ? '🥇 1ST PLACE' : 
-                             placement === 2 ? '🥈 2ND PLACE' :
-                             placement === 3 ? '🥉 3RD PLACE' :
+        const placementText = placement === 1 ? translateOverlay('runtime.overlay.first_place', '🥇 1ST PLACE') :
+                             placement === 2 ? translateOverlay('runtime.overlay.second_place', '🥈 2ND PLACE') :
+                             placement === 3 ? translateOverlay('runtime.overlay.third_place', '🥉 3RD PLACE') :
                              `#${placement}`;
         
         entry.innerHTML = `
           <div class="credits-placement">${placementText}</div>
-          <div class="credits-name">${escapeHtml(winner.nickname || winner.uniqueId || 'Player')}</div>
+          <div class="credits-name">${escapeHtml(winner.nickname || winner.uniqueId || translateOverlay('runtime.overlay.player', 'Player'))}</div>
           <div class="credits-stats">
             <div class="credits-stat">
-              <span class="credits-stat-label">Coins:</span>
+              <span class="credits-stat-label">${escapeHtml(translateOverlay('runtime.overlay.coins_label', 'Coins:'))}</span>
               <span class="credits-stat-value">${(winner.coins || 0).toLocaleString()}</span>
             </div>
             ${winner.team ? `
               <div class="credits-stat">
-                <span class="credits-stat-label">Team:</span>
+                <span class="credits-stat-label">${escapeHtml(translateOverlay('runtime.overlay.team_label', 'Team:'))}</span>
                 <span class="credits-stat-value">${escapeHtml(winner.team.toUpperCase())}</span>
               </div>
             ` : ''}
@@ -1795,11 +1819,11 @@
       
       // Set title based on type
       const titles = {
-        weekly: '📅 WEEKLY LEADERBOARD',
-        season: '🏅 SEASON LEADERBOARD',
-        lifetime: '🏆 LIFETIME LEADERBOARD'
+        weekly: translateOverlay('runtime.overlay.weekly_leaderboard', '📅 WEEKLY LEADERBOARD'),
+        season: translateOverlay('runtime.overlay.season_leaderboard', '🏅 SEASON LEADERBOARD'),
+        lifetime: translateOverlay('runtime.overlay.lifetime_leaderboard', '🏆 LIFETIME LEADERBOARD')
       };
-      titleEl.textContent = titles[type] || '🏆 LEADERBOARD';
+      titleEl.textContent = titles[type] || translateOverlay('runtime.overlay.leaderboard', '🏆 LEADERBOARD');
       
       // Fetch leaderboard data based on type
       let leaderboard = [];
@@ -1842,7 +1866,7 @@
         const noDataMsg = document.createElement('div');
         noDataMsg.className = 'post-match-lb-entry';
         noDataMsg.style.justifyContent = 'center';
-        noDataMsg.innerHTML = '<div class="post-match-lb-name">No data available</div>';
+        noDataMsg.innerHTML = `<div class="post-match-lb-name">${escapeHtml(translateOverlay('runtime.overlay.no_data', 'No data available'))}</div>`;
         listEl.appendChild(noDataMsg);
       } else {
         // Create entries
@@ -1863,7 +1887,7 @@
             <div class="post-match-lb-rank ${rankClass}">${rankEmoji}</div>
             <div class="post-match-lb-player">
               ${profilePicHtml}
-              <div class="post-match-lb-name">${escapeHtml(player.nickname || player.unique_id || 'Player')}</div>
+              <div class="post-match-lb-name">${escapeHtml(player.nickname || player.unique_id || translateOverlay('runtime.overlay.player', 'Player'))}</div>
             </div>
             <div class="post-match-lb-score">${(player.coins || player.total_coins || 0).toLocaleString()}</div>
           `;

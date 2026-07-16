@@ -1,6 +1,9 @@
 {
   "plugins": {
     "flame-overlay": {
+      "form_controls": {
+        "visual_fx_preview_title": "Vista previa del marco Visual FX"
+      },
       "flame_overlay": {
         "plugin": {
           "name": "Marco de efectos visuales",
@@ -22,13 +25,51 @@
             "loading": "Cargando …",
             "connected": "Conectado",
             "disconnected": "Desconectado",
-            "error": "Error"
+            "error": "Se produjo un error"
           },
           "messages": {
             "saved": "Ajustes guardados.",
             "failed": "No se pudieron guardar los ajustes.",
             "noData": "No hay datos disponibles.",
-            "confirm": "¿Seguro que quieres continuar?"
+            "confirm": "¿Seguro que quieres continuar?",
+            "giftCatalogLoading": "Cargando el catálogo de regalos…",
+            "giftCatalogFailed": "No se pudo cargar el catálogo de regalos.",
+            "giftCatalogRefreshing": "Actualizando el catálogo de regalos…",
+            "giftCatalogUnavailable": "No hay ningún catálogo de regalos disponible. Conecta una transmisión de TikTok y actualízalo.",
+            "giftCatalogNoResults": "No hay regalos que coincidan con esta búsqueda.",
+            "giftRuleAdded": "Se añadió una regla de regalo para {name}.",
+            "coinRuleAdded": "Se añadió la regla de monedas {range}.",
+            "triggerRulesSaved": "✅ Reglas de activación guardadas.",
+            "errorWithReason": "❌ Se produjo un error: {reason}",
+            "saveFailed": "❌ No se pudo guardar: {reason}",
+            "presetActivated": "✅ Preajuste '{name}' activado",
+            "presetFailed": "❌ Error de preajuste: {reason}",
+            "testNoEffect": "La prueba '{triggerType}' no tuvo efecto: {reason}",
+            "testFailed": "❌ Error de prueba: {reason}",
+            "testSent": "🧪 Se envió el activador de prueba '{triggerType}'",
+            "noMatchingRule": "no hay ninguna regla coincidente",
+            "stopFailed": "Error al detener: {reason}",
+            "triggersStopped": "Se detuvieron los efectos de superposición activos",
+            "triggerCount": "{count} activos",
+            "noTriggersYet": "Aún no se ha activado ningún disparador",
+            "previewStart": "▶️ Iniciar vista previa",
+            "previewStop": "⏸️ Detener vista previa",
+            "framePositionUpdated": "✅ Posición del marco actualizada.",
+            "unknownError": "Error desconocido",
+            "configLoaded": "Configuración cargada",
+            "configLoadFailed": "No se pudo cargar la configuración: {reason}",
+            "settingsSaved": "✅ Ajustes guardados.",
+            "settingsSaveFailed": "No se pudieron guardar los ajustes: {reason}",
+            "presetNameRequired": "❌ Introduce primero un nombre para el preajuste.",
+            "presetSaved": "✅ Preajuste \"{name}\" guardado.",
+            "presetLoaded": "✅ Preajuste \"{name}\" cargado.",
+            "presetDeleted": "✅ Preajuste \"{name}\" eliminado.",
+            "presetDeleteConfirm": "¿Eliminar el preajuste \"{name}\"?",
+            "presetSavedOn": "Guardado el {date}",
+            "unlabeledGift": "Regalo sin nombre",
+            "coinsLabel": "{coins} monedas",
+            "valuePixels": "{value} píxeles",
+            "removeTriggerRule": "Eliminar regla de activación"
           },
           "metrics": {
             "profile": "Perfil",
@@ -46,12 +87,14 @@
             "obsSafe": "Seguro para OBS",
             "custom": "Personalizado",
             "top": "Arriba",
-            "bottom": "Abajo"
+            "bottom": "Abajo",
+            "anyCondition": "Cualquier condición"
           },
           "settings": {
             "accentColor": "Color de acento:",
             "animationEasing": "Suavizado de animaci\u00f3n:",
-            "smokeColor": "Color del humo:"
+            "smokeColor": "Color del humo:",
+            "frameThickness": "Grosor del marco:"
           },
           "trigger": {
             "preset": "Preajuste:",
@@ -61,18 +104,52 @@
             "partyPreset": "Fiesta",
             "coinRule": "Regla de monedas"
           },
+          "events": {
+            "gift": "Regalo",
+            "follow": "Seguir",
+            "like": "Me gusta",
+            "share": "Compartir",
+            "chat": "Chat",
+            "subscribe": "Suscripción"
+          },
+          "triggerActions": {
+            "flash": "Destello",
+            "pulse": "Pulso",
+            "intensity-boost": "Aumentar intensidad",
+            "color-change": "Cambiar color",
+            "color-flash": "Destello de color",
+            "effect-switch": "Cambiar efecto",
+            "dramatic": "Efecto dramático"
+          },
+          "effects": {
+            "flames": "Llamas",
+            "particles": "Partículas",
+            "energy": "Ondas de energía",
+            "lightning": "Relámpago"
+          },
+          "sections": {
+            "base": "Fundamento",
+            "accent": "Acento",
+            "impact": "Impacto",
+            "rules": "Reglas",
+            "actions": "Acciones"
+          },
+          "aria": {
+            "toolbar": "Ajustes de efectos visuales"
+          },
           "table": {
             "enabled": "Activo",
             "event": "Evento",
             "condition": "Condici\u00f3n",
             "action": "Acci\u00f3n",
             "effect": "Efecto",
-            "color": "Color"
+            "color": "Color de efecto"
           },
           "presets": {
             "empty": "A\u00fan no hay preajustes guardados.",
             "load": "\ud83d\udcc2 Cargar",
-            "deleteTitle": "Eliminar preajuste"
+            "deleteTitle": "Eliminar preajuste",
+            "deleteLabel": "Eliminar el preajuste {name}"
           },
           "placeholders": {
             "presetName": "Nombre del preajuste (por ejemplo, modo Hype)",
@@ -274,6 +351,20 @@
         "farbverschiebung_an_kanten_retro_kamera_effekt": "Cambio de color en los bordes (efecto de cámara retro)",
         "geschwindigkeit_der_rauch_animation": "Velocidad de animación de humo.",
         "chat_farbbefehle_aktivieren": "Habilitar comandos de color del chat"
+      },
+      "form_controls": {
+        "visual_fx_preview_title": "Vista previa de Visual FX Frame",
+        "labels": {
+          "flame_brightness": "Brillo: ",
+          "edge_feather": "Suavizado de bordes: ",
+          "frame_noise_amount": "Ruido del marco: ",
+          "pulse_speed": "Velocidad de pulso: ",
+          "bloom_threshold": "Umbral de bloom: ",
+          "bloom_radius": "Radio de bloom: ",
+          "layer_parallax": "Efecto de paralaje: ",
+          "smoke_speed": "Velocidad del humo: ",
+          "trigger_cooldown": "Tiempo de espera del activador: "
+        }
       }
     }
   }

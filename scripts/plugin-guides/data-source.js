@@ -318,26 +318,26 @@ module.exports = Object.freeze({
       "id": "field-map",
       "copy": {
         "de": {
-          "title": "Field MAP: lokale TikFinity-Quelle auswaehlen",
-          "body": "Klicke auf die echte Karte „TikFinity“. Das waehlt nur die lokale WebSocket-Quelle im isolierten Testprofil; es stellt keine TikTok- oder externe Verbindung her. Für Data Source Manager prüft dieser Schritt ausdrücklich „Field MAP: lokale TikFinity-Quelle auswaehlen“.",
+          "title": "Field MAP: TikFinity-Felder und lokalen Port pruefen",
+          "body": "Pruefe die sichtbaren TikFinity-Felder und den lokalen Port im vorbereiteten Testprofil. Dieser Schritt aendert keine Quelle und stellt keine TikTok- oder externe Verbindung her.",
           "expected": "Die TikFinity-Einstellungen und der lokale Port sind sichtbar und koennen ohne Verbindung geprueft werden.",
-          "alt": "Field MAP: lokale TikFinity-Quelle auswaehlen - Datenquelle, Feldzuordnung und Aktualisierungsintervall"
+          "alt": "Field MAP: TikFinity-Felder und lokalen Port pruefen - Datenquelle, Feldzuordnung und Aktualisierungsintervall"
         },
         "en": {
-          "title": "Select the local TikFinity source for Field MAP",
-          "body": "Click the real “TikFinity” card. It selects only the local WebSocket source in the isolated test profile; it does not connect to TikTok or any external service. For Data Source Manager, this step explicitly verifies “Select the local TikFinity source for Field MAP”.",
+          "title": "Review TikFinity fields and the local port for Field MAP",
+          "body": "Review the visible TikFinity fields and local port in the prepared test profile. This step changes no source and does not connect to TikTok or any external service.",
           "expected": "The TikFinity settings and local port are visible and can be reviewed without connecting.",
-          "alt": "Select the local TikFinity source for Field MAP - data source, field mapping, and refresh interval"
+          "alt": "Review TikFinity fields and the local port for Field MAP - data source, field mapping, and refresh interval"
         },
         "es": {
-          "title": "Selecciona la fuente local TikFinity para Field MAP",
-          "body": "Haz clic en la tarjeta real «TikFinity». Solo selecciona la fuente WebSocket local del perfil aislado; no conecta con TikTok ni con un servicio externo. Para Data Source Manager, este paso comprueba expresamente «Selecciona la fuente local TikFinity para Field MAP».",
+          "title": "Revisa los campos TikFinity y el puerto local para Field MAP",
+          "body": "Revisa los campos TikFinity visibles y el puerto local en el perfil de prueba preparado. Este paso no cambia ninguna fuente ni conecta con TikTok o un servicio externo.",
           "expected": "Los ajustes de TikFinity y el puerto local quedan visibles y pueden revisarse sin conectar.",
           "alt": "Selecciona la fuente local TikFinity para Field MAP - fuente de datos, asignación de campos e intervalo de actualización"
         },
         "fr": {
-          "title": "Selectionnez la source TikFinity locale pour Field MAP",
-          "body": "Cliquez sur la vraie carte « TikFinity ». Elle selectionne uniquement la source WebSocket locale dans le profil isole ; elle ne se connecte ni a TikTok ni a un service externe. Pour Data Source Manager, cette étape vérifie explicitement « Selectionnez la source TikFinity locale pour Field MAP ».",
+          "title": "Verifiez les champs TikFinity et le port local pour Field MAP",
+          "body": "Verifiez les champs TikFinity visibles et le port local dans le profil de test prepare. Cette etape ne modifie aucune source et ne se connecte ni a TikTok ni a un service externe.",
           "expected": "Les reglages TikFinity et le port local sont visibles et peuvent etre verifies sans connexion.",
           "alt": "Selectionnez la source TikFinity locale pour Field MAP - source de données, mappage des champs et intervalle de mise à jour"
         }
@@ -346,16 +346,15 @@ module.exports = Object.freeze({
         "route": "/plugins/data-source/ui.html",
         "assertVisible": "#tikfinity-port",
         "focusText": {
-          "de": "Field MAP: lokale TikFinity-Quelle auswaehlen",
-          "en": "Select the local TikFinity source for Field MAP",
-          "es": "Selecciona la fuente local TikFinity para Field MAP",
-          "fr": "Selectionnez la source TikFinity locale pour Field MAP"
+          "de": "Field MAP: TikFinity-Felder und lokalen Port pruefen",
+          "en": "Review TikFinity fields and the local port for Field MAP",
+          "es": "Revisa los campos TikFinity y el puerto local para Field MAP",
+          "fr": "Verifiez les champs TikFinity et le port local pour Field MAP"
         },
         "action": {
-          "type": "select-local-source",
-          "allowClick": true,
-          "clickSelector": "#card-tikfinity",
-          "settleMs": 1000,
+          "type": "open-plugin-surface",
+          "prepare": "select-local-tikfinity",
+          "preparationEvidenceSelector": "#tikfinity-settings-card",
           "stepId": "field-map"
         },
         "expected": {
@@ -369,23 +368,23 @@ module.exports = Object.freeze({
         "route": "/plugins/data-source/ui.html",
         "instructions": {
           "de": {
-            "title": "Field MAP: lokale TikFinity-Quelle auswaehlen",
-            "body": "Klicke auf die echte Karte „TikFinity“. Das waehlt nur die lokale WebSocket-Quelle im isolierten Testprofil; es stellt keine TikTok- oder externe Verbindung her. Für Data Source Manager prüft dieser Schritt ausdrücklich „Field MAP: lokale TikFinity-Quelle auswaehlen“.",
+            "title": "Field MAP: TikFinity-Felder und lokalen Port pruefen",
+            "body": "Pruefe die sichtbaren TikFinity-Felder und den lokalen Port im vorbereiteten Testprofil. Dieser Schritt aendert keine Quelle und stellt keine TikTok- oder externe Verbindung her.",
             "expected": "Die TikFinity-Einstellungen und der lokale Port sind sichtbar und koennen ohne Verbindung geprueft werden."
           },
           "en": {
-            "title": "Select the local TikFinity source for Field MAP",
-            "body": "Click the real “TikFinity” card. It selects only the local WebSocket source in the isolated test profile; it does not connect to TikTok or any external service. For Data Source Manager, this step explicitly verifies “Select the local TikFinity source for Field MAP”.",
+            "title": "Review TikFinity fields and the local port for Field MAP",
+            "body": "Review the visible TikFinity fields and local port in the prepared test profile. This step changes no source and does not connect to TikTok or any external service.",
             "expected": "The TikFinity settings and local port are visible and can be reviewed without connecting."
           },
           "es": {
-            "title": "Selecciona la fuente local TikFinity para Field MAP",
-            "body": "Haz clic en la tarjeta real «TikFinity». Solo selecciona la fuente WebSocket local del perfil aislado; no conecta con TikTok ni con un servicio externo. Para Data Source Manager, este paso comprueba expresamente «Selecciona la fuente local TikFinity para Field MAP».",
+            "title": "Revisa los campos TikFinity y el puerto local para Field MAP",
+            "body": "Revisa los campos TikFinity visibles y el puerto local en el perfil de prueba preparado. Este paso no cambia ninguna fuente ni conecta con TikTok o un servicio externo.",
             "expected": "Los ajustes de TikFinity y el puerto local quedan visibles y pueden revisarse sin conectar."
           },
           "fr": {
-            "title": "Selectionnez la source TikFinity locale pour Field MAP",
-            "body": "Cliquez sur la vraie carte « TikFinity ». Elle selectionne uniquement la source WebSocket locale dans le profil isole ; elle ne se connecte ni a TikTok ni a un service externe. Pour Data Source Manager, cette étape vérifie explicitement « Selectionnez la source TikFinity locale pour Field MAP ».",
+            "title": "Verifiez les champs TikFinity et le port local pour Field MAP",
+            "body": "Verifiez les champs TikFinity visibles et le port local dans le profil de test prepare. Cette etape ne modifie aucune source et ne se connecte ni a TikTok ni a un service externe.",
             "expected": "Les reglages TikFinity et le port local sont visibles et peuvent etre verifies sans connexion."
           }
         },
@@ -395,8 +394,8 @@ module.exports = Object.freeze({
             "route": "/plugins/data-source/ui.html"
           },
           {
-            "type": "select-local-source",
-            "selector": "#card-tikfinity"
+            "type": "open-plugin-surface",
+            "selector": "#tikfinity-port"
           }
         ],
         "postconditions": [
@@ -427,7 +426,7 @@ module.exports = Object.freeze({
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },

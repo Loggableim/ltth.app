@@ -1,6 +1,10 @@
 {
   "plugins": {
     "thermal-printer": {
+      "form_controls": {
+        "usb_vendor_id_placeholder": "0x04b8",
+        "usb_product_id_placeholder": "0x0e15"
+      },
       "thermal_printer": {
         "name": "Thermal Printer",
         "description": "Prints TikTok Live events on a thermal printer (ESC/POS)",
@@ -12,7 +16,10 @@
           "queue_size": "Queue Size",
           "printed_jobs": "Printed Jobs",
           "failed_jobs": "Failed Jobs",
-          "uptime": "Uptime"
+          "uptime": "Uptime",
+          "uptime_hours": "{hours}h {minutes}m",
+          "uptime_minutes": "{minutes}m {seconds}s",
+          "uptime_seconds": "{seconds}s"
         },
         "config": {
           "enable": "Enable Thermal Printer",
@@ -47,10 +54,22 @@
         },
         "messages": {
           "config_saved": "Configuration saved successfully!",
-          "config_error": "Error saving configuration",
+          "config_error": "Error saving configuration.",
+          "config_error_details": "Error saving configuration: {details}",
           "test_queued": "Test print job queued!",
-          "test_error": "Error sending test print",
-          "printer_not_running": "Printer service not running"
+          "test_error": "Error sending test print.",
+          "test_error_details": "Error sending test print: {details}",
+          "printer_not_running": "Printer service not running.",
+          "validation_printer_type": "Choose USB or network as the printer type.",
+          "validation_usb_ids": "Provide both USB IDs or leave both empty for auto-detection.",
+          "validation_network_host": "Enter the network host for a network printer.",
+          "validation_network_port": "Enter a valid network port (1-65535).",
+          "validation_min_coins": "Minimum coins cannot be negative.",
+          "validation_width": "Paper width must be between 32 and 80 characters.",
+          "validation_reconnect_attempts": "Reconnect attempts cannot be negative.",
+          "validation_reconnect_delay": "Reconnect delay cannot be negative.",
+          "validation_queue_size": "Maximum queue size must be at least 1.",
+          "validation_print_delay": "Print delay cannot be negative."
         }
       },
       "labels": {
@@ -68,7 +87,10 @@
         "e_g_0x0e15_for_tm_t20_leave_empty": "e.g., 0x0e15 for TM-T20 (leave empty for auto-detect)",
         "delay_between_print_jobs_prevents_overloading": "Delay between print jobs (prevents overloading)",
         "minimum_coins_to_print_gifts": "Minimum Coins to Print (Gifts)",
-        "e_g_0x04b8_for_epson_leave_empty_for": "e.g., 0x04b8 for Epson (leave empty for auto-detect)"
+        "e_g_0x04b8_for_epson_leave_empty_for": "e.g., 0x04b8 for Epson (leave empty for auto-detect)",
+        "status": "Status",
+        "configuration": "Configuration",
+        "formatting": "Formatting"
       }
     }
   }

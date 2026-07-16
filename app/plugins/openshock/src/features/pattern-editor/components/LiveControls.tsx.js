@@ -1,3 +1,9 @@
+function patternEditorText(key, fallback, params = {}) {
+    return typeof window.OpenShockPatternI18n === 'function'
+        ? window.OpenShockPatternI18n(key, fallback, params)
+        : fallback;
+}
+
 /**
  * @file LiveControls.tsx.js - Live Controls Component
  * @description Test/Loop buttons and shocker selector
@@ -60,15 +66,15 @@ class LiveControls {
 
         this.container.innerHTML = `
             <div class="live-controls">
-                <h3 class="text-lg font-semibold text-white mb-3">🎮 Live Kontrolle</h3>
+                <h3 class="text-lg font-semibold text-white mb-3">🎮 ${patternEditorText('live.title', 'Live controls')}</h3>
 
                 <!-- Shocker Selection -->
                 <div class="form-group">
-                    <label class="form-label">Shocker Auswahl (Multi-Select)</label>
+                    <label class="form-label">${patternEditorText('live.shocker_selection', 'Shocker selection (multiple)')}</label>
                     <select multiple id="shockerSelect" class="form-select" size="4">
                         ${this._renderShockerOptions()}
                     </select>
-                    <small class="text-gray-400">Halte Strg/Cmd für Mehrfachauswahl</small>
+                    <small class="text-gray-400">${patternEditorText('live.multi_select_hint', 'Hold Ctrl/Cmd to select multiple')}</small>
                 </div>
 
                 <!-- Preview -->
@@ -76,7 +82,7 @@ class LiveControls {
                     <div class="pattern-preview-live">
                         <canvas id="livePreviewCanvas" width="400" height="100"></canvas>
                         <div class="live-preview-info">
-                            <span class="text-gray-400">Dauer: ${this._formatDuration(pattern.duration)}</span>
+                            <span class="text-gray-400">${patternEditorText('live.duration', 'Duration: {duration}', { duration: this._formatDuration(pattern.duration) })}</span>
                         </div>
                     </div>
                 ` : ''}
@@ -85,30 +91,30 @@ class LiveControls {
                 <div class="btn-group-vertical">
                     <button class="btn btn-success btn-lg" id="testBtn" 
                             ${!pattern || state.selectedShockers.length === 0 ? 'disabled' : ''}>
-                        ▶️ Test abspielen
+                        ▶️ ${patternEditorText('live.play_test', 'Play test')}
                     </button>
                     
                     <button class="btn ${state.isLooping ? 'btn-danger' : 'btn-primary'} btn-lg" id="loopBtn"
                             ${!pattern || state.selectedShockers.length === 0 ? 'disabled' : ''}>
-                        ${state.isLooping ? '⏸️ Loop stoppen' : '🔁 Loop'}
+                        ${state.isLooping ? `⏸️ ${patternEditorText('live.stop_loop', 'Stop loop')}` : `🔁 ${patternEditorText('live.loop', 'Loop')}`}
                     </button>
                     
                     <button class="btn btn-danger" id="stopBtn" ${!state.isPlaying ? 'disabled' : ''}>
-                        ⏹️ Stoppen
+                        ⏹️ ${patternEditorText('live.stop', 'Stop')}
                     </button>
                 </div>
 
                 <!-- Status -->
                 <div class="live-status">
                     <div class="status-item">
-                        <span class="status-label">Status:</span>
+                        <span class="status-label">${patternEditorText('live.status', 'Status:')}</span>
                         <span class="status-value ${state.isPlaying ? 'text-green-400' : 'text-gray-400'}">
-                            ${state.isPlaying ? '▶️ Spielt ab' : '⏸️ Bereit'}
+                            ${state.isPlaying ? `▶️ ${patternEditorText('live.playing', 'Playing')}` : `⏸️ ${patternEditorText('live.ready', 'Ready')}`}
                         </span>
                     </div>
                     <div class="status-item">
-                        <span class="status-label">Shocker:</span>
-                        <span class="status-value">${state.selectedShockers.length} ausgewählt</span>
+                        <span class="status-label">${patternEditorText('live.shockers', 'Shockers:')}</span>
+                        <span class="status-value">${patternEditorText('live.selected_count', '{count} selected', { count: state.selectedShockers.length })}</span>
                     </div>
                 </div>
             </div>
@@ -127,7 +133,7 @@ class LiveControls {
      */
     _renderShockerOptions() {
         if (this.devices.length === 0) {
-            return '<option disabled>Keine Geräte verbunden</option>';
+            return `<option disabled>${patternEditorText('live.no_devices', 'No devices connected')}</option>`;
         }
 
         const state = this.store.getState();
@@ -138,7 +144,7 @@ class LiveControls {
                 const selected = state.selectedShockers.includes(shocker.id);
                 options.push(`
                     <option value="${shocker.id}" ${selected ? 'selected' : ''}>
-                        ${device.name} - ${shocker.name || 'Shocker ' + shocker.id}
+                        ${device.name} - ${shocker.name || patternEditorText('live.shocker_fallback', 'Shocker {id}', { id: shocker.id })}
                     </option>
                 `);
             }
@@ -200,12 +206,12 @@ class LiveControls {
         const pattern = state.selectedPattern;
 
         if (!pattern || state.selectedShockers.length === 0) {
-            alert('Bitte wähle ein Pattern und mindestens einen Shocker aus!');
+            alert(patternEditorText('live.selection_required', 'Select a pattern and at least one shocker.'));
             return;
         }
 
         if (!this.apiClient) {
-            alert('API Client nicht verfügbar. Bitte verbinde dich zuerst!');
+            alert(patternEditorText('live.api_unavailable', 'API client unavailable. Connect first.'));
             return;
         }
 

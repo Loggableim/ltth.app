@@ -32,10 +32,26 @@ describe('StreamAlchemy UI i18n', () => {
       'plugins.streamalchemy.ui.app.overview',
       'plugins.streamalchemy.ui.metrics.jobs',
       'plugins.streamalchemy.ui.styles.pixel',
-      'plugins.streamalchemy.ui.legacy.noItems'
+      'plugins.streamalchemy.ui.legacy.noItems',
+      'plugins.streamalchemy.ui.runtime.noProviders',
+      'plugins.streamalchemy.ui.runtime.installingModel',
+      'plugins.streamalchemy.ui.runtime.modelPathUnknown',
+      'plugins.streamalchemy.ui.overlay.craftingInProgress',
+      'plugins.streamalchemy.ui.overlay.craftingComplete',
+      'plugins.streamalchemy.ui.overlay.craftingFailed'
     ]) {
       expect(values[key]).toEqual(expect.any(String));
     }
+  });
+
+  test('uses namespaced runtime translations instead of English fallback copy', () => {
+    const uiSource = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', pluginId, 'ui.html'), 'utf8');
+    const overlaySource = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', pluginId, 'overlay.html'), 'utf8');
+
+    expect(uiSource).toContain("translateUi('plugins.streamalchemy.ui.runtime.noProviders'");
+    expect(uiSource).toContain("translateUi('plugins.streamalchemy.ui.runtime.installingModel'");
+    expect(overlaySource).toContain("translateUi('plugins.streamalchemy.ui.overlay.craftingInProgress'");
+    expect(overlaySource).toContain("translateUi('plugins.streamalchemy.ui.overlay.craftingFailed'");
   });
 
   test('loads the shared i18n client on current, legacy, and overlay surfaces', () => {

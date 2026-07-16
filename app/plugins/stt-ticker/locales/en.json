@@ -1,6 +1,21 @@
 {
   "plugins": {
     "stt-ticker": {
+      "form_controls": {
+        "admin_iframe_title": "STT Ticker Admin",
+        "deepgram_api_key_placeholder": "e.g. 1234567890abcdef...",
+        "elevenlabs_api_key_placeholder": "sk_...",
+        "fish_audio_api_key_placeholder": "Fish.audio API key...",
+        "ollama_api_key_placeholder": "ollama-key-...",
+        "aria": {
+          "add_language": "Add language"
+        },
+        "labels": {
+          "auto_detect_language": "Auto detect",
+          "rms_threshold": "RMS threshold",
+          "send_to_vrchat_chatbox": "Send to VRChat chatbox"
+        }
+      },
       "stt_ticker": {
         "plugin": {
           "name": "STT Ticker",
@@ -27,10 +42,52 @@
             "error": "Error"
           },
           "messages": {
-            "saved": "Settings saved.",
             "failed": "Could not save settings.",
             "noData": "No data available.",
-            "confirm": "Are you sure?"
+            "confirm": "Are you sure?",
+            "translation_pending": "Waiting for translation…",
+            "line_count": "({count} lines)",
+            "choose_language": "Choose a language",
+            "already_added": "Already added",
+            "no_target_language": "No target language selected — standard captions are active.",
+            "error": "Error",
+            "saved": "Saved",
+            "system_default": "System default",
+            "system_microphone": "System default microphone",
+            "no_input_devices": "No additional input devices found",
+            "microphone_name": "Microphone {index}",
+            "status_unavailable": "Could not load status",
+            "status_summary": "Status: enabled={enabled} | asr={provider} | translation={translation}",
+            "status_error": "Status error: {message}",
+            "status_on": "on",
+            "status_off": "off",
+            "status_auto": "auto",
+            "active_view_reloaded": "Active view reloaded",
+            "enabled": "Enabled",
+            "disabled": "Disabled",
+            "deepgram_active": "Deepgram active — approx. $0.26/h, model: {model}",
+            "elevenlabs_active": "ElevenLabs active — model: {model}",
+            "fish_audio_active": "Fish.audio active — token usage is visible. A Deepgram or ElevenLabs key can reduce costs.",
+            "unknown": "Unknown",
+            "key_configured": "Configured",
+            "key_not_configured": "Not configured",
+            "translation_on": "On",
+            "translation_off": "Off",
+            "osc_bridge_ready": "OSC Bridge ready",
+            "osc_bridge_unavailable": "OSC Bridge unavailable — captions stay active.",
+            "saved_key_masked": "(saved: {masked})",
+            "config_saved": "Configuration saved",
+            "saving": "Saving…",
+            "asr_settings_saved": "ASR settings saved",
+            "buffer_cleared": "Buffer cleared",
+            "no_key_to_test": "No key to test",
+            "testing": "Testing…",
+            "vrchat_enable_pending": "Enabled — checking OSC Bridge.",
+            "vrchat_disabled": "Disabled",
+            "cache_cleared": "Translation cache cleared",
+            "key_valid": "Key is valid!",
+            "key_invalid": "Invalid",
+            "provider_deepgram": "Deepgram speech recognition"
           },
           "labels": {
             "source_microphone": "Source microphone",

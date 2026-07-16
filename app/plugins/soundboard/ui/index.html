@@ -1925,9 +1925,9 @@
                             <option value="both" selected data-i18n="plugins.soundboard.labels.both_dashboard_obs_overlay">Both (Dashboard + OBS Overlay)</option>
                         </select>
                         <small style="color: var(--color-text-secondary); font-size: 0.8rem; margin-top: 4px; display: block;">
-                            <strong>Dashboard:</strong><span data-i18n="plugins.soundboard.labels.audio_plays_directly_in_your_browser_recommended_if"> Audio plays directly in your browser (recommended if OBS audio not working).</span><br>
+                            <strong data-i18n="plugins.soundboard.ui.audioTarget.dashboard">Dashboard:</strong><span data-i18n="plugins.soundboard.labels.audio_plays_directly_in_your_browser_recommended_if"> Audio plays directly in your browser (recommended if OBS audio not working).</span><br>
                             <strong data-i18n="plugins.soundboard.labels.obs_overlay_435d37">OBS Overlay:</strong><span data-i18n="plugins.soundboard.labels.audio_plays_in_the_obs_browser_source"> Audio plays in the OBS browser source.</span><br>
-                            <strong>Both:</strong><span data-i18n="plugins.soundboard.labels.audio_plays_in_both_locations"> Audio plays in both locations.
+                            <strong data-i18n="plugins.soundboard.ui.audioTarget.both">Both:</strong><span data-i18n="plugins.soundboard.labels.audio_plays_in_both_locations"> Audio plays in both locations.
                         </span></small>
                     </div>
                     <div class="form-group">
@@ -1998,7 +1998,7 @@
                                 <select id="soundboard-follow-animation-type" class="form-select">
                                     <option value="none" data-i18n="plugins.soundboard.ui.animation.none">None</option>
                                     <option value="video" data-i18n="plugins.soundboard.ui.animation.video">Video</option>
-                                    <option value="gif">GIF</option>
+                                    <option value="gif" data-i18n="plugins.soundboard.ui.animation.gif">GIF</option>
                                     <option value="image" data-i18n="plugins.soundboard.ui.animation.image">Image</option>
                                 </select>
                             </div>
@@ -2043,7 +2043,7 @@
                                 <select id="soundboard-subscribe-animation-type" class="form-select">
                                     <option value="none" data-i18n="plugins.soundboard.ui.animation.none">None</option>
                                     <option value="video" data-i18n="plugins.soundboard.ui.animation.video">Video</option>
-                                    <option value="gif">GIF</option>
+                                    <option value="gif" data-i18n="plugins.soundboard.ui.animation.gif">GIF</option>
                                     <option value="image" data-i18n="plugins.soundboard.ui.animation.image">Image</option>
                                 </select>
                             </div>
@@ -2088,7 +2088,7 @@
                                 <select id="soundboard-share-animation-type" class="form-select">
                                     <option value="none" data-i18n="plugins.soundboard.ui.animation.none">None</option>
                                     <option value="video" data-i18n="plugins.soundboard.ui.animation.video">Video</option>
-                                    <option value="gif">GIF</option>
+                                    <option value="gif" data-i18n="plugins.soundboard.ui.animation.gif">GIF</option>
                                     <option value="image" data-i18n="plugins.soundboard.ui.animation.image">Image</option>
                                 </select>
                             </div>
@@ -2133,7 +2133,7 @@
                                 <select id="soundboard-gift-animation-type" class="form-select">
                                     <option value="none" data-i18n="plugins.soundboard.ui.animation.none">None</option>
                                     <option value="video" data-i18n="plugins.soundboard.ui.animation.video">Video</option>
-                                    <option value="gif">GIF</option>
+                                    <option value="gif" data-i18n="plugins.soundboard.ui.animation.gif">GIF</option>
                                     <option value="image" data-i18n="plugins.soundboard.ui.animation.image">Image</option>
                                 </select>
                             </div>
@@ -2182,7 +2182,7 @@
                                 <select id="soundboard-like-animation-type" class="form-select">
                                     <option value="none" data-i18n="plugins.soundboard.ui.animation.none">None</option>
                                     <option value="video" data-i18n="plugins.soundboard.ui.animation.video">Video</option>
-                                    <option value="gif">GIF</option>
+                                    <option value="gif" data-i18n="plugins.soundboard.ui.animation.gif">GIF</option>
                                     <option value="image" data-i18n="plugins.soundboard.ui.animation.image">Image</option>
                                 </select>
                             </div>
@@ -2196,7 +2196,7 @@
                         <div style="display: flex; gap: 12px; margin-top: 12px;">
                             <div class="form-group" style="flex: 1;">
                                 <label style="font-size: 0.8rem; color: var(--color-text-secondary);" data-i18n="plugins.soundboard.labels.threshold_likes">Threshold (likes)</label>
-                                <input type="number" id="soundboard-like-threshold" min="0" value="0" placeholder="0 = disabled" class="form-input">
+                                <input type="number" id="soundboard-like-threshold" min="0" value="0" placeholder="0 = disabled" data-i18n-placeholder="plugins.soundboard.ui.placeholders.likeThresholdDisabled" class="form-input">
                             </div>
                             <div class="form-group" style="flex: 1;">
                                 <label style="font-size: 0.8rem; color: var(--color-text-secondary);" data-i18n="plugins.soundboard.labels.time_window_s">Time Window (s)</label>
@@ -2244,10 +2244,10 @@
                     Search MyInstants
                 </span></h4>
                 <div class="search-box">
-                    <input type="text" id="myinstants-search-input" placeholder="Search for sound effects..." class="form-input">
+                    <input type="text" id="myinstants-search-input" placeholder="Search for sound effects..." data-i18n-placeholder="plugins.soundboard.ui.placeholders.searchSoundEffects" class="form-input">
                     <button id="myinstants-search-btn" class="btn btn-primary">
                         <i data-lucide="search"></i>
-                        Search
+                        <span data-i18n="plugins.soundboard.ui.actions.search">Search</span>
                     </button>
                 </div>
                 <div id="myinstants-results" class="myinstants-results"></div>
@@ -2260,10 +2260,10 @@
                     Search GIFs
                 </span></h4>
                 <div class="search-box">
-                    <input type="text" id="gif-search-input" placeholder="Search for GIF animations..." class="form-input">
+                    <input type="text" id="gif-search-input" placeholder="Search for GIF animations..." data-i18n-placeholder="plugins.soundboard.ui.placeholders.searchGifAnimations" class="form-input">
                     <button id="gif-search-btn" class="btn btn-primary">
                         <i data-lucide="search"></i>
-                        Search
+                        <span data-i18n="plugins.soundboard.ui.actions.search">Search</span>
                     </button>
                 </div>
                 <div id="gif-search-status" style="color: var(--color-text-secondary); font-size: 0.85rem; margin-top: 8px;"></div>
@@ -2277,10 +2277,10 @@
                     Add/Edit Gift Sound
                 </span></h4>
                 <div class="form-grid">
-                    <input type="number" id="new-gift-id" placeholder="Gift ID" readonly class="form-input">
-                    <input type="text" id="new-gift-label" placeholder="Label" readonly class="form-input">
-                    <input type="text" id="new-gift-url" placeholder="MP3 URL" class="form-input">
-                    <input type="number" id="new-gift-volume" min="0" max="1" step="0.1" value="1.0" placeholder="Volume" class="form-input">
+                    <input type="number" id="new-gift-id" placeholder="Gift ID" data-i18n-placeholder="plugins.soundboard.ui.placeholders.giftId" readonly class="form-input">
+                    <input type="text" id="new-gift-label" placeholder="Label" data-i18n-placeholder="plugins.soundboard.ui.placeholders.label" readonly class="form-input">
+                    <input type="text" id="new-gift-url" placeholder="MP3 URL" data-i18n-placeholder="plugins.soundboard.ui.placeholders.mp3Url" class="form-input">
+                    <input type="number" id="new-gift-volume" min="0" max="1" step="0.1" value="1.0" placeholder="Volume" data-i18n-placeholder="plugins.soundboard.ui.placeholders.volume" class="form-input">
                 </div>
                 <div class="form-grid">
                     <input type="text" id="new-gift-animation-url" placeholder="Animation URL (optional)" data-i18n-placeholder="plugins.soundboard.ui.placeholders.animationUrlOptional" class="form-input">
@@ -2288,7 +2288,7 @@
                         <option value="none" data-i18n="plugins.soundboard.labels.no_animation">No Animation</option>
                         <option value="image" data-i18n="plugins.soundboard.ui.animation.image">Image</option>
                         <option value="video" data-i18n="plugins.soundboard.ui.animation.video">Video</option>
-                        <option value="gif">GIF</option>
+                        <option value="gif" data-i18n="plugins.soundboard.ui.animation.gif">GIF</option>
                     </select>
                     <input type="number" id="new-gift-animation-volume" min="0" max="1" step="0.1" value="1.0" placeholder="Animation Volume" data-i18n-placeholder="plugins.soundboard.ui.placeholders.animationVolume" class="form-input">
                 </div>
@@ -2316,25 +2316,25 @@
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <i data-lucide="info" style="color: #3b82f6; width: 18px; height: 18px; flex-shrink: 0;"></i>
                         <span style="font-size: 0.85rem; line-height: 1.4;"><span data-i18n="plugins.soundboard.labels.search_for_sounds_by_keyword_or_browse_by">
-                            Search for sounds by keyword or browse by category. Click </span><strong>Preview</strong><span data-i18n="plugins.soundboard.labels.to_test_a_sound_or"> to test a sound, or </span><strong>Use</strong><span data-i18n="plugins.soundboard.labels.to_bind_it_to_a_gift"> to bind it to a gift.
+                            Search for sounds by keyword or browse by category. Click </span><strong data-i18n="plugins.soundboard.ui.search.preview">Preview</strong><span data-i18n="plugins.soundboard.labels.to_test_a_sound_or"> to test a sound, or </span><strong data-i18n="plugins.soundboard.ui.search.use">Use</strong><span data-i18n="plugins.soundboard.labels.to_bind_it_to_a_gift"> to bind it to a gift.
                         </span></span>
                     </div>
                 </div>
                 <div class="search-filters" style="margin-top: 12px;">
-                    <input type="text" id="advanced-search-input" placeholder="Search for sound effects..." class="form-input">
+                    <input type="text" id="advanced-search-input" placeholder="Search for sound effects..." data-i18n-placeholder="plugins.soundboard.ui.placeholders.searchSoundEffects" class="form-input">
                     <button id="trending-search-btn" class="btn btn-ghost">
                         <i data-lucide="trending-up"></i>
-                        Trending
+                        <span data-i18n="plugins.soundboard.ui.search.trending">Trending</span>
                     </button>
                     <button id="advanced-search-btn" class="btn btn-primary">
                         <i data-lucide="search"></i>
-                        Search
+                        <span data-i18n="plugins.soundboard.ui.actions.search">Search</span>
                     </button>
                 </div>
                 <div class="category-buttons" id="category-buttons-container" style="margin-top: 12px;">
                     <button class="category-btn active" data-category="all">
                         <i data-lucide="grid-3x3" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>
-                        All
+                        <span data-i18n="plugins.soundboard.ui.search.all">All</span>
                     </button>
                 </div>
                 <div id="advanced-search-results" class="myinstants-results" style="margin-top: 12px;">
@@ -2355,11 +2355,11 @@
                     <div style="display: flex; gap: 8px;">
                         <button id="export-animations-btn" class="btn btn-sm btn-ghost">
                             <i data-lucide="download"></i>
-                            Exportieren
+                            <span data-i18n="plugins.soundboard.soundboard.animations.export">Exportieren</span>
                         </button>
                         <label for="import-animations-file" class="btn btn-sm btn-primary" style="cursor: pointer; margin: 0;">
                             <i data-lucide="upload"></i>
-                            Importieren
+                            <span data-i18n="plugins.soundboard.soundboard.animations.import">Importieren</span>
                         </label>
                         <input type="file" id="import-animations-file" accept=".json" style="display: none;">
                     </div>

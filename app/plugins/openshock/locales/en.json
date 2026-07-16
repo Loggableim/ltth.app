@@ -521,6 +521,80 @@
           "test_shock": "Test shock (1s, 100%)",
           "testing": "Testing..."
         },
+        "legacy": {
+          "no_devices": "No devices found. Configure an API key first.",
+          "no_commands": "No commands executed yet.",
+          "no_mappings": "No mappings configured. Click \"Add mapping\" to create one.",
+          "no_preset_patterns": "No preset patterns available.",
+          "no_custom_patterns": "No custom patterns created yet.",
+          "no_gifts": "No gifts found in the catalog. Connect to TikTok LIVE to populate it.",
+          "all_gifts": "All gifts",
+          "yes": "Yes",
+          "no": "No",
+          "connected": "Connected",
+          "disconnected": "Disconnected",
+          "error": "Error",
+          "edit_event_mapping": "Edit event mapping",
+          "add_event_mapping": "Add event mapping",
+          "refreshing": "Refreshing...",
+          "refresh_catalog": "Refresh catalog",
+          "refresh_devices": "Refresh devices",
+          "edit_pattern": "Edit pattern",
+          "add_pattern": "Add pattern",
+          "no_steps": "No steps added yet. Click \"Add step\" to begin.",
+          "add_steps_preview": "Add steps to see a preview",
+          "curve_type_prompt": "Enter curve type (linear, exponential, sine, pulse):",
+          "curve_steps_prompt": "Enter number of steps (5–20):",
+          "curve_duration_prompt": "Enter step duration (ms):",
+          "testing": "Testing...",
+          "test_connection": "Test connection",
+          "api_connected": "API connected",
+          "api_disconnected": "API disconnected",
+          "online": "Online",
+          "offline": "Offline",
+          "select_device_test": "-- Select a device --",
+          "paused": "Paused",
+          "select_device": "Select device...",
+          "single_pulse": "None (single pulse)",
+          "preset_not_editable": "Preset patterns cannot be edited",
+          "edit_pattern_hint": "Edit this pattern",
+          "no_steps_defined": "No steps defined",
+          "sending": "Sending...",
+          "debug_log_empty": "Debug log is empty."
+        },
+        "queue_page": {
+          "processing": "Processing now",
+          "source": "Source",
+          "unknown": "Unknown",
+          "type": "Type",
+          "not_available": "N/A",
+          "intensity": "Intensity",
+          "duration": "Duration",
+          "device": "Device",
+          "empty": "No shocks waiting",
+          "status_pending": "Pending",
+          "status_processing": "Processing",
+          "status_completed": "Completed",
+          "status_failed": "Failed",
+          "clear_confirm": "Clear the whole queue?\n\nAll waiting shocks will be removed.",
+          "cleared": "Cleared"
+        },
+        "overlays": {
+          "rotating_gifts": {
+            "unknown_gift": "Unknown gift",
+            "direct_command": "Direct command"
+          },
+          "main": {
+            "emergency_stop_activated": "EMERGENCY STOP ACTIVATED",
+            "pattern_step": "Step {step}: {intensity}% for {duration}ms"
+          },
+          "zappiehell": {
+            "stream": "Stream",
+            "global": "Global",
+            "coin_progress": "{current} / {target} coins",
+            "remaining": "{count} to go"
+          }
+        },
         "connection": {
           "api_connected": "API connected",
           "api_disconnected": "API disconnected",
@@ -536,8 +610,10 @@
           "successful_load_failed": "Connection successful but devices could not be loaded"
         },
         "devices": {
+          "no_devices": "No devices found. Configure an API key first.",
           "paused": "Paused",
           "refresh_failed": "Error refreshing devices",
+          "share_code_delete_confirm": "Delete ShareCode \"{code}\"?",
           "refreshed_with_count": "Devices refreshed – {count} device(s) loaded",
           "select": "Select a device...",
           "select_for_test": "Please select a device for the test shock",
@@ -587,6 +663,8 @@
           "dialog_create": "Create new pattern",
           "dialog_edit": "Edit pattern",
           "draw_curve_required": "Please draw a curve first",
+          "draw_curve_hint": "Draw on the canvas above to create your pattern",
+          "clear_all_steps_confirm": "Delete all steps? This action cannot be undone.",
           "empty": "No patterns created yet. Click \"New Pattern\" to create one.",
           "execute_failed": "Error executing pattern",
           "executing": "Pattern is running",
@@ -642,10 +720,13 @@
           "reactivate_tooltip": "Click to reactivate system"
         },
         "status": {
+          "debug_log_empty": "Debug log is empty. Pattern operations will be logged here.",
           "command_log_cleared": "Command log cleared",
           "command_log_exported": "Command log exported",
           "loaded": "Hybrid Shock plugin loaded successfully",
-          "statistics_reset": "Statistics reset successfully"
+          "statistics_reset": "Statistics reset successfully",
+          "normal": "Normal",
+          "verbose": "Verbose"
         },
         "accessibility": {
           "delete_share_code": "Delete ShareCode {code}",
@@ -742,7 +823,45 @@
             "type_webhook_short": "Webhook"
           }
         }
+      },
+      "pattern_editor": {
+        "view": { "title": "Pattern editor", "subtitle": "Create and edit OpenShock patterns with the visual editor" },
+        "library": {
+          "title": "Pattern library", "subtitle": "Choose a preset or create your own pattern", "default_presets": "Default presets",
+          "my_patterns": "My patterns", "create_new": "Create new", "empty": "No custom patterns yet. Create your first pattern!",
+          "edit": "Edit", "delete": "Delete", "select": "Select", "delete_confirm": "Delete this pattern?", "new_pattern_name": "New pattern"
+        },
+        "live": { "title": "Live controls", "shocker_selection": "Shocker selection (multiple)", "multi_select_hint": "Hold Ctrl/Cmd to select multiple", "play_test": "Play test", "stop": "Stop", "status": "Status:", "shockers": "Shockers:" },
+        "keyframe": { "title": "Keyframe editor", "empty": "No pattern selected", "add": "Add keyframe", "delete": "Delete keyframe", "save_pattern": "Save pattern", "back_to_parameters": "Back to parameter editor", "time": "Time (ms)", "intensity": "Intensity (%)" },
+        "parameter": { "empty": "Choose a pattern from the library", "customization": "Customization", "expert_mode": "Expert mode (keyframe editor)", "save_as_own": "Save as own pattern", "back_to_library": "Back to library" },
+        "connection": { "api_key_required": "Enter an API key.", "connecting": "Connecting...", "connected": "Connected", "connect": "Connect", "not_connected": "Not connected.", "emergency_stop_confirm": "Stop all devices?", "emergency_stop_activated": "Emergency stop activated!", "online": "Online", "offline": "Offline" }
+      },
+    "form_controls": {
+      "placeholders": {
+        "user_allowlist": "e.g. user1, user2, user3",
+        "user_blocklist": "e.g. baduser1, baduser2",
+        "openshock_api_key": "Enter your OpenShock API key",
+        "gift_mapping_name": "e.g. Rose Gift Shock",
+        "gift_mapping_gift": "e.g. Rose, TikTok (leave empty to use the selection above)",
+        "command_pattern": "e.g. ^!shock",
+        "escalating_pattern": "e.g. Escalating Shock",
+        "pattern_description": "Brief description of this pattern",
+        "custom_pattern_name": "My custom pattern",
+        "api_key": "Your API key",
+        "pishock_username": "Your PiShock account username",
+        "share_code": "e.g. 17519CD8GAP",
+        "device_name": "e.g. Collar 1",
+        "no_minimum": "0 = no minimum",
+        "no_maximum": "empty = no maximum",
+        "gentle_pattern": "e.g. Gentle wake-up, intense flash, ...",
+        "custom_pattern_description": "Brief description of the pattern",
+        "goal_name": "e.g. ZappieHell Level 1",
+        "chain_name": "e.g. ZappieHell Level 1 chain",
+        "chain_description": "Describe what this chain does...",
+        "audio_text": "Enter text for TTS or audio ID",
+        "animation_type": "e.g. flash, pulse"
       }
+    }
     }
   }
 }

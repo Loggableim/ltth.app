@@ -21,7 +21,7 @@
             "loading": "Cargando …",
             "connected": "Conectado",
             "disconnected": "Desconectado",
-            "error": "Error"
+            "error": "Se produjo un error"
           },
           "messages": {
             "saved": "Ajustes guardados.",

@@ -2,105 +2,211 @@
   "plugins": {
     "quiz-show": {
       "quiz_show": {
-        "title": "Pup Cid's Little Quiz Show Plugin",
-        "subtitle": "Interactive Quiz Game",
+        "title": "Plugin de concurso de Pup Cid",
+        "subtitle": "Juego de preguntas interactivo",
         "config": {
           "title": "Configuración",
-          "enabled": "Enable Quiz Show",
-          "time_limit": "Time Limit (seconds)",
-          "points_correct": "Points for Correct Answer",
-          "points_wrong": "Points for Wrong Answer",
+          "enabled": "Activar concurso",
+          "time_limit": "Limite de tiempo (segundos)",
+          "points_correct": "Puntos por respuesta correcta",
+          "points_wrong": "Puntos por respuesta incorrecta",
           "save": "Guardar Configuración"
         },
         "game": {
-          "title": "Game Control",
-          "start": "Start Quiz",
-          "stop": "Stop Quiz",
-          "next_question": "Next Question",
-          "show_leaderboard": "Show Leaderboard"
+          "title": "Control del juego",
+          "start": "Iniciar concurso",
+          "stop": "Detener concurso",
+          "next_question": "Siguiente pregunta",
+          "show_leaderboard": "Mostrar clasificacion"
         },
         "questions": {
-          "title": "Questions",
-          "add": "Add Question",
-          "edit": "Edit Question",
-          "delete": "Delete Question",
-          "question_text": "Question",
-          "answer_a": "Answer A",
-          "answer_b": "Answer B",
-          "answer_c": "Answer C",
-          "answer_d": "Answer D",
-          "correct_answer": "Correct Answer",
-          "import": "Import Questions",
-          "export": "Export Questions"
+          "title": "Preguntas",
+          "add": "Anadir pregunta",
+          "edit": "Editar pregunta",
+          "delete": "Eliminar pregunta",
+          "question_text": "Pregunta",
+          "answer_a": "Respuesta A",
+          "answer_b": "Respuesta B",
+          "answer_c": "Respuesta C",
+          "answer_d": "Respuesta D",
+          "correct_answer": "Respuesta correcta",
+          "import": "Importar preguntas",
+          "export": "Exportar preguntas"
         },
         "ai_packages": {
-          "title": "AI Question Packages",
-          "subtitle": "Generate question packages with OpenAI",
+          "title": "Paquetes de preguntas de IA",
+          "subtitle": "Genera paquetes de preguntas con OpenAI",
           "config": {
-            "title": "OpenAI Configuration",
-            "api_key": "API Key",
+            "title": "Configuracion de OpenAI",
+            "api_key": "Clave de API",
             "api_key_placeholder": "sk-...",
-            "api_key_hint": "Your OpenAI API key will be stored securely",
-            "api_key_status_configured": "Configured",
-            "api_key_status_not_configured": "Not configured",
-            "model": "Model",
-            "default_package_size": "Default Package Size",
-            "save": "Save Configuration",
-            "test": "Test API Key",
-            "test_success": "API key is valid!",
-            "test_error": "Invalid API key",
-            "save_success": "Configuration saved successfully",
-            "save_error": "Error saving configuration"
+            "api_key_hint": "Tu clave de API de OpenAI se guardara de forma segura",
+            "api_key_status_configured": "Configurado",
+            "api_key_status_not_configured": "Sin configurar",
+            "model": "Modelo",
+            "default_package_size": "Tamano de paquete predeterminado",
+            "save": "Guardar configuracion",
+            "test": "Probar clave de API",
+            "test_success": "La clave de API es valida!",
+            "test_error": "Clave de API no valida",
+            "save_success": "Configuracion guardada correctamente",
+            "save_error": "Error al guardar la configuracion"
           },
           "generate": {
-            "title": "Generate New Question Package",
-            "warning": "Please configure your OpenAI API key above first.",
-            "category": "Category",
-            "category_placeholder": "e.g. Geography, History, Sports",
-            "package_size": "Number of Questions",
-            "package_name": "Package Name (optional)",
-            "package_name_placeholder": "Auto-generated",
-            "button": "Generate Question Package",
-            "button_generating": "Generating...",
-            "difficulty_info": "Difficulty Distribution",
-            "difficulty_easy": "50% Easy",
-            "difficulty_medium": "~17% Medium",
-            "difficulty_hard": "~17% Hard",
+            "title": "Generar un nuevo paquete de preguntas",
+            "warning": "Configura primero arriba tu clave de API de OpenAI.",
+            "category": "Categoria",
+            "category_placeholder": "p. ej., geografia, historia, deportes",
+            "package_size": "Numero de preguntas",
+            "package_name": "Nombre del paquete (opcional)",
+            "package_name_placeholder": "Generado automaticamente",
+            "button": "Generar paquete de preguntas",
+            "button_generating": "Generando...",
+            "difficulty_info": "Distribucion de dificultad",
+            "difficulty_easy": "50 % facil",
+            "difficulty_medium": "~17 % media",
+            "difficulty_hard": "~17 % dificil",
             "difficulty_expert": "~16% Experto",
-            "duplicate_info": "Existing questions in the category are automatically detected to avoid duplicates.",
-            "success": "Package successfully generated with {count} questions!",
-            "error": "Error during generation",
-            "progress_generating": "Generating questions with OpenAI...",
-            "progress_processing": "Processing answers...",
-            "progress_done": "Done!"
+            "duplicate_info": "Las preguntas existentes de la categoría se detectan automáticamente para evitar duplicados.",
+            "success": "¡Paquete generado correctamente con {count} preguntas!",
+            "error": "Error durante la generacion",
+            "progress_generating": "Generando preguntas con OpenAI...",
+            "progress_processing": "Procesando respuestas...",
+            "progress_done": "Listo!"
           },
           "list": {
-            "title": "Available Question Packages",
-            "count": "Packages",
-            "no_packages": "No packages available. Generate your first package above!",
-            "tip": "Select one or more packages to use only questions from these packages in the quiz. If no packages are selected, all questions will be used.",
-            "questions": "Questions",
-            "created": "Created",
-            "view": "View",
-            "delete": "Delete",
-            "delete_confirm": "Really delete this package and all its questions?",
-            "delete_success": "Package successfully deleted",
-            "delete_error": "Error deleting package"
+            "title": "Paquetes de preguntas disponibles",
+            "count": "Paquetes",
+            "no_packages": "No hay paquetes disponibles. Genera arriba tu primer paquete.",
+            "tip": "Selecciona uno o más paquetes para usar solo las preguntas de estos paquetes en el cuestionario. Si no se selecciona ningún paquete, se usarán todas las preguntas.",
+            "questions": "Preguntas",
+            "created": "Creado",
+            "view": "Ver",
+            "delete": "Eliminar",
+            "delete_confirm": "¿Eliminar realmente este paquete y todas sus preguntas?",
+            "delete_success": "Paquete eliminado correctamente",
+            "delete_error": "Error al eliminar el paquete"
           }
         },
         "overlay": {
           "title": "Overlay",
-          "quiz_url": "Quiz Overlay URL",
-          "leaderboard_url": "Leaderboard Overlay URL",
+          "quiz_url": "URL de la superposicion del concurso",
+          "leaderboard_url": "URL de la superposicion de clasificacion",
           "copy": "Copiar URL",
           "open": "Abrir Overlay"
         },
         "leaderboard": {
-          "title": "Leaderboard",
-          "rank": "Rank",
-          "player": "Player",
-          "score": "Score",
-          "reset": "Reset Scores"
+          "title": "Clasificacion",
+          "rank": "Posicion",
+          "player": "Jugador",
+          "score": "Puntuacion",
+          "reset": "Restablecer puntuaciones"
+        }
+      },
+      "runtime": {
+        "connection": {
+          "connected": "Conectado",
+          "disconnected": "Desconectado",
+          "testing": "Probando la conexión...",
+          "success": "✓ ¡Conexión correcta! El modelo está disponible.",
+          "failed": "✗ Error de conexión: {error}",
+          "network_error": "✗ Error de red: {error}",
+          "unknown_error": "Error desconocido"
+        },
+        "dialogs": {
+          "stop_quiz": "¿Quieres detener el cuestionario?",
+          "fill_all_fields": "Completa todos los campos",
+          "delete_question": "¿Quieres eliminar esta pregunta?",
+          "enter_json": "Introduce JSON",
+          "invalid_json": "Formato JSON no válido",
+          "reset_leaderboard": "¿Quieres restablecer la clasificación? ¡Se perderán todos los puntos!",
+          "reset_hud": "¿Quieres restablecer la configuración del HUD? Se perderán todas las posiciones y ajustes.",
+          "season_name": "Nombre de la nueva temporada:",
+          "create_season": "¿Crear la nueva temporada \"{name}\"? La temporada actual se archivará.",
+          "openai_settings_managed": "La configuración de OpenAI ahora se administra en el panel principal de ajustes. Guarda allí tu clave de API.",
+          "delete_package": "¿Quieres eliminar este paquete y todas sus preguntas?",
+          "delete_layout": "¿Quieres eliminar este diseño?",
+          "delete_mapping": "¿Quieres eliminar esta asignación?",
+          "delete_show": "¿Quieres eliminar este programa?"
+        },
+        "status": {
+          "running": "En curso",
+          "round_ended": "Ronda finalizada",
+          "stopped": "Detenido"
+        },
+        "questions": {
+          "count": "{count} preguntas",
+          "empty": "No hay preguntas disponibles",
+          "no_active": "No hay ninguna pregunta activa"
+        },
+        "leaderboard": {
+          "empty": "No hay entradas",
+          "season": "Temporada"
+        },
+        "categories": {
+          "all": "Todas las categorías",
+          "selected_count": "{count} categorías"
+        },
+        "seasons": {
+          "current": "Temporada actual",
+          "default_name": "Temporada {year}"
+        },
+        "ai": {
+          "generating": "Generando preguntas con OpenAI...",
+          "generate_short": "Generando...",
+          "processing": "Procesando respuestas...",
+          "done": "¡Listo!"
+        },
+        "packages": {
+          "count": "{count} paquetes",
+          "empty": "No hay paquetes disponibles. Genera tu primer paquete arriba."
+        },
+        "layouts": { "empty": "No hay diseños disponibles" },
+        "gifts": {
+          "select": "-- Seleccionar regalo --",
+          "empty_mappings": "No hay asignaciones disponibles"
+        },
+        "batch": {
+          "generating": "Generación en curso...",
+          "start": "Iniciar generación por lotes",
+          "started": "[{time}] Se inició la generación por lotes para {count} categorías...",
+          "completed": "[{time}] ¡Generación por lotes completada!",
+          "summary": "Correctos: {success} | Fallidos: {failed}"
+        },
+        "voting": {
+          "active": "Votación en curso: {rows}",
+          "ready": "Votación lista: {rows}",
+          "selected": "Categoría elegida: {category}",
+          "none": "ninguna",
+          "ended": "Votación finalizada"
+        },
+        "shows": { "empty": "Todavía no hay programas guardados." },
+        "jokers": { "by": "por" },
+        "sounds": { "empty": "No hay sonidos configurados." },
+        "health": {
+          "database": "Base de datos",
+          "socket": "Conexión Socket",
+          "tts": "TTS",
+          "openai": "OpenAI",
+          "questions": "Preguntas",
+          "categories": "Categorías",
+          "sounds": "Sonidos",
+          "setup": "Configuración",
+          "complete": "completa"
+        },
+        "overlay": {
+          "round": "Ronda {current}",
+          "round_of_total": "Ronda {current} / {total}",
+          "this_round": "Esta ronda",
+          "by_user": "por {user}",
+          "mvp_points": "{points} puntos",
+          "no_questions_instruction": "Añade nuevas preguntas e inicia de nuevo.",
+          "anonymous": "Anónimo",
+          "unknown": "Desconocido",
+          "leaderboard_round": "Ronda",
+          "leaderboard_round_season": "Ronda + temporada",
+          "points": "{points} puntos",
+          "achievement": "Logro"
         }
       },
       "labels": {
@@ -180,7 +286,7 @@
         "openai_api_key_erforderlich": "OpenAI (se requiere clave API)",
         "geschenk_id_33c1f8": "ID de regalo",
         "ring_mit_farbverlauf": "Anillo degradado",
-        "select_one_or_more_packages_to_use_only": "Select one or more packages to use only questions from these packages in the quiz. If no packages are selected, all questions will be used.",
+        "select_one_or_more_packages_to_use_only": "Selecciona uno o más paquetes para usar solo las preguntas de estos paquetes en el cuestionario. Si no se selecciona ningún paquete, se usarán todas las preguntas.",
         "aktive_zuordnungen": "Asignaciones activas",
         "antwortreihenfolge_mischen": "Mezclar el orden de las respuestas",
         "zurucksetzen": "Reiniciar",
@@ -292,7 +398,7 @@
         "rundenzahl_im_obs_hud_anzeigen": "Mostrar número de vuelta en OBS HUD",
         "zeile_y_773d97": "Línea (Y):",
         "neues_layout_erstellen": "Crear nuevo diseño",
-        "spalte_x": "Spalte (X)",
+        "spalte_x": "Columna (X)",
         "fragen_upload_json": "Carga de preguntas (JSON)",
         "grid_system_wie_schiffe_versenken": "Sistema de red (como barcos que se hunden):",
         "elastic_pop": "pop elástico",
@@ -438,7 +544,7 @@
         "icon_gro_e": "Tamaño del icono:",
         "erlaubt_das_schreiben_der_kompletten_antwort_z_b": "Permite escribir la respuesta completa (p. ej. \"Berlín\")",
         "ollama_lokal_kein_api_key_notig": "Ollama (local, no se requiere clave API)",
-        "openai_gpt_5_mini_gpt_4o_mini_ollama": "OpenAI: gpt-5-mini, gpt-4o-mini | Ollama: llama3.2, mistral, qwen2.5",
+        "openai_gpt_5_mini_gpt_4o_mini_ollama": "Modelos: OpenAI: gpt-5-mini, gpt-4o-mini | Ollama: llama3.2, mistral, qwen2.5",
         "overlay_konfiguration_d05390": "Configuración de superposición",
         "50_50_joker_aktiviert_joker50": "50:50 Joker activado (!joker50)",
         "richtige_antwort_d45a43": "Respuesta correcta:",
@@ -467,7 +573,7 @@
         "visuelle_einstellungen_speichern": "Guardar configuración visual",
         "x_abbrechen_e2b295": "Cancelar",
         "zuordnung_hinzufugen_bearbeiten": "Agregar/Editar tarea",
-        "spalte_x_e3a36d": "Spalte (X):",
+        "spalte_x_e3a36d": "Columna (X):",
         "vor_jeder_frage_wird_eine_zufallige_kategorie_durch": "Antes de cada pregunta, se selecciona una categoría aleatoria mediante la animación de la máquina tragamonedas.",
         "globale_tts_lautstarke_0_100": "Volumen global de TTS (0-100%)",
         "layout_management": "Gestión de diseño",
@@ -498,7 +604,7 @@
         "fade_in": "Fundirse",
         "einsliden_slide": "Deslizarse",
         "rundendauer_sekunden": "Duración de la vuelta (segundos):",
-        "comic_sans": "Comic Sans",
+        "comic_sans": "Fuente Comic Sans",
         "oder_manuell_eingeben_f9a83e": "O ingrese manualmente:",
         "live_statistiken": "Estadísticas en vivo",
         "deutsch_weiblich_a": "Alemán (Mujer A)",
@@ -585,9 +691,9 @@
           "embedded": "Integrado",
           "orientation": "Orientación",
           "element": "Elemento",
-          "visible": "Visible",
-          "vertical": "Vertical",
-          "horizontal": "Horizontal"
+          "visible": "Mostrado",
+          "vertical": "En vertical",
+          "horizontal": "En horizontal"
         },
         "ai": {
           "provider": "Proveedor de IA:",
@@ -612,7 +718,7 @@
           "colors": "Colores",
           "success": "Éxito:",
           "warning": "Advertencia:",
-          "error": "Error:",
+          "error": "Error producido:",
           "fonts": "Fuentes",
           "font_family": "Familia tipográfica:"
         },
@@ -653,7 +759,7 @@
         },
         "season": {
           "automation": "Automatización de temporada",
-          "manual": "Manual",
+          "manual": "Modo manual",
           "weekly": "Semanal",
           "monthly": "Mensuel"
         },
@@ -689,7 +795,40 @@
           "column_s": "Columna S",
           "column_t": "Columna T"
         }
+      },
+      "gift_jokers": {
+        "enabled": "Activado"
+      },
+      "form_controls": {
+      "placeholders": {
+        "question": "¿Qué es...?",
+        "general_category": "Conocimientos generales",
+        "answer_info": "Información adicional sobre la respuesta (opcional)",
+        "batch_categories": "Geografía&#10;Historia&#10;Matemáticas&#10;Ciencia&#10;Deportes&#10;Música&#10;Cine y televisión&#10;...",
+        "llm_api_key": "sk-... o déjalo vacío para Ollama",
+        "llm_model": "p. ej. gpt-5-mini, llama3.2, mistral",
+        "llm_base_url": "http://localhost:11434/v1 (Ollama predeterminado)",
+        "layout_name": "Mi diseño personalizado",
+        "gift_id_example": "p. ej. 5655",
+        "gift_name_galaxy": "p. ej. Galaxy",
+        "gift_name_rose": "p. ej. Rosa",
+        "vote_categories": "Deportes&#10;Música&#10;Gaming&#10;General",
+        "show_name": "Nombre del programa",
+        "duel_left_users": "p. ej. user1,user2",
+        "duel_right_users": "p. ej. user3,user4",
+        "sound_event_name": "p. ej. event_name",
+        "custom_css": "/* Añade aquí CSS personalizado */\n.question-text {\n  /* Ejemplo: sombra de texto */\n  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);\n}",
+        "question_import_example": "[\n  {\n    \"question\": \"¿Cuál es la capital de Alemania?\",\n    \"answers\": [\"Berlín\", \"Múnich\", \"Hamburgo\", \"Colonia\"],\n    \"correct\": 0,\n    \"difficulty\": 2,\n    \"category\": \"Geografía\",\n    \"info\": \"Berlín es la capital de Alemania reunificada desde 1990\"\n  }\n]",
+        "leaderboard_import_example": "[\n  {\n    \"userId\": \"user123\",\n    \"username\": \"Player1\",\n    \"points\": 500\n  }\n]"
+      },
+      "aria": {
+        "duel_left_label": "Nombre del equipo izquierdo",
+        "duel_right_label": "Nombre del equipo derecho",
+        "show_round_count": "Número de rondas",
+        "sound_file": "Elegir archivo de sonido",
+        "sound_volume": "Volumen del sonido"
       }
+    }
     }
   }
 }

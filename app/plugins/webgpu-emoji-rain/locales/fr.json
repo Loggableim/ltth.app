@@ -1,11 +1,19 @@
 {
   "plugins": {
     "webgpu-emoji-rain": {
+      "form_controls": {
+        "canvas_aria": "Canevas WebGPU EmojiRain",
+        "preview_aria": "Aperçu d'Emoji Rain",
+        "quick_status_aria": "État rapide d'Emoji Rain",
+        "username_filter_placeholder": "Saisissez un nom d'utilisateur...",
+        "username_placeholder": "Nom d'utilisateur",
+        "enabled_toggle_aria": "Activer la pluie d'emojis WebGPU"
+      },
       "webgpu_emoji_rain": {
         "title": "Paramètres Pluie d'Émojis",
         "subtitle": "Overlays Émojis Interactifs",
         "config": {
-          "title": "Configuration",
+          "title": "Paramètres",
           "enabled": "Activer la Pluie d'Émojis",
           "trigger_on_gift": "Déclencher sur Cadeau",
           "trigger_on_follow": "Déclencher sur Suivi",
@@ -136,7 +144,7 @@
           "copy": "Copier l'URL",
           "open": "Ouvrir l'Overlay",
           "test": "Tester la Pluie",
-          "pause": "Pause",
+          "pause": "Suspendre",
           "resume": "Reprendre",
           "clear": "Effacer",
           "theme": "Thème",
@@ -234,7 +242,7 @@
           "no_mappings": "Aucune association",
           "wind_strength": "Force du vent",
           "wind_direction": "Direction du vent",
-          "auto": "Auto (variable)",
+          "auto": "Automatique (variable)",
           "left": "Gauche",
           "right": "Droite",
           "color_mode": "Mode de couleur",
@@ -251,7 +259,7 @@
           "status_label": "État",
           "user_emoji_mappings": "Associations d’émojis utilisateur",
           "physics_air_resistance": "Résistance de l’air",
-          "physics_friction": "Friction",
+          "physics_friction": "Résistance au frottement",
           "emoji_rotation_speed": "Vitesse de rotation",
           "heart_balloon_pop_height": "Hauteur d’éclatement"
         }
@@ -399,7 +407,7 @@
         "bubble_blop": "Bulle Blop",
         "min_emojis_bei_likes": "Min. emojis pour les likes",
         "0_5_bildschirmmitte": "0,5 = centre de l'écran",
-        "konfiguration_speichern": "💾 Paramètres de configuration",
+        "konfiguration_speichern": "💾 Enregistrer la configuration",
         "upload": "📤 Télécharger",
         "1440p_2560x1440": "1440p (2560x1440)",
         "wahle_die_animation_die_beim_aufprall_am_boden": "Choisissez l'animation qui se joue lorsque vous touchez le sol",

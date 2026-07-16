@@ -3,6 +3,17 @@
  * Rotates through multiple goals with WebGL transitions
  */
 
+function t(key, fallback, params = {}) {
+    const translated = window.i18n?.t?.(key, params);
+    if (translated && translated !== key) {
+        return translated;
+    }
+
+    return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+}
+
 class MultiGoalOverlayRenderer {
     constructor() {
         this.multigoalId = null;
@@ -17,6 +28,7 @@ class MultiGoalOverlayRenderer {
         this.gl = null;
         this.webglAnimator = null;
         this.isTransitioning = false;
+        window.i18n?.onLanguageChange?.(() => this.renderGoals());
     }
 
     /**
@@ -164,7 +176,7 @@ class MultiGoalOverlayRenderer {
      */
     renderGoals() {
         if (!this.goals || this.goals.length === 0) {
-            this.goalsWrapper.innerHTML = '<div style="color: white; padding: 20px;">No goals configured</div>';
+            this.goalsWrapper.innerHTML = `<div style="color: white; padding: 20px;">${t('plugins.goals.goals.overlay.no_goals_configured', 'No goals configured')}</div>`;
             return;
         }
 

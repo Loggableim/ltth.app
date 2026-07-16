@@ -1,6 +1,11 @@
 {
   "plugins": {
     "advanced-timer": {
+      "form_controls": {
+        "sections_aria": "Bereiche des erweiterten Timers",
+        "timer_summary_aria": "Timer-Zusammenfassung",
+        "timer_name_placeholder": "Mein Timer"
+      },
       "plugin": {
         "name": "Erweiterter Timer",
         "description": "Professionelles Multi-Timer-System mit Event-Automatisierung und anpassbaren Overlays"
@@ -132,13 +137,13 @@
         "sectionTitle": "Rotator (Delta-Anzeige)",
         "sectionDesc": "Zeigt die letzte Zeit-Änderung um den Timer herum (oben/unten/links/rechts). Custom-Geschenke zeigen das Geschenk-GIF aus dem Katalog.",
         "enable": "Rotator aktivieren",
-        "position": "Position",
+        "position": "Platzierung",
         "positionTop": "Oben",
         "positionBottom": "Unten",
         "positionLeft": "Links",
         "positionRight": "Rechts",
         "slots": "Spielautomaten",
-        "rotationMs": "Rotation (ms)",
+        "rotationMs": "Wechselintervall (ms)",
         "minSeconds": "Min. Sekunden zum Anzeigen",
         "showGiftImage": "Geschenk-Bild zeigen",
         "showGiftName": "Geschenk-Name zeigen",
@@ -168,6 +173,21 @@
         "frameUpload": "Hochladen",
         "frameRemove": "Entfernen",
         "save": "Einstellungen speichern"
+      },
+      "runtime": {
+        "timer": "Zeitschaltuhr", "quickAddTen": "+10 s", "quickAddThirty": "+30 s", "quickAddMinute": "+1 Min.", "quickAddFiveMinutes": "+5 Min.", "quickRemoveTen": "-10 s", "quickRemoveThirty": "-30 s",
+        "overlay": "Overlay:", "copyOverlayUrl": "Overlay-URL kopieren", "expiryAction": "Aktion bei Ablauf", "expiryNone": "Keine", "expiryRestart": "Neu starten", "expiryAlert": "Hinweis anzeigen", "expirySound": "Sound abspielen", "expirySceneChange": "Szene wechseln", "expiryTriggerChain": "Kette auslösen",
+        "interactions": "Interaktionen", "interactionsHint": "Positive Werte fügen Zeit hinzu, negative Werte verkürzen sie. Dezimalwerte werden unterstützt (zum Beispiel 0,05).", "perCoin": "Pro Coin", "perSubscribe": "Pro Abonnement", "perFollow": "Pro Follow", "perShare": "Pro Share", "perLike": "Pro Like", "perChat": "Pro Chat-Nachricht", "advancedRulesLink": "Erweiterte Event-Regeln (Geschenknamen-Filter, Befehle...)", "saved": "Gespeichert",
+        "multiplier": "Multiplikator", "multiplierDescription": "(multipliziert alle Interaktionswerte mit diesem Faktor)", "keyboardShortcuts": "Tastenkürzel", "startPause": "Start / Pause", "increase": "Erhöhen", "reduce": "Verringern", "stepSeconds": "Schrittweite (Sekunden)", "saveShortcuts": "Tastenkürzel speichern", "loadLogHint": "Öffnen Sie diesen Bereich, um das Aktivitätsprotokoll zu laden.", "refresh": "Aktualisieren",
+        "giftOverrides": "Geschenk-Überschreibungen", "giftOverridesDescription": "Überschreibt den Pro-Coin-Wert für einzelne Geschenke. Ist ein Wert gesetzt, gilt für dieses Geschenk nur die Überschreibung.", "clickToLoad": "Zum Laden klicken.", "selectGift": "Geschenk auswählen", "seconds": "Sekunden", "add": "Hinzufügen",
+        "sourceLike": "Gefällt mir", "sourceCoin": "Coin / Geschenk", "sourceCustomGift": "Eigenes Geschenk", "sourceFollow": "Folgen", "sourceSubscribe": "Abonnement (Superfan)", "sourceShare": "Teilen", "sourceChat": "Chat", "sourceManual": "Manuell", "sourceFlow": "Ablauf", "sourceRule": "Regel",
+        "deleteTimer": "Timer löschen", "noAdvancedRules": "Noch keine erweiterten Regeln.", "advancedRulesDescription": "Diese Regeln ergänzen die flachen Pro-Event-Werte. Verwenden Sie sie für Geschenknamen-Filter, Mindest-Coins oder Chat-Befehle.", "close": "Schließen", "edit": "Bearbeiten", "addEventRule": "Event-Regel hinzufügen", "editEventRule": "Event-Regel bearbeiten", "eventType": "Event-Typ", "action": "Aktion", "valueSeconds": "Wert (Sekunden)",
+        "giftName": "Geschenkname (leer = beliebig)", "giftNamePlaceholder": "zum Beispiel Rose", "minCoins": "Mindest-Coins (0 = kein Minimum)", "minLikes": "Mindest-Likes pro Event", "commandPrefix": "Befehlspräfix (zum Beispiel !time)", "keywordContains": "Stichwort enthält", "keywordPlaceholder": "Zeit hinzufügen",
+        "noGiftOverrides": "Noch keine Geschenk-Überschreibungen.", "diamonds": "Diamanten", "selectGiftAlert": "Wählen Sie zuerst ein Geschenk aus dem Katalog.", "unknownGift": "Unbekanntes Geschenk", "failedSave": "Die Änderungen konnten nicht gespeichert werden.", "removeGiftOverride": "Diese Geschenk-Überschreibung entfernen?", "failedSaveRotator": "Die Rotator-Einstellungen konnten nicht gespeichert werden.", "failedSaveThreshold": "Die Schwellenwert-Einstellungen konnten nicht gespeichert werden.", "frameAlt": "Eigener Rahmen", "chooseFile": "Wählen Sie zuerst eine Datei aus.", "frameTooLarge": "Der Rahmen muss kleiner als 8 MB sein.", "uploadFailed": "Upload fehlgeschlagen.", "uploadError": "Beim Upload ist ein Fehler aufgetreten.", "removeFrame": "Rahmen in Steckplatz {n} entfernen?", "deleteFailed": "Löschen fehlgeschlagen.",
+        "failedCreateTimer": "Der Timer konnte nicht erstellt werden.", "noSavedProfiles": "Keine gespeicherten Profile. Verwenden Sie Aktuelles Setup speichern, um die aktuellen Timer zu sichern.", "apply": "Anwenden", "profileNamePrompt": "Profilname:", "applyProfileConfirm": "Dieses Profil anwenden? Die aktuellen Timer werden ersetzt.", "deleteProfileConfirm": "Dieses Profil löschen?", "deleteEventRuleConfirm": "Diese Event-Regel löschen?",
+        "conditionGift": "Geschenk: {value}", "conditionMinCoins": "Mindest-Coins: {value}", "conditionMinLikes": "Mindest-Likes: {value}", "conditionCommand": "Befehl: {value}", "conditionKeyword": "Stichwort: {value}",
+        "effectFlame": "Flamme", "effectLightning": "Blitz", "effectSparks": "Funken", "effectPulseGlow": "Pulsieren", "effectRainbowShake": "Regenbogen-Schütteln", "effectGoldFlux": "Goldfluss", "times": "×", "chevron": "▼",
+        "overlayMissingEyebrow": "Erweiterter-Timer-Overlay", "overlayMissingTitle": "Timer-ID fehlt", "overlayMissingDescription": "Dieses Overlay benötigt einen timer-Abfrageparameter. Öffnen Sie es in Advanced Timer oder ergänzen Sie eine Timer-ID, um einen aktiven Timer vorzuschauen.", "overlayMissingExample": "Beispiel:", "overlayTimerNotFound": "Timer nicht gefunden", "overlayMostRecent": "Zuletzt", "overlayPrevious": "Vorherige"
       },
       "labels": {
         "save_current_setup": "Aktuelles Setup speichern",

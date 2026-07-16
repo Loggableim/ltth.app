@@ -2,10 +2,34 @@
   "plugins": {
     "multicam": {
       "multicam": {
-        "title": "Multi-Cam Switcher",
-        "subtitle": "Stream Camera Management",
-        "safety_lock": "⚠️ SAFETY LOCK ACTIVE - Too many rapid switches detected. Waiting 60 seconds...",
-        "current_scene": "Current Scene:",
+    "title": "Multi-Cam Switcher",
+    "subtitle": "Stream Camera Management",
+    "safety_lock": "⚠️ SAFETY LOCK ACTIVE - Too many rapid switches detected. Waiting 60 seconds...",
+    "runtime": {
+      "server_unreachable": "The server is not responding. Make sure the LTTH server is running and a TikTok stream is connected.",
+      "retry_load": "🔄 Reload",
+      "server_error": "Server error: {error}",
+      "unknown_error": "Unknown error",
+      "catalog_load_failed": "Could not load the gift catalog. Make sure the LTTH server is running and a TikTok stream is connected.",
+      "empty_catalog": "No gifts are in the catalog. Connect a TikTok stream to load the catalog.",
+      "tier_whale": "🐋 Whale (10,000+)",
+      "tier_large": "🔥 Large (1,000–9,999)",
+      "tier_medium": "💎 Medium (100–999)",
+      "tier_small": "🪙 Small (1–99)",
+      "gift_count": "{count} gifts",
+      "no_filtered_gifts": "No gifts match the current filter.",
+      "no_mapping": "— No assignment —",
+      "minimum_coins": "Min. coins:",
+      "unsaved_changes": "🟡 Unsaved changes",
+      "all_changes_saved": "✅ All changes saved",
+      "saving": "⏳ Saving...",
+      "saved": "✅ Saved!",
+      "error": "❌ Error: {error}",
+      "discard_unsaved_changes": "Discard all unsaved changes?",
+      "connection_failed": "Connection failed: {error}",
+      "select_scene": "Please select a scene"
+    },
+    "current_scene": "Current Scene:",
         "status": {
           "connected": "Connected",
           "disconnected": "Disconnected"

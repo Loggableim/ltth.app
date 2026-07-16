@@ -29,6 +29,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
   "safety": "local",
   "mode": "ui",
   "overlay": "/plugins/streamalchemy/overlay.html",
+  "overlayWorkflowStepIds": ["alchemy-overlay"],
   "related": [
     "api-bridge",
     "gcce"

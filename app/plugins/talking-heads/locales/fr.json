@@ -1,6 +1,16 @@
 {
   "plugins": {
     "talking-heads": {
+      "form_controls": {
+        "image_api_key_placeholder": "Votre clé API",
+        "preview_tts_text_placeholder": "Bonjour ! Ceci est un test Talking Heads.",
+        "target_user_search_placeholder": "Saisissez un ID ou nom d'utilisateur...",
+        "user_search_placeholder": "Saisissez un nom d'utilisateur...",
+        "sprite_set_name_placeholder": "Nom du jeu (p. ex. MonAvatar)",
+        "viewer_bar_background_placeholder": "p. ex. rgba(0,0,0,0.3)",
+        "manual_zip_input_aria": "Televerser le fichier ZIP avec 5 images",
+        "manual_assign": "Assigner le jeu"
+      },
       "talking_heads": {
         "plugin": {
           "name": "Têtes parlantes",
@@ -80,10 +90,71 @@
           "clear_cache": "Vider tout le cache",
           "test_api": "Tester l'API",
           "test_generate": "Générer un avatar de test",
-          "save_config": "Enregistrer la configuration"
+          "save_config": "Enregistrer la configuration",
+          "testing": "Test en cours…",
+          "generating": "Génération en cours…",
+          "preparing": "Préparation en cours…",
+          "starting_animation": "Démarrage de l’animation…",
+          "loading": "Chargement…",
+          "load_stream_users": "Charger les utilisateurs du direct"
         },
         "alerts": {
           "debug_log": "<strong>ℹ️ Journal de débogage</strong><br>Les journaux en direct apparaissent ci-dessous lorsque la journalisation de débogage est activée. Désactivez-la après le dépannage pour éviter le bruit."
+        },
+        "notifications": {
+          "copy_success": "URL du HUD OBS copiée.",
+          "copy_failed": "Impossible de copier l’URL du HUD OBS.",
+          "load_failed": "Impossible de charger la configuration : {{error}}",
+          "debug_enabled": "Journalisation de débogage activée.",
+          "avatar_generated": "Avatar de {{username}} généré.",
+          "config_loading": "Veuillez attendre le chargement de la configuration…",
+          "save_success": "Configuration enregistrée.",
+          "save_failed": "Impossible d’enregistrer la configuration : {{error}}",
+          "api_test_success": "Connexion à l’API réussie.",
+          "api_test_failed": "Échec de la connexion à l’API : {{error}}",
+          "api_test_error": "Échec du test de l’API : {{error}}",
+          "generate_start": "Démarrage de la génération de test… cela peut prendre 15 à 30 secondes.",
+          "generate_success": "Avatar de test généré ({{sprites}} sprites créés).",
+          "generate_failed": "Échec de la génération de l’avatar : {{error}}",
+          "generate_error": "Échec de la génération de test : {{error}}",
+          "cache_clear_confirm": "Voulez-vous vraiment supprimer tous les avatars en cache ?",
+          "cache_cleared": "{{count}} avatars supprimés.",
+          "cache_clear_failed": "Impossible de vider le cache."
+        },
+        "logs": {
+          "empty": "Aucune entrée de journal disponible pour le moment."
+        },
+        "manual": {
+          "set_name_required": "Saisissez un nom de jeu.",
+          "uploading": "Téléversement…",
+          "set_uploaded": "Jeu \"{{setName}}\" téléversé (ID : {{setId}}).",
+          "error": "Erreur : {{error}}",
+          "network_error": "Erreur réseau : {{error}}",
+          "no_sets": "Aucun jeu manuel n’est encore disponible.",
+          "delete_set_confirm": "Supprimer le jeu de sprites \"{{setId}}\" ?",
+          "user_and_set_required": "Choisissez un utilisateur et un jeu.",
+          "set_assigned": "Jeu \"{{setId}}\" attribué à {{username}}.",
+          "configuration_saved": "Configuration enregistrée."
+        },
+        "placeholders": {
+          "choose_avatar": "-- Choisir un avatar --"
+        },
+        "errors": {
+          "prefix": "Erreur :"
+        },
+        "status": {
+          "api_configured": "API configurée ({{provider}})",
+          "api_missing": "Aucune clé API ({{provider}})",
+          "users_loaded": "{{count}} utilisateurs chargés{{scope}}",
+          "users_found": "{{count}} utilisateurs trouvés (recherche : \"{{term}}\")",
+          "cache_count": "Cache : {{count}} avatars",
+          "active_stream_scope": " (direct actif)",
+          "global_scope": " (tous)"
+        },
+        "empty": {
+          "no_avatars": "Aucun avatar n’a encore été généré.",
+          "no_users": "Aucun utilisateur trouvé.",
+          "no_active_animations": "Aucune animation active"
         }
       },
       "labels": {

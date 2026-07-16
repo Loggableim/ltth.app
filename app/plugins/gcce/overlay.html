@@ -42,6 +42,15 @@
         // ===== SOCKET.IO CONNECTION =====
         const socket = io();
 
+        function overlayText(key, fallback, params = {}) {
+            const translationKey = `plugins.gcce.runtime.overlay.${key}`;
+            const translated = window.i18n?.t?.(translationKey, params);
+            if (translated && translated !== translationKey) return translated;
+            return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+                Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+            ));
+        }
+
         // ===== MESSAGE DISPLAY =====
 
         /**
@@ -212,9 +221,9 @@
             body.innerHTML = `
                 <div class="command-detail">
                     <p class="description">${escapeHtml(command.description || '')}</p>
-                    <p class="syntax"><strong>Syntax:</strong> ${escapeHtml(command.syntax || '')}</p>
-                    <p class="permission"><strong>Permission:</strong> ${escapeHtml(command.permission || '')}</p>
-                    <p class="plugin"><strong>Plugin:</strong> ${escapeHtml(command.pluginId || '')}</p>
+                    <p class="syntax"><strong>${escapeHtml(overlayText('syntax', 'Syntax'))}:</strong> ${escapeHtml(command.syntax || '')}</p>
+                    <p class="permission"><strong>${escapeHtml(overlayText('permission', 'Permission'))}:</strong> ${escapeHtml(command.permission || '')}</p>
+                    <p class="plugin"><strong>${escapeHtml(overlayText('plugin', 'Plugin'))}:</strong> ${escapeHtml(command.pluginId || '')}</p>
                 </div>
             `;
 
@@ -234,7 +243,7 @@
          */
         function showCommandList(commands) {
             const commandNames = (commands || []).map(cmd => `/${cmd.name || ''}`).join(', ');
-            showMessage(`Available commands: ${commandNames}`, 'info');
+            showMessage(overlayText('available_commands', 'Available commands: {commands}', { commands: commandNames }), 'info');
         }
 
         // ===== SOCKET EVENT HANDLERS =====

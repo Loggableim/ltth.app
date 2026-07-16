@@ -1,6 +1,14 @@
 {
   "plugins": {
     "gift-catalog": {
+      "form_controls": {
+        "app_language_placeholder": "z. B. en-US",
+        "browser_language_placeholder": "z. B. en",
+        "webcast_language_placeholder": "z. B. en",
+        "priority_region_placeholder": "DE oder leer",
+        "time_zone_placeholder": "Zeitzone: Europe/Berlin",
+        "locales_placeholder": "z. B. en,de,es,fr"
+      },
       "gift_catalog": {
         "plugin": {
           "name": "Geschenkkatalog",
@@ -47,6 +55,15 @@
           },
           "messages": {
             "no_gifts_available": "Keine Geschenke verfügbar.",
+            "no_live_gifts_loaded": "Keine Geschenke von /api/gift-catalog-manager/catalog geladen.",
+            "static_list_empty": "Die statische Liste für das Gebietsschema {locale} ist leer.",
+            "live_source": "Live-Quelle",
+            "demo_source": "Demo-Quelle {locale}",
+            "live_entries_loaded": "Vom Live-Endpunkt geladen: {count} Geschenkeinträge.",
+            "demo_list_rendered": "Demoliste für Gebietsschema {locale} gerendert ({count} Einträge).",
+            "copy_failed_prompt": "Kopieren fehlgeschlagen. Verwende dieses Snippet:",
+            "copy_prompt": "Dieses Snippet kopieren:",
+            "endpoint_prompt": "Endpunkt:",
             "load_catalog_first_for_live_mode": "Lade zuerst den Katalog für den Live-Modus."
           }
         }
@@ -65,7 +82,7 @@
         "developer_guides_2b50b8": "Entwicklerhandbücher",
         "developer_preview_created_for_internal_plugin_integration_checks": "Entwicklervorschau erstellt für interne Plugin-Integrationsprüfungen und demogesteuerte Implementierungsplanung.",
         "load_1st_10_sample_gifts": "Laden Sie die ersten 10 Mustergeschenke",
-        "live_api_gift_catalog_manager_catalog": "Live /api/gift-catalog-manager/catalog",
+        "live_api_gift_catalog_manager_catalog": "Live-Daten /api/gift-catalog-manager/catalog",
         "frontend_plugin_request": "Anfrage für Frontend-Plugin",
         "default_names": "Standardnamen",
         "store_defaults_used_by_refresh_and_inspect_how": "Speichern Sie die von der Aktualisierung verwendeten Standardeinstellungen und prüfen Sie, wie sich Gebietsschema/Region auf Namen auswirkt.",

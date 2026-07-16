@@ -269,5 +269,8 @@
   "faq.h3.18": "?? Welche Betriebssysteme werden unterstützt?",
   "faq.p.20": "Der Windows Launcher unterstützt Windows 10 und Windows 11. Die automatische Installation über den Launcher ist die empfohlene Methode für Windows-Nutzer. Siehe Download-Seite für Details.",
   "faq.p.24": "Empfohlen: Lade den Windows Launcher herunter und führe ihn aus. Der Launcher installiert LTTH automatisch und hält es aktuell. Weitere Details findest du auf der Download-Seite.",
-  "faq.a.25": "Windows Launcher"
+  "faq.a.25": "Windows Launcher",
+  "faq.p.29": "F\u00fcr die lokale App: nein. F\u00fcr den App Store: ja. F\u00fcr die lokale Nutzung ben\u00f6tigst du keine Zugangsdaten, der App Store setzt jedoch ein Konto voraus.",
+  "faq.p.48": "Die lokale App verarbeitet Daten auf deinem Computer. Der App Store ben\u00f6tigt eine Anmeldung, die lokale Nutzung bleibt jedoch getrennt.",
+  "faq.p.75": "F\u00fcr die lokale App: nein. Der App Store ben\u00f6tigt jedoch ein Konto. Die lokale App liest nur \u00f6ffentlich verf\u00fcgbare TikTok-LIVE-Daten."
 }

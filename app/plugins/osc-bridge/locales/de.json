@@ -1,6 +1,14 @@
 {
   "plugins": {
     "osc-bridge": {
+      "form_controls": {
+        "command_description_placeholder": "Löst eine eigene Aktion aus",
+        "gift_name_placeholder": "z. B. Rose",
+        "gift_parameter_placeholder": "avtr_... oder ParameterName",
+        "avatar_name_placeholder": "Mein Avatar",
+        "avatar_id_placeholder": "z. B. avtr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        "avatar_description_placeholder": "Alltagsavatar"
+      },
       "osc_bridge": {
         "title": "OSC-Bridge Einstellungen",
         "status": {
@@ -18,8 +26,8 @@
             "discovery_failed": "OSCQuery-Erkennung fehlgeschlagen: {error}",
             "not_configured": "OSCQuery ist nicht eingerichtet und es wurde kein VRChat-Dienst gefunden.",
             "next_steps": "Nächste Schritte:",
-            "host": "Host: {host}",
-            "port": "Port: {port}",
+            "host": "Server: {host}",
+            "port": "Netzwerkport: {port}",
             "scanned": "Geprüfter Legacy-TCP-Bereich: {range}",
             "found": "OSCQuery unter {host}:{port} gefunden. Der Port wurde {saved}.",
             "saved": "gespeichert",
@@ -46,7 +54,7 @@
               "switch_avatar": "Zu Avatar {name} wechseln"
             },
             "actions": {
-              "emote_slot": "Emote {slot}",
+              "emote_slot": "Emote-Platz {slot}",
               "remove": "Entfernen",
               "switch": "Wechseln"
             },
@@ -118,7 +126,7 @@
             },
             "permissions": {
               "all": "Alle",
-              "moderator": "Moderator",
+              "moderator": "Moderation",
               "subscriber": "Abonnent"
             },
             "status": {
@@ -191,8 +199,8 @@
           },
           "emote": {
             "description": "VRChat Emote-Slot auslösen (Subscriber)",
-            "syntax": "/emote <0-7>",
-            "examples": "/emote 0, /emote 3"
+            "syntax": "Befehl: /emote <0–7>",
+            "examples": "Beispiele: /emote 0, /emote 3"
           }
         },
         "parameter_tester": {
@@ -203,9 +211,9 @@
           "dance": "💃 Tanzen",
           "hearts": "❤️ Herzen",
           "confetti": "🎊 Konfetti",
-          "emote0": "😀 Emote 0",
-          "emote1": "😎 Emote 1",
-          "emote2": "😂 Emote 2"
+          "emote0": "😀 Emote-Platz 0",
+          "emote1": "😎 Emote-Platz 1",
+          "emote2": "😂 Emote-Platz 2"
         },
         "custom_actions": {
           "title": "Eigene OSC-Aktionen",
@@ -254,7 +262,7 @@
           "info_text": "Verwalten Sie Ihre VRChat-Avatare. Avatar-IDs können in VRChat-Logs oder mit Tools wie VRCLens gefunden werden.",
           "add_new": "Neuen Avatar hinzufügen",
           "avatar_name": "Avatar Name",
-          "avatar_id": "Avatar ID",
+          "avatar_id": "Avatar-ID",
           "description": "Beschreibung (optional)",
           "add_avatar": "Avatar hinzufügen",
           "switch": "Wechseln",
@@ -321,12 +329,12 @@
         "wie_lange_verlaufsdaten_gespeichert_werden_standard_60000ms_1": "Wie lange Verlaufsdaten gespeichert werden (Standard: 60000ms = 1 Minute)",
         "avatar_spezifische_parameter": "Avatar-spezifische Parameter:",
         "erweiterte_funktionen": "⚙️ Erweiterte Funktionen",
-        "physbones_control": "🦴 PhysBones Control",
+        "physbones_control": "🦴 PhysBones-Steuerung",
         "avatar_switching_via_chat_commands": "👤 Avatar Switching via Chat Commands",
-        "save_chat_command_settings": "Save Chat Command Settings",
+        "save_chat_command_settings": "Chat-Befehlseinstellungen speichern",
         "als_preset_speichern": "Als Preset speichern",
-        "users_will_type": "Users will type /",
-        "allow_viewers_to_switch_your_vrchat_avatar_via": "Allow viewers to switch your VRChat avatar via the",
+        "users_will_type": "Nutzende geben ein: /",
+        "allow_viewers_to_switch_your_vrchat_avatar_via": "Zuschauer:innen können deinen VRChat-Avatar über den ",
         "update_intervall_ms": "Update-Intervall (ms)",
         "auto_subscribe_websocket_updates_empfangen": "Auto-Subscribe (WebSocket Updates empfangen)",
         "batch_fenster_ms": "Batch-Fenster (ms)",
@@ -340,7 +348,7 @@
         "live_monitoring_verfolgt_alle_avatar_parameter_in_echtzeit": "Live Monitoring verfolgt alle Avatar-Parameter in Echtzeit und speichert einen Verlauf für Visualisierungen und Debugging.",
         "verhindert_redundante_nachrichten_fur_unveranderte_werte_50_cpu": "Verhindert redundante Nachrichten für unveränderte Werte (-50% CPU-Last)",
         "live_parameter_monitoring": "📊 Live Parameter Monitoring",
-        "oscquery_live_monitoring_performance": "OSCQuery, Live Monitoring & Performance",
+        "oscquery_live_monitoring_performance": "OSCQuery, Live-Überwachung und Leistung",
         "verlauf_dauer_ms": "Verlauf-Dauer (ms)",
         "gifts_are_auto_detected_when_viewers_send_them": "💡 Gifts are auto-detected when viewers send them during a stream. Connect to a TikTok stream to populate the catalogue.",
         "verbessern_sie_die_performance_durch_intelligentes_batching_und": "Verbessern Sie die Performance durch intelligentes Batching und Caching von OSC-Nachrichten.",
@@ -353,17 +361,17 @@
         "zeit_bis_cache_eintrage_erneuert_werden_standard_5000ms": "Zeit bis Cache-Einträge erneuert werden (Standard: 5000ms)",
         "message_batching_aktivieren_empfohlen": "Message Batching aktivieren (empfohlen)",
         "oscquery_auto_discovery": "🔍 OSCQuery Auto-Discovery",
-        "cache_ttl_ms": "Cache TTL (ms)",
+        "cache_ttl_ms": "Cache-Gültigkeitsdauer (ms)",
         "live_monitoring_aktivieren": "Live Monitoring aktivieren",
         "select_from_gift_catalogue": "Aus Gift-Katalog auswählen",
-        "avatar_id": "Avatar ID:",
+        "avatar_id": "Avatar-ID:",
         "aktiver_avatar_erkannt": "✅ Aktiver Avatar erkannt",
         "physbones_steuerung": "PhysBones Steuerung",
         "klicken_sie_auf_avatar_erkennen_um_automatisch_den": "Klicken Sie auf \"Avatar erkennen\", um automatisch den aktuell aktiven VRChat-Avatar und seine verfügbaren Parameter zu erkennen.",
         "echtzeit_uberwachung": "Echtzeit-Überwachung",
         "message_batching_caching": "Message Batching & Caching",
-        "switch_avatar": "Switch Avatar",
-        "oscquery_host": "OSCQuery Host",
+        "switch_avatar": "Avatar wechseln",
+        "oscquery_host": "OSCQuery-Server",
         "oscquery_ermoglicht_die_automatische_erkennung_aller_verfugbaren_vrchat": "OSCQuery ermöglicht die automatische Erkennung aller verfügbaren VRChat-Avatar-Parameter ohne manuelle Konfiguration. Dies ist erforderlich für Avatar Auto-Discovery und PhysBones-Steuerung.",
         "oscquery_http_websocket_port_detected_automatically_via_mdns": "OSCQuery-HTTP/WebSocket-Port (wird automatisch über mDNS erkannt)",
         "oscquery_aktivieren_empfohlen_fur_avatar_erkennung": "OSCQuery aktivieren (empfohlen für Avatar-Erkennung)",
@@ -371,13 +379,13 @@
         "physbones_control_aktivieren": "PhysBones Control aktivieren",
         "aktivieren_sie_erweiterte_funktionen_fur_automatische_avatar_erkennung": "Aktivieren Sie erweiterte Funktionen für automatische Avatar-Erkennung, Echtzeit-Monitoring und Performance-Optimierungen.",
         "aktiviert_live_updates_uber_websocket_fur_echtzeit_parameter": "Aktiviert Live-Updates über WebSocket für Echtzeit-Parameter-Änderungen",
-        "oscquery_port": "OSCQuery Port",
-        "emote_slot": "Emote Slot",
+        "oscquery_port": "OSCQuery-Netzwerkport",
+        "emote_slot": "Emote-Platz",
         "emote_slots": "Emote Slots:",
-        "command_configure_cooldowns_to_prevent_spam": "command. Configure cooldowns to prevent spam.",
+        "command_configure_cooldowns_to_prevent_spam": " Befehl. Konfigurieren Sie Abklingzeiten, um Spam zu vermeiden.",
         "aktionen_aktualisieren": "🔄 Aktionen aktualisieren",
         "live_log": "Live-Log",
-        "physbones_heading": "PhysBones:",
+        "physbones_heading": "PhysBones-Bereich:",
         "vrchat_chatbox": "VRChat-Chatbox",
         "chatbox_typing_indicator": "Typing-Indikator bei externen Chatbox-Nachrichten anzeigen",
         "chatbox_notification_sound": "Benachrichtigungston in VRChat abspielen",

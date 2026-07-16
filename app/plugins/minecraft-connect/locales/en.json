@@ -3,28 +3,28 @@
     "minecraft-connect": {
       "minecraft_connect": {
         "title": "Minecraft Connect",
-        "subtitle": "TikTok Live to Minecraft Integration",
+        "subtitle": "TikTok LIVE to Minecraft integration",
         "status": {
           "connected": "Connected",
           "disconnected": "Disconnected",
           "waiting": "Waiting for Minecraft"
         },
         "tabs": {
-          "mappings": "Action Mappings",
-          "actions": "Available Actions",
-          "events": "Event Log",
+          "mappings": "Action mappings",
+          "actions": "Available actions",
+          "events": "Event log",
           "settings": "Settings"
         },
         "mappings": {
-          "title": "Action Mappings",
-          "add": "Add Mapping",
+          "title": "Action mappings",
+          "add": "Add mapping",
           "edit": "Edit",
           "delete": "Delete",
           "empty": "No action mappings configured yet.",
-          "empty_hint": "Click 'Add Mapping' to create your first TikTok → Minecraft action mapping.",
-          "trigger": "TikTok Event Trigger",
+          "empty_hint": "Click ‘Add mapping’ to create your first TikTok → Minecraft action mapping.",
+          "trigger": "TikTok event trigger",
           "conditions": "Conditions (optional)",
-          "action": "Minecraft Action",
+          "action": "Minecraft action",
           "parameters": "Parameters",
           "enabled": "Enabled",
           "triggers": {
@@ -35,35 +35,35 @@
             "chat": "Chat",
             "subscribe": "Subscribe"
           },
-          "add_condition": "Add Condition",
+          "add_condition": "Add condition",
           "condition_field": "Field",
           "condition_operator": "Operator",
           "condition_value": "Value",
           "operators": {
             "equals": "Equals",
-            "not_equals": "Not Equals",
-            "greater_than": "Greater Than",
-            "less_than": "Less Than",
+            "not_equals": "Does not equal",
+            "greater_than": "Greater than",
+            "less_than": "Less than",
             "contains": "Contains"
           },
-          "placeholder_hint": "Use placeholders like {uniqueId}, {giftName}, {giftCount}, {comment} for dynamic values"
+          "placeholder_hint": "Use placeholders such as {uniqueId}, {giftName}, {giftCount}, and {comment} for dynamic values"
         },
         "actions": {
-          "title": "Available Minecraft Actions",
-          "test": "Test Action",
+          "title": "Available Minecraft actions",
+          "test": "Test action",
           "empty": "No Minecraft connection detected.",
           "empty_hint": "Install and run the TikStreamLink Fabric mod to see available actions.",
-          "spawn_entity": "Spawn Entity",
-          "give_item": "Give Item",
-          "set_time": "Set Time",
-          "apply_potion_effect": "Apply Potion Effect",
-          "post_chat_message": "Post Chat Message",
-          "change_weather": "Change Weather",
-          "execute_command": "Execute Command"
+          "spawn_entity": "Spawn entity",
+          "give_item": "Give item",
+          "set_time": "Set time",
+          "apply_potion_effect": "Apply potion effect",
+          "post_chat_message": "Post chat message",
+          "change_weather": "Change weather",
+          "execute_command": "Run command"
         },
         "events": {
-          "title": "Event Log",
-          "clear": "Clear Log",
+          "title": "Event log",
+          "clear": "Clear log",
           "empty": "No events yet.",
           "empty_hint": "Events will appear here when TikTok events trigger Minecraft actions.",
           "triggered_by": "Triggered by",
@@ -71,49 +71,49 @@
         },
         "settings": {
           "title": "Settings",
-          "save": "Save Settings",
-          "saved": "Settings saved successfully! Please restart the server to apply WebSocket changes.",
+          "save": "Save settings",
+          "saved": "Settings saved successfully. Restart the server to apply WebSocket changes.",
           "websocket": {
-            "title": "WebSocket Server",
+            "title": "WebSocket server",
             "port": "Port",
-            "port_hint": "Port for WebSocket server (default: 25560)",
-            "heartbeat": "Heartbeat Interval (ms)"
+            "port_hint": "Port for the WebSocket server (default: 25560)",
+            "heartbeat": "Heartbeat interval (ms)"
           },
           "limits": {
-            "title": "Rate Limits",
-            "max_per_minute": "Max Actions per Minute",
-            "cooldown": "Command Cooldown (ms)",
-            "queue_size": "Max Queue Size"
+            "title": "Rate limits",
+            "max_per_minute": "Maximum actions per minute",
+            "cooldown": "Command cooldown (ms)",
+            "queue_size": "Maximum queue size"
           },
           "overlay": {
             "title": "Overlay",
-            "enabled": "Enable Overlay",
-            "show_username": "Show Username",
-            "show_action": "Show Action Name",
-            "duration": "Animation Duration (ms)"
+            "enabled": "Enable overlay",
+            "show_username": "Show username",
+            "show_action": "Show action name",
+            "duration": "Animation duration (ms)"
           },
           "stats": {
             "title": "Statistics",
-            "total_events": "Total Events",
-            "total_actions": "Total Actions",
+            "total_events": "Total events",
+            "total_actions": "Total actions",
             "successful": "Successful",
             "failed": "Failed"
           }
         },
         "modal": {
-          "add_title": "Add Action Mapping",
-          "edit_title": "Edit Action Mapping",
+          "add_title": "Add action mapping",
+          "edit_title": "Edit action mapping",
           "cancel": "Cancel",
           "save": "Save"
         },
         "messages": {
-          "select_trigger_action": "Please select a trigger and action",
-          "save_failed": "Failed to save mapping",
-          "delete_confirm": "Are you sure you want to delete this mapping?",
-          "delete_failed": "Failed to delete mapping",
+          "select_trigger_action": "Select a trigger and an action",
+          "save_failed": "Could not save the mapping",
+          "delete_confirm": "Do you want to delete this mapping?",
+          "delete_failed": "Could not delete the mapping",
           "test_success": "Action queued successfully",
-          "test_failed": "Failed to queue action",
-          "not_connected": "Minecraft mod not connected"
+          "test_failed": "Could not queue the action",
+          "not_connected": "Minecraft mod is not connected"
         },
         "ui": {
           "actions": {
@@ -136,6 +136,114 @@
             "night": "Night",
             "cid": "Cid"
           }
+        },
+        "runtime": {
+          "status": {
+            "connected": "Connected",
+            "disconnected": "Disconnected",
+            "waiting": "Waiting for Minecraft",
+            "queue_theme": "Queue {queue} | Theme {theme}"
+          },
+          "mappings": {
+            "empty_title": "No commands yet.",
+            "empty_hint": "Click ‘Add command’ to create your first TikTok to Minecraft mapping.",
+            "to": "to",
+            "edit": "Edit",
+            "delete": "Delete",
+            "conditions": "Conditions:",
+            "no_conditions": "No conditions",
+            "no_parameters": "No parameters",
+            "edit_command": "Edit command",
+            "add_command": "Add command"
+          },
+          "actions": {
+            "empty_title": "No Minecraft connection detected.",
+            "empty_hint": "Install and run the Fabric mod to see available actions.",
+            "select": "Select action..."
+          },
+          "chat": {
+            "empty_title": "No chat yet.",
+            "empty_hint": "Chat events will appear here when viewers send messages.",
+            "viewer": "Viewer",
+            "message": "Message"
+          },
+          "goals": {
+            "label": "Label",
+            "current": "Current",
+            "target": "Target",
+            "reward_action": "Reward action",
+            "reward_action_placeholder": "spawn_entity",
+            "enabled": "Enabled",
+            "remove": "Remove goal",
+            "empty_preview_title": "No gift bar preview yet.",
+            "empty_preview_hint": "Create at least one goal to see a preview.",
+            "default_label": "Gift goal",
+            "no_reward_action": "No reward action",
+            "new_goal": "New goal"
+          },
+          "setup": {
+            "websocket_bridge": "WebSocket bridge",
+            "minecraft_mod_connection": "Minecraft mod connection",
+            "commands_configured": "Commands configured",
+            "modern_theme_selected": "Modern theme selected"
+          },
+          "conditions": {
+            "field_placeholder": "Field (for example, giftName)",
+            "equals": "Equals",
+            "not_equals": "Does not equal",
+            "greater_than": "Greater than",
+            "less_than": "Less than",
+            "contains": "Contains",
+            "value_placeholder": "Value"
+          },
+          "parameters": {
+            "placeholder": "Enter a value or use {placeholder}"
+          },
+          "messages": {
+            "select_trigger_action": "Select a trigger and an action",
+            "save_failed": "Could not save the mapping",
+            "save_failed_with_error": "Could not save the mapping: {error}",
+            "delete_confirm": "Do you want to delete this command?",
+            "delete_failed": "Could not delete the mapping",
+            "delete_failed_with_error": "Could not delete the mapping: {error}",
+            "enter_action_name": "Enter an action name:",
+            "test_success": "Action queued successfully",
+            "test_failed": "Could not test the action",
+            "test_failed_with_error": "Could not queue the action: {error}",
+            "settings_saved": "Settings saved successfully.",
+            "settings_save_failed": "Could not save settings",
+            "settings_save_failed_with_error": "Could not save settings: {error}"
+          },
+          "placeholders": {
+            "relay_targets": "minecraft, overlay",
+            "chat_filters": "spam, links, capitals"
+          },
+          "modal": {
+            "close": "Close dialog"
+          }
+        },
+        "overlay": {
+          "triggered_by": "Triggered by {username}",
+          "entity": "entity",
+          "item": "item",
+          "unknown": "unknown",
+          "effect": "effect",
+          "actions": {
+            "spawn_entity": "Spawn entity",
+            "give_item": "Give item",
+            "change_weather": "Change weather",
+            "set_time": "Set time",
+            "apply_potion_effect": "Apply potion effect",
+            "post_chat_message": "Post chat message",
+            "execute_command": "Run command"
+          },
+          "parameters": {
+            "spawn_entity": "Spawning {count}× {entity}",
+            "give_item": "Giving {count}× {item}",
+            "change_weather": "Changing weather to {weather}",
+            "set_time": "Setting time to {time}",
+            "apply_potion_effect": "Applying {effect}"
+          }
         }
       },
       "labels": {
@@ -143,8 +251,8 @@
         "chat_filters": "Chat filters",
         "tiktok_event_trigger": "TikTok event trigger",
         "live_chat_feed": "Live chat feed",
-        "connection_safety_overlay_and_theme_controls_live_here": "Connection, safety, overlay, and theme controls live here.",
-        "pulled_from_the_minecraft_mod": "Pulled from the Minecraft mod",
+        "connection_safety_overlay_and_theme_controls_live_here": "Connection, safety, overlay, and theme controls are managed here.",
+        "pulled_from_the_minecraft_mod": "Loaded from the Minecraft mod",
         "relay_mode": "Relay mode",
         "no_chat_yet": "No chat yet.",
         "save_setup": "Save setup",
@@ -153,19 +261,19 @@
         "available_actions": "Available actions",
         "websocket_port": "WebSocket port",
         "websocket_host": "WebSocket host",
-        "max_actions_per_minute": "Max actions per minute",
-        "use_placeholders_like_uniqueid_giftname_giftcount_comment_for": "Use placeholders like {uniqueId}, {giftName}, {giftCount}, {comment} for dynamic values.",
-        "a_ltth_control_surface_for_tiktok_to_minecraft": "A LTTH control surface for TikTok to Minecraft automation, powered by the existing bridge, queue, and mapping engine.",
+        "max_actions_per_minute": "Maximum actions per minute",
+        "use_placeholders_like_uniqueid_giftname_giftcount_comment_for": "Use placeholders such as {uniqueId}, {giftName}, {giftCount}, and {comment} for dynamic values.",
+        "a_ltth_control_surface_for_tiktok_to_minecraft": "An LTTH control surface for TikTok-to-Minecraft automation using the bridge, queue, and mapping engine.",
         "chat_events_will_appear_here_when_viewers_send": "Chat events will appear here when viewers send messages.",
         "relay_targets": "Relay targets",
-        "relay_into_minecraft_chat": "Relay into Minecraft chat",
+        "relay_into_minecraft_chat": "Relay to Minecraft chat",
         "show_action_name": "Show action name",
         "add_a_command_to_map_a_tiktok_event": "Add a command to map a TikTok event to a Minecraft action.",
         "show_username": "Show username",
-        "add_command": "Add Command",
-        "vision_impaired": "Vision Impaired",
+        "add_command": "Add command",
+        "vision_impaired": "Vision impaired",
         "add_a_goal_to_show_an_ltth_gift": "Add a goal to show an LTTH gift bar.",
-        "max_queue_size": "Max queue size",
+        "max_queue_size": "Maximum queue size",
         "enable_chat_relay": "Enable chat relay",
         "enable_overlay": "Enable overlay",
         "rate_limits_and_on_stream_feedback": "Rate limits and on-stream feedback",
@@ -174,7 +282,7 @@
         "safety_and_overlay": "Safety and overlay",
         "save_chat": "Save chat",
         "goal_editor": "Goal editor",
-        "high_contrast": "High Contrast",
+        "high_contrast": "High contrast",
         "bridge_and_mod_status": "Bridge and mod status",
         "gift_bar_preview": "Gift bar preview",
         "no_commands_yet": "No commands yet.",
@@ -194,10 +302,10 @@
         "install_and_run_the_fabric_mod_to_see": "Install and run the Fabric mod to see available actions.",
         "enable_gift_bars": "Enable gift bars",
         "comma_separated_targets_for_relayed_messages": "Comma-separated targets for relayed messages.",
-        "relay_tiktok_chat_into_minecraft_and_filter_what": "Relay TikTok chat into Minecraft and filter what gets passed through.",
-        "vision_impaired_ddbfc3": "Vision Impaired",
-        "high_contrast_de938d": "High Contrast",
-        "minecraft_connect_overlay": "Minecraft Connect Overlay",
+        "relay_tiktok_chat_into_minecraft_and_filter_what": "Relay TikTok chat into Minecraft and filter what is passed through.",
+        "vision_impaired_ddbfc3": "Vision impaired",
+        "high_contrast_de938d": "High contrast",
+        "minecraft_connect_overlay": "Minecraft Connect overlay",
         "select_trigger": "Select trigger...",
         "minecraft_action": "Minecraft action",
         "save_gift_bars": "Save gift bars",

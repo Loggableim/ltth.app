@@ -91,11 +91,40 @@ describe('docs screenshot capture viewport', () => {
     );
 
     expect(source).toContain('page.__docsCaptureNetwork = [];');
-    expect(source).toContain('if (!isAllowedCaptureNetworkUrl(request.url())) {');
+    expect(source).toContain('const url = request.url();');
+    expect(source).toContain('if (!isAllowedCaptureNetworkUrl(url)) {');
     expect(source).toContain("request.abort('blockedbyclient')");
-    expect(source).toContain('if (!/^https?:/i.test(url) || !isAllowedCaptureNetworkUrl(url)) return;');
+    expect(source).toContain('if (/^https?:/i.test(url) && isAllowedCaptureNetworkUrl(url)) {');
     expect(source).toContain('network: page.__docsCaptureNetwork');
     expect(source).toContain("if (COLLECTION === 'docs' && !START_APP) {");
+  });
+
+  test('uses one request handler for local evidence and external blocking', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+    const configureStart = source.indexOf('async function configurePage');
+    const configureEnd = source.indexOf('async function synchronizeCaptureLocale');
+    const interceptionStart = source.indexOf('async function attachPluginAssetRewrite');
+    const interceptionEnd = source.indexOf('function freePort');
+
+    expect(configureStart).toBeGreaterThan(-1);
+    expect(interceptionStart).toBeGreaterThan(-1);
+    expect(source.slice(configureStart, configureEnd)).not.toContain("page.on('request'");
+    const interception = source.slice(interceptionStart, interceptionEnd);
+    expect(interception).toContain('page.__docsCaptureNetwork.push({');
+    expect(interception).toContain("if (!isAllowedCaptureNetworkUrl(url)) {");
+  });
+
+  test('keeps a partial-capture receipt when its guide declares a narrower real-panel crop', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('function compatibleDocsOutput(output, expectedById) {');
+    expect(source).toContain('asset.workflow.captureRule.imageCrop?.width || 640');
   });
 
   test('does not rewrite shared font assets into plugin paths', () => {
@@ -117,15 +146,15 @@ describe('docs screenshot capture viewport', () => {
     expect(source).toContain('RUNTIME_PLUGIN_ROUTE_PREFIXES.has(match[1])');
   });
 
-  test('keeps the signed-out Store capture isolated while declaring optional dashboard APIs unavailable', () => {
+  test('keeps the signed-out Store capture on its real local UI without synthetic API responses', () => {
     const source = fs.readFileSync(
       path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
       'utf8'
     );
 
-    expect(source).toContain('const STORE_ADMIN_OPTIONAL_API_RESPONSES = Object.freeze({');
-    expect(source).toContain("if (guideId !== 'store-admin') return false;");
-    expect(source).toContain('request.respond({');
+    expect(source).not.toContain('STORE_ADMIN_OPTIONAL_API_RESPONSES');
+    expect(source).toContain("asset.action.prepare === 'open-store-admin-view'");
+    expect(source).toContain("window.NavigationManager.switchView('plugins')");
   });
 
   test('creates a local goal before navigating to its overlay URL', () => {
@@ -151,6 +180,18 @@ describe('docs screenshot capture viewport', () => {
     expect(source).toContain("if (window.I18n && typeof window.I18n.load === 'function') {");
     expect(source).toContain('await window.I18n.load(lang);');
     expect(source).toContain('window.I18n.apply?.();');
+  });
+
+  test('waits for a page i18n client to finish initialization before changing its locale', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('async function synchronizeCaptureLocale(page, locale)');
+    expect(source).toContain("typeof window.i18n.setLocale !== 'function'");
+    expect(source).toContain('window.i18n.initialized !== false');
+    expect(source).toContain('await synchronizeCaptureLocale(page, locale);');
   });
 
   test('records checkbox interactions when the already-enabled control is exercised before it is restored', () => {

@@ -9,7 +9,7 @@ const { spawn } = require('child_process');
 const { buildSpec, LOCALES: PRODUCT_LOCALES } = require('./product-screenshot-spec');
 const { buildDocsSpec, LOCALES: DOCS_LOCALES } = require('./docs-screenshot-spec');
 const { prepareDocsPluginFixture } = require('./lib/docs-capture-plugin-fixture');
-const { createCaptureReceipt, isAllowedCaptureNetworkUrl } = require('./lib/capture-receipt');
+const { assertNoBlockedNetworkAttempts, createCaptureReceipt, isAllowedCaptureNetworkUrl } = require('./lib/capture-receipt');
 const {
   assertWorkflowOperationsExecuted,
   createBlockedNetworkEvidence,
@@ -36,6 +36,7 @@ const WAIT_AFTER_LOAD_MS = Number(process.env.SCREENSHOT_WAIT_AFTER_LOAD_MS || 1
 const ASSET_TIMEOUT_MS = Number(process.env.SCREENSHOT_ASSET_TIMEOUT_MS || 20000);
 const LIFECYCLE_TIMEOUT_MS = Number(process.env.SCREENSHOT_LIFECYCLE_TIMEOUT_MS || 5000);
 const FAILURE_CONTEXT_TIMEOUT_MS = Number(process.env.SCREENSHOT_FAILURE_CONTEXT_TIMEOUT_MS || 1000);
+const DEBUG_CAPTURE = process.env.SCREENSHOT_DEBUG_CAPTURE === 'true';
 const START_APP = process.env.SCREENSHOT_START_APP !== 'false';
 const RUNTIME_PLUGIN_ROUTE_PREFIXES = new Set(['flame-overlay', 'visual-fx-frame-webgpu']);
 const DOCUMENTATION_DEMO_INPUT_VALUES = Object.freeze({
@@ -111,6 +112,10 @@ function withTimeout(promise, label) {
   });
 }
 
+function debugCapturePhase(label) {
+  if (DEBUG_CAPTURE) console.log(`[docs-capture] ${label}`);
+}
+
 function rewritePluginAssetRequest(request) {
   const url = new URL(request.url());
   const aliases = {
@@ -136,9 +141,20 @@ function rewritePluginAssetRequest(request) {
 async function attachPluginAssetRewrite(page) {
   await page.setRequestInterception(true);
   page.on('request', (request) => {
-    if (!isAllowedCaptureNetworkUrl(request.url())) {
+    const url = request.url();
+    // Puppeteer request interception must be resolved by a single handler.
+    // Recording and resolving the same event in two listeners can deadlock a
+    // page before its i18n client has initialized.
+    if (/^https?:/i.test(url) && isAllowedCaptureNetworkUrl(url)) {
+      page.__docsCaptureNetwork.push({
+        url,
+        method: request.method(),
+        resourceType: request.resourceType()
+      });
+    }
+    if (!isAllowedCaptureNetworkUrl(url)) {
       page.__docsCaptureBlockedNetwork.push(createBlockedNetworkEvidence({
-        url: request.url(),
+        url,
         method: request.method(),
         resourceType: request.resourceType()
       }));
@@ -280,18 +296,6 @@ async function configurePage(page, locale) {
   page.__docsCaptureConsoleErrors = [];
   page.__docsCaptureNetwork = [];
   page.__docsCaptureBlockedNetwork = [];
-  page.on('request', (request) => {
-    const url = request.url();
-    // Requests outside the isolated app are aborted by the interception
-    // handler below. They never leave the browser, so only completed local
-    // app traffic belongs in the receipt's network evidence.
-    if (!/^https?:/i.test(url) || !isAllowedCaptureNetworkUrl(url)) return;
-    page.__docsCaptureNetwork.push({
-      url,
-      method: request.method(),
-      resourceType: request.resourceType()
-    });
-  });
   page.on('console', (message) => {
     if (isBlockedExternalRequestConsoleError(message)) return;
     if (message.type() === 'error') {
@@ -303,6 +307,32 @@ async function configurePage(page, locale) {
   });
   page.on('pageerror', (error) => page.__docsCaptureConsoleErrors.push(error.message));
   await page.evaluateOnNewDocument(applyCaptureDocumentSettings, locale);
+}
+
+async function synchronizeCaptureLocale(page, locale) {
+  debugCapturePhase(`locale:${locale}: wait-i18n-init`);
+  await page.waitForFunction(() => {
+    return !window.i18n
+      || typeof window.i18n.setLocale !== 'function'
+      || window.i18n.initialized !== false;
+  }, { timeout: LIFECYCLE_TIMEOUT_MS });
+  debugCapturePhase(`locale:${locale}: apply`);
+  await page.evaluate(async (lang) => {
+    document.documentElement.lang = lang;
+    document.documentElement.dataset.lang = lang;
+    document.documentElement.setAttribute('data-theme', 'cid');
+    localStorage.setItem('dashboard-theme', 'cid');
+    localStorage.setItem('app_locale', lang);
+    if (window.i18n && typeof window.i18n.setLocale === 'function') {
+      await window.i18n.setLocale(lang);
+      window.i18n.updateDOM?.();
+    }
+    if (window.I18n && typeof window.I18n.load === 'function') {
+      await window.I18n.load(lang);
+      window.I18n.apply?.();
+    }
+  }, locale);
+  debugCapturePhase(`locale:${locale}: applied`);
 }
 
 async function activateContainingTab(page, selector) {
@@ -383,20 +413,10 @@ async function applySafeStepState(page, asset, locale) {
   // safe button action in its temporary profile; every other button remains
   // untouched.
   const interactions = [];
-  await page.evaluate(async (lang) => {
-    document.documentElement.lang = lang;
-    document.documentElement.setAttribute('data-theme', 'cid');
-    localStorage.setItem('dashboard-theme', 'cid');
-    localStorage.setItem('app_locale', lang);
-    if (window.i18n && typeof window.i18n.setLocale === 'function') {
-      await window.i18n.setLocale(lang);
-      window.i18n.updateDOM?.();
-    }
-    if (window.I18n && typeof window.I18n.load === 'function') {
-      await window.I18n.load(lang);
-      window.I18n.apply?.();
-    }
-  }, locale);
+  const captureLabel = `${locale}/${asset.id || `${asset.guideId}/${asset.stepId}`}`;
+  debugCapturePhase(`${captureLabel}: local-state-locale`);
+  await synchronizeCaptureLocale(page, locale);
+  debugCapturePhase(`${captureLabel}: local-state-preparation`);
   const preparationSelector = asset.action?.preparationEvidenceSelector
     || asset.action?.inputSelector
     || asset.action?.clickSelector
@@ -820,6 +840,7 @@ async function applySafeStepState(page, asset, locale) {
         });
       })
       : null;
+    debugCapturePhase(`${captureLabel}: local-state-click`);
     await page.evaluate((selector, actionType, guideId) => {
       const control = document.querySelector(selector);
       if (!control) throw new Error(`Capture selector not found: ${selector}`);
@@ -832,6 +853,7 @@ async function applySafeStepState(page, asset, locale) {
       if (control.disabled) throw new Error(`Declared local action is disabled: ${selector}`);
       control.click();
     }, selector, asset.action.type, asset.guideId);
+    debugCapturePhase(`${captureLabel}: local-state-settle`);
     if (dialogConfirmation) await dialogConfirmation;
     await new Promise((resolve) => setTimeout(resolve, asset.action.settleMs || 250));
     const after = await observeControlState(page, selector);
@@ -890,9 +912,19 @@ async function prepareAdvancedTimerOverlay(page, baseUrl, asset, locale) {
   });
   const overlayUrl = new URL(urlFor(baseUrl, asset.route, locale));
   overlayUrl.searchParams.set('timer', timerId);
+  interactions.push({
+    type: 'prepare',
+    name: 'create-demo-timer-overlay',
+    selector: '#timer-container',
+    status: 'performed',
+    observed: true,
+    changed: Boolean(timerId),
+    timerId
+  });
   return {
     url: overlayUrl.toString(),
     interactions,
+    navigations: [{ route: setupRoute, observed: true }],
     preparation: [
       { type: 'create-demo-timer', selector: '#timer-form button[type="submit"]', observed: true },
       { type: 'use-created-overlay-url', selector: '#timer-container', timerId, observed: true }
@@ -910,7 +942,10 @@ async function prepareGoalsOverlay(page, baseUrl, asset, locale) {
     throw new Error(`HTTP ${setupResponse ? setupResponse.status() : 'no response'} while preparing Goal overlay`);
   }
   await new Promise((resolve) => setTimeout(resolve, WAIT_AFTER_LOAD_MS));
-  const interactions = await applySafeStepState(page, { guideId: asset.guideId, action: { prepare: 'open-goal-create-modal' } }, locale);
+  const interactions = await applySafeStepState(page, {
+    guideId: asset.guideId,
+    action: { prepare: 'open-goal-create-modal', preparationEvidenceSelector: '#goal-modal' }
+  }, locale);
   const submitSelector = '#goal-form button[type="submit"]';
   const beforeSubmit = await observeControlState(page, submitSelector);
   await page.evaluate(() => {
@@ -945,9 +980,19 @@ async function prepareGoalsOverlay(page, baseUrl, asset, locale) {
   });
   const overlayUrl = new URL(urlFor(baseUrl, asset.route, locale));
   overlayUrl.searchParams.set('id', goalId);
+  interactions.push({
+    type: 'prepare',
+    name: 'create-demo-goal-overlay',
+    selector: '#goal-container',
+    status: 'performed',
+    observed: true,
+    changed: Boolean(goalId),
+    goalId
+  });
   return {
     url: overlayUrl.toString(),
     interactions,
+    navigations: [{ route: setupRoute, observed: true }],
     preparation: [
       { type: 'create-demo-goal', selector: '#goal-form button[type="submit"]', observed: true },
       { type: 'use-created-overlay-url', selector: '#goal-container', goalId, observed: true }
@@ -982,29 +1027,29 @@ async function captureAsset(page, baseUrl, asset, locale) {
   page.__docsCaptureNetwork = [];
   page.__docsCaptureBlockedNetwork = [];
   page.__docsCaptureInteractions = [];
+  const captureLabel = `${locale}/${asset.id}`;
+  debugCapturePhase(`${captureLabel}: configure`);
   await page.setViewport(asset.viewport);
-  // Overlay renderers can start live sockets, WebGL loops, or audio engines on
-  // load. For documentation we preserve their shipped markup and styles while
-  // preventing that unsafe runtime work in the isolated capture browser.
-  // Interactive Story has a large, self-starting admin runtime that begins
-  // status polling before a test story has been configured. The shipped HTML
-  // already contains the complete configuration UI, so documenting its safe
-  // empty state must not start that runtime or make a network request.
-  const staticOnly = asset.guideId === 'interactive-story';
-  await page.setJavaScriptEnabled(!staticOnly);
+  // Every guide must run its shipped localization. Interactive Story uses its
+  // own real `?demo=1` mode, which avoids its live status/config requests and
+  // socket connection while retaining the fully localized product UI.
+  await page.setJavaScriptEnabled(true);
+  debugCapturePhase(`${captureLabel}: navigate`);
   const advancedTimerOverlay = asset.action && asset.action.prepare === 'create-demo-timer-overlay'
     ? await prepareAdvancedTimerOverlay(page, baseUrl, asset, locale)
     : null;
   const goalsOverlay = asset.action && asset.action.prepare === 'create-demo-goal-overlay'
     ? await prepareGoalsOverlay(page, baseUrl, asset, locale)
     : null;
+  const prepareStoreAdmin = asset.action && asset.action.prepare === 'open-store-admin-view';
   const response = await page.goto(advancedTimerOverlay?.url || goalsOverlay?.url || urlFor(baseUrl, asset.route, locale), { waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS });
   if (!response || response.status() >= 400) throw new Error(`HTTP ${response ? response.status() : 'no response'} for ${asset.route}`);
   // Store initialization automatically opens the external account bridge for
   // a fresh profile. Clear the local bridge session as soon as its shipped
   // dashboard scripts are available so the documented, real signed-out panel
   // can render before a browser navigation begins.
-  const prepareImmediately = asset.action && asset.action.prepare === 'open-store-admin-view';
+  const prepareImmediately = prepareStoreAdmin;
+  const specialOverlayPreparation = Boolean(advancedTimerOverlay || goalsOverlay);
   page.__docsCaptureInteractions = [
     ...(advancedTimerOverlay?.interactions || []),
     ...(goalsOverlay?.interactions || [])
@@ -1014,27 +1059,20 @@ async function captureAsset(page, baseUrl, asset, locale) {
   } else {
     await new Promise((resolve) => setTimeout(resolve, WAIT_AFTER_LOAD_MS));
   }
-  if (!prepareImmediately) page.__docsCaptureInteractions.push(...await applySafeStepState(page, asset, locale));
+  debugCapturePhase(`${captureLabel}: apply-local-state`);
+  if (!prepareImmediately && !specialOverlayPreparation) {
+    page.__docsCaptureInteractions.push(...await applySafeStepState(page, asset, locale));
+  }
   // Some shipped controls are created only after a real settings/preview
   // workflow. Run that workflow first, then let the generic tab helper reveal
   // a static parent pane if the anchor still needs it.
   const tabPreparation = await activateContainingTab(page, asset.selector);
+  debugCapturePhase(`${captureLabel}: apply-locale`);
   // Some dashboard views load their own i18n client after the initial page
   // setup. Reapply the requested locale after a real navigation/modal action
   // and immediately before language evidence is recorded.
-  await page.evaluate(async (lang) => {
-    document.documentElement.lang = lang;
-    document.documentElement.dataset.lang = lang;
-    localStorage.setItem('app_locale', lang);
-    if (window.i18n && typeof window.i18n.setLocale === 'function') {
-      await window.i18n.setLocale(lang);
-      window.i18n.updateDOM?.();
-    }
-    if (window.I18n && typeof window.I18n.load === 'function') {
-      await window.I18n.load(lang);
-      window.I18n.apply?.();
-    }
-  }, locale);
+  await synchronizeCaptureLocale(page, locale);
+  debugCapturePhase(`${captureLabel}: inspect-anchor`);
   const preparation = [...(advancedTimerOverlay?.preparation || []), ...(goalsOverlay?.preparation || []), tabPreparation].filter(Boolean);
   const focus = await assertRenderedAnchor(page, asset.selector);
   await new Promise((resolve) => setTimeout(resolve, 100));
@@ -1083,12 +1121,19 @@ async function captureAsset(page, baseUrl, asset, locale) {
       anchorRect: rect ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height } : null
     };
   }, locale, asset.selector, observedSelectors);
+  debugCapturePhase(`${captureLabel}: verify-workflow`);
   if (state.lang !== locale) throw new Error(`Document language is ${state.lang || 'unset'}, expected ${locale}`);
   if (state.theme !== 'cid') throw new Error(`Theme is ${state.theme || 'unset'}, expected cid`);
   if (!state.anchorRect) throw new Error(`Capture anchor has no rendered geometry: ${asset.selector}`);
   const executedOperations = assertWorkflowOperationsExecuted({
     workflow: asset.workflow,
-    state,
+    state: {
+      ...state,
+      navigations: [
+        ...(advancedTimerOverlay?.navigations || []),
+        ...(goalsOverlay?.navigations || [])
+      ]
+    },
     interactions: page.__docsCaptureInteractions,
     preparation
   });
@@ -1096,6 +1141,7 @@ async function captureAsset(page, baseUrl, asset, locale) {
   const target = outputPath(asset, locale);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   await page.screenshot({ path: target, type: 'png', clip: screenshotClip });
+  debugCapturePhase(`${captureLabel}: record-receipt`);
   const bytes = fs.readFileSync(target);
   if (asset.action && asset.action.cleanupSelector === '#end-manual-game') {
     const cleanupConfirmation = new Promise((resolve, reject) => {
@@ -1184,6 +1230,7 @@ async function captureAsset(page, baseUrl, asset, locale) {
   });
   output.receipt.executedOperations = executedOperations;
   output.receipt.blockedNetwork = [...page.__docsCaptureBlockedNetwork];
+  assertNoBlockedNetworkAttempts(output.receipt.blockedNetwork);
   const failedPostconditions = output.receipt.postconditions.filter((condition) => !condition.passed);
   if (failedPostconditions.length) {
     throw new Error(`Workflow postconditions failed for ${asset.guideId}/${asset.stepId}: ${JSON.stringify(failedPostconditions)}`);
@@ -1347,6 +1394,10 @@ async function captureProduct(spec, assets, locales) {
 function compatibleDocsOutput(output, expectedById) {
   const asset = expectedById.get(output.id);
   if (!asset || !DOCS_LOCALES.includes(output.locale)) return false;
+  const expectedClipWidth = Math.min(
+    output.state?.viewport?.clientWidth || 0,
+    asset.workflow.captureRule.imageCrop?.width || 640
+  );
   return output.guideId === asset.guideId
     && output.stepId === asset.stepId
     && output.route === asset.route
@@ -1366,10 +1417,10 @@ function compatibleDocsOutput(output, expectedById) {
       && entry.disposition === 'blocked'
       && !isAllowedCaptureNetworkUrl(entry.url))
     && Array.isArray(output.receipt?.console)
-    && output.receipt.console.length === 0
-    && output.focus?.selector === asset.selector
-    && output.screenshotClip
-    && output.screenshotClip.width === Math.min(output.state?.viewport?.clientWidth || 0, 640)
+        && output.receipt.console.length === 0
+        && output.focus?.selector === asset.selector
+        && output.screenshotClip
+        && output.screenshotClip.width === expectedClipWidth
     && output.state?.lang === output.locale
     && output.state?.i18n === output.locale
     && output.state?.theme === 'cid';

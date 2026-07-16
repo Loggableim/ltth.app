@@ -61,6 +61,15 @@ describe('ClarityHUD UI i18n', () => {
     expect(initializeLocale).toBeGreaterThan(-1);
     expect(setChatUrl).toBeGreaterThan(-1);
     expect(setChatUrl).toBeLessThan(initializeLocale);
+    expect(source.match(/setOverlayUrls\(\);/g)).toHaveLength(2);
+  });
+
+  test('keeps generated overlay URLs out of declarative text translation', () => {
+    const html = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', pluginId, 'ui', 'main.html'), 'utf8');
+
+    for (const id of ['chat-url', 'full-url', 'multi-url', 'stream-url']) {
+      expect(html).not.toMatch(new RegExp(`id="${id}"[^>]*\\bdata-i18n(?:=|-)`));
+    }
   });
 
   test('exposes translated accessible names for dynamic dashboard controls', () => {

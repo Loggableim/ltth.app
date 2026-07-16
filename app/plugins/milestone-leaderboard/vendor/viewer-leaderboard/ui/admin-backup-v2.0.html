@@ -905,7 +905,7 @@
           <div class="card-body">
             <div class="search-box">
               <span class="search-icon">🔍</span>
-              <input type="text" class="form-control" id="leaderboardSearch" placeholder="Search viewers...">
+              <input type="text" class="form-control" id="leaderboardSearch" placeholder="Search viewers..." data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.search_viewers">
             </div>
             <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
               <table class="modern-table">
@@ -1038,7 +1038,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.font_family_923ce8">Font Family</label>
-                <input type="text" class="form-control" id="leaderboardFont" placeholder="e.g. 'Inter', sans-serif">
+                <input type="text" class="form-control" id="leaderboardFont" placeholder="e.g. 'Inter', sans-serif" data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.font_family">
               </div>
             </div>
 
@@ -1216,7 +1216,7 @@
             <div style="margin-top: 16px;">
               <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.test_username_a0b330">Test Username</label>
               <input type="text" class="form-control" id="testUsername" placeholder="Enter username for testing"
-                style="max-width: 480px;">
+                style="max-width: 480px;" data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.test_username">
             </div>
           </div>
         </div>
@@ -1522,7 +1522,7 @@
             <form id="manualAwardForm">
               <div class="form-group">
                 <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.username_771cdc">Username *</label>
-                <input type="text" class="form-control" id="awardUsername" placeholder="Enter viewer username" list="viewerSuggestions" autocomplete="off" required>
+                <input type="text" class="form-control" id="awardUsername" placeholder="Enter viewer username" list="viewerSuggestions" autocomplete="off" required data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.viewer_username">
                 <datalist id="viewerSuggestions"></datalist>
                 <small class="form-text" data-i18n="plugins.milestone-leaderboard.labels.the_tiktok_username_of_the_viewer_to_award">The TikTok username of the viewer to award XP</small>
               </div>
@@ -1535,7 +1535,7 @@
 
               <div class="form-group">
                 <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.reason_optional_ab806a">Reason (Optional)</label>
-                <textarea class="form-control" id="awardReason" rows="3" placeholder="e.g., Winner of community event, Milestone celebration, etc."></textarea>
+                <textarea class="form-control" id="awardReason" rows="3" placeholder="e.g., Winner of community event, Milestone celebration, etc." data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.award_reason"></textarea>
                 <small class="form-text" data-i18n="plugins.milestone-leaderboard.labels.optional_note_about_why_this_xp_was_awarded_8a0583">Optional note about why this XP was awarded (for your records)</small>
               </div>
 
@@ -1633,7 +1633,7 @@
                   <small class="form-text" style="display: block; margin-bottom: 8px;" data-i18n="plugins.milestone-leaderboard.labels.enter_xp_values_for_each_field_positive_win_cbe6e3">
                     Enter XP values for each field (positive = win, negative = lose). One per line.
                   </small>
-                  <textarea class="form-control" id="spinFieldValues" rows="8" placeholder="5000&#10;-2000&#10;1000&#10;-5000&#10;2000&#10;-1000&#10;10000&#10;-3000"></textarea>
+                  <textarea class="form-control" id="spinFieldValues" rows="8" placeholder="5000&#10;-2000&#10;1000&#10;-5000&#10;2000&#10;-1000&#10;10000&#10;-3000" data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.spin_values"></textarea>
                   <small class="form-text" data-i18n="plugins.milestone-leaderboard.labels.tip_use_large_positive_values_for_jackpots_negative_5e86c2">Tip: Use large positive values for jackpots, negative values for risk</small>
                 </div>
 
@@ -1810,7 +1810,7 @@
             <div class="form-group" style="max-width: 800px;">
               <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.search_viewer">Search Viewer</label>
               <div style="display: flex; gap: 12px;">
-                <input type="text" class="form-control" id="historyUsername" placeholder="Enter username">
+                <input type="text" class="form-control" id="historyUsername" placeholder="Enter username" data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.username">
                 <button class="btn btn-primary" data-action="loadViewerHistory" style="white-space: nowrap;" data-i18n="plugins.milestone-leaderboard.labels.load_history_750015">
                   🔍 Load History
                 </button>
@@ -3057,10 +3057,10 @@
       tbody.innerHTML = rewards.map((reward) => `
         <tr data-level="${reward.level}">
           <td><input type="number" class="form-control" value="${reward.level}" min="1" data-field="level"></td>
-          <td><input type="text" class="form-control" value="${reward.title || ''}" placeholder="Title/Badge" data-field="title"></td>
+          <td><input type="text" class="form-control" value="${reward.title || ''}" placeholder="Title/Badge" data-field="title" data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.title_badge"></td>
           <td><input type="color" class="form-control" value="${reward.name_color || '#ffffff'}" data-field="name_color"></td>
-          <td><input type="text" class="form-control" value="${reward.announcement_message || ''}" placeholder="Custom emote or message" data-field="announcement_message"></td>
-          <td><input type="text" class="form-control" value="${reward.special_effects?.animation || ''}" placeholder="Animation key" data-field="animation"></td>
+          <td><input type="text" class="form-control" value="${reward.announcement_message || ''}" placeholder="Custom emote or message" data-field="announcement_message" data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.custom_emote"></td>
+          <td><input type="text" class="form-control" value="${reward.special_effects?.animation || ''}" placeholder="Animation key" data-field="animation" data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.animation_key"></td>
           <td>
             <button class="btn btn-sm btn-success" data-action="saveLevelReward" data-arg="${reward.level}" data-i18n="plugins.milestone-leaderboard.ui.actions.save">💾 Save</button>
             <button class="btn btn-sm btn-danger" data-action="deleteLevelReward" data-arg="${reward.level}">🗑️</button>

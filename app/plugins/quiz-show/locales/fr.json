@@ -2,105 +2,211 @@
   "plugins": {
     "quiz-show": {
       "quiz_show": {
-        "title": "Pup Cid's Little Quiz Show Plugin",
-        "subtitle": "Interactive Quiz Game",
+        "title": "Extension Quiz Show de Pup Cid",
+        "subtitle": "Jeu de quiz interactif",
         "config": {
-          "title": "Configuration",
-          "enabled": "Enable Quiz Show",
-          "time_limit": "Time Limit (seconds)",
-          "points_correct": "Points for Correct Answer",
-          "points_wrong": "Points for Wrong Answer",
+          "title": "Parametres",
+          "enabled": "Activer le Quiz Show",
+          "time_limit": "Limite de temps (secondes)",
+          "points_correct": "Points pour une bonne reponse",
+          "points_wrong": "Points pour une mauvaise reponse",
           "save": "Enregistrer les Paramètres"
         },
         "game": {
-          "title": "Game Control",
-          "start": "Start Quiz",
-          "stop": "Stop Quiz",
-          "next_question": "Next Question",
-          "show_leaderboard": "Show Leaderboard"
+          "title": "Controle du jeu",
+          "start": "Demarrer le quiz",
+          "stop": "Arreter le quiz",
+          "next_question": "Question suivante",
+          "show_leaderboard": "Afficher le classement"
         },
         "questions": {
-          "title": "Questions",
-          "add": "Add Question",
-          "edit": "Edit Question",
-          "delete": "Delete Question",
-          "question_text": "Question",
-          "answer_a": "Answer A",
-          "answer_b": "Answer B",
-          "answer_c": "Answer C",
-          "answer_d": "Answer D",
-          "correct_answer": "Correct Answer",
-          "import": "Import Questions",
-          "export": "Export Questions"
+          "title": "Liste des questions",
+          "add": "Ajouter une question",
+          "edit": "Modifier la question",
+          "delete": "Supprimer la question",
+          "question_text": "Enonce",
+          "answer_a": "Reponse A",
+          "answer_b": "Reponse B",
+          "answer_c": "Reponse C",
+          "answer_d": "Reponse D",
+          "correct_answer": "Bonne reponse",
+          "import": "Importer des questions",
+          "export": "Exporter les questions"
         },
         "ai_packages": {
-          "title": "AI Question Packages",
-          "subtitle": "Generate question packages with OpenAI",
+          "title": "Lots de questions IA",
+          "subtitle": "Generer des lots de questions avec OpenAI",
           "config": {
-            "title": "OpenAI Configuration",
-            "api_key": "API Key",
+            "title": "Configuration OpenAI",
+            "api_key": "Cle API",
             "api_key_placeholder": "sk-...",
-            "api_key_hint": "Your OpenAI API key will be stored securely",
-            "api_key_status_configured": "Configured",
-            "api_key_status_not_configured": "Not configured",
-            "model": "Model",
-            "default_package_size": "Default Package Size",
-            "save": "Save Configuration",
-            "test": "Test API Key",
-            "test_success": "API key is valid!",
-            "test_error": "Invalid API key",
-            "save_success": "Configuration saved successfully",
-            "save_error": "Error saving configuration"
+            "api_key_hint": "Votre cle API OpenAI sera stockee en securite",
+            "api_key_status_configured": "Configuree",
+            "api_key_status_not_configured": "Non configuree",
+            "model": "Modele",
+            "default_package_size": "Taille de lot par defaut",
+            "save": "Enregistrer la configuration",
+            "test": "Tester la cle API",
+            "test_success": "La cle API est valide !",
+            "test_error": "Cle API invalide",
+            "save_success": "Configuration enregistree avec succes",
+            "save_error": "Erreur lors de l enregistrement de la configuration"
           },
           "generate": {
-            "title": "Generate New Question Package",
-            "warning": "Please configure your OpenAI API key above first.",
-            "category": "Category",
-            "category_placeholder": "e.g. Geography, History, Sports",
-            "package_size": "Number of Questions",
-            "package_name": "Package Name (optional)",
-            "package_name_placeholder": "Auto-generated",
-            "button": "Generate Question Package",
-            "button_generating": "Generating...",
-            "difficulty_info": "Difficulty Distribution",
-            "difficulty_easy": "50% Easy",
-            "difficulty_medium": "~17% Medium",
-            "difficulty_hard": "~17% Hard",
-            "difficulty_expert": "~16% Expert",
-            "duplicate_info": "Existing questions in the category are automatically detected to avoid duplicates.",
-            "success": "Package successfully generated with {count} questions!",
-            "error": "Error during generation",
-            "progress_generating": "Generating questions with OpenAI...",
-            "progress_processing": "Processing answers...",
-            "progress_done": "Done!"
+            "title": "Generer un nouveau lot de questions",
+            "warning": "Configurez d abord votre cle API OpenAI ci-dessus.",
+            "category": "Categorie",
+            "category_placeholder": "par ex. geographie, histoire, sport",
+            "package_size": "Nombre de questions",
+            "package_name": "Nom du lot (facultatif)",
+            "package_name_placeholder": "Cree automatiquement",
+            "button": "Generer le lot de questions",
+            "button_generating": "Generation...",
+            "difficulty_info": "Repartition des difficultes",
+            "difficulty_easy": "50 % facile",
+            "difficulty_medium": "~17 % moyen",
+            "difficulty_hard": "~17 % difficile",
+            "difficulty_expert": "~16 % expert",
+            "duplicate_info": "Les questions existantes de la catégorie sont détectées automatiquement pour éviter les doublons.",
+            "success": "Pack de questions généré avec succès : {count} questions !",
+            "error": "Erreur lors de la generation",
+            "progress_generating": "Generation des questions avec OpenAI...",
+            "progress_processing": "Traitement des reponses...",
+            "progress_done": "Termine !"
           },
           "list": {
-            "title": "Available Question Packages",
-            "count": "Packages",
-            "no_packages": "No packages available. Generate your first package above!",
-            "tip": "Select one or more packages to use only questions from these packages in the quiz. If no packages are selected, all questions will be used.",
-            "questions": "Questions",
-            "created": "Created",
-            "view": "View",
-            "delete": "Delete",
-            "delete_confirm": "Really delete this package and all its questions?",
-            "delete_success": "Package successfully deleted",
-            "delete_error": "Error deleting package"
+            "title": "Lots de questions disponibles",
+            "count": "Lots",
+            "no_packages": "Aucun lot disponible. Generez votre premier lot ci-dessus.",
+            "tip": "Sélectionnez un ou plusieurs packages pour n'utiliser dans le quiz que les questions de ces packages. Si aucun package n'est sélectionné, toutes les questions seront utilisées.",
+            "questions": "Liste des questions",
+            "created": "Cree le",
+            "view": "Afficher",
+            "delete": "Supprimer",
+            "delete_confirm": "Voulez-vous vraiment supprimer ce package et toutes ses questions ?",
+            "delete_success": "Lot supprime avec succes",
+            "delete_error": "Erreur lors de la suppression du lot"
           }
         },
         "overlay": {
           "title": "Overlay",
-          "quiz_url": "Quiz Overlay URL",
-          "leaderboard_url": "Leaderboard Overlay URL",
+          "quiz_url": "URL de superposition du quiz",
+          "leaderboard_url": "URL de superposition du classement",
           "copy": "Copier l'URL",
           "open": "Ouvrir l'Overlay"
         },
         "leaderboard": {
-          "title": "Leaderboard",
-          "rank": "Rank",
-          "player": "Player",
-          "score": "Score",
-          "reset": "Reset Scores"
+          "title": "Classement",
+          "rank": "Rang",
+          "player": "Joueur",
+          "score": "Total de points",
+          "reset": "Reinitialiser les scores"
+        }
+      },
+      "runtime": {
+        "connection": {
+          "connected": "Connecté",
+          "disconnected": "Déconnecté",
+          "testing": "Test de la connexion...",
+          "success": "✓ Connexion réussie ! Le modèle est accessible.",
+          "failed": "✗ Échec de la connexion : {error}",
+          "network_error": "✗ Erreur réseau : {error}",
+          "unknown_error": "Erreur inconnue"
+        },
+        "dialogs": {
+          "stop_quiz": "Voulez-vous vraiment arrêter le quiz ?",
+          "fill_all_fields": "Veuillez remplir tous les champs",
+          "delete_question": "Voulez-vous vraiment supprimer cette question ?",
+          "enter_json": "Veuillez saisir du JSON",
+          "invalid_json": "Format JSON invalide",
+          "reset_leaderboard": "Voulez-vous vraiment réinitialiser le classement ? Tous les points seront perdus !",
+          "reset_hud": "Voulez-vous rétablir la configuration HUD par défaut ? Toutes les positions et tous les réglages seront perdus.",
+          "season_name": "Nom de la nouvelle saison :",
+          "create_season": "Créer la nouvelle saison \"{name}\" ? La saison actuelle sera archivée.",
+          "openai_settings_managed": "La configuration OpenAI est désormais gérée dans le panneau principal des réglages. Enregistrez-y votre clé API.",
+          "delete_package": "Voulez-vous vraiment supprimer ce pack et toutes ses questions ?",
+          "delete_layout": "Voulez-vous vraiment supprimer cette mise en page ?",
+          "delete_mapping": "Voulez-vous vraiment supprimer cette association ?",
+          "delete_show": "Voulez-vous vraiment supprimer cette émission ?"
+        },
+        "status": {
+          "running": "En cours",
+          "round_ended": "Manche terminée",
+          "stopped": "Arrêté"
+        },
+        "questions": {
+          "count": "{count} questions au total",
+          "empty": "Aucune question disponible",
+          "no_active": "Aucune question active"
+        },
+        "leaderboard": {
+          "empty": "Aucune entrée",
+          "season": "Saison"
+        },
+        "categories": {
+          "all": "Toutes les catégories",
+          "selected_count": "{count} catégories"
+        },
+        "seasons": {
+          "current": "Saison actuelle",
+          "default_name": "Saison {year}"
+        },
+        "ai": {
+          "generating": "Génération des questions avec OpenAI...",
+          "generate_short": "Génération...",
+          "processing": "Traitement des réponses...",
+          "done": "Terminé !"
+        },
+        "packages": {
+          "count": "{count} packs",
+          "empty": "Aucun pack disponible. Générez votre premier pack ci-dessus."
+        },
+        "layouts": { "empty": "Aucune mise en page disponible" },
+        "gifts": {
+          "select": "-- Choisir un cadeau --",
+          "empty_mappings": "Aucune association disponible"
+        },
+        "batch": {
+          "generating": "Génération en cours...",
+          "start": "Démarrer la génération par lots",
+          "started": "[{time}] Génération par lots lancée pour {count} catégories...",
+          "completed": "[{time}] Génération par lots terminée !",
+          "summary": "Réussites : {success} | Échecs : {failed}"
+        },
+        "voting": {
+          "active": "Vote en cours : {rows}",
+          "ready": "Vote prêt : {rows}",
+          "selected": "Catégorie choisie : {category}",
+          "none": "aucune",
+          "ended": "Vote terminé"
+        },
+        "shows": { "empty": "Aucune émission enregistrée." },
+        "jokers": { "by": "par" },
+        "sounds": { "empty": "Aucun son configuré." },
+        "health": {
+          "database": "Base de données",
+          "socket": "Connexion Socket",
+          "tts": "TTS",
+          "openai": "OpenAI",
+          "questions": "Nombre de questions",
+          "categories": "Catégories",
+          "sounds": "Sons",
+          "setup": "Configuration",
+          "complete": "terminée"
+        },
+        "overlay": {
+          "round": "Manche {current}",
+          "round_of_total": "Manche {current} / {total}",
+          "this_round": "Cette manche",
+          "by_user": "par {user}",
+          "mvp_points": "{points} points obtenus",
+          "no_questions_instruction": "Ajoutez de nouvelles questions puis recommencez.",
+          "anonymous": "Anonyme",
+          "unknown": "Inconnu",
+          "leaderboard_round": "Manche",
+          "leaderboard_round_season": "Manche + saison",
+          "points": "{points} points",
+          "achievement": "Succès"
         }
       },
       "labels": {
@@ -180,7 +286,7 @@
         "openai_api_key_erforderlich": "OpenAI (clé API requise)",
         "geschenk_id_33c1f8": "Identifiant cadeau",
         "ring_mit_farbverlauf": "Bague dégradée",
-        "select_one_or_more_packages_to_use_only": "Select one or more packages to use only questions from these packages in the quiz. If no packages are selected, all questions will be used.",
+        "select_one_or_more_packages_to_use_only": "Sélectionnez un ou plusieurs packages pour n'utiliser dans le quiz que les questions de ces packages. Si aucun package n'est sélectionné, toutes les questions seront utilisées.",
         "aktive_zuordnungen": "Affectations actives",
         "antwortreihenfolge_mischen": "Mélanger l'ordre des réponses",
         "zurucksetzen": "Réinitialiser",
@@ -275,7 +381,7 @@
         "publikum_waehlt_kategorie_je_frage": "Le public choisit la catégorie par question",
         "antwort_c": "Réponse C :",
         "bitte_konfigurieren_sie_zuerst_ihren_openai_api_schlussel": "Veuillez d'abord configurer votre clé API OpenAI dans le panneau des paramètres principal.",
-        "breite_px": "Breite (px)",
+        "breite_px": "Largeur (px)",
         "kategorien_fuer_manuelles_voting": "Catégories pour le vote manuel",
         "slot_machine_manuell_testen": "Tester manuellement la machine à sous",
         "einblenden_fade": "Fondu entrant",
@@ -331,7 +437,7 @@
         "frage_erstellen_bearbeiten": "Créer/Modifier une question",
         "tts_startzeit_vor_frage_sekunden": "Heure de début du TTS avant la question (secondes) :",
         "gro_250x250": "Gros (250x250)",
-        "francais": "Français",
+        "francais": "Langue francaise",
         "zeit_bonus_sekunden": "Bonus de temps (secondes) :",
         "50_einfach": "50 % Facile (",
         "nur_runden_leaderboard": "Classement des tours uniquement",
@@ -392,7 +498,7 @@
         "sound_testen": "Tester le son",
         "erlaubt_antworten_mit_a_schreiben_b2d411": "Permet les réponses avec / : écrivez \"/a\".",
         "label_b36e4e": "日本語",
-        "francais_b3fb1c": "Français",
+        "francais_b3fb1c": "Langue francaise",
         "tts_einstellungen_speichern": "Enregistrer les paramètres TTS",
         "tts_geschwindigkeit": "Vitesse TTS :",
         "interaktive_quizrunden_ki_fragenpakete_gift_joker_und_live": "Des quiz interactifs, des packs de questions sur l'IA, des jokers empoisonnés et un classement en direct pour votre flux.",
@@ -442,7 +548,7 @@
         "overlay_konfiguration_d05390": "Configuration de superposition",
         "50_50_joker_aktiviert_joker50": "50:50 Joker activé (!joker50)",
         "richtige_antwort_d45a43": "Bonne réponse :",
-        "ein_aus_schalten_mit_checkbox": "Ein/Aus schalten mit Checkbox",
+        "ein_aus_schalten_mit_checkbox": "Activer ou desactiver avec une case a cocher",
         "zeit_in_sekunden_zwischen_antwortanzeige_und_nachster_frage": "Temps en secondes entre l'affichage de la réponse et la question suivante",
         "gro_1200x500": "Grand (1200x500)",
         "runden_anzeige_typ": "Type d'affichage du tour",
@@ -491,7 +597,7 @@
         "punkte_fur_weitere_richtige_antworten": "Points pour des réponses correctes supplémentaires :",
         "scale_in": "Mise à l'échelle",
         "label_f52753": "Русский",
-        "francais_f53a66": "Français",
+        "francais_f53a66": "Langue francaise",
         "circular_svg": "Circulaire SVG",
         "antworteinblendedauer_sekunden": "Temps de réponse (secondes) :",
         "der_openai_api_schlussel_wird_jetzt_zentral_im": "La clé API OpenAI est désormais stockée de manière centralisée dans le",
@@ -510,21 +616,21 @@
         "tts_stimme": "Voix TTS :",
         "gro_e_ff06a4": "Taille",
         "gro_500x120": "Gros (500x120)",
-        "16_expert": "~16% Expert ("
+        "16_expert": "~16 % expert ("
       },
       "ui": {
         "navigation": {
           "dashboard": "Tableau de bord",
           "settings": "Paramètres",
           "gift_jokers": "Jokers de cadeaux",
-          "extensions": "Extensions",
+          "extensions": "Modules complementaires",
           "season": "Saison"
         },
         "game_modes": {
           "classic": "Classique",
           "elimination": "Élimination",
-          "marathon": "Marathon",
-          "duel": "Duel"
+          "marathon": "Mode marathon",
+          "duel": "Mode duel"
         },
         "actions": {
           "stop": "Arrêter",
@@ -551,7 +657,7 @@
           "easy": "Facile",
           "medium": "Moyenne",
           "hard": "Difficile",
-          "expert": "Expert",
+          "expert": "Niveau expert",
           "master": "Maître"
         },
         "language": {
@@ -575,7 +681,7 @@
           "integration": "Intégration"
         },
         "options": {
-          "standard": "Standard"
+          "standard": "Reglage par defaut"
         },
         "animation": {
           "style": "Style d’animation :"
@@ -583,10 +689,10 @@
         "layout": {
           "position": "Positionnement :",
           "embedded": "Intégré",
-          "orientation": "Orientation",
+          "orientation": "Sens d affichage",
           "element": "Élément",
-          "visible": "Visible",
-          "vertical": "Vertical",
+          "visible": "Affiche",
+          "vertical": "En vertical",
           "horizontal": "Horizontale"
         },
         "ai": {
@@ -607,7 +713,7 @@
           "timer_variant": "Variante du minuteur :",
           "animation_speed": "Vitesse d’animation :",
           "animation_speed_value": "1.0",
-          "animations": "Animations",
+          "animations": "Effets animes",
           "question_appearance": "Affichage de la question :",
           "colors": "Couleurs",
           "success": "Succès :",
@@ -626,7 +732,7 @@
         },
         "table": {
           "status": "Statut",
-          "actions": "Actions"
+          "actions": "Commandes"
         },
         "setup": {
           "wizard": "Assistant de configuration",
@@ -689,7 +795,40 @@
           "column_s": "Colonne S",
           "column_t": "Colonne T"
         }
+      },
+      "gift_jokers": {
+        "enabled": "Activé"
+      },
+      "form_controls": {
+      "placeholders": {
+        "question": "Qu’est-ce que... ?",
+        "general_category": "Général",
+        "answer_info": "Informations supplémentaires sur la réponse (facultatif)",
+        "batch_categories": "Géographie&#10;Histoire&#10;Mathématiques&#10;Sciences&#10;Sports&#10;Musique&#10;Cinéma et télévision&#10;...",
+        "llm_api_key": "sk-... ou laissez vide pour Ollama",
+        "llm_model": "ex. gpt-5-mini, llama3.2, mistral",
+        "llm_base_url": "http://localhost:11434/v1 (Ollama par défaut)",
+        "layout_name": "Ma mise en page personnalisée",
+        "gift_id_example": "ex. 5655",
+        "gift_name_galaxy": "ex. Galaxy",
+        "gift_name_rose": "ex. Rose",
+        "vote_categories": "Sports&#10;Musique&#10;Gaming&#10;Général",
+        "show_name": "Nom de l’émission",
+        "duel_left_users": "ex. user1,user2",
+        "duel_right_users": "ex. user3,user4",
+        "sound_event_name": "ex. event_name",
+        "custom_css": "/* Ajoutez votre CSS personnalisé ici */\n.question-text {\n  /* Exemple : ombre du texte */\n  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);\n}",
+        "question_import_example": "[\n  {\n    \"question\": \"Quelle est la capitale de l'Allemagne ?\",\n    \"answers\": [\"Berlin\", \"Munich\", \"Hambourg\", \"Cologne\"],\n    \"correct\": 0,\n    \"difficulty\": 2,\n    \"category\": \"Géographie\",\n    \"info\": \"Berlin est la capitale de l'Allemagne réunifiée depuis 1990\"\n  }\n]",
+        "leaderboard_import_example": "[\n  {\n    \"userId\": \"user123\",\n    \"username\": \"Player1\",\n    \"points\": 500\n  }\n]"
+      },
+      "aria": {
+        "duel_left_label": "Nom de l'équipe de gauche",
+        "duel_right_label": "Nom de l'équipe de droite",
+        "show_round_count": "Nombre de manches",
+        "sound_file": "Choisir le fichier son",
+        "sound_volume": "Volume sonore"
       }
+    }
     }
   }
 }

@@ -7,6 +7,8 @@
       throw new Error('Missing Spotlight overlay type');
     }
 
+    if (global.i18n?.ready) await global.i18n.ready;
+
     const container = document.getElementById('overlay-container');
     const animationRegistry = new AnimationRegistry();
     const animationRenderer = new AnimationRenderer(animationRegistry);
@@ -123,6 +125,13 @@
       } catch (error) {
         console.error('Error initializing overlay:', error);
       }
+    }
+
+    if (global.i18n?.onLanguageChange) {
+      global.i18n.onLanguageChange(() => {
+        if (state.renderer?.currentUser) state.renderer.render(state.renderer.currentUser, false);
+        else if (state.renderer) state.renderer.render(null, false);
+      });
     }
 
     state.socket = io();

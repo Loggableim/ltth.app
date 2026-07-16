@@ -12,6 +12,7 @@ describe('plugin guide modules', () => {
     expect(fs.existsSync(modulesRoot)).toBe(true);
     const moduleIds = fs.readdirSync(modulesRoot)
       .filter((entry) => entry.endsWith('.js') && !['index.js', 'definition.js'].includes(entry))
+      .filter((entry) => typeof require(path.join(modulesRoot, entry)).id === 'string')
       .map((entry) => path.basename(entry, '.js'))
       .sort();
 

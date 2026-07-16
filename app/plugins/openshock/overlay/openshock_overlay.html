@@ -38,13 +38,6 @@
             document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
 
             try {
-                new MutationObserver(syncTheme).observe(document.documentElement, {
-                    attributes: true,
-                    attributeFilter: ['data-theme']
-                });
-            } catch (error) {}
-
-            try {
                 if (window.parent && window.parent !== window) {
                     new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
                         attributes: true,

@@ -767,11 +767,11 @@
                 <div class="grid-2">
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.openshock.labels.whitelist_usernames_comma_separated_8c7e2b">Whitelist (usernames, comma separated)</label>
-                        <input type="text" class="form-input" id="whitelist" placeholder="user1, user2, user3">
+                        <input type="text" class="form-input" id="whitelist" placeholder="user1, user2, user3" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.user_allowlist">
                     </div>
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.openshock.labels.blacklist_usernames_comma_separated">Blacklist (usernames, comma separated)</label>
-                        <input type="text" class="form-input" id="blacklist" placeholder="baduser1, baduser2">
+                        <input type="text" class="form-input" id="blacklist" placeholder="baduser1, baduser2" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.user_blocklist">
                     </div>
                 </div>
                 <button class="btn btn-primary" id="saveUserLimits" data-i18n="plugins.openshock.labels.save_user_limits">💾 Save User Limits</button>
@@ -913,7 +913,7 @@
                 <div id="pishockFields" style="display:none;">
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.openshock.openshock.config.pishock_username">PiShock Username</label>
-                        <input type="text" class="form-input" id="pishockUsername" placeholder="Your PiShock account username">
+                        <input type="text" class="form-input" id="pishockUsername" placeholder="Your PiShock account username" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.pishock_username">
                     </div>
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.openshock.openshock.config.pishock_api_key">PiShock API Key</label>
@@ -938,11 +938,11 @@
                         <div style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
                             <div style="flex:1; min-width:140px;">
                                 <label class="form-label" style="font-size:0.8em;" data-i18n="plugins.openshock.ui.labels.code">Code</label>
-                                <input type="text" class="form-input" id="newShareCode" placeholder="e.g. 17519CD8GAP">
+                                <input type="text" class="form-input" id="newShareCode" placeholder="e.g. 17519CD8GAP" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.share_code">
                             </div>
                             <div style="flex:1; min-width:120px;">
                                 <label class="form-label" style="font-size:0.8em;" data-i18n="plugins.openshock.labels.display_name">Display Name</label>
-                                <input type="text" class="form-input" id="newShareCodeName" placeholder="e.g. Collar 1">
+                                <input type="text" class="form-input" id="newShareCodeName" placeholder="e.g. Collar 1" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.device_name">
                             </div>
                             <div>
                                 <button class="btn btn-success btn-sm" id="addShareCodeBtn" style="white-space:nowrap;" data-i18n="plugins.openshock.labels.add_code">
@@ -1046,7 +1046,7 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.openshock.labels.mapping_name">Mapping Name</label>
-                    <input type="text" class="form-input" id="mappingName" placeholder="e.g., Rose Gift Shock">
+                    <input type="text" class="form-input" id="mappingName" placeholder="e.g., Rose Gift Shock" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.gift_mapping_name">
                 </div>
 
                 <div class="form-group">
@@ -1076,23 +1076,23 @@
                             <option value="" data-i18n="plugins.openshock.labels.all_gifts_c9ac1d">All Gifts</option>
                         </select>
                         <small class="form-help-text" data-i18n="plugins.openshock.labels.or_enter_custom_name_below_9e0cf7">Or enter custom name below:</small>
-                        <input type="text" class="form-input" id="mappingGiftName" placeholder="e.g., Rose, TikTok (leave empty to use selection above)">
+                        <input type="text" class="form-input" id="mappingGiftName" placeholder="e.g., Rose, TikTok (leave empty to use selection above)" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.gift_mapping_gift">
                     </div>
                     <div class="grid-2" id="conditionCoinRange">
                         <div class="form-group">
                             <label class="form-label" data-i18n="plugins.openshock.labels.min_coins">Min Coins</label>
-                            <input type="number" class="form-input" id="mappingMinCoins" value="0" min="0" placeholder="0 = keine Untergrenze">
+                            <input type="number" class="form-input" id="mappingMinCoins" value="0" min="0" placeholder="0 = keine Untergrenze" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.no_minimum">
                             <small class="form-hint" data-i18n="plugins.openshock.labels.minimum_coins_0_keine_grenze">Minimum Coins (0 = keine Grenze)</small>
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n="plugins.openshock.labels.max_coins">Max Coins</label>
-                            <input type="number" class="form-input" id="mappingMaxCoins" value="" min="0" placeholder="leer = keine Obergrenze">
+                            <input type="number" class="form-input" id="mappingMaxCoins" value="" min="0" placeholder="leer = keine Obergrenze" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.no_maximum">
                             <small class="form-hint" data-i18n="plugins.openshock.labels.maximum_coins_leer_keine_grenze">Maximum Coins (leer = keine Grenze)</small>
                         </div>
                     </div>
                     <div class="form-group hidden" id="conditionMessagePattern">
                         <label class="form-label" data-i18n="plugins.openshock.labels.message_pattern_regex">Message Pattern (regex)</label>
-                        <input type="text" class="form-input" id="mappingMessagePattern" placeholder="e.g., ^!shock">
+                        <input type="text" class="form-input" id="mappingMessagePattern" placeholder="e.g., ^!shock" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.command_pattern">
                     </div>
                 </div>
 
@@ -1186,13 +1186,13 @@
                 </span></div>
 
                 <div class="form-group">
-                    <label class="form-label"><strong>Pattern-Name</strong></label>
-                    <input type="text" class="form-input" id="patternName" placeholder="z.B. Sanftes Aufwachen, Intensiver Blitz, ...">
+                    <label class="form-label" for="patternName"><strong data-i18n="plugins.openshock.labels.pattern_name">Pattern-Name</strong></label>
+                    <input type="text" class="form-input" id="patternName" placeholder="z.B. Sanftes Aufwachen, Intensiver Blitz, ..." data-i18n-placeholder="plugins.openshock.form_controls.placeholders.gentle_pattern">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.openshock.labels.beschreibung_optional">Beschreibung (optional)</label>
-                    <input type="text" class="form-input" id="patternDescription" placeholder="Kurze Beschreibung des Patterns">
+                    <input type="text" class="form-input" id="patternDescription" placeholder="Kurze Beschreibung des Patterns" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.custom_pattern_description">
                 </div>
 
                 <!-- Step Builder - Simplified -->
@@ -1269,7 +1269,7 @@
 
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.openshock.labels.goal_name">Goal Name *</label>
-                    <input type="text" class="form-input" id="goalName" placeholder="e.g., ZappieHell Level 1" required>
+                    <input type="text" class="form-input" id="goalName" placeholder="e.g., ZappieHell Level 1" required data-i18n-placeholder="plugins.openshock.form_controls.placeholders.goal_name">
                 </div>
 
                 <div class="grid-2">
@@ -1327,12 +1327,12 @@
 
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.openshock.labels.chain_name">Chain Name *</label>
-                    <input type="text" class="form-input" id="chainName" placeholder="e.g., ZappieHell Level 1 Chain" required>
+                    <input type="text" class="form-input" id="chainName" placeholder="e.g., ZappieHell Level 1 Chain" required data-i18n-placeholder="plugins.openshock.form_controls.placeholders.chain_name">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.openshock.ui.labels.description">Description</label>
-                    <textarea class="form-input" id="chainDescription" rows="2" placeholder="Describe what this chain does..."></textarea>
+                    <textarea class="form-input" id="chainDescription" rows="2" placeholder="Describe what this chain does..." data-i18n-placeholder="plugins.openshock.form_controls.placeholders.chain_description"></textarea>
                 </div>
 
                 <div class="card">
@@ -1436,7 +1436,7 @@
                 <div id="audioStepFields" class="step-fields" style="display: none;">
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.openshock.labels.audio_id_or_tts_text">Audio ID or TTS Text</label>
-                        <input type="text" class="form-input" id="audioText" placeholder="Enter text for TTS or audio ID">
+                        <input type="text" class="form-input" id="audioText" placeholder="Enter text for TTS or audio ID" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.audio_text">
                     </div>
                 </div>
 
@@ -1467,7 +1467,7 @@
                 <div id="overlayStepFields" class="step-fields" style="display: none;">
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.openshock.labels.animation_type">Animation Type</label>
-                        <input type="text" class="form-input" id="overlayAnimationType" placeholder="e.g., flash, pulse">
+                        <input type="text" class="form-input" id="overlayAnimationType" placeholder="e.g., flash, pulse" data-i18n-placeholder="plugins.openshock.form_controls.placeholders.animation_type">
                     </div>
 
                     <div class="form-group">

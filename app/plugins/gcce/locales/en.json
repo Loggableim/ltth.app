@@ -1,6 +1,18 @@
 {
   "plugins": {
     "gcce": {
+      "form_controls": {
+        "command_search_placeholder": "Search commands...",
+        "username_filter_placeholder": "Filter by username...",
+        "media_label_placeholder": "e.g. hype",
+        "media_url_placeholder": "https://...gif or mp4",
+        "media_command_placeholder": "e.g. !hype or /wave",
+        "gift_search_placeholder": "Search gifts by name or ID...",
+        "rotator_title_placeholder": "e.g. Star Gifter",
+        "rotator_info_placeholder": "Short message to show on HUD",
+        "hud_test_text_placeholder": "Enter test text",
+        "hud_test_image_placeholder": "Enter image URL"
+      },
       "gcce": {
         "title": "Global Chat Command Engine",
         "subtitle": "Universal chat command interpreter and framework for all plugins",
@@ -354,6 +366,12 @@
           "trend_fast": "⚡ Fast",
           "trend_good": "✓ Good",
           "trend_slow": "⚠ Slow"
+        },
+        "overlay": {
+          "syntax": "Syntax",
+          "permission": "Permission",
+          "plugin": "Plugin",
+          "available_commands": "Available commands: {commands}"
         },
         "rotator": {
           "empty": "No entries in the rotator yet.",

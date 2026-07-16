@@ -418,20 +418,20 @@
                       justify-content: space-between; align-items: center;">
             <span><strong>🔧 Debug Logger</strong></span>
             <div>
-              <button id="debug-toggle-logs" style="background: #00ff00; color: #000; border: none; 
+              <button id="debug-toggle-logs" data-i18n="common.dashboard.start" style="background: #00ff00; color: #000; border: none;
                       padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-right: 5px;">
                 Start
               </button>
-              <button id="debug-clear" style="background: #ff0000; color: #fff; border: none; 
+              <button id="debug-clear" data-i18n="common.dashboard.clear" style="background: #ff0000; color: #fff; border: none;
                       padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-right: 5px;">
                 Clear
               </button>
-              <button id="debug-export" style="background: #0066ff; color: #fff; border: none; 
+              <button id="debug-export" data-i18n="common.dashboard.export" style="background: #0066ff; color: #fff; border: none;
                       padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-right: 5px;">
                 Export
               </button>
               <button id="debug-close" style="background: #666; color: #fff; border: none; 
-                      padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+                      padding: 5px 10px; border-radius: 3px; cursor: pointer;" aria-label="Close" data-i18n-aria-label="common.close">
                 ✕
               </button>
             </div>
@@ -475,6 +475,11 @@
             const container = document.createElement('div');
             container.innerHTML = panelHTML;
             document.body.appendChild(container.firstElementChild);
+            if (window.i18n?.ready) {
+                window.i18n.ready.then(() => window.i18n.updateDOM());
+            } else if (window.i18n?.updateDOM) {
+                window.i18n.updateDOM();
+            }
 
             // Attach event listeners
             document.getElementById('debug-toggle-logs').addEventListener('click', () => this.toggleLogging());
@@ -533,8 +538,12 @@
                 
                 if (json.success) {
                     this.enabled = true;
-                    document.getElementById('debug-toggle-logs').textContent = 'Stop';
-                    document.getElementById('debug-toggle-logs').style.background = '#ff6600';
+                    const toggleButton = document.getElementById('debug-toggle-logs');
+                    const stopKey = 'common.dashboard.stop';
+                    const stopLabel = window.i18n?.t(stopKey);
+                    toggleButton.setAttribute('data-i18n', stopKey);
+                    toggleButton.textContent = stopLabel && stopLabel !== stopKey ? stopLabel : 'Stop';
+                    toggleButton.style.background = '#ff6600';
                     this.startPolling();
                     console.log('✅ Debug logging started');
                 }
@@ -553,8 +562,12 @@
                 
                 if (res.ok) {
                     this.enabled = false;
-                    document.getElementById('debug-toggle-logs').textContent = 'Start';
-                    document.getElementById('debug-toggle-logs').style.background = '#00ff00';
+                    const toggleButton = document.getElementById('debug-toggle-logs');
+                    const startKey = 'common.dashboard.start';
+                    const startLabel = window.i18n?.t(startKey);
+                    toggleButton.setAttribute('data-i18n', startKey);
+                    toggleButton.textContent = startLabel && startLabel !== startKey ? startLabel : 'Start';
+                    toggleButton.style.background = '#00ff00';
                     this.stopPolling();
                     console.log('⏹️ Debug logging stopped');
                 }

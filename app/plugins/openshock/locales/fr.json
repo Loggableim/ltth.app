@@ -3,15 +3,15 @@
     "openshock": {
       "openshock": {
         "title": "Intégration OpenShock et PiShock",
-        "subtitle": "Hardware Shock Control",
+        "subtitle": "Contrôle de chocs matériels",
         "config": {
-          "title": "Configuration",
+          "title": "Paramètres de configuration",
           "enabled": "Activer l'intégration Shock",
           "api_provider": "Fournisseur d'API",
-          "api_url": "API URL",
-          "api_token": "API Token",
-          "shocker_id": "Shocker ID",
-          "test_connection": "Test Connection",
+          "api_url": "URL de l'API",
+          "api_token": "Jeton API",
+          "shocker_id": "ID de l'appareil",
+          "test_connection": "Tester la connexion",
           "save": "Enregistrer les Paramètres",
           "pishock_username": "Nom d'utilisateur PiShock",
           "pishock_api_key": "Clé API PiShock",
@@ -19,32 +19,32 @@
           "add_sharecode": "Ajouter un ShareCode"
         },
         "triggers": {
-          "title": "Event Triggers",
-          "gift": "Gift Events",
-          "follow": "Follow Events",
-          "subscribe": "Subscribe Events",
-          "threshold": "Coin Threshold",
-          "intensity": "Shock Intensity (1-100)",
-          "duration": "Duration (ms)",
-          "cooldown": "Cooldown (seconds)"
+          "title": "Déclencheurs d'événements",
+          "gift": "Événements de cadeaux",
+          "follow": "Événements de suivi",
+          "subscribe": "Événements d'abonnement",
+          "threshold": "Seuil de pièces",
+          "intensity": "Intensité du choc (1-100)",
+          "duration": "Durée (ms)",
+          "cooldown": "Temps de recharge (secondes)"
         },
         "safety": {
-          "title": "Safety Settings",
-          "max_intensity": "Maximum Intensity",
-          "max_duration": "Maximum Duration (ms)",
-          "daily_limit": "Daily Shock Limit",
-          "require_confirmation": "Require Manual Confirmation"
+          "title": "Réglages de sécurité",
+          "max_intensity": "Intensité maximale",
+          "max_duration": "Durée maximale (ms)",
+          "daily_limit": "Limite quotidienne de chocs",
+          "require_confirmation": "Exiger une confirmation manuelle"
         },
         "status": {
-          "connected": "Connected",
-          "disconnected": "Disconnected",
-          "testing": "Testing Connection...",
-          "shocks_today": "Shocks Today",
-          "last_shock": "Last Shock"
+          "connected": "Connecté",
+          "disconnected": "Déconnecté",
+          "testing": "Test de la connexion...",
+          "shocks_today": "Chocs aujourd'hui",
+          "last_shock": "Dernier choc"
         },
         "controls": {
-          "test_shock": "Send Test Shock",
-          "emergency_stop": "Emergency Stop"
+          "test_shock": "Envoyer un choc de test",
+          "emergency_stop": "Arrêt d'urgence"
         }
       },
       "labels": {
@@ -141,7 +141,7 @@
         "global_cooldown_ms": "Temps de recharge global (ms)",
         "preview": "👁️ Aperçu",
         "complete_pattern_design_testing_system": "Système complet de conception et de test de modèles",
-        "schritt_zum_pattern_hinzufugen": "➕ Schritt zum Pattern hinzufügen",
+        "schritt_zum_pattern_hinzufugen": "➕ Ajouter une étape au modèle",
         "live_queue": "File d'attente en direct",
         "per_device_limits_43e147": "Limites par appareil",
         "save_mapping": "💾 Enregistrer la cartographie",
@@ -167,7 +167,7 @@
         "hybridshock_provider_settings": "Paramètres du fournisseur Hybridshock",
         "test_shock_function_5470b4": "⚡ Test de la fonction de choc",
         "not_configured": "Non configuré",
-        "test_einzelgerat": "📍 Test Einzelgerät",
+        "test_einzelgerat": "📍 Tester un appareil",
         "current_coins": "Pièces actuelles",
         "custom_patterns_575ace": "Modèles personnalisés",
         "vibration": "📳Vibrations",
@@ -456,12 +456,12 @@
         "labels": {
           "device": "Appareil",
           "enabled": "Activé",
-          "description": "Description",
+          "description": "Détails",
           "steps": "Étapes",
           "intensity": "Intensité",
           "duration": "Durée",
-          "action": "Action",
-          "code": "Code",
+          "action": "Commande",
+          "code": "Identifiant",
           "method": "Méthode",
           "pattern": "Modèle",
           "preview": "Aperçu"
@@ -484,7 +484,7 @@
           "shock": "Choc",
           "vibrate": "Vibrer",
           "sound": "Son",
-          "pause": "Pause",
+          "pause": "Mettre en pause",
           "select": "Sélectionner"
         },
         "tooltips": {
@@ -492,7 +492,7 @@
           "edit_pattern": "Modifier le modèle sélectionné"
         },
         "table": {
-          "actions": "Actions",
+          "actions": "Commandes",
           "metric": "Indicateur",
           "value": "Valeur"
         },
@@ -521,6 +521,80 @@
           "test_shock": "Choc de test (1 s, 100 %)",
           "testing": "Test en cours..."
         },
+        "legacy": {
+          "no_devices": "Aucun appareil trouvé. Configurez d'abord une clé API.",
+          "no_commands": "Aucune commande exécutée pour le moment.",
+          "no_mappings": "Aucune association configurée. Cliquez sur \"Ajouter une association\" pour en créer une.",
+          "no_preset_patterns": "Aucun modèle prédéfini disponible.",
+          "no_custom_patterns": "Aucun modèle personnalisé créé pour le moment.",
+          "no_gifts": "Aucun cadeau trouvé dans le catalogue. Connectez-vous à TikTok LIVE pour le remplir.",
+          "all_gifts": "Tous les cadeaux",
+          "yes": "Oui",
+          "no": "Non",
+          "connected": "Connecté",
+          "disconnected": "Déconnecté",
+          "error": "Erreur",
+          "edit_event_mapping": "Modifier l'association d'événement",
+          "add_event_mapping": "Ajouter une association d'événement",
+          "refreshing": "Actualisation...",
+          "refresh_catalog": "Actualiser le catalogue",
+          "refresh_devices": "Actualiser les appareils",
+          "edit_pattern": "Modifier le modèle",
+          "add_pattern": "Ajouter un modèle",
+          "no_steps": "Aucune étape ajoutée. Cliquez sur \"Ajouter une étape\" pour commencer.",
+          "add_steps_preview": "Ajoutez des étapes pour afficher un aperçu",
+          "curve_type_prompt": "Saisissez le type de courbe (linéaire, exponentielle, sinusoïdale, impulsion) :",
+          "curve_steps_prompt": "Saisissez le nombre d'étapes (5–20) :",
+          "curve_duration_prompt": "Saisissez la durée de l'étape (ms) :",
+          "testing": "Test en cours...",
+          "test_connection": "Tester la connexion",
+          "api_connected": "API connectée",
+          "api_disconnected": "API déconnectée",
+          "online": "En ligne",
+          "offline": "Hors ligne",
+          "select_device_test": "-- Sélectionnez un appareil --",
+          "paused": "En pause",
+          "select_device": "Sélectionnez un appareil...",
+          "single_pulse": "Aucun (impulsion unique)",
+          "preset_not_editable": "Les modèles prédéfinis ne peuvent pas être modifiés",
+          "edit_pattern_hint": "Modifier ce modèle",
+          "no_steps_defined": "Aucune étape définie",
+          "sending": "Envoi...",
+          "debug_log_empty": "Le journal de débogage est vide."
+        },
+        "queue_page": {
+          "processing": "Traitement en cours",
+          "source": "Origine",
+          "unknown": "Inconnu",
+          "type": "Catégorie",
+          "not_available": "N/D",
+          "intensity": "Intensité",
+          "duration": "Durée",
+          "device": "Appareil",
+          "empty": "Aucun choc en attente",
+          "status_pending": "En attente",
+          "status_processing": "En cours",
+          "status_completed": "Terminé",
+          "status_failed": "Échec",
+          "clear_confirm": "Vider toute la file ?\n\nTous les chocs en attente seront supprimés.",
+          "cleared": "Vidée"
+        },
+        "overlays": {
+          "rotating_gifts": {
+            "unknown_gift": "Cadeau inconnu",
+            "direct_command": "Commande directe"
+          },
+          "main": {
+            "emergency_stop_activated": "ARRÊT D'URGENCE ACTIVÉ",
+            "pattern_step": "Étape {step} : {intensity}% pendant {duration} ms"
+          },
+          "zappiehell": {
+            "stream": "Flux",
+            "global": "Objectif global",
+            "coin_progress": "{current} / {target} pièces",
+            "remaining": "Encore {count}"
+          }
+        },
         "connection": {
           "api_connected": "API connectée",
           "api_disconnected": "API déconnectée",
@@ -536,8 +610,10 @@
           "successful_load_failed": "Connexion réussie, mais les appareils n'ont pas pu être chargés"
         },
         "devices": {
+          "no_devices": "Aucun appareil trouvé. Configurez d'abord une clé API.",
           "paused": "En pause",
           "refresh_failed": "Erreur lors de l'actualisation des appareils",
+          "share_code_delete_confirm": "Supprimer le ShareCode \"{code}\" ?",
           "refreshed_with_count": "Appareils actualisés - {count} appareil(s) chargé(s)",
           "select": "Sélectionnez un appareil...",
           "select_for_test": "Sélectionnez un appareil pour le choc de test",
@@ -587,6 +663,8 @@
           "dialog_create": "Créer un nouveau modèle",
           "dialog_edit": "Modifier le modèle",
           "draw_curve_required": "Dessinez d'abord une courbe",
+          "draw_curve_hint": "Dessinez sur le canevas ci-dessus pour créer votre modèle",
+          "clear_all_steps_confirm": "Supprimer toutes les étapes ? Cette action est irréversible.",
           "empty": "Aucun modèle créé. Cliquez sur \"Nouveau modèle\" pour en créer un.",
           "execute_failed": "Erreur lors de l'exécution du modèle",
           "executing": "Le modèle est en cours d'exécution",
@@ -642,10 +720,13 @@
           "reactivate_tooltip": "Cliquez pour réactiver le système"
         },
         "status": {
+          "debug_log_empty": "Le journal de débogage est vide. Les opérations de modèle seront enregistrées ici.",
           "command_log_cleared": "Journal des commandes vidé",
           "command_log_exported": "Journal des commandes exporté",
           "loaded": "Plugin Hybrid Shock chargé avec succès",
-          "statistics_reset": "Statistiques réinitialisées avec succès"
+          "statistics_reset": "Statistiques réinitialisées avec succès",
+          "normal": "Normal",
+          "verbose": "Détaillé"
         },
         "accessibility": {
           "delete_share_code": "Supprimer le ShareCode {code}",
@@ -742,7 +823,41 @@
             "type_webhook_short": "Webhook"
           }
         }
+      },
+      "pattern_editor": {
+        "view": { "title": "Éditeur de modèles", "subtitle": "Créez et modifiez des modèles OpenShock avec l'éditeur visuel" },
+        "library": { "title": "Bibliothèque de modèles", "subtitle": "Choisissez un préréglage ou créez votre propre modèle", "default_presets": "Préréglages par défaut", "my_patterns": "Mes modèles", "create_new": "Créer", "empty": "Aucun modèle personnalisé. Créez votre premier modèle !", "edit": "Modifier", "delete": "Supprimer", "select": "Sélectionner", "delete_confirm": "Supprimer ce modèle ?", "new_pattern_name": "Nouveau modèle" },
+        "live": { "title": "Commandes en direct", "shocker_selection": "Sélection des appareils (multiple)", "multi_select_hint": "Maintenez Ctrl/Cmd pour plusieurs sélections", "play_test": "Lire le test", "stop": "Arrêter", "status": "État :", "shockers": "Appareils :" },
+        "keyframe": { "title": "Éditeur d'images clés", "empty": "Aucun modèle sélectionné", "add": "Ajouter une image clé", "delete": "Supprimer l'image clé", "save_pattern": "Enregistrer le modèle", "back_to_parameters": "Retour à l'éditeur de paramètres", "time": "Temps (ms)", "intensity": "Intensité (%)" },
+        "parameter": { "empty": "Choisissez un modèle dans la bibliothèque", "customization": "Personnalisation", "expert_mode": "Mode expert (éditeur d'images clés)", "save_as_own": "Enregistrer comme modèle personnel", "back_to_library": "Retour à la bibliothèque" },
+        "connection": { "api_key_required": "Saisissez une clé API.", "connecting": "Connexion...", "connected": "Connecté", "connect": "Se connecter", "not_connected": "Non connecté.", "emergency_stop_confirm": "Arrêter tous les appareils ?", "emergency_stop_activated": "Arrêt d'urgence activé !", "online": "En ligne", "offline": "Hors ligne" }
+      },
+    "form_controls": {
+      "placeholders": {
+        "user_allowlist": "ex. user1, user2, user3",
+        "user_blocklist": "ex. baduser1, baduser2",
+        "openshock_api_key": "Saisissez votre clé API OpenShock",
+        "gift_mapping_name": "ex. Choc cadeau Rose",
+        "gift_mapping_gift": "ex. Rose, TikTok (laissez vide pour utiliser la sélection ci-dessus)",
+        "command_pattern": "ex. ^!shock",
+        "escalating_pattern": "ex. Choc progressif",
+        "pattern_description": "Brève description de ce modèle",
+        "custom_pattern_name": "Mon modèle personnalisé",
+        "api_key": "Votre clé API",
+        "pishock_username": "Nom d’utilisateur de votre compte PiShock",
+        "share_code": "ex. 17519CD8GAP",
+        "device_name": "ex. Collier 1",
+        "no_minimum": "0 = aucun minimum",
+        "no_maximum": "vide = aucun maximum",
+        "gentle_pattern": "ex. Réveil doux, éclair intense, ...",
+        "custom_pattern_description": "Brève description du modèle",
+        "goal_name": "ex. Niveau 1 ZappieHell",
+        "chain_name": "ex. Chaîne niveau 1 ZappieHell",
+        "chain_description": "Décrivez ce que fait cette chaîne...",
+        "audio_text": "Saisissez le texte pour le TTS ou l’identifiant audio",
+        "animation_type": "ex. flash, pulse"
       }
+    }
     }
   }
 }

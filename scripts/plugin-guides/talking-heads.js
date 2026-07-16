@@ -29,6 +29,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
   "safety": "credentials",
   "mode": "ui",
   "overlay": "/plugins/talking-heads/overlay.html",
+  "overlayWorkflowStepIds": ["heads-overlay"],
   "related": [
     "tts",
     "animazingpal"

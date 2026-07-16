@@ -42,10 +42,19 @@ function localObsWebSocketUrl(value) {
   return url.toString();
 }
 
-function parseCaptureOptions(environment = process.env) {
+function parseObsConnectionOptions(environment = process.env) {
   if (environment.OBS_DOCS_CAPTURE_ALLOW !== 'yes') {
     throw new Error('OBS_DOCS_CAPTURE_ALLOW=yes is required before changing the tutorial scene');
   }
+  return {
+    obsUrl: localObsWebSocketUrl(environment.OBS_WEBSOCKET_URL || 'ws://127.0.0.1:4455'),
+    password: environment.OBS_WEBSOCKET_PASSWORD || '',
+    settleMs: positiveInteger(environment.OBS_DOCS_SETTLE_MS || 1000, 'OBS_DOCS_SETTLE_MS')
+  };
+}
+
+function parseCaptureOptions(environment = process.env) {
+  const connection = parseObsConnectionOptions(environment);
   const plugin = String(environment.OBS_DOCS_PLUGIN || '').trim();
   const locale = String(environment.OBS_DOCS_LOCALE || '').trim();
   if (!/^[a-z0-9-]+$/.test(plugin)) throw new Error('OBS_DOCS_PLUGIN must be a published plugin id');
@@ -61,11 +70,9 @@ function parseCaptureOptions(environment = process.env) {
     overlayUrl: localOverlayUrl(environment.OBS_DOCS_OVERLAY_URL),
     width: positiveInteger(environment.OBS_DOCS_WIDTH || 1280, 'OBS_DOCS_WIDTH'),
     height: positiveInteger(environment.OBS_DOCS_HEIGHT || 720, 'OBS_DOCS_HEIGHT'),
-    obsUrl: localObsWebSocketUrl(environment.OBS_WEBSOCKET_URL || 'ws://127.0.0.1:4455'),
-    password: environment.OBS_WEBSOCKET_PASSWORD || '',
+    ...connection,
     preparationUrl: environment.OBS_DOCS_PREPARE_URL ? localPreparationUrl(environment.OBS_DOCS_PREPARE_URL) : null,
-    preparationBody,
-    settleMs: positiveInteger(environment.OBS_DOCS_SETTLE_MS || 1000, 'OBS_DOCS_SETTLE_MS')
+    preparationBody
   };
 }
 
@@ -166,17 +173,48 @@ function assertPngIsVisible(image) {
 
 function updateReport(record) {
   const reportPath = path.join(REPO_ROOT, 'screenshots', 'docs-obs-capture-report.json');
-  const existing = fs.existsSync(reportPath) ? JSON.parse(fs.readFileSync(reportPath, 'utf8')) : { schemaVersion: 1, records: [] };
+  const existing = fs.existsSync(reportPath)
+    ? JSON.parse(fs.readFileSync(reportPath, 'utf8'))
+    : { schemaVersion: 2, targetCount: null, records: [] };
   const records = Array.isArray(existing.records) ? existing.records.filter((entry) => !(entry.plugin === record.plugin && entry.locale === record.locale)) : [];
   records.push(record);
   records.sort((left, right) => `${left.plugin}:${left.locale}`.localeCompare(`${right.plugin}:${right.locale}`));
-  const report = { schemaVersion: 1, generatedAt: new Date().toISOString(), records };
+  const report = {
+    schemaVersion: 2,
+    targetCount: Number.isInteger(existing.targetCount) ? existing.targetCount : null,
+    generatedAt: new Date().toISOString(),
+    records
+  };
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  return reportPath;
+}
+
+function resetObsCaptureReport({ targetCount }) {
+  if (!Number.isInteger(targetCount) || targetCount <= 0) {
+    throw new Error('OBS capture report target count must be a positive integer');
+  }
+  const reportPath = path.join(REPO_ROOT, 'screenshots', 'docs-obs-capture-report.json');
+  const report = {
+    schemaVersion: 2,
+    targetCount,
+    generatedAt: new Date().toISOString(),
+    records: []
+  };
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   return reportPath;
 }
 
 async function captureWithObs(options, { createObs } = {}) {
+  options = {
+    ...options,
+    obsUrl: localObsWebSocketUrl(options.obsUrl),
+    overlayUrl: localOverlayUrl(options.overlayUrl),
+    preparationUrl: options.preparationUrl ? localPreparationUrl(options.preparationUrl) : null,
+    width: positiveInteger(options.width, 'OBS capture width'),
+    height: positiveInteger(options.height, 'OBS capture height')
+  };
   const OBSWebSocket = createObs || require(path.join(REPO_ROOT, 'app', 'node_modules', 'obs-websocket-js')).default;
   const obs = new OBSWebSocket();
   let connected = false;
@@ -194,8 +232,10 @@ async function captureWithObs(options, { createObs } = {}) {
     const sourceImage = decodePngData(receipt.sourceImageData, options);
     const sourceVisible = assertPngIsVisible(sourceImage);
     const outputPath = path.join(REPO_ROOT, 'screenshots', 'docs', 'obs', options.plugin, `${options.locale}.png`);
+    const sourceOutputPath = path.join(REPO_ROOT, 'screenshots', 'docs', 'obs', options.plugin, `${options.locale}.source.png`);
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, image);
+    fs.writeFileSync(sourceOutputPath, sourceImage);
     const record = {
       plugin: options.plugin,
       locale: options.locale,
@@ -204,6 +244,8 @@ async function captureWithObs(options, { createObs } = {}) {
       overlayUrl: options.overlayUrl,
       screenshotPath: path.relative(REPO_ROOT, outputPath).replace(/\\/g, '/'),
       sha256: crypto.createHash('sha256').update(image).digest('hex'),
+      sourceScreenshotPath: path.relative(REPO_ROOT, sourceOutputPath).replace(/\\/g, '/'),
+      sourceSha256: crypto.createHash('sha256').update(sourceImage).digest('hex'),
       width: options.width,
       height: options.height,
       bytes: image.length,
@@ -223,7 +265,8 @@ async function captureWithObs(options, { createObs } = {}) {
       temporarySceneItemRemoved: receipt.temporarySceneItemRemoved,
       temporaryInputRemoved: receipt.temporaryInputRemoved,
       streamActive: receipt.streamActive,
-      recordActive: receipt.recordActive
+      recordActive: receipt.recordActive,
+      outputChecks: receipt.outputChecks
     };
     if (preparation) record.preparation = preparation;
     updateReport(record);
@@ -246,4 +289,12 @@ if (require.main === module) {
   });
 }
 
-module.exports = { assertPngIsVisible, captureWithObs, decodePngData, parseCaptureOptions, runLocalPreparation };
+module.exports = {
+  assertPngIsVisible,
+  captureWithObs,
+  decodePngData,
+  parseCaptureOptions,
+  parseObsConnectionOptions,
+  resetObsCaptureReport,
+  runLocalPreparation
+};

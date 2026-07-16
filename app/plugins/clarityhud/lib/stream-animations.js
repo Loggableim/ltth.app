@@ -29,7 +29,6 @@ class StreamAnimations {
     const style = document.createElement('style');
     style.id = 'stream-animations-css';
     style.textContent = `
-      /* ==================== PARTICLE ==================== */
       .sa-particle {
         position: absolute;
         pointer-events: none;

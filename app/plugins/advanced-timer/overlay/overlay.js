@@ -8,6 +8,20 @@ let timerId = null;
 let timer = null;
 let template = 'default'; // default, progress, circular, minimal, big
 
+const OVERLAY_TEXT_KEYS = Object.freeze({
+    missingEyebrow: 'plugins.advanced-timer.runtime.overlayMissingEyebrow',
+    missingTitle: 'plugins.advanced-timer.runtime.overlayMissingTitle',
+    missingDescription: 'plugins.advanced-timer.runtime.overlayMissingDescription',
+    missingExample: 'plugins.advanced-timer.runtime.overlayMissingExample',
+    timerNotFound: 'plugins.advanced-timer.runtime.overlayTimerNotFound',
+    mostRecent: 'plugins.advanced-timer.runtime.overlayMostRecent',
+    previous: 'plugins.advanced-timer.runtime.overlayPrevious'
+});
+
+function overlayText(name, params) {
+    return window.i18n.t(OVERLAY_TEXT_KEYS[name], params);
+}
+
 // Get timer ID from URL parameters
 const urlParams = new URLSearchParams(window.location.search);
 timerId = urlParams.get('timer');
@@ -24,7 +38,7 @@ if (templateParam && validTemplates.includes(templateParam)) {
     template = 'default';
 }
 
-if (!timerId) {
+function renderMissingTimer() {
     console.error('No timer ID provided in URL');
     const container = document.getElementById('timer-container');
     if (container) {
@@ -54,16 +68,15 @@ if (!timerId) {
                     letter-spacing: 0.18em;
                     text-transform: uppercase;
                     color: #fde68a;
-                ">Advanced Timer Overlay</div>
+                ">${overlayText('missingEyebrow')}</div>
                 <h1 style="
                     margin: 0 0 12px;
                     font-size: clamp(2rem, 3vw, 3rem);
                     line-height: 1.08;
                     color: #facc15;
-                ">Timer ID missing</h1>
+                ">${overlayText('missingTitle')}</h1>
                 <p style="margin: 0 0 16px; font-size: 1.05rem; color: #e5e7eb; max-width: 68ch;">
-                    This overlay is intentionally launched with a <code style="color:#facc15;">timer</code> query parameter.
-                    Open it from the Advanced Timer UI, or append a timer ID in the URL to preview a live timer.
+                    ${overlayText('missingDescription')}
                 </p>
                 <div style="
                     padding: 16px 18px;
@@ -73,7 +86,7 @@ if (!timerId) {
                     color: #fff7cc;
                     font-size: 0.98rem;
                 ">
-                    Example: <span style="color:#facc15;">/plugins/advanced-timer/overlay.html?timer=YOUR_TIMER_ID</span>
+                    ${overlayText('missingExample')} <span style="color:#facc15;">/plugins/advanced-timer/overlay.html?timer=YOUR_TIMER_ID</span>
                 </div>
             </div>
         `;
@@ -145,7 +158,7 @@ async function init() {
             } catch (e) { /* threshold optional */ }
         } else {
             console.error('Timer not found');
-            document.getElementById('timer-container').innerHTML = '<div style="color: white; text-align: center;">Timer not found</div>';
+            document.getElementById('timer-container').innerHTML = '<div style="color: white; text-align: center;">' + overlayText('timerNotFound') + '</div>';
         }
     } catch (error) {
         console.error('Error loading timer:', error);
@@ -585,7 +598,7 @@ function renderRotator() {
                 slot.classList.add('is-visible');
             } else {
                 slot.style.opacity = '0.25';
-                slot.innerHTML = '<span class="slot-emoji">⏳</span><div class="slot-body"><div class="slot-name">' + (i === 0 ? 'Most recent' : 'Previous') + '</div></div>';
+                slot.innerHTML = '<span class="slot-emoji">⏳</span><div class="slot-body"><div class="slot-name">' + (i === 0 ? overlayText('mostRecent') : overlayText('previous')) + '</div></div>';
             }
             stack.appendChild(slot);
         }
@@ -703,4 +716,8 @@ function playThresholdEffect(payload) {
 }
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', async () => {
+    if (window.i18n?.ready && typeof window.i18n.ready.then === 'function') await window.i18n.ready;
+    if (!timerId) renderMissingTimer();
+    else init();
+});

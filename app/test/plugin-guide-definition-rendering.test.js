@@ -44,4 +44,20 @@ describe('plugin guide definition rendering', () => {
       expect.objectContaining({ type: 'flow-action', value: 'emoji_rain_trigger' })
     ]));
   });
+
+  test('localizes a controls mapping that falls back to the settings guide section', () => {
+    const mappingKey = 'docs.plugin.advanced-timer.controls.6.mapping';
+    const expectedByLocale = {
+      de: 'Referenz der Workflow-Steuerelemente',
+      en: 'Workflow control reference',
+      es: 'Referencia de controles del flujo',
+      fr: 'Référence des contrôles du flux'
+    };
+
+    for (const locale of LOCALES) {
+      const values = JSON.parse(fs.readFileSync(path.join(repoRoot, 'locales', 'guides', `${locale}.json`), 'utf8'));
+      expect(values[mappingKey]).toBe(expectedByLocale[locale]);
+      expect(values[mappingKey]).not.toBe('guide-settings');
+    }
+  });
 });

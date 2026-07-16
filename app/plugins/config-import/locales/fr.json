@@ -1,6 +1,10 @@
 {
   "plugins": {
     "config-import": {
+      "form_controls": {
+        "legacy_path_placeholder": "p. ex. C:\\Users\\You\\ltth ou /home/you/ltth",
+        "legacy_profile_placeholder": "p. ex. imported-config"
+      },
       "config-import": {
         "title": "Importer la configuration",
         "description": "Importer vos réglages depuis une ancienne installation",
@@ -100,7 +104,50 @@
           "dataFiles": "Fichiers de données",
           "modeMergeDesc": "Ajoute uniquement les réglages manquants et conserve les valeurs existantes.",
           "modeReplaceDesc": "Écrase tous les réglages correspondants avec ceux de la sauvegarde.",
-          "importStatus": "Importation…"
+          "importStatus": "Importation…",
+          "legacyInfoTitle": "Importation d’une ancienne installation",
+          "legacyInfoDescription": " – Utilisez cette option pour migrer des réglages depuis une ancienne installation qui enregistre les fichiers directement dans le dossier de l’application (versions antérieures à la configuration persistante).",
+          "backupReady": "✅ Sauvegarde prête !",
+          "manualDownloadHelp": "Si le téléchargement ne démarre pas automatiquement, cliquez sur le lien ci-dessus ou faites un clic droit puis « Enregistrer sous… ».",
+          "exportFailed": "❌ Échec de l’exportation :",
+          "failedToPrepareBackup": "Impossible de préparer la sauvegarde",
+          "zipBackupOnly": "❌ Seuls les fichiers ZIP de sauvegarde sont acceptés.",
+          "backupValidationFailed": "❌ Échec de la validation de la sauvegarde :",
+          "validationError": "❌ Erreur de validation :",
+          "manifestBackupFrom": "Sauvegarde créée le :",
+          "manifestAppVersion": "Version de l’application :",
+          "manifestProfile": "Profil :",
+          "unknownValue": "inconnu",
+          "noProfile": "aucun",
+          "plugins": "Extensions",
+          "newSettings": "Nouveaux réglages",
+          "uploadFiles": "Fichiers envoyés",
+          "importCompletedRestart": "✅ Importation terminée avec succès ! Redémarrez l’application pour appliquer toutes les modifications.",
+          "importCompletedWithErrors": "❌ Importation terminée avec des erreurs :",
+          "unknownError": "Erreur inconnue",
+          "globalSettingsReport": "Réglages globaux : {imported} importés, {skipped} ignorés",
+          "userConfigsReport": "Configurations utilisateur : {imported} importées, {skipped} ignorées, {renamed} renommées",
+          "pluginReport": "[{id}] réglages : +{settings}, fichiers : +{files}",
+          "importFailed": "❌ Échec de l’importation :",
+          "legacySource": "Source ancienne {index}",
+          "fileCount": "{count} fichier(s) détecté(s)",
+          "enterPath": "❌ Saisissez un chemin.",
+          "legacyUserConfigs": "dossier user_configs",
+          "legacyUserData": "dossier user_data",
+          "legacyUploads": "dossier uploads",
+          "legacyPlugins": "dossier plugins",
+          "legacyDatabase": "ancienne database.db",
+          "legacyData": "ancien dossier data/",
+          "noConfigurationFiles": "Aucun fichier de configuration trouvé.",
+          "userConfigFiles": "{count} fichier(s) de configuration utilisateur",
+          "userDataFiles": "{count} fichier(s) de données utilisateur",
+          "uploadedFiles": "{count} fichier(s) envoyé(s)",
+          "pluginDataFiles": "{count} fichier(s) de données d’extension",
+          "legacyDatabaseFiles": "{count} ancien(s) fichier(s) de base de données",
+          "legacyDataFiles": "{count} ancien(s) fichier(s) de données",
+          "legacyImportCompleted": "✅ Importation terminée avec succès !",
+          "importedItems": "📦 Importé :",
+          "switchProfileRestart": "⚠️ Ouvrez Paramètres → Profils utilisateur, sélectionnez le profil importé, puis redémarrez l’application."
         }
       },
       "labels": {

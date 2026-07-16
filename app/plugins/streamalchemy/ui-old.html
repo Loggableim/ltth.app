@@ -261,6 +261,14 @@
         let config = {};
         let stats = {};
 
+        function translateUi(key, fallback, params = {}) {
+            const translation = window.i18n?.t(key, params);
+            if (translation && translation !== key) return translation;
+            return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+                Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+            ));
+        }
+
         // Load configuration
         async function loadConfig() {
             try {
@@ -299,7 +307,11 @@
                 }
             } catch (error) {
                 console.error('Failed to load items:', error);
-                document.getElementById('items-container').innerHTML = '<div class="error">Failed to load items</div>';
+                const container = document.getElementById('items-container');
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'error';
+                errorMessage.textContent = translateUi('plugins.streamalchemy.ui.legacy.itemsLoadFailed', 'Failed to load items');
+                container.replaceChildren(errorMessage);
             }
         }
 
@@ -321,8 +333,10 @@
             const container = document.getElementById('items-container');
 
             if (!items || items.length === 0) {
-                container.innerHTML = '<p class="loading" data-i18n="plugins.streamalchemy.ui.legacy.noItems">No items yet. Send gifts to generate items!</p>';
-                window.i18n?.updateDOM?.();
+                const emptyMessage = document.createElement('p');
+                emptyMessage.className = 'loading';
+                emptyMessage.textContent = translateUi('plugins.streamalchemy.ui.legacy.noItems', 'No items yet. Send gifts to generate items!');
+                container.replaceChildren(emptyMessage);
                 return;
             }
 
@@ -330,14 +344,17 @@
 
             const table = document.createElement('table');
             table.className = 'items-table';
+            const headers = [
+                translateUi('plugins.streamalchemy.ui.legacy.name', 'Name'),
+                translateUi('plugins.streamalchemy.ui.legacy.type', 'Type'),
+                translateUi('plugins.streamalchemy.ui.legacy.rarity', 'Rarity'),
+                translateUi('plugins.streamalchemy.ui.legacy.fromGift', 'From Gift'),
+                translateUi('plugins.streamalchemy.ui.legacy.created', 'Created')
+            ];
             table.innerHTML = `
                 <thead>
                     <tr>
-                        <th data-i18n="plugins.streamalchemy.ui.legacy.name">Name</th>
-                        <th data-i18n="plugins.streamalchemy.ui.legacy.type">Type</th>
-                        <th data-i18n="plugins.streamalchemy.ui.legacy.rarity">Rarity</th>
-                        <th data-i18n="plugins.streamalchemy.ui.legacy.fromGift">From Gift</th>
-                        <th data-i18n="plugins.streamalchemy.ui.legacy.created">Created</th>
+                        ${headers.map(header => `<th>${header}</th>`).join('')}
                     </tr>
                 </thead>
                 <tbody>

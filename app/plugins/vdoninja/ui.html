@@ -950,7 +950,7 @@
         <div class="header">
             <div class="header-title">
                 <h1>
-                    <span class="status-indicator status-inactive" id="statusIndicator"></span><span data-i18n="plugins.vdoninja.labels.vdo_ninja_multi_guest_manager">
+                    <span class="status-indicator status-inactive" id="statusIndicator"></span><span data-i18n="plugins.vdoninja.vdoninja.title">
                     VDO.Ninja Multi-Guest Manager
                 </span></h1>
             </div>
@@ -959,7 +959,7 @@
         <!-- Room Management Card -->
         <div class="card">
             <div class="card-header">
-                <h3 data-i18n="plugins.vdoninja.labels.room_management">🏠 Room Management</h3>
+                <h3><span aria-hidden="true">🏠</span> <span data-i18n="plugins.vdoninja.vdoninja.room.title">Room Management</span></h3>
             </div>
             <div class="card-body">
                 <div id="roomSection">
@@ -968,15 +968,15 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label" data-i18n="plugins.vdoninja.vdoninja.room.name">Room Name</label>
-                                <input type="text" id="roomNameInput" class="form-input" placeholder="My TikTok Stream">
+                                <input type="text" id="roomNameInput" class="form-input" data-i18n-placeholder="plugins.vdoninja.vdoninja.room.name_placeholder" placeholder="My TikTok Stream">
                             </div>
                             <div class="form-group">
                                 <label class="form-label" data-i18n="plugins.vdoninja.vdoninja.room.max_guests">Max Guests</label>
                                 <input type="number" id="maxGuestsInput" class="form-input" value="6" min="1" max="12">
                             </div>
                         </div>
-                        <button id="createRoomBtn" class="btn btn-primary" data-i18n="plugins.vdoninja.labels.create_room">
-                            ✨ Create Room
+                        <button id="createRoomBtn" class="btn btn-primary">
+                            <span aria-hidden="true">✨</span> <span data-i18n="plugins.vdoninja.vdoninja.room.create">Create Room</span>
                         </button>
                     </div>
 
@@ -991,14 +991,14 @@
                                 <span class="room-info-label" data-i18n="plugins.vdoninja.vdoninja.room.info.director_url">Director URL (for OBS):</span>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     <span id="directorUrl" class="room-info-value">-</span>
-                                    <button class="copy-btn" data-copy-target="directorUrl" data-i18n="plugins.vdoninja.labels.copy_831d1e">📋 Copy</button>
+                                    <button class="copy-btn" data-copy-target="directorUrl"><span aria-hidden="true">📋</span> <span data-i18n="plugins.vdoninja.vdoninja.room.copy">Copy</span></button>
                                 </div>
                             </div>
                             <div class="room-info-row">
                                 <span class="room-info-label" data-i18n="plugins.vdoninja.vdoninja.room.info.guest_invite_url">Guest Invite URL:</span>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     <span id="guestInviteUrl" class="room-info-value">-</span>
-                                    <button class="copy-btn" data-copy-target="guestInviteUrl" data-i18n="plugins.vdoninja.labels.copy">📋 Copy</button>
+                                    <button class="copy-btn" data-copy-target="guestInviteUrl"><span aria-hidden="true">📋</span> <span data-i18n="plugins.vdoninja.vdoninja.room.copy">Copy</span></button>
                                 </div>
                             </div>
                             <div class="room-info-row">
@@ -1007,21 +1007,21 @@
                             </div>
                         </div>
                         <div style="margin-top: 1rem;">
-                            <button id="closeRoomBtn" class="btn btn-danger" data-i18n="plugins.vdoninja.labels.close_room">
-                                🔒 Close Room
+                            <button id="closeRoomBtn" class="btn btn-danger">
+                                <span aria-hidden="true">🔒</span> <span data-i18n="plugins.vdoninja.vdoninja.room.close">Close Room</span>
                             </button>
                         </div>
 
                         <!-- Director URL Control Room Iframe -->
                         <div id="directorIframeContainer" class="director-iframe-container" style="display: none;">
                             <div class="director-iframe-header">
-                                <h4 data-i18n="plugins.vdoninja.labels.director_control_room">🎬 Director Control Room</h4>
-                                <button id="toggleIframeBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.75rem;" data-i18n="plugins.vdoninja.labels.hide">
-                                    ▼ Hide
+                                <h4><span aria-hidden="true">🎬</span> <span data-i18n="plugins.vdoninja.vdoninja.director.title">Director Control Room</span></h4>
+                                <button id="toggleIframeBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.75rem;">
+                                    <span aria-hidden="true">▼</span> <span data-i18n="plugins.vdoninja.vdoninja.director.hide">Hide</span>
                                 </button>
                             </div>
                             <div id="directorIframeWrapper">
-                                <iframe id="directorIframe" class="director-iframe-content" src="" title="Director Control Room"></iframe>
+                                <iframe id="directorIframe" class="director-iframe-content" src="" title="Director Control Room" data-i18n-title="plugins.vdoninja.form_controls.director_control_room_title"></iframe>
                             </div>
                         </div>
                     </div>
@@ -1032,13 +1032,13 @@
         <!-- Guest Controls Card -->
         <div class="card">
             <div class="card-header">
-                <h3 data-i18n="plugins.vdoninja.labels.guest_controls">👥 Guest Controls</h3>
+                <h3><span aria-hidden="true">👥</span> <span data-i18n="plugins.vdoninja.vdoninja.guests.title">Guest Controls</span></h3>
                 <div style="display: flex; gap: 0.5rem;">
-                    <button id="muteAllBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;" data-i18n="plugins.vdoninja.labels.mute_all">
-                        🔇 Mute All
+                    <button id="muteAllBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;">
+                        <span aria-hidden="true">🔇</span> <span data-i18n="plugins.vdoninja.vdoninja.guests.mute_all">Mute All</span>
                     </button>
-                    <button id="unmuteAllBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;" data-i18n="plugins.vdoninja.labels.unmute_all">
-                        🔊 Unmute All
+                    <button id="unmuteAllBtn" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;">
+                        <span aria-hidden="true">🔊</span> <span data-i18n="plugins.vdoninja.vdoninja.guests.unmute_all">Unmute All</span>
                     </button>
                 </div>
             </div>
@@ -1056,7 +1056,7 @@
         <!-- Layout Management Card -->
         <div class="card">
             <div class="card-header">
-                <h3 data-i18n="plugins.vdoninja.labels.layout_presets">🎨 Layout Presets</h3>
+                <h3><span aria-hidden="true">🎨</span> <span data-i18n="plugins.vdoninja.vdoninja.layout.title">Layout Presets</span></h3>
             </div>
             <div class="card-body">
                 <div class="layout-grid">
@@ -1092,10 +1092,10 @@
 
         <!-- Info Alert -->
         <div class="alert alert-info">
-            <strong data-i18n="plugins.vdoninja.labels.i_quick_guide">ℹ️ Quick Guide:</strong><br><span data-i18n="plugins.vdoninja.labels.1_create_a_room_to_get_started">
-            1. Create a room to get started</span><br><span data-i18n="plugins.vdoninja.labels.2_add_the_director_url_to_obs_as">
-            2. Add the Director URL to OBS as a Browser Source (1920x1080)</span><br><span data-i18n="plugins.vdoninja.labels.3_share_the_guest_invite_url_with_your">
-            3. Share the Guest Invite URL with your guests</span><br><span data-i18n="plugins.vdoninja.labels.4_control_guests_in_real_time_from_this">
+            <strong><span aria-hidden="true">ℹ️</span> <span data-i18n="plugins.vdoninja.vdoninja.guide.title">Quick Guide:</span></strong><br><span data-i18n="plugins.vdoninja.vdoninja.guide.step1">
+            1. Create a room to get started</span><br><span data-i18n="plugins.vdoninja.vdoninja.guide.step2">
+            2. Add the Director URL to OBS as a Browser Source (1920x1080)</span><br><span data-i18n="plugins.vdoninja.vdoninja.guide.step3">
+            3. Share the Guest Invite URL with your guests</span><br><span data-i18n="plugins.vdoninja.vdoninja.guide.step4">
             4. Control guests in real-time from this dashboard
         </span></div>
     </div>
@@ -1104,11 +1104,29 @@
         const socket = io();
         let activeRoom = null;
         let guests = new Map();
+        const EMPTY_URL_SENTINEL = 'N/A';
+
+        function translateUi(key, fallback, params = {}) {
+            const translated = window.i18n?.t?.(key, params);
+            if (translated && translated !== key) return translated;
+            return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+                Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+            ));
+        }
+
+        function directorToggleLabel(isVisible) {
+            const key = isVisible
+                ? 'plugins.vdoninja.vdoninja.director.hide'
+                : 'plugins.vdoninja.vdoninja.director.show';
+            const fallback = isVisible ? 'Hide' : 'Show';
+            return `${isVisible ? '▼' : '▶'} ${translateUi(key, fallback)}`;
+        }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             loadRoomStatus();
             setupEventListeners();
+            window.i18n?.onLanguageChange?.(refreshLocalizedDynamicUi);
         });
 
         function setupEventListeners() {
@@ -1122,10 +1140,11 @@
 
             // Copy button event listeners (using event delegation)
             document.addEventListener('click', (e) => {
-                if (e.target.classList.contains('copy-btn')) {
-                    const targetId = e.target.getAttribute('data-copy-target');
+                const copyButton = e.target.closest('.copy-btn');
+                if (copyButton) {
+                    const targetId = copyButton.getAttribute('data-copy-target');
                     if (targetId) {
-                        copyToClipboard(targetId);
+                        copyToClipboard(targetId, copyButton);
                     }
                 }
             });
@@ -1167,7 +1186,7 @@
             const maxGuests = parseInt(document.getElementById('maxGuestsInput').value);
 
             if (!roomName) {
-                alert('Please enter a room name');
+                alert(translateUi('plugins.vdoninja.vdoninja.messages.room_name_required', 'Please enter a room name.'));
                 return;
             }
 
@@ -1182,16 +1201,18 @@
                 if (data.success) {
                     console.log('Room created:', data.room);
                 } else {
-                    alert('Failed to create room: ' + data.error);
+                    alert(data.error
+                        ? translateUi('plugins.vdoninja.vdoninja.messages.room_create_failed_detail', 'Could not create the room: {error}', { error: data.error })
+                        : translateUi('plugins.vdoninja.vdoninja.messages.room_create_failed', 'Could not create the room.'));
                 }
             } catch (error) {
                 console.error('Error creating room:', error);
-                alert('Failed to create room');
+                alert(translateUi('plugins.vdoninja.vdoninja.messages.room_create_failed', 'Could not create the room.'));
             }
         }
 
         async function closeRoom() {
-            if (!confirm('Are you sure you want to close this room?')) {
+            if (!confirm(translateUi('plugins.vdoninja.vdoninja.messages.room_close_confirm', 'Close this room?'))) {
                 return;
             }
 
@@ -1202,11 +1223,13 @@
 
                 const data = await response.json();
                 if (!data.success) {
-                    alert('Failed to close room: ' + data.error);
+                    alert(data.error
+                        ? translateUi('plugins.vdoninja.vdoninja.messages.room_close_failed_detail', 'Could not close the room: {error}', { error: data.error })
+                        : translateUi('plugins.vdoninja.vdoninja.messages.room_close_failed', 'Could not close the room.'));
                 }
             } catch (error) {
                 console.error('Error closing room:', error);
-                alert('Failed to close room');
+                alert(translateUi('plugins.vdoninja.vdoninja.messages.room_close_failed', 'Could not close the room.'));
             }
         }
 
@@ -1261,12 +1284,12 @@
                     document.getElementById('activeRoomInfo').style.display = 'block';
 
                     document.getElementById('activeRoomName').textContent = activeRoom.roomName;
-                    document.getElementById('directorUrl').textContent = activeRoom.directorUrl || 'N/A';
-                    document.getElementById('guestInviteUrl').textContent = activeRoom.guestInviteUrl || 'N/A';
+                    document.getElementById('directorUrl').textContent = activeRoom.directorUrl || translateUi('plugins.vdoninja.vdoninja.messages.not_available', 'Not available');
+                    document.getElementById('guestInviteUrl').textContent = activeRoom.guestInviteUrl || translateUi('plugins.vdoninja.vdoninja.messages.not_available', 'Not available');
                     document.getElementById('guestCount').textContent = `${activeRoom.guestCount || 0} / ${activeRoom.maxGuests}`;
 
                     // Set up Director URL iframe
-                    if (activeRoom.directorUrl && activeRoom.directorUrl !== 'N/A') {
+                    if (activeRoom.directorUrl && activeRoom.directorUrl !== EMPTY_URL_SENTINEL) {
                         const directorIframe = document.getElementById('directorIframe');
                         const directorIframeContainer = document.getElementById('directorIframeContainer');
                         const directorIframeWrapper = document.getElementById('directorIframeWrapper');
@@ -1275,7 +1298,7 @@
                         directorIframe.src = activeRoom.directorUrl;
                         directorIframeContainer.style.display = 'block';
                         directorIframeWrapper.style.display = 'block';
-                        toggleBtn.textContent = '▼ Hide';
+                        toggleBtn.textContent = directorToggleLabel(true);
                     }
 
                     // Load guests
@@ -1356,6 +1379,19 @@
             });
         }
 
+        function refreshLocalizedDynamicUi() {
+            if (activeRoom) {
+                document.getElementById('directorUrl').textContent = activeRoom.directorUrl || translateUi('plugins.vdoninja.vdoninja.messages.not_available', 'Not available');
+                document.getElementById('guestInviteUrl').textContent = activeRoom.guestInviteUrl || translateUi('plugins.vdoninja.vdoninja.messages.not_available', 'Not available');
+
+                if (activeRoom.directorUrl && activeRoom.directorUrl !== EMPTY_URL_SENTINEL) {
+                    const wrapper = document.getElementById('directorIframeWrapper');
+                    document.getElementById('toggleIframeBtn').textContent = directorToggleLabel(wrapper.offsetParent !== null);
+                }
+            }
+            renderGuests();
+        }
+
         function renderGuests() {
             const container = document.getElementById('guestsContainer');
 
@@ -1363,11 +1399,10 @@
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">👤</div>
-                        <p data-i18n="plugins.vdoninja.vdoninja.guests.empty">No guests connected yet</p>
-                        <p style="font-size: 0.875rem; margin-top: 0.5rem;" data-i18n="plugins.vdoninja.vdoninja.guests.empty_hint">Share the Guest Invite URL to add guests to your room</p>
+                        <p>${translateUi('plugins.vdoninja.vdoninja.guests.empty', 'No guests connected yet')}</p>
+                        <p style="font-size: 0.875rem; margin-top: 0.5rem;">${translateUi('plugins.vdoninja.vdoninja.guests.empty_hint', 'Share the Guest Invite URL to add guests to your room')}</p>
                     </div>
                 `;
-                window.i18n?.updateDOM?.();
                 return;
             }
 
@@ -1375,27 +1410,27 @@
                 <div class="guest-card">
                     <div class="guest-header">
                         <span class="guest-name">${escapeHtml(guest.name || '')}</span>
-                        <span class="guest-slot">Slot ${guest.slot}</span>
+                        <span class="guest-slot">${translateUi('plugins.vdoninja.vdoninja.guests.slot', 'Slot {slot}', { slot: guest.slot })}</span>
                     </div>
                     <div class="guest-controls">
                         <button class="control-btn ${guest.audioEnabled ? 'active' : ''}"
                                 onclick="toggleAudio(${guest.slot})">
-                            ${guest.audioEnabled ? '🔊' : '🔇'} Audio
+                            ${guest.audioEnabled ? '🔊' : '🔇'} ${translateUi('plugins.vdoninja.vdoninja.guests.controls.audio', 'Audio')}
                         </button>
                         <button class="control-btn ${guest.videoEnabled ? 'active' : ''}"
                                 onclick="toggleVideo(${guest.slot})">
-                            ${guest.videoEnabled ? '📹' : '📵'} Video
+                            ${guest.videoEnabled ? '📹' : '📵'} ${translateUi('plugins.vdoninja.vdoninja.guests.controls.video', 'Video')}
                         </button>
-                        <button class="control-btn" onclick="soloGuest(${guest.slot})" data-i18n="plugins.vdoninja.vdoninja.guests.controls.solo">
-                            ⭐ Solo
+                        <button class="control-btn" onclick="soloGuest(${guest.slot})">
+                            ⭐ ${translateUi('plugins.vdoninja.vdoninja.guests.controls.solo', 'Solo')}
                         </button>
-                        <button class="control-btn" onclick="kickGuest(${guest.slot})" data-i18n="plugins.vdoninja.vdoninja.guests.controls.kick">
-                            ❌ Kick
+                        <button class="control-btn" onclick="kickGuest(${guest.slot})">
+                            ❌ ${translateUi('plugins.vdoninja.vdoninja.guests.controls.kick', 'Remove')}
                         </button>
                     </div>
                     <div class="volume-control">
                         <label class="form-label" style="margin-bottom: 0.25rem;">
-                            Volume: ${Math.round(guest.volume * 100)}%
+                            ${translateUi('plugins.vdoninja.vdoninja.guests.controls.volume', 'Volume: {value}%', { value: Math.round(guest.volume * 100) })}
                         </label>
                         <input type="range" class="volume-slider"
                                min="0" max="100" value="${guest.volume * 100}"
@@ -1405,7 +1440,6 @@
             `).join('');
 
             container.innerHTML = `<div class="guest-grid">${guestCards}</div>`;
-            window.i18n?.updateDOM?.();
         }
 
         function toggleAudio(slot) {
@@ -1442,8 +1476,8 @@
             const guest = guests.get(slot);
             if (!guest) return;
 
-            if (confirm(`Kick ${guest.name}?`)) {
-                controlGuest(slot, 'kick', { reason: 'Kicked by host' });
+            if (confirm(translateUi('plugins.vdoninja.vdoninja.messages.guest_kick_confirm', 'Remove {name} from the room?', { name: guest.name }))) {
+                controlGuest(slot, 'kick', { reason: translateUi('plugins.vdoninja.vdoninja.messages.guest_kick_reason', 'Removed by host') });
             }
         }
 
@@ -1474,27 +1508,26 @@
 
             if (isHidden) {
                 wrapper.style.display = 'block';
-                btn.textContent = '▼ Hide';
+                btn.textContent = directorToggleLabel(true);
             } else {
                 wrapper.style.display = 'none';
-                btn.textContent = '▶ Show';
+                btn.textContent = directorToggleLabel(false);
             }
         }
 
-        function copyToClipboard(elementId) {
+        function copyToClipboard(elementId, btn) {
             const element = document.getElementById(elementId);
             const text = element.textContent;
 
             navigator.clipboard.writeText(text).then(() => {
-                const btn = event.target;
                 const originalText = btn.textContent;
-                btn.textContent = '✓ Copied!';
+                btn.textContent = `✓ ${translateUi('plugins.vdoninja.vdoninja.messages.copied', 'Copied!')}`;
                 setTimeout(() => {
                     btn.textContent = originalText;
                 }, 2000);
             }).catch(err => {
                 console.error('Failed to copy:', err);
-                alert('Failed to copy to clipboard');
+                alert(translateUi('plugins.vdoninja.vdoninja.messages.copy_failed', 'Could not copy to the clipboard.'));
             });
         }
 

@@ -787,6 +787,11 @@
     let sentenceTimer = null;
     let scrollingInProgress = false;
 
+    function translateOverlay(key, params = {}) {
+      const translation = window.i18n?.t?.(key, params);
+      return typeof translation === 'string' && translation !== key ? translation : key;
+    }
+
     // Configuration constants
     const MAX_VISIBLE_PAST_SENTENCES = 2; // How many past sentences to keep visible before hiding
     const SENTENCE_ANIMATION_DELAY_MS = 100; // Delay before animating sentence entrance
@@ -1650,9 +1655,9 @@
 
         if (timeLeft <= 0) {
           clearInterval(voteTimer);
-          timerDisplay.textContent = 'Voting Ended!';
+          timerDisplay.textContent = translateOverlay('plugins.interactive-story.runtime.overlay.voting_ended');
         } else {
-          timerDisplay.textContent = `Time Remaining: ${timeLeft}s`;
+          timerDisplay.textContent = translateOverlay('plugins.interactive-story.runtime.overlay.vote_timer', { seconds: timeLeft });
 
           if (timeLeft <= 10) {
             timerDisplay.classList.add('urgent');

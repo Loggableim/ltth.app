@@ -27,6 +27,8 @@ const MODAL_RENDER_DELAY_MS = 50;
 const MAX_DEBUG_LOGS = 200;
 
 const RUNTIME_I18N_PREFIX = 'plugins.openshock.runtime.';
+const TOAST_SUCCESS = 'success';
+const TOAST_ERROR = 'error';
 
 function interpolateRuntimeFallback(fallback, params = {}) {
     return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
@@ -125,7 +127,7 @@ function renderDebugLog() {
     
     if (debugLogs.length === 0) {
         containers.forEach(container => {
-            container.innerHTML = '<p class="text-muted text-center">Debug log is empty. Pattern operations will be logged here.</p>';
+            container.innerHTML = `<p class="text-muted text-center">${escapeHtml(runtimeText('status.debug_log_empty', 'Debug log is empty. Pattern operations will be logged here.'))}</p>`;
         });
         return;
     }
@@ -192,7 +194,9 @@ function toggleDebugVerbose() {
     renderDebugLog();
     const btn = document.getElementById('toggleDebugVerbose');
     if (btn) {
-        btn.textContent = debugVerbose ? '📊 Normal' : '📊 Verbose';
+        btn.textContent = debugVerbose
+            ? `📊 ${runtimeText('status.normal', 'Normal')}`
+            : `📊 ${runtimeText('status.verbose', 'Verbose')}`;
         btn.classList.toggle('btn-primary', debugVerbose);
     }
     addDebugLog('info', `Verbose mode ${debugVerbose ? 'enabled' : 'disabled'}`);
@@ -650,7 +654,7 @@ function renderDeviceList() {
 
     if (devices.length === 0) {
         container.innerHTML = `
-            <p class="text-muted text-center">No devices found. Configure API key first.</p>
+            <p class="text-muted text-center">${escapeHtml(runtimeText('devices.no_devices', 'No devices found. Configure API key first.'))}</p>
         `;
         
         // Also update test shock dropdown and mapping device dropdown
@@ -2232,7 +2236,7 @@ class CurveEditor {
         if (!container) return;
         
         if (steps.length === 0) {
-            container.innerHTML = '<div class="timeline-empty">Draw on the canvas above to create your pattern</div>';
+        container.innerHTML = `<div class="timeline-empty">${escapeHtml(runtimeText('pattern.draw_curve_hint', 'Draw on the canvas above to create your pattern'))}</div>`;
             return;
         }
         
@@ -2305,7 +2309,7 @@ class CurveEditor {
         // Reset canvas dimensions to match display size
         this.updateCanvasDimensions();
         this.drawGrid();
-        document.getElementById('curveTimelinePreview').innerHTML = '<div class="timeline-empty">Draw on the canvas above to create your pattern</div>';
+    document.getElementById('curveTimelinePreview').innerHTML = `<div class="timeline-empty">${escapeHtml(runtimeText('pattern.draw_curve_hint', 'Draw on the canvas above to create your pattern'))}</div>`;
         document.getElementById('stepCount').textContent = '0';
         document.getElementById('totalDuration').textContent = '0';
         document.getElementById('avgIntensity').textContent = '0';
@@ -2775,7 +2779,7 @@ async function addShareCode() {
  * @param {string} code - ShareCode der gelöscht werden soll
  */
 async function deleteShareCode(code) {
-    if (!confirm(`Delete ShareCode "${code}"?`)) return;
+    if (!confirm(runtimeText('devices.share_code_delete_confirm', 'Delete ShareCode "{code}"?', { code }))) return;
 
     try {
         const response = await fetch(`/api/openshock/pishock/sharecodes/${encodeURIComponent(code)}`, {
@@ -3587,7 +3591,7 @@ function initializeEventDelegation() {
     if (clearAllStepsBtn) {
         clearAllStepsBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            if (confirm('Alle Schritte löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+            if (confirm(runtimeText('pattern.clear_all_steps_confirm', 'Delete all steps? This action cannot be undone.'))) {
                 currentPatternSteps = [];
                 editingStepIndex = null; // Reset editing state
                 renderPatternSteps();
@@ -4333,16 +4337,16 @@ function initZappieHellEventListeners() {
             // Use modern Clipboard API with fallback
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(input.value)
-                    .then(() => showToast('success', zappieText('overlay.copied', 'Overlay URL copied to clipboard!')))
+                    .then(() => showToast(TOAST_SUCCESS, zappieText('overlay.copied', 'Overlay URL copied to clipboard!')))
                     .catch(() => {
                         // Fallback to deprecated method
                         document.execCommand('copy');
-                        showToast('success', zappieText('overlay.copied', 'Overlay URL copied to clipboard!'));
+                        showToast(TOAST_SUCCESS, zappieText('overlay.copied', 'Overlay URL copied to clipboard!'));
                     });
             } else {
                 // Fallback for older browsers
                 document.execCommand('copy');
-                showToast('success', zappieText('overlay.copied', 'Overlay URL copied to clipboard!'));
+                showToast(TOAST_SUCCESS, zappieText('overlay.copied', 'Overlay URL copied to clipboard!'));
             }
         });
     }
@@ -4407,7 +4411,7 @@ async function loadGoals() {
         }
     } catch (error) {
         console.error('Error loading goals:', error);
-        showToast('error', zappieError('errors.load_goals', 'Failed to load goals: {error}', error.message));
+        showToast(TOAST_ERROR, zappieError('errors.load_goals', 'Failed to load goals: {error}', error.message));
     }
 }
 
@@ -4426,7 +4430,7 @@ async function loadEventChains() {
         }
     } catch (error) {
         console.error('Error loading event chains:', error);
-        showToast('error', zappieError('errors.load_chains', 'Failed to load event chains: {error}', error.message));
+        showToast(TOAST_ERROR, zappieError('errors.load_chains', 'Failed to load event chains: {error}', error.message));
     }
 }
 
@@ -4633,7 +4637,7 @@ async function saveGoal() {
     };
 
     if (!goalData.name || !goalData.targetCoins) {
-        showToast('error', zappieText('goals.validation_required', 'Please fill in all required fields'));
+        showToast(TOAST_ERROR, zappieText('goals.validation_required', 'Please fill in all required fields'));
         return;
     }
 
@@ -4651,17 +4655,17 @@ async function saveGoal() {
         const data = await response.json();
         
         if (data.success) {
-            showToast('success', goalId
+            showToast(TOAST_SUCCESS, goalId
                 ? zappieText('goals.updated', 'Goal updated')
                 : zappieText('goals.created', 'Goal created'));
             closeModal('goalModal');
             loadGoals();
         } else {
-            showToast('error', zappieError('errors.save_goal', 'Failed to save goal: {error}', data.error));
+            showToast(TOAST_ERROR, zappieError('errors.save_goal', 'Failed to save goal: {error}', data.error));
         }
     } catch (error) {
         console.error('Error saving goal:', error);
-        showToast('error', zappieError('errors.save_goal', 'Failed to save goal: {error}', error.message));
+        showToast(TOAST_ERROR, zappieError('errors.save_goal', 'Failed to save goal: {error}', error.message));
     }
 }
 
@@ -4686,14 +4690,14 @@ async function deleteGoal(goalId) {
         const data = await response.json();
         
         if (data.success) {
-            showToast('success', zappieText('goals.deleted', 'Goal deleted'));
+            showToast(TOAST_SUCCESS, zappieText('goals.deleted', 'Goal deleted'));
             loadGoals();
         } else {
-            showToast('error', zappieError('errors.delete_goal', 'Failed to delete goal: {error}', data.error));
+            showToast(TOAST_ERROR, zappieError('errors.delete_goal', 'Failed to delete goal: {error}', data.error));
         }
     } catch (error) {
         console.error('Error deleting goal:', error);
-        showToast('error', zappieError('errors.delete_goal', 'Failed to delete goal: {error}', error.message));
+        showToast(TOAST_ERROR, zappieError('errors.delete_goal', 'Failed to delete goal: {error}', error.message));
     }
 }
 
@@ -4711,14 +4715,14 @@ async function resetGoal(goalId) {
         const data = await response.json();
         
         if (data.success) {
-            showToast('success', zappieText('goals.reset', 'Goal reset'));
+            showToast(TOAST_SUCCESS, zappieText('goals.reset', 'Goal reset'));
             loadGoals();
         } else {
-            showToast('error', zappieError('errors.reset_goal', 'Failed to reset goal: {error}', data.error));
+            showToast(TOAST_ERROR, zappieError('errors.reset_goal', 'Failed to reset goal: {error}', data.error));
         }
     } catch (error) {
         console.error('Error resetting goal:', error);
-        showToast('error', zappieError('errors.reset_goal', 'Failed to reset goal: {error}', error.message));
+        showToast(TOAST_ERROR, zappieError('errors.reset_goal', 'Failed to reset goal: {error}', error.message));
     }
 }
 
@@ -4756,7 +4760,7 @@ async function saveChain() {
     };
 
     if (!chainData.name) {
-        showToast('error', zappieText('chains.validation_name_required', 'Please enter an event chain name'));
+        showToast(TOAST_ERROR, zappieText('chains.validation_name_required', 'Please enter an event chain name'));
         return;
     }
 
@@ -4774,17 +4778,17 @@ async function saveChain() {
         const data = await response.json();
         
         if (data.success) {
-            showToast('success', chainId
+            showToast(TOAST_SUCCESS, chainId
                 ? zappieText('chains.updated', 'Event chain updated')
                 : zappieText('chains.created', 'Event chain created'));
             closeModal('chainModal');
             loadEventChains();
         } else {
-            showToast('error', zappieError('errors.save_chain', 'Failed to save event chain: {error}', data.error));
+            showToast(TOAST_ERROR, zappieError('errors.save_chain', 'Failed to save event chain: {error}', data.error));
         }
     } catch (error) {
         console.error('Error saving chain:', error);
-        showToast('error', zappieError('errors.save_chain', 'Failed to save event chain: {error}', error.message));
+        showToast(TOAST_ERROR, zappieError('errors.save_chain', 'Failed to save event chain: {error}', error.message));
     }
 }
 
@@ -4809,14 +4813,14 @@ async function deleteChain(chainId) {
         const data = await response.json();
         
         if (data.success) {
-            showToast('success', zappieText('chains.deleted', 'Event chain deleted'));
+            showToast(TOAST_SUCCESS, zappieText('chains.deleted', 'Event chain deleted'));
             loadEventChains();
         } else {
-            showToast('error', zappieError('errors.delete_chain', 'Failed to delete event chain: {error}', data.error));
+            showToast(TOAST_ERROR, zappieError('errors.delete_chain', 'Failed to delete event chain: {error}', data.error));
         }
     } catch (error) {
         console.error('Error deleting chain:', error);
-        showToast('error', zappieError('errors.delete_chain', 'Failed to delete event chain: {error}', error.message));
+        showToast(TOAST_ERROR, zappieError('errors.delete_chain', 'Failed to delete event chain: {error}', error.message));
     }
 }
 
@@ -4834,13 +4838,13 @@ async function testChain(chainId) {
         const data = await response.json();
         
         if (data.success) {
-            showToast('success', zappieText('chains.execution_started', 'Event chain execution started'));
+            showToast(TOAST_SUCCESS, zappieText('chains.execution_started', 'Event chain execution started'));
         } else {
-            showToast('error', zappieError('errors.execute_chain', 'Failed to execute event chain: {error}', data.error));
+            showToast(TOAST_ERROR, zappieError('errors.execute_chain', 'Failed to execute event chain: {error}', data.error));
         }
     } catch (error) {
         console.error('Error executing chain:', error);
-        showToast('error', zappieError('errors.execute_chain', 'Failed to execute event chain: {error}', error.message));
+        showToast(TOAST_ERROR, zappieError('errors.execute_chain', 'Failed to execute event chain: {error}', error.message));
     }
 }
 
@@ -5052,7 +5056,7 @@ function saveChainStep() {
             try {
                 stepData.body = JSON.parse(document.getElementById('webhookBody').value);
             } catch (e) {
-                showToast('error', zappieError('errors.invalid_webhook_json', 'Invalid JSON in webhook body: {error}', e.message));
+                showToast(TOAST_ERROR, zappieError('errors.invalid_webhook_json', 'Invalid JSON in webhook body: {error}', e.message));
                 return;
             }
             break;

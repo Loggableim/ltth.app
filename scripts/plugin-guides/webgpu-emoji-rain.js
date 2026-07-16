@@ -29,6 +29,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
   "safety": "obs",
   "mode": "ui",
   "overlay": "/plugins/webgpu-emoji-rain/overlay.html",
+  "overlayWorkflowStepIds": ["gpu-rain-overlay"],
   "related": [
     "emoji-rain",
     "webgpu-fireworks"

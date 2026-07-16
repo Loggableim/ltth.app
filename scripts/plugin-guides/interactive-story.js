@@ -29,6 +29,7 @@ const guide = {
   "safety": "credentials",
   "mode": "ui",
   "overlay": "/plugins/interactive-story/overlay.html",
+  "overlayWorkflowStepIds": ["story-overlay"],
   "related": [
     "quiz-show",
     "sidekick"
@@ -430,72 +431,72 @@ const guide = {
       "id": "local-decision",
       "copy": {
         "de": {
-          "title": "Lokale Voting-Vorschau oeffnen und testen",
-          "body": "Klicke im Demo-Modus zuerst auf „Show preview“. Danach ist der echte Button „Test Voting Choices“ sichtbar; er sendet nur die eingebauten Beispieloptionen an die lokale Vorschau und ruft weder ein Modell noch einen externen Dienst auf.",
-          "expected": "Die lokale Vorschau erhaelt die echten Beispieloptionen.",
-          "alt": "Lokale Voting-Vorschau oeffnen und testen - Geschichtenmodus, Abstimmung und Modelloption"
+          "title": "Lokale Browserquellen-Vorschau oeffnen",
+          "body": "Klicke im Demo-Modus auf die Vorschau-Schaltflaeche. Dadurch wird die echte lokale Browserquellen-Vorschau geoeffnet; weder eine Story noch eine Abstimmung oder ein externer Dienst wird gestartet.",
+          "expected": "Die eingebettete lokale Vorschau ist sichtbar, ohne ein Story- oder Voting-Ereignis vorzutäuschen.",
+          "alt": "Lokale Browserquellen-Vorschau oeffnen - ohne Story oder Abstimmung"
         },
         "en": {
-          "title": "Open and test the local voting preview",
-          "body": "In demo mode, first click “Show preview”. The real “Test Voting Choices” button then becomes visible; it sends only the built-in sample choices to the local preview and calls neither a model nor an external service.",
-          "expected": "The local preview receives the real sample choices.",
-          "alt": "Open and test the local voting preview - story mode, voting, and model option"
+          "title": "Open the local browser-source preview",
+          "body": "In demo mode, click the preview button. This opens the real local browser-source preview; it does not start a story, a vote, or an external service.",
+          "expected": "The embedded local preview is visible without starting a story or voting event.",
+          "alt": "Open the local browser-source preview without starting a story or vote"
         },
         "es": {
-          "title": "Abre y prueba la vista previa local de voto",
-          "body": "En modo demo, primero haz clic en «Show preview». Entonces aparece el boton real «Test Voting Choices»; solo envia las opciones de ejemplo integradas a la vista previa local y no llama a un modelo ni a un servicio externo.",
-          "expected": "La vista previa local recibe las opciones de ejemplo reales.",
-          "alt": "Abre y prueba la vista previa local de voto - modo de historia, votación y opción de modelo"
+          "title": "Abre la vista previa local de la fuente de navegador",
+          "body": "En modo demo, haz clic en el boton de vista previa. Esto abre la vista previa local real de la fuente de navegador; no inicia una historia, una votacion ni un servicio externo.",
+          "expected": "La vista previa local integrada es visible sin iniciar un evento de historia o votacion.",
+          "alt": "Abre la vista previa local de la fuente de navegador sin iniciar una historia o votacion"
         },
         "fr": {
-          "title": "Ouvrez et testez l apercu de vote local",
-          "body": "En mode demonstration, cliquez d abord sur « Show preview ». Le vrai bouton « Test Voting Choices » devient alors visible ; il envoie uniquement les choix exemples integres vers l apercu local et n appelle ni modele ni service externe.",
-          "expected": "L apercu local recoit les vrais choix exemples.",
-          "alt": "Ouvrez et testez l apercu de vote local - mode histoire, vote et option de modèle"
+          "title": "Ouvrez l apercu local de la source navigateur",
+          "body": "En mode demonstration, cliquez sur le bouton d apercu. Cela ouvre l apercu local reel de la source navigateur ; aucune histoire, aucun vote ni service externe ne demarre.",
+          "expected": "L apercu local integre est visible sans declencher d evenement d histoire ou de vote.",
+          "alt": "Ouvrez l apercu local de la source navigateur sans demarrer d histoire ou de vote"
         }
       },
       "capture": {
         "route": "/plugins/interactive-story/ui.html?demo=1",
         "assertVisible": "#toggleOverlayPreviewBtn",
         "focusText": {
-          "de": "Lokale Voting-Vorschau oeffnen und testen",
-          "en": "Open and test the local voting preview",
-          "es": "Abre y prueba la vista previa local de voto",
-          "fr": "Ouvrez et testez l apercu de vote local"
+          "de": "Lokale Browserquellen-Vorschau oeffnen",
+          "en": "Open the local browser-source preview",
+          "es": "Abre la vista previa local de la fuente de navegador",
+          "fr": "Ouvrez l apercu local de la source navigateur"
         },
         "action": {
           "type": "run-local-preview",
           "stepId": "local-decision"
         },
         "expected": {
-          "de": "Die lokale Vorschau erhaelt die echten Beispieloptionen.",
-          "en": "The local preview receives the real sample choices.",
-          "es": "La vista previa local recibe las opciones de ejemplo reales.",
-          "fr": "L apercu local recoit les vrais choix exemples."
+          "de": "Die eingebettete lokale Vorschau ist sichtbar, ohne ein Story- oder Voting-Ereignis vorzutäuschen.",
+          "en": "The embedded local preview is visible without starting a story or voting event.",
+          "es": "La vista previa local integrada es visible sin iniciar un evento de historia o votacion.",
+          "fr": "L apercu local integre est visible sans declencher d evenement d histoire ou de vote."
         }
       },
       "workflow": {
         "route": "/plugins/interactive-story/ui.html?demo=1",
         "instructions": {
           "de": {
-            "title": "Lokale Voting-Vorschau oeffnen und testen",
-            "body": "Klicke im Demo-Modus zuerst auf „Show preview“. Danach ist der echte Button „Test Voting Choices“ sichtbar; er sendet nur die eingebauten Beispieloptionen an die lokale Vorschau und ruft weder ein Modell noch einen externen Dienst auf.",
-            "expected": "Die lokale Vorschau erhaelt die echten Beispieloptionen."
+            "title": "Lokale Browserquellen-Vorschau oeffnen",
+            "body": "Klicke im Demo-Modus auf die Vorschau-Schaltflaeche. Dadurch wird die echte lokale Browserquellen-Vorschau geoeffnet; weder eine Story noch eine Abstimmung oder ein externer Dienst wird gestartet.",
+            "expected": "Die eingebettete lokale Vorschau ist sichtbar, ohne ein Story- oder Voting-Ereignis vorzutäuschen."
           },
           "en": {
-            "title": "Open and test the local voting preview",
-            "body": "In demo mode, first click “Show preview”. The real “Test Voting Choices” button then becomes visible; it sends only the built-in sample choices to the local preview and calls neither a model nor an external service.",
-            "expected": "The local preview receives the real sample choices."
+            "title": "Open the local browser-source preview",
+            "body": "In demo mode, click the preview button. This opens the real local browser-source preview; it does not start a story, a vote, or an external service.",
+            "expected": "The embedded local preview is visible without starting a story or voting event."
           },
           "es": {
-            "title": "Abre y prueba la vista previa local de voto",
-            "body": "En modo demo, primero haz clic en «Show preview». Entonces aparece el boton real «Test Voting Choices»; solo envia las opciones de ejemplo integradas a la vista previa local y no llama a un modelo ni a un servicio externo.",
-            "expected": "La vista previa local recibe las opciones de ejemplo reales."
+            "title": "Abre la vista previa local de la fuente de navegador",
+            "body": "En modo demo, haz clic en el boton de vista previa. Esto abre la vista previa local real de la fuente de navegador; no inicia una historia, una votacion ni un servicio externo.",
+            "expected": "La vista previa local integrada es visible sin iniciar un evento de historia o votacion."
           },
           "fr": {
-            "title": "Ouvrez et testez l apercu de vote local",
-            "body": "En mode demonstration, cliquez d abord sur « Show preview ». Le vrai bouton « Test Voting Choices » devient alors visible ; il envoie uniquement les choix exemples integres vers l apercu local et n appelle ni modele ni service externe.",
-            "expected": "L apercu local recoit les vrais choix exemples."
+            "title": "Ouvrez l apercu local de la source navigateur",
+            "body": "En mode demonstration, cliquez sur le bouton d apercu. Cela ouvre l apercu local reel de la source navigateur ; aucune histoire, aucun vote ni service externe ne demarre.",
+            "expected": "L apercu local integre est visible sans declencher d evenement d histoire ou de vote."
           }
         },
         "operations": [

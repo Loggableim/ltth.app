@@ -1,7 +1,9 @@
 'use strict';
 
+const { applySafeWorkflowContracts } = require('./safe-workflow-contracts');
+
 // Explicit inventory: adding or removing a published guide is visible in review.
-module.exports = Object.freeze([
+module.exports = Object.freeze(applySafeWorkflowContracts([
   require('./advanced-timer'),
   require('./animazingpal'),
   require('./api-bridge'),
@@ -40,4 +42,4 @@ module.exports = Object.freeze([
   require('./webgpu-emoji-rain'),
   require('./webgpu-fireworks'),
   require('./store-admin'),
-]);
+]));

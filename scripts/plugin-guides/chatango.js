@@ -27,6 +27,7 @@ module.exports = Object.freeze({
   "safety": "credentials",
   "mode": "ui",
   "overlay": "/plugins/chatango/ui.html",
+  "overlayWorkflowStepIds": ["widget-preview"],
   "related": [
     "clarityhud",
     "spotlight"

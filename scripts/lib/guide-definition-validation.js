@@ -40,7 +40,7 @@ function integrationKey(entry) {
 }
 
 const UNDECLARED_INVENTORY_VALUE = /^(?:text or value shown in the control|not declared)$/i;
-const GENERIC_GUIDE_TEXT = /\b(?:visible\s+(?:control|controls?|field|fields?|button|buttons?|values?|actions?)\b|visible\s+on\s+\/|sichtbare(?:n|s)?\s+(?:feld(?:er)?|steuerelemente?|schaltflache(?:n)?|werte?|aktionen?)\b|sichtbar\s+auf\s+\/|control(?:es)?\s+visible(?:s)?|campo(?:s)?\s+visible(?:s)?|bot[oó]n(?:es)?\s+visible(?:s)?|valor(?:es)?\s+visible(?:s)?|contr[ôo]le(?:s)?\s+visible(?:s)?|champ(?:s)?\s+visible(?:s)?|bouton(?:s)?\s+visible(?:s)?|valeur(?:s)?\s+visible(?:s)?)\b/iu;
+const GENERIC_GUIDE_TEXT = /\b(?:source\s+inventory|quellinventar|inventario\s+fuente|inventaire\s+source|visible\s+(?:control|controls?|field|fields?|button|buttons?|values?|actions?)\b|visible\s+on\s+\/|sichtbare(?:n|s)?\s+(?:feld(?:er)?|steuerelemente?|schaltflache(?:n)?|werte?|aktionen?)\b|sichtbar\s+auf\s+\/|control(?:es)?\s+visible(?:s)?|campo(?:s)?\s+visible(?:s)?|bot[oó]n(?:es)?\s+visible(?:s)?|valor(?:es)?\s+visible(?:s)?|contr[ôo]le(?:s)?\s+visible(?:s)?|champ(?:s)?\s+visible(?:s)?|bouton(?:s)?\s+visible(?:s)?|valeur(?:s)?\s+visible(?:s)?)\b/iu;
 const UNSUPPORTED_RUNTIME_CLAIM = /\b(?:connects?\s+(?:an?\s+)?account|LIVE\s+output|OBS\s+test\s+scene|local\s+result|production\s+data|not\s+populated\s+as\s+expected)\b/iu;
 
 function localizedText(value, locale) {
@@ -74,10 +74,14 @@ function addMissingAnchorIssue(issues, section, details = {}) {
   addIssue(issues, 'guide-text-source-anchor-missing', { section, ...details });
 }
 
-function controlTextIsAnchored(text, controls, fallbackRoute) {
+function controlLabel(control, locale) {
+  return control.labels?.[locale] || control.label || '';
+}
+
+function controlTextIsAnchored(text, controls, fallbackRoute, locale) {
   return controls.some((control) => (
     text.includes(control.selector)
-    && (!nonEmptyString(control.label) || text.includes(control.label))
+    && (!nonEmptyString(controlLabel(control, locale)) || text.includes(controlLabel(control, locale)))
     && (!nonEmptyString(control.route || fallbackRoute) || text.includes(control.route || fallbackRoute))
   ));
 }
@@ -112,7 +116,7 @@ function auditEditorialQuality(issues, definition, controls, sourceIntegrations)
       if (nonEmptyString(route) && !text.includes(route)) {
         addMissingAnchorIssue(issues, 'workflows', { locale, workflowId: workflow.id, anchorType: 'route' });
       }
-      if (controls.length && !controlTextIsAnchored(text, controls, route)) {
+      if (controls.length && !controlTextIsAnchored(text, controls, route, locale)) {
         addMissingAnchorIssue(issues, 'workflows', { locale, workflowId: workflow.id, anchorType: 'control-selector' });
       } else if (!controls.length && sourceIntegrations.length && !sourceIntegrations.some((integration) => text.includes(integration.value))) {
         addMissingAnchorIssue(issues, 'workflows', { locale, workflowId: workflow.id, anchorType: 'integration' });
@@ -147,7 +151,8 @@ function auditEditorialQuality(issues, definition, controls, sourceIntegrations)
       if (nonEmptyString(controlRoute) && !text.includes(controlRoute)) {
         addMissingAnchorIssue(issues, 'settingsReference', { selector: setting.selector, locale, anchorType: 'route' });
       }
-      if (nonEmptyString(control.label) && !text.includes(control.label)) {
+      const label = controlLabel(control, locale);
+      if (nonEmptyString(label) && !text.includes(label)) {
         addMissingAnchorIssue(issues, 'settingsReference', { selector: setting.selector, locale, anchorType: 'control-label' });
       }
       for (const field of ['defaultValue', 'values']) {
@@ -167,7 +172,7 @@ function auditEditorialQuality(issues, definition, controls, sourceIntegrations)
       }
       addUnsupportedRuntimeClaimIssue(issues, text, 'troubleshooting', { locale });
       if (controls.length) {
-        if (!controlTextIsAnchored(text, controls, route)) {
+        if (!controlTextIsAnchored(text, controls, route, locale)) {
           addMissingAnchorIssue(issues, 'troubleshooting', { locale, anchorType: 'control-selector' });
         }
       }

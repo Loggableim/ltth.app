@@ -1,6 +1,9 @@
 {
   "plugins": {
     "weather-control": {
+      "form_controls": {
+        "effect_search_placeholder": "rain, storm, heatwave"
+      },
       "weather_control": {
         "title": "Weather Control",
         "subtitle": "Stream Weather Effects",
@@ -152,11 +155,17 @@
           "title": "Gift-to-Weather Mappings",
           "description": "Map specific TikTok gifts to weather effects. When a mapped gift is received, it will trigger the configured weather effect.",
           "load_prompt": "Click \"Load Gift Catalog\" to see available gifts",
-          "effect_label": "Weather Effect"
+          "effect_label": "Weather Effect",
+          "no_mapping": "No Mapping",
+          "enabled": "Enabled",
+          "save": "Save",
+          "delete": "Delete",
+          "delete_confirm": "Are you sure you want to delete this gift mapping?"
         }
       },
       "buttons": {
         "preview_on": "Start Preview",
+        "preview_off": "Stop Preview",
         "test_rain": "Test Rain Effect",
         "stop_all": "Stop All",
         "copy": "Copy",
@@ -226,6 +235,8 @@
         "high_500": "High – 500",
         "refresh_state": "Refresh State",
         "rgb_shift": "RGB Shift",
+        "glitch_displacement": "Displacement",
+        "glitch_scanlines": "Scanlines",
         "action_fog_delay_0_intensity_0_35_duration": "[ {\"action\":\"fog\",\"delay\":0,\"intensity\":0.35,\"duration\":8000}, {\"action\":\"rain\",\"delay\":2000,\"intensity\":0.55,\"duration\":10000}, {\"action\":\"thunder\",\"delay\":5500,\"intensity\":0.8,\"duration\":5000} ]",
         "blood_red": "Blood Red",
         "reward_cooldown_ms": "Reward Cooldown (ms)",
@@ -255,9 +266,73 @@
           "impact": "Impact", "digital": "Digital", "direction": "Direction", "layer": "Layer"
         },
         "actions": { "play": "Play", "stopEffect": "Stop Effect", "stop": "Stop" },
-        "advanced": { "title": "Advanced" },
-        "triggers": { "effect": "Effect", "intensity": "Intensity", "duration": "Duration", "likeInterval": "Like Interval" },
+        "advanced": { "title": "Advanced", "opacity": "Opacity", "particle_scale": "Particle Scale", "wind": "Wind" },
+        "triggers": { "effect": "Effect", "intensity": "Intensity", "duration": "Duration", "likeInterval": "Like Interval", "follow": "Follow", "share": "Share", "subscribe": "Subscribe", "likeMilestone": "Like milestone" },
         "active": { "noEffects": "No active effects reported by the overlay." }
+      },
+      "status": {
+        "config_loaded": "Configuration loaded successfully",
+        "error_loading_config": "Error loading configuration: {error}",
+        "config_saved": "Configuration saved successfully!",
+        "error_saving_config": "Error saving configuration: {error}",
+        "saving_config": "Saving...",
+        "overlay_copied": "Overlay URL copied to clipboard!",
+        "effect_triggered": "{effect} effect triggered!",
+        "effect_trigger_error": "Error triggering effect: {error}",
+        "gift_catalog_loading": "Loading gift catalog...",
+        "gift_catalog_empty": "No gifts in catalog. Connect to a TikTok stream first.",
+        "gift_catalog_loaded": "Gift catalog loaded: {count} gifts",
+        "gift_catalog_error": "Error loading gift catalog: {error}",
+        "gift_catalog_updating": "Updating gift catalog...",
+        "gift_catalog_updated": "Gift catalog updated successfully",
+        "gift_mappings_refreshed": "Gift mappings refreshed",
+        "gift_mapping_saved": "Gift mapping saved successfully!",
+        "gift_mapping_deleted": "Gift mapping deleted successfully!",
+        "gift_mapping_error": "Error saving mapping: {error}",
+        "select_effect": "Please select a weather effect",
+        "permanent_effects_active": "Permanent effects active: {effects}"
+      },
+      "runtime": {
+        "ui": {
+          "duration_ms": "{duration} ms",
+          "effect_details": "Intensity {intensity} | Layer {layer}",
+          "preview_effect": "Testing {effect} in the preview",
+          "preview_stopped": "All preview effects stopped",
+          "api_key_missing": "API key is not configured. Check the settings.",
+          "gift_cost": "{count} diamonds | ID: {id}",
+          "invalid_sequence_json": "Sequence steps contain invalid JSON: {error}",
+          "reset_failed": "Unable to reset gamification",
+          "overlay_url_unavailable": "Overlay URL is not available",
+          "presets": {
+            "cozy_rain": "Cozy Rain",
+            "boss_storm": "Boss Storm",
+            "winter_chill": "Winter Chill",
+            "cyber_glitch": "Cyber Glitch"
+          }
+        },
+        "overlay": {
+          "connected": "Connected",
+          "disconnected": "Disconnected",
+          "reconnected": "Reconnected",
+          "connecting": "Connecting",
+          "reconnecting": "Reconnecting {attempt}",
+          "init_failed": "Initialization failed: {error}",
+          "quest": "Quest",
+          "reward": "Reward",
+          "next_reward": "{reward} @ {meter}",
+          "meter_disabled": "Meter disabled",
+          "streak_disabled": "Streak disabled",
+          "debug_title": "Weather Control Debug",
+          "debug_socket": "Socket: {status}",
+          "socket_connected": "connected",
+          "socket_disconnected": "disconnected",
+          "debug_fps": "FPS: {fps} / avg {average}",
+          "debug_quality": "Quality: {quality}",
+          "debug_particles": "Particles: {count}",
+          "debug_active": "Active: {effects}",
+          "debug_queue": "Queue: {count}",
+          "debug_events": "Events: {count}"
+        }
       }
     }
   }

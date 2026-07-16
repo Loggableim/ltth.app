@@ -108,7 +108,7 @@ async function loadConfig() {
         }
     } catch (e) {
         console.error('[Fireworks Settings] Failed to load config:', e);
-        showToast('Failed to load configuration', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.configuration_load_failed', 'Failed to load configuration'), 'error');
     }
 }
 
@@ -129,14 +129,14 @@ async function saveConfig(showSuccessToast = true) {
                 updateUI();
             }
             if (showSuccessToast) {
-                showToast('Settings saved successfully!', 'success');
+                showToast(translateFireworks('plugins.fireworks.ui.messages.settings_saved', 'Settings saved successfully!'), 'success');
             }
         } else {
-            showToast('Failed to save settings', 'error');
+            showToast(translateFireworks('plugins.fireworks.ui.messages.settings_save_failed', 'Failed to save settings'), 'error');
         }
     } catch (e) {
         console.error('[Fireworks Settings] Failed to save config:', e);
-        showToast('Failed to save settings', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.settings_save_failed', 'Failed to save settings'), 'error');
     }
 }
 
@@ -155,10 +155,10 @@ async function triggerTest() {
             })
         });
         
-        showToast('Firework triggered', 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.firework_triggered', 'Firework triggered'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger test:', e);
-        showToast('Failed to trigger test', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.trigger_failed', 'Failed to trigger test'), 'error');
     }
 }
 
@@ -175,10 +175,10 @@ async function triggerFinale() {
             })
         });
         
-        showToast('Finale triggered!', 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.finale_triggered', 'Finale triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger finale:', e);
-        showToast('Failed to trigger finale', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.finale_trigger_failed', 'Failed to trigger finale'), 'error');
     }
 }
 
@@ -193,10 +193,10 @@ async function testFollowerFireworks() {
             })
         });
         
-        showToast('Follower fireworks triggered!', 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.follower_triggered', 'Follower fireworks triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger follower test:', e);
-        showToast('Failed to trigger follower test', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.follower_trigger_failed', 'Failed to trigger follower test'), 'error');
     }
 }
 
@@ -523,8 +523,11 @@ function updateOverviewSummary() {
 }
 
 function translateFireworks(key, fallback, params = {}) {
-    if (window.i18n?.initialized) return window.i18n.t(key, params);
-    return fallback;
+    const translated = window.i18n?.t?.(key, params);
+    if (translated && translated !== key) return translated;
+    return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
 }
 
 function getLocalizedOrientation(orientation) {
@@ -913,7 +916,7 @@ function setupEventListeners() {
     document.getElementById('copy-overlay-url').addEventListener('click', () => {
         const url = window.location.origin + '/fireworks/overlay';
         navigator.clipboard.writeText(url).then(() => {
-            showToast('Overlay URL copied to clipboard!', 'success');
+            showToast(translateFireworks('plugins.fireworks.ui.messages.overlay_url_copied', 'Overlay URL copied to clipboard!'), 'success');
         });
     });
     
@@ -968,7 +971,7 @@ function addColorSwatch(color) {
     swatch.className = 'color-swatch';
     swatch.style.background = color;
     swatch.dataset.color = color;
-    swatch.title = `${color} - click to remove`;
+    swatch.title = translateFireworks('plugins.fireworks.ui.messages.color_remove_hint', '{color} — click to remove', { color });
     swatch.draggable = true;
     swatch.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', color));
     swatch.addEventListener('dragover', event => event.preventDefault());
@@ -982,7 +985,7 @@ function addColorSwatch(color) {
         colors.splice(to, 0, colors.splice(from, 1)[0]);
         renderColorSwatches();
     });
-    swatch.title = `${color} — click to remove`;
+    swatch.title = translateFireworks('plugins.fireworks.ui.messages.color_remove_hint', '{color} — click to remove', { color });
     swatch.addEventListener('click', () => {
         config.themeColors = (config.themeColors || []).filter(item => item !== color);
         renderColorSwatches();
@@ -1028,10 +1031,10 @@ async function triggerTestShape(shape, intensity = 1.5) {
             })
         });
         
-        showToast(`${shape} firework triggered!`, 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.shape_triggered', '{shape} firework triggered!', { shape }), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger test:', e);
-        showToast('Failed to trigger test', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.trigger_failed', 'Failed to trigger test'), 'error');
     }
 }
 
@@ -1065,10 +1068,10 @@ async function triggerTestTier(tier) {
             })
         });
         
-        showToast(`${tier} tier firework triggered!`, 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.tier_triggered', '{tier} tier firework triggered!', { tier }), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger tier test:', e);
-        showToast('Failed to trigger tier test', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.tier_trigger_failed', 'Failed to trigger tier test'), 'error');
     }
 }
 
@@ -1082,10 +1085,10 @@ async function triggerTestRandom() {
             headers: { 'Content-Type': 'application/json' }
         });
         
-        showToast('Random firework triggered!', 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.random_triggered', 'Random firework triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger random:', e);
-        showToast('Failed to trigger random', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.random_trigger_failed', 'Failed to trigger random'), 'error');
     }
 }
 
@@ -1117,10 +1120,10 @@ async function triggerTestAvatar() {
             })
         });
         
-        showToast('Avatar firework test triggered!', 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.avatar_triggered', 'Avatar firework test triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger avatar test:', e);
-        showToast('Failed to trigger avatar test', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.avatar_trigger_failed', 'Failed to trigger avatar test'), 'error');
     } finally {
         if (avatarUrl) {
             setTimeout(() => URL.revokeObjectURL(avatarUrl), 60000);
@@ -1395,7 +1398,7 @@ async function startBenchmark() {
         }
     } catch (e) {
         console.error('Benchmark failed:', e);
-        showToast('Benchmark failed', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.benchmark_failed', 'Benchmark failed'), 'error');
     } finally {
         await restoreBenchmarkPreset();
         closeBenchmarkWindow();
@@ -1584,14 +1587,25 @@ function displayBenchmarkResults() {
             fpsIcon = '❌';
         }
         
+        const fpsMetrics = translateFireworks(
+            'plugins.fireworks.ui.messages.benchmark_fps_metrics',
+            'Min: {min} FPS | Max: {max} FPS',
+            { min: result.minFps.toFixed(1), max: result.maxFps.toFixed(1) }
+        );
+        const renderMetrics = translateFireworks(
+            'plugins.fireworks.ui.messages.benchmark_render_metrics',
+            'Resolution: {resolution} | Particles: {particles}',
+            { resolution: result.config.resolutionPreset, particles: result.config.maxParticles }
+        );
+
         resultCard.innerHTML = `
             <div class="flex items-center justify-between mb-2">
                 <h4 class="font-bold text-lg ${colorClass}">${fpsIcon} ${result.preset.toUpperCase()}</h4>
                 <span class="text-2xl font-bold ${colorClass}">${result.avgFps.toFixed(1)} FPS</span>
             </div>
             <div class="text-sm text-gray-400 space-y-1">
-                <div>Min: ${result.minFps.toFixed(1)} FPS | Max: ${result.maxFps.toFixed(1)} FPS</div>
-                <div>Resolution: ${result.config.resolutionPreset} | Particles: ${result.config.maxParticles}</div>
+                <div>${fpsMetrics}</div>
+                <div>${renderMetrics}</div>
             </div>
         `;
         
@@ -1611,7 +1625,7 @@ function displayBenchmarkResults() {
         const btn = document.createElement('button');
         btn.className = 'w-full mt-4 bg-green-500 hover:bg-green-600 py-3 rounded-lg font-bold transition';
         btn.dataset.preset = 'potato';
-        btn.textContent = `🥔 Potato ${applyText}`;
+        btn.textContent = `🥔 ${translateFireworks('plugins.fireworks.ui.presets.potato', 'Potato')} ${applyText}`;
         btn.addEventListener('click', () => applyPreset('potato'));
         
         const para = document.createElement('p');

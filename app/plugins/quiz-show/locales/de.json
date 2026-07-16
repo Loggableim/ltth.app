@@ -103,6 +103,112 @@
           "reset": "Punkte zurücksetzen"
         }
       },
+      "runtime": {
+        "connection": {
+          "connected": "Verbunden",
+          "disconnected": "Getrennt",
+          "testing": "Verbindung wird getestet...",
+          "success": "✓ Verbindung erfolgreich! Das Modell ist erreichbar.",
+          "failed": "✗ Verbindung fehlgeschlagen: {error}",
+          "network_error": "✗ Netzwerkfehler: {error}",
+          "unknown_error": "Unbekannter Fehler"
+        },
+        "dialogs": {
+          "stop_quiz": "Quiz wirklich stoppen?",
+          "fill_all_fields": "Bitte alle Felder ausfüllen",
+          "delete_question": "Frage wirklich löschen?",
+          "enter_json": "Bitte JSON eingeben",
+          "invalid_json": "Ungültiges JSON-Format",
+          "reset_leaderboard": "Leaderboard wirklich zurücksetzen? Alle Punkte gehen verloren!",
+          "reset_hud": "HUD-Konfiguration wirklich auf Standard zurücksetzen? Alle Positionen und Einstellungen gehen verloren.",
+          "season_name": "Name der neuen Saison:",
+          "create_season": "Neue Saison \"{name}\" erstellen? Die aktuelle Saison wird archiviert.",
+          "openai_settings_managed": "Die OpenAI-Konfiguration wird jetzt im Haupteinstellungspanel verwaltet. Bitte speichern Sie Ihren API-Schlüssel dort.",
+          "delete_package": "Dieses Paket und alle seine Fragen wirklich löschen?",
+          "delete_layout": "Layout wirklich löschen?",
+          "delete_mapping": "Zuordnung wirklich löschen?",
+          "delete_show": "Show wirklich löschen?"
+        },
+        "status": {
+          "running": "Läuft",
+          "round_ended": "Runde beendet",
+          "stopped": "Gestoppt"
+        },
+        "questions": {
+          "count": "{count} Fragen",
+          "empty": "Keine Fragen vorhanden",
+          "no_active": "Keine Frage aktiv"
+        },
+        "leaderboard": {
+          "empty": "Keine Einträge",
+          "season": "Saison"
+        },
+        "categories": {
+          "all": "Alle Kategorien",
+          "selected_count": "{count} Kategorien"
+        },
+        "seasons": {
+          "current": "Aktuelle Saison",
+          "default_name": "Saison {year}"
+        },
+        "ai": {
+          "generating": "Generiere Fragen mit OpenAI...",
+          "generate_short": "Generiere...",
+          "processing": "Verarbeite Antworten...",
+          "done": "Fertig!"
+        },
+        "packages": {
+          "count": "{count} Pakete",
+          "empty": "Keine Pakete vorhanden. Generieren Sie Ihr erstes Paket oben!"
+        },
+        "layouts": { "empty": "Keine Layouts vorhanden" },
+        "gifts": {
+          "select": "-- Geschenk wählen --",
+          "empty_mappings": "Keine Zuordnungen vorhanden"
+        },
+        "batch": {
+          "generating": "Generierung läuft...",
+          "start": "Batch-Generierung starten",
+          "started": "[{time}] Batch-Generierung für {count} Kategorien gestartet...",
+          "completed": "[{time}] Batch-Generierung abgeschlossen!",
+          "summary": "Erfolgreich: {success} | Fehlgeschlagen: {failed}"
+        },
+        "voting": {
+          "active": "Voting läuft: {rows}",
+          "ready": "Voting bereit: {rows}",
+          "selected": "Gewählte Kategorie: {category}",
+          "none": "keine",
+          "ended": "Voting beendet"
+        },
+        "shows": { "empty": "Noch keine Shows gespeichert." },
+        "jokers": { "by": "von" },
+        "sounds": { "empty": "Keine Sounds hinterlegt." },
+        "health": {
+          "database": "Datenbank",
+          "socket": "Socket-Verbindung",
+          "tts": "TTS",
+          "openai": "OpenAI",
+          "questions": "Fragen",
+          "categories": "Kategorien",
+          "sounds": "Klangdateien",
+          "setup": "Einrichtung",
+          "complete": "fertig"
+        },
+        "overlay": {
+          "round": "Runde {current}",
+          "round_of_total": "Runde {current} / {total}",
+          "this_round": "Diese Runde",
+          "by_user": "von {user}",
+          "mvp_points": "{points} Punkte",
+          "no_questions_instruction": "Bitte fügen Sie neue Fragen hinzu und starten Sie erneut.",
+          "anonymous": "Anonym",
+          "unknown": "Unbekannt",
+          "leaderboard_round": "Runde",
+          "leaderboard_round_season": "Runde + Saison",
+          "points": "{points} Pkt",
+          "achievement": "Erfolg"
+        }
+      },
       "labels": {
         "zwischen_den_kategorien_wird_eine_kurze_pause_eingelegt": "Zwischen den Kategorien wird eine kurze Pause eingelegt",
         "espanol": "Español",
@@ -119,8 +225,8 @@
         "batch_fragenpakete_generieren": "Batch Fragenpakete Generieren",
         "begrenzt_die_gesamtanzahl_aller_joker_einsatze_pro_fragerunde": "Begrenzt die Gesamtanzahl aller Joker-Einsätze pro Fragerunde",
         "zeigt_kleine_avatare_neben_der_punktzahl_bei_korrekten": "Zeigt kleine Avatare neben der Punktzahl bei korrekten Antworten",
-        "klein_300x80": "Klein (300x80)",
-        "achievements_seasons": "Achievements & Seasons",
+        "klein_300x80": "Kleine Groesse (300x80)",
+        "achievements_seasons": "Erfolge und Saisons",
         "leaderboard_importieren": "Leaderboard Importieren",
         "leaderboard_einstellungen_speichern": "Leaderboard Einstellungen Speichern",
         "spin_dauer_sekunden": "Spin-Dauer (Sekunden):",
@@ -128,7 +234,7 @@
         "wie_viele_fragen_muss_ein_spieler_in_folge": "Wie viele Fragen muss ein Spieler in Folge richtig beantworten?",
         "alle_einstellungen": "Alle Einstellungen",
         "1_20_vertikal_von_oben_nach_unten": "1-20 (vertikal von oben nach unten)",
-        "gcce_status": "GCCE Status:",
+        "gcce_status": "GCCE-Status:",
         "ausrufezeichen_prefix_a_b_c_d": "Ausrufezeichen-Prefix (!a, !b, !c, !d)",
         "gro_350x500": "Groß (350x500)",
         "system_standard": "System Standard",
@@ -158,7 +264,7 @@
         "richtig_total": "Richtig Total",
         "falsche_antwort": "Falsche Antwort:",
         "generiere_fragen": "Generiere Fragen...",
-        "turkce": "Türkçe",
+        "turkce": "Tuerkisch",
         "alle_kategorien": "Alle Kategorien",
         "custom_css_speichern": "Custom CSS Speichern",
         "kategorien_eine_pro_zeile": "Kategorien (eine pro Zeile)",
@@ -173,7 +279,7 @@
         "primarfarbe": "Primärfarbe:",
         "extra_gro_300x300": "Extra Groß (300x300)",
         "geschenk_name": "Geschenk Name",
-        "klein_150x150": "Klein (150x150)",
+        "klein_150x150": "Kleine Groesse (150x150)",
         "startet_die_slot_machine_automatisch_bei_jedem_quiz": "Startet die Slot Machine automatisch bei jedem Quiz-Start",
         "zuordnung_speichern": "Zuordnung Speichern",
         "show_speichern": "Show speichern",
@@ -200,22 +306,22 @@
         "spielende_anzeige_typ": "Spielende-Anzeige Typ",
         "portugues": "Português",
         "runde_1": "Runde 1",
-        "mittel_200x200": "Mittel (200x200)",
+        "mittel_200x200": "Mittlere Groesse (200x200)",
         "achievements_aktivieren": "Achievements aktivieren",
         "zeile_y": "Zeile (Y)",
         "leaderboard_nach_jeder_frage_anzeigen": "Leaderboard nach jeder Frage anzeigen",
-        "grid_2x2": "Grid (2x2)",
+        "grid_2x2": "Raster (2x2)",
         "spiel_einstellungen": "Spiel Einstellungen",
         "wenn_deaktiviert_pausiert_das_quiz_nach_jeder_runde": "Wenn deaktiviert, pausiert das Quiz nach jeder Runde und zeigt das Leaderboard",
         "zuordnung_hinzufugen": "Zuordnung Hinzufügen",
         "mittel_300x400": "Mittel (300x400)",
         "richtige_antwort": "Richtige Antwort!",
-        "base_url_optional": "Base URL (optional):",
+        "base_url_optional": "Basis-URL (optional):",
         "batch_generierung_starten": "Batch Generierung Starten",
         "vertikal_portrait": "Vertikal (Portrait)",
         "publikumsvoting_aktivieren": "Publikumsvoting aktivieren",
-        "horizontal_landscape": "Horizontal (Landscape)",
-        "theme_accessibility": "Theme & Accessibility",
+        "horizontal_landscape": "Horizontal (Querformat)",
+        "theme_accessibility": "Design und Barrierefreiheit",
         "obs_browser_quellen_urls": "OBS Browser-Quellen URLs:",
         "0_unbegrenzt_sonst_anzahl_der_fragen_pro_quiz": "0 = Unbegrenzt, sonst Anzahl der Fragen pro Quiz-Session",
         "achievement_popups_im_overlay": "Achievement-Popups im Overlay",
@@ -245,10 +351,10 @@
         "antworten_layout": "Antworten Layout:",
         "label_564957": "Русский",
         "portugues_5719d0": "Português",
-        "turkce_585237": "Türkçe",
+        "turkce_585237": "Tuerkisch",
         "fortschritt_wird_in_echtzeit_angezeigt": "Fortschritt wird in Echtzeit angezeigt",
         "was_beim_beenden_des_gesamten_quiz_angezeigt_werden": "Was beim Beenden des gesamten Quiz angezeigt werden soll",
-        "team_a": "Team A",
+        "team_a": "Mannschaft A",
         "neben_der_antwort": "Neben der Antwort",
         "kategorien_eine_pro_zeile_5db58b": "Kategorien (eine pro Zeile) *",
         "antworten_erst_nach_ablauf_anzeigen": "Antworten erst nach Ablauf anzeigen",
@@ -266,16 +372,16 @@
         "nur_subscriber": "Nur Subscriber",
         "tts_aktiviert_fragen_vorlesen": "TTS Aktiviert (Fragen vorlesen)",
         "keine_fragen_vorhanden": "Keine Fragen vorhanden",
-        "ltth_quiz_show": "LTTH Quiz Show",
+        "ltth_quiz_show": "LTTH-Quizshow",
         "tts_aktiviert": "TTS Aktiviert",
         "label_6a9523": "Русский",
         "layout_bearbeiten": "Layout bearbeiten",
         "quiz_start_per_geschenk_aktivieren": "Quiz-Start per Geschenk aktivieren",
-        "quiz_show_leaderboard_overlay": "Quiz Show Leaderboard Overlay",
+        "quiz_show_leaderboard_overlay": "Quizshow-Bestenlisten-Overlay",
         "publikum_waehlt_kategorie_je_frage": "Publikum waehlt Kategorie je Frage",
         "antwort_c": "Antwort C:",
         "bitte_konfigurieren_sie_zuerst_ihren_openai_api_schlussel": "Bitte konfigurieren Sie zuerst Ihren OpenAI API-Schlüssel im Haupteinstellungspanel.",
-        "breite_px": "Breite (px)",
+        "breite_px": "Breite in px",
         "kategorien_fuer_manuelles_voting": "Kategorien fuer manuelles Voting",
         "slot_machine_manuell_testen": "Slot Machine Manuell Testen",
         "einblenden_fade": "Einblenden (Fade)",
@@ -292,7 +398,7 @@
         "rundenzahl_im_obs_hud_anzeigen": "Rundenzahl im OBS HUD anzeigen",
         "zeile_y_773d97": "Zeile (Y):",
         "neues_layout_erstellen": "Neues Layout erstellen",
-        "spalte_x": "Spalte (X)",
+        "spalte_x": "X-Spalte",
         "fragen_upload_json": "Fragen Upload (JSON)",
         "grid_system_wie_schiffe_versenken": "Grid-System (wie Schiffe versenken):",
         "elastic_pop": "Elastic Pop",
@@ -300,11 +406,11 @@
         "quiz_start_geschenk_auswahlen": "Quiz-Start Geschenk auswählen",
         "label_7d4cbd": "العربية",
         "vision_impaired": "Sehbehindert",
-        "joker_feed": "Joker Feed",
+        "joker_feed": "Joker-Aktivitaet",
         "leaderboard": "🏆 Bestenliste",
         "automatischer_neustart_nach_rundenende": "Automatischer Neustart nach Rundenende",
         "erste_show": "Erste Show",
-        "reduced_motion": "Reduced Motion",
+        "reduced_motion": "Weniger Bewegung",
         "fragen_datenbank": "Fragen Datenbank",
         "overlay_konfiguration": "Overlay Konfiguration",
         "oder_manuell_eingeben": "Oder manuell eingeben:",
@@ -320,8 +426,8 @@
         "sprache_der_fragen": "Sprache der Fragen:",
         "marathon_lange_anzahl_richtiger_antworten": "Marathon Länge (Anzahl richtiger Antworten):",
         "wird_geladen": "Wird geladen...",
-        "team_b": "Team B",
-        "hohe_px": "Höhe (px)",
+        "team_b": "Mannschaft B",
+        "hohe_px": "Hoehe in px",
         "animations_einstellungen_speichern": "Animations-Einstellungen Speichern",
         "hotkey_shift_a_toggelt_den_auto_modus_direkt": "Hotkey: Shift + A toggelt den Auto Modus direkt im Dashboard.",
         "antwort_a": "Antwort A:",
@@ -330,8 +436,8 @@
         "was_nach_jeder_frage_angezeigt_werden_soll": "Was nach jeder Frage angezeigt werden soll",
         "frage_erstellen_bearbeiten": "Frage Erstellen/Bearbeiten",
         "tts_startzeit_vor_frage_sekunden": "TTS Startzeit vor Frage (Sekunden):",
-        "gro_250x250": "Groß (250x250)",
-        "francais": "Français",
+        "gro_250x250": "Grosse Groesse (250x250)",
+        "francais": "Franzoesisch",
         "zeit_bonus_sekunden": "Zeit-Bonus (Sekunden):",
         "50_einfach": "50% Einfach (",
         "nur_runden_leaderboard": "Nur Runden-Leaderboard",
@@ -342,10 +448,10 @@
         "17_mittel": "~17% Mittel (",
         "spin_geschwindigkeit_ms": "Spin-Geschwindigkeit (ms):",
         "beschrankt_joker_nutzung_auf_zuschauer_mit_superfan_oder": "Beschränkt Joker-Nutzung auf Zuschauer mit Superfan- oder Subscriber-Status",
-        "slide_in_left": "Slide In Left",
+        "slide_in_left": "Von links einschieben",
         "chat_befehle": "Chat Befehle",
         "klein_400x300": "Klein (400x300)",
-        "slide_in_right": "Slide In Right",
+        "slide_in_right": "Von rechts einschieben",
         "info_optional_wird_nach_der_runde_angezeigt": "Info (optional - wird nach der Runde angezeigt):",
         "die_unten_gezeigte_vorschau_zeigt_die_elemente_in": "Die unten gezeigte Vorschau zeigt die Elemente in ihrer Position im Grid.",
         "slot_machine_modus_aktivieren": "Slot Machine Modus aktivieren",
@@ -370,7 +476,7 @@
         "keine_eintrage": "Keine Einträge",
         "was_am_ende_der_runde_angezeigt_werden_soll": "Was am Ende der Runde angezeigt werden soll",
         "setup_abgeschlossen": "Setup abgeschlossen",
-        "progress_bar": "Progress Bar",
+        "progress_bar": "Fortschrittsbalken",
         "zeigt_profilbilder_der_zuschauer_uber_den_antworten_an": "Zeigt Profilbilder der Zuschauer über den Antworten an, für die sie gestimmt haben",
         "klein_400x100": "Klein (400x100)",
         "voting_dauer_sekunden": "Voting-Dauer (Sekunden)",
@@ -392,7 +498,7 @@
         "sound_testen": "Sound testen",
         "erlaubt_antworten_mit_a_schreiben_b2d411": "Erlaubt Antworten mit /: \"/a\" schreiben",
         "label_b36e4e": "日本語",
-        "francais_b3fb1c": "Français",
+        "francais_b3fb1c": "Franzoesisch",
         "tts_einstellungen_speichern": "TTS Einstellungen Speichern",
         "tts_geschwindigkeit": "TTS Geschwindigkeit:",
         "interaktive_quizrunden_ki_fragenpakete_gift_joker_und_live": "Interaktive Quizrunden, KI-Fragenpakete, Gift-Joker und Live-Leaderboard fuer deinen Stream.",
@@ -401,7 +507,7 @@
         "automatisch_beim_quiz_start_aktivieren": "Automatisch beim Quiz-Start aktivieren",
         "wahlen_sie_ein_geschenk_das_automatisch_ein_quiz": "Wählen Sie ein Geschenk, das automatisch ein Quiz mit Auto-Play startet. Das Quiz läuft dann automatisch weiter mit den konfigurierten Einstellungen (siehe Settings-Tab).",
         "layout_name": "Layoutname",
-        "turkce_b95de6": "Türkçe",
+        "turkce_b95de6": "Tuerkisch",
         "richtige_antwort_b98635": "Richtige Antwort:",
         "espanol_b9c597": "Español",
         "flip_in": "Flip In",
@@ -410,7 +516,7 @@
         "frage_hinzufugen": "Frage Hinzufügen",
         "integriert_quiz_commands_mit_dem_globalen_command_system": "Integriert Quiz-Commands mit dem globalen Command-System (empfohlen)",
         "gespeicherte_layouts": "Gespeicherte Layouts",
-        "shake_reject": "Shake Reject",
+        "shake_reject": "Ablehnung schuetteln",
         "kompaktmodus_bei_vielen_votes": "Kompaktmodus bei vielen Votes",
         "ultra_kompakt_modus_600x350": "Ultra-Kompakt-Modus (600x350)",
         "neue_saison": "Neue Saison",
@@ -438,11 +544,11 @@
         "icon_gro_e": "Icon-Größe:",
         "erlaubt_das_schreiben_der_kompletten_antwort_z_b": "Erlaubt das Schreiben der kompletten Antwort (z.B. \"Berlin\")",
         "ollama_lokal_kein_api_key_notig": "Ollama (Lokal, kein API-Key nötig)",
-        "openai_gpt_5_mini_gpt_4o_mini_ollama": "OpenAI: gpt-5-mini, gpt-4o-mini | Ollama: llama3.2, mistral, qwen2.5",
+        "openai_gpt_5_mini_gpt_4o_mini_ollama": "Verfuegbare Modelle - OpenAI: gpt-5-mini, gpt-4o-mini | Ollama: llama3.2, mistral, qwen2.5",
         "overlay_konfiguration_d05390": "Overlay Konfiguration",
         "50_50_joker_aktiviert_joker50": "50:50 Joker aktiviert (!joker50)",
         "richtige_antwort_d45a43": "Richtige Antwort:",
-        "ein_aus_schalten_mit_checkbox": "Ein/Aus schalten mit Checkbox",
+        "ein_aus_schalten_mit_checkbox": "Mit Kontrollkaestchen ein-/ausschalten",
         "zeit_in_sekunden_zwischen_antwortanzeige_und_nachster_frage": "Zeit in Sekunden zwischen Antwortanzeige und nächster Frage",
         "gro_1200x500": "Groß (1200x500)",
         "runden_anzeige_typ": "Runden-Anzeige Typ",
@@ -456,7 +562,7 @@
         "mittel_32px": "Mittel (32px)",
         "alle_einstellungen_speichern": "Alle Einstellungen Speichern",
         "nur_runden_leaderboard_aktuelle_frage": "Nur Runden-Leaderboard (aktuelle Frage)",
-        "bounce_in": "Bounce In",
+        "bounce_in": "Hereinhuepfen",
         "runde_season_dcabd2": "Runde + Season",
         "extra_gro_400x600": "Extra Groß (400x600)",
         "fragen_cooldown_in_stunden": "Fragen-Cooldown in Stunden",
@@ -467,38 +573,38 @@
         "visuelle_einstellungen_speichern": "Visuelle Einstellungen Speichern",
         "x_abbrechen_e2b295": "X Abbrechen",
         "zuordnung_hinzufugen_bearbeiten": "Zuordnung Hinzufügen/Bearbeiten",
-        "spalte_x_e3a36d": "Spalte (X):",
+        "spalte_x_e3a36d": "X-Spalte:",
         "vor_jeder_frage_wird_eine_zufallige_kategorie_durch": "Vor jeder Frage wird eine zufällige Kategorie durch Slot Machine Animation ausgewählt",
         "globale_tts_lautstarke_0_100": "Globale TTS Lautstärke (0-100%)",
-        "layout_management": "Layout Management",
+        "layout_management": "Layoutverwaltung",
         "tts_lautstarke_e765b2": "TTS Lautstärke (%):",
         "slide_in_top": "Slide In Top",
         "sekundarfarbe": "Sekundärfarbe:",
         "voting_speichern": "Voting speichern",
-        "gro_e": "Größe:",
+        "gro_e": "Abmessung:",
         "label_ea7c80": "中文",
         "joker_typ_eb697c": "Joker Typ",
         "x_abbrechen_ec2d1e": "X Abbrechen",
         "visuals_speichern": "Visuals speichern",
         "zeit_zwischen_frage_anzeige_und_antwort_anzeige_fur": "Zeit zwischen Frage-Anzeige und Antwort-Anzeige (für TTS-Ansage)",
-        "theme_visuals": "Theme & Visuals",
+        "theme_visuals": "Design und Optik",
         "voter_icons_anzeigen": "Voter Icons anzeigen",
         "einstellungen_speichern_efe356": "Einstellungen Speichern",
         "nur_season_leaderboard": "Nur Season-Leaderboard",
-        "quiz_show_control_center": "Quiz Show Control Center",
+        "quiz_show_control_center": "Steuerzentrale der Quizshow",
         "vordefinierte_gro_en_fur_konsistentes_layout": "Vordefinierte Größen für konsistentes Layout",
         "keine_eintrage_f4a26a": "Keine Einträge",
         "punkte_fur_weitere_richtige_antworten": "Punkte für weitere richtige Antworten:",
-        "scale_in": "Scale In",
+        "scale_in": "Hineinskalieren",
         "label_f52753": "Русский",
-        "francais_f53a66": "Français",
-        "circular_svg": "Circular SVG",
+        "francais_f53a66": "Franzoesisch",
+        "circular_svg": "Kreisfoermiges SVG",
         "antworteinblendedauer_sekunden": "Antworteinblendedauer (Sekunden):",
         "der_openai_api_schlussel_wird_jetzt_zentral_im": "Der OpenAI API-Schlüssel wird jetzt zentral im",
         "fade_in": "Einblenden",
         "einsliden_slide": "Einsliden (Slide)",
         "rundendauer_sekunden": "Rundendauer (Sekunden):",
-        "comic_sans": "Comic Sans",
+        "comic_sans": "Comic-Sans-Schrift",
         "oder_manuell_eingeben_f9a83e": "Oder manuell eingeben:",
         "live_statistiken": "Live Statistiken",
         "deutsch_weiblich_a": "Deutsch (Weiblich A)",
@@ -508,13 +614,13 @@
         "verlangert_die_countdown_zeit_um_den_eingestellten_bonus": "Verlängert die Countdown-Zeit um den eingestellten Bonus",
         "wie_lange_die_slot_machine_rotiert_1_10": "Wie lange die Slot Machine rotiert (1-10 Sekunden)",
         "tts_stimme": "TTS Stimme:",
-        "gro_e_ff06a4": "Größe",
-        "gro_500x120": "Groß (500x120)",
-        "16_expert": "~16% Expert ("
+        "gro_e_ff06a4": "Abmessung",
+        "gro_500x120": "Grosse Groesse (500x120)",
+        "16_expert": "~16 % Experte ("
       },
       "ui": {
         "navigation": {
-          "dashboard": "Dashboard",
+          "dashboard": "Uebersicht",
           "settings": "Einstellungen",
           "gift_jokers": "Geschenk-Joker",
           "extensions": "Erweiterungen",
@@ -522,8 +628,8 @@
         },
         "game_modes": {
           "classic": "Klassisch",
-          "elimination": "Elimination",
-          "marathon": "Marathon",
+          "elimination": "Ausscheidung",
+          "marathon": "Marathonmodus",
           "duel": "Duell"
         },
         "actions": {
@@ -572,10 +678,10 @@
         },
         "sections": {
           "permissions": "Berechtigungen",
-          "integration": "Integration"
+          "integration": "Einbindung"
         },
         "options": {
-          "standard": "Standard"
+          "standard": "Voreinstellung"
         },
         "animation": {
           "style": "Animationsstil:"
@@ -584,10 +690,10 @@
           "position": "Positionierung:",
           "embedded": "Eingebettet",
           "orientation": "Ausrichtung",
-          "element": "Element",
+          "element": "Baustein",
           "visible": "Sichtbar",
           "vertical": "Vertikal",
-          "horizontal": "Horizontal"
+          "horizontal": "Waagerecht"
         },
         "ai": {
           "provider": "KI-Anbieter:",
@@ -601,7 +707,7 @@
           "season": "Saison-Bestenliste"
         },
         "hud": {
-          "theme": "Theme:",
+          "theme": "Farbschema:",
           "night": "Nacht",
           "day": "Tag",
           "timer_variant": "Timer-Variante:",
@@ -625,13 +731,13 @@
           "settings": "Geschenk-Einstellungen"
         },
         "table": {
-          "status": "Status",
+          "status": "Zustand",
           "actions": "Aktionen"
         },
         "setup": {
           "wizard": "Einrichtungsassistent",
           "categories": "Kategorien",
-          "sounds": "Sounds"
+          "sounds": "Klaenge"
         },
         "health": {
           "title": "Plugin-Status"
@@ -689,7 +795,40 @@
           "column_s": "Spalte S",
           "column_t": "Spalte T"
         }
+      },
+      "gift_jokers": {
+        "enabled": "Aktiviert"
+      },
+      "form_controls": {
+      "placeholders": {
+        "question": "Was ist...?",
+        "general_category": "Allgemein",
+        "answer_info": "Zusätzliche Informationen zur Antwort (optional)",
+        "batch_categories": "Geografie&#10;Geschichte&#10;Mathematik&#10;Naturwissenschaften&#10;Sport&#10;Musik&#10;Film und Fernsehen&#10;...",
+        "llm_api_key": "sk-... oder für Ollama leer lassen",
+        "llm_model": "z. B. gpt-5-mini, llama3.2, mistral",
+        "llm_base_url": "http://localhost:11434/v1 (Ollama-Standard)",
+        "layout_name": "Mein eigenes Layout",
+        "gift_id_example": "z. B. 5655",
+        "gift_name_galaxy": "z. B. Galaxy",
+        "gift_name_rose": "z. B. Rose",
+        "vote_categories": "Sport&#10;Musik&#10;Gaming&#10;Allgemein",
+        "show_name": "Name der Show",
+        "duel_left_users": "z. B. user1,user2",
+        "duel_right_users": "z. B. user3,user4",
+        "sound_event_name": "z. B. event_name",
+        "custom_css": "/* Eigenes CSS hier einfügen */\n.question-text {\n  /* Beispiel: Textschatten */\n  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);\n}",
+        "question_import_example": "[\n  {\n    \"question\": \"Was ist die Hauptstadt von Deutschland?\",\n    \"answers\": [\"Berlin\", \"München\", \"Hamburg\", \"Köln\"],\n    \"correct\": 0,\n    \"difficulty\": 2,\n    \"category\": \"Geografie\",\n    \"info\": \"Berlin ist seit 1990 die Hauptstadt des wiedervereinigten Deutschlands\"\n  }\n]",
+        "leaderboard_import_example": "[\n  {\n    \"userId\": \"user123\",\n    \"username\": \"Player1\",\n    \"points\": 500\n  }\n]"
+      },
+      "aria": {
+        "duel_left_label": "Name des linken Teams",
+        "duel_right_label": "Name des rechten Teams",
+        "show_round_count": "Anzahl der Runden",
+        "sound_file": "Sound-Datei auswählen",
+        "sound_volume": "Sound-Lautstärke"
       }
+    }
     }
   }
 }

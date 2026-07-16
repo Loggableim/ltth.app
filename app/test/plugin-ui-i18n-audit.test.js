@@ -125,6 +125,21 @@ describe('plugin UI i18n audit', () => {
     expect(errors).not.toContain('data-i18n-html');
   });
 
+  test('reports untranslated attributes on form controls', () => {
+    const plugin = writeFixturePlugin(repoRoot, 'fixture', {
+      html: '<input placeholder="Search viewers" title="Search by username" aria-label="Viewer search">',
+      translations: translations()
+    });
+
+    const errors = auditPluginUi({ repoRoot, catalog: { plugins: [plugin] } }).errors;
+
+    expect(errors).toEqual(expect.arrayContaining([
+      expect.stringContaining('missing data-i18n key for placeholder "Search viewers"'),
+      expect.stringContaining('missing data-i18n key for title "Search by username"'),
+      expect.stringContaining('missing data-i18n key for aria-label "Viewer search"')
+    ]));
+  });
+
   test('does not report a runtime template expression as static untranslated HTML', () => {
     const plugin = writeFixturePlugin(repoRoot, 'fixture', {
       html: '<script>const card = `<button>${t(\'users.save\')}</button>`;</script>',
@@ -134,5 +149,94 @@ describe('plugin UI i18n audit', () => {
     const errors = auditPluginUi({ repoRoot, catalog: { plugins: [plugin] } }).errors.join('\n');
 
     expect(errors).not.toContain('missing data-i18n key');
+  });
+
+  test('reports raw user-facing text in every first-party plugin script', () => {
+    const plugin = writeFixturePlugin(repoRoot, 'fixture', {
+      html: '<div id="status"></div>',
+      translations: translations()
+    });
+    fs.writeFileSync(
+      path.join(repoRoot, 'app', 'plugins', 'fixture', 'live-host-ui.js'),
+      "document.getElementById('status').textContent = 'No activity yet.';",
+      'utf8'
+    );
+
+    const errors = auditPluginUi({ repoRoot, catalog: { plugins: [plugin] } }).errors;
+
+    expect(errors).toContain(
+      'fixture/live-host-ui.js: raw user-facing text at textContent "No activity yet."'
+    );
+  });
+
+  test('requires matching brace interpolation parameters in every locale', () => {
+    const plugin = writeFixturePlugin(repoRoot, 'fixture', {
+      html: '<p data-i18n="plugins.fixture.notice">Hello</p>',
+      translations: translations({
+        notice: { de: 'Hallo {name}', en: 'Hello {name}', es: 'Hola {person}', fr: 'Bonjour {name}' }
+      })
+    });
+
+    const errors = auditPluginUi({ repoRoot, catalog: { plugins: [plugin] } }).errors;
+
+    expect(errors).toContain('fixture: parameter mismatch at plugins.fixture.notice');
+  });
+
+  test('does not mistake split HTML attributes for visible text', () => {
+    const plugin = writeFixturePlugin(repoRoot, 'fixture', {
+      html: '<div id="status"></div>',
+      translations: translations()
+    });
+    fs.writeFileSync(
+      path.join(repoRoot, 'app', 'plugins', 'fixture', 'ui.js'),
+      "document.getElementById('status').innerHTML = '<a href=\\\"' + url + '\\\" download=\\\"\\\">';",
+      'utf8'
+    );
+
+    expect(auditPluginUi({ repoRoot, catalog: { plugins: [plugin] } }).errors).toEqual([]);
+  });
+
+  test('does not treat a stylesheet injected into a style element as UI copy', () => {
+    const plugin = writeFixturePlugin(repoRoot, 'fixture', {
+      html: '<div id="status"></div>',
+      translations: translations()
+    });
+    fs.writeFileSync(
+      path.join(repoRoot, 'app', 'plugins', 'fixture', 'ui.js'),
+      "const style = document.createElement('style'); style.textContent = '.card { color: red; }';",
+      'utf8'
+    );
+
+    expect(auditPluginUi({ repoRoot, catalog: { plugins: [plugin] } }).errors).toEqual([]);
+  });
+
+  test('permits the language-independent px unit in dynamically rendered values', () => {
+    const plugin = writeFixturePlugin(repoRoot, 'fixture', {
+      html: '<div id="frame-width"></div>',
+      translations: translations()
+    });
+    fs.writeFileSync(
+      path.join(repoRoot, 'app', 'plugins', 'fixture', 'ui.js'),
+      "document.getElementById('frame-width').textContent = width + ' px';",
+      'utf8'
+    );
+
+    expect(auditPluginUi({ repoRoot, catalog: { plugins: [plugin] } }).errors).toEqual([]);
+  });
+
+  test('checks keys passed to the shipped ClarityHUD runtime translator', () => {
+    const plugin = writeFixturePlugin(repoRoot, 'fixture', {
+      html: '<div id="status"></div>',
+      translations: translations()
+    });
+    fs.writeFileSync(
+      path.join(repoRoot, 'app', 'plugins', 'fixture', 'ui.js'),
+      "document.getElementById('status').textContent = ClarityHUDI18n.text('missing', 'Fallback');",
+      'utf8'
+    );
+
+    expect(auditPluginUi({ repoRoot, catalog: { plugins: [plugin] } }).errors).toContain(
+      'fixture/de: missing locale leaf plugins.fixture.runtime.missing used by ui.js'
+    );
   });
 });

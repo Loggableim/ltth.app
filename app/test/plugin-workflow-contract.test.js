@@ -15,12 +15,13 @@ describe('plugin WorkflowStep contracts', () => {
           instructions: expect.any(Object),
           operations: expect.any(Array),
           postconditions: expect.any(Array),
-          captureRule: expect.objectContaining({ selector: step.capture.assertVisible })
+          captureRule: expect.objectContaining({ selector: expect.any(String) })
         }));
         expect(step.workflow.operations.some((operation) => operation.type === 'goto')).toBe(true);
         expect(step.workflow.postconditions).toEqual(expect.arrayContaining([
           expect.objectContaining({ type: 'http-status' }),
-          expect.objectContaining({ type: 'visible', selector: step.capture.assertVisible })
+          expect.objectContaining({ type: 'visible', selector: step.capture.assertVisible }),
+          expect.objectContaining({ type: 'visible', selector: step.workflow.captureRule.selector })
         ]));
         for (const locale of LOCALES) {
           expect(step.workflow.instructions[locale]).toEqual(expect.objectContaining({

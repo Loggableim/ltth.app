@@ -27,6 +27,9 @@ module.exports = Object.freeze({
   "safety": "credentials",
   "mode": "ui",
   "overlay": "/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+  "overlayWorkflowStepIds": [
+    "minecraft-overlay-settings"
+  ],
   "related": [
     "osc-bridge",
     "api-bridge"
@@ -549,75 +552,76 @@ module.exports = Object.freeze({
       }
     },
     {
-      "id": "minecraft-review",
+      "id": "minecraft-overlay-settings",
       "copy": {
         "de": {
-          "title": "Minecraft Review im Testprofil konfigurieren",
-          "body": "Arbeite im sichtbaren Bereich Minecraft Review von Serveradresse, Ereignisbindung und Nachrichtenformat. Verwende nur lokale Demo-Werte; keine Zugangsdaten, Geraete-ID oder LIVE-Ziel.",
-          "expected": "Die Testkonfiguration ist nachvollziehbar und sicher gespeichert.",
-          "alt": "Minecraft Review im Testprofil konfigurieren - Serveradresse, Ereignisbindung und Nachrichtenformat"
+          "title": "Overlay im Testprofil aktivieren",
+          "body": "Öffne den Setup-Tab und prüfe den Schalter „Overlay aktivieren“. Die lokale Browser-Source-URL lautet /plugins/minecraft-connect/overlay/minecraft_overlay.html; verwende ausschließlich das Testprofil.",
+          "expected": "Der Schalter „Overlay aktivieren“ ist im Setup-Tab sichtbar und aktiviert.",
+          "alt": "Overlay im Testprofil aktivieren – lokale Browser-Source konfigurieren"
         },
         "en": {
-          "title": "Configure Minecraft Review in the test profile",
-          "body": "Work in the visible Minecraft Review area of server address, event binding, and message format. Use local demo values only; never credentials, a device ID, or a LIVE target.",
-          "expected": "The test configuration is saved safely and can be reviewed.",
-          "alt": "Configure Minecraft Review in the test profile - server address, event binding, and message format"
+          "title": "Enable the overlay in the test profile",
+          "body": "Open the Setup tab and review the “Enable overlay” switch. The local browser-source URL is /plugins/minecraft-connect/overlay/minecraft_overlay.html; use the test profile only.",
+          "expected": "The “Enable overlay” switch is visible in the Setup tab and enabled.",
+          "alt": "Enable the overlay in the test profile – configure the local browser source"
         },
         "es": {
-          "title": "Configura Minecraft Review en el perfil de prueba",
-          "body": "Trabaja en el area visible Minecraft Review de dirección del servidor, enlace de eventos y formato de mensaje. Usa solo valores demo locales; nunca credenciales, ID de dispositivo ni destino LIVE.",
-          "expected": "La configuración de prueba se guarda de forma segura y puede revisarse.",
-          "alt": "Configura Minecraft Review en el perfil de prueba - dirección del servidor, enlace de eventos y formato de mensaje"
+          "title": "Activa la superposición en el perfil de prueba",
+          "body": "Abre la pestaña Configuración y revisa el interruptor «Activar superposición». La URL local de la fuente de navegador es /plugins/minecraft-connect/overlay/minecraft_overlay.html; usa únicamente el perfil de prueba.",
+          "expected": "El interruptor «Activar superposición» está visible y activado en la pestaña Configuración.",
+          "alt": "Activa la superposición en el perfil de prueba: configura la fuente local del navegador"
         },
         "fr": {
-          "title": "Configurez Minecraft Review dans le profil de test",
-          "body": "Travaillez dans la zone visible Minecraft Review de adresse serveur, liaison d’événements et format de message. Utilisez uniquement des valeurs demo locales, jamais identifiants, ID appareil ou cible LIVE.",
-          "expected": "La configuration de test est enregistrée de manière sûre et vérifiable.",
-          "alt": "Configurez Minecraft Review dans le profil de test - adresse serveur, liaison d’événements et format de message"
+          "title": "Activez l’overlay dans le profil de test",
+          "body": "Ouvrez l’onglet Configuration et vérifiez l’interrupteur « Activer l’overlay ». L’URL locale de la source navigateur est /plugins/minecraft-connect/overlay/minecraft_overlay.html ; utilisez uniquement le profil de test.",
+          "expected": "L’interrupteur « Activer l’overlay » est visible et activé dans l’onglet Configuration.",
+          "alt": "Activez l’overlay dans le profil de test – configurez la source navigateur locale"
         }
       },
       "capture": {
         "route": "/plugins/minecraft-connect/minecraft-connect.html",
-        "assertVisible": "#connectionMeta",
+        "assertVisible": "#overlayEnabled",
         "focusText": {
-          "de": "Minecraft Review im Testprofil konfigurieren",
-          "en": "Configure Minecraft Review in the test profile",
-          "es": "Configura Minecraft Review en el perfil de prueba",
-          "fr": "Configurez Minecraft Review dans le profil de test"
+          "de": "Overlay im Testprofil aktivieren",
+          "en": "Enable the overlay in the test profile",
+          "es": "Activa la superposición en el perfil de prueba",
+          "fr": "Activez l’overlay dans le profil de test"
         },
         "action": {
-          "type": "save-demo-config",
-          "stepId": "minecraft-review"
+          "type": "set-demo-value",
+          "prepare": "open-minecraft-setup-tab",
+          "stepId": "minecraft-overlay-settings"
         },
         "expected": {
-          "de": "Die Testkonfiguration ist nachvollziehbar und sicher gespeichert.",
-          "en": "The test configuration is saved safely and can be reviewed.",
-          "es": "La configuración de prueba se guarda de forma segura y puede revisarse.",
-          "fr": "La configuration de test est enregistrée de manière sûre et vérifiable."
+          "de": "Der Schalter „Overlay aktivieren“ ist im Setup-Tab sichtbar und aktiviert.",
+          "en": "The “Enable overlay” switch is visible in the Setup tab and enabled.",
+          "es": "El interruptor «Activar superposición» está visible y activado en la pestaña Configuración.",
+          "fr": "L’interrupteur « Activer l’overlay » est visible et activé dans l’onglet Configuration."
         }
       },
       "workflow": {
         "route": "/plugins/minecraft-connect/minecraft-connect.html",
         "instructions": {
           "de": {
-            "title": "Minecraft Review im Testprofil konfigurieren",
-            "body": "Arbeite im sichtbaren Bereich Minecraft Review von Serveradresse, Ereignisbindung und Nachrichtenformat. Verwende nur lokale Demo-Werte; keine Zugangsdaten, Geraete-ID oder LIVE-Ziel.",
-            "expected": "Die Testkonfiguration ist nachvollziehbar und sicher gespeichert."
+            "title": "Overlay im Testprofil aktivieren",
+            "body": "Öffne den Setup-Tab und prüfe den Schalter „Overlay aktivieren“. Die lokale Browser-Source-URL lautet /plugins/minecraft-connect/overlay/minecraft_overlay.html; verwende ausschließlich das Testprofil.",
+            "expected": "Der Schalter „Overlay aktivieren“ ist im Setup-Tab sichtbar und aktiviert."
           },
           "en": {
-            "title": "Configure Minecraft Review in the test profile",
-            "body": "Work in the visible Minecraft Review area of server address, event binding, and message format. Use local demo values only; never credentials, a device ID, or a LIVE target.",
-            "expected": "The test configuration is saved safely and can be reviewed."
+            "title": "Enable the overlay in the test profile",
+            "body": "Open the Setup tab and review the “Enable overlay” switch. The local browser-source URL is /plugins/minecraft-connect/overlay/minecraft_overlay.html; use the test profile only.",
+            "expected": "The “Enable overlay” switch is visible in the Setup tab and enabled."
           },
           "es": {
-            "title": "Configura Minecraft Review en el perfil de prueba",
-            "body": "Trabaja en el area visible Minecraft Review de dirección del servidor, enlace de eventos y formato de mensaje. Usa solo valores demo locales; nunca credenciales, ID de dispositivo ni destino LIVE.",
-            "expected": "La configuración de prueba se guarda de forma segura y puede revisarse."
+            "title": "Activa la superposición en el perfil de prueba",
+            "body": "Abre la pestaña Configuración y revisa el interruptor «Activar superposición». La URL local de la fuente de navegador es /plugins/minecraft-connect/overlay/minecraft_overlay.html; usa únicamente el perfil de prueba.",
+            "expected": "El interruptor «Activar superposición» está visible y activado en la pestaña Configuración."
           },
           "fr": {
-            "title": "Configurez Minecraft Review dans le profil de test",
-            "body": "Travaillez dans la zone visible Minecraft Review de adresse serveur, liaison d’événements et format de message. Utilisez uniquement des valeurs demo locales, jamais identifiants, ID appareil ou cible LIVE.",
-            "expected": "La configuration de test est enregistrée de manière sûre et vérifiable."
+            "title": "Activez l’overlay dans le profil de test",
+            "body": "Ouvrez l’onglet Configuration et vérifiez l’interrupteur « Activer l’overlay ». L’URL locale de la source navigateur est /plugins/minecraft-connect/overlay/minecraft_overlay.html ; utilisez uniquement le profil de test.",
+            "expected": "L’interrupteur « Activer l’overlay » est visible et activé dans l’onglet Configuration."
           }
         },
         "operations": [
@@ -626,8 +630,12 @@ module.exports = Object.freeze({
             "route": "/plugins/minecraft-connect/minecraft-connect.html"
           },
           {
-            "type": "save-demo-config",
-            "selector": "#connectionMeta"
+            "type": "prepare",
+            "name": "open-minecraft-setup-tab"
+          },
+          {
+            "type": "set-demo-value",
+            "selector": "#overlayEnabled"
           }
         ],
         "postconditions": [
@@ -645,7 +653,7 @@ module.exports = Object.freeze({
           },
           {
             "type": "visible",
-            "selector": "#connectionMeta"
+            "selector": "#overlayEnabled"
           },
           {
             "type": "console",
@@ -653,7 +661,7 @@ module.exports = Object.freeze({
           }
         ],
         "captureRule": {
-          "selector": "#connectionMeta",
+          "selector": "#overlayEnabled",
           "viewport": {
             "width": 1440,
             "height": 900

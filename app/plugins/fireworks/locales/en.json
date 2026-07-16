@@ -1,6 +1,19 @@
 {
   "plugins": {
     "fireworks": {
+      "form_controls": {
+        "fireworks_aria": "Fireworks",
+        "shape_burst_title": "Burst",
+        "shape_heart_title": "Heart",
+        "shape_star_title": "Star",
+        "shape_ring_title": "Ring",
+        "shape_spiral_title": "Spiral",
+        "shape_paws_title": "Paws",
+        "add_theme_color_aria": "Add theme color",
+        "theme_color_hex_aria": "Theme color hex value",
+        "minimum_placeholder": "Minimum",
+        "maximum_placeholder": "Maximum"
+      },
       "fireworks": {
         "title": "Fireworks Superplugin Settings",
         "subtitle": "GPU-Accelerated Fireworks for TikTok LIVE",
@@ -294,7 +307,36 @@
         "labels": { "range_to": "to", "center": "Center", "neon": "Neon", "minimal": "Minimal", "large": "Large", "custom": "Custom", "bounce": "Bounce", "rotate": "Rotate" },
         "presets": { "ultra": "Ultra", "four_k": "4K – Ultra", "high": "High", "resolution_1440p": "1440p – High", "recommended": "Recommended", "low": "Low", "resolution_720p": "720p – Low", "toaster": "Toaster", "resolution_540p": "540p – Toaster", "potato": "Potato", "resolution_360p": "360p – Potato" },
         "summary": { "theme": "Theme: {theme}", "resolution": "{preset} · {orientation}", "performance": "{fps} FPS · {particles} particles", "safety": "{queue} · {adaptive}" },
-        "themes": { "day": "Day", "contrast": "High contrast", "vision-impaired": "Vision", "cid": "CID", "night": "Night" }
+        "themes": { "day": "Day", "contrast": "High contrast", "vision-impaired": "Vision", "cid": "CID", "night": "Night" },
+        "messages": {
+          "configuration_load_failed": "Failed to load configuration",
+          "settings_saved": "Settings saved successfully!",
+          "settings_save_failed": "Failed to save settings",
+          "firework_triggered": "Firework triggered",
+          "trigger_failed": "Failed to trigger test",
+          "finale_triggered": "Finale triggered!",
+          "finale_trigger_failed": "Failed to trigger finale",
+          "follower_triggered": "Follower fireworks triggered!",
+          "follower_trigger_failed": "Failed to trigger follower test",
+          "overlay_url_copied": "Overlay URL copied to clipboard!",
+          "shape_triggered": "{shape} firework triggered!",
+          "tier_triggered": "{tier} tier firework triggered!",
+          "tier_trigger_failed": "Failed to trigger tier test",
+          "random_triggered": "Random firework triggered!",
+          "random_trigger_failed": "Failed to trigger random",
+          "avatar_triggered": "Avatar firework test triggered!",
+          "avatar_trigger_failed": "Failed to trigger avatar test",
+          "benchmark_failed": "Benchmark failed",
+          "color_remove_hint": "{color} — click to remove",
+          "benchmark_fps_metrics": "Min: {min} FPS | Max: {max} FPS",
+          "benchmark_render_metrics": "Resolution: {resolution} | Particles: {particles}",
+          "unknown_follower": "Unknown",
+          "follower_thanks": "Thanks for the follow! 💙",
+          "gift_coins": "{username}: {coins} coins",
+          "combo": "{combo}x COMBO!",
+          "overlay_frozen": "⚠️ OVERLAY FROZEN ⚠️",
+          "overlay_soft_reset": "Performing soft reset..."
+        }
       }
     }
   }

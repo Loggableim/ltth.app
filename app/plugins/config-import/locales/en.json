@@ -1,6 +1,10 @@
 {
   "plugins": {
     "config-import": {
+      "form_controls": {
+        "legacy_path_placeholder": "e.g. C:\\Users\\You\\ltth or /home/you/ltth",
+        "legacy_profile_placeholder": "imported-config"
+      },
       "config-import": {
         "title": "Import Configuration",
         "description": "Import your settings from an old installation",
@@ -100,7 +104,50 @@
           "dataFiles": "Data Files",
           "modeMergeDesc": "Add missing settings only; existing values are kept.",
           "modeReplaceDesc": "Overwrite all matching settings with backup values.",
-          "importStatus": "Importing…"
+          "importStatus": "Importing…",
+          "legacyInfoTitle": "Legacy Import",
+          "legacyInfoDescription": " – Use this to migrate settings from an older installation that stores files directly in the application directory (pre-persistent-config versions).",
+          "backupReady": "✅ Backup ready!",
+          "manualDownloadHelp": "If the download did not start automatically, click the link above or right-click → \"Save as…\"",
+          "exportFailed": "❌ Export failed:",
+          "failedToPrepareBackup": "Failed to prepare backup",
+          "zipBackupOnly": "❌ Only ZIP backup files are accepted.",
+          "backupValidationFailed": "❌ Backup validation failed:",
+          "validationError": "❌ Validation error:",
+          "manifestBackupFrom": "Backup from:",
+          "manifestAppVersion": "App version:",
+          "manifestProfile": "Profile:",
+          "unknownValue": "unknown",
+          "noProfile": "none",
+          "plugins": "Plugins",
+          "newSettings": "New Settings",
+          "uploadFiles": "Upload Files",
+          "importCompletedRestart": "✅ Import completed successfully! Restart the application to apply all changes.",
+          "importCompletedWithErrors": "❌ Import completed with errors:",
+          "unknownError": "Unknown error",
+          "globalSettingsReport": "Global settings: {imported} imported, {skipped} skipped",
+          "userConfigsReport": "User configs: {imported} imported, {skipped} skipped, {renamed} renamed",
+          "pluginReport": "[{id}] settings: +{settings} files: +{files}",
+          "importFailed": "❌ Import failed:",
+          "legacySource": "Legacy source {index}",
+          "fileCount": "{count} file(s) detected",
+          "enterPath": "❌ Please enter a path.",
+          "legacyUserConfigs": "user_configs directory",
+          "legacyUserData": "user_data directory",
+          "legacyUploads": "uploads directory",
+          "legacyPlugins": "plugins directory",
+          "legacyDatabase": "Legacy database.db",
+          "legacyData": "Legacy data/ directory",
+          "noConfigurationFiles": "No configuration files found.",
+          "userConfigFiles": "{count} user config files",
+          "userDataFiles": "{count} user data files",
+          "uploadedFiles": "{count} upload files",
+          "pluginDataFiles": "{count} plugin data files",
+          "legacyDatabaseFiles": "{count} legacy database files",
+          "legacyDataFiles": "{count} legacy data files",
+          "legacyImportCompleted": "✅ Import completed successfully!",
+          "importedItems": "📦 Imported:",
+          "switchProfileRestart": "⚠️ Go to Settings → User Profiles, switch to the imported profile, then restart the application."
         }
       },
       "labels": {

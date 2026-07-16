@@ -21,7 +21,7 @@
             "loading": "Cargando…",
             "connected": "Conectado",
             "disconnected": "Desconectado",
-            "error": "Error"
+            "error": "Se produjo un error"
           },
           "messages": {
             "saved": "Configuración guardada.",
@@ -45,6 +45,73 @@
             "strip_emojis": "Eliminar emojis del texto TTS",
             "strip_emojis_desc": "Cuando esté activado, los emojis se eliminarán de los mensajes antes de ser hablados, evitando que el motor TTS lea los nombres de los emojis en voz alta."
           }
+        },
+        "voice": {
+          "custom_empty": "Aún no has añadido voces personalizadas. Añade arriba tu primera voz personalizada.",
+          "remove_confirm": "¿Eliminar la voz personalizada \"{voiceId}\"?",
+          "none_available": "No hay voces disponibles",
+          "default": "Usar la voz predeterminada",
+          "none_for_engine": "No hay voces disponibles para este motor",
+          "none_matching": "Ninguna voz coincide con tu búsqueda",
+          "custom_form_unavailable": "Los campos del formulario de voces personalizadas no están disponibles.",
+          "custom_exists": "Ya existe una voz llamada \"{name}\".",
+          "custom_added": "Se añadió la voz personalizada \"{name}\". Recuerda guardar la configuración.",
+          "custom_not_found": "No se encontró la voz.",
+          "custom_removed": "Se eliminó la voz personalizada \"{voiceId}\". Recuerda guardar la configuración.",
+          "load_failed": "No se pudieron cargar las voces: {message}"
+        },
+        "users": {
+          "no_results": "No se encontraron usuarios.",
+          "no_results_for": "No se encontraron usuarios para \"{search}\".",
+          "results_summary": "Se muestran {shown} de {total} usuarios{search}{limit}",
+          "empty": "No se encontraron usuarios. Los usuarios se crean automáticamente cuando usan TTS por primera vez.",
+          "blacklist_confirm": "¿Seguro que quieres bloquear a {username}?",
+          "load_failed": "No se pudieron cargar los usuarios: {message}",
+          "allowed": "TTS permitido para {username}.",
+          "allow_failed": "No se pudo permitir al usuario: {message}",
+          "revoked": "TTS revocado para {username}.",
+          "revoke_failed": "No se pudo revocar TTS: {message}",
+          "blacklisted": "{username} fue bloqueado.",
+          "blacklist_failed": "No se pudo bloquear al usuario: {message}",
+          "unblacklisted": "Usuario eliminado de la lista de bloqueados.",
+          "unblacklist_failed": "No se pudo eliminar al usuario de la lista de bloqueados: {message}"
+        },
+        "queue": {
+          "empty": "La cola está vacía",
+          "no_audio_playing": "No se está reproduciendo audio",
+          "clear_confirm": "¿Vaciar toda la cola?",
+          "stats": {
+            "total_queued": "Total en cola:",
+            "total_played": "Total reproducido:",
+            "total_dropped": "Total descartado:",
+            "rate_limited": "Con límite de frecuencia:",
+            "current_queue": "Cola actual:"
+          }
+        },
+        "permissions": {
+          "stats": {
+            "total_users": "Usuarios totales:",
+            "whitelisted": "En lista de permitidos:",
+            "blacklisted": "En lista de bloqueados:",
+            "voice_assigned": "Voz asignada:"
+          }
+        },
+        "gifters": {
+          "load_failed": "No se pudieron cargar los donantes.",
+          "empty": "Aún no hay donantes en esta sesión.",
+          "error": "Se produjo un error: {message}"
+        },
+        "logs": {
+          "empty": "Ningún registro coincide con el filtro actual",
+          "clear_confirm": "¿Borrar todos los registros de depuración?"
+        },
+        "debug": {
+          "enable": "Activar depuración",
+          "disable": "Desactivar depuración",
+          "enabled": "Activada",
+          "disabled": "Desactivada",
+          "active": "Activa",
+          "inactive": "Inactiva"
         }
       },
       "runtime": {
@@ -58,7 +125,8 @@
           "loading_plugin_status": "Cargando el estado del complemento...",
           "loading_debug_logs": "Cargando registros de depuración...",
           "initialized": "Inicializado correctamente",
-          "init_failed": "Error de inicialización: {message}"
+          "init_failed": "Error de inicialización: {message}",
+          "statistics_load_failed": "No se pudieron cargar las estadísticas (no crítico)"
         },
         "load": { "config_failed": "No se pudo cargar la configuración: {message}" },
         "save": { "success": "Configuración guardada correctamente", "failed": "No se pudo guardar la configuración: {message}" },
@@ -114,7 +182,60 @@
           "deleting": "Eliminando la voz \"{voiceName}\"...",
           "deleted": "¡Voz \"{voiceName}\" eliminada correctamente!",
           "delete_failed": "No se pudo eliminar la voz: {message}"
-        }
+        },
+        "voice": {
+          "custom_empty": "Aún no has añadido voces personalizadas. Añade arriba tu primera voz personalizada.",
+          "remove_confirm": "¿Eliminar la voz personalizada \"{voiceId}\"?",
+          "none_available": "No hay voces disponibles",
+          "default": "Usar la voz predeterminada",
+          "none_for_engine": "No hay voces disponibles para este motor",
+          "none_matching": "Ninguna voz coincide con tu búsqueda",
+          "custom_form_unavailable": "Los campos del formulario de voces personalizadas no están disponibles.",
+          "custom_exists": "Ya existe una voz llamada \"{name}\".",
+          "custom_added": "Se añadió la voz personalizada \"{name}\". Recuerda guardar la configuración.",
+          "custom_not_found": "No se encontró la voz.",
+          "custom_removed": "Se eliminó la voz personalizada \"{voiceId}\". Recuerda guardar la configuración.",
+          "load_failed": "No se pudieron cargar las voces: {message}"
+        },
+        "users": {
+          "no_results": "No se encontraron usuarios.",
+          "no_results_for": "No se encontraron usuarios para \"{search}\".",
+          "results_summary": "Se muestran {shown} de {total} usuarios{search}{limit}",
+          "empty": "No se encontraron usuarios. Los usuarios se crean automáticamente cuando usan TTS por primera vez.",
+          "blacklist_confirm": "¿Seguro que quieres bloquear a {username}?",
+          "load_failed": "No se pudieron cargar los usuarios: {message}",
+          "allowed": "TTS permitido para {username}.",
+          "allow_failed": "No se pudo permitir al usuario: {message}",
+          "revoked": "TTS revocado para {username}.",
+          "revoke_failed": "No se pudo revocar TTS: {message}",
+          "blacklisted": "{username} fue bloqueado.",
+          "blacklist_failed": "No se pudo bloquear al usuario: {message}",
+          "unblacklisted": "Usuario eliminado de la lista de bloqueados.",
+          "unblacklist_failed": "No se pudo eliminar al usuario de la lista de bloqueados: {message}"
+        },
+        "queue": {
+          "empty": "La cola está vacía",
+          "no_audio_playing": "No se está reproduciendo audio",
+          "clear_confirm": "¿Vaciar toda la cola?",
+          "stats": { "total_queued": "Total en cola:", "total_played": "Total reproducido:", "total_dropped": "Total descartado:", "rate_limited": "Con límite de frecuencia:", "current_queue": "Cola actual:" },
+          "cleared": "Se eliminaron {count} elementos de la cola.",
+          "clear_failed": "No se pudo vaciar la cola: {message}",
+          "skipped": "Se omitió el elemento actual.",
+          "nothing_to_skip": "No hay nada que omitir.",
+          "skip_failed": "No se pudo omitir el elemento: {message}"
+        },
+        "permissions": {
+          "stats": { "total_users": "Usuarios totales:", "whitelisted": "En lista de permitidos:", "blacklisted": "En lista de bloqueados:", "voice_assigned": "Voz asignada:" }
+        },
+        "gifters": { "load_failed": "No se pudieron cargar los donantes.", "empty": "Aún no hay donantes en esta sesión.", "error": "Se produjo un error: {message}" },
+        "logs": { "empty": "Ningún registro coincide con el filtro actual", "clear_confirm": "¿Borrar todos los registros de depuración?", "cleared": "Registros de depuración borrados.", "clear_failed": "No se pudieron borrar los registros: {message}" },
+        "debug": { "enable": "Activar depuración", "disable": "Desactivar depuración", "enabled": "Activada", "disabled": "Desactivada", "active": "Activa", "inactive": "Inactiva", "mode_changed": "Depuración {state}.", "toggle_failed": "No se pudo cambiar la depuración: {message}" },
+        "manual": { "form_unavailable": "Los elementos del formulario no están disponibles.", "username_required": "Introduce un nombre de usuario.", "voice_required": "Selecciona una voz.", "assigned": "La voz \"{voiceId}\" ({engine}) se asignó a {username}.", "assign_failed": "No se pudo asignar la voz: {message}" },
+        "gain": { "update_failed": "No se pudo actualizar la ganancia: {message}" },
+        "modal": { "unavailable": "El cuadro de asignación de voz no está disponible.", "voice_required": "Selecciona una voz.", "assigned": "La voz se asignó a {username}.", "assign_failed": "No se pudo asignar la voz: {message}" },
+        "test": { "text_required": "Introduce texto para probar.", "queued": "TTS se añadió a la cola correctamente.", "failed": "La prueba de TTS falló: {message}" },
+        "gift_rules": { "name_placeholder": "Nombre del regalo (p. ej., rosa)", "template_placeholder": "Plantilla", "reminder_placeholder": "Mensaje", "remove": "Eliminar", "default_voice": "Voz predeterminada" },
+        "controls": { "speed": "Velocidad:", "volume": "Volumen:", "reveal_session_id": "Mostrar SessionID" }
       },
       "labels": {
         "search_users": "Buscar usuarios",
@@ -308,7 +429,7 @@
         "debug_log_categories": "Categorías de registros de depuración",
         "time_window_sekunden": "Ventana de tiempo (segundos)",
         "look_in_the_url": "Mira en la URL:",
-        "z_b_3_nur_top_3_schenker_durfen": "z.B. 3 = nur Top 3 Schenker dürfen TTS nutzen",
+        "z_b_3_nur_top_3_schenker_durfen": "Ejemplo: 3 permite TTS solo a los tres principales donantes",
         "nachrichten_werden_in_der_reihenfolge_durchrotiert": "Los mensajes rotan en orden",
         "username_tiktok_uniqueid": "Nombre de usuario (Id. único de TikTok)",
         "volume_gain_0_300": "Ganancia de volumen (0-300%)",
@@ -339,7 +460,7 @@
         "add_gift_rule": "Agregar regla de regalo",
         "specific_gift_name_triggers_b335db": "Activadores específicos del nombre del regalo",
         "32_character_hex_id": "ID hexadecimal de 32 caracteres",
-        "elevenlabs_tts": "ElevenLabs TTS",
+        "elevenlabs_tts": "Síntesis de voz de ElevenLabs",
         "lautstarke_b4bcdf": "Lautstarke:",
         "ltth_suite": "Suite LTTH",
         "250_users": "250 usuarios",
@@ -399,7 +520,7 @@
         "debug_mode": "Modo de depuración:",
         "top_gifter_announcement_e3c114": "Anuncio de los mejores obsequios",
         "analyse_debug": "Análisis y depuración",
-        "spezielle_tts_nachrichten_fur_bestimmte_gift_namen": "Spezielle TTS-Nachrichten für bestimmte Gift-Namen",
+        "spezielle_tts_nachrichten_fur_bestimmte_gift_namen": "Mensajes de TTS especiales para nombres concretos de regalos",
         "2_fill_in_the_keys_for_the_engines": "2. Complete las claves de los motores que desea habilitar.",
         "i_confirm_that_i_own_this_voice_sample": "Confirmo que soy propietario de esta muestra de voz o que tengo permiso explícito para clonarla y usarla.",
         "legacy_fallback_only_preserved_for_backwards_compatibility": "Solo respaldo heredado, conservado para compatibilidad con versiones anteriores.",

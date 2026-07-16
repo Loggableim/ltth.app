@@ -511,7 +511,7 @@
             </div>
 
             <div class="info-box">
-                <h4 data-i18n="plugins.chatango.chatango.embed_code">Using Embed Codes</h4>
+                <h4 data-i18n="plugins.chatango.chatango.embed_code_usage">Using Embed Codes</h4>
                 <p data-i18n="plugins.chatango.chatango.embed_help">Copy these embed codes to use Chatango on external pages or OBS browser sources. The dashboard and widget embeds are automatically managed by this plugin.</p>
             </div>
 
@@ -519,7 +519,7 @@
             <div class="code-block" id="dashboard-embed-code" data-i18n="plugins.chatango.chatango.loading">Loading...</div>
             <button class="btn btn-secondary copy-btn" id="copy-dashboard-btn" data-i18n="plugins.chatango.chatango.copy_code">📋 Copy Code</button>
 
-            <h4 class="section-title" data-i18n="plugins.chatango.chatango.floating_widget">Widget Embed</h4>
+            <h4 class="section-title" data-i18n="plugins.chatango.chatango.widget_embed">Widget Embed</h4>
             <div class="code-block" id="widget-embed-code" data-i18n="plugins.chatango.chatango.loading">Loading...</div>
             <button class="btn btn-secondary copy-btn" id="copy-widget-btn" data-i18n="plugins.chatango.chatango.copy_code">📋 Copy Code</button>
         </div>
@@ -545,7 +545,7 @@
         let currentConfig = {};
 
         function t(key, params = {}) {
-            return window.i18n && window.i18n.initialized ? window.i18n.t(`chatango.${key}`, params) : key;
+            return window.i18n && window.i18n.initialized ? window.i18n.t(key, params) : key;
         }
 
         if (window.i18n) {
@@ -647,13 +647,15 @@
                     currentConfig = data.config;
                     updateStatus(currentConfig.enabled);
                     updateEmbedCodes();
-                    showNotification(t('config_saved'), 'success');
+                    showNotification(t('plugins.chatango.chatango.config_saved'), 'success');
                 } else {
-                    showNotification(t('notification_save_failed_detail', { error: data.error }), 'error');
+                    showNotification(t('plugins.chatango.chatango.notification_save_failed_detail', {
+                        error: t('plugins.chatango.chatango.save_failure_detail')
+                    }), 'error');
                 }
             } catch (error) {
                 console.error('Failed to save config:', error);
-                showNotification(t('notification_save_failed'), 'error');
+                showNotification(t('plugins.chatango.chatango.notification_save_failed'), 'error');
             }
         }
 
@@ -663,10 +665,10 @@
 
             if (enabled) {
                 indicator.className = 'status-indicator active';
-                statusText.textContent = t('status_active');
+                statusText.textContent = t('plugins.chatango.chatango.status_active');
             } else {
                 indicator.className = 'status-indicator inactive';
-                statusText.textContent = t('status_disabled');
+                statusText.textContent = t('plugins.chatango.chatango.status_disabled');
             }
         }
 
@@ -723,9 +725,9 @@
             const code = document.getElementById(elementId).textContent;
             
             navigator.clipboard.writeText(code).then(() => {
-                showNotification(t('copied'), 'success');
+                showNotification(t('plugins.chatango.chatango.copied'), 'success');
             }).catch(() => {
-                showNotification(t('notification_copy_failed'), 'error');
+                showNotification(t('plugins.chatango.chatango.notification_copy_failed'), 'error');
             });
         }
 
@@ -746,12 +748,11 @@
             wrapper.style.color = 'var(--color-text-muted)';
 
             const warning = document.createElement('p');
-            warning.textContent = '⚠️ Live preview requires the Chatango embed script to load.';
-            warning.textContent = t('preview_warning');
+            warning.textContent = t('plugins.chatango.chatango.preview_warning');
             wrapper.appendChild(warning);
 
             const instructions = document.createElement('p');
-            instructions.textContent = t('preview_instructions');
+            instructions.textContent = t('plugins.chatango.chatango.preview_instructions');
             wrapper.appendChild(instructions);
 
             const details = document.createElement('p');
@@ -760,9 +761,9 @@
             roomLabel.textContent = config.roomHandle || '';
             const themeLabel = document.createElement('strong');
             themeLabel.textContent = theme || '';
-            details.append(`${t('preview_room')} `);
+            details.append(`${t('plugins.chatango.chatango.preview_room')} `);
             details.appendChild(roomLabel);
-            details.append(` | ${t('preview_theme')} `);
+            details.append(` | ${t('plugins.chatango.chatango.preview_theme')} `);
             details.appendChild(themeLabel);
             wrapper.appendChild(details);
 
@@ -781,7 +782,7 @@
             socket.emit('notification', {
                 message,
                 type,
-                source: 'Chatango Plugin'
+                source: t('plugins.chatango.chatango.notification_source')
             });
 
             // Also log to console

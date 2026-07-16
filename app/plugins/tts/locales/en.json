@@ -45,6 +45,73 @@
             "strip_emojis": "Strip emojis from TTS text",
             "strip_emojis_desc": "When enabled, emojis will be removed from messages before they are spoken, preventing the TTS engine from reading emoji names aloud."
           }
+        },
+        "voice": {
+          "custom_empty": "No custom voices added yet. Add your first custom voice above.",
+          "remove_confirm": "Remove custom voice \"{voiceId}\"?",
+          "none_available": "No voices available",
+          "default": "Use default voice",
+          "none_for_engine": "No voices available for this engine",
+          "none_matching": "No voices match your search",
+          "custom_form_unavailable": "Custom voice form elements are not available.",
+          "custom_exists": "A voice named \"{name}\" already exists.",
+          "custom_added": "Custom voice \"{name}\" added. Remember to save your configuration.",
+          "custom_not_found": "Voice not found.",
+          "custom_removed": "Custom voice \"{voiceId}\" removed. Remember to save your configuration.",
+          "load_failed": "Failed to load voices: {message}"
+        },
+        "users": {
+          "no_results": "No users found.",
+          "no_results_for": "No users found for \"{search}\".",
+          "results_summary": "Showing {shown} of {total} users{search}{limit}",
+          "empty": "No users found. Users are automatically created when they first use TTS.",
+          "blacklist_confirm": "Are you sure you want to blacklist {username}?",
+          "load_failed": "Failed to load users: {message}",
+          "allowed": "TTS allowed for {username}",
+          "allow_failed": "Failed to allow user: {message}",
+          "revoked": "TTS revoked for {username}",
+          "revoke_failed": "Failed to revoke TTS: {message}",
+          "blacklisted": "{username} has been blacklisted.",
+          "blacklist_failed": "Failed to blacklist user: {message}",
+          "unblacklisted": "User removed from blacklist.",
+          "unblacklist_failed": "Failed to remove user from blacklist: {message}"
+        },
+        "queue": {
+          "empty": "Queue is empty",
+          "no_audio_playing": "No audio playing",
+          "clear_confirm": "Clear entire queue?",
+          "stats": {
+            "total_queued": "Total queued:",
+            "total_played": "Total played:",
+            "total_dropped": "Total dropped:",
+            "rate_limited": "Rate limited:",
+            "current_queue": "Current queue:"
+          }
+        },
+        "permissions": {
+          "stats": {
+            "total_users": "Total users:",
+            "whitelisted": "Whitelisted:",
+            "blacklisted": "Blacklisted:",
+            "voice_assigned": "Voice assigned:"
+          }
+        },
+        "gifters": {
+          "load_failed": "Could not load gifters.",
+          "empty": "No gifters in this session yet.",
+          "error": "Error: {message}"
+        },
+        "logs": {
+          "empty": "No logs match the current filter",
+          "clear_confirm": "Clear all debug logs?"
+        },
+        "debug": {
+          "enable": "Enable debug",
+          "disable": "Disable debug",
+          "enabled": "Enabled",
+          "disabled": "Disabled",
+          "active": "Active",
+          "inactive": "Inactive"
         }
       },
       "runtime": {
@@ -58,7 +125,8 @@
           "loading_plugin_status": "Loading plugin status...",
           "loading_debug_logs": "Loading debug logs...",
           "initialized": "Initialized successfully",
-          "init_failed": "Initialization failed: {message}"
+          "init_failed": "Initialization failed: {message}",
+          "statistics_load_failed": "Failed to load statistics (non-critical)"
         },
         "load": { "config_failed": "Failed to load configuration: {message}" },
         "save": { "success": "Configuration saved successfully", "failed": "Failed to save configuration: {message}" },
@@ -114,7 +182,60 @@
           "deleting": "Deleting voice \"{voiceName}\"...",
           "deleted": "Voice \"{voiceName}\" deleted successfully!",
           "delete_failed": "Failed to delete voice: {message}"
-        }
+        },
+        "voice": {
+          "custom_empty": "No custom voices added yet. Add your first custom voice above.",
+          "remove_confirm": "Remove custom voice \"{voiceId}\"?",
+          "none_available": "No voices available",
+          "default": "Use default voice",
+          "none_for_engine": "No voices available for this engine",
+          "none_matching": "No voices match your search",
+          "custom_form_unavailable": "Custom voice form elements are not available.",
+          "custom_exists": "A voice named \"{name}\" already exists.",
+          "custom_added": "Custom voice \"{name}\" added. Remember to save your configuration.",
+          "custom_not_found": "Voice not found.",
+          "custom_removed": "Custom voice \"{voiceId}\" removed. Remember to save your configuration.",
+          "load_failed": "Failed to load voices: {message}"
+        },
+        "users": {
+          "no_results": "No users found.",
+          "no_results_for": "No users found for \"{search}\".",
+          "results_summary": "Showing {shown} of {total} users{search}{limit}",
+          "empty": "No users found. Users are automatically created when they first use TTS.",
+          "blacklist_confirm": "Are you sure you want to blacklist {username}?",
+          "load_failed": "Failed to load users: {message}",
+          "allowed": "TTS allowed for {username}",
+          "allow_failed": "Failed to allow user: {message}",
+          "revoked": "TTS revoked for {username}",
+          "revoke_failed": "Failed to revoke TTS: {message}",
+          "blacklisted": "{username} has been blacklisted.",
+          "blacklist_failed": "Failed to blacklist user: {message}",
+          "unblacklisted": "User removed from blacklist.",
+          "unblacklist_failed": "Failed to remove user from blacklist: {message}"
+        },
+        "queue": {
+          "empty": "Queue is empty",
+          "no_audio_playing": "No audio playing",
+          "clear_confirm": "Clear entire queue?",
+          "stats": { "total_queued": "Total queued:", "total_played": "Total played:", "total_dropped": "Total dropped:", "rate_limited": "Rate limited:", "current_queue": "Current queue:" },
+          "cleared": "Cleared {count} items from queue.",
+          "clear_failed": "Failed to clear queue: {message}",
+          "skipped": "Skipped current item.",
+          "nothing_to_skip": "Nothing to skip.",
+          "skip_failed": "Failed to skip item: {message}"
+        },
+        "permissions": {
+          "stats": { "total_users": "Total users:", "whitelisted": "Whitelisted:", "blacklisted": "Blacklisted:", "voice_assigned": "Voice assigned:" }
+        },
+        "gifters": { "load_failed": "Could not load gifters.", "empty": "No gifters in this session yet.", "error": "Error: {message}" },
+        "logs": { "empty": "No logs match the current filter", "clear_confirm": "Clear all debug logs?", "cleared": "Debug logs cleared.", "clear_failed": "Failed to clear logs: {message}" },
+        "debug": { "enable": "Enable debug", "disable": "Disable debug", "enabled": "Enabled", "disabled": "Disabled", "active": "Active", "inactive": "Inactive", "mode_changed": "Debug mode {state}.", "toggle_failed": "Failed to toggle debug mode: {message}" },
+        "manual": { "form_unavailable": "Form elements are not available.", "username_required": "Please enter a username.", "voice_required": "Please select a voice.", "assigned": "Voice \"{voiceId}\" ({engine}) assigned to {username}.", "assign_failed": "Failed to assign voice: {message}" },
+        "gain": { "update_failed": "Failed to update gain: {message}" },
+        "modal": { "unavailable": "Voice assignment dialog is not available.", "voice_required": "Please select a voice.", "assigned": "Voice assigned to {username}.", "assign_failed": "Failed to assign voice: {message}" },
+        "test": { "text_required": "Please enter text to test.", "queued": "TTS queued successfully.", "failed": "TTS test failed: {message}" },
+        "gift_rules": { "name_placeholder": "Gift name (e.g. Rose)", "template_placeholder": "Template", "reminder_placeholder": "Message", "remove": "Remove", "default_voice": "Default voice" },
+        "controls": { "speed": "Speed:", "volume": "Volume:", "reveal_session_id": "Show SessionID" }
       },
       "labels": {
         "search_users": "Search Users",

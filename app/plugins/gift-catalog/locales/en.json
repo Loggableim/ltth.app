@@ -1,6 +1,14 @@
 {
   "plugins": {
     "gift-catalog": {
+      "form_controls": {
+        "app_language_placeholder": "en-US",
+        "browser_language_placeholder": "en",
+        "webcast_language_placeholder": "en",
+        "priority_region_placeholder": "DE or empty",
+        "time_zone_placeholder": "Europe/Berlin",
+        "locales_placeholder": "en,de,es,fr"
+      },
       "gift_catalog": {
         "plugin": {
           "name": "Gift Catalog",
@@ -47,6 +55,15 @@
           },
           "messages": {
             "no_gifts_available": "No gifts available.",
+            "no_live_gifts_loaded": "No gifts loaded from /api/gift-catalog-manager/catalog.",
+            "static_list_empty": "Static list for locale {locale} is empty.",
+            "live_source": "Live source",
+            "demo_source": "Demo source {locale}",
+            "live_entries_loaded": "Loaded from live endpoint: {count} gift entries.",
+            "demo_list_rendered": "Demo list rendered for locale: {locale} ({count} entries).",
+            "copy_failed_prompt": "Copy failed. Use this snippet:",
+            "copy_prompt": "Copy this snippet:",
+            "endpoint_prompt": "Endpoint:",
             "load_catalog_first_for_live_mode": "Load the catalog first for live mode."
           }
         }

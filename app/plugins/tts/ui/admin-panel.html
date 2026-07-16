@@ -1550,12 +1550,12 @@
 
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium mb-2">Volume: <output id="volumeValue">80</output>%</label>
+                            <label class="block text-sm font-medium mb-2"><span data-i18n="plugins.tts.runtime.controls.volume">Lautstärke:</span> <output id="volumeValue">80</output>%</label>
                             <input type="range" id="volume" min="0" max="100" value="80" class="w-full">
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium mb-2">Speed: <output id="speedValue">1.0</output>x</label>
+                            <label class="block text-sm font-medium mb-2"><span data-i18n="plugins.tts.runtime.controls.speed">Geschwindigkeit:</span> <output id="speedValue">1.0</output>x</label>
                             <input type="range" id="speed" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full">
                         </div>
 
@@ -1792,7 +1792,7 @@
                                             <div class="text-sm font-semibold text-green-300" data-i18n="plugins.tts.labels.tiktok_session_id">TikTok Session ID</div>
                                             <p class="text-xs text-gray-400" data-i18n="plugins.tts.labels.legacy_fallback_only_preserved_for_backwards_compatibility">Legacy fallback only, preserved for backwards compatibility.</p>
                                         </div>
-                                        <button id="toggle-tiktok-session" type="button" class="h-9 w-9 rounded-full border border-gray-600 bg-gray-800 text-gray-300 hover:text-white">
+                                        <button id="toggle-tiktok-session" type="button" class="h-9 w-9 rounded-full border border-gray-600 bg-gray-800 text-gray-300 hover:text-white" aria-label="SessionID anzeigen" title="SessionID anzeigen" data-i18n-aria-label="plugins.tts.runtime.controls.reveal_session_id" data-i18n-title="plugins.tts.runtime.controls.reveal_session_id">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                     </div>

@@ -161,6 +161,7 @@
         },
         "actions": {
           "refresh": "Refresh",
+          "search": "Search",
           "copy": "Copy",
           "clear": "Clear",
           "copyUrl": "Copy URL",
@@ -179,6 +180,7 @@
           "cover": "Cover",
           "fill": "Fill",
           "none": "None",
+          "gif": "GIF",
           "video": "Video",
           "image": "Image"
         },
@@ -207,6 +209,13 @@
         },
         "placeholders": {
           "loading": "Loading...",
+          "likeThresholdDisabled": "0 = disabled",
+          "searchSoundEffects": "Search for sound effects...",
+          "searchGifAnimations": "Search for GIF animations...",
+          "giftId": "Gift ID",
+          "label": "Label",
+          "mp3Url": "MP3 URL",
+          "volume": "Volume",
           "soundUrl": "Sound URL (MP3)",
           "animationUrl": "Animation URL",
           "animationUrlOptional": "Animation URL (optional)",
@@ -217,6 +226,16 @@
         },
         "accessibility": {
           "closeGiftCatalogModal": "Close gift catalog modal"
+        },
+        "audioTarget": {
+          "dashboard": "Dashboard:",
+          "both": "Both:"
+        },
+        "search": {
+          "preview": "Preview",
+          "use": "Use",
+          "trending": "Trending",
+          "all": "All"
         }
       }
     }

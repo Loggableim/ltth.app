@@ -32,6 +32,14 @@
             "failed": "Could not save settings.",
             "noData": "No data available.",
             "confirm": "Are you sure?"
+          },
+          "runtime": {
+            "loadFailed": "Could not load the data source.",
+            "switchFailed": "Could not change the data source.",
+            "invalidPort": "Enter a port between 1 and 65535.",
+            "settingsSaved": "TikFinity settings saved.",
+            "settingsSaveFailed": "Could not save TikFinity settings.",
+            "sourceChanged": "Data source changed: {source}"
           }
         }
       },

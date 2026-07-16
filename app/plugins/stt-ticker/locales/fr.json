@@ -1,6 +1,21 @@
 {
   "plugins": {
     "stt-ticker": {
+      "form_controls": {
+        "admin_iframe_title": "Administration de STT Ticker",
+        "deepgram_api_key_placeholder": "p. ex. 1234567890abcdef...",
+        "elevenlabs_api_key_placeholder": "p. ex. sk_...",
+        "fish_audio_api_key_placeholder": "Clé API Fish.audio...",
+        "ollama_api_key_placeholder": "p. ex. ollama-key-...",
+        "aria": {
+          "add_language": "Ajouter une langue"
+        },
+        "labels": {
+          "auto_detect_language": "Détection automatique",
+          "rms_threshold": "Seuil RMS",
+          "send_to_vrchat_chatbox": "Envoyer vers la boîte de discussion VRChat"
+        }
+      },
       "stt_ticker": {
         "plugin": {
           "name": "Ticker STT",
@@ -27,16 +42,58 @@
             "error": "Erreur"
           },
           "messages": {
-            "saved": "Réglages enregistrés.",
             "failed": "Impossible d’enregistrer les réglages.",
             "noData": "Aucune donnée disponible.",
-            "confirm": "Voulez-vous continuer ?"
+            "confirm": "Voulez-vous continuer ?",
+            "translation_pending": "En attente de traduction…",
+            "line_count": "({count} lignes)",
+            "choose_language": "Choisissez une langue",
+            "already_added": "Déjà ajouté",
+            "no_target_language": "Aucune langue cible n’est sélectionnée : les sous-titres standards sont actifs.",
+            "error": "Erreur",
+            "saved": "Enregistré",
+            "system_default": "Valeur par défaut du système",
+            "system_microphone": "Microphone par défaut du système",
+            "no_input_devices": "Aucun autre périphérique d’entrée trouvé",
+            "microphone_name": "Microphone n° {index}",
+            "status_unavailable": "Impossible de charger l’état",
+            "status_summary": "État : activé={enabled} | ASR={provider} | traduction={translation}",
+            "status_error": "Erreur d’état : {message}",
+            "status_on": "activé",
+            "status_off": "désactivé",
+            "status_auto": "automatique",
+            "active_view_reloaded": "Vue active rechargée",
+            "enabled": "Activé",
+            "disabled": "Désactivé",
+            "deepgram_active": "Deepgram actif — env. 0,26 $/h, modèle : {model}",
+            "elevenlabs_active": "ElevenLabs actif — modèle : {model}",
+            "fish_audio_active": "Fish.audio est actif ; la consommation de jetons est visible. Une clé Deepgram ou ElevenLabs peut réduire les coûts.",
+            "unknown": "Inconnu",
+            "key_configured": "Configurée",
+            "key_not_configured": "Non configurée",
+            "translation_on": "Activée",
+            "translation_off": "Désactivée",
+            "osc_bridge_ready": "OSC Bridge est prêt",
+            "osc_bridge_unavailable": "OSC Bridge n’est pas disponible ; les sous-titres restent actifs.",
+            "saved_key_masked": "(enregistrée : {masked})",
+            "config_saved": "Configuration enregistrée",
+            "saving": "Enregistrement…",
+            "asr_settings_saved": "Réglages ASR enregistrés",
+            "buffer_cleared": "Tampon vidé",
+            "no_key_to_test": "Aucune clé à tester",
+            "testing": "Test en cours…",
+            "vrchat_enable_pending": "Activé ; vérification d’OSC Bridge.",
+            "vrchat_disabled": "Désactivé",
+            "cache_cleared": "Cache de traduction vidé",
+            "key_valid": "Clé valide !",
+            "key_invalid": "Non valide",
+            "provider_deepgram": "Reconnaissance vocale Deepgram"
           },
           "labels": {
             "source_microphone": "Microphone source",
             "stt_model": "Modèle STT",
             "caption_style": "Style des sous-titres",
-            "position": "Position",
+            "position": "Emplacement",
             "asr_provider": "Fournisseur ASR",
             "model": "Modèle",
             "translation_color": "Couleur de traduction"
@@ -44,7 +101,7 @@
           "navigation": {
             "status": "Statut",
             "admin": "Administration",
-            "capture": "Capture",
+            "capture": "Enregistrement",
             "multi_language": "Multilingue"
           },
           "options": {

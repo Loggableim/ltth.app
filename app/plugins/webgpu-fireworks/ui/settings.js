@@ -10,9 +10,12 @@ let rendererStatusTimer = null;
 let paletteSaveTimer = null;
 let palettePreviewTimer = null;
 
-function t(key, fallback) {
-    const translated = window.i18n?.t?.(key);
-    return translated && translated !== key ? translated : fallback;
+function t(key, fallback, params = {}) {
+    const translated = window.i18n?.t?.(key, params);
+    if (translated && translated !== key) return translated;
+    return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
 }
 
 // Benchmark configuration constants
@@ -175,11 +178,21 @@ async function loadRendererStatus() {
         if (audioProfile) audioProfile.textContent = renderer.lastAudioProfile || t('plugins.webgpu-fireworks.ui.none', 'None');
         if (audioVoices) {
             const voices = renderer.activeVoices || {};
-            audioVoices.textContent = `L${Number(voices.launch || 0)} / B${Number(voices.bang || 0)} / C${Number(voices.crackle || 0)} (${Number(voices.total || 0)} ${t('plugins.webgpu-fireworks.ui.total', 'total')})`;
+            audioVoices.textContent = t(
+                'plugins.webgpu-fireworks.ui.audio_voices',
+                'L{launch} / B{bang} / C{crackle} ({total} {totalLabel})',
+                {
+                    launch: Number(voices.launch || 0),
+                    bang: Number(voices.bang || 0),
+                    crackle: Number(voices.crackle || 0),
+                    total: Number(voices.total || 0),
+                    totalLabel: t('plugins.webgpu-fireworks.ui.total', 'total')
+                }
+            );
         }
         if (audioEvents) audioEvents.textContent = `${Number(renderer.missedAudioEvents || 0)} ${t('plugins.webgpu-fireworks.ui.missed', 'missed')} / ${Number(renderer.audioEvictions || 0)} ${t('plugins.webgpu-fireworks.ui.evicted', 'evicted')}`;
         if (audioPeak) audioPeak.textContent = renderer.audioPeak !== null && renderer.audioPeak !== undefined && Number.isFinite(Number(renderer.audioPeak))
-            ? `${Number(renderer.audioPeak).toFixed(1)} dBFS`
+            ? `${Number(renderer.audioPeak).toFixed(1)} ${t('plugins.webgpu-fireworks.ui.audio_peak_unit', 'dBFS')}`
             : '-';
         if (timelineSync) {
             const events = Array.isArray(renderer.timelineEvents) ? renderer.timelineEvents : [];
@@ -574,10 +587,10 @@ function updateToggle(id, value) {
 
 function formatVisualStyle(style) {
     return {
-        'premium-hybrid': 'Premium Hybrid',
-        realistic: 'Realistic',
-        'stylized-neon': 'Stylized Neon'
-    }[style] || 'Premium Hybrid';
+        'premium-hybrid': t('plugins.webgpu-fireworks.ui.visual_style_premium_hybrid', 'Premium Hybrid'),
+        realistic: t('plugins.webgpu-fireworks.ui.visual_style_realistic', 'Realistic'),
+        'stylized-neon': t('plugins.webgpu-fireworks.ui.visual_style_stylized_neon', 'Stylized Neon')
+    }[style] || t('plugins.webgpu-fireworks.ui.visual_style_premium_hybrid', 'Premium Hybrid');
 }
 
 function readCurrentTheme() {
@@ -601,15 +614,15 @@ function readCurrentTheme() {
 function formatThemeLabel(theme) {
     switch (theme) {
         case 'day':
-            return 'Day';
+            return t('plugins.webgpu-fireworks.ui.theme_day', 'Day');
         case 'contrast':
-            return 'High Contrast';
+            return t('plugins.webgpu-fireworks.ui.theme_high_contrast', 'High Contrast');
         case 'vision-impaired':
-            return 'Vision';
+            return t('plugins.webgpu-fireworks.ui.theme_vision', 'Vision');
         case 'cid':
-            return 'CID';
+            return t('plugins.webgpu-fireworks.ui.theme_cid', 'CID');
         default:
-            return 'Night';
+            return t('plugins.webgpu-fireworks.ui.theme_night', 'Night');
     }
 }
 
@@ -1176,7 +1189,7 @@ function addColorSwatch(color) {
     swatch.className = 'color-swatch';
     swatch.style.background = color;
     swatch.dataset.color = color;
-    swatch.title = `${color} - click to remove`;
+    swatch.title = t('plugins.webgpu-fireworks.ui.remove_palette_color', '{color} — click to remove', { color });
     swatch.draggable = true;
     swatch.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', color));
     swatch.addEventListener('dragover', event => event.preventDefault());
@@ -1191,7 +1204,7 @@ function addColorSwatch(color) {
         renderColorSwatches();
         schedulePaletteUpdate(true);
     });
-    swatch.title = `${color} - click to remove`;
+    swatch.title = t('plugins.webgpu-fireworks.ui.remove_palette_color', '{color} — click to remove', { color });
     swatch.addEventListener('click', () => {
         if ((config.themeColors || []).length <= 1) {
             showToast(t('plugins.webgpu-fireworks.ui.palette_requires_color', 'The theme palette needs at least one color'), 'error');
@@ -1813,6 +1826,8 @@ function displayBenchmarkResults() {
     // Clear previous results
     resultsContainer.innerHTML = '';
 
+    const framesPerSecond = t('plugins.webgpu-fireworks.ui.frames_per_second', 'FPS');
+
     // Sort by avgFps descending
     const sortedResults = [...benchmarkResults].sort((a, b) => b.avgFps - a.avgFps);
 
@@ -1841,10 +1856,10 @@ function displayBenchmarkResults() {
         resultCard.innerHTML = `
             <div class="flex items-center justify-between mb-2">
                 <h4 class="font-bold text-lg ${colorClass}">${fpsIcon} ${result.preset.toUpperCase()}</h4>
-                <span class="text-2xl font-bold ${colorClass}">${result.avgFps.toFixed(1)} FPS</span>
+                <span class="text-2xl font-bold ${colorClass}">${result.avgFps.toFixed(1)} ${framesPerSecond}</span>
             </div>
             <div class="text-sm text-gray-400 space-y-1">
-                <div>${t('plugins.webgpu-fireworks.ui.minimum', 'Min')}: ${result.minFps.toFixed(1)} FPS | ${t('plugins.webgpu-fireworks.ui.maximum', 'Max')}: ${result.maxFps.toFixed(1)} FPS</div>
+                <div>${t('plugins.webgpu-fireworks.ui.minimum', 'Min')}: ${result.minFps.toFixed(1)} ${framesPerSecond} | ${t('plugins.webgpu-fireworks.ui.maximum', 'Max')}: ${result.maxFps.toFixed(1)} ${framesPerSecond}</div>
                 <div>${t('plugins.webgpu-fireworks.ui.resolution', 'Resolution')}: ${result.config.resolutionPreset} | ${t('plugins.webgpu-fireworks.ui.particles_label', 'Particles')}: ${result.config.maxParticles}</div>
             </div>
         `;
@@ -1889,7 +1904,7 @@ function displayBenchmarkResults() {
             headerDiv.className = 'flex items-center justify-between mb-2';
             headerDiv.innerHTML = `
                 <span class="font-bold">${rank}: ${rec.preset.toUpperCase()}</span>
-                <span class="text-green-300 font-bold">${rec.avgFps.toFixed(1)} FPS</span>
+                <span class="text-green-300 font-bold">${rec.avgFps.toFixed(1)} ${framesPerSecond}</span>
             `;
 
             const btn = document.createElement('button');

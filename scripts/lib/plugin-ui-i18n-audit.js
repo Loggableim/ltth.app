@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const acorn = require(path.join(__dirname, '..', '..', 'app', 'node_modules', 'acorn'));
 const {
   LOCALES,
   flattenTranslations,
@@ -12,6 +13,9 @@ const MALFORMED_UTF8 = /\uFFFD|\u00C3(?:[\u0080-\u00BF]|\u0192)|\u00C2[\u0080-\u
 const USER_FACING_TAGS = new Set(['a', 'button', 'h1', 'h2', 'h3', 'h4', 'label', 'legend', 'li', 'option', 'p', 'span', 'summary', 'th']);
 const USER_FACING_ATTRIBUTES = ['aria-label', 'placeholder', 'title'];
 const TRANSLATION_KEY_ATTRIBUTES = ['data-i18n', 'data-i18n-key', 'data-i18n-placeholder', 'data-i18n-title', 'data-i18n-aria-label'];
+const RAW_TEXT_SINKS = new Set(['textContent', 'innerText', 'innerHTML', 'placeholder', 'title', 'ariaLabel']);
+const MESSAGE_CALLS = new Set(['alert', 'confirm', 'prompt', 'notify', 'toast', 'showToast']);
+const TRANSLATION_HELPERS = new Set(['t', 'translate', 'translateRuntime']);
 
 function walkFiles(root, predicate) {
   if (!fs.existsSync(root)) return [];
@@ -32,7 +36,7 @@ function getAttribute(attributes, name) {
   return match ? match[2].trim() : null;
 }
 
-function getTranslationKeys(source) {
+function getTranslationKeys(source, pluginId) {
   const keys = [];
   for (const attribute of TRANSLATION_KEY_ATTRIBUTES) {
     const dataI18n = new RegExp(`\\b${attribute}\\s*=\\s*(["'])(.*?)\\1`, 'gi');
@@ -41,8 +45,12 @@ function getTranslationKeys(source) {
   }
 
   let match;
-  const translateCall = /\b(?:api|i18n)\.t\(\s*(["'`])([^"'`]+)\1/g;
+  const translateCall = /\b(?:(?:(?:[A-Za-z_$][\w$]*\.)+)?(?:t|translate|translateRuntime))\(\s*(["'`])([^"'`]+)\1/g;
   while ((match = translateCall.exec(source))) keys.push(match[2].trim());
+  const clarityRuntimeCall = /\bClarityHUDI18n\.text\(\s*(["'`])([^"'`]+)\1/g;
+  while ((match = clarityRuntimeCall.exec(source))) {
+    keys.push(`plugins.${pluginId}.runtime.${match[2].trim()}`);
+  }
   return [...new Set(keys.filter((key) => key && !key.includes('${')))];
 }
 
@@ -56,10 +64,118 @@ function getI18nKey(attributes) {
 
 function getInterpolationTokens(value) {
   const tokens = [];
-  const expression = /\$\{([^}]+)\}/g;
+  const expression = /\$\{\s*([^}]+?)\s*\}|\{\{\s*([^}]+?)\s*\}\}|\{([A-Za-z_][\w.-]*)\}/g;
   let match;
-  while ((match = expression.exec(String(value)))) tokens.push(match[1].trim());
+  while ((match = expression.exec(String(value)))) tokens.push((match[1] || match[2] || match[3]).trim());
   return tokens.sort();
+}
+
+function parseJavaScript(source) {
+  const input = String(source).replace(/^\uFEFF/, '');
+  try {
+    return acorn.parse(input, { ecmaVersion: 'latest', sourceType: 'module', allowAwaitOutsideFunction: true });
+  } catch (moduleError) {
+    try {
+      return acorn.parse(input, { ecmaVersion: 'latest', sourceType: 'script', allowAwaitOutsideFunction: true });
+    } catch (scriptError) {
+      return null;
+    }
+  }
+}
+
+function walkAst(node, visit) {
+  if (!node || typeof node !== 'object') return;
+  visit(node);
+  Object.entries(node).forEach(([key, value]) => {
+    if (key === 'start' || key === 'end' || key === 'loc') return;
+    if (Array.isArray(value)) value.forEach((child) => walkAst(child, visit));
+    else if (value && typeof value.type === 'string') walkAst(value, visit);
+  });
+}
+
+function memberName(node) {
+  if (!node || node.type !== 'MemberExpression') return null;
+  if (!node.computed && node.property.type === 'Identifier') return node.property.name;
+  if (node.computed && node.property.type === 'Literal' && typeof node.property.value === 'string') return node.property.value;
+  return null;
+}
+
+function callName(node) {
+  if (!node || node.type !== 'CallExpression') return null;
+  if (node.callee.type === 'Identifier') return node.callee.name;
+  return memberName(node.callee);
+}
+
+function staticTextTemplates(expression) {
+  if (!expression) return ['__LTTH_DYNAMIC__'];
+  if (expression.type === 'Literal' && typeof expression.value === 'string') return [expression.value];
+  if (expression.type === 'TemplateLiteral') {
+    return [expression.quasis.map((quasi) => quasi.value.cooked || quasi.value.raw || '').join('__LTTH_DYNAMIC__')];
+  }
+  if (expression.type === 'BinaryExpression' && expression.operator === '+') {
+    const left = staticTextTemplates(expression.left);
+    const right = staticTextTemplates(expression.right);
+    return left.flatMap((leftValue) => right.map((rightValue) => `${leftValue}${rightValue}`)).slice(0, 32);
+  }
+  if (expression.type === 'ConditionalExpression') {
+    return [...staticTextTemplates(expression.consequent), ...staticTextTemplates(expression.alternate)].slice(0, 32);
+  }
+  if (expression.type === 'LogicalExpression') {
+    return [...staticTextTemplates(expression.left), ...staticTextTemplates(expression.right)].slice(0, 32);
+  }
+  return ['__LTTH_DYNAMIC__'];
+}
+
+function visibleText(value) {
+  return String(value)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/__LTTH_DYNAMIC__/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isStylesheetText(value) {
+  return /\{[^}]*\b(?:align-items|animation|background|border|color|content|display|font(?:-[\w-]+)?|height|left|margin|opacity|padding|position|right|text-shadow|top|transform|transition|width|z-index)\s*:/i.test(value);
+}
+
+function rawTextErrors(pluginId, file, source) {
+  const ast = parseJavaScript(source);
+  if (!ast) return [];
+  const errors = new Set();
+  const report = (sink, expression) => {
+    staticTextTemplates(expression).forEach((template) => {
+      const text = visibleText(template);
+      if (text && !isStylesheetText(text) && isUserFacingText(text) && !isInvariantUiText(text)) {
+        errors.add(`${pluginId}/${file}: raw user-facing text at ${sink} "${text}"`);
+      }
+    });
+  };
+
+  walkAst(ast, (node) => {
+    if (node.type === 'AssignmentExpression') {
+      const sink = memberName(node.left);
+      if (RAW_TEXT_SINKS.has(sink)) report(sink, node.right);
+      return;
+    }
+    if (node.type !== 'CallExpression') return;
+    const name = callName(node);
+    if (name === 'setAttribute' && node.arguments.length >= 2) {
+      const attribute = staticTextTemplates(node.arguments[0]).join('');
+      if (['aria-label', 'placeholder', 'title'].includes(attribute)) report(attribute, node.arguments[1]);
+      return;
+    }
+    if (MESSAGE_CALLS.has(name) && node.arguments.length) report(name, node.arguments[0]);
+  });
+  return [...errors].sort();
+}
+
+function inlineScripts(source) {
+  const scripts = [];
+  const expression = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  let match;
+  while ((match = expression.exec(source))) scripts.push(match[1]);
+  return scripts;
 }
 
 function isUserFacingText(value) {
@@ -85,7 +201,6 @@ function collectHtmlControls(pluginId, uiPath) {
   const tagPattern = /<([a-z][\w-]*)([^>]*)>/gi;
   while ((match = tagPattern.exec(source))) {
     const [, tag, attributes] = match;
-    if (!USER_FACING_TAGS.has(tag.toLowerCase())) continue;
     const hasKey = Boolean(getI18nKey(attributes));
     for (const attribute of USER_FACING_ATTRIBUTES) {
       const value = getAttribute(attributes, attribute);
@@ -163,9 +278,9 @@ function auditPluginUi({ repoRoot, catalog }) {
     const htmlFiles = walkFiles(pluginRoot, (filePath) => filePath.endsWith('.html'));
     const sourceFiles = walkFiles(pluginRoot, (filePath) => {
       const relative = path.relative(pluginRoot, filePath).replace(/\\/g, '/');
-      if (relative.split('/').includes('test')) return false;
+      if (relative.split('/').some((segment) => ['test', 'tests', 'node_modules', 'vendor'].includes(segment))) return false;
       if (filePath.endsWith('.html')) return true;
-      return filePath.endsWith('.js') && /(?:^|\/)(?:ui|overlay|public|frontend|client)(?:\/|$)|(?:^|\/)(?:ui|overlay|client)\.js$/i.test(relative);
+      return filePath.endsWith('.js');
     });
     const valuesByLocale = loadPluginLocales(pluginRoot, pluginId, errors);
     const controls = htmlFiles.flatMap((uiPath) => collectHtmlControls(pluginId, uiPath));
@@ -177,10 +292,13 @@ function auditPluginUi({ repoRoot, catalog }) {
     const keyOrigins = new Map();
     for (const sourcePath of sourceFiles) {
       const file = path.relative(pluginRoot, sourcePath).replace(/\\/g, '/');
-      const keys = getTranslationKeys(fs.readFileSync(sourcePath, 'utf8'));
+      const source = fs.readFileSync(sourcePath, 'utf8');
+      const keys = getTranslationKeys(source, pluginId);
       keys.forEach((key) => {
         if (!keyOrigins.has(key)) keyOrigins.set(key, file);
       });
+      if (sourcePath.endsWith('.js')) errors.push(...rawTextErrors(pluginId, file, source));
+      else inlineScripts(source).forEach((script) => errors.push(...rawTextErrors(pluginId, file, script)));
     }
     keysByPlugin[pluginId] = [...keyOrigins.keys()].sort();
     for (const [key, file] of keyOrigins) assertKey(pluginId, key, file, valuesByLocale, errors, claims);

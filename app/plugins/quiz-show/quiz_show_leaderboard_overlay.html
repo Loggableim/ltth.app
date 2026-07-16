@@ -315,7 +315,9 @@
                 const container = document.getElementById('leaderboardContainer');
 
                 // Update type display
-                typeDisplay.textContent = type === 'round' ? 'Diese Runde' : 'Season';
+                typeDisplay.textContent = type === 'round'
+                    ? window.i18n?.t('plugins.quiz-show.runtime.overlay.this_round')
+                    : window.i18n?.t('plugins.quiz-show.runtime.leaderboard.season');
 
                 // Show container
                 if (container.classList.contains('hidden')) {

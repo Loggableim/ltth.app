@@ -18,14 +18,31 @@ describe('STT Ticker static UI localization', () => {
   const requiredKeys = {
     'capture.html': [
       'actions.copy', 'actions.stop', 'labels.source_microphone', 'labels.stt_model',
-      'options.no_selection', 'options.no_models', 'options.no_api_key'
+      'options.no_selection', 'options.no_models', 'options.no_api_key',
+      'messages.translation_pending', 'messages.line_count', 'messages.choose_language',
+      'messages.already_added', 'messages.no_target_language', 'messages.error',
+      'messages.saved', 'messages.system_microphone', 'messages.no_input_devices',
+      'messages.microphone_name'
     ],
-    'master.html': ['navigation.status', 'navigation.admin', 'navigation.capture'],
+    'master.html': [
+      'navigation.status', 'navigation.admin', 'navigation.capture',
+      'messages.status_unavailable', 'messages.status_summary', 'messages.status_error',
+      'messages.active_view_reloaded'
+    ],
     'ui.html': [
       'actions.save_vrchat_output', 'labels.caption_style', 'labels.position',
       'labels.asr_provider', 'labels.stt_model', 'labels.model', 'labels.translation_color',
       'navigation.multi_language', 'options.center', 'options.no_selection', 'options.no_models',
-      'help.multilang_rows', 'help.vrchat_final_captions'
+      'help.multilang_rows', 'help.vrchat_final_captions', 'messages.enabled',
+      'messages.disabled', 'messages.deepgram_active', 'messages.elevenlabs_active',
+      'messages.fish_audio_active', 'messages.unknown', 'messages.key_configured',
+      'messages.key_not_configured', 'messages.translation_on', 'messages.translation_off',
+      'messages.osc_bridge_ready', 'messages.osc_bridge_unavailable',
+      'messages.saved_key_masked', 'messages.no_target_language', 'messages.config_saved',
+      'messages.saving', 'messages.asr_settings_saved', 'messages.buffer_cleared',
+      'messages.no_key_to_test', 'messages.testing', 'messages.already_added',
+      'messages.vrchat_enable_pending', 'messages.vrchat_disabled', 'messages.cache_cleared',
+      'messages.key_valid', 'messages.key_invalid', 'messages.provider_deepgram'
     ]
   };
 
@@ -58,5 +75,11 @@ describe('STT Ticker static UI localization', () => {
       expect(source).toContain('if (window.i18n?.ready) await window.i18n.ready;');
       expect(source).toContain('setSelectFallback(');
     });
+  });
+
+  test('uses stable message keys for every audited runtime status', () => {
+    expect(read('capture.html')).toContain('plugins.stt-ticker.stt_ticker.ui.messages.translation_pending');
+    expect(read('master.html')).toContain('plugins.stt-ticker.stt_ticker.ui.messages.status_summary');
+    expect(read('ui.html')).toContain('plugins.stt-ticker.stt_ticker.ui.messages.deepgram_active');
   });
 });

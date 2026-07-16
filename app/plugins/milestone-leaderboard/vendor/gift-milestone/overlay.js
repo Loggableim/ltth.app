@@ -15,6 +15,17 @@ let isPlaying = false;
 const celebrationQueue = [];
 const MAX_QUEUE_SIZE = 10;
 
+function giftMilestoneOverlayText(key, fallback, params = {}) {
+    const fullKey = `plugins.milestone-leaderboard.gift_milestone.runtime.${key}`;
+    if (window.i18n && typeof window.i18n.t === 'function') {
+        const translated = window.i18n.t(fullKey, params);
+        if (translated && translated !== fullKey) return translated;
+    }
+    return String(fallback).replace(/\{([A-Za-z_][\w.-]*)\}/g, (match, name) => (
+        Object.hasOwn(params, name) ? params[name] : match
+    ));
+}
+
 // Listen for milestone celebrations
 socket.on('milestone:celebrate', (data) => {
     console.log('Milestone celebration triggered:', data);
@@ -42,16 +53,18 @@ async function playCelebration(data) {
 
     // Update title and messages
     if (data.username) {
-        thankYou.textContent = `Danke @${data.username}! 🙏`;
+        thankYou.textContent = giftMilestoneOverlayText('overlay_thank_you', 'Thank you @{username}! 🙏', { username: data.username });
         thankYou.style.display = 'block';
     } else {
         thankYou.style.display = 'none';
     }
 
-    title.textContent = `🎯 ${data.milestone.toLocaleString()} Coins Milestone! 🎉`;
+    title.textContent = giftMilestoneOverlayText('overlay_title', '🎯 {amount} Coin Milestone! 🎉', {
+        amount: data.milestone.toLocaleString()
+    });
 
     if (data.tier) {
-        tierStatus.textContent = `Du hast ${data.tier} erreicht! 🏆`;
+        tierStatus.textContent = giftMilestoneOverlayText('overlay_tier_reached', 'You reached {tier}! 🏆', { tier: data.tier });
         tierStatus.style.display = 'block';
     } else {
         tierStatus.style.display = 'none';

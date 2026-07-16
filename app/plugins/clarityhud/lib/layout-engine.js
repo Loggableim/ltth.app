@@ -80,6 +80,8 @@ class LayoutEngine {
    * Render empty state
    */
   renderEmpty(container) {
+    const title = ClarityHUDI18n.text('empty.no_activity_title', 'No activity yet');
+    const description = ClarityHUDI18n.text('empty.no_activity_description', 'Events will appear here as they happen');
     container.innerHTML = `
       <div class="clarity-empty-state" style="
         display: flex;
@@ -93,9 +95,9 @@ class LayoutEngine {
       ">
         <div>
           <div style="font-size: 3em; margin-bottom: 10px; opacity: 0.5;">📊</div>
-          <div>No activity yet</div>
+          <div>${title}</div>
           <div style="font-size: 0.8em; margin-top: 10px; opacity: 0.7;">
-            Events will appear here as they happen
+            ${description}
           </div>
         </div>
       </div>

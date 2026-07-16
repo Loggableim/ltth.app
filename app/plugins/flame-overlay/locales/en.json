@@ -1,6 +1,9 @@
 {
   "plugins": {
     "flame-overlay": {
+      "form_controls": {
+        "visual_fx_preview_title": "Visual FX Frame preview"
+      },
       "flame_overlay": {
         "plugin": {
           "name": "Visual FX Frame",
@@ -28,7 +31,45 @@
             "saved": "Settings saved.",
             "failed": "Could not save settings.",
             "noData": "No data available.",
-            "confirm": "Are you sure?"
+            "confirm": "Are you sure?",
+            "giftCatalogLoading": "Loading gift catalog…",
+            "giftCatalogFailed": "Could not load the gift catalog.",
+            "giftCatalogRefreshing": "Refreshing gift catalog…",
+            "giftCatalogUnavailable": "No gift catalog is available. Connect a TikTok stream and refresh it.",
+            "giftCatalogNoResults": "No gifts match this search.",
+            "giftRuleAdded": "Added a gift rule for {name}.",
+            "coinRuleAdded": "Added coin rule {range}.",
+            "triggerRulesSaved": "✅ Trigger rules saved!",
+            "errorWithReason": "❌ Error: {reason}",
+            "saveFailed": "❌ Could not save: {reason}",
+            "presetActivated": "✅ Activated preset '{name}'",
+            "presetFailed": "❌ Preset error: {reason}",
+            "testNoEffect": "Test '{triggerType}' had no effect: {reason}",
+            "testFailed": "❌ Test error: {reason}",
+            "testSent": "🧪 Sent test trigger '{triggerType}'",
+            "noMatchingRule": "no matching rule",
+            "stopFailed": "Stop error: {reason}",
+            "triggersStopped": "Stopped active overlay effects",
+            "triggerCount": "{count} active",
+            "noTriggersYet": "No triggers have fired yet",
+            "previewStart": "▶️ Start preview",
+            "previewStop": "⏸️ Stop preview",
+            "framePositionUpdated": "✅ Updated frame position!",
+            "unknownError": "Unknown error",
+            "configLoaded": "Configuration loaded",
+            "configLoadFailed": "Could not load configuration: {reason}",
+            "settingsSaved": "✅ Settings saved!",
+            "settingsSaveFailed": "Could not save settings: {reason}",
+            "presetNameRequired": "❌ Enter a preset name first.",
+            "presetSaved": "✅ Preset \"{name}\" saved!",
+            "presetLoaded": "✅ Preset \"{name}\" loaded!",
+            "presetDeleted": "✅ Preset \"{name}\" deleted!",
+            "presetDeleteConfirm": "Delete preset \"{name}\"?",
+            "presetSavedOn": "Saved on {date}",
+            "unlabeledGift": "Unnamed gift",
+            "coinsLabel": "{coins} Coins",
+            "valuePixels": "{value} px",
+            "removeTriggerRule": "Remove trigger rule"
           },
           "metrics": {
             "profile": "Profile",
@@ -46,12 +87,14 @@
             "obsSafe": "OBS-safe",
             "custom": "Custom",
             "top": "Top",
-            "bottom": "Bottom"
+            "bottom": "Bottom",
+            "anyCondition": "Any condition"
           },
           "settings": {
             "accentColor": "Accent color:",
             "animationEasing": "Animation easing:",
-            "smokeColor": "Smoke color:"
+            "smokeColor": "Smoke color:",
+            "frameThickness": "Frame thickness:"
           },
           "trigger": {
             "preset": "Preset:",
@@ -60,6 +103,39 @@
             "chillPreset": "Chill",
             "partyPreset": "Party",
             "coinRule": "Coin rule"
+          },
+          "events": {
+            "gift": "Gift",
+            "follow": "Follow",
+            "like": "Like",
+            "share": "Share",
+            "chat": "Chat",
+            "subscribe": "Subscribe"
+          },
+          "triggerActions": {
+            "flash": "Flash",
+            "pulse": "Pulse",
+            "intensity-boost": "Intensity boost",
+            "color-change": "Change color",
+            "color-flash": "Flash color",
+            "effect-switch": "Switch effect",
+            "dramatic": "Dramatic effect"
+          },
+          "effects": {
+            "flames": "Flames",
+            "particles": "Particles",
+            "energy": "Energy waves",
+            "lightning": "Lightning"
+          },
+          "sections": {
+            "base": "Base",
+            "accent": "Accent",
+            "impact": "Impact",
+            "rules": "Rules",
+            "actions": "Actions"
+          },
+          "aria": {
+            "toolbar": "Visual FX settings"
           },
           "table": {
             "enabled": "Enabled",
@@ -72,7 +148,8 @@
           "presets": {
             "empty": "No presets saved yet.",
             "load": "\ud83d\udcc2 Load",
-            "deleteTitle": "Delete preset"
+            "deleteTitle": "Delete preset",
+            "deleteLabel": "Delete preset {name}"
           },
           "placeholders": {
             "presetName": "Preset name (for example, Hype mode)",
@@ -274,6 +351,20 @@
         "farbverschiebung_an_kanten_retro_kamera_effekt": "Color shift on edges (retro camera effect)",
         "geschwindigkeit_der_rauch_animation": "Smoke animation speed",
         "chat_farbbefehle_aktivieren": "Enable chat color commands"
+      },
+      "form_controls": {
+        "visual_fx_preview_title": "Visual FX Frame preview",
+        "labels": {
+          "flame_brightness": "Brightness: ",
+          "edge_feather": "Edge feathering: ",
+          "frame_noise_amount": "Frame noise: ",
+          "pulse_speed": "Pulse speed: ",
+          "bloom_threshold": "Bloom threshold: ",
+          "bloom_radius": "Bloom radius: ",
+          "layer_parallax": "Parallax effect: ",
+          "smoke_speed": "Smoke speed: ",
+          "trigger_cooldown": "Trigger cooldown: "
+        }
       }
     }
   }

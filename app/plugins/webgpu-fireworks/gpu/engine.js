@@ -5,6 +5,14 @@
  */
 const DEBUG = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'true';
 
+function t(key, fallback, params = {}) {
+    const translated = window.i18n?.t?.(key, params);
+    if (translated && translated !== key) return translated;
+    return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+}
+
 class AudioManager {
     constructor(onStatus = null) {
         this.context = null;
@@ -979,7 +987,11 @@ class WebGPUFireworksEngine {
             element.style.cssText = 'position:fixed;left:16px;bottom:16px;max-width:620px;padding:14px 18px;border:2px solid #22d3ee;background:rgba(8,47,73,.92);color:white;font:600 16px Segoe UI,sans-serif;z-index:10000;border-radius:10px';
             document.body.appendChild(element);
         }
-        element.textContent = `WebGPU Fireworks: ${status.state}${status.reason ? ` - ${status.reason}` : ''}`;
+        element.textContent = t(
+            'plugins.webgpu-fireworks.runtime.diagnostic',
+            'WebGPU Fireworks: {state}{reason}',
+            { state: status.state, reason: status.reason ? ` — ${status.reason}` : '' }
+        );
     }
 
     hideDiagnostic() { document.getElementById('webgpu-diagnostic')?.remove(); }
@@ -1960,7 +1972,15 @@ class WebGPUFireworksEngine {
             popup.appendChild(image);
         }
         const label = document.createElement('span');
-        label.textContent = `${data.username}: ${data.coins} coins${data.combo > 1 ? ` · ${data.combo}x` : ''}`;
+        label.textContent = t(
+            'plugins.webgpu-fireworks.runtime.gift_popup',
+            '{username}: {coins} coins{combo}',
+            {
+                username: data.username,
+                coins: data.coins,
+                combo: data.combo > 1 ? ` · ${data.combo}x` : ''
+            }
+        );
         popup.appendChild(label);
         document.getElementById('fireworks-container')?.appendChild(popup);
         setTimeout(() => popup.remove(), 2500);
@@ -1970,7 +1990,10 @@ class WebGPUFireworksEngine {
         const root = document.getElementById('follower-animation');
         if (!root) return;
         document.getElementById('follower-username').textContent = data.username || '';
-        document.getElementById('thank-you-text').textContent = data.thankYouText || data.text || 'Danke für den Follow!';
+        document.getElementById('thank-you-text').textContent = data.thankYouText || data.text || t(
+            'plugins.webgpu-fireworks.runtime.follow_thanks',
+            'Thanks for the follow!'
+        );
         root.className = `follower-animation pos-${data.position || 'center'} size-${data.size || 'medium'} style-${data.style || 'gradient-purple'} entrance-${data.entrance || 'scale'}`;
         const scale = data.size === 'small' ? 0.8 : data.size === 'large' ? 1.25 : data.size === 'custom' ? Number(data.scale) || 1 : 1;
         root.style.setProperty('--follower-scale', String(Math.max(0.5, Math.min(2, scale))));
@@ -2047,7 +2070,18 @@ class WebGPUFireworksEngine {
         const renderer = document.getElementById('renderer-type');
         if (fps) fps.textContent = this.fps;
         if (particles) particles.textContent = metrics.activeParticles || 0;
-        if (renderer) renderer.textContent = `WEBGPU · ${this.rendererStatus.state || 'initializing'} · ${this.performanceMode}`;
+        if (renderer) {
+            const rendererState = this.rendererStatus.state || 'initializing';
+            const performanceMode = this.performanceMode || 'normal';
+            renderer.textContent = t(
+                'plugins.webgpu-fireworks.runtime.renderer_debug',
+                'WEBGPU · {state} · {mode}',
+                {
+                    state: t(`plugins.webgpu-fireworks.runtime.renderer_state_${rendererState}`, rendererState),
+                    mode: t(`plugins.webgpu-fireworks.runtime.performance_mode_${performanceMode}`, performanceMode)
+                }
+            );
+        }
         document.getElementById('debug-panel')?.classList.toggle('visible', this.debug);
     }
 

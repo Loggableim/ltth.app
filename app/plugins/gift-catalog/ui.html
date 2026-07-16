@@ -661,21 +661,21 @@
             <div class="gc-row">
               <div class="gc-field">
                 <label for="app-language" data-i18n="plugins.gift-catalog.gift_catalog.ui.labels.app_language">app_language</label>
-                <input id="app-language" class="gc-input" placeholder="en-US" />
+                        <input id="app-language" class="gc-input" placeholder="en-US" data-i18n-placeholder="plugins.gift-catalog.form_controls.app_language_placeholder" />
               </div>
               <div class="gc-field">
                 <label for="browser-language" data-i18n="plugins.gift-catalog.gift_catalog.ui.labels.browser_language">browser_language</label>
-                <input id="browser-language" class="gc-input" placeholder="en" />
+                        <input id="browser-language" class="gc-input" placeholder="en" data-i18n-placeholder="plugins.gift-catalog.form_controls.browser_language_placeholder" />
               </div>
             </div>
             <div class="gc-row">
               <div class="gc-field">
                 <label for="webcast-language" data-i18n="plugins.gift-catalog.gift_catalog.ui.labels.webcast_language">webcast_language</label>
-                <input id="webcast-language" class="gc-input" placeholder="en" />
+                <input id="webcast-language" class="gc-input" placeholder="en" data-i18n-placeholder="plugins.gift-catalog.form_controls.webcast_language_placeholder" />
               </div>
               <div class="gc-field">
                 <label for="priority-region" data-i18n="plugins.gift-catalog.gift_catalog.ui.labels.priority_region">priority_region</label>
-                <input id="priority-region" class="gc-input" placeholder="DE or empty" />
+                        <input id="priority-region" class="gc-input" placeholder="DE or empty" data-i18n-placeholder="plugins.gift-catalog.form_controls.priority_region_placeholder" />
               </div>
               <div class="gc-field">
                 <label data-i18n="plugins.gift-catalog.labels.region_quick_set">Region quick set</label>
@@ -691,11 +691,11 @@
             <div class="gc-row">
               <div class="gc-field">
                 <label for="tz-name" data-i18n="plugins.gift-catalog.gift_catalog.ui.labels.tz_name">tz_name</label>
-                <input id="tz-name" class="gc-input" placeholder="Europe/Berlin" />
+                        <input id="tz-name" class="gc-input" placeholder="Europe/Berlin" data-i18n-placeholder="plugins.gift-catalog.form_controls.time_zone_placeholder" />
               </div>
               <div class="gc-field">
                 <label for="locales" data-i18n="plugins.gift-catalog.labels.locales_comma_separated">locales (comma separated)</label>
-                <input id="locales" class="gc-input" placeholder="en,de,es,fr" />
+                        <input id="locales" class="gc-input" placeholder="en,de,es,fr" data-i18n-placeholder="plugins.gift-catalog.form_controls.locales_placeholder" />
               </div>
               <div class="gc-field">
                 <label data-i18n="plugins.gift-catalog.labels.locale_quick_picks_d20326">Locale quick-picks</label>
@@ -1000,9 +1000,13 @@ function resolveGiftLocale(locale) {
           coreRefresh: '/api/gift-catalog/update'
         };
 
-        function translateUi(key, fallback) {
-          const translation = window.i18n.t(key);
-          return translation && translation !== key ? translation : fallback;
+        function translateUi(key, fallback, params) {
+          const values = params || {};
+          const translation = window.i18n?.t(key, values);
+          if (translation && translation !== key) return translation;
+          return String(fallback).replace(/\{(\w+)\}/g, function (_, name) {
+            return Object.prototype.hasOwnProperty.call(values, name) ? values[name] : `{${name}}`;
+          });
         }
 
         const demoGiftData = {
@@ -1555,8 +1559,15 @@ function resolveGiftLocale(locale) {
             emptyItem.appendChild(meta);
             demoComponents.listContainer.appendChild(emptyItem);
             demoComponents.listStatus.textContent = useLive
-              ? 'No gifts loaded from /api/gift-catalog-manager/catalog.'
-              : 'Static list for locale ' + locale + ' is empty.';
+              ? translateUi(
+                'plugins.gift-catalog.gift_catalog.ui.messages.no_live_gifts_loaded',
+                'No gifts loaded from /api/gift-catalog-manager/catalog.'
+              )
+              : translateUi(
+                'plugins.gift-catalog.gift_catalog.ui.messages.static_list_empty',
+                'Static list for locale {locale} is empty.',
+                { locale: locale }
+              );
             return;
           }
 
@@ -1567,15 +1578,25 @@ function resolveGiftLocale(locale) {
             item.className = 'gc-demo-list-item';
             title.textContent = (index + 1) + '. ' + name;
             meta.className = 'gc-demo-list-item-meta';
-            meta.textContent = useLive ? 'Live source' : 'Demo source ' + locale;
+            meta.textContent = useLive
+              ? translateUi('plugins.gift-catalog.gift_catalog.ui.messages.live_source', 'Live source')
+              : translateUi('plugins.gift-catalog.gift_catalog.ui.messages.demo_source', 'Demo source {locale}', { locale: locale });
             item.appendChild(title);
             item.appendChild(meta);
             demoComponents.listContainer.appendChild(item);
           });
 
           demoComponents.listStatus.textContent = useLive
-            ? ('Loaded from live endpoint: ' + gifts.length + ' gift entries.')
-            : ('Demo list rendered for locale: ' + locale + ' (' + gifts.length + ' entries).');
+            ? translateUi(
+              'plugins.gift-catalog.gift_catalog.ui.messages.live_entries_loaded',
+              'Loaded from live endpoint: {count} gift entries.',
+              { count: gifts.length }
+            )
+            : translateUi(
+              'plugins.gift-catalog.gift_catalog.ui.messages.demo_list_rendered',
+              'Demo list rendered for locale: {locale} ({count} entries).',
+              { locale: locale, count: gifts.length }
+            );
         }
 
         function copySnippet(id) {
@@ -1587,10 +1608,10 @@ function resolveGiftLocale(locale) {
 
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(value).catch(function () {
-              window.prompt('Copy failed. Use this snippet:', value);
+              window.prompt(translateUi('plugins.gift-catalog.gift_catalog.ui.messages.copy_failed_prompt', 'Copy failed. Use this snippet:'), value);
             });
           } else {
-            window.prompt('Copy this snippet:', value);
+            window.prompt(translateUi('plugins.gift-catalog.gift_catalog.ui.messages.copy_prompt', 'Copy this snippet:'), value);
           }
         }
 
@@ -1681,12 +1702,12 @@ function resolveGiftLocale(locale) {
             }
 
             if (!navigator.clipboard) {
-              window.prompt('Endpoint:', demoComponents.endpointPreview.textContent || '');
+              window.prompt(translateUi('plugins.gift-catalog.gift_catalog.ui.messages.endpoint_prompt', 'Endpoint:'), demoComponents.endpointPreview.textContent || '');
               return;
             }
 
             navigator.clipboard.writeText(demoComponents.endpointPreview.textContent || '').catch(function () {
-              window.prompt('Endpoint:', demoComponents.endpointPreview.textContent || '');
+              window.prompt(translateUi('plugins.gift-catalog.gift_catalog.ui.messages.endpoint_prompt', 'Endpoint:'), demoComponents.endpointPreview.textContent || '');
             });
           });
 

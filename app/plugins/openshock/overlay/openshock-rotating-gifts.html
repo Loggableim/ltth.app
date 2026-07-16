@@ -216,6 +216,15 @@
         let rotationTimer = null;
         let socket = null;
 
+        function rotatingGiftText(key, fallback, params = {}) {
+            const translationKey = `plugins.openshock.runtime.overlays.rotating_gifts.${key}`;
+            const translated = window.i18n?.t(translationKey, params);
+            const value = translated && translated !== translationKey ? translated : fallback;
+            return String(value).replace(/\{(\w+)\}/g, (match, name) => (
+                Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+            ));
+        }
+
         // Initialize Socket.io connection
         function initSocket() {
             socket = io();
@@ -318,7 +327,7 @@
 
             setTimeout(() => {
                 // Update content
-                document.getElementById('giftName').textContent = gift.giftName || 'Unknown Gift';
+                document.getElementById('giftName').textContent = gift.giftName || rotatingGiftText('unknown_gift', 'Unknown gift');
 
                 // Update icon
                 const iconImg = document.getElementById('giftIcon');
@@ -334,7 +343,7 @@
                 }
 
                 // Update pattern info
-                document.getElementById('patternName').textContent = gift.patternName || 'Direct Command';
+                document.getElementById('patternName').textContent = gift.patternName || rotatingGiftText('direct_command', 'Direct command');
 
                 // Format duration
                 const durationMs = gift.patternDurationMs || 0;

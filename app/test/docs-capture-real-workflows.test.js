@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 
 const { buildGuides } = require('../../scripts/plugin-tutorial-source');
@@ -45,16 +46,28 @@ describe('documentation capture real workflows', () => {
     });
   });
 
-  test.each(['local-source', 'field-map'])(
-    'selects the real local TikFinity source before documenting %s',
-    (stepId) => {
-      expect(step('data-source', stepId).capture.action).toMatchObject({
-        type: 'select-local-source',
-        allowClick: true,
-        clickSelector: '#card-tikfinity'
-      });
+  test('selects the real local TikFinity source before documenting Local Source', () => {
+    expect(step('data-source', 'local-source').capture.action).toMatchObject({
+      type: 'select-local-source',
+      allowClick: true,
+      clickSelector: '#card-tikfinity'
+    });
+  });
+
+  test('reviews Field MAP after the local source is selected instead of clicking it twice', () => {
+    const fieldMap = step('data-source', 'field-map');
+    expect(fieldMap.capture).toMatchObject({ assertVisible: '#tikfinity-port' });
+    expect(fieldMap.capture.action).toMatchObject({
+      type: 'open-plugin-surface',
+      prepare: 'select-local-tikfinity',
+      preparationEvidenceSelector: '#tikfinity-settings-card'
+    });
+    expect(fieldMap.workflow.captureRule.stateChange).toBe(false);
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      expect(fieldMap.copy[locale].body).not.toMatch(/(?:Klicke|Click|Haz clic|Cliquez)/i);
+      expect(fieldMap.workflow.instructions[locale].body).toBe(fieldMap.copy[locale].body);
     }
-  );
+  });
 
   test('saves the local TikFinity settings before documenting the result', () => {
     expect(step('data-source', 'data-preview').capture.action).toMatchObject({
@@ -92,8 +105,33 @@ describe('documentation capture real workflows', () => {
     expect(step('interactive-story', 'local-decision').capture).toMatchObject({
       route: '/plugins/interactive-story/ui.html?demo=1',
       assertVisible: '#toggleOverlayPreviewBtn',
-      action: { type: 'run-local-preview' }
+      action: { type: 'run-local-preview', allowClick: true, clickSelector: '#toggleOverlayPreviewBtn', evidenceSelector: '#overlayPreviewContainer' }
     });
+  });
+
+  test('keeps JavaScript and localized shipped demo mode for every Interactive Story capture', () => {
+    const guide = buildGuides(repoRoot).find((candidate) => candidate.id === 'interactive-story');
+    const runnerSource = fs.readFileSync(path.join(repoRoot, 'scripts', 'capture-product-screenshots.js'), 'utf8');
+    const uiSource = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', 'interactive-story', 'ui.html'), 'utf8');
+
+    expect(guide.steps).toHaveLength(6);
+    expect(guide.steps.every((guideStep) => guideStep.capture.route === '/plugins/interactive-story/ui.html?demo=1')).toBe(true);
+    expect(runnerSource).toContain('await page.setJavaScriptEnabled(true);');
+    expect(runnerSource).not.toContain("asset.guideId === 'interactive-story'");
+    expect(uiSource).toContain("const isPreviewMode = new URLSearchParams(window.location.search).get('demo') === '1';");
+    expect(uiSource).toContain("const socket = isPreviewMode ? { on: () => {}, emit: () => {} } : io();");
+    expect(uiSource).toContain('await window.i18n.init();');
+    expect(uiSource).toMatch(/if\s*\(!isPreviewMode\)\s*\{\s*loadStatus\(\);\s*loadConfig\(\);\s*loadThemes\(\);\s*loadDebugLogs\(\);/);
+  });
+
+  test('describes the Interactive Story preview without inventing a demo vote', () => {
+    const localPreview = step('interactive-story', 'local-decision');
+
+    expect(JSON.stringify(localPreview.copy)).not.toContain('Test Voting Choices');
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      expect(localPreview.copy[locale].body).toMatch(/(?:preview|Vorschau|vista previa|aper(?:cu|çu))/i);
+      expect(localPreview.copy[locale].expected).not.toMatch(/(?:sample choices|Beispieloptionen|opciones de ejemplo|choix exemples)/i);
+    }
   });
 
   test.each(['safety-card', 'safe-limit'])(
@@ -102,6 +140,17 @@ describe('documentation capture real workflows', () => {
       expect(step('openshock', stepId).capture.action).toMatchObject({ prepare: 'open-openshock-safety-tab' });
     }
   );
+
+  test('documents the real empty OpenShock overlay without fabricating a hardware event', () => {
+    const overlay = step('openshock', 'shock-overlay');
+
+    expect(overlay.capture).toMatchObject({
+      route: '/plugins/openshock/overlay/openshock_overlay.html',
+      assertVisible: '.background-orbs',
+      action: { type: 'open-overlay-preview' }
+    });
+    expect(overlay.workflow.captureRule.stateChange).toBe(false);
+  });
 
   test.each([
     ['config-import', 'export-scope'],
@@ -159,6 +208,15 @@ describe('documentation capture real workflows', () => {
     expect(step('soundboard', 'muted-sound-test').capture.action).toMatchObject({ prepare: 'open-soundboard-obs-overlay' });
   });
 
+  test('accepts the native confirmation after the real local Soundboard save', () => {
+    expect(step('soundboard', 'soundboard-review').capture.action).toMatchObject({
+      allowClick: true,
+      clickSelector: '[data-save-proxy]',
+      evidenceSelector: '#soundboard-save-state',
+      confirmDialog: true
+    });
+  });
+
   test('opens the real Store Admin view without touching sources or packages', () => {
     expect(step('store-admin', 'store-card').capture).toMatchObject({
       route: '/dashboard.html',
@@ -169,6 +227,10 @@ describe('documentation capture real workflows', () => {
     expect(step('store-admin', 'package-status').capture.assertVisible).toBe('[data-store-auth-mode="sign-in"]');
     expect(step('store-admin', 'store-inspection').capture.assertVisible).toBe('[data-store-auth-mode="sign-up"]');
     expect(step('store-admin', 'store-review').capture.assertVisible).toBe('[data-store-account-signin]');
+  });
+
+  test('records the Store Admin account review as a non-mutating inspection', () => {
+    expect(step('store-admin', 'store-review').workflow.captureRule.stateChange).toBe(false);
   });
 
   test('keeps Spotlight documentation on visible product controls instead of an empty preview frame', () => {

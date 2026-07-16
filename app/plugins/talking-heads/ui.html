@@ -883,7 +883,7 @@
             </div>
             <div class="form-group">
                 <label class="form-label" data-i18n="plugins.talking-heads.labels.preview_text">Vorschau-Text</label>
-                <input type="text" id="previewTtsText" class="form-input" placeholder="Hallo! Das ist ein Talking Heads Test.">
+                <input type="text" id="previewTtsText" class="form-input" placeholder="Hallo! Das ist ein Talking Heads Test." data-i18n-placeholder="plugins.talking-heads.form_controls.preview_tts_text_placeholder">
                 <div class="form-help" data-i18n="plugins.talking-heads.labels.spielt_die_lokale_tts_engine_ab_und_zeigt">Spielt die lokale TTS Engine ab und zeigt gleichzeitig das Talking Head im OBS HUD.</div>
             </div>
             <div class="flex gap-4">
@@ -957,7 +957,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div class="form-group">
                     <label class="form-label" data-i18n="plugins.talking-heads.labels.ziel_user_erhalt_sprites">Ziel-User (erhält Sprites)</label>
-                    <input type="text" id="targetUserSearch" class="form-input" placeholder="User-ID oder Username eingeben...">
+                        <input type="text" id="targetUserSearch" class="form-input" placeholder="User-ID oder Username eingeben..." data-i18n-placeholder="plugins.talking-heads.form_controls.target_user_search_placeholder">
                     <div class="form-help" data-i18n="plugins.talking-heads.labels.der_user_der_die_sprites_erhalten_soll">Der User, der die Sprites erhalten soll</div>
                 </div>
 
@@ -1018,7 +1018,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.talking-heads.labels.user_suchen">User suchen</label>
-                        <input type="text" id="userSearchInput" class="form-input" placeholder="Username eingeben...">
+                        <input type="text" id="userSearchInput" class="form-input" placeholder="Username eingeben..." data-i18n-placeholder="plugins.talking-heads.form_controls.user_search_placeholder">
                     </div>
                     <div class="form-group">
                         <label class="form-label" data-i18n="plugins.talking-heads.labels.user_filter">User-Filter</label>
@@ -1138,7 +1138,7 @@
             <!-- Upload Zone -->
             <div class="form-group">
                 <label class="form-label" data-i18n="plugins.talking-heads.labels.neues_sprite_set_hochladen">Neues Sprite-Set hochladen</label>
-                <input type="text" class="form-input" id="manualSetNameInput" placeholder="Set-Name (z.B. MeinAvatar)" style="margin-bottom:8px;">
+                <input type="text" class="form-input" id="manualSetNameInput" placeholder="Set-Name (z.B. MeinAvatar)" data-i18n-placeholder="plugins.talking-heads.form_controls.sprite_set_name_placeholder" style="margin-bottom:8px;">
 
                 <div id="manualUploadDropZone" style="
                     border: 2px dashed var(--color-border);
@@ -1160,7 +1160,7 @@
 
                 <div style="text-align:center;font-size:0.75rem;color:var(--color-text-secondary);margin-bottom:8px;">oder</div>
                 <div style="display:flex;gap:8px;align-items:center;">
-                    <input type="file" id="manualZipInput" accept=".zip" style="flex:1;" class="form-input">
+                    <input type="file" id="manualZipInput" accept=".zip" style="flex:1;" class="form-input" data-i18n-aria-label="plugins.talking-heads.form_controls.manual_zip_input_aria">
                     <span style="font-size:0.75rem;color:var(--color-text-secondary);" data-i18n="plugins.talking-heads.labels.zip_mit_den_5_frames_hochladen">ZIP mit den 5 Frames hochladen</span>
                 </div>
 
@@ -1195,7 +1195,7 @@
                             <option value="" data-i18n="plugins.talking-heads.labels.set_wahlen">-- Set wählen --</option>
                         </select>
                     </div>
-                    <button class="btn btn-success" id="manualAssignBtn">
+                    <button class="btn btn-success" id="manualAssignBtn" data-i18n="plugins.talking-heads.form_controls.manual_assign">
                         <i data-lucide="check" class="inline-block w-4 h-4 mr-1"></i>
                         Zuweisen
                     </button>
@@ -1307,7 +1307,7 @@
             <!-- Bar Background -->
             <div class="form-group">
                 <label class="form-label" data-i18n="plugins.talking-heads.labels.bar_background">Bar-Hintergrundfarbe</label>
-                <input type="text" class="form-input" id="viewerBarBackground" value="rgba(0,0,0,0.3)" placeholder="rgba(0,0,0,0.3)" style="width:250px;">
+                            <input type="text" class="form-input" id="viewerBarBackground" value="rgba(0,0,0,0.3)" placeholder="rgba(0,0,0,0.3)" data-i18n-placeholder="plugins.talking-heads.form_controls.viewer_bar_background_placeholder" style="width:250px;">
                 <div class="form-help" data-i18n="plugins.talking-heads.labels.css_farbe_z_b_rgba_0_0_0">CSS Farbe (z.B. rgba(0,0,0,0.5) oder #1a1a1a)</div>
             </div>
 
@@ -1349,6 +1349,11 @@
     // =====================================================================
     (function () {
         const SPRITE_FIELDS = ['idle_neutral', 'blink', 'speak_closed', 'speak_mid', 'speak_open'];
+        const translate = (key, fallback, params = {}) => {
+            const value = window.i18n?.t?.(key, params);
+            if (value && value !== key) return value;
+            return fallback.replace(/\{\{?(\w+)\}?\}/g, (match, name) => (name in params ? params[name] : match));
+        };
 
         // --- Sprite Mode ---
         const spriteModeSelect = document.getElementById('spriteModeSelect');
@@ -1421,7 +1426,7 @@
             uploadBtn.addEventListener('click', async function () {
                 const setName = (document.getElementById('manualSetNameInput') || {}).value || '';
                 if (!setName.trim()) {
-                    if (uploadStatus) { uploadStatus.style.color = 'var(--color-accent-danger)'; uploadStatus.textContent = 'Bitte einen Set-Namen eingeben.'; }
+                    if (uploadStatus) { uploadStatus.style.color = 'var(--color-accent-danger)'; uploadStatus.textContent = translate('plugins.talking-heads.talking_heads_ui.manual.set_name_required', 'Please enter a set name.'); }
                     return;
                 }
 
@@ -1443,23 +1448,23 @@
                     formData.append('zip', zipInput.files[0]);
                 }
 
-                if (uploadStatus) { uploadStatus.style.color = 'var(--color-text-secondary)'; uploadStatus.textContent = 'Wird hochgeladen…'; }
+                if (uploadStatus) { uploadStatus.style.color = 'var(--color-text-secondary)'; uploadStatus.textContent = translate('plugins.talking-heads.talking_heads_ui.manual.uploading', 'Uploading…'); }
                 uploadBtn.disabled = true;
 
                 try {
                     const resp = await fetch('/api/talkingheads/manual-upload', { method: 'POST', body: formData });
                     const data = await resp.json();
                     if (data.success) {
-                        if (uploadStatus) { uploadStatus.style.color = 'var(--color-accent-success)'; uploadStatus.textContent = `✅ Set "${data.setName}" hochgeladen (ID: ${data.setId})`; }
+                        if (uploadStatus) { uploadStatus.style.color = 'var(--color-accent-success)'; uploadStatus.textContent = translate('plugins.talking-heads.talking_heads_ui.manual.set_uploaded', 'Set "{{setName}}" uploaded (ID: {{setId}}).', { setName: data.setName, setId: data.setId }); }
                         loadManualSets();
                         if (filesInput) filesInput.value = '';
                         if (zipInput) zipInput.value = '';
                         if (document.getElementById('manualSetNameInput')) document.getElementById('manualSetNameInput').value = '';
                     } else {
-                        if (uploadStatus) { uploadStatus.style.color = 'var(--color-accent-danger)'; uploadStatus.textContent = '❌ ' + (data.error || 'Fehler'); }
+                        if (uploadStatus) { uploadStatus.style.color = 'var(--color-accent-danger)'; uploadStatus.textContent = translate('plugins.talking-heads.talking_heads_ui.manual.error', 'Error: {{error}}', { error: data.error || '' }); }
                     }
                 } catch (err) {
-                    if (uploadStatus) { uploadStatus.style.color = 'var(--color-accent-danger)'; uploadStatus.textContent = '❌ Netzwerkfehler: ' + err.message; }
+                    if (uploadStatus) { uploadStatus.style.color = 'var(--color-accent-danger)'; uploadStatus.textContent = translate('plugins.talking-heads.talking_heads_ui.manual.network_error', 'Network error: {{error}}', { error: err.message }); }
                 } finally {
                     uploadBtn.disabled = false;
                 }
@@ -1481,7 +1486,7 @@
                 if (setsList) {
                     setsList.innerHTML = '';
                     if (data.sets.length === 0) {
-                        setsList.innerHTML = '<div style="color:var(--color-text-secondary);font-size:0.85rem;">Noch keine manuellen Sets vorhanden.</div>';
+                        setsList.innerHTML = `<div style="color:var(--color-text-secondary);font-size:0.85rem;">${translate('plugins.talking-heads.talking_heads_ui.manual.no_sets', 'No manual sets are available yet.')}</div>`;
                     } else {
                         for (const set of data.sets) {
                             const card = document.createElement('div');
@@ -1491,7 +1496,7 @@
                                 <img src="${previewSrc}" alt="${set.setName}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--color-border);margin-bottom:6px;" onerror="this.style.display='none'">
                                 <div style="font-size:0.8rem;font-weight:600;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${set.setName}">${set.setName}</div>
                                 <div style="font-size:0.7rem;color:var(--color-text-secondary);margin-bottom:6px;">${set.setId}</div>
-                                <button class="btn btn-danger" data-set-id="${set.setId}" style="padding:4px 8px;font-size:0.75rem;" data-i18n="plugins.talking-heads.labels.delete">Löschen</button>
+                                <button class="btn btn-danger" data-set-id="${set.setId}" style="padding:4px 8px;font-size:0.75rem;">${translate('plugins.talking-heads.labels.delete', 'Delete')}</button>
                             `;
                             card.querySelector('button').addEventListener('click', function () {
                                 deleteManualSet(this.getAttribute('data-set-id'));
@@ -1504,18 +1509,18 @@
                 // Rebuild selects
                 const setOptions = data.sets.map(s => `<option value="${s.setId}">${s.setName}</option>`).join('');
                 if (defaultSelect) {
-                    defaultSelect.innerHTML = '<option value="" data-i18n="plugins.talking-heads.labels.kein_standard">-- Kein Standard --</option>' + setOptions;
+                    defaultSelect.innerHTML = `<option value="">${translate('plugins.talking-heads.labels.kein_standard', '-- No default --')}</option>${setOptions}`;
                     if (currentDefaultId) defaultSelect.value = currentDefaultId;
                 }
                 if (assignSetSelect) {
-                    assignSetSelect.innerHTML = '<option value="" data-i18n="plugins.talking-heads.labels.set_wahlen">-- Set wählen --</option>' + setOptions;
+                    assignSetSelect.innerHTML = `<option value="">${translate('plugins.talking-heads.labels.set_wahlen', '-- Choose set --')}</option>${setOptions}`;
                 }
                 window.i18n?.updateDOM?.();
             } catch (_) {}
         }
 
         async function deleteManualSet(setId) {
-            if (!confirm(`Sprite-Set "${setId}" wirklich löschen?`)) return;
+            if (!confirm(translate('plugins.talking-heads.talking_heads_ui.manual.delete_set_confirm', 'Delete sprite set "{{setId}}"?', { setId }))) return;
             try {
                 const resp = await fetch(`/api/talkingheads/manual-upload/${encodeURIComponent(setId)}`, { method: 'DELETE' });
                 const data = await resp.json();
@@ -1534,7 +1539,7 @@
                     select.innerHTML = '';
                     const defaultOption = document.createElement('option');
                     defaultOption.value = '';
-                    defaultOption.textContent = '-- User wählen --';
+                    defaultOption.textContent = translate('plugins.talking-heads.labels.user_wahlen', '-- Choose user --');
                     select.appendChild(defaultOption);
 
                     data.users.forEach(u => {
@@ -1562,7 +1567,7 @@
                 const setId = setSelect ? setSelect.value : '';
 
                 if (!userId || !setId) {
-                    if (statusEl) { statusEl.style.color = 'var(--color-accent-danger)'; statusEl.textContent = 'Bitte User und Set auswählen.'; }
+                    if (statusEl) { statusEl.style.color = 'var(--color-accent-danger)'; statusEl.textContent = translate('plugins.talking-heads.talking_heads_ui.manual.user_and_set_required', 'Choose a user and a set.'); }
                     return;
                 }
 
@@ -1574,12 +1579,12 @@
                     });
                     const data = await resp.json();
                     if (data.success) {
-                        if (statusEl) { statusEl.style.color = 'var(--color-accent-success)'; statusEl.textContent = `✅ Set "${setId}" wurde ${username} zugewiesen.`; }
+                        if (statusEl) { statusEl.style.color = 'var(--color-accent-success)'; statusEl.textContent = translate('plugins.talking-heads.talking_heads_ui.manual.set_assigned', 'Set "{{setId}}" assigned to {{username}}.', { setId, username }); }
                     } else {
-                        if (statusEl) { statusEl.style.color = 'var(--color-accent-danger)'; statusEl.textContent = '❌ ' + (data.error || 'Fehler'); }
+                        if (statusEl) { statusEl.style.color = 'var(--color-accent-danger)'; statusEl.textContent = translate('plugins.talking-heads.talking_heads_ui.manual.error', 'Error: {{error}}', { error: data.error || '' }); }
                     }
                 } catch (err) {
-                    if (statusEl) { statusEl.style.color = 'var(--color-accent-danger)'; statusEl.textContent = '❌ Fehler: ' + err.message; }
+                    if (statusEl) { statusEl.style.color = 'var(--color-accent-danger)'; statusEl.textContent = translate('plugins.talking-heads.talking_heads_ui.manual.network_error', 'Network error: {{error}}', { error: err.message }); }
                 }
             });
         }
@@ -1677,12 +1682,12 @@
                     });
                     const data = await resp.json();
                     if (data.success) {
-                        if (saveStatus) { saveStatus.style.color = 'var(--color-accent-success)'; saveStatus.textContent = '✅ Konfiguration gespeichert'; }
+                        if (saveStatus) { saveStatus.style.color = 'var(--color-accent-success)'; saveStatus.textContent = translate('plugins.talking-heads.talking_heads_ui.manual.configuration_saved', 'Configuration saved.'); }
                     } else {
-                        if (saveStatus) { saveStatus.style.color = 'var(--color-accent-danger)'; saveStatus.textContent = '❌ ' + (data.error || 'Fehler'); }
+                        if (saveStatus) { saveStatus.style.color = 'var(--color-accent-danger)'; saveStatus.textContent = translate('plugins.talking-heads.talking_heads_ui.manual.error', 'Error: {{error}}', { error: data.error || '' }); }
                     }
                 } catch (err) {
-                    if (saveStatus) { saveStatus.style.color = 'var(--color-accent-danger)'; saveStatus.textContent = '❌ Fehler: ' + err.message; }
+                    if (saveStatus) { saveStatus.style.color = 'var(--color-accent-danger)'; saveStatus.textContent = translate('plugins.talking-heads.talking_heads_ui.manual.network_error', 'Network error: {{error}}', { error: err.message }); }
                 } finally {
                     saveBtn.disabled = false;
                 }

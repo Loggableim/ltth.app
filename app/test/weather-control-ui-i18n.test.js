@@ -7,7 +7,7 @@ describe('Weather Control preview localization', () => {
 
     expect(source).not.toContain("i18nTranslate('buttons.preview_off')");
     expect(source).not.toContain("i18nTranslate('buttons.preview_on')");
-    expect(source).toContain("translate('buttons.preview_off')");
-    expect(source).toContain("translate('buttons.preview_on')");
+    expect(source).toContain("weatherText('plugins.weather-control.buttons.preview_off'");
+    expect(source).toContain("weatherText('plugins.weather-control.buttons.preview_on'");
   });
 });

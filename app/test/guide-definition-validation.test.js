@@ -79,10 +79,10 @@ describe('GuideDefinition contract audit', () => {
         ],
         settingsReference: [{
           selector: '#save',
-          purpose: localized('Source inventory on /plugins/complete: "Save configuration" (#save).'),
+          purpose: localized('Use "Save configuration" (#save) on /plugins/complete to run this action.'),
           defaultValue: localized('No value'),
           values: localized('One action'),
-          dependencies: localized('Source inventory on /plugins/complete: "Save configuration" (#save).')
+          dependencies: localized('"Save configuration" (#save) is available on /plugins/complete.')
         }],
         integrations: sourceIntegrations.map((integration) => ({ ...integration, description: localized(integration.value) }))
       }
@@ -154,6 +154,39 @@ describe('GuideDefinition contract audit', () => {
       expect.objectContaining({ code: 'guide-text-source-anchor-missing', section: 'settingsReference', selector: '#sample' }),
       expect.objectContaining({ code: 'guide-text-source-anchor-missing', section: 'troubleshooting', anchorType: 'control-selector' }),
       expect.objectContaining({ code: 'guide-text-source-anchor-missing', section: 'troubleshooting', anchorType: 'integration' })
+    ]));
+  });
+
+  test('rejects source-inventory boilerplate in a setting reference', () => {
+    const report = auditGuideDefinition({
+      id: 'source-inventory-plugin',
+      definition: {
+        activation: { route: '/plugins/source-inventory' },
+        visibleControls: [{ selector: '#sample', classification: 'documented', section: 'step-configure', stepId: 'configure' }],
+        settingsReference: [{
+          selector: '#sample',
+          purpose: localized('Source inventory on /plugins/source-inventory: "Sample mode" (#sample).'),
+          defaultValue: localized('empty'),
+          values: localized('text'),
+          dependencies: localized('Source inventory on /plugins/source-inventory: "Sample mode" (#sample).')
+        }],
+        integrations: []
+      }
+    }, {
+      inventory: {
+        controls: [{
+          selector: '#sample',
+          label: 'Sample mode',
+          route: '/plugins/source-inventory',
+          defaultValue: 'empty',
+          values: 'text'
+        }]
+      }
+    });
+
+    expect(report.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'generic-guide-text', section: 'settingsReference', selector: '#sample', field: 'purpose' }),
+      expect.objectContaining({ code: 'generic-guide-text', section: 'settingsReference', selector: '#sample', field: 'dependencies' })
     ]));
   });
 

@@ -2,18 +2,42 @@
   "plugins": {
     "multicam": {
       "multicam": {
-        "title": "Multi-Cam Umschalter",
-        "subtitle": "Stream-Kamera-Verwaltung",
-        "safety_lock": "⚠️ SICHERHEITSSPERRE AKTIV - Zu viele schnelle Umschaltungen erkannt. Warte 60 Sekunden...",
-        "current_scene": "Aktuelle Szene:",
+    "title": "Multi-Cam Umschalter",
+    "subtitle": "Stream-Kamera-Verwaltung",
+    "safety_lock": "⚠️ SICHERHEITSSPERRE AKTIV - Zu viele schnelle Umschaltungen erkannt. Warte 60 Sekunden...",
+    "runtime": {
+      "server_unreachable": "Der Server antwortet nicht. Stelle sicher, dass der LTTH-Server läuft und ein TikTok-Stream verbunden ist.",
+      "retry_load": "🔄 Erneut laden",
+      "server_error": "Serverfehler: {error}",
+      "unknown_error": "Unbekannter Fehler",
+      "catalog_load_failed": "Der Geschenkekatalog konnte nicht geladen werden. Stelle sicher, dass der LTTH-Server läuft und ein TikTok-Stream verbunden ist.",
+      "empty_catalog": "Keine Geschenke im Katalog. Verbinde einen TikTok-Stream, um den Katalog zu laden.",
+      "tier_whale": "🐋 Whale (10.000+)",
+      "tier_large": "🔥 Groß (1.000–9.999)",
+      "tier_medium": "💎 Mittel (100–999)",
+      "tier_small": "🪙 Klein (1–99)",
+      "gift_count": "{count} Geschenke",
+      "no_filtered_gifts": "Keine Geschenke entsprechen dem aktuellen Filter.",
+      "no_mapping": "— Keine Zuordnung —",
+      "minimum_coins": "Min. Coins:",
+      "unsaved_changes": "🟡 Ungespeicherte Änderungen",
+      "all_changes_saved": "✅ Alle Änderungen gespeichert",
+      "saving": "⏳ Speichere...",
+      "saved": "✅ Gespeichert!",
+      "error": "❌ Fehler: {error}",
+      "discard_unsaved_changes": "Alle nicht gespeicherten Änderungen verwerfen?",
+      "connection_failed": "Verbindung fehlgeschlagen: {error}",
+      "select_scene": "Bitte wähle eine Szene"
+    },
+    "current_scene": "Aktuelle Szene:",
         "status": {
           "connected": "Verbunden",
           "disconnected": "Getrennt"
         },
         "connection": {
           "title": "Verbindung",
-          "host": "Host",
-          "port": "Port",
+      "host": "Serveradresse",
+      "port": "Anschluss",
           "password": "Passwort",
           "connect": "OBS verbinden",
           "disconnect": "OBS trennen",
@@ -52,7 +76,7 @@
           "add": "Zuordnung hinzufügen",
           "refresh_gifts": "Geschenke aktualisieren",
           "current_mappings": "Aktuelle Zuordnungen:",
-          "filter": "Filter:",
+      "filter": "Filtern nach:",
           "camera_filter": "Kamera:",
           "sort": "Sortierung:"
         },
@@ -82,7 +106,7 @@
       "labels": {
         "warte_auf_events": "Warte auf Events...",
         "aktivitats_log": "Aktivitäts-Log",
-        "name_a_z": "Name (A-Z)",
+    "name_a_z": "Name (A bis Z)",
         "nur_nicht_zugeordnete": "Nur nicht zugeordnete",
         "klein_1_99_coins": "Klein (1-99 Coins)",
         "coins_absteigend": "Coins (absteigend)",

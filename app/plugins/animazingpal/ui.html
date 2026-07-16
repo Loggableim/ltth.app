@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="plugins.animazingpal.labels.animazingpal_multi_platform_vtubing_integration">AnimazingPal - Multi Platform VTubing Integration</title>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/tailwind.output.css">
   <link rel="stylesheet" href="/css/themes.css">
   <script>
     (function () {
@@ -618,7 +618,7 @@
             </div>
             <div>
                   <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.fallback_aktionsnachricht_optional_0657dd">Fallback-/Aktionsnachricht (optional)</label>
-              <input type="text" class="input" id="followChatMessage" placeholder="{username} folgt jetzt!">
+                        <input type="text" class="input" id="followChatMessage" placeholder="{username} folgt jetzt!" data-i18n-placeholder="plugins.animazingpal.form_controls.follow_chat_message_placeholder">
             </div>
             <div>
               <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.echo_override_6cdf51">Echo Override</label>
@@ -657,7 +657,7 @@
             </div>
             <div>
                   <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.fallback_aktionsnachricht_optional_87086a">Fallback-/Aktionsnachricht (optional)</label>
-              <input type="text" class="input" id="shareChatMessage" placeholder="Danke fürs Teilen, {username}!">
+                        <input type="text" class="input" id="shareChatMessage" placeholder="Danke fürs Teilen, {username}!" data-i18n-placeholder="plugins.animazingpal.form_controls.share_chat_message_placeholder">
             </div>
             <div>
               <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.echo_override_43a65e">Echo Override</label>
@@ -696,7 +696,7 @@
             </div>
             <div>
                   <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.fallback_aktionsnachricht_optional_615cc9">Fallback-/Aktionsnachricht (optional)</label>
-              <input type="text" class="input" id="subscribeChatMessage" placeholder="Vielen Dank für das Abo, {username}!">
+                        <input type="text" class="input" id="subscribeChatMessage" placeholder="Vielen Dank für das Abo, {username}!" data-i18n-placeholder="plugins.animazingpal.form_controls.subscribe_chat_message_placeholder">
             </div>
             <div>
               <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.echo_override_31ab69">Echo Override</label>
@@ -774,7 +774,7 @@
             </div>
             <div>
                   <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.fallback_aktionsnachricht_optional">Fallback-/Aktionsnachricht (optional)</label>
-              <input type="text" class="input" id="giftChatMessage" placeholder="Wow, danke {username} für {giftName}!">
+                        <input type="text" class="input" id="giftChatMessage" placeholder="Wow, danke {username} für {giftName}!" data-i18n-placeholder="plugins.animazingpal.form_controls.gift_chat_message_placeholder">
             </div>
             <div>
               <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.echo_override_f072b9">Echo Override</label>
@@ -813,7 +813,7 @@
             </div>
             <div>
                   <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.fallback_aktionsnachricht_optional_e8ac24">Fallback-/Aktionsnachricht (optional)</label>
-              <input type="text" class="input" id="chatChatMessage" placeholder="Danke für deinen Chat, {username}!">
+                        <input type="text" class="input" id="chatChatMessage" placeholder="Danke für deinen Chat, {username}!" data-i18n-placeholder="plugins.animazingpal.form_controls.chat_message_placeholder">
             </div>
             <div>
               <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.echo_override">Echo Override</label>
@@ -982,7 +982,7 @@
 
         <!-- Search Controls -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-          <input type="text" placeholder="Suche nach Benutzer oder Erinnerung..." class="input" id="memorySearchInput" aria-label="Suche nach Benutzer oder Erinnerung" data-i18n-aria-label="plugins.animazingpal.runtime.aria.memory_search" data-i18n-placeholder="plugins.animazingpal.runtime.placeholder.memory_search">
+          <input type="text" placeholder="Suche nach Benutzer oder Erinnerung..." class="input" id="memorySearchInput" aria-label="Suche nach Benutzer oder Erinnerung" data-i18n-key="plugins.animazingpal.runtime.placeholder.memory_search" data-i18n-aria-label="plugins.animazingpal.runtime.aria.memory_search" data-i18n-placeholder="plugins.animazingpal.runtime.placeholder.memory_search">
           <select class="select" id="memoryFilterUser">
             <option value="" data-i18n="plugins.animazingpal.labels.alle_benutzer">Alle Benutzer</option>
           </select>
@@ -1091,7 +1091,7 @@
             </div>
             <div>
               <label class="text-gray-400 text-sm" data-i18n="plugins.animazingpal.labels.sync_on_events">Sync on Events</label>
-              <input type="text" class="input" id="viewerbaseSyncOnEvents" placeholder="chat, gift, follow, share, like, subscribe">
+                        <input type="text" class="input" id="viewerbaseSyncOnEvents" placeholder="chat, gift, follow, share, like, subscribe" data-i18n-placeholder="plugins.animazingpal.form_controls.viewerbase_events_placeholder">
             </div>
           </div>
           <div class="flex gap-3 mt-4">

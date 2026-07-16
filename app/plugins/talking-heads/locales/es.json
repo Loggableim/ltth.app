@@ -1,6 +1,16 @@
 {
   "plugins": {
     "talking-heads": {
+      "form_controls": {
+        "image_api_key_placeholder": "Tu clave API",
+        "preview_tts_text_placeholder": "¡Hola! Esta es una prueba de Talking Heads.",
+        "target_user_search_placeholder": "Introduce un ID o nombre de usuario...",
+        "user_search_placeholder": "Introduce un nombre de usuario...",
+        "sprite_set_name_placeholder": "Nombre del conjunto (p. ej. MiAvatar)",
+        "viewer_bar_background_placeholder": "p. ej. rgba(0,0,0,0.3)",
+        "manual_zip_input_aria": "Subir archivo ZIP con 5 fotogramas",
+        "manual_assign": "Asignar conjunto"
+      },
       "talking_heads": {
         "plugin": {
           "name": "cabezas parlantes",
@@ -21,7 +31,7 @@
             "loading": "Cargando…",
             "connected": "Conectado",
             "disconnected": "Desconectado",
-            "error": "Error"
+            "error": "Error de la API"
           },
           "messages": {
             "saved": "Configuración guardada.",
@@ -80,10 +90,71 @@
           "clear_cache": "Limpiar toda la caché",
           "test_api": "Probar API",
           "test_generate": "Generar avatar de prueba",
-          "save_config": "Guardar configuración"
+          "save_config": "Guardar configuración",
+          "testing": "Probando…",
+          "generating": "Generando…",
+          "preparing": "Preparando…",
+          "starting_animation": "Iniciando animación…",
+          "loading": "Cargando…",
+          "load_stream_users": "Cargar usuarios de la transmisión"
         },
         "alerts": {
           "debug_log": "<strong>ℹ️ Registro de depuración</strong><br>Los registros en vivo aparecen a continuación cuando el registro de depuración está activado. Desactive el registro de depuración después de solucionar problemas para evitar ruido."
+        },
+        "notifications": {
+          "copy_success": "URL del HUD de OBS copiada.",
+          "copy_failed": "No se pudo copiar la URL del HUD de OBS.",
+          "load_failed": "No se pudo cargar la configuración: {{error}}",
+          "debug_enabled": "Registro de depuración activado.",
+          "avatar_generated": "Avatar para {{username}} generado.",
+          "config_loading": "Espera a que se cargue la configuración…",
+          "save_success": "Configuración guardada.",
+          "save_failed": "No se pudo guardar la configuración: {{error}}",
+          "api_test_success": "Conexión con la API correcta.",
+          "api_test_failed": "Falló la conexión con la API: {{error}}",
+          "api_test_error": "Falló la prueba de la API: {{error}}",
+          "generate_start": "Iniciando la generación de prueba… puede tardar 15–30 segundos.",
+          "generate_success": "Avatar de prueba generado correctamente ({{sprites}} sprites creados).",
+          "generate_failed": "Falló la generación del avatar: {{error}}",
+          "generate_error": "Falló la generación de prueba: {{error}}",
+          "cache_clear_confirm": "¿Quieres eliminar todos los avatares almacenados en caché?",
+          "cache_cleared": "Se eliminaron {{count}} avatares.",
+          "cache_clear_failed": "No se pudo limpiar la caché."
+        },
+        "logs": {
+          "empty": "Aún no hay entradas de registro disponibles."
+        },
+        "manual": {
+          "set_name_required": "Introduce un nombre para el conjunto.",
+          "uploading": "Subiendo…",
+          "set_uploaded": "Conjunto \"{{setName}}\" subido (ID: {{setId}}).",
+          "error": "Problema: {{error}}",
+          "network_error": "Problema de red: {{error}}",
+          "no_sets": "Aún no hay conjuntos manuales.",
+          "delete_set_confirm": "¿Eliminar el conjunto de sprites \"{{setId}}\"?",
+          "user_and_set_required": "Elige un usuario y un conjunto.",
+          "set_assigned": "Conjunto \"{{setId}}\" asignado a {{username}}.",
+          "configuration_saved": "Configuración guardada."
+        },
+        "placeholders": {
+          "choose_avatar": "-- Elegir avatar --"
+        },
+        "errors": {
+          "prefix": "Problema:"
+        },
+        "status": {
+          "api_configured": "API configurada ({{provider}})",
+          "api_missing": "No hay clave de API ({{provider}})",
+          "users_loaded": "{{count}} usuarios cargados{{scope}}",
+          "users_found": "{{count}} usuarios encontrados (búsqueda: \"{{term}}\")",
+          "cache_count": "Caché: {{count}} avatares",
+          "active_stream_scope": " (transmisión activa)",
+          "global_scope": " (todos)"
+        },
+        "empty": {
+          "no_avatars": "Aún no se han generado avatares.",
+          "no_users": "No se encontraron usuarios.",
+          "no_active_animations": "No hay animaciones activas"
         }
       },
       "labels": {

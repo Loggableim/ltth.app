@@ -28,22 +28,30 @@ describe('AnimazingPal settings UI localization', () => {
     expect(source).toContain('window.i18n.updateDOM()');
   });
 
+  test('loads the bundled Tailwind build instead of a remote runtime CDN', () => {
+    const tailwindConfig = fs.readFileSync(path.join(__dirname, '..', 'tailwind.config.js'), 'utf8');
+
+    expect(html).toContain('<link rel="stylesheet" href="/css/tailwind.output.css">');
+    expect(html).not.toContain('https://cdn.tailwindcss.com');
+    expect(tailwindConfig).toContain("'./plugins/**/ui.html'");
+  });
+
   test('translates dynamic connection-state labels through stable plugin keys', () => {
-    expect(source).toContain("translateRuntime('connection.connected'");
-    expect(source).toContain("translateRuntime('connection.disconnected'");
-    expect(source).toContain("translateRuntime('connection.disconnect'");
+    expect(source).toContain("translateRuntime('plugins.animazingpal.runtime.connection.connected'");
+    expect(source).toContain("translateRuntime('plugins.animazingpal.runtime.connection.disconnected'");
+    expect(source).toContain("translateRuntime('plugins.animazingpal.runtime.connection.disconnect'");
   });
 
   test('routes runtime dialogs, feedback, empty states, and accessible names through stable keys', () => {
     expect(source).toContain('function translateRuntime(key, fallback, params = {})');
-    expect(source).toContain("translateRuntime('connection.connect'");
+    expect(source).toContain("translateRuntime('plugins.animazingpal.runtime.connection.connect'");
     expect(source).toContain("runtimeEmptyMarkup('empty.no_data'");
-    expect(source).toContain("translateRuntime('mapping.gift_catalog_prompt'");
-    expect(source).toMatch(/translateRuntime\(\s*'mapping\.save_failed'/);
-    expect(source).toContain("translateRuntime('memory.archive_confirm'");
-    expect(source).toContain("'persona.delete_confirm'");
-    expect(source).toContain("translateRuntime('toast.backend_error'");
-    expect(source).toContain("translateRuntime('audio.enable'");
+    expect(source).toContain("translateRuntime('plugins.animazingpal.runtime.mapping.gift_catalog_prompt'");
+    expect(source).toMatch(/translateRuntime\(\s*'plugins\.animazingpal\.runtime\.mapping\.save_failed'/);
+    expect(source).toContain("translateRuntime('plugins.animazingpal.runtime.memory.archive_confirm'");
+    expect(source).toContain("'plugins.animazingpal.runtime.persona.delete_confirm'");
+    expect(source).toContain("translateRuntime('plugins.animazingpal.runtime.toast.backend_error'");
+    expect(source).toContain("translateRuntime('plugins.animazingpal.runtime.audio.enable'");
     expect(html).toContain('data-i18n-aria-label="plugins.animazingpal.runtime.aria.memory_search"');
     expect(html).toContain('data-i18n-placeholder="plugins.animazingpal.runtime.placeholder.memory_search"');
   });

@@ -29,6 +29,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
   "safety": "obs",
   "mode": "ui",
   "overlay": "/flame-overlay/overlay",
+  "overlayWorkflowStepIds": ["frame-obs-source"],
   "related": [
     "visual-fx-frame-webgpu",
     "fireworks"

@@ -67,6 +67,64 @@ describe('ClarityHUD UI and overlay contracts', () => {
     expect(streamJs).toContain("createClarityHUDLogger('CLARITY STREAM')");
   });
 
+  test('loads the shared namespaced runtime translator before every overlay script', () => {
+    const runtimeI18n = read('lib/i18n-runtime.js');
+
+    expect(runtimeI18n).toContain('plugins.clarityhud.runtime.');
+    ['chat.html', 'full.html', 'multi.html', 'stream.html'].forEach((overlay) => {
+      const html = read(`overlays/${overlay}`);
+      expect(html).toContain('/plugins/clarityhud/lib/i18n-runtime.js');
+    });
+  });
+
+  test('localizes dynamic full-overlay fallbacks and initialization errors', () => {
+    const fullJs = read('overlays/full.js');
+
+    expect(fullJs).toContain("ClarityHUDI18n.text('overlay.anonymous'");
+    expect(fullJs).toContain("ClarityHUDI18n.text('overlay.init_retry'");
+    expect(fullJs).toContain("ClarityHUDI18n.text('overlay.init_failed'");
+    expect(fullJs).toContain("ClarityHUDI18n.text('overlay.coins'");
+    expect(fullJs).toContain("ClarityHUDI18n.text('overlay.gift_sent'");
+    expect(fullJs).toContain("ClarityHUDI18n.text(`overlay.event.${type}`");
+    expect(fullJs).toContain('window.i18n.ready.then(init)');
+
+    ['de', 'en', 'es', 'fr'].forEach((locale) => {
+      const translations = JSON.parse(read(`locales/${locale}.json`));
+      const overlay = translations.plugins.clarityhud.runtime.overlay;
+      expect(overlay).toMatchObject({ anonymous: expect.any(String), init_retry: expect.any(String), init_failed: expect.any(String), coins: expect.any(String), gift_sent: expect.any(String) });
+    });
+  });
+
+  test('provides every runtime key used by the shared overlay helpers', () => {
+    ['de', 'en', 'es', 'fr'].forEach((locale) => {
+      const runtime = JSON.parse(read(`locales/${locale}.json`)).plugins.clarityhud.runtime;
+
+      expect(runtime.badge).toMatchObject({
+        team_level: expect.any(String),
+        moderator: expect.any(String),
+        subscriber: expect.any(String),
+        gifter_level: expect.any(String),
+        fan_club_with_name: expect.any(String),
+        fan_club_level: expect.any(String)
+      });
+      expect(runtime.debug).toMatchObject({
+        status: expect.any(String),
+        socket: expect.any(String),
+        events: expect.any(String),
+        streams: expect.any(String)
+      });
+      expect(runtime.empty).toMatchObject({
+        no_activity_title: expect.any(String),
+        no_activity_description: expect.any(String)
+      });
+      expect(runtime.overlay).toMatchObject({
+        gift_sent_count: expect.any(String),
+        multi_gift_sent: expect.any(String),
+        message_render_error: expect.any(String)
+      });
+    });
+  });
+
   test('removes unsafe dynamic innerHTML rendering from multi and stream ticker overlays', () => {
     const multiJs = read('overlays/multi.js');
     const streamJs = read('overlays/stream.js');

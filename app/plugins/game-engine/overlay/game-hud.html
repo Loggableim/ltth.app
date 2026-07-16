@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="plugins.game-engine.labels.game_engine_hud_ltth">Game Engine HUD - LTTH</title>
   <script>
+    function runtimeText(key, params = {}) {
+      const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
+      const translated = window.i18n?.t?.(normalizedKey, params);
+      return translated && translated !== normalizedKey ? translated : '';
+    }
+
     (function () {
       const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
 
@@ -558,23 +564,23 @@
       // Update game name based on type
       const gameNameEl = document.getElementById('game-name');
       if (gameType === 'chess') {
-        gameNameEl.textContent = 'Blitzschach';
+        gameNameEl.textContent = runtimeText('plugins.game-engine.runtime.hud.chess');
       } else if (gameType === 'plinko') {
-        gameNameEl.textContent = 'Plinko';
+        gameNameEl.textContent = runtimeText('plugins.game-engine.runtime.hud.plinko');
       } else {
-        gameNameEl.textContent = 'Connect4';
+        gameNameEl.textContent = runtimeText('plugins.game-engine.runtime.hud.connect4');
       }
 
       // Update status indicator
       if (state.status === 'active') {
         statusIndicator.className = 'status-indicator';
-        gameStatus.textContent = 'Spiel läuft';
+        gameStatus.textContent = runtimeText('plugins.game-engine.runtime.hud.game_running');
       } else if (state.status === 'completed') {
         statusIndicator.className = 'status-indicator ended';
-        gameStatus.textContent = 'Spiel beendet';
+        gameStatus.textContent = runtimeText('plugins.game-engine.runtime.common.game_finished');
       } else {
         statusIndicator.className = 'status-indicator waiting';
-        gameStatus.textContent = 'Warte auf Spiel...';
+        gameStatus.textContent = runtimeText('plugins.game-engine.runtime.hud.waiting_for_game');
       }
 
       // Show/hide players container (not applicable for Plinko)
@@ -600,18 +606,18 @@
 
         // Update player info with null checks
         if (player1Info) {
-          document.getElementById('player1-name').textContent = player1Info.nickname || player1Info.username || 'Player 1';
+          document.getElementById('player1-name').textContent = player1Info.nickname || player1Info.username || runtimeText('plugins.game-engine.runtime.hud.player_one');
           document.getElementById('player1-role').textContent = gameType === 'chess'
-            ? ((player1Info.side === 'white' || player1Info.side === 'black') ? (player1Info.side === 'white' ? 'Weiß' : 'Schwarz') : 'Spieler')
-            : (player1Info.role || 'viewer');
+            ? ((player1Info.side === 'white' || player1Info.side === 'black') ? (player1Info.side === 'white' ? runtimeText('plugins.game-engine.runtime.chess.white') : runtimeText('plugins.game-engine.runtime.chess.black')) : runtimeText('plugins.game-engine.runtime.hud.player'))
+            : (player1Info.role || runtimeText('plugins.game-engine.runtime.hud.viewer'));
           document.getElementById('player1-color').style.background = player1Info.color || '#4CAF50';
         }
 
         if (player2Info) {
-          document.getElementById('player2-name').textContent = player2Info.nickname || player2Info.username || 'Player 2';
+          document.getElementById('player2-name').textContent = player2Info.nickname || player2Info.username || runtimeText('plugins.game-engine.runtime.hud.player_two');
           document.getElementById('player2-role').textContent = gameType === 'chess'
-            ? ((player2Info.side === 'white' || player2Info.side === 'black') ? (player2Info.side === 'white' ? 'Weiß' : 'Schwarz') : 'Spieler')
-            : (player2Info.role || 'viewer');
+            ? ((player2Info.side === 'white' || player2Info.side === 'black') ? (player2Info.side === 'white' ? runtimeText('plugins.game-engine.runtime.chess.white') : runtimeText('plugins.game-engine.runtime.chess.black')) : runtimeText('plugins.game-engine.runtime.hud.player'))
+            : (player2Info.role || runtimeText('plugins.game-engine.runtime.hud.viewer'));
           document.getElementById('player2-color').style.background = player2Info.color || '#2196F3';
         }
 
@@ -693,16 +699,16 @@
         }
 
         if (winnerInfo) {
-          gameResult.textContent = `🏆 ${winnerInfo.nickname || winnerInfo.username} gewinnt!`;
+          gameResult.textContent = runtimeText('plugins.game-engine.runtime.hud.winner', { player: winnerInfo.nickname || winnerInfo.username });
         } else {
-          gameResult.textContent = '🏆 Gewonnen!';
+          gameResult.textContent = runtimeText('plugins.game-engine.runtime.hud.won');
         }
         gameResult.className = 'game-result';
       } else if (data.reason === 'draw' || data.reason === 'stalemate') {
-        gameResult.textContent = '🤝 Unentschieden!';
+        gameResult.textContent = runtimeText('plugins.game-engine.runtime.connect4.draw');
         gameResult.className = 'game-result draw';
       } else {
-        gameResult.textContent = 'Spiel beendet';
+        gameResult.textContent = runtimeText('plugins.game-engine.runtime.common.game_finished');
         gameResult.className = 'game-result';
       }
 

@@ -1,6 +1,10 @@
 {
   "plugins": {
     "thermal-printer": {
+      "form_controls": {
+        "usb_vendor_id_placeholder": "z. B. 0x04b8",
+        "usb_product_id_placeholder": "z. B. 0x0e15"
+      },
       "thermal_printer": {
         "name": "Thermodrucker",
         "description": "Druckt TikTok Live Events auf einem Thermodrucker (ESC/POS)",
@@ -12,7 +16,10 @@
           "queue_size": "Warteschlangengröße",
           "printed_jobs": "Gedruckte Aufträge",
           "failed_jobs": "Fehlgeschlagene Aufträge",
-          "uptime": "Laufzeit"
+          "uptime": "Laufzeit",
+          "uptime_hours": "{hours} Std. {minutes} Min.",
+          "uptime_minutes": "{minutes} Min. {seconds} Sek.",
+          "uptime_seconds": "{seconds} Sek."
         },
         "config": {
           "enable": "Thermodrucker aktivieren",
@@ -47,10 +54,22 @@
         },
         "messages": {
           "config_saved": "Konfiguration erfolgreich gespeichert!",
-          "config_error": "Fehler beim Speichern der Konfiguration",
+          "config_error": "Die Konfiguration konnte nicht gespeichert werden.",
+          "config_error_details": "Die Konfiguration konnte nicht gespeichert werden: {details}",
           "test_queued": "Testdruck-Auftrag in Warteschlange!",
-          "test_error": "Fehler beim Senden des Testdrucks",
-          "printer_not_running": "Drucker-Dienst läuft nicht"
+          "test_error": "Der Testdruck konnte nicht gesendet werden.",
+          "test_error_details": "Der Testdruck konnte nicht gesendet werden: {details}",
+          "printer_not_running": "Der Druckerdienst läuft nicht.",
+          "validation_printer_type": "Wähle USB oder Netzwerk als Druckertyp.",
+          "validation_usb_ids": "Gib beide USB-IDs an oder lasse beide für die automatische Erkennung leer.",
+          "validation_network_host": "Gib den Netzwerk-Host für einen Netzwerkdrucker an.",
+          "validation_network_port": "Gib einen gültigen Netzwerk-Port an (1-65535).",
+          "validation_min_coins": "Die Mindestanzahl an Coins darf nicht negativ sein.",
+          "validation_width": "Die Papierbreite muss zwischen 32 und 80 Zeichen liegen.",
+          "validation_reconnect_attempts": "Die Neuverbindungsversuche dürfen nicht negativ sein.",
+          "validation_reconnect_delay": "Die Neuverbindungsverzögerung darf nicht negativ sein.",
+          "validation_queue_size": "Die maximale Warteschlangengröße muss mindestens 1 sein.",
+          "validation_print_delay": "Die Druckverzögerung darf nicht negativ sein."
         }
       },
       "labels": {
@@ -68,7 +87,10 @@
         "e_g_0x0e15_for_tm_t20_leave_empty": "z. B. 0x0e15 für TM-T20 (für automatische Erkennung leer lassen)",
         "delay_between_print_jobs_prevents_overloading": "Verzögerung zwischen Druckaufträgen (verhindert Überlastung)",
         "minimum_coins_to_print_gifts": "Mindestanzahl an zu druckenden Münzen (Geschenke)",
-        "e_g_0x04b8_for_epson_leave_empty_for": "z. B. 0x04b8 für Epson (für automatische Erkennung leer lassen)"
+        "e_g_0x04b8_for_epson_leave_empty_for": "z. B. 0x04b8 für Epson (für automatische Erkennung leer lassen)",
+        "status": "Aktueller Zustand",
+        "configuration": "Konfiguration",
+        "formatting": "Formatierung"
       }
     }
   }

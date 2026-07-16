@@ -19,4 +19,18 @@ describe('Fireworks settings runtime localization', () => {
     expect(source).toContain("plugins.fireworks.ui.summary.performance");
     expect(source).toContain("plugins.fireworks.ui.impact.${info.impact}");
   });
+
+  test('uses stable localized messages for settings toasts and overlay feedback', () => {
+    const engineSource = fs.readFileSync(
+      path.join(__dirname, '..', 'plugins', 'fireworks', 'gpu', 'engine.js'),
+      'utf8'
+    );
+
+    expect(source).toContain("plugins.fireworks.ui.messages.settings_saved");
+    expect(source).toContain("plugins.fireworks.ui.messages.trigger_failed");
+    expect(source).toContain("plugins.fireworks.ui.messages.color_remove_hint");
+    expect(engineSource).toContain("plugins.fireworks.ui.messages.overlay_frozen");
+    expect(engineSource).toContain("plugins.fireworks.ui.messages.follower_thanks");
+    expect(engineSource).toContain("plugins.fireworks.ui.messages.gift_coins");
+  });
 });

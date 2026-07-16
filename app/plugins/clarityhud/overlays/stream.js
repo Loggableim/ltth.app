@@ -269,7 +269,7 @@ function showAlertCard(type, data, slotId, ttl) {
 
   const username = document.createElement('div');
   username.className = 'alert-username';
-  username.textContent = data.user?.nickname || data.nickname || data.username || 'Anonymous';
+  username.textContent = data.user?.nickname || data.nickname || data.username || ClarityHUDI18n.text('overlay.anonymous', 'Anonymous');
   content.appendChild(username);
 
   const action = document.createElement('div');
@@ -348,7 +348,7 @@ function showHighlightCard(type, data, slotId, ttl) {
   // Username
   const usernameEl = document.createElement('div');
   usernameEl.className = 'highlight-username';
-  usernameEl.textContent = data.user?.nickname || data.nickname || data.username || 'Anonymous';
+  usernameEl.textContent = data.user?.nickname || data.nickname || data.username || ClarityHUDI18n.text('overlay.anonymous', 'Anonymous');
   card.appendChild(usernameEl);
 
   // Action label with optional count
@@ -357,9 +357,9 @@ function showHighlightCard(type, data, slotId, ttl) {
   const giftName = data.gift?.name || data.giftName || null;
   const giftCount = data.gift?.count || data.repeatCount || null;
   if (giftName && giftCount && giftCount > 1) {
-    actionEl.textContent = `sent ${giftName} x${giftCount}`;
+    actionEl.textContent = ClarityHUDI18n.text('overlay.gift_sent_count', 'sent {gift} x{count}', { gift: giftName, count: giftCount });
   } else if (giftName) {
-    actionEl.textContent = `sent ${giftName}`;
+    actionEl.textContent = ClarityHUDI18n.text('overlay.gift_sent', 'sent {gift}', { gift: giftName });
   } else {
     actionEl.textContent = cfg.label;
   }
@@ -566,7 +566,7 @@ function addTickerItem(type, data) {
   const cfg = EVENT_CONFIG[type];
   if (!cfg) return;
 
-  const username = data.user?.nickname || data.nickname || data.username || 'Anonymous';
+  const username = data.user?.nickname || data.nickname || data.username || ClarityHUDI18n.text('overlay.anonymous', 'Anonymous');
   let text = cfg.label;
 
   if (type === 'gift') {

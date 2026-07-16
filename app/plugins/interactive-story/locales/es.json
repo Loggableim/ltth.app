@@ -1,6 +1,12 @@
 {
   "plugins": {
     "interactive-story": {
+      "form_controls": {
+        "openrouter_api_key_placeholder": "Clave de OpenRouter: sk-or-...",
+        "ollama_api_key_placeholder": "Opcional para Ollama local",
+        "ollama_model_placeholder": "Modelo de Ollama: qwen3.5:cloud",
+        "obs_overlay_preview_title": "Vista previa de la superposición de OBS"
+      },
       "interactive_story": {
         "plugin": {
           "name": "Generador de historias interactivas",
@@ -21,7 +27,7 @@
             "loading": "Cargando…",
             "connected": "Conectado",
             "disconnected": "Desconectado",
-            "error": "Error"
+            "error": "Se produjo un error"
           },
           "messages": {
             "saved": "Configuración guardada.",
@@ -60,118 +66,249 @@
       },
       "hero": {
         "status": {
-          "ready": "Ready"
+          "ready": "Todo listo para tu próxima transmisión"
         },
-        "theme_synced": "Theme synced",
-        "language_label": "Language label"
+        "theme_synced": "Tema sincronizado con el panel",
+        "language_label": "Idioma"
       },
       "cards": {
         "overlay": {
-          "open": "Open",
-          "title": "Title",
-          "url_label": "Url label",
+          "open": "Abrir superposición",
+          "title": "Superposición OBS",
+          "url_label": "URL de la superposición para la fuente de navegador de OBS:",
           "copy": "Copiar",
-          "hint": "Hint",
+          "hint": "Agrega esta URL como fuente de navegador en OBS (tamaño recomendado: 1920×1080).",
           "preview": {
-            "show": "Show"
+            "show": "Mostrar vista previa"
           },
-          "preview_hint": "Preview hint"
+          "preview_hint": "Esta vista previa se muestra al 50 % de la vista de superposición de 1920×1080."
         },
         "status": {
-          "title": "Title",
-          "plugin": "Plugin",
-          "loading": "Loading",
-          "session": "Session",
+          "title": "Estado en directo",
+          "plugin": "Estado del plugin",
+          "loading": "Cargando…",
+          "session": "Sesión activa",
           "none": "Ninguno",
-          "chapter": "Chapter",
+          "chapter": "Capítulo actual",
           "voting": "Votar",
           "inactive": "Inactivo"
         },
         "configuration": {
-          "title": "Title",
+          "title": "Configuración de la historia",
           "api_info": "Información de API",
-          "test_api_key": "Test api key",
-          "test_hint": "Test hint",
+          "test_api_key": "Probar clave de API",
+          "test_hint": "Haz clic para validar tu clave de API",
           "providers": {
-            "llm": "Llm",
-            "image": "Image",
-            "tts": "Tts",
-            "openrouter_key": "Openrouter key",
-            "ollama_url": "Ollama url",
-            "ollama_key": "Ollama key"
+            "llm": "Proveedor de LLM",
+            "image": "Proveedor de imágenes",
+            "tts": "Proveedor de TTS",
+            "openrouter_key": "Clave de API de OpenRouter",
+            "ollama_url": "URL base de Ollama",
+            "ollama_key": "Clave de API de Ollama"
           },
           "models": {
-            "openai_llm": "Openai llm",
-            "openrouter_llm": "Openrouter llm",
-            "ollama_llm": "Ollama llm",
-            "silicon_llm": "Silicon llm",
-            "openai_image": "Openai image",
-            "silicon_image": "Silicon image"
+            "openai_llm": "Modelo LLM de OpenAI",
+            "openrouter_llm": "Modelo de OpenRouter",
+            "ollama_llm": "Modelo de Ollama",
+            "silicon_llm": "Modelo LLM de SiliconFlow",
+            "openai_image": "Modelo de imágenes de OpenAI",
+            "silicon_image": "Modelo de imágenes de SiliconFlow"
           },
           "voting": {
-            "auto_tts": "Auto tts",
-            "max_chapters": "Max chapters",
-            "choices": "Choices",
-            "duration": "Duration",
-            "pattern": "Pattern",
-            "auto_images": "Auto images",
-            "case_sensitive": "Case sensitive",
-            "offline_mode": "Offline mode",
-            "manual_mode": "Manual mode",
-            "manual_tts": "Manual tts",
-            "debug_logging": "Debug logging",
-            "api_logging": "Api logging"
+            "auto_tts": "Activar narración TTS",
+            "max_chapters": "Máximo de capítulos",
+            "choices": "Número de opciones",
+            "duration": "Duración de la votación (segundos)",
+            "pattern": "Patrón de palabras clave para votar",
+            "auto_images": "Generar imágenes automáticamente",
+            "case_sensitive": "Votación con distinción entre mayúsculas y minúsculas",
+            "offline_mode": "Modo sin conexión/prueba",
+            "manual_mode": "Modo manual",
+            "manual_tts": "Usar TTS en modo manual",
+            "debug_logging": "Registro de depuración",
+            "api_logging": "Registro de solicitudes API"
           },
           "story": {
-            "language": "Language"
+            "language": "Idioma de la historia"
           },
           "overlay": {
             "orientation": "Orientación",
             "resolution": "Resolución",
-            "display_mode": "Display mode",
-            "font_family": "Font family",
-            "text_size": "Text size",
-            "title_size": "Title size",
-            "text_color": "Text color",
-            "title_color": "Title color"
+            "display_mode": "Modo de visualización",
+            "font_family": "Familia tipográfica",
+            "text_size": "Tamaño de texto (em)",
+            "title_size": "Tamaño de título (em)",
+            "text_color": "Color del texto",
+            "title_color": "Color del título"
           },
-          "save": "Save"
+          "save": "Guardar configuración"
         },
         "story_controls": {
-          "title": "Title",
-          "start_new": "Start new",
-          "select_theme": "Select theme",
-          "custom_outline": "Custom outline",
+          "title": "Controles de la historia",
+          "start_new": "Iniciar historia nueva",
+          "select_theme": "Seleccionar tema:",
+          "custom_outline": "Esquema personalizado (opcional)",
           "custom_outline_placeholder": "Marcador de posición de esquema personalizado",
-          "start_btn": "Start btn",
-          "active_story": "Active story",
-          "end_story": "End story",
-          "manual_title": "Manual title",
-          "manual_body": "Manual body",
-          "manual_current_round": "Manual current round",
-          "manual_chapter": "Manual chapter",
-          "manual_voting_active": "Manual voting active",
-          "manual_voting_results": "Manual voting results",
-          "manual_advance": "Manual advance",
-          "manual_show_results": "Manual show results",
-          "offline_title": "Offline title",
-          "offline_body": "Offline body",
-          "force_vote": "Force vote",
-          "regenerate_image": "Regenerate image"
+          "start_btn": "Iniciar historia",
+          "active_story": "Historia activa",
+          "end_story": "Terminar historia",
+          "manual_title": "Modo manual:",
+          "manual_body": "Avanza manualmente por cada ronda",
+          "manual_current_round": "Ronda actual:",
+          "manual_chapter": "Capítulo:",
+          "manual_voting_active": "Votación activa:",
+          "manual_voting_results": "Resultados actuales de la votación:",
+          "manual_advance": "Pasar a la siguiente ronda",
+          "manual_show_results": "Mostrar resultados de la votación",
+          "offline_title": "Modo sin conexión/prueba:",
+          "offline_body": "Elige manualmente el siguiente camino",
+          "force_vote": "Forzar fin de la votación",
+          "regenerate_image": "Regenerar imagen"
         },
         "memory": {
-          "title": "Title",
+          "title": "Memoria de la historia / base de datos de lore",
           "characters": "Personajes",
           "locations": "Ubicaciones",
           "items": "Artículos"
         },
         "voters": {
-          "title": "Title"
+          "title": "Votantes principales"
         },
         "debug": {
-          "title": "Title",
+          "title": "Registros de depuración",
           "clear": "Borrar",
-          "empty": "Empty"
+          "empty": "Todavía no hay registros disponibles"
+        }
+      },
+      "alerts": {
+        "admin_choice_error": "No se pudo seleccionar la opción: {message}",
+        "advance_error": "No se pudo avanzar la ronda: {message}",
+        "api_test_error": "La prueba de la clave API ha fallado.",
+        "config_save_error": "No se pudo guardar la configuración: {message}",
+        "config_saved": "Configuración guardada.",
+        "generation_failed": "La generación de la historia ha fallado: {message}",
+        "generation_timeout": "La generación de la historia ha tardado demasiado. Espera unos minutos e inténtalo de nuevo, termina la historia actual, cambia a un modelo más rápido o reduce el número máximo de capítulos.",
+        "overlay_blocked": "La ventana emergente fue bloqueada. Permite las ventanas emergentes o abre esta URL manualmente:\n{url}",
+        "overlay_copied": "URL de superposición copiada.",
+        "overlay_copy_failed": "No se pudo copiar la URL. Selecciónala y cópiala manualmente.",
+        "overlay_missing": "No hay URL de superposición disponible. Recarga la página e inténtalo de nuevo.",
+        "overlay_open_error": "No se pudo abrir la superposición. Abre esta URL manualmente:\n{url}",
+        "story_end_error": "No se pudo terminar la historia: {message}",
+        "story_error": "Error de historia: {message}",
+        "story_start_error": "No se pudo iniciar la historia: {message}",
+        "theme_required": "Selecciona un tema antes de iniciar la historia.",
+        "ui_missing": "Falta un control necesario. Recarga la página e inténtalo de nuevo."
+      },
+      "prompts": {
+        "advance_chapter": "¿Avanzar del capítulo {current} al capítulo {next} de {total}?",
+        "confirm_choice": "¿Elegir la opción {option}?",
+        "confirm_end_story": "¿Terminar la historia actual?",
+        "no_active_chapter": "No hay un capítulo activo desde el que avanzar."
+      },
+      "runtime": {
+        "actions": {
+          "ending": "Terminando la historia…",
+          "generating": "Generando…",
+          "preview_hide": "Ocultar vista previa",
+          "preview_show": "Mostrar vista previa",
+          "start_story": "Iniciar historia",
+          "story_ended": "Historia terminada",
+          "test_api_key": "Probar clave API",
+          "testing": "Probando…"
+        },
+        "api_test": {
+          "check_console": "Consulta la consola del navegador para ver los detalles.",
+          "diagnostics": "Diagnóstico",
+          "error_details": "Se produjo un error: {message}",
+          "prefix": "Prefijo: {value}",
+          "provider_details": "Proveedor: {provider}<br>Longitud de la clave API: {keyLength} caracteres<br>Prefijo: {keyPrefix}<br>Modelo probado: {testedModel}",
+          "provider_summary": "Proveedor: {provider}<br>Longitud de la clave API: {keyLength} caracteres",
+          "status_code": "Código de estado: {code}",
+          "troubleshooting": "Pasos para solucionar problemas",
+          "unknown": "Desconocido"
+        },
+        "boolean": {
+          "no": "Desactivada",
+          "yes": "Sí"
+        },
+        "chapter": {
+          "current": "Capítulo actual",
+          "empty_body": "Inicia una historia para mostrar aquí el capítulo, la votación y la imagen.",
+          "empty_eyebrow": "Capítulo preparado",
+          "empty_title": "Aún no hay una historia activa",
+          "image_alt": "Imagen del capítulo",
+          "image_pending": "Imagen pendiente",
+          "image_pending_body": "La imagen del capítulo aparecerá aquí cuando esté lista.",
+          "no_choices": "Aún no hay opciones disponibles.",
+          "vote_sync": "La votación en directo y las imágenes del capítulo permanecen sincronizadas."
+        },
+        "debug": {
+          "empty": "Aún no hay registros disponibles"
+        },
+        "manual": {
+          "vote_summary": "{votes} votos ({percentage} %)"
+        },
+        "overlay": {
+          "vote_timer": "Tiempo restante: {seconds}s",
+          "voting_ended": "Votación finalizada"
+        },
+        "preview": {
+          "adventure_content": "Nuestro héroe despierta en un bosque misterioso, rodeado de árboles antiguos que susurran secretos de otros tiempos.",
+          "adventure_title": "El comienzo de una aventura épica",
+          "demo_choice_camp": "Volver al campamento",
+          "demo_choice_mountain": "Subir la montaña",
+          "demo_choice_river": "Seguir el río",
+          "demo_content": "Esta es una vista previa del contenido de la historia.",
+          "demo_title": "Capítulo de demostración",
+          "temple_choice_altar": "Acercarse al altar",
+          "temple_choice_runes": "Examinar de cerca las runas",
+          "temple_choice_voice": "Seguir la voz",
+          "temple_content": "Al cruzar las enormes puertas de piedra, un escalofrío recorre tu espalda. Las paredes están cubiertas de runas antiguas que parecen brillar débilmente en la oscuridad. Una voz misteriosa resuena en la cámara y habla en un idioma que, de algún modo, entiendes.",
+          "temple_title": "El templo antiguo",
+          "vote_choice_corridor": "Entrar en el corredor oscuro",
+          "vote_choice_exit": "Buscar otra salida",
+          "vote_choice_help": "Pedir ayuda"
+        },
+        "provider_help": {
+          "ollama": "Usa un punto final Ollama local o en la nube. La clave API local es opcional; algunas implementaciones en la nube la requieren.",
+          "openai": "Usa la clave API global de OpenAI de Configuración. Elige un modelo adecuado para tu flujo de historias.",
+          "openrouter": "Usa una clave API de OpenRouter y selecciona un modelo compatible, incluidas rutas gratuitas cuando estén disponibles.",
+          "siliconflow": "Usa SiliconFlow si ya dispones de una configuración SiliconFlow compatible para esta canalización de historias."
+        },
+        "status": {
+          "active_time": "Activo ({seconds}s)",
+          "chapter_prefix": "Capítulo",
+          "connection_offline": "Sin conexión",
+          "connection_online": "Conectado",
+          "configured": "Configurado",
+          "generation_ready": "Generación preparada",
+          "inactive": "Inactivo",
+          "none": "Ninguno",
+          "not_configured": "Sin configurar",
+          "ready": "Listo",
+          "ready_to_start": "Listo para iniciar",
+          "story_active": "Historia activa",
+          "voting_idle": "Votación en pausa",
+          "voting_running": "Votación en curso"
+        },
+        "story": {
+          "chapter_badge": "Capítulo {current} de {total}",
+          "option_label": "Opción {option}: {choice}"
+        },
+        "theme": {
+          "cid": "CID",
+          "contrast": "Alto contraste",
+          "day": "Día",
+          "load_failed": "No se pudieron cargar los temas",
+          "night": "Noche",
+          "synced": "Tema sincronizado",
+          "vision-impaired": "Dificultad visual"
+        },
+        "voters": {
+          "votes": "{count} votos"
+        },
+        "voices": {
+          "group_label": "Voces de {engine}"
         }
       },
       "labels": {
@@ -200,7 +337,7 @@
         "deutsch_german": "Alemán (alemán)",
         "alloy_neutral": "Aleación (neutro)",
         "test_overlay_display": "Pantalla de superposición de prueba",
-        "elevenlabs_tts": "ElevenLabs TTS",
+        "elevenlabs_tts": "Síntesis de voz de ElevenLabs",
         "fable_british": "Fábula (británica)",
         "set_your_openai_openrouter_ollama_or_siliconflow_api": "Configure su clave API OpenAI, OpenRouter, Ollama o SiliconFlow en Configuración",
         "test_voting_choices": "Pruebe las opciones de votación",
@@ -212,7 +349,7 @@
         "overlay_customization": "Personalización de superposición",
         "flux_1_schnell": "FLUJO.1 Schnell",
         "1280x720_hd": "1280x720 (alta definición)",
-        "1920x1080_full_hd": "1920x1080 (Full HD)",
+        "1920x1080_full_hd": "1920×1080 (alta definición completa)",
         "deepseek_v3": "Búsqueda profunda V3",
         "llama_3_2_3b_instruct_free": "Llama 3.2 3B Instrucción (Gratis)",
         "for_zero_cost_routing": "para enrutamiento sin costo.",
@@ -223,7 +360,7 @@
         "tts_engine": "Motor TTS",
         "generating_animation": "Generando animación",
         "system_tts_ltth_tts_plugin": "Sistema TTS (complemento LTTH TTS)",
-        "gpt_4o_multimodal": "GPT-4o (Multimodal)",
+        "gpt_4o_multimodal": "GPT-4o (modelo multimodal)",
         "dark_bottom_fade_default": "Desvanecimiento inferior oscuro (predeterminado)",
         "bella_soft_female": "Bella (mujer suave)",
         "us_english_male_neural": "Inglés estadounidense - Masculino (neural)",
@@ -248,7 +385,7 @@
         "clear_overlay": "Borrar superposición",
         "star_wars_scroll_tts_synced": "Pergamino de Star Wars (TTS sincronizado)",
         "antwort_1_2_3": "Respuesta 1, 2, 3...",
-        "meta_llama_3_1_8b": "Meta-Llama 3.1-8B",
+        "meta_llama_3_1_8b": "Meta Llama 3.1-8B (modelo de lenguaje)",
         "rachel_calm_female": "Rachel (mujer tranquila)",
         "o1_reasoning": "o1 (razonamiento)",
         "voting_results_display_seconds": "Visualización de resultados de votación (segundos)",
@@ -266,7 +403,7 @@
         "add_obs_overlay": "Agregar superposición OBS",
         "shimmer_soft_female": "Shimmer (suave hembra)",
         "z_image_turbo": "Turbo de imagen Z",
-        "qwen_2_5_7b": "Qwen 2.5-7B",
+        "qwen_2_5_7b": "Qwen 2.5-7B (modelo de lenguaje)",
         "tts_voice_configuration": "Configuración de voz TTS",
         "final_chapter_auto_end_seconds": "Fin automático del capítulo final (segundos)",
         "english_us_female": "Inglés EE.UU. - Mujer",

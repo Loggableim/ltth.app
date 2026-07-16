@@ -1,6 +1,11 @@
 {
   "plugins": {
     "advanced-timer": {
+      "form_controls": {
+        "sections_aria": "Advanced Timer sections",
+        "timer_summary_aria": "Timer summary",
+        "timer_name_placeholder": "My Timer"
+      },
       "plugin": {
         "name": "Advanced Timer",
         "description": "Professional multi-timer system with event automation and customizable overlays"
@@ -168,6 +173,21 @@
         "frameUpload": "Upload",
         "frameRemove": "Remove",
         "save": "Save Settings"
+      },
+      "runtime": {
+        "timer": "Timer", "quickAddTen": "+10s", "quickAddThirty": "+30s", "quickAddMinute": "+1m", "quickAddFiveMinutes": "+5m", "quickRemoveTen": "-10s", "quickRemoveThirty": "-30s",
+        "overlay": "Overlay:", "copyOverlayUrl": "Copy overlay URL", "expiryAction": "Action on expiry", "expiryNone": "None", "expiryRestart": "Restart", "expiryAlert": "Show alert", "expirySound": "Play sound", "expirySceneChange": "Change scene", "expiryTriggerChain": "Trigger chain",
+        "interactions": "Interactions", "interactionsHint": "Positive values add time, negative values reduce it. Decimals are supported (for example 0.05).", "perCoin": "Per coin", "perSubscribe": "Per subscription", "perFollow": "Per follow", "perShare": "Per share", "perLike": "Per like", "perChat": "Per chat message", "advancedRulesLink": "Advanced event rules (gift-name filters, commands...)", "saved": "Saved",
+        "multiplier": "Multiplier", "multiplierDescription": "(multiplies all interaction values by this factor)", "keyboardShortcuts": "Keyboard shortcuts", "startPause": "Start / pause", "increase": "Increase", "reduce": "Reduce", "stepSeconds": "Step (seconds)", "saveShortcuts": "Save shortcuts", "loadLogHint": "Open this section to load the activity log.", "refresh": "Refresh",
+        "giftOverrides": "Gift overrides", "giftOverridesDescription": "Override the per-coin value for individual gifts. When set, only the override is used for that gift.", "clickToLoad": "Click to load.", "selectGift": "Select gift", "seconds": "Seconds", "add": "Add",
+        "sourceLike": "Like", "sourceCoin": "Coin / gift", "sourceCustomGift": "Custom gift", "sourceFollow": "Follow", "sourceSubscribe": "Subscription (Superfan)", "sourceShare": "Share", "sourceChat": "Chat", "sourceManual": "Manual", "sourceFlow": "Flow", "sourceRule": "Rule",
+        "deleteTimer": "Delete timer", "noAdvancedRules": "No advanced rules yet.", "advancedRulesDescription": "These rules extend the flat per-event values. Use them for gift-name filters, minimum coins, or chat commands.", "close": "Close", "edit": "Edit", "addEventRule": "Add event rule", "editEventRule": "Edit event rule", "eventType": "Event type", "action": "Action", "valueSeconds": "Value (seconds)",
+        "giftName": "Gift name (blank means any)", "giftNamePlaceholder": "for example Rose", "minCoins": "Minimum coins (0 means no minimum)", "minLikes": "Minimum likes per event", "commandPrefix": "Command prefix (for example !time)", "keywordContains": "Keyword contains", "keywordPlaceholder": "add time",
+        "noGiftOverrides": "No gift overrides yet.", "diamonds": "diamonds", "selectGiftAlert": "Select a gift from the catalog first.", "unknownGift": "Unknown gift", "failedSave": "Could not save the changes.", "removeGiftOverride": "Remove this gift override?", "failedSaveRotator": "Could not save the rotator settings.", "failedSaveThreshold": "Could not save the threshold settings.", "frameAlt": "Custom frame", "chooseFile": "Choose a file first.", "frameTooLarge": "The frame must be smaller than 8 MB.", "uploadFailed": "Upload failed.", "uploadError": "An upload error occurred.", "removeFrame": "Remove the frame in slot {n}?", "deleteFailed": "Delete failed.",
+        "failedCreateTimer": "Could not create the timer.", "noSavedProfiles": "No saved profiles. Use Save Current Setup to save the current timers.", "apply": "Apply", "profileNamePrompt": "Profile name:", "applyProfileConfirm": "Apply this profile? Current timers will be replaced.", "deleteProfileConfirm": "Delete this profile?", "deleteEventRuleConfirm": "Delete this event rule?",
+        "conditionGift": "Gift: {value}", "conditionMinCoins": "Minimum coins: {value}", "conditionMinLikes": "Minimum likes: {value}", "conditionCommand": "Command: {value}", "conditionKeyword": "Keyword: {value}",
+        "effectFlame": "Flame", "effectLightning": "Lightning", "effectSparks": "Sparks", "effectPulseGlow": "Pulse glow", "effectRainbowShake": "Rainbow shake", "effectGoldFlux": "Gold flux", "times": "×", "chevron": "▼",
+        "overlayMissingEyebrow": "Advanced Timer overlay", "overlayMissingTitle": "Timer ID missing", "overlayMissingDescription": "This overlay needs a timer query parameter. Open it from Advanced Timer or append a timer ID to preview a live timer.", "overlayMissingExample": "Example:", "overlayTimerNotFound": "Timer not found", "overlayMostRecent": "Most recent", "overlayPrevious": "Previous"
       },
       "labels": {
         "save_current_setup": "Save Current Setup",

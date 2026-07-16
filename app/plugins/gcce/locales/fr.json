@@ -1,53 +1,65 @@
 {
   "plugins": {
     "gcce": {
+      "form_controls": {
+        "command_search_placeholder": "Rechercher des commandes...",
+        "username_filter_placeholder": "Filtrer par nom d'utilisateur...",
+        "media_label_placeholder": "p. ex. hype",
+        "media_url_placeholder": "https://...gif ou mp4",
+        "media_command_placeholder": "p. ex. !hype ou /wave",
+        "gift_search_placeholder": "Rechercher des cadeaux par nom ou ID...",
+        "rotator_title_placeholder": "p. ex. Donateur vedette",
+        "rotator_info_placeholder": "Court message à afficher dans le HUD",
+        "hud_test_text_placeholder": "Saisissez un texte de test",
+        "hud_test_image_placeholder": "Saisissez l'URL de l'image"
+      },
       "gcce": {
-        "title": "Global Chat Command Engine",
-        "subtitle": "Universal chat command interpreter and framework for all plugins",
+        "title": "Moteur global de commandes de chat",
+        "subtitle": "Interpréteur et cadre universels de commandes de chat pour tous les plugins",
         "statistics": {
-          "title": "Statistics",
-          "total_commands": "Total Commands",
-          "enabled_commands": "Enabled Commands",
-          "registered_plugins": "Registered Plugins"
+          "title": "Statistiques",
+          "total_commands": "Commandes totales",
+          "enabled_commands": "Commandes activées",
+          "registered_plugins": "Extensions enregistrées"
         },
         "config": {
-          "title": "Configuration",
-          "command_prefix": "Command Prefix",
-          "command_prefix_desc": "Prefix used to identify chat commands (e.g., \"!\" for !help)",
-          "enable_built_in": "Enable Built-in Commands",
-          "enable_built_in_desc": "Enable default commands like !help, !commands, etc.",
-          "enable_overlay": "Enable Overlay Messages",
-          "enable_overlay_desc": "Show command responses on stream overlays",
-          "enable_help": "Enable Help Command",
-          "enable_help_desc": "Allow users to use !help command",
-          "save": "Save Configuration"
+          "title": "Paramètres",
+          "command_prefix": "Préfixe de commande",
+          "command_prefix_desc": "Préfixe utilisé pour identifier les commandes de chat (p. ex., \"!\" pour !help)",
+          "enable_built_in": "Activer les commandes intégrées",
+          "enable_built_in_desc": "Active les commandes par défaut comme !help, !commands, etc.",
+          "enable_overlay": "Activer les messages de superposition",
+          "enable_overlay_desc": "Affiche les réponses des commandes sur les superpositions du direct",
+          "enable_help": "Activer la commande d’aide",
+          "enable_help_desc": "Autorise les utilisateurs à employer la commande !help",
+          "save": "Enregistrer les paramètres"
         },
         "commands": {
-          "title": "Registered Commands",
-          "loading": "Loading commands...",
-          "no_commands": "No commands registered yet.",
-          "failed_load": "Failed to load commands",
+          "title": "Commandes enregistrées",
+          "loading": "Chargement des commandes...",
+          "no_commands": "Aucune commande enregistrée pour le moment.",
+          "failed_load": "Impossible de charger les commandes",
           "table": {
-            "command": "Command",
-            "description": "Description",
-            "plugin": "Plugin",
-            "permission": "Permission",
+            "command": "Commande",
+            "description": "Détails",
+            "plugin": "Extension",
+            "permission": "Autorisation",
             "enabled": "Activé"
           },
-          "built_in": "built-in"
+          "built_in": "intégrée"
         },
         "permissions": {
-          "viewer": "viewer",
-          "subscriber": "subscriber",
-          "moderator": "moderator",
-          "owner": "owner"
+          "viewer": "spectateur",
+          "subscriber": "abonné",
+          "moderator": "modérateur",
+          "owner": "propriétaire"
         },
         "messages": {
-          "config_saved": "Configuration saved successfully!",
-          "config_failed": "Failed to save configuration",
-          "command_enabled": "Command {name} enabled",
-          "command_disabled": "Command {name} disabled",
-          "toggle_failed": "Failed to toggle command"
+          "config_saved": "Paramètres enregistrés avec succès !",
+          "config_failed": "Impossible d’enregistrer les paramètres",
+          "command_enabled": "Commande {name} activée",
+          "command_disabled": "Commande {name} désactivée",
+          "toggle_failed": "Impossible de modifier la commande"
         }
       },
       "labels": {
@@ -141,7 +153,7 @@
         "select_gifts_from_the_tiktok_gift_catalog_add": "Sélectionnez des cadeaux dans le catalogue de cadeaux TikTok, ajoutez un titre et des informations, choisissez un modèle/une police/une couleur et faites-les pivoter sur votre HUD OBS. Vous pouvez également ajouter des médias personnalisés (images/vidéos) aux côtés des cadeaux.",
         "entry_type": "Type d'entrée",
         "active_users": "Utilisateurs actifs",
-        "test_hudmedia": "🧪 Test /hudmedia",
+        "test_hudmedia": "🧪 Tester /hudmedia",
         "command_cache": "Cache de commandes :",
         "active_elements": "Éléments actifs",
         "hud_statistics": "📊 Statistiques HUD",
@@ -232,14 +244,14 @@
       },
       "ui": {
         "headline": "Titre",
-        "design": "Design",
+        "design": "Apparence",
         "template": "Modèle",
         "template_card": "Carte",
         "template_banner": "Bannière",
-        "template_minimal": "Minimal",
+        "template_minimal": "Épuré",
         "template_elegant": "Élégant",
         "template_bold": "Gras",
-        "template_compact": "Compact",
+        "template_compact": "Condensé",
         "template_gradient": "Dégradé",
         "font": "Police",
         "font_inter": "Inter",
@@ -254,10 +266,10 @@
         "animation_swing": "Balancement",
         "colors": "Couleurs",
         "color_text": "Texte",
-        "color_accent": "Accent",
+        "color_accent": "Couleur d’accent",
         "color_background": "Arrière-plan",
         "category_system": "Système",
-        "category_information": "Information",
+        "category_information": "Informations",
         "category_moderation": "Modération",
         "category_fun": "Divertissement",
         "category_utility": "Utilitaire",
@@ -267,11 +279,11 @@
         "table_executions": "Exécutions",
         "table_name": "Nom",
         "table_chat_command": "Commande de chat",
-        "table_type": "Type",
+        "table_type": "Catégorie",
         "table_duration": "Durée",
         "table_time": "Heure",
         "table_user": "Utilisateur",
-        "table_arguments": "Arguments",
+        "table_arguments": "Paramètres",
         "table_status": "Statut",
         "no_commands": "Aucune commande n’est encore enregistrée.",
         "media_load_failed": "Impossible de charger la bibliothèque multimédia",
@@ -354,6 +366,12 @@
           "trend_fast": "⚡ Rapide",
           "trend_good": "✓ Bon",
           "trend_slow": "⚠ Lent"
+        },
+        "overlay": {
+          "syntax": "Syntaxe",
+          "permission": "Autorisation",
+          "plugin": "Extension",
+          "available_commands": "Commandes disponibles : {commands}"
         },
         "rotator": {
           "empty": "Aucune entrée dans le rotateur pour le moment.",

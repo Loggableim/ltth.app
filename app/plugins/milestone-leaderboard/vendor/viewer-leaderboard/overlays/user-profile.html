@@ -264,6 +264,7 @@
     }
     </style>
     <script src="/js/i18n-client.js"></script>
+    <script src="/plugins/viewer-leaderboard/viewer-xp-i18n.js"></script>
 </head>
 <body>
   <div id="profileCard" class="profile-card">
@@ -352,8 +353,8 @@
     } catch (error) {
       console.error('Failed to initialize socket.io:', error);
       // Display error message
-      const errorTitle = window.i18n?.t('plugins.milestone-leaderboard.ui.connection.error_title') || '⚠️ Connection Error';
-      const errorMessage = window.i18n?.t('plugins.milestone-leaderboard.ui.connection.error_message') || 'Failed to connect to server. Please refresh the page.';
+      const errorTitle = ViewerXpI18n.text('connection_error_title', '⚠️ Connection error');
+      const errorMessage = ViewerXpI18n.text('connection_error_message', 'Failed to connect to the server. Please refresh the page.');
       document.body.innerHTML = `<div style="color: red; text-align: center; padding: 50px; font-family: sans-serif;"><h2>${errorTitle}</h2><p>${errorMessage}</p></div>`;
     }
 
@@ -392,16 +393,16 @@
 
       // Update username and color
       const usernameEl = document.getElementById('username');
-      usernameEl.textContent = data.username || 'Unknown';
+      usernameEl.textContent = data.username || ViewerXpI18n.text('unknown_user', 'Unknown');
       if (data.name_color) {
         usernameEl.style.color = data.name_color;
       }
 
       // Update title
-      document.getElementById('title').textContent = data.title || 'Newcomer';
+      document.getElementById('title').textContent = data.title || ViewerXpI18n.text('newcomer', 'Newcomer');
 
       // Update level
-      document.getElementById('level').textContent = `Level ${data.level || 1}`;
+      document.getElementById('level').textContent = ViewerXpI18n.text('profile_level', 'Level {level}', { level: data.level || 1 });
 
       // Update rank if available
       if (data.rank) {
@@ -425,7 +426,7 @@
 
       // Update stats
       document.getElementById('totalXP').textContent = (data.total_xp_earned || 0).toLocaleString();
-      document.getElementById('streak').textContent = `${data.streak_days || 0} days`;
+      document.getElementById('streak').textContent = ViewerXpI18n.text('profile_days', '{count} days', { count: data.streak_days || 0 });
 
       // Calculate watch time in hours using shared function
       const watchMinutes = data.watch_time_minutes || 0;
@@ -440,11 +441,11 @@
         const diffHours = Math.floor(diffMins / 60);
         const diffDays = Math.floor(diffHours / 24);
 
-        let lastSeenText = 'Now';
-        if (diffMins < 1) lastSeenText = 'Now';
-        else if (diffMins < 60) lastSeenText = `${diffMins}m ago`;
-        else if (diffHours < 24) lastSeenText = `${diffHours}h ago`;
-        else lastSeenText = `${diffDays}d ago`;
+        let lastSeenText = ViewerXpI18n.text('relative_now', 'Just now');
+        if (diffMins < 1) lastSeenText = ViewerXpI18n.text('relative_now', 'Just now');
+        else if (diffMins < 60) lastSeenText = ViewerXpI18n.text('relative_minutes_ago', '{count}m ago', { count: diffMins });
+        else if (diffHours < 24) lastSeenText = ViewerXpI18n.text('relative_hours_ago', '{count}h ago', { count: diffHours });
+        else lastSeenText = ViewerXpI18n.text('relative_days_ago', '{count}d ago', { count: diffDays });
 
         document.getElementById('lastSeen').textContent = lastSeenText;
       }
@@ -461,7 +462,7 @@
           badgesContainer.appendChild(badgeEl);
         });
       } else {
-        badgesContainer.innerHTML = '<div class="badge">🆕 Newcomer</div>';
+        badgesContainer.innerHTML = `<div class="badge">🆕 ${ViewerXpI18n.text('newcomer', 'Newcomer')}</div>`;
       }
 
       // Update avatar emoji based on level

@@ -7,6 +7,23 @@
 
     const container = document.getElementById('minecraft-overlay');
     let socket = null;
+    const OVERLAY_I18N_PREFIX = 'plugins.minecraft-connect.minecraft_connect.overlay.';
+
+    function interpolateOverlayFallback(fallback, params = {}) {
+        return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+            Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+        ));
+    }
+
+    function overlayText(key, fallback, params = {}) {
+        const translationKey = `${OVERLAY_I18N_PREFIX}${key}`;
+        const translated = window.i18n && typeof window.i18n.t === 'function'
+            ? window.i18n.t(translationKey, params)
+            : translationKey;
+        return translated && translated !== translationKey
+            ? translated
+            : interpolateOverlayFallback(fallback, params);
+    }
 
     // Action icons
     const ACTION_ICONS = {
@@ -63,7 +80,7 @@
             </div>
             <div class="mc-notification-body">
                 ${paramText ? `<div class="mc-notification-action">${paramText}</div>` : ''}
-                ${username ? `<div class="mc-notification-user">Triggered by ${username}</div>` : ''}
+                ${username ? `<div class="mc-notification-user">${overlayText('triggered_by', 'Triggered by {username}', { username })}</div>` : ''}
             </div>
         `;
         
@@ -81,9 +98,10 @@
 
     // Format action name
     function formatActionName(action) {
-        return action.split('_').map(word => 
+        const fallback = action.split('_').map(word =>
             word.charAt(0).toUpperCase() + word.slice(1)
         ).join(' ');
+        return overlayText(`actions.${action}`, fallback);
     }
 
     // Format parameters
@@ -94,19 +112,31 @@
 
         switch (action) {
             case 'spawn_entity':
-                return `Spawning ${params.count || 1}x ${params.entityId || 'entity'}`;
+                return overlayText('parameters.spawn_entity', 'Spawning {count}× {entity}', {
+                    count: params.count || 1,
+                    entity: params.entityId || overlayText('entity', 'entity')
+                });
             
             case 'give_item':
-                return `Giving ${params.count || 1}x ${params.itemId || 'item'}`;
+                return overlayText('parameters.give_item', 'Giving {count}× {item}', {
+                    count: params.count || 1,
+                    item: params.itemId || overlayText('item', 'item')
+                });
             
             case 'change_weather':
-                return `Changing weather to ${params.weatherType || 'unknown'}`;
+                return overlayText('parameters.change_weather', 'Changing weather to {weather}', {
+                    weather: params.weatherType || overlayText('unknown', 'unknown')
+                });
             
             case 'set_time':
-                return `Setting time to ${params.time || 'unknown'}`;
+                return overlayText('parameters.set_time', 'Setting time to {time}', {
+                    time: params.time || overlayText('unknown', 'unknown')
+                });
             
             case 'apply_potion_effect':
-                return `Applying ${params.effectId || 'effect'}`;
+                return overlayText('parameters.apply_potion_effect', 'Applying {effect}', {
+                    effect: params.effectId || overlayText('effect', 'effect')
+                });
             
             case 'post_chat_message':
                 return params.message || '';

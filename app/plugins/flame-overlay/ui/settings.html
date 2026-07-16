@@ -1581,22 +1581,22 @@
 
         <div class="broadcast-stack">
             <div class="broadcast-card">
-                <div class="card-tag">Base</div>
+                <div class="card-tag" data-i18n="plugins.flame-overlay.flame_overlay.ui.sections.base">Base</div>
                 <h3 data-i18n="plugins.flame-overlay.labels.stable_frame_first">Stable frame first</h3>
                 <p data-i18n="plugins.flame-overlay.labels.der_grundzustand_bleibt_ruhig_sauber_und_permanent_lesbar">Der Grundzustand bleibt ruhig, sauber und permanent lesbar. So wirkt das Overlay auch in langen Sessions nicht ueberladen.</p>
             </div>
             <div class="broadcast-card">
-                <div class="card-tag">Accent</div>
+                <div class="card-tag" data-i18n="plugins.flame-overlay.flame_overlay.ui.sections.accent">Accent</div>
                 <h3 data-i18n="plugins.flame-overlay.labels.short_reaction_bursts">Short reaction bursts</h3>
                 <p data-i18n="plugins.flame-overlay.labels.follows_likes_und_kleine_gifts_loesen_kurze_pulse">Follows, Likes und kleine Gifts loesen kurze Pulse und Farbimpulse aus, ohne die Content-Zone zu verdecken.</p>
             </div>
             <div class="broadcast-card">
-                <div class="card-tag">Impact</div>
+                <div class="card-tag" data-i18n="plugins.flame-overlay.flame_overlay.ui.sections.impact">Impact</div>
                 <h3 data-i18n="plugins.flame-overlay.labels.peak_moments_only">Peak moments only</h3>
                 <p data-i18n="plugins.flame-overlay.labels.grosse_gifts_shares_oder_manuelle_tests_ziehen_lightning">Grosse Gifts, Shares oder manuelle Tests ziehen Lightning und starke Bloom-Spikes nur fuer wenige Sekunden.</p>
             </div>
         </div>
-        <div class="tab-strip" role="toolbar" aria-label="Visual FX Einstellungen">
+        <div class="tab-strip" role="toolbar" aria-label="Visual FX Einstellungen" data-i18n-aria-label="plugins.flame-overlay.flame_overlay.ui.aria.toolbar">
             <button class="tab-btn active" type="button" data-tab-target="look" aria-pressed="true" data-i18n="plugins.flame-overlay.flame_overlay.ui.tabs.look">Look</button>
             <button class="tab-btn" type="button" data-tab-target="frame" aria-pressed="false" data-i18n="plugins.flame-overlay.flame_overlay.ui.tabs.frame">Frame</button>
             <button class="tab-btn" type="button" data-tab-target="motion" aria-pressed="false" data-i18n="plugins.flame-overlay.flame_overlay.ui.tabs.motion">Motion</button>
@@ -1641,7 +1641,7 @@
 
             <div class="preview-container" id="previewContainer" style="display: none;">
                 <div class="preview-wrapper" id="previewWrapper">
-                    <iframe id="previewIframe" class="preview-iframe" src="about:blank" title="Visual FX Frame preview"></iframe>
+                    <iframe id="previewIframe" class="preview-iframe" src="about:blank" title="Visual FX Frame preview" data-i18n-title="plugins.flame-overlay.form_controls.visual_fx_preview_title"></iframe>
                 </div>
             </div>
 
@@ -1740,7 +1740,7 @@
             </div>
 
             <div class="form-group">
-                <label for="frameThickness">Rahmenbreite: <span class="slider-value" id="frameThicknessValue" data-i18n="plugins.flame-overlay.labels.150_px">150 px</span></label>
+                <label for="frameThickness"><span data-i18n="plugins.flame-overlay.flame_overlay.ui.settings.frameThickness">Rahmenbreite:</span> <span class="slider-value" id="frameThicknessValue" data-i18n="plugins.flame-overlay.labels.150_px">150 px</span></label>
                 <input type="range" id="frameThickness" min="50" max="500" value="150" step="10">
             </div>
 
@@ -1787,7 +1787,7 @@
             </div>
 
             <div class="form-group">
-                <label for="flameBrightness">Helligkeit: <span class="slider-value" id="flameBrightnessValue">0.25</span></label>
+                    <label for="flameBrightness"><span data-i18n="plugins.flame-overlay.form_controls.labels.flame_brightness">Helligkeit: </span><span class="slider-value" id="flameBrightnessValue">0.25</span></label>
                 <input type="range" id="flameBrightness" min="0.1" max="1.0" value="0.25" step="0.05">
             </div>
         </div>
@@ -1864,7 +1864,7 @@
             <h2 class="section-title" data-i18n="plugins.flame-overlay.labels.kanten_einstellungen">✂️ Kanten-Einstellungen</h2>
 
             <div class="form-group">
-                <label for="edgeFeather">Kanten-Weichzeichnung: <span class="slider-value" id="edgeFeatherValue">0.30</span></label>
+                <label for="edgeFeather"><span data-i18n="plugins.flame-overlay.form_controls.labels.edge_feather">Kanten-Weichzeichnung: </span><span class="slider-value" id="edgeFeatherValue">0.30</span></label>
                 <input type="range" id="edgeFeather" min="0" max="1" value="0.3" step="0.05">
                 <small style="color: #888;" data-i18n="plugins.flame-overlay.labels.steuert_wie_weich_die_effekte_an_den_kanten">Steuert wie weich die Effekte an den Kanten auslaufen</small>
             </div>
@@ -1876,7 +1876,7 @@
             </div>
 
             <div class="form-group">
-                <label for="frameNoiseAmount">Rahmen-Rauschen: <span class="slider-value" id="frameNoiseAmountValue">0.00</span></label>
+                <label for="frameNoiseAmount"><span data-i18n="plugins.flame-overlay.form_controls.labels.frame_noise_amount">Rahmen-Rauschen: </span><span class="slider-value" id="frameNoiseAmountValue">0.00</span></label>
                 <input type="range" id="frameNoiseAmount" min="0" max="1" value="0" step="0.05">
                 <small style="color: #888;" data-i18n="plugins.flame-overlay.labels.fugt_rauschen_an_den_rahmenkanten_fur_organischeren_look">Fügt Rauschen an den Rahmenkanten für organischeren Look hinzu</small>
             </div>
@@ -1911,7 +1911,7 @@
             </div>
 
             <div class="form-group">
-                <label for="pulseSpeed">Puls-Geschwindigkeit: <span class="slider-value" id="pulseSpeedValue">1.0</span></label>
+                <label for="pulseSpeed"><span data-i18n="plugins.flame-overlay.form_controls.labels.pulse_speed">Puls-Geschwindigkeit: </span><span class="slider-value" id="pulseSpeedValue">1.0</span></label>
                 <input type="range" id="pulseSpeed" min="0.1" max="3" value="1" step="0.1">
             </div>
         </div>
@@ -1935,13 +1935,13 @@
             </div>
 
             <div class="form-group">
-                <label for="bloomThreshold">Bloom-Schwellwert: <span class="slider-value" id="bloomThresholdValue">0.60</span></label>
+                <label for="bloomThreshold"><span data-i18n="plugins.flame-overlay.form_controls.labels.bloom_threshold">Bloom-Schwellwert: </span><span class="slider-value" id="bloomThresholdValue">0.60</span></label>
                 <input type="range" id="bloomThreshold" min="0" max="1" value="0.6" step="0.05">
                 <small style="color: #888;" data-i18n="plugins.flame-overlay.labels.ab_welcher_helligkeit_der_bloom_effekt_einsetzt">Ab welcher Helligkeit der Bloom-Effekt einsetzt</small>
             </div>
 
             <div class="form-group">
-                <label for="bloomRadius">Bloom-Radius: <span class="slider-value" id="bloomRadiusValue">4</span></label>
+                <label for="bloomRadius"><span data-i18n="plugins.flame-overlay.form_controls.labels.bloom_radius">Bloom-Radius: </span><span class="slider-value" id="bloomRadiusValue">4</span></label>
                 <input type="range" id="bloomRadius" min="1" max="10" value="4" step="1">
                 <small style="color: #888;" data-i18n="plugins.flame-overlay.labels.reichweite_des_bloom_effekts">Reichweite des Bloom-Effekts</small>
             </div>
@@ -1966,7 +1966,7 @@
             </div>
 
             <div class="form-group">
-                <label for="layerParallax">Parallax-Effekt: <span class="slider-value" id="layerParallaxValue">0.30</span></label>
+                <label for="layerParallax"><span data-i18n="plugins.flame-overlay.form_controls.labels.layer_parallax">Parallax-Effekt: </span><span class="slider-value" id="layerParallaxValue">0.30</span></label>
                 <input type="range" id="layerParallax" min="0" max="1" value="0.3" step="0.05">
                 <small style="color: #888;" data-i18n="plugins.flame-overlay.labels.starke_des_3d_tiefeneffekts_zwischen_ebenen">Stärke des 3D-Tiefeneffekts zwischen Ebenen</small>
             </div>
@@ -2043,7 +2043,7 @@
             </div>
 
             <div class="form-group">
-                <label for="smokeSpeed">Rauch-Geschwindigkeit: <span class="slider-value" id="smokeSpeedValue">0.30</span></label>
+                <label for="smokeSpeed"><span data-i18n="plugins.flame-overlay.form_controls.labels.smoke_speed">Rauch-Geschwindigkeit: </span><span class="slider-value" id="smokeSpeedValue">0.30</span></label>
                 <input type="range" id="smokeSpeed" min="0.1" max="1" value="0.3" step="0.05">
                 <small style="color: #888;" data-i18n="plugins.flame-overlay.labels.geschwindigkeit_der_rauch_animation">Geschwindigkeit der Rauch-Animation</small>
             </div>
@@ -2116,7 +2116,7 @@
                         </div>
                         <div class="trigger-policy-grid">
                             <div class="form-group">
-                                <label for="triggerCooldown">Trigger-Cooldown: <span class="slider-value" id="triggerCooldownValue">2000</span> ms</label>
+                                <label for="triggerCooldown"><span data-i18n="plugins.flame-overlay.form_controls.labels.trigger_cooldown">Trigger-Cooldown: </span><span class="slider-value" id="triggerCooldownValue">2000</span> ms</label>
                                 <input type="range" id="triggerCooldown" min="0" max="10000" value="2000" step="100">
                                 <small style="color: #888;" data-i18n="plugins.flame-overlay.labels.mindestabstand_zwischen_triggern_gleichen_typs_anti_spam">Mindestabstand zwischen Triggern gleichen Typs (Anti-Spam)</small>
                             </div>
@@ -2151,7 +2151,7 @@
                     <div class="trigger-card">
                         <div class="trigger-card-header">
                             <div>
-                                <div class="trigger-card-kicker">Rules</div>
+                                <div class="trigger-card-kicker" data-i18n="plugins.flame-overlay.flame_overlay.ui.sections.rules">Rules</div>
                                 <h3 data-i18n="plugins.flame-overlay.labels.trigger_table">Trigger table</h3>
                             </div>
                             <div class="trigger-card-meta" data-i18n="plugins.flame-overlay.labels.active_rule_set">Active rule set</div>
@@ -2185,7 +2185,7 @@
                     <div class="trigger-card">
                         <div class="trigger-card-header">
                             <div>
-                                <div class="trigger-card-kicker">Actions</div>
+                                <div class="trigger-card-kicker" data-i18n="plugins.flame-overlay.flame_overlay.ui.sections.actions">Actions</div>
                                 <h3 data-i18n="plugins.flame-overlay.labels.test_status">Test & status</h3>
                             </div>
                         </div>
@@ -2263,6 +2263,18 @@
                                           'pulseEnabled', 'bloomEnabled', 'layersEnabled', 'smokeEnabled', 'smokeColor',
                                           'qualityMode', 'sparkEnabled', 'heatDistortionEnabled'];
         const CUSTOM_RESOLUTION_INPUTS = ['customWidth', 'customHeight'];
+
+        function translateUi(key, fallback, params = {}) {
+            const translation = window.i18n?.t?.(key, params);
+            if (translation && translation !== key) return translation;
+            return String(fallback).replace(/\{(\w+)\}/g, (_, name) => (
+                Object.prototype.hasOwnProperty.call(params, name) ? params[name] : `{${name}}`
+            ));
+        }
+
+        function currentLocale() {
+            return window.i18n?.currentLocale || document.documentElement.lang || 'de-DE';
+        }
 
         function getNumberInputValue(id, fallback) {
             const value = parseInt(document.getElementById(id).value, 10);
@@ -2456,6 +2468,7 @@
         const ACTION_OPTIONS = ['flash', 'pulse', 'intensity-boost', 'color-change', 'color-flash', 'effect-switch', 'dramatic'];
         const EVENT_OPTIONS = ['gift', 'follow', 'like', 'share', 'chat', 'subscribe'];
         let giftCatalog = [];
+        let latestTriggerStatus = {};
 
         // App-internal feature tests. The backend simulates TikTok events so
         // rules, fallbacks, cooldown bypass, and renderer dispatch are tested together.
@@ -2491,7 +2504,7 @@
             EVENT_OPTIONS.forEach(opt => {
                 const o = document.createElement('option');
                 o.value = opt;
-                o.textContent = opt;
+                o.textContent = translateUi(`plugins.flame-overlay.flame_overlay.ui.events.${opt}`, opt);
                 if (opt === rule.event) o.selected = true;
                 eventSel.appendChild(o);
             });
@@ -2504,7 +2517,7 @@
             condInput.type = 'text';
             condInput.className = 'rule-condition';
             condInput.value = rule.condition || 'any';
-            condInput.placeholder = 'any';
+            condInput.placeholder = translateUi('plugins.flame-overlay.flame_overlay.ui.options.anyCondition', 'any');
             tdCond.appendChild(condInput);
             tr.appendChild(tdCond);
 
@@ -2515,7 +2528,7 @@
             ACTION_OPTIONS.forEach(opt => {
                 const o = document.createElement('option');
                 o.value = opt;
-                o.textContent = opt;
+                o.textContent = translateUi(`plugins.flame-overlay.flame_overlay.ui.triggerActions.${opt}`, opt);
                 if (opt === rule.action) o.selected = true;
                 actionSel.appendChild(o);
             });
@@ -2541,7 +2554,7 @@
             EFFECT_OPTIONS.forEach(opt => {
                 const o = document.createElement('option');
                 o.value = opt;
-                o.textContent = opt;
+                o.textContent = translateUi(`plugins.flame-overlay.flame_overlay.ui.effects.${opt}`, opt);
                 if (opt === rule.effect) o.selected = true;
                 effectSel.appendChild(o);
             });
@@ -2581,8 +2594,9 @@
             removeBtn.className = 'trigger-row-remove';
             removeBtn.type = 'button';
             removeBtn.textContent = '✕';
-            removeBtn.setAttribute('aria-label', 'Trigger-Regel entfernen');
-            removeBtn.title = 'Trigger-Regel entfernen';
+            const removeRuleLabel = translateUi('plugins.flame-overlay.flame_overlay.ui.messages.removeTriggerRule', 'Trigger-Regel entfernen');
+            removeBtn.setAttribute('aria-label', removeRuleLabel);
+            removeBtn.title = removeRuleLabel;
             removeBtn.addEventListener('click', () => tr.remove());
             tdRemove.appendChild(removeBtn);
             tr.appendChild(tdRemove);
@@ -2647,7 +2661,7 @@
         }
 
         function getGiftName(gift) {
-            return gift.name || gift.giftName || gift.gift_name || gift.title || 'Unbenannt';
+            return gift.name || gift.giftName || gift.gift_name || gift.title || translateUi('plugins.flame-overlay.flame_overlay.ui.messages.unlabeledGift', 'Unbenannt');
         }
 
         function getGiftId(gift) {
@@ -2692,7 +2706,7 @@
             if (!status || !grid) return;
 
             status.style.display = 'block';
-            status.textContent = 'Geschenkekatalog wird geladen...';
+            status.textContent = translateUi('plugins.flame-overlay.flame_overlay.ui.messages.giftCatalogLoading', 'Geschenkekatalog wird geladen...');
             grid.innerHTML = '';
 
             try {
@@ -2703,7 +2717,7 @@
                 renderGiftCatalog();
             } catch (error) {
                 giftCatalog = [];
-                status.textContent = 'Geschenkekatalog konnte nicht geladen werden.';
+                status.textContent = translateUi('plugins.flame-overlay.flame_overlay.ui.messages.giftCatalogFailed', 'Geschenkekatalog konnte nicht geladen werden.');
                 console.error('Failed to load gift catalog:', error);
             }
         }
@@ -2712,7 +2726,7 @@
             const status = document.getElementById('giftCatalogStatus');
             if (status) {
                 status.style.display = 'block';
-                status.textContent = 'Geschenkekatalog wird aktualisiert...';
+                status.textContent = translateUi('plugins.flame-overlay.flame_overlay.ui.messages.giftCatalogRefreshing', 'Geschenkekatalog wird aktualisiert...');
             }
 
             try {
@@ -2746,14 +2760,14 @@
 
             if (!giftCatalog.length) {
                 status.style.display = 'block';
-                status.textContent = 'Kein Geschenkekatalog verfuegbar. Verbinde zuerst einen TikTok Stream und aktualisiere dann.';
+                status.textContent = translateUi('plugins.flame-overlay.flame_overlay.ui.messages.giftCatalogUnavailable', 'Kein Geschenkekatalog verfügbar. Verbinde zuerst einen TikTok-Stream und aktualisiere dann.');
                 grid.innerHTML = '';
                 return;
             }
 
             if (!filtered.length) {
                 status.style.display = 'block';
-                status.textContent = 'Keine Geschenke fuer diese Suche gefunden.';
+                status.textContent = translateUi('plugins.flame-overlay.flame_overlay.ui.messages.giftCatalogNoResults', 'Keine Geschenke für diese Suche gefunden.');
                 grid.innerHTML = '';
                 return;
             }
@@ -2770,7 +2784,7 @@
                     ${imageHtml}
                     <span>
                         <span class="gift-chip-name">${escapeHtml(name)}</span>
-                        <span class="gift-chip-coins">${coins || '?'} Coins</span>
+                        <span class="gift-chip-coins">${escapeHtml(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.coinsLabel', '{coins} Coins', { coins: coins || '?' }))}</span>
                     </span>
                 </button>`;
             }).join('');
@@ -2796,7 +2810,7 @@
                 duration: coins >= 500 ? 8000 : (coins >= 100 ? 5000 : 1200),
                 enabled: true
             });
-            showStatus(`Geschenk-Regel fuer ${name} hinzugefuegt`, 'success');
+            showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.giftRuleAdded', 'Geschenk-Regel für {name} hinzugefügt', { name }), 'success');
         }
 
         function addGiftRangeRule() {
@@ -2812,7 +2826,7 @@
                 duration: 5000,
                 enabled: true
             });
-            showStatus(`Coin-Regel ${label} hinzugefuegt`, 'success');
+            showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.coinRuleAdded', 'Coin-Regel {range} hinzugefügt', { range: label }), 'success');
         }
 
         /**
@@ -2850,14 +2864,14 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    showStatus('✅ Trigger-Regeln gespeichert!', 'success');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.triggerRulesSaved', '✅ Trigger-Regeln gespeichert!'), 'success');
                     // Mark preset as custom
                     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
                 } else {
-                    showStatus('❌ Fehler: ' + data.error, 'error');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.errorWithReason', '❌ Fehler: {reason}', { reason: data.error }), 'error');
                 }
             } catch (error) {
-                showStatus('❌ Fehler beim Speichern: ' + error.message, 'error');
+                showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.saveFailed', '❌ Fehler beim Speichern: {reason}', { reason: error.message }), 'error');
             }
         }
 
@@ -2887,12 +2901,12 @@
                     document.querySelectorAll('.preset-btn').forEach(b => {
                         b.classList.toggle('active', b.dataset.preset === name);
                     });
-                    showStatus(`✅ Preset '${name}' aktiviert`, 'success');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.presetActivated', '✅ Preset \'{name}\' aktiviert', { name }), 'success');
                 } else {
-                    showStatus('❌ Fehler: ' + data.error, 'error');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.errorWithReason', '❌ Fehler: {reason}', { reason: data.error }), 'error');
                 }
             } catch (error) {
-                showStatus('❌ Preset-Fehler: ' + error.message, 'error');
+                showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.presetFailed', '❌ Preset-Fehler: {reason}', { reason: error.message }), 'error');
             }
         }
 
@@ -2910,16 +2924,19 @@
                 });
                 const data = await response.json();
                 if (data.success && data.accepted === false) {
-                    showStatus(`Test '${triggerType}' ohne Effekt: ${data.reason || 'keine passende Regel'}`, 'error');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.testNoEffect', "Test '{triggerType}' ohne Effekt: {reason}", {
+                        triggerType,
+                        reason: data.reason || translateUi('plugins.flame-overlay.flame_overlay.ui.messages.noMatchingRule', 'keine passende Regel')
+                    }), 'error');
                     return;
                 }
                 if (!data.success) {
-                    showStatus('❌ Test-Fehler: ' + data.error, 'error');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.testFailed', '❌ Test-Fehler: {reason}', { reason: data.error }), 'error');
                 } else {
-                    showStatus(`🧪 Test-Trigger '${triggerType}' gesendet`, 'success');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.testSent', '🧪 Test-Trigger \'{triggerType}\' gesendet', { triggerType }), 'success');
                 }
             } catch (error) {
-                showStatus('❌ Test-Fehler: ' + error.message, 'error');
+                showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.testFailed', '❌ Test-Fehler: {reason}', { reason: error.message }), 'error');
             }
         }
 
@@ -2931,12 +2948,12 @@
                 });
                 const data = await response.json();
                 if (!data.success) {
-                    showStatus('Stop-Fehler: ' + data.error, 'error');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.stopFailed', 'Stop-Fehler: {reason}', { reason: data.error }), 'error');
                 } else {
-                    showStatus('Aktive Overlay-Effekte gestoppt', 'success');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.triggersStopped', 'Aktive Overlay-Effekte gestoppt'), 'success');
                 }
             } catch (error) {
-                showStatus('Stop-Fehler: ' + error.message, 'error');
+                showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.stopFailed', 'Stop-Fehler: {reason}', { reason: error.message }), 'error');
             }
         }
 
@@ -2946,11 +2963,12 @@
          */
         function updateTriggerStatus(data) {
             data = data || {};
+            latestTriggerStatus = data;
             const countEl = document.getElementById('activeTriggerCount');
             const logContainer = document.getElementById('triggerLogContainer');
 
             if (countEl) {
-                countEl.textContent = `${data.activeTriggers || 0} aktiv`;
+                countEl.textContent = translateUi('plugins.flame-overlay.flame_overlay.ui.messages.triggerCount', '{count} aktiv', { count: data.activeTriggers || 0 });
             }
 
             if (!logContainer) return;
@@ -2964,7 +2982,7 @@
                 empty.style.fontSize = '12px';
                 empty.style.textAlign = 'center';
                 empty.style.padding = '8px 0';
-                empty.textContent = 'Noch keine Trigger ausgelöst';
+                empty.textContent = translateUi('plugins.flame-overlay.flame_overlay.ui.messages.noTriggersYet', 'Noch keine Trigger ausgelöst');
                 logContainer.appendChild(empty);
                 return;
             }
@@ -2983,7 +3001,7 @@
 
                 const time = document.createElement('span');
                 time.style.color = '#666';
-                time.textContent = new Date(t.time).toLocaleTimeString('de-DE', { hour12: false });
+                time.textContent = new Date(t.time).toLocaleTimeString(currentLocale(), { hour12: false });
 
                 item.append(type, source, time);
                 logContainer.appendChild(item);
@@ -3063,7 +3081,7 @@
                 iframe.src = '/flame-overlay/overlay';
                 container.style.display = 'block';
                 positionControls.style.display = 'block';
-                toggle.textContent = '⏸️ Vorschau stoppen';
+                toggle.textContent = translateUi('plugins.flame-overlay.flame_overlay.ui.messages.previewStop', '⏸️ Vorschau stoppen');
                 previewActive = true;
                 updatePreviewAspectRatio();
             } else {
@@ -3071,7 +3089,7 @@
                 iframe.src = 'about:blank';
                 container.style.display = 'none';
                 positionControls.style.display = 'none';
-                toggle.textContent = '▶️ Vorschau starten';
+                toggle.textContent = translateUi('plugins.flame-overlay.flame_overlay.ui.messages.previewStart', '▶️ Vorschau starten');
                 previewActive = false;
             }
         }
@@ -3128,13 +3146,15 @@
             }).then(response => response.json())
               .then(data => {
                   if (data.success) {
-                      showStatus('✅ Rahmenposition aktualisiert!', 'success');
+                      showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.framePositionUpdated', '✅ Rahmenposition aktualisiert!'), 'success');
                   } else {
-                      showStatus('❌ Fehler: ' + (data.error || 'Unbekannter Fehler'), 'error');
+                      showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.errorWithReason', '❌ Fehler: {reason}', {
+                          reason: data.error || translateUi('plugins.flame-overlay.flame_overlay.ui.messages.unknownError', 'Unbekannter Fehler')
+                      }), 'error');
                   }
               })
               .catch(error => {
-                  showStatus('❌ Fehler beim Speichern: ' + error.message, 'error');
+                  showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.saveFailed', '❌ Fehler beim Speichern: {reason}', { reason: error.message }), 'error');
               });
         }
 
@@ -3145,7 +3165,7 @@
                 if (valueSpan) {
                     let value = e.target.value;
                     if (e.target.id === 'frameThickness') {
-                        value += ' px';
+                        value = translateUi('plugins.flame-overlay.flame_overlay.ui.messages.valuePixels', '{value} px', { value });
                     } else if (e.target.id === 'chromaticAberration') {
                         value = parseFloat(value).toFixed(3);
                     } else if (['edgeFeather', 'frameCurve', 'frameNoiseAmount', 'pulseAmount',
@@ -3335,7 +3355,7 @@
                     // Frame
                     document.getElementById('frameMode').value = config.frameMode || 'bottom';
                     document.getElementById('frameThickness').value = config.frameThickness || 150;
-                    document.getElementById('frameThicknessValue').textContent = (config.frameThickness || 150) + ' px';
+                    document.getElementById('frameThicknessValue').textContent = translateUi('plugins.flame-overlay.flame_overlay.ui.messages.valuePixels', '{value} px', { value: config.frameThickness || 150 });
                     document.getElementById('maskOnlyEdges').checked = config.maskOnlyEdges !== false;
 
                     // Appearance
@@ -3454,13 +3474,13 @@
                     // Trigger custom resolution visibility
                     document.getElementById('resolutionPreset').dispatchEvent(new Event('change'));
 
-                    showStatus('Konfiguration geladen', 'success');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.configLoaded', 'Konfiguration geladen'), 'success');
 
                     // Refresh preset list
                     loadPresets();
                 }
             } catch (error) {
-                showStatus('Fehler beim Laden: ' + error.message, 'error');
+                showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.configLoadFailed', 'Fehler beim Laden: {reason}', { reason: error.message }), 'error');
             }
         }
 
@@ -3480,12 +3500,12 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    showStatus('✅ Einstellungen gespeichert!', 'success');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.settingsSaved', '✅ Einstellungen gespeichert!'), 'success');
                 } else {
-                    showStatus('Fehler: ' + data.error, 'error');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.errorWithReason', '❌ Fehler: {reason}', { reason: data.error }), 'error');
                 }
             } catch (error) {
-                showStatus('Fehler beim Speichern: ' + error.message, 'error');
+                showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.settingsSaveFailed', 'Fehler beim Speichern: {reason}', { reason: error.message }), 'error');
             }
         }
 
@@ -3541,24 +3561,25 @@
             const names = Object.keys(presets);
 
             if (names.length === 0) {
-                container.innerHTML = '<p style="color: #f3f4f6; font-size: 14px; line-height: 1.5;" data-i18n="plugins.flame-overlay.flame_overlay.ui.presets.empty">Noch keine Presets gespeichert.</p>';
-                window.i18n?.updateDOM?.();
+                container.innerHTML = `<p style="color: #f3f4f6; font-size: 14px; line-height: 1.5;">${escapeHtml(translateUi('plugins.flame-overlay.flame_overlay.ui.presets.empty', 'Noch keine Presets gespeichert.'))}</p>`;
                 return;
             }
 
             container.innerHTML = names.map(name => {
                 const preset = presets[name];
-                const date = new Date(preset.createdAt).toLocaleDateString('de-DE');
+                const date = new Date(preset.createdAt).toLocaleDateString(currentLocale());
                 const escapedName = escapeHtml(name);
+                const savedOn = escapeHtml(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.presetSavedOn', 'Gespeichert am {date}', { date }));
+                const deleteLabel = escapeHtml(translateUi('plugins.flame-overlay.flame_overlay.ui.presets.deleteLabel', 'Preset {name} löschen', { name }));
                 return `
                     <div style="display: flex; align-items: center; justify-content: space-between; background: #333; padding: 10px 15px; border-radius: 4px; margin-bottom: 8px;">
                         <div>
                             <strong style="color: #ff9933;">${escapedName}</strong>
-                            <span style="color: #e5e7eb; font-size: 14px; line-height: 1.45; margin-left: 10px;">Gespeichert am ${escapeHtml(date)}</span>
+                            <span style="color: #e5e7eb; font-size: 14px; line-height: 1.45; margin-left: 10px;">${savedOn}</span>
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <button class="btn preset-load-btn" data-preset-name="${escapedName}" style="padding: 6px 12px; font-size: 12px;" data-i18n="plugins.flame-overlay.flame_overlay.ui.presets.load">📂 Laden</button>
-                            <button class="btn btn-secondary preset-delete-btn" data-preset-name="${escapedName}" aria-label="Preset ${escapedName} löschen" title="Preset löschen" data-i18n-title="plugins.flame-overlay.flame_overlay.ui.presets.deleteTitle" style="padding: 6px 12px; font-size: 12px;">🗑️</button>
+                            <button class="btn btn-secondary preset-delete-btn" data-preset-name="${escapedName}" aria-label="${deleteLabel}" title="${deleteLabel}" style="padding: 6px 12px; font-size: 12px;">🗑️</button>
                         </div>
                     </div>
                 `;
@@ -3578,7 +3599,7 @@
         async function savePreset() {
             const name = document.getElementById('presetName').value.trim();
             if (!name) {
-                showStatus('❌ Bitte gib einen Preset-Namen ein!', 'error');
+                showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.presetNameRequired', '❌ Bitte gib einen Preset-Namen ein!'), 'error');
                 return;
             }
 
@@ -3593,14 +3614,14 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    showStatus(`✅ Preset "${name}" gespeichert!`, 'success');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.presetSaved', '✅ Preset "{name}" gespeichert!', { name }), 'success');
                     document.getElementById('presetName').value = '';
                     loadPresets();
                 } else {
-                    showStatus('❌ ' + (data.error || 'Fehler'), 'error');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.errorWithReason', '❌ Fehler: {reason}', { reason: data.error || translateUi('plugins.flame-overlay.flame_overlay.ui.status.error', 'Fehler') }), 'error');
                 }
             } catch (error) {
-                showStatus('❌ Fehler: ' + error.message, 'error');
+                showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.errorWithReason', '❌ Fehler: {reason}', { reason: error.message }), 'error');
             }
         }
 
@@ -3613,18 +3634,18 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    showStatus(`✅ Preset "${name}" geladen!`, 'success');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.presetLoaded', '✅ Preset "{name}" geladen!', { name }), 'success');
                     loadConfig();
                 } else {
-                    showStatus('❌ ' + (data.error || 'Fehler'), 'error');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.errorWithReason', '❌ Fehler: {reason}', { reason: data.error || translateUi('plugins.flame-overlay.flame_overlay.ui.status.error', 'Fehler') }), 'error');
                 }
             } catch (error) {
-                showStatus('❌ Fehler: ' + error.message, 'error');
+                showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.errorWithReason', '❌ Fehler: {reason}', { reason: error.message }), 'error');
             }
         }
 
         async function deletePreset(name) {
-            if (!confirm(`Preset "${name}" wirklich löschen?`)) return;
+            if (!confirm(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.presetDeleteConfirm', 'Preset "{name}" wirklich löschen?', { name }))) return;
 
             try {
                 const response = await fetch(`/api/flame-overlay/presets/${encodeURIComponent(name)}`, {
@@ -3632,19 +3653,32 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    showStatus(`✅ Preset "${name}" gelöscht!`, 'success');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.presetDeleted', '✅ Preset "{name}" gelöscht!', { name }), 'success');
                     loadPresets();
                 } else {
-                    showStatus('❌ ' + (data.error || 'Fehler'), 'error');
+                    showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.errorWithReason', '❌ Fehler: {reason}', { reason: data.error || translateUi('plugins.flame-overlay.flame_overlay.ui.status.error', 'Fehler') }), 'error');
                 }
             } catch (error) {
-                showStatus('❌ Fehler: ' + error.message, 'error');
+                showStatus(translateUi('plugins.flame-overlay.flame_overlay.ui.messages.errorWithReason', '❌ Fehler: {reason}', { reason: error.message }), 'error');
             }
         }
 
         // Update overlay URL based on current location
         const overlayUrl = window.location.origin + '/flame-overlay/overlay';
             document.getElementById('overlayUrl').textContent = overlayUrl;
+
+        window.i18n?.onLanguageChange?.(() => {
+            const previewToggle = document.getElementById('previewToggle');
+            if (previewToggle) {
+                previewToggle.textContent = previewActive
+                    ? translateUi('plugins.flame-overlay.flame_overlay.ui.messages.previewStop', '⏸️ Vorschau stoppen')
+                    : translateUi('plugins.flame-overlay.flame_overlay.ui.messages.previewStart', '▶️ Vorschau starten');
+            }
+            renderTriggerRules(collectTriggerRules());
+            renderGiftCatalog();
+            updateTriggerStatus(latestTriggerStatus);
+            loadPresets();
+        });
 
         // Load config on page load
         activateTab('look');

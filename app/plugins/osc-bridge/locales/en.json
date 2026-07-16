@@ -1,6 +1,14 @@
 {
   "plugins": {
     "osc-bridge": {
+      "form_controls": {
+        "command_description_placeholder": "Triggers a custom action",
+        "gift_name_placeholder": "Rose",
+        "gift_parameter_placeholder": "avtr_... or ParameterName",
+        "avatar_name_placeholder": "My Avatar",
+        "avatar_id_placeholder": "avtr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        "avatar_description_placeholder": "Casual avatar"
+      },
       "osc_bridge": {
         "title": "OSC-Bridge Settings",
         "status": {

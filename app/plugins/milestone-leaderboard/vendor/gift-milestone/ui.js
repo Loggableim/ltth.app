@@ -6,6 +6,17 @@ let users = [];
 let currentEditingTier = null;
 let pluginDisabled = false;
 
+function giftMilestoneText(key, fallback, params = {}) {
+    const fullKey = `plugins.milestone-leaderboard.gift_milestone.runtime.${key}`;
+    if (window.i18n && typeof window.i18n.t === 'function') {
+        const translated = window.i18n.t(fullKey, params);
+        if (translated && translated !== fullKey) return translated;
+    }
+    return String(fallback).replace(/\{([A-Za-z_][\w.-]*)\}/g, (match, name) => (
+        Object.hasOwn(params, name) ? params[name] : match
+    ));
+}
+
 function escapeHtml(value) {
     const div = document.createElement('div');
     div.textContent = value == null ? '' : String(value);
@@ -102,7 +113,7 @@ function displayTiers() {
     const tiersList = document.getElementById('tiersList');
     
     if (!tiers || tiers.length === 0) {
-        tiersList.innerHTML = '<div class="empty-state">📭 Noch keine Stufen definiert. Klicke auf "Neue Stufe hinzufügen" um loszulegen.</div>';
+        tiersList.innerHTML = `<div class="empty-state">${giftMilestoneText('empty_tiers', '📭 No milestone tiers yet. Click “Add Tier” to get started.')}</div>`;
         return;
     }
     
@@ -111,18 +122,20 @@ function displayTiers() {
             <div class="tier-info">
                 <div class="tier-name">
                     ${escapeHtml(tier.name)}
-                    <span class="tier-level-badge">Level ${Number(tier.tier_level || 0)}</span>
-                    ${!tier.enabled ? '<span style="opacity: 0.5">(Deaktiviert)</span>' : ''}
+                    <span class="tier-level-badge">${giftMilestoneText('tier_level', 'Level {level}', { level: Number(tier.tier_level || 0) })}</span>
+                    ${!tier.enabled ? `<span style="opacity: 0.5">${giftMilestoneText('tier_disabled', '(Disabled)')}</span>` : ''}
                 </div>
                 <div class="tier-threshold">
-                    💰 ${Number(tier.threshold || 0).toLocaleString()} Coins
-                    ${tier.animation_gif_path || tier.animation_video_path || tier.animation_audio_path ? '| 🎬 Benutzerdefinierte Medien' : ''}
+                    ${giftMilestoneText('tier_coins', '💰 {amount} Coins', { amount: Number(tier.threshold || 0).toLocaleString() })}
+                    ${tier.animation_gif_path || tier.animation_video_path || tier.animation_audio_path
+                        ? giftMilestoneText('custom_media', '| 🎬 Custom media')
+                        : ''}
                 </div>
             </div>
             <div class="tier-actions">
-                <button class="small-button test-tier-btn" data-tier-id="${Number(tier.id || 0)}">🧪 Test</button>
-                <button class="small-button edit-btn" data-tier-id="${Number(tier.id || 0)}">✏️ Bearbeiten</button>
-                <button class="small-button delete-btn" data-tier-id="${Number(tier.id || 0)}">🗑️ Löschen</button>
+                <button class="small-button test-tier-btn" data-tier-id="${Number(tier.id || 0)}">${giftMilestoneText('test_tier', '🧪 Test')}</button>
+                <button class="small-button edit-btn" data-tier-id="${Number(tier.id || 0)}">${giftMilestoneText('edit_tier_action', '✏️ Edit')}</button>
+                <button class="small-button delete-btn" data-tier-id="${Number(tier.id || 0)}">${giftMilestoneText('delete_tier_action', '🗑️ Delete')}</button>
             </div>
         </div>
     `).join('');
@@ -133,7 +146,7 @@ function displayUsers() {
     const userStatsList = document.getElementById('userStatsList');
     
     if (!users || users.length === 0) {
-        userStatsList.innerHTML = '<div class="empty-state">📭 Noch keine Benutzer-Statistiken vorhanden.</div>';
+        userStatsList.innerHTML = `<div class="empty-state">${giftMilestoneText('empty_users', '📭 No user statistics yet.')}</div>`;
         return;
     }
     
@@ -144,7 +157,7 @@ function displayUsers() {
     });
     
     userStatsList.innerHTML = users.map(user => {
-        const tierName = tierMap[user.last_tier_reached] || 'Keine Stufe';
+        const tierName = tierMap[user.last_tier_reached] || giftMilestoneText('no_tier', 'No tier');
         return `
         <div class="user-item">
             <div class="user-info">
@@ -153,12 +166,14 @@ function displayUsers() {
                     ${user.last_tier_reached > 0 ? `<span class="user-tier-badge">${escapeHtml(tierName)}</span>` : ''}
                 </div>
                 <div class="user-coins">
-                    💰 ${Number(user.cumulative_coins || 0).toLocaleString()} Coins gesamt
-                    ${user.last_trigger_at ? `| Letzter Meilenstein: ${new Date(user.last_trigger_at).toLocaleString('de-DE')}` : ''}
+                    ${giftMilestoneText('user_coins', '💰 {amount} total coins', { amount: Number(user.cumulative_coins || 0).toLocaleString() })}
+                    ${user.last_trigger_at ? giftMilestoneText('last_milestone', '| Last milestone: {date}', {
+                        date: new Date(user.last_trigger_at).toLocaleString()
+                    }) : ''}
                 </div>
             </div>
             <div class="user-actions">
-                <button class="small-button delete-btn delete-user-btn" data-user-id="${encodeURIComponent(user.user_id)}">🗑️ Zurücksetzen</button>
+                <button class="small-button delete-btn delete-user-btn" data-user-id="${encodeURIComponent(user.user_id)}">${giftMilestoneText('reset_user', '🗑️ Reset')}</button>
             </div>
         </div>
     `;
@@ -168,7 +183,7 @@ function displayUsers() {
 // Add tier
 function addTier() {
     currentEditingTier = null; // Clear any previous editing state
-    document.getElementById('tierModalTitle').textContent = 'Neue Stufe hinzufügen';
+    document.getElementById('tierModalTitle').textContent = giftMilestoneText('add_tier', 'Add New Tier');
     document.getElementById('tierName').value = '';
     document.getElementById('tierLevel').value = tiers.length + 1;
     document.getElementById('tierThreshold').value = 1000;
@@ -185,7 +200,7 @@ function editTier(tierId) {
     if (!tier) return;
     
     currentEditingTier = tier;
-    document.getElementById('tierModalTitle').textContent = 'Stufe bearbeiten';
+    document.getElementById('tierModalTitle').textContent = giftMilestoneText('edit_tier', 'Edit Tier');
     document.getElementById('tierName').value = tier.name;
     document.getElementById('tierLevel').value = tier.tier_level;
     document.getElementById('tierThreshold').value = tier.threshold;
@@ -319,7 +334,7 @@ async function autoSaveTierForUpload() {
 
 // Delete tier
 async function deleteTier(tierId) {
-    if (!confirm('Diese Stufe wirklich löschen?')) return;
+    if (!confirm(giftMilestoneText('confirm_delete_tier', 'Delete this tier?'))) return;
     
     try {
         const response = await fetch(`/api/gift-milestone/tiers/${tierId}`, {
@@ -360,7 +375,7 @@ async function testTier(tierId) {
 
 // Delete user
 async function deleteUser(userId) {
-    if (!confirm('Statistiken für diesen Benutzer wirklich zurücksetzen?')) return;
+    if (!confirm(giftMilestoneText('confirm_reset_user', "Reset this user's statistics?"))) return;
     
     try {
         const response = await fetch(`/api/gift-milestone/users/${encodeURIComponent(userId)}`, {
@@ -381,7 +396,7 @@ async function deleteUser(userId) {
 
 // Delete all users
 async function deleteAllUsers() {
-    if (!confirm('ALLE Benutzer-Statistiken wirklich zurücksetzen? Dies kann nicht rückgängig gemacht werden!')) return;
+    if (!confirm(giftMilestoneText('confirm_reset_all', 'Reset ALL user statistics? This cannot be undone!'))) return;
     
     try {
         const response = await fetch('/api/gift-milestone/users/reset', {
@@ -437,7 +452,9 @@ function populateForm(config) {
     }
 
     document.getElementById('enableToggle').checked = config.enabled || false;
-    document.getElementById('statusText').textContent = config.enabled ? 'Aktiviert' : 'Deaktiviert';
+    document.getElementById('statusText').textContent = config.enabled
+        ? giftMilestoneText('status_enabled', 'Enabled')
+        : giftMilestoneText('status_disabled', 'Disabled');
     
     // Only visible fields
     document.getElementById('playbackMode').value = config.playback_mode || 'exclusive';
@@ -483,7 +500,9 @@ document.getElementById('enableToggle').addEventListener('change', async (e) => 
         });
         const data = await response.json();
         if (data.success) {
-            document.getElementById('statusText').textContent = enabled ? 'Aktiviert' : 'Deaktiviert';
+            document.getElementById('statusText').textContent = enabled
+                ? giftMilestoneText('status_enabled', 'Enabled')
+                : giftMilestoneText('status_disabled', 'Disabled');
             showNotification(data.message);
         }
     } catch (error) {
@@ -564,7 +583,7 @@ document.getElementById('saveButton').addEventListener('click', async () => {
         });
         const data = await response.json();
         if (data.success) {
-            showNotification('Konfiguration gespeichert!');
+            showNotification(giftMilestoneText('config_saved', 'Configuration saved!'));
             loadStats();
         } else {
             showNotification(data.error, 'error');
@@ -611,6 +630,15 @@ socket.on('milestone:config-update', (data) => {
     loadConfig();
 });
 
+if (window.i18n && typeof window.i18n.onLanguageChange === 'function') {
+    window.i18n.onLanguageChange(() => {
+        if (pluginDisabled) return;
+        if (config) populateForm(config);
+        displayTiers();
+        displayUsers();
+    });
+}
+
 // Handle plugin disabled state
 function handlePluginDisabled() {
     if (pluginDisabled) return; // Already handled
@@ -618,18 +646,18 @@ function handlePluginDisabled() {
     pluginDisabled = true;
     
     // Show error message
-    showNotification('⚠️ Plugin ist deaktiviert! Bitte aktiviere das Plugin in den Einstellungen.', 'error');
+    showNotification(giftMilestoneText('plugin_disabled', '⚠️ Plugin is disabled. Enable it in the plugin settings.'), 'error');
     
     // Display disabled message in all sections
     const tiersList = document.getElementById('tiersList');
     const userStatsList = document.getElementById('userStatsList');
     
     if (tiersList) {
-        tiersList.innerHTML = '<div class="empty-state">⚠️ Plugin ist deaktiviert. Bitte aktiviere es in den Plugin-Einstellungen.</div>';
+        tiersList.innerHTML = `<div class="empty-state">${giftMilestoneText('plugin_disabled', '⚠️ Plugin is disabled. Enable it in the plugin settings.')}</div>`;
     }
     
     if (userStatsList) {
-        userStatsList.innerHTML = '<div class="empty-state">⚠️ Plugin ist deaktiviert. Bitte aktiviere es in den Plugin-Einstellungen.</div>';
+        userStatsList.innerHTML = `<div class="empty-state">${giftMilestoneText('plugin_disabled', '⚠️ Plugin is disabled. Enable it in the plugin settings.')}</div>`;
     }
     
     console.warn('Gift Milestone Plugin is disabled. Please enable it in the plugin settings.');

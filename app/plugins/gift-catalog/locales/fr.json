@@ -1,6 +1,14 @@
 {
   "plugins": {
     "gift-catalog": {
+      "form_controls": {
+        "app_language_placeholder": "p. ex. en-US",
+        "browser_language_placeholder": "p. ex. en",
+        "webcast_language_placeholder": "p. ex. en",
+        "priority_region_placeholder": "DE ou vide",
+        "time_zone_placeholder": "Fuseau horaire : Europe/Berlin",
+        "locales_placeholder": "p. ex. en,de,es,fr"
+      },
       "gift_catalog": {
         "plugin": {
           "name": "Catalogue de cadeaux",
@@ -47,6 +55,15 @@
           },
           "messages": {
             "no_gifts_available": "Aucun cadeau disponible.",
+            "no_live_gifts_loaded": "Aucun cadeau n’a été chargé depuis /api/gift-catalog-manager/catalog.",
+            "static_list_empty": "La liste statique pour les paramètres régionaux {locale} est vide.",
+            "live_source": "Source en direct",
+            "demo_source": "Source de démonstration {locale}",
+            "live_entries_loaded": "{count} entrées de cadeaux ont été chargées depuis le point de terminaison en direct.",
+            "demo_list_rendered": "Liste de démonstration affichée pour les paramètres régionaux {locale} ({count} entrées).",
+            "copy_failed_prompt": "La copie a échoué. Utilisez cet extrait :",
+            "copy_prompt": "Copiez cet extrait :",
+            "endpoint_prompt": "Point de terminaison :",
             "load_catalog_first_for_live_mode": "Chargez d’abord le catalogue pour le mode en direct."
           }
         }

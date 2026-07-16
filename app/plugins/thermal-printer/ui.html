@@ -458,7 +458,7 @@
         <!-- Status Card -->
         <div class="card">
             <div class="card-header">
-                <h5><span class="icon-activity"></span>Status</h5>
+                <h5><span class="icon-activity"></span><span data-i18n="plugins.thermal-printer.labels.status">Status</span></h5>
             </div>
             <div class="card-body">
                 <div class="stats-grid">
@@ -493,7 +493,7 @@
         <!-- Configuration Form -->
         <div class="card">
             <div class="card-header">
-                <h5><span class="icon-settings"></span>Configuration</h5>
+                <h5><span class="icon-settings"></span><span data-i18n="plugins.thermal-printer.labels.configuration">Configuration</span></h5>
             </div>
             <div class="card-body">
                 <form id="config-form">
@@ -524,12 +524,12 @@
                     <div id="usb-settings">
                         <div class="form-group">
                             <label for="usbVendorId" class="form-label" data-i18n="plugins.thermal-printer.thermal_printer.config.usb_vendor_id">USB Vendor ID</label>
-                            <input type="text" class="form-control" id="usbVendorId" placeholder="0x04b8">
+                            <input type="text" class="form-control" id="usbVendorId" placeholder="0x04b8" data-i18n-placeholder="plugins.thermal-printer.form_controls.usb_vendor_id_placeholder">
                             <small class="form-text" data-i18n="plugins.thermal-printer.labels.e_g_0x04b8_for_epson_leave_empty_for">e.g., 0x04b8 for Epson (leave empty for auto-detect)</small>
                         </div>
                         <div class="form-group">
                             <label for="usbProductId" class="form-label" data-i18n="plugins.thermal-printer.thermal_printer.config.usb_product_id">USB Product ID</label>
-                            <input type="text" class="form-control" id="usbProductId" placeholder="0x0e15">
+                            <input type="text" class="form-control" id="usbProductId" placeholder="0x0e15" data-i18n-placeholder="plugins.thermal-printer.form_controls.usb_product_id_placeholder">
                             <small class="form-text" data-i18n="plugins.thermal-printer.labels.e_g_0x0e15_for_tm_t20_leave_empty">e.g., 0x0e15 for TM-T20 (leave empty for auto-detect)</small>
                         </div>
                     </div>
@@ -588,7 +588,7 @@
                     <hr class="section-divider">
 
                     <!-- Formatting -->
-                    <h6 class="section-title"><span class="icon-format"></span>Formatting</h6>
+                    <h6 class="section-title"><span class="icon-format"></span><span data-i18n="plugins.thermal-printer.labels.formatting">Formatting</span></h6>
 
                     <div class="form-group">
                         <div class="form-check">
@@ -708,17 +708,24 @@
             togglePrinterSettings();
         }
 
-        function getStatusLabel(status) {
-            if (!window.i18n?.initialized) {
-                return {
-                    connected: 'Connected',
-                    reconnecting: 'Reconnecting...',
-                    disconnected: 'Disconnected'
-                }[status];
+        function translateUi(key, fallback, params = {}) {
+            const translation = window.i18n?.initialized ? window.i18n.t(key, params) : null;
+            if (translation && translation !== key) {
+                return translation;
             }
-            if (status === 'connected') return window.i18n.t('plugins.thermal-printer.thermal_printer.status.connected');
-            if (status === 'reconnecting') return window.i18n.t('plugins.thermal-printer.thermal_printer.status.reconnecting');
-            return window.i18n.t('plugins.thermal-printer.thermal_printer.status.disconnected');
+            return fallback.replace(/\{(\w+)\}/g, (match, name) => (
+                Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+            ));
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                connected: ['plugins.thermal-printer.thermal_printer.status.connected', 'Connected'],
+                reconnecting: ['plugins.thermal-printer.thermal_printer.status.reconnecting', 'Reconnecting...'],
+                disconnected: ['plugins.thermal-printer.thermal_printer.status.disconnected', 'Disconnected']
+            };
+            const [key, fallback] = labels[status] || labels.disconnected;
+            return translateUi(key, fallback);
         }
 
         function setStatusBadge(statusEl, style, status) {
@@ -760,12 +767,67 @@
             const hours = Math.floor(minutes / 60);
 
             if (hours > 0) {
-                return `${hours}h ${minutes % 60}m`;
-            } else if (minutes > 0) {
-                return `${minutes}m ${seconds % 60}s`;
-            } else {
-                return `${seconds}s`;
+                return translateUi(
+                    'plugins.thermal-printer.thermal_printer.status.uptime_hours',
+                    '{hours}h {minutes}m',
+                    { hours, minutes: minutes % 60 }
+                );
             }
+            if (minutes > 0) {
+                return translateUi(
+                    'plugins.thermal-printer.thermal_printer.status.uptime_minutes',
+                    '{minutes}m {seconds}s',
+                    { minutes, seconds: seconds % 60 }
+                );
+            }
+            return translateUi(
+                'plugins.thermal-printer.thermal_printer.status.uptime_seconds',
+                '{seconds}s',
+                { seconds }
+            );
+        }
+
+        function translateValidationError(error) {
+            const keys = {
+                'printerType must be "usb" or "network"': 'validation_printer_type',
+                'USB Vendor ID and Product ID must both be provided or both be empty for auto-detection': 'validation_usb_ids',
+                'Network host is required for network printers': 'validation_network_host',
+                'Valid network port is required (1-65535)': 'validation_network_port',
+                'minCoinsToPrint must be >= 0': 'validation_min_coins',
+                'width must be between 32 and 80 characters': 'validation_width',
+                'reconnectAttempts must be >= 0': 'validation_reconnect_attempts',
+                'reconnectDelay must be >= 0': 'validation_reconnect_delay',
+                'queueMaxSize must be >= 1': 'validation_queue_size',
+                'printDelay must be >= 0': 'validation_print_delay'
+            };
+            const key = keys[error];
+            return key
+                ? translateUi(`plugins.thermal-printer.messages.${key}`, error)
+                : translateUi('plugins.thermal-printer.messages.config_error', 'Error saving configuration.');
+        }
+
+        function getConfigErrorMessage(data) {
+            const validationErrors = Array.isArray(data.errors)
+                ? data.errors.map(translateValidationError)
+                : [];
+            if (validationErrors.length) {
+                return translateUi(
+                    'plugins.thermal-printer.messages.config_error_details',
+                    'Error saving configuration: {details}',
+                    { details: validationErrors.join(', ') }
+                );
+            }
+            return translateUi('plugins.thermal-printer.messages.config_error', 'Error saving configuration.');
+        }
+
+        function getTestErrorMessage(data) {
+            if (data.errorCode === 'printer_not_running') {
+                return translateUi(
+                    'plugins.thermal-printer.messages.printer_not_running',
+                    'Printer service not running.'
+                );
+            }
+            return translateUi('plugins.thermal-printer.messages.test_error', 'Error sending test print.');
         }
 
         // Toggle Printer Settings
@@ -821,14 +883,14 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    alert('Configuration saved successfully!');
+                    alert(translateUi('plugins.thermal-printer.messages.config_saved', 'Configuration saved successfully!'));
                     loadStatus();
                 } else {
-                    alert('Error saving configuration: ' + (data.errors ? data.errors.join(', ') : data.error));
+                    alert(getConfigErrorMessage(data));
                 }
             } catch (error) {
                 console.error('Error saving config:', error);
-                alert('Error saving configuration!');
+                alert(translateUi('plugins.thermal-printer.messages.config_error', 'Error saving configuration.'));
             }
         });
 
@@ -842,13 +904,13 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    alert('Test print job queued!');
+                    alert(translateUi('plugins.thermal-printer.messages.test_queued', 'Test print job queued!'));
                 } else {
-                    alert('Error: ' + data.error);
+                    alert(getTestErrorMessage(data));
                 }
             } catch (error) {
                 console.error('Error test printing:', error);
-                alert('Error sending test print!');
+                alert(translateUi('plugins.thermal-printer.messages.test_error', 'Error sending test print.'));
             }
         });
 

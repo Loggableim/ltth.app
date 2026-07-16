@@ -34,7 +34,7 @@
           "title": "Panneau d'Administration TTS",
           "initializing": "Initialisation...",
           "tabs": {
-            "config": "Configuration",
+            "config": "Paramètres",
             "users": "Gestion des Utilisateurs",
             "event_triggers": "Déclencheurs d'Événements",
             "queue": "File d'Attente et Lecture",
@@ -45,6 +45,73 @@
             "strip_emojis": "Supprimer les émojis du texte TTS",
             "strip_emojis_desc": "Lorsqu'activé, les émojis seront supprimés des messages avant d'être prononcés, empêchant le moteur TTS de lire les noms d'émojis à voix haute."
           }
+        },
+        "voice": {
+          "custom_empty": "Aucune voix personnalisée n'a encore été ajoutée. Ajoutez votre première voix personnalisée ci-dessus.",
+          "remove_confirm": "Supprimer la voix personnalisée \"{voiceId}\" ?",
+          "none_available": "Aucune voix disponible",
+          "default": "Utiliser la voix par défaut",
+          "none_for_engine": "Aucune voix disponible pour ce moteur",
+          "none_matching": "Aucune voix ne correspond à votre recherche",
+          "custom_form_unavailable": "Les champs du formulaire de voix personnalisées ne sont pas disponibles.",
+          "custom_exists": "Une voix nommée « {name} » existe déjà.",
+          "custom_added": "La voix personnalisée « {name} » a été ajoutée. Pensez à enregistrer la configuration.",
+          "custom_not_found": "Voix introuvable.",
+          "custom_removed": "La voix personnalisée « {voiceId} » a été supprimée. Pensez à enregistrer la configuration.",
+          "load_failed": "Impossible de charger les voix : {message}"
+        },
+        "users": {
+          "no_results": "Aucun utilisateur trouvé.",
+          "no_results_for": "Aucun utilisateur trouvé pour \"{search}\".",
+          "results_summary": "{shown} utilisateurs affichés sur {total}{search}{limit}",
+          "empty": "Aucun utilisateur trouvé. Les utilisateurs sont créés automatiquement lors de leur première utilisation de TTS.",
+          "blacklist_confirm": "Voulez-vous vraiment bloquer {username} ?",
+          "load_failed": "Impossible de charger les utilisateurs : {message}",
+          "allowed": "TTS autorisé pour {username}.",
+          "allow_failed": "Impossible d’autoriser l’utilisateur : {message}",
+          "revoked": "TTS révoqué pour {username}.",
+          "revoke_failed": "Impossible de révoquer TTS : {message}",
+          "blacklisted": "{username} a été bloqué.",
+          "blacklist_failed": "Impossible de bloquer l’utilisateur : {message}",
+          "unblacklisted": "Utilisateur retiré de la liste de blocage.",
+          "unblacklist_failed": "Impossible de retirer l’utilisateur de la liste de blocage : {message}"
+        },
+        "queue": {
+          "empty": "La file d'attente est vide",
+          "no_audio_playing": "Aucun audio en cours de lecture",
+          "clear_confirm": "Vider toute la file d'attente ?",
+          "stats": {
+            "total_queued": "Total mis en file :",
+            "total_played": "Total lu :",
+            "total_dropped": "Total abandonné :",
+            "rate_limited": "Limité par fréquence :",
+            "current_queue": "File actuelle :"
+          }
+        },
+        "permissions": {
+          "stats": {
+            "total_users": "Utilisateurs au total :",
+            "whitelisted": "Autorisés :",
+            "blacklisted": "Bloqués :",
+            "voice_assigned": "Voix attribuée :"
+          }
+        },
+        "gifters": {
+          "load_failed": "Impossible de charger les donateurs.",
+          "empty": "Aucun donateur pour cette session.",
+          "error": "Erreur : {message}"
+        },
+        "logs": {
+          "empty": "Aucun journal ne correspond au filtre actuel",
+          "clear_confirm": "Effacer tous les journaux de débogage ?"
+        },
+        "debug": {
+          "enable": "Activer le débogage",
+          "disable": "Désactiver le débogage",
+          "enabled": "Activé",
+          "disabled": "Désactivé",
+          "active": "Actif",
+          "inactive": "Inactif"
         }
       },
       "runtime": {
@@ -58,7 +125,8 @@
           "loading_plugin_status": "Chargement de l’état du plugin...",
           "loading_debug_logs": "Chargement des journaux de débogage...",
           "initialized": "Initialisation réussie",
-          "init_failed": "Échec de l’initialisation : {message}"
+          "init_failed": "Échec de l’initialisation : {message}",
+          "statistics_load_failed": "Impossible de charger les statistiques (sans gravité)"
         },
         "load": { "config_failed": "Impossible de charger la configuration : {message}" },
         "save": { "success": "Configuration enregistrée", "failed": "Impossible d’enregistrer la configuration : {message}" },
@@ -114,7 +182,60 @@
           "deleting": "Suppression de la voix \"{voiceName}\"...",
           "deleted": "Voix \"{voiceName}\" supprimée !",
           "delete_failed": "Impossible de supprimer la voix : {message}"
-        }
+        },
+        "voice": {
+          "custom_empty": "Aucune voix personnalisée n'a encore été ajoutée. Ajoutez votre première voix personnalisée ci-dessus.",
+          "remove_confirm": "Supprimer la voix personnalisée \"{voiceId}\" ?",
+          "none_available": "Aucune voix disponible",
+          "default": "Utiliser la voix par défaut",
+          "none_for_engine": "Aucune voix disponible pour ce moteur",
+          "none_matching": "Aucune voix ne correspond à votre recherche",
+          "custom_form_unavailable": "Les champs du formulaire de voix personnalisées ne sont pas disponibles.",
+          "custom_exists": "Une voix nommée « {name} » existe déjà.",
+          "custom_added": "La voix personnalisée « {name} » a été ajoutée. Pensez à enregistrer la configuration.",
+          "custom_not_found": "Voix introuvable.",
+          "custom_removed": "La voix personnalisée « {voiceId} » a été supprimée. Pensez à enregistrer la configuration.",
+          "load_failed": "Impossible de charger les voix : {message}"
+        },
+        "users": {
+          "no_results": "Aucun utilisateur trouvé.",
+          "no_results_for": "Aucun utilisateur trouvé pour \"{search}\".",
+          "results_summary": "{shown} utilisateurs affichés sur {total}{search}{limit}",
+          "empty": "Aucun utilisateur trouvé. Les utilisateurs sont créés automatiquement lors de leur première utilisation de TTS.",
+          "blacklist_confirm": "Voulez-vous vraiment bloquer {username} ?",
+          "load_failed": "Impossible de charger les utilisateurs : {message}",
+          "allowed": "TTS autorisé pour {username}.",
+          "allow_failed": "Impossible d’autoriser l’utilisateur : {message}",
+          "revoked": "TTS révoqué pour {username}.",
+          "revoke_failed": "Impossible de révoquer TTS : {message}",
+          "blacklisted": "{username} a été bloqué.",
+          "blacklist_failed": "Impossible de bloquer l’utilisateur : {message}",
+          "unblacklisted": "Utilisateur retiré de la liste de blocage.",
+          "unblacklist_failed": "Impossible de retirer l’utilisateur de la liste de blocage : {message}"
+        },
+        "queue": {
+          "empty": "La file d'attente est vide",
+          "no_audio_playing": "Aucun audio en cours de lecture",
+          "clear_confirm": "Vider toute la file d'attente ?",
+          "stats": { "total_queued": "Total mis en file :", "total_played": "Total lu :", "total_dropped": "Total abandonné :", "rate_limited": "Limité par fréquence :", "current_queue": "File actuelle :" },
+          "cleared": "{count} éléments retirés de la file d’attente.",
+          "clear_failed": "Impossible de vider la file d’attente : {message}",
+          "skipped": "Élément actuel ignoré.",
+          "nothing_to_skip": "Aucun élément à ignorer.",
+          "skip_failed": "Impossible d’ignorer l’élément : {message}"
+        },
+        "permissions": {
+          "stats": { "total_users": "Utilisateurs au total :", "whitelisted": "Autorisés :", "blacklisted": "Bloqués :", "voice_assigned": "Voix attribuée :" }
+        },
+        "gifters": { "load_failed": "Impossible de charger les donateurs.", "empty": "Aucun donateur pour cette session.", "error": "Erreur : {message}" },
+        "logs": { "empty": "Aucun journal ne correspond au filtre actuel", "clear_confirm": "Effacer tous les journaux de débogage ?", "cleared": "Journaux de débogage effacés.", "clear_failed": "Impossible d’effacer les journaux : {message}" },
+        "debug": { "enable": "Activer le débogage", "disable": "Désactiver le débogage", "enabled": "Activé", "disabled": "Désactivé", "active": "Actif", "inactive": "Inactif", "mode_changed": "Débogage {state}.", "toggle_failed": "Impossible de basculer le débogage : {message}" },
+        "manual": { "form_unavailable": "Les éléments du formulaire ne sont pas disponibles.", "username_required": "Saisissez un nom d’utilisateur.", "voice_required": "Sélectionnez une voix.", "assigned": "La voix « {voiceId} » ({engine}) a été attribuée à {username}.", "assign_failed": "Impossible d’attribuer la voix : {message}" },
+        "gain": { "update_failed": "Impossible de mettre à jour le gain : {message}" },
+        "modal": { "unavailable": "La boîte d’attribution de voix n’est pas disponible.", "voice_required": "Sélectionnez une voix.", "assigned": "La voix a été attribuée à {username}.", "assign_failed": "Impossible d’attribuer la voix : {message}" },
+        "test": { "text_required": "Saisissez du texte à tester.", "queued": "TTS a bien été ajouté à la file d’attente.", "failed": "Le test TTS a échoué : {message}" },
+        "gift_rules": { "name_placeholder": "Nom du cadeau (p. ex. rose)", "template_placeholder": "Modèle", "reminder_placeholder": "Texte du rappel", "remove": "Supprimer", "default_voice": "Voix par défaut" },
+        "controls": { "speed": "Vitesse :", "volume": "Volume :", "reveal_session_id": "Afficher le SessionID" }
       },
       "labels": {
         "search_users": "Rechercher des utilisateurs",
@@ -139,7 +260,7 @@
         "voice_cloning_requires_a_speechify_api_key_configure": "Le clonage vocal nécessite une clé API Speechify. Configurez-le d'abord dans le panneau Paramètres globaux.",
         "queue_lange": "Longueur de la file d'attente",
         "25_users": "25 utilisateurs",
-        "event_tts_automatische_event_ansagen": "Event TTS - Automatische Event-Ansagen",
+        "event_tts_automatische_event_ansagen": "Annonces TTS automatiques des événements",
         "none_neutral_11a6fe": "Aucun (neutre)",
         "enter_the_exact_tiktok_username_case_sensitive_or": "Entrez le nom d'utilisateur exact de TikTok (sensible à la casse) ou sélectionnez parmi les utilisateurs de chat récents",
         "variablen_username_nickname_combocount_totalcoins": "Variable : {username}, {nickname}, {comboCount}, {totalCoins}",
@@ -197,7 +318,7 @@
         "short_texts_e_g_ok_lol_hi_will": "Les textes courts (par exemple, \"ok\", \"mdr\", \"salut\") utiliseront un langage de secours",
         "italiano_italian_46def0": "Italiano (italien)",
         "engine_settings": "Paramètres du moteur",
-        "siliconflow_tts_fish_speech_1_5": "SiliconFlow TTS (Fish Speech 1.5)",
+        "siliconflow_tts_fish_speech_1_5": "Synthèse vocale SiliconFlow (Fish Speech 1.5)",
         "fish_audio_tts_official_api": "Fish.audio TTS (API officielle)",
         "portugues_portuguese": "Português (portugais)",
         "select_which_engines_should_be_available_as_fallbacks": "Sélectionnez les moteurs qui doivent être disponibles comme solutions de secours en cas de panne du moteur principal. Seuls les moteurs activés seront chargés (économise les ressources système).",
@@ -225,8 +346,8 @@
         "assigning_voice_for": "Attribution d'une voix pour :",
         "default_engine_main": "Moteur par défaut (principal)",
         "adjust_volume_for_this_user_100_normal_300": "Ajuster le volume pour cet utilisateur (100 % = normal, 300 % = maximum)",
-        "openai_tts": "OpenAI TTS",
-        "francais": "Français",
+        "openai_tts": "Synthèse vocale OpenAI",
+        "francais": "Langue française",
         "elevenlabs_premium": "OnzeLabs (Premium)",
         "variablen_username_nickname_likecount": "Variable : {username}, {nickname}, {likeCount}",
         "language_detection": "Détection de la langue",
@@ -240,7 +361,7 @@
         "event_tts_system_aktivieren_deaktivieren": "Événement TTS System activé/désactivé",
         "announce_username_before_message": "Annoncer le nom d'utilisateur avant le message",
         "desktop_first_control_surface_for_the_tts_plugin": "Surface de contrôle de bureau pour le plugin TTS.",
-        "siliconflow_premium": "SiliconFlow (Premium)",
+        "siliconflow_premium": "SiliconFlow – formule Premium",
         "cheerful_upbeat_positive": "Joyeux – optimiste, positif",
         "profanity_filter": "Filtres grossièretés",
         "variablen_username_nickname": "Variable : {username}, {nickname}",
@@ -255,7 +376,7 @@
         "variablen_username_nickname_6fbdc6": "Variable : {username}, {nickname}",
         "portugues_portuguese_70070d": "Português (portugais)",
         "alternatively_you_can_use_voice_ids_directly_in": "Alternativement, vous pouvez utiliser les identifiants vocaux directement dans le champ « Voix par défaut » sans les ajouter ici.",
-        "events_werden_vor_chat_nachrichten_abgespielt": "Events werden vor Chat-Nachrichten abgespielt",
+        "events_werden_vor_chat_nachrichten_abgespielt": "Les événements sont lus avant les messages du chat",
         "copy_the_32_character_hexadecimal_id_and_paste": "Copiez l'identifiant hexadécimal de 32 caractères et collez-le ci-dessus",
         "loading_tts_admin_panel_if_this_message_persists": "Chargement du panneau d'administration TTS... Si ce message persiste, vérifiez la console du navigateur (F12)",
         "core_funktionen": "Fonctions de base",
@@ -291,7 +412,7 @@
         "off_no_filtering": "Désactivé - Pas de filtrage",
         "variablen_username_nickname_8b1352": "Variable : {username}, {nickname}",
         "variablen_username_nickname_giftname_giftcount_coins_8b2121": "Variable : {username}, {nickname}, {giftName}, {giftCount}, {coins}",
-        "automatische_tts_nachrichten_in_festgelegten_intervallen": "Automatische TTS-Nachrichten in festgelegten Intervallen",
+        "automatische_tts_nachrichten_in_festgelegten_intervallen": "Messages TTS automatiques à intervalles définis",
         "top_gifter_announcement": "Annonce du meilleur cadeau",
         "specific_gift_name_triggers": "Déclencheurs spécifiques du nom du cadeau",
         "standard_voice_8ca83b": "Voix standard",
@@ -302,7 +423,7 @@
         "japanese_936941": "日本語 (japonais)",
         "google_cloud_tts_94af08": "Google Cloud TTS",
         "espanol_spanish_94b48b": "espagnol (espagnol)",
-        "elevenlabs_tts_premium": "ElevenLabs TTS (Premium)",
+        "elevenlabs_tts_premium": "Synthèse vocale ElevenLabs – Premium",
         "voice_optional_95b759": "Voix (facultatif)",
         "share_events": "Partager des événements",
         "debug_log_categories": "Catégories du journal de débogage",
@@ -362,7 +483,7 @@
         "live_updates": "Mises à jour en direct :",
         "search_voice": "Recherche vocale",
         "api_keys": "Clés API",
-        "siliconflow_tts": "SiliconFlow TTS",
+        "siliconflow_tts": "Synthèse vocale SiliconFlow",
         "join_events_c698ae": "Rejoindre des événements",
         "save_event_triggers": "Enregistrer les déclencheurs d'événements",
         "anzahl_gifts_fur_combo": "Nombre de cadeaux pour le combo",
@@ -371,7 +492,7 @@
         "tieng_viet_vietnamese": "Tiếng Việt (vietnamien)",
         "tts_request_denied_permissions_rate_limit": "Demande TTS refusée (autorisations/limite de débit)",
         "standard_voice_cb616d": "Voix standard",
-        "speechify_premium": "Speechify (Premium)",
+        "speechify_premium": "Speechify – formule Premium",
         "reference_id": "Numéro de référence *",
         "gift_events": "Événements cadeaux",
         "your_custom_voices": "Vos voix personnalisées",
@@ -381,7 +502,7 @@
         "performance_mode": "Mode performante",
         "add_emotional_expression_to_speechify_voices_works_best": "Ajoutez une expression émotionnelle aux voix Speechify. Fonctionne mieux avec des phrases plus courtes.",
         "voice_optional_d7b8de": "Voix (facultatif)",
-        "speechify_tts": "Speechify TTS",
+        "speechify_tts": "Synthèse vocale Speechify",
         "tier_4_1000_coins": "Niveau 4 (plus de 1 000 pièces)",
         "subscribe_events_d98d57": "Abonnez-vous aux événements",
         "nur_die_top_n_schenker_der_session_erhalten": "Seuls les N principaux donateurs de la session ont accès au chat TTS. Réinitialisé au démarrage du flux. Les utilisateurs sur liste noire continueront d'être bloqués.",
@@ -410,22 +531,22 @@
         "direct_straightforward_clear": "Direct - Simple, clair",
         "advanced_event_triggers": "Déclencheurs d'événements avancés",
         "cooldown_s_eb6d1f": "Temps de recharge (s)",
-        "tiktok_tts": "TikTok TTS",
+        "tiktok_tts": "Synthèse vocale TikTok",
         "terrified_extreme_fear": "Terrifié - Peur extrême",
-        "openai_tts_ec8e25": "OpenAI TTS",
+        "openai_tts_ec8e25": "Synthèse vocale OpenAI",
         "emotion_speechify_only_ed25c2": "Émotion (Speechify uniquement)",
         "konfiguration_speichern": "Enregistrer la configuration",
         "standard_voice_ee9a67": "Voix standard",
         "event_tts_umgeht_den_duplikatsfilter_des_tts_systems": "Event TTS utilise le filtre double des systèmes TTS",
         "total_logs": "Journaux totaux :",
-        "openai_tts_f0878e": "OpenAI TTS",
+        "openai_tts_f0878e": "Synthèse vocale OpenAI",
         "manual_voice_assignment": "Attribution manuelle de la voix",
         "internal_identifier_no_spaces": "Identifiant interne (sans espaces)",
         "100_users": "100 utilisateurs",
-        "speechify_tts_f4a981": "Speechify TTS",
+        "speechify_tts_f4a981": "Synthèse vocale Speechify",
         "periodic_reminder_f54e90": "Rappel périodique",
         "messages_starting_with_these_characters_will_be_ignored": "Les messages commençant par ces caractères seront ignorés. Séparez plusieurs préfixes par des espaces (par exemple, \"! / .\")",
-        "fish_audio_premium": "Fish.audio (Premium)",
+        "fish_audio_premium": "Fish.audio – formule Premium",
         "current_queue": "File d'attente actuelle",
         "assign_voice_f76165": "Attribuer une voix",
         "nederlands_dutch": "Nederlands (néerlandais)",
@@ -496,7 +617,7 @@
             "assertive": "Affirmé",
             "energetic": "Énergique",
             "warm": "Chaleureux",
-            "direct": "Direct",
+            "direct": "Directe",
             "bright": "Lumineux"
           }
         }

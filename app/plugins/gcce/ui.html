@@ -1167,7 +1167,7 @@
 
             <!-- Filter Bar -->
             <div class="filter-bar">
-                <input type="text" id="cmd-filter-search" class="filter-input" placeholder="Search commands...">
+                <input type="text" id="cmd-filter-search" class="filter-input" placeholder="Search commands..." data-i18n-placeholder="plugins.gcce.form_controls.command_search_placeholder">
                 <select id="cmd-filter-category" class="filter-input">
                     <option value="" data-i18n="plugins.gcce.labels.all_categories">All Categories</option>
                     <option value="System" data-i18n="plugins.gcce.ui.category_system">System</option>
@@ -1201,7 +1201,7 @@
         <div class="card">
             <div class="card-title" data-i18n="plugins.gcce.labels.real_time_command_execution_log">📊 Real-time Command Execution Log</div>
             <div class="filter-bar">
-                <input type="text" id="log-filter-user" class="filter-input" placeholder="Filter by username...">
+                <input type="text" id="log-filter-user" class="filter-input" placeholder="Filter by username..." data-i18n-placeholder="plugins.gcce.form_controls.username_filter_placeholder">
                 <select id="log-filter-status" class="filter-input">
                     <option value="" data-i18n="plugins.gcce.labels.all_statuses">All Statuses</option>
                     <option value="success" data-i18n="plugins.gcce.labels.success_only">Success Only</option>
@@ -1390,15 +1390,15 @@
                 <div>
                     <div class="config-group">
                         <label class="config-label" data-i18n="plugins.gcce.labels.media_name">Media Name</label>
-                        <input type="text" id="media-label" placeholder="e.g. hype" maxlength="50">
+                                <input type="text" id="media-label" placeholder="e.g. hype" data-i18n-placeholder="plugins.gcce.form_controls.media_label_placeholder" maxlength="50">
                     </div>
                     <div class="config-group">
                         <label class="config-label" data-i18n="plugins.gcce.labels.media_url">Media URL</label>
-                        <input type="text" id="media-url" placeholder="https://...gif or mp4">
+                                <input type="text" id="media-url" placeholder="https://...gif or mp4" data-i18n-placeholder="plugins.gcce.form_controls.media_url_placeholder">
                     </div>
                     <div class="config-group">
                         <label class="config-label" data-i18n="plugins.gcce.labels.chat_command_optional">Chat Command (optional)</label>
-                        <input type="text" id="media-command" placeholder="e.g. !hype or /wave" maxlength="50">
+                                <input type="text" id="media-command" placeholder="e.g. !hype or /wave" data-i18n-placeholder="plugins.gcce.form_controls.media_command_placeholder" maxlength="50">
                         <small class="config-description" data-i18n="plugins.gcce.labels.if_empty_use_hudmedia_name">If empty, use /hudmedia &lt;name&gt;</small>
                     </div>
                 </div>
@@ -1452,7 +1452,7 @@
                             <div id="gift-catalog-status" class="config-description" data-i18n="plugins.gcce.labels.catalog_not_loaded">Catalog not loaded</div>
                             <button class="btn btn-primary btn-sm" id="btn-load-gift-catalog" data-i18n="plugins.gcce.labels.load_gift_catalog">🔄 Load Gift Catalog</button>
                         </div>
-                        <input type="text" id="gift-catalog-search" class="gift-catalog-search" placeholder="Search gifts by name or ID...">
+                            <input type="text" id="gift-catalog-search" class="gift-catalog-search" placeholder="Search gifts by name or ID..." data-i18n-placeholder="plugins.gcce.form_controls.gift_search_placeholder">
                         <div id="gift-catalog-grid" class="gift-catalog-grid"></div>
                         <div id="selected-gift-preview" class="selected-gift-preview">
                             <img id="selected-gift-preview-img" src="" alt="Gift">
@@ -1488,11 +1488,11 @@
                 <div>
                     <div class="config-group">
                         <label class="config-label" data-i18n="plugins.gcce.ui.headline">Headline</label>
-                        <input type="text" id="rotator-title" placeholder="e.g. Star Gifter">
+                                <input type="text" id="rotator-title" placeholder="e.g. Star Gifter" data-i18n-placeholder="plugins.gcce.form_controls.rotator_title_placeholder">
                     </div>
                     <div class="config-group">
                         <label class="config-label" data-i18n="plugins.gcce.labels.info_text_optional">Info Text (optional)</label>
-                        <input type="text" id="rotator-info" placeholder="Short message to show on HUD">
+                                <input type="text" id="rotator-info" placeholder="Short message to show on HUD" data-i18n-placeholder="plugins.gcce.form_controls.rotator_info_placeholder">
                     </div>
                     <div class="config-group">
                         <label class="config-label" data-i18n="plugins.gcce.ui.design">Design</label>
@@ -1601,12 +1601,12 @@
             <div class="card-title" data-i18n="plugins.gcce.labels.test_hud_display">🧪 Test HUD Display</div>
             <div class="config-group">
                 <label class="config-label" data-i18n="plugins.gcce.labels.test_text">Test Text</label>
-                <input type="text" id="hud-test-text" placeholder="Enter test text" value="Hello from HUD!">
+                                <input type="text" id="hud-test-text" placeholder="Enter test text" data-i18n-placeholder="plugins.gcce.form_controls.hud_test_text_placeholder" value="Hello from HUD!">
                 <button class="btn btn-primary" id="btn-test-hud-text" style="margin-top: 8px;" data-i18n="plugins.gcce.labels.display_text">Display Text</button>
             </div>
             <div class="config-group">
                 <label class="config-label" data-i18n="plugins.gcce.labels.test_image_url">Test Image URL</label>
-                <input type="text" id="hud-test-image" placeholder="Enter image URL">
+                                <input type="text" id="hud-test-image" placeholder="Enter image URL" data-i18n-placeholder="plugins.gcce.form_controls.hud_test_image_placeholder">
                 <button class="btn btn-primary" id="btn-test-hud-image" style="margin-top: 8px;" data-i18n="plugins.gcce.labels.display_image">Display Image</button>
             </div>
         </div>
@@ -2768,7 +2768,7 @@
 
                 const templateBadge = document.createElement('span');
                 templateBadge.className = 'rotator-entry-template-badge';
-                templateBadge.textContent = entry.template || 'card';
+                templateBadge.textContent = entry.template || t('plugins.gcce.ui.template_card', 'Card');
                 templateDiv.appendChild(templateBadge);
 
                 if (entry.animation) {

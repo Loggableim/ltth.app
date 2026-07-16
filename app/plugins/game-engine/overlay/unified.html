@@ -172,6 +172,12 @@
   </div>
 
   <script>
+    function runtimeText(key, params = {}) {
+      const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
+      const translated = window.i18n?.t?.(normalizedKey, params);
+      return translated && translated !== normalizedKey ? translated : '';
+    }
+
     const socket = io({ auth: { role: 'overlay' } });
     let currentGame = null;
     let latestInteractiveState = null;
@@ -389,7 +395,7 @@
 
       if (queueLength > 0) {
         indicator.classList.add('visible');
-        list.innerHTML = `<div class="queue-item">${queueLength} game(s) in queue</div>`;
+        list.innerHTML = `<div class="queue-item">${runtimeText('plugins.game-engine.runtime.unified.queue_count', { count: queueLength })}</div>`;
       } else {
         indicator.classList.remove('visible');
       }

@@ -1,6 +1,6 @@
 const { ObsDocsCaptureSession } = require('../../scripts/lib/obs-docs-capture-session');
 
-function createFakeObs({ streamActive = false, recordActive = false, removeSceneItemFails = false, sourceNames = ['LTTH Tutorial - Emoji Rain'] } = {}) {
+function createFakeObs({ streamActive = false, recordActive = false, removeSceneItemFails = false, sourceNames = [] } = {}) {
   const calls = [];
   const sources = sourceNames.map((sourceName, index) => ({
     sourceName,
@@ -13,6 +13,10 @@ function createFakeObs({ streamActive = false, recordActive = false, removeScene
   let temporaryInputExists = false;
   return {
     calls,
+    setOutputState({ nextStreamActive = streamActive, nextRecordActive = recordActive } = {}) {
+      streamActive = nextStreamActive;
+      recordActive = nextRecordActive;
+    },
     async call(requestType, requestData = {}) {
       calls.push({ requestType, requestData });
       if (requestType === 'GetStreamStatus') return { outputActive: streamActive };
@@ -68,8 +72,8 @@ describe('OBS Docs Capture session', () => {
       temporaryInputRemoved: true,
       streamActive: false,
       recordActive: false,
-      initialSourceNames: ['LTTH Tutorial - Emoji Rain'],
-      restoredSourceNames: ['LTTH Tutorial - Emoji Rain']
+      initialSourceNames: [],
+      restoredSourceNames: []
     });
     expect(obs.calls.map((call) => call.requestType)).toEqual([
       'GetStreamStatus',
@@ -78,8 +82,12 @@ describe('OBS Docs Capture session', () => {
       'CreateInput',
       'GetInputSettings',
       'GetSceneItemList',
+      'GetStreamStatus',
+      'GetRecordStatus',
       'GetSourceScreenshot',
       'GetSourceScreenshot',
+      'GetStreamStatus',
+      'GetRecordStatus',
       'RemoveSceneItem',
       'GetSceneItemList',
       'RemoveInput',
@@ -100,7 +108,7 @@ describe('OBS Docs Capture session', () => {
     expect(obs.calls.some((call) => /^(?:SetCurrentProgramScene|StartStream|StartRecord)$/.test(call.requestType))).toBe(false);
     expect(obs.calls.find((call) => call.requestType === 'RemoveSceneItem').requestData).toEqual({
       sceneName: 'tutorial',
-      sceneItemId: 2
+      sceneItemId: 1
     });
     expect(obs.calls.filter((call) => call.requestType === 'GetSourceScreenshot').map((call) => call.requestData.sourceName)).toEqual([
       'LTTH Docs Capture',
@@ -110,13 +118,7 @@ describe('OBS Docs Capture session', () => {
       inputName: 'LTTH Docs Capture'
     });
     expect(receipt.initialSceneItems).toEqual(receipt.restoredSceneItems);
-    expect(receipt.initialSceneItems).toEqual([{
-      sourceName: 'LTTH Tutorial - Emoji Rain',
-      sceneItemId: 1,
-      sceneItemEnabled: true,
-      sceneItemLocked: false,
-      sceneItemTransform: { positionX: 0, positionY: 0, scaleX: 1, scaleY: 1 }
-    }]);
+    expect(receipt.initialSceneItems).toEqual([]);
     expect(obs.calls.filter((call) => call.requestType === 'GetSourceScreenshot').at(-1).requestData).toMatchObject({
       sourceName: 'tutorial',
       imageFormat: 'png',
@@ -151,6 +153,23 @@ describe('OBS Docs Capture session', () => {
     expect(obs.calls).toEqual([]);
   });
 
+  test('requires the tutorial scene to be empty before adding the temporary source', async () => {
+    const obs = createFakeObs({ sourceNames: ['Existing Tutorial Source'] });
+    const session = new ObsDocsCaptureSession(obs);
+
+    await expect(session.capture({
+      sceneName: 'tutorial',
+      overlayUrl: 'http://127.0.0.1:3000/plugins/emoji-rain/overlay.html',
+      width: 1280,
+      height: 720
+    })).rejects.toThrow('OBS tutorial scene must be empty before documentation capture');
+    expect(obs.calls.map((call) => call.requestType)).toEqual([
+      'GetStreamStatus',
+      'GetRecordStatus',
+      'GetSceneItemList'
+    ]);
+  });
+
   test('runs a supplied local preparation only after the temporary source is visible', async () => {
     const obs = createFakeObs();
     const session = new ObsDocsCaptureSession(obs);
@@ -168,6 +187,23 @@ describe('OBS Docs Capture session', () => {
     });
 
     expect(prepared).toBe(true);
+  });
+
+  test('aborts and cleans up if OBS output starts after setup but before screenshots', async () => {
+    const obs = createFakeObs();
+    const session = new ObsDocsCaptureSession(obs);
+
+    await expect(session.capture({
+      sceneName: 'tutorial',
+      overlayUrl: 'http://127.0.0.1:3000/emoji-rain/obs-hud',
+      width: 1280,
+      height: 720,
+      beforeScreenshot: async () => obs.setOutputState({ nextStreamActive: true })
+    })).rejects.toThrow('OBS stream or recording output is active');
+
+    expect(obs.calls.some((call) => call.requestType === 'GetSourceScreenshot')).toBe(false);
+    expect(obs.calls.some((call) => call.requestType === 'RemoveSceneItem')).toBe(true);
+    expect(obs.calls.some((call) => call.requestType === 'RemoveInput')).toBe(true);
   });
 
   test('still removes the temporary input if scene-item cleanup fails', async () => {

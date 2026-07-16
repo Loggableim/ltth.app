@@ -1,6 +1,21 @@
-const { createCaptureReceipt } = require('../../scripts/lib/capture-receipt');
+const { assertNoBlockedNetworkAttempts, createCaptureReceipt, isAllowedCaptureNetworkUrl } = require('../../scripts/lib/capture-receipt');
 
 describe('CaptureReceipt workflow evidence', () => {
+  test('rejects every blocked external network attempt', () => {
+    expect(() => assertNoBlockedNetworkAttempts([])).not.toThrow();
+    expect(() => assertNoBlockedNetworkAttempts([{
+      attempted: true,
+      disposition: 'blocked',
+      url: 'https://example.com/tracker.js'
+    }])).toThrow('blocked external network attempt');
+  });
+
+  test('allows inline data assets while continuing to reject remote URLs', () => {
+    expect(isAllowedCaptureNetworkUrl('data:image/svg+xml,%3Csvg%20/%3E')).toBe(true);
+    expect(isAllowedCaptureNetworkUrl('http://127.0.0.1:43111/css/themes.css')).toBe(true);
+    expect(isAllowedCaptureNetworkUrl('https://cdn.tailwindcss.com/')).toBe(false);
+  });
+
   test('records declared operations and evaluates real workflow postconditions', () => {
     const workflow = {
       operations: [

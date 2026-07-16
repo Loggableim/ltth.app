@@ -2,6 +2,10 @@
 (function() {
     'use strict';
 
+    function t(key, params) {
+        return window.i18n?.t(key, params) || key;
+    }
+
     // Socket.IO connection
     const socket = io();
 
@@ -208,7 +212,7 @@
         socket.on('connect', () => {
             const status = document.getElementById('connectionStatus');
             if (status) {
-                status.textContent = 'Verbunden';
+                status.textContent = t('plugins.quiz-show.runtime.connection.connected');
                 status.className = 'status-badge status-connected';
             }
         });
@@ -216,7 +220,7 @@
         socket.on('disconnect', () => {
             const status = document.getElementById('connectionStatus');
             if (status) {
-                status.textContent = 'Getrennt';
+                status.textContent = t('plugins.quiz-show.runtime.connection.disconnected');
                 status.className = 'status-badge status-error';
             }
         });
@@ -272,7 +276,7 @@
     }
 
     function stopQuiz() {
-        if (confirm('Quiz wirklich stoppen?')) {
+        if (confirm(t('plugins.quiz-show.runtime.dialogs.stop_quiz'))) {
             socket.emit('quiz-show:stop');
         }
     }
@@ -292,7 +296,7 @@
         const info = document.getElementById('questionInfo').value.trim() || null;
 
         if (!question || answers.some(a => !a)) {
-            alert('Bitte alle Felder ausfüllen');
+            alert(t('plugins.quiz-show.runtime.dialogs.fill_all_fields'));
             return;
         }
 
@@ -334,7 +338,7 @@
         const info = document.getElementById('questionInfo').value.trim() || null;
 
         if (!question || answers.some(a => !a)) {
-            alert('Bitte alle Felder ausfüllen');
+            alert(t('plugins.quiz-show.runtime.dialogs.fill_all_fields'));
             return;
         }
 
@@ -386,7 +390,7 @@
     }
 
     async function deleteQuestion(questionId) {
-        if (!confirm('Frage wirklich löschen?')) return;
+        if (!confirm(t('plugins.quiz-show.runtime.dialogs.delete_question'))) return;
 
         try {
             const response = await fetch(`/api/quiz-show/questions/${questionId}`, {
@@ -431,7 +435,7 @@
         const jsonText = document.getElementById('jsonUpload').value.trim();
 
         if (!jsonText) {
-            alert('Bitte JSON eingeben');
+            alert(t('plugins.quiz-show.runtime.dialogs.enter_json'));
             return;
         }
 
@@ -454,7 +458,7 @@
             }
         } catch (error) {
             console.error('Error uploading questions:', error);
-            alert('Ungültiges JSON Format');
+            alert(t('plugins.quiz-show.runtime.dialogs.invalid_json'));
         }
     }
 
@@ -636,7 +640,7 @@
         const jsonText = document.getElementById('importLeaderboardJson').value.trim();
 
         if (!jsonText) {
-            alert('Bitte JSON eingeben');
+            alert(t('plugins.quiz-show.runtime.dialogs.enter_json'));
             return;
         }
 
@@ -660,12 +664,12 @@
             }
         } catch (error) {
             console.error('Error importing leaderboard:', error);
-            alert('Ungültiges JSON Format');
+            alert(t('plugins.quiz-show.runtime.dialogs.invalid_json'));
         }
     }
 
     async function resetLeaderboard() {
-        if (!confirm('Leaderboard wirklich zurücksetzen? Alle Punkte gehen verloren!')) {
+        if (!confirm(t('plugins.quiz-show.runtime.dialogs.reset_leaderboard'))) {
             return;
         }
 
@@ -693,7 +697,7 @@
 
         // Update UI
         if (state.isRunning) {
-            document.getElementById('quizStatus').textContent = 'Läuft';
+            document.getElementById('quizStatus').textContent = t('plugins.quiz-show.runtime.status.running');
             document.getElementById('quizStatus').className = 'status-badge status-running';
 
             document.getElementById('startQuizBtn').disabled = true;
@@ -712,7 +716,7 @@
     }
 
     function handleRoundEnded(data) {
-        document.getElementById('quizStatus').textContent = 'Runde beendet';
+        document.getElementById('quizStatus').textContent = t('plugins.quiz-show.runtime.status.round_ended');
         document.getElementById('quizStatus').className = 'status-badge status-idle';
 
         // Keep buttons active - user can still stop or continue to next question
@@ -768,7 +772,7 @@
     }
 
     function handleQuizStopped() {
-        document.getElementById('quizStatus').textContent = 'Gestoppt';
+        document.getElementById('quizStatus').textContent = t('plugins.quiz-show.runtime.status.stopped');
         document.getElementById('quizStatus').className = 'status-badge status-idle';
 
         document.getElementById('startQuizBtn').disabled = false;
@@ -919,7 +923,7 @@
         const resultDiv = document.getElementById('llmTestResult');
 
         resultDiv.classList.remove('hidden', 'success-message', 'error-message');
-        resultDiv.textContent = 'Teste Verbindung...';
+        resultDiv.textContent = t('plugins.quiz-show.runtime.connection.testing');
         resultDiv.className = 'message';
 
         try {
@@ -931,14 +935,14 @@
             const data = await response.json();
 
             if (data.success) {
-                resultDiv.textContent = '? Verbindung erfolgreich! Das Modell ist erreichbar.';
+                resultDiv.textContent = t('plugins.quiz-show.runtime.connection.success');
                 resultDiv.className = 'message success-message';
             } else {
-                resultDiv.textContent = '? Verbindung fehlgeschlagen: ' + (data.error || 'Unbekannter Fehler');
+                resultDiv.textContent = t('plugins.quiz-show.runtime.connection.failed', { error: data.error || t('plugins.quiz-show.runtime.connection.unknown_error') });
                 resultDiv.className = 'message error-message';
             }
         } catch (error) {
-            resultDiv.textContent = '? Netzwerkfehler: ' + error.message;
+            resultDiv.textContent = t('plugins.quiz-show.runtime.connection.network_error', { error: error.message });
             resultDiv.className = 'message error-message';
         }
         resultDiv.classList.remove('hidden');
@@ -949,10 +953,10 @@
         const container = document.getElementById('questionsList');
         const countDisplay = document.getElementById('questionCount');
 
-        countDisplay.textContent = `${questions.length} Fragen`;
+        countDisplay.textContent = t('plugins.quiz-show.runtime.questions.count', { count: questions.length });
 
         if (questions.length === 0) {
-            container.innerHTML = '<p class="no-data">Keine Fragen vorhanden</p>';
+            container.innerHTML = `<p class="no-data">${t('plugins.quiz-show.runtime.questions.empty')}</p>`;
             return;
         }
 
@@ -988,7 +992,7 @@
         const tbody = document.getElementById('leaderboardBody');
 
         if (leaderboard.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="no-data">Keine Einträge</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="3" class="no-data">${t('plugins.quiz-show.runtime.leaderboard.empty')}</td></tr>`;
             return;
         }
 
@@ -1015,11 +1019,11 @@
             const selectedOption = seasonSelect && seasonSelect.selectedIndex >= 0
                 ? seasonSelect.options[seasonSelect.selectedIndex]
                 : null;
-            seasonBadge.textContent = selectedOption ? selectedOption.textContent.trim() : 'Season';
+            seasonBadge.textContent = selectedOption ? selectedOption.textContent.trim() : t('plugins.quiz-show.runtime.leaderboard.season');
         }
 
         if (leaderboard.length === 0) {
-            preview.innerHTML = '<p class="no-data">Keine Einträge</p>';
+            preview.innerHTML = `<p class="no-data">${t('plugins.quiz-show.runtime.leaderboard.empty')}</p>`;
             return;
         }
 
@@ -1068,7 +1072,7 @@
         const display = document.getElementById('currentQuestionDisplay');
         const optionsContainer = document.getElementById('answerOptions');
 
-        display.innerHTML = '<p class="no-question">Keine Frage aktiv</p>';
+        display.innerHTML = `<p class="no-question">${t('plugins.quiz-show.runtime.questions.no_active')}</p>`;
         optionsContainer.classList.add('hidden');
     }
 
@@ -1169,7 +1173,7 @@
         event.innerHTML = `
             <span class="joker-icon">${jokerIcons[joker.type]}</span>
             <span class="joker-info">
-                <strong>${jokerNames[joker.type]}</strong> von ${escapeHtml(joker.username)}
+                <strong>${jokerNames[joker.type]}</strong> ${t('plugins.quiz-show.runtime.jokers.by')} ${escapeHtml(joker.username)}
             </span>
         `;
 
@@ -1336,7 +1340,7 @@
     }
 
     async function resetHUDConfig() {
-        if (!confirm('Möchten Sie die HUD-Konfiguration wirklich auf Standard zurücksetzen? Alle Positionen und Einstellungen gehen verloren.')) {
+        if (!confirm(t('plugins.quiz-show.runtime.dialogs.reset_hud'))) {
             return;
         }
 
@@ -1621,11 +1625,11 @@
         const selected = getSelectedCategories();
         
         if (selected.includes('Alle') || selected.length === 0) {
-            label.textContent = 'Alle Kategorien';
+            label.textContent = t('plugins.quiz-show.runtime.categories.all');
         } else if (selected.length === 1) {
             label.textContent = selected[0];
         } else {
-            label.textContent = `${selected.length} Kategorien`;
+            label.textContent = t('plugins.quiz-show.runtime.categories.selected_count', { count: selected.length });
         }
     }
     
@@ -1736,7 +1740,7 @@
                 const seasonSelect = document.getElementById('seasonSelect');
                 const currentSeason = seasonSelect.value;
                 
-                seasonSelect.innerHTML = '<option value="active">Aktuelle Saison</option>' +
+                seasonSelect.innerHTML = `<option value="active">${t('plugins.quiz-show.runtime.seasons.current')}</option>` +
                     data.seasons.filter(s => !s.is_active).map(season =>
                         `<option value="${season.id}">${escapeHtml(season.season_name)} (${new Date(season.start_date).toLocaleDateString()})</option>`
                     ).join('');
@@ -1856,10 +1860,10 @@
     }
     
     async function createNewSeason() {
-        const seasonName = prompt('Name der neuen Saison:', `Saison ${new Date().getFullYear()}`);
+        const seasonName = prompt(t('plugins.quiz-show.runtime.dialogs.season_name'), t('plugins.quiz-show.runtime.seasons.default_name', { year: new Date().getFullYear() }));
         if (!seasonName) return;
         
-        if (!confirm(`Neue Saison "${seasonName}" erstellen? Die aktuelle Saison wird archiviert.`)) {
+        if (!confirm(t('plugins.quiz-show.runtime.dialogs.create_season', { name: seasonName }))) {
             return;
         }
         
@@ -1936,17 +1940,17 @@
 
     async function saveOpenAIConfig() {
         // Deprecated - OpenAI config is now in main settings
-        alert('OpenAI-Konfiguration wird jetzt im Haupteinstellungspanel verwaltet. Bitte speichern Sie Ihren API-Schlüssel dort.');
+        alert(t('plugins.quiz-show.runtime.dialogs.openai_settings_managed'));
     }
 
     async function testOpenAIKey() {
         // Deprecated - OpenAI config is now in main settings
-        alert('OpenAI-Konfiguration wird jetzt im Haupteinstellungspanel verwaltet. Bitte speichern Sie Ihren API-Schlüssel dort.');
+        alert(t('plugins.quiz-show.runtime.dialogs.openai_settings_managed'));
     }
 
     async function testOpenAIKeyFromSettings() {
         // Deprecated - OpenAI config is now in main settings  
-        alert('OpenAI-Konfiguration wird jetzt im Haupteinstellungspanel verwaltet. Bitte speichern Sie Ihren API-Schlüssel dort.');
+        alert(t('plugins.quiz-show.runtime.dialogs.openai_settings_managed'));
     }
 
     async function generateQuestionPackage() {
@@ -1968,11 +1972,11 @@
             
             progressContainer.classList.remove('hidden');
             progressBar.style.width = '10%';
-            progressText.textContent = 'Generiere Fragen mit OpenAI...';
+            progressText.textContent = t('plugins.quiz-show.runtime.ai.generating');
 
             const btn = document.getElementById('generatePackageBtn');
             const originalText = btn.textContent;
-            btn.textContent = ' Generiere...';
+            btn.textContent = ` ${t('plugins.quiz-show.runtime.ai.generate_short')}`;
             btn.disabled = true;
 
             const response = await fetch('/api/quiz-show/packages/generate', {
@@ -1987,12 +1991,12 @@
             });
 
             progressBar.style.width = '50%';
-            progressText.textContent = 'Verarbeite Antworten...';
+            progressText.textContent = t('plugins.quiz-show.runtime.ai.processing');
 
             const data = await response.json();
 
             progressBar.style.width = '100%';
-            progressText.textContent = 'Fertig!';
+            progressText.textContent = t('plugins.quiz-show.runtime.ai.done');
 
             btn.textContent = originalText;
             btn.disabled = false;
@@ -2040,10 +2044,10 @@
         const container = document.getElementById('packagesList');
         const countDisplay = document.getElementById('packageCount');
 
-        countDisplay.textContent = `${packages.length} Pakete`;
+        countDisplay.textContent = t('plugins.quiz-show.runtime.packages.count', { count: packages.length });
 
         if (packages.length === 0) {
-            container.innerHTML = '<p class="no-data">Keine Pakete vorhanden. Generieren Sie Ihr erstes Paket oben!</p>';
+            container.innerHTML = `<p class="no-data">${t('plugins.quiz-show.runtime.packages.empty')}</p>`;
             return;
         }
 
@@ -2099,7 +2103,7 @@
     }
 
     async function deletePackage(packageId) {
-        if (!confirm('Dieses Paket und alle seine Fragen wirklich löschen?')) {
+        if (!confirm(t('plugins.quiz-show.runtime.dialogs.delete_package'))) {
             return;
         }
 
@@ -2197,7 +2201,7 @@
         if (!container) return;
 
         if (layouts.length === 0) {
-            container.innerHTML = '<p class="no-data">Keine Layouts vorhanden</p>';
+            container.innerHTML = `<p class="no-data">${t('plugins.quiz-show.runtime.layouts.empty')}</p>`;
             return;
         }
 
@@ -2351,7 +2355,7 @@
     }
 
     async function deleteLayout(layoutId) {
-        if (!confirm('Layout wirklich löschen?')) return;
+        if (!confirm(t('plugins.quiz-show.runtime.dialogs.delete_layout'))) return;
         
         try {
             const response = await fetch(`/api/quiz-show/layouts/${layoutId}`, {
@@ -2862,7 +2866,7 @@
         const selector = document.getElementById('giftSelector');
         if (!selector) return;
 
-        selector.innerHTML = '<option value="">-- Geschenk wählen --</option>' +
+        selector.innerHTML = `<option value="">${t('plugins.quiz-show.runtime.gifts.select')}</option>` +
             giftCatalog.map(gift => {
                 const giftId = parseInt(gift.id, 10);
                 const diamondCount = parseInt(gift.diamond_count, 10) || 0;
@@ -2892,7 +2896,7 @@
         const selector = document.getElementById('quizStartGiftSelector');
         if (!selector) return;
 
-        selector.innerHTML = '<option value="">-- Geschenk wählen --</option>' +
+        selector.innerHTML = `<option value="">${t('plugins.quiz-show.runtime.gifts.select')}</option>` +
             giftCatalog.map(gift => {
                 const giftId = parseInt(gift.id, 10);
                 const diamondCount = parseInt(gift.diamond_count, 10) || 0;
@@ -2937,7 +2941,7 @@
         if (!tbody) return;
 
         if (giftJokers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="no-data">Keine Zuordnungen vorhanden</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="5" class="no-data">${t('plugins.quiz-show.runtime.gifts.empty_mappings')}</td></tr>`;
             return;
         }
 
@@ -3035,7 +3039,7 @@
     }
 
     async function deleteGiftJoker(giftId) {
-        if (!confirm('Zuordnung wirklich löschen?')) return;
+        if (!confirm(t('plugins.quiz-show.runtime.dialogs.delete_mapping'))) return;
 
         try {
             const response = await fetch(`/api/quiz-show/gift-jokers/${giftId}`, {
@@ -3514,7 +3518,7 @@
                 // Disable button
                 if (batchGenerateBtn) {
                     batchGenerateBtn.disabled = true;
-                    batchGenerateBtn.textContent = ' Generierung läuft...';
+                    batchGenerateBtn.textContent = ` ${t('plugins.quiz-show.runtime.batch.generating')}`;
                 }
                 
                 // Show progress
@@ -3523,7 +3527,7 @@
                 }
                 if (batchProgressLog) {
                     batchProgressLog.innerHTML = '';
-                    batchProgressLog.innerHTML += `<div style="color: #10b981;">[${new Date().toLocaleTimeString()}] Batch-Generierung gestartet für ${categories.length} Kategorien...</div>`;
+                    batchProgressLog.innerHTML += `<div style="color: #10b981;">${t('plugins.quiz-show.runtime.batch.started', { time: new Date().toLocaleTimeString(), count: categories.length })}</div>`;
                 }
                 
                 batchGenerationActive = true;
@@ -3542,7 +3546,7 @@
                     showMessage('Fehler: ' + data.error, 'error', 'batchGenerateMessage');
                     if (batchGenerateBtn) {
                         batchGenerateBtn.disabled = false;
-                        batchGenerateBtn.textContent = ' Batch Generierung Starten';
+                        batchGenerateBtn.textContent = ` ${t('plugins.quiz-show.runtime.batch.start')}`;
                     }
                     batchGenerationActive = false;
                 }
@@ -3551,7 +3555,7 @@
                 const batchGenerateBtn = document.getElementById('batchGenerateBtn');
                 if (batchGenerateBtn) {
                     batchGenerateBtn.disabled = false;
-                    batchGenerateBtn.textContent = ' Batch Generierung Starten';
+                    batchGenerateBtn.textContent = ` ${t('plugins.quiz-show.runtime.batch.start')}`;
                 }
                 batchGenerationActive = false;
             }
@@ -3597,13 +3601,13 @@
         
         if (batchGenerateBtn) {
             batchGenerateBtn.disabled = false;
-            batchGenerateBtn.textContent = ' Batch Generierung Starten';
+            batchGenerateBtn.textContent = ` ${t('plugins.quiz-show.runtime.batch.start')}`;
         }
         
         if (batchProgressLog) {
             const timestamp = new Date().toLocaleTimeString();
-            batchProgressLog.innerHTML += `<div style="color: #10b981; font-weight: bold; margin-top: 10px;">[${timestamp}] Batch-Generierung abgeschlossen!</div>`;
-            batchProgressLog.innerHTML += `<div style="color: #a0a0a0;">Erfolgreich: ${data.successCount} | Fehlgeschlagen: ${data.failedCount}</div>`;
+            batchProgressLog.innerHTML += `<div style="color: #10b981; font-weight: bold; margin-top: 10px;">${t('plugins.quiz-show.runtime.batch.completed', { time: timestamp })}</div>`;
+            batchProgressLog.innerHTML += `<div style="color: #a0a0a0;">${t('plugins.quiz-show.runtime.batch.summary', { success: data.successCount, failed: data.failedCount })}</div>`;
             batchProgressLog.scrollTop = batchProgressLog.scrollHeight;
         }
         
@@ -3773,7 +3777,9 @@
         const rows = Object.entries(vote.votesByCategory || {})
             .map(([category, count]) => `${escapeHtml(category)}: ${count}`)
             .join(' | ');
-        element.textContent = vote.active ? `Voting laeuft: ${rows}` : `Voting bereit: ${rows}`;
+        element.textContent = vote.active
+            ? t('plugins.quiz-show.runtime.voting.active', { rows })
+            : t('plugins.quiz-show.runtime.voting.ready', { rows });
         element.className = 'message message-info';
         element.classList.remove('hidden');
     }
@@ -3781,7 +3787,7 @@
     function renderCategoryVoteEnded(data) {
         const element = document.getElementById('categoryVoteStatus');
         if (!element) return;
-        element.textContent = `Gewaehlte Kategorie: ${data.selectedCategory || 'keine'}`;
+        element.textContent = t('plugins.quiz-show.runtime.voting.selected', { category: data.selectedCategory || t('plugins.quiz-show.runtime.voting.none') });
         element.className = 'message message-success';
         element.classList.remove('hidden');
     }
@@ -3794,7 +3800,7 @@
             const list = document.getElementById('showsList');
             if (!list) return;
             if (!data.shows.length) {
-                list.innerHTML = '<div class="empty-state">Noch keine Shows gespeichert.</div>';
+                list.innerHTML = `<div class="empty-state">${t('plugins.quiz-show.runtime.shows.empty')}</div>`;
                 return;
             }
             list.innerHTML = data.shows.map(show => `
@@ -3869,7 +3875,7 @@
     }
 
     async function deleteShow(id) {
-        if (!confirm('Show wirklich loeschen?')) return;
+        if (!confirm(t('plugins.quiz-show.runtime.dialogs.delete_show'))) return;
         await fetch(`/api/quiz-show/shows/${id}`, { method: 'DELETE' });
         await loadShows();
     }
@@ -3949,7 +3955,7 @@
                     <span>${escapeHtml(sound.file_path || '')}</span>
                     <span>${sound.volume}</span>
                 </div>
-            `).join('') : '<div class="empty-state">Keine Sounds hinterlegt.</div>';
+            `).join('') : `<div class="empty-state">${t('plugins.quiz-show.runtime.sounds.empty')}</div>`;
         } catch (error) {
             list.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
         }
@@ -4095,14 +4101,14 @@
             const data = await response.json();
             const checks = data.checks || {};
             panel.innerHTML = `
-                <div><strong>Datenbank</strong><span>${escapeHtml(checks.database?.status || 'unknown')}</span></div>
-                <div><strong>Socket</strong><span>${escapeHtml(checks.socket?.status || 'unknown')}</span></div>
-                <div><strong>TTS</strong><span>${escapeHtml(checks.tts?.status || 'unknown')}</span></div>
-                <div><strong>OpenAI</strong><span>${escapeHtml(checks.openai?.status || 'unknown')}</span></div>
-                <div><strong>Fragen</strong><span>${data.inventory?.questions ?? 0}</span></div>
-                <div><strong>Kategorien</strong><span>${data.inventory?.categories ?? 0}</span></div>
-                <div><strong>Sounds</strong><span>${data.inventory?.sounds ?? 0}</span></div>
-                <div><strong>Setup</strong><span>${data.setup?.completed ? 'fertig' : data.setup?.step}</span></div>
+                <div><strong>${t('plugins.quiz-show.runtime.health.database')}</strong><span>${escapeHtml(checks.database?.status || 'unknown')}</span></div>
+                <div><strong>${t('plugins.quiz-show.runtime.health.socket')}</strong><span>${escapeHtml(checks.socket?.status || 'unknown')}</span></div>
+                <div><strong>${t('plugins.quiz-show.runtime.health.tts')}</strong><span>${escapeHtml(checks.tts?.status || 'unknown')}</span></div>
+                <div><strong>${t('plugins.quiz-show.runtime.health.openai')}</strong><span>${escapeHtml(checks.openai?.status || 'unknown')}</span></div>
+                <div><strong>${t('plugins.quiz-show.runtime.health.questions')}</strong><span>${data.inventory?.questions ?? 0}</span></div>
+                <div><strong>${t('plugins.quiz-show.runtime.health.categories')}</strong><span>${data.inventory?.categories ?? 0}</span></div>
+                <div><strong>${t('plugins.quiz-show.runtime.health.sounds')}</strong><span>${data.inventory?.sounds ?? 0}</span></div>
+                <div><strong>${t('plugins.quiz-show.runtime.health.setup')}</strong><span>${data.setup?.completed ? t('plugins.quiz-show.runtime.health.complete') : data.setup?.step}</span></div>
             `;
         } catch (error) {
             panel.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;

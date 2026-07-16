@@ -141,6 +141,35 @@
       },
       "runtime": {
       "status": { "settings_updated": "Settings updated from server" },
+      "overlay": {
+        "anonymous": "Anonymous",
+        "init_retry": "ClarityHUD initialization failed. Retrying in {seconds}s…",
+        "init_failed": "ClarityHUD could not be initialized. Check the browser console for details.",
+        "coins": "coins",
+        "gift_sent": "sent a gift",
+        "gift_sent_count": "sent {gift} x{count}",
+        "multi_gift_sent": "🎁 Sent {gift} x{count}",
+        "message_render_error": "Error rendering message: {message}",
+        "event": {
+          "chat": "Chat",
+          "follow": "Followed",
+          "share": "Shared",
+          "like": "Liked",
+          "gift": "Gift",
+          "sub": "Subscribed",
+          "treasure": "Treasure",
+          "join": "Joined"
+        }
+      },
+      "badge": {
+        "team_level": "Team level {level}",
+        "moderator": "Moderator",
+        "subscriber": "Subscriber",
+        "gifter_level": "Gifter level {level}",
+        "fan_club_with_name": "{clubName} (level {level})",
+        "fan_club_level": "Fan club level {level}"
+      },
+      "debug": { "status": "Status: {status}", "socket": "Socket: {status}", "events": "Events: {count}", "streams": "Streams: {count}" },
       "toast": {
         "unknown_error": "Unknown error",
         "url_copied": "URL copied to clipboard!",
@@ -171,7 +200,7 @@
         "preset_name": "Preset name",
         "reset_confirm": "Are you sure you want to reset all settings to defaults? This cannot be undone."
       },
-      "empty": { "no_additional_streams": "No additional streams configured", "unknown_tab": "Unknown tab" },
+      "empty": { "no_additional_streams": "No additional streams configured", "unknown_tab": "Unknown tab", "no_activity_title": "No activity yet", "no_activity_description": "Events will appear here as they happen" },
       "stream": { "fallback": "Stream {number}" },
       "dock": { "chat": "Chat HUD", "full": "Full Activity HUD", "multi": "Multi-Stream HUD", "stream": "Stream Overlay" },
       "preset": { "highContrast": "High Contrast", "visionImpaired": "Vision Impaired", "dyslexiaFriendly": "Dyslexia-Friendly", "motionSensitive": "Motion Sensitive" },

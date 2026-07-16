@@ -1,53 +1,65 @@
 {
   "plugins": {
     "gcce": {
+      "form_controls": {
+        "command_search_placeholder": "Buscar comandos...",
+        "username_filter_placeholder": "Filtrar por nombre de usuario...",
+        "media_label_placeholder": "p. ej. hype",
+        "media_url_placeholder": "https://...gif o mp4",
+        "media_command_placeholder": "p. ej. !hype o /wave",
+        "gift_search_placeholder": "Buscar regalos por nombre o ID...",
+        "rotator_title_placeholder": "p. ej. Donante estrella",
+        "rotator_info_placeholder": "Mensaje corto para mostrar en el HUD",
+        "hud_test_text_placeholder": "Introduce un texto de prueba",
+        "hud_test_image_placeholder": "Introduce la URL de la imagen"
+      },
       "gcce": {
-        "title": "Global Chat Command Engine",
-        "subtitle": "Universal chat command interpreter and framework for all plugins",
+        "title": "Motor global de comandos de chat",
+        "subtitle": "Intérprete y marco de comandos de chat universal para todos los complementos",
         "statistics": {
-          "title": "Statistics",
-          "total_commands": "Total Commands",
-          "enabled_commands": "Enabled Commands",
-          "registered_plugins": "Registered Plugins"
+          "title": "Estadísticas",
+          "total_commands": "Comandos totales",
+          "enabled_commands": "Comandos habilitados",
+          "registered_plugins": "Complementos registrados"
         },
         "config": {
           "title": "Configuración",
-          "command_prefix": "Command Prefix",
-          "command_prefix_desc": "Prefix used to identify chat commands (e.g., \"!\" for !help)",
-          "enable_built_in": "Enable Built-in Commands",
-          "enable_built_in_desc": "Enable default commands like !help, !commands, etc.",
-          "enable_overlay": "Enable Overlay Messages",
-          "enable_overlay_desc": "Show command responses on stream overlays",
-          "enable_help": "Enable Help Command",
-          "enable_help_desc": "Allow users to use !help command",
-          "save": "Save Configuration"
+          "command_prefix": "Prefijo de comando",
+          "command_prefix_desc": "Prefijo usado para identificar comandos de chat (p. ej., \"!\" para !help)",
+          "enable_built_in": "Activar comandos integrados",
+          "enable_built_in_desc": "Activa comandos predeterminados como !help, !commands, etc.",
+          "enable_overlay": "Activar mensajes de superposición",
+          "enable_overlay_desc": "Muestra las respuestas de los comandos en las superposiciones de la transmisión",
+          "enable_help": "Activar comando de ayuda",
+          "enable_help_desc": "Permite que los usuarios usen el comando !help",
+          "save": "Guardar configuración"
         },
         "commands": {
-          "title": "Registered Commands",
-          "loading": "Loading commands...",
-          "no_commands": "No commands registered yet.",
-          "failed_load": "Failed to load commands",
+          "title": "Comandos registrados",
+          "loading": "Cargando comandos...",
+          "no_commands": "Aún no hay comandos registrados.",
+          "failed_load": "No se pudieron cargar los comandos",
           "table": {
-            "command": "Command",
-            "description": "Description",
+            "command": "Comando",
+            "description": "Descripción",
             "plugin": "Complemento",
-            "permission": "Permission",
+            "permission": "Permiso",
             "enabled": "Habilitado"
           },
-          "built_in": "built-in"
+          "built_in": "integrado"
         },
         "permissions": {
-          "viewer": "viewer",
-          "subscriber": "subscriber",
-          "moderator": "moderator",
-          "owner": "owner"
+          "viewer": "espectador",
+          "subscriber": "suscriptor",
+          "moderator": "moderador",
+          "owner": "propietario"
         },
         "messages": {
-          "config_saved": "Configuration saved successfully!",
-          "config_failed": "Failed to save configuration",
-          "command_enabled": "Command {name} enabled",
-          "command_disabled": "Command {name} disabled",
-          "toggle_failed": "Failed to toggle command"
+          "config_saved": "¡La configuración se guardó correctamente!",
+          "config_failed": "No se pudo guardar la configuración",
+          "command_enabled": "Comando {name} activado",
+          "command_disabled": "Comando {name} desactivado",
+          "toggle_failed": "No se pudo cambiar el comando"
         }
       },
       "labels": {
@@ -235,7 +247,7 @@
         "design": "Diseño",
         "template": "Plantilla",
         "template_card": "Tarjeta",
-        "template_banner": "Banner",
+        "template_banner": "Encabezado ancho",
         "template_minimal": "Minimalista",
         "template_elegant": "Elegante",
         "template_bold": "Negrita",
@@ -332,7 +344,7 @@
         },
         "gift_catalog": {
           "empty": "No hay regalos disponibles. Haz clic en \"Cargar catálogo de regalos\" para obtener regalos.",
-          "gift_id": "ID: {id}",
+          "gift_id": "Identificador: {id}",
           "load_failed": "No se pudo cargar el catálogo de regalos",
           "loaded": "Se cargaron {count} regalos",
           "no_matches": "Ningún regalo coincide con tu búsqueda."
@@ -354,6 +366,12 @@
           "trend_fast": "⚡ Rápido",
           "trend_good": "✓ Bien",
           "trend_slow": "⚠ Lento"
+        },
+        "overlay": {
+          "syntax": "Sintaxis",
+          "permission": "Permiso",
+          "plugin": "Complemento",
+          "available_commands": "Comandos disponibles: {commands}"
         },
         "rotator": {
           "empty": "Aún no hay entradas en el rotador.",

@@ -1,6 +1,13 @@
 {
   "plugins": {
     "emoji-rain": {
+      "form_controls": {
+        "preview_aria": "Vista previa de Emoji Rain",
+        "quick_status_aria": "Estado rápido de Emoji Rain",
+        "username_filter_placeholder": "Introduce un nombre de usuario...",
+        "username_placeholder": "Nombre de usuario",
+        "enabled_toggle_aria": "Activar lluvia de emojis"
+      },
       "emoji_rain": {
         "title": "Configuración de Lluvia de Emojis",
         "subtitle": "Overlays Interactivos de Emojis",
@@ -100,7 +107,7 @@
           "delete": "Eliminar",
           "trigger": "Disparador",
           "name": "Nombre",
-          "emoji": "Emoji",
+          "emoji": "Emoticono",
           "count": "Cantidad",
           "intensity": "Intensidad",
           "duration": "Duración (ms)",
@@ -110,7 +117,7 @@
         "user_mappings": {
           "title": "Asignaciones de Usuario",
           "username": "Nombre de Usuario",
-          "emoji": "Emoji",
+          "emoji": "Emoticono",
           "search": "Buscar",
           "import": "Importar",
           "export": "Exportar",
@@ -411,7 +418,7 @@
           "disabled": "Emoji Rain desactivado.",
           "configuration_saved": "Configuración guardada.",
           "test_emojis_spawned": "Se generaron emojis de prueba.",
-          "error_prefix": "Error: {error}",
+          "error_prefix": "Se produjo un error: {error}",
           "configuration_load_failed": "No se pudo cargar la configuración.",
           "ui_update_failed": "No se pudo actualizar la interfaz.",
           "configuration_save_failed": "No se pudo guardar la configuración: {error}",

@@ -87,17 +87,17 @@
         "obs_overlay_435d37": "OBS-Overlay:",
         "top_left": "Oben links",
         "select_gift_for_sound": "Wählen Sie Gift for Sound",
-        "animation_mp4_gif": "Animation (MP4/GIF)",
+        "animation_mp4_gif": "Animationsdatei (MP4/GIF)",
         "audio_system_ready_waiting_for_events": "Audiosystem bereit. Warten auf Ereignisse...",
         "anim_vol": "Anim. Bd.",
         "for_gift_specific_sounds_and_animations_use_the": "Für geschenkspezifische Sounds und Animationen verwenden Sie den Abschnitt „Geschenkspezifische Sounds“ unten.",
-        "sounds_gifs": "Sounds + GIFs",
+        "sounds_gifs": "Sounds und GIFs",
         "clear_log": "Protokoll löschen",
         "obs_animation_overlay": "OBS-Animationsüberlagerung",
-        "animation_mp4_gif_5a9859": "Animation (MP4/GIF)",
+        "animation_mp4_gif_5a9859": "Animationsdatei (MP4/GIF)",
         "configured_gifts": "Konfigurierte Geschenke",
         "to_test_a_sound_or": "einen Ton testen, oder",
-        "animation_mp4_gif_63a0da": "Animation (MP4/GIF)",
+        "animation_mp4_gif_63a0da": "Animationsdatei (MP4/GIF)",
         "save_settings": "Einstellungen speichern",
         "sound_fallback_for_unconfigured_gifts": "Sound (Fallback für nicht konfigurierte Geschenke)",
         "click_a_column_to_sort_type_to_filter": "Klicken Sie zum Sortieren auf eine Spalte. Geben Sie ein, um die Liste zu filtern.",
@@ -111,7 +111,7 @@
         "no_animation": "Keine Animation",
         "open_gift_mapping": "Öffnen Sie die Geschenkzuordnung",
         "add_update_gift_sound": "Geschenksound hinzufügen/aktualisieren",
-        "animation_mp4_gif_83138c": "Animation (MP4/GIF)",
+        "animation_mp4_gif_83138c": "Animationsdatei (MP4/GIF)",
         "enable_audio_permissions": "Aktivieren Sie Audioberechtigungen",
         "animation_fallback": "Animation (Fallback)",
         "0_0_gifts": "0 / 0 Geschenke",
@@ -132,7 +132,7 @@
         "play_mode": "Wiedergabemodus",
         "search_myinstants": "Durchsuchen Sie MyInstants",
         "audio_plays_in_both_locations": "Audio wird an beiden Orten abgespielt.",
-        "audio_animationen_verwaltung": "Audio-Animationen Verwaltung",
+        "audio_animationen_verwaltung": "Verwaltung von Audioanimationen",
         "subscribe_super_fan": "Abonnieren (Super Fan)",
         "test_audio": "Audio testen",
         "x_position": "X-Position (%)",
@@ -161,6 +161,7 @@
         },
         "actions": {
           "refresh": "Aktualisieren",
+          "search": "Suchen",
           "copy": "Kopieren",
           "clear": "Leeren",
           "copyUrl": "URL kopieren",
@@ -179,7 +180,8 @@
           "cover": "Zuschneiden",
           "fill": "Ausf\u00fcllen",
           "none": "Keine",
-          "video": "Video",
+          "gif": "GIF",
+          "video": "Videodatei",
           "image": "Bild"
         },
         "events": {
@@ -201,12 +203,19 @@
         },
         "table": {
           "label": "Bezeichnung",
-          "sound": "Sound",
-          "animation": "Animation",
+          "sound": "Audiodatei",
+          "animation": "Animationsdatei",
           "actions": "Aktionen"
         },
         "placeholders": {
           "loading": "Wird geladen...",
+          "likeThresholdDisabled": "0 = deaktiviert",
+          "searchSoundEffects": "Nach Soundeffekten suchen...",
+          "searchGifAnimations": "Nach GIF-Animationen suchen...",
+          "giftId": "Geschenk-ID",
+          "label": "Bezeichnung",
+          "mp3Url": "MP3-URL",
+          "volume": "Lautstärke",
           "soundUrl": "Sound-URL (MP3)",
           "animationUrl": "Animations-URL",
           "animationUrlOptional": "Animations-URL (optional)",
@@ -217,6 +226,16 @@
         },
         "accessibility": {
           "closeGiftCatalogModal": "Geschenkkatalog-Dialog schlie\u00dfen"
+        },
+        "audioTarget": {
+          "dashboard": "Steuerzentrale:",
+          "both": "Beide:"
+        },
+        "search": {
+          "preview": "Vorschau",
+          "use": "Verwenden",
+          "trending": "Angesagt",
+          "all": "Alle"
         }
       }
     }

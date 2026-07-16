@@ -18,10 +18,23 @@ function applyOverlayEntryPoints(guide, entries) {
       const entry = entries[step.id];
       if (!entry) return step;
 
-      const copy = Object.fromEntries(Object.entries(entry.copy).map(([locale, value]) => [locale, {
-        ...value,
-        alt: value.alt || value.title
-      }]));
+      const documentedOverlayRoute = guide.overlay || entry.route;
+      const routeHint = {
+        de: `Lokaler Overlay-Pfad: \`${documentedOverlayRoute}\`.`,
+        en: `Local overlay path: \`${documentedOverlayRoute}\`.`,
+        es: `Ruta local del overlay: \`${documentedOverlayRoute}\`.`,
+        fr: `Chemin local de l’overlay : \`${documentedOverlayRoute}\`.`
+      };
+      const copy = Object.fromEntries(Object.entries(entry.copy).map(([locale, value]) => {
+        const body = value.body.includes(documentedOverlayRoute)
+          ? value.body
+          : `${value.body} ${routeHint[locale]}`;
+        return [locale, {
+          ...value,
+          body,
+          alt: value.alt || value.title
+        }];
+      }));
       const localized = (field) => Object.fromEntries(Object.entries(copy).map(([locale, value]) => [locale, value[field]]));
       const captureRule = {
         selector: entry.selector,
@@ -52,7 +65,7 @@ function applyOverlayEntryPoints(guide, entries) {
             { type: 'open-plugin-surface', selector: entry.selector }
           ],
           postconditions: [
-            { type: 'http-status', expected: 200 },
+            { type: 'http-status', expected: [200, 304] },
             { type: 'url', expected: exactLocalUrlExpectation(entry.route) },
             { type: 'visible', selector: entry.selector },
             { type: 'console', expected: 'no-errors' }

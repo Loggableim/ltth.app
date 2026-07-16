@@ -682,7 +682,7 @@
     <div class="w-full max-w-none mx-0">
         <!-- Header -->
         <header class="fireworks-hero card mb-6">
-            <div class="fireworks-logo-wrap" aria-label="Fireworks">
+    <div class="fireworks-logo-wrap" aria-label="Fireworks" data-i18n-aria-label="plugins.fireworks.form_controls.fireworks_aria">
                 <img class="top-logo" data-brand-logo src="/plugins/fireworks/assets/fireworks-logo.png" alt="Fireworks">
             </div>
             <div class="fireworks-hero-meta">
@@ -891,12 +891,12 @@
                         </p>
 
                         <div class="flex flex-wrap gap-4 mb-4">
-                            <div class="shape-preview active-shape" data-shape="burst" title="Burst">&#x1F386;</div>
-                            <div class="shape-preview" data-shape="heart" title="Heart">&#x2764;&#xFE0F;</div>
-                            <div class="shape-preview" data-shape="star" title="Star">&#x2B50;</div>
-                            <div class="shape-preview" data-shape="ring" title="Ring">&#x25EF;</div>
-                            <div class="shape-preview" data-shape="spiral" title="Spiral">&#x1F300;</div>
-                            <div class="shape-preview" data-shape="paws" title="Paws">&#x1F43E;</div>
+                            <div class="shape-preview active-shape" data-shape="burst" title="Burst" data-i18n-title="plugins.fireworks.form_controls.shape_burst_title">&#x1F386;</div>
+                            <div class="shape-preview" data-shape="heart" title="Heart" data-i18n-title="plugins.fireworks.form_controls.shape_heart_title">&#x2764;&#xFE0F;</div>
+                            <div class="shape-preview" data-shape="star" title="Star" data-i18n-title="plugins.fireworks.form_controls.shape_star_title">&#x2B50;</div>
+                            <div class="shape-preview" data-shape="ring" title="Ring" data-i18n-title="plugins.fireworks.form_controls.shape_ring_title">&#x25EF;</div>
+                            <div class="shape-preview" data-shape="spiral" title="Spiral" data-i18n-title="plugins.fireworks.form_controls.shape_spiral_title">&#x1F300;</div>
+                            <div class="shape-preview" data-shape="paws" title="Paws" data-i18n-title="plugins.fireworks.form_controls.shape_paws_title">&#x1F43E;</div>
                         </div>
 
                         <div>
@@ -958,8 +958,8 @@
                         <div>
                             <label class="block mb-2" data-i18n="plugins.fireworks.fireworks.theme_colors">Theme Colors</label>
                             <div class="flex flex-wrap gap-2" id="color-swatches">
-                                <input id="color-picker" type="color" value="#ff4444" aria-label="Add theme color" class="color-swatch bg-gray-700 cursor-pointer">
-                                <input id="color-hex" type="text" value="#ff4444" maxlength="7" aria-label="Theme color hex value" class="bg-gray-700 rounded px-2 py-1 w-24 font-mono text-sm uppercase">
+                                <input id="color-picker" type="color" value="#ff4444" aria-label="Add theme color" data-i18n-aria-label="plugins.fireworks.form_controls.add_theme_color_aria" class="color-swatch bg-gray-700 cursor-pointer">
+                                <input id="color-hex" type="text" value="#ff4444" maxlength="7" aria-label="Theme color hex value" data-i18n-aria-label="plugins.fireworks.form_controls.theme_color_hex_aria" class="bg-gray-700 rounded px-2 py-1 w-24 font-mono text-sm uppercase">
                                 <button id="add-color" class="color-swatch bg-gray-700 flex items-center justify-center text-xl" type="button">+</button>
                             </div>
                             <p class="text-xs text-gray-400 mt-2" data-i18n="plugins.fireworks.labels.click_a_color_to_remove_it_drag_colors">Click a color to remove it. Drag colors to set the palette order.</p>
@@ -995,9 +995,9 @@
                         <div>
                             <label class="block mb-2" data-i18n="plugins.fireworks.fireworks.particle_size">Particle Size</label>
                             <div class="flex gap-4">
-                                <input type="number" id="particle-min" class="w-24 bg-black/30 rounded-lg px-4 py-2" value="3" placeholder="Min">
+                            <input type="number" id="particle-min" class="w-24 bg-black/30 rounded-lg px-4 py-2" value="3" placeholder="Min" data-i18n-placeholder="plugins.fireworks.form_controls.minimum_placeholder">
                                 <span class="text-gray-400 self-center" data-i18n="plugins.fireworks.ui.labels.range_to">to</span>
-                                <input type="number" id="particle-max" class="w-24 bg-black/30 rounded-lg px-4 py-2" value="10" placeholder="Max">
+                            <input type="number" id="particle-max" class="w-24 bg-black/30 rounded-lg px-4 py-2" value="10" placeholder="Max" data-i18n-placeholder="plugins.fireworks.form_controls.maximum_placeholder">
                             </div>
                         </div>
                     </div>

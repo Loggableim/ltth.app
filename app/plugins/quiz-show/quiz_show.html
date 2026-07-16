@@ -239,7 +239,7 @@
                             <div class="help-text">
                                 Format: <code>[{"question": "...", "answers": ["A", "B", "C", "D"], "correct": 0, "difficulty": 2, "category": "...", "info": "..."}]</code>
                             </div>
-                            <textarea id="jsonUpload" class="json-input" placeholder='[
+                            <textarea id="jsonUpload" class="json-input" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.question_import_example" placeholder='[
   {
     "question": "Was ist die Hauptstadt von Deutschland?",
     "answers": ["Berlin", "München", "Hamburg", "Köln"],
@@ -265,25 +265,25 @@
                     <div class="panel-body">
                         <div class="form-group">
                             <label data-i18n="plugins.quiz-show.ui.questions.label">Frage:</label>
-                            <input type="text" id="questionInput" class="form-control" placeholder="Was ist...?">
+                            <input type="text" id="questionInput" class="form-control" placeholder="Was ist...?" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.question">
                         </div>
 
                         <div class="answers-grid">
                             <div class="form-group">
                                 <label data-i18n="plugins.quiz-show.labels.antwort_a">Antwort A:</label>
-                                <input type="text" id="answerA" class="form-control" placeholder="Antwort A">
+                                <input type="text" id="answerA" class="form-control" placeholder="Antwort A" data-i18n-placeholder="plugins.quiz-show.quiz_show.questions.answer_a">
                             </div>
                             <div class="form-group">
                                 <label data-i18n="plugins.quiz-show.labels.antwort_b">Antwort B:</label>
-                                <input type="text" id="answerB" class="form-control" placeholder="Antwort B">
+                                <input type="text" id="answerB" class="form-control" placeholder="Antwort B" data-i18n-placeholder="plugins.quiz-show.quiz_show.questions.answer_b">
                             </div>
                             <div class="form-group">
                                 <label data-i18n="plugins.quiz-show.labels.antwort_c">Antwort C:</label>
-                                <input type="text" id="answerC" class="form-control" placeholder="Antwort C">
+                                <input type="text" id="answerC" class="form-control" placeholder="Antwort C" data-i18n-placeholder="plugins.quiz-show.quiz_show.questions.answer_c">
                             </div>
                             <div class="form-group">
                                 <label data-i18n="plugins.quiz-show.labels.antwort_d">Antwort D:</label>
-                                <input type="text" id="answerD" class="form-control" placeholder="Antwort D">
+                                <input type="text" id="answerD" class="form-control" placeholder="Antwort D" data-i18n-placeholder="plugins.quiz-show.quiz_show.questions.answer_d">
                             </div>
                         </div>
 
@@ -300,7 +300,7 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label data-i18n="plugins.quiz-show.ui.questions.category">Kategorie:</label>
-                                <input type="text" id="questionCategory" class="form-control" placeholder="Allgemein" list="categoryList">
+                                <input type="text" id="questionCategory" class="form-control" placeholder="Allgemein" list="categoryList" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.general_category">
                                 <datalist id="categoryList">
                                     <!-- Categories will be populated dynamically -->
                                 </datalist>
@@ -319,7 +319,7 @@
 
                         <div class="form-group">
                             <label data-i18n="plugins.quiz-show.labels.info_optional_wird_nach_der_runde_angezeigt">Info (optional - wird nach der Runde angezeigt):</label>
-                            <textarea id="questionInfo" class="form-control" rows="2" placeholder="Zusätzliche Informationen zur Antwort (optional)"></textarea>
+                            <textarea id="questionInfo" class="form-control" rows="2" placeholder="Zusätzliche Informationen zur Antwort (optional)" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.answer_info"></textarea>
                         </div>
 
                         <div class="button-group">
@@ -379,7 +379,7 @@
                                         class="form-control"
                                         list="categoryList"
                                         placeholder="z.B. Geographie, Geschichte, Sport"
-                                    >
+                                     data-i18n-placeholder="plugins.quiz-show.quiz_show.ai_packages.generate.category_placeholder">
                                 </div>
 
                                 <div class="form-group">
@@ -391,7 +391,7 @@
                                         min="5"
                                         max="50"
                                         value="10"
-                                    >
+                                     data-i18n-placeholder="plugins.quiz-show.quiz_show.ai_packages.generate.package_name_placeholder">
                                 </div>
 
                                 <div class="form-group">
@@ -401,7 +401,7 @@
                                         id="packageName"
                                         class="form-control"
                                         placeholder="Automatisch generiert"
-                                    >
+                                     data-i18n-placeholder="plugins.quiz-show.quiz_show.ai_packages.generate.package_name_placeholder">
                                 </div>
 
                                 <div class="form-group">
@@ -468,7 +468,7 @@
                                     rows="8"
                                     placeholder="Geographie&#10;Geschichte&#10;Mathematik&#10;Naturwissenschaften&#10;Sport&#10;Musik&#10;Film & Fernsehen&#10;..."
                                     style="font-family: monospace; resize: vertical;"
-                                ></textarea>
+                                 data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.batch_categories"></textarea>
                                 <small style="color: #666; margin-top: 5px; display: block;" data-i18n="plugins.quiz-show.labels.geben_sie_jede_kategorie_in_eine_neue_zeile">
                                     Geben Sie jede Kategorie in eine neue Zeile ein. Leere Zeilen werden ignoriert.
                                 </small>
@@ -1024,18 +1024,18 @@
 
                         <div class="form-group" id="llmApiKeyGroup">
                             <label for="llmApiKey" data-i18n="plugins.quiz-show.ui.ai.api_key">API-Key:</label>
-                            <input type="password" id="llmApiKey" class="form-control" placeholder="sk-... oder leer lassen für Ollama">
+                            <input type="password" id="llmApiKey" class="form-control" placeholder="sk-... oder leer lassen für Ollama" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.llm_api_key">
                         </div>
 
                         <div class="form-group">
                             <label for="llmModel" data-i18n="plugins.quiz-show.ui.ai.model">Modell:</label>
-                            <input type="text" id="llmModel" class="form-control" placeholder="z.B. gpt-5-mini, llama3.2, mistral">
+                            <input type="text" id="llmModel" class="form-control" placeholder="z.B. gpt-5-mini, llama3.2, mistral" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.llm_model">
                             <div class="help-text small" data-i18n="plugins.quiz-show.labels.openai_gpt_5_mini_gpt_4o_mini_ollama">OpenAI: gpt-5-mini, gpt-4o-mini | Ollama: llama3.2, mistral, qwen2.5</div>
                         </div>
 
                         <div class="form-group" id="llmBaseUrlGroup">
                             <label for="llmBaseUrl" data-i18n="plugins.quiz-show.labels.base_url_optional">Base URL (optional):</label>
-                            <input type="text" id="llmBaseUrl" class="form-control" placeholder="http://localhost:11434/v1 (Ollama Standard)">
+                            <input type="text" id="llmBaseUrl" class="form-control" placeholder="http://localhost:11434/v1 (Ollama Standard)" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.llm_base_url">
                             <div class="help-text small" data-i18n="plugins.quiz-show.labels.nur_fur_ollama_oder_benutzerdefinierte_endpoints_openai_url">Nur für Ollama oder benutzerdefinierte Endpoints. OpenAI-URL nicht ändern.</div>
                         </div>
 
@@ -1130,7 +1130,7 @@
                         <button class="modal-close" data-i18n="plugins.quiz-show.ui.actions.close">&times;</button>
                     </div>
                     <div class="modal-body">
-                        <textarea id="importLeaderboardJson" class="json-input" placeholder='[
+                        <textarea id="importLeaderboardJson" class="json-input" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.leaderboard_import_example" placeholder='[
   {
     "userId": "user123",
     "username": "Player1",
@@ -1199,7 +1199,7 @@
                                 <div class="form-grid-2col">
                                     <div class="form-group">
                                         <label data-i18n="plugins.quiz-show.labels.layout_name">Layout Name</label>
-                                        <input type="text" id="layoutName" class="form-control" placeholder="Mein Custom Layout">
+                                        <input type="text" id="layoutName" class="form-control" placeholder="Mein Custom Layout" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.layout_name">
                                     </div>
                                     <div class="form-group">
                                         <label data-i18n="plugins.quiz-show.ui.layout.orientation">Ausrichtung</label>
@@ -1672,7 +1672,7 @@
                             <div class="help-text" style="margin-bottom: 15px;" data-i18n="plugins.quiz-show.labels.fugen_sie_hier_eigenes_css_hinzu_um_das">
                                 Fügen Sie hier eigenes CSS hinzu, um das Overlay weiter anzupassen.
                             </div>
-                            <textarea id="customCSS" class="css-editor" placeholder="/* Eigenes CSS hier einfügen */
+                            <textarea id="customCSS" class="css-editor" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.custom_css" placeholder="/* Eigenes CSS hier einfügen */
 .question-text {
     /* Beispiel: Textschatten */
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
@@ -1762,11 +1762,11 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label data-i18n="plugins.quiz-show.labels.geschenk_id">Geschenk ID</label>
-                                    <input type="number" id="quizStartGiftId" class="form-control" placeholder="z.B. 5655">
+                                    <input type="number" id="quizStartGiftId" class="form-control" placeholder="z.B. 5655" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.gift_id_example">
                                 </div>
                                 <div class="form-group">
                                     <label data-i18n="plugins.quiz-show.labels.geschenk_name">Geschenk Name</label>
-                                    <input type="text" id="quizStartGiftName" class="form-control" placeholder="z.B. Galaxy">
+                                    <input type="text" id="quizStartGiftName" class="form-control" placeholder="z.B. Galaxy" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.gift_name_galaxy">
                                 </div>
                             </div>
 
@@ -1826,11 +1826,11 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label data-i18n="plugins.quiz-show.labels.geschenk_id_33c1f8">Geschenk ID</label>
-                                <input type="number" id="giftJokerId" class="form-control" placeholder="z.B. 5655">
+                                <input type="number" id="giftJokerId" class="form-control" placeholder="z.B. 5655" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.gift_id_example">
                             </div>
                             <div class="form-group">
                                 <label data-i18n="plugins.quiz-show.labels.geschenk_name_af7a53">Geschenk Name</label>
-                                <input type="text" id="giftJokerName" class="form-control" placeholder="z.B. Rose">
+                                <input type="text" id="giftJokerName" class="form-control" placeholder="z.B. Rose" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.gift_name_rose">
                             </div>
                         </div>
 
@@ -1847,7 +1847,7 @@
                         <div class="form-group">
                             <label>
                                 <input type="checkbox" id="giftJokerEnabled" checked>
-                                Aktiviert
+                                <span data-i18n="plugins.quiz-show.gift_jokers.enabled">Aktiviert</span>
                             </label>
                         </div>
 
@@ -2022,7 +2022,7 @@
                     </div>
                     <div class="form-group">
                         <label data-i18n="plugins.quiz-show.labels.kategorien_fuer_manuelles_voting">Kategorien fuer manuelles Voting</label>
-                        <textarea id="categoryVoteOptions" class="form-control" rows="4" placeholder="Sport&#10;Musik&#10;Gaming&#10;Allgemein"></textarea>
+                        <textarea id="categoryVoteOptions" class="form-control" rows="4" placeholder="Sport&#10;Musik&#10;Gaming&#10;Allgemein" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.vote_categories"></textarea>
                     </div>
                     <button id="saveVotingConfigBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.voting_speichern">Voting speichern</button>
                     <button id="startCategoryVoteBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.voting_starten">Voting starten</button>
@@ -2033,8 +2033,8 @@
                 <div class="panel">
                     <h2 data-i18n="plugins.quiz-show.labels.shows_playlists">Shows / Playlists</h2>
                     <div class="form-grid compact">
-                        <input type="text" id="showName" class="form-control" placeholder="Show-Name">
-                        <input type="number" id="showRoundCount" class="form-control" min="1" max="250" value="10">
+                        <input type="text" id="showName" class="form-control" placeholder="Show-Name" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.show_name">
+                        <input type="number" id="showRoundCount" class="form-control" min="1" max="250" value="10" aria-label="Anzahl der Runden" data-i18n-aria-label="plugins.quiz-show.form_controls.aria.show_round_count">
                     </div>
                     <div class="form-group">
                         <label data-i18n="plugins.quiz-show.labels.kategorien_eine_pro_zeile">Kategorien (eine pro Zeile)</label>
@@ -2051,12 +2051,12 @@
                 <div class="panel">
                     <h2 data-i18n="plugins.quiz-show.ui.duel.title">Duel-Modus</h2>
                     <div class="form-grid compact">
-                        <input type="text" id="duelLeftLabel" class="form-control" value="Team A">
-                        <input type="text" id="duelRightLabel" class="form-control" value="Team B">
+                        <input type="text" id="duelLeftLabel" class="form-control" value="Team A" aria-label="Name des linken Teams" data-i18n-aria-label="plugins.quiz-show.form_controls.aria.duel_left_label">
+                        <input type="text" id="duelRightLabel" class="form-control" value="Team B" aria-label="Name des rechten Teams" data-i18n-aria-label="plugins.quiz-show.form_controls.aria.duel_right_label">
                     </div>
                     <div class="form-grid compact">
-                        <input type="text" id="duelLeftUsers" class="form-control" placeholder="user1,user2">
-                        <input type="text" id="duelRightUsers" class="form-control" placeholder="user3,user4">
+                        <input type="text" id="duelLeftUsers" class="form-control" placeholder="user1,user2" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.duel_left_users">
+                        <input type="text" id="duelRightUsers" class="form-control" placeholder="user3,user4" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.duel_right_users">
                     </div>
                     <button id="startDuelBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.duel_starten">Duel starten</button>
                     <button id="stopDuelBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.duel_beenden">Duel beenden</button>
@@ -2100,10 +2100,10 @@
                 <div class="panel">
                     <h2 data-i18n="plugins.quiz-show.ui.sound.upload">Sound-Upload</h2>
                     <div class="form-grid compact">
-                        <input type="text" id="soundEventName" class="form-control" placeholder="event_name">
-                        <input type="number" id="soundVolume" class="form-control" min="0" max="1" step="0.1" value="1">
+                        <input type="text" id="soundEventName" class="form-control" placeholder="event_name" data-i18n-placeholder="plugins.quiz-show.form_controls.placeholders.sound_event_name">
+                        <input type="number" id="soundVolume" class="form-control" min="0" max="1" step="0.1" value="1" aria-label="Sound-Lautstärke" data-i18n-aria-label="plugins.quiz-show.form_controls.aria.sound_volume">
                     </div>
-                    <input type="file" id="soundFileInput" class="form-control" accept=".mp3,.wav,.ogg,.m4a,.aac,audio/*">
+                    <input type="file" id="soundFileInput" class="form-control" accept=".mp3,.wav,.ogg,.m4a,.aac,audio/*" aria-label="Sound-Datei auswählen" data-i18n-aria-label="plugins.quiz-show.form_controls.aria.sound_file">
                     <button id="uploadSoundBtn" class="btn btn-primary" data-i18n="plugins.quiz-show.labels.sound_speichern">Sound speichern</button>
                     <button id="testSoundBtn" class="btn btn-secondary" data-i18n="plugins.quiz-show.labels.sound_testen">Sound testen</button>
                     <div id="soundsList" class="compact-list"></div>

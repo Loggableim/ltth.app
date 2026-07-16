@@ -1,6 +1,9 @@
 {
   "plugins": {
     "coinbattle": {
+      "form_controls": {
+        "overlay_layout_name_placeholder": "My custom layout"
+      },
       "plugin": {
         "name": "CoinBattle",
         "description": "Live battle game where viewers compete by sending TikTok gifts to collect coins"
@@ -25,6 +28,57 @@
         },
         "aria": { "overlay_width": "Overlay width", "overlay_height": "Overlay height" },
         "placeholder": { "season_name": "e.g., Winter 2024" },
+        "overlay": {
+          "red_team": "RED TEAM",
+          "blue_team": "BLUE TEAM",
+          "unknown_player": "Unknown",
+          "no_data": "No data available",
+          "achievement_unlocked": "Achievement unlocked!",
+          "team_wins": "{team} TEAM WINS!",
+          "takes_lead": "🥊 {nickname} TAKES THE LEAD!",
+          "winner": "Winner",
+          "xp_earned": "XP earned:",
+          "first_place": "🥇 1ST PLACE",
+          "second_place": "🥈 2ND PLACE",
+          "third_place": "🥉 3RD PLACE",
+          "player": "Player",
+          "coins_label": "Coins:",
+          "team_label": "Team:",
+          "weekly_leaderboard": "📅 WEEKLY LEADERBOARD",
+          "season_leaderboard": "🏅 SEASON LEADERBOARD",
+          "lifetime_leaderboard": "🏆 LIFETIME LEADERBOARD",
+          "leaderboard": "🏆 LEADERBOARD"
+        },
+        "history_loader": {
+          "loading_matches": "Loading matches...",
+          "no_more_matches": "No more matches to load",
+          "retry": "Retry",
+          "load_failed": "Failed to load matches. Please try again.",
+          "unknown": "Unknown",
+          "winner_player": "Winner: {player}",
+          "team_wins": "Team {team} wins!",
+          "no_winner": "No winner",
+          "solo": "Solo",
+          "duration": "Duration: {duration}",
+          "coins": "{count} coins",
+          "gifts": "{count} gifts"
+        },
+        "layout_editor": {
+          "layout_name_prompt": "Layout name:",
+          "duplicate_name_prompt": "Name for duplicated layout:",
+          "duplicate_name_default": "{name} (Copy)",
+          "delete_default_layout": "Default layouts cannot be deleted.",
+          "delete_confirm": "Delete layout \"{name}\"?",
+          "layout_deleted": "Layout deleted",
+          "delete_failed": "Could not delete layout",
+          "layout_saved": "Layout saved",
+          "save_failed": "Could not save layout",
+          "layout_exported": "Layout exported",
+          "layout_imported": "Layout imported",
+          "import_failed": "Could not import layout",
+          "reset_confirm": "Reset layout to its default?",
+          "layout_reset": "Layout reset"
+        },
         "status": { "active": "Active", "paused": "Paused", "inactive": "Inactive" },
         "action": { "pause": "⏸️ Pause", "resume": "▶️ Resume", "delete": "Delete" },
         "table": {

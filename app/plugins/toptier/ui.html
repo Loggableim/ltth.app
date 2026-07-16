@@ -1598,8 +1598,8 @@
           <span class="tt-status-chip__dot"></span>
           <div class="tt-status-chip__content">
             <div class="tt-status-chip__label" data-i18n="plugins.toptier.toptier.ui.status.connected">Connected</div>
-            <div class="tt-status-chip__value" data-i18n="plugins.toptier.labels.api_offline">API offline</div>
-            <div class="tt-status-chip__subvalue" data-i18n="plugins.toptier.labels.waiting_for_socket">Waiting for socket</div>
+            <div class="tt-status-chip__value" data-i18n="plugins.toptier.toptier.ui.messages.connection_offline">API offline</div>
+            <div class="tt-status-chip__subvalue" data-i18n="plugins.toptier.toptier.ui.messages.socket_waiting">Waiting for socket</div>
           </div>
         </div>
         <div class="tt-status-chip" id="status-session">
@@ -1614,8 +1614,8 @@
           <span class="tt-status-chip__dot"></span>
           <div class="tt-status-chip__content">
             <div class="tt-status-chip__label" data-i18n="plugins.toptier.labels.auto_refresh">Auto Refresh</div>
-            <div class="tt-status-chip__value" data-i18n="plugins.toptier.labels.3_sek">3 Sek.</div>
-            <div class="tt-status-chip__subvalue" data-i18n="plugins.toptier.labels.socket_fallback_sync">Socket fallback sync</div>
+            <div class="tt-status-chip__value" data-i18n="plugins.toptier.toptier.ui.messages.refresh_interval">3 sec</div>
+            <div class="tt-status-chip__subvalue" data-i18n="plugins.toptier.toptier.ui.messages.socket_fallback_sync">Socket fallback sync</div>
           </div>
         </div>
         <div class="tt-status-chip" id="status-overlay">
@@ -1623,7 +1623,7 @@
           <div class="tt-status-chip__content">
             <div class="tt-status-chip__label" data-i18n="plugins.toptier.labels.overlay_ready">Overlay Ready</div>
             <div class="tt-status-chip__value">1920x1080</div>
-            <div class="tt-status-chip__subvalue" data-i18n="plugins.toptier.labels.landscape_portrait">Landscape + portrait</div>
+            <div class="tt-status-chip__subvalue" data-i18n="plugins.toptier.toptier.ui.messages.landscape_portrait">Landscape + portrait</div>
           </div>
         </div>
       </div>
@@ -1640,7 +1640,7 @@
     </section>
   </header>
 
-  <section class="tt-stat-grid" aria-label="Live summary cards">
+  <section class="tt-stat-grid" aria-label="Live summary cards" data-i18n-aria-label="plugins.toptier.toptier.ui.messages.live_summary_cards">
     <article class="tt-stat-card tt-stat-card--accent">
       <div class="tt-stat-card__icon"><i data-lucide="users" style="width: 22px; height: 22px;"></i></div>
       <div class="tt-stat-card__body">
@@ -1654,7 +1654,7 @@
       <div class="tt-stat-card__body">
         <div class="tt-stat-card__label" data-i18n="plugins.toptier.labels.likes_points_e7f04e">Likes Points</div>
         <div class="tt-stat-card__value" id="stat-likes">0</div>
-        <div class="tt-stat-card__hint" id="stat-likes-hint" data-i18n="plugins.toptier.labels.top_rank_8def26">Top rank: --</div>
+        <div class="tt-stat-card__hint" id="stat-likes-hint" data-i18n="plugins.toptier.toptier.ui.messages.top_rank_empty">Top rank: --</div>
       </div>
     </article>
     <article class="tt-stat-card tt-stat-card--gold">
@@ -1662,7 +1662,7 @@
       <div class="tt-stat-card__body">
         <div class="tt-stat-card__label" data-i18n="plugins.toptier.labels.gift_coins">Gift Coins</div>
         <div class="tt-stat-card__value" id="stat-gifts">0</div>
-        <div class="tt-stat-card__hint" id="stat-gifts-hint" data-i18n="plugins.toptier.labels.top_rank">Top rank: --</div>
+        <div class="tt-stat-card__hint" id="stat-gifts-hint" data-i18n="plugins.toptier.toptier.ui.messages.top_rank_empty">Top rank: --</div>
       </div>
     </article>
     <article class="tt-stat-card tt-stat-card--purple">
@@ -1675,13 +1675,13 @@
     </article>
   </section>
 
-  <nav class="tt-tabs" aria-label="Top Tier sections">
+  <nav class="tt-tabs" aria-label="Top Tier sections" data-i18n-aria-label="plugins.toptier.toptier.ui.messages.sections_navigation">
     <button type="button" class="tt-tab-btn is-active" data-tab="live" data-i18n="plugins.toptier.labels.live_boards">Live Boards</button>
     <button type="button" class="tt-tab-btn" data-tab="obs" data-i18n="plugins.toptier.labels.obs_urls">OBS URLs</button>
     <button type="button" class="tt-tab-btn" data-tab="likes-cfg" data-i18n="plugins.toptier.toptier.ui.navigation.likes">Likes</button>
     <button type="button" class="tt-tab-btn" data-tab="gifts-cfg" data-i18n="plugins.toptier.toptier.ui.navigation.gifts">Gifts</button>
     <button type="button" class="tt-tab-btn" data-tab="decay-cfg" data-i18n="plugins.toptier.toptier.ui.navigation.decay">Decay</button>
-    <button type="button" class="tt-tab-btn" data-tab="overlay-cfg">Overlay</button>
+    <button type="button" class="tt-tab-btn" data-tab="overlay-cfg" data-i18n="plugins.toptier.toptier.ui.navigation.overlay">Overlay</button>
     <button type="button" class="tt-tab-btn" data-tab="sound-chat" data-i18n="plugins.toptier.labels.sound_chat">Sound &amp; Chat</button>
     <button type="button" class="tt-tab-btn" data-tab="controls" data-i18n="plugins.toptier.toptier.ui.navigation.controls">Controls</button>
   </nav>
@@ -1699,11 +1699,11 @@
               <div class="tt-inline-note" id="podium-note" data-i18n="plugins.toptier.labels.live_board_synced_via_socket">Live board synced via socket</div>
             </div>
             <div class="tt-live-topline">
-              <span><strong>Board:</strong> Likes</span>
-              <span><strong>View:</strong><span data-i18n="plugins.toptier.labels.podium_dual_tables"> Podium + dual tables</span></span>
+              <span><strong data-i18n="plugins.toptier.toptier.ui.messages.board_label">Board</strong>: <span data-i18n="plugins.toptier.toptier.ui.messages.board_likes">Likes</span></span>
+              <span><strong data-i18n="plugins.toptier.toptier.ui.messages.view_label">View</strong>:<span data-i18n="plugins.toptier.labels.podium_dual_tables"> Podium + dual tables</span></span>
             </div>
             <div class="tt-podium-strip" id="likes-podium">
-              <div class="tt-live-empty" data-i18n="plugins.toptier.labels.keine_eintrage">Keine Eintr&auml;ge</div>
+              <div class="tt-live-empty" data-i18n="plugins.toptier.toptier.ui.messages.no_entries">No entries</div>
             </div>
           </article>
 
@@ -1780,7 +1780,7 @@
             </div>
             <div class="tt-card__body">
               <div class="tt-feed" id="live-feed">
-                <div class="tt-feed-empty" data-i18n="plugins.toptier.labels.no_live_events_yet">No live events yet</div>
+                <div class="tt-feed-empty" data-i18n="plugins.toptier.toptier.ui.messages.no_live_events">No live events yet</div>
               </div>
             </div>
           </article>
@@ -1986,7 +1986,7 @@
               </select>
             </div>
             <div class="tt-form-control">
-              <label for="decay-interval">Interval <span id="decay-interval-val">10s</span></label>
+                  <label for="decay-interval"><span data-i18n="plugins.toptier.toptier.ui.messages.interval_label">Interval</span> <span id="decay-interval-val">10s</span></label>
               <input type="range" id="decay-interval" min="1000" max="60000" step="1000" value="10000">
             </div>
             <div class="tt-form-control">
@@ -2062,7 +2062,7 @@
           </div>
           <div class="tt-form-control" style="margin-top: 12px;">
             <label for="ov-css" data-i18n="plugins.toptier.labels.custom_css">Custom CSS</label>
-            <textarea id="ov-css" placeholder="/* Custom overlay CSS here */"></textarea>
+                  <textarea id="ov-css" placeholder="/* Custom overlay CSS here */" data-i18n-placeholder="plugins.toptier.toptier.ui.messages.custom_css_placeholder"></textarea>
           </div>
         </div>
       </article>
@@ -2166,19 +2166,19 @@
   const SESSION_STORAGE_PREFIX = 'toptier-session-start:';
   const TAB_IDS = ['live', 'obs', 'likes-cfg', 'gifts-cfg', 'decay-cfg', 'overlay-cfg', 'sound-chat', 'controls'];
   const VARIANTS = [
-    { id: 'classic-list', name: 'Classic List', desc: 'Statische sortierte Liste' },
-    { id: 'animated-race', name: 'Animated Race', desc: 'FLIP-Technik, Kronen-Glow' },
-    { id: 'spotlight', name: 'Spotlight', desc: 'Rotiert durch Top N' },
-    { id: 'podium', name: 'Podium View', desc: 'Klassisches 3-Stufen-Podium' },
-    { id: 'ticker', name: 'Ticker', desc: 'Laufschrift (horizontal/vertikal)' },
-    { id: 'holographic', name: 'Holographic Cards', desc: 'Glassmorphism / Neon-Glow' },
-    { id: 'scoreboard', name: 'Scoreboard', desc: 'ESports-Tabelle mit Delta' },
-    { id: 'combined', name: 'Combined', desc: 'Likes + Gifts in einem View' }
+    { id: 'classic-list', nameKey: 'variant_classic_list_name', descriptionKey: 'variant_classic_list_description', name: 'Classic list', desc: 'Static sorted list' },
+    { id: 'animated-race', nameKey: 'variant_animated_race_name', descriptionKey: 'variant_animated_race_description', name: 'Animated race', desc: 'FLIP animation with crown glow' },
+    { id: 'spotlight', nameKey: 'variant_spotlight_name', descriptionKey: 'variant_spotlight_description', name: 'Spotlight', desc: 'Rotates through the top entries' },
+    { id: 'podium', nameKey: 'variant_podium_name', descriptionKey: 'variant_podium_description', name: 'Podium view', desc: 'Classic three-step podium' },
+    { id: 'ticker', nameKey: 'variant_ticker_name', descriptionKey: 'variant_ticker_description', name: 'Ticker', desc: 'Horizontal or vertical scrolling text' },
+    { id: 'holographic', nameKey: 'variant_holographic_name', descriptionKey: 'variant_holographic_description', name: 'Holographic cards', desc: 'Glassmorphism with neon glow' },
+    { id: 'scoreboard', nameKey: 'variant_scoreboard_name', descriptionKey: 'variant_scoreboard_description', name: 'Scoreboard', desc: 'Esports table with change indicator' },
+    { id: 'combined', nameKey: 'variant_combined_name', descriptionKey: 'variant_combined_description', name: 'Combined', desc: 'Likes and gifts in one view' }
   ];
   const QUICK_URLS = [
-    { label: 'Likes Leaderboard', board: 'likes', variant: 'animated-race' },
-    { label: 'Gifts Leaderboard', board: 'gifts', variant: 'animated-race' },
-    { label: 'Top 3 Podium', board: 'likes', variant: 'podium' }
+    { labelKey: 'quick_url_likes', label: 'Likes leaderboard', board: 'likes', variant: 'animated-race' },
+    { labelKey: 'quick_url_gifts', label: 'Gifts leaderboard', board: 'gifts', variant: 'animated-race' },
+    { labelKey: 'quick_url_podium', label: 'Top 3 podium', board: 'likes', variant: 'podium' }
   ];
 
   const state = {
@@ -2197,9 +2197,22 @@
     activeTab: 'live'
   };
 
-  function translateUi(key, fallback) {
-    const translation = window.i18n.t(key);
-    return translation && translation !== key ? translation : fallback;
+  function translateUi(key, fallback, params = {}) {
+    const translation = window.i18n?.t(key, params);
+    if (translation && translation !== key) return translation;
+    return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+      Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+  }
+
+  function translateMessage(name, fallback, params = {}) {
+    return translateUi(`plugins.toptier.toptier.ui.messages.${name}`, fallback, params);
+  }
+
+  function translateVariant(variant, part) {
+    const key = part === 'name' ? variant.nameKey : variant.descriptionKey;
+    const fallback = part === 'name' ? variant.name : variant.desc;
+    return translateMessage(key, fallback);
   }
 
   const socket = io();
@@ -2285,8 +2298,12 @@
     const value = chip.querySelector('.tt-status-chip__value');
     const subvalue = chip.querySelector('.tt-status-chip__subvalue');
     chip.dataset.status = connected ? 'connected' : 'disconnected';
-    if (value) value.textContent = connected ? 'API online' : 'API offline';
-    if (subvalue) subvalue.textContent = connected ? 'Socket live' : 'Waiting for socket';
+    if (value) value.textContent = connected
+      ? translateUi('plugins.toptier.toptier.ui.messages.connection_online', 'API online')
+      : translateUi('plugins.toptier.toptier.ui.messages.connection_offline', 'API offline');
+    if (subvalue) subvalue.textContent = connected
+      ? translateUi('plugins.toptier.toptier.ui.messages.socket_live', 'Socket live')
+      : translateUi('plugins.toptier.toptier.ui.messages.socket_waiting', 'Waiting for socket');
   }
 
   function updateSessionChip() {
@@ -2302,9 +2319,13 @@
 
     if (chip) chip.dataset.status = hasActiveSession ? 'connected' : (state.socketConnected ? 'warning' : 'disconnected');
     if (value) value.textContent = elapsed;
-    if (subvalue) subvalue.textContent = hasActiveSession ? (stream !== '-' ? `@${stream}` : `Session ${sessionId.slice(0, 8)}`) : 'No active stream';
+    if (subvalue) subvalue.textContent = hasActiveSession
+      ? (stream !== '-' ? `@${stream}` : translateMessage('session_label', 'Session {session}', { session: sessionId.slice(0, 8) }))
+      : translateUi('plugins.toptier.toptier.ui.messages.no_active_stream', 'No active stream');
     if (durationText) durationText.textContent = elapsed;
-    if (durationHint) durationHint.textContent = hasActiveSession ? `Start ${formatClock(new Date(state.sessionStartedAt || Date.now()))}` : 'Waiting for live stream';
+    if (durationHint) durationHint.textContent = hasActiveSession
+      ? translateMessage('session_started', 'Start {time}', { time: formatClock(new Date(state.sessionStartedAt || Date.now())) })
+      : translateUi('plugins.toptier.toptier.ui.messages.waiting_for_live_stream', 'Waiting for live stream');
   }
 
   function clearSessionState() {
@@ -2327,10 +2348,12 @@
     const overlayValue = document.querySelector('#status-overlay .tt-status-chip__value');
     const overlaySubvalue = document.querySelector('#status-overlay .tt-status-chip__subvalue');
 
-    if (refreshValue) refreshValue.textContent = `${Math.round(REFRESH_INTERVAL_MS / 1000)} Sek.`;
-    if (refreshSubvalue) refreshSubvalue.textContent = state.socketConnected ? 'Socket fallback sync' : 'Auto reconnect pending';
+    if (refreshValue) refreshValue.textContent = translateUi('plugins.toptier.toptier.ui.messages.refresh_interval', '{seconds} sec', { seconds: Math.round(REFRESH_INTERVAL_MS / 1000) });
+    if (refreshSubvalue) refreshSubvalue.textContent = state.socketConnected
+      ? translateUi('plugins.toptier.toptier.ui.messages.socket_fallback_sync', 'Socket fallback sync')
+      : translateUi('plugins.toptier.toptier.ui.messages.auto_reconnect_pending', 'Auto reconnect pending');
     if (overlayValue) overlayValue.textContent = '1920x1080';
-    if (overlaySubvalue) overlaySubvalue.textContent = 'Landscape + portrait';
+    if (overlaySubvalue) overlaySubvalue.textContent = translateUi('plugins.toptier.toptier.ui.messages.landscape_portrait', 'Landscape + portrait');
   }
 
   function updateSaveStamp(label) {
@@ -2392,7 +2415,9 @@
     const sessionChip = document.querySelector('#status-session .tt-status-chip__value');
     const sessionChipSub = document.querySelector('#status-session .tt-status-chip__subvalue');
     if (sessionChip) sessionChip.textContent = formatDuration(Date.now() - (state.sessionStartedAt || Date.now()));
-    if (sessionChipSub) sessionChipSub.textContent = streamUsername ? `@${streamUsername}` : `Session ${sessionId.slice(0, 8)}`;
+    if (sessionChipSub) sessionChipSub.textContent = streamUsername
+      ? `@${streamUsername}`
+      : translateMessage('session_label', 'Session {session}', { session: sessionId.slice(0, 8) });
 
     updateSessionChip();
   }
@@ -2425,7 +2450,7 @@
 
     const rows = computeBoardDeltas(boardType, entries);
     if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="4"><div class="tt-live-empty">Keine Eintr&auml;ge</div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4"><div class="tt-live-empty">${escHtml(translateUi('plugins.toptier.toptier.ui.messages.no_entries', 'No entries'))}</div></td></tr>`;
       return;
     }
 
@@ -2461,7 +2486,7 @@
 
     const top3 = (entries || []).slice(0, 3);
     if (!top3.length) {
-      container.innerHTML = '<div class="tt-live-empty">Keine Eintr&auml;ge</div>';
+      container.innerHTML = `<div class="tt-live-empty">${escHtml(translateUi('plugins.toptier.toptier.ui.messages.no_entries', 'No entries'))}</div>`;
       return;
     }
 
@@ -2470,7 +2495,7 @@
     container.innerHTML = seatOrder.map((index, position) => {
       const entry = top3[index];
       if (!entry) {
-        return `<div class="tt-podium-seat ${seatClassMap[position]}"><div class="tt-live-empty">No entry</div></div>`;
+        return `<div class="tt-podium-seat ${seatClassMap[position]}"><div class="tt-live-empty">${escHtml(translateUi('plugins.toptier.toptier.ui.messages.no_entry', 'No entry'))}</div></div>`;
       }
       const avatarSrc = entry.profile_picture_url || '/plugins/toptier/assets/avatar-placeholder.svg';
       const rankClass = position === 1 ? 'is-first' : position === 0 ? 'is-second' : 'is-third';
@@ -2499,7 +2524,7 @@
       const url = `${base}?board=${encodeURIComponent(item.board)}&variant=${encodeURIComponent(item.variant)}&orientation=${encodeURIComponent(orientation)}&theme=${encodeURIComponent(theme)}`;
       return `
         <div class="tt-url-row">
-          <div class="tt-url-row__label">${escHtml(item.label)}</div>
+          <div class="tt-url-row__label">${escHtml(translateMessage(item.labelKey, item.label))}</div>
           <div class="tt-url-row__code">${escHtml(url)}</div>
           <button type="button" class="tt-url-chip__button tt-url-chip__button--copy" data-url="${escAttr(url)}">${escHtml(translateUi('plugins.toptier.toptier.ui.actions.copy', 'Copy'))}</button>
         </div>
@@ -2512,12 +2537,12 @@
         try {
           if (navigator.clipboard && navigator.clipboard.writeText) {
             await navigator.clipboard.writeText(url);
-            setToast('URL kopiert!');
+            setToast(translateMessage('url_copied', 'URL copied.'));
           } else {
-            setToast('Kopieren nicht m&ouml;glich');
+            setToast(translateMessage('copy_unavailable', 'Copying is not available.'));
           }
         } catch (error) {
-          setToast('Kopieren fehlgeschlagen');
+          setToast(translateMessage('copy_failed', 'Could not copy the URL.'));
         }
       });
     });
@@ -2528,7 +2553,7 @@
     if (!container) return;
 
     if (!state.feed.length) {
-      container.innerHTML = '<div class="tt-feed-empty">No live events yet</div>';
+      container.innerHTML = `<div class="tt-feed-empty">${escHtml(translateUi('plugins.toptier.toptier.ui.messages.no_live_events', 'No live events yet'))}</div>`;
       return;
     }
 
@@ -2536,8 +2561,8 @@
       <div class="tt-feed-item">
         <div class="tt-feed-time">${escHtml(item.time)}</div>
         <i data-lucide="${escAttr(item.icon)}" class="tt-feed-icon"></i>
-        <div class="tt-feed-text">${escHtml(item.text)}</div>
-        <div class="tt-feed-value ${escAttr(item.valueClass || '')}">${escHtml(item.value || '')}</div>
+        <div class="tt-feed-text">${escHtml(item.textKey ? translateMessage(item.textKey, item.text || '', item.textParams || {}) : item.text)}</div>
+        <div class="tt-feed-value ${escAttr(item.valueClass || '')}">${escHtml(item.valueKey ? translateMessage(item.valueKey, item.value || '', item.valueParams || {}) : item.value || '')}</div>
       </div>
     `).join('');
     renderIcons();
@@ -2548,7 +2573,11 @@
       time: formatClock(new Date()),
       icon: entry.icon || 'activity',
       text: entry.text || '',
+      textKey: entry.textKey || '',
+      textParams: entry.textParams || {},
       value: entry.value || '',
+      valueKey: entry.valueKey || '',
+      valueParams: entry.valueParams || {},
       valueClass: entry.valueClass || ''
     };
     state.feed.unshift(item);
@@ -2574,11 +2603,18 @@
     const giftsHint = document.getElementById('stat-gifts-hint');
 
     if (tracked) tracked.textContent = String(uniqueUsers.size || 0);
-    if (trackedHint) trackedHint.textContent = `Likes ${state.likes.length} + Gifts ${state.gifts.length}`;
+    if (trackedHint) trackedHint.textContent = translateUi('plugins.toptier.toptier.ui.messages.score_summary', '{likes} likes + {gifts} gifts', {
+      likes: state.likes.length,
+      gifts: state.gifts.length
+    });
     if (likes) likes.textContent = formatCompactNumber(likesSum);
-    if (likesHint) likesHint.textContent = topLike ? `Top rank: ${topLike.nickname || topLike.username || '-'}` : 'Top rank: --';
+    if (likesHint) likesHint.textContent = topLike
+      ? translateUi('plugins.toptier.toptier.ui.messages.top_rank', 'Top rank: {name}', { name: topLike.nickname || topLike.username || '-' })
+      : translateUi('plugins.toptier.toptier.ui.messages.top_rank_empty', 'Top rank: --');
     if (gifts) gifts.textContent = formatCompactNumber(giftsSum);
-    if (giftsHint) giftsHint.textContent = topGift ? `Top rank: ${topGift.nickname || topGift.username || '-'}` : 'Top rank: --';
+    if (giftsHint) giftsHint.textContent = topGift
+      ? translateUi('plugins.toptier.toptier.ui.messages.top_rank', 'Top rank: {name}', { name: topGift.nickname || topGift.username || '-' })
+      : translateUi('plugins.toptier.toptier.ui.messages.top_rank_empty', 'Top rank: --');
   }
 
   function refreshLiveView() {
@@ -2594,8 +2630,8 @@
 
     grid.innerHTML = VARIANTS.map(v => `
       <div class="tt-variant-option ${v.id === selected ? 'selected' : ''}" data-variant="${escAttr(v.id)}" role="button" tabindex="0">
-        <div class="tt-variant-option__name">${escHtml(v.name)}</div>
-        <div class="tt-variant-option__desc">${escHtml(v.desc)}</div>
+        <div class="tt-variant-option__name">${escHtml(translateVariant(v, 'name'))}</div>
+        <div class="tt-variant-option__desc">${escHtml(translateVariant(v, 'description'))}</div>
       </div>
     `).join('');
 
@@ -2626,7 +2662,13 @@
     container.innerHTML = VARIANTS.map(variant => {
       const urls = boards.map(board => {
         const url = `${base}?board=${encodeURIComponent(board)}&variant=${encodeURIComponent(variant.id)}&orientation=${encodeURIComponent(orientation)}&theme=${encodeURIComponent(theme)}`;
-        const label = board === 'both' ? 'Both' : board === 'combined' ? 'Combined' : board === 'likes' ? 'Likes' : 'Gifts';
+        const label = board === 'both'
+          ? translateMessage('board_both', 'Both')
+          : board === 'combined'
+            ? translateMessage('board_combined', 'Combined')
+            : board === 'likes'
+              ? translateMessage('board_likes', 'Likes')
+              : translateMessage('board_gifts', 'Gifts');
         return `
           <div class="tt-url-chip">
             <div class="tt-url-chip__label">${escHtml(label)}</div>
@@ -2640,10 +2682,10 @@
         <article class="tt-url-card">
           <div class="tt-url-card__head">
             <div>
-              <div class="tt-url-card__title">${escHtml(variant.name)}</div>
-              <div class="tt-url-card__desc">${escHtml(variant.desc)}</div>
+              <div class="tt-url-card__title">${escHtml(translateVariant(variant, 'name'))}</div>
+              <div class="tt-url-card__desc">${escHtml(translateVariant(variant, 'description'))}</div>
             </div>
-            <div class="tt-url-card__badge">4 URLs</div>
+            <div class="tt-url-card__badge">${escHtml(translateMessage('urls_count', '{count} URLs', { count: boards.length }))}</div>
           </div>
           <div class="tt-url-card__list">
             ${urls}
@@ -2658,12 +2700,12 @@
         try {
           if (navigator.clipboard && navigator.clipboard.writeText) {
             await navigator.clipboard.writeText(url);
-            setToast('URL kopiert!');
+            setToast(translateMessage('url_copied', 'URL copied.'));
           } else {
-            setToast('Kopieren nicht m&ouml;glich');
+            setToast(translateMessage('copy_unavailable', 'Copying is not available.'));
           }
         } catch (error) {
-          setToast('Kopieren fehlgeschlagen');
+          setToast(translateMessage('copy_failed', 'Could not copy the URL.'));
         }
       });
     });
@@ -2838,15 +2880,15 @@
       .then(data => {
         if (data.success) {
           updateSaveStamp(formatClock(new Date()));
-          setToast('Konfiguration gespeichert!');
-          pushFeedEvent({ icon: 'save', text: 'Configuration saved', value: 'OK', valueClass: 'is-up' });
+          setToast(translateMessage('save_succeeded', 'Configuration saved.'));
+          pushFeedEvent({ icon: 'save', textKey: 'save_succeeded', text: 'Configuration saved.', valueKey: 'feed_ok', value: 'OK', valueClass: 'is-up' });
         } else {
-          setToast('Fehler: ' + (data.error || 'Unbekannt'));
+          setToast(translateMessage('save_error', 'Save error: {error}', { error: data.error || translateMessage('unknown_error', 'Unknown error') }));
         }
       })
       .catch(error => {
         console.error('Failed to save config', error);
-        setToast('Speichern fehlgeschlagen');
+        setToast(translateMessage('config_save_failed', 'Could not save configuration.'));
       });
   }
 
@@ -2856,33 +2898,41 @@
   }
 
   function confirmAndReset(boardType) {
+    const boardLabel = boardType === 'likes'
+      ? translateMessage('board_likes', 'Likes')
+      : translateMessage('board_gifts', 'Gifts');
     const message = boardType === 'all'
-      ? 'Alle Boards wirklich zuruecksetzen?'
-      : `${boardType === 'likes' ? 'Likes' : 'Gifts'}-Board wirklich zuruecksetzen?`;
+      ? translateMessage('reset_all_confirm', 'Reset all boards?')
+      : translateMessage('reset_board_confirm', 'Reset the {board} board?', { board: boardLabel });
     if (!confirm(message)) return;
     sendReset(boardType)
       .then(() => {
-        setToast(boardType === 'all' ? 'Alle Boards zurueckgesetzt' : `${boardType === 'likes' ? 'Likes' : 'Gifts'} zurueckgesetzt`);
+        setToast(boardType === 'all'
+          ? translateMessage('reset_all_done', 'All boards reset.')
+          : translateMessage('reset_board_done', '{board} board reset.', { board: boardLabel }));
         pushFeedEvent({
           icon: 'rotate-ccw',
-          text: boardType === 'all' ? 'All boards reset' : `${boardType === 'likes' ? 'Likes' : 'Gifts'} board reset`,
+          textKey: boardType === 'all' ? 'reset_all_done' : 'reset_board_done',
+          text: boardType === 'all' ? 'All boards reset.' : '{board} board reset.',
+          textParams: boardType === 'all' ? {} : { board: boardLabel },
+          valueKey: 'feed_reset',
           value: 'RESET',
           valueClass: 'is-purple'
         });
       })
       .catch(error => {
         console.error('Reset failed', error);
-        setToast('Reset fehlgeschlagen');
+        setToast(translateMessage('reset_failed', 'Could not reset the board.'));
       });
   }
 
   function startNewSession() {
-    if (!confirm('Neue Session starten? Aktuelle Session wird abgeschlossen.')) return;
+    if (!confirm(translateUi('plugins.toptier.toptier.ui.messages.session_start_confirm', 'Start a new session? The current session will be closed.'))) return;
     fetch(API_BASE + '/session/new', { method: 'POST' })
       .then(response => response.json())
       .then(data => {
         if (!data.success) {
-          setToast('Neue Session fehlgeschlagen');
+          setToast(translateMessage('new_session_failed', 'Could not start a new session.'));
           return;
         }
         syncSession({
@@ -2890,13 +2940,20 @@
           streamUsername: data.streamUsername || null,
           streamKey: data.streamKey || null
         }, true);
-        setToast('Neue Session gestartet');
-        pushFeedEvent({ icon: 'play', text: 'New session started', value: data.sessionId ? data.sessionId.slice(0, 8) : 'NEW', valueClass: 'is-up' });
+        setToast(translateMessage('new_session_started', 'New session started.'));
+        pushFeedEvent({
+          icon: 'play',
+          textKey: 'new_session_started',
+          text: 'New session started.',
+          value: data.sessionId ? data.sessionId.slice(0, 8) : '',
+          valueKey: data.sessionId ? '' : 'feed_new',
+          valueClass: 'is-up'
+        });
         fetchBoards();
       })
       .catch(error => {
         console.error('New session failed', error);
-        setToast('Neue Session fehlgeschlagen');
+        setToast(translateMessage('new_session_failed', 'Could not start a new session.'));
       });
   }
 
@@ -2904,12 +2961,14 @@
     const snapshot = Array.isArray(entries) ? entries.slice(0, 10) : [];
     if (boardType === 'likes') {
       state.likes = snapshot;
-      renderBoardTable('likes', state.likes, 'likes-tbody', 'Likes Points');
+      renderBoardTable('likes', state.likes, 'likes-tbody');
       renderPodium(state.likes);
       if (state.likes[0]) {
         pushFeedEvent({
           icon: 'heart',
-          text: `Likes board synced: ${state.likes[0].nickname || state.likes[0].username || '-'}`,
+          textKey: 'likes_board_synced',
+          text: 'Likes board synced: {name}',
+          textParams: { name: state.likes[0].nickname || state.likes[0].username || '-' },
           value: formatCompactNumber(state.likes[0].score || 0),
           valueClass: 'is-up'
         });
@@ -2918,11 +2977,13 @@
 
     if (boardType === 'gifts') {
       state.gifts = snapshot;
-      renderBoardTable('gifts', state.gifts, 'gifts-tbody', 'Gift Coins');
+      renderBoardTable('gifts', state.gifts, 'gifts-tbody');
       if (state.gifts[0]) {
         pushFeedEvent({
           icon: 'gift',
-          text: `Gifts board synced: ${state.gifts[0].nickname || state.gifts[0].username || '-'}`,
+          textKey: 'gifts_board_synced',
+          text: 'Gifts board synced: {name}',
+          textParams: { name: state.gifts[0].nickname || state.gifts[0].username || '-' },
           value: formatCompactNumber(state.gifts[0].score || 0),
           valueClass: 'is-gold'
         });
@@ -2938,8 +2999,11 @@
     if (type === 'start' && state.currentSession) {
       pushFeedEvent({
         icon: 'sparkles',
-        text: `Session started: ${state.currentSession.streamUsername ? '@' + state.currentSession.streamUsername : state.currentSession.sessionId.slice(0, 8)}`,
-        value: state.currentSession.sessionId ? state.currentSession.sessionId.slice(0, 8) : 'SESSION',
+        textKey: 'session_started_feed',
+        text: 'Session started: {session}',
+        textParams: { session: state.currentSession.streamUsername ? '@' + state.currentSession.streamUsername : state.currentSession.sessionId.slice(0, 8) },
+        value: state.currentSession.sessionId ? state.currentSession.sessionId.slice(0, 8) : '',
+        valueKey: state.currentSession.sessionId ? '' : 'feed_session',
         valueClass: 'is-up'
       });
     }
@@ -2947,7 +3011,9 @@
     if (type === 'end') {
       pushFeedEvent({
         icon: 'log-out',
+        textKey: 'session_ended_feed',
         text: 'Session ended',
+        valueKey: 'feed_end',
         value: 'END',
         valueClass: 'is-down'
       });
@@ -2977,8 +3043,8 @@
     document.getElementById('new-session').addEventListener('click', startNewSession);
     document.getElementById('new-session-panel').addEventListener('click', startNewSession);
     document.getElementById('test-overlay').addEventListener('click', () => {
-      setToast('Overlay test requested');
-      pushFeedEvent({ icon: 'monitor', text: 'Overlay test requested', value: 'TEST', valueClass: 'is-purple' });
+      setToast(translateMessage('overlay_test_requested', 'Overlay test requested.'));
+      pushFeedEvent({ icon: 'monitor', textKey: 'overlay_test_requested', text: 'Overlay test requested.', valueKey: 'feed_test', value: 'TEST', valueClass: 'is-purple' });
     });
 
     document.getElementById('obs-orientation').addEventListener('change', buildObsUrls);
@@ -3016,7 +3082,7 @@
     fetchBoards();
     loadSession();
     renderIcons();
-    pushFeedEvent({ icon: 'wifi', text: 'Socket connected', value: 'LIVE', valueClass: 'is-up' });
+    pushFeedEvent({ icon: 'wifi', textKey: 'socket_connected', text: 'Socket connected', valueKey: 'feed_live', value: 'LIVE', valueClass: 'is-up' });
   });
 
   socket.on('disconnect', () => {
@@ -3024,7 +3090,7 @@
     updateConnectionChip(false);
     updateStatusOverview();
     stopRefreshLoop();
-    pushFeedEvent({ icon: 'wifi-off', text: 'Socket disconnected', value: 'OFF', valueClass: 'is-down' });
+    pushFeedEvent({ icon: 'wifi-off', textKey: 'socket_disconnected', text: 'Socket disconnected', valueKey: 'feed_off', value: 'OFF', valueClass: 'is-down' });
   });
 
   socket.on('toptier:update', data => {
@@ -3036,13 +3102,13 @@
     if (!config) return;
     state.currentConfig = config;
     applyConfigToUI(config);
-    pushFeedEvent({ icon: 'settings-2', text: 'Config synced from server', value: 'CFG', valueClass: 'is-purple' });
+    pushFeedEvent({ icon: 'settings-2', textKey: 'config_synced', text: 'Configuration synced from server', valueKey: 'feed_config', value: 'CFG', valueClass: 'is-purple' });
   });
 
   socket.on('toptier:config-saved', data => {
     if (!data || !data.success) return;
     updateSaveStamp(formatClock(new Date()));
-    setToast('Konfiguration gespeichert!');
+    setToast(translateMessage('save_succeeded', 'Configuration saved.'));
   });
 
   socket.on('toptier:session-start', data => {
@@ -3060,7 +3126,9 @@
     if (!data) return;
     pushFeedEvent({
       icon: 'arrow-up-right',
-      text: `${data.nickname || data.username || 'User'} moved from #${data.oldRank} to #${data.newRank}`,
+      textKey: 'rank_change',
+      text: '{name} moved from #{oldRank} to #{newRank}',
+      textParams: { name: data.nickname || data.username || translateMessage('unknown_user', 'User'), oldRank: data.oldRank, newRank: data.newRank },
       value: formatCompactNumber(data.score || 0),
       valueClass: data.newRank < data.oldRank ? 'is-up' : 'is-down'
     });
@@ -3070,7 +3138,9 @@
     if (!data) return;
     pushFeedEvent({
       icon: 'crown',
-      text: `${data.nickname || data.username || 'User'} is the new leader`,
+      textKey: 'new_leader',
+      text: '{name} is the new leader',
+      textParams: { name: data.nickname || data.username || translateMessage('unknown_user', 'User') },
       value: formatCompactNumber(data.score || 0),
       valueClass: 'is-gold'
     });
@@ -3080,7 +3150,9 @@
     if (!data || !Array.isArray(data.affectedUsers) || !data.affectedUsers.length) return;
     pushFeedEvent({
       icon: 'timer-reset',
-      text: `Decay tick affected ${data.affectedUsers.length} users`,
+      textKey: 'decay_affected',
+      text: 'Decay tick affected {count} users',
+      textParams: { count: data.affectedUsers.length },
       value: `-${data.affectedUsers.length}`,
       valueClass: 'is-down'
     });
@@ -3110,8 +3182,11 @@
   if (window.i18n?.ready) {
     window.i18n.ready.then(init);
     window.i18n.onLanguageChange(() => {
+      updateConnectionChip(state.socketConnected);
+      updateSessionChip();
+      updateStatusOverview();
       buildObsUrls();
-      renderQuickUrls();
+      refreshLiveView();
     });
   } else {
     init();

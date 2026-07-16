@@ -53,4 +53,10 @@ describe('Music Bot overlay theme and layout engine', () => {
     expect(overlayHtml).toContain("socket.on('connect', () => {");
     expect(overlayHtml).toContain('showIdleMessage();');
   });
+
+  test('loads the shared i18n client only once', () => {
+    const references = overlayHtml.match(/<script src="\/js\/i18n-client\.js"><\/script>/g) || [];
+
+    expect(references).toHaveLength(1);
+  });
 });

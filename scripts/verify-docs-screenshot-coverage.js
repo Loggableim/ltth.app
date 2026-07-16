@@ -7,6 +7,7 @@ const path = require('path');
 const zlib = require('zlib');
 const { LOCALES, buildDocsSpec } = require('./docs-screenshot-spec');
 const { isAllowedCaptureNetworkUrl } = require('./lib/capture-receipt');
+const { validateDocsCaptureReceipts } = require('./verify-docs-capture-receipts');
 
 const ROOT = path.resolve(__dirname, '..');
 const manifestPath = path.join(ROOT, 'screenshots', 'docs-capture-manifest.json');
@@ -81,6 +82,7 @@ const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 assert.strictEqual(manifest.version, spec.version, 'Capture manifest version is stale');
 assert.strictEqual(manifest.specHash, specHash(spec), 'Capture manifest was not recorded from the current step specification');
 assert.deepStrictEqual(manifest.failures || [], [], 'Capture failures must be resolved, not carried into the manifest');
+validateDocsCaptureReceipts({ manifest, assets: spec.assets, locales: LOCALES });
 
 const expected = new Map();
 for (const locale of LOCALES) {

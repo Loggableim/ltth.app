@@ -1613,10 +1613,10 @@
                                     <input type="checkbox" id="effect-glitchclouds-rgbshift" checked><span data-i18n="plugins.weather-control.labels.rgb_shift"> RGB Shift
                                 </span></label>
                                 <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
-                                    <input type="checkbox" id="effect-glitchclouds-displacement" checked> Displacement
+                                    <input type="checkbox" id="effect-glitchclouds-displacement" checked><span data-i18n-key="plugins.weather-control.labels.glitch_displacement"> Displacement</span>
                                 </label>
                                 <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
-                                    <input type="checkbox" id="effect-glitchclouds-scanlines" checked> Scanlines
+                                    <input type="checkbox" id="effect-glitchclouds-scanlines" checked><span data-i18n-key="plugins.weather-control.labels.glitch_scanlines"> Scanlines</span>
                                 </label>
                                 <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
                                     <input type="checkbox" id="effect-glitchclouds-noise" checked><span data-i18n="plugins.weather-control.labels.static_noise"> Static Noise
@@ -1860,7 +1860,7 @@
                 <div class="grid grid-2">
                     <div class="form-group">
                         <label class="form-label" data-i18n-key="plugins.weather-control.cards.tools.search">Search Effects</label>
-                        <input type="search" class="form-control" id="effectSearch" placeholder="rain, storm, heatwave">
+                        <input type="search" class="form-control" id="effectSearch" placeholder="rain, storm, heatwave" data-i18n-placeholder="plugins.weather-control.form_controls.effect_search_placeholder">
                     </div>
                     <div class="form-group">
                         <label class="form-label" data-i18n-key="plugins.weather-control.cards.tools.category">Effect Category</label>
@@ -2057,6 +2057,12 @@
                 }
             }
         ];
+        const builtInPresetTranslationKeys = {
+            'Cozy Rain': 'cozy_rain',
+            'Boss Storm': 'boss_storm',
+            'Winter Chill': 'winter_chill',
+            'Cyber Glitch': 'cyber_glitch'
+        };
 
         const triggerControls = {
             follow: {
@@ -2316,22 +2322,29 @@
             }
         };
 
-        function translate(key, params = {}) {
-            const namespacedKey = `plugins.weather-control.${key}`;
+        function weatherText(key, fallback = key, params = {}) {
+            const namespacedKey = key.startsWith('plugins.weather-control.')
+                ? key
+                : `plugins.weather-control.${key}`;
             const sharedTranslation = window.i18n?.t?.(namespacedKey);
             if (sharedTranslation && sharedTranslation !== namespacedKey) {
                 return Object.keys(params).reduce((text, param) => {
-                    return text.replace(new RegExp(`{{${param}}}`, 'g'), params[param]);
+                    return text
+                        .replace(new RegExp(`{{${param}}}`, 'g'), params[param])
+                        .replace(new RegExp(`{${param}}`, 'g'), params[param]);
                 }, sharedTranslation);
             }
 
             const locale = window.i18n?.currentLocale || localStorage.getItem('app_locale') || 'en';
             const fallbackLocale = 'en';
             const localeTexts = translations[locale] || translations[fallbackLocale] || {};
-            let text = localeTexts[key] || translations[fallbackLocale]?.[key] || key;
+            const localKey = namespacedKey.replace('plugins.weather-control.', '');
+            let text = localeTexts[localKey] || translations[fallbackLocale]?.[localKey] || fallback;
 
             Object.keys(params).forEach((param) => {
-                text = text.replace(new RegExp(`{{${param}}}`, 'g'), params[param]);
+                text = text
+                    .replace(new RegExp(`{{${param}}}`, 'g'), params[param])
+                    .replace(new RegExp(`{${param}}`, 'g'), params[param]);
             });
 
             return text;
@@ -2354,7 +2367,7 @@
         function applyTranslations() {
             document.querySelectorAll('[data-i18n-key]').forEach((el) => {
                 const key = el.getAttribute('data-i18n-key');
-                const translation = translate(key);
+                const translation = weatherText(key);
                 if (!translation) return;
 
                 if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
@@ -2403,11 +2416,18 @@
 
             const card = document.createElement('div');
             card.className = 'effect-card';
+            const heatwave = weatherText('plugins.weather-control.effects.names.heatwave', 'Heatwave');
+            const intensityLabel = weatherText('plugins.weather-control.effects.intensity', 'Intensity');
+            const durationLabel = weatherText('plugins.weather-control.effects.duration_ms', 'Duration (ms)');
+            const permanentLabel = weatherText('plugins.weather-control.effects.permanent_label', 'Permanent');
+            const permanentHelp = weatherText('plugins.weather-control.effects.permanent_help', 'Keep this effect running until manually stopped.');
+            const playLabel = weatherText('plugins.weather-control.ui.actions.play', 'Play');
+            const testLabel = weatherText('plugins.weather-control.effects.test_button', 'Test Effect');
             card.innerHTML = `
                 <div class="effect-header">
                     <div class="effect-title">
                         <span style="color: #f97316; font-size: 1.5rem;">~</span>
-                        <span data-i18n-key="plugins.weather-control.effects.names.heatwave">Heatwave</span>
+                        <span data-i18n-key="plugins.weather-control.effects.names.heatwave">${heatwave}</span>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="effect-heatwave-enabled" checked>
@@ -2416,30 +2436,30 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">
-                        <span data-i18n-key="plugins.weather-control.effects.intensity">Intensity</span>
+                        <span data-i18n-key="plugins.weather-control.effects.intensity">${intensityLabel}</span>
                         <span class="range-value" id="effect-heatwave-intensity-val">0.4</span>
                     </label>
                     <input type="range" class="range-slider" id="effect-heatwave-intensity" min="0" max="1" step="0.1" value="0.4">
                 </div>
                 <div class="form-group">
-                    <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">Duration (ms)</label>
+                    <label class="form-label" data-i18n-key="plugins.weather-control.effects.duration_ms">${durationLabel}</label>
                     <input type="number" class="form-control" id="effect-heatwave-duration" value="8000" min="1000" max="60000">
                 </div>
                 <div class="form-group">
                     <label class="form-label">
                         <span style="display: flex; justify-content: space-between; align-items: center;">
-                            <span data-i18n-key="plugins.weather-control.effects.permanent_label">Permanent</span>
+                            <span data-i18n-key="plugins.weather-control.effects.permanent_label">${permanentLabel}</span>
                             <label class="switch">
                                 <input type="checkbox" id="effect-heatwave-permanent">
                                 <span class="slider"></span>
                             </label>
                         </span>
                     </label>
-                    <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
+                    <small class="form-text" data-i18n-key="plugins.weather-control.effects.permanent_help">${permanentHelp}</small>
                 </div>
                 <button class="btn btn-primary btn-sm w-100" data-test-effect="heatwave" type="button">
-                    <span data-i18n-key="plugins.weather-control.ui.actions.play">Play</span>
-                    <span data-i18n-key="plugins.weather-control.effects.test_button">Test Effect</span>
+                    <span data-i18n-key="plugins.weather-control.ui.actions.play">${playLabel}</span>
+                    <span data-i18n-key="plugins.weather-control.effects.test_button">${testLabel}</span>
                 </button>
             `;
             effectsGrid.appendChild(card);
@@ -2463,32 +2483,42 @@
                 const meta = effectMeta[effect] || {};
                 const wrapper = document.createElement('div');
                 wrapper.dataset.advancedFor = effect;
+                const advancedTitle = weatherText('plugins.weather-control.ui.advanced.title', 'Advanced');
+                const opacityLabel = weatherText('plugins.weather-control.ui.advanced.opacity', 'Opacity');
+                const particleScaleLabel = weatherText('plugins.weather-control.ui.advanced.particle_scale', 'Particle Scale');
+                const windLabel = weatherText('plugins.weather-control.ui.advanced.wind', 'Wind');
+                const directionLabel = weatherText('plugins.weather-control.ui.effects.direction', 'Direction');
+                const layerLabel = weatherText('plugins.weather-control.ui.effects.layer', 'Layer');
+                const stopLabel = weatherText('plugins.weather-control.ui.actions.stopEffect', 'Stop Effect');
+                const defaultOpacity = Number(1).toFixed(2);
+                const defaultParticleScale = Number(1).toFixed(2);
+                const defaultWind = Number(0).toFixed(2);
                 wrapper.innerHTML = `
                     <details style="margin-top: 1rem;">
-                        <summary class="form-label" data-i18n-key="plugins.weather-control.ui.advanced.title">Advanced</summary>
+                        <summary class="form-label" data-i18n-key="plugins.weather-control.ui.advanced.title">${advancedTitle}</summary>
                         <div class="grid grid-2" style="margin-top: 0.75rem;">
                             <div class="form-group">
-                                <label class="form-label">Opacity <span class="range-value" id="effect-${effect}-opacity-val">1.00</span></label>
+                                <label class="form-label">${opacityLabel} <span class="range-value" id="effect-${effect}-opacity-val">${defaultOpacity}</span></label>
                                 <input type="range" class="range-slider" id="effect-${effect}-opacity" min="0.05" max="1" step="0.05" value="1">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Particle Scale <span class="range-value" id="effect-${effect}-particleScale-val">1.00</span></label>
+                                <label class="form-label">${particleScaleLabel} <span class="range-value" id="effect-${effect}-particleScale-val">${defaultParticleScale}</span></label>
                                 <input type="range" class="range-slider" id="effect-${effect}-particleScale" min="0.25" max="2" step="0.05" value="1">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Wind <span class="range-value" id="effect-${effect}-wind-val">0.00</span></label>
+                                <label class="form-label">${windLabel} <span class="range-value" id="effect-${effect}-wind-val">${defaultWind}</span></label>
                                 <input type="range" class="range-slider" id="effect-${effect}-wind" min="-1" max="1" step="0.05" value="0">
                             </div>
                             <div class="form-group">
-                                <label class="form-label" data-i18n-key="plugins.weather-control.ui.effects.direction">Direction</label>
+                                <label class="form-label" data-i18n-key="plugins.weather-control.ui.effects.direction">${directionLabel}</label>
                                 <input type="number" class="form-control" id="effect-${effect}-directionDeg" min="-180" max="180" value="0">
                             </div>
                             <div class="form-group">
-                                <label class="form-label" data-i18n-key="plugins.weather-control.ui.effects.layer">Layer</label>
+                                <label class="form-label" data-i18n-key="plugins.weather-control.ui.effects.layer">${layerLabel}</label>
                                 <input type="number" class="form-control" id="effect-${effect}-layer" min="0" max="100" value="${meta.layer || 50}">
                             </div>
                             <div class="form-group">
-                                <button class="btn btn-secondary btn-sm w-100" data-stop-effect="${effect}" type="button" data-i18n-key="plugins.weather-control.ui.actions.stopEffect">Stop Effect</button>
+                                <button class="btn btn-secondary btn-sm w-100" data-stop-effect="${effect}" type="button" data-i18n-key="plugins.weather-control.ui.actions.stopEffect">${stopLabel}</button>
                             </div>
                         </div>
                     </details>
@@ -2508,11 +2538,12 @@
             grid.innerHTML = triggerNames.map(triggerName => {
                 const trigger = config.triggerEvents?.[triggerName] || {};
                 const controls = triggerControls[triggerName];
-                const effectOptions = effects.map(effect => `<option value="${effect}" ${trigger.action === effect ? 'selected' : ''}>${translate(`effects.names.${effect}`) || effect}</option>`).join('');
+                const effectOptions = effects.map(effect => `<option value="${effect}" ${trigger.action === effect ? 'selected' : ''}>${weatherText(`plugins.weather-control.effects.names.${effect}`, effect)}</option>`).join('');
+                const triggerLabel = weatherText(`plugins.weather-control.ui.triggers.${triggerName}`, triggerName);
                 return `
                     <div class="effect-card">
                         <div class="effect-header">
-                            <div class="effect-title">${triggerName}</div>
+                            <div class="effect-title">${triggerLabel}</div>
                             <label class="switch">
                                 <input type="checkbox" id="${controls.enabled}" ${trigger.enabled ? 'checked' : ''}>
                                 <span class="slider"></span>
@@ -2546,7 +2577,10 @@
             presets.forEach((preset, index) => {
                 const option = document.createElement('option');
                 option.value = String(index);
-                option.textContent = preset.name || '';
+                const presetKey = builtInPresetTranslationKeys[preset.name];
+                option.textContent = presetKey
+                    ? weatherText(`plugins.weather-control.runtime.ui.presets.${presetKey}`, preset.name)
+                    : preset.name || '';
                 presetSelect.appendChild(option);
             });
             presetSelect._weatherPresets = presets;
@@ -2595,17 +2629,18 @@
             const safeEffects = activeEffects.filter(effect => effect && effects.includes(effect.type));
             document.getElementById('activeEffectsCount').textContent = safeEffects.length;
             if (safeEffects.length === 0) {
-                list.innerHTML = '<p class="help-text" data-i18n-key="plugins.weather-control.ui.active.noEffects">No active effects reported by the overlay.</p>';
+                const emptyMessage = weatherText('plugins.weather-control.ui.active.noEffects', 'No active effects reported by the overlay.');
+                list.innerHTML = `<p class="help-text" data-i18n-key="plugins.weather-control.ui.active.noEffects">${emptyMessage}</p>`;
                 applyTranslations();
                 return;
             }
             list.innerHTML = safeEffects.map(effect => `
                 <div class="effect-card">
                     <div class="effect-header">
-                        <div class="effect-title">${translate(`effects.names.${effect.type}`) || effect.type}</div>
-                        <span class="help-text">${effect.permanent ? 'Permanent' : `${effect.duration || 0} ms`}</span>
+                        <div class="effect-title">${weatherText(`plugins.weather-control.effects.names.${effect.type}`, effect.type)}</div>
+                        <span class="help-text">${effect.permanent ? weatherText('plugins.weather-control.effects.permanent_label', 'Permanent') : weatherText('plugins.weather-control.runtime.ui.duration_ms', '{duration} ms', { duration: effect.duration || 0 })}</span>
                     </div>
-                    <div class="help-text">Intensity ${Number(effect.intensity || 0).toFixed(2)} | Layer ${effect.layer ?? '-'}</div>
+                    <div class="help-text">${weatherText('plugins.weather-control.runtime.ui.effect_details', 'Intensity {intensity} | Layer {layer}', { intensity: Number(effect.intensity || 0).toFixed(2), layer: effect.layer ?? '-' })}</div>
                     <button class="btn btn-danger btn-sm w-100" type="button" data-stop-effect="${effect.type}" data-i18n-key="plugins.weather-control.ui.actions.stop">Stop</button>
                 </div>
             `).join('');
@@ -2647,7 +2682,9 @@
             try {
                 steps = JSON.parse(document.getElementById('sequenceSteps')?.value || '[]');
             } catch (error) {
-                showStatus('status.error_saving_config', 'danger', { error: `Invalid sequence JSON: ${error.message}` });
+                showStatus('status.error_saving_config', 'danger', {
+                    error: weatherText('plugins.weather-control.runtime.ui.invalid_sequence_json', 'Sequence steps contain invalid JSON: {error}', { error: error.message })
+                });
             }
             return [{
                 name: document.getElementById('sequenceName')?.value || 'Sequence',
@@ -2762,7 +2799,9 @@
                 renderGamificationState(data.gamification);
                 showStatus('status.config_saved', 'success');
             } else {
-                showStatus('status.error_saving_config', 'danger', { error: data.error || 'Unable to reset gamification' });
+                showStatus('status.error_saving_config', 'danger', {
+                    error: data.error || weatherText('plugins.weather-control.runtime.ui.reset_failed', 'Unable to reset gamification')
+                });
             }
         }
 
@@ -2999,7 +3038,7 @@
             try {
                 const saveBtn = document.getElementById('saveConfig');
                 const originalText = saveBtn.innerHTML;
-                saveBtn.innerHTML = `<span class="spinner"></span> ${translate('status.saving_config')}`;
+                saveBtn.innerHTML = `<span class="spinner"></span> ${weatherText('plugins.weather-control.status.saving_config', 'Saving...')}`;
                 saveBtn.disabled = true;
 
                 const config = {
@@ -3100,7 +3139,7 @@
                         // Show additional notification for permanent effects
                         setTimeout(() => {
                             showStatus('status.permanent_effects_active', 'info', {
-                                effects: permanentEffects.map(e => translate(`effects.names.${e}`) || e).join(', ')
+                                effects: permanentEffects.map(e => weatherText(`plugins.weather-control.effects.names.${e}`, e)).join(', ')
                             });
                         }, 2000);
                     }
@@ -3112,7 +3151,7 @@
                 saveBtn.disabled = false;
             } catch (error) {
                 showStatus('status.error_saving_config', 'danger', { error: error.message });
-                document.getElementById('saveConfig').innerHTML = '<span>💾</span> ' + translate('buttons.save_config');
+                document.getElementById('saveConfig').innerHTML = '<span>💾</span> ' + weatherText('plugins.weather-control.buttons.save_config', 'Save Configuration');
                 document.getElementById('saveConfig').disabled = false;
             }
         }
@@ -3134,7 +3173,7 @@
                         // Warn if API key is required but missing
                         console.warn('[Weather Control] API key required but not configured. Request may fail.');
                         showStatus('status.effect_trigger_error', 'warning', {
-                            error: 'API key not configured. Please check settings.'
+                            error: weatherText('plugins.weather-control.runtime.ui.api_key_missing', 'API key not configured. Please check settings.')
                         });
                     }
                 }
@@ -3160,7 +3199,7 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    const effectLabel = translate(`effects.names.${action}`) || action;
+                    const effectLabel = weatherText(`plugins.weather-control.effects.names.${action}`, action);
                     showStatus('status.effect_triggered', 'success', { effect: effectLabel });
                 } else {
                     showStatus('status.effect_trigger_error', 'danger', { error: data.error });
@@ -3175,7 +3214,7 @@
             const alert = document.getElementById('statusAlert');
             alert.className = `alert alert-${type} show`;
 
-            const message = translate(messageKey, params);
+            const message = weatherText(messageKey, messageKey, params);
             let icon = '<span>ℹ️</span>';
             if (type === 'success') icon = '<span>✅</span>';
             if (type === 'danger') icon = '<span>❌</span>';
@@ -3198,7 +3237,9 @@
         async function copyOverlayUrl() {
             const input = document.getElementById('overlayUrl');
             if (!input || !input.value) {
-                showStatus('status.effect_trigger_error', 'danger', { error: 'Overlay URL not available' });
+                showStatus('status.effect_trigger_error', 'danger', {
+                    error: weatherText('plugins.weather-control.runtime.ui.overlay_url_unavailable', 'Overlay URL is not available')
+                });
                 return;
             }
 
@@ -3330,15 +3371,15 @@
                 const status = document.getElementById('giftCatalogStatus');
 
                 btn.disabled = true;
-                btn.innerHTML = '<span class="spinner"></span> ' + translate('status.gift_catalog_loading');
-                status.textContent = translate('status.gift_catalog_loading');
+                btn.innerHTML = '<span class="spinner"></span> ' + weatherText('plugins.weather-control.status.gift_catalog_loading', 'Loading gift catalog...');
+                status.textContent = weatherText('plugins.weather-control.status.gift_catalog_loading', 'Loading gift catalog...');
 
                 const response = await fetch('/api/gift-catalog');
                 const data = await response.json();
 
                 if (data.success && data.catalog) {
                     giftCatalog = data.catalog;
-                    status.textContent = translate('status.gift_catalog_loaded', { count: giftCatalog.length });
+                    status.textContent = weatherText('plugins.weather-control.status.gift_catalog_loaded', 'Gift catalog loaded: {count} gifts', { count: giftCatalog.length });
 
                     // Also load existing mappings
                     await loadGiftMappings();
@@ -3348,16 +3389,16 @@
 
                     showStatus('status.gift_catalog_loaded', 'success', { count: giftCatalog.length });
                 } else {
-                    status.textContent = translate('status.gift_catalog_empty');
+                    status.textContent = weatherText('plugins.weather-control.status.gift_catalog_empty', 'No gifts in catalog. Connect to a TikTok stream first.');
                     showStatus('status.gift_catalog_empty', 'danger');
                 }
             } catch (error) {
-                document.getElementById('giftCatalogStatus').textContent = translate('status.gift_catalog_error', { error: error.message });
+                document.getElementById('giftCatalogStatus').textContent = weatherText('plugins.weather-control.status.gift_catalog_error', 'Error loading gift catalog: {error}', { error: error.message });
                 showStatus('status.gift_catalog_error', 'danger', { error: error.message });
             } finally {
                 const btn = document.getElementById('loadGiftCatalog');
                 btn.disabled = false;
-                btn.innerHTML = '<span>🔄</span> ' + translate('buttons.load_catalog');
+                btn.innerHTML = '<span>🔄</span> ' + weatherText('plugins.weather-control.buttons.load_catalog', 'Load Gift Catalog');
             }
         }
 
@@ -3367,8 +3408,8 @@
             const btn = document.getElementById('updateGiftCatalog');
             try {
                 btn.disabled = true;
-                btn.innerHTML = '<span class="spinner"></span> ' + translate('status.gift_catalog_updating');
-                status.textContent = translate('status.gift_catalog_updating');
+                btn.innerHTML = '<span class="spinner"></span> ' + weatherText('plugins.weather-control.status.gift_catalog_updating', 'Updating gift catalog...');
+                status.textContent = weatherText('plugins.weather-control.status.gift_catalog_updating', 'Updating gift catalog...');
 
                 const response = await fetch('/api/gift-catalog/update', {
                     method: 'POST'
@@ -3376,19 +3417,19 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    status.textContent = translate('status.gift_catalog_updated');
+                    status.textContent = weatherText('plugins.weather-control.status.gift_catalog_updated', 'Gift catalog updated successfully');
                     showStatus('status.gift_catalog_updated', 'success');
                     await loadGiftCatalog();
                 } else {
-                    status.textContent = translate('status.gift_catalog_error', { error: data.error });
+                    status.textContent = weatherText('plugins.weather-control.status.gift_catalog_error', 'Error loading gift catalog: {error}', { error: data.error });
                     showStatus('status.gift_catalog_error', 'danger', { error: data.error });
                 }
             } catch (error) {
-                status.textContent = translate('status.gift_catalog_error', { error: error.message });
+                status.textContent = weatherText('plugins.weather-control.status.gift_catalog_error', 'Error loading gift catalog: {error}', { error: error.message });
                 showStatus('status.gift_catalog_error', 'danger', { error: error.message });
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<span>⟳</span> ' + translate('buttons.update_catalog');
+                btn.innerHTML = '<span>⟳</span> ' + weatherText('plugins.weather-control.buttons.update_catalog', 'Update Gift Catalog');
             }
         }
 
@@ -3411,7 +3452,7 @@
             const container = document.getElementById('giftMappingList');
 
             if (giftCatalog.length === 0) {
-                container.innerHTML = `<p class="help-text">${translate('status.gift_catalog_empty')}</p>`;
+                container.innerHTML = `<p class="help-text">${weatherText('plugins.weather-control.status.gift_catalog_empty', 'No gifts in catalog. Connect to a TikTok stream first.')}</p>`;
                 return;
             }
 
@@ -3434,18 +3475,18 @@
                                     <strong>${escapeHtml(gift.name)}</strong>
                                 </div>
                                 <div class="help-text" style="font-size: 0.75rem; margin-top: 0.25rem;">
-                                    💎 ${gift.diamond_count} diamonds | ID: ${gift.id}
+                                    💎 ${weatherText('plugins.weather-control.runtime.ui.gift_cost', '{count} diamonds | ID: {id}', { count: gift.diamond_count, id: gift.id })}
                                 </div>
                             </div>
                         </div>
 
                         <div class="form-group" style="margin-top: 1rem;">
-                            <label class="form-label" data-i18n-key="plugins.weather-control.cards.gifts.effect_label">${translate('cards.gifts.effect_label') || 'Weather Effect'}</label>
+                            <label class="form-label" data-i18n-key="plugins.weather-control.cards.gifts.effect_label">${weatherText('plugins.weather-control.cards.gifts.effect_label', 'Weather Effect')}</label>
                             <select class="form-select" id="gift-${gift.id}-effect">
-                                <option value="">-- ${translate('cards.gifts.no_mapping') || 'No Mapping'} --</option>
+                                <option value="">-- ${weatherText('plugins.weather-control.cards.gifts.no_mapping', 'No Mapping')} --</option>
                                 ${effects.map(effect => `
                                     <option value="${effect}" ${mapping && mapping.weather_effect === effect ? 'selected' : ''}>
-                                        ${translate(`effects.names.${effect}`) || effect.charAt(0).toUpperCase() + effect.slice(1)}
+                                        ${weatherText(`plugins.weather-control.effects.names.${effect}`, effect.charAt(0).toUpperCase() + effect.slice(1))}
                                     </option>
                                 `).join('')}
                             </select>
@@ -3454,14 +3495,14 @@
                         <div id="gift-${gift.id}-settings" style="${hasMapping ? '' : 'display: none;'}">
                             <div class="form-group">
                                 <label class="form-label">
-                                    ${translate('effects.intensity')}
+                                    ${weatherText('plugins.weather-control.effects.intensity', 'Intensity')}
                                     <span class="range-value" id="gift-${gift.id}-intensity-val">${mapping ? mapping.intensity.toFixed(1) : '0.5'}</span>
                                 </label>
                                 <input type="range" class="range-slider" id="gift-${gift.id}-intensity" min="0" max="1" step="0.1" value="${mapping ? mapping.intensity : 0.5}">
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">${translate('effects.duration_ms')}</label>
+                                <label class="form-label">${weatherText('plugins.weather-control.effects.duration_ms', 'Duration (ms)')}</label>
                                 <input type="number" class="form-control" id="gift-${gift.id}-duration" value="${mapping ? mapping.duration : 10000}" min="1000" max="60000">
                             </div>
 
@@ -3470,15 +3511,15 @@
                                     <input type="checkbox" id="gift-${gift.id}-enabled" ${!mapping || mapping.enabled ? 'checked' : ''}>
                                     <span class="slider"></span>
                                 </label>
-                                <label class="form-label" style="margin: 0;">${translate('cards.gifts.enabled') || 'Enabled'}</label>
+                                <label class="form-label" style="margin: 0;">${weatherText('plugins.weather-control.cards.gifts.enabled', 'Enabled')}</label>
                             </div>
 
                             <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
                                 <button class="btn btn-primary btn-sm save-gift-btn" style="flex: 1;" data-gift-id="${gift.id}">
-                                    <span>💾</span> ${translate('cards.gifts.save') || 'Save'}
+                                    <span>💾</span> ${weatherText('plugins.weather-control.cards.gifts.save', 'Save')}
                                 </button>
                                 <button class="btn btn-danger btn-sm delete-gift-btn" data-gift-id="${gift.id}">
-                                    <span>🗑️</span> ${translate('cards.gifts.delete') || 'Delete'}
+                                    <span>🗑️</span> ${weatherText('plugins.weather-control.cards.gifts.delete', 'Delete')}
                                 </button>
                             </div>
                         </div>
@@ -3574,7 +3615,7 @@
         // Delete gift mapping
         async function deleteGiftMapping(giftId) {
             try {
-                if (!confirm(translate('cards.gifts.delete_confirm') || 'Are you sure you want to delete this gift mapping?')) {
+                if (!confirm(weatherText('plugins.weather-control.cards.gifts.delete_confirm', 'Are you sure you want to delete this gift mapping?'))) {
                     return;
                 }
 
@@ -3660,15 +3701,15 @@
                 btn.classList.remove('btn-primary');
                 btn.classList.add('btn-success');
                 btn.querySelector('span:first-child').textContent = '⏸️';
-                text.setAttribute('data-i18n-key', 'buttons.preview_off');
-                text.textContent = translate('buttons.preview_off');
+                text.setAttribute('data-i18n-key', 'plugins.weather-control.buttons.preview_off');
+                text.textContent = weatherText('plugins.weather-control.buttons.preview_off', 'Stop Preview');
             } else {
                 previewEngine.stop();
                 btn.classList.remove('btn-success');
                 btn.classList.add('btn-primary');
                 btn.querySelector('span:first-child').textContent = '▶️';
-                text.setAttribute('data-i18n-key', 'buttons.preview_on');
-                text.textContent = translate('buttons.preview_on');
+                text.setAttribute('data-i18n-key', 'plugins.weather-control.buttons.preview_on');
+                text.textContent = weatherText('plugins.weather-control.buttons.preview_on', 'Start Preview');
             }
         }
 
@@ -3691,7 +3732,9 @@
             // Trigger effect in preview
             previewEngine.startEffect(effectType, intensity, duration, { permanent });
 
-            showStatus(`Testing ${effectType} effect in preview`, 'info');
+            showStatus('plugins.weather-control.runtime.ui.preview_effect', 'info', {
+                effect: weatherText(`plugins.weather-control.effects.names.${effectType}`, effectType)
+            });
         }
 
         /**
@@ -3708,7 +3751,7 @@
         function stopAllPreviewEffects() {
             if (!previewEngine) return;
             previewEngine.stopAllEffects();
-            showStatus('All preview effects stopped', 'info');
+            showStatus('plugins.weather-control.runtime.ui.preview_stopped', 'info');
         }
 
         /**

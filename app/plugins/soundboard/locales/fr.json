@@ -3,19 +3,19 @@
     "soundboard": {
       "soundboard": {
         "title": "Table d'harmonie",
-        "subtitle": "Sound Effect Management",
+        "subtitle": "Gestion des effets sonores",
         "sounds": {
-          "title": "Sound Library",
-          "add": "Add Sound",
-          "upload": "Upload Sound",
-          "name": "Sound Name",
-          "file": "Sound File",
-          "category": "Category",
-          "volume": "Volume",
-          "play": "Play",
-          "stop": "Stop",
-          "delete": "Delete",
-          "edit": "Edit"
+          "title": "Bibliothèque de sons",
+          "add": "Ajouter un son",
+          "upload": "Téléverser un son",
+          "name": "Nom du son",
+          "file": "Fichier audio",
+          "category": "Catégorie",
+          "volume": "Volume sonore",
+          "play": "Lire",
+          "stop": "Arrêter",
+          "delete": "Supprimer",
+          "edit": "Modifier"
         },
         "animations": {
           "export": "Exporter les animations audio",
@@ -27,33 +27,33 @@
         },
         "config": {
           "title": "Paramètres",
-          "enabled": "Enable Soundboard",
-          "trigger_mode": "Trigger Mode",
-          "manual": "Manual Only",
-          "automatic": "Automatic on Events",
-          "master_volume": "Master Volume",
+          "enabled": "Activer la table de sons",
+          "trigger_mode": "Mode de déclenchement",
+          "manual": "Manuel uniquement",
+          "automatic": "Automatique lors des événements",
+          "master_volume": "Volume principal",
           "save": "Enregistrer les Paramètres",
-          "audio_target": "Audio Playback Target",
-          "audio_target_dashboard": "Dashboard Only",
-          "audio_target_obs": "OBS Overlay Only",
-          "audio_target_both": "Both (Dashboard + OBS)",
-          "audio_target_help_dashboard": "Audio plays directly in your browser (recommended if OBS audio not working)",
-          "audio_target_help_obs": "Audio plays in the OBS browser source",
-          "audio_target_help_both": "Audio plays in both locations"
+          "audio_target": "Cible de lecture audio",
+          "audio_target_dashboard": "Tableau de bord uniquement",
+          "audio_target_obs": "Superposition OBS uniquement",
+          "audio_target_both": "Les deux (tableau de bord + OBS)",
+          "audio_target_help_dashboard": "L'audio est lu directement dans votre navigateur (recommandé si l'audio OBS ne fonctionne pas)",
+          "audio_target_help_obs": "L'audio est lu dans la source navigateur d'OBS",
+          "audio_target_help_both": "L'audio est lu aux deux endroits"
         },
         "categories": {
-          "all": "All Sounds",
-          "alerts": "Alerts",
+          "all": "Tous les sons",
+          "alerts": "Alertes",
           "effects": "Effets",
-          "music": "Music",
-          "custom": "Custom"
+          "music": "Musique",
+          "custom": "Personnalisé"
         },
         "triggers": {
-          "title": "Event Triggers",
-          "gift": "On Gift",
-          "follow": "On Follow",
-          "subscribe": "On Subscribe",
-          "like": "On Like"
+          "title": "Déclencheurs d'événements",
+          "gift": "À la réception d'un cadeau",
+          "follow": "Lors d'un suivi",
+          "subscribe": "Lors d'un abonnement",
+          "like": "Lors d'un J'aime"
         }
       },
       "labels": {
@@ -161,6 +161,7 @@
         },
         "actions": {
           "refresh": "Actualiser",
+          "search": "Rechercher",
           "copy": "Copier",
           "clear": "Effacer",
           "copyUrl": "Copier l'URL",
@@ -180,7 +181,8 @@
           "fill": "Remplir",
           "none": "Aucune",
           "video": "Vid\u00e9o",
-          "image": "Image"
+          "gif": "GIF",
+          "image": "Fichier image"
         },
         "events": {
           "follow": "Suivre",
@@ -202,11 +204,18 @@
         "table": {
           "label": "Libell\u00e9",
           "sound": "Son",
-          "animation": "Animation",
-          "actions": "Actions"
+          "animation": "Média animé",
+          "actions": "Opérations"
         },
         "placeholders": {
           "loading": "Chargement...",
+          "likeThresholdDisabled": "0 = désactivé",
+          "searchSoundEffects": "Rechercher des effets sonores...",
+          "searchGifAnimations": "Rechercher des animations GIF...",
+          "giftId": "Identifiant du cadeau",
+          "label": "Libellé",
+          "mp3Url": "URL MP3",
+          "volume": "Niveau sonore",
           "soundUrl": "URL du son (MP3)",
           "animationUrl": "URL de l'animation",
           "animationUrlOptional": "URL de l'animation (facultatif)",
@@ -217,6 +226,16 @@
         },
         "accessibility": {
           "closeGiftCatalogModal": "Fermer la bo\u00eete de dialogue du catalogue de cadeaux"
+        },
+        "audioTarget": {
+          "dashboard": "Tableau de bord :",
+          "both": "Les deux :"
+        },
+        "search": {
+          "preview": "Aperçu",
+          "use": "Utiliser",
+          "trending": "Tendances",
+          "all": "Tous"
         }
       }
     }

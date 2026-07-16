@@ -6,6 +6,23 @@
     'use strict';
 
     const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+    const RUNTIME_I18N_PREFIX = 'plugins.minecraft-connect.minecraft_connect.runtime.';
+
+    function interpolateRuntimeFallback(fallback, params = {}) {
+        return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+            Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+        ));
+    }
+
+    function runtimeText(key, fallback, params = {}) {
+        const translationKey = `${RUNTIME_I18N_PREFIX}${key}`;
+        const translated = window.i18n && typeof window.i18n.t === 'function'
+            ? window.i18n.t(translationKey, params)
+            : translationKey;
+        return translated && translated !== translationKey
+            ? translated
+            : interpolateRuntimeFallback(fallback, params);
+    }
 
     const state = {
         socket: null,
@@ -77,8 +94,25 @@
             }
         });
         bindEvents();
+        registerRuntimeI18n();
         connectSocket();
         loadDashboard();
+    }
+
+    function rerenderRuntimeCopy() {
+        renderAll();
+    }
+
+    function registerRuntimeI18n() {
+        if (!window.i18n) {
+            return;
+        }
+        if (typeof window.i18n.onChange === 'function') {
+            window.i18n.onChange(rerenderRuntimeCopy);
+        }
+        if (typeof window.i18n.onLanguageChange === 'function') {
+            window.i18n.onLanguageChange(rerenderRuntimeCopy);
+        }
     }
 
     function normalizeTheme(theme) {
@@ -336,17 +370,23 @@
 
         if (state.status.isConnected) {
             statusDot.classList.add('connected');
-            statusText.textContent = 'Connected';
+            statusText.textContent = runtimeText('status.connected', 'Connected');
         } else if (state.status.connectionStatus === 'Waiting') {
             statusDot.classList.add('waiting');
-            statusText.textContent = 'Waiting for Minecraft';
+            statusText.textContent = runtimeText('status.waiting', 'Waiting for Minecraft');
         } else {
-            statusText.textContent = state.status.connectionStatus || 'Disconnected';
+            statusText.textContent = state.status.connectionStatus === 'Disconnected' || !state.status.connectionStatus
+                ? runtimeText('status.disconnected', 'Disconnected')
+                : state.status.connectionStatus;
         }
 
         if (connectionMeta) {
             const queueSize = state.status.queueStatus?.queueSize || 0;
-            connectionMeta.textContent = `Queue ${queueSize} | Theme ${document.documentElement.dataset.theme || 'night'}`;
+            connectionMeta.textContent = runtimeText(
+                'status.queue_theme',
+                'Queue {queue} | Theme {theme}',
+                { queue: queueSize, theme: document.documentElement.dataset.theme || 'night' }
+            );
         }
 
         const testBtn = document.getElementById('testActionBtn');
@@ -396,8 +436,8 @@
         if (!state.mappings.length) {
             container.innerHTML = `
                 <div class="mc-empty-state">
-                    <p>No commands yet.</p>
-                    <p class="mc-text-muted">Click "Add command" to create your first TikTok to Minecraft mapping.</p>
+                    <p>${escapeHtml(runtimeText('mappings.empty_title', 'No commands yet.'))}</p>
+                    <p class="mc-text-muted">${escapeHtml(runtimeText('mappings.empty_hint', 'Click "Add command" to create your first TikTok to Minecraft mapping.'))}</p>
                 </div>
             `;
             return;
@@ -417,17 +457,17 @@
                     <div class="mc-command-top">
                         <div>
                             <span class="mc-trigger-pill">${escapeHtml(mapping.trigger || 'trigger')}</span>
-                            <span class="mc-command-arrow">to</span>
+                            <span class="mc-command-arrow">${escapeHtml(runtimeText('mappings.to', 'to'))}</span>
                             <strong>${escapeHtml(mapping.action || 'action')}</strong>
                         </div>
                         <div class="mc-command-actions">
-                            <button class="mc-btn mc-btn-secondary mc-btn-small" onclick="editMapping('${escapeAttr(mapping.id)}')">Edit</button>
-                            <button class="mc-btn mc-btn-danger mc-btn-small" onclick="deleteMapping('${escapeAttr(mapping.id)}')">Delete</button>
+                            <button class="mc-btn mc-btn-secondary mc-btn-small" onclick="editMapping('${escapeAttr(mapping.id)}')">${escapeHtml(runtimeText('mappings.edit', 'Edit'))}</button>
+                            <button class="mc-btn mc-btn-danger mc-btn-small" onclick="deleteMapping('${escapeAttr(mapping.id)}')">${escapeHtml(runtimeText('mappings.delete', 'Delete'))}</button>
                         </div>
                     </div>
                     <div class="mc-command-body">
-                        ${conditions ? `<p><span>Conditions:</span> ${conditions}</p>` : '<p class="mc-text-muted">No conditions</p>'}
-                        ${params ? `<div class="mc-param-row">${params}</div>` : '<p class="mc-text-muted">No parameters</p>'}
+                        ${conditions ? `<p><span>${escapeHtml(runtimeText('mappings.conditions', 'Conditions:'))}</span> ${conditions}</p>` : `<p class="mc-text-muted">${escapeHtml(runtimeText('mappings.no_conditions', 'No conditions'))}</p>`}
+                        ${params ? `<div class="mc-param-row">${params}</div>` : `<p class="mc-text-muted">${escapeHtml(runtimeText('mappings.no_parameters', 'No parameters'))}</p>`}
                     </div>
                 </article>
             `;
@@ -443,8 +483,8 @@
         if (!state.status.availableActions.length) {
             container.innerHTML = `
                 <div class="mc-empty-state">
-                    <p>No Minecraft connection detected.</p>
-                    <p class="mc-text-muted">Install and run the Fabric mod to see available actions.</p>
+                    <p>${escapeHtml(runtimeText('actions.empty_title', 'No Minecraft connection detected.'))}</p>
+                    <p class="mc-text-muted">${escapeHtml(runtimeText('actions.empty_hint', 'Install and run the Fabric mod to see available actions.'))}</p>
                 </div>
             `;
             return;
@@ -479,8 +519,8 @@
         if (!chatEvents.length) {
             container.innerHTML = `
                 <div class="mc-empty-state">
-                    <p>No chat yet.</p>
-                    <p class="mc-text-muted">Chat events will appear here when viewers send messages.</p>
+                    <p>${escapeHtml(runtimeText('chat.empty_title', 'No chat yet.'))}</p>
+                    <p class="mc-text-muted">${escapeHtml(runtimeText('chat.empty_hint', 'Chat events will appear here when viewers send messages.'))}</p>
                 </div>
             `;
             return;
@@ -488,8 +528,8 @@
 
         container.innerHTML = chatEvents.map((event) => {
             const data = event.data || {};
-            const username = data.nickname || data.uniqueId || 'Viewer';
-            const message = data.comment || data.content || data.text || 'Message';
+            const username = data.nickname || data.uniqueId || runtimeText('chat.viewer', 'Viewer');
+            const message = data.comment || data.content || data.text || runtimeText('chat.message', 'Message');
             return `
                 <article class="mc-feed-item">
                     <div>
@@ -527,26 +567,26 @@
                     return `
                         <article class="mc-goal-card" data-goal-index="${index}">
                             <div class="mc-goal-row">
-                                <label>Label</label>
+                                <label>${escapeHtml(runtimeText('goals.label', 'Label'))}</label>
                                 <input type="text" class="mc-input" data-goal-field="label" value="${escapeAttr(goal.label || '')}">
                             </div>
                             <div class="mc-goal-row">
-                                <label>Current</label>
+                                <label>${escapeHtml(runtimeText('goals.current', 'Current'))}</label>
                                 <input type="number" class="mc-input" data-goal-field="current" value="${escapeAttr(goal.current ?? 0)}">
                             </div>
                             <div class="mc-goal-row">
-                                <label>Target</label>
+                                <label>${escapeHtml(runtimeText('goals.target', 'Target'))}</label>
                                 <input type="number" class="mc-input" data-goal-field="target" value="${escapeAttr(goal.target ?? 100)}">
                             </div>
                             <div class="mc-goal-row">
-                                <label>Reward action</label>
-                                <input type="text" class="mc-input" data-goal-field="rewardAction" value="${escapeAttr(goal.rewardAction || '')}" placeholder="spawn_entity">
+                                <label>${escapeHtml(runtimeText('goals.reward_action', 'Reward action'))}</label>
+                                <input type="text" class="mc-input" data-goal-field="rewardAction" value="${escapeAttr(goal.rewardAction || '')}" placeholder="${escapeAttr(runtimeText('goals.reward_action_placeholder', 'spawn_entity'))}">
                             </div>
                             <label class="mc-checkbox-label">
                                 <input type="checkbox" data-goal-field="enabled" ${goal.enabled === false ? '' : 'checked'}>
-                                Enabled
+                                ${escapeHtml(runtimeText('goals.enabled', 'Enabled'))}
                             </label>
-                            <button class="mc-btn mc-btn-danger mc-btn-small" data-remove-goal="${index}">Remove goal</button>
+                            <button class="mc-btn mc-btn-danger mc-btn-small" data-remove-goal="${index}">${escapeHtml(runtimeText('goals.remove', 'Remove goal'))}</button>
                         </article>
                     `;
                 }).join('');
@@ -566,8 +606,8 @@
             if (!firstGoal) {
                 preview.innerHTML = `
                     <div class="mc-empty-state">
-                        <p>No gift bar preview yet.</p>
-                        <p class="mc-text-muted">Create at least one goal to see a preview.</p>
+                        <p>${escapeHtml(runtimeText('goals.empty_preview_title', 'No gift bar preview yet.'))}</p>
+                        <p class="mc-text-muted">${escapeHtml(runtimeText('goals.empty_preview_hint', 'Create at least one goal to see a preview.'))}</p>
                     </div>
                 `;
                 return;
@@ -580,13 +620,13 @@
             preview.innerHTML = `
                 <div class="mc-progress-shell">
                     <div class="mc-progress-meta">
-                        <strong>${escapeHtml(firstGoal.label || 'Gift goal')}</strong>
+                        <strong>${escapeHtml(firstGoal.label || runtimeText('goals.default_label', 'Gift goal'))}</strong>
                         <span>${current} / ${target}</span>
                     </div>
                     <div class="mc-progress-track">
                         <div class="mc-progress-fill" style="width: ${progress}%;"></div>
                     </div>
-                    <p class="mc-text-muted">${escapeHtml(firstGoal.rewardAction || 'No reward action')}</p>
+                    <p class="mc-text-muted">${escapeHtml(firstGoal.rewardAction || runtimeText('goals.no_reward_action', 'No reward action'))}</p>
                 </div>
             `;
         }
@@ -599,10 +639,10 @@
         }
 
         const steps = [
-            { label: 'WebSocket bridge', done: state.status.connectionStatus && state.status.connectionStatus !== 'Disconnected' },
-            { label: 'Minecraft mod connection', done: !!state.status.isConnected },
-            { label: 'Commands configured', done: state.mappings.length > 0 },
-            { label: 'Modern theme selected', done: VALID_THEMES.has(state.config.ui?.theme || 'night') }
+            { label: runtimeText('setup.websocket_bridge', 'WebSocket bridge'), done: state.status.connectionStatus && state.status.connectionStatus !== 'Disconnected' },
+            { label: runtimeText('setup.minecraft_mod_connection', 'Minecraft mod connection'), done: !!state.status.isConnected },
+            { label: runtimeText('setup.commands_configured', 'Commands configured'), done: state.mappings.length > 0 },
+            { label: runtimeText('setup.modern_theme_selected', 'Modern theme selected'), done: VALID_THEMES.has(state.config.ui?.theme || 'night') }
         ];
 
         checklist.innerHTML = steps.map((step) => `
@@ -620,7 +660,7 @@
         }
 
         const currentValue = select.value;
-        select.innerHTML = '<option value="">Select action...</option>' + state.status.availableActions.map((action) => {
+        select.innerHTML = `<option value="">${escapeHtml(runtimeText('actions.select', 'Select action...'))}</option>` + state.status.availableActions.map((action) => {
             return `<option value="${escapeAttr(action.name)}">${escapeHtml(action.name)}</option>`;
         }).join('');
 
@@ -635,10 +675,10 @@
         const title = document.getElementById('modalTitle');
 
         if (mapping) {
-            title.textContent = 'Edit Command';
+            title.textContent = runtimeText('mappings.edit_command', 'Edit Command');
             fillMappingForm(mapping);
         } else {
-            title.textContent = 'Add Command';
+            title.textContent = runtimeText('mappings.add_command', 'Add Command');
             resetMappingForm();
         }
 
@@ -686,16 +726,16 @@
 
         const conditionHtml = `
             <div class="mc-condition" data-condition-id="${conditionId}">
-                <input type="text" class="mc-input mc-condition-field" placeholder="Field (e.g., giftName)"
+                    <input type="text" class="mc-input mc-condition-field" placeholder="${escapeAttr(runtimeText('conditions.field_placeholder', 'Field (e.g., giftName)'))}"
                     value="${escapeAttr(condition ? condition.field : '')}" data-role="field">
                 <select class="mc-input mc-condition-operator" data-role="operator">
-                    <option value="equals" ${condition?.operator === 'equals' ? 'selected' : ''}>Equals</option>
-                    <option value="not_equals" ${condition?.operator === 'not_equals' ? 'selected' : ''}>Not Equals</option>
-                    <option value="greater_than" ${condition?.operator === 'greater_than' ? 'selected' : ''}>Greater Than</option>
-                    <option value="less_than" ${condition?.operator === 'less_than' ? 'selected' : ''}>Less Than</option>
-                    <option value="contains" ${condition?.operator === 'contains' ? 'selected' : ''}>Contains</option>
+                    <option value="equals" ${condition?.operator === 'equals' ? 'selected' : ''}>${escapeHtml(runtimeText('conditions.equals', 'Equals'))}</option>
+                    <option value="not_equals" ${condition?.operator === 'not_equals' ? 'selected' : ''}>${escapeHtml(runtimeText('conditions.not_equals', 'Not Equals'))}</option>
+                    <option value="greater_than" ${condition?.operator === 'greater_than' ? 'selected' : ''}>${escapeHtml(runtimeText('conditions.greater_than', 'Greater Than'))}</option>
+                    <option value="less_than" ${condition?.operator === 'less_than' ? 'selected' : ''}>${escapeHtml(runtimeText('conditions.less_than', 'Less Than'))}</option>
+                    <option value="contains" ${condition?.operator === 'contains' ? 'selected' : ''}>${escapeHtml(runtimeText('conditions.contains', 'Contains'))}</option>
                 </select>
-                <input type="text" class="mc-input mc-condition-value" placeholder="Value"
+                    <input type="text" class="mc-input mc-condition-value" placeholder="${escapeAttr(runtimeText('conditions.value_placeholder', 'Value'))}"
                     value="${escapeAttr(condition ? condition.value : '')}" data-role="value">
                 <button class="mc-condition-remove" onclick="removeCondition(${conditionId})">x</button>
             </div>
@@ -731,7 +771,7 @@
         parametersList.innerHTML = action.params.map((param) => `
             <div class="mc-form-group">
                 <label>${escapeHtml(param)}</label>
-                <input type="text" class="mc-input" data-param="${escapeAttr(param)}" placeholder="Enter value or use {placeholder}">
+                <input type="text" class="mc-input" data-param="${escapeAttr(param)}" placeholder="${escapeAttr(runtimeText('parameters.placeholder', 'Enter value or use {placeholder}'))}">
             </div>
         `).join('');
     }
@@ -742,7 +782,7 @@
         const enabled = document.getElementById('mappingEnabled').checked;
 
         if (!trigger || !action) {
-            alert('Please select a trigger and action');
+            alert(runtimeText('messages.select_trigger_action', 'Please select a trigger and action'));
             return;
         }
 
@@ -787,11 +827,11 @@
                 renderCommands();
                 closeMappingModal();
             } else {
-                alert('Failed to save mapping: ' + data.error);
+                alert(runtimeText('messages.save_failed_with_error', 'Failed to save mapping: {error}', { error: data.error || '' }));
             }
         } catch (error) {
             console.error('[Minecraft Connect] Failed to save mapping:', error);
-            alert('Failed to save mapping');
+            alert(runtimeText('messages.save_failed', 'Failed to save mapping'));
         }
     }
 
@@ -803,7 +843,7 @@
     };
 
     window.deleteMapping = async function(id) {
-        if (!confirm('Are you sure you want to delete this command?')) {
+        if (!confirm(runtimeText('messages.delete_confirm', 'Are you sure you want to delete this command?'))) {
             return;
         }
 
@@ -818,16 +858,16 @@
                 renderCommands();
                 renderSetup();
             } else {
-                alert('Failed to delete mapping: ' + data.error);
+                alert(runtimeText('messages.delete_failed_with_error', 'Failed to delete mapping: {error}', { error: data.error || '' }));
             }
         } catch (error) {
             console.error('[Minecraft Connect] Failed to delete mapping:', error);
-            alert('Failed to delete mapping');
+            alert(runtimeText('messages.delete_failed', 'Failed to delete mapping'));
         }
     };
 
     async function testAction() {
-        const actionName = prompt('Enter action name:');
+        const actionName = prompt(runtimeText('messages.enter_action_name', 'Enter action name:'));
         if (!actionName) {
             return;
         }
@@ -844,20 +884,20 @@
 
             const data = await response.json();
             if (data.success) {
-                alert('Action queued successfully');
+                alert(runtimeText('messages.test_success', 'Action queued successfully'));
             } else {
-                alert('Failed to queue action: ' + data.error);
+                alert(runtimeText('messages.test_failed_with_error', 'Failed to queue action: {error}', { error: data.error || '' }));
             }
         } catch (error) {
             console.error('[Minecraft Connect] Failed to test action:', error);
-            alert('Failed to test action');
+            alert(runtimeText('messages.test_failed', 'Failed to test action'));
         }
     }
 
     function addGiftGoal() {
         state.config.giftBars = state.config.giftBars || { enabled: false, goals: [] };
         state.config.giftBars.goals.push({
-            label: 'New goal',
+            label: runtimeText('goals.new_goal', 'New goal'),
             current: 0,
             target: 100,
             rewardAction: 'spawn_entity',
@@ -939,15 +979,15 @@
                 renderStatus();
                 updateSummary();
                 if (!silent) {
-                    alert('Settings saved successfully.');
+                    alert(runtimeText('messages.settings_saved', 'Settings saved successfully.'));
                 }
             } else if (!silent) {
-                alert('Failed to save settings: ' + data.error);
+                alert(runtimeText('messages.settings_save_failed_with_error', 'Failed to save settings: {error}', { error: data.error || '' }));
             }
         } catch (error) {
             console.error('[Minecraft Connect] Failed to save settings:', error);
             if (!silent) {
-                alert('Failed to save settings');
+                alert(runtimeText('messages.settings_save_failed', 'Failed to save settings'));
             }
         }
     }

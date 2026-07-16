@@ -1,4 +1,4 @@
-const { parseCaptureOptions, runLocalPreparation } = require('../../scripts/capture-obs-docs-screenshot');
+const { captureWithObs, parseCaptureOptions, runLocalPreparation } = require('../../scripts/capture-obs-docs-screenshot');
 
 describe('OBS documentation capture runner', () => {
   const baseEnvironment = {
@@ -35,6 +35,15 @@ describe('OBS documentation capture runner', () => {
       .toBe('ws://127.0.0.1:4455/');
     expect(() => parseCaptureOptions({ ...baseEnvironment, OBS_WEBSOCKET_URL: 'ws://192.168.1.5:4455' }))
       .toThrow('OBS documentation captures may use only a local OBS WebSocket URL');
+  });
+
+  test('revalidates the overlay URL when the single-capture API is called programmatically', async () => {
+    const options = parseCaptureOptions(baseEnvironment);
+    const createObs = jest.fn();
+
+    await expect(captureWithObs({ ...options, overlayUrl: 'https://example.com/overlay' }, { createObs }))
+      .rejects.toThrow('OBS documentation captures may use only a local LTTH overlay URL');
+    expect(createObs).not.toHaveBeenCalled();
   });
 
   test('does not follow redirects during local overlay preparation', async () => {

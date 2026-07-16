@@ -49,6 +49,22 @@ function definitionLabels(locale) {
   }[locale];
 }
 
+const GUIDE_SECTION_LABELS = {
+  'guide-purpose': 'purpose',
+  'guide-activation': 'activation',
+  'guide-workflows': 'workflows',
+  'guide-settings': 'settings',
+  'guide-integrations': 'integrations',
+  'guide-controls': 'controls',
+  'guide-troubleshooting': 'troubleshooting'
+};
+
+function localizedGuideSectionLabel(locale, section) {
+  const label = GUIDE_SECTION_LABELS[section];
+  if (!label) throw new Error(`Guide control references an unsupported guide section: ${section}`);
+  return label === 'troubleshooting' ? LABELS[locale].troubleshooting : definitionLabels(locale)[label];
+}
+
 function add(values, name, byLocale) {
   for (const locale of LOCALES) values[locale][name] = byLocale[locale];
 }
@@ -91,7 +107,7 @@ function buildLocales(guides) {
     }
     for (const [index, control] of definition.visibleControls.entries()) {
       const step = guide.steps.find((candidate) => candidate.id === control.stepId);
-      add(values, key(guide.id, `controls.${index}.mapping`), Object.fromEntries(LOCALES.map((locale) => [locale, step ? step.copy[locale].title : control.section])));
+      add(values, key(guide.id, `controls.${index}.mapping`), Object.fromEntries(LOCALES.map((locale) => [locale, step ? step.copy[locale].title : localizedGuideSectionLabel(locale, control.section)])));
     }
     for (const [stepIndex, step] of guide.steps.entries()) {
       for (const field of ['title', 'body', 'expected', 'alt']) add(values, key(guide.id, `steps.${step.id}.${field}`), Object.fromEntries(LOCALES.map((locale) => [locale, step.copy[locale][field]])));

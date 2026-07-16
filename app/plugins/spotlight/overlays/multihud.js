@@ -21,6 +21,15 @@ let currentEventIndex = 0;
 let rotationTimer = null;
 let sessionId = null;
 let requestGeneration = 0;
+let i18nChangeListenerRegistered = false;
+
+function translate(key, fallback, params = {}) {
+  const value = window.i18n?.t?.(key, params);
+  if (value && value !== key) return value;
+  return String(fallback).replace(/\{([A-Za-z_][\w.-]*)\}/g, (match, name) => (
+    Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+  ));
+}
 
 // Initialize animation system
 const animationRegistry = new AnimationRegistry();
@@ -113,6 +122,15 @@ socket.on('lastevent.session.reset', (payload = {}) => {
 
 // Initialize overlay
 async function init() {
+  if (window.i18n?.ready) await window.i18n.ready;
+  if (!i18nChangeListenerRegistered && window.i18n?.onLanguageChange) {
+    i18nChangeListenerRegistered = true;
+    window.i18n.onLanguageChange(() => {
+      if (renderer?.currentUser) renderer.render(renderer.currentUser, false);
+      else if (selectedEvents.length === 0) startRotation();
+    });
+  }
+
   try {
     // Load settings
     const settingsResponse = await fetch(`/api/lastevent/settings/${OVERLAY_TYPE}`);
@@ -180,7 +198,7 @@ async function loadAllEventData() {
 function startRotation(preferredEventType = null) {
   if (selectedEvents.length === 0) {
     console.log('No events selected for rotation');
-    container.innerHTML = '<div class="no-data">No events selected for rotation</div>';
+    container.innerHTML = `<div class="no-data">${translate('plugins.spotlight.runtime.overlay.no_rotation_events', 'No events selected for rotation')}</div>`;
     return;
   }
 

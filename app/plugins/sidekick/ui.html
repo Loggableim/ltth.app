@@ -719,7 +719,7 @@
             <div class="grid">
               <div class="form-group">
                 <label for="host-asr-language" data-i18n="plugins.sidekick.labels.sprache_optional_z_b_de_de">Sprache (optional, z.B. de-DE)</label>
-                <input type="text" id="host-asr-language" maxlength="16" placeholder="Auto">
+                <input type="text" id="host-asr-language" maxlength="16" placeholder="Auto" data-i18n-placeholder="plugins.sidekick.form_controls.asr_language_placeholder">
               </div>
               <div class="form-group">
                 <label for="host-asr-max-bytes" data-i18n="plugins.sidekick.labels.max_audio_bytes">Max Audio Bytes</label>
@@ -1095,6 +1095,54 @@
     let hostAsrManualMode = false;
     let hostAsrUploading = false;
 
+    function translateUi(key, fallback, params = {}) {
+      const translated = window.i18n?.t?.(key, params);
+      if (translated && translated !== key) return translated;
+      return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+      ));
+    }
+
+    function createEmptyState(key, fallback, styles) {
+      const message = document.createElement('p');
+      message.style.cssText = styles;
+      message.textContent = translateUi(key, fallback);
+      return message;
+    }
+
+    const preflightTranslationKeys = {
+      'animazingpal.available': { label: 'animazingPal', ok: 'animazingPalAvailable', error: 'animazingPalUnavailable', errorAction: 'animazingPalUnavailableAction' },
+      'animazingpal.hostPipeline': { label: 'animazingPalPipeline', ok: 'animazingPalPipelineReady', error: 'animazingPalPipelineMissing', errorAction: 'animazingPalPipelineMissingAction' },
+      'tts.plugin': { label: 'tts', ok: 'ttsReady', error: 'ttsUnavailable', errorAction: 'ttsUnavailableAction' },
+      'tts.fishConfigured': { label: 'fishAudio', ok: 'fishConfigured', error: 'fishUnconfigured', errorAction: 'fishUnconfiguredAction' },
+      'asr.backend': { label: 'asrBackend', ok: 'asrBackendReady', warn: 'asrBackendUnavailable', error: 'asrBackendUnavailable', warnAction: 'asrBackendUnavailableAction', errorAction: 'asrBackendUnavailableAction' },
+      'conversation.enabled': { label: 'conversation', ok: 'conversationEnabled', error: 'conversationDisabled', errorAction: 'conversationDisabledAction' },
+      'microphone.device': { label: 'microphone', ok: 'microphoneReady', warn: 'microphoneOverride', error: 'microphoneBlocked', warnAction: 'microphoneOverrideAction', errorAction: 'microphoneBlockedAction' },
+      'ui.microphone.device': { label: 'microphone', error: 'microphoneBlocked', errorAction: 'microphoneBlockedAction' },
+      'ui.microphone.override': { label: 'microphone', warn: 'microphoneOverride', warnAction: 'microphoneOverrideAction' }
+    };
+
+    function translatePreflightCheck(check) {
+      const mapping = preflightTranslationKeys[check.id];
+      const status = check.status === 'warn' ? 'warn' : (check.status === 'ok' ? 'ok' : 'error');
+      if (!mapping || !mapping[status]) return check;
+
+      const actionKey = mapping[`${status}Action`];
+      return {
+        ...check,
+        label: translateUi(`plugins.sidekick.ui.preflight.labels.${mapping.label}`, check.label || check.id),
+        detail: translateUi(`plugins.sidekick.ui.preflight.${mapping[status]}`, check.detail || ''),
+        ...(actionKey ? { action: translateUi(`plugins.sidekick.ui.preflight.${actionKey}`, check.action || '') } : {})
+      };
+    }
+
+    function translateAsrErrorCode(code, fallback) {
+      const normalizedCode = String(code || '').trim().toUpperCase();
+      return normalizedCode
+        ? translateUi(`plugins.sidekick.ui.asr.errors.${normalizedCode}`, fallback)
+        : fallback;
+    }
+
     const hostAsrUnsafePattern = /\b(cable|vb-audio|loopback|stereo mix|what u hear|output|speaker|speakers|monitor|desktop audio)\b/i;
     const hostAsrMimePreferences = [
       'audio/webm;codecs=opus',
@@ -1195,9 +1243,9 @@
           updateConfigUI();
           return;
         }
-        throw new Error('Config konnte nicht gespeichert werden');
+        throw new Error(translateUi('plugins.sidekick.ui.asr.configSaveFailed', 'Config could not be saved'));
       } catch (err) {
-        setAsrError(`Fehler beim Speichern der ASR-Einstellungen: ${err.message}`);
+        setAsrError(translateUi('plugins.sidekick.ui.asr.saveFailed', 'Could not save ASR settings: {message}', { message: err.message }));
       }
     }
 
@@ -1269,7 +1317,7 @@
       const option = getSelectedAsrDeviceOption();
       if (option?.dataset?.unsafe === 'true') {
         warning.style.display = 'block';
-        warning.textContent = 'Warnung: Dieses Gerät klingt nach CABLE/VB-Audio/Loopback/Stereo Mix/Output/Speaker/Monitor. Für Host-ASR bitte ein echtes Mikrofon wählen oder die Risiko-Bestätigung aktivieren.';
+        warning.textContent = translateUi('plugins.sidekick.ui.asr.unsafeDeviceWarning', 'Warning: this device looks like CABLE/VB-Audio/Loopback/Stereo Mix/Output/Speaker/Monitor. For host ASR, choose a real microphone or confirm the risk.');
       } else {
         warning.style.display = 'none';
         warning.textContent = '';
@@ -1306,9 +1354,11 @@
     async function refreshAsrDevices() {
       const select = document.getElementById('host-asr-device');
       if (!navigator.mediaDevices?.enumerateDevices) {
-        select.innerHTML = '<option value="" data-i18n="plugins.sidekick.ui.asr.mediaDevicesUnavailable">MediaDevices nicht verfügbar</option>';
-        window.i18n?.updateDOM?.();
-        setAsrError('Browser unterstützt enumerateDevices nicht oder die Seite ist nicht sicher geladen.');
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = translateUi('plugins.sidekick.ui.asr.mediaDevicesUnavailable', 'MediaDevices are unavailable');
+        select.replaceChildren(option);
+        setAsrError(translateUi('plugins.sidekick.ui.asr.enumerateDevicesUnavailable', 'The browser does not support enumerateDevices, or this page is not loaded securely.'));
         return;
       }
 
@@ -1318,8 +1368,10 @@
       select.innerHTML = '';
 
       if (audioInputs.length === 0) {
-        select.innerHTML = '<option value="" data-i18n="plugins.sidekick.ui.asr.noMicrophonesFound">Keine Mikrofone gefunden</option>';
-        window.i18n?.updateDOM?.();
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = translateUi('plugins.sidekick.ui.asr.noMicrophonesFound', 'No microphones found');
+        select.replaceChildren(option);
         updateAsrDeviceWarning();
         return;
       }
@@ -1327,7 +1379,7 @@
       audioInputs.forEach((device, index) => {
         const option = document.createElement('option');
         option.value = device.deviceId;
-        option.textContent = device.label || `Mikrofon ${index + 1} (Berechtigung nötig für Namen)`;
+        option.textContent = device.label || translateUi('plugins.sidekick.ui.asr.microphoneWithIndex', 'Microphone {index} (permission required for its name)', { index: index + 1 });
         option.dataset.unsafe = isUnsafeAudioInputDevice(device) ? 'true' : 'false';
         select.appendChild(option);
       });
@@ -1341,29 +1393,29 @@
 
     async function requestAsrPermission() {
       if (!navigator.mediaDevices?.getUserMedia) {
-        setAsrError('Browser unterstützt getUserMedia nicht oder Mikrofonzugriff ist blockiert.');
+        setAsrError(translateUi('plugins.sidekick.ui.asr.getUserMediaUnavailable', 'The browser does not support getUserMedia, or microphone access is blocked.'));
         return null;
       }
       if (selectedAsrDeviceIsBlocked()) {
-        setAsrError('Unsicheres Eingabegerät blockiert. Bitte echtes Mikrofon wählen oder Risiko-Bestätigung aktivieren.');
+        setAsrError(translateUi('plugins.sidekick.ui.asr.unsafeInputBlocked', 'Unsafe input device blocked. Choose a real microphone or confirm the risk.'));
         return null;
       }
 
       try {
         const stream = await openHostAsrStream();
         setAsrError('');
-        setAsrRecorderStatus('Mikrofon bereit', 'asr-ok');
+        setAsrRecorderStatus(translateUi('plugins.sidekick.ui.asr.microphoneReady', 'Microphone ready'), 'asr-ok');
         await refreshAsrDevices();
         if (selectedAsrDeviceIsBlocked()) {
           stopHostAsrStream({ cancelRecorder: true });
-          setAsrError('Unsicheres Eingabegerät nach Berechtigung erkannt und blockiert. Bitte echtes Mikrofon wählen oder Risiko-Bestätigung aktivieren.');
-          setAsrRecorderStatus('Unsafe device blocked', 'asr-error');
+          setAsrError(translateUi('plugins.sidekick.ui.asr.unsafeInputBlockedAfterPermission', 'Unsafe input device was detected and blocked after permission. Choose a real microphone or confirm the risk.'));
+          setAsrRecorderStatus(translateUi('plugins.sidekick.ui.asr.unsafeInputBlockedStatus', 'Unsafe input device blocked'), 'asr-error');
           return null;
         }
         return stream;
       } catch (err) {
-        setAsrError(`Mikrofonzugriff fehlgeschlagen: ${err.message}`);
-        setAsrRecorderStatus('Permission fehlt', 'asr-error');
+        setAsrError(translateUi('plugins.sidekick.ui.asr.microphoneAccessFailed', 'Microphone access failed: {message}', { message: err.message }));
+        setAsrRecorderStatus(translateUi('plugins.sidekick.ui.asr.permissionMissing', 'Permission missing'), 'asr-error');
         return null;
       }
     }
@@ -1416,8 +1468,8 @@
       if (asrStatus.hostPreflight && asrStatus.hostPreflight.ready === false) {
         document.getElementById('host-asr-enabled').checked = false;
         saveHostAsrSettings();
-        setAsrRecorderStatus('Blocked by preflight', 'asr-error');
-        setAsrError('Host Preflight blockiert ASR Listening. Bitte die angezeigten Schritte beheben.');
+        setAsrRecorderStatus(translateUi('plugins.sidekick.ui.asr.blockedByPreflight', 'Blocked by preflight'), 'asr-error');
+        setAsrError(translateUi('plugins.sidekick.ui.asr.preflightBlocked', 'Host preflight blocks ASR listening. Resolve the displayed steps.'));
         return;
       }
       const stream = await requestAsrPermission();
@@ -1426,14 +1478,14 @@
         saveHostAsrSettings();
         return;
       }
-      setAsrRecorderStatus('Listening', 'asr-ok');
+      setAsrRecorderStatus(translateUi('plugins.sidekick.ui.runtime.listening', 'Listening'), 'asr-ok');
       runAsrVadLoop();
     }
 
     function stopAsrListening() {
       saveHostAsrSettings();
       stopHostAsrStream({ cancelRecorder: true });
-      setAsrRecorderStatus('Idle', 'asr-muted');
+      setAsrRecorderStatus(translateUi('plugins.sidekick.ui.runtime.idle', 'Idle'), 'asr-muted');
     }
 
     function handleUnsafeOverrideChange() {
@@ -1444,8 +1496,8 @@
         stopHostAsrStream({ cancelRecorder: true });
         document.getElementById('host-asr-enabled').checked = false;
         saveHostAsrSettings();
-        setAsrRecorderStatus('Stopped: unsafe input', 'asr-error');
-        setAsrError('ASR wurde gestoppt, weil das ausgewählte Eingabegerät ohne Risiko-Bestätigung als unsicher erkannt wurde.');
+        setAsrRecorderStatus(translateUi('plugins.sidekick.ui.asr.stoppedUnsafeInput', 'Stopped: unsafe input'), 'asr-error');
+        setAsrError(translateUi('plugins.sidekick.ui.asr.stoppedUnsafeInputMessage', 'ASR was stopped because the selected input device was identified as unsafe without a risk confirmation.'));
       }
     }
 
@@ -1497,12 +1549,12 @@
       if (!hostAsrStream || hostAsrUploading) return;
       if (hostAsrRecorder && hostAsrRecorder.state !== 'inactive') return;
       if (typeof MediaRecorder === 'undefined') {
-        setAsrError('MediaRecorder wird von diesem Browser nicht unterstützt.');
+        setAsrError(translateUi('plugins.sidekick.ui.asr.mediaRecorderUnavailable', 'MediaRecorder is not supported by this browser.'));
         return;
       }
       const mimeType = getSupportedAsrMimeType();
       if (!mimeType) {
-        setAsrError('Kein unterstütztes Aufnahmeformat gefunden (webm/ogg/mp4).');
+        setAsrError(translateUi('plugins.sidekick.ui.asr.recordingFormatUnsupported', 'No supported recording format found (webm/ogg/mp4).'));
         return;
       }
 
@@ -1534,20 +1586,20 @@
         const blob = new Blob(segment.chunks, { type: segment.mimeType });
         clearAsrSegment(segment);
         if (!segment.shouldUpload) {
-          setAsrRecorderStatus(document.getElementById('host-asr-enabled').checked ? 'Listening' : 'Idle', document.getElementById('host-asr-enabled').checked ? 'asr-ok' : 'asr-muted');
+          setAsrRecorderStatus(document.getElementById('host-asr-enabled').checked ? translateUi('plugins.sidekick.ui.runtime.listening', 'Listening') : translateUi('plugins.sidekick.ui.runtime.idle', 'Idle'), document.getElementById('host-asr-enabled').checked ? 'asr-ok' : 'asr-muted');
           return;
         }
         if (!segment.manualMode && (durationMs < 450 || blob.size < 1024 || !segment.hadVoice)) {
-          setAsrRecorderStatus('Listening', 'asr-ok');
+          setAsrRecorderStatus(translateUi('plugins.sidekick.ui.runtime.listening', 'Listening'), 'asr-ok');
           return;
         }
         uploadAsrBlob(blob, segment.manualMode).catch(err => {
-          setAsrError(`ASR Upload fehlgeschlagen: ${err.message}`);
-          setAsrRecorderStatus(document.getElementById('host-asr-enabled').checked ? 'Listening' : 'Idle');
+          setAsrError(translateUi('plugins.sidekick.ui.asr.uploadFailed', 'ASR upload failed: {message}', { message: translateAsrErrorCode(err.code, err.message) }));
+          setAsrRecorderStatus(document.getElementById('host-asr-enabled').checked ? translateUi('plugins.sidekick.ui.runtime.listening', 'Listening') : translateUi('plugins.sidekick.ui.runtime.idle', 'Idle'));
         });
       });
       segment.recorder.start();
-      setAsrRecorderStatus(manualMode ? 'Test recording...' : 'Recording speech...', 'asr-ok');
+      setAsrRecorderStatus(manualMode ? translateUi('plugins.sidekick.ui.asr.testRecording', 'Test recording...') : translateUi('plugins.sidekick.ui.asr.recordingSpeech', 'Recording speech...'), 'asr-ok');
     }
 
     function clearAsrSegment(segment) {
@@ -1583,27 +1635,27 @@
     async function toggleAsrTestRecording() {
       if (hostAsrRecorder?.state === 'recording' && hostAsrManualMode) {
         stopAsrSegment({ shouldUpload: true });
-        document.getElementById('btn-asr-test').textContent = 'Test-Aufnahme starten';
+        document.getElementById('btn-asr-test').textContent = translateUi('plugins.sidekick.ui.asr.testRecordingStart', 'Start test recording');
         return;
       }
       if (hostAsrRecorder?.state === 'recording') {
-        setAsrError('Automatische ASR-Aufnahme läuft gerade. Bitte kurz warten, bis das Sprachsegment fertig ist.');
+        setAsrError(translateUi('plugins.sidekick.ui.asr.automaticRecordingInProgress', 'An automatic ASR recording is currently running. Wait until the speech segment is finished.'));
         return;
       }
 
       const stream = hostAsrStream || await requestAsrPermission();
       if (!stream) return;
-      document.getElementById('btn-asr-test').textContent = 'Test-Aufnahme stoppen';
+      document.getElementById('btn-asr-test').textContent = translateUi('plugins.sidekick.ui.asr.testRecordingStop', 'Stop test recording');
       startAsrSegment(true);
     }
 
     async function uploadAsrBlob(blob, transcribeOnly) {
       if (!blob || blob.size < 1) {
-        setAsrError('Aufnahme war leer und wurde nicht hochgeladen.');
+        setAsrError(translateUi('plugins.sidekick.ui.asr.emptyRecording', 'The recording was empty and was not uploaded.'));
         return;
       }
       hostAsrUploading = true;
-      setAsrRecorderStatus('Uploading ASR...', 'asr-ok');
+      setAsrRecorderStatus(translateUi('plugins.sidekick.ui.asr.uploading', 'Uploading ASR...'), 'asr-ok');
       const formData = new FormData();
       const extension = getAsrAudioExtension(blob.type || 'audio/webm');
       formData.append('audio', blob, `host-mic.${extension}`);
@@ -1619,8 +1671,10 @@
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.success === false) {
           const code = data.error?.code || `HTTP_${res.status}`;
-          const message = data.error?.message || res.statusText || 'ASR request failed';
-          throw new Error(`${code}: ${message}`);
+          const message = translateAsrErrorCode(code, data.error?.message || res.statusText || 'ASR request failed');
+          const error = new Error(message);
+          error.code = code;
+          throw error;
         }
         asrStatus = data.diagnostics || asrStatus;
         updateAsrStatusUI();
@@ -1628,8 +1682,8 @@
         setAsrError('');
       } finally {
         hostAsrUploading = false;
-        document.getElementById('btn-asr-test').textContent = 'Test-Aufnahme starten';
-        setAsrRecorderStatus(document.getElementById('host-asr-enabled').checked ? 'Listening' : 'Idle', document.getElementById('host-asr-enabled').checked ? 'asr-ok' : 'asr-muted');
+        document.getElementById('btn-asr-test').textContent = translateUi('plugins.sidekick.ui.asr.testRecordingStart', 'Start test recording');
+        setAsrRecorderStatus(document.getElementById('host-asr-enabled').checked ? translateUi('plugins.sidekick.ui.runtime.listening', 'Listening') : translateUi('plugins.sidekick.ui.runtime.idle', 'Idle'), document.getElementById('host-asr-enabled').checked ? 'asr-ok' : 'asr-muted');
       }
     }
 
@@ -1643,7 +1697,7 @@
           updateAsrStatusUI();
         }
       } catch (err) {
-        setAsrError(`ASR Status konnte nicht geladen werden: ${err.message}`);
+        setAsrError(translateUi('plugins.sidekick.ui.asr.statusLoadFailed', 'Could not load ASR status: {message}', { message: err.message }));
       }
     }
 
@@ -1666,18 +1720,23 @@
     }
 
     function updateAsrStatusUI() {
-      document.getElementById('host-asr-enabled-status').textContent = asrStatus.enabled ? 'Enabled' : 'Disabled';
+      document.getElementById('host-asr-enabled-status').textContent = asrStatus.enabled
+        ? translateUi('plugins.sidekick.ui.runtime.enabled', 'Enabled')
+        : translateUi('plugins.sidekick.ui.runtime.disabled', 'Disabled');
       document.getElementById('host-asr-enabled-status').className = asrStatus.enabled ? 'asr-ok' : 'asr-error';
       document.getElementById('host-asr-ready-status').textContent = asrStatus.ready
-        ? 'Ready'
-        : `Not ready (TTS: ${asrStatus.ttsAvailable ? 'ok' : 'missing'}, Fish: ${asrStatus.fishConfigured ? 'ok' : 'not configured'})`;
+        ? translateUi('plugins.sidekick.ui.asr.readyState', 'Ready')
+        : translateUi('plugins.sidekick.ui.asr.notReadyState', 'Not ready (TTS: {tts}, Fish: {fish})', {
+          tts: asrStatus.ttsAvailable ? translateUi('plugins.sidekick.ui.runtime.ok', 'ok') : translateUi('plugins.sidekick.ui.runtime.missing', 'missing'),
+          fish: asrStatus.fishConfigured ? translateUi('plugins.sidekick.ui.runtime.ok', 'ok') : translateUi('plugins.sidekick.ui.runtime.notConfigured', 'not configured')
+        });
       document.getElementById('host-asr-ready-status').className = asrStatus.ready ? 'asr-ok' : 'asr-warning';
       document.getElementById('host-asr-requests').textContent = asrStatus.counters?.requests || 0;
       document.getElementById('host-asr-transcribed').textContent = asrStatus.counters?.transcribed || 0;
       document.getElementById('host-asr-delegated').textContent = asrStatus.counters?.delegated || 0;
       document.getElementById('host-asr-latency').textContent = asrStatus.lastLatencyMs ? `${asrStatus.lastLatencyMs} ms` : '-';
       if (asrStatus.lastError) {
-        setAsrError(`${asrStatus.lastError.code}: ${asrStatus.lastError.message}`);
+        setAsrError(`${asrStatus.lastError.code}: ${translateAsrErrorCode(asrStatus.lastError.code, asrStatus.lastError.message)}`);
       }
       if (Number.isFinite(asrStatus.maxAudioBytes)) {
         document.getElementById('host-asr-max-bytes').value = asrStatus.maxAudioBytes;
@@ -1717,17 +1776,19 @@
 
       const hasError = checks.some(check => check.status === 'error');
       const statusEl = document.getElementById('host-preflight-status');
-      statusEl.textContent = hasError ? 'Blocked' : (preflight.ready ? 'Ready' : 'Warnings');
+      statusEl.textContent = hasError
+        ? translateUi('plugins.sidekick.ui.runtime.blocked', 'Blocked')
+        : (preflight.ready ? translateUi('plugins.sidekick.ui.runtime.ready', 'Ready') : translateUi('plugins.sidekick.ui.runtime.warnings', 'Warnings'));
       statusEl.className = hasError ? 'asr-error' : (preflight.ready ? 'asr-ok' : 'asr-warning');
       const list = document.getElementById('host-preflight-checks');
       const visibleChecks = checks.filter(check => check.status !== 'ok').slice(0, 8);
       list.replaceChildren();
       if (visibleChecks.length) {
-        visibleChecks.forEach(check => appendPreflightCheckItem(list, check));
+        visibleChecks.forEach(check => appendPreflightCheckItem(list, translatePreflightCheck(check)));
       } else {
         const item = document.createElement('li');
         item.className = 'asr-ok';
-        item.textContent = 'Alle Host-Abhängigkeiten sind bereit.';
+        item.textContent = translateUi('plugins.sidekick.ui.asr.allDependenciesReady', 'All host dependencies are ready.');
         list.appendChild(item);
       }
     }
@@ -1738,10 +1799,10 @@
       const badge = document.getElementById('status-badge');
       if (status.muted) {
         badge.className = 'badge badge-warning';
-        badge.textContent = 'Muted';
+        badge.textContent = translateUi('plugins.sidekick.ui.runtime.muted', 'Muted');
       } else {
         badge.className = 'badge badge-success';
-        badge.textContent = 'Active';
+        badge.textContent = translateUi('plugins.sidekick.ui.runtime.active', 'Active');
       }
 
       // AnimazingPal connection
@@ -1749,10 +1810,10 @@
       const animazeText = document.getElementById('animaze-status-text');
       if (status.animaze?.isConnected) {
         animazeIndicator.className = 'status-indicator status-connected';
-        animazeText.textContent = 'Connected';
+        animazeText.textContent = translateUi('plugins.sidekick.ui.runtime.connected', 'Connected');
       } else {
         animazeIndicator.className = 'status-indicator status-disconnected';
-        animazeText.textContent = 'Disconnected';
+        animazeText.textContent = translateUi('plugins.sidekick.ui.runtime.disconnected', 'Disconnected');
       }
 
       // Queue
@@ -1780,7 +1841,9 @@
       document.getElementById('session-dedupe').textContent = status.session?.dedupeHits || 0;
 
       // Rate limit
-      const rlStatus = status.rateLimiter?.globalCooldownRemaining > 0 ? 'Cooldown' : 'OK';
+      const rlStatus = status.rateLimiter?.globalCooldownRemaining > 0
+        ? translateUi('plugins.sidekick.ui.runtime.cooldown', 'Cooldown')
+        : translateUi('plugins.sidekick.ui.runtime.ok', 'OK');
       document.getElementById('ratelimit-status').textContent = rlStatus;
 
       // Deduper
@@ -1798,7 +1861,9 @@
 
       const hostDecision = status.conversation?.lastHostSpeechDecision || {};
       document.getElementById('host-asr-last-decision').textContent = typeof hostDecision.respond === 'boolean'
-        ? (hostDecision.respond ? 'antworten' : 'blockieren')
+        ? (hostDecision.respond
+          ? translateUi('plugins.sidekick.ui.runtime.responding', 'respond')
+          : translateUi('plugins.sidekick.ui.runtime.blocking', 'block'))
         : '-';
       document.getElementById('host-asr-last-decision-reason').textContent = hostDecision.reason || '-';
       document.getElementById('host-asr-last-decision-score').textContent = Number.isFinite(hostDecision.score)
@@ -1898,11 +1963,11 @@
         const data = await res.json();
         if (data.success) {
           config = data.config;
-          alert('Einstellungen gespeichert!');
+          alert(translateUi('plugins.sidekick.ui.messages.settingsSaved', 'Settings saved.'));
         }
       } catch (err) {
         console.error('Failed to save config:', err);
-        alert('Fehler beim Speichern!');
+        alert(translateUi('plugins.sidekick.ui.messages.settingsSaveFailed', 'Could not save settings.'));
       }
     }
 
@@ -1929,8 +1994,7 @@
         if (data.success) {
           const container = document.getElementById('top-users');
           if (data.users.length === 0) {
-            container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;" data-i18n="plugins.sidekick.ui.empty.noUsers">Keine User gefunden</p>';
-            window.i18n?.updateDOM?.();
+            container.replaceChildren(createEmptyState('plugins.sidekick.ui.empty.noUsers', 'No users found', 'color: #666; padding: 20px; text-align: center;'));
             return;
           }
           container.innerHTML = data.users.map((user, i) => `
@@ -1962,8 +2026,7 @@
         if (data.success) {
           const container = document.getElementById('event-log');
           if (data.events.length === 0) {
-            container.innerHTML = '<p style="color: #666; text-align: center;" data-i18n="plugins.sidekick.ui.empty.noEvents">Keine Events</p>';
-            window.i18n?.updateDOM?.();
+            container.replaceChildren(createEmptyState('plugins.sidekick.ui.empty.noEvents', 'No events', 'color: #666; text-align: center;'));
             return;
           }
           container.innerHTML = data.events.reverse().map(event => {
@@ -1994,8 +2057,7 @@
           const gifters = data.metrics.topGifters || [];
           const container = document.getElementById('top-gifters');
           if (gifters.length === 0) {
-            container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;" data-i18n="plugins.sidekick.ui.empty.noGifters">Keine Gifter</p>';
-            window.i18n?.updateDOM?.();
+            container.replaceChildren(createEmptyState('plugins.sidekick.ui.empty.noGifters', 'No gifters', 'color: #666; padding: 20px; text-align: center;'));
           } else {
             container.innerHTML = gifters.map((user, i) => `
               <div class="user-item">
@@ -2027,7 +2089,7 @@
             .slice(0, 5)
             .map(([type, counts]) => `${type}: ${counts.selected || 0}/${counts.attempts || 0}`)
             .join(' · ');
-          document.getElementById('decision-types').textContent = `By event type: ${selectedByEventType || '-'}`;
+          document.getElementById('decision-types').textContent = translateUi('plugins.sidekick.ui.runtime.eventTypeSummary', 'By event type: {summary}', { summary: selectedByEventType || '-' });
         }
       } catch (err) {
         console.error('Failed to fetch metrics:', err);
@@ -2055,8 +2117,7 @@
             </div>
           `).join('');
         } else {
-          container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;" data-i18n="plugins.sidekick.ui.empty.noResults">Keine Ergebnisse</p>';
-          window.i18n?.updateDOM?.();
+          container.replaceChildren(createEmptyState('plugins.sidekick.ui.empty.noResults', 'No results', 'color: #666; padding: 20px; text-align: center;'));
         }
       } catch (err) {
         console.error('Failed to search users:', err);
@@ -2093,7 +2154,7 @@
     });
 
     document.getElementById('btn-reset').addEventListener('click', async () => {
-      if (confirm('Session wirklich zurücksetzen?')) {
+      if (confirm(translateUi('plugins.sidekick.ui.confirm.resetSession', 'Reset this session?'))) {
         await fetch('/api/sidekick/reset', { method: 'POST' });
         fetchStatus();
       }
@@ -2139,7 +2200,7 @@
     document.getElementById('btn-save-settings').addEventListener('click', saveConfig);
 
     document.getElementById('btn-clear-memory').addEventListener('click', async () => {
-      if (confirm('Memory wirklich löschen?')) {
+      if (confirm(translateUi('plugins.sidekick.ui.confirm.clearMemory', 'Clear memory?'))) {
         await fetch('/api/sidekick/memory/clear', { method: 'POST' });
         fetchMemoryStats();
         fetchTopUsers();
@@ -2169,7 +2230,7 @@
       if (hostAsrSettings.enabled) {
         startAsrListening();
       }
-    }).catch(err => setAsrError(`Geräteliste konnte nicht geladen werden: ${err.message}`));
+    }).catch(err => setAsrError(translateUi('plugins.sidekick.ui.asr.deviceListLoadFailed', 'Could not load the device list: {message}', { message: err.message })));
     fetchStatus();
     fetchConfig();
     fetchAsrStatus();

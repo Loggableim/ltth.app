@@ -1,6 +1,14 @@
 {
   "plugins": {
     "webgpu-emoji-rain": {
+      "form_controls": {
+        "canvas_aria": "WebGPU EmojiRain",
+        "preview_aria": "Emoji Rain preview",
+        "quick_status_aria": "Emoji Rain quick status",
+        "username_filter_placeholder": "Enter a username...",
+        "username_placeholder": "Username",
+        "enabled_toggle_aria": "Enable WebGPU Emoji Rain"
+      },
       "webgpu_emoji_rain": {
         "title": "Emoji Rain Settings",
         "subtitle": "Interactive Emoji Overlays with GCCE Commands",
@@ -399,7 +407,7 @@
         "bubble_blop": "Bubble Blop",
         "min_emojis_bei_likes": "Min. emojis for likes",
         "0_5_bildschirmmitte": "0.5 = center of screen",
-        "konfiguration_speichern": "💾 Konfiguration speichern",
+        "konfiguration_speichern": "💾 Save configuration",
         "upload": "📤 Upload",
         "1440p_2560x1440": "1440p (2560x1440)",
         "wahle_die_animation_die_beim_aufprall_am_boden": "Choose the animation that plays when hitting the ground",

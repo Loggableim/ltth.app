@@ -825,7 +825,7 @@
               </span><input type="url" id="comfyUrl">
             </label>
             <label><span data-i18n="plugins.streamalchemy.labels.comfyui_root">ComfyUI root
-              </span><input type="text" id="comfyRootDir" placeholder="C:\ComfyUI">
+              </span><input type="text" id="comfyRootDir" placeholder="C:\ComfyUI" data-i18n-placeholder="plugins.streamalchemy.form_controls.comfy_root_directory_placeholder">
             </label>
             <label><span data-i18n="plugins.streamalchemy.labels.hugging_face_token">Hugging Face token
               </span><input type="password" id="hfToken" autocomplete="off" placeholder="HF_TOKEN / HUGGINGFACE_TOKEN">
@@ -892,12 +892,20 @@
     };
     let localModelPollTimer = null;
 
+    function translateUi(key, fallback, params = {}) {
+      const translation = window.i18n?.t(key, params);
+      if (translation && translation !== key) return translation;
+      return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+      ));
+    }
+
     const titles = {
-      overview: ['Overview', 'Live status for inventory, cached recipes, generation providers, and local model readiness.'],
-      items: ['Items', 'Base gifts and crafted results persisted in the StreamAlchemy store.'],
-      recipes: ['Recipes', 'Cached craft combinations reuse their existing images and avoid repeated generation costs.'],
-      'generation-jobs': ['Generation', 'Provider attempts, prompts, and image generation results.'],
-      settings: ['Settings', 'Guided local generation setup, model selection, and ComfyUI readiness.']
+      overview: ['overviewTitle', 'overviewDescription', 'Overview', 'Live status for inventory, cached recipes, generation providers, and local model readiness.'],
+      items: ['itemsTitle', 'itemsDescription', 'Items', 'Base gifts and crafted results persisted in the StreamAlchemy store.'],
+      recipes: ['recipesTitle', 'recipesDescription', 'Recipes', 'Cached craft combinations reuse their existing images and avoid repeated generation costs.'],
+      'generation-jobs': ['generationTitle', 'generationDescription', 'Generation', 'Provider attempts, prompts, and image generation results.'],
+      settings: ['settingsTitle', 'settingsDescription', 'Settings', 'Guided local generation setup, model selection, and ComfyUI readiness.']
     };
 
     const notice = document.getElementById('notice');
@@ -939,10 +947,10 @@
     }
 
     const RARITY_FRAMES = {
-      common: { className: 'frame-common', label: 'Bronze frame' },
-      rare: { className: 'frame-rare', label: 'Silver frame' },
-      legendary: { className: 'frame-legendary', label: 'Gold frame' },
-      mythic: { className: 'frame-mythic', label: 'Arcane frame' }
+      common: { className: 'frame-common', labelKey: 'bronzeFrame', fallback: 'Bronze frame' },
+      rare: { className: 'frame-rare', labelKey: 'silverFrame', fallback: 'Silver frame' },
+      legendary: { className: 'frame-legendary', labelKey: 'goldFrame', fallback: 'Gold frame' },
+      mythic: { className: 'frame-mythic', labelKey: 'arcaneFrame', fallback: 'Arcane frame' }
     };
 
     function frameDefinition(rarity) {
@@ -954,7 +962,8 @@
     }
 
     function frameLabel(rarity) {
-      return frameDefinition(rarity).label;
+      const frame = frameDefinition(rarity);
+      return translateUi(`plugins.streamalchemy.ui.runtime.${frame.labelKey}`, frame.fallback);
     }
 
     function formatBytes(value) {
@@ -973,9 +982,9 @@
     function installerErrorMessage(model) {
       if (!model?.error) return '';
       const tokenHint = model.error.includes('HTTP_401') || model.error.includes('HTTP_403')
-        ? ' Accept the Hugging Face model terms and set HF_TOKEN or HUGGINGFACE_TOKEN before starting LTTH.'
+        ? ` ${translateUi('plugins.streamalchemy.ui.runtime.acceptModelTerms', 'Accept the Hugging Face model terms and set HF_TOKEN or HUGGINGFACE_TOKEN before starting LTTH.')}`
         : '';
-      return `Install failed: ${model.error}.${tokenHint} You can also download the model manually and place it at the path shown above.`;
+      return `${translateUi('plugins.streamalchemy.ui.runtime.installFailed', 'Install failed: {error}.', { error: model.error })}${tokenHint} ${translateUi('plugins.streamalchemy.ui.runtime.manualModelDownload', 'You can also download the model manually and place it at the path shown above.')}`;
     }
 
     function imageSource(item) {
@@ -983,7 +992,7 @@
     }
 
     function itemName(item) {
-      return item.name || item.item_name || item.itemId || item.item_id || 'Unknown item';
+      return item.name || item.item_name || item.itemId || item.item_id || translateUi('plugins.streamalchemy.ui.runtime.unknownItem', 'Unknown item');
     }
 
     function selectedPreset() {
@@ -1001,7 +1010,7 @@
     function renderProviders() {
       const list = document.getElementById('providerList');
       if (!state.providers.length) {
-        list.innerHTML = '<div class="empty">No provider status available.</div>';
+        list.innerHTML = `<div class="empty">${escapeHtml(translateUi('plugins.streamalchemy.ui.runtime.noProviders', 'No provider status available.'))}</div>`;
         return;
       }
 
@@ -1020,14 +1029,14 @@
       const list = document.getElementById('analysisList');
       const analysis = state.analysis || {};
       const rows = [
-        ['CPU', analysis.cpu?.model],
-        ['RAM', analysis.memory?.totalGb ? `${analysis.memory.totalGb} GB` : '-'],
-        ['GPU', analysis.gpu?.name],
-        ['VRAM', analysis.gpu?.vramGb ? `${analysis.gpu.vramGb} GB` : '-'],
-        ['Disk', analysis.disk?.freeGb ? `${analysis.disk.freeGb} GB free` : safeText(analysis.disk?.targetRoot)],
-        ['ComfyUI', analysis.comfy?.state],
-        ['Comfy root', analysis.comfyRoot?.state],
-        ['Recommendation', analysis.recommendation?.primaryModel]
+        [translateUi('plugins.streamalchemy.ui.runtime.cpu', 'CPU'), analysis.cpu?.model],
+        [translateUi('plugins.streamalchemy.ui.runtime.ram', 'RAM'), analysis.memory?.totalGb ? `${analysis.memory.totalGb} GB` : '-'],
+        [translateUi('plugins.streamalchemy.ui.runtime.gpu', 'GPU'), analysis.gpu?.name],
+        [translateUi('plugins.streamalchemy.ui.runtime.vram', 'VRAM'), analysis.gpu?.vramGb ? `${analysis.gpu.vramGb} GB` : '-'],
+        [translateUi('plugins.streamalchemy.ui.runtime.disk', 'Disk'), analysis.disk?.freeGb ? translateUi('plugins.streamalchemy.ui.runtime.diskFree', '{value} GB free', { value: analysis.disk.freeGb }) : safeText(analysis.disk?.targetRoot)],
+        [translateUi('plugins.streamalchemy.ui.runtime.comfyUi', 'ComfyUI'), analysis.comfy?.state],
+        [translateUi('plugins.streamalchemy.ui.runtime.comfyRoot', 'Comfy root'), analysis.comfyRoot?.state],
+        [translateUi('plugins.streamalchemy.ui.runtime.recommendation', 'Recommendation'), analysis.recommendation?.primaryModel]
       ];
 
       list.innerHTML = rows.map(([label, value]) => `
@@ -1041,7 +1050,7 @@
     function renderItems() {
       const list = document.getElementById('itemList');
       if (!state.items.length) {
-        list.innerHTML = '<div class="empty">No items stored yet.</div>';
+        list.innerHTML = `<div class="empty">${escapeHtml(translateUi('plugins.streamalchemy.ui.runtime.noStoredItems', 'No items stored yet.'))}</div>`;
         return;
       }
 
@@ -1054,8 +1063,8 @@
             <div class="name">${escapeHtml(itemName(item))}</div>
             <div class="meta">
               <span class="status">${escapeHtml(item.rarity)}</span>
-              <span class="muted">${item.is_crafted || item.isCrafted ? 'crafted' : 'base'}</span>
-              <span class="muted">${escapeHtml(item.coin_value || item.coinValue)} coins</span>
+              <span class="muted">${item.is_crafted || item.isCrafted ? translateUi('plugins.streamalchemy.ui.runtime.crafted', 'crafted') : translateUi('plugins.streamalchemy.ui.runtime.base', 'base')}</span>
+              <span class="muted">${escapeHtml(translateUi('plugins.streamalchemy.ui.runtime.coins', '{value} coins', { value: item.coin_value || item.coinValue }))}</span>
             </div>
           </div>
           <span class="muted">x${escapeHtml(item.quantity || 0)}</span>
@@ -1066,15 +1075,15 @@
     function renderRecipes() {
       const list = document.getElementById('recipeList');
       if (!state.recipes.length) {
-        list.innerHTML = '<div class="empty">No cached recipes yet.</div>';
+        list.innerHTML = `<div class="empty">${escapeHtml(translateUi('plugins.streamalchemy.ui.runtime.noRecipes', 'No cached recipes yet.'))}</div>`;
         return;
       }
 
       list.innerHTML = state.recipes.map(recipe => `
         <article class="recipe">
           <div class="name">${escapeHtml(recipe.recipe_key || recipe.recipeKey)}</div>
-          <div class="muted">Result: ${escapeHtml(recipe.result_item_id || recipe.resultItemId)}</div>
-          <div class="muted">Prompt version: ${escapeHtml(recipe.prompt_version || recipe.promptVersion)}</div>
+          <div class="muted">${escapeHtml(translateUi('plugins.streamalchemy.ui.runtime.recipeResult', 'Result: {value}', { value: recipe.result_item_id || recipe.resultItemId }))}</div>
+          <div class="muted">${escapeHtml(translateUi('plugins.streamalchemy.ui.runtime.promptVersion', 'Prompt version: {value}', { value: recipe.prompt_version || recipe.promptVersion }))}</div>
         </article>
       `).join('');
     }
@@ -1082,7 +1091,7 @@
     function renderJobs() {
       const list = document.getElementById('jobList');
       if (!state.jobs.length) {
-        list.innerHTML = '<div class="empty">No generation jobs recorded yet.</div>';
+        list.innerHTML = `<div class="empty">${escapeHtml(translateUi('plugins.streamalchemy.ui.runtime.noGenerationJobs', 'No generation jobs recorded yet.'))}</div>`;
         return;
       }
 
@@ -1096,7 +1105,7 @@
             <span class="status ${classToken(job.status)}">${escapeHtml(job.status)}</span>
           </div>
           <div class="muted">${escapeHtml(job.prompt)}</div>
-          ${job.error ? `<div class="muted">Error: ${escapeHtml(job.error)}</div>` : ''}
+          ${job.error ? `<div class="muted">${escapeHtml(translateUi('plugins.streamalchemy.ui.runtime.errorMessage', 'Error: {error}', { error: job.error }))}</div>` : ''}
         </article>
       `).join('');
     }
@@ -1112,7 +1121,7 @@
     function renderPresetCards() {
       const list = document.getElementById('presetList');
       if (!state.presets.length) {
-        list.innerHTML = '<div class="empty">No model presets available.</div>';
+        list.innerHTML = `<div class="empty">${escapeHtml(translateUi('plugins.streamalchemy.ui.runtime.noPresets', 'No model presets available.'))}</div>`;
         return;
       }
       const currentId = state.config?.localGeneration?.selectedPresetId;
@@ -1127,13 +1136,13 @@
           </div>
           <div class="meta">
             <span class="status">${escapeHtml(preset.installMethod)}</span>
-            <span class="muted">${preset.installed ? 'installed' : 'missing'}</span>
+            <span class="muted">${preset.installed ? translateUi('plugins.streamalchemy.ui.runtime.installed', 'installed') : translateUi('plugins.streamalchemy.ui.runtime.missing', 'missing')}</span>
             <span class="muted">${escapeHtml(preset.workflowId)}</span>
           </div>
           <div class="muted">${escapeHtml(preset.targetRelativePath)}</div>
           <div class="muted">${escapeHtml(preset.notes)}</div>
           <div class="actions" style="justify-content: flex-start;">
-            <button class="button preset-use-btn" type="button" data-preset-id="${escapeHtml(preset.id)}">${preset.id === currentId ? 'Selected' : 'Use this model'}</button>
+            <button class="button preset-use-btn" type="button" data-preset-id="${escapeHtml(preset.id)}">${preset.id === currentId ? translateUi('plugins.streamalchemy.ui.runtime.selected', 'Selected') : translateUi('plugins.streamalchemy.ui.runtime.useModel', 'Use this model')}</button>
             <a class="button" href="${escapeHtml(preset.sourceUrl)}" target="_blank" rel="noreferrer" data-i18n="plugins.streamalchemy.ui.app.source">Source</a>
           </div>
         </article>
@@ -1162,10 +1171,10 @@
       }
       const targetPath = state.localModel?.targetPath || preset.targetPath || preset.targetRelativePath;
       steps.innerHTML = `
-        <li>Source: <a href="${escapeHtml(preset.sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(preset.source)}</a></li>
-        <li>Target file: ${escapeHtml(targetPath)}</li>
-        <li>Workflow: ${escapeHtml(preset.workflowId)}</li>
-        <li>${preset.installMethod === 'one_click' ? 'One-click is available when ComfyUI root is configured.' : 'Manual placement is required for this preset.'}</li>
+        <li>${escapeHtml(translateUi('plugins.streamalchemy.ui.runtime.source', 'Source'))}: <a href="${escapeHtml(preset.sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(preset.source)}</a></li>
+        <li>${escapeHtml(translateUi('plugins.streamalchemy.ui.runtime.targetFile', 'Target file'))}: ${escapeHtml(targetPath)}</li>
+        <li>${escapeHtml(translateUi('plugins.streamalchemy.ui.runtime.workflow', 'Workflow'))}: ${escapeHtml(preset.workflowId)}</li>
+        <li>${escapeHtml(preset.installMethod === 'one_click' ? translateUi('plugins.streamalchemy.ui.runtime.oneClickAvailable', 'One-click is available when ComfyUI root is configured.') : translateUi('plugins.streamalchemy.ui.runtime.manualPlacement', 'Manual placement is required for this preset.'))}</li>
       `;
     }
 
@@ -1180,7 +1189,7 @@
 
       document.getElementById('localModelState').textContent = stateValue;
       document.getElementById('localModelState').className = `status ${classToken(stateValue)}`;
-      document.getElementById('localModelPath').textContent = model.targetPath || preset?.targetPath || 'Model path not resolved yet.';
+      document.getElementById('localModelPath').textContent = model.targetPath || preset?.targetPath || translateUi('plugins.streamalchemy.ui.runtime.modelPathUnknown', 'Model path not resolved yet.');
       document.getElementById('localModelProgress').style.width = `${progress}%`;
       document.getElementById('localModelBytes').textContent = model.bytesTotal
         ? `${formatBytes(model.bytesDownloaded)} / ${formatBytes(model.bytesTotal)}`
@@ -1193,8 +1202,8 @@
 
       installButton.disabled = stateValue === 'installing' || model.canInstall === false;
       installButton.textContent = stateValue === 'installing'
-        ? 'Installing...'
-        : (stateValue === 'installed' ? 'Local model installed' : (stateValue === 'failed' ? 'Retry local model install' : 'Install local model'));
+        ? translateUi('plugins.streamalchemy.ui.runtime.installingModel', 'Installing...')
+        : (stateValue === 'installed' ? translateUi('plugins.streamalchemy.ui.runtime.modelInstalled', 'Local model installed') : (stateValue === 'failed' ? translateUi('plugins.streamalchemy.ui.runtime.retryInstall', 'Retry local model install') : translateUi('plugins.streamalchemy.ui.runtime.installModel', 'Install local model')));
 
       renderManualSteps();
     }
@@ -1265,8 +1274,9 @@
         const view = button.dataset.target;
         document.querySelectorAll('.nav button').forEach(item => item.classList.toggle('active', item === button));
         document.querySelectorAll('.view').forEach(section => section.classList.toggle('active', section.dataset.view === view));
-        document.getElementById('viewTitle').textContent = titles[view][0];
-        document.getElementById('viewSubtitle').textContent = titles[view][1];
+        const [titleKey, descriptionKey, titleFallback, descriptionFallback] = titles[view];
+        document.getElementById('viewTitle').textContent = translateUi(`plugins.streamalchemy.ui.runtime.${titleKey}`, titleFallback);
+        document.getElementById('viewSubtitle').textContent = translateUi(`plugins.streamalchemy.ui.runtime.${descriptionKey}`, descriptionFallback);
       });
     });
 
@@ -1309,7 +1319,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
-        showNotice('Settings saved.');
+        showNotice(translateUi('plugins.streamalchemy.ui.runtime.settingsSaved', 'Settings saved.'));
         await refresh();
       } catch (error) {
         showNotice(error.message, 'error');
@@ -1351,7 +1361,7 @@
         });
         state.localModel = payload.model || null;
         renderLocalModelInstaller();
-        showNotice('Local model installation started.');
+        showNotice(translateUi('plugins.streamalchemy.ui.runtime.modelInstallationStarted', 'Local model installation started.'));
         scheduleLocalModelPoll();
       } catch (error) {
         showNotice(error.message, 'error');
@@ -1363,7 +1373,7 @@
     document.getElementById('runLocalTestBtn').addEventListener('click', async () => {
       try {
         const payload = await getJson('/api/streamalchemy/local-generation/test', { method: 'POST' });
-        showNotice(`Local test generation succeeded via ${payload.result.provider}.`);
+        showNotice(translateUi('plugins.streamalchemy.ui.runtime.localTestSucceeded', 'Local test generation succeeded via {provider}.', { provider: payload.result.provider }));
       } catch (error) {
         showNotice(error.message, 'error');
       }

@@ -33,7 +33,6 @@ describe('OpenShock static UI localization', () => {
       'events.like', 'events.subscribe', 'actions.shock', 'actions.vibrate', 'actions.sound',
       'table.actions', 'table.metric', 'table.value'
     ],
-    'queue.html': ['queue.processing'],
     'overlay/openshock_overlay.html': ['overlay.queue', 'overlay.active', 'overlay.today', 'labels.duration', 'labels.intensity'],
     'overlay/openshock-rotating-gifts.html': ['overlay.pattern', 'overlay.duration', 'overlay.intensity'],
     'src/features/pattern-editor/index.html': ['empty_state.no_devices'],
@@ -53,6 +52,23 @@ describe('OpenShock static UI localization', () => {
       const translation = JSON.parse(read(`locales/${locale}.json`));
       keys.forEach((key) => {
         expect(getLeaf(translation, `plugins.openshock.ui.${key}`)).toEqual(expect.any(String));
+      });
+    });
+  });
+
+  test('resolves every queue label through the runtime queue-page namespace', () => {
+    const queueKeys = [
+      'processing', 'source', 'type', 'intensity', 'duration', 'device', 'unknown',
+      'not_available', 'empty', 'clear_confirm', 'cleared', 'status_pending',
+      'status_processing', 'status_completed', 'status_failed'
+    ];
+    const source = read('queue.html');
+
+    expect(source).toContain('plugins.openshock.runtime.queue_page.${key}');
+    locales.forEach((locale) => {
+      const translation = JSON.parse(read(`locales/${locale}.json`));
+      queueKeys.forEach((key) => {
+        expect(getLeaf(translation, `plugins.openshock.runtime.queue_page.${key}`)).toEqual(expect.any(String));
       });
     });
   });

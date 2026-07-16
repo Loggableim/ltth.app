@@ -55,7 +55,7 @@ const STATE = {
 function updateDebugStatus(status) {
   const debugStatus = document.getElementById('debug-status');
   if (debugStatus) {
-    debugStatus.textContent = `Status: ${status}`;
+    debugStatus.textContent = ClarityHUDI18n.text('debug.status', 'Status: {status}', { status });
   }
   HUD_LOG.debug(`[MULTI HUD] Status: ${status}`);
 }
@@ -63,7 +63,7 @@ function updateDebugStatus(status) {
 function updateDebugSocket(status) {
   const debugSocket = document.getElementById('debug-socket');
   if (debugSocket) {
-    debugSocket.textContent = `Socket: ${status}`;
+    debugSocket.textContent = ClarityHUDI18n.text('debug.socket', 'Socket: {status}', { status });
   }
 }
 
@@ -71,14 +71,14 @@ function updateDebugEvents() {
   STATE.eventCount++;
   const debugEvents = document.getElementById('debug-events');
   if (debugEvents) {
-    debugEvents.textContent = `Events: ${STATE.eventCount}`;
+    debugEvents.textContent = ClarityHUDI18n.text('debug.events', 'Events: {count}', { count: STATE.eventCount });
   }
 }
 
 function updateDebugStreams(count) {
   const debugStreams = document.getElementById('debug-streams');
   if (debugStreams) {
-    debugStreams.textContent = `Streams: ${count}`;
+    debugStreams.textContent = ClarityHUDI18n.text('debug.streams', 'Streams: {count}', { count });
   }
 }
 
@@ -464,7 +464,10 @@ function renderGiftMessage(event) {
   // Add gift message text
   const textEl = document.createElement('div');
   textEl.className = 'chat-text';
-  textEl.textContent = `🎁 Sent ${event.gift.name} x${event.gift.count}`;
+  textEl.textContent = ClarityHUDI18n.text('overlay.multi_gift_sent', '🎁 Sent {gift} x{count}', {
+    gift: event.gift.name,
+    count: event.gift.count
+  });
   if (event.gift.diamondCount > 0) {
     textEl.textContent += ` (${event.gift.diamondCount} 💎)`;
   }

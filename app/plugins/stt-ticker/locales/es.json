@@ -1,6 +1,21 @@
 {
   "plugins": {
     "stt-ticker": {
+      "form_controls": {
+        "admin_iframe_title": "Administración de STT Ticker",
+        "deepgram_api_key_placeholder": "p. ej. 1234567890abcdef...",
+        "elevenlabs_api_key_placeholder": "p. ej. sk_...",
+        "fish_audio_api_key_placeholder": "Clave API de Fish.audio...",
+        "ollama_api_key_placeholder": "p. ej. ollama-key-...",
+        "aria": {
+          "add_language": "Añadir idioma"
+        },
+        "labels": {
+          "auto_detect_language": "Detección automática",
+          "rms_threshold": "Umbral RMS",
+          "send_to_vrchat_chatbox": "Enviar al chat de VRChat"
+        }
+      },
       "stt_ticker": {
         "plugin": {
           "name": "Ticker STT",
@@ -24,13 +39,55 @@
             "loading": "Cargando …",
             "connected": "Conectado",
             "disconnected": "Desconectado",
-            "error": "Error"
+            "error": "Error de la aplicación"
           },
           "messages": {
-            "saved": "Ajustes guardados.",
             "failed": "No se pudieron guardar los ajustes.",
             "noData": "No hay datos disponibles.",
-            "confirm": "¿Seguro que quieres continuar?"
+            "confirm": "¿Seguro que quieres continuar?",
+            "translation_pending": "Esperando la traducción…",
+            "line_count": "({count} líneas)",
+            "choose_language": "Elige un idioma",
+            "already_added": "Ya se añadió",
+            "no_target_language": "No se eligió un idioma de destino; los subtítulos estándar están activos.",
+            "error": "Se produjo un error",
+            "saved": "Guardado",
+            "system_default": "Predeterminado del sistema",
+            "system_microphone": "Micrófono predeterminado del sistema",
+            "no_input_devices": "No se encontraron más dispositivos de entrada",
+            "microphone_name": "Micrófono {index}",
+            "status_unavailable": "No se pudo cargar el estado",
+            "status_summary": "Estado: activado={enabled} | ASR={provider} | traducción={translation}",
+            "status_error": "Error de estado: {message}",
+            "status_on": "activado",
+            "status_off": "desactivado",
+            "status_auto": "automático",
+            "active_view_reloaded": "Vista activa recargada",
+            "enabled": "Activado",
+            "disabled": "Desactivado",
+            "deepgram_active": "Deepgram activo — aprox. 0,26 $/h, modelo: {model}",
+            "elevenlabs_active": "ElevenLabs activo — modelo: {model}",
+            "fish_audio_active": "Fish.audio está activo; el consumo de tokens es visible. Una clave de Deepgram o ElevenLabs puede reducir costes.",
+            "unknown": "Desconocido",
+            "key_configured": "Configurada",
+            "key_not_configured": "Sin configurar",
+            "translation_on": "Activada",
+            "translation_off": "Desactivada",
+            "osc_bridge_ready": "OSC Bridge está listo",
+            "osc_bridge_unavailable": "OSC Bridge no está disponible; los subtítulos siguen activos.",
+            "saved_key_masked": "(guardada: {masked})",
+            "config_saved": "Configuración guardada",
+            "saving": "Guardando…",
+            "asr_settings_saved": "Ajustes de ASR guardados",
+            "buffer_cleared": "Búfer vaciado",
+            "no_key_to_test": "No hay clave para probar",
+            "testing": "Probando…",
+            "vrchat_enable_pending": "Activado; comprobando OSC Bridge.",
+            "vrchat_disabled": "Desactivado",
+            "cache_cleared": "Caché de traducción vaciada",
+            "key_valid": "¡La clave es válida!",
+            "key_invalid": "No válida",
+            "provider_deepgram": "Reconocimiento de voz Deepgram"
           },
           "labels": {
             "source_microphone": "Micrófono de origen",

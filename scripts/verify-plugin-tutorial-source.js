@@ -82,6 +82,7 @@ for (const guide of guides) {
       const isOpenShockSafety = guide.id === 'openshock' && ['safety-card', 'safe-limit'].includes(step.id) && step.capture.action.prepare === 'open-openshock-safety-tab';
       const isMinecraftTab = guide.id === 'minecraft-connect'
         && ((step.id === 'offline-address' && step.capture.action.prepare === 'open-minecraft-setup-tab')
+          || (step.id === 'minecraft-overlay-settings' && step.capture.action.prepare === 'open-minecraft-setup-tab')
           || (step.id === 'event-format' && step.capture.action.prepare === 'open-minecraft-chat-tab'));
       const isQuizWorkflow = guide.id === 'quiz-show'
         && ((step.id === 'question-pool' && step.capture.action.prepare === 'open-quiz-questions-tab')

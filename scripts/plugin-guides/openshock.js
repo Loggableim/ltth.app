@@ -440,25 +440,25 @@ module.exports = Object.freeze({
         "de": {
           "title": "lokale Impuls-Simulation lokal testen",
           "body": "Fuehre lokale Impuls-Simulation nur mit die eingebaute Simulation ohne Token und Gerät im isolierten Testprofil aus; keine LIVE-Quelle, Hardware oder externe Verbindung wird benutzt.",
-          "expected": "der Ablauf wird als Simulation angezeigt und löst keine Haptik aus",
+            "expected": "Die Browserquelle bleibt ohne lokales Testereignis leer; es wird keine Haptik ausgelöst.",
           "alt": "lokale Impuls-Simulation lokal testen - Sicherheitslimit, Queue und Gerätezuordnung"
         },
         "en": {
           "title": "Test local impulse simulation locally",
           "body": "Run local impulse simulation only with the built-in simulation without a token or device in the isolated test profile; no LIVE source, hardware, or external connection is used.",
-          "expected": "the flow is shown as a simulation and triggers no haptics",
+            "expected": "The browser source remains empty until a local test event; no haptics are triggered.",
           "alt": "Test local impulse simulation locally - safety limit, queue, and device mapping"
         },
         "es": {
           "title": "Prueba simulacion de impulso local localmente",
           "body": "Ejecuta simulacion de impulso local solo con la simulación integrada sin token ni dispositivo en el perfil aislado; no se usa fuente LIVE, hardware ni conexion externa.",
-          "expected": "el flujo se muestra como simulación y no activa háptica",
+            "expected": "La fuente del navegador permanece vacía sin un evento local de prueba; no se activa háptica.",
           "alt": "Prueba simulacion de impulso local localmente - límite de seguridad, cola y asignación de dispositivo"
         },
         "fr": {
           "title": "Testez simulation locale d impulsion localement",
           "body": "Executez simulation locale d impulsion uniquement avec la simulation intégrée sans jeton ni appareil dans le profil isole ; aucune source LIVE, materiel ou connexion externe n est utilisee.",
-          "expected": "le flux est affiché comme simulation et ne déclenche aucune haptique",
+            "expected": "La source navigateur reste vide sans événement de test local ; aucune haptique n’est déclenchée.",
           "alt": "Testez simulation locale d impulsion localement - limite de sécurité, file et mappage d’appareil"
         }
       },
@@ -578,7 +578,7 @@ module.exports = Object.freeze({
       },
       "capture": {
         "route": "/plugins/openshock/overlay/openshock_overlay.html",
-        "assertVisible": "#overlay-container",
+          "assertVisible": ".background-orbs",
         "focusText": {
           "de": "Shock Overlay als Overlay-Vorschau oeffnen",
           "en": "Open Shock Overlay as an overlay preview",
@@ -590,10 +590,10 @@ module.exports = Object.freeze({
           "stepId": "shock-overlay"
         },
         "expected": {
-          "de": "der Ablauf wird als Simulation angezeigt und löst keine Haptik aus",
-          "en": "the flow is shown as a simulation and triggers no haptics",
-          "es": "el flujo se muestra como simulación y no activa háptica",
-          "fr": "le flux est affiché comme simulation et ne déclenche aucune haptique"
+            "de": "Die Browserquelle bleibt ohne lokales Testereignis leer; es wird keine Haptik ausgelöst.",
+            "en": "The browser source remains empty until a local test event; no haptics are triggered.",
+            "es": "La fuente del navegador permanece vacía sin un evento local de prueba; no se activa háptica.",
+            "fr": "La source navigateur reste vide sans événement de test local ; aucune haptique n’est déclenchée."
         }
       },
       "workflow": {
@@ -602,22 +602,22 @@ module.exports = Object.freeze({
           "de": {
             "title": "Shock Overlay als Overlay-Vorschau oeffnen",
             "body": "Oeffne die echte Shock Overlay-Oberflaeche nur in einer nicht sendenden OBS-Testszene. Ohne lokales Testereignis kann sie leer oder transparent bleiben; es werden keine Demo-Inhalte eingefuegt.",
-            "expected": "der Ablauf wird als Simulation angezeigt und löst keine Haptik aus"
+              "expected": "Die Browserquelle bleibt ohne lokales Testereignis leer; es wird keine Haptik ausgelöst."
           },
           "en": {
             "title": "Open Shock Overlay as an overlay preview",
             "body": "Open the real Shock Overlay surface only in an OBS test scene that is not live. Without a local test event, it can remain empty or transparent; no demo content is inserted.",
-            "expected": "the flow is shown as a simulation and triggers no haptics"
+              "expected": "The browser source remains empty until a local test event; no haptics are triggered."
           },
           "es": {
             "title": "Abre Shock Overlay como vista previa de overlay",
             "body": "Abre la superficie real Shock Overlay solo en una escena de prueba de OBS que no esta al aire. Sin un evento local de prueba, puede quedar vacia o transparente; no se inserta contenido demo.",
-            "expected": "el flujo se muestra como simulación y no activa háptica"
+              "expected": "La fuente del navegador permanece vacía sin un evento local de prueba; no se activa háptica."
           },
           "fr": {
             "title": "Ouvrez Shock Overlay comme apercu overlay",
             "body": "Ouvrez la vraie surface Shock Overlay uniquement dans une scene de test OBS non diffusee. Sans evenement de test local, elle peut rester vide ou transparente ; aucun contenu de demonstration nest insere.",
-            "expected": "le flux est affiché comme simulation et ne déclenche aucune haptique"
+              "expected": "La source navigateur reste vide sans événement de test local ; aucune haptique n’est déclenchée."
           }
         },
         "operations": [
@@ -627,7 +627,7 @@ module.exports = Object.freeze({
           },
           {
             "type": "open-overlay-preview",
-            "selector": "#overlay-container"
+              "selector": ".background-orbs"
           }
         ],
         "postconditions": [
@@ -645,7 +645,7 @@ module.exports = Object.freeze({
           },
           {
             "type": "visible",
-            "selector": "#overlay-container"
+              "selector": ".background-orbs"
           },
           {
             "type": "console",
@@ -653,12 +653,12 @@ module.exports = Object.freeze({
           }
         ],
         "captureRule": {
-          "selector": "#overlay-container",
+            "selector": ".background-orbs",
           "viewport": {
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+            "stateChange": false
         }
       }
     },

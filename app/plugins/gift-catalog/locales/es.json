@@ -1,6 +1,14 @@
 {
   "plugins": {
     "gift-catalog": {
+      "form_controls": {
+        "app_language_placeholder": "p. ej. en-US",
+        "browser_language_placeholder": "p. ej. en",
+        "webcast_language_placeholder": "p. ej. en",
+        "priority_region_placeholder": "DE o vacío",
+        "time_zone_placeholder": "Zona horaria: Europe/Berlin",
+        "locales_placeholder": "p. ej. en,de,es,fr"
+      },
       "gift_catalog": {
         "plugin": {
           "name": "Catálogo de regalos",
@@ -22,7 +30,7 @@
             "loading": "Cargando …",
             "connected": "Conectado",
             "disconnected": "Desconectado",
-            "error": "Error"
+            "error": "Se produjo un error"
           },
           "messages": {
             "saved": "Ajustes guardados.",
@@ -47,6 +55,15 @@
           },
           "messages": {
             "no_gifts_available": "No hay regalos disponibles.",
+            "no_live_gifts_loaded": "No se cargaron regalos desde /api/gift-catalog-manager/catalog.",
+            "static_list_empty": "La lista estática para la configuración regional {locale} está vacía.",
+            "live_source": "Fuente en directo",
+            "demo_source": "Fuente de demostración {locale}",
+            "live_entries_loaded": "Se cargaron {count} entradas de regalos desde el endpoint en directo.",
+            "demo_list_rendered": "Lista de demostración renderizada para la configuración regional {locale} ({count} entradas).",
+            "copy_failed_prompt": "No se pudo copiar. Usa este fragmento:",
+            "copy_prompt": "Copia este fragmento:",
+            "endpoint_prompt": "Punto de conexión:",
             "load_catalog_first_for_live_mode": "Primero carga el catálogo para el modo en directo."
           }
         }

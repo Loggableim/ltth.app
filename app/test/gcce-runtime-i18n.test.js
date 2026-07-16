@@ -69,4 +69,28 @@ describe('GCCE active UI runtime localization', () => {
       });
     });
   });
+
+  test('localizes overlay command-detail labels and the rotator card fallback', () => {
+    const ui = read('ui.html');
+    const overlay = read('overlay.html');
+
+    expect(overlay).not.toContain('<strong>Syntax:</strong>');
+    expect(overlay).not.toContain('<strong>Permission:</strong>');
+    expect(overlay).not.toContain('<strong>Plugin:</strong>');
+    expect(overlay).not.toContain('Available commands: ${commandNames}');
+    expect(overlay).toContain("overlayText('syntax'");
+    expect(overlay).toContain("overlayText('permission'");
+    expect(overlay).toContain("overlayText('plugin'");
+    expect(overlay).toContain("overlayText('available_commands'");
+    expect(ui).not.toContain("entry.template || 'card'");
+    expect(ui).toContain("t('plugins.gcce.ui.template_card', 'Card')");
+
+    locales.forEach((locale) => {
+      const translation = JSON.parse(read(`locales/${locale}.json`));
+      ['syntax', 'permission', 'plugin', 'available_commands'].forEach((key) => {
+        expect(getLeaf(translation, `plugins.gcce.runtime.overlay.${key}`)).toEqual(expect.any(String));
+      });
+      expect(getLeaf(translation, 'plugins.gcce.ui.template_card')).toEqual(expect.any(String));
+    });
+  });
 });

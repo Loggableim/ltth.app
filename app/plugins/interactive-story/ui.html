@@ -3597,7 +3597,7 @@
 
                   <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.providers.openrouter_key">OpenRouter API Key</label>
 
-                  <input type="password" class="form-control" id="openRouterApiKey" placeholder="sk-or-...">
+                    <input type="password" class="form-control" id="openRouterApiKey" placeholder="sk-or-..." data-i18n-placeholder="plugins.interactive-story.form_controls.openrouter_api_key_placeholder">
 
                   <small class="form-text text-muted"><span data-i18n="plugins.interactive-story.labels.required_for_openrouter_use">Required for OpenRouter. Use </span><code>openrouter/free</code><span data-i18n="plugins.interactive-story.labels.for_zero_cost_routing"> for zero-cost routing.</span></small>
 
@@ -3625,7 +3625,7 @@
 
                   <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.providers.ollama_key">Ollama API Key</label>
 
-                  <input type="password" class="form-control" id="ollamaApiKey" placeholder="Optional for local Ollama">
+                    <input type="password" class="form-control" id="ollamaApiKey" placeholder="Optional for local Ollama" data-i18n-placeholder="plugins.interactive-story.form_controls.ollama_api_key_placeholder">
 
                   <small class="form-text text-muted" data-i18n="plugins.interactive-story.labels.leave_empty_for_local_ollama_required_only_for">Leave empty for local Ollama; required only for some cloud deployments.</small>
 
@@ -3677,7 +3677,7 @@
 
                   <label class="form-label" data-i18n-key="plugins.interactive-story.cards.configuration.models.ollama_llm">Ollama Model</label>
 
-                  <input type="text" class="form-control" id="ollamaModel" list="ollamaModelSuggestions" placeholder="qwen3.5:cloud">
+                    <input type="text" class="form-control" id="ollamaModel" list="ollamaModelSuggestions" placeholder="qwen3.5:cloud" data-i18n-placeholder="plugins.interactive-story.form_controls.ollama_model_placeholder">
 
                   <datalist id="ollamaModelSuggestions">
 
@@ -4484,6 +4484,7 @@
               style="width: 100%; height: 540px; border: none; display: block;"
 
               title="OBS Overlay Preview"
+              data-i18n-title="plugins.interactive-story.form_controls.obs_overlay_preview_title"
 
             ></iframe>
 
@@ -5573,17 +5574,9 @@
 
     const t = (key, params = {}) => {
 
-      const parts = key.split('.');
+      const translation = window.i18n?.t?.(key, params);
 
-      const localeData = pluginTranslations[currentLocale] || pluginTranslations.en;
-
-      const fallbackData = pluginTranslations.en;
-
-      let value = getNested(localeData, parts) || getNested(fallbackData, parts) || key;
-
-      if (typeof value !== 'string') return key;
-
-      return value.replace(/\{\{(\w+)\}\}/g, (_, token) => params[token] !== undefined ? params[token] : `{{${token}}}`);
+      return typeof translation === 'string' && translation !== key ? translation : key;
 
     };
 
@@ -5649,15 +5642,17 @@
 
       if (badgeText) {
 
-        const themeKey = `hero.theme_name.${theme}`;
+        const themeKey = `plugins.interactive-story.runtime.theme.${theme}`;
         const localizedThemeName = t(themeKey);
         const themeName = (!localizedThemeName || localizedThemeName === themeKey) ? theme : localizedThemeName;
 
-        badgeText.textContent = `${t('hero.theme_synced')} - ${themeName}`;
+        badgeText.textContent = `${t('plugins.interactive-story.runtime.theme.synced')} - ${themeName}`;
 
       }
 
-      document.documentElement.setAttribute('data-theme', theme);
+      if (document.documentElement.getAttribute('data-theme') !== theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+      }
 
       const logo = document.querySelector('[data-brand-logo]');
       if (logo) {
@@ -5715,7 +5710,7 @@
 
       if (!help) return;
 
-      help.textContent = t(`cards.configuration.provider_help.${provider}`) || '';
+      help.textContent = t(`plugins.interactive-story.runtime.provider_help.${provider}`) || '';
 
     }
 
@@ -5838,11 +5833,7 @@
 
       const overlayInput = document.getElementById('overlayUrl');
 
-      const overlayFrame = document.getElementById('overlayPreview');
-
       if (overlayInput) overlayInput.value = overlayUrl;
-
-      if (overlayFrame) overlayFrame.src = overlayUrl;
 
       updateOverlayPreviewSizing();
 
@@ -5950,7 +5941,7 @@
 
         if (logDisplay) {
 
-          logDisplay.innerHTML = `<div class="text-muted">${t('cards.debug.empty')}</div>`;
+          logDisplay.innerHTML = `<div class="text-muted">${t('plugins.interactive-story.runtime.debug.empty')}</div>`;
 
         }
 
@@ -5986,7 +5977,7 @@
 
         if (isPreviewMode) {
 
-          alert(t('alerts.config_saved'));
+          alert(t('plugins.interactive-story.alerts.config_saved'));
 
           return;
 
@@ -6138,7 +6129,7 @@
 
           if (response.ok) {
 
-            alert(t('alerts.config_saved'));
+            alert(t('plugins.interactive-story.alerts.config_saved'));
 
             loadStatus();
 
@@ -6148,13 +6139,13 @@
 
             const errorText = await response.text();
 
-            alert(t('alerts.config_save_error', { message: `HTTP ${response.status}: ${errorText}` }));
+            alert(t('plugins.interactive-story.alerts.config_save_error', { message: `HTTP ${response.status}: ${errorText}` }));
 
           }
 
         } catch (error) {
 
-          alert(t('alerts.config_save_error', { message: error.message }));
+          alert(t('plugins.interactive-story.alerts.config_save_error', { message: error.message }));
 
         }
 
@@ -6166,7 +6157,7 @@
 
         if (!selectedTheme) {
 
-          alert(t('alerts.theme_required'));
+          alert(t('plugins.interactive-story.alerts.theme_required'));
 
           return;
 
@@ -6198,7 +6189,7 @@
 
             startBtn.disabled = true;
 
-            startBtn.innerHTML = t('cards.configuration.generating');
+            startBtn.innerHTML = t('plugins.interactive-story.runtime.actions.generating');
 
           }
 
@@ -6216,11 +6207,15 @@
 
                 chapterNumber: 1,
 
-                title: 'Demo Chapter',
+                title: t('plugins.interactive-story.runtime.preview.demo_title'),
 
-                content: 'This is a preview of the story content.',
+                content: t('plugins.interactive-story.runtime.preview.demo_content'),
 
-                choices: ['Follow the river', 'Climb the mountain', 'Return to camp']
+                choices: [
+                  t('plugins.interactive-story.runtime.preview.demo_choice_river'),
+                  t('plugins.interactive-story.runtime.preview.demo_choice_mountain'),
+                  t('plugins.interactive-story.runtime.preview.demo_choice_camp')
+                ]
 
               },
 
@@ -6236,7 +6231,7 @@
 
               startBtn.disabled = false;
 
-              startBtn.innerHTML = t('cards.story_controls.start_btn');
+              startBtn.innerHTML = t('plugins.interactive-story.runtime.actions.start_story');
 
             }
 
@@ -6266,13 +6261,13 @@
 
             const error = await response.json();
 
-            alert(t('alerts.story_start_error', { message: error.error }));
+            alert(t('plugins.interactive-story.alerts.story_start_error', { message: error.error }));
 
           }
 
         } catch (error) {
 
-          alert(t('alerts.story_error', { message: error.message }));
+          alert(t('plugins.interactive-story.alerts.story_error', { message: error.message }));
 
         } finally {
 
@@ -6282,7 +6277,7 @@
 
             startBtn.disabled = false;
 
-            startBtn.innerHTML = t('cards.story_controls.start_btn');
+            startBtn.innerHTML = t('plugins.interactive-story.runtime.actions.start_story');
 
           }
 
@@ -6294,7 +6289,7 @@
 
       document.getElementById('endStoryBtn')?.addEventListener('click', async () => {
 
-        if (!confirm(t('prompts.confirm_end_story'))) {
+        if (!confirm(t('plugins.interactive-story.prompts.confirm_end_story'))) {
 
           return;
 
@@ -6318,7 +6313,7 @@
 
           endBtn.disabled = true;
 
-          endBtn.innerHTML = '? Ending...';
+          endBtn.textContent = t('plugins.interactive-story.runtime.actions.ending');
 
 
 
@@ -6346,7 +6341,7 @@
 
             // Show success message briefly
 
-            endBtn.innerHTML = '? Story Ended';
+            endBtn.textContent = t('plugins.interactive-story.runtime.actions.story_ended');
 
             setTimeout(() => {
 
@@ -6366,7 +6361,7 @@
 
           console.error('Error ending story:', error);
 
-          alert(t('alerts.story_end_error', { message: error.message }));
+          alert(t('plugins.interactive-story.alerts.story_end_error', { message: error.message }));
 
 
 
@@ -6436,7 +6431,7 @@
 
           await navigator.clipboard.writeText(url);
 
-          alert(t('alerts.overlay_copied'));
+          alert(t('plugins.interactive-story.alerts.overlay_copied'));
 
         } else {
 
@@ -6448,7 +6443,7 @@
 
           document.execCommand('copy');
 
-          alert(t('alerts.overlay_copied'));
+          alert(t('plugins.interactive-story.alerts.overlay_copied'));
 
         }
 
@@ -6460,7 +6455,7 @@
 
         urlInput.select();
 
-        alert(t('alerts.overlay_copy_failed'));
+        alert(t('plugins.interactive-story.alerts.overlay_copy_failed'));
 
       }
 
@@ -6476,7 +6471,7 @@
 
       if (!url) {
 
-        alert(t('alerts.overlay_missing'));
+        alert(t('plugins.interactive-story.alerts.overlay_missing'));
 
         return;
 
@@ -6500,7 +6495,7 @@
 
               // Popup was blocked
 
-              alert(t('alerts.overlay_blocked', { url }));
+              alert(t('plugins.interactive-story.alerts.overlay_blocked', { url }));
 
             }
 
@@ -6518,9 +6513,25 @@
 
         console.error('Error opening overlay:', error);
 
-        alert(t('alerts.overlay_open_error', { url }));
+        alert(t('plugins.interactive-story.alerts.overlay_open_error', { url }));
 
       }
+
+    }
+
+
+
+    function ensureOverlayPreviewLoaded() {
+
+      const previewFrame = document.getElementById('overlayPreview');
+
+      if (!previewFrame || previewFrame.getAttribute('src')) return;
+
+      const overlayUrl = document.getElementById('overlayUrl')?.value
+
+        || `${window.location.protocol}//${window.location.host}/interactive-story/overlay`;
+
+      previewFrame.src = overlayUrl;
 
     }
 
@@ -6538,13 +6549,15 @@
 
       if (container.style.display === 'none') {
 
+        ensureOverlayPreviewLoaded();
+
         container.style.display = 'block';
 
         updateOverlayPreviewSizing();
 
         toggleIcon.textContent = '▾';
 
-        toggleText.textContent = t('cards.overlay.preview.hide');
+        toggleText.textContent = t('plugins.interactive-story.runtime.actions.preview_hide');
 
       } else {
 
@@ -6552,7 +6565,7 @@
 
         toggleIcon.textContent = '▸';
 
-        toggleText.textContent = t('cards.overlay.preview.show');
+        toggleText.textContent = t('plugins.interactive-story.runtime.actions.preview_show');
 
       }
 
@@ -6640,9 +6653,9 @@
 
         chapterNumber: 1,
 
-        title: 'The Beginning of an Epic Adventure',
+        title: t('plugins.interactive-story.runtime.preview.adventure_title'),
 
-        content: 'Our hero awakens in a mysterious forest, surrounded by ancient trees whispering secrets of old.',
+        content: t('plugins.interactive-story.runtime.preview.adventure_content'),
 
         choices: [],
 
@@ -6688,11 +6701,15 @@
 
         chapterNumber: 2,
 
-        title: 'The Ancient Temple',
+        title: t('plugins.interactive-story.runtime.preview.temple_title'),
 
-        content: 'As you step through the massive stone doors, a chill runs down your spine. The walls are covered in ancient runes that seem to glow faintly in the darkness. A mysterious voice echoes through the chamber, speaking in a language you somehow understand.',
+        content: t('plugins.interactive-story.runtime.preview.temple_content'),
 
-        choices: ['Approach the altar', 'Examine the runes closely', 'Follow the voice'],
+        choices: [
+          t('plugins.interactive-story.runtime.preview.temple_choice_altar'),
+          t('plugins.interactive-story.runtime.preview.temple_choice_runes'),
+          t('plugins.interactive-story.runtime.preview.temple_choice_voice')
+        ],
 
         imagePath: null
 
@@ -6748,11 +6765,11 @@
 
       const testChoices = [
 
-        'Enter the dark corridor',
+        t('plugins.interactive-story.runtime.preview.vote_choice_corridor'),
 
-        'Search for another exit',
+        t('plugins.interactive-story.runtime.preview.vote_choice_exit'),
 
-        'Call out for help'
+        t('plugins.interactive-story.runtime.preview.vote_choice_help')
 
       ];
 
@@ -6844,7 +6861,7 @@
 
         console.error('[TEST API KEY] Button or result div not found!', { btn, resultDiv });
 
-        alert(t('alerts.ui_missing'));
+        alert(t('plugins.interactive-story.alerts.ui_missing'));
 
         return;
 
@@ -6858,7 +6875,7 @@
 
         resultDiv.className = 'alert alert-success mt-2';
 
-        resultDiv.textContent = t('alerts.overlay_copied');
+        resultDiv.textContent = t('plugins.interactive-story.alerts.overlay_copied');
 
         return;
 
@@ -6896,7 +6913,7 @@
 
       btn.disabled = true;
 
-      btn.innerHTML = t('cards.configuration.testing');
+      btn.textContent = t('plugins.interactive-story.runtime.actions.testing');
 
       resultDiv.style.display = 'none';
 
@@ -6934,23 +6951,13 @@
 
           resultDiv.className = 'alert alert-success mt-2';
 
-          resultDiv.innerHTML = `
-
-            <strong>? ${result.message}</strong><br>
-
-            <small>
-
-              Provider: ${result.provider}<br>
-
-              API Key Length: ${result.details.keyLength} characters<br>
-
-              Prefix: ${result.details.keyPrefix}<br>
-
-              Tested Model: ${result.details.testedModel}
-
-            </small>
-
-          `;
+          const providerDetails = t('plugins.interactive-story.runtime.api_test.provider_details', {
+            provider: result.provider,
+            keyLength: result.details.keyLength,
+            keyPrefix: result.details.keyPrefix,
+            testedModel: result.details.testedModel
+          });
+          resultDiv.innerHTML = `<strong>? ${result.message}</strong><br><small>${providerDetails}</small>`;
 
         } else {
 
@@ -6966,31 +6973,32 @@
 
           } else {
 
-            html += `<small>Error: ${result.error}</small><br>`;
+            html += `<small>${t('plugins.interactive-story.runtime.api_test.error_details', { message: result.error })}</small><br>`;
 
             if (result.details) {
 
-              html += `<br><strong>Diagnostics:</strong><br>`;
+              html += `<br><strong>${t('plugins.interactive-story.runtime.api_test.diagnostics')}</strong><br>`;
 
-              html += `Provider: ${result.provider || 'Unknown'}<br>`;
-
-              html += `API Key Length: ${result.details.keyLength} characters`;
+              html += t('plugins.interactive-story.runtime.api_test.provider_summary', {
+                provider: result.provider || t('plugins.interactive-story.runtime.api_test.unknown'),
+                keyLength: result.details.keyLength
+              });
 
               // Only show expected length warning for SiliconFlow (OpenAI keys vary in length)
 
               if (result.details.keyLength !== 64 && result.provider && result.provider.toLowerCase() !== 'openai') {
 
-                html += ` <span style="color: #ffc107;" data-i18n="plugins.interactive-story.interactive_story.ui.validation.expectedApiKeyLength">Expected: ~64 characters</span>`;
+                html += ` <span style="color: #ffc107;">${t('plugins.interactive-story.interactive_story.ui.validation.expectedApiKeyLength')}</span>`;
 
               }
 
-              html += `<br>Prefix: ${result.details.keyPrefix}<br>`;
+              html += `<br>${t('plugins.interactive-story.runtime.api_test.prefix', { value: result.details.keyPrefix })}<br>`;
 
-              html += `Status Code: ${result.details.statusCode}<br>`;
+              html += `${t('plugins.interactive-story.runtime.api_test.status_code', { code: result.details.statusCode })}<br>`;
 
               if (result.details.hasWhitespace) {
 
-                html += `<span style="color: #ffc107;" data-i18n="plugins.interactive-story.interactive_story.ui.validation.apiKeyWhitespace">API key contains whitespace!</span><br>`;
+                html += `<span style="color: #ffc107;">${t('plugins.interactive-story.interactive_story.ui.validation.apiKeyWhitespace')}</span><br>`;
 
               }
 
@@ -6998,7 +7006,7 @@
 
             if (result.troubleshooting && result.troubleshooting.length > 0) {
 
-              html += `<br><strong>Troubleshooting Steps:</strong><ul style="margin-bottom: 0; padding-left: 20px;">`;
+              html += `<br><strong>${t('plugins.interactive-story.runtime.api_test.troubleshooting')}</strong><ul style="margin-bottom: 0; padding-left: 20px;">`;
 
               result.troubleshooting.forEach(tip => {
 
@@ -7029,11 +7037,11 @@
 
         resultDiv.innerHTML = `
 
-          <strong>? ${t('alerts.api_test_error')}</strong><br>
+          <strong>? ${t('plugins.interactive-story.alerts.api_test_error')}</strong><br>
 
           <small>${error.message}</small><br>
 
-          <small style="color: var(--color-text-muted, #94a3b8);">Check browser console for details</small>
+          <small style="color: var(--color-text-muted, #94a3b8);">${t('plugins.interactive-story.runtime.api_test.check_console')}</small>
 
         `;
 
@@ -7043,7 +7051,7 @@
 
         btn.disabled = false;
 
-        btn.innerHTML = t('cards.configuration.test_api_key');
+        btn.textContent = t('plugins.interactive-story.runtime.actions.test_api_key');
 
       }
 
@@ -7773,7 +7781,8 @@
 
           optgroup.id = groupId;
 
-          optgroup.label = engine.charAt(0).toUpperCase() + engine.slice(1) + ' Voices';
+          const engineLabel = engine.charAt(0).toUpperCase() + engine.slice(1);
+          optgroup.label = t('plugins.interactive-story.runtime.voices.group_label', { engine: engineLabel });
 
           voiceSelect.appendChild(optgroup);
 
@@ -8096,7 +8105,7 @@
 
           const themeSelector = document.getElementById('themeSelector');
 
-          themeSelector.innerHTML = `<div class="alert alert-danger">${t('alerts.story_error', { message: 'Theme load failed' })}</div>`;
+          themeSelector.innerHTML = `<div class="alert alert-danger">${t('plugins.interactive-story.alerts.story_error', { message: t('plugins.interactive-story.runtime.theme.load_failed') })}</div>`;
 
         }
 
@@ -8133,18 +8142,17 @@
       const memoryCard = document.getElementById('memoryCard');
       const topVotersCard = document.getElementById('topVotersCard');
       const statusCard = document.getElementById('statusCard');
-      const isGerman = currentLocale === 'de';
       const connectionText = currentStatus.configured
-        ? (isGerman ? 'Verbunden' : 'Connected')
-        : (isGerman ? 'Nicht verbunden' : 'Not connected');
+        ? t('plugins.interactive-story.runtime.status.connection_online')
+        : t('plugins.interactive-story.runtime.status.connection_offline');
       const storyStateText = currentStatus.session
-        ? (isGerman ? 'Story aktiv' : 'Story active')
-        : (isGerman ? 'Bereit' : 'Ready');
+        ? t('plugins.interactive-story.runtime.status.story_active')
+        : t('plugins.interactive-story.runtime.status.ready');
       const liveStateText = currentStatus.voting && currentStatus.voting.active
-        ? (isGerman ? 'Voting laeuft' : 'Voting running')
+        ? t('plugins.interactive-story.runtime.status.voting_running')
         : (currentStatus.session
-          ? (isGerman ? 'Generation bereit' : 'Generation ready')
-          : (isGerman ? 'Bereit zum Start' : 'Ready to start'));
+          ? t('plugins.interactive-story.runtime.status.generation_ready')
+          : t('plugins.interactive-story.runtime.status.ready_to_start'));
       const providerNames = {
         openai: 'OpenAI',
         openrouter: 'OpenRouter',
@@ -8173,11 +8181,11 @@
 
       if (currentStatus.configured) {
 
-        statusEl.innerHTML = `<span class="status-indicator status-active"></span> ${t('cards.status.configured')}`;
+        statusEl.innerHTML = `<span class="status-indicator status-active"></span> ${t('plugins.interactive-story.runtime.status.configured')}`;
 
       } else {
 
-        statusEl.innerHTML = `<span class="status-indicator status-inactive"></span> ${t('cards.status.not_configured')}`;
+        statusEl.innerHTML = `<span class="status-indicator status-inactive"></span> ${t('plugins.interactive-story.runtime.status.not_configured')}`;
 
       }
 
@@ -8201,14 +8209,14 @@
 
       // Session status
 
-      document.getElementById('sessionStatus').textContent = currentStatus.session ? `#${currentStatus.session.id}` : t('cards.status.none');
+      document.getElementById('sessionStatus').textContent = currentStatus.session ? `#${currentStatus.session.id}` : t('plugins.interactive-story.runtime.status.none');
 
 
 
       // Chapter status
 
       document.getElementById('chapterStatus').textContent = currentStatus.chapter
-        ? `${t('cards.status.chapter_prefix')} ${currentStatus.chapter.chapterNumber}`
+        ? `${t('plugins.interactive-story.runtime.status.chapter_prefix')} ${currentStatus.chapter.chapterNumber}`
         : '-';
 
 
@@ -8221,13 +8229,13 @@
 
         const timeLeft = Math.ceil(currentStatus.voting.timeRemaining);
 
-        votingEl.innerHTML = `<span class="status-indicator status-active"></span> ${t('cards.status.active_time', { seconds: timeLeft })}`;
+        votingEl.innerHTML = `<span class="status-indicator status-active"></span> ${t('plugins.interactive-story.runtime.status.active_time', { seconds: timeLeft })}`;
 
         document.getElementById('forceVoteEndBtn').style.display = 'inline-block';
 
       } else {
 
-        votingEl.innerHTML = `<span class="status-indicator status-inactive"></span> ${t('cards.status.inactive')}`;
+        votingEl.innerHTML = `<span class="status-indicator status-inactive"></span> ${t('plugins.interactive-story.runtime.status.inactive')}`;
 
         document.getElementById('forceVoteEndBtn').style.display = 'none';
 
@@ -8296,13 +8304,11 @@
         return;
       }
 
-      const isGerman = currentLocale === 'de';
-
       display.innerHTML = `
         <div class="story-empty-state">
-          <div class="story-empty-state__eyebrow">${isGerman ? 'Kapitel bereit' : 'Chapter ready'}</div>
-          <h4>${isGerman ? 'Noch keine aktive Story' : 'No active story yet'}</h4>
-          <p>${isGerman ? 'Starte eine Story, um Kapitel, Voting und Bild hier im Fokus zu sehen.' : 'Start a story to bring the chapter, voting, and image into focus.'}</p>
+          <div class="story-empty-state__eyebrow">${t('plugins.interactive-story.runtime.chapter.empty_eyebrow')}</div>
+          <h4>${t('plugins.interactive-story.runtime.chapter.empty_title')}</h4>
+          <p>${t('plugins.interactive-story.runtime.chapter.empty_body')}</p>
         </div>
       `;
     }
@@ -8315,10 +8321,9 @@
         return;
       }
 
-      const isGerman = currentLocale === 'de';
       const maxChapters = Math.max(1, currentStatus?.config?.maxChapters || 5);
       const progressPercent = Math.min(100, Math.max(0, Math.round((chapter.chapterNumber / maxChapters) * 100)));
-      const badgeLabel = t('cards.story_controls.chapter_badge', { current: chapter.chapterNumber, total: maxChapters });
+      const badgeLabel = t('plugins.interactive-story.runtime.story.chapter_badge', { current: chapter.chapterNumber, total: maxChapters });
       const votePattern = currentStatus?.config?.voteKeywordPattern || '!letter';
       const choices = Array.isArray(chapter.choices) ? chapter.choices : [];
       const choiceAccents = ['#35e77b', '#2dd4ff', '#8b5cf6', '#ffb347', '#fb7185', '#60a5fa'];
@@ -8329,8 +8334,8 @@
         ? Math.min(100, Math.round((votingRemaining / votingDuration) * 100))
         : 0;
       const votingLabel = currentStatus?.voting?.active
-        ? (isGerman ? 'Voting läuft' : 'Voting running')
-        : (isGerman ? 'Voting pausiert' : 'Voting idle');
+        ? t('plugins.interactive-story.runtime.status.voting_running')
+        : t('plugins.interactive-story.runtime.status.voting_idle');
       const votingCountdown = currentStatus?.voting?.active ? formatCountdown(votingRemaining) : '00:00';
       const choiceMarkup = choices.length > 0
         ? choices.map((choice, index) => {
@@ -8343,13 +8348,13 @@
               </div>
             `;
           }).join('')
-        : `<div class="story-empty-state story-empty-state--compact">${isGerman ? 'Noch keine Optionen verfügbar.' : 'No choices available yet.'}</div>`;
+        : `<div class="story-empty-state story-empty-state--compact">${t('plugins.interactive-story.runtime.chapter.no_choices')}</div>`;
 
       let imageMarkup = `
         <div class="story-chapter-media__placeholder">
           <span class="story-chapter-media__eyebrow">LTTH</span>
-          <strong>${isGerman ? 'Bild wird generiert' : 'Image pending'}</strong>
-          <p>${isGerman ? 'Das Kapitelbild erscheint hier, sobald es fertig ist.' : 'The chapter image appears here once it is ready.'}</p>
+          <strong>${t('plugins.interactive-story.runtime.chapter.image_pending')}</strong>
+          <p>${t('plugins.interactive-story.runtime.chapter.image_pending_body')}</p>
         </div>
       `;
 
@@ -8357,7 +8362,7 @@
 
         const filename = chapter.imagePath.split('/').pop();
 
-        imageMarkup = `<img id="storyImage" src="/api/interactive-story/image/${escapeHtml(filename)}" alt="${isGerman ? 'Kapitelbild' : 'Chapter image'}">`;
+        imageMarkup = `<img id="storyImage" src="/api/interactive-story/image/${escapeHtml(filename)}" alt="${t('plugins.interactive-story.runtime.chapter.image_alt')}">`;
 
       }
 
@@ -8365,7 +8370,7 @@
         <section class="story-chapter-card">
           <div class="story-chapter-card__header">
             <div class="story-chapter-card__heading">
-              <div class="story-chapter-card__eyebrow">${isGerman ? 'Aktuelles Kapitel' : 'Current chapter'}</div>
+              <div class="story-chapter-card__eyebrow">${t('plugins.interactive-story.runtime.chapter.current')}</div>
               <h3>${escapeHtml(chapter.title || '')}</h3>
             </div>
             <span class="story-chapter-card__badge">${escapeHtml(badgeLabel)}</span>
@@ -8391,7 +8396,7 @@
           <div class="story-vote-strip">
             <div class="story-vote-strip__copy">
               <span class="story-vote-strip__label">${votingLabel}</span>
-              <span class="story-vote-strip__meta">${isGerman ? 'Live-Voting und Kapitelvisuals sind synchronisiert.' : 'Live voting and chapter visuals stay in sync.'}</span>
+              <span class="story-vote-strip__meta">${t('plugins.interactive-story.runtime.chapter.vote_sync')}</span>
             </div>
             <div class="story-vote-strip__time">${votingCountdown}</div>
           </div>
@@ -8484,7 +8489,7 @@
 
           const escapedChoice = escapeHtml(choice);
 
-          const buttonLabel = t('cards.story_controls.option_label', { option: letter, choice: escapedChoice });
+          const buttonLabel = t('plugins.interactive-story.runtime.story.option_label', { option: letter, choice: escapedChoice });
 
           html += `
 
@@ -8546,7 +8551,7 @@
 
     async function selectAdminChoice(choiceIndex) {
 
-      if (!confirm(t('prompts.confirm_choice', { option: String.fromCharCode(65 + choiceIndex) }))) {
+      if (!confirm(t('plugins.interactive-story.prompts.confirm_choice', { option: String.fromCharCode(65 + choiceIndex) }))) {
 
         return;
 
@@ -8578,7 +8583,7 @@
 
           const error = await response.json();
 
-          alert(t('alerts.admin_choice_error', { message: error.error }));
+          alert(t('plugins.interactive-story.alerts.admin_choice_error', { message: error.error }));
 
         }
 
@@ -8586,7 +8591,7 @@
 
         console.error('Error selecting admin choice:', error);
 
-        alert(t('alerts.admin_choice_error', { message: error.message }));
+        alert(t('plugins.interactive-story.alerts.admin_choice_error', { message: error.message }));
 
       }
 
@@ -8610,7 +8615,9 @@
 
       document.getElementById('manualChapterNumber').textContent = `${chapter.chapterNumber}/${currentStatus.config?.maxChapters || 5}`;
 
-      document.getElementById('manualVotingStatus').textContent = voting.active ? 'Yes' : 'No';
+      document.getElementById('manualVotingStatus').textContent = voting.active
+        ? t('plugins.interactive-story.runtime.boolean.yes')
+        : t('plugins.interactive-story.runtime.boolean.no');
 
 
 
@@ -8650,7 +8657,7 @@
 
                 <strong>${letter}. ${choice}</strong>
 
-                <span class="badge bg-primary">${votes} votes (${percentage}%)</span>
+                    <span class="badge bg-primary">${t('plugins.interactive-story.runtime.manual.vote_summary', { votes, percentage })}</span>
 
               </div>
 
@@ -8698,7 +8705,7 @@
 
       if (!currentStatus || !currentStatus.chapter) {
 
-        alert('No active chapter to advance from.');
+        alert(t('plugins.interactive-story.prompts.no_active_chapter'));
 
         return;
 
@@ -8714,7 +8721,7 @@
 
 
 
-      if (!confirm(`Advance from Chapter ${chapterNum} to Chapter ${nextChapter}/${maxChapters}?`)) {
+      if (!confirm(t('plugins.interactive-story.prompts.advance_chapter', { current: chapterNum, next: nextChapter, total: maxChapters }))) {
 
         return;
 
@@ -8744,7 +8751,7 @@
 
           const error = await response.json();
 
-          alert('Error advancing round: ' + error.error);
+          alert(t('plugins.interactive-story.alerts.advance_error', { message: error.error }));
 
         }
 
@@ -8752,7 +8759,7 @@
 
         console.error('Error advancing round:', error);
 
-        alert('Error advancing round: ' + error.message);
+        alert(t('plugins.interactive-story.alerts.advance_error', { message: error.message }));
 
       }
 
@@ -8844,7 +8851,7 @@
 
             <span><strong>#${index + 1}</strong> ${voter.username}</span>
 
-            <span class="badge bg-primary">${t('cards.voters.votes', { count: voter.votes_cast })}</span>
+            <span class="badge bg-primary">${t('plugins.interactive-story.runtime.voters.votes', { count: voter.votes_cast })}</span>
 
           </div>
 
@@ -8912,29 +8919,13 @@
 
       // Show user-friendly error message
 
-      let errorMsg = `Story generation failed: ${data.error}`;
+      let errorMsg = t('plugins.interactive-story.alerts.generation_failed', { message: data.error });
 
 
 
       if (data.isTimeout || data.statusCode === 504) {
 
-        errorMsg = `API Timeout: The story generation took too long.
-
-
-
-Suggestions:
-
-- Wait a few minutes and try again (API may be overloaded)
-
-- Use the "End Story" button to stop the current story
-
-- Consider switching to a faster model in configuration
-
-- Reduce max_chapters for shorter stories
-
-
-
-You can still manually end the story and start a new one.`;
+        errorMsg = t('plugins.interactive-story.alerts.generation_timeout');
 
       }
 
@@ -8966,7 +8957,7 @@ You can still manually end the story and start a new one.`;
 
         if (isPreviewMode) {
 
-          document.getElementById('debugLogDisplay').innerHTML = `<div class="text-muted">${t('cards.debug.empty')}</div>`;
+          document.getElementById('debugLogDisplay').innerHTML = `<div class="text-muted">${t('plugins.interactive-story.runtime.debug.empty')}</div>`;
 
           return;
 
@@ -8986,7 +8977,7 @@ You can still manually end the story and start a new one.`;
 
         } else {
 
-          logDisplay.innerHTML = `<div class="text-muted">${t('cards.debug.empty')}</div>`;
+          logDisplay.innerHTML = `<div class="text-muted">${t('plugins.interactive-story.runtime.debug.empty')}</div>`;
 
         }
 

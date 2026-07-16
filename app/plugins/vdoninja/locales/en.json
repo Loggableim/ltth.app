@@ -1,6 +1,9 @@
 {
   "plugins": {
     "vdoninja": {
+      "form_controls": {
+        "director_control_room_title": "Director Control Room"
+      },
       "vdoninja": {
         "title": "VDO.Ninja Multi-Guest Manager",
         "status": {
@@ -10,8 +13,8 @@
         "room": {
           "title": "Room Management",
           "name": "Room Name",
-          "name_placeholder": "My TikTok Stream",
-          "max_guests": "Max Guests",
+          "name_placeholder": "My TikTok LIVE stream",
+          "max_guests": "Maximum Guests",
           "create": "Create Room",
           "close": "Close Room",
           "info": {
@@ -27,22 +30,24 @@
           "mute_all": "Mute All",
           "unmute_all": "Unmute All",
           "empty": "No guests connected yet",
-          "empty_hint": "Share the Guest Invite URL to add guests to your room",
-          "slot": "Slot",
+          "empty_hint": "Share the guest invite URL to add guests to this room.",
+          "slot": "Slot {slot}",
           "controls": {
+            "audio": "Audio",
+            "video": "Video",
             "mute": "Mute",
             "unmute": "Unmute",
             "hide": "Hide",
             "show": "Show",
-            "kick": "Kick",
+            "kick": "Remove",
             "solo": "Solo",
-            "volume": "Volume"
+            "volume": "Volume: {value}%"
           }
         },
         "layout": {
           "title": "Layout Presets",
-          "grid_2x2": "Grid 2x2",
-          "grid_3x2": "Grid 3x2",
+          "grid_2x2": "Grid 2×2",
+          "grid_3x2": "Grid 3×2",
           "solo": "Solo"
         },
         "director": {
@@ -52,37 +57,28 @@
         },
         "guide": {
           "title": "Quick Guide:",
-          "step1": "1. Create a room to get started",
-          "step2": "2. Add the Director URL to OBS as a Browser Source (1920x1080)",
-          "step3": "3. Share the Guest Invite URL with your guests",
-          "step4": "4. Control guests in real-time from this dashboard"
+          "step1": "1. Create a room to get started.",
+          "step2": "2. Add the Director URL to OBS as a browser source (1920×1080).",
+          "step3": "3. Share the guest invite URL with your guests.",
+          "step4": "4. Control guests in real time from this dashboard."
         },
         "messages": {
           "room_created": "Room created successfully!",
           "room_closed": "Room closed successfully!",
-          "guest_kicked": "Guest kicked from room",
-          "copied": "Copied to clipboard!",
-          "error": "An error occurred"
+          "guest_kicked": "Guest removed from the room.",
+          "copied": "Copied!",
+          "error": "An error occurred.",
+          "room_name_required": "Please enter a room name.",
+          "room_create_failed": "Could not create the room.",
+          "room_create_failed_detail": "Could not create the room: {error}",
+          "room_close_confirm": "Close this room?",
+          "room_close_failed": "Could not close the room.",
+          "room_close_failed_detail": "Could not close the room: {error}",
+          "guest_kick_confirm": "Remove {name} from the room?",
+          "guest_kick_reason": "Removed by host",
+          "copy_failed": "Could not copy to the clipboard.",
+          "not_available": "Not available"
         }
-      },
-      "labels": {
-        "director_control_room": "🎬 Director Control Room",
-        "3_share_the_guest_invite_url_with_your": "3. Share the Guest Invite URL with your guests",
-        "4_control_guests_in_real_time_from_this": "4. Control guests in real-time from this dashboard",
-        "create_room": "✨ Create Room",
-        "i_quick_guide": "ℹ️ Quick Guide:",
-        "close_room": "🔒 Close Room",
-        "copy": "📋 Copy",
-        "copy_831d1e": "📋 Copy",
-        "hide": "▼ Hide",
-        "layout_presets": "🎨 Layout Presets",
-        "room_management": "🏠 Room Management",
-        "guest_controls": "👥 Guest Controls",
-        "1_create_a_room_to_get_started": "1. Create a room to get started",
-        "vdo_ninja_multi_guest_manager": "VDO.Ninja Multi-Guest Manager",
-        "unmute_all": "🔊 Unmute All",
-        "2_add_the_director_url_to_obs_as": "2. Add the Director URL to OBS as a Browser Source (1920x1080)",
-        "mute_all": "🔇 Mute All"
       }
     }
   }

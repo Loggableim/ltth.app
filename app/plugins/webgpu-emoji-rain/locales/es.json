@@ -1,6 +1,14 @@
 {
   "plugins": {
     "webgpu-emoji-rain": {
+      "form_controls": {
+        "canvas_aria": "Lienzo WebGPU EmojiRain",
+        "preview_aria": "Vista previa de Emoji Rain",
+        "quick_status_aria": "Estado rápido de Emoji Rain",
+        "username_filter_placeholder": "Introduce un nombre de usuario...",
+        "username_placeholder": "Nombre de usuario",
+        "enabled_toggle_aria": "Activar lluvia de emojis WebGPU"
+      },
       "webgpu_emoji_rain": {
         "title": "Configuración de Lluvia de Emojis",
         "subtitle": "Overlays Interactivos de Emojis",
@@ -100,7 +108,7 @@
           "delete": "Eliminar",
           "trigger": "Disparador",
           "name": "Nombre",
-          "emoji": "Emoji",
+          "emoji": "Icono emoji",
           "count": "Cantidad",
           "intensity": "Intensidad",
           "duration": "Duración (ms)",
@@ -110,7 +118,7 @@
         "user_mappings": {
           "title": "Asignaciones de Usuario",
           "username": "Nombre de Usuario",
-          "emoji": "Emoji",
+          "emoji": "Icono emoji",
           "search": "Buscar",
           "import": "Importar",
           "export": "Exportar",
@@ -194,7 +202,7 @@
           "state_initializing": "Inicializando",
           "state_ready": "Listo",
           "state_unsupported": "No compatible",
-          "state_error": "Error",
+          "state_error": "Fallo",
           "state_device_lost": "Dispositivo perdido",
           "state_recovering": "Recuperando",
           "state_unknown": "Desconocido",
@@ -399,7 +407,7 @@
         "bubble_blop": "explosión de burbujas",
         "min_emojis_bei_likes": "Mín. emojis para me gusta",
         "0_5_bildschirmmitte": "0,5 = centro de la pantalla",
-        "konfiguration_speichern": "💾 Configuración detallada",
+        "konfiguration_speichern": "💾 Guardar configuración",
         "upload": "📤 Subir",
         "1440p_2560x1440": "1440p (2560x1440)",
         "wahle_die_animation_die_beim_aufprall_am_boden": "Elige la animación que se reproduce al tocar el suelo.",
@@ -429,7 +437,7 @@
         "aktuelle_fps": "FPS actuales:",
         "superfan_burst": "⭐ Explosión de SuperFan",
         "0_trage_1_aggressiv": "0 = lento, 1 = agresivo",
-        "like_divisor": "Como divisor",
+        "like_divisor": "Divisor de me gusta",
         "1080p_portrait_1080x1920": "1080p Portrait (1080x1920)",
         "obs_hud_aktivieren": "Habilitar HUD de OBS",
         "nur_geschenkeregen": "Sólo lluvia de regalos:",

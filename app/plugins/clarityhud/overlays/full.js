@@ -64,6 +64,11 @@ const EVENT_TYPES = {
   join: { icon: '👋', label: 'Joined', colorClass: 'event-join' }
 };
 
+function eventLabel(type) {
+  const eventType = EVENT_TYPES[type];
+  return ClarityHUDI18n.text(`overlay.event.${type}`, eventType?.label || type);
+}
+
 // ==================== INITIALIZATION ====================
 // P6: Retry wrapper – up to 3 attempts with 2-second delays.
 async function init() {
@@ -82,9 +87,9 @@ async function init() {
         const msg = document.createElement('div');
         msg.style.cssText = 'color:#f88;padding:16px;font-family:monospace;font-size:14px;';
         if (attempt < MAX_RETRIES) {
-          msg.textContent = `ClarityHUD init error (attempt ${attempt}/${MAX_RETRIES}). Retrying in ${RETRY_DELAY_MS / 1000}s… ${error.message}`;
+          msg.textContent = ClarityHUDI18n.text('overlay.init_retry', 'ClarityHUD initialization failed. Retrying in {seconds}s…', { seconds: RETRY_DELAY_MS / 1000 });
         } else {
-          msg.textContent = `ClarityHUD failed to initialize after ${MAX_RETRIES} attempts. Check the browser console for details.`;
+          msg.textContent = ClarityHUDI18n.text('overlay.init_failed', 'ClarityHUD could not be initialized. Check the browser console for details.');
         }
         STATE.container.appendChild(msg);
       }
@@ -590,7 +595,7 @@ function renderStructured() {
 
     const header = document.createElement('div');
     header.className = `block-header ${EVENT_TYPES[type].colorClass}`;
-    header.textContent = `${EVENT_TYPES[type].icon} ${EVENT_TYPES[type].label}`;
+        header.textContent = `${EVENT_TYPES[type].icon} ${eventLabel(type)}`;
     block.appendChild(header);
 
     const content = document.createElement('div');
@@ -631,7 +636,7 @@ function renderAdaptive() {
 
     const header = document.createElement('div');
     header.className = `block-header ${EVENT_TYPES[type].colorClass}`;
-    header.textContent = `${EVENT_TYPES[type].icon} ${EVENT_TYPES[type].label}`;
+        header.textContent = `${EVENT_TYPES[type].icon} ${eventLabel(type)}`;
     block.appendChild(header);
 
     const content = document.createElement('div');
@@ -775,7 +780,7 @@ function createEventElement(event, layoutMode) {
 
     const username = document.createElement('span');
     username.className = 'event-username';
-    username.textContent = formattedMessage.user?.nickname || event.data.user?.nickname || event.data.username || 'Anonymous';
+    username.textContent = formattedMessage.user?.nickname || event.data.user?.nickname || event.data.username || ClarityHUDI18n.text('overlay.anonymous', 'Anonymous');
     
     // Apply username color based on team level if enabled
     if (STATE.settings.usernameColorByTeamLevel && badges.teamLevel > 0 && STATE.badgeRenderer) {
@@ -788,7 +793,7 @@ function createEventElement(event, layoutMode) {
     if (layoutMode === 'singleStream') {
       const type = document.createElement('span');
       type.className = 'event-type';
-      type.textContent = `(${EVENT_TYPES[event.type].label})`;
+      type.textContent = `(${eventLabel(event.type)})`;
       element.appendChild(type);
     }
 
@@ -811,13 +816,13 @@ function createEventElement(event, layoutMode) {
   } else if (event.type === 'gift') {
     const username = document.createElement('span');
     username.className = 'event-username';
-    username.textContent = event.data.user?.nickname || event.data.username || 'Anonymous';
+    username.textContent = event.data.user?.nickname || event.data.username || ClarityHUDI18n.text('overlay.anonymous', 'Anonymous');
     element.appendChild(username);
 
     if (layoutMode === 'singleStream') {
       const type = document.createElement('span');
       type.className = 'event-type';
-      type.textContent = `(${EVENT_TYPES[event.type].label})`;
+      type.textContent = `(${eventLabel(event.type)})`;
       element.appendChild(type);
     }
 
@@ -836,21 +841,29 @@ function createEventElement(event, layoutMode) {
 
     const giftInfo = document.createElement('span');
     giftInfo.className = 'event-gift-info';
-    giftInfo.textContent = event.data.gift?.name || event.data.giftName ?
-      `${event.data.gift?.name || event.data.giftName}${event.data.gift?.coins || event.data.coins ? ` (${event.data.gift?.coins || event.data.coins} coins)` : ''}` :
-      (event.data.gift?.coins || event.data.coins ? `${event.data.gift?.coins || event.data.coins} coins` : 'sent a gift');
+    const giftName = event.data.gift?.name || event.data.giftName;
+    const giftCoins = event.data.gift?.coins || event.data.coins;
+    if (giftName) {
+      giftInfo.textContent = giftCoins
+        ? `${giftName} (${giftCoins} ${ClarityHUDI18n.text('overlay.coins', 'coins')})`
+        : giftName;
+    } else if (giftCoins) {
+      giftInfo.textContent = `${giftCoins} ${ClarityHUDI18n.text('overlay.coins', 'coins')}`;
+    } else {
+      giftInfo.textContent = ClarityHUDI18n.text('overlay.gift_sent', 'sent a gift');
+    }
     element.appendChild(giftInfo);
   } else if (event.type === 'like') {
     // Like events (similar to follow/share)
     const username = document.createElement('span');
     username.className = 'event-username';
-    username.textContent = event.data.user?.nickname || event.data.username || 'Anonymous';
+    username.textContent = event.data.user?.nickname || event.data.username || ClarityHUDI18n.text('overlay.anonymous', 'Anonymous');
     element.appendChild(username);
 
     if (layoutMode === 'singleStream') {
       const type = document.createElement('span');
       type.className = 'event-type';
-      type.textContent = `(${EVENT_TYPES[event.type].label})`;
+      type.textContent = `(${eventLabel(event.type)})`;
       element.appendChild(type);
     }
 
@@ -865,13 +878,13 @@ function createEventElement(event, layoutMode) {
     // Standard event (follow, share, sub, treasure, join)
     const username = document.createElement('span');
     username.className = 'event-username';
-    username.textContent = event.data.user?.nickname || event.data.username || 'Anonymous';
+    username.textContent = event.data.user?.nickname || event.data.username || ClarityHUDI18n.text('overlay.anonymous', 'Anonymous');
     element.appendChild(username);
 
     if (layoutMode === 'singleStream') {
       const type = document.createElement('span');
       type.className = 'event-type';
-      type.textContent = `(${EVENT_TYPES[event.type].label})`;
+      type.textContent = `(${eventLabel(event.type)})`;
       element.appendChild(type);
     }
   }
@@ -916,7 +929,10 @@ function getActiveTypeCount() {
 }
 
 // ==================== INITIALIZE ON LOAD ====================
-window.addEventListener('DOMContentLoaded', init);
+window.addEventListener('DOMContentLoaded', () => {
+  if (window.i18n?.ready) window.i18n.ready.then(init);
+  else init();
+});
 
 window.addEventListener('message', (event) => {
   const payload = event.data || {};

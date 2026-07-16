@@ -27,6 +27,7 @@ module.exports = Object.freeze({
   "safety": "obs",
   "mode": "ui",
   "overlay": "/plugins/quiz-show/quiz_show_overlay.html",
+  "overlayWorkflowStepIds": ["quiz-overlay"],
   "related": [
     "game-engine",
     "interactive-story"

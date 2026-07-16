@@ -735,6 +735,7 @@
     }
   </style>
     <script src="/js/i18n-client.js"></script>
+    <script src="/plugins/viewer-leaderboard/viewer-xp-i18n.js"></script>
 </head>
 <body>
   <div class="app-container">
@@ -864,7 +865,7 @@
           </div>
           <div class="card-body">
             <div class="form-group">
-              <input type="text" id="overview-search-input" class="form-control" placeholder="Enter username to search...">
+              <input type="text" id="overview-search-input" class="form-control" placeholder="Enter username to search..." data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.overview_username_search">
             </div>
             <div id="overview-search-results"></div>
           </div>
@@ -916,7 +917,7 @@
           </div>
           <div class="card-body">
             <div class="form-group">
-              <input type="text" id="user-detail-search" class="form-control" placeholder="Enter username...">
+              <input type="text" id="user-detail-search" class="form-control" placeholder="Enter username..." data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.user_detail_username_search">
             </div>
             <button id="user-detail-search-btn" class="btn btn-primary" data-i18n="plugins.milestone-leaderboard.ui.actions.search">Search</button>
           </div>
@@ -1147,7 +1148,7 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
               <div class="form-group">
                 <label class="form-label" data-i18n="plugins.milestone-leaderboard.ui.table.username">Username</label>
-                <input type="text" id="logs-filter-username" class="form-control" placeholder="Filter by username...">
+                <input type="text" id="logs-filter-username" class="form-control" placeholder="Filter by username..." data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.filter_username">
               </div>
               <div class="form-group">
                 <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.event_type_f847e9">Event Type</label>
@@ -1336,7 +1337,7 @@
           <div class="card-body">
             <div class="search-box">
               <span class="search-icon">🔍</span>
-              <input type="text" class="form-control" id="leaderboardSearch" placeholder="Search viewers...">
+              <input type="text" class="form-control" id="leaderboardSearch" placeholder="Search viewers..." data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.search_viewers">
             </div>
             <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
               <table class="modern-table">
@@ -1469,7 +1470,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.font_family">Font Family</label>
-                <input type="text" class="form-control" id="leaderboardFont" placeholder="e.g. 'Inter', sans-serif">
+                <input type="text" class="form-control" id="leaderboardFont" placeholder="e.g. 'Inter', sans-serif" data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.font_family">
               </div>
             </div>
 
@@ -1647,7 +1648,7 @@
             <div style="margin-top: 16px;">
               <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.test_username">Test Username</label>
               <input type="text" class="form-control" id="testUsername" placeholder="Enter username for testing"
-                style="max-width: 300px;">
+                style="max-width: 300px;" data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.test_username">
             </div>
           </div>
         </div>
@@ -1949,7 +1950,7 @@
             <form id="manualAwardForm">
               <div class="form-group">
                 <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.username">Username *</label>
-                <input type="text" class="form-control" id="awardUsername" placeholder="Enter viewer username" list="viewerSuggestions" autocomplete="off" required>
+                <input type="text" class="form-control" id="awardUsername" placeholder="Enter viewer username" list="viewerSuggestions" autocomplete="off" required data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.viewer_username">
                 <datalist id="viewerSuggestions"></datalist>
               </div>
 
@@ -1961,7 +1962,7 @@
 
               <div class="form-group">
                 <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.reason_optional_df4721">Reason (Optional)</label>
-                <textarea class="form-control" id="awardReason" rows="3" placeholder="e.g., Winner of community event, Milestone celebration, etc."></textarea>
+                <textarea class="form-control" id="awardReason" rows="3" placeholder="e.g., Winner of community event, Milestone celebration, etc." data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.award_reason"></textarea>
                 <small class="form-text" data-i18n="plugins.milestone-leaderboard.labels.optional_note_about_why_this_xp_was_awarded">Optional note about why this XP was awarded (for your records)</small>
               </div>
 
@@ -2065,7 +2066,7 @@
                   <small class="form-text" style="display: block; margin-bottom: 8px;" data-i18n="plugins.milestone-leaderboard.labels.enter_xp_values_for_each_field_positive_win">
                     Enter XP values for each field (positive = win, negative = lose). One per line.
                   </small>
-                  <textarea class="form-control" id="spinFieldValues" rows="8" placeholder="5000&#10;-2000&#10;1000&#10;-5000&#10;2000&#10;-1000&#10;10000&#10;-3000"></textarea>
+                  <textarea class="form-control" id="spinFieldValues" rows="8" placeholder="5000&#10;-2000&#10;1000&#10;-5000&#10;2000&#10;-1000&#10;10000&#10;-3000" data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.spin_values"></textarea>
                   <small class="form-text" data-i18n="plugins.milestone-leaderboard.labels.tip_use_large_positive_values_for_jackpots_negative">Tip: Use large positive values for jackpots, negative values for risk</small>
                 </div>
 
@@ -2242,7 +2243,7 @@
             <div class="form-group" style="max-width: 800px;">
               <label class="form-label" data-i18n="plugins.milestone-leaderboard.labels.search_viewer_c4e6c9">Search Viewer</label>
               <div style="display: flex; gap: 12px;">
-                <input type="text" class="form-control" id="historyUsername" placeholder="Enter username">
+                <input type="text" class="form-control" id="historyUsername" placeholder="Enter username" data-i18n-placeholder="plugins.milestone-leaderboard.form_controls.placeholders.username">
                 <button class="btn btn-primary" data-action="loadViewerHistory" style="white-space: nowrap;" data-i18n="plugins.milestone-leaderboard.labels.load_history">
                   🔍 Load History
                 </button>
@@ -2279,6 +2280,34 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <script>
+    function adminText(key, fallback, params = {}) {
+      return ViewerXpI18n.text(`admin.${key}`, fallback, params);
+    }
+
+    function formatViewerXpEventType(type) {
+      const normalizedType = String(type || '').replace(/^gift_tier\d+$/, 'gift');
+      const eventKeys = {
+        chat_message: 'event_chat_message',
+        chat: 'event_chat',
+        gift: 'event_gift',
+        follow: 'event_follow',
+        share: 'event_share',
+        like: 'event_like',
+        subscribe: 'event_subscribe',
+        daily_bonus: 'event_daily_bonus',
+        streak_bonus: 'event_streak_bonus',
+        watch_time_minute: 'event_watch_time_minute',
+        join: 'event_join',
+        manual_award: 'event_manual_award',
+        spin_win: 'event_spin_win',
+        spin_loss: 'event_spin_loss'
+      };
+      const key = eventKeys[normalizedType];
+      return key
+        ? ViewerXpI18n.text(key, normalizedType.replace(/_/g, ' '))
+        : adminText('unknown_event', 'Other event');
+    }
+
     // Navigation System
     function navigateTo(pageName) {
       // Hide all pages
@@ -2325,7 +2354,7 @@
         // Show success feedback
         const btn = event.target.closest('button');
         const originalText = btn.innerHTML;
-        btn.innerHTML = '✅ Copied!';
+        btn.innerHTML = adminText('copied', '✅ Copied!');
         btn.style.background = 'var(--color-accent-success)';
 
         setTimeout(() => {
@@ -2334,7 +2363,7 @@
         }, 2000);
       }).catch(err => {
         console.error('Failed to copy:', err);
-        alert('Failed to copy to clipboard');
+        alert(adminText('copy_failed', 'Failed to copy to clipboard'));
       });
     }
 
@@ -2389,7 +2418,7 @@
       document.getElementById(urlElementIds[overlayType]).textContent = fullUrl;
 
       // Show success message
-      alert('✅ URL updated! Copy it to use in OBS.');
+      alert(adminText('url_updated', '✅ URL updated! Copy it to use in OBS.'));
     }
 
     // Test overlay in new window
@@ -2471,8 +2500,8 @@
               <td colspan="7">
                 <div class="empty-state">
                   <div class="empty-state-icon">🏆</div>
-                  <div class="empty-state-text" data-i18n="plugins.milestone-leaderboard.ui.empty.no_viewers">No viewers yet</div>
-                  <div class="empty-state-description">Viewers will appear here as they earn XP</div>
+                  <div class="empty-state-text">${adminText('no_viewers', 'No viewers yet')}</div>
+                  <div class="empty-state-description">${adminText('viewers_appear', 'Viewers will appear here as they earn XP')}</div>
                 </div>
               </td>
             </tr>
@@ -2500,18 +2529,18 @@
                 <div class="rank-indicator ${rankClass}">${rankIcon}</div>
               </td>
               <td><strong>${escapeHtml(viewer.username)}</strong></td>
-              <td><span class="badge badge-level">Lvl ${viewer.level}</span></td>
-              <td><span class="badge badge-primary">${escapeHtml(viewer.title || 'Newcomer')}</span></td>
+              <td><span class="badge badge-level">${adminText('level_badge', 'Lvl {level}', { level: viewer.level })}</span></td>
+              <td><span class="badge badge-primary">${escapeHtml(viewer.title || adminText('newcomer', 'Newcomer'))}</span></td>
               <td><strong>${formatNumber(xpValue)}</strong> XP</td>
               <td style="min-width: 200px;">
                 <div class="xp-progress">
                   <div class="xp-progress-fill" style="width: ${Math.min(Math.max(progress, 0), 100)}%"></div>
                 </div>
-                <small class="form-text">${Number(progress).toFixed(1)}% to next level</small>
+                <small class="form-text">${adminText('to_next_level', '{percent}% to next level', { percent: Number(progress).toFixed(1) })}</small>
               </td>
               <td>
-                <button class="btn btn-sm btn-secondary" data-action="viewUserDetails" data-arg="${escapeHtml(viewer.username)}" data-i18n="plugins.milestone-leaderboard.ui.actions.view">
-                  View
+                <button class="btn btn-sm btn-secondary" data-action="viewUserDetails" data-arg="${escapeHtml(viewer.username)}">
+                  ${adminText('view', 'View')}
                 </button>
               </td>
             </tr>
@@ -2536,8 +2565,8 @@
       message.innerHTML = `
         <span>💡</span>
         <div>
-          <strong>Coming Soon!</strong><br>
-          Detailed viewer profile for ${escapeHtml(username)} will be available in the next update.
+          <strong>${adminText('coming_soon', 'Coming soon!')}</strong><br>
+          ${adminText('viewer_profile_coming_soon', 'Detailed viewer profile for {username} will be available in the next update.', { username: escapeHtml(username) })}
         </div>
       `;
       document.body.appendChild(message);
@@ -2605,7 +2634,10 @@
     socket.on('viewer-xp:level-up', (data) => {
       // Show toast notification for level ups
       if (data && data.username && data.newLevel) {
-        showToast(`🎉 ${data.username} leveled up to Level ${data.newLevel}!`, 'success');
+        showToast(adminText('level_up', '🎉 {username} leveled up to Level {level}!', {
+          username: data.username,
+          level: data.newLevel
+        }), 'success');
       }
     });
 
@@ -2619,7 +2651,7 @@
         const tbody = document.getElementById('actionsTable');
         if (actions && actions.length > 0) {
           tbody.innerHTML = actions.map(action => {
-            const actionName = action.action_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const actionName = formatViewerXpEventType(action.action_type);
             return `
               <tr>
                 <td><strong>${actionName}</strong></td>
@@ -2636,8 +2668,8 @@
                          ${action.enabled ? 'checked' : ''}>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-primary" data-action="updateAction" data-arg="${action.action_type}" data-i18n="plugins.milestone-leaderboard.ui.actions.save">
-                    💾 Save
+                  <button class="btn btn-sm btn-primary" data-action="updateAction" data-arg="${action.action_type}">
+                    ${adminText('save', '💾 Save')}
                   </button>
                 </td>
               </tr>
@@ -2649,7 +2681,7 @@
               <td colspan="5">
                 <div class="empty-state">
                   <div class="empty-state-icon">⚙️</div>
-                  <div class="empty-state-text">No actions configured</div>
+                  <div class="empty-state-text">${adminText('no_actions', 'No actions configured')}</div>
                 </div>
               </td>
             </tr>
@@ -2669,7 +2701,7 @@
         }
       } catch (error) {
         console.error('Error loading XP settings:', error);
-        showToast('Failed to load XP settings', 'danger');
+        showToast(adminText('load_xp_settings_failed', 'Failed to load XP settings'), 'danger');
       }
     }
 
@@ -2682,12 +2714,12 @@
 
         // Validate parsed numbers
         if (isNaN(xpAmount) || xpAmount < 0) {
-          showToast('Invalid XP amount - must be a positive number', 'danger');
+          showToast(adminText('invalid_xp_amount', 'Invalid XP amount - must be a positive number'), 'danger');
           return;
         }
 
         if (isNaN(cooldown) || cooldown < 0) {
-          showToast('Invalid cooldown - must be a positive number', 'danger');
+          showToast(adminText('invalid_cooldown', 'Invalid cooldown - must be a positive number'), 'danger');
           return;
         }
 
@@ -2704,13 +2736,13 @@
         const result = await response.json();
 
         if (response.ok && result.success) {
-          showToast('Action updated successfully!', 'success');
+          showToast(adminText('action_updated', 'Action updated successfully!'), 'success');
         } else {
-          showToast('Failed to update action', 'danger');
+          showToast(adminText('action_update_failed', 'Failed to update action'), 'danger');
         }
       } catch (error) {
         console.error('Error updating action:', error);
-        showToast('Failed to update action', 'danger');
+        showToast(adminText('action_update_failed', 'Failed to update action'), 'danger');
       }
     }
 
@@ -2725,23 +2757,23 @@
         const description = page.querySelector('.page-description');
 
         if (configs && configs.length > 0) {
-          description.textContent = 'Level configuration is loaded. Advanced editing coming soon.';
+          description.textContent = adminText('level_config_loaded', 'Level configuration is loaded. Advanced editing coming soon.');
 
           // Add a basic preview table
           let configHtml = `
             <div class="card">
               <div class="card-header">
-                <span><span class="card-header-icon">📊</span>Current Level Configuration</span>
+                <span><span class="card-header-icon">📊</span>${adminText('current_level_config', 'Current level configuration')}</span>
               </div>
               <div class="card-body">
                 <div class="table-responsive">
                   <table class="modern-table">
                     <thead>
                       <tr>
-                        <th data-i18n="plugins.milestone-leaderboard.ui.table.level">Level</th>
-                        <th data-i18n="plugins.milestone-leaderboard.ui.table.xp_required">XP Required</th>
-                        <th data-i18n="plugins.milestone-leaderboard.ui.table.title">Title</th>
-                        <th data-i18n="plugins.milestone-leaderboard.ui.table.color">Color</th>
+                        <th>${adminText('table_level', 'Level')}</th>
+                        <th>${adminText('table_xp_required', 'XP required')}</th>
+                        <th>${adminText('table_title', 'Title')}</th>
+                        <th>${adminText('table_color', 'Color')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2752,8 +2784,8 @@
               <tr>
                 <td><strong>${config.level}</strong></td>
                 <td>${config.xp_required.toLocaleString()} XP</td>
-                <td>${config.title || 'N/A'}</td>
-                <td><span style="color: ${config.name_color || '#FFFFFF'}">●</span> ${config.name_color || 'Default'}</td>
+                <td>${config.title || adminText('not_available', 'N/A')}</td>
+                <td><span style="color: ${config.name_color || '#FFFFFF'}">●</span> ${config.name_color || adminText('default', 'Default')}</td>
               </tr>
             `;
           });
@@ -2762,8 +2794,8 @@
                     </tbody>
                   </table>
                 </div>
-                <p class="form-text" style="margin-top: 16px;" data-i18n="plugins.milestone-leaderboard.ui.levels.editor_notice">
-                  Showing first 20 levels. Advanced level configuration editor coming in a future update.
+                <p class="form-text" style="margin-top: 16px;">
+                  ${adminText('level_config_notice', 'Showing the first 20 levels. An advanced editor will be available in a future update.')}
                 </p>
               </div>
             </div>
@@ -2781,13 +2813,13 @@
         const page = document.getElementById('page-level-config');
         page.innerHTML = `
           <div class="page-header">
-          <h1 class="page-title" data-i18n="plugins.milestone-leaderboard.ui.levels.configuration">📈 Level Config</h1>
-            <p class="page-description" data-i18n="plugins.milestone-leaderboard.ui.levels.description">Customize level progression and rewards</p>
+          <h1 class="page-title">📈 ${adminText('level_config_title', 'Level configuration')}</h1>
+            <p class="page-description">${adminText('level_config_description', 'Customize level progression and rewards')}</p>
           </div>
           <div class="alert alert-warning">
             <span>⚠️</span>
             <div>
-              <strong>Loading Error:</strong> Could not load level configuration data.
+              <strong>${adminText('loading_error', 'Loading error:')}</strong> ${adminText('level_config_load_failed', 'Could not load level configuration data.')}
             </div>
           </div>
         `;
@@ -2796,13 +2828,13 @@
 
     // XP Settings Functions
     function resetSettings() {
-      if (confirm('Are you sure you want to reset all settings to defaults?')) {
+      if (confirm(adminText('reset_settings_confirm', 'Are you sure you want to reset all settings to defaults?'))) {
         document.getElementById('enableDailyBonus').checked = true;
         document.getElementById('enableStreaks').checked = true;
         document.getElementById('enableWatchTime').checked = true;
         document.getElementById('watchTimeInterval').value = 5;
         document.getElementById('announceLevelUps').checked = true;
-        alert('Settings reset to defaults. Click "Save Settings" to apply.');
+        alert(adminText('settings_reset', 'Settings reset to defaults. Click "Save Settings" to apply.'));
       }
     }
 
@@ -2824,7 +2856,7 @@
       try {
         const response = await fetch(`/api/viewer-xp/search?q=${encodeURIComponent(term)}&limit=8`);
         const results = await response.json();
-        awardSuggestions.innerHTML = results.map((viewer) => `<option value="${viewer.username}">Lvl ${viewer.level}</option>`).join('');
+        awardSuggestions.innerHTML = results.map((viewer) => `<option value="${viewer.username}">${adminText('level_badge', 'Lvl {level}', { level: viewer.level })}</option>`).join('');
       } catch (error) {
         console.error('Suggestion search failed', error);
       }
@@ -2870,7 +2902,7 @@
       const reason = document.getElementById('awardReason').value;
 
       const resultDiv = document.getElementById('awardResult');
-      resultDiv.innerHTML = '<div class="spinner"></div> Awarding XP...';
+      resultDiv.innerHTML = `<div class="spinner"></div> ${adminText('awarding_xp', 'Awarding XP...')}`;
 
       try {
         const response = await fetch('/api/viewer-xp/award', {
@@ -2886,22 +2918,22 @@
             <div class="alert alert-success">
               <span>✅</span>
               <div>
-                <strong>Success!</strong> Awarded ${amount} XP to ${username}.
-                ${result.leveledUp ? ` They leveled up to Level ${result.newLevel}!` : ''}
+                <strong>${adminText('success', 'Success!')}</strong> ${adminText('award_success', 'Awarded {amount} XP to {username}.', { amount, username })}
+                ${result.leveledUp ? ` ${adminText('award_level_up', 'They leveled up to Level {level}!', { level: result.newLevel })}` : ''}
               </div>
             </div>
           `;
           clearAwardForm();
           loadRecentAwards();
-          showToast(`Successfully awarded ${amount} XP to ${username}!`);
+          showToast(adminText('award_toast_success', 'Successfully awarded {amount} XP to {username}!', { amount, username }));
         } else {
-          showToast(`Failed to award ${amount} XP to ${username}`, 'error');
+          showToast(adminText('award_toast_failed', 'Failed to award {amount} XP to {username}', { amount, username }), 'error');
         }
       } catch (error) {
         resultDiv.innerHTML = `
           <div class="alert alert-danger">
             <span>❌</span>
-            <div><strong>Error:</strong> ${error.message}</div>
+            <div><strong>${adminText('error', 'Error:')}</strong> ${adminText('award_failed', 'Could not award XP.')}</div>
           </div>
         `;
       }
@@ -2915,7 +2947,7 @@
 
       // Validate watch time interval
       if (isNaN(watchTimeInterval) || watchTimeInterval < 1 || watchTimeInterval > 60) {
-        showToast('Watch time interval must be between 1 and 60 minutes', 'danger');
+        showToast(adminText('watch_time_interval_invalid', 'Watch time interval must be between 1 and 60 minutes'), 'danger');
         return;
       }
 
@@ -2937,12 +2969,12 @@
         const result = await response.json();
 
         if (response.ok && result.success) {
-          showToast('Settings saved successfully!', 'success');
+          showToast(adminText('settings_saved', 'Settings saved successfully!'), 'success');
         } else {
           throw new Error(result.error || 'Failed to save settings');
         }
       } catch (error) {
-        showToast(`Error saving settings: ${error.message}`, 'danger');
+        showToast(adminText('settings_save_failed', 'Could not save settings.'), 'danger');
       }
     });
 
@@ -2959,7 +2991,7 @@
               <td colspan="4">
                 <div class="empty-state">
                   <div class="empty-state-icon">📜</div>
-                  <div class="empty-state-text">No manual awards yet</div>
+                  <div class="empty-state-text">${adminText('no_manual_awards', 'No manual awards yet')}</div>
                 </div>
               </td>
             </tr>
@@ -2986,7 +3018,7 @@
       const status = document.getElementById('exportStatus');
 
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> Exporting...';
+      btn.innerHTML = `<span class="spinner"></span> ${adminText('exporting', 'Exporting...')}`;
       status.innerHTML = '';
 
       try {
@@ -3006,19 +3038,19 @@
         status.innerHTML = `
           <div class="alert alert-success">
             <span>✅</span>
-            <div><strong>Success!</strong> Export file downloaded. Exported ${viewerCount} viewers.</div>
+            <div><strong>${adminText('success', 'Success!')}</strong> ${adminText('export_success', 'Export file downloaded. Exported {count} viewers.', { count: viewerCount })}</div>
           </div>
         `;
       } catch (error) {
         status.innerHTML = `
           <div class="alert alert-danger">
             <span>❌</span>
-            <div><strong>Error:</strong> ${error.message}</div>
+            <div><strong>${adminText('error', 'Error:')}</strong> ${adminText('export_failed', 'Could not export data.')}</div>
           </div>
         `;
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '📥 Download Export File';
+        btn.innerHTML = adminText('download_export', '📥 Download Export File');
       }
     }
 
@@ -3031,14 +3063,14 @@
         status.innerHTML = `
           <div class="alert alert-warning">
             <span>⚠️</span>
-            <div>Please select a file to import.</div>
+            <div>${adminText('select_import_file', 'Please select a file to import.')}</div>
           </div>
         `;
         return;
       }
 
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> Importing...';
+      btn.innerHTML = `<span class="spinner"></span> ${adminText('importing', 'Importing...')}`;
       status.innerHTML = '';
 
       try {
@@ -3059,8 +3091,8 @@
             <div class="alert alert-success">
               <span>✅</span>
               <div>
-                <strong>Success!</strong> Imported ${result.imported} viewers.
-                ${result.updated ? ` Updated ${result.updated} existing profiles.` : ''}
+                <strong>${adminText('success', 'Success!')}</strong> ${adminText('import_success', 'Imported {count} viewers.', { count: result.imported })}
+                ${result.updated ? ` ${adminText('import_updated_profiles', 'Updated {count} existing profiles.', { count: result.updated })}` : ''}
               </div>
             </div>
           `;
@@ -3073,12 +3105,12 @@
         status.innerHTML = `
           <div class="alert alert-danger">
             <span>❌</span>
-            <div><strong>Error:</strong> ${error.message}</div>
+            <div><strong>${adminText('error', 'Error:')}</strong> ${adminText('import_failed', 'Could not import data.')}</div>
           </div>
         `;
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '📥 Import Data';
+        btn.innerHTML = adminText('import_data', '📥 Import Data');
       }
     }
 
@@ -3095,7 +3127,7 @@
             <td colspan="4">
               <div class="alert alert-warning">
                 <span>⚠️</span>
-                <div>Please enter a username to search</div>
+                <div>${adminText('enter_username', 'Please enter a username to search')}</div>
               </div>
             </td>
           </tr>
@@ -3114,8 +3146,8 @@
               <td colspan="4">
                 <div class="empty-state">
                   <div class="empty-state-icon">📊</div>
-                  <div class="empty-state-text">No history found</div>
-                  <div class="empty-state-description">No XP transactions for this viewer</div>
+                  <div class="empty-state-text">${adminText('no_history', 'No history found')}</div>
+                  <div class="empty-state-description">${adminText('no_xp_transactions', 'No XP transactions for this viewer')}</div>
                 </div>
               </td>
             </tr>
@@ -3139,7 +3171,7 @@
             return `
               <tr>
                 <td>${new Date(item.timestamp).toLocaleString()}</td>
-                <td><span class="badge badge-primary">${escapeHtml(item.action_type)}</span></td>
+                <td><span class="badge badge-primary">${formatViewerXpEventType(item.action_type)}</span></td>
                 <td><strong>+${item.amount} XP</strong></td>
                 <td style="font-size: 0.85rem; color: var(--color-text-muted);">${detailsHtml}</td>
               </tr>
@@ -3156,7 +3188,7 @@
             <td colspan="4">
               <div class="alert alert-danger">
                 <span>❌</span>
-                <div><strong>Error:</strong> Failed to load viewer history. ${error.message}</div>
+                <div><strong>${adminText('error', 'Error:')}</strong> ${adminText('history_load_failed', 'Failed to load viewer history.')}</div>
               </div>
             </td>
           </tr>
@@ -3251,7 +3283,7 @@
     function copyToClipboard(text) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
-          showToast('✅ URL copied to clipboard!');
+          showToast(adminText('url_copied', '✅ URL copied to clipboard!'));
         }).catch(err => {
           console.error('Failed to copy:', err);
           fallbackCopyToClipboard(text);
@@ -3273,13 +3305,13 @@
       try {
         const successful = document.execCommand('copy');
         if (successful) {
-          showToast('✅ URL copied to clipboard!');
+          showToast(adminText('url_copied', '✅ URL copied to clipboard!'));
         } else {
-          showToast('❌ Failed to copy URL - please copy manually');
+          showToast(adminText('url_copy_failed', '❌ Failed to copy URL - please copy manually'));
         }
       } catch (err) {
         console.error('Fallback copy failed:', err);
-        showToast('❌ Failed to copy URL - please copy manually');
+        showToast(adminText('url_copy_failed', '❌ Failed to copy URL - please copy manually'));
       }
 
       document.body.removeChild(textArea);
@@ -3292,15 +3324,18 @@
         oldLevel: TEST_LEVEL,
         newLevel: TEST_LEVEL + 1,
         rewards: {
-          title: 'Rising Star',
+          title: adminText('test_reward_title', 'Rising Star'),
           badge: '⭐',
-          announcement_message: `Congratulations ${username}! You've reached Level ${TEST_LEVEL + 1}!`
+          announcement_message: adminText('test_level_up_announcement', 'Congratulations {username}! You reached Level {level}!', {
+            username,
+            level: TEST_LEVEL + 1
+          })
         }
       };
 
       console.log('🧪 Testing Level Up:', testData);
       socket.emit('viewer-xp:level-up', testData);
-      showToast('✅ Level Up test event sent!', 'success');
+      showToast(adminText('level_up_test_sent', '✅ Level-up test event sent!'), 'success');
     }
 
     function testXPGain() {
@@ -3320,13 +3355,13 @@
           xp_for_next_level: xpData.xp_for_next_level,
           xp_progress_percent: xpData.xp_progress_percent,
           name_color: '#FFD700',
-          title: 'Rising Star'
+          title: adminText('test_reward_title', 'Rising Star')
         }
       };
 
       console.log('🧪 Testing XP Gain:', testData);
       socket.emit('viewer-xp:update', testData);
-      showToast('✅ XP Gain test event sent!', 'success');
+      showToast(adminText('xp_gain_test_sent', '✅ XP-gain test event sent!'), 'success');
     }
 
     function refreshLeaderboardPreview() {
@@ -3336,7 +3371,7 @@
         limit: 10,
         days: null
       });
-      showToast('✅ Leaderboard refresh requested!', 'success');
+      showToast(adminText('leaderboard_refresh_requested', '✅ Leaderboard refresh requested!'), 'success');
     }
 
     function testUserProfile() {
@@ -3352,7 +3387,7 @@
         xp_for_next_level: xpData.xp_for_next_level,
         xp_progress_percent: xpData.xp_progress_percent,
         rank: 42,
-        title: 'Rising Star',
+        title: adminText('test_reward_title', 'Rising Star'),
         name_color: '#FFD700',
         badges: ['🎮', '⭐', '🏆'],
         streak_days: 7,
@@ -3362,7 +3397,7 @@
 
       console.log('🧪 Testing User Profile:', testData);
       socket.emit('viewer-xp:show-user-profile', testData);
-      showToast('✅ User Profile test event sent!', 'success');
+      showToast(adminText('user_profile_test_sent', '✅ User-profile test event sent!'), 'success');
     }
 
     // ========== LEVEL CONFIGURATION FUNCTIONS ==========
@@ -3392,13 +3427,13 @@
         });
 
         if (response.ok) {
-          showToast('✅ Progression settings saved!');
+          showToast(adminText('progression_saved', '✅ Progression settings saved!'));
         } else {
           throw new Error('Failed to save settings');
         }
       } catch (error) {
         console.error('Error saving level type:', error);
-        showToast('❌ Failed to save settings');
+        showToast(adminText('settings_save_failed', 'Could not save settings.'));
       }
     }
 
@@ -3431,7 +3466,7 @@
         const growth = i === 1 ? '-' : `${((xpForNext / prevXPForNext - 1) * 100).toFixed(1)}%`;
         tbody.innerHTML += `
           <tr>
-            <td><strong>Level ${i}</strong></td>
+            <td><strong>${adminText('level_badge', 'Lvl {level}', { level: i })}</strong></td>
             <td>${totalXP.toLocaleString()} XP</td>
             <td>+${xpForNext.toLocaleString()} XP</td>
             <td>${growth}</td>
@@ -3464,14 +3499,14 @@
 
         if (response.ok) {
           const configs = await response.json();
-          showToast(`✅ Generated ${configs.length} level configurations!`);
+          showToast(adminText('level_configs_generated', '✅ Generated {count} level configurations!', { count: configs.length }));
           previewLevelProgression();
         } else {
           throw new Error('Failed to generate configs');
         }
       } catch (error) {
         console.error('Error generating levels:', error);
-        showToast('❌ Failed to generate level configurations');
+        showToast(adminText('level_configs_generate_failed', 'Could not generate level configurations.'));
       }
     }
 
@@ -3485,8 +3520,8 @@
             <td colspan="6">
               <div class="empty-state">
                 <div class="empty-state-icon">🎁</div>
-                <div class="empty-state-text">No rewards configured yet</div>
-                <div class="empty-state-description">Add milestone rewards for reaching specific levels</div>
+                <div class="empty-state-text">${adminText('no_rewards', 'No rewards configured yet')}</div>
+                <div class="empty-state-description">${adminText('add_milestone_rewards', 'Add milestone rewards for reaching specific levels')}</div>
               </div>
             </td>
           </tr>
@@ -3497,12 +3532,12 @@
       tbody.innerHTML = rewards.map((reward) => `
         <tr data-level="${reward.level}">
           <td><input type="number" class="form-control" value="${reward.level}" min="1" data-field="level"></td>
-          <td><input type="text" class="form-control" value="${reward.title || ''}" placeholder="Title/Badge" data-field="title"></td>
+          <td><input type="text" class="form-control" value="${reward.title || ''}" placeholder="${adminText('reward_title_placeholder', 'Title or badge')}" data-field="title"></td>
           <td><input type="color" class="form-control" value="${reward.name_color || '#ffffff'}" data-field="name_color"></td>
-          <td><input type="text" class="form-control" value="${reward.announcement_message || ''}" placeholder="Custom emote or message" data-field="announcement_message"></td>
-          <td><input type="text" class="form-control" value="${reward.special_effects?.animation || ''}" placeholder="Animation key" data-field="animation"></td>
+          <td><input type="text" class="form-control" value="${reward.announcement_message || ''}" placeholder="${adminText('reward_message_placeholder', 'Custom emote or message')}" data-field="announcement_message"></td>
+          <td><input type="text" class="form-control" value="${reward.special_effects?.animation || ''}" placeholder="${adminText('reward_animation_placeholder', 'Animation key')}" data-field="animation"></td>
           <td>
-            <button class="btn btn-sm btn-success" data-action="saveLevelReward" data-arg="${reward.level}" data-i18n="plugins.milestone-leaderboard.ui.actions.save">💾 Save</button>
+            <button class="btn btn-sm btn-success" data-action="saveLevelReward" data-arg="${reward.level}">${adminText('save', '💾 Save')}</button>
             <button class="btn btn-sm btn-danger" data-action="deleteLevelReward" data-arg="${reward.level}">🗑️</button>
           </td>
         </tr>
@@ -3522,10 +3557,10 @@
         const response = await fetch('/api/viewer-xp/level-rewards');
         currentLevelRewards = await response.json();
         renderLevelRewards(currentLevelRewards);
-        showToast('✅ Level rewards loaded', 'success');
+        showToast(adminText('rewards_loaded', '✅ Level rewards loaded'), 'success');
       } catch (error) {
         console.error('Error loading level rewards:', error);
-        showToast('❌ Failed to load level rewards', 'danger');
+        showToast(adminText('rewards_load_failed', 'Could not load level rewards.'), 'danger');
       }
     }
 
@@ -3550,32 +3585,32 @@
         });
         const result = await response.json();
         if (response.ok && result.success) {
-          showToast('Level reward saved', 'success');
+          showToast(adminText('reward_saved', 'Level reward saved'), 'success');
           loadLevelRewards();
         } else {
           throw new Error(result.error || 'Failed to save');
         }
       } catch (error) {
         console.error('Error saving reward:', error);
-        showToast('❌ Failed to save reward', 'danger');
+        showToast(adminText('reward_save_failed', 'Could not save reward.'), 'danger');
       }
     }
 
     async function deleteLevelReward(level) {
-      if (!confirm('Delete this level reward?')) return;
+      if (!confirm(adminText('delete_reward_confirm', 'Delete this level reward?'))) return;
       try {
         const response = await fetch(`/api/viewer-xp/level-rewards/${level}`, { method: 'DELETE' });
         const result = await response.json();
         if (response.ok && result.success) {
           currentLevelRewards = currentLevelRewards.filter(r => Number(r.level) !== Number(level));
           renderLevelRewards(currentLevelRewards);
-          showToast('Reward deleted', 'success');
+          showToast(adminText('reward_deleted', 'Reward deleted'), 'success');
         } else {
           throw new Error(result.error || 'Failed to delete');
         }
       } catch (error) {
         console.error('Error deleting reward:', error);
-        showToast('❌ Failed to delete reward', 'danger');
+        showToast(adminText('reward_delete_failed', 'Could not delete reward.'), 'danger');
       }
     }
 
@@ -3609,7 +3644,7 @@
         }
       } catch (error) {
         console.error('Error loading spin config:', error);
-        showToast('Failed to load spin configuration', 'error');
+        showToast(adminText('spin_config_load_failed', 'Failed to load spin configuration'), 'error');
       }
     }
 
@@ -3703,7 +3738,7 @@
         const fieldValues = fieldValuesText.split('\n').map(v => parseInt(v.trim())).filter(v => !isNaN(v));
 
         if (fieldValues.length === 0) {
-          showToast('Please enter at least one field value', 'error');
+          showToast(adminText('spin_field_required', 'Please enter at least one field value'), 'error');
           return;
         }
 
@@ -3724,14 +3759,14 @@
 
         const result = await response.json();
         if (result.success) {
-          showToast('Spin configuration saved successfully', 'success');
+          showToast(adminText('spin_config_saved', 'Spin configuration saved successfully'), 'success');
           loadSpinConfig();
         } else {
           throw new Error(result.error || 'Failed to save');
         }
       } catch (error) {
         console.error('Error saving spin config:', error);
-        showToast('Failed to save spin configuration', 'error');
+        showToast(adminText('spin_config_save_failed', 'Failed to save spin configuration'), 'error');
       }
     }
 
@@ -3758,12 +3793,12 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th data-i18n="plugins.milestone-leaderboard.ui.table.username">Username</th>
-                <th data-i18n="plugins.milestone-leaderboard.ui.table.bet">Bet</th>
-                <th data-i18n="plugins.milestone-leaderboard.ui.table.field">Field</th>
-                <th data-i18n="plugins.milestone-leaderboard.ui.table.result">Result</th>
-                <th data-i18n="plugins.milestone-leaderboard.ui.table.xp_change">XP Change</th>
-                <th data-i18n="plugins.milestone-leaderboard.ui.table.time">Time</th>
+                <th>${adminText('table_username', 'Username')}</th>
+                <th>${adminText('table_bet', 'Bet')}</th>
+                <th>${adminText('table_field', 'Field')}</th>
+                <th>${adminText('table_result', 'Result')}</th>
+                <th>${adminText('table_xp_change', 'XP change')}</th>
+                <th>${adminText('table_time', 'Time')}</th>
               </tr>
             </thead>
             <tbody>
@@ -3778,7 +3813,7 @@
                     <td><strong>${spin.username}</strong></td>
                     <td>${formatNumber(spin.bet_amount)}</td>
                     <td>${fieldSign}${formatNumber(spin.field_value)}</td>
-                    <td style="color: ${changeColor}; font-weight: bold;">${isWin ? '🎉 WIN' : '😢 LOSS'}</td>
+                    <td style="color: ${changeColor}; font-weight: bold;">${isWin ? adminText('spin_win', '🎉 Win') : adminText('spin_loss', '😢 Loss')}</td>
                     <td style="color: ${changeColor}; font-weight: bold;">${changeSign}${formatNumber(spin.xp_change)}</td>
                     <td>${new Date(spin.timestamp).toLocaleString()}</td>
                   </tr>
@@ -3991,7 +4026,7 @@
     document.getElementById('refreshSpinHistoryBtn')?.addEventListener('click', function() {
       loadSpinHistory();
       loadSpinStats();
-      showToast('Spin history refreshed', 'success');
+      showToast(adminText('spin_history_refreshed', 'Spin history refreshed'), 'success');
     });
 
     // ========================================
@@ -4030,7 +4065,7 @@
 
         const tbody = document.getElementById('overview-leaderboard-body');
         if (!leaderboard || leaderboard.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;" data-i18n="plugins.milestone-leaderboard.ui.empty.no_viewers">No viewers yet</td></tr>';
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 40px;">${adminText('no_viewers', 'No viewers yet')}</td></tr>`;
           return;
         }
 
@@ -4041,12 +4076,12 @@
             <tr>
               <td><strong>${rankIcon} ${rank}</strong></td>
               <td>${escapeHtml(viewer.username)}</td>
-              <td><span class="badge badge-level">Lvl ${viewer.level}</span></td>
+              <td><span class="badge badge-level">${adminText('level_badge', 'Lvl {level}', { level: viewer.level })}</span></td>
               <td>${formatNumber(viewer.xp || 0)} XP</td>
-              <td>${viewer.streak_days || 0} days</td>
+              <td>${adminText('streak_days', '{count} days', { count: viewer.streak_days || 0 })}</td>
               <td>
-                <button class="btn btn-sm btn-primary" onclick="loadUserDetailByUsername('${escapeHtml(viewer.username)}')" data-i18n="plugins.milestone-leaderboard.ui.actions.view">
-                  View
+                <button class="btn btn-sm btn-primary" onclick="loadUserDetailByUsername('${escapeHtml(viewer.username)}')">
+                  ${adminText('view', 'View')}
                 </button>
               </td>
             </tr>
@@ -4080,13 +4115,13 @@
                 <span class="badge badge-level" style="margin-left: 8px;">Lvl ${user.level}</span>
                 <div style="font-size: 0.875rem; color: var(--color-text-muted);">${formatNumber(user.xp || 0)} XP</div>
               </div>
-              <button class="btn btn-sm btn-primary" onclick="loadUserDetailByUsername('${escapeHtml(user.username)}')" data-i18n="plugins.milestone-leaderboard.ui.actions.view">
-                View
+              <button class="btn btn-sm btn-primary" onclick="loadUserDetailByUsername('${escapeHtml(user.username)}')">
+                ${adminText('view', 'View')}
               </button>
             </div>
           `).join('');
 
-          document.getElementById('overview-search-results').innerHTML = resultsHtml || '<p style="margin-top: 12px; color: var(--color-text-muted);" data-i18n="plugins.milestone-leaderboard.ui.empty.no_users">No users found</p>';
+          document.getElementById('overview-search-results').innerHTML = resultsHtml || `<p style="margin-top: 12px; color: var(--color-text-muted);">${adminText('no_users', 'No users found')}</p>`;
         } catch (error) {
           console.error('Error searching users:', error);
         }
@@ -4130,7 +4165,7 @@
         // Load user summary
         const response = await fetch(`/api/viewer-xp/user/${encodeURIComponent(username)}/summary`);
         if (!response.ok) {
-          alert('User not found');
+          alert(adminText('user_not_found', 'User not found'));
           return;
         }
 
@@ -4166,7 +4201,7 @@
             `<span class="badge badge-success" style="margin: 4px;">🏆 ${escapeHtml(badge)}</span>`
           ).join('');
         } else {
-          badgesContainer.innerHTML = '<p style="color: var(--color-text-muted);" data-i18n="plugins.milestone-leaderboard.ui.empty.no_badges">No badges yet</p>';
+          badgesContainer.innerHTML = `<p style="color: var(--color-text-muted);">${adminText('no_badges', 'No badges yet')}</p>`;
         }
 
         // Load recent events
@@ -4175,17 +4210,17 @@
           eventsBody.innerHTML = data.recent_events.map(event => `
             <tr>
               <td>${formatTimestamp(event.created_at)}</td>
-              <td>${escapeHtml(event.event_type)}</td>
+              <td>${formatViewerXpEventType(event.event_type)}</td>
               <td><span class="badge badge-success">+${event.xp_awarded} XP</span></td>
               <td>${event.meta ? JSON.stringify(event.meta) : '-'}</td>
             </tr>
           `).join('');
         } else {
-          eventsBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">No recent events</td></tr>';
+          eventsBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px;">${adminText('no_recent_events', 'No recent events')}</td></tr>`;
         }
       } catch (error) {
         console.error('Error loading user detail:', error);
-        alert('Error loading user details');
+        alert(adminText('user_details_load_failed', 'Error loading user details'));
       }
     }
 
@@ -4206,12 +4241,14 @@
         });
 
         if (response.ok) {
-          alert(currentlyOptedOut ? 'User opted back in' : 'User opted out');
+          alert(currentlyOptedOut
+            ? adminText('user_opted_in', 'User opted back in')
+            : adminText('user_opted_out', 'User opted out'));
           loadUserDetail(currentUserDetail);
         }
       } catch (error) {
         console.error('Error toggling opt-out:', error);
-        alert('Error updating opt-out status');
+        alert(adminText('opt_out_update_failed', 'Error updating opt-out status'));
       }
     });
 
@@ -4252,7 +4289,7 @@
     document.getElementById('config-save-btn')?.addEventListener('click', async function() {
       try {
         const status = document.getElementById('config-save-status');
-        status.textContent = 'Saving...';
+        status.textContent = adminText('saving', 'Saving...');
         status.style.color = 'var(--color-text-muted)';
 
         // Collect configuration
@@ -4309,7 +4346,7 @@
           }
         }
 
-        status.textContent = '✅ Configuration saved successfully!';
+        status.textContent = adminText('config_saved', '✅ Configuration saved successfully!');
         status.style.color = 'var(--color-accent-success)';
 
         setTimeout(() => {
@@ -4318,7 +4355,7 @@
       } catch (error) {
         console.error('Error saving config:', error);
         const status = document.getElementById('config-save-status');
-        status.textContent = '❌ Error saving configuration';
+        status.textContent = adminText('config_save_failed', '❌ Error saving configuration');
         status.style.color = 'var(--color-accent-danger)';
       }
     });
@@ -4334,8 +4371,8 @@
         const types = data.event_types || [];
 
         const select = document.getElementById('logs-filter-type');
-        select.innerHTML = '<option value="" data-i18n="plugins.milestone-leaderboard.ui.options.all_types">All Types</option>' +
-          types.map(type => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`).join('');
+        select.innerHTML = `<option value="">${adminText('all_types', 'All types')}</option>` +
+          types.map(type => `<option value="${escapeHtml(type)}">${formatViewerXpEventType(type)}</option>`).join('');
       } catch (error) {
         console.error('Error loading event types:', error);
       }
@@ -4353,7 +4390,7 @@
       document.getElementById('logs-limit').value = '50';
       logsCurrentPage = 0;
       logsCurrentFilters = {};
-      document.getElementById('logs-table-body').innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">Click "Apply Filters" to load events</td></tr>';
+      document.getElementById('logs-table-body').innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 40px;">${adminText('apply_filters_to_load', 'Click "Apply filters" to load events')}</td></tr>`;
     });
 
     document.getElementById('logs-prev-btn')?.addEventListener('click', function() {
@@ -4398,25 +4435,25 @@
         const data = await response.json();
 
         if (!data.success) {
-          throw new Error(data.error || 'Failed to load logs');
+          throw new Error(data.error || adminText('logs_load_failed', 'Failed to load logs'));
         }
 
         const events = data.events || [];
         const total = data.pagination?.total || 0;
 
         // Update total count
-        document.getElementById('logs-total-count').textContent = `${total} events`;
+        document.getElementById('logs-total-count').textContent = adminText('logs_count', '{count} events', { count: total });
 
         // Update table
         const tbody = document.getElementById('logs-table-body');
         if (events.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">No events found</td></tr>';
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 40px;">${adminText('no_events', 'No events found')}</td></tr>`;
         } else {
           tbody.innerHTML = events.map(event => `
             <tr>
               <td>${formatTimestamp(event.created_at)}</td>
               <td><strong>${escapeHtml(event.username)}</strong></td>
-              <td><span class="badge badge-primary">${escapeHtml(event.event_type)}</span></td>
+              <td><span class="badge badge-primary">${formatViewerXpEventType(event.event_type)}</span></td>
               <td>${event.amount}</td>
               <td><span class="badge badge-success">+${event.xp_awarded} XP</span></td>
               <td><small>${event.meta ? JSON.stringify(event.meta).substring(0, 50) + '...' : '-'}</small></td>
@@ -4428,10 +4465,14 @@
         const hasMore = data.pagination?.has_more || false;
         document.getElementById('logs-prev-btn').disabled = logsCurrentPage === 0;
         document.getElementById('logs-next-btn').disabled = !hasMore;
-        document.getElementById('logs-page-info').textContent = `Page ${logsCurrentPage + 1} (showing ${offset + 1}-${offset + events.length} of ${total})`;
+        document.getElementById('logs-page-info').textContent = adminText(
+          'logs_page',
+          'Page {page} (showing {start}-{end} of {total})',
+          { page: logsCurrentPage + 1, start: offset + 1, end: offset + events.length, total }
+        );
       } catch (error) {
         console.error('Error loading logs:', error);
-        alert('Error loading event logs');
+        alert(adminText('logs_load_failed', 'Error loading event logs'));
       }
     }
 
@@ -4474,10 +4515,10 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        alert('Export downloaded successfully!');
+        alert(adminText('logs_export_success', 'Export downloaded successfully!'));
       } catch (error) {
         console.error('Error exporting logs:', error);
-        alert('Error exporting logs');
+        alert(adminText('logs_export_failed', 'Error exporting logs'));
       }
     });
 
@@ -4487,9 +4528,9 @@
       const now = new Date();
       const diff = now - date;
 
-      if (diff < 60000) return 'Just now';
-      if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
-      if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+      if (diff < 60000) return ViewerXpI18n.text('relative_now', 'Just now');
+      if (diff < 3600000) return ViewerXpI18n.text('relative_minutes_ago', '{count}m ago', { count: Math.floor(diff / 60000) });
+      if (diff < 86400000) return ViewerXpI18n.text('relative_hours_ago', '{count}h ago', { count: Math.floor(diff / 3600000) });
 
       return date.toLocaleString();
     }

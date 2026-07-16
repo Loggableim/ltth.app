@@ -1,6 +1,9 @@
 {
   "plugins": {
     "sidekick": {
+      "form_controls": {
+        "asr_language_placeholder": "Automático"
+      },
       "sidekick": {
         "plugin": {
           "name": "Compañero",
@@ -21,7 +24,7 @@
             "loading": "Cargando …",
             "connected": "Conectado",
             "disconnected": "Desconectado",
-            "error": "Error"
+            "error": "Falló"
           },
           "messages": {
             "saved": "Ajustes guardados.",
@@ -141,11 +144,130 @@
         "asr": {
           "level": "Nivel",
           "mediaDevicesUnavailable": "MediaDevices no est\u00e1 disponible",
-          "noMicrophonesFound": "No se encontraron micr\u00f3fonos"
+          "noMicrophonesFound": "No se encontraron micr\u00f3fonos",
+          "allDependenciesReady": "Todas las dependencias del anfitrión están listas.",
+          "automaticRecordingInProgress": "Hay una grabación ASR automática en curso. Espere a que termine el segmento de voz.",
+          "blockedByPreflight": "Bloqueado por la comprobación previa",
+          "configSaveFailed": "No se pudo guardar la configuración",
+          "deviceListLoadFailed": "No se pudo cargar la lista de dispositivos: {message}",
+          "emptyRecording": "La grabación estaba vacía y no se subió.",
+          "enumerateDevicesUnavailable": "El navegador no admite enumerateDevices o la página no se cargó de forma segura.",
+          "getUserMediaUnavailable": "El navegador no admite getUserMedia o el acceso al micrófono está bloqueado.",
+          "mediaRecorderUnavailable": "Este navegador no admite MediaRecorder.",
+          "microphoneAccessFailed": "Falló el acceso al micrófono: {message}",
+          "microphoneReady": "Micrófono listo",
+          "microphoneWithIndex": "Micrófono {index} (se requiere permiso para mostrar el nombre)",
+          "notReadyState": "No está listo (TTS: {tts}, Fish: {fish})",
+          "readyState": "Listo",
+          "permissionMissing": "Falta el permiso",
+          "preflightBlocked": "La comprobación previa del anfitrión bloquea la escucha ASR. Resuelva los pasos indicados.",
+          "recordingFormatUnsupported": "No se encontró ningún formato de grabación compatible (webm/ogg/mp4).",
+          "recordingSpeech": "Grabando voz...",
+          "saveFailed": "No se pudieron guardar los ajustes de ASR: {message}",
+          "statusLoadFailed": "No se pudo cargar el estado de ASR: {message}",
+          "stoppedUnsafeInput": "Detenido: entrada no segura",
+          "stoppedUnsafeInputMessage": "ASR se detuvo porque el dispositivo de entrada seleccionado se identificó como no seguro sin confirmación del riesgo.",
+          "testRecording": "Grabación de prueba...",
+          "testRecordingStart": "Iniciar grabación de prueba",
+          "testRecordingStop": "Detener grabación de prueba",
+          "unsafeDeviceWarning": "Advertencia: este dispositivo parece CABLE/VB-Audio/Loopback/Stereo Mix/Output/Speaker/Monitor. Para el ASR del anfitrión, elija un micrófono real o confirme el riesgo.",
+          "unsafeInputBlocked": "Dispositivo de entrada no seguro bloqueado. Elija un micrófono real o confirme el riesgo.",
+          "unsafeInputBlockedAfterPermission": "Se detectó y bloqueó un dispositivo de entrada no seguro tras conceder el permiso. Elija un micrófono real o confirme el riesgo.",
+          "unsafeInputBlockedStatus": "Dispositivo de entrada no seguro bloqueado",
+          "uploadFailed": "Falló la subida de ASR: {message}",
+          "uploading": "Subiendo ASR...",
+          "errors": {
+            "ASR_FORBIDDEN_ORIGIN": "La política de origen rechazó esta subida de ASR.",
+            "ASR_RATE_LIMITED": "Hay demasiadas subidas de ASR. Espere un momento.",
+            "ASR_DISABLED": "El ASR de Sidekick está desactivado.",
+            "ASR_TTS_UNAVAILABLE": "La función ASR del complemento TTS no está disponible.",
+            "ASR_UPLOAD_TOO_LARGE": "La subida de audio supera el límite ASR configurado.",
+            "ASR_UNSUPPORTED_MIME": "Este tipo MIME de audio no es compatible.",
+            "ASR_MULTIPART_LIMIT": "La subida ASR supera los límites multipart permitidos.",
+            "ASR_UNEXPECTED_FILE": "La subida debe contener exactamente un archivo de audio.",
+            "ASR_UPLOAD_INVALID": "La subida ASR no es válida.",
+            "ASR_UPLOAD_REQUIRED": "Se requiere un archivo de audio para esta subida.",
+            "ASR_UPLOAD_EMPTY": "El archivo de audio subido está vacío.",
+            "ASR_UNSUPPORTED_AUDIO_CONTENT": "El contenido de audio no es compatible.",
+            "ASR_HOST_PREFLIGHT_BLOCKED": "La comprobación previa del anfitrión bloqueó la delegación ASR.",
+            "ASR_FISH_UNCONFIGURED": "La clave API de Fish.audio ASR no está configurada.",
+            "ASR_TRANSCRIPTION_FAILED": "Falló la transcripción de Fish.audio.",
+            "ASR_DELEGATION_FAILED": "Falló la delegación de voz del anfitrión de Sidekick.",
+            "ASR_ROUTE_ERROR": "Falló la ruta ASR de Sidekick."
+          }
         },
         "speechOutput": { "title": "Salida de voz" },
         "outbox": { "separator": "Separador" },
         "hostDecision": { "title": "L\u00f3gica de decisiones del anfitri\u00f3n" },
+        "confirm": {
+          "resetSession": "¿Restablecer esta sesión?",
+          "clearMemory": "¿Borrar la memoria?"
+        },
+        "messages": {
+          "settingsSaved": "Configuración guardada.",
+          "settingsSaveFailed": "No se pudo guardar la configuración."
+        },
+        "runtime": {
+          "active": "Activo",
+          "blocked": "Bloqueado",
+          "blocking": "bloquear",
+          "connected": "Conectado",
+          "cooldown": "Tiempo de espera",
+          "disabled": "Desactivado",
+          "disconnected": "Desconectado",
+          "enabled": "Activado",
+          "eventTypeSummary": "Por tipo de evento: {summary}",
+          "idle": "Inactivo",
+          "listening": "Escuchando",
+          "missing": "falta",
+          "muted": "Silenciado",
+          "notConfigured": "sin configurar",
+          "ok": "Correcto",
+          "ready": "Listo",
+          "responding": "responder",
+          "warnings": "Advertencias"
+        },
+        "preflight": {
+          "labels": {
+            "animazingPal": "Plugin AnimazingPal",
+            "animazingPalPipeline": "Canal de anfitrión de AnimazingPal",
+            "tts": "Complemento TTS",
+            "fishAudio": "Fish.audio",
+            "asrBackend": "Backend ASR",
+            "conversation": "Coordinador de conversación",
+            "microphone": "Micrófono"
+          },
+          "animazingPalAvailable": "El complemento AnimazingPal está disponible.",
+          "animazingPalUnavailable": "El complemento AnimazingPal no está disponible.",
+          "animazingPalUnavailableAction": "Active AnimazingPal y recargue Sidekick.",
+          "animazingPalPipelineReady": "Los métodos dedicados para la voz del anfitrión y la salida de voz están disponibles.",
+          "animazingPalPipelineMissing": "Falta el canal dedicado para voz del anfitrión o salida de voz.",
+          "animazingPalPipelineMissingAction": "Actualice o active AnimazingPal para que su canal de voz del anfitrión esté disponible.",
+          "ttsReady": "El complemento TTS está listo.",
+          "ttsUnavailable": "El complemento TTS no está disponible o no se ha inicializado.",
+          "ttsUnavailableAction": "Active el complemento TTS y recargue Sidekick.",
+          "fishConfigured": "Fish.audio está configurado.",
+          "fishUnconfigured": "Fish.audio no está configurado para TTS/ASR.",
+          "fishUnconfiguredAction": "Configure la clave API de Fish.audio en el complemento TTS.",
+          "asrBackendReady": "El backend ASR está listo.",
+          "asrBackendUnavailable": "El backend ASR no está listo para el audio del anfitrión.",
+          "asrBackendUnavailableAction": "Active el ASR de Sidekick y asegúrese de que el complemento TTS exponga Fish.audio ASR.",
+          "conversationEnabled": "El coordinador de conversación está activado.",
+          "conversationDisabled": "El coordinador de conversación está desactivado.",
+          "conversationDisabledAction": "Active el coordinador de conversación de Sidekick.",
+          "microphoneReady": "No se sabe que el micrófono seleccionado sea inseguro.",
+          "microphoneBlocked": "La entrada seleccionada parece audio de bucle o monitor y está bloqueada.",
+          "microphoneBlockedAction": "Elija un micrófono real o acepte explícitamente el riesgo de bucle.",
+          "microphoneOverride": "La anulación de micrófono no seguro está activada para un dispositivo que parece de bucle.",
+          "microphoneOverrideAction": "Use un micrófono real cuando sea posible para evitar realimentación."
+        },
+        "overlay": {
+          "chatPerMinute": "Chats/min",
+          "gifts": "Regalos",
+          "follows": "Seguimientos",
+          "viewers": "Espectadores",
+          "gift": "Regalo"
+        },
         "empty": {
           "loading": "Cargando...",
           "noUsers": "No se encontraron usuarios",

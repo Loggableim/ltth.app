@@ -51,6 +51,23 @@ describe('documentation screenshot workflow runner', () => {
     })).toThrow('has no observed local interaction evidence');
   });
 
+  test('accepts an earlier setup navigation when an overlay is the final route', () => {
+    const operations = assertWorkflowOperationsExecuted({
+      workflow: {
+        operations: [
+          { type: 'goto', route: '/plugins/advanced-timer/ui.html' },
+          { type: 'goto', route: '/plugins/advanced-timer/overlay/index.html' }
+        ]
+      },
+      state: {
+        route: '/plugins/advanced-timer/overlay/index.html?timer=demo',
+        navigations: [{ route: '/plugins/advanced-timer/ui.html?lang=en', observed: true }]
+      }
+    });
+
+    expect(operations.every((operation) => operation.observed)).toBe(true);
+  });
+
   test('records every blocked external request as capture evidence', () => {
     expect(createBlockedNetworkEvidence({
       url: 'https://example.com/tracker.js',
@@ -74,5 +91,6 @@ describe('documentation screenshot workflow runner', () => {
     expect(source).toContain('assertWorkflowOperationsExecuted');
     expect(source).toContain('executedOperations');
     expect(source).toContain('blockedNetwork');
+    expect(source).toContain("prepare: 'open-goal-create-modal', preparationEvidenceSelector: '#goal-modal'");
   });
 });

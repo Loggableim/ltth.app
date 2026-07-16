@@ -1,6 +1,9 @@
 {
   "plugins": {
     "flame-overlay": {
+      "form_controls": {
+        "visual_fx_preview_title": "Aperçu du cadre Visual FX"
+      },
       "flame_overlay": {
         "plugin": {
           "name": "Cadre d’effets visuels",
@@ -28,7 +31,45 @@
             "saved": "Réglages enregistrés.",
             "failed": "Impossible d’enregistrer les réglages.",
             "noData": "Aucune donnée disponible.",
-            "confirm": "Voulez-vous continuer ?"
+            "confirm": "Voulez-vous continuer ?",
+            "giftCatalogLoading": "Chargement du catalogue de cadeaux…",
+            "giftCatalogFailed": "Impossible de charger le catalogue de cadeaux.",
+            "giftCatalogRefreshing": "Actualisation du catalogue de cadeaux…",
+            "giftCatalogUnavailable": "Aucun catalogue de cadeaux n’est disponible. Connectez un live TikTok puis actualisez-le.",
+            "giftCatalogNoResults": "Aucun cadeau ne correspond à cette recherche.",
+            "giftRuleAdded": "Règle de cadeau ajoutée pour {name}.",
+            "coinRuleAdded": "Règle de pièces {range} ajoutée.",
+            "triggerRulesSaved": "✅ Règles de déclenchement enregistrées !",
+            "errorWithReason": "❌ Erreur : {reason}",
+            "saveFailed": "❌ Impossible d’enregistrer : {reason}",
+            "presetActivated": "✅ Préréglage '{name}' activé",
+            "presetFailed": "❌ Erreur de préréglage : {reason}",
+            "testNoEffect": "Le test '{triggerType}' n’a produit aucun effet : {reason}",
+            "testFailed": "❌ Erreur de test : {reason}",
+            "testSent": "🧪 Déclencheur de test '{triggerType}' envoyé",
+            "noMatchingRule": "aucune règle correspondante",
+            "stopFailed": "Erreur d’arrêt : {reason}",
+            "triggersStopped": "Effets d’overlay actifs arrêtés",
+            "triggerCount": "{count} actifs",
+            "noTriggersYet": "Aucun déclencheur ne s’est encore produit",
+            "previewStart": "▶️ Démarrer l’aperçu",
+            "previewStop": "⏸️ Arrêter l’aperçu",
+            "framePositionUpdated": "✅ Position du cadre mise à jour !",
+            "unknownError": "Erreur inconnue",
+            "configLoaded": "Configuration chargée",
+            "configLoadFailed": "Impossible de charger la configuration : {reason}",
+            "settingsSaved": "✅ Réglages enregistrés !",
+            "settingsSaveFailed": "Impossible d’enregistrer les réglages : {reason}",
+            "presetNameRequired": "❌ Saisissez d’abord un nom de préréglage.",
+            "presetSaved": "✅ Préréglage \"{name}\" enregistré !",
+            "presetLoaded": "✅ Préréglage \"{name}\" chargé !",
+            "presetDeleted": "✅ Préréglage \"{name}\" supprimé !",
+            "presetDeleteConfirm": "Supprimer le préréglage \"{name}\" ?",
+            "presetSavedOn": "Enregistré le {date}",
+            "unlabeledGift": "Cadeau sans nom",
+            "coinsLabel": "{coins} pièces",
+            "valuePixels": "{value} pixels",
+            "removeTriggerRule": "Supprimer la règle de déclenchement"
           },
           "metrics": {
             "profile": "Profil",
@@ -46,12 +87,14 @@
             "obsSafe": "Compatible OBS",
             "custom": "Personnalis\u00e9",
             "top": "Haut",
-            "bottom": "Bas"
+            "bottom": "Bas",
+            "anyCondition": "Toute condition"
           },
           "settings": {
             "accentColor": "Couleur d'accent :",
             "animationEasing": "Lissage d'animation :",
-            "smokeColor": "Couleur de fum\u00e9e :"
+            "smokeColor": "Couleur de fum\u00e9e :",
+            "frameThickness": "Épaisseur du cadre :"
           },
           "trigger": {
             "preset": "Pr\u00e9r\u00e9glage :",
@@ -61,18 +104,52 @@
             "partyPreset": "F\u00eate",
             "coinRule": "R\u00e8gle de pi\u00e8ces"
           },
+          "events": {
+            "gift": "Cadeau",
+            "follow": "Suivre",
+            "like": "J’aime",
+            "share": "Partager",
+            "chat": "Chat",
+            "subscribe": "Abonnement"
+          },
+          "triggerActions": {
+            "flash": "Éclair lumineux",
+            "pulse": "Impulsion",
+            "intensity-boost": "Augmenter l’intensité",
+            "color-change": "Changer la couleur",
+            "color-flash": "Flash de couleur",
+            "effect-switch": "Changer d’effet",
+            "dramatic": "Effet dramatique"
+          },
+          "effects": {
+            "flames": "Flammes",
+            "particles": "Particules",
+            "energy": "Ondes d’énergie",
+            "lightning": "Éclair"
+          },
+          "sections": {
+            "base": "Fondation",
+            "accent": "Accent visuel",
+            "impact": "Impact visuel",
+            "rules": "Règles",
+            "actions": "Actions disponibles"
+          },
+          "aria": {
+            "toolbar": "Réglages des effets visuels"
+          },
           "table": {
             "enabled": "Activ\u00e9",
             "event": "\u00c9v\u00e9nement",
-            "condition": "Condition",
-            "action": "Action",
+            "condition": "Critère",
+            "action": "Opération",
             "effect": "Effet",
             "color": "Couleur"
           },
           "presets": {
             "empty": "Aucun pr\u00e9r\u00e9glage enregistr\u00e9.",
             "load": "\ud83d\udcc2 Charger",
-            "deleteTitle": "Supprimer le pr\u00e9r\u00e9glage"
+            "deleteTitle": "Supprimer le pr\u00e9r\u00e9glage",
+            "deleteLabel": "Supprimer le pr\u00e9r\u00e9glage {name}"
           },
           "placeholders": {
             "presetName": "Nom du pr\u00e9r\u00e9glage (par exemple, mode Hype)",
@@ -98,7 +175,7 @@
         "2k_portrait_1440_2560": "Portraits 2K (1440×2560)",
         "obs_browser_source_einrichtung": "📋 Configuration de la source du navigateur OBS",
         "impact_layer": "Couche d'impact",
-        "orange": "!orange → 🟠",
+            "orange": "!orange → 🟠 (couleur orange)",
         "die_vorschau_zeigt_die_layer_hierarchie_in_echtzeit": "L'aperçu montre la hiérarchie des couches en temps réel. Assurez-vous que la zone de contenu reste libre et que seuls les bords extérieurs sont vivants.",
         "in_obs_eine_neue_browser_source_erstellen": "Créer une nouvelle source de navigateur dans OBS",
         "ebenen_tiefe": "📚 Couches et profondeur",
@@ -245,7 +322,7 @@
         "0_aktiv": "0 actif",
         "green": "!vert → 🟢",
         "kanten_einstellungen": "✂️ Paramètres de bord",
-        "cyan": "!cyan → 🩵",
+            "cyan": "!cyan → 🩵 (bleu cyan)",
         "hintergrund_tint": "Teinte d'arrière-plan :",
         "steuert_wie_weich_die_effekte_an_den_kanten": "Contrôle la fluidité des effets sur les bords",
         "white": "!blanc → ⚪",
@@ -274,6 +351,20 @@
         "farbverschiebung_an_kanten_retro_kamera_effekt": "Changement de couleur sur les bords (effet caméra rétro)",
         "geschwindigkeit_der_rauch_animation": "Vitesse d'animation de la fumée",
         "chat_farbbefehle_aktivieren": "Activer les commandes de couleur du chat"
+      },
+      "form_controls": {
+        "visual_fx_preview_title": "Aperçu de Visual FX Frame",
+        "labels": {
+          "flame_brightness": "Luminosité : ",
+          "edge_feather": "Adoucissement des bords : ",
+          "frame_noise_amount": "Bruit du cadre : ",
+          "pulse_speed": "Vitesse de pulsation : ",
+          "bloom_threshold": "Seuil de bloom : ",
+          "bloom_radius": "Rayon de bloom : ",
+          "layer_parallax": "Effet de parallaxe : ",
+          "smoke_speed": "Vitesse de fumée : ",
+          "trigger_cooldown": "Délai entre déclenchements : "
+        }
       }
     }
   }

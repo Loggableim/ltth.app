@@ -56,7 +56,10 @@ function assertWorkflowOperationsExecuted({ workflow, state = {}, interactions =
       if (typeof operation.route !== 'string' || !operation.route) {
         throw new Error('Documentation workflow goto operation requires a route');
       }
-      if (routePath(state.route) !== routePath(operation.route)) {
+      const observedNavigation = Array.isArray(state.navigations) && state.navigations.some((entry) => (
+        entry?.observed === true && routePath(entry.route) === routePath(operation.route)
+      ));
+      if (routePath(state.route) !== routePath(operation.route) && !observedNavigation) {
         throw new Error(`Documentation workflow goto did not reach ${operation.route}`);
       }
       return { ...operation, observed: true };

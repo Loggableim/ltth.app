@@ -326,6 +326,7 @@
     }
     </style>
     <script src="/js/i18n-client.js"></script>
+    <script src="/plugins/viewer-leaderboard/viewer-xp-i18n.js"></script>
 </head>
 <body>
   <div class="leaderboard">
@@ -393,7 +394,7 @@
 
     // Update subtitle
     if (days) {
-      document.getElementById('subtitle').textContent = `Last ${days} Days`;
+      document.getElementById('subtitle').textContent = ViewerXpI18n.text('leaderboard_last_days', 'Last {days} Days', { days });
     }
 
     // Format number with separators
@@ -416,7 +417,7 @@
       const list = document.getElementById('leaderboardList');
 
       if (!data || data.length === 0) {
-        list.innerHTML = '<li class="no-data" data-i18n="plugins.milestone-leaderboard.ui.empty.no_viewers">No viewers yet</li>';
+        list.innerHTML = `<li class="no-data">${ViewerXpI18n.text('no_viewers', 'No viewers yet')}</li>`;
         return;
       }
 
@@ -440,7 +441,7 @@
             ${viewer.title ? `<div class="viewer-title">${viewer.title}</div>` : ''}
           </div>
           <div class="level-info">
-            <div class="level-badge">Lvl ${viewer.level}</div>
+            <div class="level-badge">${ViewerXpI18n.text('leaderboard_level', 'Level {level}', { level: viewer.level })}</div>
             <div class="xp-amount">${formatNumber(xpValue)} XP</div>
           </div>
         `;
@@ -450,8 +451,11 @@
 
       // Update time
       const now = new Date();
-      document.getElementById('updateTime').textContent =
-        `Last updated: ${now.toLocaleTimeString()}`;
+      document.getElementById('updateTime').textContent = ViewerXpI18n.text(
+        'leaderboard_updated',
+        'Last updated: {time}',
+        { time: now.toLocaleTimeString() }
+      );
     }
 
     // Fetch leaderboard

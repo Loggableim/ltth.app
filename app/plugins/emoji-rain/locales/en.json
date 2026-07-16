@@ -1,6 +1,13 @@
 {
   "plugins": {
     "emoji-rain": {
+      "form_controls": {
+        "preview_aria": "Emoji Rain preview",
+        "quick_status_aria": "Emoji Rain quick status",
+        "username_filter_placeholder": "Enter a username...",
+        "username_placeholder": "Username",
+        "enabled_toggle_aria": "Enable Emoji Rain"
+      },
       "emoji_rain": {
         "title": "Emoji Rain Settings",
         "subtitle": "Interactive Emoji Overlays with GCCE Commands",

@@ -12,13 +12,13 @@ function translate(key, fallback, params = {}) {
   return fallback;
 }
 
-function translateRuntime(key, fallback, params = {}) {
+function runtimeText(key, fallback, params = {}) {
   return translate(`plugins.clarityhud.runtime.${key}`, fallback, params);
 }
 
 function runtimeError(key, message, fallback) {
-  return translateRuntime(key, fallback, {
-    message: message || translateRuntime('toast.unknown_error', 'Unknown error')
+  return runtimeText(key, fallback, {
+    message: message || runtimeText('toast.unknown_error', 'Unknown error')
   });
 }
 
@@ -29,7 +29,7 @@ function getDockLabel(dock) {
     multi: 'Multi-Stream HUD',
     stream: 'Stream Overlay'
   };
-  return translateRuntime(`dock.${dock}`, fallbacks[dock] || dock);
+  return runtimeText(`dock.${dock}`, fallbacks[dock] || dock);
 }
 
 function getPresetLabel(preset) {
@@ -39,22 +39,29 @@ function getPresetLabel(preset) {
     dyslexiaFriendly: 'Dyslexia-Friendly',
     motionSensitive: 'Motion Sensitive'
   };
-  return translateRuntime(`preset.${preset}`, fallbacks[preset] || preset);
+  return runtimeText(`preset.${preset}`, fallbacks[preset] || preset);
 }
 
-// Initialize
-async function init() {
-  if (window.i18n) {
-    await window.i18n.init();
-    window.i18n.updateDOM();
-  }
-
-  // Set URLs
+function setOverlayUrls() {
   const origin = window.location.origin;
   document.getElementById('chat-url').textContent = `${origin}/overlay/clarity/chat`;
   document.getElementById('full-url').textContent = `${origin}/overlay/clarity/full`;
   document.getElementById('multi-url').textContent = `${origin}/overlay/clarity/multi`;
   document.getElementById('stream-url').textContent = `${origin}/overlay/clarity/stream`;
+}
+
+// Initialize
+async function init() {
+  // The fixed local browser-source URLs are useful before translations finish
+  // loading, and ensure the real values never remain hidden behind a loading
+  // placeholder in a freshly opened dashboard.
+  setOverlayUrls();
+
+  if (window.i18n) {
+    await window.i18n.init();
+    window.i18n.updateDOM();
+  }
+  setOverlayUrls();
 
   // Initialize Socket.IO for live updates
   socket = io();
@@ -71,7 +78,7 @@ async function init() {
   socket.on('clarityhud:settings:updated', (data) => {
     if (data.dock === currentDock) {
       currentSettings = data.settings;
-      showToast(translateRuntime('status.settings_updated', 'Settings updated from server'), 'success');
+      showToast(runtimeText('status.settings_updated', 'Settings updated from server'), 'success');
     }
   });
 
@@ -97,9 +104,9 @@ function copyURL(dock) {
   const url = urlElement.textContent;
 
   navigator.clipboard.writeText(url).then(() => {
-    showToast(translateRuntime('toast.url_copied', 'URL copied to clipboard!'), 'success');
+    showToast(runtimeText('toast.url_copied', 'URL copied to clipboard!'), 'success');
   }).catch(err => {
-    showToast(translateRuntime('toast.url_copy_failed', 'Failed to copy URL'), 'error');
+    showToast(runtimeText('toast.url_copy_failed', 'Failed to copy URL'), 'error');
     console.error('Copy failed:', err);
   });
 }
@@ -108,7 +115,7 @@ function copyURL(dock) {
 function refreshPreview(dock) {
   const iframe = document.getElementById(`${dock}-preview`);
   iframe.src = iframe.src;
-  showToast(translateRuntime('toast.preview_refreshed', 'Preview refreshed'), 'success');
+  showToast(runtimeText('toast.preview_refreshed', 'Preview refreshed'), 'success');
 }
 
 function sendLivePreviewSettings(dock, settings = currentSettings) {
@@ -132,13 +139,13 @@ async function testEvent(dock) {
     const data = await response.json();
 
     if (data.success) {
-      showToast(translateRuntime('toast.test_event_sent', `Test event sent to ${getDockLabel(dock)} overlay`, { dock: getDockLabel(dock) }), 'success');
+      showToast(runtimeText('toast.test_event_sent', `Test event sent to ${getDockLabel(dock)} overlay`, { dock: getDockLabel(dock) }), 'success');
     } else {
       showToast(runtimeError('toast.test_failed', data.error, `Test failed: ${data.error || 'Unknown error'}`), 'error');
     }
   } catch (error) {
     console.error('Error testing overlay:', error);
-    showToast(translateRuntime('toast.test_event_failed', 'Error sending test event'), 'error');
+    showToast(runtimeText('toast.test_event_failed', 'Error sending test event'), 'error');
   }
 }
 
@@ -156,7 +163,7 @@ async function openSettings(dock) {
 
       // Render single-tab layout for stream
       document.getElementById('settings-tabs').innerHTML =
-            `<div class="tab active" data-tab-id="stream-main">${translateRuntime('tab.stream_settings', 'Stream Settings')}</div>`;
+            `<div class="tab active" data-tab-id="stream-main">${runtimeText('tab.stream_settings', 'Stream Settings')}</div>`;
       document.getElementById('tab-contents').innerHTML =
         '<div class="tab-content active" id="tab-stream-main">' +
         window.StreamSettingsTab.getStreamTabHTML(settings) +
@@ -186,7 +193,7 @@ async function openSettings(dock) {
     }
   } catch (error) {
     console.error('Error loading settings:', error);
-    showToast(translateRuntime('toast.settings_load_failed_generic', 'Error loading settings'), 'error');
+    showToast(runtimeText('toast.settings_load_failed_generic', 'Error loading settings'), 'error');
   }
 }
 
@@ -203,26 +210,26 @@ function renderSettingsForm(dock) {
 
   // Multi-stream specific tabs
   if (dock === 'multi') {
-    tabs.push({ id: 'streams', label: translateRuntime('tab.streams', 'Streams') });
-    tabs.push({ id: 'layout', label: translateRuntime('tab.layout', 'Layout') });
-    tabs.push({ id: 'appearance', label: translateRuntime('tab.appearance', 'Appearance') });
+    tabs.push({ id: 'streams', label: runtimeText('tab.streams', 'Streams') });
+    tabs.push({ id: 'layout', label: runtimeText('tab.layout', 'Layout') });
+    tabs.push({ id: 'appearance', label: runtimeText('tab.appearance', 'Appearance') });
   } else {
     // Common tabs for chat and full
-    tabs.push({ id: 'appearance', label: translateRuntime('tab.appearance', 'Appearance') });
+    tabs.push({ id: 'appearance', label: runtimeText('tab.appearance', 'Appearance') });
 
     // Dock-specific tabs
     if (dock === 'full') {
-      tabs.push({ id: 'events', label: translateRuntime('tab.events', 'Events') });
+      tabs.push({ id: 'events', label: runtimeText('tab.events', 'Events') });
     }
 
-    tabs.push({ id: 'layout', label: translateRuntime('tab.layout', 'Layout') });
+    tabs.push({ id: 'layout', label: runtimeText('tab.layout', 'Layout') });
 
     if (dock === 'full') {
-      tabs.push({ id: 'animation', label: translateRuntime('tab.animation', 'Animation') });
+      tabs.push({ id: 'animation', label: runtimeText('tab.animation', 'Animation') });
     }
 
-    tabs.push({ id: 'styling', label: translateRuntime('tab.styling', 'Styling') });
-    tabs.push({ id: 'accessibility', label: translateRuntime('tab.accessibility', 'Accessibility') });
+    tabs.push({ id: 'styling', label: runtimeText('tab.styling', 'Styling') });
+    tabs.push({ id: 'accessibility', label: runtimeText('tab.accessibility', 'Accessibility') });
   }
 
   // Render tabs
@@ -874,7 +881,7 @@ function renderTabContent(dock, tabId) {
       `;
 
     default:
-      return `<p>${translateRuntime('empty.unknown_tab', 'Unknown tab')}</p>`;
+      return `<p>${runtimeText('empty.unknown_tab', 'Unknown tab')}</p>`;
   }
 }
 
@@ -999,7 +1006,7 @@ function applyPreset(preset) {
       break;
   }
 
-  showToast(translateRuntime('toast.preset_applied', `Applied ${getPresetLabel(preset)} preset`, { preset: getPresetLabel(preset) }), 'success');
+  showToast(runtimeText('toast.preset_applied', `Applied ${getPresetLabel(preset)} preset`, { preset: getPresetLabel(preset) }), 'success');
 }
 
 // Helper to set field value
@@ -1141,7 +1148,7 @@ async function saveSettings() {
 
   const saveBtn = document.querySelector('.modal-footer .btn-primary');
   const originalText = saveBtn.innerHTML;
-  saveBtn.innerHTML = `<span class="spinner"></span> ${translateRuntime('action.saving', 'Saving...')}`;
+  saveBtn.innerHTML = `<span class="spinner"></span> ${runtimeText('action.saving', 'Saving...')}`;
   saveBtn.disabled = true;
 
   // Stream uses dedicated module
@@ -1151,7 +1158,7 @@ async function saveSettings() {
       const saved = await window.StreamSettingsTab.saveStreamSettings(newSettings);
       currentSettings = saved;
       sendLivePreviewSettings('stream', saved);
-      showToast(translateRuntime('toast.stream_settings_saved', 'Stream settings saved successfully!'), 'success');
+      showToast(runtimeText('toast.stream_settings_saved', 'Stream settings saved successfully!'), 'success');
       closeSettings();
     } catch (error) {
       console.error('Error saving stream settings:', error);
@@ -1287,7 +1294,7 @@ async function saveSettings() {
       currentSettings = data.settings;
       const savedDock = currentDock;
       sendLivePreviewSettings(savedDock, currentSettings);
-      showToast(translateRuntime('toast.settings_saved', 'Settings saved successfully!'), 'success');
+      showToast(runtimeText('toast.settings_saved', 'Settings saved successfully!'), 'success');
       closeSettings();
       if (savedDock === 'multi') {
         loadMultiStreamStatus();
@@ -1333,7 +1340,7 @@ async function exportProfile() {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    showToast(translateRuntime('toast.profile_exported', 'Profile exported'), 'success');
+    showToast(runtimeText('toast.profile_exported', 'Profile exported'), 'success');
   } catch (error) {
     console.error('Error exporting profile:', error);
     showToast(runtimeError('toast.profile_export_failed', error.message, 'Error exporting profile'), 'error');
@@ -1366,7 +1373,7 @@ async function importProfile(event) {
       }
     });
     loadMultiStreamStatus();
-    showToast(translateRuntime('toast.profile_imported', 'Profile imported'), 'success');
+    showToast(runtimeText('toast.profile_imported', 'Profile imported'), 'success');
   } catch (error) {
     console.error('Error importing profile:', error);
     showToast(runtimeError('toast.profile_import_failed', error.message, 'Error importing profile'), 'error');
@@ -1388,7 +1395,7 @@ async function loadPresets() {
 }
 
 async function saveCustomPreset() {
-  const name = window.prompt(translateRuntime('dialog.preset_name', 'Preset name'));
+  const name = window.prompt(runtimeText('dialog.preset_name', 'Preset name'));
   if (!name) return;
 
   try {
@@ -1406,7 +1413,7 @@ async function saveCustomPreset() {
     }
 
     await loadPresets();
-    showToast(translateRuntime('toast.preset_saved', 'Preset saved'), 'success');
+    showToast(runtimeText('toast.preset_saved', 'Preset saved'), 'success');
   } catch (error) {
     console.error('Error saving preset:', error);
     showToast(runtimeError('toast.preset_save_failed', error.message, 'Error saving preset'), 'error');
@@ -1432,7 +1439,7 @@ async function applyPresetFromApi(presetId) {
     });
     await loadMultiStreamStatus();
     closeSetupWizard();
-    showToast(translateRuntime('toast.preset_applied', `Applied ${data.preset.name}`, { preset: data.preset.name }), 'success');
+    showToast(runtimeText('toast.preset_applied', `Applied ${data.preset.name}`, { preset: data.preset.name }), 'success');
   } catch (error) {
     console.error('Error applying preset:', error);
     showToast(runtimeError('toast.preset_apply_failed', error.message, 'Error applying preset'), 'error');
@@ -1473,7 +1480,7 @@ function renderMultiStreamStatus(streams) {
   if (!Array.isArray(streams) || streams.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'status-item';
-    empty.textContent = translateRuntime('empty.no_additional_streams', 'No additional streams configured');
+    empty.textContent = runtimeText('empty.no_additional_streams', 'No additional streams configured');
     container.appendChild(empty);
     return;
   }
@@ -1482,7 +1489,7 @@ function renderMultiStreamStatus(streams) {
     const item = document.createElement('div');
     item.className = 'status-item';
     const label = document.createElement('span');
-    label.textContent = stream.displayName || stream.username || translateRuntime('stream.fallback', `Stream ${stream.index + 1}`, { number: stream.index + 1 });
+    label.textContent = stream.displayName || stream.username || runtimeText('stream.fallback', `Stream ${stream.index + 1}`, { number: stream.index + 1 });
     const status = document.createElement('span');
     status.textContent = stream.lastError ? `${stream.status}: ${stream.lastError}` : stream.status;
     item.appendChild(label);
@@ -1495,7 +1502,7 @@ function renderMultiStreamStatus(streams) {
 async function resetToDefaults() {
   if (!currentDock) return;
 
-  if (!confirm(translateRuntime('dialog.reset_confirm', 'Are you sure you want to reset all settings to defaults? This cannot be undone.'))) {
+  if (!confirm(runtimeText('dialog.reset_confirm', 'Are you sure you want to reset all settings to defaults? This cannot be undone.'))) {
     return;
   }
 
@@ -1509,7 +1516,7 @@ async function resetToDefaults() {
     if (data.success) {
       currentSettings = data.settings;
       renderSettingsForm(currentDock);
-      showToast(translateRuntime('toast.settings_reset', 'Settings reset to defaults'), 'success');
+      showToast(runtimeText('toast.settings_reset', 'Settings reset to defaults'), 'success');
     } else {
       showToast(runtimeError('toast.settings_reset_failed', data.error, `Error resetting settings: ${data.error || 'Unknown error'}`), 'error');
     }

@@ -310,12 +310,12 @@
                             </div>
                             <div class="mc-form-group">
                                 <label for="chatRelayTargets" data-i18n="plugins.minecraft-connect.labels.relay_targets">Relay targets</label>
-                                <input type="text" id="chatRelayTargets" class="mc-input" placeholder="minecraft, overlay">
+                                <input type="text" id="chatRelayTargets" class="mc-input" placeholder="minecraft, overlay" data-i18n-placeholder="plugins.minecraft-connect.minecraft_connect.runtime.placeholders.relay_targets">
                                 <small data-i18n="plugins.minecraft-connect.labels.comma_separated_targets_for_relayed_messages">Comma-separated targets for relayed messages.</small>
                             </div>
                             <div class="mc-form-group">
                                 <label for="chatFilters" data-i18n="plugins.minecraft-connect.labels.chat_filters">Chat filters</label>
-                                <input type="text" id="chatFilters" class="mc-input" placeholder="spam, links, caps">
+                                <input type="text" id="chatFilters" class="mc-input" placeholder="spam, links, caps" data-i18n-placeholder="plugins.minecraft-connect.minecraft_connect.runtime.placeholders.chat_filters">
                                 <small data-i18n="plugins.minecraft-connect.labels.comma_separated_filter_keywords">Comma-separated filter keywords.</small>
                             </div>
                         </div>
@@ -470,7 +470,7 @@
         <div class="mc-modal-content">
             <div class="mc-modal-header">
                 <h3 id="modalTitle" data-i18n="plugins.minecraft-connect.labels.add_command">Add Command</h3>
-                <button class="mc-modal-close" id="modalClose">&times;</button>
+                <button class="mc-modal-close" id="modalClose" aria-label="Close dialog" data-i18n-aria-label="plugins.minecraft-connect.minecraft_connect.runtime.modal.close">&times;</button>
             </div>
             <div class="mc-modal-body">
                 <div class="mc-form-group">
@@ -508,7 +508,7 @@
                 <div class="mc-form-group">
                     <label class="mc-checkbox-label">
                         <input type="checkbox" id="mappingEnabled" checked>
-                        Enabled
+                        <span data-i18n="plugins.minecraft-connect.minecraft_connect.mappings.enabled">Enabled</span>
                     </label>
                 </div>
             </div>

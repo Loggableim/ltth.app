@@ -3,15 +3,15 @@
     "openshock": {
       "openshock": {
         "title": "Integración de OpenShock y PiShock",
-        "subtitle": "Hardware Shock Control",
+        "subtitle": "Control de descargas de hardware",
         "config": {
           "title": "Configuración",
           "enabled": "Activar integración de Shock",
           "api_provider": "Proveedor de API",
-          "api_url": "API URL",
-          "api_token": "API Token",
-          "shocker_id": "Shocker ID",
-          "test_connection": "Test Connection",
+          "api_url": "URL de API",
+          "api_token": "Token de API",
+          "shocker_id": "ID del dispositivo",
+          "test_connection": "Probar conexión",
           "save": "Guardar Configuración",
           "pishock_username": "Usuario de PiShock",
           "pishock_api_key": "Clave API de PiShock",
@@ -19,32 +19,32 @@
           "add_sharecode": "Agregar ShareCode"
         },
         "triggers": {
-          "title": "Event Triggers",
-          "gift": "Gift Events",
-          "follow": "Follow Events",
-          "subscribe": "Subscribe Events",
-          "threshold": "Coin Threshold",
-          "intensity": "Shock Intensity (1-100)",
-          "duration": "Duration (ms)",
-          "cooldown": "Cooldown (seconds)"
+          "title": "Disparadores de eventos",
+          "gift": "Eventos de regalos",
+          "follow": "Eventos de seguidores",
+          "subscribe": "Eventos de suscripción",
+          "threshold": "Umbral de monedas",
+          "intensity": "Intensidad de descarga (1-100)",
+          "duration": "Duración (ms)",
+          "cooldown": "Tiempo de espera (segundos)"
         },
         "safety": {
-          "title": "Safety Settings",
-          "max_intensity": "Maximum Intensity",
-          "max_duration": "Maximum Duration (ms)",
-          "daily_limit": "Daily Shock Limit",
-          "require_confirmation": "Require Manual Confirmation"
+          "title": "Ajustes de seguridad",
+          "max_intensity": "Intensidad máxima",
+          "max_duration": "Duración máxima (ms)",
+          "daily_limit": "Límite diario de descargas",
+          "require_confirmation": "Requerir confirmación manual"
         },
         "status": {
-          "connected": "Connected",
-          "disconnected": "Disconnected",
-          "testing": "Testing Connection...",
-          "shocks_today": "Shocks Today",
-          "last_shock": "Last Shock"
+          "connected": "Conectado",
+          "disconnected": "Desconectado",
+          "testing": "Probando la conexión...",
+          "shocks_today": "Descargas de hoy",
+          "last_shock": "Última descarga"
         },
         "controls": {
-          "test_shock": "Send Test Shock",
-          "emergency_stop": "Emergency Stop"
+          "test_shock": "Enviar descarga de prueba",
+          "emergency_stop": "Parada de emergencia"
         }
       },
       "labels": {
@@ -141,7 +141,7 @@
         "global_cooldown_ms": "Enfriamiento global (ms)",
         "preview": "👁️ Vista previa",
         "complete_pattern_design_testing_system": "Sistema completo de diseño y prueba de patrones",
-        "schritt_zum_pattern_hinzufugen": "➕ Schritt zum Pattern hinzufügen",
+        "schritt_zum_pattern_hinzufugen": "➕ Añadir paso al patrón",
         "live_queue": "Cola en vivo",
         "per_device_limits_43e147": "Límites por dispositivo",
         "save_mapping": "💾 Guardar mapeo",
@@ -377,7 +377,7 @@
         "how_to_use": "💡 Cómo utilizar:",
         "cooldown_ms_d7a895": "Enfriamiento (ms)",
         "api_key_d8342f": "Clave API",
-        "url": "URL *",
+        "url": "Dirección URL *",
         "refresh_catalog_d9438e": "🔄 Actualizar catálogo",
         "event_mapper_da4c01": "🔗 Mapeador de eventos",
         "pattern_steps": "Pasos del patrón:",
@@ -398,7 +398,7 @@
         "step_type": "Tipo de paso *",
         "debug_log_is_empty_e3ac23": "El registro de depuración está vacío.",
         "commands_in_queue_e472f9": "Comandos en cola",
-        "alle_loschen": "🗑️ Alle löschen",
+        "alle_loschen": "🗑️ Borrar todo",
         "save_goal": "💾 Guardar gol",
         "loading_gift_catalog_e4e8a5": "Cargando catálogo de regalos...",
         "per_device_cooldown_ms": "Enfriamiento por dispositivo (ms)",
@@ -473,7 +473,7 @@
           "all": "Todos",
           "info": "Información",
           "warning": "Advertencia",
-          "error": "Error",
+          "error": "Error detectado",
           "gift": "Regalo",
           "follow": "Seguimiento",
           "share": "Compartir",
@@ -521,12 +521,86 @@
           "test_shock": "Descarga de prueba (1 s, 100 %)",
           "testing": "Probando..."
         },
+        "legacy": {
+          "no_devices": "No se encontraron dispositivos. Configura primero una clave API.",
+          "no_commands": "Todavía no se ha ejecutado ningún comando.",
+          "no_mappings": "No hay asignaciones configuradas. Haz clic en \"Añadir asignación\" para crear una.",
+          "no_preset_patterns": "No hay patrones predefinidos disponibles.",
+          "no_custom_patterns": "Todavía no se han creado patrones personalizados.",
+          "no_gifts": "No se encontraron regalos en el catálogo. Conéctate a TikTok LIVE para completarlo.",
+          "all_gifts": "Todos los regalos",
+          "yes": "Sí",
+          "no": "No activo",
+          "connected": "Conectado",
+          "disconnected": "Desconectado",
+          "error": "Fallo",
+          "edit_event_mapping": "Editar asignación de evento",
+          "add_event_mapping": "Añadir asignación de evento",
+          "refreshing": "Actualizando...",
+          "refresh_catalog": "Actualizar catálogo",
+          "refresh_devices": "Actualizar dispositivos",
+          "edit_pattern": "Editar patrón",
+          "add_pattern": "Añadir patrón",
+          "no_steps": "Aún no se han añadido pasos. Haz clic en \"Añadir paso\" para empezar.",
+          "add_steps_preview": "Añade pasos para ver una vista previa",
+          "curve_type_prompt": "Introduce el tipo de curva (lineal, exponencial, seno, pulso):",
+          "curve_steps_prompt": "Introduce el número de pasos (5–20):",
+          "curve_duration_prompt": "Introduce la duración del paso (ms):",
+          "testing": "Probando...",
+          "test_connection": "Probar conexión",
+          "api_connected": "API conectada",
+          "api_disconnected": "API desconectada",
+          "online": "En línea",
+          "offline": "Sin conexión",
+          "select_device_test": "-- Selecciona un dispositivo --",
+          "paused": "En pausa",
+          "select_device": "Selecciona un dispositivo...",
+          "single_pulse": "Ninguno (pulso único)",
+          "preset_not_editable": "Los patrones predefinidos no se pueden editar",
+          "edit_pattern_hint": "Editar este patrón",
+          "no_steps_defined": "No hay pasos definidos",
+          "sending": "Enviando...",
+          "debug_log_empty": "El registro de depuración está vacío."
+        },
+        "queue_page": {
+          "processing": "Procesando ahora",
+          "source": "Fuente",
+          "unknown": "Desconocido",
+          "type": "Tipo",
+          "not_available": "N/D",
+          "intensity": "Intensidad",
+          "duration": "Duración",
+          "device": "Dispositivo",
+          "empty": "No hay descargas esperando",
+          "status_pending": "Pendiente",
+          "status_processing": "Procesando",
+          "status_completed": "Completado",
+          "status_failed": "Fallido",
+          "clear_confirm": "¿Vaciar toda la cola?\n\nSe eliminarán todas las descargas que esperan.",
+          "cleared": "Vaciada"
+        },
+        "overlays": {
+          "rotating_gifts": {
+            "unknown_gift": "Regalo desconocido",
+            "direct_command": "Comando directo"
+          },
+          "main": {
+            "emergency_stop_activated": "PARADA DE EMERGENCIA ACTIVADA",
+            "pattern_step": "Paso {step}: {intensity}% durante {duration} ms"
+          },
+          "zappiehell": {
+            "stream": "Transmisión",
+            "global": "Objetivo global",
+            "coin_progress": "{current} / {target} monedas",
+            "remaining": "Faltan {count}"
+          }
+        },
         "connection": {
           "api_connected": "API conectada",
           "api_disconnected": "API desconectada",
           "connected": "Conectado",
           "disconnected": "Desconectado",
-          "error": "Error",
+          "error": "Error de conexión",
           "failed_with_error": "Error de conexión: {error}",
           "offline": "Sin conexión",
           "online": "En línea",
@@ -536,8 +610,10 @@
           "successful_load_failed": "La conexión fue correcta, pero no se pudieron cargar los dispositivos"
         },
         "devices": {
+          "no_devices": "No se encontraron dispositivos. Configura primero una clave API.",
           "paused": "En pausa",
           "refresh_failed": "Error al actualizar los dispositivos",
+          "share_code_delete_confirm": "¿Eliminar el ShareCode \"{code}\"?",
           "refreshed_with_count": "Dispositivos actualizados - {count} dispositivo(s) cargado(s)",
           "select": "Selecciona un dispositivo...",
           "select_for_test": "Selecciona un dispositivo para la descarga de prueba",
@@ -587,6 +663,8 @@
           "dialog_create": "Crear nuevo patrón",
           "dialog_edit": "Editar patrón",
           "draw_curve_required": "Dibuja primero una curva",
+          "draw_curve_hint": "Dibuja en el lienzo superior para crear tu patrón",
+          "clear_all_steps_confirm": "¿Eliminar todos los pasos? Esta acción no se puede deshacer.",
           "empty": "Todavía no hay patrones. Haz clic en \"Nuevo patrón\" para crear uno.",
           "execute_failed": "Error al ejecutar el patrón",
           "executing": "El patrón se está ejecutando",
@@ -624,7 +702,7 @@
           "no_commands": "Todavía no se ha ejecutado ningún comando.",
           "pause_failed": "Error al pausar la cola",
           "paused": "Cola en pausa",
-          "processing_no": "No",
+          "processing_no": "No en proceso",
           "processing_yes": "Sí",
           "resume_failed": "Error al reanudar la cola",
           "resumed": "Cola reanudada"
@@ -642,10 +720,13 @@
           "reactivate_tooltip": "Haz clic para reactivar el sistema"
         },
         "status": {
+          "debug_log_empty": "El registro de depuración está vacío. Las operaciones de patrón se registrarán aquí.",
           "command_log_cleared": "Registro de comandos vaciado",
           "command_log_exported": "Registro de comandos exportado",
           "loaded": "Plugin Hybrid Shock cargado correctamente",
-          "statistics_reset": "Estadísticas restablecidas correctamente"
+          "statistics_reset": "Estadísticas restablecidas correctamente",
+          "normal": "Normal",
+          "verbose": "Detallado"
         },
         "accessibility": {
           "delete_share_code": "Eliminar ShareCode {code}",
@@ -742,7 +823,41 @@
             "type_webhook_short": "Webhook"
           }
         }
+      },
+      "pattern_editor": {
+        "view": { "title": "Editor de patrones", "subtitle": "Crea y edita patrones de OpenShock con el editor visual" },
+        "library": { "title": "Biblioteca de patrones", "subtitle": "Elige un preajuste o crea tu propio patrón", "default_presets": "Preajustes predeterminados", "my_patterns": "Mis patrones", "create_new": "Crear nuevo", "empty": "Aún no hay patrones personalizados. ¡Crea el primero!", "edit": "Editar", "delete": "Eliminar", "select": "Seleccionar", "delete_confirm": "¿Eliminar este patrón?", "new_pattern_name": "Patrón nuevo" },
+        "live": { "title": "Controles en directo", "shocker_selection": "Selección de dispositivos (múltiple)", "multi_select_hint": "Mantén Ctrl/Cmd para seleccionar varios", "play_test": "Reproducir prueba", "stop": "Detener", "status": "Estado:", "shockers": "Dispositivos:" },
+        "keyframe": { "title": "Editor de fotogramas clave", "empty": "No hay ningún patrón seleccionado", "add": "Añadir fotograma clave", "delete": "Eliminar fotograma clave", "save_pattern": "Guardar patrón", "back_to_parameters": "Volver al editor de parámetros", "time": "Tiempo (ms)", "intensity": "Intensidad (%)" },
+        "parameter": { "empty": "Elige un patrón de la biblioteca", "customization": "Personalización", "expert_mode": "Modo experto (editor de fotogramas clave)", "save_as_own": "Guardar como patrón propio", "back_to_library": "Volver a la biblioteca" },
+        "connection": { "api_key_required": "Introduce una clave API.", "connecting": "Conectando...", "connected": "Conectado", "connect": "Conectar", "not_connected": "No conectado.", "emergency_stop_confirm": "¿Detener todos los dispositivos?", "emergency_stop_activated": "¡Parada de emergencia activada!", "online": "En línea", "offline": "Sin conexión" }
+      },
+    "form_controls": {
+      "placeholders": {
+        "user_allowlist": "p. ej. user1, user2, user3",
+        "user_blocklist": "p. ej. baduser1, baduser2",
+        "openshock_api_key": "Introduce tu clave API de OpenShock",
+        "gift_mapping_name": "p. ej. Descarga por regalo Rosa",
+        "gift_mapping_gift": "p. ej. Rosa, TikTok (déjalo vacío para usar la selección anterior)",
+        "command_pattern": "p. ej. ^!shock",
+        "escalating_pattern": "p. ej. Descarga creciente",
+        "pattern_description": "Breve descripción de este patrón",
+        "custom_pattern_name": "Mi patrón personalizado",
+        "api_key": "Tu clave API",
+        "pishock_username": "Nombre de usuario de tu cuenta PiShock",
+        "share_code": "p. ej. 17519CD8GAP",
+        "device_name": "p. ej. Collar 1",
+        "no_minimum": "0 = sin mínimo",
+        "no_maximum": "vacío = sin máximo",
+        "gentle_pattern": "p. ej. Despertar suave, destello intenso, ...",
+        "custom_pattern_description": "Breve descripción del patrón",
+        "goal_name": "p. ej. Nivel 1 de ZappieHell",
+        "chain_name": "p. ej. Cadena de nivel 1 de ZappieHell",
+        "chain_description": "Describe lo que hace esta cadena...",
+        "audio_text": "Introduce texto para TTS o ID de audio",
+        "animation_type": "p. ej. flash, pulse"
       }
+    }
     }
   }
 }

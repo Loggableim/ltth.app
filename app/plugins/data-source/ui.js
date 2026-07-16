@@ -24,6 +24,16 @@
     }, 3000);
   }
 
+  function translate(key, params) {
+    var translation = window.i18n?.t(key, params || {});
+    return translation && translation !== key ? translation : '';
+  }
+
+  function showLocalizedToast(key, type, params) {
+    var message = translate(key, params);
+    if (message) showToast(message, type);
+  }
+
   function getSourceLabel(source) {
     if (source === 'tikfinity') {
       return window.i18n?.initialized
@@ -66,11 +76,12 @@
         }
       })
       .catch(function (err) {
-        showToast('Fehler beim Laden: ' + err.message, 'error');
+        showLocalizedToast('plugins.data-source.data_source.ui.runtime.loadFailed', 'error');
       });
   }
 
-  fetchStatus();
+  if (window.i18n?.ready) window.i18n.ready.then(fetchStatus);
+  else fetchStatus();
 
   window.i18n?.onLanguageChange(function () {
     updateUI(currentSource);
@@ -95,13 +106,13 @@
             // must not depend on that asynchronous delivery to show its real
             // TikFinity settings.
             updateUI(data.newSource);
-            showToast(data.message, 'success');
+            showLocalizedToast('plugins.data-source.data_source.ui.runtime.sourceChanged', 'success', { source: getSourceLabel(data.newSource) });
           } else {
-          showToast(data.error || 'Fehler', 'error');
+          showLocalizedToast('plugins.data-source.data_source.ui.runtime.switchFailed', 'error');
         }
       })
       .catch(function (err) {
-        showToast('Fehler: ' + err.message, 'error');
+        showLocalizedToast('plugins.data-source.data_source.ui.runtime.switchFailed', 'error');
       });
   }
 
@@ -112,7 +123,7 @@
   btnSaveTikfinity.addEventListener('click', function () {
     var port = parseInt(tikfinityPortInput.value, 10);
     if (isNaN(port) || port < 1 || port > 65535) {
-      showToast('Ungültiger Port (1 – 65535)', 'error');
+      showLocalizedToast('plugins.data-source.data_source.ui.runtime.invalidPort', 'error');
       return;
     }
 
@@ -124,16 +135,16 @@
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data.success) {
-          showToast('Einstellungen gespeichert ✓', 'success');
+          showLocalizedToast('plugins.data-source.data_source.ui.runtime.settingsSaved', 'success');
           if (data.settings) {
             tikfinityPortInput.value = data.settings.tikfinity_ws_port;
           }
         } else {
-          showToast(data.error || 'Fehler', 'error');
+          showLocalizedToast('plugins.data-source.data_source.ui.runtime.settingsSaveFailed', 'error');
         }
       })
       .catch(function (err) {
-        showToast('Fehler: ' + err.message, 'error');
+        showLocalizedToast('plugins.data-source.data_source.ui.runtime.settingsSaveFailed', 'error');
       });
   });
 
@@ -141,7 +152,7 @@
   socket.on('datasource:changed', function (data) {
     updateUI(data.newSource);
     if (data.previousSource !== data.newSource) {
-      showToast('Datenquelle geändert: ' + data.newSource, 'success');
+      showLocalizedToast('plugins.data-source.data_source.ui.runtime.sourceChanged', 'success', { source: getSourceLabel(data.newSource) });
     }
     // Refresh to get latest settings
     fetchStatus();

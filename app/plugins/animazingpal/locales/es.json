@@ -1,8 +1,16 @@
 {
   "plugins": {
     "animazingpal": {
+      "form_controls": {
+        "follow_chat_message_placeholder": "¡{username} ahora te sigue!",
+        "share_chat_message_placeholder": "¡Gracias por compartir, {username}!",
+        "subscribe_chat_message_placeholder": "¡Gracias por suscribirte, {username}!",
+        "gift_chat_message_placeholder": "¡Guau, gracias {username} por {giftName}!",
+        "chat_message_placeholder": "¡Gracias por tu mensaje, {username}!",
+        "viewerbase_events_placeholder": "p. ej. chat, gift, follow, share, like, subscribe"
+      },
       "navigation": {
-        "animazingpal": "AnimazingPal"
+        "animazingpal": "Integración AnimazingPal"
       },
       "animazingpal": {
         "title": "AnimazingPal - Cerebro IA VTuber",
@@ -144,14 +152,14 @@
         "brain_antworten_an_vrchat_senden": "Envía respuestas cerebrales a VRChat",
         "echo_override": "Anulación de eco",
         "idle_animationen": "animaciones inactivas",
-        "stream_ready_anwenden": "? Aplicar listo para transmitir",
+        "stream_ready_anwenden": "Aplicar listo para transmitir",
         "aktueller_avatar": "avatar actual",
         "auswahlen": "Seleccione...",
         "viewerbase_in_ui_anzeigen": "Mostrar base de espectadores en la interfaz de usuario",
         "persona_verwaltung": "Gestión de personas",
         "idle_animation_149cbd": "Animación inactiva",
         "vrchat_bridge_aktivieren": "Activar el puente VRChat",
-        "subscribe_event": "? Suscribir evento",
+        "subscribe_event": "Suscribir evento",
         "echo_erzwingen": "Eco de fuerza",
         "override_behaviors": "Anular comportamientos",
         "globale_einstellung_verwenden_1bd610": "Usar configuración global",
@@ -297,30 +305,96 @@
         "echo_erzwingen_fb9720": "Eco de fuerza"
       },
       "ui": {
-        "actions": { "refresh": "Actualizar", "search": "Buscar", "disconnect": "Desconectar", "emote": "Emote", "special": "Acción especial", "pose": "Postura" },
+        "actions": { "refresh": "Actualizar", "search": "Buscar", "disconnect": "Desconectar", "emote": "emoticono", "special": "Acción especial", "pose": "Postura" },
         "connection": { "connected": "Conectado", "disconnected": "No conectado" },
         "defaults": { "host": "127.0.0.1:9000", "zero": "0", "idle": "inactivo" },
         "events": { "gift": "Regalo", "follow": "Seguir", "share": "Compartir", "subscribe": "Suscribirse", "like": "Me gusta", "chat": "Mensaje de chat" },
-        "labels": { "target": "Destino:", "status": "Estado:", "host": "Host:", "host_plain": "Host", "avatars": "Avatares:", "emotes": "Emotes:", "action_type": "Tipo de acción", "event_type": "Tipo de evento", "results": "Resultados:", "importance_threshold": "Umbral de importancia", "conversations": "Conversaciones", "archive": "Archivos", "queue": "Cola", "platform": "Plataforma", "port": "Puerto", "target_plugin": "Plugin de destino" },
+        "labels": { "target": "Destino:", "status": "Estado:", "host": "servidor:", "host_plain": "servidor", "avatars": "Avatares:", "emotes": "emoticonos:", "action_type": "Tipo de acción", "event_type": "Tipo de evento", "results": "Resultados:", "importance_threshold": "Umbral de importancia", "conversations": "Conversaciones", "archive": "Archivos", "queue": "Cola", "platform": "Plataforma", "port": "Puerto", "target_plugin": "Plugin de destino" },
         "messages": { "no_avatar_information": "No hay información de avatar disponible" },
-        "platforms": { "animaze": "Animaze", "vseeface": "VSeeFace" },
+        "platforms": { "animaze": "Plataforma Animaze", "vseeface": "Plataforma VSeeFace" },
         "roles": { "streamer": "Emisor", "viewer": "Espectador" },
         "sections": { "connection": "Conexión", "quick_actions": "Acciones rápidas", "memory_settings": "Configuración de memoria", "memory_database": "Base de datos de memoria", "connection_settings": "Configuración de conexión" }
+      },
+      "live_host": {
+        "copy": {
+          "save_activation": "Guardar activación",
+          "active_personality": "Personalidad activa",
+          "test_active_provider": "Probar el proveedor y modelo activos",
+          "reset_all": "Restablecer todos los ajustes",
+          "response_behavior": "Comportamiento de respuesta",
+          "reset_section": "Restablecer sección",
+          "greeting_warmup": "Precalentamiento de saludos",
+          "brain_provider": "Proveedor de Brain",
+          "diagnostics": "Diagnóstico",
+          "events": "Eventos",
+          "fish_audio": "Motor de voz Fish.audio",
+          "choose_catalog_gift": "Elige un regalo del catálogo...",
+          "title": "Anfitrión inteligente en vivo",
+          "connect_readonly": "Conectar en modo de solo lectura",
+          "host_enabled": "Activar anfitrión en vivo",
+          "save_mode": "Guardar modo",
+          "required_setup": "Configuración obligatoria: selecciona el canal de TikTok, la voz de Fish.audio y el dispositivo de salida CABLE; después ejecuta la comprobación previa.",
+          "save": "Guardar",
+          "tiktok_event_source": "Fuente de eventos de TikTok LIVE",
+          "run_preflight": "Ejecutar comprobación previa 24/7",
+          "production_profile": "Perfil de producción 24/7",
+          "unknown": "desconocido"
+        },
+        "fields": {
+          "bundle_emotion": "Emoción",
+          "bundle_gift_names": "Nombres de regalos alternativos, separados por comas",
+          "bundle_id": "ID de bundle",
+          "bundle_name": "Nombre visible",
+          "bundle_pitch": "Tono",
+          "bundle_priority": "Prioridad de cola",
+          "bundle_sidekick_name": "Nombre de Sidekick para este avatar",
+          "bundle_speed": "Velocidad",
+          "bundle_volume": "Volumen",
+          "test_text": "Texto de prueba",
+          "warmup_user_limit": "Límite de usuarios principales",
+          "warmup_variants_per_user": "Variantes por usuario"
+        },
+        "messages": {
+          "section_saved": "Sección {section} guardada",
+          "audio_devices_unreadable": "No se pudieron leer los dispositivos de audio: {message}",
+          "host_microphones_unreadable": "No se pudieron leer los micrófonos del anfitrión: {message}",
+          "output_device_saved": "Dispositivo de salida de Animaze guardado: {device}",
+          "preflight_ready": "La comprobación previa 24/7 está lista",
+          "preflight_blocked": "La comprobación previa 24/7 tiene errores que bloquean",
+          "movement_test_sent": "Prueba de movimiento de Animaze enviada: {name}",
+          "movement_test_failed": "La prueba de movimiento de Animaze falló: {message}",
+          "tts_probe_ok": "La prueba de TTS fue correcta",
+          "tts_probe_failed": "La prueba de TTS falló: {message}",
+          "host_stt_started": "Se inició el reconocimiento de voz del anfitrión",
+          "host_stt_stopped": "Se detuvo el reconocimiento de voz del anfitrión",
+          "bundle_id_required": "Se requiere el ID del paquete",
+          "warmup_generated": "Precalentamiento de saludos: se generaron {count} variantes",
+          "reset_confirm": "¿Restablecer la sección {section}? Se conservarán las claves API.",
+          "production_profile_applied": "Perfil de producción 24/7 aplicado",
+          "speech_test_started": "Prueba de voz iniciada",
+          "provider_test_succeeded": "La prueba del proveedor fue correcta{response}",
+          "readonly_connected": "Conectado a @{username} en modo de solo lectura",
+          "personality_activated": "Personalidad activada",
+          "host_stt_status_updated": "Estado del reconocimiento de voz del anfitrión actualizado",
+          "bundle_activated": "Paquete de avatar activado",
+          "api_key_deleted": "Clave API eliminada",
+          "config_load_failed": "No se pudo cargar la configuración del anfitrión en vivo: {message}"
+        }
       },
       "runtime": {
         "connection": { "connected": "Conectado", "disconnected": "Sin conexión", "connect": "Conectar", "disconnect": "Desconectar", "target": "el destino" },
         "empty": { "no_data": "No hay datos disponibles", "no_hotkeys": "No hay atajos disponibles", "no_models": "No hay modelos disponibles", "vtube_uses_hotkeys": "VTube Studio usa atajos en lugar de poses", "idles_unsupported": "Las animaciones inactivas no son compatibles aquí", "no_expressions": "No hay expresiones disponibles", "no_motions": "No hay movimientos disponibles", "no_emotes": "No hay emotes disponibles", "no_special_actions": "No hay acciones especiales disponibles", "no_poses": "No hay poses disponibles", "no_idles": "No hay animaciones inactivas disponibles", "no_gift_mappings": "No hay asignaciones de regalos configuradas", "no_memories": "No se encontraron recuerdos", "no_override_behaviors": "No hay comportamientos de anulación disponibles" },
         "action": { "emote": "Gesto", "special_action": "Acción especial", "pose": "Postura", "idle": "Animación inactiva", "chat_message": "Plantilla TTS del host", "hotkey": "Atajo", "expression": "Expresión", "motion": "Movimiento", "reset": "Restablecer", "load_avatar": "Cargar avatar/modelo" },
         "select": { "choose": "Seleccionar...", "no_action": "Sin acción" },
-        "mapping": { "gift_catalog_prompt": "Nombre del regalo de TikTok o ID del regalo para la asignación:", "action_type_prompt": "Tipo de acción ({types}):", "invalid_action_type": "Tipo de acción no válido", "action_value_prompt": "Valor de acción (nombre del emote o índice):", "valid_number_required": "Introduce un número válido", "chat_message_prompt": "Mensaje de chat opcional (déjalo vacío si no hay):", "echo_confirmation": "¿Forzar eco para este mensaje de chat?", "choose_gift": "Elige un regalo del catálogo...", "gift_required": "Elige un regalo del catálogo", "action_required": "Elige un tipo de acción y una acción", "save_failed": "No se pudo guardar la asignación de regalo: {message}", "save_success": "Asignación de regalo guardada", "type": "Tipo: {value}", "value": "Valor: {value}", "chat": "Chat: {value}", "echo": "Eco: {value}", "enabled": "activado", "disabled": "desactivado", "fallback_name": "Asignación {number}", "remove": "Eliminar", "unknown": "desconocido" },
-        "memory": { "all_users": "Todos los usuarios", "archive_confirm": "¿Seguro que quieres archivar los recuerdos antiguos? Esto resume los recuerdos más antiguos.", "archived": "Recuerdos archivados", "general": "general" },
+        "mapping": { "gift_catalog_prompt": "Nombre del regalo de TikTok o ID del regalo para la asignación:", "action_type_prompt": "Tipo de acción ({types}):", "invalid_action_type": "Tipo de acción no válido", "action_value_prompt": "Valor de acción (nombre del emote o índice):", "valid_number_required": "Introduce un número válido", "chat_message_prompt": "Mensaje de chat opcional (déjalo vacío si no hay):", "echo_confirmation": "¿Forzar eco para este mensaje de chat?", "choose_gift": "Elige un regalo del catálogo...", "gift_required": "Elige un regalo del catálogo", "action_required": "Elige un tipo de acción y una acción", "save_failed": "No se pudo guardar la asignación de regalo: {message}", "save_success": "Asignación de regalo guardada", "type": "Tipo: {value}", "value": "Valor: {value}", "chat": "Mensaje de chat: {value}", "echo": "Eco: {value}", "enabled": "activado", "disabled": "desactivado", "fallback_name": "Asignación {number}", "remove": "Eliminar", "unknown": "desconocido" },
+        "memory": { "all_users": "Todos los usuarios", "archive_confirm": "¿Seguro que quieres archivar los recuerdos antiguos? Esto resume los recuerdos más antiguos.", "archived": "Recuerdos archivados", "general": "memoria general" },
         "persona": { "active": "Activa", "custom": "Personalizada", "edit": "Editar", "delete": "Eliminar", "none_selected": "Ninguna seleccionada", "catchphrases_json_required": "Error: las frases deben ser un array JSON válido", "name_and_prompt_required": "Se requieren el nombre y el prompt del sistema", "saved": "¡Persona guardada!", "delete_confirm": "¿Eliminar la persona {name}?", "deleted": "Persona eliminada", "active_changed": "Persona activa cambiada: {name}", "created": "Persona creada", "selection_required": "Selecciona una persona", "update_system_prompt": "Nuevo prompt del sistema para {name}:", "updated": "Persona actualizada", "select": "Seleccionar una persona...", "new_name_prompt": "Nombre de la nueva persona:", "system_prompt_prompt": "Prompt del sistema (descripción de personalidad):" },
         "placeholder": { "memory_search": "Buscar un usuario o recuerdo...", "optional": "Opcional", "token_configured": "Token guardado; déjalo vacío para conservarlo", "vtube_token_optional": "Opcional: solo para VTube Studio" },
         "audio": { "prompt": "Activa el audio para que Fish.audio pueda dirigirse al dispositivo de salida de Animaze configurado.", "enable": "Activar audio" },
         "aria": { "memory_search": "Buscar recuerdos", "gift_mapping_gift": "Regalo del catálogo", "gift_mapping_action_type": "Tipo de acción", "gift_mapping_action_value": "Acción" },
-        "section": { "animaze": { "emotes": "Gestos", "special_actions": "Acciones especiales", "poses": "Poses", "idles": "Animaciones inactivas" }, "vtube_studio": { "emotes": "Atajos", "special_actions": "Modelos", "poses": "Acciones", "idles": "No compatible" }, "vseeface": { "emotes": "Expresiones", "special_actions": "Movimientos", "poses": "Restablecer", "idles": "No compatible" } },
-        "toast": { "backend_error": "Error: {message}", "unknown_error": "Error desconocido", "personality_switched": "Personalidad cambiada", "viewerbase_saved": "Configuración de Viewerbase guardada", "viewerbase_sync_started": "Sincronización de Viewerbase iniciada", "connection_target_failed": "No se pudo conectar con {platform}. Comprueba que la aplicación se esté ejecutando y que la API esté activada.", "data_refreshed": "Datos actualizados", "calibration_started": "Calibración del rastreador iniciada", "broadcast_started": "Transmisión iniciada", "broadcast_stopped": "Transmisión detenida", "emote_triggered": "Emote activado: {name}", "special_action_triggered": "Acción especial activada", "pose_triggered": "Pose activada", "idle_triggered": "Animación inactiva activada", "avatar_loaded": "Avatar/modelo cargado: {name}", "event_updated": "Evento {event} actualizado", "settings_saved": "Configuración guardada", "preset_applied": "Preajuste aplicado: {preset}", "audio_output_unavailable": "El navegador no puede seleccionar directamente el dispositivo de salida de Animaze. Configura CABLE Input como salida predeterminada de Windows o usa un navegador con setSinkId.", "personality_settings_saved": "Configuración de personalidad guardada", "brain_config_saved": "Configuración del cerebro guardada", "testing_connection": "Probando conexión...", "connection_successful": "¡Conexión correcta!", "brain_settings_saved": "¡Configuración del cerebro guardada!", "logic_matrix_coming_soon": "El editor de Logic Matrix estará disponible pronto...", "event_type_required": "Selecciona un tipo de evento", "invalid_json": "Formato JSON no válido", "test_completed": "Prueba completada correctamente", "test_failed": "Prueba fallida", "override_updated": "{behavior}: {state}" },
-        "viewerbase": { "user_fallback": "Usuario {number}", "unknown_user": "desconocido", "diamonds": "{count} diamantes", "gifts": "{count} regalos", "streams": "Transmisiones: {count}", "interactions": "{count} interacciones", "no_last_topic": "Sin tema reciente", "general_memory": "general" }
+        "section": { "animaze": { "emotes": "Gestos", "special_actions": "Acciones especiales", "poses": "Posturas", "idles": "Animaciones inactivas" }, "vtube_studio": { "emotes": "Atajos", "special_actions": "Modelos", "poses": "Acciones", "idles": "No compatible" }, "vseeface": { "emotes": "Expresiones", "special_actions": "Movimientos", "poses": "Restablecer", "idles": "No compatible" } },
+        "toast": { "backend_error": "Se produjo un error: {message}", "unknown_error": "Error desconocido", "personality_switched": "Personalidad cambiada", "viewerbase_saved": "Configuración de Viewerbase guardada", "viewerbase_sync_started": "Sincronización de Viewerbase iniciada", "connection_target_failed": "No se pudo conectar con {platform}. Comprueba que la aplicación se esté ejecutando y que la API esté activada.", "data_refreshed": "Datos actualizados", "calibration_started": "Calibración del rastreador iniciada", "broadcast_started": "Transmisión iniciada", "broadcast_stopped": "Transmisión detenida", "emote_triggered": "Emote activado: {name}", "special_action_triggered": "Acción especial activada", "pose_triggered": "Pose activada", "idle_triggered": "Animación inactiva activada", "avatar_loaded": "Avatar/modelo cargado: {name}", "event_updated": "Evento {event} actualizado", "settings_saved": "Configuración guardada", "preset_applied": "Preajuste aplicado: {preset}", "audio_output_unavailable": "El navegador no puede seleccionar directamente el dispositivo de salida de Animaze. Configura CABLE Input como salida predeterminada de Windows o usa un navegador con setSinkId.", "personality_settings_saved": "Configuración de personalidad guardada", "brain_config_saved": "Configuración del cerebro guardada", "testing_connection": "Probando conexión...", "connection_successful": "¡Conexión correcta!", "brain_settings_saved": "¡Configuración del cerebro guardada!", "logic_matrix_coming_soon": "El editor de Logic Matrix estará disponible pronto...", "event_type_required": "Selecciona un tipo de evento", "invalid_json": "Formato JSON no válido", "test_completed": "Prueba completada correctamente", "test_failed": "Prueba fallida", "override_updated": "Estado de {behavior}: {state}" },
+        "viewerbase": { "user_fallback": "Usuario {number}", "unknown_user": "desconocido", "diamonds": "{count} diamantes", "gifts": "{count} regalos", "streams": "Transmisiones: {count}", "interactions": "{count} interacciones", "no_last_topic": "Sin tema reciente", "general_memory": "memoria general" }
       }
     }
   }

@@ -20,7 +20,11 @@ describe('Gift Catalog static UI localization', () => {
     'labels.locale', 'labels.app_language', 'labels.browser_language', 'labels.priority_region',
     'labels.tz_name', 'labels.webcast_language',
     'options.none', 'options.locale_de', 'options.locale_en', 'options.locale_es', 'options.locale_fr',
-    'messages.no_gifts_available', 'messages.load_catalog_first_for_live_mode'
+    'messages.no_gifts_available', 'messages.load_catalog_first_for_live_mode',
+    'messages.no_live_gifts_loaded', 'messages.static_list_empty',
+    'messages.live_source', 'messages.demo_source',
+    'messages.live_entries_loaded', 'messages.demo_list_rendered',
+    'messages.copy_failed_prompt', 'messages.copy_prompt', 'messages.endpoint_prompt'
   ];
 
   test('uses stable Gift Catalog keys for every audited control', () => {
@@ -43,5 +47,7 @@ describe('Gift Catalog static UI localization', () => {
     const source = read('ui.html');
     expect(source).toContain('/js/i18n-client.js');
     expect(source).toContain('translateUi(');
+    expect(source).toMatch(/translateUi\(\s*'plugins\.gift-catalog\.gift_catalog\.ui\.messages\.no_live_gifts_loaded'/);
+    expect(source).toMatch(/translateUi\(\s*'plugins\.gift-catalog\.gift_catalog\.ui\.messages\.copy_prompt'/);
   });
 });

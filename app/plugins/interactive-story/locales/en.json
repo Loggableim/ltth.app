@@ -1,6 +1,12 @@
 {
   "plugins": {
     "interactive-story": {
+      "form_controls": {
+        "openrouter_api_key_placeholder": "sk-or-...",
+        "ollama_api_key_placeholder": "Optional for local Ollama",
+        "ollama_model_placeholder": "qwen3.5:cloud",
+        "obs_overlay_preview_title": "OBS Overlay preview"
+      },
       "interactive_story": {
         "plugin": {
           "name": "Interactive Story Generator",
@@ -172,6 +178,137 @@
           "title": "Debug Logs",
           "clear": "Clear",
           "empty": "No logs available yet"
+        }
+      },
+      "alerts": {
+        "admin_choice_error": "Could not select the option: {message}",
+        "advance_error": "Could not advance the round: {message}",
+        "api_test_error": "API key test failed.",
+        "config_save_error": "Could not save the configuration: {message}",
+        "config_saved": "Configuration saved.",
+        "generation_failed": "Story generation failed: {message}",
+        "generation_timeout": "The story generation timed out. Wait a few minutes and try again, use End Story to stop the current run, switch to a faster model, or reduce the maximum number of chapters.",
+        "overlay_blocked": "The popup was blocked. Allow popups or open this URL manually:\n{url}",
+        "overlay_copied": "Overlay URL copied.",
+        "overlay_copy_failed": "Could not copy the URL. Select it and copy it manually.",
+        "overlay_missing": "No overlay URL is available. Reload the page and try again.",
+        "overlay_open_error": "Could not open the overlay. Open this URL manually:\n{url}",
+        "story_end_error": "Could not end the story: {message}",
+        "story_error": "Story error: {message}",
+        "story_start_error": "Could not start the story: {message}",
+        "theme_required": "Select a theme before starting the story.",
+        "ui_missing": "A required control is missing. Reload the page and try again."
+      },
+      "prompts": {
+        "advance_chapter": "Advance from chapter {current} to chapter {next} of {total}?",
+        "confirm_choice": "Choose option {option}?",
+        "confirm_end_story": "End the current story?",
+        "no_active_chapter": "There is no active chapter to advance from."
+      },
+      "runtime": {
+        "actions": {
+          "ending": "Ending story…",
+          "generating": "Generating…",
+          "preview_hide": "Hide preview",
+          "preview_show": "Show preview",
+          "start_story": "Start story",
+          "story_ended": "Story ended",
+          "test_api_key": "Test API key",
+          "testing": "Testing…"
+        },
+        "api_test": {
+          "check_console": "Check the browser console for details.",
+          "diagnostics": "Diagnostics",
+          "error_details": "Error: {message}",
+          "prefix": "Prefix: {value}",
+          "provider_details": "Provider: {provider}<br>API key length: {keyLength} characters<br>Prefix: {keyPrefix}<br>Tested model: {testedModel}",
+          "provider_summary": "Provider: {provider}<br>API key length: {keyLength} characters",
+          "status_code": "Status code: {code}",
+          "troubleshooting": "Troubleshooting steps",
+          "unknown": "Unknown"
+        },
+        "boolean": {
+          "no": "No",
+          "yes": "Yes"
+        },
+        "chapter": {
+          "current": "Current chapter",
+          "empty_body": "Start a story to bring the chapter, voting, and image into focus.",
+          "empty_eyebrow": "Chapter ready",
+          "empty_title": "No active story yet",
+          "image_alt": "Chapter image",
+          "image_pending": "Image pending",
+          "image_pending_body": "The chapter image appears here once it is ready.",
+          "no_choices": "No choices available yet.",
+          "vote_sync": "Live voting and chapter visuals stay in sync."
+        },
+        "debug": {
+          "empty": "No logs available yet"
+        },
+        "manual": {
+          "vote_summary": "{votes} votes ({percentage}%)"
+        },
+        "overlay": {
+          "vote_timer": "Time remaining: {seconds}s",
+          "voting_ended": "Voting ended"
+        },
+        "preview": {
+          "adventure_content": "Our hero awakens in a mysterious forest, surrounded by ancient trees whispering secrets of old.",
+          "adventure_title": "The Beginning of an Epic Adventure",
+          "demo_choice_camp": "Return to camp",
+          "demo_choice_mountain": "Climb the mountain",
+          "demo_choice_river": "Follow the river",
+          "demo_content": "This is a preview of the story content.",
+          "demo_title": "Demo Chapter",
+          "temple_choice_altar": "Approach the altar",
+          "temple_choice_runes": "Examine the runes closely",
+          "temple_choice_voice": "Follow the voice",
+          "temple_content": "As you step through the massive stone doors, a chill runs down your spine. The walls are covered in ancient runes that seem to glow faintly in the darkness. A mysterious voice echoes through the chamber, speaking in a language you somehow understand.",
+          "temple_title": "The Ancient Temple",
+          "vote_choice_corridor": "Enter the dark corridor",
+          "vote_choice_exit": "Search for another exit",
+          "vote_choice_help": "Call out for help"
+        },
+        "provider_help": {
+          "ollama": "Use a local or cloud Ollama endpoint. A local API key is optional; some cloud deployments require one.",
+          "openai": "Uses the global OpenAI API key from Settings. Choose a model that fits your story workflow.",
+          "openrouter": "Use an OpenRouter API key and select a compatible model, including free routes where available.",
+          "siliconflow": "Use SiliconFlow when you already have a compatible SiliconFlow setup for this story pipeline."
+        },
+        "status": {
+          "active_time": "Active ({seconds}s)",
+          "chapter_prefix": "Chapter",
+          "connection_offline": "Not connected",
+          "connection_online": "Connected",
+          "configured": "Configured",
+          "generation_ready": "Generation ready",
+          "inactive": "Inactive",
+          "none": "None",
+          "not_configured": "Not configured",
+          "ready": "Ready",
+          "ready_to_start": "Ready to start",
+          "story_active": "Story active",
+          "voting_idle": "Voting idle",
+          "voting_running": "Voting running"
+        },
+        "story": {
+          "chapter_badge": "Chapter {current} of {total}",
+          "option_label": "Option {option}: {choice}"
+        },
+        "theme": {
+          "cid": "CID",
+          "contrast": "High contrast",
+          "day": "Day",
+          "load_failed": "Could not load themes",
+          "night": "Night",
+          "synced": "Theme synchronized",
+          "vision-impaired": "Vision-impaired"
+        },
+        "voters": {
+          "votes": "{count} votes"
+        },
+        "voices": {
+          "group_label": "{engine} voices"
         }
       },
       "labels": {

@@ -32,6 +32,14 @@
             "failed": "Impossible d’enregistrer les réglages.",
             "noData": "Aucune donnée disponible.",
             "confirm": "Voulez-vous continuer ?"
+          },
+          "runtime": {
+            "loadFailed": "Impossible de charger la source de données.",
+            "switchFailed": "Impossible de changer la source de données.",
+            "invalidPort": "Saisissez un port compris entre 1 et 65535.",
+            "settingsSaved": "Les réglages TikFinity ont été enregistrés.",
+            "settingsSaveFailed": "Impossible d’enregistrer les réglages TikFinity.",
+            "sourceChanged": "Source de données modifiée : {source}"
           }
         }
       },

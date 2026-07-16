@@ -1,3 +1,9 @@
+function patternEditorText(key, fallback, params = {}) {
+    return typeof window.OpenShockPatternI18n === 'function'
+        ? window.OpenShockPatternI18n(key, fallback, params)
+        : fallback;
+}
+
 /**
  * @file ParameterEditor.tsx.js - Parameter Editor Component
  * @description Contextual parameter controls for preset patterns
@@ -43,7 +49,7 @@ class ParameterEditor {
         if (!pattern) {
             this.container.innerHTML = `
                 <div class="empty-state">
-                    <p class="text-gray-400 text-center py-8">Wähle ein Pattern aus der Bibliothek</p>
+                    <p class="text-gray-400 text-center py-8">${patternEditorText('parameter.empty', 'Choose a pattern from the library')}</p>
                 </div>
             `;
             return;
@@ -55,22 +61,22 @@ class ParameterEditor {
             <div class="parameter-editor">
                 <div class="parameter-editor-header">
                     <h3 class="text-xl font-bold text-white mb-2">${this._escapeHtml(pattern.name)}</h3>
-                    <p class="text-gray-400 mb-4">${presetDef ? presetDef.description : 'Custom Pattern'}</p>
+                    <p class="text-gray-400 mb-4">${presetDef ? presetDef.description : patternEditorText('parameter.custom_pattern', 'Custom pattern')}</p>
                 </div>
 
                 ${pattern.type === 'preset' ? this._renderPresetControls(pattern, presetDef) : ''}
 
                 <div class="parameter-editor-actions">
                     <button class="btn btn-primary btn-block" id="expertModeBtn">
-                        🔧 Expertenmodus (Keyframe Editor)
+                        🔧 ${patternEditorText('parameter.expert_mode', 'Expert mode (keyframe editor)')}
                     </button>
                     
                     <button class="btn btn-success btn-block" id="savePatternBtn">
-                        💾 Als eigenes Pattern speichern
+                        💾 ${patternEditorText('parameter.save_as_own', 'Save as own pattern')}
                     </button>
 
                     <button class="btn btn-secondary btn-block" id="backToLibraryBtn">
-                        ← Zurück zur Bibliothek
+                        ← ${patternEditorText('parameter.back_to_library', 'Back to library')}
                     </button>
                 </div>
             </div>
@@ -90,7 +96,7 @@ class ParameterEditor {
 
         return `
             <div class="parameter-controls">
-                <h4 class="text-lg font-semibold text-white mb-3">Anpassung</h4>
+                <h4 class="text-lg font-semibold text-white mb-3">${patternEditorText('parameter.customization', 'Customization')}</h4>
                 ${presetDef.paramDefinitions.map(paramDef => 
                     this._renderParameter(paramDef, pattern.params[paramDef.key])
                 ).join('')}
@@ -167,11 +173,11 @@ class ParameterEditor {
     _getPresetDefinition(presetName) {
         const presets = {
             'Konstant': {
-                description: 'Eine konstante Intensität über die Zeit',
+                description: patternEditorText('parameter.presets.constant.description', 'A constant intensity over time'),
                 paramDefinitions: [
                     {
                         key: 'intensity',
-                        label: 'Intensität',
+                        label: patternEditorText('parameter.labels.intensity', 'Intensity'),
                         type: 'slider',
                         min: 0,
                         max: 100,
@@ -182,11 +188,11 @@ class ParameterEditor {
                 ]
             },
             'Rampe': {
-                description: 'Linear ansteigende oder abfallende Intensität',
+                description: patternEditorText('parameter.presets.ramp.description', 'Linearly rising or falling intensity'),
                 paramDefinitions: [
                     {
                         key: 'startIntensity',
-                        label: 'Start-Intensität',
+                        label: patternEditorText('parameter.labels.start_intensity', 'Start intensity'),
                         type: 'slider',
                         min: 0,
                         max: 100,
@@ -196,7 +202,7 @@ class ParameterEditor {
                     },
                     {
                         key: 'endIntensity',
-                        label: 'End-Intensität',
+                        label: patternEditorText('parameter.labels.end_intensity', 'End intensity'),
                         type: 'slider',
                         min: 0,
                         max: 100,
@@ -206,7 +212,7 @@ class ParameterEditor {
                     },
                     {
                         key: 'duration',
-                        label: 'Dauer',
+                        label: patternEditorText('parameter.labels.duration', 'Duration'),
                         type: 'number',
                         min: 300,
                         max: 30000,
@@ -217,11 +223,11 @@ class ParameterEditor {
                 ]
             },
             'Puls': {
-                description: 'Wiederkehrende Pulse mit Pausen',
+                description: patternEditorText('parameter.presets.pulse.description', 'Repeating pulses with pauses'),
                 paramDefinitions: [
                     {
                         key: 'intensity',
-                        label: 'Intensität',
+                        label: patternEditorText('parameter.labels.intensity', 'Intensity'),
                         type: 'slider',
                         min: 0,
                         max: 100,
@@ -231,7 +237,7 @@ class ParameterEditor {
                     },
                     {
                         key: 'pulseDuration',
-                        label: 'Puls-Dauer',
+                        label: patternEditorText('parameter.labels.pulse_duration', 'Pulse duration'),
                         type: 'number',
                         min: 100,
                         max: 5000,
@@ -241,7 +247,7 @@ class ParameterEditor {
                     },
                     {
                         key: 'pauseDuration',
-                        label: 'Pausen-Dauer',
+                        label: patternEditorText('parameter.labels.pause_duration', 'Pause duration'),
                         type: 'number',
                         min: 100,
                         max: 5000,
@@ -252,11 +258,11 @@ class ParameterEditor {
                 ]
             },
             'Welle': {
-                description: 'Sinusförmige Wellenform',
+                description: patternEditorText('parameter.presets.wave.description', 'Sine wave form'),
                 paramDefinitions: [
                     {
                         key: 'minIntensity',
-                        label: 'Min-Intensität',
+                        label: patternEditorText('parameter.labels.minimum_intensity', 'Minimum intensity'),
                         type: 'slider',
                         min: 0,
                         max: 100,
@@ -266,7 +272,7 @@ class ParameterEditor {
                     },
                     {
                         key: 'maxIntensity',
-                        label: 'Max-Intensität',
+                        label: patternEditorText('parameter.labels.maximum_intensity', 'Maximum intensity'),
                         type: 'slider',
                         min: 0,
                         max: 100,
@@ -276,7 +282,7 @@ class ParameterEditor {
                     },
                     {
                         key: 'frequency',
-                        label: 'Frequenz',
+                        label: patternEditorText('parameter.labels.frequency', 'Frequency'),
                         type: 'slider',
                         min: 0.1,
                         max: 5,
@@ -287,11 +293,11 @@ class ParameterEditor {
                 ]
             },
             'Zufall': {
-                description: 'Zufällige Intensitätswerte',
+                description: patternEditorText('parameter.presets.random.description', 'Random intensity values'),
                 paramDefinitions: [
                     {
                         key: 'minIntensity',
-                        label: 'Min-Intensität',
+                        label: patternEditorText('parameter.labels.minimum_intensity', 'Minimum intensity'),
                         type: 'slider',
                         min: 0,
                         max: 100,
@@ -301,7 +307,7 @@ class ParameterEditor {
                     },
                     {
                         key: 'maxIntensity',
-                        label: 'Max-Intensität',
+                        label: patternEditorText('parameter.labels.maximum_intensity', 'Maximum intensity'),
                         type: 'slider',
                         min: 0,
                         max: 100,
@@ -311,7 +317,7 @@ class ParameterEditor {
                     },
                     {
                         key: 'frequency',
-                        label: 'Update-Frequenz',
+                        label: patternEditorText('parameter.labels.update_frequency', 'Update frequency'),
                         type: 'slider',
                         min: 0.5,
                         max: 10,
@@ -369,10 +375,10 @@ class ParameterEditor {
         const savePatternBtn = this.container.querySelector('#savePatternBtn');
         if (savePatternBtn) {
             savePatternBtn.addEventListener('click', () => {
-                const name = prompt('Pattern Name:', 'Mein Pattern');
+                const name = prompt(patternEditorText('parameter.name_prompt', 'Pattern name:'), patternEditorText('parameter.default_name', 'My pattern'));
                 if (name) {
                     this.store.saveAsUserPattern(name);
-                    alert('Pattern gespeichert!');
+                    alert(patternEditorText('parameter.saved', 'Pattern saved!'));
                 }
             });
         }

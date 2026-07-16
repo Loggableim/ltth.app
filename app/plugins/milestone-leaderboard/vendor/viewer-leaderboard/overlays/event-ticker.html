@@ -371,6 +371,7 @@
     }
   </style>
     <script src="/js/i18n-client.js"></script>
+    <script src="/plugins/viewer-leaderboard/viewer-xp-i18n.js"></script>
 </head>
 <body>
   <div class="ticker-container">
@@ -443,7 +444,7 @@
     // Connection handlers
     socket.on('connect', () => {
       console.log('Connected to server');
-      connectionStatus.textContent = 'Connected';
+      connectionStatus.textContent = ViewerXpI18n.text('ticker_connected', 'Connected');
       connectionStatus.className = 'connection-status connected';
 
       // Subscribe to XP events
@@ -455,7 +456,7 @@
 
     socket.on('disconnect', () => {
       console.log('Disconnected from server');
-      connectionStatus.textContent = 'Disconnected';
+      connectionStatus.textContent = ViewerXpI18n.text('ticker_disconnected', 'Disconnected');
       connectionStatus.className = 'connection-status disconnected';
     });
 
@@ -491,7 +492,7 @@
     // Render events
     function renderEvents() {
       if (events.length === 0) {
-        eventsList.innerHTML = '<div class="empty-message">Waiting for events...</div>';
+        eventsList.innerHTML = `<div class="empty-message">${ViewerXpI18n.text('ticker_waiting', 'Waiting for events…')}</div>`;
         return;
       }
 
@@ -509,7 +510,7 @@
             <div class="event-details">
               <span class="event-icon">${icon}</span>
               <span class="event-type">${formatEventType(event.event_type)}</span>
-              <span class="event-xp">+${event.xp_awarded} XP</span>
+              <span class="event-xp">${ViewerXpI18n.text('ticker_xp', '+{amount} XP', { amount: event.xp_awarded })}</span>
             </div>
           </div>
         `;
@@ -525,14 +526,28 @@
       const now = Date.now();
       const diff = Math.floor((now - timestamp) / 1000);
 
-      if (diff < 60) return 'just now';
-      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-      return `${Math.floor(diff / 86400)}d ago`;
+      if (diff < 60) return ViewerXpI18n.text('relative_now', 'Just now');
+      if (diff < 3600) return ViewerXpI18n.text('relative_minutes_ago', '{count}m ago', { count: Math.floor(diff / 60) });
+      if (diff < 86400) return ViewerXpI18n.text('relative_hours_ago', '{count}h ago', { count: Math.floor(diff / 3600) });
+      return ViewerXpI18n.text('relative_days_ago', '{count}d ago', { count: Math.floor(diff / 86400) });
     }
 
     function formatEventType(type) {
-      return type.replace(/_/g, ' ').replace(/tier\d+/, '');
+      const normalizedType = type.replace(/^gift_tier\d+$/, 'gift');
+      const eventKeys = {
+        chat_message: 'event_chat_message',
+        gift: 'event_gift',
+        follow: 'event_follow',
+        share: 'event_share',
+        like: 'event_like',
+        subscribe: 'event_subscribe',
+        daily_bonus: 'event_daily_bonus',
+        streak_bonus: 'event_streak_bonus',
+        watch_time_minute: 'event_watch_time_minute'
+      };
+      const key = eventKeys[normalizedType];
+      const fallback = normalizedType.replace(/_/g, ' ');
+      return key ? ViewerXpI18n.text(key, fallback) : fallback;
     }
 
     function getEventClass(type) {

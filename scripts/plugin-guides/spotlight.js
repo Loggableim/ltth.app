@@ -29,6 +29,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
   "safety": "obs",
   "mode": "ui",
   "overlay": "/plugins/spotlight/overlays/chatter.html",
+  "overlayWorkflowStepIds": ["spotlight-overlay"],
   "related": [
     "clarityhud",
     "toptier"

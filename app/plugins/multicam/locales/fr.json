@@ -2,21 +2,45 @@
   "plugins": {
     "multicam": {
       "multicam": {
-        "title": "Multi-Cam Switcher",
-        "subtitle": "Stream Camera Management",
-        "safety_lock": "⚠️ SAFETY LOCK ACTIVE - Too many rapid switches detected. Waiting 60 seconds...",
-        "current_scene": "Current Scene:",
-        "status": {
-          "connected": "Connected",
-          "disconnected": "Disconnected"
-        },
-        "connection": {
-          "title": "Connection",
+    "title": "Sélecteur multicaméra",
+    "subtitle": "Gestion des caméras de diffusion",
+    "safety_lock": "⚠️ VERROU DE SÉCURITÉ ACTIF : trop de changements rapides détectés. Attente de 60 secondes...",
+    "runtime": {
+      "server_unreachable": "Le serveur ne répond pas. Assurez-vous que le serveur LTTH est en cours d’exécution et qu’un flux TikTok est connecté.",
+      "retry_load": "🔄 Recharger",
+      "server_error": "Erreur du serveur : {error}",
+      "unknown_error": "Erreur inconnue",
+      "catalog_load_failed": "Impossible de charger le catalogue de cadeaux. Assurez-vous que le serveur LTTH est en cours d’exécution et qu’un flux TikTok est connecté.",
+      "empty_catalog": "Aucun cadeau dans le catalogue. Connectez un flux TikTok pour charger le catalogue.",
+      "tier_whale": "🐋 Baleine (10 000+)",
+      "tier_large": "🔥 Grand (1 000–9 999)",
+      "tier_medium": "💎 Moyen (100–999)",
+      "tier_small": "🪙 Petit (1–99)",
+      "gift_count": "{count} cadeaux",
+      "no_filtered_gifts": "Aucun cadeau ne correspond au filtre actuel.",
+      "no_mapping": "— Aucune attribution —",
+      "minimum_coins": "Pièces min. :",
+      "unsaved_changes": "🟡 Modifications non enregistrées",
+      "all_changes_saved": "✅ Toutes les modifications sont enregistrées",
+      "saving": "⏳ Enregistrement...",
+      "saved": "✅ Enregistré !",
+      "error": "❌ Erreur : {error}",
+      "discard_unsaved_changes": "Abandonner toutes les modifications non enregistrées ?",
+      "connection_failed": "Échec de la connexion : {error}",
+      "select_scene": "Veuillez sélectionner une scène"
+    },
+    "current_scene": "Scène actuelle :",
+    "status": {
+      "connected": "Connecté à OBS",
+      "disconnected": "Déconnecté"
+    },
+    "connection": {
+      "title": "Connexion",
           "host": "Hôte",
-          "port": "Port",
+      "port": "Numéro de port",
           "password": "Mot de passe",
-          "connect": "Connect OBS",
-          "disconnect": "Disconnect OBS",
+      "connect": "Connecter OBS",
+      "disconnect": "Déconnecter OBS",
           "save_settings": "Enregistrer les Paramètres",
           "auto_connect_settings": "Paramètres de Connexion Automatique",
           "connect_on_start": "Connecter au Démarrage",
@@ -33,13 +57,13 @@
           "health_check_interval_ms": "Intervalle de Vérification de Santé (ms)",
           "health_check_interval_ms_desc": "Temps entre les vérifications de santé"
         },
-        "switcher": {
-          "title": "Scene Switcher",
-          "select_scene": "Select Scene...",
-          "switch": "Switch"
-        },
-        "hot_buttons": {
-          "title": "Hot Buttons"
+    "switcher": {
+      "title": "Sélecteur de scène",
+      "select_scene": "Sélectionnez une scène...",
+      "switch": "Changer"
+    },
+    "hot_buttons": {
+      "title": "Boutons rapides"
         },
         "gift_mapping": {
           "title": "Mappage de Cadeau à Scène",
@@ -56,27 +80,27 @@
           "camera_filter": "Caméra :",
           "sort": "Ordre de tri :"
         },
-        "log": {
-          "title": "Activity Log",
-          "waiting": "Waiting for events..."
-        },
-        "cameras": {
-          "title": "Camera Sources",
-          "add": "Add Camera",
-          "name": "Camera Name",
-          "url": "Source URL",
-          "active": "Active",
+    "log": {
+      "title": "Journal d’activité",
+      "waiting": "En attente d’événements..."
+    },
+    "cameras": {
+      "title": "Sources vidéo",
+      "add": "Ajouter une caméra",
+      "name": "Nom de la caméra",
+      "url": "URL source",
+      "active": "Activée",
           "preview": "Aperçu"
         },
-        "overlay": {
-          "title": "Overlay Settings",
+    "overlay": {
+      "title": "Paramètres de superposition",
           "url": "URL de l'Overlay",
           "copy": "Copier l'URL",
           "open": "Ouvrir l'Overlay"
         },
-        "settings": {
+    "settings": {
           "save": "Enregistrer les Paramètres",
-          "reset": "Reset to Defaults"
+      "reset": "Réinitialiser les valeurs par défaut"
         }
       },
       "labels": {
@@ -87,7 +111,7 @@
         "klein_1_99_coins": "Petit (1-99 pièces)",
         "coins_absteigend": "Pièces (décroissantes)",
         "lade_geschenkekatalog": "Chargement du catalogue de cadeaux...",
-        "current_scene": "Current Scene:",
+    "current_scene": "Scène actuelle :",
         "multi_cam_switcher_geschenkekatalog": "🎥 Sélecteur multi-caméras — Catalogue cadeaux",
         "wahle_fur_jedes_geschenk_die_obs_szene_kamera": "Pour chaque cadeau, sélectionnez la scène OBS (caméra) qui doit être commutée automatiquement. Les cadeaux sans attribution seront ignorés. Les modifications sont appliquées avec « Enregistrer ».",
         "alle_geschenke": "Tous les cadeaux",

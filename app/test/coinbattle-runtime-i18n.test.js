@@ -27,7 +27,19 @@ describe('CoinBattle runtime i18n', () => {
     'plugins.coinbattle.runtime.season.summary',
     'plugins.coinbattle.runtime.aria.overlay_width',
     'plugins.coinbattle.runtime.aria.overlay_height',
-    'plugins.coinbattle.runtime.placeholder.season_name'
+    'plugins.coinbattle.runtime.placeholder.season_name',
+    'plugins.coinbattle.runtime.overlay.red_team',
+    'plugins.coinbattle.runtime.overlay.blue_team',
+    'plugins.coinbattle.runtime.overlay.unknown_player',
+    'plugins.coinbattle.runtime.overlay.no_data',
+    'plugins.coinbattle.runtime.overlay.xp_earned',
+    'plugins.coinbattle.runtime.overlay.team_wins',
+    'plugins.coinbattle.runtime.overlay.takes_lead',
+    'plugins.coinbattle.runtime.history_loader.loading_matches',
+    'plugins.coinbattle.runtime.history_loader.no_more_matches',
+    'plugins.coinbattle.runtime.history_loader.retry',
+    'plugins.coinbattle.runtime.layout_editor.layout_name_prompt',
+    'plugins.coinbattle.runtime.layout_editor.delete_default_layout'
   ];
 
   test('routes visible runtime feedback through stable CoinBattle translation keys', () => {
@@ -53,6 +65,19 @@ describe('CoinBattle runtime i18n', () => {
     expect(html).toContain('data-i18n-aria-label="plugins.coinbattle.runtime.aria.overlay_width"');
     expect(html).toContain('data-i18n-aria-label="plugins.coinbattle.runtime.aria.overlay_height"');
     expect(html).toContain('data-i18n-placeholder="plugins.coinbattle.runtime.placeholder.season_name"');
+  });
+
+  test('localizes overlay, history, and layout-editor feedback with stable keys', () => {
+    const overlay = fs.readFileSync(path.join(pluginRoot, 'overlay', 'overlay.js'), 'utf8');
+    const historyLoader = fs.readFileSync(path.join(pluginRoot, 'ui', 'lazy-history-loader.js'), 'utf8');
+    const overlayEditor = fs.readFileSync(path.join(pluginRoot, 'ui', 'overlay-editor.js'), 'utf8');
+
+    expect(overlay).toContain("translateOverlay('runtime.overlay.red_team'");
+    expect(overlay).toContain("translateOverlay('runtime.overlay.no_data'");
+    expect(historyLoader).toContain("translateHistory('runtime.history_loader.loading_matches'");
+    expect(historyLoader).toContain("translateHistory('runtime.history_loader.retry'");
+    expect(overlayEditor).toContain("translateEditor('runtime.layout_editor.layout_name_prompt'");
+    expect(overlayEditor).toContain("translateEditor('runtime.layout_editor.delete_default_layout'");
   });
 
   test.each(['de', 'en', 'es', 'fr'])('provides stable runtime keys in %s', (locale) => {

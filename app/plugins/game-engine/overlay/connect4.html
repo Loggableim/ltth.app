@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="plugins.game-engine.labels.connect4_overlay_ltth_game_engine">Connect4 Overlay - LTTH Game Engine</title>
   <script>
+    function runtimeText(key, params = {}) {
+      const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
+      const translated = window.i18n?.t?.(normalizedKey, params);
+      return translated && translated !== normalizedKey ? translated : '';
+    }
+
     (function () {
       const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
 
@@ -992,13 +998,13 @@
         const data = await response.json();
 
         if (!data || data.length === 0) {
-          contentDiv.innerHTML = '<div class="leaderboard-empty">Noch keine Daten / No data yet</div>';
+          contentDiv.innerHTML = `<div class="leaderboard-empty">${runtimeText('plugins.game-engine.runtime.common.no_data')}</div>`;
         } else {
           contentDiv.replaceChildren(renderLeaderboardTable(data, type));
         }
       } catch (error) {
         console.error('Failed to load leaderboard:', error);
-        contentDiv.innerHTML = '<div class="leaderboard-empty">Fehler beim Laden / Error loading</div>';
+        contentDiv.innerHTML = `<div class="leaderboard-empty">${runtimeText('plugins.game-engine.runtime.common.load_error')}</div>`;
       }
 
       // Show leaderboard
@@ -1202,12 +1208,15 @@
           const winLabel = dt.labelWin || '🏆 {player} gewinnt!';
           statusDiv.textContent = winLabel.replace('{player}', winnerInfo.nickname || winnerInfo.username);
         } else {
-          statusDiv.textContent = dt.labelDraw || '🤝 Unentschieden!';
+          statusDiv.textContent = dt.labelDraw || runtimeText('plugins.game-engine.runtime.connect4.draw');
         }
       } else {
         const currentPlayerInfo = state.currentPlayer === 1 ? state.player1 : state.player2;
         const columnText = currentPlayerInfo.role === 'viewer' ? ` ${dt.labelYourTurn || 'Du bist dran! Tippe A-G'}` : '';
-        statusDiv.textContent = `Am Zug: ${currentPlayerInfo.nickname || currentPlayerInfo.username}${columnText}`;
+        statusDiv.textContent = runtimeText('plugins.game-engine.runtime.connect4.current_turn', {
+          player: currentPlayerInfo.nickname || currentPlayerInfo.username,
+          columnText
+        });
       }
     }
 
@@ -1238,11 +1247,11 @@
         resultText.innerHTML = '';
         const drawText = document.createElement('span');
         drawText.className = 'draw-text';
-        drawText.textContent = dt.labelDraw || '🤝 Unentschieden!';
+        drawText.textContent = dt.labelDraw || runtimeText('plugins.game-engine.runtime.connect4.draw');
         resultText.appendChild(drawText);
         playAudioFile('/game-engine/sounds/default/game over.mp3');
       } else {
-        resultText.innerHTML = '<span data-i18n="plugins.game-engine.ui.connect4.game_finished">Spiel beendet</span>';
+        resultText.innerHTML = `<span>${runtimeText('plugins.game-engine.runtime.common.game_finished')}</span>`;
       }
 
       // Show XP reward if viewer won/lost
@@ -1479,11 +1488,11 @@
             document.getElementById('test-game-controls').style.display = 'block';
           } else {
             console.error('Failed to start test game:', data.error);
-            alert('Failed to start test game: ' + (data.error || data.message));
+            alert(runtimeText('plugins.game-engine.runtime.connect4.test_start_failed', { error: data.error || data.message }));
           }
         } catch (error) {
           console.error('Error starting test game:', error);
-          alert('Error starting test game: ' + error.message);
+          alert(runtimeText('plugins.game-engine.runtime.connect4.test_start_error', { error: error.message }));
         }
       });
 
@@ -1491,7 +1500,7 @@
       document.querySelectorAll('.test-column-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
           if (!testSessionId) {
-            alert('No active test game');
+            alert(runtimeText('plugins.game-engine.runtime.connect4.no_active_test_game'));
             return;
           }
 
@@ -1521,7 +1530,7 @@
       // End test game button
       document.getElementById('test-end-game').addEventListener('click', async () => {
         if (!testSessionId) {
-          alert('No active test game');
+          alert(runtimeText('plugins.game-engine.runtime.connect4.no_active_test_game'));
           return;
         }
 

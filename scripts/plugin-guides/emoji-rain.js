@@ -29,6 +29,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
   "safety": "obs",
   "mode": "ui",
   "overlay": "/emoji-rain/obs-hud",
+  "overlayWorkflowStepIds": ["verify-obs-hud"],
   "related": [
     "webgpu-emoji-rain",
     "fireworks"

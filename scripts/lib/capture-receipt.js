@@ -81,6 +81,7 @@ function normalizeNetworkEvidence(network = []) {
 function isAllowedCaptureNetworkUrl(value) {
   try {
     const url = new URL(value);
+    if (url.protocol === 'data:') return true;
     return url.protocol === 'http:' && (url.hostname === '127.0.0.1' || url.hostname === 'localhost');
   } catch (_) {
     return false;
@@ -98,6 +99,14 @@ function assertCaptureEvidence({ network = [], consoleErrors = [] }) {
     throw new Error(`CaptureReceipt contains browser console errors: ${consoleErrors.join(' | ')}`);
   }
   return { network: normalizedNetwork, console: [...consoleErrors] };
+}
+
+function assertNoBlockedNetworkAttempts(blockedNetwork = []) {
+  if (!Array.isArray(blockedNetwork)) throw new Error('Capture blocked-network evidence must be an array');
+  const attempt = blockedNetwork[0];
+  if (attempt) {
+    throw new Error(`CaptureReceipt contains a blocked external network attempt: ${attempt.url || 'unknown URL'}`);
+  }
 }
 
 function evaluatePostcondition(condition, { httpStatus, state, consoleErrors, interactions, locale }) {
@@ -193,6 +202,7 @@ function createCaptureReceipt({ asset, locale, appVersion, screenshotPath, sha25
 
 module.exports = {
   assertCaptureEvidence,
+  assertNoBlockedNetworkAttempts,
   createCaptureReceipt,
   evaluatePostcondition,
   isAllowedCaptureNetworkUrl,

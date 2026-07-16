@@ -1,6 +1,16 @@
 {
   "plugins": {
     "talking-heads": {
+      "form_controls": {
+        "image_api_key_placeholder": "Your API key",
+        "preview_tts_text_placeholder": "Hello! This is a Talking Heads test.",
+        "target_user_search_placeholder": "Enter a user ID or username...",
+        "user_search_placeholder": "Enter a username...",
+        "sprite_set_name_placeholder": "Set name (e.g. MyAvatar)",
+        "viewer_bar_background_placeholder": "rgba(0,0,0,0.3)",
+        "manual_zip_input_aria": "Upload ZIP file with 5 frames",
+        "manual_assign": "Assign set"
+      },
       "talking_heads": {
         "plugin": {
           "name": "Talking Heads",
@@ -80,10 +90,71 @@
           "clear_cache": "Clear entire cache",
           "test_api": "Test API",
           "test_generate": "Generate test avatar",
-          "save_config": "Save configuration"
+          "save_config": "Save configuration",
+          "testing": "Testing…",
+          "generating": "Generating…",
+          "preparing": "Preparing…",
+          "starting_animation": "Starting animation…",
+          "loading": "Loading…",
+          "load_stream_users": "Load users from stream"
         },
         "alerts": {
           "debug_log": "<strong>Debug log</strong><br>Live logs appear below when debug logging is enabled. Disable debug logging after troubleshooting to avoid noise."
+        },
+        "notifications": {
+          "copy_success": "OBS HUD URL copied.",
+          "copy_failed": "Could not copy the OBS HUD URL.",
+          "load_failed": "Could not load the configuration: {{error}}",
+          "debug_enabled": "Debug logging enabled.",
+          "avatar_generated": "Avatar for {{username}} generated.",
+          "config_loading": "Please wait for the configuration to load…",
+          "save_success": "Configuration saved.",
+          "save_failed": "Could not save the configuration: {{error}}",
+          "api_test_success": "API connection succeeded.",
+          "api_test_failed": "API connection failed: {{error}}",
+          "api_test_error": "API test failed: {{error}}",
+          "generate_start": "Starting test generation… this can take 15–30 seconds.",
+          "generate_success": "Test avatar generated successfully ({{sprites}} sprites created).",
+          "generate_failed": "Avatar generation failed: {{error}}",
+          "generate_error": "Test generation failed: {{error}}",
+          "cache_clear_confirm": "Do you really want to delete all cached avatars?",
+          "cache_cleared": "{{count}} avatars deleted.",
+          "cache_clear_failed": "Could not clear the cache."
+        },
+        "logs": {
+          "empty": "No log entries are available yet."
+        },
+        "manual": {
+          "set_name_required": "Please enter a set name.",
+          "uploading": "Uploading…",
+          "set_uploaded": "Set \"{{setName}}\" uploaded (ID: {{setId}}).",
+          "error": "Error: {{error}}",
+          "network_error": "Network error: {{error}}",
+          "no_sets": "No manual sets are available yet.",
+          "delete_set_confirm": "Delete sprite set \"{{setId}}\"?",
+          "user_and_set_required": "Choose a user and a set.",
+          "set_assigned": "Set \"{{setId}}\" assigned to {{username}}.",
+          "configuration_saved": "Configuration saved."
+        },
+        "placeholders": {
+          "choose_avatar": "-- Choose avatar --"
+        },
+        "errors": {
+          "prefix": "Error:"
+        },
+        "status": {
+          "api_configured": "API configured ({{provider}})",
+          "api_missing": "No API key ({{provider}})",
+          "users_loaded": "{{count}} users loaded{{scope}}",
+          "users_found": "{{count}} users found (search: \"{{term}}\")",
+          "cache_count": "Cache: {{count}} avatars",
+          "active_stream_scope": " (active stream)",
+          "global_scope": " (global)"
+        },
+        "empty": {
+          "no_avatars": "No avatars have been generated yet.",
+          "no_users": "No users found.",
+          "no_active_animations": "No active animations"
         }
       },
       "labels": {

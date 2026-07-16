@@ -122,7 +122,7 @@ function buildGuides(repoRoot) {
         copy,
         steps,
         overlay,
-        inventory: collectGuideUiInventory(repoRoot, { definition: { activation: { route: contract.route } } }),
+        inventory: collectGuideUiInventory(repoRoot, { id: record.id, definition: { activation: { route: contract.route } } }),
         integrationInventory: collectPluginIntegrationInventory(repoRoot, record.id, contract.route)
       })
     };
