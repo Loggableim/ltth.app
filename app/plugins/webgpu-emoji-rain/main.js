@@ -869,7 +869,9 @@ class WebGPUEmojiRainPlugin {
     this.heartBalloonUserColors.clear();
     this.heartBalloonColorPool = this.createHeartBalloonColorPool();
     this.heartBalloonColorIndex = 0;
+    this.spawnQueue = [];
     this.lastHeartBalloonStreamIdentity = streamIdentity;
+    this.api.emit('webgpu-emoji-rain:clear', {});
     return true;
   }
 

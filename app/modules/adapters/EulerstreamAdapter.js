@@ -98,6 +98,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this.streamIdentity = this.confirmedUsername && this.confirmedRoomId
             ? this._buildStreamIdentity(this.confirmedUsername, this.confirmedRoomId)
             : null;
+        this.forceNewStreamOnNextConfirmation = false;
 
         // Periodic stats persistence
         this.statsPersistenceInterval = null;
@@ -918,13 +919,15 @@ class EulerstreamAdapter extends BaseAdapter {
         const previousUsername = this.confirmedUsername;
         const previousRoomId = this.confirmedRoomId;
         const nextIdentity = this._buildStreamIdentity(this.currentUsername, roomId);
-        const isReconnect = !!previousIdentity && previousIdentity === nextIdentity;
+        const isReconnect = !this.forceNewStreamOnNextConfirmation &&
+            !!previousIdentity && previousIdentity === nextIdentity;
         const isNewStream = !isReconnect;
 
         this.roomId = roomId;
         this.confirmedRoomId = roomId;
         this.confirmedUsername = this.currentUsername;
         this.streamIdentity = nextIdentity;
+        this.forceNewStreamOnNextConfirmation = false;
 
         if (isNewStream) {
             const extractedStart = this._extractStreamStartTime(payload || {});
@@ -2413,6 +2416,10 @@ class EulerstreamAdapter extends BaseAdapter {
         this._pauseLiveTracking();
         this.ws = null;
         this.isConnected = false;
+
+        if (wasLive && [4404, 4005, 1000].includes(code)) {
+            this.forceNewStreamOnNextConfirmation = true;
+        }
 
         const emitDisconnect = (disconnectReason, isTransient = false) => {
             if (!this._connectedEventEmitted) return;

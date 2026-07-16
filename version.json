@@ -1,10 +1,10 @@
 {
-  "version": "1.3.28",
+  "version": "1.3.29",
   "releaseDate": "2026-07-15",
   "status": "stable",
-  "downloadVersion": "1.3.28",
-  "downloadNote": "Version 1.3.28 bundles the Visual FX Frame WEBGPU beta, makes Goals reset once per confirmed LIVE stream, and refreshes launcher defaults.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.28",
+  "downloadVersion": "1.3.29",
+  "downloadNote": "Version 1.3.29 resets stream goals and EmojiRain overlays after a completed LIVE session, including same-room restarts.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.29",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
     "macos": "curl -fsSL https://ltth.app/install/install.sh | bash",
@@ -19,6 +19,15 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.29": {
+      "date": "2026-07-15",
+      "changes": [
+        "FIXED: Terminal TikTok LIVE ends now start a fresh session even when the next stream uses the same room ID",
+        "FIXED: Goals plus EmojiRain and WebGPU EmojiRain reset reliably for a new LIVE session",
+        "FIXED: WebGPU EmojiRain OBS Browser Sources rehydrate their runtime state after Socket.IO reconnects",
+        "IMPROVED: Public release metadata and download surfaces bumped to 1.3.29"
+      ]
+    },
     "1.3.28": {
       "date": "2026-07-15",
       "changes": [

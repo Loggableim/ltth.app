@@ -797,7 +797,9 @@ class EmojiRainPlugin {
     this.heartBalloonUserColors.clear();
     this.heartBalloonColorPool = this.createHeartBalloonColorPool();
     this.heartBalloonColorIndex = 0;
+    this.spawnQueue = [];
     this.lastHeartBalloonStreamIdentity = streamIdentity;
+    this.api.emit('emoji-rain:clear', {});
     return true;
   }
 

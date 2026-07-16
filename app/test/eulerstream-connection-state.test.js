@@ -142,6 +142,39 @@ describe('Eulerstream quota-safe connection state', () => {
     expect(adapter.stats.likes).toBe(0);
   });
 
+  test('same room after a terminal LIVE end starts a new session', async () => {
+    const saved = {
+      viewers: 12,
+      likes: 34,
+      totalCoins: 56,
+      followers: 7,
+      shares: 8,
+      gifts: 9,
+      username: 'streamer',
+      roomId: '111',
+      streamStartTime: 1700000000000
+    };
+    const { adapter, db } = createAdapter(saved);
+    const sessionStarted = jest.fn();
+    adapter.on('streamSessionStarted', sessionStarted);
+    adapter._connectionHadLive = true;
+    adapter._connectedEventEmitted = true;
+
+    adapter._handleSocketClose(1, 4005, 'stream ended');
+    adapter._connectedEventEmitted = false;
+    const next = await adapter._confirmLive({
+      generation: 1,
+      roomId: '111',
+      source: 'roomInfo',
+      payload: { roomId: '111', start_time: 1800000000 }
+    });
+
+    expect(next).toMatchObject({ isNewStream: true, isReconnect: false });
+    expect(db.resetStreamStats).toHaveBeenCalledTimes(1);
+    expect(sessionStarted).toHaveBeenCalledTimes(1);
+    expect(adapter.stats.likes).toBe(0);
+  });
+
   test('events remain buffered until a room identity is confirmed', async () => {
     const { adapter } = createAdapter();
     adapter._startIdentityResolution = jest.fn();

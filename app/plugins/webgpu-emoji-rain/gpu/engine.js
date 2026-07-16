@@ -623,9 +623,34 @@
     }
   }
 
+  async function hydrateRuntimeState() {
+    const [configPayload, mappingsPayload, overlayPayload] = await Promise.all([
+      loadPayload('/api/webgpu-emoji-rain/config', { config: {} }),
+      loadPayload('/api/webgpu-emoji-rain/user-mappings', { mappings: {} }),
+      loadPayload('/api/webgpu-emoji-rain/overlay/state', { state: {} })
+    ]);
+
+    state.config = configPayload?.config && typeof configPayload.config === 'object' ? configPayload.config : {};
+    state.userMappings = mappingsPayload?.mappings && typeof mappingsPayload.mappings === 'object' ? mappingsPayload.mappings : {};
+    state.overlay = {
+      ...state.overlay,
+      ...(overlayPayload?.state && typeof overlayPayload.state === 'object' ? overlayPayload.state : {})
+    };
+    state.paused = state.overlay.paused === true;
+    refreshRateConfiguration();
+    applyEnabledState(state.config.enabled !== false);
+    state.renderer?.configure?.(state.config);
+    applyOverlayState();
+  }
+
   function connectSocket() {
     if (state.socket) return;
     state.socket = io();
+    state.socket.on('connect', () => {
+      void hydrateRuntimeState().catch(error => {
+        console.warn(`[WebGPU EmojiRain] Failed to hydrate after Socket.IO reconnect: ${error.message}`);
+      });
+    });
     state.socket.on('webgpu-emoji-rain:spawn', spawnEmoji);
     state.socket.on('webgpu-emoji-rain:heart-balloons', spawnHearts);
     state.socket.on('webgpu-emoji-rain:gift-balls', spawnGifts);
@@ -653,21 +678,7 @@
   }
 
   async function init() {
-    const [configPayload, mappingsPayload, overlayPayload] = await Promise.all([
-      loadPayload('/api/webgpu-emoji-rain/config', { config: {} }),
-      loadPayload('/api/webgpu-emoji-rain/user-mappings', { mappings: {} }),
-      loadPayload('/api/webgpu-emoji-rain/overlay/state', { state: {} })
-    ]);
-
-    state.config = configPayload?.config && typeof configPayload.config === 'object' ? configPayload.config : {};
-    state.userMappings = mappingsPayload?.mappings && typeof mappingsPayload.mappings === 'object' ? mappingsPayload.mappings : {};
-    state.overlay = {
-      ...state.overlay,
-      ...(overlayPayload?.state && typeof overlayPayload.state === 'object' ? overlayPayload.state : {})
-    };
-    state.paused = state.overlay.paused === true;
-    refreshRateConfiguration();
-    applyEnabledState(state.config.enabled !== false);
+    await hydrateRuntimeState();
     connectSocket();
 
     if (typeof globalThis.setInterval === 'function') {
