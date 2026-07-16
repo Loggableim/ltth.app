@@ -58,7 +58,7 @@ class MockAPI {
 }
 
 const commandCases = [
-  ['beans', '🐾', '/beans', 'subscriber', 30000, 5000],
+  ['beans', '🐾', '/beans', 'all', 30000, 5000],
   ['miau', '🐱', '/miau', 'all', 60000, 15000],
   ['rawr', '🦖', '/rawr', 'all', 60000, 15000],
   ['woof', '🐶', '/woof', 'all', 60000, 15000],
