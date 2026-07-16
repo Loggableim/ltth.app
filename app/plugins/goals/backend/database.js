@@ -35,6 +35,7 @@ class GoalsDatabase {
                     -- Behavior on reach
                     on_reach_action TEXT DEFAULT 'hide',
                     on_reach_increment INTEGER DEFAULT 100,
+                    reset_on_stream_end INTEGER DEFAULT 1,
 
                     -- Fireworks finale on reach
                     firework_enabled INTEGER DEFAULT 0,
@@ -161,6 +162,10 @@ class GoalsDatabase {
             {
                 name: 'firework_progress_milestones',
                 sql: "ALTER TABLE goals ADD COLUMN firework_progress_milestones TEXT DEFAULT '25,50,75'"
+            },
+            {
+                name: 'reset_on_stream_end',
+                sql: 'ALTER TABLE goals ADD COLUMN reset_on_stream_end INTEGER DEFAULT 1'
             }
         ];
 
@@ -188,6 +193,7 @@ class GoalsDatabase {
             animation_on_reach = 'celebration',
             on_reach_action = 'hide',
             on_reach_increment = 100,
+            reset_on_stream_end = 1,
             firework_enabled = 0,
             firework_intensity = 3.0,
             firework_duration = 5000,
@@ -208,19 +214,20 @@ class GoalsDatabase {
             INSERT INTO goals (
                 id, name, goal_type, enabled, current_value, target_value, start_value,
                 template_id, animation_on_update, animation_on_reach,
-                on_reach_action, on_reach_increment,
+                on_reach_action, on_reach_increment, reset_on_stream_end,
                 firework_enabled, firework_intensity, firework_duration,
                 firework_theme, firework_encounter_mode, firework_quality_profile,
                 firework_hud_label, firework_progress_enabled, firework_progress_milestones,
                 theme_json,
                 overlay_width, overlay_height
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         stmt.run(
             id, name, goal_type, enabled, current_value, target_value, start_value,
             template_id, animation_on_update, animation_on_reach,
             on_reach_action, on_reach_increment,
+            reset_on_stream_end === 0 || reset_on_stream_end === '0' || reset_on_stream_end === false ? 0 : 1,
             firework_enabled ? 1 : 0, firework_intensity, firework_duration,
             firework_theme, firework_encounter_mode, firework_quality_profile,
             firework_hud_label, firework_progress_enabled ? 1 : 0, firework_progress_milestones,
@@ -301,7 +308,7 @@ class GoalsDatabase {
         const allowedFields = [
             'name', 'goal_type', 'enabled', 'current_value', 'target_value',
             'start_value', 'template_id', 'animation_on_update', 'animation_on_reach',
-            'on_reach_action', 'on_reach_increment',
+            'on_reach_action', 'on_reach_increment', 'reset_on_stream_end',
             'firework_enabled', 'firework_intensity', 'firework_duration',
             'firework_theme', 'firework_encounter_mode', 'firework_quality_profile',
             'firework_hud_label', 'firework_progress_enabled', 'firework_progress_milestones',

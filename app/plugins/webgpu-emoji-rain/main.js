@@ -124,7 +124,7 @@ class WebGPUEmojiRainPlugin {
       '#ff7eb3'
     ];
     this.heartBalloonColorPool = this.createHeartBalloonColorPool();
-    this.lastHeartBalloonStreamIdentity = null;
+    this.lastHeartBalloonSessionToken = null;
   }
 
   async init() {
@@ -857,12 +857,14 @@ class WebGPUEmojiRainPlugin {
       return false;
     }
 
-    const streamIdentity = data.streamIdentity || (
-      data.username && data.roomId
-        ? `${String(data.username).toLowerCase()}:${data.roomId}`
-        : null
-    );
-    if (!streamIdentity || streamIdentity === this.lastHeartBalloonStreamIdentity) {
+    const sessionToken = data.streamSessionId !== undefined && data.streamSessionId !== null
+      ? `session:${data.streamSessionId}`
+      : data.streamIdentity || (
+        data.username && data.roomId
+          ? `${String(data.username).toLowerCase()}:${data.roomId}`
+          : null
+      );
+    if (!sessionToken || sessionToken === this.lastHeartBalloonSessionToken) {
       return false;
     }
 
@@ -870,7 +872,7 @@ class WebGPUEmojiRainPlugin {
     this.heartBalloonColorPool = this.createHeartBalloonColorPool();
     this.heartBalloonColorIndex = 0;
     this.spawnQueue = [];
-    this.lastHeartBalloonStreamIdentity = streamIdentity;
+    this.lastHeartBalloonSessionToken = sessionToken;
     this.api.emit('webgpu-emoji-rain:clear', {});
     return true;
   }

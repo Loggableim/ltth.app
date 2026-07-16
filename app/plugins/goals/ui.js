@@ -180,6 +180,7 @@ function openCreateModal() {
     document.getElementById('goal-bg-color').value = '#0f172a'; // Default bg in hex
     document.getElementById('goal-font-family').value = "'Impact', 'Haettenschweiler', 'Arial Narrow Bold', sans-serif";
     document.getElementById('goal-font-size').value = '20';
+    document.getElementById('goal-reset-on-stream-end').checked = true;
     document.getElementById('goal-firework-enabled').checked = false;
     document.getElementById('goal-firework-intensity').value = '3';
     document.getElementById('goal-firework-duration').value = '5';
@@ -222,6 +223,7 @@ function editGoal(id) {
     document.getElementById('goal-anim-reach').value = goal.animation_on_reach;
     document.getElementById('goal-on-reach').value = goal.on_reach_action;
     document.getElementById('goal-increment').value = goal.on_reach_increment;
+    document.getElementById('goal-reset-on-stream-end').checked = Number(goal.reset_on_stream_end) !== 0;
     document.getElementById('goal-firework-enabled').checked = Number(goal.firework_enabled) === 1;
     document.getElementById('goal-firework-intensity').value = clampNumber(goal.firework_intensity, 1, 10, 3);
     document.getElementById('goal-firework-duration').value = clampNumber((goal.firework_duration || 5000) / 1000, 1, 30, 5);
@@ -271,6 +273,7 @@ async function saveGoal(e) {
         animation_on_reach: document.getElementById('goal-anim-reach').value,
         on_reach_action: document.getElementById('goal-on-reach').value,
         on_reach_increment: parseInt(document.getElementById('goal-increment').value),
+        reset_on_stream_end: document.getElementById('goal-reset-on-stream-end').checked ? 1 : 0,
         firework_enabled: document.getElementById('goal-firework-enabled').checked ? 1 : 0,
         firework_intensity: clampNumber(document.getElementById('goal-firework-intensity').value, 1, 10, 3),
         firework_duration: Math.round(clampNumber(document.getElementById('goal-firework-duration').value, 1, 30, 5) * 1000),
