@@ -785,13 +785,23 @@ class PlaybackController extends EventEmitter {
       const terminalInfo = isOutgoingCrossfade
         ? { ...info, reason: 'crossfade' }
         : info;
-      this._emitTrackEndOnce(slot, terminalInfo);
       if (!isOutgoingCrossfade && this.activeSlot === slot.name) {
-        slot.playbackId = null;
         slot.state = 'idle';
         this.activePlaybackId = null;
+        if (terminalInfo.reason === 'error') this.activeSlot = null;
         this.transportState = 'idle';
       }
+      if (!isOutgoingCrossfade && terminalInfo.reason === 'error') {
+        Promise.resolve(this._retireSlot(slot))
+          .then(() => this._emitTrackEndOnce(slot, terminalInfo))
+          .catch((error) => {
+            this._recordError(error, slot.transitionGeneration);
+            this._emitTrackEndOnce(slot, terminalInfo);
+          });
+        return;
+      }
+      this._emitTrackEndOnce(slot, terminalInfo);
+      if (!isOutgoingCrossfade) slot.playbackId = null;
     });
 
     slot.engine.on('volume-changed', (volume) => {

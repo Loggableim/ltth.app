@@ -506,6 +506,31 @@ describe('Music Bot lifecycle-safe playback controller', () => {
     expect(controller.getState()).toBe('playing');
   });
 
+  test('retires an errored active slot before publishing its terminal event', async () => {
+    const engine = new FakeEngine('A');
+    const { controller } = createHarness({ engines: [engine] });
+    const terminalSnapshots = [];
+    controller.on('track-end', (info) => {
+      terminalSnapshots.push({ info, snapshot: controller.getSnapshot() });
+    });
+    const track = { id: 'viewer-error', title: 'Viewer error', url: 'viewer-error.mp3' };
+    await controller.play(track);
+
+    engine.emit('track-end', { track, reason: 'error', error: 'decoder failed' });
+    await flushPromises();
+
+    expect(engine.shutdownCalls).toBe(1);
+    expect(terminalSnapshots).toEqual([{
+      info: expect.objectContaining({ track, reason: 'error', error: 'decoder failed' }),
+      snapshot: expect.objectContaining({
+        transportState: 'idle',
+        activePlaybackId: null,
+        activeSlot: null,
+        slots: { A: null, B: null }
+      })
+    }]);
+  });
+
   test('classifies outgoing EOF during crossfade as crossfade, never ended', async () => {
     jest.useFakeTimers();
     const outgoing = new FakeEngine('A');
