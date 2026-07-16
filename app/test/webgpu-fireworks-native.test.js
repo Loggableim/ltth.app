@@ -137,7 +137,7 @@ describe('WebGPU Fireworks native migration', () => {
       'combined-whistle-tiny4'
     ]) expect(orchestrationSource).toContain(sound);
     expect(orchestrationSource).toContain('fitLaunchToFlight(selection, flightDuration, seed)');
-    expect(orchestrationSource).toContain('maxDuration: plan.flightDuration');
+    expect(orchestrationSource).toContain('maxDuration: Math.min(plan.flightDuration, remainingShowSeconds)');
     expect(orchestrationSource).toContain('source.stop(stopAt)');
     expect(orchestrationSource).toContain('this.audio.play(explosion.sound.bang');
   });

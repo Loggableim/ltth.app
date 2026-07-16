@@ -629,6 +629,40 @@ class AudioManager {
         return { ...withWindow(launch), bang: pick(bangPool), crackle, crackleProfile: profile, combo: Math.max(1, Number(combo) || 1) };
     }
 
+    chooseForRole(role, tier, seed) {
+        const normalizedRole = String(role || 'single').toLowerCase();
+        const roleSeed = (Number(seed) >>> 0) ^ (parseInt(this.hash(normalizedRole), 36) >>> 0);
+        const random = this.createRandom(roleSeed);
+        const pick = values => values[Math.floor(random() * values.length)];
+        const profiles = {
+            single: { launch: this.BASIC_LAUNCH, bang: ['explosion-medium'] },
+            call: { launch: this.BASIC_LAUNCH, bang: ['explosion-medium'] },
+            pair: { launch: this.SMOOTH_LAUNCH, bang: ['explosion-medium'] },
+            response: { launch: this.SMOOTH_LAUNCH, bang: ['explosion-medium'] },
+            ballet: { launch: this.SMOOTH_LAUNCH, bang: ['explosion-medium'] },
+            accent: { launch: ['launch-whistle', 'launch-smooth2'], bang: ['explosion-big'] },
+            floral: { launch: ['launch-whistle', 'launch-smooth2'], bang: ['explosion-big'] },
+            volley: { launch: ['launch-whistle', 'launch-smooth2'], bang: ['explosion-big'] },
+            salute: { launch: ['launch-whistle'], bang: ['explosion-huge'] },
+            heavy: { launch: ['launch-whistle'], bang: ['explosion-huge'] },
+            crown: { launch: ['launch-whistle'], bang: ['explosion-huge'] },
+            wall: { launch: ['launch-whistle'], bang: ['explosion-huge'] },
+            wave: { launch: ['launch-whistle'], bang: ['explosion-huge'] }
+        };
+        const fallback = ['big', 'massive'].includes(tier) ? profiles.accent : profiles.single;
+        const profile = profiles[normalizedRole] || fallback;
+        const launch = pick(profile.launch);
+        return {
+            launch,
+            launchWindow: this.LAUNCH_WINDOWS[launch] || null,
+            bang: pick(profile.bang),
+            crackle: null,
+            crackleProfile: null,
+            combo: 1,
+            soundRole: normalizedRole
+        };
+    }
+
     fitLaunchToFlight(selection, flightDuration, seed) {
         const duration = Math.max(0.05, Number(flightDuration) || 0);
         if (!selection?.launch || !this.CUE_MANIFEST[selection.launch]) return selection;
@@ -787,6 +821,8 @@ class WebGPUFireworksEngine {
         this.finaleIds = new Set();
         this.currentFinale = null;
         this.finalePhase = 'idle';
+        this.finaleGeneration = 0;
+        this.failingFinaleIds = new Set();
         this.giftLaunchTimestamps = [];
         this.giftBacklog = new Map();
         this.giftDrainDue = null;
@@ -894,6 +930,9 @@ class WebGPUFireworksEngine {
     }
 
     setStatus(status) {
+        const previousState = this.rendererStatus?.state;
+        const failureStates = new Set(['error', 'device-lost']);
+        const entersRendererFailure = failureStates.has(status.state) && !failureStates.has(previousState);
         this.rendererStatus = {
             ...this.rendererStatus,
             ...status,
@@ -908,6 +947,10 @@ class WebGPUFireworksEngine {
         this.updateDebugPanel();
         if ((this.debug || this.isBenchmark) && status.state && status.state !== 'ready') this.showDiagnostic(status);
         else this.hideDiagnostic();
+        if (entersRendererFailure && this.currentFinale) {
+            const message = status.reason || `Renderer entered ${status.state}`;
+            this.failFinale(this.currentFinale.id, new Error(message), this.getRuntimeNow());
+        }
     }
 
     emitStatus() {
@@ -1009,6 +1052,8 @@ class WebGPUFireworksEngine {
         if (!(this.giftBacklog instanceof Map)) this.giftBacklog = new Map();
         if (!Object.prototype.hasOwnProperty.call(this, 'giftDrainDue')) this.giftDrainDue = null;
         if (!Number.isFinite(this.finaleSequence)) this.finaleSequence = 0;
+        if (!Number.isFinite(this.finaleGeneration)) this.finaleGeneration = 0;
+        if (!(this.failingFinaleIds instanceof Set)) this.failingFinaleIds = new Set();
     }
 
     getRuntimeNow() {
@@ -1138,6 +1183,16 @@ class WebGPUFireworksEngine {
         if (!this.currentFinale || !this.isGiftTrigger(data)) return this.handleTrigger(data);
         const now = this.getRuntimeNow();
         this.pruneGiftLaunches(now);
+        if (this.giftBacklog.size) {
+            const bundle = this.bundleGift(data);
+            this.drainGiftBacklog(now);
+            return {
+                accepted: true,
+                queued: this.giftBacklog.has(bundle.giftBundleKey),
+                bundled: true,
+                bundleCount: bundle.bundleCount
+            };
+        }
         if (this.giftLaunchTimestamps.length < 3) return this.launchGiftNow(data, now);
         const bundle = this.bundleGift(data);
         this.scheduleGiftDrain(now);
@@ -1148,6 +1203,32 @@ class WebGPUFireworksEngine {
         if (this.config.toasterMode || this.performanceMode === 'minimal') return 0.5;
         if (this.performanceMode === 'reduced') return 0.75;
         return 1;
+    }
+
+    isFinaleRuntimeTokenValid(finaleId, runtimeToken) {
+        if (!finaleId) return true;
+        return Boolean(
+            runtimeToken &&
+            this.currentFinale?.id === finaleId &&
+            this.currentFinale.runtimeToken === runtimeToken
+        );
+    }
+
+    materializeFinalePayload(payload = {}) {
+        if (!Number.isFinite(Number(payload.baseParticleCount))) return { ...payload };
+        const qualityScale = this.getFinaleQualityScale();
+        const sizeScale = Math.sqrt(qualityScale);
+        const baseSize = Array.isArray(payload.baseParticleSizeRange) ? payload.baseParticleSizeRange : [4, 12];
+        const ordinal = Math.max(0, Number(payload.finaleOrdinal) || 0);
+        const crackleEnabled = this.config.toasterMode || this.performanceMode === 'minimal'
+            ? false
+            : payload.presetCrackleEnabled === true && (this.performanceMode !== 'reduced' || ordinal % 2 === 0);
+        return {
+            ...payload,
+            particleCount: Math.max(1, Math.round(Number(payload.baseParticleCount) * qualityScale)),
+            particleSizeRange: baseSize.map(value => Math.max(1, Number(value) * sizeScale)),
+            crackleEnabled
+        };
     }
 
     calculateFlightDuration(targetY) {
@@ -1166,7 +1247,8 @@ class WebGPUFireworksEngine {
             const event = this.timelineQueue.shift();
             try {
                 if (event.type === 'finale-launch') {
-                    Promise.resolve(this.handleTrigger(event.payload)).catch(error => this.failFinale(event.finaleId, error, now));
+                    const payload = this.materializeFinalePayload(event.payload);
+                    Promise.resolve(this.handleTrigger(payload)).catch(error => this.failFinale(event.finaleId, error, now));
                 } else if (event.type === 'finale-phase') {
                     this.setFinalePhase(event.finaleId, event.phase);
                 } else if (event.type === 'finale-complete') {
@@ -1231,8 +1313,13 @@ class WebGPUFireworksEngine {
             ? Number(launch.explodeAt)
             : createdAt + Math.max(0, Number(launch.flightDuration) || 0) * 1000;
         const crackleProfile = explosion.sound.crackleProfile || null;
-        const crackleDuration = crackleProfile === 'long' ? 1 : crackleProfile === 'short' ? 0.65 : 0;
         const crackleDelay = crackleProfile === 'long' ? 220 : 180;
+        let crackleAt = crackleProfile ? explodeAt + crackleDelay : null;
+        let crackleDuration = crackleProfile === 'long' ? 1 : crackleProfile === 'short' ? 0.65 : 0;
+        if (crackleAt !== null && explosion.finaleEndsAt) {
+            crackleDuration = Math.min(crackleDuration, Math.max(0, (explosion.finaleEndsAt - crackleAt) / 1000));
+            if (crackleDuration <= 0) crackleAt = null;
+        }
         return {
             id: explosion.id,
             finaleId: launch.finaleId || explosion.finaleId || null,
@@ -1240,7 +1327,7 @@ class WebGPUFireworksEngine {
             createdAt,
             launchAt: createdAt,
             explodeAt,
-            crackleAt: crackleProfile ? explodeAt + crackleDelay : null,
+            crackleAt,
             cleanupAt: explodeAt + Math.min(6000, 1800 + explosion.intensity * 900),
             flightDuration: launch.flightDuration,
             launch,
@@ -1290,6 +1377,10 @@ class WebGPUFireworksEngine {
         const cue = this.audio.CUE_MANIFEST[explosion.sound.launch] || {};
         const sourceWindow = Number(explosion.sound.launchWindow || cue.embeddedBangAt || plan.flightDuration);
         const playbackRate = Math.max(0.9, Math.min(1.1, sourceWindow / Math.max(0.05, plan.flightDuration)));
+        const remainingShowSeconds = explosion.finaleEndsAt
+            ? Math.max(0, (explosion.finaleEndsAt - plannedAt) / 1000)
+            : plan.flightDuration;
+        if (remainingShowSeconds <= 0) return;
         const playbackOptions = {
             effectId: plan.id,
             eventType: 'launch-audio',
@@ -1299,7 +1390,7 @@ class WebGPUFireworksEngine {
             playbackRate,
             // The selected cue is fitted to the flight at 0.9-1.1x. Let its
             // final 60 ms fade land on the separately scheduled bang.
-            maxDuration: plan.flightDuration,
+            maxDuration: Math.min(plan.flightDuration, remainingShowSeconds),
             fadeOutDuration: 0.06
         };
         void this.audio.play(explosion.sound.launch, 0.82, 1, playbackOptions);
@@ -1341,7 +1432,12 @@ class WebGPUFireworksEngine {
     }
 
     async handleTrigger(data = {}) {
-        if (!this.renderer?.initialized || this.rendererStatus.state !== 'ready') return;
+        if (!this.renderer?.initialized || this.rendererStatus.state !== 'ready') {
+            if (data.finaleId) throw new Error(`WebGPU renderer is not ready for finale ${data.finaleId}`);
+            return;
+        }
+        const finaleId = data.finaleId || null;
+        const runtimeToken = data.runtimeToken || null;
         const shape = ['burst', 'heart', 'paws', 'star', 'ring', 'spiral'].includes(data.shape) ? data.shape : 'burst';
         const intensity = Math.max(0.1, Math.min(5, Number(data.intensity) || 1));
         const combo = Math.max(1, Number(data.combo) || 1);
@@ -1367,14 +1463,19 @@ class WebGPUFireworksEngine {
         let skipRocket = !forceRocket && combo >= 5;
         let flightDuration = skipRocket ? 0 : this.calculateFlightDuration(targetY);
         const assets = await this.prepareImages(data);
+        if (finaleId && !this.isFinaleRuntimeTokenValid(finaleId, runtimeToken)) {
+            return { cancelled: true, finaleId, reason: 'stale-finale-generation' };
+        }
         const id = data.id || `${Date.now()}-${Math.random()}`;
         const seed = Number.isFinite(Number(data.seed)) ? Number(data.seed) : (parseInt(this.audio.hash(id), 36) >>> 0);
         // Choose the complete tier profile before applying the combo shortcut.
         // If this becomes a crackling effect it must remain a real rocket.
-        let sound = this.audio.choose(tier, forceRocket ? 1 : combo, false, {
-            seed,
-            crackleFrequency: data.crackleFrequency ?? this.config.crackleFrequency
-        });
+        let sound = data.soundRole
+            ? this.audio.chooseForRole(data.soundRole, tier, seed)
+            : this.audio.choose(tier, forceRocket ? 1 : combo, false, {
+                seed,
+                crackleFrequency: data.crackleFrequency ?? this.config.crackleFrequency
+            });
         sound = this.applyCracklePolicy(sound, data, tier, seed);
         if (instant && !sound.crackle) {
             sound.launch = null;
@@ -1508,12 +1609,16 @@ class WebGPUFireworksEngine {
         this.audio.recordTimelineEvent(effectId, 'explosion-visual', plannedAt, actualAt, 'rendered');
         if (explosion.playSound) {
             const bangDurations = { small: 0.7, medium: 0.9, big: 1.2, massive: 1.5 };
+            const remainingShowSeconds = explosion.finaleEndsAt
+                ? Math.max(0, (explosion.finaleEndsAt - plannedAt) / 1000)
+                : Number.POSITIVE_INFINITY;
+            if (remainingShowSeconds <= 0) return;
             void this.audio.play(explosion.sound.bang, explosion.tier === 'massive' ? 1 : 0.88, 3, {
                 effectId,
                 eventType: 'bang-audio',
                 plannedAt,
                 maxLatenessMs: 100,
-                maxDuration: bangDurations[explosion.tier] || 0.9,
+                maxDuration: Math.min(bangDurations[explosion.tier] || 0.9, remainingShowSeconds),
                 fadeOutDuration: 0.1,
                 bus: 'bang'
             });
@@ -1526,16 +1631,12 @@ class WebGPUFireworksEngine {
         const flightDurationMs = this.calculateFlightDuration(targetY) * 1000;
         const plannedExplodeAt = startAt + Number(cue.beatAtMs);
         const plannedLaunchAt = plannedExplodeAt - flightDurationMs;
-        const qualityScale = this.getFinaleQualityScale();
         const configuredSize = Array.isArray(this.config.particleSizeRange) ? this.config.particleSizeRange : [4, 12];
-        const sizeScale = Math.sqrt(qualityScale);
         const intensity = Math.max(0.1, Math.min(5, (Number(data.intensity) || 3) * (Number(launch.powerScale) || 1)));
-        const crackleEnabled = this.config.toasterMode || this.performanceMode === 'minimal'
-            ? false
-            : launch.crackleEnabled === true && (this.performanceMode !== 'reduced' || ordinal % 2 === 0);
         return {
             id: launch.id,
             finaleId: showPlan.id,
+            runtimeToken: this.currentFinale?.runtimeToken,
             cueBeatAtMs: Number(cue.beatAtMs),
             phase: cue.phase,
             formation: cue.formation,
@@ -1548,11 +1649,12 @@ class WebGPUFireworksEngine {
             particleScale: Number(launch.particleScale) || 1,
             soundRole: launch.soundRole,
             intensity,
-            particleCount: Math.max(1, Math.round(60 * intensity * (Number(launch.particleScale) || 1) * qualityScale)),
-            particleSizeRange: configuredSize.map(value => Math.max(1, Number(value) * sizeScale)),
+            baseParticleCount: Math.max(1, Math.round(60 * intensity * (Number(launch.particleScale) || 1))),
+            baseParticleSizeRange: [...configuredSize],
+            presetCrackleEnabled: launch.crackleEnabled === true,
+            finaleOrdinal: ordinal,
             tier: launch.tier,
             forceRocket: true,
-            crackleEnabled,
             playSound: data.playSound !== false,
             plannedLaunchAt,
             plannedExplodeAt,
@@ -1634,6 +1736,8 @@ class WebGPUFireworksEngine {
             intensity, count, finaleDuration, interval, shapes, colors, bursts, baseSeed,
             random, frequency, crackleInterval, seededPhase
         } = legacy;
+        const visualTailMs = (1.15 + intensity * 0.28) * 1000;
+        let completeAt = startAt + finaleDuration;
         for (let i = 0; i < count; i++) {
             const plan = bursts[i] || {
                 position: { x: 0.16 + ((i * 0.61803398875) % 1) * 0.68, y: 0.18 + ((i * 0.38196601125) % 1) * 0.42 },
@@ -1641,13 +1745,17 @@ class WebGPUFireworksEngine {
                 seed: baseSeed + i * 2654435761
             };
             const crackleEnabled = frequency > 0 && (i - seededPhase) % crackleInterval === 0 && i >= seededPhase;
+            const launchAt = startAt + i * interval;
+            const targetY = Math.max(0, Math.min(1, Number(plan.position?.y) || 0.5)) * this.baseHeight;
+            completeAt = Math.max(completeAt, launchAt + this.calculateFlightDuration(targetY) * 1000 + visualTailMs);
             this.scheduleTimeline({
                 type: 'finale-launch',
-                due: startAt + i * interval,
+                due: launchAt,
                 order: i,
                 finaleId: id,
                 payload: {
-                id: `${id}-${i}`, finaleId: id, shape: shapes[i % shapes.length], colors,
+                id: `${id}-${i}`, finaleId: id, runtimeToken: entry.runtimeToken,
+                shape: shapes[i % shapes.length], colors,
                 position: plan.position, origin: plan.origin, seed: plan.seed,
                 visualStyle: data.visualStyle || this.config.visualStyle,
                 intensity: intensity * (0.78 + random() * 0.35), particleCount: Math.round(60 * intensity),
@@ -1659,13 +1767,15 @@ class WebGPUFireworksEngine {
                 }
             });
         }
-        this.scheduleTimeline({ type: 'finale-complete', due: startAt + finaleDuration, order: 100, finaleId: id });
-        return { count, crackleInterval, seededPhase, frequency, durationMs: finaleDuration };
+        this.scheduleTimeline({ type: 'finale-complete', due: completeAt, order: 100, finaleId: id });
+        return { count, crackleInterval, seededPhase, frequency, durationMs: completeAt - startAt };
     }
 
     startFinaleEntry(entry, startAt = this.getRuntimeNow()) {
         const style = entry.showPlan?.style || 'legacy';
         const length = entry.showPlan?.length || 'legacy';
+        this.finaleGeneration++;
+        entry.runtimeToken = `${entry.id}:${this.finaleGeneration}`;
         this.currentFinale = {
             id: entry.id,
             eventId: entry.data.eventId || null,
@@ -1673,6 +1783,7 @@ class WebGPUFireworksEngine {
             length,
             phase: 'opening',
             startedAt: startAt,
+            runtimeToken: entry.runtimeToken,
             legacy: entry.legacy
         };
         this.finalePhase = 'opening';
@@ -1692,6 +1803,8 @@ class WebGPUFireworksEngine {
 
     completeFinale(finaleId, now = this.getRuntimeNow()) {
         if (!this.currentFinale || this.currentFinale.id !== finaleId) return false;
+        const controlEvents = new Set(['finale-launch', 'finale-phase', 'finale-complete']);
+        this.timelineQueue = this.timelineQueue.filter(event => event.finaleId !== finaleId || !controlEvents.has(event.type));
         this.finaleIds.delete(finaleId);
         this.currentFinale = null;
         this.finalePhase = 'idle';
@@ -1702,23 +1815,30 @@ class WebGPUFireworksEngine {
     }
 
     failFinale(finaleId, error, now = this.getRuntimeNow()) {
-        const message = error?.message || String(error || 'Unknown finale renderer error');
-        console.error(`[WebGPU Fireworks] Finale ${finaleId || 'unknown'} failed:`, error);
-        this.timelineQueue = this.timelineQueue.filter(event => event.finaleId !== finaleId);
-        for (const [effectId, plan] of this.effectPlans.entries()) {
-            if (plan.finaleId !== finaleId) continue;
-            this.effectPlans.delete(effectId);
-            this.activeShows.delete(effectId);
+        this.ensureFinaleRuntimeState();
+        if (!finaleId || this.failingFinaleIds.has(finaleId)) return false;
+        this.failingFinaleIds.add(finaleId);
+        try {
+            const message = error?.message || String(error || 'Unknown finale renderer error');
+            console.error(`[WebGPU Fireworks] Finale ${finaleId || 'unknown'} failed:`, error);
+            this.timelineQueue = this.timelineQueue.filter(event => event.finaleId !== finaleId);
+            for (const [effectId, plan] of this.effectPlans.entries()) {
+                if (plan.finaleId !== finaleId) continue;
+                this.effectPlans.delete(effectId);
+                this.activeShows.delete(effectId);
+            }
+            this.finaleIds.delete(finaleId);
+            if (this.currentFinale?.id === finaleId) {
+                this.currentFinale = null;
+                this.finalePhase = 'idle';
+                const next = this.finaleQueue.shift();
+                if (next) this.startFinaleEntry(next, now);
+            }
+            this.emitFinaleTelemetry({ finaleError: message });
+            return false;
+        } finally {
+            this.failingFinaleIds.delete(finaleId);
         }
-        this.finaleIds.delete(finaleId);
-        if (this.currentFinale?.id === finaleId) {
-            this.currentFinale = null;
-            this.finalePhase = 'idle';
-            const next = this.finaleQueue.shift();
-            if (next) this.startFinaleEntry(next, now);
-        }
-        this.emitFinaleTelemetry({ finaleError: message });
-        return false;
     }
 
     handleFinale(data = {}) {
@@ -1815,7 +1935,16 @@ class WebGPUFireworksEngine {
         this.lastFrameAt = now;
         this.processTimeline(now);
         const shouldSkip = this.config.frameSkipEnabled !== false && this.performanceMode === 'minimal' && (this.skippedFrame = !this.skippedFrame);
-        this.renderer?.render(delta, now / 1000, { present: !shouldSkip });
+        try {
+            this.renderer?.render(delta, now / 1000, { present: !shouldSkip });
+        } catch (error) {
+            console.error('[WebGPU Fireworks] Renderer frame failed:', error);
+            const failedFinaleId = this.currentFinale?.id || null;
+            this.setStatus({ state: 'error', reason: error?.message || String(error) });
+            if (failedFinaleId && this.currentFinale?.id === failedFinaleId) {
+                this.failFinale(failedFinaleId, error, now);
+            }
+        }
         this.frameCount++;
         if (now - this.fpsWindowAt >= 1000) {
             this.fps = Math.round(this.frameCount * 1000 / (now - this.fpsWindowAt));
@@ -1862,6 +1991,8 @@ class WebGPUFireworksEngine {
         this.finaleIds.clear();
         this.currentFinale = null;
         this.finalePhase = 'idle';
+        this.finaleGeneration = 0;
+        this.failingFinaleIds.clear();
         this.giftBacklog.clear();
         this.giftLaunchTimestamps.length = 0;
         this.giftDrainDue = null;

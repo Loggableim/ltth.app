@@ -30,7 +30,8 @@ function makeRuntime(now = 10000) {
     spawnRocket: jest.fn(),
     spawnExplosion: jest.fn(),
     spawnCrackle: jest.fn(),
-    uploadImage: jest.fn().mockResolvedValue(0)
+    uploadImage: jest.fn().mockResolvedValue(0),
+    getMetrics: jest.fn(() => ({}))
   };
   engine.socket = { connected: false, emit: jest.fn() };
   engine.timelineQueue = [];
@@ -40,6 +41,9 @@ function makeRuntime(now = 10000) {
   engine.crackleSequence = { eligible: 0, ordinal: 0, lastCrackleOrdinal: -100 };
   engine.performanceMode = 'normal';
   engine.getRuntimeNow = () => now;
+  engine.updateDebugPanel = jest.fn();
+  engine.showDiagnostic = jest.fn();
+  engine.hideDiagnostic = jest.fn();
   engine.ensureFinaleRuntimeState();
   return engine;
 }
@@ -176,7 +180,8 @@ describe('WebGPU choreographed finale runtime', () => {
     expect(first).toMatchObject({ accepted: true, queued: false, legacy: true, count: 3 });
     expect(second).toMatchObject({ accepted: true, queued: true, legacy: true, count: 2 });
     expect(engine.timelineQueue.filter(event => event.type === 'finale-launch')).toHaveLength(3);
-    now = 5900;
+    const legacyComplete = engine.timelineQueue.find(event => event.type === 'finale-complete' && event.finaleId === 'legacy-a');
+    now = legacyComplete.due;
     engine.processTimeline(now);
     expect(engine.currentFinale.id).toBe('legacy-b');
     // The first queued launch is due at the hand-off timestamp and is consumed
@@ -243,8 +248,6 @@ describe('WebGPU choreographed finale runtime', () => {
   ])('degrades %s visuals without changing planned timing or formations', (mode, disablesCrackle) => {
     const normal = makeRuntime(10000);
     const constrained = makeRuntime(10000);
-    if (mode === 'toaster') constrained.config.toasterMode = true;
-    else constrained.performanceMode = mode;
     const showPlan = plan('thunder-finale', 'short', `quality-${mode}`);
     normal.handleFinale({ id: `quality-${mode}`, intensity: 4, showPlan });
     constrained.handleFinale({ id: `quality-${mode}`, intensity: 4, showPlan });
@@ -254,21 +257,49 @@ describe('WebGPU choreographed finale runtime', () => {
     expect(constrainedEvents.map(event => [event.due, event.payload.plannedExplodeAt, event.payload.formation]))
       .toEqual(normalEvents.map(event => [event.due, event.payload.plannedExplodeAt, event.payload.formation]));
     expect(constrainedEvents).toHaveLength(normalEvents.length);
-    expect(constrainedEvents[0].payload.particleCount).toBeLessThan(normalEvents[0].payload.particleCount);
-    expect(constrainedEvents[0].payload.shape).toBe(normalEvents[0].payload.shape);
-    expect(constrainedEvents[0].payload.colors).toEqual(normalEvents[0].payload.colors);
-    expect(constrainedEvents[0].payload.soundRole).toBe(normalEvents[0].payload.soundRole);
-    if (disablesCrackle) expect(constrainedEvents.every(event => event.payload.crackleEnabled === false)).toBe(true);
-    else expect(constrainedEvents.filter(event => event.payload.crackleEnabled)).toHaveLength(
-      Math.floor(normalEvents.filter(event => event.payload.crackleEnabled).length / 2)
+    expect(constrainedEvents.map(event => event.payload)).toEqual(normalEvents.map(event => event.payload));
+
+    if (mode === 'toaster') constrained.config.toasterMode = true;
+    else constrained.performanceMode = mode;
+    const normalPayloads = normalEvents.map(event => normal.materializeFinalePayload(event.payload));
+    const constrainedPayloads = constrainedEvents.map(event => constrained.materializeFinalePayload(event.payload));
+    expect(constrainedPayloads[0].particleCount).toBeLessThan(normalPayloads[0].particleCount);
+    expect(constrainedPayloads[0].particleSizeRange[1]).toBeLessThan(normalPayloads[0].particleSizeRange[1]);
+    expect(constrainedPayloads[0].shape).toBe(normalPayloads[0].shape);
+    expect(constrainedPayloads[0].colors).toEqual(normalPayloads[0].colors);
+    expect(constrainedPayloads[0].soundRole).toBe(normalPayloads[0].soundRole);
+    if (disablesCrackle) expect(constrainedPayloads.every(payload => payload.crackleEnabled === false)).toBe(true);
+    else expect(constrainedPayloads.filter(payload => payload.crackleEnabled)).toHaveLength(
+      Math.floor(normalPayloads.filter(payload => payload.crackleEnabled).length / 2)
     );
+  });
+
+  test('applies the current performance mode when a later finale cue launches', () => {
+    const engine = makeRuntime(10000);
+    const showPlan = plan('thunder-finale', 'short', 'dynamic-quality');
+    engine.handleFinale({ id: 'dynamic-quality', intensity: 4, showPlan });
+    const event = engine.timelineQueue.find(item => item.type === 'finale-launch');
+    const normal = engine.materializeFinalePayload(event.payload);
+
+    engine.performanceMode = 'minimal';
+    const degraded = engine.materializeFinalePayload(event.payload);
+
+    expect(degraded).toMatchObject({
+      plannedLaunchAt: normal.plannedLaunchAt,
+      plannedExplodeAt: normal.plannedExplodeAt,
+      formation: normal.formation,
+      crackleEnabled: false
+    });
+    expect(degraded.particleCount).toBeLessThan(normal.particleCount);
+    expect(event.payload).not.toHaveProperty('particleCount');
   });
 
   test('keeps planned explodeAt through asynchronous trigger preparation', async () => {
     const engine = makeRuntime(10000);
+    engine.currentFinale = { id: 'show', runtimeToken: 'show:1', phase: 'highlight' };
     engine.prepareImages = jest.fn().mockResolvedValue({ giftTexture: 0, avatarTexture: 0, avatarChance: 0.3 });
     const plan = await engine.handleTrigger({
-      id: 'planned', finaleId: 'show', forceRocket: true,
+      id: 'planned', finaleId: 'show', runtimeToken: 'show:1', forceRocket: true,
       position: { x: 0.5, y: 0.25 }, origin: { x: 0.5, y: 1.02 },
       shape: 'star', colors: ['#abcdef'], tier: 'big', soundRole: 'accent',
       intensity: 3, particleCount: 90, plannedLaunchAt: 12000, plannedExplodeAt: 13550,
@@ -330,6 +361,153 @@ describe('WebGPU choreographed finale runtime', () => {
     }
   });
 
+  test('cancels a delayed old-show trigger after completion instead of enqueueing ghost events', async () => {
+    let releaseImages;
+    const delayedImages = new Promise(resolve => { releaseImages = resolve; });
+    const engine = makeRuntime(10000);
+    engine.prepareImages = jest.fn()
+      .mockReturnValueOnce(delayedImages)
+      .mockResolvedValue({ giftTexture: 0, avatarTexture: 0, avatarChance: 0.3 });
+    engine.handleFinale({ id: 'old', showPlan: tinyPlan('old', { durationMs: 500 }) });
+    engine.handleFinale({ id: 'new', showPlan: tinyPlan('new') });
+    const oldLaunch = engine.timelineQueue.find(event => event.type === 'finale-launch' && event.finaleId === 'old');
+
+    engine.processTimeline(oldLaunch.due);
+    engine.processTimeline(10500);
+    expect(engine.currentFinale.id).toBe('new');
+    releaseImages({ giftTexture: 0, avatarTexture: 0, avatarChance: 0.3 });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect([...engine.effectPlans.values()].some(effect => effect.finaleId === 'old')).toBe(false);
+    expect(engine.timelineQueue.some(event => event.finaleId === 'old')).toBe(false);
+  });
+
+  test('device errors fail one current show and repeated status callbacks do not kill the next', () => {
+    const engine = makeRuntime(10000);
+    engine.handleFinale({ id: 'device-old', showPlan: tinyPlan('device-old') });
+    engine.handleFinale({ id: 'device-next', showPlan: tinyPlan('device-next') });
+
+    engine.setStatus({ state: 'device-lost', reason: 'adapter reset' });
+    expect(engine.currentFinale.id).toBe('device-next');
+    engine.setStatus({ state: 'device-lost', reason: 'adapter reset' });
+
+    expect(engine.currentFinale.id).toBe('device-next');
+    expect(engine.finaleIds.has('device-old')).toBe(false);
+    expect(engine.rendererStatus).toMatchObject({ state: 'device-lost', finaleError: expect.stringContaining('adapter reset') });
+  });
+
+  test('render exceptions isolate the current finale and keep scheduling frames', () => {
+    const engine = makeRuntime(10000);
+    engine.handleFinale({ id: 'render-old', showPlan: tinyPlan('render-old') });
+    engine.handleFinale({ id: 'render-next', showPlan: tinyPlan('render-next') });
+    engine.running = true;
+    engine.lastFrameAt = performance.now();
+    engine.fpsWindowAt = performance.now();
+    engine.frameCount = 0;
+    engine.fpsHistory = [];
+    engine.fps = 60;
+    engine.isBenchmark = true;
+    engine.skippedFrame = false;
+    // A synchronous frame failure is a fresh failure even when an earlier
+    // device callback already left the renderer in an error state.
+    engine.rendererStatus.state = 'device-lost';
+    engine.renderer.render = jest.fn(() => { throw new Error('render pass failed'); });
+    const originalRequestAnimationFrame = global.requestAnimationFrame;
+    global.requestAnimationFrame = jest.fn(() => 99);
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      engine.render();
+      expect(engine.currentFinale.id).toBe('render-next');
+      expect(engine.rendererStatus).toMatchObject({ state: 'error', reason: 'render pass failed' });
+      expect(global.requestAnimationFrame).toHaveBeenCalledTimes(1);
+    } finally {
+      global.requestAnimationFrame = originalRequestAnimationFrame;
+      consoleError.mockRestore();
+    }
+  });
+
+  test('rejects a finale trigger when the renderer is not ready but ignores an ordinary trigger', async () => {
+    const engine = makeRuntime(10000);
+    engine.rendererStatus.state = 'device-lost';
+
+    await expect(engine.handleTrigger({ id: 'planned', finaleId: 'show' })).rejects.toThrow('renderer is not ready');
+    await expect(engine.handleTrigger({ id: 'ordinary' })).resolves.toBeUndefined();
+  });
+
+  test('waits for the final legacy rocket flight and tail before starting the next entry', () => {
+    let now = 10000;
+    const engine = makeRuntime(now);
+    engine.getRuntimeNow = () => now;
+    engine.handleFinale({ id: 'legacy-tail', burstCount: 3, duration: 900, intensity: 5, seed: 8 });
+    engine.handleFinale({ id: 'after-tail', showPlan: tinyPlan('after-tail') });
+    const launches = engine.timelineQueue.filter(event => event.type === 'finale-launch' && event.finaleId === 'legacy-tail');
+    const complete = engine.timelineQueue.find(event => event.type === 'finale-complete' && event.finaleId === 'legacy-tail');
+    const latestTail = Math.max(...launches.map(event => {
+      const targetY = event.payload.position.y * engine.baseHeight;
+      return event.due + engine.calculateFlightDuration(targetY) * 1000 + (1.15 + 5 * 0.28) * 1000;
+    }));
+
+    expect(complete.due).toBeGreaterThanOrEqual(latestTail);
+    now = complete.due - 1;
+    engine.processTimeline(now);
+    expect(engine.currentFinale.id).toBe('legacy-tail');
+    now = complete.due;
+    engine.processTimeline(now);
+    expect(engine.currentFinale.id).toBe('after-tail');
+  });
+
+  test('a low gift arriving at the token boundary cannot jump an older high-value bundle', () => {
+    let now = 1000;
+    const engine = makeRuntime(now);
+    engine.getRuntimeNow = () => now;
+    engine.currentFinale = { id: 'show', runtimeToken: 'show:1', phase: 'opening' };
+    engine.handleTrigger = jest.fn().mockResolvedValue({});
+    engine.giftLaunchTimestamps = [0, 500, 500];
+    engine.bundleGift({ reason: 'gift', userId: 'vip', giftId: 'lion', username: 'VIP', coins: 500 });
+
+    engine.handleIncomingTrigger({ reason: 'gift', userId: 'low', giftId: 'rose', username: 'Low', coins: 1 });
+
+    expect(engine.handleTrigger).toHaveBeenCalledTimes(1);
+    expect(engine.handleTrigger).toHaveBeenCalledWith(expect.objectContaining({ username: 'VIP', coins: 500 }));
+    expect([...engine.giftBacklog.values()]).toEqual([
+      expect.objectContaining({ username: 'Low', coins: 1 })
+    ]);
+  });
+
+  test('maps finale sound roles to deterministic curated audio families', async () => {
+    const engine = makeRuntime(10000);
+    engine.prepareImages = jest.fn().mockResolvedValue({ giftTexture: 0, avatarTexture: 0, avatarChance: 0.3 });
+    expect(engine.audio.chooseForRole('single', 'medium', 42)).toEqual(engine.audio.chooseForRole('single', 'medium', 42));
+    expect(engine.audio.chooseForRole('single', 'medium', 42)).toMatchObject({ bang: 'explosion-medium' });
+    expect(engine.audio.chooseForRole('wave', 'massive', 42)).toMatchObject({ bang: 'explosion-huge' });
+    expect(engine.audio.chooseForRole('wave', 'massive', 42).launch)
+      .not.toBe(engine.audio.chooseForRole('single', 'medium', 42).launch);
+
+    const wave = await engine.handleTrigger({
+      id: 'wave-role', soundRole: 'wave', tier: 'massive', crackleEnabled: false,
+      position: { x: 0.5, y: 0.5 }, forceRocket: true, playSound: false
+    });
+    expect(wave.explosion.sound).toMatchObject({ bang: 'explosion-huge' });
+  });
+
+  test('caps the final Thunder bang to the remaining 1475ms acoustic tail', async () => {
+    const engine = makeRuntime(10000);
+    engine.currentFinale = { id: 'thunder', runtimeToken: 'thunder:1', phase: 'finale' };
+    engine.prepareImages = jest.fn().mockResolvedValue({ giftTexture: 0, avatarTexture: 0, avatarChance: 0.3 });
+    engine.audio.play = jest.fn().mockResolvedValue(true);
+    const effect = await engine.handleTrigger({
+      id: 'thunder-tail', finaleId: 'thunder', runtimeToken: 'thunder:1',
+      soundRole: 'wave', tier: 'massive', crackleEnabled: false,
+      position: { x: 0.5, y: 0.5 }, forceRocket: true,
+      plannedLaunchAt: 10000, plannedExplodeAt: 12000, finaleEndsAt: 13475
+    });
+    engine.processExplosion(effect.explosion, effect, 12000, 12000);
+    const bang = engine.audio.play.mock.calls.find(call => call[0] === 'explosion-huge');
+
+    expect(bang[3]).toMatchObject({ maxDuration: 1.475 });
+  });
+
   test('destroy clears ephemeral finale and gift scheduling state', () => {
     const engine = makeRuntime(10000);
     engine.canvas = { removeEventListener: jest.fn() };
@@ -341,6 +519,8 @@ describe('WebGPU choreographed finale runtime', () => {
     engine.handleFinale({ id: 'two', showPlan: tinyPlan('two') });
     engine.giftBacklog.set('gift', { coins: 10 });
     engine.giftLaunchTimestamps.push(1);
+    engine.failingFinaleIds.add('one');
+    engine.finaleGeneration = 7;
 
     engine.destroy();
 
@@ -349,6 +529,8 @@ describe('WebGPU choreographed finale runtime', () => {
     expect(engine.finaleIds.size).toBe(0);
     expect(engine.giftBacklog.size).toBe(0);
     expect(engine.giftLaunchTimestamps).toEqual([]);
+    expect(engine.failingFinaleIds.size).toBe(0);
+    expect(engine.finaleGeneration).toBe(0);
     expect(engine.timelineQueue).toEqual([]);
   });
 });
