@@ -360,6 +360,42 @@ describe('MusicResolver provider cascade and subscribers', () => {
     expect(runner.run).toHaveBeenCalledTimes(2);
     expect(result.song.trackKey).toBe('soundcloud:playable');
   });
+
+  test('materializes a canonical watch URL for a validated YouTube id', async () => {
+    const { resolver, runner } = createResolver(async () => youtubeSearch([{
+      id: 'dQw4w9WgXcQ',
+      title: 'Artist Song',
+      uploader: 'Artist',
+      duration: 180,
+      extractor: 'youtube'
+    }]));
+
+    const result = await resolver.resolve('artist song');
+
+    expect(runner.run).toHaveBeenCalledTimes(1);
+    expect(result.song).toMatchObject({
+      trackKey: 'youtube:dQw4w9WgXcQ',
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    });
+  });
+
+  test('rejects an opaque SoundCloud id when no playable locator exists', async () => {
+    const { resolver, runner } = createResolver(async (_executable, args) => {
+      if (args.at(-1).startsWith('ytsearch5:')) return youtubeSearch([]);
+      return youtubeSearch([{
+        id: 'opaque-soundcloud-id',
+        title: 'Artist Song',
+        uploader: 'Artist',
+        duration: 180,
+        extractor: 'soundcloud'
+      }]);
+    });
+
+    const result = await resolver.resolve('artist song');
+
+    expect(runner.run).toHaveBeenCalledTimes(2);
+    expect(result).toMatchObject({ success: false, reason: 'not_found' });
+  });
 });
 
 describe('track identity and resolver memory cache', () => {

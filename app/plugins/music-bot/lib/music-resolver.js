@@ -386,11 +386,7 @@ class MusicResolver extends EventEmitter {
   _hasPlayableLocator(song) {
     if (String(song.localPath || '').trim()) return true;
     if (/^https?:\/\//i.test(String(song.streamUrl || ''))) return true;
-    if (/^https?:\/\//i.test(String(song.url || ''))) return true;
-    const providerId = String(song.providerId || '').trim();
-    return ['youtube', 'soundcloud'].includes(song.provider)
-      && Boolean(providerId)
-      && providerId !== 'unknown';
+    return /^https?:\/\//i.test(String(song.url || ''));
   }
 
   _candidateScore(query, song) {
@@ -421,8 +417,15 @@ class MusicResolver extends EventEmitter {
   _songFromData(data = {}, fallbackUrl = '', meta = {}, isUrl = false) {
     const ageLimit = Number.isFinite(meta.ageLimit) ? meta.ageLimit : Number(data.age_limit ?? NaN);
     const channelName = data.channel || data.uploader || meta.channelName || '';
-    const canonicalUrl = data.webpage_url || data.original_url || fallbackUrl || data.url || '';
+    let canonicalUrl = data.webpage_url || data.original_url || fallbackUrl || data.url || '';
     const identity = deriveTrackIdentity(data, canonicalUrl);
+    if (
+      identity.provider === 'youtube'
+      && !/^https?:\/\//i.test(String(canonicalUrl))
+      && /^[A-Za-z0-9_-]{11}$/.test(identity.providerId)
+    ) {
+      canonicalUrl = `https://www.youtube.com/watch?v=${identity.providerId}`;
+    }
     return {
       title: data.title || fallbackUrl,
       artist: data.artist || data.creator || data.uploader || '',
