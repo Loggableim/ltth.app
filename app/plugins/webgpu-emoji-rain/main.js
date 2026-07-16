@@ -423,7 +423,7 @@ class WebGPUEmojiRainPlugin {
           name: 'beans',
           description: 'SuperFan emoji rain effect',
           syntax: '/beans',
-          permission: 'subscriber',
+          permission: 'all',
           enabled: true,
           minArgs: 0,
           maxArgs: 0,
