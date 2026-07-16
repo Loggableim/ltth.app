@@ -1,4 +1,4 @@
-# Music-Bot, Finale and Release 1.3.30 Implementation Plan
+# Music-Bot, Finale and Release 1.3.31 Implementation Plan
 
 > **For Codex:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
@@ -37,7 +37,7 @@
 5. Run all focused Music-Bot tests, syntax checks, locale parsing, and ESLint.
 6. Commit only Music-Bot source and tests.
 
-### Task 3: Synchronize version 1.3.30
+### Task 3: Synchronize version 1.3.31
 
 **Files:**
 - Modify: `package.json`
@@ -56,8 +56,8 @@
 - Modify: `locales/es.json`
 - Modify: `locales/fr.json`
 
-1. Verify `v1.3.30` is unused locally and remotely.
-2. Update every active release/version surface to `1.3.30` with the current release date and concise Emoji/WebGPU finale/Music-Bot notes.
+1. Verify `v1.3.31` is unused locally and remotely.
+2. Update every active release/version surface to `1.3.31` with the current release date and concise Emoji/WebGPU finale/Music-Bot notes.
 3. Validate JSON and exact version consistency.
 4. Commit the version update separately.
 
@@ -74,7 +74,7 @@
 ### Task 5: Publish, restart, and perform live acceptance
 
 1. Push the verified release head directly to `origin/main`.
-2. Create and push annotated tag `v1.3.30`.
+2. Create and push annotated tag `v1.3.31`.
 3. Verify remote branch and tag reachability and inspect the GitHub release workflow result.
 4. Restart the LTTH app from the published release state.
 5. In the real WebGPU overlay, verify the new finale controls, trigger a firework and a finale, and confirm renderer/show runtime state without browser errors.
