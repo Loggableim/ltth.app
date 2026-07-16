@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.30] - 2026-07-17
+
+### Added
+
+- **Choreographed WebGPU Finales**: Added four deterministic finale shows in short, medium, and long lengths with synchronized formations, staged phases, queueing, and live gift rockets that do not disrupt show cues.
+- **Music-Bot Runtime Hardening**: Added a dual-slot playback controller, media cache, process reconciliation, resolver diagnostics, expanded runtime controls, and safer queue identities.
+- **Emoji Animal Command Controls**: Added persisted SuperFan-only controls for animal commands while keeping their output as plain emoji rain.
+
+### Fixed
+
+- **Music-Bot Auto-DJ Recovery**: Auto-DJ now advances after the playback controller retires an MPV slot that ended with an error.
+- **Finale Goal Integration**: Like-goal and goal-editor finale triggers now inherit or override the global show style and length consistently.
+
+### Changed
+
+- **Release Metadata**: Synchronized package, launcher, download, locale, and website version surfaces to 1.3.30.
+
 ## [1.3.28] - 2026-07-15
 
 ### Added

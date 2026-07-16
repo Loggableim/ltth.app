@@ -1,5 +1,5 @@
 {
-  "version": "1.3.28",
-  "updated_at": "2026-07-15T00:03:02.483701+00:00",
-  "notes": "LTTH Version 1.3.28 Release Notes\n\nVersion 1.3.28 bundles the Visual FX Frame WEBGPU beta, makes Goals reset once per confirmed LIVE stream, and refreshes launcher defaults.\n\n- NEW: Visual FX Frame WEBGPU 1.2.0 ships as an independent disabled working beta and remains available as a subscriber open-beta Plugin Store package\n- FIXED: Goals reset once per confirmed TikTok LIVE stream identity and ignore reconnects to the same LIVE room\n- IMPROVED: Launcher defaults use high contrast, remain open, and follow the Stable update channel\n- IMPROVED: Public release metadata and download surfaces bumped to 1.3.28\n"
+  "version": "1.3.30",
+  "updated_at": "2026-07-16T22:38:45.562589+00:00",
+  "notes": "LTTH Version 1.3.30 Release Notes\n\nVersion 1.3.30 delivers choreographed WebGPU firework finales, hardened Music-Bot playback, and configurable SuperFan animal commands.\n\n- NEW: Four deterministic WebGPU finale shows with short, medium, and long choreography, synchronized cues, queueing, and live gift rockets\n- NEW: Music-Bot playback controller, media cache, process reconciliation, resolver diagnostics, and expanded runtime controls\n- FIXED: Auto-DJ continues after the playback controller retires a failed MPV slot\n- IMPROVED: Emoji animal commands support persisted SuperFan-only controls and plain rain payloads\n- IMPROVED: Public release metadata and download surfaces bumped to 1.3.30\n"
 }
