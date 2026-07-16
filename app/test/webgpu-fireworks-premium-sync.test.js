@@ -259,23 +259,26 @@ describe('WebGPU Fireworks premium graphics and synchronized crackling', () => {
     test('plans finale crackling deterministically and disables it at frequency zero', () => {
       const first = makeOrchestrator();
       const firstResult = first.handleFinale({ id: 'finale', seed: 1234, intensity: 4, burstCount: 15, crackleFrequency: 0.5 });
-      const firstPayloads = first.timelineQueue.map(event => event.payload);
+      const firstEvents = first.timelineQueue.filter(event => event.type === 'finale-launch');
+      const firstPayloads = firstEvents.map(event => event.payload);
       const second = makeOrchestrator();
       const secondResult = second.handleFinale({ id: 'finale', seed: 1234, intensity: 4, burstCount: 15, crackleFrequency: 0.5 });
-      const secondPayloads = second.timelineQueue.map(event => event.payload);
+      const secondEvents = second.timelineQueue.filter(event => event.type === 'finale-launch');
+      const secondPayloads = secondEvents.map(event => event.payload);
 
       expect(secondResult).toEqual(firstResult);
       expect(secondPayloads).toEqual(firstPayloads);
       expect(firstResult).toMatchObject({ count: 15, crackleInterval: 3, frequency: 0.5 });
       expect(firstPayloads.every(payload => payload.forceRocket === true)).toBe(true);
       expect(firstPayloads.some(payload => payload.crackleEnabled)).toBe(true);
-      expect(first.timelineQueue.at(-1).due - first.timelineQueue[0].due).toBeCloseTo(5000, 6);
-      expect(first.timelineQueue[1].due - first.timelineQueue[0].due).toBeCloseTo(5000 / 14, 6);
+      expect(firstEvents.at(-1).due - firstEvents[0].due).toBeCloseTo(5000, 6);
+      expect(firstEvents[1].due - firstEvents[0].due).toBeCloseTo(5000 / 14, 6);
 
       const muted = makeOrchestrator();
       expect(muted.handleFinale({ seed: 1234, intensity: 5, burstCount: 12, crackleFrequency: 0 }))
         .toMatchObject({ frequency: 0, crackleInterval: Number.POSITIVE_INFINITY, seededPhase: -1 });
-      expect(muted.timelineQueue.every(event => event.payload.crackleEnabled === false)).toBe(true);
+      expect(muted.timelineQueue.filter(event => event.type === 'finale-launch')
+        .every(event => event.payload.crackleEnabled === false)).toBe(true);
     });
 
     test('uses one ordered effect plan for launch, explosion and crackle', () => {
