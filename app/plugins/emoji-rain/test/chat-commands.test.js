@@ -125,6 +125,22 @@ describe('EmojiRain chat commands', () => {
     expect(api.emissions).toEqual([]);
   });
 
+  test('beans is restricted to SuperFans and describes plain emoji rain', async () => {
+    const api = new MockAPI();
+    const plugin = new EmojiRainPlugin(api);
+    await plugin.integrateWithGCCE();
+
+    const beans = api.commands.find(command => command.name === 'beans');
+    const response = await beans.handler([], {
+      username: 'viewer-one',
+      userData: { teamMemberLevel: 0 }
+    });
+
+    expect(response).toEqual(expect.objectContaining({ success: false }));
+    expect(api.emissions).toEqual([]);
+    expect(beans).toMatchObject({ description: 'SuperFan emoji rain effect' });
+  });
+
   test('miau allows regular viewers when the SuperFan restriction is disabled', async () => {
     const api = new MockAPI({ animal_commands_superfans_only: false });
     const plugin = new EmojiRainPlugin(api);
