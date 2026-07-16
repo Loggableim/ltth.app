@@ -290,6 +290,33 @@ describe('Music Bot orphan reconciliation', () => {
     expect(processRegistry.cleanupMarked).toHaveBeenCalledWith({ timeoutMs: 2000 });
   });
 
+  test('clears stale remaining-process state after a later scan finds no marked MPV', async () => {
+    const processRegistry = {
+      findMarkedProcesses: jest.fn(async () => []),
+      cleanupMarked: jest.fn(async () => ({
+        found: [4702],
+        killed: [],
+        remaining: [4702]
+      }))
+    };
+    const controller = createController(processRegistry);
+    await controller.emergencyStop('manual-lock');
+    expect(controller.getLastProcessCleanup().remaining).toEqual([4702]);
+
+    const result = await controller.reconcileProcesses();
+
+    expect(result).toEqual(expect.objectContaining({
+      detected: [],
+      remaining: [],
+      locked: true
+    }));
+    expect(controller.getLastProcessCleanup()).toEqual({
+      found: [],
+      killed: [],
+      remaining: []
+    });
+  });
+
   test('an owned MPV waiting idle without media is not treated as an orphan', async () => {
     const processRegistry = {
       findMarkedProcesses: jest.fn(async () => [{ ...markedProcess(4751), known: true }]),

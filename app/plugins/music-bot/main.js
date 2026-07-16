@@ -1031,6 +1031,16 @@ class MusicBotPlugin extends EventEmitter {
     );
   }
 
+  async _persistConfigOrThrow(config = this.config, context = 'Music Bot config') {
+    const persisted = await this.api.setConfig('config', config);
+    if (persisted === false) {
+      const error = new Error(`Failed to persist ${context}`);
+      error.code = 'CONFIG_PERSIST_FAILED';
+      throw error;
+    }
+    return persisted;
+  }
+
   async _reconcilePlaybackProcessesAtInit() {
     const reconciliation = await this.playbackEngine?.reconcileProcesses?.();
     if (!reconciliation?.locked) return reconciliation || null;
@@ -1041,7 +1051,7 @@ class MusicBotPlugin extends EventEmitter {
       reason: 'orphan-player-detected'
     };
     try {
-      await this.api.setConfig('config', this.config);
+      await this._persistConfigOrThrow(this.config, 'orphan-player Safety Lock');
     } catch (error) {
       this.api.log(
         `[music-bot] Failed to persist orphan-player Safety Lock during init: ${error.message}`,
@@ -1077,7 +1087,7 @@ class MusicBotPlugin extends EventEmitter {
     // Persist first, but never let a storage failure block the actual kill path.
     let persistError = null;
     try {
-      await this.api.setConfig('config', this.config);
+      await this._persistConfigOrThrow(this.config, 'Safety Lock');
     } catch (error) {
       persistError = error;
       this.api.log(`[music-bot] Failed to persist Safety Lock before stopping audio: ${error.message}`, 'error');
@@ -1110,12 +1120,18 @@ class MusicBotPlugin extends EventEmitter {
       error.code = 'SOUNDBOT_MPV_REMAINS';
       throw error;
     }
+    const previousSafety = this.config.safety;
     this.config.safety = {
       locked: false,
       lockedAt: null,
       reason: null
     };
-    await this.api.setConfig('config', this.config);
+    try {
+      await this._persistConfigOrThrow(this.config, 'Safety Lock release');
+    } catch (error) {
+      this.config.safety = previousSafety;
+      throw error;
+    }
     this.playbackEngine?.releaseSafetyLock?.();
     this._recordTransition('idle', 'safety-lock-released');
     this._emitSafetyState();
@@ -1140,7 +1156,7 @@ class MusicBotPlugin extends EventEmitter {
     this._recordTransition(locked ? 'locked' : 'idle', reason || 'controller-safety-release');
     let persistError = null;
     try {
-      await this.api.setConfig('config', this.config);
+      await this._persistConfigOrThrow(this.config, 'controller Safety Lock');
     } catch (error) {
       persistError = error;
       this.api.log(`[music-bot] Failed to persist controller Safety Lock: ${error.message}`, 'error');
@@ -1666,7 +1682,7 @@ class MusicBotPlugin extends EventEmitter {
       try {
         // Persistence is the commit point; runtime consumers only see the new
         // immutable snapshot after durable storage accepted it.
-        await this.api.setConfig('config', nextConfig);
+        await this._persistConfigOrThrow(nextConfig, 'live config');
         persistedNext = true;
         this._distributeLiveConfig(nextConfig);
         if (this.mediaCache) {
@@ -1685,7 +1701,7 @@ class MusicBotPlugin extends EventEmitter {
         }
         if (persistedNext) {
           try {
-            await this.api.setConfig('config', previousConfig);
+            await this._persistConfigOrThrow(previousConfig, 'live config rollback');
           } catch (rollbackError) {
             this.api.log(`[music-bot] Live config persistence rollback failed: ${rollbackError.message}`, 'error');
           }

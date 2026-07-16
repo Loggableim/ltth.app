@@ -119,6 +119,30 @@ describe('music-bot POST /api/plugins/music-bot/config', () => {
     expect(api.setConfig).toHaveBeenCalledTimes(1);
   });
 
+  test('treats the production setConfig false result as a failed commit', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const previousConfig = plugin.config;
+    api.setConfig.mockResolvedValueOnce(false);
+    plugin._registerRoutes();
+    const response = createResponseMock();
+
+    await api.handlers['POST:/api/plugins/music-bot/config']({
+      body: { queue: { maxLength: previousConfig.queue.maxLength + 10 } }
+    }, response);
+
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      error: expect.stringContaining('persist')
+    }));
+    expect(plugin.config).toBe(previousConfig);
+    expect(plugin.queueManager.config).toBe(previousConfig);
+    expect(plugin.playbackEngine.setVolume).not.toHaveBeenCalled();
+    expect(api.setConfig).toHaveBeenCalledTimes(1);
+  });
+
   test('component failure rolls back the persisted and distributed config snapshot', async () => {
     const api = createApi();
     const plugin = new MusicBotPlugin(api);
@@ -142,6 +166,32 @@ describe('music-bot POST /api/plugins/music-bot/config', () => {
       playback: expect.objectContaining({ crossfadeDuration: 4321 })
     }));
     expect(api.setConfig).toHaveBeenNthCalledWith(2, 'config', previousConfig);
+  });
+
+  test('reports a false setConfig result while rolling back a failed runtime distribution', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const previousConfig = plugin.config;
+    plugin.playbackEngine.updateConfig = jest.fn()
+      .mockImplementationOnce(() => { throw new Error('controller rejected config'); })
+      .mockImplementationOnce(() => {});
+    api.setConfig
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
+    plugin._registerRoutes();
+    const response = createResponseMock();
+
+    await api.handlers['POST:/api/plugins/music-bot/config']({
+      body: { playback: { crossfadeDuration: 5432 } }
+    }, response);
+
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(api.setConfig).toHaveBeenNthCalledWith(2, 'config', previousConfig);
+    expect(api.log).toHaveBeenCalledWith(
+      expect.stringContaining('persistence rollback failed'),
+      'error'
+    );
   });
 
   test('merges arrays and persists merged config including blocked keywords, aliases and gift catalogs', async () => {
