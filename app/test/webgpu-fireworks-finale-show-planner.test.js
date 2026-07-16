@@ -86,12 +86,18 @@ function launchCount(plan) {
   return plan.cues.reduce((total, cue) => total + cue.launches.length, 0);
 }
 
-function withoutPowerScale(plan) {
+function withoutIntensityFields(plan) {
   return {
     ...plan,
     cues: plan.cues.map(cue => ({
       ...cue,
-      launches: cue.launches.map(({ powerScale, ...launch }) => launch)
+      launches: cue.launches.map(launch => {
+        const stableLaunch = { ...launch };
+        delete stableLaunch.powerScale;
+        delete stableLaunch.particleScale;
+        delete stableLaunch.tier;
+        return stableLaunch;
+      })
     }))
   };
 }
@@ -144,7 +150,7 @@ describe('WebGPU Fireworks finale show planner', () => {
       for (const launch of cue.launches) {
         expect(Object.keys(launch)).toEqual([
           'id', 'seed', 'position', 'origin', 'shape', 'colors', 'powerScale',
-          'tier', 'soundRole', 'crackleEnabled'
+          'particleScale', 'tier', 'soundRole', 'crackleEnabled'
         ]);
         expect(launch.id).toEqual(expect.any(String));
         expect(launch.seed).toEqual(expect.any(Number));
@@ -152,6 +158,8 @@ describe('WebGPU Fireworks finale show planner', () => {
         expect(launch.colors).toEqual(PRESETS[style].palette);
         expect(launch.powerScale).toBeGreaterThanOrEqual(0.75);
         expect(launch.powerScale).toBeLessThanOrEqual(1.35);
+        expect(launch.particleScale).toBeGreaterThanOrEqual(0.7);
+        expect(launch.particleScale).toBeLessThanOrEqual(1.4);
         expect(['small', 'medium', 'big', 'massive']).toContain(launch.tier);
         expect(launch.soundRole).toEqual(expect.any(String));
         expect(typeof launch.crackleEnabled).toBe('boolean');
@@ -184,6 +192,42 @@ describe('WebGPU Fireworks finale show planner', () => {
     expect([...new Set(launches.map(launch => launch.soundRole))].sort()).toEqual([...PRESETS[style].soundRoles].sort());
   });
 
+  test('keeps symmetric-salute calls left and responses right across seeds and orientations', () => {
+    for (const orientation of ['landscape', 'portrait']) {
+      for (const seed of [0, 1, 42, 2026, 0xffffffff]) {
+        const plan = new FinaleShowPlanner().plan({
+          style: 'symmetric-salute', length: 'short', orientation, intensity: 5, seed
+        });
+        const call = plan.cues.find(cue => cue.formation === 'call').launches[0];
+        const response = plan.cues.find(cue => cue.formation === 'response').launches[0];
+
+        expect(call.position.x).toBeLessThan(0.5);
+        expect(response.position.x).toBeGreaterThan(0.5);
+        expect(call.position.x).toBeLessThan(response.position.x);
+      }
+    }
+  });
+
+  test('gives diagonal and cross pairs explicit flight-path geometry', () => {
+    for (const orientation of ['landscape', 'portrait']) {
+      for (const seed of [1, 42, 2026]) {
+        const plan = new FinaleShowPlanner().plan({
+          style: 'sky-ballet', length: 'short', orientation, intensity: 5, seed
+        });
+        const diagonal = plan.cues.find(cue => cue.formation === 'diagonal-pair').launches;
+        for (const launch of diagonal) {
+          expect(launch.position.x - launch.origin.x).toBeGreaterThanOrEqual(0.1);
+        }
+
+        const crossed = [...plan.cues.find(cue => cue.formation === 'cross-pair').launches]
+          .sort((left, right) => left.position.x - right.position.x);
+        expect(crossed[0].origin.x).toBeGreaterThan(crossed[1].origin.x);
+        expect(crossed[0].origin.x).toBeGreaterThan(crossed[0].position.x);
+        expect(crossed[1].origin.x).toBeLessThan(crossed[1].position.x);
+      }
+    }
+  });
+
   test('is exactly deterministic and changes seeded positions without changing the score', () => {
     const options = {
       id: 'deterministic-finale', style: 'symmetric-salute', length: 'long',
@@ -200,18 +244,27 @@ describe('WebGPU Fireworks finale show planner', () => {
       .not.toEqual(first.cues.flatMap(cue => cue.launches.map(launch => launch.position)));
   });
 
-  test('maps intensity only to powerScale without changing count, timing or choreography', () => {
+  test('maps intensity to visual scale and tier mix without changing count, timing or choreography', () => {
     const options = {
       id: 'intensity-independent', style: 'sky-ballet', length: 'medium',
       orientation: 'landscape', seed: 9001
     };
     const low = new FinaleShowPlanner().plan({ ...options, intensity: 1 });
     const high = new FinaleShowPlanner().plan({ ...options, intensity: 10 });
+    const lowLaunches = low.cues.flatMap(cue => cue.launches);
+    const highLaunches = high.cues.flatMap(cue => cue.launches);
 
-    expect(new Set(low.cues.flatMap(cue => cue.launches.map(launch => launch.powerScale))))
-      .toEqual(new Set([0.75]));
-    expect(new Set(high.cues.flatMap(cue => cue.launches.map(launch => launch.powerScale))))
-      .toEqual(new Set([1.35]));
-    expect(withoutPowerScale(high)).toEqual(withoutPowerScale(low));
+    expect(new Set(lowLaunches.map(launch => launch.powerScale))).toEqual(new Set([0.75]));
+    expect(new Set(highLaunches.map(launch => launch.powerScale))).toEqual(new Set([1.35]));
+    expect(new Set(lowLaunches.map(launch => launch.particleScale))).toEqual(new Set([0.7]));
+    expect(new Set(highLaunches.map(launch => launch.particleScale))).toEqual(new Set([1.4]));
+
+    const tierRank = { small: 0, medium: 1, big: 2, massive: 3 };
+    const lowTiers = lowLaunches.map(launch => tierRank[launch.tier]);
+    const highTiers = highLaunches.map(launch => tierRank[launch.tier]);
+    expect(highTiers).not.toEqual(lowTiers);
+    expect(highTiers.every((tier, index) => tier >= lowTiers[index])).toBe(true);
+    expect(highTiers.some((tier, index) => tier > lowTiers[index])).toBe(true);
+    expect(withoutIntensityFields(high)).toEqual(withoutIntensityFields(low));
   });
 });

@@ -11,6 +11,7 @@ const FINALE_STYLES = Object.freeze([
 
 const FINALE_LENGTHS = Object.freeze(['short', 'medium', 'long']);
 const PHASE_ORDER = Object.freeze(['opening', 'build', 'highlight', 'finale']);
+const TIER_ORDER = Object.freeze(['small', 'medium', 'big', 'massive']);
 
 const LENGTH_PRESETS = Object.freeze({
   short: {
@@ -150,6 +151,12 @@ function mixSeed(seed, cueIndex, launchIndex) {
   return mixed >>> 0;
 }
 
+function resolveTier(baseTier, intensity) {
+  const baseIndex = Math.max(0, TIER_ORDER.indexOf(baseTier));
+  const intensityShift = intensity <= 3 ? -1 : intensity >= 8 ? 1 : 0;
+  return TIER_ORDER[clamp(baseIndex + intensityShift, 0, TIER_ORDER.length - 1)];
+}
+
 function spreadEvenly(start, end, count) {
   const step = (end - start) / (count + 1);
   return Array.from({ length: count }, (_, index) => Math.round(start + step * (index + 1)));
@@ -168,6 +175,8 @@ function createFormationPositions(formation, count, bounds, seed) {
     let x = centerX;
     let y = centerY;
 
+    if (formation === 'call') x = bounds.minX + width * (0.24 + random() * 0.08);
+    if (formation === 'response') x = bounds.minX + width * (0.68 + random() * 0.08);
     if (/pair|salute|wall|fan|crown|volley|wave/.test(formation)) {
       const spacing = width * Math.min(0.19, 0.66 / Math.max(1, count - 1));
       x += centeredIndex * spacing;
@@ -195,6 +204,23 @@ function createFormationPositions(formation, count, bounds, seed) {
   return positions;
 }
 
+function createFormationOrigins(formation, positions, bounds) {
+  if (formation === 'diagonal-pair') {
+    const offset = (bounds.maxX - bounds.minX) * 0.22;
+    return positions.map(position => ({
+      x: clamp(position.x - offset, 0.04, 0.96),
+      y: 1.02
+    }));
+  }
+  if (formation === 'cross-pair') {
+    return positions.map((position, index) => ({
+      x: positions[positions.length - 1 - index].x,
+      y: 1.02
+    }));
+  }
+  return null;
+}
+
 class FinaleShowPlanner {
   plan(options = {}) {
     const style = FINALE_STYLES.includes(options.style) ? options.style : FINALE_STYLES[0];
@@ -204,6 +230,7 @@ class FinaleShowPlanner {
     const id = options.id === undefined || options.id === null ? `finale-${seed}` : String(options.id);
     const intensity = clamp(Number(options.intensity) || 1, 1, 10);
     const powerScale = round(0.75 + ((intensity - 1) / 9) * 0.6);
+    const particleScale = round(0.7 + ((intensity - 1) / 9) * 0.7);
     const lengthPreset = LENGTH_PRESETS[length];
     const stylePreset = STYLE_PRESETS[style];
     const cueCounts = CUE_LAUNCH_COUNTS[style][length];
@@ -221,13 +248,15 @@ class FinaleShowPlanner {
         const descriptor = descriptors[phaseCueIndex % descriptors.length];
         const cueSeed = mixSeed(seed, cueOrdinal, launchCount);
         const positions = createFormationPositions(descriptor.formation, launchCount, bounds, cueSeed);
+        const origins = createFormationOrigins(descriptor.formation, positions, bounds);
         const launches = positions.map((position, launchIndex) => {
           const launchSeed = mixSeed(seed, cueOrdinal, launchIndex);
           const spatialPlan = spawnPlanner.plan({
             seed: launchSeed,
             orientation,
             positionMode: 'exact',
-            position
+            position,
+            origin: origins?.[launchIndex]
           });
           const soundRoles = descriptor.soundRoles || [descriptor.soundRole];
           return {
@@ -244,7 +273,8 @@ class FinaleShowPlanner {
             shape: descriptor.shape,
             colors: [...stylePreset.palette],
             powerScale,
-            tier: descriptor.tier,
+            particleScale,
+            tier: resolveTier(descriptor.tier, intensity),
             soundRole: soundRoles[launchIndex % soundRoles.length],
             crackleEnabled: descriptor.crackleEnabled
           };
