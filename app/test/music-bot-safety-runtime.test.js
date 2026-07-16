@@ -121,6 +121,14 @@ function hydratePlugin({ locked = false } = {}) {
     setVolume: jest.fn(async () => true),
     testTone: jest.fn(async () => ({ success: true, durationMs: 500 })),
     resetPlayer: jest.fn(async () => true),
+    reconcileProcesses: jest.fn(async () => ({
+      detected: [],
+      killed: [],
+      remaining: [],
+      locked: safetyLocked
+    })),
+    probe: jest.fn(async () => true),
+    getLastProcessCleanup: jest.fn(() => ({ found: [], killed: [], remaining: [] })),
     shutdown: jest.fn(async () => true)
   };
   plugin.musicResolver = {
@@ -160,6 +168,60 @@ function hydratePlugin({ locked = false } = {}) {
 }
 
 describe('Music Bot Safety Lock runtime integration', () => {
+  test('init reconciliation persists an orphan-triggered lock before continuing', async () => {
+    const { api, plugin } = hydratePlugin();
+    plugin.playbackEngine.reconcileProcesses.mockResolvedValue({
+      detected: [9981],
+      killed: [9981],
+      remaining: [],
+      locked: true
+    });
+
+    const result = await plugin._reconcilePlaybackProcessesAtInit();
+
+    expect(result).toMatchObject({ locked: true, detected: [9981] });
+    expect(plugin.config.safety).toMatchObject({
+      locked: true,
+      reason: 'orphan-player-detected'
+    });
+    expect(api.setConfig).toHaveBeenCalledWith('config', plugin.config);
+  });
+
+  test('status probe waits for an orphan-triggered controller lock to persist', async () => {
+    const { api, plugin } = hydratePlugin();
+    let releasePersistence;
+    api.setConfig.mockImplementation(() => new Promise((resolve) => {
+      releasePersistence = resolve;
+    }));
+    plugin.playbackEngine.probe.mockImplementation(async () => {
+      plugin._controllerSafetySyncPromise = plugin._handleControllerSafetyChange({
+        locked: true,
+        reason: 'orphan-player-detected',
+        lockedAt: 9982
+      });
+    });
+    const handler = api.handlers['GET:/api/plugins/music-bot/status'];
+    const response = createResponse();
+
+    const request = handler({}, response);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(response.json).not.toHaveBeenCalled();
+
+    releasePersistence(true);
+    await request;
+    expect(plugin.playbackEngine.probe).toHaveBeenCalledTimes(1);
+    expect(plugin.config.safety).toEqual({
+      locked: true,
+      lockedAt: 9982,
+      reason: 'orphan-player-detected'
+    });
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      runtime: expect.objectContaining({ safetyLock: true }),
+      health: expect.objectContaining({ locked: true })
+    }));
+  });
+
   test('emergency stop persists the lock before stopping audio and preserves the queue', async () => {
     const { api, plugin, queue } = hydratePlugin();
     const order = [];
@@ -273,6 +335,29 @@ describe('Music Bot Safety Lock runtime integration', () => {
     }));
   });
 
+  test('unlock is refused while a marked Soundbot MPV remains after cleanup', async () => {
+    const { api, plugin } = hydratePlugin({ locked: true });
+    plugin.playbackEngine.getLastProcessCleanup.mockReturnValue({
+      found: [9911],
+      killed: [],
+      remaining: [9911]
+    });
+    const handler = api.handlers['POST:/api/plugins/music-bot/safety-lock'];
+    const response = createResponse();
+
+    await handler({ body: { locked: false } }, response);
+
+    expect(plugin.playbackEngine.probe).toHaveBeenCalledTimes(1);
+    expect(plugin.playbackEngine.releaseSafetyLock).not.toHaveBeenCalled();
+    expect(api.setConfig).not.toHaveBeenCalled();
+    expect(plugin.config.safety).toMatchObject({ locked: true });
+    expect(response.status).toHaveBeenCalledWith(409);
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      locked: true
+    }));
+  });
+
   test('locked bot keeps accepting viewer requests without starting playback', async () => {
     const { plugin, queue } = hydratePlugin({ locked: true });
     const requestedSong = {
@@ -335,6 +420,62 @@ describe('Music Bot Safety Lock runtime integration', () => {
       controllerHealthy: true,
       stateConsistent: true,
       activePlayers: 0
+    });
+  });
+
+  test('an owned MPV waiting idle without media is not counted as active playback', () => {
+    const { plugin } = hydratePlugin();
+    plugin.playbackEngine.getSnapshot.mockReturnValue({
+      lifecycle: 'active',
+      safetyLock: false,
+      transportState: 'idle',
+      slots: {
+        A: {
+          pid: 9871,
+          state: 'idle',
+          playbackId: null,
+          media: { title: null, basename: null }
+        },
+        B: null
+      },
+      healthy: true,
+      lastError: null
+    });
+
+    expect(plugin._buildHealthPayload()).toMatchObject({
+      state: 'idle',
+      activePlayers: 0,
+      playerProcesses: 1,
+      stateConsistent: true,
+      healthy: true
+    });
+  });
+
+  test('Safety Lock treats even an idle owned MPV process as inconsistent', () => {
+    const { plugin } = hydratePlugin({ locked: true });
+    plugin.playbackEngine.getSnapshot.mockReturnValue({
+      lifecycle: 'active',
+      safetyLock: true,
+      transportState: 'idle',
+      slots: {
+        A: {
+          pid: 9872,
+          state: 'idle',
+          playbackId: null,
+          media: { title: null, basename: null }
+        },
+        B: null
+      },
+      healthy: false,
+      lastError: null
+    });
+
+    expect(plugin._buildHealthPayload()).toMatchObject({
+      state: 'locked',
+      activePlayers: 0,
+      playerProcesses: 1,
+      stateConsistent: false,
+      healthy: false
     });
   });
 

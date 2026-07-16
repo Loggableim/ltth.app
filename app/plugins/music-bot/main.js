@@ -193,6 +193,7 @@ class MusicBotPlugin extends EventEmitter {
     this._destroyed = false;
     this._stateTransitions = [];
     this._lastResolverProgress = null;
+    this._controllerSafetySyncPromise = Promise.resolve();
 
     // Constructor-only state stays inert for tests and route registration. The
     // persisted/default live-safe lock is applied atomically by _loadConfig().
@@ -258,8 +259,11 @@ class MusicBotPlugin extends EventEmitter {
     await this.mediaCache.prune();
     this.playbackEngine = new PlaybackController(this.config.playback, this.api);
     await this.playbackEngine.setVolume(this._computeEffectiveVolume());
-    if (this.config.safety.locked) {
-      await this.playbackEngine.emergencyStop();
+    await this._reconcilePlaybackProcessesAtInit();
+    if (this.config.safety.locked || this.playbackEngine.isSafetyLocked?.()) {
+      await this.playbackEngine.emergencyStop(
+        this.config.safety.reason || 'safety-lock'
+      );
     } else {
       this.playbackEngine.releaseSafetyLock();
     }
@@ -1027,6 +1031,31 @@ class MusicBotPlugin extends EventEmitter {
     );
   }
 
+  async _reconcilePlaybackProcessesAtInit() {
+    const reconciliation = await this.playbackEngine?.reconcileProcesses?.();
+    if (!reconciliation?.locked) return reconciliation || null;
+
+    this.config.safety = {
+      locked: true,
+      lockedAt: Date.now(),
+      reason: 'orphan-player-detected'
+    };
+    try {
+      await this.api.setConfig('config', this.config);
+    } catch (error) {
+      this.api.log(
+        `[music-bot] Failed to persist orphan-player Safety Lock during init: ${error.message}`,
+        'error'
+      );
+    }
+    return reconciliation;
+  }
+
+  async _probePlaybackRuntime() {
+    await this.playbackEngine?.probe?.();
+    await this._controllerSafetySyncPromise;
+  }
+
   _lockedResult() {
     return {
       success: false,
@@ -1071,6 +1100,16 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   async _releaseSafetyLock() {
+    await this.playbackEngine?.probe?.();
+    await this._controllerSafetySyncPromise;
+    const processCleanup = this.playbackEngine?.getLastProcessCleanup?.() || {};
+    if (processCleanup.error || processCleanup.remaining?.length) {
+      const error = new Error(
+        'Safety Lock kann nicht aufgehoben werden, solange ein Soundbot-MPV aktiv ist.'
+      );
+      error.code = 'SOUNDBOT_MPV_REMAINS';
+      throw error;
+    }
     this.config.safety = {
       locked: false,
       lockedAt: null,
@@ -1309,9 +1348,11 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.playbackEngine.on('safety-lock-changed', (payload) => {
-      Promise.resolve(this._handleControllerSafetyChange(payload)).catch((error) => {
-        this.api.log(`[music-bot] Failed to persist controller safety state: ${error.message}`, 'error');
-      });
+      this._controllerSafetySyncPromise = this._controllerSafetySyncPromise
+        .then(() => this._handleControllerSafetyChange(payload))
+        .catch((error) => {
+          this.api.log(`[music-bot] Failed to persist controller safety state: ${error.message}`, 'error');
+        });
     });
   }
 
@@ -1337,10 +1378,12 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerRoute('get', '/api/plugins/music-bot/status', async (req, res) => {
+      await this._probePlaybackRuntime();
       res.json(this._buildStatusPayload());
     });
 
     this.api.registerRoute('get', '/api/plugins/music-bot/diagnostics', async (req, res) => {
+      await this._probePlaybackRuntime();
       res.json(this._buildDiagnosticsPayload());
     });
 
@@ -1367,7 +1410,8 @@ class MusicBotPlugin extends EventEmitter {
         res.json({ success: true, locked: safety.locked, safety, health: this._buildHealthPayload() });
       } catch (error) {
         this.api.log(`[music-bot] Safety lock update failed: ${error.message}`, 'error');
-        res.status(500).json({ success: false, locked: this._isSafetyLocked(), error: error.message });
+        const statusCode = error.code === 'SOUNDBOT_MPV_REMAINS' ? 409 : 500;
+        res.status(statusCode).json({ success: false, locked: this._isSafetyLocked(), error: error.message });
       }
     });
 
@@ -3059,14 +3103,30 @@ class MusicBotPlugin extends EventEmitter {
 
   _buildHealthPayload(runtime = this._buildRuntimeSnapshot(), resolver = this._buildResolverSnapshot()) {
     const locked = this._isSafetyLocked();
-    const activePlayers = Object.values(runtime.slots || {}).filter(Boolean).length;
+    const slots = Object.values(runtime.slots || {}).filter(Boolean);
+    const activeStates = new Set([
+      'buffering',
+      'crossfading',
+      'loading',
+      'paused',
+      'playing',
+      'recovering',
+      'testing'
+    ]);
+    const activePlayers = slots.filter((slot) => (
+      activeStates.has(String(slot.state || '').toLowerCase())
+      || Boolean(slot.playbackId || slot.media?.title || slot.media?.basename)
+    )).length;
+    const playerProcesses = slots.filter((slot) => Number.isInteger(Number(slot.pid))).length;
     const cleanLockedController = locked
       && runtime.lifecycle === 'active'
-      && activePlayers === 0
+      && playerProcesses === 0
       && !runtime.lastError;
     const controllerHealthy = runtime.healthy !== false || cleanLockedController;
     const runtimeState = locked ? 'locked' : (runtime.transportState || 'idle');
-    const stateConsistent = !(['idle', 'locked'].includes(runtimeState) && activePlayers > 0);
+    const stateConsistent = runtimeState === 'locked'
+      ? playerProcesses === 0 && activePlayers === 0
+      : !(runtimeState === 'idle' && activePlayers > 0);
     const cache = this.mediaCache?.getStats?.() || { files: 0, bytes: 0, inflight: 0 };
     return {
       state: runtimeState,
@@ -3077,6 +3137,7 @@ class MusicBotPlugin extends EventEmitter {
       mpvAvailable: Boolean(this._mpvAvailable),
       ytdlpAvailable: Boolean(this._ytdlpAvailable),
       activePlayers,
+      playerProcesses,
       resolverActive: Number(resolver.active || 0),
       resolverQueued: Number(resolver.queued || 0),
       cache: {

@@ -5,6 +5,10 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { randomUUID } = require('crypto');
+const {
+  SOUND_BOT_IPC_PREFIX,
+  SOUND_BOT_PROCESS_MARKER
+} = require('./soundbot-process-registry');
 
 const DEFAULT_DUCKING_TARGET_PERCENT = 35;
 const DEFAULT_NORMALIZATION_INTEGRATED_LUFS = -16;
@@ -42,6 +46,7 @@ class PlaybackEngine extends EventEmitter {
     this._socketGeneration = 0;
     this._ownedPids = new Set();
     this._expectedProcessStops = new WeakSet();
+    this._processRegistry = options.processRegistry || null;
     const timing = options.timing || options;
     this._now = typeof timing.now === 'function' ? timing.now : Date.now;
     this._setTimeout = typeof timing.setTimeout === 'function' ? timing.setTimeout : setTimeout;
@@ -200,6 +205,7 @@ class PlaybackEngine extends EventEmitter {
       this._crossfadeOutgoingTrack = null;
       this._replacementOutgoingTrack = null;
       this._skipInProgress = false;
+      this._clearMediaDiagnostics();
     }
     if (stopError) throw stopError;
   }
@@ -212,6 +218,7 @@ class PlaybackEngine extends EventEmitter {
     this.state = 'idle';
     this._crossfadeOutgoingTrack = null;
     this._replacementOutgoingTrack = null;
+    this._clearMediaDiagnostics();
     await this._sendCommand(['stop']);
     this.emit('track-end', { track: skippedTrack, reason: 'skip' });
   }
@@ -334,6 +341,7 @@ class PlaybackEngine extends EventEmitter {
     this._duckActiveCount = 0;
     this._timedDuckActive = false;
     this.volume = this.masterVolume;
+    this._clearMediaDiagnostics();
   }
 
   async restart() {
@@ -538,6 +546,7 @@ class PlaybackEngine extends EventEmitter {
     this.nowPlaying = null;
     this.state = 'idle';
     this._crossfadeOutgoingTrack = null;
+    this._clearMediaDiagnostics();
     if (!preserveReplacementOutgoing) {
       this._replacementOutgoingTrack = null;
     }
@@ -562,7 +571,13 @@ class PlaybackEngine extends EventEmitter {
     // or been stopped. Do not let that event block queue and Auto-DJ recovery.
     if (this.state === 'playing' && !this.nowPlaying) {
       this.state = 'idle';
+      this._clearMediaDiagnostics();
     }
+  }
+
+  _clearMediaDiagnostics() {
+    this._lastMediaTitle = null;
+    this._lastMediaBasename = null;
   }
 
   async getPosition({ timeoutMs = 500 } = {}) {
@@ -744,10 +759,11 @@ class PlaybackEngine extends EventEmitter {
 
     const ipcIdentity = `${Date.now()}-${randomUUID()}`;
     this.ipcPath = process.platform === 'win32'
-      ? `\\\\.\\pipe\\music-bot-mpv-${ipcIdentity}`
-      : path.join(os.tmpdir(), `music-bot-mpv-${ipcIdentity}.sock`);
+      ? `\\\\.\\pipe\\${SOUND_BOT_IPC_PREFIX}${ipcIdentity}`
+      : path.join(os.tmpdir(), `${SOUND_BOT_IPC_PREFIX}${ipcIdentity}.sock`);
     const args = [
       '--idle=yes',
+      `--title=${SOUND_BOT_PROCESS_MARKER}`,
       `--input-ipc-server=${this.ipcPath}`,
       '--no-video',
       '--force-window=no',
@@ -761,6 +777,7 @@ class PlaybackEngine extends EventEmitter {
     this.process = child;
     if (Number.isInteger(child.pid)) {
       this._ownedPids.add(child.pid);
+      this._processRegistry?.register?.(child.pid);
     }
     this._shuttingDown = false;
     this._restartAttempts = 0;
@@ -804,6 +821,7 @@ class PlaybackEngine extends EventEmitter {
   _handleProcessClose(child, childSocket, generation, code) {
     if (Number.isInteger(child?.pid)) {
       this._ownedPids.delete(child.pid);
+      this._processRegistry?.unregister?.(child.pid);
     }
     if (this.process !== child || this._processGeneration !== generation) {
       return;
@@ -1123,6 +1141,7 @@ class PlaybackEngine extends EventEmitter {
         this.emit('track-end', trackEnd);
         if (this.nowPlaying === endedTrack) {
           this.nowPlaying = null;
+          this._clearMediaDiagnostics();
         }
       } else if (msg.event === 'property-change' && msg.name === 'volume') {
         this.volume = msg.data;

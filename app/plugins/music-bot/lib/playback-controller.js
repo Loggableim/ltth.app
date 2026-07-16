@@ -1,6 +1,7 @@
 const EventEmitter = require('events');
 const { randomUUID } = require('crypto');
 const PlaybackEngine = require('./playback-engine');
+const { SoundbotProcessRegistry } = require('./soundbot-process-registry');
 
 const RAMP_STEP_MS = 50;
 
@@ -21,10 +22,13 @@ class PlaybackController extends EventEmitter {
     const optionSource = options && Object.keys(options).length
       ? options
       : (api?.engineFactory || api?.timing ? api : {});
+    this._processRegistry = optionSource.processRegistry
+      || (optionSource.engineFactory ? null : new SoundbotProcessRegistry(this.api));
     this._engineFactory = optionSource.engineFactory || ((context) => (
       new PlaybackEngine(context.config, context.api, {
         timing: context.timing,
-        heartbeatState: context.heartbeatState
+        heartbeatState: context.heartbeatState,
+        processRegistry: context.processRegistry
       })
     ));
     const timing = optionSource.timing || optionSource;
@@ -54,6 +58,8 @@ class PlaybackController extends EventEmitter {
     this._duckActiveCount = 0;
     this._timedDuckUntil = 0;
     this._heartbeatPromise = null;
+    this._processReconcilePromise = null;
+    this._lastProcessCleanup = { found: [], killed: [], remaining: [] };
     this._heartbeatState = {
       windowStartedAt: null,
       failuresInWindow: 0,
@@ -380,7 +386,10 @@ class PlaybackController extends EventEmitter {
     this.lifecycle = 'destroying';
     this._abortActiveTransition('shutdown');
     return this._enqueueIntent('shutdown', async () => {
-      await this._terminateAllSlots();
+      await Promise.all([
+        this._terminateAllSlots(),
+        this._cleanupMarkedProcesses()
+      ]);
       this.lifecycle = 'destroyed';
       this.transportState = 'idle';
     });
@@ -393,7 +402,10 @@ class PlaybackController extends EventEmitter {
     this._liveSlots().forEach((slot) => this._suppressTerminalForSlot(slot));
     this._abortActiveTransition('player-reset');
     return this._enqueueIntent('player-reset', async () => {
-      await this._terminateAllSlots();
+      await Promise.all([
+        this._terminateAllSlots(),
+        this._cleanupMarkedProcesses()
+      ]);
       this._duckActiveCount = 0;
       this._timedDuckUntil = 0;
       this.safetyLock = finalLocked;
@@ -420,9 +432,87 @@ class PlaybackController extends EventEmitter {
     }
     this._abortActiveTransition('safety-lock');
     return this._enqueueIntent('emergency-stop', async () => {
-      await this._terminateAllSlots();
+      await Promise.all([
+        this._terminateAllSlots(),
+        this._cleanupMarkedProcesses()
+      ]);
       this.transportState = 'idle';
     });
+  }
+
+  reconcileProcesses({ reason = 'orphan-player-detected' } = {}) {
+    if (this._processReconcilePromise) return this._processReconcilePromise;
+    if (
+      this.transportState !== 'idle'
+      && !this.safetyLock
+    ) {
+      return Promise.resolve({
+        detected: [],
+        killed: [],
+        remaining: [],
+        locked: false,
+        skipped: 'active-playback'
+      });
+    }
+    if (!this._processRegistry?.findMarkedProcesses) {
+      return Promise.resolve({
+        detected: [],
+        killed: [],
+        remaining: [],
+        locked: this.safetyLock
+      });
+    }
+
+    const operation = Promise.resolve()
+      .then(() => this._processRegistry.findMarkedProcesses({ timeoutMs: 500 }))
+      .then(async (processes) => {
+        const unexpected = processes.filter((entry) => this._isUnexpectedMarkedProcess(entry));
+        const detected = unexpected.map((entry) => Number(entry.pid));
+        if (!detected.length) {
+          this._lastProcessCleanup = { found: [], killed: [], remaining: [] };
+          return { detected, killed: [], remaining: [], locked: this.safetyLock };
+        }
+        await this.emergencyStop(reason);
+        const cleanup = this._lastProcessCleanup || {};
+        return {
+          detected,
+          killed: cleanup.killed || [],
+          remaining: cleanup.remaining || detected,
+          locked: true
+        };
+      })
+      .catch((error) => {
+        this.api.log?.(`[music-bot] Soundbot process reconciliation failed: ${error.message}`, 'error');
+        this._lastProcessCleanup = {
+          found: [],
+          killed: [],
+          remaining: [],
+          error: error.message
+        };
+        return {
+          detected: [],
+          killed: [],
+          remaining: [],
+          locked: this.safetyLock,
+          error: error.message
+        };
+      });
+    const tracked = operation.finally(() => {
+      if (this._processReconcilePromise === tracked) {
+        this._processReconcilePromise = null;
+      }
+    });
+    this._processReconcilePromise = tracked;
+    return tracked;
+  }
+
+  getLastProcessCleanup() {
+    return {
+      ...this._lastProcessCleanup,
+      found: [...(this._lastProcessCleanup?.found || [])],
+      killed: [...(this._lastProcessCleanup?.killed || [])],
+      remaining: [...(this._lastProcessCleanup?.remaining || [])]
+    };
   }
 
   releaseSafetyLock() {
@@ -507,6 +597,7 @@ class PlaybackController extends EventEmitter {
         ? slot.engine.probe()
         : undefined;
     }));
+    await this.reconcileProcesses();
     return this.getSnapshot();
   }
 
@@ -650,7 +741,8 @@ class PlaybackController extends EventEmitter {
       config: this.config,
       api: this.api,
       timing: this._timing,
-      heartbeatState: this._heartbeatState
+      heartbeatState: this._heartbeatState,
+      processRegistry: this._processRegistry
     });
   }
 
@@ -799,6 +891,56 @@ class PlaybackController extends EventEmitter {
     this.activeSlot = null;
     this.activePlaybackId = null;
     this.transportState = 'idle';
+  }
+
+  async _cleanupMarkedProcesses() {
+    if (!this._processRegistry?.cleanupMarked) {
+      this._lastProcessCleanup = { found: [], killed: [], remaining: [] };
+      return this._lastProcessCleanup;
+    }
+    try {
+      this._lastProcessCleanup = await this._processRegistry.cleanupMarked({ timeoutMs: 2000 });
+    } catch (error) {
+      this.api.log?.(`[music-bot] Marked Soundbot MPV cleanup failed: ${error.message}`, 'error');
+      this._lastProcessCleanup = {
+        found: [],
+        killed: [],
+        remaining: [],
+        error: error.message
+      };
+    }
+    return this._lastProcessCleanup;
+  }
+
+  _isUnexpectedMarkedProcess(entry) {
+    if (this.safetyLock) return true;
+    if (entry?.known !== true) return true;
+    const pid = Number(entry.pid);
+    const slot = this._liveSlots().find((candidate) => {
+      const diagnostics = candidate.engine.getDiagnostics?.() || {};
+      return Number(diagnostics.pid) === pid;
+    });
+    if (!slot) return true;
+
+    const diagnostics = slot.engine.getDiagnostics?.() || {};
+    const state = String(
+      diagnostics.state || slot.engine.getState?.() || slot.state || 'idle'
+    ).toLowerCase();
+    const hasActiveState = [
+      'buffering',
+      'crossfading',
+      'loading',
+      'paused',
+      'playing',
+      'recovering',
+      'testing'
+    ].includes(state);
+    const hasMedia = Boolean(
+      slot.engine.getNowPlaying?.()
+      || diagnostics.media?.title
+      || diagnostics.media?.basename
+    );
+    return hasActiveState || hasMedia;
   }
 
   _enqueueIntent(name, operation) {
