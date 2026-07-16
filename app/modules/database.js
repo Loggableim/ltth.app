@@ -1762,6 +1762,7 @@ class DatabaseManager {
 
             // SuperFan Burst
             superfan_burst_enabled: true,
+            animal_commands_superfans_only: true,
             superfan_burst_intensity: 3.8,
             superfan_burst_duration: 2000,
 
