@@ -171,15 +171,18 @@ class YtDlpRunner {
   }
 
   async _terminateAndSettle(job, error) {
-    if (job.terminating) return;
+    if (job.terminationPromise) return job.terminationPromise;
     job.terminating = true;
-    try {
-      await this._killProcessTree(job.child);
-    } finally {
-      this.active.delete(job.id);
-      this._settle(job, error);
-      if (!this.destroyed) this._drain();
-    }
+    job.terminationPromise = (async () => {
+      try {
+        await this._killProcessTree(job.child);
+      } finally {
+        this.active.delete(job.id);
+        this._settle(job, error);
+        if (!this.destroyed) this._drain();
+      }
+    })();
+    return job.terminationPromise;
   }
 
   async _killProcessTree(child) {

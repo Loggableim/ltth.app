@@ -30,9 +30,11 @@ function normalizeRequestKey(value) {
 
 function providerFromTrack(track = {}) {
   const hint = normalizeText(track.provider || track.extractor_key || track.extractor || track.source);
-  const url = String(track.webpage_url || track.url || '');
-  if (hint.includes('soundcloud') || /(?:^|\.)soundcloud\.com\//i.test(url)) return 'soundcloud';
+  const rawId = String(track.providerId || track.id || '');
+  const url = String(track.webpage_url || track.url || (/^https?:\/\//i.test(rawId) ? rawId : ''));
+  if (hint.includes('soundcloud') || /^https?:\/\/(?:www\.)?(?:on\.)?soundcloud\.com\//i.test(url)) return 'soundcloud';
   if (hint.includes('youtube') || hint.includes('youtu') || /(?:youtube\.com|youtu\.be)\//i.test(url)) return 'youtube';
+  if (String(track.youtubeId || '').trim()) return 'youtube';
   return hint || 'url';
 }
 
@@ -46,16 +48,27 @@ function soundCloudPath(value) {
 }
 
 function deriveTrackIdentity(track = {}, fallbackUrl = '') {
-  const provider = providerFromTrack({ ...track, url: track.webpage_url || track.url || fallbackUrl });
-  const rawId = String(track.providerId || track.id || '').trim();
+  const sourceTrack = typeof track === 'string' ? { url: track } : (track || {});
+  const provider = providerFromTrack({
+    ...sourceTrack,
+    url: sourceTrack.webpage_url || sourceTrack.url || fallbackUrl
+  });
+  const rawId = String(
+    sourceTrack.providerId
+    || sourceTrack.id
+    || (provider === 'youtube' ? sourceTrack.youtubeId : '')
+    || ''
+  ).trim();
   let providerId = rawId || null;
 
   if (provider === 'youtube') {
-    providerId = providerId || extractYouTubeId(track.webpage_url || track.url || fallbackUrl);
+    providerId = providerId || extractYouTubeId(sourceTrack.webpage_url || sourceTrack.url || fallbackUrl);
   } else if (provider === 'soundcloud') {
-    providerId = providerId || soundCloudPath(track.webpage_url || track.url || fallbackUrl);
+    providerId = /^https?:\/\//i.test(String(providerId || ''))
+      ? soundCloudPath(providerId)
+      : (providerId || soundCloudPath(sourceTrack.webpage_url || sourceTrack.url || fallbackUrl));
   } else {
-    providerId = providerId || normalizeUrl(track.webpage_url || track.url || fallbackUrl);
+    providerId = providerId || normalizeUrl(sourceTrack.webpage_url || sourceTrack.url || fallbackUrl);
   }
 
   const safeProviderId = String(providerId || normalizeUrl(fallbackUrl) || 'unknown');

@@ -88,9 +88,7 @@ class MusicResolver extends EventEmitter {
     const deadline = Date.now() + TOTAL_BUDGET_MS;
 
     return this._subscribe(cacheKey, signal, async (operationSignal) => {
-      const result = await this._resolveUncached(trimmed, operationSignal, deadline);
-      this._addToCache(cacheKey, result);
-      return result;
+      return this._resolveUncached(trimmed, operationSignal, deadline);
     });
   }
 
@@ -105,9 +103,7 @@ class MusicResolver extends EventEmitter {
     if (cacheHit) return Promise.resolve(this._revalidateCached(cacheHit));
 
     return this._subscribe(cacheKey, signal, async (operationSignal) => {
-      const result = await this._resolvePlaylistUncached(url, index, operationSignal);
-      this._addToCache(cacheKey, result);
-      return result;
+      return this._resolvePlaylistUncached(url, index, operationSignal);
     });
   }
 
@@ -115,6 +111,7 @@ class MusicResolver extends EventEmitter {
     const entries = [...this.inFlight.values()];
     this.inFlight.clear();
     for (const entry of entries) {
+      entry.invalidated = true;
       entry.controller.abort();
       for (const subscriber of entry.subscribers.values()) {
         this._settleSubscriber(subscriber, abortError());
@@ -150,7 +147,8 @@ class MusicResolver extends EventEmitter {
       entry = {
         key,
         controller: new AbortController(),
-        subscribers: new Map()
+        subscribers: new Map(),
+        invalidated: false
       };
       this.inFlight.set(key, entry);
       this._progress('queued', key);
@@ -173,7 +171,11 @@ class MusicResolver extends EventEmitter {
       subscriber.onAbort = () => {
         entry.subscribers.delete(subscriber.id);
         this._settleSubscriber(subscriber, abortError());
-        if (entry.subscribers.size === 0) entry.controller.abort();
+        if (entry.subscribers.size === 0) {
+          entry.invalidated = true;
+          if (this.inFlight.get(entry.key) === entry) this.inFlight.delete(entry.key);
+          entry.controller.abort();
+        }
       };
       signal?.addEventListener('abort', subscriber.onAbort, { once: true });
       entry.subscribers.set(subscriber.id, subscriber);
@@ -181,7 +183,10 @@ class MusicResolver extends EventEmitter {
   }
 
   _finishEntry(entry, error, value) {
-    if (this.inFlight.get(entry.key) === entry) this.inFlight.delete(entry.key);
+    const isCurrent = !entry.invalidated && this.inFlight.get(entry.key) === entry;
+    if (!isCurrent) return;
+    this.inFlight.delete(entry.key);
+    if (!error) this._addToCache(entry.key, value);
     if (error) this._progress('failed', entry.key, { error: error.message });
     else this._progress(value?.success === false ? 'failed' : 'ready', entry.key);
     for (const subscriber of entry.subscribers.values()) {
@@ -368,6 +373,7 @@ class MusicResolver extends EventEmitter {
       const maxDuration = Number(this.config.maxDurationSeconds || this.config.maxSongDuration || Infinity);
       if (!Number.isFinite(duration) || duration <= 0) continue;
       if (Number.isFinite(maxDuration) && maxDuration > 0 && duration > maxDuration) continue;
+      if (!this._hasPlayableLocator(song)) continue;
       if (this._applyModeration(song)) continue;
       const score = this._candidateScore(query, song);
       if (score <= 0) continue;
@@ -375,6 +381,16 @@ class MusicResolver extends EventEmitter {
     }
     ranked.sort((a, b) => b.score - a.score);
     return ranked[0]?.song || null;
+  }
+
+  _hasPlayableLocator(song) {
+    if (String(song.localPath || '').trim()) return true;
+    if (/^https?:\/\//i.test(String(song.streamUrl || ''))) return true;
+    if (/^https?:\/\//i.test(String(song.url || ''))) return true;
+    const providerId = String(song.providerId || '').trim();
+    return ['youtube', 'soundcloud'].includes(song.provider)
+      && Boolean(providerId)
+      && providerId !== 'unknown';
   }
 
   _candidateScore(query, song) {

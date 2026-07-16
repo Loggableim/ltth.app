@@ -131,6 +131,37 @@ describe('YtDlpRunner concurrency and cancellation', () => {
     );
     expect(child.kill).toHaveBeenCalledWith('SIGKILL');
   });
+
+  test('destroy waits for an already-running process-tree termination', async () => {
+    const taskkill = new EventEmitter();
+    const child = makeChild(9001);
+    const controller = new AbortController();
+    const runner = new YtDlpRunner({
+      platform: 'win32',
+      spawnImpl: jest.fn(() => child),
+      taskkillImpl: jest.fn(() => taskkill)
+    });
+    const operation = runner.run('yt-dlp', ['track'], {
+      deadline: Date.now() + 10000,
+      signal: controller.signal
+    });
+    const rejected = expect(operation).rejects.toMatchObject({ name: 'AbortError' });
+    await flush();
+
+    controller.abort();
+    await flush();
+    let destroyed = false;
+    const destroying = runner.destroy().then(() => { destroyed = true; });
+    await flush();
+
+    expect(destroyed).toBe(false);
+    expect(runner.getStatus().active).toBe(1);
+    expect(runner.taskkillImpl).toHaveBeenCalledTimes(1);
+
+    taskkill.emit('close', 0);
+    await Promise.all([destroying, rejected]);
+    expect(runner.getStatus()).toMatchObject({ active: 0, queued: 0, destroyed: true });
+  });
 });
 
 describe('MusicResolver provider cascade and subscribers', () => {
@@ -289,6 +320,46 @@ describe('MusicResolver provider cascade and subscribers', () => {
     await expect(operation).rejects.toMatchObject({ name: 'AbortError' });
     expect(resolver.getResolverStatus()).toMatchObject({ inFlight: 0, destroyed: true });
   });
+
+  test('last-subscriber abort atomically detaches stale work from a new equivalent request', async () => {
+    const releases = [];
+    const { resolver, runner } = createResolver(() => new Promise((resolve) => releases.push(resolve)));
+    const controller = new AbortController();
+    const stale = resolver.resolve('artist song', { signal: controller.signal });
+    const staleRejected = expect(stale).rejects.toMatchObject({ name: 'AbortError' });
+    await flush();
+
+    controller.abort();
+    await staleRejected;
+    const fresh = resolver.resolve(' ARTIST   SONG ');
+    await flush();
+
+    expect(runner.run).toHaveBeenCalledTimes(2);
+    releases[1](youtubeSearch([{ id: 'fresh', title: 'Artist Song', uploader: 'Artist', duration: 180,
+      extractor: 'youtube', webpage_url: 'https://youtube.com/watch?v=fresh' }]));
+    await expect(fresh).resolves.toMatchObject({ song: { trackKey: 'youtube:fresh' } });
+
+    releases[0](youtubeSearch([{ id: 'stale', title: 'Artist Song', uploader: 'Artist', duration: 180,
+      extractor: 'youtube', webpage_url: 'https://youtube.com/watch?v=stale' }]));
+    await flush();
+    await expect(resolver.resolve('artist song')).resolves.toMatchObject({ song: { trackKey: 'youtube:fresh' } });
+    expect(runner.run).toHaveBeenCalledTimes(2);
+  });
+
+  test('rejects metadata-only candidates without any playable locator', async () => {
+    const { resolver, runner } = createResolver(async (_executable, args) => {
+      if (args.at(-1).startsWith('ytsearch5:')) {
+        return youtubeSearch([{ title: 'Artist Song', uploader: 'Artist', duration: 180, extractor: 'youtube' }]);
+      }
+      return youtubeSearch([{ id: 'playable', title: 'Artist Song', uploader: 'Artist', duration: 180,
+        extractor: 'soundcloud', webpage_url: 'https://soundcloud.com/artist/song' }]);
+    });
+
+    const result = await resolver.resolve('artist song');
+
+    expect(runner.run).toHaveBeenCalledTimes(2);
+    expect(result.song.trackKey).toBe('soundcloud:playable');
+  });
 });
 
 describe('track identity and resolver memory cache', () => {
@@ -297,6 +368,22 @@ describe('track identity and resolver memory cache', () => {
     expect(deriveTrackIdentity({ id: 'same', extractor: 'soundcloud', webpage_url: 'https://soundcloud.com/a/b' }))
       .toMatchObject({ trackKey: 'soundcloud:same', youtubeId: null });
     expect(normalizeRequestKey('  ARTIST   Song ')).toBe('artist song');
+  });
+
+  test('legacy youtubeId and raw SoundCloud URLs retain canonical provider identity', () => {
+    expect(deriveTrackIdentity({ youtubeId: 'legacy-video' })).toMatchObject({
+      provider: 'youtube', providerId: 'legacy-video', trackKey: 'youtube:legacy-video', youtubeId: 'legacy-video'
+    });
+    expect(deriveTrackIdentity('https://soundcloud.com/Artist/Track?utm_source=test')).toMatchObject({
+      provider: 'soundcloud',
+      providerId: 'soundcloud.com/artist/track',
+      trackKey: 'soundcloud:soundcloud.com/artist/track',
+      youtubeId: null
+    });
+    expect(deriveTrackIdentity({
+      extractor: 'soundcloud',
+      id: 'https://soundcloud.com/Artist/Track?si=tracking'
+    }).trackKey).toBe('soundcloud:soundcloud.com/artist/track');
   });
 
   test('cache replacement does not overcount and invalid limits use safe defaults', () => {
