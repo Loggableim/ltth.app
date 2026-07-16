@@ -726,6 +726,7 @@ class PlaybackEngine extends EventEmitter {
       '--no-video',
       '--force-window=no',
       '--audio-display=no',
+      ...this._getAudioOutputArgs(),
       `--audio-device=${this.config.audioDevice || 'auto'}`
     ];
 
@@ -804,6 +805,10 @@ class PlaybackEngine extends EventEmitter {
       return configuredPath;
     }
     return `${configuredPath}.exe`;
+  }
+
+  _getAudioOutputArgs() {
+    return this.config?.audioOutputDriver === 'null' ? ['--ao=null'] : [];
   }
 
   async _connectSocket(child = this.process, ipcPath = this.ipcPath, generation = this._processGeneration) {

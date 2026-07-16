@@ -1124,6 +1124,22 @@ describe('Music Bot playback engine lifecycle hardening', () => {
     expect(spawn).not.toHaveBeenCalled();
   });
 
+  test('allows only the explicit null audio output driver', () => {
+    const silent = new PlaybackEngine({
+      defaultVolume: 50,
+      audioOutputDriver: 'null'
+    }, { log: jest.fn() });
+    const defaultOutput = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const invalid = new PlaybackEngine({
+      defaultVolume: 50,
+      audioOutputDriver: 'null --script=unsafe.js'
+    }, { log: jest.fn() });
+
+    expect(silent._getAudioOutputArgs()).toEqual(['--ao=null']);
+    expect(defaultOutput._getAudioOutputArgs()).toEqual([]);
+    expect(invalid._getAudioOutputArgs()).toEqual([]);
+  });
+
   const windowsTest = process.platform === 'win32' ? test : test.skip;
 
   windowsTest('terminates only owned Windows process trees through taskkill', async () => {
