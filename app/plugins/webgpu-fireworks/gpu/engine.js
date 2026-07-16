@@ -783,6 +783,13 @@ class WebGPUFireworksEngine {
         this.effectPlans = new Map();
         this.crackleSequence = { eligible: 0, ordinal: 0, lastCrackleOrdinal: -100 };
         this.activeShows = new Map();
+        this.finaleQueue = [];
+        this.finaleIds = new Set();
+        this.currentFinale = null;
+        this.finalePhase = 'idle';
+        this.giftLaunchTimestamps = [];
+        this.giftBacklog = new Map();
+        this.giftDrainDue = null;
         this.imageCache = new Map();
         this.isBenchmark = new URLSearchParams(window.location.search).get('benchmark') === 'true';
         this.debug = DEBUG;
@@ -863,7 +870,7 @@ class WebGPUFireworksEngine {
             this.emitStatus();
             this.audio.ensureContext();
         });
-        this.socket.on('webgpu-fireworks:trigger', data => this.handleTrigger(data));
+        this.socket.on('webgpu-fireworks:trigger', data => this.handleIncomingTrigger(data));
         this.socket.on('webgpu-fireworks:finale', data => this.handleFinale(data));
         this.socket.on('webgpu-fireworks:follower-animation', data => this.showFollowerAnimation(data));
         this.socket.on('webgpu-fireworks:get-active-count', () => {
@@ -887,7 +894,13 @@ class WebGPUFireworksEngine {
     }
 
     setStatus(status) {
-        this.rendererStatus = { ...this.rendererStatus, ...status, ...this.audio.getTelemetry(), backend: 'webgpu' };
+        this.rendererStatus = {
+            ...this.rendererStatus,
+            ...status,
+            ...this.audio.getTelemetry(),
+            ...this.getFinaleTelemetry(),
+            backend: 'webgpu'
+        };
         if ((status.state === 'initializing' || status.state === 'ready') && !Object.prototype.hasOwnProperty.call(status, 'reason')) {
             delete this.rendererStatus.reason;
         }
@@ -902,6 +915,7 @@ class WebGPUFireworksEngine {
         this.socket.emit('webgpu-fireworks:renderer-status', {
             ...this.rendererStatus,
             ...this.audio.getTelemetry(),
+            ...this.getFinaleTelemetry(),
             backend: 'webgpu', fps: this.fps, visualStyle: this.config.visualStyle,
             visible: document.visibilityState !== 'hidden', benchmark: this.isBenchmark,
             timestamp: Date.now()
@@ -986,6 +1000,156 @@ class WebGPUFireworksEngine {
         else this.renderer.setQuality({ ...visibility, trailSamples: configuredTrails, bloomEnabled: this.config.glowEnabled !== false, turbulence: style.turbulence, style: style.id, glowScale: style.glowScale });
     }
 
+    ensureFinaleRuntimeState() {
+        if (!Array.isArray(this.finaleQueue)) this.finaleQueue = [];
+        if (!(this.finaleIds instanceof Set)) this.finaleIds = new Set();
+        if (!Object.prototype.hasOwnProperty.call(this, 'currentFinale')) this.currentFinale = null;
+        if (typeof this.finalePhase !== 'string') this.finalePhase = 'idle';
+        if (!Array.isArray(this.giftLaunchTimestamps)) this.giftLaunchTimestamps = [];
+        if (!(this.giftBacklog instanceof Map)) this.giftBacklog = new Map();
+        if (!Object.prototype.hasOwnProperty.call(this, 'giftDrainDue')) this.giftDrainDue = null;
+        if (!Number.isFinite(this.finaleSequence)) this.finaleSequence = 0;
+    }
+
+    getRuntimeNow() {
+        return performance.now();
+    }
+
+    getFinaleTelemetry() {
+        this.ensureFinaleRuntimeState();
+        return {
+            finaleActive: Boolean(this.currentFinale),
+            finaleId: this.currentFinale?.id || null,
+            finaleStyle: this.currentFinale?.style || null,
+            finaleLength: this.currentFinale?.length || null,
+            finalePhase: this.currentFinale?.phase || 'idle',
+            finaleQueueLength: this.finaleQueue.length
+        };
+    }
+
+    emitFinaleTelemetry(extra = {}) {
+        this.rendererStatus = {
+            ...this.rendererStatus,
+            ...this.getFinaleTelemetry(),
+            ...extra
+        };
+        this.emitStatus();
+    }
+
+    isValidShowPlan(showPlan) {
+        return Boolean(
+            showPlan &&
+            Number(showPlan.planVersion) >= 1 &&
+            Number(showPlan.durationMs) > 0 &&
+            Array.isArray(showPlan.cues)
+        );
+    }
+
+    finaleIdentity(data = {}) {
+        const supplied = data.eventId ?? data.id ?? data.showPlan?.id;
+        if (supplied !== undefined && supplied !== null && String(supplied).trim()) return String(supplied);
+        this.ensureFinaleRuntimeState();
+        this.finaleSequence++;
+        return `finale-runtime-${Math.round(this.getRuntimeNow())}-${this.finaleSequence}`;
+    }
+
+    isGiftTrigger(data = {}) {
+        return data.reason === 'gift' || data.type === 'gift' || Boolean(
+            data.giftId || data.giftName ||
+            (data.giftImage && data.username && Number(data.coins || data.value) > 0)
+        );
+    }
+
+    giftBundleKey(data = {}) {
+        const user = data.userId ?? data.uniqueId ?? data.username ?? 'anonymous';
+        const gift = data.giftId ?? data.giftName ?? data.giftImage ?? 'gift';
+        return `${String(user)}::${String(gift)}`;
+    }
+
+    bundleGift(data = {}) {
+        const key = this.giftBundleKey(data);
+        const existing = this.giftBacklog.get(key);
+        const incomingUnitValue = Math.max(0, Number(data.value ?? data.coins) || 0);
+        if (!existing) {
+            const bundle = {
+                ...data,
+                coins: Math.max(0, Number(data.coins) || 0),
+                value: Math.max(0, Number(data.value ?? data.coins) || 0),
+                combo: Math.max(1, Number(data.combo) || 1),
+                bundleCount: 1,
+                giftBundleKey: key,
+                highestGiftUnitValue: incomingUnitValue
+            };
+            this.giftBacklog.set(key, bundle);
+            return bundle;
+        }
+
+        const coins = existing.coins + Math.max(0, Number(data.coins) || 0);
+        const value = existing.value + Math.max(0, Number(data.value ?? data.coins) || 0);
+        const combo = existing.combo + Math.max(1, Number(data.combo) || 1);
+        const bundleCount = existing.bundleCount + 1;
+        if (incomingUnitValue >= existing.highestGiftUnitValue) {
+            Object.assign(existing, data);
+            existing.highestGiftUnitValue = incomingUnitValue;
+        }
+        Object.assign(existing, { coins, value, combo, bundleCount, giftBundleKey: key });
+        return existing;
+    }
+
+    pruneGiftLaunches(now) {
+        this.giftLaunchTimestamps = this.giftLaunchTimestamps.filter(timestamp => now - timestamp < 1000);
+    }
+
+    scheduleGiftDrain(now = this.getRuntimeNow()) {
+        if (!this.giftBacklog.size || !this.giftLaunchTimestamps.length) return;
+        const due = Math.min(...this.giftLaunchTimestamps) + 1000;
+        if (this.giftDrainDue !== null && this.giftDrainDue <= due) return;
+        this.timelineQueue = this.timelineQueue.filter(event => event.type !== 'gift-drain');
+        this.giftDrainDue = Math.max(now, due);
+        this.scheduleTimeline({ type: 'gift-drain', due: this.giftDrainDue, order: -10 });
+    }
+
+    launchGiftNow(data, now = this.getRuntimeNow()) {
+        this.giftLaunchTimestamps.push(now);
+        Promise.resolve(this.handleTrigger(data)).catch(error => {
+            console.error('[WebGPU Fireworks] Gift launch failed:', error);
+            this.setStatus({ giftError: error.message || String(error) });
+        });
+        return { accepted: true, queued: false, bundled: Number(data.bundleCount) > 1 };
+    }
+
+    drainGiftBacklog(now = this.getRuntimeNow()) {
+        this.ensureFinaleRuntimeState();
+        this.giftDrainDue = null;
+        this.pruneGiftLaunches(now);
+        while (this.giftLaunchTimestamps.length < 3 && this.giftBacklog.size) {
+            const [key, gift] = [...this.giftBacklog.entries()].sort((left, right) => {
+                const coinDifference = Number(right[1].coins || right[1].value) - Number(left[1].coins || left[1].value);
+                return coinDifference || String(left[0]).localeCompare(String(right[0]));
+            })[0];
+            this.giftBacklog.delete(key);
+            this.launchGiftNow(gift, now);
+        }
+        if (this.giftBacklog.size) this.scheduleGiftDrain(now);
+    }
+
+    handleIncomingTrigger(data = {}) {
+        this.ensureFinaleRuntimeState();
+        if (!this.currentFinale || !this.isGiftTrigger(data)) return this.handleTrigger(data);
+        const now = this.getRuntimeNow();
+        this.pruneGiftLaunches(now);
+        if (this.giftLaunchTimestamps.length < 3) return this.launchGiftNow(data, now);
+        const bundle = this.bundleGift(data);
+        this.scheduleGiftDrain(now);
+        return { accepted: true, queued: true, bundled: true, bundleCount: bundle.bundleCount };
+    }
+
+    getFinaleQualityScale() {
+        if (this.config.toasterMode || this.performanceMode === 'minimal') return 0.5;
+        if (this.performanceMode === 'reduced') return 0.75;
+        return 1;
+    }
+
     calculateFlightDuration(targetY) {
         const travel = Math.max(0, Math.min(1, (this.baseHeight - targetY) / this.baseHeight));
         return 0.55 + travel * 1.25;
@@ -1000,20 +1164,34 @@ class WebGPUFireworksEngine {
         this.audio.syncClock(now);
         while (this.timelineQueue.length && this.timelineQueue[0].due <= now) {
             const event = this.timelineQueue.shift();
-            if (event.type === 'finale-launch') {
-                void this.handleTrigger(event.payload);
-            } else if (event.type === 'launch') {
-                this.processLaunch(event.plan, event.due, now);
-            } else if (event.type === 'explode') {
-                this.processExplosion(event.plan.explosion, event.plan, event.due, now);
-            } else if (event.type === 'crackle') {
-                this.processCrackle(event.plan, event.due, now);
-            } else if (event.type === 'crackle-end') {
-                this.audio.updateDucking();
-            } else if (event.type === 'cleanup') {
-                this.activeShows.delete(event.plan.id);
-                this.effectPlans.delete(event.plan.id);
-                this.audio.updateDucking();
+            try {
+                if (event.type === 'finale-launch') {
+                    Promise.resolve(this.handleTrigger(event.payload)).catch(error => this.failFinale(event.finaleId, error, now));
+                } else if (event.type === 'finale-phase') {
+                    this.setFinalePhase(event.finaleId, event.phase);
+                } else if (event.type === 'finale-complete') {
+                    this.completeFinale(event.finaleId, now);
+                } else if (event.type === 'gift-drain') {
+                    this.drainGiftBacklog(now);
+                } else if (event.type === 'launch') {
+                    this.processLaunch(event.plan, event.due, now);
+                } else if (event.type === 'explode') {
+                    this.processExplosion(event.plan.explosion, event.plan, event.due, now);
+                } else if (event.type === 'crackle') {
+                    this.processCrackle(event.plan, event.due, now);
+                } else if (event.type === 'crackle-end') {
+                    this.audio.updateDucking();
+                } else if (event.type === 'cleanup') {
+                    this.activeShows.delete(event.plan.id);
+                    this.effectPlans.delete(event.plan.id);
+                    this.audio.updateDucking();
+                }
+            } catch (error) {
+                if (event.finaleId || event.plan?.finaleId) this.failFinale(event.finaleId || event.plan.finaleId, error, now);
+                else {
+                    console.error('[WebGPU Fireworks] Timeline event failed:', error);
+                    this.setStatus({ timelineError: error.message || String(error) });
+                }
             }
         }
     }
@@ -1048,13 +1226,16 @@ class WebGPUFireworksEngine {
     }
 
     createEffectPlan(explosion, launch) {
-        const createdAt = Number(launch.createdAt) || performance.now();
-        const explodeAt = createdAt + Math.max(0, Number(launch.flightDuration) || 0) * 1000;
+        const createdAt = Number.isFinite(Number(launch.createdAt)) ? Number(launch.createdAt) : this.getRuntimeNow();
+        const explodeAt = Number.isFinite(Number(launch.explodeAt))
+            ? Number(launch.explodeAt)
+            : createdAt + Math.max(0, Number(launch.flightDuration) || 0) * 1000;
         const crackleProfile = explosion.sound.crackleProfile || null;
         const crackleDuration = crackleProfile === 'long' ? 1 : crackleProfile === 'short' ? 0.65 : 0;
         const crackleDelay = crackleProfile === 'long' ? 220 : 180;
         return {
             id: explosion.id,
+            finaleId: launch.finaleId || explosion.finaleId || null,
             seed: launch.seed,
             createdAt,
             launchAt: createdAt,
@@ -1073,15 +1254,15 @@ class WebGPUFireworksEngine {
     enqueueEffectPlan(plan) {
         this.effectPlans.set(plan.id, plan);
         this.activeShows.set(plan.id, plan.createdAt);
-        this.scheduleTimeline({ type: 'launch', due: plan.launchAt, order: 0, plan });
-        this.scheduleTimeline({ type: 'explode', due: plan.explodeAt, order: 1, plan });
+        this.scheduleTimeline({ type: 'launch', due: plan.launchAt, order: 0, finaleId: plan.finaleId, plan });
+        this.scheduleTimeline({ type: 'explode', due: plan.explodeAt, order: 1, finaleId: plan.finaleId, plan });
         if (plan.crackleAt !== null) {
             this.audio.crackleState = 'scheduled';
             this.audio.lastAudioProfile = plan.crackleProfile;
-            this.scheduleTimeline({ type: 'crackle', due: plan.crackleAt, order: 2, plan });
-            this.scheduleTimeline({ type: 'crackle-end', due: plan.crackleAt + plan.crackleDuration * 1000, order: 3, plan });
+            this.scheduleTimeline({ type: 'crackle', due: plan.crackleAt, order: 2, finaleId: plan.finaleId, plan });
+            this.scheduleTimeline({ type: 'crackle-end', due: plan.crackleAt + plan.crackleDuration * 1000, order: 3, finaleId: plan.finaleId, plan });
         }
-        this.scheduleTimeline({ type: 'cleanup', due: plan.cleanupAt, order: 4, plan });
+        this.scheduleTimeline({ type: 'cleanup', due: plan.cleanupAt, order: 4, finaleId: plan.finaleId, plan });
     }
 
     processLaunch(plan, plannedAt, actualAt) {
@@ -1203,6 +1384,13 @@ class WebGPUFireworksEngine {
             skipRocket = false;
             flightDuration = this.calculateFlightDuration(targetY);
         }
+        const plannedLaunchAt = Number(data.plannedLaunchAt);
+        const plannedExplodeAt = Number(data.plannedExplodeAt);
+        const hasPlannedTiming = Number.isFinite(plannedLaunchAt) && Number.isFinite(plannedExplodeAt) && plannedExplodeAt >= plannedLaunchAt;
+        if (hasPlannedTiming) {
+            skipRocket = false;
+            flightDuration = (plannedExplodeAt - plannedLaunchAt) / 1000;
+        }
         const customLaunch = this.audio.useConfiguredUrl(data.rocketSound, 'launch');
         const customBang = this.audio.useConfiguredUrl(data.explosionSound, 'bang');
         if (customLaunch) {
@@ -1216,8 +1404,16 @@ class WebGPUFireworksEngine {
         const explosion = {
             id, x, y: targetY, shape, intensity, count, colors, assets, visualStyle, style,
             playSound: data.playSound !== false, sound, tier,
+            finaleId: data.finaleId || null,
+            finaleEndsAt: Number.isFinite(Number(data.finaleEndsAt)) ? Number(data.finaleEndsAt) : null,
+            powerScale: Number(data.powerScale) || 1,
+            particleScale: Number(data.particleScale) || 1,
+            soundRole: data.soundRole || null,
+            formation: data.formation || null,
             avatarRocketHead: data.avatarRocketHead === true,
-            username: data.username, coins: data.coins, combo, giftImage: data.giftImage,
+            username: data.username, userId: data.userId, uniqueId: data.uniqueId,
+            giftId: data.giftId, giftName: data.giftName, giftImage: data.giftImage,
+            coins: data.coins, value: data.value, combo, bundleCount: data.bundleCount,
             gravity: Number(data.gravity ?? this.config.gravity),
             friction: Number(data.friction ?? this.config.friction),
             wind: data.windEnabled ? Number(data.windStrength ?? this.config.windStrength) : 0,
@@ -1227,12 +1423,14 @@ class WebGPUFireworksEngine {
             despawnFadeDuration: Number(data.despawnFadeDuration ?? this.config.despawnFadeDuration)
         };
         const plan = this.createEffectPlan(explosion, {
-            createdAt: performance.now(),
+            createdAt: hasPlannedTiming ? plannedLaunchAt : this.getRuntimeNow(),
+            explodeAt: hasPlannedTiming ? plannedExplodeAt : undefined,
             flightDuration,
             origin: { x: originX, y: originY },
             target: { x, y: targetY },
             skipRocket,
-            seed
+            seed,
+            finaleId: data.finaleId || null
         });
         this.enqueueEffectPlan(plan);
         return plan;
@@ -1275,7 +1473,11 @@ class WebGPUFireworksEngine {
         baseCount = Math.max(1, baseCount - avatarCount - giftCount);
         const naturalDuration = 1.15 + explosion.intensity * 0.28;
         const pressureFade = Math.max(0.25, Math.min(4, explosion.despawnFadeDuration || naturalDuration));
-        const duration = this.performanceMode === 'minimal' ? Math.min(naturalDuration, pressureFade) : naturalDuration;
+        const performanceDuration = this.performanceMode === 'minimal' ? Math.min(naturalDuration, pressureFade) : naturalDuration;
+        const finaleTailDuration = explosion.finaleEndsAt
+            ? Math.max(0.25, (explosion.finaleEndsAt - plannedAt) / 1000)
+            : performanceDuration;
+        const duration = Math.min(performanceDuration, finaleTailDuration);
         const minSize = Math.max(2, Number(explosion.particleSizeRange?.[0]) || 4);
         const maxSize = Math.max(minSize, Number(explosion.particleSizeRange?.[1]) || 12);
         const configuredSize = (minSize + maxSize) * 0.5;
@@ -1319,7 +1521,86 @@ class WebGPUFireworksEngine {
         if (explosion.username && Number(explosion.coins) > 0) this.showGiftPopup(explosion);
     }
 
-    handleFinale(data = {}) {
+    buildPlannedFinalePayload(data, showPlan, cue, launch, startAt, ordinal = 0) {
+        const targetY = Math.max(0, Math.min(1, Number(launch.position?.y) || 0.5)) * this.baseHeight;
+        const flightDurationMs = this.calculateFlightDuration(targetY) * 1000;
+        const plannedExplodeAt = startAt + Number(cue.beatAtMs);
+        const plannedLaunchAt = plannedExplodeAt - flightDurationMs;
+        const qualityScale = this.getFinaleQualityScale();
+        const configuredSize = Array.isArray(this.config.particleSizeRange) ? this.config.particleSizeRange : [4, 12];
+        const sizeScale = Math.sqrt(qualityScale);
+        const intensity = Math.max(0.1, Math.min(5, (Number(data.intensity) || 3) * (Number(launch.powerScale) || 1)));
+        const crackleEnabled = this.config.toasterMode || this.performanceMode === 'minimal'
+            ? false
+            : launch.crackleEnabled === true && (this.performanceMode !== 'reduced' || ordinal % 2 === 0);
+        return {
+            id: launch.id,
+            finaleId: showPlan.id,
+            cueBeatAtMs: Number(cue.beatAtMs),
+            phase: cue.phase,
+            formation: cue.formation,
+            shape: launch.shape,
+            colors: Array.isArray(launch.colors) ? [...launch.colors] : [],
+            position: launch.position,
+            origin: launch.origin,
+            seed: launch.seed,
+            powerScale: Number(launch.powerScale) || 1,
+            particleScale: Number(launch.particleScale) || 1,
+            soundRole: launch.soundRole,
+            intensity,
+            particleCount: Math.max(1, Math.round(60 * intensity * (Number(launch.particleScale) || 1) * qualityScale)),
+            particleSizeRange: configuredSize.map(value => Math.max(1, Number(value) * sizeScale)),
+            tier: launch.tier,
+            forceRocket: true,
+            crackleEnabled,
+            playSound: data.playSound !== false,
+            plannedLaunchAt,
+            plannedExplodeAt,
+            finaleEndsAt: startAt + Number(showPlan.durationMs)
+        };
+    }
+
+    startPlannedFinale(entry, startAt) {
+        const { data, showPlan, id } = entry;
+        let order = 0;
+        for (const cue of showPlan.cues) {
+            for (const launch of cue.launches || []) {
+                const payload = this.buildPlannedFinalePayload(data, showPlan, cue, launch, startAt, order);
+                this.scheduleTimeline({
+                    type: 'finale-launch',
+                    due: payload.plannedLaunchAt,
+                    order: order++,
+                    finaleId: id,
+                    payload
+                });
+            }
+        }
+
+        const firstBeat = phase => {
+            const beats = showPlan.cues.filter(cue => cue.phase === phase).map(cue => Number(cue.beatAtMs));
+            return beats.length ? Math.min(...beats) : null;
+        };
+        for (const phase of ['build', 'highlight']) {
+            const beat = firstBeat(phase);
+            if (beat !== null) this.scheduleTimeline({ type: 'finale-phase', due: startAt + beat, order: -20, finaleId: id, phase });
+        }
+        const highlightBeats = showPlan.cues.filter(cue => cue.phase === 'highlight').map(cue => Number(cue.beatAtMs));
+        const finaleBeat = firstBeat('finale');
+        if (highlightBeats.length && finaleBeat !== null) {
+            const breathBeat = (Math.max(...highlightBeats) + finaleBeat) / 2;
+            this.scheduleTimeline({ type: 'finale-phase', due: startAt + breathBeat, order: -20, finaleId: id, phase: 'breath' });
+        }
+        if (finaleBeat !== null) this.scheduleTimeline({ type: 'finale-phase', due: startAt + finaleBeat, order: -20, finaleId: id, phase: 'finale' });
+        this.scheduleTimeline({
+            type: 'finale-complete',
+            due: startAt + Number(showPlan.durationMs),
+            order: 100,
+            finaleId: id
+        });
+        return { count: showPlan.cues.reduce((sum, cue) => sum + (cue.launches?.length || 0), 0) };
+    }
+
+    describeLegacyFinale(data = {}) {
         const intensity = Math.max(1, Math.min(5, Number(data.intensity) || 3));
         const count = Math.min(40, Math.max(1, Number(data.burstCount) || Math.round(intensity * 5)));
         const finaleDuration = Math.max(500, Number(data.duration) || 5000);
@@ -1340,7 +1621,19 @@ class WebGPUFireworksEngine {
         const seededPhase = Number.isFinite(crackleInterval)
             ? Math.floor(random() * Math.min(crackleInterval, count))
             : -1;
-        const startAt = performance.now();
+        return {
+            intensity, count, finaleDuration, interval, shapes, colors, bursts, baseSeed,
+            random, frequency, crackleInterval, seededPhase
+        };
+    }
+
+    startLegacyFinale(entry, startAt) {
+        const { data, id } = entry;
+        const legacy = this.describeLegacyFinale(data);
+        const {
+            intensity, count, finaleDuration, interval, shapes, colors, bursts, baseSeed,
+            random, frequency, crackleInterval, seededPhase
+        } = legacy;
         for (let i = 0; i < count; i++) {
             const plan = bursts[i] || {
                 position: { x: 0.16 + ((i * 0.61803398875) % 1) * 0.68, y: 0.18 + ((i * 0.38196601125) % 1) * 0.42 },
@@ -1352,8 +1645,9 @@ class WebGPUFireworksEngine {
                 type: 'finale-launch',
                 due: startAt + i * interval,
                 order: i,
+                finaleId: id,
                 payload: {
-                id: `${data.id || 'finale'}-${i}`, shape: shapes[i % shapes.length], colors,
+                id: `${id}-${i}`, finaleId: id, shape: shapes[i % shapes.length], colors,
                 position: plan.position, origin: plan.origin, seed: plan.seed,
                 visualStyle: data.visualStyle || this.config.visualStyle,
                 intensity: intensity * (0.78 + random() * 0.35), particleCount: Math.round(60 * intensity),
@@ -1365,7 +1659,99 @@ class WebGPUFireworksEngine {
                 }
             });
         }
-        return { count, crackleInterval, seededPhase, frequency };
+        this.scheduleTimeline({ type: 'finale-complete', due: startAt + finaleDuration, order: 100, finaleId: id });
+        return { count, crackleInterval, seededPhase, frequency, durationMs: finaleDuration };
+    }
+
+    startFinaleEntry(entry, startAt = this.getRuntimeNow()) {
+        const style = entry.showPlan?.style || 'legacy';
+        const length = entry.showPlan?.length || 'legacy';
+        this.currentFinale = {
+            id: entry.id,
+            eventId: entry.data.eventId || null,
+            style,
+            length,
+            phase: 'opening',
+            startedAt: startAt,
+            legacy: entry.legacy
+        };
+        this.finalePhase = 'opening';
+        const details = entry.legacy
+            ? this.startLegacyFinale(entry, startAt)
+            : this.startPlannedFinale(entry, startAt);
+        this.emitFinaleTelemetry({ finaleError: null });
+        return details;
+    }
+
+    setFinalePhase(finaleId, phase) {
+        if (!this.currentFinale || this.currentFinale.id !== finaleId) return;
+        this.currentFinale.phase = phase;
+        this.finalePhase = phase;
+        this.emitFinaleTelemetry();
+    }
+
+    completeFinale(finaleId, now = this.getRuntimeNow()) {
+        if (!this.currentFinale || this.currentFinale.id !== finaleId) return false;
+        this.finaleIds.delete(finaleId);
+        this.currentFinale = null;
+        this.finalePhase = 'idle';
+        const next = this.finaleQueue.shift();
+        if (next) this.startFinaleEntry(next, now);
+        else this.emitFinaleTelemetry();
+        return true;
+    }
+
+    failFinale(finaleId, error, now = this.getRuntimeNow()) {
+        const message = error?.message || String(error || 'Unknown finale renderer error');
+        console.error(`[WebGPU Fireworks] Finale ${finaleId || 'unknown'} failed:`, error);
+        this.timelineQueue = this.timelineQueue.filter(event => event.finaleId !== finaleId);
+        for (const [effectId, plan] of this.effectPlans.entries()) {
+            if (plan.finaleId !== finaleId) continue;
+            this.effectPlans.delete(effectId);
+            this.activeShows.delete(effectId);
+        }
+        this.finaleIds.delete(finaleId);
+        if (this.currentFinale?.id === finaleId) {
+            this.currentFinale = null;
+            this.finalePhase = 'idle';
+            const next = this.finaleQueue.shift();
+            if (next) this.startFinaleEntry(next, now);
+        }
+        this.emitFinaleTelemetry({ finaleError: message });
+        return false;
+    }
+
+    handleFinale(data = {}) {
+        this.ensureFinaleRuntimeState();
+        const id = this.finaleIdentity(data);
+        if (this.finaleIds.has(id)) {
+            return { accepted: false, duplicate: true, id, queueLength: this.finaleQueue.length };
+        }
+        const showPlan = this.isValidShowPlan(data.showPlan)
+            ? { ...data.showPlan, id }
+            : null;
+        const entry = { id, data: { ...data, id }, showPlan, legacy: !showPlan };
+        const queued = Boolean(this.currentFinale);
+        this.finaleIds.add(id);
+        let details;
+        if (queued) {
+            this.finaleQueue.push(entry);
+            details = showPlan
+                ? { count: showPlan.cues.reduce((sum, cue) => sum + (cue.launches?.length || 0), 0) }
+                : this.describeLegacyFinale(entry.data);
+            this.emitFinaleTelemetry();
+        } else details = this.startFinaleEntry(entry, this.getRuntimeNow());
+        return {
+            accepted: true,
+            queued,
+            legacy: entry.legacy,
+            id,
+            queueLength: this.finaleQueue.length,
+            count: details.count,
+            crackleInterval: details.crackleInterval,
+            seededPhase: details.seededPhase,
+            frequency: details.frequency
+        };
     }
 
     showGiftPopup(data) {
@@ -1460,8 +1846,10 @@ class WebGPUFireworksEngine {
 
     destroy() {
         this.running = false;
-        if (this.animationFrame !== null) cancelAnimationFrame(this.animationFrame);
-        window.removeEventListener('resize', this.resizeHandler);
+        if (this.animationFrame !== null && this.animationFrame !== undefined && typeof cancelAnimationFrame === 'function') {
+            cancelAnimationFrame(this.animationFrame);
+        }
+        if (typeof window !== 'undefined') window.removeEventListener('resize', this.resizeHandler);
         this.canvas?.removeEventListener('pointerdown', this.clickHandler);
         this.socket?.disconnect();
         this.renderer?.destroy();
@@ -1470,6 +1858,13 @@ class WebGPUFireworksEngine {
         this.effectPlans.clear();
         this.activeShows.clear();
         this.imageCache.clear();
+        this.finaleQueue.length = 0;
+        this.finaleIds.clear();
+        this.currentFinale = null;
+        this.finalePhase = 'idle';
+        this.giftBacklog.clear();
+        this.giftLaunchTimestamps.length = 0;
+        this.giftDrainDue = null;
     }
 }
 

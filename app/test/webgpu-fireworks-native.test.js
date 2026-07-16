@@ -159,15 +159,14 @@ describe('WebGPU Fireworks native migration', () => {
     expect(rendererSource).toContain('role: 8');
   });
 
-  test('forces every finale burst through a rocket flight while spacing crackling rockets', () => {
-    const finaleStart = orchestrationSource.indexOf('handleFinale(data = {})');
-    const finaleEnd = orchestrationSource.indexOf('showGiftPopup(data)', finaleStart);
-    const finaleBody = orchestrationSource.slice(finaleStart, finaleEnd);
-    expect(finaleBody).toContain('forceRocket: true');
-    expect(finaleBody).toContain("type: 'finale-launch'");
-    expect(finaleBody).toContain('const baseCrackleInterval = intensity >= 4 ? 3 : intensity >= 3 ? 4 : 5');
-    expect(finaleBody).toContain('finaleDuration / (count - 1)');
-    expect(finaleBody).toContain('crackleEnabled,');
+  test('forces planned and legacy finale bursts through timed rocket flights', () => {
+    expect(orchestrationSource).toContain('forceRocket: true');
+    expect(orchestrationSource).toContain("type: 'finale-launch'");
+    expect(orchestrationSource).toContain('plannedLaunchAt');
+    expect(orchestrationSource).toContain('plannedExplodeAt');
+    expect(orchestrationSource).toContain('const baseCrackleInterval = intensity >= 4 ? 3 : intensity >= 3 ? 4 : 5');
+    expect(orchestrationSource).toContain('finaleDuration / (count - 1)');
+    expect(orchestrationSource).toContain('crackleEnabled,');
     expect(orchestrationSource).toContain('let skipRocket = !forceRocket && combo >= 5');
     expect(orchestrationSource).toContain('this.audio.choose(tier, forceRocket ? 1 : combo, false, {');
     expect(orchestrationSource).toContain('if (sound.crackle && skipRocket)');
