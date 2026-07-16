@@ -6,6 +6,15 @@ const VALID_RESOLUTION_PRESETS = ['360p', '480p', '540p', '720p', '1080p', '1440
 const VALID_FOLLOWER_POSITIONS = ['top-left', 'top-center', 'top-right', 'center', 'bottom-left', 'bottom-center', 'bottom-right'];
 const VALID_FOLLOWER_STYLES = ['gradient-purple', 'gradient-blue', 'gradient-gold', 'gradient-rainbow', 'neon', 'minimal'];
 const VALID_FOLLOWER_ENTRANCES = ['scale', 'fade', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'bounce', 'rotate'];
+const { FINALE_STYLES, FINALE_LENGTHS } = require('./finale-show-planner');
+
+const ALLOWED_FINALE_STYLES = Object.freeze(['auto', ...FINALE_STYLES]);
+const ALLOWED_FINALE_LENGTHS = Object.freeze([...FINALE_LENGTHS]);
+const FINALE_DURATION_BY_LENGTH = Object.freeze({
+  short: 10000,
+  medium: 18000,
+  long: 28000
+});
 
 const DEFAULT_FIREWORKS_CONFIG = {
   enabled: true,
@@ -49,7 +58,9 @@ const DEFAULT_FIREWORKS_CONFIG = {
   themeColors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
   goalFinaleEnabled: true,
   goalFinaleIntensity: 3.0,
-  goalFinaleDuration: 5000,
+  goalFinaleStyle: 'auto',
+  goalFinaleLength: 'medium',
+  goalFinaleDuration: 18000,
   followerFireworksEnabled: false,
   followerRocketCount: 3,
   followerShowAnimation: true,
@@ -125,6 +136,22 @@ function normalizeShape(value, fallback = DEFAULT_FIREWORKS_CONFIG.defaultShape)
 
 function normalizeVisualStyle(value, fallback = DEFAULT_FIREWORKS_CONFIG.visualStyle) {
   return ALLOWED_VISUAL_STYLES.includes(value) ? value : fallback;
+}
+
+function normalizeFinaleStyle(value, fallback = DEFAULT_FIREWORKS_CONFIG.goalFinaleStyle) {
+  return ALLOWED_FINALE_STYLES.includes(value) ? value : fallback;
+}
+
+function normalizeFinaleLength(value, fallback = DEFAULT_FIREWORKS_CONFIG.goalFinaleLength) {
+  return ALLOWED_FINALE_LENGTHS.includes(value) ? value : fallback;
+}
+
+function finaleLengthFromDuration(value) {
+  const duration = Number(value);
+  if (!Number.isFinite(duration)) return DEFAULT_FIREWORKS_CONFIG.goalFinaleLength;
+  if (duration <= 14000) return 'short';
+  if (duration <= 23000) return 'medium';
+  return 'long';
 }
 
 function normalizeColor(value) {
@@ -258,6 +285,8 @@ function normalizeConfig(config = {}) {
     themeColors: normalizeColorArray(source.themeColors, defaults.themeColors),
     goalFinaleEnabled: normalizeBoolean(source.goalFinaleEnabled, defaults.goalFinaleEnabled),
     goalFinaleIntensity: clampNumber(source.goalFinaleIntensity, 0.1, 10, defaults.goalFinaleIntensity),
+    goalFinaleStyle: normalizeFinaleStyle(source.goalFinaleStyle, defaults.goalFinaleStyle),
+    goalFinaleLength: normalizeFinaleLength(source.goalFinaleLength, defaults.goalFinaleLength),
     goalFinaleDuration: clampInteger(source.goalFinaleDuration, 250, 30000, defaults.goalFinaleDuration),
     followerFireworksEnabled: normalizeBoolean(source.followerFireworksEnabled, defaults.followerFireworksEnabled),
     followerRocketCount: clampInteger(source.followerRocketCount, 1, 10, defaults.followerRocketCount),
@@ -351,9 +380,31 @@ function normalizeFireworkTrigger(options = {}, config = DEFAULT_FIREWORKS_CONFI
 
 function normalizeFinaleRequest(body = {}) {
   const source = isPlainObject(body) ? body : {};
+  const hasExplicitLength = Object.prototype.hasOwnProperty.call(source, 'length');
+  const length = hasExplicitLength
+    ? normalizeFinaleLength(source.length)
+    : (source.duration === undefined
+      ? DEFAULT_FIREWORKS_CONFIG.goalFinaleLength
+      : finaleLengthFromDuration(source.duration));
+  const rawIdentity = source.eventId ?? source.id;
+  const eventId = (typeof rawIdentity === 'string' || typeof rawIdentity === 'number') && String(rawIdentity).trim()
+    ? String(rawIdentity).trim().slice(0, 160)
+    : null;
+  const seedValue = Number(source.seed);
+  const seed = Number.isFinite(seedValue)
+    ? (Math.trunc(seedValue) >>> 0)
+    : (Math.floor(Math.random() * 0x100000000) >>> 0);
+  const durationMs = FINALE_DURATION_BY_LENGTH[length];
   return {
+    style: normalizeFinaleStyle(source.style),
+    length,
     intensity: clampNumber(source.intensity, 0.1, 10, 3.0),
-    duration: clampInteger(source.duration, 250, 30000, 5000)
+    seed,
+    bypassEnabled: source.bypassEnabled === true,
+    eventId,
+    id: eventId,
+    duration: durationMs,
+    durationMs
   };
 }
 
@@ -377,13 +428,19 @@ function normalizeGiftMapping(body = {}) {
 }
 
 module.exports = {
+  ALLOWED_FINALE_LENGTHS,
+  ALLOWED_FINALE_STYLES,
   ALLOWED_SHAPES,
   ALLOWED_VISUAL_STYLES,
   DEFAULT_FIREWORKS_CONFIG,
+  FINALE_DURATION_BY_LENGTH,
   clampInteger,
   clampNumber,
+  finaleLengthFromDuration,
   normalizeConfig,
+  normalizeFinaleLength,
   normalizeFinaleRequest,
+  normalizeFinaleStyle,
   normalizeFireworkTrigger,
   normalizeGiftMapping,
   normalizePosition,
