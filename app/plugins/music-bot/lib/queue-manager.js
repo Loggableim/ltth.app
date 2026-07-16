@@ -1,4 +1,10 @@
 const { randomUUID } = require('crypto');
+const {
+  deriveTrackIdentity,
+  extractYouTubeId,
+  normalizeUrl,
+  providerFromTrack
+} = require('./track-identity');
 
 const DEFAULT_MAX_SONG_DURATION_SECONDS = 360;
 const MIN_ALLOWED_MAX_SONG_DURATION_SECONDS = 30;
@@ -15,6 +21,12 @@ class QueueManager {
     this.userLastRequest = new Map();
     this.voteSkipVoters = new Set();
     this.skipImmuneUsers = new Set();
+    this._persistenceGuard = {
+      blocked: false,
+      reason: null,
+      blockedAt: null,
+      lastError: null
+    };
     this._ensureTables();
   }
 
@@ -28,6 +40,13 @@ class QueueManager {
 
   getCurrent() {
     return this.current;
+  }
+
+  getPersistenceStatus() {
+    return {
+      ...this._persistenceGuard,
+      pendingCount: this.queue.length
+    };
   }
 
   addSkipImmunity(username) {
@@ -96,7 +115,7 @@ class QueueManager {
       return validation;
     }
 
-    const youtubeId = this._extractYouTubeId(song);
+    const identity = this._identityForSong(song);
 
     const requesterKey = this._normalizeRequesterKey(song.requestedBy);
     const songEntry = {
@@ -109,8 +128,13 @@ class QueueManager {
       streamUrl: song.streamUrl || null,
       streamHeaders: song.streamHeaders || null,
       localPath: song.localPath || null,
-      youtubeId: youtubeId || null,
-      source: song.source || 'youtube',
+      youtubeId: identity.youtubeId || null,
+      provider: identity.provider,
+      providerId: identity.providerId,
+      trackKey: identity.trackKey,
+      channelId: song.channelId || null,
+      channelName: song.channelName || null,
+      source: song.source || identity.provider,
       requestedBy: song.requestedBy || 'viewer',
       requesterAvatar: song.requesterAvatar || null,
       requesterKey: requesterKey || 'viewer',
@@ -193,6 +217,21 @@ class QueueManager {
       return { ...entry, localPath };
     });
     if (this.current?.id === songId) {
+      this.current = { ...this.current, localPath };
+      updated = true;
+    }
+    return updated;
+  }
+
+  setTrackLocalPath(trackKey, localPath) {
+    if (!trackKey || !localPath) return false;
+    let updated = false;
+    this.queue = this.queue.map((entry) => {
+      if (entry.trackKey !== trackKey) return entry;
+      updated = true;
+      return { ...entry, localPath };
+    });
+    if (this.current?.trackKey === trackKey) {
       this.current = { ...this.current, localPath };
       updated = true;
     }
@@ -353,23 +392,36 @@ class QueueManager {
     const mode = this.queueConfig.duplicateDetection || 'strict';
     if (mode === 'off') return null;
 
-    const youtubeId = this._extractYouTubeId(song);
+    const identity = this._identityForSong(song);
+    const youtubeId = identity.youtubeId;
+    const normalizedUrl = normalizeUrl(song.url || '');
 
     for (let i = 0; i < this.queue.length; i += 1) {
       const entry = this.queue[i];
+      const entryIdentity = this._identityForSong(entry);
+      const canonicalMatch = Boolean(
+        identity.trackKey && entryIdentity.trackKey && identity.trackKey === entryIdentity.trackKey
+      );
+      const youtubeMatch = Boolean(
+        youtubeId && entryIdentity.youtubeId && youtubeId === entryIdentity.youtubeId
+      );
+      const urlMatch = Boolean(
+        normalizedUrl && entry.url && normalizedUrl === normalizeUrl(entry.url)
+      );
       if (mode === 'strict') {
-        if (
-          (youtubeId && entry.youtubeId && youtubeId === entry.youtubeId) ||
-          entry.url === song.url
-        ) {
-          return { position: i + 1, entry, matchType: youtubeId ? 'youtubeId' : 'url' };
+        if (canonicalMatch || youtubeMatch || urlMatch) {
+          return {
+            position: i + 1,
+            entry,
+            matchType: canonicalMatch ? 'trackKey' : (youtubeMatch ? 'youtubeId' : 'url')
+          };
         }
       }
 
       if (
         mode === 'fuzzy' &&
         (this.isFuzzyMatch(entry.title, song.title) ||
-          (youtubeId && entry.youtubeId && youtubeId === entry.youtubeId))
+          canonicalMatch || youtubeMatch)
       ) {
         return { position: i + 1, entry, matchType: 'fuzzy' };
       }
@@ -379,19 +431,59 @@ class QueueManager {
 
   _extractYouTubeId(song) {
     if (song.youtubeId) return song.youtubeId;
-    const url = song.url || '';
-    const match = url.match(
-      /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([A-Za-z0-9_-]{6,})/
-    );
-    return match ? match[1] : null;
+    return extractYouTubeId(song.url || '');
+  }
+
+  _identityForSong(song = {}) {
+    if (song.trackKey) {
+      const separator = String(song.trackKey).indexOf(':');
+      if (separator > 0) {
+        const provider = String(song.trackKey).slice(0, separator);
+        const providerId = String(song.trackKey).slice(separator + 1);
+        if (providerId) {
+          return {
+            provider,
+            providerId,
+            trackKey: `${provider}:${providerId}`,
+            youtubeId: provider === 'youtube' ? providerId : null
+          };
+        }
+      }
+    }
+
+    const explicitProvider = String(song.provider || song.source || '').trim().toLowerCase();
+    const youtubeId = !explicitProvider || explicitProvider === 'youtube'
+      ? this._extractYouTubeId(song)
+      : null;
+    const provider = youtubeId ? 'youtube' : providerFromTrack({
+      provider: song.provider || song.source,
+      url: song.url
+    });
+    const providerId = song.providerId || (provider === 'youtube' ? youtubeId : null);
+    return deriveTrackIdentity({
+      provider,
+      providerId,
+      url: song.url
+    }, song.url || '');
   }
 
   persistQueue() {
+    if (this._persistenceGuard.blocked) {
+      return {
+        success: false,
+        blocked: true,
+        reason: this._persistenceGuard.reason
+      };
+    }
+
     try {
       const stmt = this.db.prepare(
         `INSERT INTO plugin_music_bot_queue
-          (id, position, title, artist, duration, thumbnail, url, youtubeId, source, requestedBy, requesterAvatar, isGiftRequest, addedAt)
-          VALUES (@id, @position, @title, @artist, @duration, @thumbnail, @url, @youtubeId, @source, @requestedBy, @requesterAvatar, @isGiftRequest, @addedAt)`
+          (id, position, title, artist, duration, thumbnail, url, youtubeId, provider, providerId,
+           trackKey, channelId, channelName, source, requestedBy, requesterAvatar, isGiftRequest, addedAt)
+          VALUES (@id, @position, @title, @artist, @duration, @thumbnail, @url, @youtubeId, @provider,
+           @providerId, @trackKey, @channelId, @channelName, @source, @requestedBy, @requesterAvatar,
+           @isGiftRequest, @addedAt)`
       );
       const writeSongs = (songs) => {
         this.db.prepare('DELETE FROM plugin_music_bot_queue').run();
@@ -405,6 +497,11 @@ class QueueManager {
             thumbnail: song.thumbnail || null,
             url: song.url || '',
             youtubeId: song.youtubeId || null,
+            provider: song.provider || null,
+            providerId: song.providerId || null,
+            trackKey: song.trackKey || null,
+            channelId: song.channelId || null,
+            channelName: song.channelName || null,
             source: song.source || 'youtube',
             requestedBy: song.requestedBy || 'viewer',
             requesterAvatar: song.requesterAvatar || null,
@@ -421,55 +518,125 @@ class QueueManager {
       } else {
         writeSongs(this.queue);
       }
+      return { success: true, blocked: false, count: this.queue.length };
     } catch (error) {
       this.api.log?.(`[music-bot] Failed to persist queue: ${error.message}`, 'error');
+      return { success: false, blocked: false, error: error.message };
     }
   }
 
-  restoreQueue() {
+  restoreQueue(options = {}) {
+    const wasPersistenceBlocked = this._persistenceGuard.blocked;
+    const pendingEntries = wasPersistenceBlocked ? [...this.queue] : [];
+    let restorePhase = 'read';
     try {
       const rows = this.db
         .prepare('SELECT * FROM plugin_music_bot_queue ORDER BY position ASC')
         .all();
-      this.queue = rows.map(row => ({
-        id: row.id,
-        title: row.title,
-        artist: row.artist || '',
-        duration: row.duration || null,
-        thumbnail: row.thumbnail || null,
-        url: row.url,
-        youtubeId: row.youtubeId || null,
-        source: row.source || 'youtube',
-        requestedBy: row.requestedBy || 'viewer',
-        requesterAvatar: row.requesterAvatar || null,
-        requesterKey: this._normalizeRequesterKey(row.requestedBy || 'viewer'),
-        isGiftRequest: Boolean(row.isGiftRequest),
-        addedAt: row.addedAt || Date.now()
-      }));
+      restorePhase = 'decode';
+      const persistedEntries = rows.map((row) => this._entryFromPersistedRow(row));
+      const duplicatesDisabled =
+        this.queueConfig.duplicateDetection === 'off' || this.queueConfig.allowDuplicates;
+      const seen = new Set();
+      const restored = [];
+      let deduped = 0;
+      let banned = 0;
+
+      let banCheckError = null;
+      for (const entry of persistedEntries) {
+        if (typeof options.isAllowed === 'function') {
+          try {
+            const decision = options.isAllowed(entry);
+            const allowed = decision !== false && decision?.allowed !== false && decision?.banned !== true;
+            if (!allowed) {
+              banned += 1;
+              continue;
+            }
+          } catch (error) {
+            banCheckError = error;
+            break;
+          }
+        }
+
+        if (!duplicatesDisabled && seen.has(entry.trackKey)) {
+          deduped += 1;
+          continue;
+        }
+        seen.add(entry.trackKey);
+        restored.push(entry);
+      }
+
+      if (banCheckError) {
+        this.queue = wasPersistenceBlocked
+          ? this._mergeQueueEntries(persistedEntries, pendingEntries)
+          : this._mergeQueueEntries(this.queue, persistedEntries);
+        this._rebuildRequesterState();
+        this._clearPersistenceGuard();
+        this.api.log?.(
+          `[music-bot] Queue restore aborted because ban check failed: ${banCheckError.message}`,
+          'error'
+        );
+        return {
+          restored: rows.length,
+          deduped: 0,
+          banned: 0,
+          error: 'ban-check-failed'
+        };
+      }
+
+      this.queue = wasPersistenceBlocked
+        ? this._mergeQueueEntries(restored, pendingEntries, {
+          dedupeTrackKeys: !duplicatesDisabled
+        })
+        : restored;
+      if (wasPersistenceBlocked) {
+        deduped += restored.length + pendingEntries.length - this.queue.length;
+      }
+      this._rebuildRequesterState();
+      this._clearPersistenceGuard();
+      this.persistQueue();
       this.api.log?.(`[music-bot] Restored ${this.queue.length} songs from persistent queue`, 'info');
-      return this.queue.length;
+      return { restored: this.queue.length, deduped, banned };
     } catch (error) {
+      const reason = restorePhase === 'read'
+        ? 'restore-read-failed'
+        : 'restore-decode-failed';
+      this._engagePersistenceGuard(reason, error);
       this.api.log?.(`[music-bot] Failed to restore queue: ${error.message}`, 'error');
-      return 0;
+      return {
+        restored: 0,
+        deduped: 0,
+        banned: 0,
+        error: reason,
+        persistenceBlocked: true
+      };
     }
   }
 
   _persistHistory(track) {
     try {
+      const identity = this._identityForSong(track);
       const stmt = this.db.prepare(
         `INSERT OR REPLACE INTO plugin_music_bot_history
-          (id, youtubeId, title, artist, url, duration, requestedBy, source, thumbnail, finishedAt, skipped)
-          VALUES (@id, @youtubeId, @title, @artist, @url, @duration, @requestedBy, @source, @thumbnail, @finishedAt, @skipped)`
+          (id, youtubeId, provider, providerId, trackKey, channelId, channelName, title, artist,
+           url, duration, requestedBy, source, thumbnail, finishedAt, skipped)
+          VALUES (@id, @youtubeId, @provider, @providerId, @trackKey, @channelId, @channelName,
+           @title, @artist, @url, @duration, @requestedBy, @source, @thumbnail, @finishedAt, @skipped)`
       );
       stmt.run({
         id: track.id || randomUUID(),
-        youtubeId: track.youtubeId || this._extractYouTubeId(track),
+        youtubeId: identity.youtubeId || null,
+        provider: identity.provider,
+        providerId: identity.providerId,
+        trackKey: identity.trackKey,
+        channelId: track.channelId || null,
+        channelName: track.channelName || null,
         title: track.title || '',
         artist: track.artist || '',
         url: track.url || '',
         duration: track.duration || null,
         requestedBy: track.requestedBy || 'viewer',
-        source: track.source || 'youtube',
+        source: track.source || identity.provider,
         thumbnail: track.thumbnail || null,
         finishedAt: track.finishedAt || Date.now(),
         skipped: track.skipped ? 1 : 0
@@ -489,6 +656,11 @@ class QueueManager {
             title TEXT,
             artist TEXT,
             url TEXT,
+            provider TEXT,
+            providerId TEXT,
+            trackKey TEXT,
+            channelId TEXT,
+            channelName TEXT,
             duration INTEGER,
             requestedBy TEXT,
             source TEXT,
@@ -501,6 +673,12 @@ class QueueManager {
     } catch (error) {
       this.api.log?.(`[music-bot] Failed to ensure history table: ${error.message}`, 'error');
     }
+
+    this._ensureHistoryColumn('provider', 'TEXT');
+    this._ensureHistoryColumn('providerId', 'TEXT');
+    this._ensureHistoryColumn('trackKey', 'TEXT');
+    this._ensureHistoryColumn('channelId', 'TEXT');
+    this._ensureHistoryColumn('channelName', 'TEXT');
 
     try {
       this.db.prepare(
@@ -528,6 +706,11 @@ class QueueManager {
             thumbnail TEXT,
             url TEXT,
             youtubeId TEXT,
+            provider TEXT,
+            providerId TEXT,
+            trackKey TEXT,
+            channelId TEXT,
+            channelName TEXT,
             source TEXT,
             requestedBy TEXT,
             requesterAvatar TEXT,
@@ -540,13 +723,95 @@ class QueueManager {
       this.api.log?.(`[music-bot] Failed to ensure queue table: ${error.message}`, 'error');
     }
 
+    this._ensureQueueColumn('requesterAvatar', 'TEXT');
+    this._ensureQueueColumn('provider', 'TEXT');
+    this._ensureQueueColumn('providerId', 'TEXT');
+    this._ensureQueueColumn('trackKey', 'TEXT');
+    this._ensureQueueColumn('channelId', 'TEXT');
+    this._ensureQueueColumn('channelName', 'TEXT');
+  }
+
+  _entryFromPersistedRow(row) {
+    const identity = this._identityForSong(row);
+    return {
+      id: row.id,
+      title: row.title,
+      artist: row.artist || '',
+      duration: row.duration || null,
+      thumbnail: row.thumbnail || null,
+      url: row.url,
+      youtubeId: identity.youtubeId || null,
+      provider: identity.provider,
+      providerId: identity.providerId,
+      trackKey: identity.trackKey,
+      channelId: row.channelId || null,
+      channelName: row.channelName || null,
+      source: row.source || identity.provider,
+      requestedBy: row.requestedBy || 'viewer',
+      requesterAvatar: row.requesterAvatar || null,
+      requesterKey: this._normalizeRequesterKey(row.requestedBy || 'viewer'),
+      isGiftRequest: Boolean(row.isGiftRequest),
+      addedAt: row.addedAt || Date.now()
+    };
+  }
+
+  _rebuildRequesterState() {
+    this.userLastRequest.clear();
+    this.queue.forEach((entry) => {
+      if (entry.requesterKey) {
+        this.userLastRequest.set(entry.requesterKey, entry.addedAt);
+      }
+    });
+  }
+
+  _mergeQueueEntries(primary, secondary, { dedupeTrackKeys = false } = {}) {
+    const merged = [...primary];
+    const ids = new Set(merged.map((entry) => entry.id).filter(Boolean));
+    const trackKeys = new Set(merged.map((entry) => entry.trackKey).filter(Boolean));
+    secondary.forEach((entry) => {
+      if (entry.id && ids.has(entry.id)) return;
+      if (dedupeTrackKeys && entry.trackKey && trackKeys.has(entry.trackKey)) return;
+      merged.push(entry);
+      if (entry.id) ids.add(entry.id);
+      if (entry.trackKey) trackKeys.add(entry.trackKey);
+    });
+    return merged;
+  }
+
+  _engagePersistenceGuard(reason, error) {
+    this._persistenceGuard = {
+      blocked: true,
+      reason,
+      blockedAt: this._persistenceGuard.blockedAt || Date.now(),
+      lastError: error?.message || String(error || reason)
+    };
+  }
+
+  _clearPersistenceGuard() {
+    this._persistenceGuard = {
+      blocked: false,
+      reason: null,
+      blockedAt: null,
+      lastError: null
+    };
+  }
+
+  _ensureQueueColumn(name, definition) {
     try {
-      this.db
-        .prepare('ALTER TABLE plugin_music_bot_queue ADD COLUMN requesterAvatar TEXT')
-        .run();
+      this.db.prepare(`ALTER TABLE plugin_music_bot_queue ADD COLUMN ${name} ${definition}`).run();
     } catch (error) {
       if (!/duplicate column name/i.test(error.message)) {
-        this.api.log?.(`[music-bot] Failed to ensure requesterAvatar column: ${error.message}`, 'debug');
+        this.api.log?.(`[music-bot] Failed to ensure ${name} column: ${error.message}`, 'debug');
+      }
+    }
+  }
+
+  _ensureHistoryColumn(name, definition) {
+    try {
+      this.db.prepare(`ALTER TABLE plugin_music_bot_history ADD COLUMN ${name} ${definition}`).run();
+    } catch (error) {
+      if (!/duplicate column name/i.test(error.message)) {
+        this.api.log?.(`[music-bot] Failed to ensure history ${name} column: ${error.message}`, 'debug');
       }
     }
   }

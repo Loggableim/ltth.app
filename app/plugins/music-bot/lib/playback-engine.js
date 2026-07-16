@@ -5,6 +5,10 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { randomUUID } = require('crypto');
+const {
+  SOUND_BOT_IPC_PREFIX,
+  SOUND_BOT_PROCESS_MARKER
+} = require('./soundbot-process-registry');
 
 const DEFAULT_DUCKING_TARGET_PERCENT = 35;
 const DEFAULT_NORMALIZATION_INTEGRATED_LUFS = -16;
@@ -12,7 +16,7 @@ const DEFAULT_NORMALIZATION_TRUE_PEAK_DB = -1.5;
 const DEFAULT_NORMALIZATION_LRA = 11;
 
 class PlaybackEngine extends EventEmitter {
-  constructor(config, api) {
+  constructor(config, api, options = {}) {
     super();
     this.config = config;
     this.api = api;
@@ -36,13 +40,71 @@ class PlaybackEngine extends EventEmitter {
     this._nextCommandId = 1;
     this._skipInProgress = false;
     this._volumeCommandQueue = Promise.resolve();
+    this._destroyed = false;
+    this._restarting = false;
+    this._processGeneration = 0;
+    this._socketGeneration = 0;
+    this._ownedPids = new Set();
+    this._expectedProcessStops = new WeakSet();
+    this._processRegistry = options.processRegistry || null;
+    const timing = options.timing || options;
+    this._now = typeof timing.now === 'function' ? timing.now : Date.now;
+    this._setTimeout = typeof timing.setTimeout === 'function' ? timing.setTimeout : setTimeout;
+    this._clearTimeout = typeof timing.clearTimeout === 'function' ? timing.clearTimeout : clearTimeout;
+    this._heartbeatState = options.heartbeatState && typeof options.heartbeatState === 'object'
+      ? options.heartbeatState
+      : {};
+    this._installHeartbeatStateAccessors();
+    if (this._heartbeatWindowStartedAt === undefined) this._heartbeatWindowStartedAt = null;
+    if (this._heartbeatFailuresInWindow === undefined) this._heartbeatFailuresInWindow = 0;
+    if (this._heartbeatRecoveryPerformed === undefined) this._heartbeatRecoveryPerformed = false;
+    if (this._heartbeatLockEmitted === undefined) this._heartbeatLockEmitted = false;
+    this._heartbeatRecoveryInProgress = false;
+    this._heartbeatPromise = null;
+    this._lastIpcLatencyMs = null;
+    this._lastProbeConnected = null;
+    this._lastMediaTitle = null;
+    this._lastMediaBasename = null;
+  }
+
+  _installHeartbeatStateAccessors() {
+    const fields = {
+      _heartbeatWindowStartedAt: 'windowStartedAt',
+      _heartbeatFailuresInWindow: 'failuresInWindow',
+      _heartbeatRecoveryPerformed: 'recoveryPerformed',
+      _heartbeatLockEmitted: 'lockEmitted'
+    };
+    Object.entries(fields).forEach(([property, key]) => {
+      Object.defineProperty(this, property, {
+        configurable: false,
+        enumerable: false,
+        get: () => this._heartbeatState[key],
+        set: (value) => {
+          this._heartbeatState[key] = value;
+        }
+      });
+    });
+  }
+
+  updateConfig(config = {}) {
+    this.config = config;
+    if (Object.prototype.hasOwnProperty.call(config, 'defaultVolume')) {
+      this.masterVolume = this._clampVolume(config.defaultVolume);
+      if (this.state === 'idle') {
+        this.volume = this._getEffectiveVolume();
+      }
+    }
+    return this.config;
   }
 
   async play(track) {
+    this._assertNotDestroyed();
     if (!track || (!track.url && !track.localPath)) {
       throw new Error('Invalid track');
     }
 
+    this._lastMediaTitle = null;
+    this._lastMediaBasename = null;
     await this._ensureProcess();
     await this._applyNormalizationFilter();
     const crossfadeMs = Number(this.config.crossfadeDuration || 0);
@@ -109,9 +171,43 @@ class PlaybackEngine extends EventEmitter {
   }
 
   async stop() {
-    if (!this.process) return;
-    await this._sendCommand(['stop'], { waitForResponse: true });
-    this.state = 'stopped';
+    const child = this.process;
+    let stopError = null;
+    try {
+      if (child && this.socket && !this.socket.destroyed) {
+        await this._sendCommand(['stop'], { waitForResponse: true });
+      } else if (child && this._isLiveChild(child)) {
+        stopError = new Error('mpv IPC is not connected for stop');
+      }
+    } catch (error) {
+      stopError = error;
+    } finally {
+      if (stopError && child && this._isLiveChild(child)) {
+        const socket = this.socket;
+        if (socket) {
+          socket.destroy();
+          if (this.socket === socket) {
+            this.socket = null;
+            this._socketGeneration = 0;
+          }
+        }
+        const terminated = await this._terminateProcess(child, {
+          waitForClose: true,
+          timeoutMs: 2000
+        });
+        if (this.process === child) {
+          this.process = null;
+        }
+        if (terminated !== false) stopError = null;
+      }
+      this.nowPlaying = null;
+      this.state = 'idle';
+      this._crossfadeOutgoingTrack = null;
+      this._replacementOutgoingTrack = null;
+      this._skipInProgress = false;
+      this._clearMediaDiagnostics();
+    }
+    if (stopError) throw stopError;
   }
 
   async skip() {
@@ -122,6 +218,7 @@ class PlaybackEngine extends EventEmitter {
     this.state = 'idle';
     this._crossfadeOutgoingTrack = null;
     this._replacementOutgoingTrack = null;
+    this._clearMediaDiagnostics();
     await this._sendCommand(['stop']);
     this.emit('track-end', { track: skippedTrack, reason: 'skip' });
   }
@@ -194,25 +291,44 @@ class PlaybackEngine extends EventEmitter {
   }
 
   async shutdown() {
+    if (this._destroyed) return;
+    this._destroyed = true;
     this._shuttingDown = true;
     if (this._duckReleaseTimer) {
       clearTimeout(this._duckReleaseTimer);
       this._duckReleaseTimer = null;
     }
-    if (this.socket) {
-      this.socket.destroy();
-      this.socket = null;
+    if (this._fadeTimer) {
+      clearInterval(this._fadeTimer);
+      this._fadeTimer = null;
+    }
+    const socket = this.socket;
+    const child = this.process;
+    if (socket) {
+      socket.destroy();
+      if (this.socket === socket) {
+        this.socket = null;
+        this._socketGeneration = 0;
+      }
     }
     this._rejectPendingCommands(new Error('mpv playback engine was shut down'));
-    const process = this.process;
-    this.process = null;
-    if (process && (process.exitCode === null || process.exitCode === undefined)) {
-      process.once('close', () => {
+    if (child && this._isLiveChild(child)) {
+      this._expectedProcessStops.add(child);
+      child.once?.('close', () => {
         this._shuttingDown = false;
       });
-      process.kill('SIGTERM');
+      if (this.process === child) {
+        this.process = null;
+      }
+      await this._terminateProcess(child, {
+        waitForClose: Number.isInteger(child.pid),
+        timeoutMs: 2000
+      });
     } else {
       this._shuttingDown = false;
+      if (this.process === child) {
+        this.process = null;
+      }
     }
     if (this.ipcPath && fs.existsSync(this.ipcPath)) {
       fs.unlinkSync(this.ipcPath);
@@ -225,30 +341,29 @@ class PlaybackEngine extends EventEmitter {
     this._duckActiveCount = 0;
     this._timedDuckActive = false;
     this.volume = this.masterVolume;
+    this._clearMediaDiagnostics();
   }
 
   async restart() {
+    this._assertNotDestroyed();
     const currentTrack = this.nowPlaying;
     const child = this.process;
+    const socket = this.socket;
+    this._restarting = true;
     this._shuttingDown = true;
-    if (this.socket) {
-      this.socket.destroy();
-      this.socket = null;
+    if (socket) {
+      socket.destroy();
+      if (this.socket === socket) {
+        this.socket = null;
+        this._socketGeneration = 0;
+      }
     }
     this._rejectPendingCommands(new Error('mpv playback engine is restarting'));
 
     try {
-      if (child && (child.exitCode === null || child.exitCode === undefined)) {
-        await new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            reject(new Error('mpv did not stop for restart'));
-          }, 5000);
-          child.once('close', () => {
-            clearTimeout(timeout);
-            resolve();
-          });
-          child.kill('SIGTERM');
-        });
+      if (child && this._isLiveChild(child)) {
+        this._expectedProcessStops.add(child);
+        await this._terminateProcess(child, { waitForClose: true });
       }
       if (this.process === child) {
         this.process = null;
@@ -261,12 +376,164 @@ class PlaybackEngine extends EventEmitter {
       this._replacementOutgoingTrack = null;
       return currentTrack;
     } finally {
+      this._restarting = false;
       this._shuttingDown = false;
     }
   }
 
+  _assertNotDestroyed() {
+    if (this._destroyed) {
+      throw new Error('mpv playback engine was shut down');
+    }
+  }
+
+  _isLiveChild(child) {
+    return Boolean(child && (child.exitCode === null || child.exitCode === undefined));
+  }
+
+  async _terminateProcess(child, { waitForClose = false, timeoutMs = 2000 } = {}) {
+    if (!child || !this._isLiveChild(child)) return true;
+    const hasPid = Number.isInteger(child.pid);
+    const isOwnedPid = hasPid && this._ownedPids.has(child.pid);
+    if (hasPid && !isOwnedPid) return false;
+    const boundedTimeoutMs = Math.min(Math.max(Number(timeoutMs) || 2000, 1), 2000);
+    let closePromise = null;
+    if (waitForClose && typeof child.once === 'function') {
+      closePromise = new Promise((resolve) => {
+        const onClose = () => {
+          this._clearTimeout(timeout);
+          resolve(true);
+        };
+        const timeout = this._setTimeout(() => {
+          child.removeListener?.('close', onClose);
+          resolve(false);
+        }, boundedTimeoutMs);
+        child.once('close', onClose);
+      });
+    }
+
+    let terminatedByTaskkill = false;
+    if (process.platform === 'win32' && isOwnedPid) {
+      terminatedByTaskkill = await new Promise((resolve) => {
+        let settled = false;
+        let timeout = null;
+        const finish = (success) => {
+          if (settled) return;
+          settled = true;
+          if (timeout) this._clearTimeout(timeout);
+          resolve(success);
+        };
+        try {
+          const killer = spawn(
+            'taskkill.exe',
+            ['/PID', String(child.pid), '/T', '/F'],
+            { stdio: 'ignore', windowsHide: true }
+          );
+          killer.once('error', () => finish(false));
+          killer.once('close', (code) => finish(code === 0));
+          timeout = this._setTimeout(() => finish(false), Math.min(500, boundedTimeoutMs));
+        } catch (_) {
+          finish(false);
+        }
+      });
+    }
+
+    if (!terminatedByTaskkill) {
+      try {
+        child.kill('SIGTERM');
+      } catch (_) { /* process already exited */ }
+    }
+    if (closePromise) {
+      return closePromise;
+    }
+    return terminatedByTaskkill || !hasPid;
+  }
+
   getNowPlaying() {
     return this.nowPlaying;
+  }
+
+  getDiagnostics() {
+    const liveOwnedPid = this._isLiveChild(this.process)
+      && Number.isInteger(this.process?.pid)
+      && this._ownedPids.has(this.process.pid)
+      ? this.process.pid
+      : null;
+    const transportConnected = Boolean(
+      liveOwnedPid
+      && this.socket
+      && !this.socket.destroyed
+    );
+    return {
+      pid: liveOwnedPid,
+      ipc: {
+        connected: transportConnected && this._lastProbeConnected !== false,
+        lastLatencyMs: this._lastIpcLatencyMs
+      },
+      media: {
+        title: this._lastMediaTitle || this._safeMediaTitle(this.nowPlaying?.title),
+        basename: this._lastMediaBasename
+      },
+      state: this.getState()
+    };
+  }
+
+  async probe({ timeoutMs = 500 } = {}) {
+    if (
+      !this._isLiveChild(this.process)
+      || !this.socket
+      || this.socket.destroyed
+    ) {
+      this._lastProbeConnected = false;
+      return this.getDiagnostics();
+    }
+
+    const startedAt = this._now();
+    try {
+      const [titleResult, pathResult] = await Promise.all([
+        this._sendCommand(['get_property', 'media-title'], {
+          waitForResponse: true,
+          timeoutMs
+        }),
+        this._sendCommand(['get_property', 'path'], {
+          waitForResponse: true,
+          timeoutMs
+        })
+      ]);
+      this._lastIpcLatencyMs = Math.max(0, this._now() - startedAt);
+      this._lastProbeConnected = true;
+      this._lastMediaTitle = this._safeMediaTitle(titleResult?.data)
+        || this._safeMediaTitle(this.nowPlaying?.title);
+      this._lastMediaBasename = this._safeMediaBasename(pathResult?.data);
+    } catch (_) {
+      this._lastIpcLatencyMs = Math.max(0, this._now() - startedAt);
+      this._lastProbeConnected = false;
+    }
+    return this.getDiagnostics();
+  }
+
+  _safeMediaTitle(value) {
+    if (value === null || value === undefined) return null;
+    const normalized = String(value).replace(/[\r\n\t]+/g, ' ').trim();
+    if (!normalized) return null;
+    if (/^[a-z][a-z\d+.-]*:\/\//i.test(normalized)) {
+      return this._safeMediaBasename(normalized);
+    }
+    return normalized.slice(0, 256);
+  }
+
+  _safeMediaBasename(value) {
+    if (value === null || value === undefined) return null;
+    let normalized = String(value).trim();
+    if (!normalized) return null;
+    try {
+      if (/^[a-z][a-z\d+.-]*:\/\//i.test(normalized)) {
+        normalized = decodeURIComponent(new URL(normalized).pathname);
+      }
+    } catch (_) { /* fall back to separator-safe parsing */ }
+    normalized = normalized.split(/[?#]/, 1)[0].replace(/\\/g, '/');
+    const basename = normalized.split('/').filter(Boolean).at(-1) || null;
+    return basename ? basename.slice(0, 256) : null;
   }
 
   rememberReplacementOutgoing(track) {
@@ -279,6 +546,7 @@ class PlaybackEngine extends EventEmitter {
     this.nowPlaying = null;
     this.state = 'idle';
     this._crossfadeOutgoingTrack = null;
+    this._clearMediaDiagnostics();
     if (!preserveReplacementOutgoing) {
       this._replacementOutgoingTrack = null;
     }
@@ -303,7 +571,13 @@ class PlaybackEngine extends EventEmitter {
     // or been stopped. Do not let that event block queue and Auto-DJ recovery.
     if (this.state === 'playing' && !this.nowPlaying) {
       this.state = 'idle';
+      this._clearMediaDiagnostics();
     }
+  }
+
+  _clearMediaDiagnostics() {
+    this._lastMediaTitle = null;
+    this._lastMediaBasename = null;
   }
 
   async getPosition({ timeoutMs = 500 } = {}) {
@@ -338,26 +612,178 @@ class PlaybackEngine extends EventEmitter {
     });
   }
 
-  async _ensureProcess() {
-    if (this.process && this.process.exitCode === null) return;
+  heartbeat({ timeoutMs = 500 } = {}) {
+    if (this._heartbeatPromise) return this._heartbeatPromise;
+    const operation = this._runHeartbeat({ timeoutMs });
+    const tracked = operation.finally(() => {
+      if (this._heartbeatPromise === tracked) {
+        this._heartbeatPromise = null;
+      }
+    });
+    this._heartbeatPromise = tracked;
+    return tracked;
+  }
 
+  async _runHeartbeat({ timeoutMs }) {
+    this._assertNotDestroyed();
+    this._resetHeartbeatWindowIfExpired();
+    try {
+      if (!this._isLiveChild(this.process) || !this.socket || this.socket.destroyed) {
+        throw new Error('mpv IPC is not connected');
+      }
+      const response = await this._sendCommand(['get_property', 'time-pos'], {
+        waitForResponse: true,
+        timeoutMs
+      });
+      this._lastProbeConnected = true;
+      return {
+        ok: true,
+        action: 'healthy',
+        failures: this._heartbeatFailuresInWindow,
+        position: Number(response?.data) || 0,
+        diagnostics: this.getDiagnostics()
+      };
+    } catch (error) {
+      this._lastProbeConnected = false;
+      return this._handleHeartbeatFailure(error, { resumePlayback: true });
+    }
+  }
+
+  _resetHeartbeatWindowIfExpired(now = this._now()) {
+    if (
+      this._heartbeatWindowStartedAt !== null
+      && now - this._heartbeatWindowStartedAt > 60000
+    ) {
+      this._heartbeatWindowStartedAt = null;
+      this._heartbeatFailuresInWindow = 0;
+      this._heartbeatRecoveryPerformed = false;
+      this._heartbeatLockEmitted = false;
+    }
+  }
+
+  async _handleHeartbeatFailure(error, { resumePlayback }) {
+    const failureAt = this._now();
+    this._resetHeartbeatWindowIfExpired(failureAt);
+    if (this._heartbeatWindowStartedAt === null) {
+      this._heartbeatWindowStartedAt = failureAt;
+    }
+    this._heartbeatFailuresInWindow += 1;
+    const failures = this._heartbeatFailuresInWindow;
+
+    if (failures === 1) {
+      this.api.log?.(`[music-bot] MPV IPC heartbeat failed (1/3): ${error.message}`, 'warn');
+      return {
+        ok: false,
+        action: 'counted',
+        failures,
+        position: 0,
+        diagnostics: this.getDiagnostics()
+      };
+    }
+
+    if (failures === 2 && !this._heartbeatRecoveryPerformed) {
+      this._heartbeatRecoveryPerformed = true;
+      // A third failure is dangerous for 60 seconds after the recovery
+      // attempt, regardless of how long ago the first failure happened.
+      this._heartbeatWindowStartedAt = failureAt;
+      const retainedTrack = this.nowPlaying;
+      this.api.log?.(`[music-bot] MPV IPC heartbeat failed (2/3); recovering player: ${error.message}`, 'warn');
+      this._heartbeatRecoveryInProgress = true;
+      try {
+        await this.restart();
+        if (resumePlayback && retainedTrack) {
+          await this.play(retainedTrack);
+        } else if (!resumePlayback) {
+          await this._startProcess();
+        }
+      } finally {
+        this._heartbeatRecoveryInProgress = false;
+      }
+      return {
+        ok: true,
+        action: 'recovered',
+        failures,
+        position: 0,
+        diagnostics: this.getDiagnostics()
+      };
+    }
+
+    const lockError = new Error('mpv heartbeat safety lock engaged');
+    lockError.code = 'MPV_HEARTBEAT_SAFETY_LOCK';
+    if (!this._heartbeatLockEmitted) {
+      this._heartbeatLockEmitted = true;
+      this.emit('heartbeat-lock', {
+        reason: 'heartbeat-lock',
+        failures,
+        windowMs: 60000,
+        error: error.message
+      });
+    }
+    throw lockError;
+  }
+
+  async _ensureProcess() {
+    this._assertNotDestroyed();
+    if (this._heartbeatPromise && !this._heartbeatRecoveryInProgress) {
+      const result = await this._heartbeatPromise;
+      if (result.action === 'counted') {
+        const error = new Error('mpv heartbeat failure counted');
+        error.code = 'MPV_HEARTBEAT_FAILURE_COUNTED';
+        throw error;
+      }
+    }
+    if (this._isLiveChild(this.process) && !Number.isInteger(this.process.pid) && !this.socket) {
+      return;
+    }
+    if (this._isLiveChild(this.process)) {
+      try {
+        await this._sendCommand(['get_property', 'idle-active'], { waitForResponse: true });
+        return;
+      } catch (error) {
+        const result = await this._handleHeartbeatFailure(error, { resumePlayback: false });
+        if (result.action === 'counted') {
+          error.code = 'MPV_HEARTBEAT_FAILURE_COUNTED';
+          throw error;
+        }
+        return;
+      }
+    }
+
+    await this._startProcess();
+  }
+
+  async _startProcess() {
+    this._assertNotDestroyed();
+    this._lastProbeConnected = null;
+    const generation = ++this._processGeneration;
+
+    const ipcIdentity = `${Date.now()}-${randomUUID()}`;
     this.ipcPath = process.platform === 'win32'
-      ? `\\\\.\\pipe\\music-bot-mpv-${Date.now()}`
-      : path.join(os.tmpdir(), `music-bot-mpv-${Date.now()}.sock`);
+      ? `\\\\.\\pipe\\${SOUND_BOT_IPC_PREFIX}${ipcIdentity}`
+      : path.join(os.tmpdir(), `${SOUND_BOT_IPC_PREFIX}${ipcIdentity}.sock`);
     const args = [
       '--idle=yes',
+      `--title=${SOUND_BOT_PROCESS_MARKER}`,
       `--input-ipc-server=${this.ipcPath}`,
       '--no-video',
       '--force-window=no',
       '--audio-display=no',
+      ...this._getAudioOutputArgs(),
       `--audio-device=${this.config.audioDevice || 'auto'}`
     ];
 
-    this.process = spawn(this._getMpvExecutablePath(), args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(this._getMpvExecutablePath(), args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    let childSocket = null;
+    this.process = child;
+    if (Number.isInteger(child.pid)) {
+      this._ownedPids.add(child.pid);
+      this._processRegistry?.register?.(child.pid);
+    }
     this._shuttingDown = false;
     this._restartAttempts = 0;
 
-    this.process.on('error', (error) => {
+    child.on('error', (error) => {
+      if (this.process !== child || this._processGeneration !== generation) return;
       if (error.code === 'ENOENT') {
         this.emit('error', new Error(
           `mpv nicht gefunden ("${this.config.mpvPath}"). ` +
@@ -368,26 +794,53 @@ class PlaybackEngine extends EventEmitter {
       this.emit('error', error);
     });
 
-    this.process.on('close', (code) => {
-      this.socket?.destroy();
-      this.socket = null;
-      this._rejectPendingCommands(new Error(`mpv exited with code ${code ?? 'unknown'}`));
-      this.process = null;
-      if (this._shuttingDown) {
-        return;
-      }
-      this.state = 'idle';
-      this.emit('crashed', { code });
+    child.on('close', (code) => {
+      this._handleProcessClose(child, childSocket, generation, code);
     });
 
-    this.process.stderr.on('data', (data) => {
+    child.stderr?.on('data', (data) => {
+      if (this.process !== child || this._processGeneration !== generation) return;
       const message = data.toString();
       if (message.toLowerCase().includes('error')) {
         this.emit('error', new Error(message));
       }
     });
 
-    await this._connectSocket();
+    try {
+      childSocket = await this._connectSocket(child, this.ipcPath, generation);
+    } catch (error) {
+      if (this.process === child) {
+        this._expectedProcessStops.add(child);
+        await this._terminateProcess(child, { waitForClose: false });
+        if (this.process === child) this.process = null;
+      }
+      throw error;
+    }
+  }
+
+  _handleProcessClose(child, childSocket, generation, code) {
+    if (Number.isInteger(child?.pid)) {
+      this._ownedPids.delete(child.pid);
+      this._processRegistry?.unregister?.(child.pid);
+    }
+    if (this.process !== child || this._processGeneration !== generation) {
+      return;
+    }
+
+    if (this.socket === childSocket || this._socketGeneration === generation) {
+      this.socket?.destroy();
+      this.socket = null;
+      this._socketGeneration = 0;
+    }
+    this._rejectPendingCommands(new Error(`mpv exited with code ${code ?? 'unknown'}`));
+    this.process = null;
+    const expected = this._expectedProcessStops.has(child);
+    this._expectedProcessStops.delete(child);
+    if (expected || this._shuttingDown || this._restarting || this._destroyed) {
+      return;
+    }
+    this.state = 'idle';
+    this.emit('crashed', { code });
   }
 
   _getMpvExecutablePath() {
@@ -398,34 +851,60 @@ class PlaybackEngine extends EventEmitter {
     return `${configuredPath}.exe`;
   }
 
-  async _connectSocket() {
+  _getAudioOutputArgs() {
+    return this.config?.audioOutputDriver === 'null' ? ['--ao=null'] : [];
+  }
+
+  async _connectSocket(child = this.process, ipcPath = this.ipcPath, generation = this._processGeneration) {
     const maxAttempts = 10;
     let attempts = 0;
-    await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const tryConnect = () => {
+        if (this._destroyed || this.process !== child || this._processGeneration !== generation) {
+          reject(new Error('mpv connection attempt was retired'));
+          return;
+        }
         attempts += 1;
-        this.socket = net.createConnection(this.ipcPath, () => {
-          this.socket.setEncoding('utf8');
-          this.socket.on('data', (chunk) => this._onData(chunk));
-          this.socket.on('error', (error) => {
+        let connected = false;
+        const candidate = net.createConnection(ipcPath, () => {
+          connected = true;
+          candidate.removeListener('error', onConnectError);
+          if (this._destroyed || this.process !== child || this._processGeneration !== generation) {
+            candidate.destroy();
+            reject(new Error('mpv connection attempt was retired'));
+            return;
+          }
+          candidate.setEncoding('utf8');
+          candidate.on('data', (chunk) => {
+            if (this.socket === candidate && this._socketGeneration === generation) {
+              this._onData(chunk);
+            }
+          });
+          candidate.on('error', (error) => {
+            if (this.socket !== candidate || this._socketGeneration !== generation) return;
             this._rejectPendingCommands(error);
             this.emit('error', error);
           });
-          resolve();
+          this.socket = candidate;
+          this._socketGeneration = generation;
+          resolve(candidate);
         });
-        this.socket.on('error', (err) => {
+        const onConnectError = (err) => {
+          if (connected) return;
+          candidate.destroy();
           if (attempts >= maxAttempts) {
             reject(err);
           } else {
             setTimeout(tryConnect, 50);
           }
-        });
+        };
+        candidate.once('error', onConnectError);
       };
       tryConnect();
     });
   }
 
-  async _sendCommand(command, { waitForResponse = false } = {}) {
+  async _sendCommand(command, { waitForResponse = false, timeoutMs = 1500 } = {}) {
     if (!this.socket || this.socket.destroyed) {
       throw new Error('mpv IPC is not connected');
     }
@@ -443,7 +922,7 @@ class PlaybackEngine extends EventEmitter {
       const timeout = setTimeout(() => {
         this._pendingCommands.delete(requestId);
         reject(new Error(`mpv did not acknowledge command: ${command[0]}`));
-      }, 1500);
+      }, Math.max(1, Number(timeoutMs) || 1500));
       this._pendingCommands.set(requestId, { resolve, reject, timeout });
       this.socket.write(`${payload}\n`, (error) => {
         if (!error) return;
@@ -642,8 +1121,11 @@ class PlaybackEngine extends EventEmitter {
         if (!outgoingTrack && mpvReason === 'stop') {
           return;
         }
-        const isPlaybackError = mpvReason === 'error';
-        const reason = crossfadeOutgoingTrack ? 'crossfade' : (isPlaybackError ? 'error' : 'ended');
+        const expectedCrossfadeStop = Boolean(crossfadeOutgoingTrack) && mpvReason === 'stop';
+        const isPlaybackError = mpvReason !== 'eof' && !expectedCrossfadeStop;
+        const reason = isPlaybackError
+          ? 'error'
+          : (crossfadeOutgoingTrack ? 'crossfade' : 'ended');
         this._crossfadeOutgoingTrack = null;
         this._replacementOutgoingTrack = null;
         if (!outgoingTrack) {
@@ -652,11 +1134,14 @@ class PlaybackEngine extends EventEmitter {
         const trackEnd = { track: endedTrack, reason };
         if (isPlaybackError) {
           trackEnd.mpvReason = mpvReason;
-          trackEnd.error = msg.error || msg.file_error || 'MPV could not play this stream';
+          trackEnd.error = msg.error
+            || msg.file_error
+            || `MPV ended playback unexpectedly (${mpvReason})`;
         }
         this.emit('track-end', trackEnd);
         if (this.nowPlaying === endedTrack) {
           this.nowPlaying = null;
+          this._clearMediaDiagnostics();
         }
       } else if (msg.event === 'property-change' && msg.name === 'volume') {
         this.volume = msg.data;

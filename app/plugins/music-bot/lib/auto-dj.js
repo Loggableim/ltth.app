@@ -431,10 +431,11 @@ class AutoDJ {
     const orderClause = this.config.historyShuffled ? 'ORDER BY RANDOM()' : 'ORDER BY finishedAt DESC';
     return this.db
       .prepare(
-        `SELECT youtubeId, title, artist, url, duration, source, thumbnail, COUNT(*) as plays
+        `SELECT youtubeId, title, artist, url, duration, source, thumbnail,
+                channelId, channelName, COUNT(*) as plays
          FROM plugin_music_bot_history
          WHERE youtubeId IS NOT NULL
-         GROUP BY youtubeId, title, artist, url, duration, source, thumbnail
+         GROUP BY youtubeId, title, artist, url, duration, source, thumbnail, channelId, channelName
          HAVING plays >= ?
          ${orderClause}
          LIMIT 20`
@@ -474,7 +475,9 @@ class AutoDJ {
       duration: candidate.duration,
       source: candidate.source || 'youtube',
       thumbnail: candidate.thumbnail,
-      youtubeId: candidate.youtubeId
+      youtubeId: candidate.youtubeId,
+      channelId: candidate.channelId || null,
+      channelName: candidate.channelName || null
     };
   }
 
