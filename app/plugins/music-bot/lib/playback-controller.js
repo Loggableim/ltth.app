@@ -464,7 +464,7 @@ class PlaybackController extends EventEmitter {
     }
 
     const operation = Promise.resolve()
-      .then(() => this._processRegistry.findMarkedProcesses({ timeoutMs: 500 }))
+      .then(() => this._processRegistry.findMarkedProcesses({ timeoutMs: 1500 }))
       .then(async (processes) => {
         const unexpected = processes.filter((entry) => this._isUnexpectedMarkedProcess(entry));
         const detected = unexpected.map((entry) => Number(entry.pid));
@@ -487,7 +487,8 @@ class PlaybackController extends EventEmitter {
           found: [],
           killed: [],
           remaining: [],
-          error: error.message
+          error: error.message,
+          at: this._timing.now()
         };
         return {
           detected: [],
@@ -573,6 +574,13 @@ class PlaybackController extends EventEmitter {
     const healthy = this.lifecycle === 'active'
       && !this.safetyLock
       && this._liveSlots().every((slot) => !slot.crashed && !slot.lastError);
+    const reconciliationError = this._lastProcessCleanup?.error
+      ? {
+        message: this._lastProcessCleanup.error,
+        source: 'process-reconciliation',
+        at: this._lastProcessCleanup.at || null
+      }
+      : null;
     return {
       lifecycle: this.lifecycle,
       safetyLock: this.safetyLock,
@@ -583,7 +591,7 @@ class PlaybackController extends EventEmitter {
       slots,
       healthy,
       lastTransition: this.lastTransition,
-      lastError: this.lastError
+      lastError: this.lastError || reconciliationError
     };
   }
 

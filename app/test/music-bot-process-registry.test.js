@@ -266,6 +266,7 @@ describe('Music Bot orphan reconciliation', () => {
       locked: true,
       remaining: []
     }));
+    expect(processRegistry.findMarkedProcesses).toHaveBeenCalledWith({ timeoutMs: 1500 });
     expect(controller.isSafetyLocked()).toBe(true);
     expect(processRegistry.cleanupMarked).toHaveBeenCalledWith({ timeoutMs: 2000 });
     expect(safetyChanged).toHaveBeenCalledWith(expect.objectContaining({
@@ -315,6 +316,30 @@ describe('Music Bot orphan reconciliation', () => {
       killed: [],
       remaining: []
     });
+  });
+
+  test('reports a scanner failure in health diagnostics and clears it after recovery', async () => {
+    const processRegistry = {
+      findMarkedProcesses: jest.fn()
+        .mockRejectedValueOnce(new Error('powershell.exe timed out'))
+        .mockResolvedValueOnce([]),
+      cleanupMarked: jest.fn()
+    };
+    const controller = createController(processRegistry);
+
+    await expect(controller.reconcileProcesses()).resolves.toEqual(expect.objectContaining({
+      error: 'powershell.exe timed out'
+    }));
+    expect(controller.getSnapshot().lastError).toEqual(expect.objectContaining({
+      message: 'powershell.exe timed out',
+      source: 'process-reconciliation'
+    }));
+
+    await expect(controller.reconcileProcesses()).resolves.toEqual(expect.objectContaining({
+      detected: [],
+      remaining: []
+    }));
+    expect(controller.getSnapshot().lastError).toBeNull();
   });
 
   test('an owned MPV waiting idle without media is not treated as an orphan', async () => {
