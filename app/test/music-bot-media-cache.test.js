@@ -32,6 +32,37 @@ function createSuccessfulSpawn(bytes = Buffer.from('audio')) {
   return spawn;
 }
 
+function createSequencedSpawn(outputs) {
+  let invocation = 0;
+  return jest.fn((_command, args) => {
+    const output = outputs[Math.min(invocation, outputs.length - 1)];
+    invocation += 1;
+    const child = new EventEmitter();
+    child.pid = 4000 + invocation;
+    child.exitCode = null;
+    child.stdout = new EventEmitter();
+    child.stderr = new EventEmitter();
+    child.kill = jest.fn(() => true);
+    process.nextTick(() => {
+      const outputTemplate = args[args.indexOf('--output') + 1];
+      const outputPath = outputTemplate.replace('%(ext)s', output.extension);
+      fs.writeFileSync(outputPath, Buffer.alloc(output.bytes, invocation));
+      child.stdout.emit('data', Buffer.from(`${outputPath}\n`));
+      child.exitCode = 0;
+      child.emit('close', 0);
+    });
+    return child;
+  });
+}
+
+function deferred() {
+  let resolve;
+  const promise = new Promise((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
 describe('music-bot media cache', () => {
   let dataDir;
 
@@ -197,5 +228,136 @@ describe('music-bot media cache', () => {
     expect(result).toBe('rejected');
     expect(cache.get('youtube:too-large')).toBeNull();
     await cache.destroy();
+  });
+
+  it('rejects an oversized download before pruning valid existing cache files', async () => {
+    const spawn = createSequencedSpawn([
+      { extension: 'webm', bytes: 4 },
+      { extension: 'opus', bytes: 8 }
+    ]);
+    const cache = new MediaCache({ maxCacheSizeMB: 0.001 }, createApi(dataDir), { spawn });
+    const existing = await cache.getOrDownload({
+      trackKey: 'youtube:existing',
+      url: 'https://youtu.be/existing'
+    });
+    cache.maxSizeMB = 5 / (1024 * 1024);
+
+    await expect(cache.getOrDownload({
+      trackKey: 'youtube:oversized',
+      url: 'https://youtu.be/oversized'
+    })).rejects.toThrow(/exceeds/i);
+
+    expect(fs.existsSync(existing)).toBe(true);
+    expect(cache.get('youtube:existing')).toBe(existing);
+    expect(cache.get('youtube:oversized')).toBeNull();
+    await cache.destroy();
+  });
+
+  it('keeps failed deletions in the real prune byte and file accounting', async () => {
+    const cache = new MediaCache({ maxCacheSizeMB: 0.001 }, createApi(dataDir), {
+      spawn: createSuccessfulSpawn(Buffer.alloc(6))
+    });
+    const victim = await cache.getOrDownload({
+      trackKey: 'youtube:undeletable',
+      url: 'https://youtu.be/undeletable'
+    });
+    cache.maxSizeMB = 1 / (1024 * 1024);
+    const originalRmSync = fs.rmSync;
+    const remove = jest.spyOn(fs, 'rmSync').mockImplementation((target, options) => {
+      if (path.resolve(target) === path.resolve(victim)) {
+        const error = new Error('locked');
+        error.code = 'EACCES';
+        throw error;
+      }
+      return originalRmSync(target, options);
+    });
+
+    let result;
+    try {
+      result = await cache.prune();
+    } finally {
+      remove.mockRestore();
+    }
+
+    expect(result).toEqual({ bytes: 6, files: 1 });
+    expect(fs.existsSync(victim)).toBe(true);
+    await cache.destroy();
+  });
+
+  it('removes a published file when the caller aborts while final prune is pending', async () => {
+    const cache = new MediaCache({}, createApi(dataDir), { spawn: createSuccessfulSpawn() });
+    const enteredPrune = deferred();
+    const releasePrune = deferred();
+    const realPrune = cache.prune.bind(cache);
+    cache.prune = jest.fn(async (options) => {
+      enteredPrune.resolve();
+      await releasePrune.promise;
+      return realPrune(options);
+    });
+    const controller = new AbortController();
+    const pending = cache.getOrDownload({
+      trackKey: 'youtube:late-abort',
+      url: 'https://youtu.be/late-abort'
+    }, { signal: controller.signal });
+    await enteredPrune.promise;
+
+    controller.abort();
+    releasePrune.resolve();
+
+    await expect(pending).rejects.toThrow(/aborted/i);
+    expect(cache.get('youtube:late-abort')).toBeNull();
+    await cache.destroy();
+  });
+
+  it('removes a published file when destroy races the final prune', async () => {
+    const cache = new MediaCache({}, createApi(dataDir), { spawn: createSuccessfulSpawn() });
+    const enteredPrune = deferred();
+    const releasePrune = deferred();
+    const realPrune = cache.prune.bind(cache);
+    cache.prune = jest.fn(async (options) => {
+      enteredPrune.resolve();
+      await releasePrune.promise;
+      return realPrune(options);
+    });
+    const pending = cache.getOrDownload({
+      trackKey: 'youtube:late-destroy',
+      url: 'https://youtu.be/late-destroy'
+    });
+    await enteredPrune.promise;
+
+    const destroying = cache.destroy();
+    releasePrune.resolve();
+
+    await expect(pending).rejects.toThrow(/aborted|destroyed/i);
+    await destroying;
+    expect(cache.get('youtube:late-destroy')).toBeNull();
+  });
+
+  it('publishes one canonical file across concurrent cache instances and extensions', async () => {
+    const spawn = createSequencedSpawn([
+      { extension: 'webm', bytes: 4 },
+      { extension: 'opus', bytes: 5 }
+    ]);
+    const firstCache = new MediaCache({}, createApi(dataDir), { spawn });
+    const secondCache = new MediaCache({}, createApi(dataDir), { spawn });
+
+    const [first, second] = await Promise.all([
+      firstCache.getOrDownload({
+        trackKey: 'youtube:shared-across-instances',
+        url: 'https://youtu.be/shared-across-instances'
+      }),
+      secondCache.getOrDownload({
+        trackKey: 'youtube:shared-across-instances',
+        url: 'https://youtube.com/watch?v=shared-across-instances'
+      })
+    ]);
+
+    expect(second).toBe(first);
+    const hash = path.basename(first).slice(0, 64);
+    const published = fs.readdirSync(path.dirname(first)).filter(
+      (name) => name.startsWith(`${hash}.`) && !name.includes('.download-') && !name.endsWith('.lock')
+    );
+    expect(published).toHaveLength(1);
+    await Promise.all([firstCache.destroy(), secondCache.destroy()]);
   });
 });

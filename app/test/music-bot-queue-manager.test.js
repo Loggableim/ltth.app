@@ -263,4 +263,111 @@ describe('music-bot queue manager', () => {
     expect(manager.getCurrent().localPath).toBe('C:\\cache\\song.webm');
     db.close();
   });
+
+  it('aborts restore without mutating memory or persistence when the ban check throws', () => {
+    const { db, manager, api } = createRealManager();
+    manager.addSong({
+      title: 'Persisted',
+      url: 'https://youtu.be/abc123DEF45',
+      requestedBy: 'viewer'
+    });
+    const persistedBefore = db.prepare(
+      'SELECT id, title, trackKey FROM plugin_music_bot_queue ORDER BY position'
+    ).all();
+    const sentinel = { id: 'existing-memory', title: 'Existing memory' };
+    manager.queue = [sentinel];
+    const persist = jest.spyOn(manager, 'persistQueue');
+
+    const result = manager.restoreQueue({
+      isAllowed: () => {
+        throw new Error('ban storage unavailable');
+      }
+    });
+
+    expect(result).toEqual({
+      restored: 0,
+      deduped: 0,
+      banned: 0,
+      error: 'ban-check-failed'
+    });
+    expect(manager.getQueue()).toEqual([sentinel]);
+    expect(persist).not.toHaveBeenCalled();
+    expect(db.prepare(
+      'SELECT id, title, trackKey FROM plugin_music_bot_queue ORDER BY position'
+    ).all()).toEqual(persistedBefore);
+    expect(api.log).toHaveBeenCalledWith(
+      expect.stringContaining('ban storage unavailable'),
+      'error'
+    );
+    db.close();
+  });
+
+  it('canonicalizes YouTube live and privacy-enhanced embed URL aliases', () => {
+    const { db, manager } = createRealManager();
+    const videoId = 'AbC123xYz_-';
+
+    expect(manager.addSong({
+      title: 'Live alias',
+      url: `https://www.youtube.com/live/${videoId}?si=share`
+    }).song.trackKey).toBe(`youtube:${videoId}`);
+    expect(manager.addSong({
+      title: 'Short alias',
+      url: `https://youtu.be/${videoId}`
+    }).success).toBe(false);
+
+    manager.clear();
+    expect(manager.addSong({
+      title: 'Privacy embed',
+      url: `https://www.youtube-nocookie.com/embed/${videoId}`
+    }).song.trackKey).toBe(`youtube:${videoId}`);
+    expect(manager.addSong({
+      title: 'Watch alias',
+      url: `https://youtube.com/watch?v=${videoId}`
+    }).success).toBe(false);
+    db.close();
+  });
+
+  it('migrates legacy history and persists canonical provider and channel metadata', () => {
+    const { db, manager } = createRealManager({}, (legacyDb) => {
+      legacyDb.exec(`
+        CREATE TABLE plugin_music_bot_history (
+          id TEXT PRIMARY KEY,
+          youtubeId TEXT,
+          title TEXT,
+          artist TEXT,
+          url TEXT,
+          duration INTEGER,
+          requestedBy TEXT,
+          source TEXT,
+          thumbnail TEXT,
+          finishedAt INTEGER,
+          skipped INTEGER DEFAULT 0
+        )
+      `);
+    });
+
+    manager.addToHistory({
+      id: 'history-track',
+      title: 'History Track',
+      artist: 'History Artist',
+      url: 'https://www.youtube.com/live/AbC123xYz_-',
+      provider: 'youtube',
+      providerId: 'AbC123xYz_-',
+      trackKey: 'youtube:AbC123xYz_-',
+      channelId: 'channel-123',
+      channelName: 'History Channel'
+    });
+
+    expect(db.prepare(`
+      SELECT provider, providerId, trackKey, channelId, channelName
+      FROM plugin_music_bot_history WHERE id = ?
+    `).get('history-track')).toEqual({
+      provider: 'youtube',
+      providerId: 'AbC123xYz_-',
+      trackKey: 'youtube:AbC123xYz_-',
+      channelId: 'channel-123',
+      channelName: 'History Channel'
+    });
+    db.close();
+  });
 });

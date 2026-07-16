@@ -110,8 +110,7 @@ class MediaCache {
         if (entry.pinned || protectedHashes.has(entry.hash) || now - entry.stat.mtimeMs <= ttlMs) {
           return true;
         }
-        this._removeFile(entry.path);
-        return false;
+        return !this._removeFile(entry.path);
       });
     }
 
@@ -120,16 +119,18 @@ class MediaCache {
     const lru = remaining
       .filter((entry) => !entry.pinned && !protectedHashes.has(entry.hash))
       .sort((a, b) => a.stat.atimeMs - b.stat.atimeMs || a.path.localeCompare(b.path));
-    const removed = new Set();
     for (const entry of lru) {
       if (bytes <= maxBytes) break;
-      this._removeFile(entry.path);
-      bytes -= entry.stat.size;
-      removed.add(entry.path);
+      if (this._removeFile(entry.path)) {
+        bytes -= entry.stat.size;
+      }
     }
 
-    remaining = remaining.filter((entry) => !removed.has(entry.path));
-    return { bytes: Math.max(0, bytes), files: remaining.length };
+    const actual = this._publishedFiles();
+    return {
+      bytes: actual.reduce((sum, entry) => sum + entry.stat.size, 0),
+      files: actual.length
+    };
   }
 
   getStats() {
@@ -170,6 +171,10 @@ class MediaCache {
       'after_move:filepath',
       url
     ];
+    const deadline = options.deadline || Date.now() + this._positiveNumber(
+      this.config.downloadTimeoutMs,
+      45000
+    );
     const controller = new AbortController();
     const abortFromCaller = () => controller.abort();
     if (options.signal?.aborted) controller.abort();
@@ -182,10 +187,7 @@ class MediaCache {
         args,
         {
           signal: controller.signal,
-          deadline: options.deadline || Date.now() + this._positiveNumber(
-            this.config.downloadTimeoutMs,
-            45000
-          ),
+          deadline,
           priority: options.priority
         }
       );
@@ -196,19 +198,44 @@ class MediaCache {
       if (!downloadedPath) throw new Error('yt-dlp did not publish a cache file');
       const stat = fs.statSync(downloadedPath);
       if (!stat.isFile() || stat.size <= 0) throw new Error('Downloaded cache file is empty');
-      const extension = this._safeExtension(downloadedPath);
-      const finalPath = path.join(this.cacheDir, `${hash}${extension}`);
-      if (fs.existsSync(finalPath)) fs.rmSync(finalPath, { force: true });
-      fs.renameSync(downloadedPath, finalPath);
-      const timestamp = new Date(this.now());
-      fs.utimesSync(finalPath, timestamp, timestamp);
-      this._removeTemporaryFiles(temporaryPrefix);
-      await this.prune({ protectedKeys: [trackKey] });
       if (stat.size > this.maxSizeMB * 1024 * 1024) {
-        this._removeFile(finalPath);
+        this._removeFile(downloadedPath);
         throw new Error('Downloaded cache file exceeds the configured cache limit');
       }
-      return finalPath;
+
+      const lock = await this._acquirePublishLock(hash, controller.signal, deadline);
+      let finalPath = null;
+      let published = false;
+      try {
+        if (this.destroyed || controller.signal.aborted) {
+          throw new Error('Media cache download aborted');
+        }
+        const existing = this._canonicalizePublishedFiles(hash);
+        if (existing) {
+          this._touchFile(existing);
+          return existing;
+        }
+
+        const extension = this._safeExtension(downloadedPath);
+        finalPath = path.join(this.cacheDir, `${hash}${extension}`);
+        fs.renameSync(downloadedPath, finalPath);
+        published = true;
+        this._touchFile(finalPath);
+        this._removeTemporaryFiles(temporaryPrefix);
+        await this.prune({ protectedKeys: [trackKey] });
+        if (this.destroyed || controller.signal.aborted) {
+          throw new Error('Media cache download aborted');
+        }
+        if (!fs.existsSync(finalPath)) {
+          throw new Error('Published cache file disappeared during prune');
+        }
+        return finalPath;
+      } catch (error) {
+        if (published && finalPath) this._invalidatePublishedFile(finalPath, hash, nonce);
+        throw error;
+      } finally {
+        this._releasePublishLock(lock);
+      }
     } finally {
       options.signal?.removeEventListener?.('abort', abortFromCaller);
       this.jobControllers.delete(controller);
@@ -253,25 +280,52 @@ class MediaCache {
 
   _findPublishedFile(trackKey) {
     const hash = this._hash(trackKey);
-    const name = fs.readdirSync(this.cacheDir).find(
-      (entry) => entry.startsWith(`${hash}.`) && !entry.includes('.download-')
-    );
-    if (!name) return null;
-    const filePath = path.join(this.cacheDir, name);
-    try {
-      const stat = fs.statSync(filePath);
-      if (stat.isFile() && stat.size > 0) return filePath;
-      this._removeFile(filePath);
-    } catch (_error) {
-      // A concurrent prune may remove a candidate between readdir and stat.
-    }
-    return null;
+    if (fs.existsSync(this._publishLockPath(hash))) return null;
+    return this._findPublishedFileByHash(hash);
+  }
+
+  _findPublishedFileByHash(hash) {
+    const candidates = this._publishedCandidates(hash);
+    return candidates.length ? candidates[0].path : null;
+  }
+
+  _publishedCandidates(hash) {
+    const prefix = `${hash}.`;
+    return fs.readdirSync(this.cacheDir)
+      .filter((name) => (
+        name.startsWith(prefix) &&
+        !name.endsWith('.lock') &&
+        /^[a-f0-9]{64}\.[^.]+$/i.test(name)
+      ))
+      .map((name) => {
+        const filePath = path.join(this.cacheDir, name);
+        try {
+          const stat = fs.statSync(filePath);
+          if (!stat.isFile() || stat.size <= 0) {
+            this._removeFile(filePath);
+            return null;
+          }
+          return { path: filePath, stat };
+        } catch (_error) {
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs || a.path.localeCompare(b.path));
+  }
+
+  _canonicalizePublishedFiles(hash) {
+    const candidates = this._publishedCandidates(hash);
+    if (!candidates.length) return null;
+    const [keep, ...duplicates] = candidates;
+    duplicates.forEach((entry) => this._removeFile(entry.path));
+    return keep.path;
   }
 
   _publishedFiles() {
     const pinnedHashes = new Set([...this.pinnedKeys].map((key) => this._hash(key)));
     return fs.readdirSync(this.cacheDir)
-      .filter((name) => /^[a-f0-9]{64}\.[^.]+$/i.test(name))
+      .filter((name) => !name.endsWith('.lock') && /^[a-f0-9]{64}\.[^.]+$/i.test(name))
       .map((name) => {
         const filePath = path.join(this.cacheDir, name);
         try {
@@ -281,7 +335,9 @@ class MediaCache {
             path: filePath,
             stat,
             hash: name.slice(0, 64),
-            pinned: pinnedHashes.has(name.slice(0, 64))
+            pinned: pinnedHashes.has(name.slice(0, 64)) || fs.existsSync(
+              this._publishLockPath(name.slice(0, 64))
+            )
           };
         } catch (_error) {
           return null;
@@ -303,8 +359,81 @@ class MediaCache {
   _removeFile(filePath) {
     try {
       fs.rmSync(filePath, { force: true });
+      return !fs.existsSync(filePath);
     } catch (error) {
       this.api.log?.(`[music-bot] Failed to remove cached media: ${error.message}`, 'debug');
+      return false;
+    }
+  }
+
+  _touchFile(filePath) {
+    const timestamp = new Date(this.now());
+    fs.utimesSync(filePath, timestamp, timestamp);
+  }
+
+  _publishLockPath(hash) {
+    return path.join(this.cacheDir, `${hash}.lock`);
+  }
+
+  async _acquirePublishLock(hash, signal, deadline) {
+    const lockPath = this._publishLockPath(hash);
+    while (true) {
+      if (this.destroyed || signal.aborted) throw new Error('Media cache download aborted');
+      if (Date.now() >= deadline) throw new Error('Media cache publish lock timed out');
+      try {
+        const descriptor = fs.openSync(lockPath, 'wx');
+        return { descriptor, path: lockPath };
+      } catch (error) {
+        if (error.code !== 'EEXIST') throw error;
+        try {
+          const stat = fs.statSync(lockPath);
+          if (Date.now() - stat.mtimeMs > 60000) this._removeFile(lockPath);
+        } catch (_error) {
+          // The lock owner may have released it between open and stat.
+        }
+        await this._waitForPublishLock(signal, Math.min(25, Math.max(1, deadline - Date.now())));
+      }
+    }
+  }
+
+  _waitForPublishLock(signal, delayMs) {
+    return new Promise((resolve, reject) => {
+      if (signal.aborted) {
+        reject(new Error('Media cache download aborted'));
+        return;
+      }
+      const timer = setTimeout(() => {
+        signal.removeEventListener('abort', onAbort);
+        resolve();
+      }, delayMs);
+      const onAbort = () => {
+        clearTimeout(timer);
+        reject(new Error('Media cache download aborted'));
+      };
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
+  }
+
+  _releasePublishLock(lock) {
+    if (!lock) return;
+    try {
+      fs.closeSync(lock.descriptor);
+    } catch (_error) {
+      // The descriptor may already have been closed by the runtime.
+    }
+    this._removeFile(lock.path);
+  }
+
+  _invalidatePublishedFile(filePath, hash, nonce) {
+    if (this._removeFile(filePath)) return;
+    const quarantine = path.join(
+      this.cacheDir,
+      `${hash}.download-${nonce}.invalid${path.extname(filePath)}`
+    );
+    try {
+      fs.renameSync(filePath, quarantine);
+    } catch (error) {
+      this.api.log?.(`[music-bot] Failed to invalidate cached media: ${error.message}`, 'error');
     }
   }
 

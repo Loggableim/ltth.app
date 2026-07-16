@@ -418,7 +418,25 @@ class QueueManager {
 
   _extractYouTubeId(song) {
     if (song.youtubeId) return song.youtubeId;
-    return extractYouTubeId(song.url || '');
+    const url = song.url || '';
+    const standardId = extractYouTubeId(url);
+    if (standardId) return standardId;
+    try {
+      const parsed = new URL(String(url));
+      const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+      const youtubeHosts = [
+        'youtube.com',
+        'm.youtube.com',
+        'music.youtube.com',
+        'youtube-nocookie.com'
+      ];
+      if (!youtubeHosts.includes(host)) return null;
+      if (parsed.pathname === '/watch') return parsed.searchParams.get('v');
+      const match = parsed.pathname.match(/^\/(?:embed|shorts|live|v)\/([^/]+)/);
+      return match ? match[1] : null;
+    } catch (_error) {
+      return null;
+    }
   }
 
   _identityForSong(song = {}) {
@@ -438,11 +456,15 @@ class QueueManager {
       }
     }
 
-    const provider = providerFromTrack({
+    const explicitProvider = String(song.provider || song.source || '').trim().toLowerCase();
+    const youtubeId = !explicitProvider || explicitProvider === 'youtube'
+      ? this._extractYouTubeId(song)
+      : null;
+    const provider = youtubeId ? 'youtube' : providerFromTrack({
       provider: song.provider || song.source,
       url: song.url
     });
-    const providerId = song.providerId || (provider === 'youtube' ? song.youtubeId : null);
+    const providerId = song.providerId || (provider === 'youtube' ? youtubeId : null);
     return deriveTrackIdentity({
       provider,
       providerId,
@@ -510,7 +532,8 @@ class QueueManager {
       let deduped = 0;
       let banned = 0;
 
-      rows.forEach((row) => {
+      let banCheckError = null;
+      for (const row of rows) {
         const identity = this._identityForSong(row);
         const entry = {
           id: row.id,
@@ -539,22 +562,34 @@ class QueueManager {
             const allowed = decision !== false && decision?.allowed !== false && decision?.banned !== true;
             if (!allowed) {
               banned += 1;
-              return;
+              continue;
             }
           } catch (error) {
-            banned += 1;
-            this.api.log?.(`[music-bot] Queue restore rejected a row after ban check failed: ${error.message}`, 'warn');
-            return;
+            banCheckError = error;
+            break;
           }
         }
 
         if (!duplicatesDisabled && seen.has(entry.trackKey)) {
           deduped += 1;
-          return;
+          continue;
         }
         seen.add(entry.trackKey);
         restored.push(entry);
-      });
+      }
+
+      if (banCheckError) {
+        this.api.log?.(
+          `[music-bot] Queue restore aborted because ban check failed: ${banCheckError.message}`,
+          'error'
+        );
+        return {
+          restored: 0,
+          deduped: 0,
+          banned: 0,
+          error: 'ban-check-failed'
+        };
+      }
 
       this.queue = restored;
       this.userLastRequest.clear();
@@ -574,20 +609,28 @@ class QueueManager {
 
   _persistHistory(track) {
     try {
+      const identity = this._identityForSong(track);
       const stmt = this.db.prepare(
         `INSERT OR REPLACE INTO plugin_music_bot_history
-          (id, youtubeId, title, artist, url, duration, requestedBy, source, thumbnail, finishedAt, skipped)
-          VALUES (@id, @youtubeId, @title, @artist, @url, @duration, @requestedBy, @source, @thumbnail, @finishedAt, @skipped)`
+          (id, youtubeId, provider, providerId, trackKey, channelId, channelName, title, artist,
+           url, duration, requestedBy, source, thumbnail, finishedAt, skipped)
+          VALUES (@id, @youtubeId, @provider, @providerId, @trackKey, @channelId, @channelName,
+           @title, @artist, @url, @duration, @requestedBy, @source, @thumbnail, @finishedAt, @skipped)`
       );
       stmt.run({
         id: track.id || randomUUID(),
-        youtubeId: track.youtubeId || this._extractYouTubeId(track),
+        youtubeId: identity.youtubeId || null,
+        provider: identity.provider,
+        providerId: identity.providerId,
+        trackKey: identity.trackKey,
+        channelId: track.channelId || null,
+        channelName: track.channelName || null,
         title: track.title || '',
         artist: track.artist || '',
         url: track.url || '',
         duration: track.duration || null,
         requestedBy: track.requestedBy || 'viewer',
-        source: track.source || 'youtube',
+        source: track.source || identity.provider,
         thumbnail: track.thumbnail || null,
         finishedAt: track.finishedAt || Date.now(),
         skipped: track.skipped ? 1 : 0
@@ -607,6 +650,11 @@ class QueueManager {
             title TEXT,
             artist TEXT,
             url TEXT,
+            provider TEXT,
+            providerId TEXT,
+            trackKey TEXT,
+            channelId TEXT,
+            channelName TEXT,
             duration INTEGER,
             requestedBy TEXT,
             source TEXT,
@@ -619,6 +667,12 @@ class QueueManager {
     } catch (error) {
       this.api.log?.(`[music-bot] Failed to ensure history table: ${error.message}`, 'error');
     }
+
+    this._ensureHistoryColumn('provider', 'TEXT');
+    this._ensureHistoryColumn('providerId', 'TEXT');
+    this._ensureHistoryColumn('trackKey', 'TEXT');
+    this._ensureHistoryColumn('channelId', 'TEXT');
+    this._ensureHistoryColumn('channelName', 'TEXT');
 
     try {
       this.db.prepare(
@@ -677,6 +731,16 @@ class QueueManager {
     } catch (error) {
       if (!/duplicate column name/i.test(error.message)) {
         this.api.log?.(`[music-bot] Failed to ensure ${name} column: ${error.message}`, 'debug');
+      }
+    }
+  }
+
+  _ensureHistoryColumn(name, definition) {
+    try {
+      this.db.prepare(`ALTER TABLE plugin_music_bot_history ADD COLUMN ${name} ${definition}`).run();
+    } catch (error) {
+      if (!/duplicate column name/i.test(error.message)) {
+        this.api.log?.(`[music-bot] Failed to ensure history ${name} column: ${error.message}`, 'debug');
       }
     }
   }
