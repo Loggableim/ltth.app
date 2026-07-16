@@ -194,6 +194,7 @@ class MusicBotPlugin extends EventEmitter {
     this._stateTransitions = [];
     this._lastResolverProgress = null;
     this._controllerSafetySyncPromise = Promise.resolve();
+    this._configUpdateTail = Promise.resolve();
 
     // Constructor-only state stays inert for tests and route registration. The
     // persisted/default live-safe lock is applied atomically by _loadConfig().
@@ -295,6 +296,7 @@ class MusicBotPlugin extends EventEmitter {
   async destroy() {
     if (this._destroyed) return;
     this._destroyed = true;
+    const configUpdateDrain = this._configUpdateTail;
     this._lifecycleGeneration += 1;
     this._recordTransition('destroyed', 'plugin-destroy');
     this._stopPlaybackSync();
@@ -320,6 +322,7 @@ class MusicBotPlugin extends EventEmitter {
     } catch (error) {
       this.api.log(`[music-bot] Failed to shutdown playback: ${error.message}`, 'error');
     }
+    await configUpdateDrain;
 
     // Keep queued songs across app restarts and plugin reloads. Explicit user
     // actions still use queueManager.clear() through the clear route/command.
@@ -1041,6 +1044,26 @@ class MusicBotPlugin extends EventEmitter {
     return persisted;
   }
 
+  _configLifecycleError() {
+    const error = new Error('Music Bot config update cancelled because the plugin is shutting down');
+    error.code = 'PLUGIN_DESTROYED';
+    return error;
+  }
+
+  _assertConfigUpdateActive() {
+    if (this._destroyed) throw this._configLifecycleError();
+  }
+
+  _runSerializedConfigUpdate(operation) {
+    if (this._destroyed) return Promise.reject(this._configLifecycleError());
+    const queued = this._configUpdateTail.then(async () => {
+      this._assertConfigUpdateActive();
+      return operation();
+    });
+    this._configUpdateTail = queued.catch(() => {});
+    return queued;
+  }
+
   async _reconcilePlaybackProcessesAtInit() {
     const reconciliation = await this.playbackEngine?.reconcileProcesses?.();
     if (!reconciliation?.locked) return reconciliation || null;
@@ -1669,45 +1692,68 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/config', async (req, res) => {
-      const prepared = this._prepareLiveConfigUpdate(req.body || {});
-      if (!prepared.valid) {
-        res.status(400).json({ success: false, error: prepared.error });
-        return;
-      }
-      const previousConfig = this.config;
-      const nextConfig = prepared.config;
-      const mpvPathChanged = previousConfig?.playback?.mpvPath !== nextConfig.playback.mpvPath;
-      const ytDlpPathChanged = previousConfig?.resolver?.ytdlpPath !== nextConfig.resolver.ytdlpPath;
-      let persistedNext = false;
       try {
-        // Persistence is the commit point; runtime consumers only see the new
-        // immutable snapshot after durable storage accepted it.
-        await this._persistConfigOrThrow(nextConfig, 'live config');
-        persistedNext = true;
-        this._distributeLiveConfig(nextConfig);
-        if (this.mediaCache) {
-          await this.mediaCache.prune({ protectedKeys: [...this._pinnedCacheKeys] });
-        }
-        if (ytDlpPathChanged) await this._ensureYtDlp();
-        if (mpvPathChanged) await this._ensureMpv();
-        await this._applyAudioVolume();
-        if (mpvPathChanged || ytDlpPathChanged) this._emitSetupStatus();
-        res.json({ success: true, config: this.config });
-      } catch (error) {
-        try {
-          this._distributeLiveConfig(previousConfig);
-        } catch (rollbackError) {
-          this.api.log(`[music-bot] Live config runtime rollback failed: ${rollbackError.message}`, 'error');
-        }
-        if (persistedNext) {
-          try {
-            await this._persistConfigOrThrow(previousConfig, 'live config rollback');
-          } catch (rollbackError) {
-            this.api.log(`[music-bot] Live config persistence rollback failed: ${rollbackError.message}`, 'error');
+        await this._runSerializedConfigUpdate(async () => {
+          const prepared = this._prepareLiveConfigUpdate(req.body || {});
+          if (!prepared.valid) {
+            res.status(400).json({ success: false, error: prepared.error });
+            return;
           }
-        }
+          const previousConfig = this.config;
+          const nextConfig = prepared.config;
+          const mpvPathChanged = previousConfig?.playback?.mpvPath !== nextConfig.playback.mpvPath;
+          const ytDlpPathChanged = previousConfig?.resolver?.ytdlpPath !== nextConfig.resolver.ytdlpPath;
+          let persistedNext = false;
+          try {
+            // Persistence is the commit point; runtime consumers only see the
+            // new snapshot after durable storage accepted it.
+            await this._persistConfigOrThrow(nextConfig, 'live config');
+            persistedNext = true;
+            this._assertConfigUpdateActive();
+            this._distributeLiveConfig(nextConfig);
+            if (this.mediaCache) {
+              await this.mediaCache.prune({ protectedKeys: [...this._pinnedCacheKeys] });
+              this._assertConfigUpdateActive();
+            }
+            if (ytDlpPathChanged) {
+              await this._ensureYtDlp();
+              this._assertConfigUpdateActive();
+            }
+            if (mpvPathChanged) {
+              await this._ensureMpv();
+              this._assertConfigUpdateActive();
+            }
+            await this._applyAudioVolume();
+            this._assertConfigUpdateActive();
+            if (mpvPathChanged || ytDlpPathChanged) this._emitSetupStatus();
+            res.json({ success: true, config: this.config });
+          } catch (error) {
+            try {
+              if (this._destroyed) {
+                this.config = previousConfig;
+              } else {
+                this._distributeLiveConfig(previousConfig);
+              }
+            } catch (rollbackError) {
+              this.api.log(`[music-bot] Live config runtime rollback failed: ${rollbackError.message}`, 'error');
+            }
+            if (persistedNext) {
+              try {
+                await this._persistConfigOrThrow(previousConfig, 'live config rollback');
+              } catch (rollbackError) {
+                this.api.log(`[music-bot] Live config persistence rollback failed: ${rollbackError.message}`, 'error');
+              }
+            }
+            const responseError = this._destroyed ? this._configLifecycleError() : error;
+            this.api.log(`[music-bot] Live config update rejected: ${responseError.message}`, 'error');
+            const statusCode = responseError.code === 'PLUGIN_DESTROYED' ? 503 : 500;
+            res.status(statusCode).json({ success: false, error: responseError.message });
+          }
+        });
+      } catch (error) {
         this.api.log(`[music-bot] Live config update rejected: ${error.message}`, 'error');
-        res.status(500).json({ success: false, error: error.message });
+        const statusCode = error.code === 'PLUGIN_DESTROYED' ? 503 : 500;
+        res.status(statusCode).json({ success: false, error: error.message });
       }
     });
 

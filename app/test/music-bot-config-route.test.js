@@ -194,6 +194,99 @@ describe('music-bot POST /api/plugins/music-bot/config', () => {
     );
   });
 
+  test('serializes overlapping updates so a late A rollback cannot overwrite successful B', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const baselineCrossfade = plugin.config.playback.crossfadeDuration;
+    const persistedSnapshots = [];
+    api.setConfig.mockImplementation(async (_key, config) => {
+      persistedSnapshots.push(structuredClone(config));
+      return true;
+    });
+    plugin.playbackEngine.updateConfig = jest.fn();
+    let rejectFirstVolume;
+    let markFirstVolumeStarted;
+    const firstVolumeStarted = new Promise((resolve) => {
+      markFirstVolumeStarted = resolve;
+    });
+    plugin.playbackEngine.setVolume
+      .mockImplementationOnce(() => {
+        markFirstVolumeStarted();
+        return new Promise((_resolve, reject) => {
+          rejectFirstVolume = reject;
+        });
+      })
+      .mockResolvedValue(true);
+    plugin._registerRoutes();
+    const handler = api.handlers['POST:/api/plugins/music-bot/config'];
+    const responseA = createResponseMock();
+    const responseB = createResponseMock();
+
+    const requestA = handler({
+      body: { playback: { crossfadeDuration: baselineCrossfade + 111 } }
+    }, responseA);
+    await firstVolumeStarted;
+    const requestB = handler({
+      body: { queue: { maxLength: 77 } }
+    }, responseB);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(api.setConfig).toHaveBeenCalledTimes(1);
+    rejectFirstVolume(new Error('late A volume failure'));
+    await Promise.all([requestA, requestB]);
+
+    expect(responseA.status).toHaveBeenCalledWith(500);
+    expect(responseB.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    expect(api.setConfig).toHaveBeenCalledTimes(3);
+    expect(persistedSnapshots.at(-1)).toEqual(plugin.config);
+    expect(plugin.config.queue.maxLength).toBe(77);
+    expect(plugin.config.playback.crossfadeDuration).toBe(baselineCrossfade);
+    expect(plugin.queueManager.config).toBe(plugin.config);
+  });
+
+  test('rejects a queued update when the plugin lifecycle ends before its turn', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    plugin.playbackEngine.updateConfig = jest.fn();
+    let rejectFirstVolume;
+    let markFirstVolumeStarted;
+    const firstVolumeStarted = new Promise((resolve) => {
+      markFirstVolumeStarted = resolve;
+    });
+    plugin.playbackEngine.setVolume
+      .mockImplementationOnce(() => {
+        markFirstVolumeStarted();
+        return new Promise((_resolve, reject) => {
+          rejectFirstVolume = reject;
+        });
+      })
+      .mockResolvedValue(true);
+    plugin._registerRoutes();
+    const handler = api.handlers['POST:/api/plugins/music-bot/config'];
+    const responseA = createResponseMock();
+    const responseB = createResponseMock();
+
+    const requestA = handler({
+      body: { playback: { crossfadeDuration: 4100 } }
+    }, responseA);
+    await firstVolumeStarted;
+    const requestB = handler({
+      body: { queue: { maxLength: 88 } }
+    }, responseB);
+    const destroying = plugin.destroy();
+    rejectFirstVolume(new Error('A aborted during destroy'));
+    await Promise.all([requestA, requestB, destroying]);
+
+    expect(responseA.status).toHaveBeenCalledWith(503);
+    expect(responseB.status).toHaveBeenCalledWith(503);
+    expect(responseB.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+    expect(api.setConfig).toHaveBeenCalledTimes(2);
+    expect(api.setConfig.mock.calls.some(([, config]) => config.queue.maxLength === 88)).toBe(false);
+  });
+
   test('merges arrays and persists merged config including blocked keywords, aliases and gift catalogs', async () => {
     const api = createApi();
     const plugin = new MusicBotPlugin(api);
