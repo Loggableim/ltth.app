@@ -22,7 +22,7 @@ class PlaybackController extends EventEmitter {
       ? options
       : (api?.engineFactory || api?.timing ? api : {});
     this._engineFactory = optionSource.engineFactory || ((context) => (
-      new PlaybackEngine(context.config, context.api)
+      new PlaybackEngine(context.config, context.api, { timing: context.timing })
     ));
     const timing = optionSource.timing || optionSource;
     this._timing = {
@@ -48,6 +48,8 @@ class PlaybackController extends EventEmitter {
     this._activeTransition = null;
     this._crossfade = null;
     this._masterVolume = this._clampVolume(this.config.defaultVolume);
+    this._duckActiveCount = 0;
+    this._timedDuckUntil = 0;
   }
 
   play(track) {
@@ -62,6 +64,7 @@ class PlaybackController extends EventEmitter {
         id: track.id || randomUUID()
       };
       const transition = this._createTransition('play', generation);
+      transition.playbackId = randomUUID();
       this._activeTransition = transition;
       try {
         const active = this._getActiveSlot();
@@ -105,19 +108,31 @@ class PlaybackController extends EventEmitter {
 
   stop() {
     const interruptedTransition = Boolean(this._crossfade);
+    this._liveSlots().forEach((slot) => this._suppressTerminalForSlot(slot));
     this._abortActiveTransition('stop');
     return this._enqueueIntent('stop', async () => {
       if (interruptedTransition) {
         await this._terminateAllSlots();
       } else {
         const slot = this._getActiveSlot();
-        if (slot) {
-          await slot.engine.stop();
-          slot.playbackId = null;
-          slot.state = 'idle';
+        let stopError = null;
+        try {
+          if (slot) {
+            await slot.engine.stop();
+          }
+        } catch (error) {
+          stopError = error;
+        } finally {
+          if (slot) {
+            slot.playbackId = null;
+            slot.state = 'idle';
+            await this._retireSlot(slot);
+          }
+          this.activeSlot = null;
+          this.activePlaybackId = null;
+          this.transportState = 'idle';
         }
-        this.activePlaybackId = null;
-        this.transportState = 'idle';
+        if (stopError) throw stopError;
       }
     });
   }
@@ -174,15 +189,55 @@ class PlaybackController extends EventEmitter {
   }
 
   async beginDucking() {
+    this._duckActiveCount += 1;
     await this._callOnLiveSlots('beginDucking');
   }
 
   async endDucking() {
+    if (this._duckActiveCount === 0) return;
+    this._duckActiveCount -= 1;
     await this._callOnLiveSlots('endDucking');
   }
 
   async triggerDucking(durationMs) {
+    const durationCandidate = Number(durationMs);
+    const configHold = Number(this.config?.ducking?.holdMs);
+    const holdMs = Math.max(
+      Number.isFinite(durationCandidate)
+        ? durationCandidate
+        : (Number.isFinite(configHold) ? configHold : 1000),
+      0
+    );
+    this._timedDuckUntil = Math.max(this._timedDuckUntil, this._timing.now() + holdMs);
     await this._callOnLiveSlots('triggerDucking', durationMs);
+  }
+
+  updateConfig(config = {}) {
+    const update = config && typeof config === 'object' ? config : {};
+    const next = {
+      ...this.config,
+      ...update,
+      ducking: {
+        ...(this.config.ducking || {}),
+        ...(update.ducking || {})
+      },
+      normalization: {
+        ...(this.config.normalization || {}),
+        ...(update.normalization || {})
+      }
+    };
+    const liveSlots = this._liveSlots();
+    liveSlots.forEach((slot) => {
+      slot.engine.config = next;
+    });
+    this.config = next;
+    this._masterVolume = this._clampVolume(next.defaultVolume);
+    liveSlots.forEach((slot) => {
+      if (typeof slot.engine.updateConfig === 'function') {
+        slot.engine.updateConfig(next);
+      }
+    });
+    return next;
   }
 
   async listAudioDevices() {
@@ -286,6 +341,25 @@ class PlaybackController extends EventEmitter {
     });
   }
 
+  resetPlayer({ remainLocked = this.safetyLock } = {}) {
+    const finalLocked = Boolean(remainLocked);
+    const preservedReason = this._safetyReason;
+    const preservedLockedAt = this._safetyLockedAt;
+    this._liveSlots().forEach((slot) => this._suppressTerminalForSlot(slot));
+    this._abortActiveTransition('player-reset');
+    return this._enqueueIntent('player-reset', async () => {
+      await this._terminateAllSlots();
+      this._duckActiveCount = 0;
+      this._timedDuckUntil = 0;
+      this.safetyLock = finalLocked;
+      this._safetyReason = finalLocked ? (preservedReason || 'player-reset') : null;
+      this._safetyLockedAt = finalLocked
+        ? (preservedLockedAt || this._timing.now())
+        : null;
+      this.transportState = 'idle';
+    });
+  }
+
   emergencyStop(reason = 'emergency-stop') {
     const normalizedReason = String(reason || 'emergency-stop');
     const changed = !this.safetyLock || this._safetyReason !== normalizedReason;
@@ -345,6 +419,7 @@ class PlaybackController extends EventEmitter {
 
   clearNowPlaying(options) {
     const slot = this._getActiveSlot();
+    this._suppressTerminalForSlot(slot);
     slot?.engine.clearNowPlaying?.(options);
     if (slot) {
       slot.playbackId = null;
@@ -376,27 +451,38 @@ class PlaybackController extends EventEmitter {
     };
   }
 
+  getDiagnostics() {
+    return this.getSnapshot();
+  }
+
+  async probe() {
+    await Promise.allSettled(this._liveSlots().map((slot) => {
+      return typeof slot.engine.probe === 'function'
+        ? slot.engine.probe()
+        : undefined;
+    }));
+    return this.getSnapshot();
+  }
+
   async _playOnActiveSlot(slot, track, transition) {
-    const target = slot || this._createSlot('A', transition.generation);
-    const previousTrack = target.engine.getNowPlaying?.() || null;
-    const previousPlaybackId = target.playbackId;
-    const previousState = target.state;
-    if (!slot) {
-      this.activeSlot = target.name;
+    const targetName = slot?.name || 'A';
+    if (slot) {
+      await this._retireSlot(slot);
     }
-    this.activePlaybackId = track.id;
-    target.playbackId = track.id;
-    target.startedPlaybackIds.delete(track.id);
-    target.terminalPlaybackIds.delete(track.id);
+    const target = this._createSlot(targetName, transition.generation);
+    this.activeSlot = target.name;
+    this.activePlaybackId = transition.playbackId;
+    target.playbackId = transition.playbackId;
+    target.sourceTrackId = track.id;
     target.state = 'loading';
     this.transportState = 'loading';
 
     try {
+      await this._applyInheritedDucking(target, transition);
       await this._raceTransition(target.engine.setVolume(this._masterVolume), transition);
       await this._raceTransition(target.engine.play(track), transition);
       this._throwIfAborted(transition);
       const activeTrack = target.engine.getNowPlaying?.() || track;
-      target.playbackId = activeTrack.id || track.id;
       target.state = 'playing';
       target.crashed = false;
       target.lastError = null;
@@ -405,17 +491,10 @@ class PlaybackController extends EventEmitter {
       this.transportState = 'playing';
       return activeTrack;
     } catch (error) {
-      if (!slot) {
-        await this._retireSlot(target);
-        this.activeSlot = null;
-        this.activePlaybackId = null;
-        this.transportState = 'idle';
-      } else {
-        target.playbackId = previousPlaybackId;
-        target.state = previousState;
-        this.activePlaybackId = previousPlaybackId;
-        this.transportState = previousTrack ? previousState : 'idle';
-      }
+      await this._retireSlot(target);
+      this.activeSlot = null;
+      this.activePlaybackId = null;
+      this.transportState = 'idle';
       this._recordError(error, transition.generation);
       throw error;
     }
@@ -428,16 +507,17 @@ class PlaybackController extends EventEmitter {
     }
     const incoming = this._createSlot(standbyName, transition.generation);
     this._crossfade = { outgoing, incoming, transition };
-    incoming.playbackId = track.id;
+    incoming.playbackId = transition.playbackId;
+    incoming.sourceTrackId = track.id;
     incoming.state = 'loading';
     this.transportState = 'loading';
 
     try {
+      await this._applyInheritedDucking(incoming, transition);
       await this._raceTransition(incoming.engine.setVolume(0), transition);
       await this._raceTransition(incoming.engine.play(track), transition);
       this._throwIfAborted(transition);
       incoming.state = 'playing';
-      incoming.playbackId = incoming.engine.getNowPlaying?.()?.id || track.id;
       this.transportState = 'crossfading';
 
       await this._rampSlots(outgoing, incoming, durationMs, transition);
@@ -501,13 +581,16 @@ class PlaybackController extends EventEmitter {
       transitionGeneration,
       kind,
       playbackId: null,
+      sourceTrackId: null,
       state: 'idle',
       retired: false,
       retirePromise: null,
       crashed: false,
       lastError: null,
       startedPlaybackIds: new Set(),
-      terminalPlaybackIds: new Set()
+      terminalPlaybackIds: new Set(),
+      suppressedPlaybackIds: new Set(),
+      suppressedPlaybackId: null
     };
     this._slots[name] = slot;
     this._bindSlotEvents(slot);
@@ -519,7 +602,8 @@ class PlaybackController extends EventEmitter {
       slot,
       generation,
       config: this.config,
-      api: this.api
+      api: this.api,
+      timing: this._timing
     });
   }
 
@@ -533,10 +617,9 @@ class PlaybackController extends EventEmitter {
     slot.engine.on('track-start', (track) => {
       if (!isCurrent()) return;
       if (slot.kind === 'test-tone') return;
-      const playbackId = track?.id || slot.playbackId;
+      const playbackId = slot.playbackId;
       if (playbackId && slot.startedPlaybackIds.has(playbackId)) return;
       if (playbackId) slot.startedPlaybackIds.add(playbackId);
-      slot.playbackId = playbackId || null;
       slot.state = 'playing';
       if (this.activeSlot === slot.name) {
         this.activePlaybackId = slot.playbackId;
@@ -548,8 +631,15 @@ class PlaybackController extends EventEmitter {
     slot.engine.on('track-end', (info) => {
       if (!isCurrent()) return;
       if (slot.kind === 'test-tone') return;
-      this._emitTrackEndOnce(slot, info);
+      if (this._crossfade?.incoming === slot) {
+        this._abortActiveTransition('incoming-end');
+        return;
+      }
       const isOutgoingCrossfade = this._crossfade?.outgoing === slot;
+      const terminalInfo = isOutgoingCrossfade
+        ? { ...info, reason: 'crossfade' }
+        : info;
+      this._emitTrackEndOnce(slot, terminalInfo);
       if (!isOutgoingCrossfade && this.activeSlot === slot.name) {
         slot.playbackId = null;
         slot.state = 'idle';
@@ -587,13 +677,30 @@ class PlaybackController extends EventEmitter {
       slot.crashed = true;
       slot.state = 'crashed';
       if (slot.kind === 'test-tone') return;
+      if (this._crossfade?.incoming === slot) {
+        this._abortActiveTransition('incoming-crash');
+      }
       if (this.activeSlot === slot.name) this.transportState = 'idle';
       this.emit('crashed', info);
+    });
+    slot.engine.on('heartbeat-lock', (info = {}) => {
+      if (!isCurrent()) return;
+      Promise.resolve(this.engageSafetyLock(info.reason || 'heartbeat-lock'))
+        .catch((error) => {
+          this.api.log?.(`[music-bot] Failed to engage heartbeat safety lock: ${error.message}`, 'error');
+        });
     });
   }
 
   _emitTrackEndOnce(slot, info = {}) {
-    const playbackId = info.track?.id || slot.playbackId || 'unknown';
+    const playbackId = slot.playbackId || info.track?.id || 'unknown';
+    if (
+      (slot.suppressedPlaybackId && (
+        !slot.playbackId || slot.suppressedPlaybackId === slot.playbackId
+      ))
+      || slot.suppressedPlaybackIds.has(slot.playbackId)
+      || slot.suppressedPlaybackIds.has(info.track?.id)
+    ) return false;
     if (slot.terminalPlaybackIds.has(playbackId)) return false;
     slot.terminalPlaybackIds.add(playbackId);
     this.emit('track-end', info);
@@ -608,15 +715,26 @@ class PlaybackController extends EventEmitter {
     if (this._slots[slot.name] === slot) {
       this._slots[slot.name] = null;
     }
-    slot.retirePromise = Promise.resolve()
-      .then(() => slot.engine.shutdown?.())
-      .catch((error) => {
-        slot.lastError = error?.message || String(error);
-        this._recordError(error, slot.transitionGeneration);
-      })
-      .then(() => {
+    const shutdown = Promise.resolve().then(() => slot.engine.shutdown?.());
+    shutdown.catch(() => {});
+    slot.retirePromise = new Promise((resolve) => {
+      let settled = false;
+      const finish = (error = null) => {
+        if (settled) return;
+        settled = true;
+        this._timing.clearTimeout(timeout);
+        if (error) {
+          slot.lastError = error?.message || String(error);
+          this._recordError(error, slot.transitionGeneration);
+        }
         slot.state = 'retired';
-      });
+        resolve();
+      };
+      const timeout = this._timing.setTimeout(() => {
+        finish(new Error('Playback slot cleanup timed out after 2000ms'));
+      }, 2000);
+      shutdown.then(() => finish(), (error) => finish(error));
+    });
     return slot.retirePromise;
   }
 
@@ -766,16 +884,69 @@ class PlaybackController extends EventEmitter {
     }));
   }
 
+  async _applyInheritedDucking(slot, transition) {
+    const calls = [];
+    for (let index = 0; index < this._duckActiveCount; index += 1) {
+      if (typeof slot.engine.beginDucking === 'function') {
+        calls.push(slot.engine.beginDucking());
+      }
+    }
+    const remainingTimedDuckMs = this._timedDuckUntil - this._timing.now();
+    if (remainingTimedDuckMs > 0 && typeof slot.engine.triggerDucking === 'function') {
+      calls.push(slot.engine.triggerDucking(remainingTimedDuckMs));
+    }
+    if (calls.length) {
+      await this._raceTransition(Promise.all(calls), transition);
+    }
+  }
+
+  _suppressTerminalForSlot(slot) {
+    if (!slot || slot.retired) return;
+    slot.suppressedPlaybackId = slot.playbackId;
+    if (slot.playbackId) slot.suppressedPlaybackIds.add(slot.playbackId);
+    if (slot.sourceTrackId) slot.suppressedPlaybackIds.add(slot.sourceTrackId);
+  }
+
   _snapshotSlot(slot) {
     if (!slot || slot.retired) return null;
+    const diagnostics = slot.engine.getDiagnostics?.() || {};
+    const ipc = diagnostics.ipc || {};
+    const media = diagnostics.media || {};
     return {
       generation: slot.generation,
       kind: slot.kind,
       playbackId: slot.playbackId,
-      state: slot.engine.getState?.() || slot.state,
+      pid: Number.isInteger(diagnostics.pid) ? diagnostics.pid : null,
+      ipc: {
+        connected: Boolean(ipc.connected),
+        lastLatencyMs: Number.isFinite(Number(ipc.lastLatencyMs))
+          ? Number(ipc.lastLatencyMs)
+          : null
+      },
+      media: {
+        title: this._sanitizeDiagnosticLabel(media.title, false),
+        basename: this._sanitizeDiagnosticLabel(media.basename, true)
+      },
+      state: diagnostics.state || slot.engine.getState?.() || slot.state,
       healthy: !slot.crashed && !slot.lastError,
       lastError: slot.lastError
     };
+  }
+
+  _sanitizeDiagnosticLabel(value, basenameOnly) {
+    if (value === null || value === undefined) return null;
+    let normalized = String(value).replace(/[\r\n\t]+/g, ' ').trim();
+    if (!normalized) return null;
+    if (basenameOnly || /^[a-z][a-z\d+.-]*:\/\//i.test(normalized)) {
+      try {
+        if (/^[a-z][a-z\d+.-]*:\/\//i.test(normalized)) {
+          normalized = decodeURIComponent(new URL(normalized).pathname);
+        }
+      } catch (_) { /* use separator-safe fallback */ }
+      normalized = normalized.split(/[?#]/, 1)[0].replace(/\\/g, '/');
+      normalized = normalized.split('/').filter(Boolean).at(-1) || '';
+    }
+    return normalized ? normalized.slice(0, 256) : null;
   }
 
   _crossfadeDuration() {

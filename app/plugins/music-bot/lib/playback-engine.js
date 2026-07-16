@@ -12,7 +12,7 @@ const DEFAULT_NORMALIZATION_TRUE_PEAK_DB = -1.5;
 const DEFAULT_NORMALIZATION_LRA = 11;
 
 class PlaybackEngine extends EventEmitter {
-  constructor(config, api) {
+  constructor(config, api, options = {}) {
     super();
     this.config = config;
     this.api = api;
@@ -42,6 +42,27 @@ class PlaybackEngine extends EventEmitter {
     this._socketGeneration = 0;
     this._ownedPids = new Set();
     this._expectedProcessStops = new WeakSet();
+    const timing = options.timing || options;
+    this._now = typeof timing.now === 'function' ? timing.now : Date.now;
+    this._setTimeout = typeof timing.setTimeout === 'function' ? timing.setTimeout : setTimeout;
+    this._clearTimeout = typeof timing.clearTimeout === 'function' ? timing.clearTimeout : clearTimeout;
+    this._lastHeartbeatFailureAt = null;
+    this._heartbeatFailuresInWindow = 0;
+    this._lastIpcLatencyMs = null;
+    this._lastProbeConnected = null;
+    this._lastMediaTitle = null;
+    this._lastMediaBasename = null;
+  }
+
+  updateConfig(config = {}) {
+    this.config = config;
+    if (Object.prototype.hasOwnProperty.call(config, 'defaultVolume')) {
+      this.masterVolume = this._clampVolume(config.defaultVolume);
+      if (this.state === 'idle') {
+        this.volume = this._getEffectiveVolume();
+      }
+    }
+    return this.config;
   }
 
   async play(track) {
@@ -50,6 +71,8 @@ class PlaybackEngine extends EventEmitter {
       throw new Error('Invalid track');
     }
 
+    this._lastMediaTitle = null;
+    this._lastMediaBasename = null;
     await this._ensureProcess();
     await this._applyNormalizationFilter();
     const crossfadeMs = Number(this.config.crossfadeDuration || 0);
@@ -117,17 +140,41 @@ class PlaybackEngine extends EventEmitter {
 
   async stop() {
     const child = this.process;
+    let stopError = null;
     try {
       if (child && this.socket && !this.socket.destroyed) {
         await this._sendCommand(['stop'], { waitForResponse: true });
+      } else if (child && this._isLiveChild(child)) {
+        stopError = new Error('mpv IPC is not connected for stop');
       }
+    } catch (error) {
+      stopError = error;
     } finally {
+      if (stopError && child && this._isLiveChild(child)) {
+        const socket = this.socket;
+        if (socket) {
+          socket.destroy();
+          if (this.socket === socket) {
+            this.socket = null;
+            this._socketGeneration = 0;
+          }
+        }
+        const terminated = await this._terminateProcess(child, {
+          waitForClose: true,
+          timeoutMs: 2000
+        });
+        if (this.process === child) {
+          this.process = null;
+        }
+        if (terminated !== false) stopError = null;
+      }
       this.nowPlaying = null;
       this.state = 'idle';
       this._crossfadeOutgoingTrack = null;
       this._replacementOutgoingTrack = null;
       this._skipInProgress = false;
     }
+    if (stopError) throw stopError;
   }
 
   async skip() {
@@ -239,7 +286,10 @@ class PlaybackEngine extends EventEmitter {
       if (this.process === child) {
         this.process = null;
       }
-      await this._terminateProcess(child, { waitForClose: false });
+      await this._terminateProcess(child, {
+        waitForClose: Number.isInteger(child.pid),
+        timeoutMs: 2000
+      });
     } else {
       this._shuttingDown = false;
       if (this.process === child) {
@@ -306,19 +356,24 @@ class PlaybackEngine extends EventEmitter {
     return Boolean(child && (child.exitCode === null || child.exitCode === undefined));
   }
 
-  async _terminateProcess(child, { waitForClose = false, timeoutMs = 5000 } = {}) {
-    if (!child || !this._isLiveChild(child)) return;
+  async _terminateProcess(child, { waitForClose = false, timeoutMs = 2000 } = {}) {
+    if (!child || !this._isLiveChild(child)) return true;
     const hasPid = Number.isInteger(child.pid);
     const isOwnedPid = hasPid && this._ownedPids.has(child.pid);
-    if (hasPid && !isOwnedPid) return;
+    if (hasPid && !isOwnedPid) return false;
+    const boundedTimeoutMs = Math.min(Math.max(Number(timeoutMs) || 2000, 1), 2000);
     let closePromise = null;
     if (waitForClose && typeof child.once === 'function') {
-      closePromise = new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('mpv did not stop in time')), timeoutMs);
-        child.once('close', () => {
-          clearTimeout(timeout);
-          resolve();
-        });
+      closePromise = new Promise((resolve) => {
+        const onClose = () => {
+          this._clearTimeout(timeout);
+          resolve(true);
+        };
+        const timeout = this._setTimeout(() => {
+          child.removeListener?.('close', onClose);
+          resolve(false);
+        }, boundedTimeoutMs);
+        child.once('close', onClose);
       });
     }
 
@@ -326,9 +381,11 @@ class PlaybackEngine extends EventEmitter {
     if (process.platform === 'win32' && isOwnedPid) {
       terminatedByTaskkill = await new Promise((resolve) => {
         let settled = false;
+        let timeout = null;
         const finish = (success) => {
           if (settled) return;
           settled = true;
+          if (timeout) this._clearTimeout(timeout);
           resolve(success);
         };
         try {
@@ -339,6 +396,7 @@ class PlaybackEngine extends EventEmitter {
           );
           killer.once('error', () => finish(false));
           killer.once('close', (code) => finish(code === 0));
+          timeout = this._setTimeout(() => finish(false), Math.min(500, boundedTimeoutMs));
         } catch (_) {
           finish(false);
         }
@@ -351,12 +409,96 @@ class PlaybackEngine extends EventEmitter {
       } catch (_) { /* process already exited */ }
     }
     if (closePromise) {
-      await closePromise;
+      return closePromise;
     }
+    return terminatedByTaskkill || !hasPid;
   }
 
   getNowPlaying() {
     return this.nowPlaying;
+  }
+
+  getDiagnostics() {
+    const liveOwnedPid = this._isLiveChild(this.process)
+      && Number.isInteger(this.process?.pid)
+      && this._ownedPids.has(this.process.pid)
+      ? this.process.pid
+      : null;
+    const transportConnected = Boolean(
+      liveOwnedPid
+      && this.socket
+      && !this.socket.destroyed
+    );
+    return {
+      pid: liveOwnedPid,
+      ipc: {
+        connected: transportConnected && this._lastProbeConnected !== false,
+        lastLatencyMs: this._lastIpcLatencyMs
+      },
+      media: {
+        title: this._lastMediaTitle || this._safeMediaTitle(this.nowPlaying?.title),
+        basename: this._lastMediaBasename
+      },
+      state: this.getState()
+    };
+  }
+
+  async probe({ timeoutMs = 500 } = {}) {
+    if (
+      !this._isLiveChild(this.process)
+      || !this.socket
+      || this.socket.destroyed
+    ) {
+      this._lastProbeConnected = false;
+      return this.getDiagnostics();
+    }
+
+    const startedAt = this._now();
+    try {
+      const [titleResult, pathResult] = await Promise.all([
+        this._sendCommand(['get_property', 'media-title'], {
+          waitForResponse: true,
+          timeoutMs
+        }),
+        this._sendCommand(['get_property', 'path'], {
+          waitForResponse: true,
+          timeoutMs
+        })
+      ]);
+      this._lastIpcLatencyMs = Math.max(0, this._now() - startedAt);
+      this._lastProbeConnected = true;
+      this._lastMediaTitle = this._safeMediaTitle(titleResult?.data)
+        || this._safeMediaTitle(this.nowPlaying?.title);
+      this._lastMediaBasename = this._safeMediaBasename(pathResult?.data);
+    } catch (_) {
+      this._lastIpcLatencyMs = Math.max(0, this._now() - startedAt);
+      this._lastProbeConnected = false;
+    }
+    return this.getDiagnostics();
+  }
+
+  _safeMediaTitle(value) {
+    if (value === null || value === undefined) return null;
+    const normalized = String(value).replace(/[\r\n\t]+/g, ' ').trim();
+    if (!normalized) return null;
+    if (/^[a-z][a-z\d+.-]*:\/\//i.test(normalized)) {
+      return this._safeMediaBasename(normalized);
+    }
+    return normalized.slice(0, 256);
+  }
+
+  _safeMediaBasename(value) {
+    if (value === null || value === undefined) return null;
+    let normalized = String(value).trim();
+    if (!normalized) return null;
+    try {
+      if (/^[a-z][a-z\d+.-]*:\/\//i.test(normalized)) {
+        normalized = decodeURIComponent(new URL(normalized).pathname);
+      }
+    } catch (_) { /* fall back to separator-safe parsing */ }
+    normalized = normalized.split(/[?#]/, 1)[0].replace(/\\/g, '/');
+    const basename = normalized.split('/').filter(Boolean).at(-1) || null;
+    return basename ? basename.slice(0, 256) : null;
   }
 
   rememberReplacementOutgoing(track) {
@@ -440,6 +582,23 @@ class PlaybackEngine extends EventEmitter {
         await this._sendCommand(['get_property', 'idle-active'], { waitForResponse: true });
         return;
       } catch (error) {
+        const failureAt = this._now();
+        const withinEscalationWindow = this._lastHeartbeatFailureAt !== null
+          && failureAt - this._lastHeartbeatFailureAt <= 60000;
+        if (withinEscalationWindow) {
+          this._heartbeatFailuresInWindow += 1;
+          const lockError = new Error('mpv heartbeat safety lock engaged');
+          lockError.code = 'MPV_HEARTBEAT_SAFETY_LOCK';
+          this.emit('heartbeat-lock', {
+            reason: 'heartbeat-lock',
+            failures: this._heartbeatFailuresInWindow,
+            windowMs: 60000,
+            error: error.message
+          });
+          throw lockError;
+        }
+        this._lastHeartbeatFailureAt = failureAt;
+        this._heartbeatFailuresInWindow = 1;
         this.api.log?.(`[music-bot] MPV IPC heartbeat failed; restarting player: ${error.message}`, 'warn');
         if (this.socket === staleSocket && staleSocket) {
           staleSocket.destroy();
@@ -460,6 +619,7 @@ class PlaybackEngine extends EventEmitter {
 
   async _startProcess() {
     this._assertNotDestroyed();
+    this._lastProbeConnected = null;
     const generation = ++this._processGeneration;
 
     const ipcIdentity = `${Date.now()}-${randomUUID()}`;
@@ -601,7 +761,7 @@ class PlaybackEngine extends EventEmitter {
     });
   }
 
-  async _sendCommand(command, { waitForResponse = false } = {}) {
+  async _sendCommand(command, { waitForResponse = false, timeoutMs = 1500 } = {}) {
     if (!this.socket || this.socket.destroyed) {
       throw new Error('mpv IPC is not connected');
     }
@@ -619,7 +779,7 @@ class PlaybackEngine extends EventEmitter {
       const timeout = setTimeout(() => {
         this._pendingCommands.delete(requestId);
         reject(new Error(`mpv did not acknowledge command: ${command[0]}`));
-      }, 1500);
+      }, Math.max(1, Number(timeoutMs) || 1500));
       this._pendingCommands.set(requestId, { resolve, reject, timeout });
       this.socket.write(`${payload}\n`, (error) => {
         if (!error) return;
