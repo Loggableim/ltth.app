@@ -438,7 +438,7 @@ describe('WebGPU choreographed finale runtime', () => {
   });
 
   test('a successful frame clears only its transient render error and resumes one queued finale', () => {
-    const engine = makeRuntime(10000);
+    const engine = makeRuntime(performance.now());
     engine.handleFinale({ id: 'render-old', showPlan: tinyPlan('render-old') });
     engine.handleFinale({ id: 'render-next', showPlan: tinyPlan('render-next') });
     const startFinaleEntry = jest.spyOn(engine, 'startFinaleEntry');

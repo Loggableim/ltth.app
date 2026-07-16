@@ -56,7 +56,7 @@ describe('WebGPU Fireworks native migration', () => {
     expect(rendererSource).toContain('atomicCompareExchangeWeak');
     expect(rendererSource).toContain('atomicAdd(&counters.droppedCount');
     expect(rendererSource).toContain('var result = 0xffffffffu');
-    expect(rendererSource).toContain('return result;\n}\nfn releaseParticle');
+    expect(rendererSource).toMatch(/return result;\r?\n}\r?\nfn releaseParticle/);
     expect(rendererSource).toContain('drawIndirect(this.buffers.coreIndirect');
     expect(rendererSource).toContain('drawIndirect(this.buffers.trailIndirect');
   });
