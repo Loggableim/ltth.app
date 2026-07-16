@@ -74,6 +74,13 @@ function tinyPlan(id, overrides = {}) {
   };
 }
 
+function mockGiftLaunches(engine) {
+  engine.handleTrigger = jest.fn(data => {
+    if (data.trackGiftLaunch) engine.giftLaunchTimestamps.push(engine.getRuntimeNow());
+    return Promise.resolve({});
+  });
+}
+
 describe('WebGPU choreographed finale runtime', () => {
   test('queues shows FIFO, deduplicates active and waiting IDs, and starts the next at the complete duration', () => {
     let now = 10000;
@@ -194,7 +201,7 @@ describe('WebGPU choreographed finale runtime', () => {
     const engine = makeRuntime(now);
     engine.getRuntimeNow = () => now;
     engine.currentFinale = { id: 'show', startedAt: 0, style: 'classic-crescendo', length: 'short', phase: 'opening' };
-    engine.handleTrigger = jest.fn().mockResolvedValue({});
+    mockGiftLaunches(engine);
 
     for (let index = 0; index < 3; index++) {
       engine.handleIncomingTrigger({ reason: 'gift', userId: `u-${index}`, giftId: `g-${index}`, username: `U${index}`, coins: 1, combo: 1 });
@@ -226,7 +233,7 @@ describe('WebGPU choreographed finale runtime', () => {
     const engine = makeRuntime(now);
     engine.getRuntimeNow = () => now;
     engine.currentFinale = { id: 'show', startedAt: 0, style: 'classic-crescendo', length: 'short', phase: 'opening' };
-    engine.handleTrigger = jest.fn().mockResolvedValue({});
+    mockGiftLaunches(engine);
     for (let index = 0; index < 3; index++) engine.handleIncomingTrigger({ reason: 'gift', userId: `seed-${index}`, giftId: 'seed', coins: 1 });
     const showEvent = { type: 'finale-launch', due: 5000, finaleId: 'show', payload: { id: 'planned' } };
     engine.scheduleTimeline(showEvent);
@@ -383,18 +390,51 @@ describe('WebGPU choreographed finale runtime', () => {
     expect(engine.timelineQueue.some(event => event.finaleId === 'old')).toBe(false);
   });
 
-  test('device errors fail one current show and repeated status callbacks do not kill the next', () => {
+  test('holds queued finales through device recovery and resumes exactly one when ready', () => {
+    let now = 10000;
+    const engine = makeRuntime(now);
+    engine.getRuntimeNow = () => now;
+    engine.handleFinale({ id: 'device-a', showPlan: tinyPlan('device-a') });
+    engine.handleFinale({ id: 'device-b', showPlan: tinyPlan('device-b') });
+    engine.handleFinale({ id: 'device-c', showPlan: tinyPlan('device-c') });
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      engine.setStatus({ state: 'device-lost', reason: 'adapter reset' });
+      expect(engine.currentFinale).toBeNull();
+      expect(engine.finaleQueue.map(entry => entry.id)).toEqual(['device-b', 'device-c']);
+      expect(engine.finaleIds.has('device-a')).toBe(false);
+
+      now = 11001;
+      engine.setStatus({ state: 'device-lost', reason: 'adapter reset' });
+      expect(engine.currentFinale).toBeNull();
+      expect(engine.finaleQueue.map(entry => entry.id)).toEqual(['device-b', 'device-c']);
+
+      engine.setStatus({ state: 'ready' });
+      expect(engine.currentFinale).toMatchObject({ id: 'device-b', startedAt: 11001 });
+      expect(engine.finaleQueue.map(entry => entry.id)).toEqual(['device-c']);
+      const runtimeToken = engine.currentFinale.runtimeToken;
+
+      engine.setStatus({ state: 'ready' });
+      expect(engine.currentFinale).toMatchObject({ id: 'device-b', runtimeToken });
+      expect(engine.finaleQueue.map(entry => entry.id)).toEqual(['device-c']);
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  test('queues a new finale that arrives while the renderer is recovering', () => {
     const engine = makeRuntime(10000);
-    engine.handleFinale({ id: 'device-old', showPlan: tinyPlan('device-old') });
-    engine.handleFinale({ id: 'device-next', showPlan: tinyPlan('device-next') });
+    engine.rendererStatus.state = 'device-lost';
 
-    engine.setStatus({ state: 'device-lost', reason: 'adapter reset' });
-    expect(engine.currentFinale.id).toBe('device-next');
-    engine.setStatus({ state: 'device-lost', reason: 'adapter reset' });
+    expect(engine.handleFinale({ id: 'during-recovery', showPlan: tinyPlan('during-recovery') }))
+      .toMatchObject({ accepted: true, queued: true, queueLength: 1 });
+    expect(engine.currentFinale).toBeNull();
+    expect(engine.timelineQueue).toEqual([]);
 
-    expect(engine.currentFinale.id).toBe('device-next');
-    expect(engine.finaleIds.has('device-old')).toBe(false);
-    expect(engine.rendererStatus).toMatchObject({ state: 'device-lost', finaleError: expect.stringContaining('adapter reset') });
+    engine.setStatus({ state: 'ready' });
+    expect(engine.currentFinale.id).toBe('during-recovery');
+    expect(engine.finaleQueue).toEqual([]);
   });
 
   test('render exceptions isolate the current finale and keep scheduling frames', () => {
@@ -418,9 +458,12 @@ describe('WebGPU choreographed finale runtime', () => {
     const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
     try {
       engine.render();
-      expect(engine.currentFinale.id).toBe('render-next');
+      expect(engine.currentFinale).toBeNull();
+      expect(engine.finaleQueue.map(entry => entry.id)).toEqual(['render-next']);
       expect(engine.rendererStatus).toMatchObject({ state: 'error', reason: 'render pass failed' });
       expect(global.requestAnimationFrame).toHaveBeenCalledTimes(1);
+      engine.setStatus({ state: 'ready' });
+      expect(engine.currentFinale.id).toBe('render-next');
     } finally {
       global.requestAnimationFrame = originalRequestAnimationFrame;
       consoleError.mockRestore();
@@ -435,20 +478,32 @@ describe('WebGPU choreographed finale runtime', () => {
     await expect(engine.handleTrigger({ id: 'ordinary' })).resolves.toBeUndefined();
   });
 
-  test('waits for the final legacy rocket flight and tail before starting the next entry', () => {
+  test('uses each seeded legacy launch intensity once and completes at its true maximum tail', () => {
     let now = 10000;
     const engine = makeRuntime(now);
     engine.getRuntimeNow = () => now;
-    engine.handleFinale({ id: 'legacy-tail', burstCount: 3, duration: 900, intensity: 5, seed: 8 });
+    engine.handleFinale({ id: 'legacy-tail', burstCount: 6, duration: 900, intensity: 4, seed: 8 });
     engine.handleFinale({ id: 'after-tail', showPlan: tinyPlan('after-tail') });
     const launches = engine.timelineQueue.filter(event => event.type === 'finale-launch' && event.finaleId === 'legacy-tail');
     const complete = engine.timelineQueue.find(event => event.type === 'finale-complete' && event.finaleId === 'legacy-tail');
     const latestTail = Math.max(...launches.map(event => {
       const targetY = event.payload.position.y * engine.baseHeight;
-      return event.due + engine.calculateFlightDuration(targetY) * 1000 + (1.15 + 5 * 0.28) * 1000;
+      const actualIntensity = Math.max(0.1, Math.min(5, event.payload.intensity));
+      const visualTail = 1.15 + actualIntensity * 0.28;
+      const bangTail = { small: 0.7, medium: 0.9, big: 1.2, massive: 1.5 }[event.payload.tier];
+      const crackleTail = event.payload.crackleEnabled
+        ? (event.payload.tier === 'massive' ? 1.22 : 0.83)
+        : 0;
+      return event.due + engine.calculateFlightDuration(targetY) * 1000 + Math.max(visualTail, bangTail, crackleTail) * 1000;
     }));
 
-    expect(complete.due).toBeGreaterThanOrEqual(latestTail);
+    expect(complete.due).toBeCloseTo(latestTail, 8);
+    const replay = makeRuntime(10000);
+    replay.handleFinale({ id: 'legacy-tail', burstCount: 6, duration: 900, intensity: 4, seed: 8 });
+    expect(replay.timelineQueue
+      .filter(event => event.type === 'finale-launch')
+      .map(event => event.payload.intensity))
+      .toEqual(launches.map(event => event.payload.intensity));
     now = complete.due - 1;
     engine.processTimeline(now);
     expect(engine.currentFinale.id).toBe('legacy-tail');
@@ -457,12 +512,87 @@ describe('WebGPU choreographed finale runtime', () => {
     expect(engine.currentFinale.id).toBe('after-tail');
   });
 
+  test('caps late launch, explosion and crackle work from actual frame time and skips work at the end', async () => {
+    const engine = makeRuntime(10000);
+    engine.currentFinale = { id: 'late-show', runtimeToken: 'late-show:1', phase: 'finale' };
+    engine.prepareImages = jest.fn().mockResolvedValue({ giftTexture: 0, avatarTexture: 0, avatarChance: 0.3 });
+    engine.audio.play = jest.fn().mockResolvedValue(true);
+    const effect = await engine.handleTrigger({
+      id: 'late-effect', finaleId: 'late-show', runtimeToken: 'late-show:1',
+      soundRole: 'wave', tier: 'massive', crackleEnabled: true,
+      position: { x: 0.5, y: 0.5 }, forceRocket: true,
+      plannedLaunchAt: 10000, plannedExplodeAt: 12000, finaleEndsAt: 13000
+    });
+
+    engine.processLaunch(effect, 10000, 12950);
+    expect(engine.renderer.spawnRocket).toHaveBeenLastCalledWith(expect.objectContaining({ duration: 0.05 }));
+    expect(engine.audio.play.mock.calls.at(-1)[3]).toMatchObject({ maxDuration: 0.05 });
+
+    engine.processExplosion(effect.explosion, effect, 12000, 12900);
+    expect(engine.renderer.spawnExplosion).toHaveBeenLastCalledWith(expect.objectContaining({ duration: 0.1 }));
+    expect(engine.audio.play.mock.calls.at(-1)[3]).toMatchObject({ maxDuration: 0.1 });
+
+    engine.processCrackle(effect, effect.crackleAt, 12900);
+    expect(engine.renderer.spawnCrackle).toHaveBeenLastCalledWith(expect.objectContaining({ duration: 0.1 }));
+    expect(engine.audio.play.mock.calls.at(-1)[3]).toMatchObject({ maxDuration: 0.1 });
+
+    engine.renderer.spawnRocket.mockClear();
+    engine.renderer.spawnExplosion.mockClear();
+    engine.renderer.spawnCrackle.mockClear();
+    engine.audio.play.mockClear();
+    engine.processLaunch(effect, 10000, 13000);
+    engine.processExplosion(effect.explosion, effect, 12000, 13000);
+    engine.processCrackle(effect, effect.crackleAt, 13000);
+    expect(engine.renderer.spawnRocket).not.toHaveBeenCalled();
+    expect(engine.renderer.spawnExplosion).not.toHaveBeenCalled();
+    expect(engine.renderer.spawnCrackle).not.toHaveBeenCalled();
+    expect(engine.audio.play).not.toHaveBeenCalled();
+    expect(engine.audio.timelineEvents.filter(event => event.effectId === 'late-effect').slice(-3))
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ type: 'launch-visual', state: 'skipped-finale-ended' }),
+        expect.objectContaining({ type: 'explosion-visual', state: 'skipped-finale-ended' }),
+        expect.objectContaining({ type: 'crackle-visual', state: 'skipped-finale-ended' })
+      ]));
+  });
+
+  test('starts three gift rockets before image assets resolve and bundles the fourth', async () => {
+    const engine = makeRuntime(10000);
+    engine.currentFinale = { id: 'gift-show', runtimeToken: 'gift-show:1', phase: 'build' };
+    let resolveImage;
+    const pendingImage = new Promise(resolve => { resolveImage = resolve; });
+    engine.loadImage = jest.fn(() => pendingImage);
+    engine.renderer.uploadImage = jest.fn().mockResolvedValue(17);
+
+    for (let index = 0; index < 3; index++) {
+      engine.handleIncomingTrigger({
+        id: `gift-${index}`, reason: 'gift', userId: `user-${index}`, giftId: 'rose',
+        username: `User ${index}`, giftImage: '/rose.png', coins: 10, combo: 1
+      });
+    }
+    const fourth = engine.handleIncomingTrigger({
+      id: 'gift-3', reason: 'gift', userId: 'user-3', giftId: 'rose',
+      username: 'User 3', giftImage: '/rose.png', coins: 10, combo: 1
+    });
+
+    expect([...engine.effectPlans.keys()]).toEqual(['gift-0', 'gift-1', 'gift-2']);
+    expect(engine.giftLaunchTimestamps).toEqual([10000, 10000, 10000]);
+    expect(fourth).toMatchObject({ accepted: true, queued: true, bundled: true });
+    expect(engine.giftBacklog.size).toBe(1);
+    expect([...engine.effectPlans.values()].map(effect => effect.explosion.assets.giftTexture)).toEqual([0, 0, 0]);
+
+    resolveImage({ width: 32, height: 32 });
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect([...engine.effectPlans.values()].map(effect => effect.explosion.assets.giftTexture)).toEqual([17, 17, 17]);
+  });
+
   test('a low gift arriving at the token boundary cannot jump an older high-value bundle', () => {
     let now = 1000;
     const engine = makeRuntime(now);
     engine.getRuntimeNow = () => now;
     engine.currentFinale = { id: 'show', runtimeToken: 'show:1', phase: 'opening' };
-    engine.handleTrigger = jest.fn().mockResolvedValue({});
+    mockGiftLaunches(engine);
     engine.giftLaunchTimestamps = [0, 500, 500];
     engine.bundleGift({ reason: 'gift', userId: 'vip', giftId: 'lion', username: 'VIP', coins: 500 });
 

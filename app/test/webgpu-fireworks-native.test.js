@@ -137,7 +137,7 @@ describe('WebGPU Fireworks native migration', () => {
       'combined-whistle-tiny4'
     ]) expect(orchestrationSource).toContain(sound);
     expect(orchestrationSource).toContain('fitLaunchToFlight(selection, flightDuration, seed)');
-    expect(orchestrationSource).toContain('maxDuration: Math.min(plan.flightDuration, remainingShowSeconds)');
+    expect(orchestrationSource).toContain('maxDuration: launchDuration');
     expect(orchestrationSource).toContain('source.stop(stopAt)');
     expect(orchestrationSource).toContain('this.audio.play(explosion.sound.bang');
   });
@@ -149,7 +149,7 @@ describe('WebGPU Fireworks native migration', () => {
     expect(processBody).toContain('this.renderer.spawnCrackle({');
     expect(processBody).toContain('profile: plan.crackleProfile');
     expect(processBody).toContain('pulseCount: plan.cracklePulseCount');
-    expect(processBody).toContain('maxDuration: plan.crackleDuration');
+    expect(processBody).toContain('maxDuration: crackleDuration');
     expect(processBody).toContain('offset: this.audio.CRACKLE_OFFSETS[explosion.sound.crackle] || 0');
     expect(processBody).toContain("bus: 'crackle'");
     expect(processBody).toContain('void this.audio.play(explosion.sound.crackle, 1, 4');
