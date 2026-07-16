@@ -468,6 +468,82 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(api.emit).not.toHaveBeenCalledWith('musicbot:error', expect.anything());
   });
 
+  test('publishes idle runtime health after a viewer track ends with an MPV error', () => {
+    const { plugin, api } = createPluginWithQueue([]);
+    const playbackEngine = new (require('events'))();
+    playbackEngine.getNowPlaying = jest.fn(() => null);
+    playbackEngine.getState = jest.fn(() => 'idle');
+    playbackEngine.getSnapshot = jest.fn(() => ({
+      lifecycle: 'active',
+      safetyLock: false,
+      transportState: 'idle',
+      activePlaybackId: null,
+      activeSlot: null,
+      slots: { A: null, B: null },
+      healthy: true,
+      lastError: { message: 'decoder failed' }
+    }));
+    plugin.playbackEngine = playbackEngine;
+    plugin.autoDJ = { markPlaybackFailed: jest.fn() };
+    plugin._clearCrossfadeTimer = jest.fn();
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._registerPlaybackEvents();
+    api.emit.mockClear();
+
+    playbackEngine.emit('track-end', {
+      track: { id: 'viewer-error', title: 'Viewer error', requestedBy: 'viewer' },
+      reason: 'error',
+      error: 'decoder failed'
+    });
+
+    expect(api.emit).toHaveBeenCalledWith('musicbot:runtime', expect.objectContaining({
+      transportState: 'idle',
+      activePlaybackId: null,
+      slots: { A: null, B: null }
+    }));
+    expect(api.emit).toHaveBeenCalledWith('musicbot:health', expect.objectContaining({
+      state: 'idle',
+      activePlayers: 0
+    }));
+  });
+
+  test('publishes cleaned runtime health after the active MPV process crashes', () => {
+    const { plugin, api } = createPluginWithQueue([]);
+    const playbackEngine = new (require('events'))();
+    let current = { id: 'viewer-crash', title: 'Viewer crash', requestedBy: 'viewer' };
+    playbackEngine.getNowPlaying = jest.fn(() => current);
+    playbackEngine.getState = jest.fn(() => current ? 'playing' : 'idle');
+    playbackEngine.clearNowPlaying = jest.fn(() => {
+      current = null;
+    });
+    playbackEngine.getSnapshot = jest.fn(() => ({
+      lifecycle: 'active',
+      safetyLock: false,
+      transportState: current ? 'playing' : 'idle',
+      activePlaybackId: current?.id || null,
+      activeSlot: current ? 'A' : null,
+      slots: current ? { A: { pid: 1234, state: 'crashed' }, B: null } : { A: null, B: null },
+      healthy: !current,
+      lastError: current ? { message: 'mpv crashed' } : null
+    }));
+    plugin.playbackEngine = playbackEngine;
+    plugin._registerPlaybackEvents();
+    api.emit.mockClear();
+
+    playbackEngine.emit('crashed', { code: 1 });
+
+    expect(playbackEngine.clearNowPlaying).toHaveBeenCalledTimes(1);
+    expect(api.emit).toHaveBeenCalledWith('musicbot:runtime', expect.objectContaining({
+      transportState: 'idle',
+      activePlaybackId: null,
+      slots: { A: null, B: null }
+    }));
+    expect(api.emit).toHaveBeenCalledWith('musicbot:health', expect.objectContaining({
+      state: 'idle',
+      activePlayers: 0
+    }));
+  });
+
   test('returns a requested song to the front when MPV rejects its start command', async () => {
     const queued = [{ id: 'requested', title: 'Requested Song', url: 'https://example.test/requested.mp3' }];
     const { plugin } = createPluginWithQueue(queued);

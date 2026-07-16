@@ -1240,6 +1240,7 @@ class MusicBotPlugin extends EventEmitter {
         }
         this._emitError(message);
         this._emitPlaybackStopped();
+        this._emitRuntimeHealth();
         return;
       }
       this.queueManager.addToHistory(info.track, info.reason === 'skip');
@@ -1294,6 +1295,7 @@ class MusicBotPlugin extends EventEmitter {
       this.queueManager?.markPlaying?.(null);
       this._emitPlaybackStopped();
       this._emitNowPlaying(null);
+      this._emitRuntimeHealth();
     });
 
     this.playbackEngine.on('transition', (transition) => {
