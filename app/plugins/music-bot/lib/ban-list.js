@@ -1,4 +1,6 @@
-const VALID_TYPES = ['url', 'keyword', 'channel', 'user'];
+const VALID_TYPES = ['url', 'keyword', 'channel', 'user', 'artist'];
+const MAX_VALUE_LENGTH = 500;
+const MAX_ARTIST_LENGTH = 200;
 
 class BanList {
   constructor(api) {
@@ -45,16 +47,33 @@ class BanList {
     }
   }
 
-  _validateValue(value) {
+  _normalizeValue(value) {
+    return String(value || '').normalize('NFKC').trim().replace(/\s+/g, ' ');
+  }
+
+  _normalizeExact(value) {
+    return this._normalizeValue(value).toLowerCase();
+  }
+
+  _validateValue(value, type) {
     if (!value || !String(value).trim()) {
       throw new Error('Value is required');
+    }
+    const maxLength = type === 'artist' ? MAX_ARTIST_LENGTH : MAX_VALUE_LENGTH;
+    if (this._normalizeValue(value).length > maxLength) {
+      throw new Error(`Ban value is too long (maximum ${maxLength} characters)`);
     }
   }
 
   addBan(type, value, reason, bannedBy) {
     this._validateType(type);
-    this._validateValue(value);
-    const sanitizedValue = String(value).trim();
+    this._validateValue(value, type);
+    const sanitizedValue = this._normalizeValue(value);
+    const normalizedValue = this._normalizeExact(sanitizedValue);
+    const existing = this.getBansByType(type).find(
+      (ban) => this._normalizeExact(ban.value) === normalizedValue
+    );
+    if (existing) return existing;
     const createdAt = Date.now();
     const stmt = this.db.prepare(
       'INSERT INTO plugin_music_bot_bans (type, value, reason, banned_by, created_at) VALUES (?, ?, ?, ?, ?)'
@@ -146,6 +165,15 @@ class BanList {
       }
     }
     return { banned: false, ban: null };
+  }
+
+  isArtistBanned(artist) {
+    if (!artist) return { banned: false, ban: null };
+    const normalizedArtist = this._normalizeExact(artist);
+    const ban = this.getBansByType('artist').find(
+      (entry) => this._normalizeExact(entry.value) === normalizedArtist
+    );
+    return ban ? { banned: true, ban } : { banned: false, ban: null };
   }
 }
 

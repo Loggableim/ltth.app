@@ -1,4 +1,10 @@
 const { randomUUID } = require('crypto');
+const {
+  deriveTrackIdentity,
+  extractYouTubeId,
+  normalizeUrl,
+  providerFromTrack
+} = require('./track-identity');
 
 const DEFAULT_MAX_SONG_DURATION_SECONDS = 360;
 const MIN_ALLOWED_MAX_SONG_DURATION_SECONDS = 30;
@@ -96,7 +102,7 @@ class QueueManager {
       return validation;
     }
 
-    const youtubeId = this._extractYouTubeId(song);
+    const identity = this._identityForSong(song);
 
     const requesterKey = this._normalizeRequesterKey(song.requestedBy);
     const songEntry = {
@@ -109,8 +115,13 @@ class QueueManager {
       streamUrl: song.streamUrl || null,
       streamHeaders: song.streamHeaders || null,
       localPath: song.localPath || null,
-      youtubeId: youtubeId || null,
-      source: song.source || 'youtube',
+      youtubeId: identity.youtubeId || null,
+      provider: identity.provider,
+      providerId: identity.providerId,
+      trackKey: identity.trackKey,
+      channelId: song.channelId || null,
+      channelName: song.channelName || null,
+      source: song.source || identity.provider,
       requestedBy: song.requestedBy || 'viewer',
       requesterAvatar: song.requesterAvatar || null,
       requesterKey: requesterKey || 'viewer',
@@ -193,6 +204,21 @@ class QueueManager {
       return { ...entry, localPath };
     });
     if (this.current?.id === songId) {
+      this.current = { ...this.current, localPath };
+      updated = true;
+    }
+    return updated;
+  }
+
+  setTrackLocalPath(trackKey, localPath) {
+    if (!trackKey || !localPath) return false;
+    let updated = false;
+    this.queue = this.queue.map((entry) => {
+      if (entry.trackKey !== trackKey) return entry;
+      updated = true;
+      return { ...entry, localPath };
+    });
+    if (this.current?.trackKey === trackKey) {
       this.current = { ...this.current, localPath };
       updated = true;
     }
@@ -353,23 +379,36 @@ class QueueManager {
     const mode = this.queueConfig.duplicateDetection || 'strict';
     if (mode === 'off') return null;
 
-    const youtubeId = this._extractYouTubeId(song);
+    const identity = this._identityForSong(song);
+    const youtubeId = identity.youtubeId;
+    const normalizedUrl = normalizeUrl(song.url || '');
 
     for (let i = 0; i < this.queue.length; i += 1) {
       const entry = this.queue[i];
+      const entryIdentity = this._identityForSong(entry);
+      const canonicalMatch = Boolean(
+        identity.trackKey && entryIdentity.trackKey && identity.trackKey === entryIdentity.trackKey
+      );
+      const youtubeMatch = Boolean(
+        youtubeId && entryIdentity.youtubeId && youtubeId === entryIdentity.youtubeId
+      );
+      const urlMatch = Boolean(
+        normalizedUrl && entry.url && normalizedUrl === normalizeUrl(entry.url)
+      );
       if (mode === 'strict') {
-        if (
-          (youtubeId && entry.youtubeId && youtubeId === entry.youtubeId) ||
-          entry.url === song.url
-        ) {
-          return { position: i + 1, entry, matchType: youtubeId ? 'youtubeId' : 'url' };
+        if (canonicalMatch || youtubeMatch || urlMatch) {
+          return {
+            position: i + 1,
+            entry,
+            matchType: canonicalMatch ? 'trackKey' : (youtubeMatch ? 'youtubeId' : 'url')
+          };
         }
       }
 
       if (
         mode === 'fuzzy' &&
         (this.isFuzzyMatch(entry.title, song.title) ||
-          (youtubeId && entry.youtubeId && youtubeId === entry.youtubeId))
+          canonicalMatch || youtubeMatch)
       ) {
         return { position: i + 1, entry, matchType: 'fuzzy' };
       }
@@ -379,19 +418,47 @@ class QueueManager {
 
   _extractYouTubeId(song) {
     if (song.youtubeId) return song.youtubeId;
-    const url = song.url || '';
-    const match = url.match(
-      /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([A-Za-z0-9_-]{6,})/
-    );
-    return match ? match[1] : null;
+    return extractYouTubeId(song.url || '');
+  }
+
+  _identityForSong(song = {}) {
+    if (song.trackKey) {
+      const separator = String(song.trackKey).indexOf(':');
+      if (separator > 0) {
+        const provider = String(song.trackKey).slice(0, separator);
+        const providerId = String(song.trackKey).slice(separator + 1);
+        if (providerId) {
+          return {
+            provider,
+            providerId,
+            trackKey: `${provider}:${providerId}`,
+            youtubeId: provider === 'youtube' ? providerId : null
+          };
+        }
+      }
+    }
+
+    const provider = providerFromTrack({
+      provider: song.provider || song.source,
+      url: song.url
+    });
+    const providerId = song.providerId || (provider === 'youtube' ? song.youtubeId : null);
+    return deriveTrackIdentity({
+      provider,
+      providerId,
+      url: song.url
+    }, song.url || '');
   }
 
   persistQueue() {
     try {
       const stmt = this.db.prepare(
         `INSERT INTO plugin_music_bot_queue
-          (id, position, title, artist, duration, thumbnail, url, youtubeId, source, requestedBy, requesterAvatar, isGiftRequest, addedAt)
-          VALUES (@id, @position, @title, @artist, @duration, @thumbnail, @url, @youtubeId, @source, @requestedBy, @requesterAvatar, @isGiftRequest, @addedAt)`
+          (id, position, title, artist, duration, thumbnail, url, youtubeId, provider, providerId,
+           trackKey, channelId, channelName, source, requestedBy, requesterAvatar, isGiftRequest, addedAt)
+          VALUES (@id, @position, @title, @artist, @duration, @thumbnail, @url, @youtubeId, @provider,
+           @providerId, @trackKey, @channelId, @channelName, @source, @requestedBy, @requesterAvatar,
+           @isGiftRequest, @addedAt)`
       );
       const writeSongs = (songs) => {
         this.db.prepare('DELETE FROM plugin_music_bot_queue').run();
@@ -405,6 +472,11 @@ class QueueManager {
             thumbnail: song.thumbnail || null,
             url: song.url || '',
             youtubeId: song.youtubeId || null,
+            provider: song.provider || null,
+            providerId: song.providerId || null,
+            trackKey: song.trackKey || null,
+            channelId: song.channelId || null,
+            channelName: song.channelName || null,
             source: song.source || 'youtube',
             requestedBy: song.requestedBy || 'viewer',
             requesterAvatar: song.requesterAvatar || null,
@@ -426,31 +498,77 @@ class QueueManager {
     }
   }
 
-  restoreQueue() {
+  restoreQueue(options = {}) {
     try {
       const rows = this.db
         .prepare('SELECT * FROM plugin_music_bot_queue ORDER BY position ASC')
         .all();
-      this.queue = rows.map(row => ({
-        id: row.id,
-        title: row.title,
-        artist: row.artist || '',
-        duration: row.duration || null,
-        thumbnail: row.thumbnail || null,
-        url: row.url,
-        youtubeId: row.youtubeId || null,
-        source: row.source || 'youtube',
-        requestedBy: row.requestedBy || 'viewer',
-        requesterAvatar: row.requesterAvatar || null,
-        requesterKey: this._normalizeRequesterKey(row.requestedBy || 'viewer'),
-        isGiftRequest: Boolean(row.isGiftRequest),
-        addedAt: row.addedAt || Date.now()
-      }));
+      const duplicatesDisabled =
+        this.queueConfig.duplicateDetection === 'off' || this.queueConfig.allowDuplicates;
+      const seen = new Set();
+      const restored = [];
+      let deduped = 0;
+      let banned = 0;
+
+      rows.forEach((row) => {
+        const identity = this._identityForSong(row);
+        const entry = {
+          id: row.id,
+          title: row.title,
+          artist: row.artist || '',
+          duration: row.duration || null,
+          thumbnail: row.thumbnail || null,
+          url: row.url,
+          youtubeId: identity.youtubeId || null,
+          provider: identity.provider,
+          providerId: identity.providerId,
+          trackKey: identity.trackKey,
+          channelId: row.channelId || null,
+          channelName: row.channelName || null,
+          source: row.source || identity.provider,
+          requestedBy: row.requestedBy || 'viewer',
+          requesterAvatar: row.requesterAvatar || null,
+          requesterKey: this._normalizeRequesterKey(row.requestedBy || 'viewer'),
+          isGiftRequest: Boolean(row.isGiftRequest),
+          addedAt: row.addedAt || Date.now()
+        };
+
+        if (typeof options.isAllowed === 'function') {
+          try {
+            const decision = options.isAllowed(entry);
+            const allowed = decision !== false && decision?.allowed !== false && decision?.banned !== true;
+            if (!allowed) {
+              banned += 1;
+              return;
+            }
+          } catch (error) {
+            banned += 1;
+            this.api.log?.(`[music-bot] Queue restore rejected a row after ban check failed: ${error.message}`, 'warn');
+            return;
+          }
+        }
+
+        if (!duplicatesDisabled && seen.has(entry.trackKey)) {
+          deduped += 1;
+          return;
+        }
+        seen.add(entry.trackKey);
+        restored.push(entry);
+      });
+
+      this.queue = restored;
+      this.userLastRequest.clear();
+      restored.forEach((entry) => {
+        if (entry.requesterKey) {
+          this.userLastRequest.set(entry.requesterKey, entry.addedAt);
+        }
+      });
+      this.persistQueue();
       this.api.log?.(`[music-bot] Restored ${this.queue.length} songs from persistent queue`, 'info');
-      return this.queue.length;
+      return { restored: this.queue.length, deduped, banned };
     } catch (error) {
       this.api.log?.(`[music-bot] Failed to restore queue: ${error.message}`, 'error');
-      return 0;
+      return { restored: 0, deduped: 0, banned: 0 };
     }
   }
 
@@ -528,6 +646,11 @@ class QueueManager {
             thumbnail TEXT,
             url TEXT,
             youtubeId TEXT,
+            provider TEXT,
+            providerId TEXT,
+            trackKey TEXT,
+            channelId TEXT,
+            channelName TEXT,
             source TEXT,
             requestedBy TEXT,
             requesterAvatar TEXT,
@@ -540,13 +663,20 @@ class QueueManager {
       this.api.log?.(`[music-bot] Failed to ensure queue table: ${error.message}`, 'error');
     }
 
+    this._ensureQueueColumn('requesterAvatar', 'TEXT');
+    this._ensureQueueColumn('provider', 'TEXT');
+    this._ensureQueueColumn('providerId', 'TEXT');
+    this._ensureQueueColumn('trackKey', 'TEXT');
+    this._ensureQueueColumn('channelId', 'TEXT');
+    this._ensureQueueColumn('channelName', 'TEXT');
+  }
+
+  _ensureQueueColumn(name, definition) {
     try {
-      this.db
-        .prepare('ALTER TABLE plugin_music_bot_queue ADD COLUMN requesterAvatar TEXT')
-        .run();
+      this.db.prepare(`ALTER TABLE plugin_music_bot_queue ADD COLUMN ${name} ${definition}`).run();
     } catch (error) {
       if (!/duplicate column name/i.test(error.message)) {
-        this.api.log?.(`[music-bot] Failed to ensure requesterAvatar column: ${error.message}`, 'debug');
+        this.api.log?.(`[music-bot] Failed to ensure ${name} column: ${error.message}`, 'debug');
       }
     }
   }
