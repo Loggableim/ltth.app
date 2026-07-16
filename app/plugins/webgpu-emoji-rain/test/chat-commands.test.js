@@ -156,6 +156,31 @@ describe('WebGPU Emoji Rain chat commands', () => {
     expect(api.emissions[0].data).toEqual(expect.objectContaining({ burst: false }));
   });
 
+  test('beans allows regular viewers when the SuperFan restriction is disabled', async () => {
+    const api = new MockAPI({ animal_commands_superfans_only: false });
+    const plugin = new WebGPUEmojiRainPlugin(api);
+    await plugin.integrateWithGCCE();
+
+    const beans = api.commands.find(command => command.name === 'beans');
+    const response = await beans.handler([], {
+      username: 'viewer-one',
+      userData: { teamMemberLevel: 0 }
+    });
+
+    expect(response).toEqual(expect.objectContaining({ success: true, displayOverlay: true }));
+    expect(api.emissions[0].data).toEqual(expect.objectContaining({ burst: false }));
+  });
+
+  test('runtime configuration defaults animal commands to SuperFans and preserves an explicit opt-out', () => {
+    const plugin = new WebGPUEmojiRainPlugin(new MockAPI());
+
+    expect(plugin.getRuntimeConfig().animal_commands_superfans_only).toBe(true);
+
+    plugin.updateRuntimeConfig({ animal_commands_superfans_only: false });
+
+    expect(plugin.getRuntimeConfig().animal_commands_superfans_only).toBe(false);
+  });
+
   test('miau does not emit while WebGPU Emoji Rain is disabled', async () => {
     const api = new MockAPI({ enabled: false });
     const plugin = new WebGPUEmojiRainPlugin(api);

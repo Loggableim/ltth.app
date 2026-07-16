@@ -396,6 +396,7 @@ function updateUI() {
         // SuperFan burst
         console.log('?? [EMOJI RAIN UI] Setting SuperFan burst...');
         document.getElementById('superfan_burst_enabled').checked = config.superfan_burst_enabled !== false;
+        document.getElementById('animal_commands_superfans_only').checked = config.animal_commands_superfans_only !== false;
         setRangeValue('superfan_burst_intensity', config.superfan_burst_intensity !== undefined ? config.superfan_burst_intensity : 3.0);
         document.getElementById('superfan_burst_duration').value = config.superfan_burst_duration || 2000;
 
@@ -517,6 +518,7 @@ async function saveConfig() {
         pixel_size: parseInt(document.getElementById('pixel_size').value),
         // SuperFan burst
         superfan_burst_enabled: document.getElementById('superfan_burst_enabled').checked,
+        animal_commands_superfans_only: document.getElementById('animal_commands_superfans_only').checked,
         superfan_burst_intensity: parseFloat(document.getElementById('superfan_burst_intensity').value),
         superfan_burst_duration: parseInt(document.getElementById('superfan_burst_duration').value),
         // FPS optimization

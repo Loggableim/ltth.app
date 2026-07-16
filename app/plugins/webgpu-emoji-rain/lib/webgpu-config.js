@@ -47,6 +47,7 @@ const DEFAULT_WEBGPU_CONFIG = Object.freeze({
   pixel_enabled: false,
   pixel_size: 4,
   superfan_burst_enabled: true,
+  animal_commands_superfans_only: true,
   superfan_burst_intensity: 3.8,
   superfan_burst_duration: 2000,
   fps_optimization_enabled: true,
@@ -163,7 +164,7 @@ function normalizeWebGPUConfig(input = {}) {
     'enable_depth', 'enable_bloom', 'enable_trails', 'enable_soft_shadows',
     'gpu_collisions_enabled', 'use_custom_images', 'toaster_mode', 'wind_enabled',
     'floor_enabled', 'bounce_enabled', 'rainbow_enabled', 'pixel_enabled',
-    'superfan_burst_enabled', 'fps_optimization_enabled', 'adaptive_resolution_enabled',
+    'superfan_burst_enabled', 'animal_commands_superfans_only', 'fps_optimization_enabled', 'adaptive_resolution_enabled',
     'rate_limit_enabled', 'gift_balls_enabled', 'gift_ball_tier_thresholds_enabled',
     'heart_balloons_enabled', 'sticker_enabled', 'sticker_superfan_burst_enabled'
   ]) {
