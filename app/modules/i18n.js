@@ -187,11 +187,34 @@ class I18n {
     const targetLeaves = this.translationLeaves(target);
     const sourceLeaves = this.translationLeaves(source);
     const origins = this.translationOrigins[locale] || new Map();
+    const targetBranchOrigins = new Map();
+    Object.keys(targetLeaves).forEach((targetKey) => {
+      const segments = targetKey.split('.');
+      for (let index = 1; index < segments.length; index++) {
+        const branch = segments.slice(0, index).join('.');
+        if (!targetBranchOrigins.has(branch)) targetBranchOrigins.set(branch, targetKey);
+      }
+    });
+
+    const collision = (key, existingKey = key) => {
+      const existingSource = origins.get(existingKey) || fallbackSourcePath;
+      throw new Error(`Translation collision at ${key} between ${existingSource} and ${sourcePath}`);
+    };
 
     Object.entries(sourceLeaves).forEach(([key, value]) => {
       if (Object.hasOwn(targetLeaves, key) && targetLeaves[key] !== value) {
-        const existingSource = origins.get(key) || fallbackSourcePath;
-        throw new Error(`Translation collision at ${key} between ${existingSource} and ${sourcePath}`);
+        collision(key);
+      }
+
+      const segments = key.split('.');
+      for (let index = 1; index < segments.length; index++) {
+        const ancestor = segments.slice(0, index).join('.');
+        if (Object.hasOwn(targetLeaves, ancestor)) collision(ancestor);
+      }
+
+      const descendant = targetBranchOrigins.get(key);
+      if (descendant) {
+        collision(key, descendant);
       }
     });
 

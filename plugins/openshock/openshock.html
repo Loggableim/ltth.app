@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.2c931fecb980">OpenShock Control Panel</title>
+    <title data-i18n="plugins.openshock.legacy.openshock.text.001">OpenShock Control Panel</title>
     <link rel="stylesheet" href="/openshock/openshock.css">
     <script src="/socket.io/socket.io.js"></script>
 </head>
@@ -12,8 +12,8 @@
         <!-- Header -->
         <header>
             <div>
-                <h1 data-i18n="generated.e78ccfd4a721">⚡ OpenShock Control Panel</h1>
-                <p class="text-muted header-subtitle" data-i18n="generated.85a76aea2192">TikTok Live Integration mit OpenShock API</p>
+                <h1 data-i18n="plugins.openshock.legacy.openshock.text.002">⚡ OpenShock Control Panel</h1>
+                <p class="text-muted header-subtitle" data-i18n="plugins.openshock.legacy.openshock.text.003">TikTok Live Integration mit OpenShock API</p>
             </div>
             <div id="connection-status">
                 <div class="status-badge status-disconnected">
@@ -25,12 +25,12 @@
 
         <!-- Tabs Navigation -->
         <div class="tabs">
-            <button class="tab-button active" data-tab="dashboard" data-i18n="generated.9c0c570fed8c">📊 Dashboard</button>
-            <button class="tab-button" data-tab="mapper" data-i18n="generated.e616319bbe93">🔗 Event Mapper</button>
-            <button class="tab-button" data-tab="gifts" data-i18n="generated.5ba695f81113">🎁 Gift Catalog</button>
-            <button class="tab-button" data-tab="safety" data-i18n="generated.52bf778b069a">🛡️ Safety</button>
-            <button class="tab-button" data-tab="patterns" data-i18n="generated.5bde9ef88eb8">🎵 Patterns</button>
-            <button class="tab-button" data-tab="advanced" data-i18n="generated.7faa3f83fbc0">⚙️ Advanced</button>
+            <button class="tab-button active" data-tab="dashboard" data-i18n="plugins.openshock.legacy.openshock.text.004">📊 Dashboard</button>
+            <button class="tab-button" data-tab="mapper" data-i18n="plugins.openshock.legacy.openshock.text.005">🔗 Event Mapper</button>
+            <button class="tab-button" data-tab="gifts" data-i18n="plugins.openshock.legacy.openshock.text.006">🎁 Gift Catalog</button>
+            <button class="tab-button" data-tab="safety" data-i18n="plugins.openshock.legacy.openshock.text.007">🛡️ Safety</button>
+            <button class="tab-button" data-tab="patterns" data-i18n="plugins.openshock.legacy.openshock.text.008">🎵 Patterns</button>
+            <button class="tab-button" data-tab="advanced" data-i18n="plugins.openshock.legacy.openshock.text.009">⚙️ Advanced</button>
         </div>
 
         <!-- Tab 1: Dashboard -->
@@ -38,11 +38,11 @@
             <!-- Connection Status Card -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.0a144ec084c4">Connection Status</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.010">Connection Status</h2>
                 </div>
                 <div class="grid-3">
                     <div class="stat-card">
-                        <div class="stat-label" data-i18n="generated.b941a14c3ba1">API Status</div>
+                        <div class="stat-label" data-i18n="plugins.openshock.legacy.openshock.text.011">API Status</div>
                         <div class="stat-value" id="apiStatus">⚫</div>
                     </div>
                     <div class="stat-card">
@@ -59,21 +59,21 @@
             <!-- Test Shock Function -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.89befe8b285d">⚡ Test Shock Function</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.012">⚡ Test Shock Function</h2>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.d96d970e4949">Select Device for Test</label>
+                    <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.013">Select Device for Test</label>
                     <select class="form-input" id="testShockDevice">
-                        <option value="" data-i18n="generated.a2a2f46a0773">-- Select a device --</option>
+                        <option value="" data-i18n="plugins.openshock.legacy.openshock.text.014">-- Select a device --</option>
                     </select>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-warning btn-lg" id="testShockButton" disabled data-i18n="generated.41a3b008543d">
+                    <button class="btn btn-warning btn-lg" id="testShockButton" disabled data-i18n="plugins.openshock.legacy.openshock.text.015">
                         ⚡ Test Shock (1s, 100%)
                     </button>
                 </div>
                 <p class="text-muted mt-2">
-                    <small data-i18n="generated.fa5cd296eb0c">⚠️ This will send a 1-second shock at 100% intensity to the selected device.</small>
+                    <small data-i18n="plugins.openshock.legacy.openshock.text.016">⚠️ This will send a 1-second shock at 100% intensity to the selected device.</small>
                 </p>
             </div>
 
@@ -81,10 +81,10 @@
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">Devices</h2>
-                    <button class="btn btn-primary btn-sm" id="refreshDevices" data-i18n="generated.280d37b8da4a">🔄 Refresh</button>
+                    <button class="btn btn-primary btn-sm" id="refreshDevices" data-i18n="plugins.openshock.legacy.openshock.text.017">🔄 Refresh</button>
                 </div>
                 <div id="devicesList">
-                    <p class="text-muted text-center" data-i18n="generated.737bdc5171ca">No devices found. Configure API key first.</p>
+                    <p class="text-muted text-center" data-i18n="plugins.openshock.legacy.openshock.text.018">No devices found. Configure API key first.</p>
                 </div>
             </div>
 
@@ -92,11 +92,11 @@
                 <!-- Live Queue Status -->
                 <div class="card">
                     <div class="card-header">
-                        <h2 class="card-title" data-i18n="generated.26813e8d1f3e">Live Queue</h2>
+                        <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.019">Live Queue</h2>
                     </div>
                     <div class="grid-3">
                         <div class="stat-card">
-                            <div class="stat-label" data-i18n="generated.caba04eff6ce">Queue Length</div>
+                            <div class="stat-label" data-i18n="plugins.openshock.legacy.openshock.text.020">Queue Length</div>
                             <div class="stat-value" id="queueLength">0</div>
                         </div>
                         <div class="stat-card">
@@ -114,15 +114,15 @@
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">Statistics</h2>
-                        <button class="btn btn-secondary btn-sm" id="resetStats" data-i18n="generated.86a62644bee1">🔄 Reset</button>
+                        <button class="btn btn-secondary btn-sm" id="resetStats" data-i18n="plugins.openshock.legacy.openshock.text.021">🔄 Reset</button>
                     </div>
                     <div class="grid-3">
                         <div class="stat-card">
-                            <div class="stat-label" data-i18n="generated.98ca0c800f0c">Total Commands</div>
+                            <div class="stat-label" data-i18n="plugins.openshock.legacy.openshock.text.022">Total Commands</div>
                             <div class="stat-value" id="totalCommands">0</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label" data-i18n="generated.8114b18dc59d">Success Rate</div>
+                            <div class="stat-label" data-i18n="plugins.openshock.legacy.openshock.text.023">Success Rate</div>
                             <div class="stat-value" id="successRate">0%</div>
                         </div>
                         <div class="stat-card">
@@ -136,14 +136,14 @@
             <!-- Recent Commands Log -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.e8c758a1c40d">Recent Commands</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.024">Recent Commands</h2>
                     <div class="btn-group">
-                        <button class="btn btn-secondary btn-sm" id="clearLog" data-i18n="generated.6daf063610b7">🗑️ Clear</button>
-                        <button class="btn btn-secondary btn-sm" id="exportLog" data-i18n="generated.a93b47c40767">📥 Export</button>
+                        <button class="btn btn-secondary btn-sm" id="clearLog" data-i18n="plugins.openshock.legacy.openshock.text.025">🗑️ Clear</button>
+                        <button class="btn btn-secondary btn-sm" id="exportLog" data-i18n="plugins.openshock.legacy.openshock.text.026">📥 Export</button>
                     </div>
                 </div>
                 <div class="log-container" id="commandLog">
-                    <p class="text-muted text-center" data-i18n="generated.a84079c4c1bf">No commands executed yet.</p>
+                    <p class="text-muted text-center" data-i18n="plugins.openshock.legacy.openshock.text.027">No commands executed yet.</p>
                 </div>
             </div>
         </div>
@@ -152,15 +152,15 @@
         <div id="mapper" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.21d497da6b67">Event Mappings</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.028">Event Mappings</h2>
                     <div class="btn-group">
-                        <button class="btn btn-success" id="addMapping" data-i18n="generated.a213011fd4e1">➕ Add Mapping</button>
-                        <button class="btn btn-secondary" id="importMappings" data-i18n="generated.18b388db85fe">📥 Import</button>
-                        <button class="btn btn-secondary" id="exportMappings" data-i18n="generated.cba7d8b29d26">📤 Export</button>
+                        <button class="btn btn-success" id="addMapping" data-i18n="plugins.openshock.legacy.openshock.text.029">➕ Add Mapping</button>
+                        <button class="btn btn-secondary" id="importMappings" data-i18n="plugins.openshock.legacy.openshock.text.030">📥 Import</button>
+                        <button class="btn btn-secondary" id="exportMappings" data-i18n="plugins.openshock.legacy.openshock.text.031">📤 Export</button>
                     </div>
                 </div>
                 <div id="mappingsList">
-                    <p class="text-muted text-center" data-i18n="generated.44d13abbefd0">No mappings configured. Click "Add Mapping" to create one.</p>
+                    <p class="text-muted text-center" data-i18n="plugins.openshock.legacy.openshock.text.032">No mappings configured. Click "Add Mapping" to create one.</p>
                 </div>
             </div>
         </div>
@@ -169,15 +169,15 @@
         <div id="gifts" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.50aac7fdf347">🎁 TikTok Gift Catalog</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.033">🎁 TikTok Gift Catalog</h2>
                     <div class="btn-group">
-                        <button class="btn btn-primary" id="refreshGiftCatalog" data-i18n="generated.3238c85262df">🔄 Refresh Catalog</button>
+                        <button class="btn btn-primary" id="refreshGiftCatalog" data-i18n="plugins.openshock.legacy.openshock.text.034">🔄 Refresh Catalog</button>
                     </div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted" data-i18n="generated.7c21f14f072a">Below are all available TikTok gifts. You can create Event Mappings to trigger shock patterns when specific gifts are received.</p>
+                    <p class="text-muted" data-i18n="plugins.openshock.legacy.openshock.text.035">Below are all available TikTok gifts. You can create Event Mappings to trigger shock patterns when specific gifts are received.</p>
                     <div id="giftCatalogList">
-                        <p class="text-center text-muted" data-i18n="generated.fef9c8cd9b4a">Loading gift catalog...</p>
+                        <p class="text-center text-muted" data-i18n="plugins.openshock.legacy.openshock.text.036">Loading gift catalog...</p>
                     </div>
                 </div>
             </div>
@@ -188,53 +188,53 @@
             <!-- Global Limits -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.0b9c01b01ac6">Global Safety Limits</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.037">Global Safety Limits</h2>
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
                         <div class="slider-label">
-                            <span class="form-label" data-i18n="generated.14fec5f458f6">Max Intensity</span>
+                            <span class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.038">Max Intensity</span>
                             <span class="slider-value" id="globalMaxIntensityValue">100</span>
                         </div>
                         <input type="range" id="globalMaxIntensity" min="1" max="100" value="100">
                     </div>
                     <div class="form-group">
                         <div class="slider-label">
-                            <span class="form-label" data-i18n="generated.0c8275c0da1f">Max Duration (ms)</span>
+                            <span class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.039">Max Duration (ms)</span>
                             <span class="slider-value" id="globalMaxDurationValue">30000</span>
                         </div>
                         <input type="range" id="globalMaxDuration" min="300" max="30000" step="100" value="30000">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.5febddb4bdfe">Max Commands per Minute</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.040">Max Commands per Minute</label>
                         <input type="number" class="form-input" id="globalMaxCommandsPerMin" value="60" min="1" max="600">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.166a546c7ecc">Cooldown between Commands (ms)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.041">Cooldown between Commands (ms)</label>
                         <input type="number" class="form-input" id="globalCooldown" value="1000" min="0" step="100">
                     </div>
                 </div>
-                <button class="btn btn-primary" id="saveGlobalLimits" data-i18n="generated.d852c8d10f68">💾 Save Global Limits</button>
+                <button class="btn btn-primary" id="saveGlobalLimits" data-i18n="plugins.openshock.legacy.openshock.text.042">💾 Save Global Limits</button>
             </div>
 
             <!-- Device Limits -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.614e162120e6">Per-Device Limits</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.043">Per-Device Limits</h2>
                 </div>
                 <table class="table">
                     <thead>
                         <tr>
                             <th>Device</th>
-                            <th data-i18n="generated.4c80a31ce1ef">Max Intensity</th>
-                            <th data-i18n="generated.79c05e2d7a24">Max Duration (ms)</th>
-                            <th data-i18n="generated.c48d53290bf7">Cooldown (ms)</th>
+                            <th data-i18n="plugins.openshock.legacy.openshock.text.044">Max Intensity</th>
+                            <th data-i18n="plugins.openshock.legacy.openshock.text.045">Max Duration (ms)</th>
+                            <th data-i18n="plugins.openshock.legacy.openshock.text.046">Cooldown (ms)</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="deviceLimitsTable">
                         <tr>
-                            <td colspan="5" class="text-center text-muted" data-i18n="generated.360825900cd0">No devices configured</td>
+                            <td colspan="5" class="text-center text-muted" data-i18n="plugins.openshock.legacy.openshock.text.047">No devices configured</td>
                         </tr>
                     </tbody>
                 </table>
@@ -243,39 +243,39 @@
             <!-- User Limits -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.4bc4e1bd913b">User Restrictions</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.048">User Restrictions</h2>
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.253e354d3b70">Min Follower Age (days)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.049">Min Follower Age (days)</label>
                         <input type="number" class="form-input" id="minFollowerAge" value="0" min="0">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.3ed7a06d6536">Max Commands per User (per session)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.050">Max Commands per User (per session)</label>
                         <input type="number" class="form-input" id="maxCommandsPerUser" value="10" min="1">
                     </div>
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.771ce0c102d4">Whitelist (usernames, comma separated)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.051">Whitelist (usernames, comma separated)</label>
                         <input type="text" class="form-input" id="whitelist" placeholder="user1, user2, user3">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.e569f5d7e39f">Blacklist (usernames, comma separated)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.052">Blacklist (usernames, comma separated)</label>
                         <input type="text" class="form-input" id="blacklist" placeholder="baduser1, baduser2">
                     </div>
                 </div>
-                <button class="btn btn-primary" id="saveUserLimits" data-i18n="generated.4c2edb3e2a0f">💾 Save User Limits</button>
+                <button class="btn btn-primary" id="saveUserLimits" data-i18n="plugins.openshock.legacy.openshock.text.053">💾 Save User Limits</button>
             </div>
 
             <!-- Emergency Stop -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.939a44d75a65">Emergency Controls</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.054">Emergency Controls</h2>
                 </div>
                 <div class="text-center">
-                    <button class="btn btn-danger btn-lg" id="emergencyStop" data-i18n="generated.8d237336ff8e">🛑 EMERGENCY STOP</button>
-                    <p class="text-muted mt-2" data-i18n="generated.d1e82d2a4764">Immediately stops all commands and pauses the queue</p>
+                    <button class="btn btn-danger btn-lg" id="emergencyStop" data-i18n="plugins.openshock.legacy.openshock.text.055">🛑 EMERGENCY STOP</button>
+                    <p class="text-muted mt-2" data-i18n="plugins.openshock.legacy.openshock.text.056">Immediately stops all commands and pauses the queue</p>
                     <div id="emergencyStatus" class="mt-2"></div>
                 </div>
             </div>
@@ -285,17 +285,17 @@
         <div id="patterns" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.9de0d5281685">Shock Patterns</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.057">Shock Patterns</h2>
                     <div class="btn-group">
-                        <button class="btn btn-success" id="addPattern" data-i18n="generated.b3f06aa9e031">➕ Add Pattern</button>
-                        <button class="btn btn-secondary" id="importPatterns" data-i18n="generated.0d4fb5c98e60">📥 Import</button>
-                        <button class="btn btn-secondary" id="exportPatterns" data-i18n="generated.55ab57eb906c">📤 Export</button>
+                        <button class="btn btn-success" id="addPattern" data-i18n="plugins.openshock.legacy.openshock.text.058">➕ Add Pattern</button>
+                        <button class="btn btn-secondary" id="importPatterns" data-i18n="plugins.openshock.legacy.openshock.text.059">📥 Import</button>
+                        <button class="btn btn-secondary" id="exportPatterns" data-i18n="plugins.openshock.legacy.openshock.text.060">📤 Export</button>
                     </div>
                 </div>
 
                 <!-- Preset Patterns -->
                 <div class="mb-3">
-                    <h3 class="pattern-section-title" data-i18n="generated.7dff90507330">Preset Patterns</h3>
+                    <h3 class="pattern-section-title" data-i18n="plugins.openshock.legacy.openshock.text.061">Preset Patterns</h3>
                     <div class="grid-3" id="presetPatternsList">
                         <!-- Preset patterns will be rendered here -->
                     </div>
@@ -303,9 +303,9 @@
 
                 <!-- Custom Patterns -->
                 <div>
-                    <h3 class="pattern-section-title" data-i18n="generated.e7f9a441ff30">Custom Patterns</h3>
+                    <h3 class="pattern-section-title" data-i18n="plugins.openshock.legacy.openshock.text.062">Custom Patterns</h3>
                     <div class="grid-3" id="customPatternsList">
-                        <p class="text-muted text-center" data-i18n="generated.decab91ff8dd">No custom patterns created yet.</p>
+                        <p class="text-muted text-center" data-i18n="plugins.openshock.legacy.openshock.text.063">No custom patterns created yet.</p>
                     </div>
                 </div>
             </div>
@@ -313,30 +313,30 @@
             <!-- Curve Generator -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.3c8410533ceb">Pattern Curve Generator</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.064">Pattern Curve Generator</h2>
                 </div>
                 <div class="grid-3">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.626254f37085">Curve Type</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.065">Curve Type</label>
                         <select class="form-select" id="curveType">
                             <option value="linear">Linear</option>
                             <option value="exponential">Exponential</option>
-                            <option value="sine" data-i18n="generated.24b87d891a6e">Sine Wave</option>
+                            <option value="sine" data-i18n="plugins.openshock.legacy.openshock.text.066">Sine Wave</option>
                             <option value="pulse">Pulse</option>
-                            <option value="ramp-up" data-i18n="generated.27da57b38335">Ramp Up</option>
-                            <option value="ramp-down" data-i18n="generated.dd295c857fab">Ramp Down</option>
+                            <option value="ramp-up" data-i18n="plugins.openshock.legacy.openshock.text.067">Ramp Up</option>
+                            <option value="ramp-down" data-i18n="plugins.openshock.legacy.openshock.text.068">Ramp Down</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.01433fba04ec">Duration (ms)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.069">Duration (ms)</label>
                         <input type="number" class="form-input" id="curveDuration" value="5000" min="300" step="100">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.35ed0a7f44ed">Max Intensity</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.070">Max Intensity</label>
                         <input type="number" class="form-input" id="curveMaxIntensity" value="50" min="1" max="100">
                     </div>
                 </div>
-                <button class="btn btn-primary" id="generateCurve" data-i18n="generated.8c31f2c54fd8">🎨 Generate Pattern</button>
+                <button class="btn btn-primary" id="generateCurve" data-i18n="plugins.openshock.legacy.openshock.text.071">🎨 Generate Pattern</button>
             </div>
         </div>
 
@@ -345,38 +345,38 @@
             <!-- API Settings -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.53f366d634e3">OpenShock API Settings</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.072">OpenShock API Settings</h2>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.404820480371">API Key</label>
+                    <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.073">API Key</label>
                     <input type="password" class="form-input" id="apiKey" placeholder="Enter your OpenShock API key">
                 </div>
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.3426fecfe214">Base URL</label>
+                    <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.074">Base URL</label>
                     <input type="text" class="form-input" id="baseUrl" value="https://api.openshock.app" placeholder="https://api.openshock.app">
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-primary" id="saveApiSettings" data-i18n="generated.bfd085cde9a8">💾 Save Settings</button>
-                    <button class="btn btn-secondary" id="testConnection" data-i18n="generated.5c7c7fa3e32f">🔌 Test Connection</button>
+                    <button class="btn btn-primary" id="saveApiSettings" data-i18n="plugins.openshock.legacy.openshock.text.075">💾 Save Settings</button>
+                    <button class="btn btn-secondary" id="testConnection" data-i18n="plugins.openshock.legacy.openshock.text.076">🔌 Test Connection</button>
                 </div>
             </div>
 
             <!-- Queue Management -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.3c2371b1df00">Queue Management</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.077">Queue Management</h2>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-warning" id="pauseQueue" data-i18n="generated.0da4af9317ee">⏸️ Pause Queue</button>
-                    <button class="btn btn-success" id="resumeQueue" data-i18n="generated.27ddff4446b7">▶️ Resume Queue</button>
-                    <button class="btn btn-danger" id="clearQueue" data-i18n="generated.2589b46463c8">🗑️ Clear Queue</button>
+                    <button class="btn btn-warning" id="pauseQueue" data-i18n="plugins.openshock.legacy.openshock.text.078">⏸️ Pause Queue</button>
+                    <button class="btn btn-success" id="resumeQueue" data-i18n="plugins.openshock.legacy.openshock.text.079">▶️ Resume Queue</button>
+                    <button class="btn btn-danger" id="clearQueue" data-i18n="plugins.openshock.legacy.openshock.text.080">🗑️ Clear Queue</button>
                 </div>
             </div>
 
             <!-- Debug Log -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.b41dc39a90f7">Debug Log</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.081">Debug Log</h2>
                     <div class="btn-group">
                         <select class="form-select form-select-auto" id="logFilter">
                             <option value="all">All</option>
@@ -384,19 +384,19 @@
                             <option value="warning">Warning</option>
                             <option value="error">Error</option>
                         </select>
-                        <button class="btn btn-secondary btn-sm" id="clearDebugLog" data-i18n="generated.5b665847cf71">🗑️ Clear</button>
-                        <button class="btn btn-secondary btn-sm" id="exportDebugLog" data-i18n="generated.531ba00754d8">📥 Export</button>
+                        <button class="btn btn-secondary btn-sm" id="clearDebugLog" data-i18n="plugins.openshock.legacy.openshock.text.082">🗑️ Clear</button>
+                        <button class="btn btn-secondary btn-sm" id="exportDebugLog" data-i18n="plugins.openshock.legacy.openshock.text.083">📥 Export</button>
                     </div>
                 </div>
                 <div class="log-container" id="debugLog">
-                    <p class="text-muted text-center" data-i18n="generated.66830cf7f8cc">Debug log is empty.</p>
+                    <p class="text-muted text-center" data-i18n="plugins.openshock.legacy.openshock.text.084">Debug log is empty.</p>
                 </div>
             </div>
 
             <!-- Detailed Statistics -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title" data-i18n="generated.f2a00d985d39">Detailed Statistics</h2>
+                    <h2 class="card-title" data-i18n="plugins.openshock.legacy.openshock.text.085">Detailed Statistics</h2>
                 </div>
                 <table class="table">
                     <thead>
@@ -407,27 +407,27 @@
                     </thead>
                     <tbody id="detailedStatsTable">
                         <tr>
-                            <td data-i18n="generated.ddeb336e5b72">Total Events Received</td>
+                            <td data-i18n="plugins.openshock.legacy.openshock.text.086">Total Events Received</td>
                             <td id="statTotalEvents">0</td>
                         </tr>
                         <tr>
-                            <td data-i18n="generated.aef4f2a08400">Total Commands Sent</td>
+                            <td data-i18n="plugins.openshock.legacy.openshock.text.087">Total Commands Sent</td>
                             <td id="statTotalCommands">0</td>
                         </tr>
                         <tr>
-                            <td data-i18n="generated.8bd63149bd2c">Successful Commands</td>
+                            <td data-i18n="plugins.openshock.legacy.openshock.text.088">Successful Commands</td>
                             <td id="statSuccessfulCommands">0</td>
                         </tr>
                         <tr>
-                            <td data-i18n="generated.f27aacce1ee3">Failed Commands</td>
+                            <td data-i18n="plugins.openshock.legacy.openshock.text.089">Failed Commands</td>
                             <td id="statFailedCommands">0</td>
                         </tr>
                         <tr>
-                            <td data-i18n="generated.38616b72ef62">Average Response Time</td>
+                            <td data-i18n="plugins.openshock.legacy.openshock.text.090">Average Response Time</td>
                             <td id="statAvgResponseTime">0ms</td>
                         </tr>
                         <tr>
-                            <td data-i18n="generated.3c61cc258e9e">Commands in Queue</td>
+                            <td data-i18n="plugins.openshock.legacy.openshock.text.091">Commands in Queue</td>
                             <td id="statQueueSize">0</td>
                         </tr>
                     </tbody>
@@ -440,12 +440,12 @@
     <div id="mappingModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="mappingModalTitle" data-i18n="generated.6bb80a475bac">Add Event Mapping</h2>
+                <h2 class="modal-title" id="mappingModalTitle" data-i18n="plugins.openshock.legacy.openshock.text.092">Add Event Mapping</h2>
                 <button class="modal-close" id="closeMappingModal">×</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.cdae46e550f9">Mapping Name</label>
+                    <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.093">Mapping Name</label>
                     <input type="text" class="form-input" id="mappingName" placeholder="e.g., Rose Gift Shock">
                 </div>
 
@@ -457,10 +457,10 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.b483e54893a9">Event Type</label>
+                    <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.094">Event Type</label>
                     <select class="form-select" id="mappingEventType">
                         <option value="gift">Gift</option>
-                        <option value="chat" data-i18n="generated.2b2419a4afb9">Chat Message</option>
+                        <option value="chat" data-i18n="plugins.openshock.legacy.openshock.text.095">Chat Message</option>
                         <option value="follow">Follow</option>
                         <option value="share">Share</option>
                         <option value="like">Like</option>
@@ -471,26 +471,26 @@
                 <!-- Conditions (dynamic based on event type) -->
                 <div id="mappingConditions">
                     <div class="form-group" id="conditionGift">
-                        <label class="form-label" data-i18n="generated.46b7fead0432">Gift Name</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.096">Gift Name</label>
                         <select class="form-select" id="mappingGiftNameSelect">
-                            <option value="" data-i18n="generated.b1a21304955a">All Gifts</option>
+                            <option value="" data-i18n="plugins.openshock.legacy.openshock.text.097">All Gifts</option>
                         </select>
-                        <small class="form-help-text" data-i18n="generated.52597f6e337b">Or enter custom name below:</small>
+                        <small class="form-help-text" data-i18n="plugins.openshock.legacy.openshock.text.098">Or enter custom name below:</small>
                         <input type="text" class="form-input" id="mappingGiftName" placeholder="e.g., Rose, TikTok (leave empty to use selection above)">
                     </div>
                     <div class="form-group" id="conditionMinCoins">
-                        <label class="form-label" data-i18n="generated.e570522a02b2">Min Coins</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.099">Min Coins</label>
                         <input type="number" class="form-input" id="mappingMinCoins" value="0" min="0">
                     </div>
                     <div class="form-group hidden" id="conditionMessagePattern">
-                        <label class="form-label" data-i18n="generated.85d3555831ac">Message Pattern (regex)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.100">Message Pattern (regex)</label>
                         <input type="text" class="form-input" id="mappingMessagePattern" placeholder="e.g., ^!shock">
                     </div>
                 </div>
 
                 <!-- Action Configuration -->
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.df9b9489c510">Action Type</label>
+                    <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.101">Action Type</label>
                     <select class="form-select" id="mappingActionType">
                         <option value="shock">Shock</option>
                         <option value="vibrate">Vibrate</option>
@@ -501,7 +501,7 @@
                 <div class="form-group">
                     <label class="form-label">Device</label>
                     <select class="form-select" id="mappingDevice">
-                        <option value="" data-i18n="generated.8eb06ffbf91c">Select Device...</option>
+                        <option value="" data-i18n="plugins.openshock.legacy.openshock.text.102">Select Device...</option>
                     </select>
                 </div>
 
@@ -515,31 +515,31 @@
 
                 <div class="form-group">
                     <div class="slider-label">
-                        <span class="form-label" data-i18n="generated.5b1a02c54299">Duration (ms)</span>
+                        <span class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.103">Duration (ms)</span>
                         <span class="slider-value" id="mappingDurationValue">1000</span>
                     </div>
                     <input type="range" id="mappingDuration" min="300" max="30000" step="100" value="1000">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.506c07778803">Pattern (optional)</label>
+                    <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.104">Pattern (optional)</label>
                     <select class="form-select" id="mappingPattern">
-                        <option value="" data-i18n="generated.83a77c28b928">None (Single pulse)</option>
+                        <option value="" data-i18n="plugins.openshock.legacy.openshock.text.105">None (Single pulse)</option>
                     </select>
                 </div>
 
                 <!-- Cooldowns -->
                 <div class="grid-3">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.37fe494c2eb9">Global Cooldown (ms)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.106">Global Cooldown (ms)</label>
                         <input type="number" class="form-input" id="mappingGlobalCooldown" value="0" min="0" step="100">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.998987252e9d">Per-Device Cooldown (ms)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.107">Per-Device Cooldown (ms)</label>
                         <input type="number" class="form-input" id="mappingDeviceCooldown" value="0" min="0" step="100">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.4fa4627548d2">Per-User Cooldown (ms)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.108">Per-User Cooldown (ms)</label>
                         <input type="number" class="form-input" id="mappingUserCooldown" value="0" min="0" step="100">
                     </div>
                 </div>
@@ -547,18 +547,18 @@
                 <!-- Safety Overrides -->
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.216f0b024238">Max Intensity Override</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.109">Max Intensity Override</label>
                         <input type="number" class="form-input" id="mappingMaxIntensity" value="100" min="1" max="100">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" data-i18n="generated.7f5347d01362">Max Duration Override (ms)</label>
+                        <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.110">Max Duration Override (ms)</label>
                         <input type="number" class="form-input" id="mappingMaxDuration" value="30000" min="300" step="100">
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" id="saveMappingBtn" data-i18n="generated.bd00e94c017c">💾 Save Mapping</button>
-                <button class="btn btn-secondary" id="cancelMappingBtn" data-i18n="generated.76f4fecddbe7">❌ Cancel</button>
+                <button class="btn btn-primary" id="saveMappingBtn" data-i18n="plugins.openshock.legacy.openshock.text.111">💾 Save Mapping</button>
+                <button class="btn btn-secondary" id="cancelMappingBtn" data-i18n="plugins.openshock.legacy.openshock.text.112">❌ Cancel</button>
             </div>
         </div>
     </div>
@@ -567,12 +567,12 @@
     <div id="patternModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="patternModalTitle" data-i18n="generated.3ee003e8dbe1">Add Pattern</h2>
+                <h2 class="modal-title" id="patternModalTitle" data-i18n="plugins.openshock.legacy.openshock.text.113">Add Pattern</h2>
                 <button class="modal-close" id="closePatternModal">×</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label" data-i18n="generated.547f6c3f074a">Pattern Name</label>
+                    <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.114">Pattern Name</label>
                     <input type="text" class="form-input" id="patternName" placeholder="e.g., Escalating Shock">
                 </div>
 
@@ -586,17 +586,17 @@
                     <div class="step-list" id="patternSteps">
                         <!-- Steps will be rendered here -->
                     </div>
-                    <button class="btn btn-secondary btn-sm mt-2" id="addPatternStep" data-i18n="generated.6588d8f02655">➕ Add Step</button>
+                    <button class="btn btn-secondary btn-sm mt-2" id="addPatternStep" data-i18n="plugins.openshock.legacy.openshock.text.115">➕ Add Step</button>
                 </div>
 
                 <!-- Step Form (for adding/editing) -->
                 <div class="card mt-3 step-form-hidden" id="stepForm">
                     <div class="card-header">
-                        <h3 class="modal-title-small" data-i18n="generated.0f10fdbc07e8">Step Configuration</h3>
+                        <h3 class="modal-title-small" data-i18n="plugins.openshock.legacy.openshock.text.116">Step Configuration</h3>
                     </div>
                     <div class="modal-body-padding">
                         <div class="form-group">
-                            <label class="form-label" data-i18n="generated.83a8535064c2">Action Type</label>
+                            <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.117">Action Type</label>
                             <select class="form-select" id="stepType">
                                 <option value="shock">Shock</option>
                                 <option value="vibrate">Vibrate</option>
@@ -612,27 +612,27 @@
                             <input type="range" id="stepIntensity" min="1" max="100" value="50">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" data-i18n="generated.7e34a1a2e441">Duration (ms)</label>
+                            <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.118">Duration (ms)</label>
                             <input type="number" class="form-input" id="stepDuration" value="500" min="100" step="100">
                         </div>
                         <div class="btn-group">
-                            <button class="btn btn-primary btn-sm" id="saveStep" data-i18n="generated.065fa46804c6">💾 Save Step</button>
-                            <button class="btn btn-secondary btn-sm" id="cancelStep" data-i18n="generated.0a732bc91e41">❌ Cancel</button>
+                            <button class="btn btn-primary btn-sm" id="saveStep" data-i18n="plugins.openshock.legacy.openshock.text.119">💾 Save Step</button>
+                            <button class="btn btn-secondary btn-sm" id="cancelStep" data-i18n="plugins.openshock.legacy.openshock.text.120">❌ Cancel</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Preview Timeline -->
                 <div class="form-group mt-3">
-                    <label class="form-label" data-i18n="generated.3a4f4ecd81e2">Pattern Preview</label>
+                    <label class="form-label" data-i18n="plugins.openshock.legacy.openshock.text.121">Pattern Preview</label>
                     <div class="pattern-timeline" id="patternPreview">
-                        <p class="text-muted text-center pattern-timeline-text" data-i18n="generated.2f219a828c46">Add steps to see preview</p>
+                        <p class="text-muted text-center pattern-timeline-text" data-i18n="plugins.openshock.legacy.openshock.text.122">Add steps to see preview</p>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" id="savePatternBtn" data-i18n="generated.1f1161a77fed">💾 Save Pattern</button>
-                <button class="btn btn-secondary" id="cancelPatternBtn" data-i18n="generated.192c881e6457">❌ Cancel</button>
+                <button class="btn btn-primary" id="savePatternBtn" data-i18n="plugins.openshock.legacy.openshock.text.123">💾 Save Pattern</button>
+                <button class="btn btn-secondary" id="cancelPatternBtn" data-i18n="plugins.openshock.legacy.openshock.text.124">❌ Cancel</button>
             </div>
         </div>
     </div>

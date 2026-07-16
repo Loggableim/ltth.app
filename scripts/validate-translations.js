@@ -62,6 +62,7 @@ function checkSet(label, directory, findings) {
     for (const key of allKeys) {
       if (!flattened[locale].has(key)) continue;
       const value = flattened[locale].get(key);
+      if (key.startsWith('generated.')) findings.push({ type: 'generated-key', label, locale, key });
       if (typeof value !== 'string' || !value.trim()) findings.push({ type: 'empty-value', label, locale, key });
       if (flattened.en.has(key) && JSON.stringify(placeholders(flattened.en.get(key))) !== JSON.stringify(placeholders(value))) {
         findings.push({ type: 'placeholder-mismatch', label, locale, key, expected: placeholders(flattened.en.get(key)), actual: placeholders(value) });
@@ -136,6 +137,7 @@ function checkReferencedKeys(findings) {
     if (!keys.length) return;
     const maps = referenceLocaleMap(file);
     keys.forEach(key => locales.forEach(locale => {
+      if (key.startsWith('generated.')) findings.push({ type: 'generated-reference', file: path.relative(repoRoot, file).replace(/\\/g, '/'), locale, key });
       if (!maps[locale].has(key)) findings.push({ type: 'missing-reference-key', file: path.relative(repoRoot, file).replace(/\\/g, '/'), locale, key });
     }));
   });

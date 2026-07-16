@@ -12,6 +12,12 @@ const MUTUALLY_EXCLUSIVE_PLUGIN_GROUPS = Object.freeze([
   Object.freeze(['emoji-rain', 'webgpu-emoji-rain'])
 ]);
 
+// Chatango mounts an external provider script from its dashboard adapter. It
+// remains enabled for its own product guide, but unrelated local dashboard
+// captures must retain the real disabled-plugin state so the fixture never
+// creates an outbound embed just to register unrelated local routes.
+const CAPTURE_GUIDE_ONLY_PLUGIN_IDS = new Set(['chatango']);
+
 function resolveDocsPluginSource(repoRoot, guideId) {
   const candidates = [
     path.join(repoRoot, 'app', 'plugins', guideId),
@@ -77,7 +83,7 @@ function prepareDocsPluginFixture(repoRoot, profileDir, guideId) {
     // These copies are ephemeral. Enabling each manifest registers its real
     // local routes; the isolated profile prevents touching a user installation.
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    manifest.enabled = true;
+    manifest.enabled = !CAPTURE_GUIDE_ONLY_PLUGIN_IDS.has(pluginId) || pluginId === guideId;
     fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
   }
 

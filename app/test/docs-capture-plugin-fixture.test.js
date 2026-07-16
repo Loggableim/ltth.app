@@ -60,6 +60,30 @@ describe('docs capture plugin fixture', () => {
     }
   });
 
+  test('keeps Chatango disabled outside its own capture fixture', () => {
+    const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-docs-chatango-fixture-test-'));
+    const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-docs-chatango-fixture-profile-'));
+    try {
+      for (const id of ['store-admin', 'chatango']) {
+        const pluginDir = path.join(repoRoot, 'app', 'plugins', id);
+        fs.mkdirSync(pluginDir, { recursive: true });
+        fs.writeFileSync(path.join(pluginDir, 'plugin.json'), JSON.stringify({ id, enabled: false }));
+      }
+      fs.mkdirSync(path.join(repoRoot, 'app', 'modules'), { recursive: true });
+      fs.mkdirSync(path.join(repoRoot, 'app', 'node_modules'), { recursive: true });
+
+      const unrelatedFixture = prepareDocsPluginFixture(repoRoot, profileDir, 'store-admin');
+      expect(JSON.parse(fs.readFileSync(path.join(unrelatedFixture, 'store-admin', 'plugin.json'), 'utf8')).enabled).toBe(true);
+      expect(JSON.parse(fs.readFileSync(path.join(unrelatedFixture, 'chatango', 'plugin.json'), 'utf8')).enabled).toBe(false);
+
+      const ownFixture = prepareDocsPluginFixture(repoRoot, profileDir, 'chatango');
+      expect(JSON.parse(fs.readFileSync(path.join(ownFixture, 'chatango', 'plugin.json'), 'utf8')).enabled).toBe(true);
+    } finally {
+      fs.rmSync(repoRoot, { recursive: true, force: true });
+      fs.rmSync(profileDir, { recursive: true, force: true });
+    }
+  });
+
   test('keeps dashboard plugin assets together with their enabled local route manifests', () => {
     const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-docs-static-assets-test-'));
     const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-docs-static-assets-profile-'));

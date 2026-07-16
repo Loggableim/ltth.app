@@ -52,6 +52,32 @@ describe('plugin i18n runtime namespaces', () => {
     )).toThrow('Translation collision at plugins.sample-plugin.labels.title between base/locales/en.json and sample-plugin/locales/en.json');
   });
 
+  test.each([
+    [
+      { plugins: { 'sample-plugin': 'First value' } },
+      { plugins: { 'sample-plugin': { labels: { title: 'Second value' } } } },
+      'plugins.sample-plugin'
+    ],
+    [
+      { plugins: { 'sample-plugin': { labels: { title: 'First value' } } } },
+      { plugins: { 'sample-plugin': 'Second value' } },
+      'plugins.sample-plugin'
+    ]
+  ])('rejects a scalar-object translation collision at the shared path', (target, source, key) => {
+    jest.resetModules();
+    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const i18n = require('../modules/i18n');
+    log.mockRestore();
+
+    expect(() => i18n.mergeTranslationSource(
+      'en',
+      source,
+      'sample-plugin/locales/en.json',
+      target,
+      'base/locales/en.json'
+    )).toThrow(`Translation collision at ${key} between base/locales/en.json and sample-plugin/locales/en.json`);
+  });
+
   test('fails startup when separate plugin sources claim a conflicting locale leaf', () => {
     jest.resetModules();
     const { I18n } = require('../modules/i18n');
