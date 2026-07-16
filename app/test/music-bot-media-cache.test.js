@@ -62,6 +62,30 @@ describe('music-bot media cache', () => {
     await cache.destroy();
   });
 
+  it('uses an injected yt-dlp runner without taking ownership of it', async () => {
+    const runner = {
+      run: jest.fn(async (_executable, args) => {
+        const outputTemplate = args[args.indexOf('--output') + 1];
+        const outputPath = outputTemplate.replace('%(ext)s', 'opus');
+        fs.writeFileSync(outputPath, 'runner-audio');
+        return outputPath;
+      }),
+      destroy: jest.fn(async () => {}),
+      getStatus: jest.fn(() => ({ active: 0, queued: 0 }))
+    };
+    const cache = new MediaCache({}, createApi(dataDir), { runner });
+
+    const cachedPath = await cache.getOrDownload({
+      trackKey: 'youtube:runner',
+      url: 'https://youtu.be/runner'
+    });
+
+    expect(fs.readFileSync(cachedPath, 'utf8')).toBe('runner-audio');
+    expect(runner.run).toHaveBeenCalledTimes(1);
+    await cache.destroy();
+    expect(runner.destroy).not.toHaveBeenCalled();
+  });
+
   it('prunes expired files before least-recently-used files by actual bytes and preserves pins', async () => {
     let now = 1_000_000;
     const cache = new MediaCache({ cacheTTLDays: 1, maxCacheSizeMB: 0.00001 }, createApi(dataDir), {

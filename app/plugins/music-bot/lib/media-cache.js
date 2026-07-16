@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const YtDlpRunner = require('./yt-dlp-runner');
 
 const DEFAULT_TTL_DAYS = 30;
 const DEFAULT_MAX_SIZE_MB = 2048;
@@ -10,7 +10,6 @@ class MediaCache {
   constructor(config = {}, api = {}, dependencies = {}) {
     this.config = config || {};
     this.api = api || {};
-    this.spawn = dependencies.spawn || spawn;
     this.now = dependencies.now || (() => Date.now());
     this.cacheDir = this.config.cacheDir || path.join(
       this.api.getPluginDataDir?.() || process.cwd(),
@@ -25,9 +24,18 @@ class MediaCache {
       DEFAULT_MAX_SIZE_MB
     );
     this.inflight = new Map();
-    this.activeJobs = new Set();
+    this.jobControllers = new Set();
     this.pinnedKeys = new Set();
     this.destroyed = false;
+    this.ownsRunner = !dependencies.runner;
+    this.runner = dependencies.runner || new YtDlpRunner({
+      maxConcurrent: this._positiveNumber(this.config.maxConcurrentDownloads, 2),
+      maxQueue: this._positiveNumber(this.config.maxQueuedDownloads, 100),
+      spawnImpl: dependencies.spawn,
+      taskkillImpl: dependencies.taskkill,
+      platform: dependencies.platform || (dependencies.spawn ? 'test' : process.platform),
+      logger: this.api
+    });
     fs.mkdirSync(this.cacheDir, { recursive: true });
   }
 
@@ -126,27 +134,27 @@ class MediaCache {
 
   getStats() {
     const files = this._publishedFiles();
+    const runner = this.runner.getStatus?.() || {};
     return {
       directory: this.cacheDir,
       files: files.length,
       bytes: files.reduce((sum, entry) => sum + entry.stat.size, 0),
       inflight: this.inflight.size,
-      pinned: this.pinnedKeys.size
+      pinned: this.pinnedKeys.size,
+      runner
     };
   }
 
   async destroy() {
     if (this.destroyed) return;
     this.destroyed = true;
-    const error = new Error('Media cache destroyed');
-    for (const job of [...this.activeJobs]) {
-      job.abort(error);
-    }
+    for (const controller of [...this.jobControllers]) controller.abort();
+    if (this.ownsRunner) await this.runner.destroy();
     await Promise.allSettled([...this.inflight.values()]);
     this.inflight.clear();
   }
 
-  _startDownload(trackKey, url, options) {
+  async _startDownload(trackKey, url, options) {
     const hash = this._hash(trackKey);
     const nonce = crypto.randomBytes(6).toString('hex');
     const temporaryPrefix = `${hash}.download-${nonce}`;
@@ -162,93 +170,67 @@ class MediaCache {
       'after_move:filepath',
       url
     ];
+    const controller = new AbortController();
+    const abortFromCaller = () => controller.abort();
+    if (options.signal?.aborted) controller.abort();
+    else options.signal?.addEventListener?.('abort', abortFromCaller, { once: true });
+    this.jobControllers.add(controller);
 
-    return new Promise((resolve, reject) => {
-      let child;
-      let stdout = '';
-      let stderr = '';
-      let settled = false;
-      const signal = options.signal;
-
-      const cleanupListeners = () => {
-        signal?.removeEventListener?.('abort', onAbort);
-        this.activeJobs.delete(job);
-      };
-      const rejectJob = (error) => {
-        if (settled) return;
-        settled = true;
-        cleanupListeners();
-        this._removeTemporaryFiles(temporaryPrefix);
-        reject(error);
-      };
-      const abortJob = (error = new Error('Media cache download aborted')) => {
-        if (settled) return;
-        try {
-          if (child && child.exitCode === null) child.kill?.('SIGKILL');
-        } catch (_error) {
-          // Settling the job is more important than waiting for a broken child handle.
+    try {
+      const stdout = await this._runWithAbort(
+        options.ytdlpPath || this.config.ytdlpPath || 'yt-dlp',
+        args,
+        {
+          signal: controller.signal,
+          deadline: options.deadline || Date.now() + this._positiveNumber(
+            this.config.downloadTimeoutMs,
+            45000
+          ),
+          priority: options.priority
         }
-        rejectJob(error);
-      };
-      const job = { abort: abortJob };
-      const onAbort = () => abortJob(new Error('Media cache download aborted'));
-
-      if (signal?.aborted) {
-        reject(new Error('Media cache download aborted'));
-        return;
+      );
+      if (this.destroyed || controller.signal.aborted) {
+        throw new Error('Media cache download aborted');
       }
-
-      try {
-        child = this.spawn(options.ytdlpPath || this.config.ytdlpPath || 'yt-dlp', args, {
-          stdio: ['ignore', 'pipe', 'pipe'],
-          windowsHide: true
-        });
-      } catch (error) {
-        rejectJob(error);
-        return;
+      const downloadedPath = this._resolveDownloadedPath(stdout, temporaryPrefix);
+      if (!downloadedPath) throw new Error('yt-dlp did not publish a cache file');
+      const stat = fs.statSync(downloadedPath);
+      if (!stat.isFile() || stat.size <= 0) throw new Error('Downloaded cache file is empty');
+      const extension = this._safeExtension(downloadedPath);
+      const finalPath = path.join(this.cacheDir, `${hash}${extension}`);
+      if (fs.existsSync(finalPath)) fs.rmSync(finalPath, { force: true });
+      fs.renameSync(downloadedPath, finalPath);
+      const timestamp = new Date(this.now());
+      fs.utimesSync(finalPath, timestamp, timestamp);
+      this._removeTemporaryFiles(temporaryPrefix);
+      await this.prune({ protectedKeys: [trackKey] });
+      if (stat.size > this.maxSizeMB * 1024 * 1024) {
+        this._removeFile(finalPath);
+        throw new Error('Downloaded cache file exceeds the configured cache limit');
       }
+      return finalPath;
+    } finally {
+      options.signal?.removeEventListener?.('abort', abortFromCaller);
+      this.jobControllers.delete(controller);
+      this._removeTemporaryFiles(temporaryPrefix);
+    }
+  }
 
-      this.activeJobs.add(job);
-      signal?.addEventListener?.('abort', onAbort, { once: true });
-      child.stdout?.on?.('data', (chunk) => {
-        stdout += chunk.toString();
-      });
-      child.stderr?.on?.('data', (chunk) => {
-        stderr += chunk.toString();
-      });
-      child.once?.('error', (error) => rejectJob(error));
-      child.once?.('close', async (code) => {
-        if (settled) return;
-        if (code !== 0) {
-          rejectJob(new Error(stderr.trim() || `yt-dlp failed with exit code ${code}`));
-          return;
-        }
-
-        try {
-          const downloadedPath = this._resolveDownloadedPath(stdout, temporaryPrefix);
-          if (!downloadedPath) throw new Error('yt-dlp did not publish a cache file');
-          const stat = fs.statSync(downloadedPath);
-          if (!stat.isFile() || stat.size <= 0) throw new Error('Downloaded cache file is empty');
-          const extension = this._safeExtension(downloadedPath);
-          const finalPath = path.join(this.cacheDir, `${hash}${extension}`);
-          if (fs.existsSync(finalPath)) fs.rmSync(finalPath, { force: true });
-          fs.renameSync(downloadedPath, finalPath);
-          const timestamp = new Date(this.now());
-          fs.utimesSync(finalPath, timestamp, timestamp);
-          this._removeTemporaryFiles(temporaryPrefix);
-          await this.prune({ protectedKeys: [trackKey] });
-          if (stat.size > this.maxSizeMB * 1024 * 1024) {
-            this._removeFile(finalPath);
-            throw new Error('Downloaded cache file exceeds the configured cache limit');
-          }
-          settled = true;
-          cleanupListeners();
-          resolve(finalPath);
-        } catch (error) {
-          rejectJob(error);
-        }
-      });
+  async _runWithAbort(executable, args, options) {
+    if (options.signal.aborted) throw new Error('Media cache download aborted');
+    let abortListener;
+    const aborted = new Promise((resolve, reject) => {
+      abortListener = () => reject(new Error('Media cache download aborted'));
+      options.signal.addEventListener('abort', abortListener, { once: true });
     });
+    try {
+      return await Promise.race([
+        this.runner.run(executable, args, options),
+        aborted
+      ]);
+    } finally {
+      options.signal.removeEventListener('abort', abortListener);
+    }
   }
 
   _resolveDownloadedPath(stdout, temporaryPrefix) {
