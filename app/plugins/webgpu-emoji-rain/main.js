@@ -421,7 +421,7 @@ class WebGPUEmojiRainPlugin {
         },
         {
           name: 'beans',
-          description: 'SuperFan burst effect',
+          description: 'SuperFan emoji rain effect',
           syntax: '/beans',
           permission: 'subscriber',
           enabled: true,
@@ -435,10 +435,10 @@ class WebGPUEmojiRainPlugin {
           handler: async (args, context) => await this.handleBeansCommand(args, context)
         },
         ...[
-          { name: 'miau', emoji: '🐱', label: 'cat', description: 'Trigger cat emoji burst' },
-          { name: 'rawr', emoji: '🦖', label: 'dinosaur', description: 'Trigger dinosaur emoji burst' },
-          { name: 'woof', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji burst' },
-          { name: 'wuff', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji burst' }
+          { name: 'miau', emoji: '🐱', label: 'cat', description: 'Trigger cat emoji rain' },
+          { name: 'rawr', emoji: '🦖', label: 'dinosaur', description: 'Trigger dinosaur emoji rain' },
+          { name: 'woof', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji rain' },
+          { name: 'wuff', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji rain' }
         ].map(({ name, emoji, label, description }) => ({
           name,
           description,
@@ -663,7 +663,7 @@ class WebGPUEmojiRainPlugin {
       };
     }
 
-    // SuperFan burst
+    // SuperFan paw emoji rain
     this.triggerEmojiRain({
       emoji: '🐾',
       count: 30,
@@ -679,7 +679,7 @@ class WebGPUEmojiRainPlugin {
 
     return {
       success: true,
-      message: `${context.username} triggered a SuperFan paw burst! 🐾`,
+      message: `${context.username} triggered a SuperFan paw emoji rain! 🐾`,
       displayOverlay: true
     };
   }
@@ -727,7 +727,7 @@ class WebGPUEmojiRainPlugin {
 
     return {
       success: true,
-      message: `${context.username} triggered a ${label} burst! ${emoji}`,
+      message: `${context.username} triggered a ${label} emoji rain! ${emoji}`,
       displayOverlay: true
     };
   }
