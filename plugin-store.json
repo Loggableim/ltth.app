@@ -1018,10 +1018,10 @@
         "fr": "Schnorrbecher"
       },
       "description": {
-        "en": "A transparent OBS coin jar that fills with physics-driven TikTok LIVE gift icons.",
-        "de": "Ein transparentes OBS-Münzglas, das sich mit physikalisch animierten TikTok-LIVE-Geschenk-Icons füllt.",
-        "es": "Un tarro de monedas transparente para OBS que se llena con iconos de regalos de TikTok LIVE animados con física.",
-        "fr": "Un bocal de pièces OBS transparent qui se remplit d’icônes de cadeaux TikTok LIVE animées par la physique."
+        "en": "A transparent OBS gift jar that fills with physics-driven TikTok LIVE gift icons.",
+        "de": "Ein transparentes OBS-Geschenkeglas, das sich mit physikalisch animierten TikTok-LIVE-Geschenk-Icons füllt.",
+        "es": "Un tarro de regalos transparente para OBS que se llena con iconos de regalos de TikTok LIVE animados con física.",
+        "fr": "Un bocal de cadeaux OBS transparent qui se remplit d’icônes de cadeaux TikTok LIVE animées par la physique."
       },
       "version": "1.0.0",
       "author": "LTTH",
@@ -1029,7 +1029,7 @@
       "channel": "open-beta",
       "badges": [],
       "packageUrl": "https://ltth.app/plugin-store/packages/schnorrbecher-1.0.0.zip",
-      "sha256": "4fb5fb2cc11d1ce90baf8b7aa86f8578463d7b7475eac038f3f6fd9d2b9fb6ca",
+      "sha256": "c733fcd8c309cb831bc75307d33c16abd3291be276b3730d921486110277854e",
       "pricing": {
         "type": "free",
         "amount": 0,

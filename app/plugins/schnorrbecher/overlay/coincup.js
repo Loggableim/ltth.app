@@ -34,6 +34,14 @@
     arcade: '/plugins/schnorrbecher/assets/jars/arcade.png'
   });
 
+  // Normalized inner contours measured against the transparent glass artwork.
+  // They intentionally describe the *inside* of the vessel, not its PNG box.
+  const JAR_COLLISION_PROFILES = Object.freeze({
+    classic: Object.freeze({ opening: [0.118, 0.882, 0.11], floor: [0.194, 0.806, 0.745] }),
+    mason: Object.freeze({ opening: [0.23, 0.77, 0.12], floor: [0.20, 0.80, 0.83] }),
+    arcade: Object.freeze({ opening: [0.22, 0.78, 0.20], floor: [0.18, 0.82, 0.785] })
+  });
+
   function clamp(value, minimum, maximum) {
     return Math.max(minimum, Math.min(maximum, value));
   }
@@ -61,6 +69,51 @@
       height,
       centerX: Math.round(centerX),
       centerY: Math.round(centerY)
+    };
+  }
+
+  function calculateJarPhysicsBounds(renderBounds, jarStyle) {
+    const profile = JAR_COLLISION_PROFILES[normalizeJarStyle(jarStyle)] || JAR_COLLISION_PROFILES.classic;
+    const [openingLeft, openingRight, openingY] = profile.opening;
+    const [floorLeft, floorRight, floorY] = profile.floor;
+    const point = (x, y) => ({
+      x: Math.round(renderBounds.left + renderBounds.width * x),
+      y: Math.round(renderBounds.top + renderBounds.height * y)
+    });
+    const opening = {
+      left: point(openingLeft, openingY).x,
+      right: point(openingRight, openingY).x,
+      y: point(0, openingY).y
+    };
+    const floor = {
+      left: point(floorLeft, floorY).x,
+      right: point(floorRight, floorY).x,
+      y: point(0, floorY).y
+    };
+    return {
+      style: normalizeJarStyle(jarStyle),
+      opening,
+      floor,
+      leftWall: { start: { x: opening.left, y: opening.y }, end: { x: floor.left, y: floor.y } },
+      rightWall: { start: { x: opening.right, y: opening.y }, end: { x: floor.right, y: floor.y } }
+    };
+  }
+
+  function calculateJarWallSegments(physicsBounds, guardHeight = 160) {
+    const height = Math.max(0, finiteNumber(guardHeight, 160));
+    const leftOpening = physicsBounds.leftWall.start;
+    const rightOpening = physicsBounds.rightWall.start;
+    return {
+      leftGuard: {
+        start: { x: leftOpening.x, y: leftOpening.y - height },
+        end: { x: leftOpening.x, y: leftOpening.y }
+      },
+      leftWall: physicsBounds.leftWall,
+      rightWall: physicsBounds.rightWall,
+      rightGuard: {
+        start: { x: rightOpening.x, y: rightOpening.y - height },
+        end: { x: rightOpening.x, y: rightOpening.y }
+      }
     };
   }
 
@@ -129,6 +182,7 @@
       this.counterTarget = 0;
       this.lastSoundAt = 0;
       this.bounds = null;
+      this.physicsBounds = null;
       this.elements = {};
       this._boundResize = () => this.resize();
 
@@ -173,6 +227,7 @@
 
     resize() {
       this.bounds = calculateJarBounds(this._viewport(), this.config);
+      this.physicsBounds = calculateJarPhysicsBounds(this.bounds, this.config.jarStyle);
       const { jar, scene } = this.elements;
       if (scene?.style) {
         scene.style.setProperty('--jar-left', `${this.bounds.left}px`);
@@ -189,21 +244,46 @@
       this._rebuildWalls();
     }
 
+    _createSlopedWall(Bodies, start, end, side, thickness) {
+      const deltaX = end.x - start.x;
+      const deltaY = end.y - start.y;
+      const length = Math.hypot(deltaX, deltaY);
+      if (!Number.isFinite(length) || length < 1) return null;
+      const inward = side === 'left'
+        ? { x: deltaY / length, y: -deltaX / length }
+        : { x: -deltaY / length, y: deltaX / length };
+      return Bodies.rectangle(
+        (start.x + end.x) / 2 - inward.x * thickness / 2,
+        (start.y + end.y) / 2 - inward.y * thickness / 2,
+        length + thickness * 2,
+        thickness,
+        { isStatic: true, angle: Math.atan2(deltaY, deltaX) }
+      );
+    }
+
     _rebuildWalls() {
-      if (!this.engine || !this.Matter || !this.bounds) return;
+      if (!this.engine || !this.Matter || !this.bounds || !this.physicsBounds) return;
       const { Bodies, Composite } = this.Matter;
       for (const wall of this.walls) Composite.remove(this.engine.world, wall);
       const thickness = 24;
-      const centerY = (this.bounds.top + this.bounds.bottom) / 2;
       const spill = calculateSpillBounds(this._viewport(), thickness);
+      const segments = calculateJarWallSegments(this.physicsBounds);
       this.walls = [
-        Bodies.rectangle(this.bounds.left - thickness / 2, centerY, thickness, this.bounds.height + thickness, { isStatic: true }),
-        Bodies.rectangle(this.bounds.right + thickness / 2, centerY, thickness, this.bounds.height + thickness, { isStatic: true }),
-        Bodies.rectangle(this.bounds.centerX, this.bounds.bottom + thickness / 2, this.bounds.width + thickness * 2, thickness, { isStatic: true }),
+        this._createSlopedWall(Bodies, segments.leftGuard.start, segments.leftGuard.end, 'left', thickness),
+        this._createSlopedWall(Bodies, segments.leftWall.start, segments.leftWall.end, 'left', thickness),
+        this._createSlopedWall(Bodies, segments.rightWall.start, segments.rightWall.end, 'right', thickness),
+        this._createSlopedWall(Bodies, segments.rightGuard.start, segments.rightGuard.end, 'right', thickness),
+        Bodies.rectangle(
+          (this.physicsBounds.floor.left + this.physicsBounds.floor.right) / 2,
+          this.physicsBounds.floor.y + thickness / 2,
+          this.physicsBounds.floor.right - this.physicsBounds.floor.left + thickness * 2,
+          thickness,
+          { isStatic: true }
+        ),
         Bodies.rectangle(spill.floor.x, spill.floor.y, spill.floor.width, spill.floor.height, { isStatic: true }),
         Bodies.rectangle(spill.left.x, spill.left.y, spill.left.width, spill.left.height, { isStatic: true }),
         Bodies.rectangle(spill.right.x, spill.right.y, spill.right.width, spill.right.height, { isStatic: true })
-      ];
+      ].filter(Boolean);
       Composite.add(this.engine.world, this.walls);
     }
 
@@ -253,10 +333,17 @@
       this.counterTarget = this.counterValue;
       this._renderCounter(true);
       const count = Math.min(this.config.maxPhysicalIcons, Math.max(0, Math.floor(finiteNumber(payload.visualCoinCount, 0))));
+      const recentGifts = Array.isArray(payload.recentGifts)
+        ? payload.recentGifts.filter(gift => typeof gift?.giftImage === 'string' && gift.giftImage.trim())
+        : [];
       for (let index = 0; index < count; index += 1) {
+        const gift = recentGifts[index % Math.max(1, recentGifts.length)];
+        if (!gift) break;
         this._createCoin({
           totalValue: Math.max(1, finiteNumber(payload.totalCoinValue, 1) / Math.max(1, count)),
-          giftName: 'Gift',
+          giftId: gift.giftId,
+          giftName: gift.giftName,
+          giftImage: gift.giftImage,
           visualCoins: 1,
           generation: this.generation
         }, { settled: true, overflow: false, tier: index > 180 ? 1 : 0 });
@@ -301,8 +388,14 @@
         x: result.x + body.position.x / group.length,
         y: result.y + body.position.y / group.length
       }), { x: 0, y: 0 });
+      const representative = group.find(body => body.plugin?.giftImage)?.plugin;
       for (const body of group) this._removeBody(body);
-      this._createCoin({ totalValue: 10, giftName: 'Compressed Gift', visualCoins: 1 }, {
+      this._createCoin({
+        totalValue: 10,
+        giftName: representative?.giftName || 'Gift',
+        giftImage: representative?.giftImage,
+        visualCoins: 1
+      }, {
         settled: true,
         tier,
         position: average,
@@ -329,18 +422,24 @@
     }
 
     _createCoin(payload = {}, options = {}) {
-      if (!this.engine || !this.Matter || !this.bounds || this.bodies.length >= this.config.maxPhysicalIcons) return null;
+      const giftImage = typeof payload.giftImage === 'string' ? payload.giftImage.trim() : '';
+      if (!this.engine || !this.Matter || !this.bounds || !this.physicsBounds || !giftImage || this.bodies.length >= this.config.maxPhysicalIcons) return null;
       const { Bodies, Body, Composite } = this.Matter;
       const tier = options.tier || 0;
       const size = calculateCoinSize(payload.totalValue, this.config.iconScale) * (1 + tier * 0.35);
       const overflow = options.overflow === true;
       const side = this.random() < 0.5 ? -1 : 1;
+      const openingWidth = this.physicsBounds.opening.right - this.physicsBounds.opening.left;
+      const spawnX = openingWidth <= size
+        ? (this.physicsBounds.opening.left + this.physicsBounds.opening.right) / 2
+        : this.physicsBounds.opening.left + size / 2 + this.random() * (openingWidth - size);
+      const interiorHeight = this.physicsBounds.floor.y - this.physicsBounds.opening.y;
       const x = options.position?.x ?? (overflow
         ? (side < 0 ? this.bounds.left - 50 - this.random() * 160 : this.bounds.right + 50 + this.random() * 160)
-        : this.bounds.left + size / 2 + this.random() * Math.max(1, this.bounds.width - size));
+        : spawnX);
       const y = options.position?.y ?? (options.settled
-        ? this.bounds.top + size + this.random() * Math.max(1, this.bounds.height - size * 2)
-        : this.bounds.top - 30 - this.random() * 120);
+        ? this.physicsBounds.opening.y + size / 2 + this.random() * Math.max(1, interiorHeight - size)
+        : this.physicsBounds.opening.y - 30 - this.random() * 120);
       const body = Bodies.circle(x, y, size / 2, {
         restitution: 0.15,
         friction: 0.35,
@@ -351,37 +450,40 @@
       Body.setVelocity(body, { x: -1.5 + this.random() * 3, y: options.settled ? 0 : this.random() * 0.4 });
       Body.setAngularVelocity(body, -0.08 + this.random() * 0.16);
       body.plugin = {
-        element: this._createSprite(payload, size, tier),
+        element: null,
         tier,
         overflow,
-        value: finiteNumber(payload.totalValue, 1)
+        value: finiteNumber(payload.totalValue, 1),
+        giftName: payload.giftName || 'Gift',
+        giftImage
       };
       Composite.add(this.engine.world, body);
       this.bodies.push(body);
+      const sprite = this._createSprite({ ...payload, giftImage }, size, tier, () => this._removeBody(body));
+      if (!sprite) {
+        this._removeBody(body);
+        return null;
+      }
+      body.plugin.element = sprite;
       return body;
     }
 
-    _createSprite(payload, size, tier) {
-      if (!this.elements.sprites || !this.document?.createElement) return null;
+    _createSprite(payload, size, tier, onImageError) {
+      const giftImage = typeof payload.giftImage === 'string' ? payload.giftImage.trim() : '';
+      if (!this.elements.sprites || !this.document?.createElement || this.config.showGiftImage === false || !giftImage) return null;
       const element = this.document.createElement('div');
       element.className = `gift-sprite gift-tier-${tier}`;
       element.style.width = `${size}px`;
       element.style.height = `${size}px`;
       element.setAttribute('aria-label', payload.giftName || 'Gift');
-      if (this.config.showGiftImage !== false && payload.giftImage) {
-        const image = this.document.createElement('img');
-        image.src = payload.giftImage;
-        image.alt = '';
-        image.addEventListener('error', () => {
-          image.remove();
-          element.classList.add('gift-fallback');
-          element.textContent = '🎁';
-        }, { once: true });
-        element.appendChild(image);
-      } else {
-        element.classList.add('gift-fallback');
-        element.textContent = '🎁';
-      }
+      const image = this.document.createElement('img');
+      image.src = giftImage;
+      image.alt = '';
+      image.addEventListener('error', () => {
+        element.remove();
+        onImageError?.();
+      }, { once: true });
+      element.appendChild(image);
       this.elements.sprites.appendChild(element);
       return element;
     }
@@ -514,7 +616,7 @@
     }
   }
 
-  const exports = { calculateJarBounds, calculateCoinSize, calculateSpillBounds, planVisualCoins, CoinJarOverlay };
+  const exports = { calculateJarBounds, calculateJarPhysicsBounds, calculateJarWallSegments, calculateCoinSize, calculateSpillBounds, planVisualCoins, CoinJarOverlay };
   if (typeof module !== 'undefined' && module.exports) module.exports = exports;
   root.CoinJarOverlay = CoinJarOverlay;
   root.CoinJarOverlayHelpers = exports;

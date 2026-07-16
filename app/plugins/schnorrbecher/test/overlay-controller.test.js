@@ -1,5 +1,7 @@
 const {
   calculateJarBounds,
+  calculateJarPhysicsBounds,
+  calculateJarWallSegments,
   calculateCoinSize,
   calculateSpillBounds,
   planVisualCoins,
@@ -17,6 +19,43 @@ describe('CoinJarOverlay planning', () => {
       right: 1200,
       top: 286,
       bottom: 886
+    });
+  });
+
+  test('maps invisible walls to the visible inner contour of each generated glass', () => {
+    const renderBounds = calculateJarBounds(
+      { width: 1920, height: 1080 },
+      { jarWidth: 480, jarHeight: 600, jarX: 50, jarY: 82 }
+    );
+
+    expect(calculateJarPhysicsBounds(renderBounds, 'classic')).toMatchObject({
+      opening: { left: 777, right: 1143, y: 352 },
+      floor: { left: 813, right: 1107, y: 733 }
+    });
+    expect(calculateJarPhysicsBounds(renderBounds, 'mason')).toMatchObject({
+      opening: { left: 830, right: 1090, y: 358 },
+      floor: { left: 816, right: 1104, y: 784 }
+    });
+    expect(calculateJarPhysicsBounds(renderBounds, 'arcade')).toMatchObject({
+      opening: { left: 826, right: 1094, y: 406 },
+      floor: { left: 806, right: 1114, y: 757 }
+    });
+  });
+
+  test('extends side walls above the rim to retain normal gifts without closing the opening', () => {
+    const renderBounds = calculateJarBounds(
+      { width: 1920, height: 1080 },
+      { jarWidth: 480, jarHeight: 600, jarX: 50, jarY: 82 }
+    );
+    const segments = calculateJarWallSegments(calculateJarPhysicsBounds(renderBounds, 'arcade'));
+
+    expect(segments.leftGuard).toEqual({
+      start: { x: 826, y: 246 },
+      end: { x: 826, y: 406 }
+    });
+    expect(segments.rightGuard).toEqual({
+      start: { x: 1094, y: 246 },
+      end: { x: 1094, y: 406 }
     });
   });
 
@@ -114,5 +153,6 @@ describe('CoinJarOverlay planning', () => {
     expect(sprite.className).toContain('gift-sprite');
     expect(sprite.className).not.toContain('coin-sprite');
     expect(sprite.querySelector('img').src).toBe('https://catalog.example/rose.png');
+    expect(overlay._createSprite({ giftName: 'Missing catalog art' }, 64, 0)).toBeNull();
   });
 });

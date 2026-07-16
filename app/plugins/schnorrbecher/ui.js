@@ -132,7 +132,7 @@
     }
 
     addCoins() {
-      return this.post('/api/coin-jar/add', { value: 100, giftName: '100 Coins' });
+      return this.post('/api/coin-jar/test-gift', { value: 100, senderName: 'LTTH Test' });
     }
 
     reset() {

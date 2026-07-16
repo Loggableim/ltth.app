@@ -30,7 +30,8 @@ function createApi(dataDir) {
     getPluginDataDir: () => dataDir,
     ensurePluginDataDir: () => {},
     getDatabase: () => ({
-      getGift: id => id === 'rose' ? { image_url: 'https://catalog.example/rose.png' } : null
+      getGift: id => id === 'rose' ? { id: 'rose', name: 'Rose', image_url: 'https://catalog.example/rose.png' } : null,
+      getGiftCatalog: () => [{ id: 'rose', name: 'Rose', image_url: 'https://catalog.example/rose.png' }]
     }),
     log: jest.fn(),
     registerRoute,
@@ -95,6 +96,20 @@ describe('Schnorrbecher plugin integration', () => {
         totalValue: 1
       })
     }));
+  });
+
+  test('uses a catalog gift image for the Test Gift action', async () => {
+    await request(api.app)
+      .post('/api/coin-jar/test-gift')
+      .send({ value: 100 })
+      .expect(200)
+      .expect(response => {
+        expect(response.body.result).toMatchObject({
+          giftId: 'rose',
+          giftName: 'Rose',
+          giftImage: 'https://catalog.example/rose.png'
+        });
+      });
   });
 
   test('sends state to a reconnecting overlay and routes local socket commands through the engine', () => {

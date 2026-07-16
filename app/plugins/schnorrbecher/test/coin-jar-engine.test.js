@@ -84,6 +84,27 @@ describe('CoinJarEngine', () => {
     expect(emitted.filter(item => item.event === 'coinJar.add')).toHaveLength(1);
   });
 
+  test('keeps actual catalog gift art available for an overlay resync', () => {
+    const { engine, state } = createEngine();
+
+    engine.handleGift({
+      eventId: 'gift-art',
+      giftId: 'rose',
+      giftName: 'Rose',
+      giftImage: 'https://catalog.example/rose.png',
+      diamondValue: 1,
+      repeatCount: 1,
+      repeatEnd: true
+    });
+
+    expect(state.recentGifts).toEqual([{
+      giftId: 'rose',
+      giftName: 'Rose',
+      giftImage: 'https://catalog.example/rose.png'
+    }]);
+    expect(engine.syncPayload().recentGifts).toEqual(state.recentGifts);
+  });
+
   test('defers a combo until its terminal event and uses its largest repeat count', () => {
     const { engine, state } = createEngine();
     expect(engine.handleGift({

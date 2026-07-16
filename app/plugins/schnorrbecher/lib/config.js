@@ -32,6 +32,7 @@ const DEFAULT_STATE = Object.freeze({
   sessionId: null,
   totalCoinValue: 0,
   visualCoinCount: 0,
+  recentGifts: [],
   lastProcessedEventIds: [],
   updatedAt: 0
 });
@@ -53,6 +54,24 @@ function normalizeText(value, fallback, maximum = 120) {
 
 function normalizeJarStyle(value) {
   return ['classic', 'mason', 'arcade'].includes(value) ? value : DEFAULT_CONFIG.jarStyle;
+}
+
+function normalizeRecentGifts(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  const gifts = [];
+  for (const candidate of value) {
+    if (!candidate || typeof candidate !== 'object') continue;
+    const giftImage = typeof candidate.giftImage === 'string' ? candidate.giftImage.trim() : '';
+    if (!giftImage) continue;
+    const giftId = String(candidate.giftId || '').slice(0, 160);
+    const giftName = typeof candidate.giftName === 'string' ? candidate.giftName.slice(0, 160) : 'Gift';
+    const key = `${giftId}:${giftImage}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    gifts.push({ giftId, giftName, giftImage });
+  }
+  return gifts.slice(-24);
 }
 
 function normalizeConfig(input = {}) {
@@ -95,6 +114,7 @@ function normalizeState(input = {}) {
     sessionId: typeof source.sessionId === 'string' ? source.sessionId.slice(0, 240) : null,
     totalCoinValue: Math.max(0, Number(source.totalCoinValue) || 0),
     visualCoinCount: Math.max(0, Math.floor(Number(source.visualCoinCount) || 0)),
+    recentGifts: normalizeRecentGifts(source.recentGifts),
     lastProcessedEventIds: Array.isArray(source.lastProcessedEventIds)
       ? source.lastProcessedEventIds.filter(value => typeof value === 'string').slice(-5000)
       : [],

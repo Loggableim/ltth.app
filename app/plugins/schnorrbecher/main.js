@@ -50,14 +50,42 @@ class SchnorrbecherPlugin {
     };
   }
 
-  resolveGiftImage(event = {}) {
+  resolveCatalogGift(giftId) {
     try {
-      const catalogGift = this.api.getDatabase()?.getGift?.(event.giftId ?? event.gift_id);
-      return catalogGift?.image_url || catalogGift?.imageUrl ||
-        event.giftImage || event.giftImageUrl || event.giftPictureUrl || null;
+      const database = this.api.getDatabase?.();
+      const directGift = database?.getGift?.(giftId);
+      if (directGift) return directGift;
+      const catalog = database?.getGiftCatalog?.();
+      return Array.isArray(catalog)
+        ? catalog.find(gift => String(gift?.id) === String(giftId)) || null
+        : null;
     } catch (error) {
       this.api.log(`Gift catalog lookup failed: ${error.message}`, 'warn');
-      return event.giftImage || event.giftImageUrl || event.giftPictureUrl || null;
+      return null;
+    }
+  }
+
+  resolveGiftImage(event = {}) {
+    const catalogGift = this.resolveCatalogGift(event.giftId ?? event.gift_id);
+    const candidates = [
+      catalogGift?.image_url,
+      catalogGift?.imageUrl,
+      event.giftImage,
+      event.giftImageUrl,
+      event.giftPictureUrl
+    ];
+    return candidates.find(candidate => typeof candidate === 'string' && candidate.trim()) || null;
+  }
+
+  resolveTestCatalogGift() {
+    try {
+      const catalog = this.api.getDatabase?.()?.getGiftCatalog?.();
+      return Array.isArray(catalog)
+        ? catalog.find(gift => typeof (gift?.image_url || gift?.imageUrl) === 'string') || null
+        : null;
+    } catch (error) {
+      this.api.log(`Test gift catalog lookup failed: ${error.message}`, 'warn');
+      return null;
     }
   }
 
@@ -76,7 +104,7 @@ class SchnorrbecherPlugin {
       senderId: payload.senderId,
       senderName: payload.senderName,
       giftId: payload.giftId,
-      giftName: payload.giftName || 'Manual Coins',
+      giftName: payload.giftName || 'Manual Gift',
       giftImage: this.resolveGiftImage(payload) || payload.giftImage || null,
       timestamp: payload.timestamp
     });
@@ -112,11 +140,13 @@ class SchnorrbecherPlugin {
 
     this.api.registerRoute('post', '/api/coin-jar/test-gift', (req, res) => {
       const body = req.body || {};
+      const catalogGift = this.resolveTestCatalogGift();
+      const giftId = body.giftId || catalogGift?.id || 'test-gift';
       const result = this._handleAdd({
         value: body.value ?? 100,
-        giftId: body.giftId || 'test-gift',
-        giftName: body.giftName || 'Test Gift',
-        giftImage: body.giftImage || null,
+        giftId,
+        giftName: body.giftName || catalogGift?.name || 'Test Gift',
+        giftImage: body.giftImage || this.resolveGiftImage({ giftId }),
         senderName: body.senderName || 'LTTH Test'
       });
       res.status(result.accepted ? 200 : 400).json({ success: result.accepted, result });

@@ -2,6 +2,7 @@ const { DEFAULT_STATE, normalizeState } = require('./config');
 
 const MAX_EVENT_IDS = 5000;
 const COMBO_TIMEOUT_MS = 2500;
+const MAX_RECENT_GIF_ART = 24;
 
 function calculateVisualCoins(value) {
   return Math.max(1, Math.min(100, Math.ceil(Math.sqrt(value))));
@@ -72,6 +73,22 @@ class CoinJarEngine {
     }
   }
 
+  _rememberGiftArt(event) {
+    const giftImage = typeof event.giftImage === 'string' ? event.giftImage.trim() : '';
+    if (!giftImage) return;
+    const gift = {
+      giftId: String(event.giftId || '').slice(0, 160),
+      giftName: typeof event.giftName === 'string' ? event.giftName.slice(0, 160) : 'Gift',
+      giftImage
+    };
+    const key = `${gift.giftId}:${gift.giftImage}`;
+    const remembered = Array.isArray(this.state.recentGifts) ? this.state.recentGifts : [];
+    this.state.recentGifts = [
+      ...remembered.filter(item => `${item.giftId}:${item.giftImage}` !== key),
+      gift
+    ].slice(-MAX_RECENT_GIF_ART);
+  }
+
   _persist() {
     this.state.updatedAt = this.now();
     this.state.lastProcessedEventIds = Array.from(this.completedEventIds);
@@ -89,6 +106,7 @@ class CoinJarEngine {
     }
 
     this._rememberEvent(event.eventId);
+    this._rememberGiftArt(event);
     const visualCoins = calculateVisualCoins(totalValue);
     this.state.totalCoinValue += totalValue;
     this.state.visualCoinCount += visualCoins;
@@ -194,6 +212,7 @@ class CoinJarEngine {
       sessionId: this.state.sessionId,
       totalCoinValue: this.state.totalCoinValue,
       visualCoinCount: this.state.visualCoinCount,
+      recentGifts: this.state.recentGifts,
       updatedAt: this.state.updatedAt,
       generation: this.generation
     };

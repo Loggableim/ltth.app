@@ -2,7 +2,7 @@
   "id": "schnorrbecher",
   "name": "Schnorrbecher",
   "version": "1.0.0",
-  "description": "TikTok-LIVE Coin Jar mit Matter.js-OBS-Overlay.",
+  "description": "TikTok-LIVE Geschenkeglas mit Matter.js-OBS-Overlay.",
   "author": "LTTH",
   "icon": "/plugins/schnorrbecher/assets/branding/schnorrbecher-icon.png",
   "logo": "/plugins/schnorrbecher/assets/branding/schnorrbecher-logo.png",
@@ -24,9 +24,9 @@
     "localization"
   ],
   "descriptions": {
-    "en": "A TikTok LIVE coin jar that fills with animated gift icons.",
-    "de": "Ein TikTok-LIVE-Münzglas, das sich mit animierten Geschenk-Icons füllt.",
-    "es": "Un tarro de monedas para TikTok LIVE que se llena con iconos de regalos animados.",
-    "fr": "Un bocal de pièces TikTok LIVE qui se remplit d’icônes de cadeaux animées."
+    "en": "A TikTok LIVE gift jar filled with animated gift icons.",
+    "de": "Ein TikTok-LIVE-Geschenkeglas, das sich mit animierten Geschenk-Icons f\u00fcllt.",
+    "es": "Un tarro de regalos de TikTok LIVE que se llena con iconos de regalos animados.",
+    "fr": "Un bocal de cadeaux TikTok LIVE qui se remplit d'ic\u00f4nes de cadeaux anim\u00e9es."
   }
 }

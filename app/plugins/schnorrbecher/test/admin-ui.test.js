@@ -4,7 +4,7 @@ const path = require('path');
 const { SchnorrbecherAdmin } = require('../ui');
 
 describe('Schnorrbecher admin UI', () => {
-  test('renders state and sends test, add, reset, and cache-clear actions', async () => {
+  test('renders state and sends catalog-backed test, add, reset, and cache-clear actions', async () => {
     const document = new JSDOM('<!doctype html><html><body></body></html>').window.document;
     document.body.innerHTML = [
       '<span id="total-value"></span><span id="physical-count"></span>',
@@ -45,10 +45,10 @@ describe('Schnorrbecher admin UI', () => {
 
     expect(calls.map(call => call.url)).toEqual(expect.arrayContaining([
       '/api/coin-jar/test-gift',
-      '/api/coin-jar/add',
       '/api/coin-jar/reset',
       '/api/coin-jar/event-cache/clear'
     ]));
+    expect(calls.filter(call => call.url === '/api/coin-jar/test-gift')).toHaveLength(2);
   });
 
   test('offers the three generated glass styles in the configuration form', () => {
