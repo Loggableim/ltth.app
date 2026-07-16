@@ -4,6 +4,8 @@ const MusicResolver = require('../plugins/music-bot/lib/music-resolver');
 const YtDlpRunner = require('../plugins/music-bot/lib/yt-dlp-runner');
 const {
   deriveTrackIdentity,
+  extractYouTubeId,
+  providerFromTrack,
   normalizeRequestKey
 } = require('../plugins/music-bot/lib/track-identity');
 
@@ -253,6 +255,33 @@ describe('MusicResolver provider cascade and subscribers', () => {
     expect(runner.run.mock.calls[0][1].at(-1)).toBe('https://www.youtube.com/watch?v=direct-id');
   });
 
+  test.each([
+    ['https://www.youtube.com/live/AbC123xYz_-?si=share', 'AbC123xYz_-'],
+    ['https://www.youtube-nocookie.com/embed/NoCookie123', 'NoCookie123']
+  ])('resolves supported YouTube URL aliases directly: %s', async (url, videoId) => {
+    const output = [
+      '0',
+      'channel-id',
+      'Channel',
+      "['Music']",
+      JSON.stringify({
+        id: videoId,
+        title: 'Direct song',
+        uploader: 'Artist',
+        duration: 180,
+        extractor: 'youtube',
+        webpage_url: url
+      })
+    ].join('\n');
+    const { resolver, runner } = createResolver(async () => output);
+
+    const result = await resolver.resolve(url);
+
+    expect(result.song.trackKey).toBe(`youtube:${videoId}`);
+    expect(runner.run).toHaveBeenCalledTimes(1);
+    expect(runner.run.mock.calls[0][1].at(-1)).toBe(url);
+  });
+
   test('YouTube success skips SoundCloud and reports progress', async () => {
     const { resolver, runner, progress } = createResolver(async (_executable, args) => {
       expect(args).toContain('ytsearch5:artist song');
@@ -399,6 +428,20 @@ describe('MusicResolver provider cascade and subscribers', () => {
 });
 
 describe('track identity and resolver memory cache', () => {
+  test.each([
+    ['https://www.youtube.com/live/AbC123xYz_-?si=share', 'AbC123xYz_-'],
+    ['https://www.youtube-nocookie.com/embed/NoCookie123', 'NoCookie123']
+  ])('recognizes YouTube aliases in shared identity helpers: %s', (url, videoId) => {
+    expect(extractYouTubeId(url)).toBe(videoId);
+    expect(providerFromTrack({ url })).toBe('youtube');
+    expect(deriveTrackIdentity({ url })).toMatchObject({
+      provider: 'youtube',
+      providerId: videoId,
+      trackKey: `youtube:${videoId}`,
+      youtubeId: videoId
+    });
+  });
+
   test('cross-provider equal ids have distinct canonical keys', () => {
     expect(deriveTrackIdentity({ id: 'same', extractor: 'youtube' }).trackKey).toBe('youtube:same');
     expect(deriveTrackIdentity({ id: 'same', extractor: 'soundcloud', webpage_url: 'https://soundcloud.com/a/b' }))

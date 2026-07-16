@@ -33,7 +33,11 @@ function providerFromTrack(track = {}) {
   const rawId = String(track.providerId || track.id || '');
   const url = String(track.webpage_url || track.url || (/^https?:\/\//i.test(rawId) ? rawId : ''));
   if (hint.includes('soundcloud') || /^https?:\/\/(?:www\.)?(?:on\.)?soundcloud\.com\//i.test(url)) return 'soundcloud';
-  if (hint.includes('youtube') || hint.includes('youtu') || /(?:youtube\.com|youtu\.be)\//i.test(url)) return 'youtube';
+  if (
+    hint.includes('youtube')
+    || hint.includes('youtu')
+    || /(?:youtube(?:-nocookie)?\.com|youtu\.be)\//i.test(url)
+  ) return 'youtube';
   if (String(track.youtubeId || '').trim()) return 'youtube';
   return hint || 'url';
 }
@@ -85,9 +89,9 @@ function extractYouTubeId(value) {
     const url = new URL(String(value || ''));
     const host = url.hostname.replace(/^www\./, '').toLowerCase();
     if (host === 'youtu.be') return url.pathname.split('/').filter(Boolean)[0] || null;
-    if (['youtube.com', 'm.youtube.com', 'music.youtube.com'].includes(host)) {
+    if (['youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtube-nocookie.com'].includes(host)) {
       if (url.pathname === '/watch') return url.searchParams.get('v');
-      const match = url.pathname.match(/^\/(?:embed|shorts)\/([^/]+)/);
+      const match = url.pathname.match(/^\/(?:embed|shorts|live|v)\/([^/]+)/);
       return match ? match[1] : null;
     }
   } catch (_error) {

@@ -418,25 +418,7 @@ class QueueManager {
 
   _extractYouTubeId(song) {
     if (song.youtubeId) return song.youtubeId;
-    const url = song.url || '';
-    const standardId = extractYouTubeId(url);
-    if (standardId) return standardId;
-    try {
-      const parsed = new URL(String(url));
-      const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
-      const youtubeHosts = [
-        'youtube.com',
-        'm.youtube.com',
-        'music.youtube.com',
-        'youtube-nocookie.com'
-      ];
-      if (!youtubeHosts.includes(host)) return null;
-      if (parsed.pathname === '/watch') return parsed.searchParams.get('v');
-      const match = parsed.pathname.match(/^\/(?:embed|shorts|live|v)\/([^/]+)/);
-      return match ? match[1] : null;
-    } catch (_error) {
-      return null;
-    }
+    return extractYouTubeId(song.url || '');
   }
 
   _identityForSong(song = {}) {
@@ -534,27 +516,7 @@ class QueueManager {
 
       let banCheckError = null;
       for (const row of rows) {
-        const identity = this._identityForSong(row);
-        const entry = {
-          id: row.id,
-          title: row.title,
-          artist: row.artist || '',
-          duration: row.duration || null,
-          thumbnail: row.thumbnail || null,
-          url: row.url,
-          youtubeId: identity.youtubeId || null,
-          provider: identity.provider,
-          providerId: identity.providerId,
-          trackKey: identity.trackKey,
-          channelId: row.channelId || null,
-          channelName: row.channelName || null,
-          source: row.source || identity.provider,
-          requestedBy: row.requestedBy || 'viewer',
-          requesterAvatar: row.requesterAvatar || null,
-          requesterKey: this._normalizeRequesterKey(row.requestedBy || 'viewer'),
-          isGiftRequest: Boolean(row.isGiftRequest),
-          addedAt: row.addedAt || Date.now()
-        };
+        const entry = this._entryFromPersistedRow(row);
 
         if (typeof options.isAllowed === 'function') {
           try {
@@ -579,12 +541,20 @@ class QueueManager {
       }
 
       if (banCheckError) {
+        const inMemoryIds = new Set(this.queue.map((entry) => entry.id).filter(Boolean));
+        for (const row of rows) {
+          const entry = this._entryFromPersistedRow(row);
+          if (entry.id && inMemoryIds.has(entry.id)) continue;
+          this.queue.push(entry);
+          if (entry.id) inMemoryIds.add(entry.id);
+        }
+        this._rebuildRequesterState();
         this.api.log?.(
           `[music-bot] Queue restore aborted because ban check failed: ${banCheckError.message}`,
           'error'
         );
         return {
-          restored: 0,
+          restored: rows.length,
           deduped: 0,
           banned: 0,
           error: 'ban-check-failed'
@@ -592,12 +562,7 @@ class QueueManager {
       }
 
       this.queue = restored;
-      this.userLastRequest.clear();
-      restored.forEach((entry) => {
-        if (entry.requesterKey) {
-          this.userLastRequest.set(entry.requesterKey, entry.addedAt);
-        }
-      });
+      this._rebuildRequesterState();
       this.persistQueue();
       this.api.log?.(`[music-bot] Restored ${this.queue.length} songs from persistent queue`, 'info');
       return { restored: this.queue.length, deduped, banned };
@@ -723,6 +688,39 @@ class QueueManager {
     this._ensureQueueColumn('trackKey', 'TEXT');
     this._ensureQueueColumn('channelId', 'TEXT');
     this._ensureQueueColumn('channelName', 'TEXT');
+  }
+
+  _entryFromPersistedRow(row) {
+    const identity = this._identityForSong(row);
+    return {
+      id: row.id,
+      title: row.title,
+      artist: row.artist || '',
+      duration: row.duration || null,
+      thumbnail: row.thumbnail || null,
+      url: row.url,
+      youtubeId: identity.youtubeId || null,
+      provider: identity.provider,
+      providerId: identity.providerId,
+      trackKey: identity.trackKey,
+      channelId: row.channelId || null,
+      channelName: row.channelName || null,
+      source: row.source || identity.provider,
+      requestedBy: row.requestedBy || 'viewer',
+      requesterAvatar: row.requesterAvatar || null,
+      requesterKey: this._normalizeRequesterKey(row.requestedBy || 'viewer'),
+      isGiftRequest: Boolean(row.isGiftRequest),
+      addedAt: row.addedAt || Date.now()
+    };
+  }
+
+  _rebuildRequesterState() {
+    this.userLastRequest.clear();
+    this.queue.forEach((entry) => {
+      if (entry.requesterKey) {
+        this.userLastRequest.set(entry.requesterKey, entry.addedAt);
+      }
+    });
   }
 
   _ensureQueueColumn(name, definition) {
