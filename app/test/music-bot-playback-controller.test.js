@@ -43,6 +43,7 @@ class FakeEngine extends EventEmitter {
     this.endDuckingCalls = 0;
     this.triggerDuckingCalls = [];
     this.probeCalls = 0;
+    this.heartbeatCalls = 0;
     this.configUpdates = [];
     this.destroyed = false;
   }
@@ -139,6 +140,20 @@ class FakeEngine extends EventEmitter {
   async probe() {
     this.probeCalls += 1;
     return this.getDiagnostics();
+  }
+
+  heartbeat(options) {
+    this.heartbeatCalls += 1;
+    if (this.options.heartbeat) {
+      return this.options.heartbeat(options, this);
+    }
+    return Promise.resolve({
+      ok: true,
+      action: 'healthy',
+      failures: 0,
+      position: 12,
+      diagnostics: this.getDiagnostics()
+    });
   }
 
   async getAvailableDevices() {
@@ -782,7 +797,7 @@ describe('Music Bot lifecycle-safe playback controller', () => {
   test('engages safety lock when an active slot reports heartbeat escalation', async () => {
     const engine = new FakeEngine('A', {
       play: async (_track, target) => {
-        target.emit('heartbeat-lock', { reason: 'heartbeat-lock', failures: 2 });
+        target.emit('heartbeat-lock', { reason: 'heartbeat-lock', failures: 3 });
       }
     });
     const { controller } = createHarness({ engines: [engine] });
@@ -800,6 +815,23 @@ describe('Music Bot lifecycle-safe playback controller', () => {
       locked: true,
       reason: 'heartbeat-lock'
     }));
+  });
+
+  test('delegates watchdog heartbeats once while a prior check is still in flight', async () => {
+    const pending = deferred();
+    const engine = new FakeEngine('A', {
+      heartbeat: () => pending.promise
+    });
+    const { controller } = createHarness({ engines: [engine] });
+    await controller.play({ id: 'active', title: 'Active', url: 'active.mp3' });
+
+    const first = controller.heartbeat({ timeoutMs: 2000 });
+    const second = controller.heartbeat({ timeoutMs: 2000 });
+    expect(engine.heartbeatCalls).toBe(1);
+
+    pending.resolve({ ok: true, action: 'healthy', failures: 0, position: 17 });
+    await expect(first).resolves.toEqual(expect.objectContaining({ position: 17 }));
+    await expect(second).resolves.toEqual(expect.objectContaining({ position: 17 }));
   });
 
   test('emits transition records whenever lastTransition changes', async () => {
@@ -895,37 +927,36 @@ describe('Music Bot playback engine lifecycle hardening', () => {
     spawn.mockReset();
   });
 
-  test('heartbeat failure replaces a live process with stale IPC', async () => {
+  test('counts the first heartbeat failure without restarting playback', async () => {
     const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
     const staleProcess = { exitCode: null, pid: 100, kill: jest.fn() };
     const staleSocket = { destroyed: false, destroy: jest.fn() };
-    const replacementProcess = { exitCode: null, pid: 101 };
-    const replacementSocket = { destroyed: false };
     engine.process = staleProcess;
     engine.socket = staleSocket;
+    engine.nowPlaying = { id: 'active', title: 'Active', url: 'active.mp3' };
+    engine.state = 'playing';
     engine._sendCommand = jest.fn(async () => {
       throw new Error('dead IPC');
     });
-    engine._terminateProcess = jest.fn(async () => {});
-    engine._startProcess = jest.fn(async () => {
-      engine.process = replacementProcess;
-      engine.socket = replacementSocket;
-    });
+    engine.restart = jest.fn();
+    engine.play = jest.fn();
 
-    await engine._ensureProcess();
+    const result = await engine.heartbeat({ timeoutMs: 2000 });
 
     expect(engine._sendCommand).toHaveBeenCalledWith(
-      ['get_property', 'idle-active'],
-      { waitForResponse: true }
+      ['get_property', 'time-pos'],
+      { waitForResponse: true, timeoutMs: 2000 }
     );
-    expect(staleSocket.destroy).toHaveBeenCalledTimes(1);
-    expect(engine._terminateProcess).toHaveBeenCalledWith(staleProcess, expect.any(Object));
-    expect(engine._startProcess).toHaveBeenCalledTimes(1);
-    expect(engine.process).toBe(replacementProcess);
-    expect(engine.socket).toBe(replacementSocket);
+    expect(result).toEqual(expect.objectContaining({
+      ok: false,
+      action: 'counted',
+      failures: 1
+    }));
+    expect(engine.restart).not.toHaveBeenCalled();
+    expect(engine.play).not.toHaveBeenCalled();
   });
 
-  test('recovers once, then escalates a second heartbeat failure within 60 seconds', async () => {
+  test('recovers exactly once on failure two and safety-locks on failure three within 60 seconds', async () => {
     let now = 1000;
     const engine = new PlaybackEngine(
       { defaultVolume: 50 },
@@ -934,28 +965,85 @@ describe('Music Bot playback engine lifecycle hardening', () => {
     );
     const heartbeatLock = jest.fn();
     engine.on('heartbeat-lock', heartbeatLock);
+    const track = { id: 'active', title: 'Active', url: 'active.mp3' };
     engine.process = { exitCode: null, pid: 100 };
     engine.socket = { destroyed: false, destroy: jest.fn() };
+    engine.nowPlaying = track;
+    engine.state = 'playing';
     engine._sendCommand = jest.fn(async () => {
       throw new Error('dead IPC');
     });
-    engine._terminateProcess = jest.fn(async () => true);
-    engine._startProcess = jest.fn(async () => {
-      engine.process = { exitCode: null, pid: 101 };
-      engine.socket = { destroyed: false, destroy: jest.fn() };
-    });
+    engine.restart = jest.fn(async () => track);
+    engine.play = jest.fn(async () => {});
 
-    await engine._ensureProcess();
+    await expect(engine.heartbeat()).resolves.toEqual(expect.objectContaining({
+      action: 'counted',
+      failures: 1
+    }));
     now += 1000;
-    await expect(engine._ensureProcess()).rejects.toThrow('heartbeat safety lock');
+    await expect(engine.heartbeat()).resolves.toEqual(expect.objectContaining({
+      action: 'recovered',
+      failures: 2
+    }));
+    now += 1000;
+    await expect(engine.heartbeat()).rejects.toThrow('heartbeat safety lock');
 
-    expect(engine._terminateProcess).toHaveBeenCalledTimes(1);
-    expect(engine._startProcess).toHaveBeenCalledTimes(1);
+    expect(engine.restart).toHaveBeenCalledTimes(1);
+    expect(engine.play).toHaveBeenCalledTimes(1);
+    expect(engine.play).toHaveBeenCalledWith(track);
     expect(heartbeatLock).toHaveBeenCalledTimes(1);
     expect(heartbeatLock).toHaveBeenCalledWith(expect.objectContaining({
       reason: 'heartbeat-lock',
-      failures: 2
+      failures: 3
     }));
+  });
+
+  test('resets the heartbeat failure window after more than 60 seconds', async () => {
+    let now = 1000;
+    const engine = new PlaybackEngine(
+      { defaultVolume: 50 },
+      { log: jest.fn() },
+      { timing: { now: () => now } }
+    );
+    engine.process = { exitCode: null, pid: 100 };
+    engine.socket = { destroyed: false };
+    engine.nowPlaying = { id: 'active', title: 'Active', url: 'active.mp3' };
+    engine.state = 'playing';
+    engine._sendCommand = jest.fn(async () => {
+      throw new Error('dead IPC');
+    });
+    engine.restart = jest.fn();
+    engine.play = jest.fn();
+
+    await expect(engine.heartbeat()).resolves.toEqual(expect.objectContaining({ failures: 1 }));
+    now += 60001;
+    await expect(engine.heartbeat()).resolves.toEqual(expect.objectContaining({
+      action: 'counted',
+      failures: 1
+    }));
+
+    expect(engine.restart).not.toHaveBeenCalled();
+    expect(engine.play).not.toHaveBeenCalled();
+  });
+
+  test('coalesces parallel engine heartbeat failures into one failure count', async () => {
+    const pending = deferred();
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    engine.process = { exitCode: null, pid: 100 };
+    engine.socket = { destroyed: false };
+    engine.nowPlaying = { id: 'active', title: 'Active', url: 'active.mp3' };
+    engine.state = 'playing';
+    engine._sendCommand = jest.fn(() => pending.promise);
+    engine.restart = jest.fn();
+
+    const first = engine.heartbeat();
+    const second = engine.heartbeat();
+    expect(engine._sendCommand).toHaveBeenCalledTimes(1);
+
+    pending.reject(new Error('dead IPC'));
+    await expect(first).resolves.toEqual(expect.objectContaining({ failures: 1 }));
+    await expect(second).resolves.toEqual(expect.objectContaining({ failures: 1 }));
+    expect(engine.restart).not.toHaveBeenCalled();
   });
 
   test('an old child close cannot destroy a replacement process or socket', () => {

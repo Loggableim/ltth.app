@@ -46,8 +46,12 @@ class PlaybackEngine extends EventEmitter {
     this._now = typeof timing.now === 'function' ? timing.now : Date.now;
     this._setTimeout = typeof timing.setTimeout === 'function' ? timing.setTimeout : setTimeout;
     this._clearTimeout = typeof timing.clearTimeout === 'function' ? timing.clearTimeout : clearTimeout;
-    this._lastHeartbeatFailureAt = null;
+    this._heartbeatWindowStartedAt = null;
     this._heartbeatFailuresInWindow = 0;
+    this._heartbeatRecoveryPerformed = false;
+    this._heartbeatRecoveryInProgress = false;
+    this._heartbeatLockEmitted = false;
+    this._heartbeatPromise = null;
     this._lastIpcLatencyMs = null;
     this._lastProbeConnected = null;
     this._lastMediaTitle = null;
@@ -570,47 +574,137 @@ class PlaybackEngine extends EventEmitter {
     });
   }
 
+  heartbeat({ timeoutMs = 500 } = {}) {
+    if (this._heartbeatPromise) return this._heartbeatPromise;
+    const operation = this._runHeartbeat({ timeoutMs });
+    const tracked = operation.finally(() => {
+      if (this._heartbeatPromise === tracked) {
+        this._heartbeatPromise = null;
+      }
+    });
+    this._heartbeatPromise = tracked;
+    return tracked;
+  }
+
+  async _runHeartbeat({ timeoutMs }) {
+    this._assertNotDestroyed();
+    this._resetHeartbeatWindowIfExpired();
+    try {
+      if (!this._isLiveChild(this.process) || !this.socket || this.socket.destroyed) {
+        throw new Error('mpv IPC is not connected');
+      }
+      const response = await this._sendCommand(['get_property', 'time-pos'], {
+        waitForResponse: true,
+        timeoutMs
+      });
+      this._lastProbeConnected = true;
+      return {
+        ok: true,
+        action: 'healthy',
+        failures: this._heartbeatFailuresInWindow,
+        position: Number(response?.data) || 0,
+        diagnostics: this.getDiagnostics()
+      };
+    } catch (error) {
+      this._lastProbeConnected = false;
+      return this._handleHeartbeatFailure(error, { resumePlayback: true });
+    }
+  }
+
+  _resetHeartbeatWindowIfExpired(now = this._now()) {
+    if (
+      this._heartbeatWindowStartedAt !== null
+      && now - this._heartbeatWindowStartedAt > 60000
+    ) {
+      this._heartbeatWindowStartedAt = null;
+      this._heartbeatFailuresInWindow = 0;
+      this._heartbeatRecoveryPerformed = false;
+      this._heartbeatLockEmitted = false;
+    }
+  }
+
+  async _handleHeartbeatFailure(error, { resumePlayback }) {
+    const failureAt = this._now();
+    this._resetHeartbeatWindowIfExpired(failureAt);
+    if (this._heartbeatWindowStartedAt === null) {
+      this._heartbeatWindowStartedAt = failureAt;
+    }
+    this._heartbeatFailuresInWindow += 1;
+    const failures = this._heartbeatFailuresInWindow;
+
+    if (failures === 1) {
+      this.api.log?.(`[music-bot] MPV IPC heartbeat failed (1/3): ${error.message}`, 'warn');
+      return {
+        ok: false,
+        action: 'counted',
+        failures,
+        position: 0,
+        diagnostics: this.getDiagnostics()
+      };
+    }
+
+    if (failures === 2 && !this._heartbeatRecoveryPerformed) {
+      this._heartbeatRecoveryPerformed = true;
+      const retainedTrack = this.nowPlaying;
+      this.api.log?.(`[music-bot] MPV IPC heartbeat failed (2/3); recovering player: ${error.message}`, 'warn');
+      this._heartbeatRecoveryInProgress = true;
+      try {
+        await this.restart();
+        if (resumePlayback && retainedTrack) {
+          await this.play(retainedTrack);
+        } else if (!resumePlayback) {
+          await this._startProcess();
+        }
+      } finally {
+        this._heartbeatRecoveryInProgress = false;
+      }
+      return {
+        ok: true,
+        action: 'recovered',
+        failures,
+        position: 0,
+        diagnostics: this.getDiagnostics()
+      };
+    }
+
+    const lockError = new Error('mpv heartbeat safety lock engaged');
+    lockError.code = 'MPV_HEARTBEAT_SAFETY_LOCK';
+    if (!this._heartbeatLockEmitted) {
+      this._heartbeatLockEmitted = true;
+      this.emit('heartbeat-lock', {
+        reason: 'heartbeat-lock',
+        failures,
+        windowMs: 60000,
+        error: error.message
+      });
+    }
+    throw lockError;
+  }
+
   async _ensureProcess() {
     this._assertNotDestroyed();
+    if (this._heartbeatPromise && !this._heartbeatRecoveryInProgress) {
+      const result = await this._heartbeatPromise;
+      if (result.action === 'counted') {
+        const error = new Error('mpv heartbeat failure counted');
+        error.code = 'MPV_HEARTBEAT_FAILURE_COUNTED';
+        throw error;
+      }
+    }
     if (this._isLiveChild(this.process) && !Number.isInteger(this.process.pid) && !this.socket) {
       return;
     }
     if (this._isLiveChild(this.process)) {
-      const staleChild = this.process;
-      const staleSocket = this.socket;
       try {
         await this._sendCommand(['get_property', 'idle-active'], { waitForResponse: true });
         return;
       } catch (error) {
-        const failureAt = this._now();
-        const withinEscalationWindow = this._lastHeartbeatFailureAt !== null
-          && failureAt - this._lastHeartbeatFailureAt <= 60000;
-        if (withinEscalationWindow) {
-          this._heartbeatFailuresInWindow += 1;
-          const lockError = new Error('mpv heartbeat safety lock engaged');
-          lockError.code = 'MPV_HEARTBEAT_SAFETY_LOCK';
-          this.emit('heartbeat-lock', {
-            reason: 'heartbeat-lock',
-            failures: this._heartbeatFailuresInWindow,
-            windowMs: 60000,
-            error: error.message
-          });
-          throw lockError;
+        const result = await this._handleHeartbeatFailure(error, { resumePlayback: false });
+        if (result.action === 'counted') {
+          error.code = 'MPV_HEARTBEAT_FAILURE_COUNTED';
+          throw error;
         }
-        this._lastHeartbeatFailureAt = failureAt;
-        this._heartbeatFailuresInWindow = 1;
-        this.api.log?.(`[music-bot] MPV IPC heartbeat failed; restarting player: ${error.message}`, 'warn');
-        if (this.socket === staleSocket && staleSocket) {
-          staleSocket.destroy();
-          this.socket = null;
-          this._socketGeneration = 0;
-        }
-        this._rejectPendingCommands(new Error('mpv IPC heartbeat failed'));
-        this._expectedProcessStops.add(staleChild);
-        await this._terminateProcess(staleChild, { waitForClose: false });
-        if (this.process === staleChild) {
-          this.process = null;
-        }
+        return;
       }
     }
 

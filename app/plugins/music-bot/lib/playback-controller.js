@@ -50,6 +50,7 @@ class PlaybackController extends EventEmitter {
     this._masterVolume = this._clampVolume(this.config.defaultVolume);
     this._duckActiveCount = 0;
     this._timedDuckUntil = 0;
+    this._heartbeatPromise = null;
   }
 
   play(track) {
@@ -186,6 +187,41 @@ class PlaybackController extends EventEmitter {
     const slot = this._getActiveSlot();
     if (!slot?.engine.getPosition) return 0;
     return slot.engine.getPosition(options);
+  }
+
+  heartbeat(options = {}) {
+    if (this._heartbeatPromise) return this._heartbeatPromise;
+    const slot = this._getActiveSlot();
+    if (!slot) {
+      return Promise.resolve({
+        ok: true,
+        action: 'idle',
+        failures: 0,
+        position: 0,
+        diagnostics: this.getSnapshot()
+      });
+    }
+
+    const operation = typeof slot.engine.heartbeat === 'function'
+      ? slot.engine.heartbeat(options)
+      : Promise.resolve(slot.engine.getPosition?.(options) || 0).then((position) => ({
+        ok: true,
+        action: 'healthy',
+        failures: 0,
+        position: Number(position) || 0
+      }));
+    const tracked = Promise.resolve(operation)
+      .then((result) => ({
+        ...result,
+        diagnostics: this.getSnapshot()
+      }))
+      .finally(() => {
+        if (this._heartbeatPromise === tracked) {
+          this._heartbeatPromise = null;
+        }
+      });
+    this._heartbeatPromise = tracked;
+    return tracked;
   }
 
   async beginDucking() {
