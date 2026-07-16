@@ -22,7 +22,10 @@ class PlaybackController extends EventEmitter {
       ? options
       : (api?.engineFactory || api?.timing ? api : {});
     this._engineFactory = optionSource.engineFactory || ((context) => (
-      new PlaybackEngine(context.config, context.api, { timing: context.timing })
+      new PlaybackEngine(context.config, context.api, {
+        timing: context.timing,
+        heartbeatState: context.heartbeatState
+      })
     ));
     const timing = optionSource.timing || optionSource;
     this._timing = {
@@ -51,6 +54,12 @@ class PlaybackController extends EventEmitter {
     this._duckActiveCount = 0;
     this._timedDuckUntil = 0;
     this._heartbeatPromise = null;
+    this._heartbeatState = {
+      windowStartedAt: null,
+      failuresInWindow: 0,
+      recoveryPerformed: false,
+      lockEmitted: false
+    };
   }
 
   play(track) {
@@ -424,6 +433,7 @@ class PlaybackController extends EventEmitter {
     this.safetyLock = false;
     this._safetyReason = null;
     this._safetyLockedAt = null;
+    this._resetHeartbeatState();
     if (changed) {
       this.emit('safety-lock-changed', {
         locked: false,
@@ -639,8 +649,16 @@ class PlaybackController extends EventEmitter {
       generation,
       config: this.config,
       api: this.api,
-      timing: this._timing
+      timing: this._timing,
+      heartbeatState: this._heartbeatState
     });
+  }
+
+  _resetHeartbeatState() {
+    this._heartbeatState.windowStartedAt = null;
+    this._heartbeatState.failuresInWindow = 0;
+    this._heartbeatState.recoveryPerformed = false;
+    this._heartbeatState.lockEmitted = false;
   }
 
   _bindSlotEvents(slot) {

@@ -998,6 +998,83 @@ describe('Music Bot playback engine lifecycle hardening', () => {
     }));
   });
 
+  test('starts the 60-second safety window when recovery is attempted', async () => {
+    let now = 0;
+    const engine = new PlaybackEngine(
+      { defaultVolume: 50 },
+      { log: jest.fn() },
+      { timing: { now: () => now } }
+    );
+    const track = { id: 'active', title: 'Active', url: 'active.mp3' };
+    engine.process = { exitCode: null, pid: 100 };
+    engine.socket = { destroyed: false };
+    engine.nowPlaying = track;
+    engine.state = 'playing';
+    engine._sendCommand = jest.fn(async () => {
+      throw new Error('dead IPC');
+    });
+    engine.restart = jest.fn(async () => track);
+    engine.play = jest.fn(async () => {});
+
+    await expect(engine.heartbeat()).resolves.toMatchObject({ action: 'counted', failures: 1 });
+    now = 59000;
+    await expect(engine.heartbeat()).resolves.toMatchObject({ action: 'recovered', failures: 2 });
+    now = 61000;
+    await expect(engine.heartbeat()).rejects.toMatchObject({
+      code: 'MPV_HEARTBEAT_SAFETY_LOCK'
+    });
+  });
+
+  test('keeps heartbeat recovery state across controller slot generations', async () => {
+    let nextPid = 100;
+    const engines = [];
+    const controller = new PlaybackController(
+      { defaultVolume: 50, crossfadeDuration: 0 },
+      { log: jest.fn() },
+      {
+        engineFactory: (context) => {
+          const engine = new PlaybackEngine(context.config, context.api, {
+            timing: context.timing,
+            heartbeatState: context.heartbeatState
+          });
+          engine.process = { exitCode: null, pid: nextPid++ };
+          engine.socket = { destroyed: false };
+          engine._sendCommand = jest.fn(async () => {
+            throw new Error('dead IPC');
+          });
+          engine.setVolume = jest.fn(async () => {});
+          engine.restart = jest.fn(async () => engine.nowPlaying);
+          engine.play = jest.fn(async (track) => {
+            engine.nowPlaying = track;
+            engine.state = 'playing';
+            engine.emit('track-start', track);
+          });
+          engine.shutdown = jest.fn(async () => {
+            engine.process = null;
+            engine.socket = null;
+            engine.nowPlaying = null;
+            engine.state = 'idle';
+          });
+          engines.push(engine);
+          return engine;
+        }
+      }
+    );
+
+    await controller.play({ id: 'one', title: 'One', url: 'one.mp3' });
+    await expect(controller.heartbeat()).resolves.toMatchObject({ action: 'counted', failures: 1 });
+
+    await controller.play({ id: 'two', title: 'Two', url: 'two.mp3' });
+    await expect(controller.heartbeat()).resolves.toMatchObject({ action: 'recovered', failures: 2 });
+    expect(engines[1].restart).toHaveBeenCalledTimes(1);
+
+    await controller.play({ id: 'three', title: 'Three', url: 'three.mp3' });
+    await expect(controller.heartbeat()).rejects.toMatchObject({
+      code: 'MPV_HEARTBEAT_SAFETY_LOCK'
+    });
+    expect(controller.isSafetyLocked()).toBe(true);
+  });
+
   test('resets the heartbeat failure window after more than 60 seconds', async () => {
     let now = 1000;
     const engine = new PlaybackEngine(

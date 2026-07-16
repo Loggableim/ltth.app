@@ -46,16 +46,39 @@ class PlaybackEngine extends EventEmitter {
     this._now = typeof timing.now === 'function' ? timing.now : Date.now;
     this._setTimeout = typeof timing.setTimeout === 'function' ? timing.setTimeout : setTimeout;
     this._clearTimeout = typeof timing.clearTimeout === 'function' ? timing.clearTimeout : clearTimeout;
-    this._heartbeatWindowStartedAt = null;
-    this._heartbeatFailuresInWindow = 0;
-    this._heartbeatRecoveryPerformed = false;
+    this._heartbeatState = options.heartbeatState && typeof options.heartbeatState === 'object'
+      ? options.heartbeatState
+      : {};
+    this._installHeartbeatStateAccessors();
+    if (this._heartbeatWindowStartedAt === undefined) this._heartbeatWindowStartedAt = null;
+    if (this._heartbeatFailuresInWindow === undefined) this._heartbeatFailuresInWindow = 0;
+    if (this._heartbeatRecoveryPerformed === undefined) this._heartbeatRecoveryPerformed = false;
+    if (this._heartbeatLockEmitted === undefined) this._heartbeatLockEmitted = false;
     this._heartbeatRecoveryInProgress = false;
-    this._heartbeatLockEmitted = false;
     this._heartbeatPromise = null;
     this._lastIpcLatencyMs = null;
     this._lastProbeConnected = null;
     this._lastMediaTitle = null;
     this._lastMediaBasename = null;
+  }
+
+  _installHeartbeatStateAccessors() {
+    const fields = {
+      _heartbeatWindowStartedAt: 'windowStartedAt',
+      _heartbeatFailuresInWindow: 'failuresInWindow',
+      _heartbeatRecoveryPerformed: 'recoveryPerformed',
+      _heartbeatLockEmitted: 'lockEmitted'
+    };
+    Object.entries(fields).forEach(([property, key]) => {
+      Object.defineProperty(this, property, {
+        configurable: false,
+        enumerable: false,
+        get: () => this._heartbeatState[key],
+        set: (value) => {
+          this._heartbeatState[key] = value;
+        }
+      });
+    });
   }
 
   updateConfig(config = {}) {
@@ -645,6 +668,9 @@ class PlaybackEngine extends EventEmitter {
 
     if (failures === 2 && !this._heartbeatRecoveryPerformed) {
       this._heartbeatRecoveryPerformed = true;
+      // A third failure is dangerous for 60 seconds after the recovery
+      // attempt, regardless of how long ago the first failure happened.
+      this._heartbeatWindowStartedAt = failureAt;
       const retainedTrack = this.nowPlaying;
       this.api.log?.(`[music-bot] MPV IPC heartbeat failed (2/3); recovering player: ${error.message}`, 'warn');
       this._heartbeatRecoveryInProgress = true;
