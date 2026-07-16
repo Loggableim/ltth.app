@@ -951,6 +951,9 @@ class WebGPUFireworksEngine {
             const message = status.reason || `Renderer entered ${status.state}`;
             this.failFinale(this.currentFinale.id, new Error(message), this.getRuntimeNow());
         }
+        if (status.state === 'ready' && !this.currentFinale) {
+            this.startNextFinaleIfReady(this.getRuntimeNow());
+        }
     }
 
     emitStatus() {
@@ -1155,8 +1158,11 @@ class WebGPUFireworksEngine {
     }
 
     launchGiftNow(data, now = this.getRuntimeNow()) {
-        this.giftLaunchTimestamps.push(now);
-        Promise.resolve(this.handleTrigger(data)).catch(error => {
+        Promise.resolve(this.handleTrigger({
+            ...data,
+            deferAssets: true,
+            trackGiftLaunch: true
+        })).catch(error => {
             console.error('[WebGPU Fireworks] Gift launch failed:', error);
             this.setStatus({ giftError: error.message || String(error) });
         });
@@ -1330,6 +1336,7 @@ class WebGPUFireworksEngine {
             crackleAt,
             cleanupAt: explodeAt + Math.min(6000, 1800 + explosion.intensity * 900),
             flightDuration: launch.flightDuration,
+            trackGiftLaunch: launch.trackGiftLaunch === true,
             launch,
             explosion,
             crackleProfile,
@@ -1341,6 +1348,7 @@ class WebGPUFireworksEngine {
     enqueueEffectPlan(plan) {
         this.effectPlans.set(plan.id, plan);
         this.activeShows.set(plan.id, plan.createdAt);
+        if (plan.trackGiftLaunch) this.giftLaunchTimestamps.push(plan.createdAt);
         this.scheduleTimeline({ type: 'launch', due: plan.launchAt, order: 0, finaleId: plan.finaleId, plan });
         this.scheduleTimeline({ type: 'explode', due: plan.explodeAt, order: 1, finaleId: plan.finaleId, plan });
         if (plan.crackleAt !== null) {
@@ -1354,13 +1362,21 @@ class WebGPUFireworksEngine {
 
     processLaunch(plan, plannedAt, actualAt) {
         const { launch, explosion } = plan;
+        const remainingShowSeconds = explosion.finaleEndsAt
+            ? Math.max(0, (explosion.finaleEndsAt - actualAt) / 1000)
+            : plan.flightDuration;
+        if (explosion.finaleEndsAt && remainingShowSeconds <= 0) {
+            this.audio.recordTimelineEvent(plan.id, 'launch-visual', plannedAt, actualAt, 'skipped-finale-ended');
+            return false;
+        }
+        const launchDuration = Math.min(plan.flightDuration, remainingShowSeconds);
         if (!launch.skipRocket) {
             const avatarTexture = Number(explosion.assets.avatarTexture) || 0;
             this.renderer.spawnRocket({
                 effectId: plan.id,
                 origin: launch.origin,
                 target: launch.target,
-                duration: plan.flightDuration,
+                duration: launchDuration,
                 color: explosion.colors[0],
                 textureIndex: explosion.avatarRocketHead ? 0 : avatarTexture,
                 headTextureIndex: explosion.avatarRocketHead ? avatarTexture : 0,
@@ -1377,9 +1393,6 @@ class WebGPUFireworksEngine {
         const cue = this.audio.CUE_MANIFEST[explosion.sound.launch] || {};
         const sourceWindow = Number(explosion.sound.launchWindow || cue.embeddedBangAt || plan.flightDuration);
         const playbackRate = Math.max(0.9, Math.min(1.1, sourceWindow / Math.max(0.05, plan.flightDuration)));
-        const remainingShowSeconds = explosion.finaleEndsAt
-            ? Math.max(0, (explosion.finaleEndsAt - plannedAt) / 1000)
-            : plan.flightDuration;
         if (remainingShowSeconds <= 0) return;
         const playbackOptions = {
             effectId: plan.id,
@@ -1390,7 +1403,7 @@ class WebGPUFireworksEngine {
             playbackRate,
             // The selected cue is fitted to the flight at 0.9-1.1x. Let its
             // final 60 ms fade land on the separately scheduled bang.
-            maxDuration: Math.min(plan.flightDuration, remainingShowSeconds),
+            maxDuration: launchDuration,
             fadeOutDuration: 0.06
         };
         void this.audio.play(explosion.sound.launch, 0.82, 1, playbackOptions);
@@ -1399,6 +1412,14 @@ class WebGPUFireworksEngine {
     processCrackle(plan, plannedAt, actualAt) {
         const explosion = plan.explosion;
         if (!explosion.sound.crackle || !plan.crackleProfile) return;
+        const remainingShowSeconds = explosion.finaleEndsAt
+            ? Math.max(0, (explosion.finaleEndsAt - actualAt) / 1000)
+            : plan.crackleDuration;
+        if (explosion.finaleEndsAt && remainingShowSeconds <= 0) {
+            this.audio.recordTimelineEvent(plan.id, 'crackle-visual', plannedAt, actualAt, 'skipped-finale-ended');
+            return false;
+        }
+        const crackleDuration = Math.min(plan.crackleDuration, remainingShowSeconds);
         this.renderer.spawnCrackle({
             effectId: plan.id,
             profile: plan.crackleProfile,
@@ -1406,7 +1427,7 @@ class WebGPUFireworksEngine {
             origin: { x: explosion.x, y: explosion.y },
             colors: explosion.colors,
             intensity: explosion.intensity,
-            duration: plan.crackleDuration,
+            duration: crackleDuration,
             gravity: explosion.gravity * 520,
             drag: Math.min(0.988, explosion.friction),
             wind: explosion.wind * 280,
@@ -1422,8 +1443,8 @@ class WebGPUFireworksEngine {
                 maxLatenessMs: 100,
                 profile: plan.crackleProfile,
                 offset: this.audio.CRACKLE_OFFSETS[explosion.sound.crackle] || 0,
-                maxDuration: plan.crackleDuration,
-                fadeOutDuration: Math.min(0.16, plan.crackleDuration * 0.2),
+                maxDuration: crackleDuration,
+                fadeOutDuration: Math.min(0.16, crackleDuration * 0.2),
                 bus: 'crackle'
             }).then(played => {
                 if (!played && this.audio.crackleState === 'starting') this.audio.crackleState = 'missed';
@@ -1462,7 +1483,15 @@ class WebGPUFireworksEngine {
         const instant = !forceRocket && combo >= 8;
         let skipRocket = !forceRocket && combo >= 5;
         let flightDuration = skipRocket ? 0 : this.calculateFlightDuration(targetY);
-        const assets = await this.prepareImages(data);
+        const deferredAssets = data.deferAssets === true;
+        const assetPreparation = deferredAssets ? this.prepareImages(data) : null;
+        const assets = deferredAssets
+            ? {
+                giftTexture: 0,
+                avatarTexture: 0,
+                avatarChance: Math.max(0, Math.min(1, Number(data.avatarParticleChance ?? this.config.avatarParticleChance ?? 0.3)))
+            }
+            : await this.prepareImages(data);
         if (finaleId && !this.isFinaleRuntimeTokenValid(finaleId, runtimeToken)) {
             return { cancelled: true, finaleId, reason: 'stale-finale-generation' };
         }
@@ -1531,9 +1560,20 @@ class WebGPUFireworksEngine {
             target: { x, y: targetY },
             skipRocket,
             seed,
-            finaleId: data.finaleId || null
+            finaleId: data.finaleId || null,
+            trackGiftLaunch: data.trackGiftLaunch === true
         });
         this.enqueueEffectPlan(plan);
+        if (assetPreparation) {
+            Promise.resolve(assetPreparation).then(preparedAssets => {
+                const explosionPending = this.timelineQueue.some(event => event.type === 'explode' && event.plan === plan);
+                if (this.effectPlans.get(plan.id) === plan && explosionPending) {
+                    Object.assign(plan.explosion.assets, preparedAssets);
+                }
+            }).catch(error => {
+                console.error('[WebGPU Fireworks] Deferred gift assets failed:', error);
+            });
+        }
         return plan;
     }
 
@@ -1565,6 +1605,14 @@ class WebGPUFireworksEngine {
     }
 
     processExplosion(explosion, plan = null, plannedAt = performance.now(), actualAt = performance.now()) {
+        const effectId = plan?.id || explosion.id;
+        const remainingShowSeconds = explosion.finaleEndsAt
+            ? Math.max(0, (explosion.finaleEndsAt - actualAt) / 1000)
+            : Number.POSITIVE_INFINITY;
+        if (explosion.finaleEndsAt && remainingShowSeconds <= 0) {
+            this.audio.recordTimelineEvent(effectId, 'explosion-visual', plannedAt, actualAt, 'skipped-finale-ended');
+            return false;
+        }
         const shapeSpecific = explosion.shape !== 'burst';
         let baseCount = explosion.count;
         let avatarCount = 0;
@@ -1575,9 +1623,7 @@ class WebGPUFireworksEngine {
         const naturalDuration = 1.15 + explosion.intensity * 0.28;
         const pressureFade = Math.max(0.25, Math.min(4, explosion.despawnFadeDuration || naturalDuration));
         const performanceDuration = this.performanceMode === 'minimal' ? Math.min(naturalDuration, pressureFade) : naturalDuration;
-        const finaleTailDuration = explosion.finaleEndsAt
-            ? Math.max(0.25, (explosion.finaleEndsAt - plannedAt) / 1000)
-            : performanceDuration;
+        const finaleTailDuration = explosion.finaleEndsAt ? remainingShowSeconds : performanceDuration;
         const duration = Math.min(performanceDuration, finaleTailDuration);
         const minSize = Math.max(2, Number(explosion.particleSizeRange?.[0]) || 4);
         const maxSize = Math.max(minSize, Number(explosion.particleSizeRange?.[1]) || 12);
@@ -1602,16 +1648,12 @@ class WebGPUFireworksEngine {
             wind: explosion.wind * 420, size: semanticSize,
             style: explosion.visualStyle
         };
-        const effectId = plan?.id || explosion.id;
         this.renderer.spawnExplosion({ ...common, effectId, shape: explosion.shape, colors: explosion.colors, count: baseCount });
         if (avatarCount) this.renderer.spawnExplosion({ ...common, effectId, shape: 'image', colors: ['#ffffff'], count: avatarCount, textureIndex: explosion.assets.avatarTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
         if (giftCount) this.renderer.spawnExplosion({ ...common, effectId, shape: 'image', colors: ['#ffffff'], count: giftCount, textureIndex: explosion.assets.giftTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
         this.audio.recordTimelineEvent(effectId, 'explosion-visual', plannedAt, actualAt, 'rendered');
         if (explosion.playSound) {
             const bangDurations = { small: 0.7, medium: 0.9, big: 1.2, massive: 1.5 };
-            const remainingShowSeconds = explosion.finaleEndsAt
-                ? Math.max(0, (explosion.finaleEndsAt - plannedAt) / 1000)
-                : Number.POSITIVE_INFINITY;
             if (remainingShowSeconds <= 0) return;
             void this.audio.play(explosion.sound.bang, explosion.tier === 'massive' ? 1 : 0.88, 3, {
                 effectId,
@@ -1736,7 +1778,6 @@ class WebGPUFireworksEngine {
             intensity, count, finaleDuration, interval, shapes, colors, bursts, baseSeed,
             random, frequency, crackleInterval, seededPhase
         } = legacy;
-        const visualTailMs = (1.15 + intensity * 0.28) * 1000;
         let completeAt = startAt + finaleDuration;
         for (let i = 0; i < count; i++) {
             const plan = bursts[i] || {
@@ -1745,9 +1786,17 @@ class WebGPUFireworksEngine {
                 seed: baseSeed + i * 2654435761
             };
             const crackleEnabled = frequency > 0 && (i - seededPhase) % crackleInterval === 0 && i >= seededPhase;
+            const launchIntensity = Math.max(0.1, Math.min(5, intensity * (0.78 + random() * 0.35)));
+            const tier = intensity >= 4 ? 'massive' : intensity >= 3 ? 'big' : 'medium';
             const launchAt = startAt + i * interval;
             const targetY = Math.max(0, Math.min(1, Number(plan.position?.y) || 0.5)) * this.baseHeight;
-            completeAt = Math.max(completeAt, launchAt + this.calculateFlightDuration(targetY) * 1000 + visualTailMs);
+            const visualTail = 1.15 + launchIntensity * 0.28;
+            const bangTail = data.playSound === false
+                ? 0
+                : ({ small: 0.7, medium: 0.9, big: 1.2, massive: 1.5 }[tier] || 0.9);
+            const crackleTail = crackleEnabled ? (tier === 'massive' ? 1.22 : 0.83) : 0;
+            const effectTailMs = Math.max(visualTail, bangTail, crackleTail) * 1000;
+            completeAt = Math.max(completeAt, launchAt + this.calculateFlightDuration(targetY) * 1000 + effectTailMs);
             this.scheduleTimeline({
                 type: 'finale-launch',
                 due: launchAt,
@@ -1758,8 +1807,8 @@ class WebGPUFireworksEngine {
                 shape: shapes[i % shapes.length], colors,
                 position: plan.position, origin: plan.origin, seed: plan.seed,
                 visualStyle: data.visualStyle || this.config.visualStyle,
-                intensity: intensity * (0.78 + random() * 0.35), particleCount: Math.round(60 * intensity),
-                combo: Math.max(1, Math.round(intensity)), tier: intensity >= 4 ? 'massive' : intensity >= 3 ? 'big' : 'medium',
+                intensity: launchIntensity, particleCount: Math.round(60 * intensity),
+                combo: Math.max(1, Math.round(intensity)), tier,
                 forceRocket: true,
                 crackleEnabled,
                 crackleFrequency: frequency,
@@ -1808,9 +1857,22 @@ class WebGPUFireworksEngine {
         this.finaleIds.delete(finaleId);
         this.currentFinale = null;
         this.finalePhase = 'idle';
+        this.startNextFinaleIfReady(now);
+        return true;
+    }
+
+    startNextFinaleIfReady(now = this.getRuntimeNow()) {
+        this.ensureFinaleRuntimeState();
+        if (this.currentFinale || this.rendererStatus?.state !== 'ready' || !this.renderer?.initialized) {
+            this.emitFinaleTelemetry();
+            return false;
+        }
         const next = this.finaleQueue.shift();
-        if (next) this.startFinaleEntry(next, now);
-        else this.emitFinaleTelemetry();
+        if (!next) {
+            this.emitFinaleTelemetry();
+            return false;
+        }
+        this.startFinaleEntry(next, now);
         return true;
     }
 
@@ -1831,8 +1893,7 @@ class WebGPUFireworksEngine {
             if (this.currentFinale?.id === finaleId) {
                 this.currentFinale = null;
                 this.finalePhase = 'idle';
-                const next = this.finaleQueue.shift();
-                if (next) this.startFinaleEntry(next, now);
+                this.startNextFinaleIfReady(now);
             }
             this.emitFinaleTelemetry({ finaleError: message });
             return false;
@@ -1851,7 +1912,11 @@ class WebGPUFireworksEngine {
             ? { ...data.showPlan, id }
             : null;
         const entry = { id, data: { ...data, id }, showPlan, legacy: !showPlan };
-        const queued = Boolean(this.currentFinale);
+        const rendererKnownUnavailable = (
+            (this.rendererStatus?.state && this.rendererStatus.state !== 'ready') ||
+            this.renderer?.initialized === false
+        );
+        const queued = Boolean(this.currentFinale || rendererKnownUnavailable);
         this.finaleIds.add(id);
         let details;
         if (queued) {
