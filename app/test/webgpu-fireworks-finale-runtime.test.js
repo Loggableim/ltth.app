@@ -437,10 +437,11 @@ describe('WebGPU choreographed finale runtime', () => {
     expect(engine.finaleQueue).toEqual([]);
   });
 
-  test('render exceptions isolate the current finale and keep scheduling frames', () => {
+  test('a successful frame clears only its transient render error and resumes one queued finale', () => {
     const engine = makeRuntime(10000);
     engine.handleFinale({ id: 'render-old', showPlan: tinyPlan('render-old') });
     engine.handleFinale({ id: 'render-next', showPlan: tinyPlan('render-next') });
+    const startFinaleEntry = jest.spyOn(engine, 'startFinaleEntry');
     engine.running = true;
     engine.lastFrameAt = performance.now();
     engine.fpsWindowAt = performance.now();
@@ -449,10 +450,9 @@ describe('WebGPU choreographed finale runtime', () => {
     engine.fps = 60;
     engine.isBenchmark = true;
     engine.skippedFrame = false;
-    // A synchronous frame failure is a fresh failure even when an earlier
-    // device callback already left the renderer in an error state.
-    engine.rendererStatus.state = 'device-lost';
-    engine.renderer.render = jest.fn(() => { throw new Error('render pass failed'); });
+    engine.renderer.render = jest.fn()
+      .mockImplementationOnce(() => { throw new Error('render pass failed'); })
+      .mockImplementation(() => {});
     const originalRequestAnimationFrame = global.requestAnimationFrame;
     global.requestAnimationFrame = jest.fn(() => 99);
     const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -462,8 +462,46 @@ describe('WebGPU choreographed finale runtime', () => {
       expect(engine.finaleQueue.map(entry => entry.id)).toEqual(['render-next']);
       expect(engine.rendererStatus).toMatchObject({ state: 'error', reason: 'render pass failed' });
       expect(global.requestAnimationFrame).toHaveBeenCalledTimes(1);
-      engine.setStatus({ state: 'ready' });
+
+      engine.render();
+      expect(engine.rendererStatus).toMatchObject({ state: 'ready' });
       expect(engine.currentFinale.id).toBe('render-next');
+      expect(engine.finaleQueue).toEqual([]);
+      expect(startFinaleEntry).toHaveBeenCalledTimes(1);
+      expect(global.requestAnimationFrame).toHaveBeenCalledTimes(2);
+
+      const runtimeToken = engine.currentFinale.runtimeToken;
+      engine.render();
+      expect(engine.currentFinale).toMatchObject({ id: 'render-next', runtimeToken });
+      expect(startFinaleEntry).toHaveBeenCalledTimes(1);
+    } finally {
+      global.requestAnimationFrame = originalRequestAnimationFrame;
+      consoleError.mockRestore();
+    }
+  });
+
+  test('a successful frame does not clear a genuine device-lost state', () => {
+    const engine = makeRuntime(10000);
+    engine.handleFinale({ id: 'lost-old', showPlan: tinyPlan('lost-old') });
+    engine.handleFinale({ id: 'lost-next', showPlan: tinyPlan('lost-next') });
+    engine.running = true;
+    engine.lastFrameAt = performance.now();
+    engine.fpsWindowAt = performance.now();
+    engine.frameCount = 0;
+    engine.fpsHistory = [];
+    engine.fps = 60;
+    engine.isBenchmark = true;
+    engine.skippedFrame = false;
+    engine.renderer.render = jest.fn();
+    const originalRequestAnimationFrame = global.requestAnimationFrame;
+    global.requestAnimationFrame = jest.fn(() => 99);
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      engine.setStatus({ state: 'device-lost', reason: 'adapter reset' });
+      engine.render();
+      expect(engine.rendererStatus).toMatchObject({ state: 'device-lost', reason: 'adapter reset' });
+      expect(engine.currentFinale).toBeNull();
+      expect(engine.finaleQueue.map(entry => entry.id)).toEqual(['lost-next']);
     } finally {
       global.requestAnimationFrame = originalRequestAnimationFrame;
       consoleError.mockRestore();

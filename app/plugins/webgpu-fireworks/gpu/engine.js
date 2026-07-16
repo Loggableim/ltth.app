@@ -823,6 +823,7 @@ class WebGPUFireworksEngine {
         this.finalePhase = 'idle';
         this.finaleGeneration = 0;
         this.failingFinaleIds = new Set();
+        this.transientFrameError = false;
         this.giftLaunchTimestamps = [];
         this.giftBacklog = new Map();
         this.giftDrainDue = null;
@@ -850,7 +851,7 @@ class WebGPUFireworksEngine {
                 if (!unlocked) return;
                 if (DEBUG) console.debug('[WebGPU Fireworks Audio] Audio unlocked by canvas interaction');
                 this.applyInteractiveMode();
-                this.setStatus({ state: this.rendererStatus.state, audioStatus: 'ready' });
+                this.setStatus({ audioStatus: 'ready' });
             });
             if (!this.config.interactiveEnabled || !this.config.clickTriggerEnabled || !this.socket?.connected) return;
             const bounds = this.canvas.getBoundingClientRect();
@@ -929,8 +930,10 @@ class WebGPUFireworksEngine {
         });
     }
 
-    setStatus(status) {
+    setStatus(status, options = {}) {
         const previousState = this.rendererStatus?.state;
+        if (options.transientFrameError === true) this.transientFrameError = true;
+        else if (status.state) this.transientFrameError = false;
         const failureStates = new Set(['error', 'device-lost']);
         const entersRendererFailure = failureStates.has(status.state) && !failureStates.has(previousState);
         this.rendererStatus = {
@@ -1057,6 +1060,7 @@ class WebGPUFireworksEngine {
         if (!Number.isFinite(this.finaleSequence)) this.finaleSequence = 0;
         if (!Number.isFinite(this.finaleGeneration)) this.finaleGeneration = 0;
         if (!(this.failingFinaleIds instanceof Set)) this.failingFinaleIds = new Set();
+        if (typeof this.transientFrameError !== 'boolean') this.transientFrameError = false;
     }
 
     getRuntimeNow() {
@@ -2000,15 +2004,25 @@ class WebGPUFireworksEngine {
         this.lastFrameAt = now;
         this.processTimeline(now);
         const shouldSkip = this.config.frameSkipEnabled !== false && this.performanceMode === 'minimal' && (this.skippedFrame = !this.skippedFrame);
+        let renderSucceeded = false;
         try {
-            this.renderer?.render(delta, now / 1000, { present: !shouldSkip });
+            if (typeof this.renderer?.render === 'function') {
+                this.renderer.render(delta, now / 1000, { present: !shouldSkip });
+                renderSucceeded = true;
+            }
         } catch (error) {
             console.error('[WebGPU Fireworks] Renderer frame failed:', error);
             const failedFinaleId = this.currentFinale?.id || null;
-            this.setStatus({ state: 'error', reason: error?.message || String(error) });
+            this.setStatus(
+                { state: 'error', reason: error?.message || String(error) },
+                { transientFrameError: true }
+            );
             if (failedFinaleId && this.currentFinale?.id === failedFinaleId) {
                 this.failFinale(failedFinaleId, error, now);
             }
+        }
+        if (renderSucceeded && this.transientFrameError && this.rendererStatus.state === 'error') {
+            this.setStatus({ state: 'ready' });
         }
         this.frameCount++;
         if (now - this.fpsWindowAt >= 1000) {
@@ -2058,6 +2072,7 @@ class WebGPUFireworksEngine {
         this.finalePhase = 'idle';
         this.finaleGeneration = 0;
         this.failingFinaleIds.clear();
+        this.transientFrameError = false;
         this.giftBacklog.clear();
         this.giftLaunchTimestamps.length = 0;
         this.giftDrainDue = null;
@@ -2082,7 +2097,7 @@ if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded
         if (DEBUG) console.debug('[WebGPU Fireworks Audio] Audio unlocked by browser interaction');
         for (const type of ['pointerdown', 'click', 'keydown', 'touchstart']) document.removeEventListener(type, unlock, true);
         engine.applyInteractiveMode();
-        engine.setStatus({ state: engine.rendererStatus.state, audioStatus: 'ready' });
+        engine.setStatus({ audioStatus: 'ready' });
     };
     for (const type of ['pointerdown', 'click', 'keydown', 'touchstart']) document.addEventListener(type, unlock, { passive: true, capture: true });
     document.addEventListener('visibilitychange', () => {
