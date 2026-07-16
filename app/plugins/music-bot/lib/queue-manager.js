@@ -21,6 +21,12 @@ class QueueManager {
     this.userLastRequest = new Map();
     this.voteSkipVoters = new Set();
     this.skipImmuneUsers = new Set();
+    this._persistenceGuard = {
+      blocked: false,
+      reason: null,
+      blockedAt: null,
+      lastError: null
+    };
     this._ensureTables();
   }
 
@@ -34,6 +40,13 @@ class QueueManager {
 
   getCurrent() {
     return this.current;
+  }
+
+  getPersistenceStatus() {
+    return {
+      ...this._persistenceGuard,
+      pendingCount: this.queue.length
+    };
   }
 
   addSkipImmunity(username) {
@@ -455,6 +468,14 @@ class QueueManager {
   }
 
   persistQueue() {
+    if (this._persistenceGuard.blocked) {
+      return {
+        success: false,
+        blocked: true,
+        reason: this._persistenceGuard.reason
+      };
+    }
+
     try {
       const stmt = this.db.prepare(
         `INSERT INTO plugin_music_bot_queue
@@ -497,16 +518,23 @@ class QueueManager {
       } else {
         writeSongs(this.queue);
       }
+      return { success: true, blocked: false, count: this.queue.length };
     } catch (error) {
       this.api.log?.(`[music-bot] Failed to persist queue: ${error.message}`, 'error');
+      return { success: false, blocked: false, error: error.message };
     }
   }
 
   restoreQueue(options = {}) {
+    const wasPersistenceBlocked = this._persistenceGuard.blocked;
+    const pendingEntries = wasPersistenceBlocked ? [...this.queue] : [];
+    let restorePhase = 'read';
     try {
       const rows = this.db
         .prepare('SELECT * FROM plugin_music_bot_queue ORDER BY position ASC')
         .all();
+      restorePhase = 'decode';
+      const persistedEntries = rows.map((row) => this._entryFromPersistedRow(row));
       const duplicatesDisabled =
         this.queueConfig.duplicateDetection === 'off' || this.queueConfig.allowDuplicates;
       const seen = new Set();
@@ -515,9 +543,7 @@ class QueueManager {
       let banned = 0;
 
       let banCheckError = null;
-      for (const row of rows) {
-        const entry = this._entryFromPersistedRow(row);
-
+      for (const entry of persistedEntries) {
         if (typeof options.isAllowed === 'function') {
           try {
             const decision = options.isAllowed(entry);
@@ -541,14 +567,11 @@ class QueueManager {
       }
 
       if (banCheckError) {
-        const inMemoryIds = new Set(this.queue.map((entry) => entry.id).filter(Boolean));
-        for (const row of rows) {
-          const entry = this._entryFromPersistedRow(row);
-          if (entry.id && inMemoryIds.has(entry.id)) continue;
-          this.queue.push(entry);
-          if (entry.id) inMemoryIds.add(entry.id);
-        }
+        this.queue = wasPersistenceBlocked
+          ? this._mergeQueueEntries(persistedEntries, pendingEntries)
+          : this._mergeQueueEntries(this.queue, persistedEntries);
         this._rebuildRequesterState();
+        this._clearPersistenceGuard();
         this.api.log?.(
           `[music-bot] Queue restore aborted because ban check failed: ${banCheckError.message}`,
           'error'
@@ -561,14 +584,27 @@ class QueueManager {
         };
       }
 
-      this.queue = restored;
+      this.queue = wasPersistenceBlocked
+        ? this._mergeQueueEntries(restored, pendingEntries)
+        : restored;
       this._rebuildRequesterState();
+      this._clearPersistenceGuard();
       this.persistQueue();
       this.api.log?.(`[music-bot] Restored ${this.queue.length} songs from persistent queue`, 'info');
       return { restored: this.queue.length, deduped, banned };
     } catch (error) {
+      const reason = restorePhase === 'read'
+        ? 'restore-read-failed'
+        : 'restore-decode-failed';
+      this._engagePersistenceGuard(reason, error);
       this.api.log?.(`[music-bot] Failed to restore queue: ${error.message}`, 'error');
-      return { restored: 0, deduped: 0, banned: 0 };
+      return {
+        restored: 0,
+        deduped: 0,
+        banned: 0,
+        error: reason,
+        persistenceBlocked: true
+      };
     }
   }
 
@@ -721,6 +757,35 @@ class QueueManager {
         this.userLastRequest.set(entry.requesterKey, entry.addedAt);
       }
     });
+  }
+
+  _mergeQueueEntries(primary, secondary) {
+    const merged = [...primary];
+    const ids = new Set(merged.map((entry) => entry.id).filter(Boolean));
+    secondary.forEach((entry) => {
+      if (entry.id && ids.has(entry.id)) return;
+      merged.push(entry);
+      if (entry.id) ids.add(entry.id);
+    });
+    return merged;
+  }
+
+  _engagePersistenceGuard(reason, error) {
+    this._persistenceGuard = {
+      blocked: true,
+      reason,
+      blockedAt: this._persistenceGuard.blockedAt || Date.now(),
+      lastError: error?.message || String(error || reason)
+    };
+  }
+
+  _clearPersistenceGuard() {
+    this._persistenceGuard = {
+      blocked: false,
+      reason: null,
+      blockedAt: null,
+      lastError: null
+    };
   }
 
   _ensureQueueColumn(name, definition) {
