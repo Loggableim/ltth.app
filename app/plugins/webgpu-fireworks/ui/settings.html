@@ -740,6 +740,9 @@
                 <div><span data-i18n="generated.0fa015f4d84f">Audio events: </span><strong id="webgpu-audio-events" data-i18n="generated.cf0ef89f1288">0 missed / 0 evicted</strong></div>
                 <div><span data-i18n="generated.af260b9f99b8">Audio peak: </span><strong id="webgpu-audio-peak">-</strong></div>
                 <div><span data-i18n="generated.f5859661737e">Timeline sync: </span><strong id="webgpu-timeline-sync" data-i18n="generated.5af44856d10b">No events</strong></div>
+                <div><span data-i18n="webgpu_fireworks.finale_active_show">Active show:</span> <strong id="webgpu-finale-active">Idle</strong></div>
+                <div><span data-i18n="webgpu_fireworks.finale_phase">Phase:</span> <strong id="webgpu-finale-phase">IDLE</strong></div>
+                <div><span data-i18n="webgpu_fireworks.finale_queue">Queue:</span> <strong id="webgpu-finale-queue">0</strong></div>
                 <div><span data-i18n="webgpu_fireworks.visual_style">Visual style:</span> <strong id="webgpu-visual-style" data-i18n="generated.31b18de4e854">Premium Hybrid</strong></div>
                 <div><span data-i18n="generated.3ba2d86de03e">GPU frame: </span><strong id="webgpu-frame-time">—</strong></div>
             </div>
@@ -1470,6 +1473,26 @@
                                 <span id="finale-intensity-value">3x</span>
                                 <span>10x</span>
                             </div>
+                        </div>
+
+                        <div>
+                            <label class="block mb-2" for="finale-style" data-i18n="webgpu_fireworks.finale_style">Show Style</label>
+                            <select id="finale-style" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="goalFinaleStyle">
+                                <option value="auto" selected data-i18n="webgpu_fireworks.finale_style_auto">Auto (rotating)</option>
+                                <option value="classic-crescendo" data-i18n="webgpu_fireworks.finale_style_classic_crescendo">Classic Crescendo</option>
+                                <option value="symmetric-salute" data-i18n="webgpu_fireworks.finale_style_symmetric_salute">Symmetric Salute</option>
+                                <option value="sky-ballet" data-i18n="webgpu_fireworks.finale_style_sky_ballet">Sky Ballet</option>
+                                <option value="thunder-finale" data-i18n="webgpu_fireworks.finale_style_thunder_finale">Thunder Finale</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block mb-2" for="finale-length" data-i18n="webgpu_fireworks.finale_length">Show Length</label>
+                            <select id="finale-length" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="goalFinaleLength">
+                                <option value="short" data-i18n="webgpu_fireworks.finale_length_short">Short (10 s)</option>
+                                <option value="medium" selected data-i18n="webgpu_fireworks.finale_length_medium">Medium (18 s)</option>
+                                <option value="long" data-i18n="webgpu_fireworks.finale_length_long">Long (28 s)</option>
+                            </select>
                         </div>
 
                         <button id="test-finale-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="webgpu_fireworks.test_finale">

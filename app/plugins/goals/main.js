@@ -21,6 +21,15 @@ const { StateMachineManager } = require('./engine/state-machine');
 const { ValidationError, NotFoundError } = require('../../modules/error-handler');
 const LifecycleTracker = require('../../modules/lifecycle-tracker');
 
+const WEBGPU_FINALE_STYLES = new Set([
+    'auto',
+    'classic-crescendo',
+    'symmetric-salute',
+    'sky-ballet',
+    'thunder-finale'
+]);
+const WEBGPU_FINALE_LENGTHS = new Set(['short', 'medium', 'long']);
+
 class GoalsPlugin extends EventEmitter {
     constructor(api) {
         super();
@@ -495,13 +504,29 @@ class GoalsPlugin extends EventEmitter {
                 return false;
             }
 
-            const { plugin: fireworks } = resolved;
+            const { id: pluginId, plugin: fireworks } = resolved;
             const intensity = this.clampNumber(goal.firework_intensity, 1, 10, 3);
-            const duration = this.clampNumber(goal.firework_duration, 1000, 30000, 5000);
 
             this.fireworkFinaleMilestones.add(milestoneKey);
-            fireworks.triggerFinale(intensity, duration);
-            this.api.log(`Triggered firework finale for goal "${goal.name}" (${intensity}x, ${duration}ms)`, 'info');
+            if (pluginId === 'webgpu-fireworks') {
+                const style = WEBGPU_FINALE_STYLES.has(goal.firework_encounter_mode)
+                    ? goal.firework_encounter_mode
+                    : 'inherit';
+                const length = WEBGPU_FINALE_LENGTHS.has(goal.firework_finale_length)
+                    ? goal.firework_finale_length
+                    : 'inherit';
+                const eventId = `goal:${milestoneKey}`;
+                fireworks.triggerFinale({ intensity, style, length, eventId });
+                this.api.log(
+                    `Triggered WebGPU firework finale for goal "${goal.name}" ` +
+                    `(${intensity}x, style=${style}, length=${length})`,
+                    'info'
+                );
+            } else {
+                const duration = this.clampNumber(goal.firework_duration, 1000, 30000, 5000);
+                fireworks.triggerFinale(intensity, duration);
+                this.api.log(`Triggered firework finale for goal "${goal.name}" (${intensity}x, ${duration}ms)`, 'info');
+            }
             return true;
         } catch (error) {
             this.api.log(`Error triggering goal firework finale: ${error.message}`, 'error');

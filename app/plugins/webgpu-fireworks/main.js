@@ -235,6 +235,15 @@ class FireworksPlugin {
                                 state: typeof event?.state === 'string' ? event.state.slice(0, 40) : null
                             }))
                             : previous.timelineEvents || [],
+                        finaleActive: data.finaleActive === true,
+                        finaleId: typeof data.finaleId === 'string' ? data.finaleId.slice(0, 160) : null,
+                        finaleStyle: typeof data.finaleStyle === 'string' ? data.finaleStyle.slice(0, 40) : null,
+                        finaleLength: typeof data.finaleLength === 'string' ? data.finaleLength.slice(0, 20) : null,
+                        finalePhase: typeof data.finalePhase === 'string' ? data.finalePhase.slice(0, 40) : 'idle',
+                        finaleQueueLength: Number.isFinite(Number(data.finaleQueueLength))
+                            ? Math.max(0, Math.floor(Number(data.finaleQueueLength)))
+                            : 0,
+                        finaleError: typeof data.finaleError === 'string' ? data.finaleError.slice(0, 300) : null,
                         visualStyle: typeof data.visualStyle === 'string' ? data.visualStyle : this.config.visualStyle,
                         reason: typeof data.reason === 'string' ? data.reason.slice(0, 300) : null,
                         updatedAt: Date.now()
@@ -325,6 +334,13 @@ class FireworksPlugin {
             missedAudioEvents: 0,
             audioPeak: null,
             timelineEvents: [],
+            finaleActive: false,
+            finaleId: null,
+            finaleStyle: null,
+            finaleLength: null,
+            finalePhase: 'idle',
+            finaleQueueLength: 0,
+            finaleError: null,
             visualStyle: this.config?.visualStyle || 'premium-hybrid',
             reason: 'No active WebGPU overlay connected'
         };
