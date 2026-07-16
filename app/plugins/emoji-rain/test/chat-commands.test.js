@@ -1,5 +1,5 @@
 /**
- * Tests for EmojiRain chat command registration and emitted burst payloads.
+ * Tests for EmojiRain chat command eligibility and emitted plain-rain payloads.
  */
 
 class MockAPI {
@@ -73,7 +73,7 @@ describe('EmojiRain chat commands', () => {
     EmojiRainPlugin = require('../main.js');
   });
 
-  test.each(commandCases)('%s registers and emits the expected burst', async (
+  test.each(commandCases)('%s registers and emits the expected plain rain for a SuperFan', async (
     name, emoji, source, permission, userCooldown, globalCooldown
   ) => {
     const api = new MockAPI();
@@ -90,7 +90,10 @@ describe('EmojiRain chat commands', () => {
       cooldown: { user: userCooldown, global: globalCooldown }
     });
 
-    const response = await command.handler([], { username: 'viewer-one' });
+    const response = await command.handler([], {
+      username: 'superfan-one',
+      userData: { teamMemberLevel: 1 }
+    });
 
     expect(response).toEqual(expect.objectContaining({ success: true, displayOverlay: true }));
     expect(api.emissions).toEqual([expect.objectContaining({
@@ -98,13 +101,43 @@ describe('EmojiRain chat commands', () => {
       data: expect.objectContaining({
         emoji,
         source,
-        username: 'viewer-one',
+        username: 'superfan-one',
         count: 30,
         intensity: 1.5,
-        burst: true,
+        burst: false,
         reason: 'command'
       })
     })]);
+  });
+
+  test('miau rejects regular viewers when animal commands are restricted to SuperFans', async () => {
+    const api = new MockAPI();
+    const plugin = new EmojiRainPlugin(api);
+    await plugin.integrateWithGCCE();
+
+    const miau = api.commands.find(command => command.name === 'miau');
+    const response = await miau.handler([], {
+      username: 'viewer-one',
+      userData: { teamMemberLevel: 0 }
+    });
+
+    expect(response).toEqual(expect.objectContaining({ success: false }));
+    expect(api.emissions).toEqual([]);
+  });
+
+  test('miau allows regular viewers when the SuperFan restriction is disabled', async () => {
+    const api = new MockAPI({ animal_commands_superfans_only: false });
+    const plugin = new EmojiRainPlugin(api);
+    await plugin.integrateWithGCCE();
+
+    const miau = api.commands.find(command => command.name === 'miau');
+    const response = await miau.handler([], {
+      username: 'viewer-one',
+      userData: { teamMemberLevel: 0 }
+    });
+
+    expect(response).toEqual(expect.objectContaining({ success: true, displayOverlay: true }));
+    expect(api.emissions[0].data).toEqual(expect.objectContaining({ burst: false }));
   });
 
   test('miau does not emit while EmojiRain is disabled', async () => {
