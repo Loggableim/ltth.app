@@ -358,12 +358,14 @@ describe('Goals firework finale integration', () => {
     expect(uiHtml).toContain('id="goal-firework-duration" type="hidden"');
     expect(uiHtml).toContain('id="goal-firework-encounter"');
     expect(uiHtml).toContain('id="goal-firework-finale-length"');
-    expect(uiHtml).toContain('<option value="inherit">Globalen Standard verwenden</option>');
+    expect(uiHtml).toContain('data-i18n="goals.modal.firework_finale_style_label"');
+    expect(uiHtml).toContain('data-i18n="goals.modal.firework_finale_length_label"');
+    expect(uiHtml.match(/data-i18n="goals\.modal\.firework_finale_global_default"/g)).toHaveLength(2);
     for (const style of ['auto', 'classic-crescendo', 'symmetric-salute', 'sky-ballet', 'thunder-finale']) {
-      expect(uiHtml).toContain(`<option value="${style}">`);
+      expect(uiHtml).toContain(`<option value="${style}"`);
     }
     for (const length of ['short', 'medium', 'long']) {
-      expect(uiHtml).toContain(`<option value="${length}">`);
+      expect(uiHtml).toContain(`<option value="${length}"`);
     }
     expect(uiHtml).toContain('id="goal-firework-progress-enabled"');
     expect(uiHtml).toContain('id="goal-firework-progress-milestones"');
@@ -377,6 +379,66 @@ describe('Goals firework finale integration', () => {
     expect(uiJs).toContain("goal.firework_encounter_mode === 'finale'");
     expect(uiJs).toContain('firework_progress_enabled');
     expect(uiJs).toContain('firework_progress_milestones');
+  });
+
+  test('localizes finale style and length selectors in every goals locale', () => {
+    const expected = {
+      de: {
+        firework_finale_style_label: 'Finale-Showstil',
+        firework_finale_length_label: 'Finale-Länge',
+        firework_finale_global_default: 'Globalen Standard verwenden',
+        firework_finale_style_auto: 'Auto',
+        firework_finale_length_short: 'Kurz (10 s)',
+        firework_finale_length_medium: 'Mittel (18 s)',
+        firework_finale_length_long: 'Lang (28 s)'
+      },
+      en: {
+        firework_finale_style_label: 'Finale Show Style',
+        firework_finale_length_label: 'Finale Length',
+        firework_finale_global_default: 'Use global default',
+        firework_finale_style_auto: 'Auto',
+        firework_finale_length_short: 'Short (10 s)',
+        firework_finale_length_medium: 'Medium (18 s)',
+        firework_finale_length_long: 'Long (28 s)'
+      },
+      es: {
+        firework_finale_style_label: 'Estilo del espectáculo final',
+        firework_finale_length_label: 'Duración de la final',
+        firework_finale_global_default: 'Usar valor global',
+        firework_finale_style_auto: 'Automático',
+        firework_finale_length_short: 'Corta (10 s)',
+        firework_finale_length_medium: 'Media (18 s)',
+        firework_finale_length_long: 'Larga (28 s)'
+      },
+      fr: {
+        firework_finale_style_label: 'Style du spectacle final',
+        firework_finale_length_label: 'Durée de la finale',
+        firework_finale_global_default: 'Utiliser le réglage global',
+        firework_finale_style_auto: 'Auto',
+        firework_finale_length_short: 'Courte (10 s)',
+        firework_finale_length_medium: 'Moyenne (18 s)',
+        firework_finale_length_long: 'Longue (28 s)'
+      }
+    };
+    const showNames = [
+      'Classic Crescendo',
+      'Symmetric Salute',
+      'Sky Ballet',
+      'Thunder Finale'
+    ];
+
+    for (const [locale, localizedValues] of Object.entries(expected)) {
+      const translations = JSON.parse(
+        fs.readFileSync(path.join(__dirname, '..', 'plugins', 'goals', 'locales', `${locale}.json`), 'utf8')
+      ).goals.modal;
+      expect(translations).toMatchObject(localizedValues);
+      expect([
+        translations.firework_finale_style_classic_crescendo,
+        translations.firework_finale_style_symmetric_salute,
+        translations.firework_finale_style_sky_ballet,
+        translations.firework_finale_style_thunder_finale
+      ]).toEqual(showNames);
+    }
   });
 
   test('sends custom style fields as goal theme from the UI save payload', () => {
