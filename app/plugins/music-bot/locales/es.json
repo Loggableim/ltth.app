@@ -26,6 +26,35 @@
         "failed": "No se pudieron guardar los ajustes.",
         "noData": "No hay datos disponibles.",
         "confirm": "¿Seguro que quieres continuar?"
+      },
+      "safety": {
+        "kicker": "Seguridad en directo",
+        "title": "Control del Soundbot",
+        "description": "La parada de emergencia termina solo los procesos del Soundbot. LTTH y la cola siguen activos.",
+        "emergencyStop": "Parada de emergencia",
+        "unlock": "Desbloquear Safety Lock",
+        "reset": "Reiniciar reproductor",
+        "testTone": "Tono de prueba"
+      },
+      "health": {
+        "refresh": "Actualizar estado",
+        "export": "Exportar diagnóstico",
+        "state": "Estado",
+        "players": "Reproductores A/B",
+        "mpv": "MPV / IPC",
+        "ipcLatency": "Latencia IPC",
+        "mediaTitle": "Título real de MPV",
+        "resolver": "Resolutor",
+        "cache": "Caché",
+        "lastError": "Último error",
+        "checkedAt": "Hora de comprobación"
+      },
+      "banMenu": {
+        "title": "Bloquear pista",
+        "track": "Bloquear esta canción",
+        "artist": "Bloquear artista",
+        "channel": "Bloquear canal",
+        "keyword": "Bloquear palabra del título"
       }
     }
   },

@@ -18,7 +18,7 @@
       const isActive = t.getAttribute('data-tab') === target;
       t.classList.toggle('active', isActive);
       t.setAttribute('aria-selected', isActive ? 'true' : 'false');
-      if (isActive) t.setAttribute('tabindex', '0');
+      t.setAttribute('tabindex', isActive ? '0' : '-1');
     });
     document.querySelectorAll('.tab-content').forEach((c) => {
       const isActive = c.getAttribute('data-tab-content') === contentTarget;
@@ -162,6 +162,32 @@
   const onboardingSettings = document.getElementById('musicbot-onboarding-settings');
   const onboardingOverlay = document.getElementById('musicbot-onboarding-overlay');
   const onboardingComplete = document.getElementById('musicbot-onboarding-complete');
+  const safetyPanel = document.getElementById('musicbot-safety-panel');
+  const safetyLockStatus = document.getElementById('safety-lock-status');
+  const emergencyStopButton = document.getElementById('emergency-stop-btn');
+  const safetyUnlockButton = document.getElementById('safety-unlock-btn');
+  const playerResetButton = document.getElementById('player-reset-btn');
+  const testToneButton = document.getElementById('test-tone-btn');
+  const healthRefreshButton = document.getElementById('health-refresh-btn');
+  const diagnosticsExportButton = document.getElementById('diagnostics-export-btn');
+  const safetyFeedback = document.getElementById('safety-feedback');
+  const healthState = document.getElementById('health-state');
+  const healthPlayers = document.getElementById('health-players');
+  const healthMpv = document.getElementById('health-mpv');
+  const healthIpcLatency = document.getElementById('health-ipc-latency');
+  const healthMediaTitle = document.getElementById('health-media-title');
+  const healthResolver = document.getElementById('health-resolver');
+  const healthCache = document.getElementById('health-cache');
+  const healthLastError = document.getElementById('health-last-error');
+  const healthCheckedAt = document.getElementById('health-checked-at');
+  const trackBanMenu = document.getElementById('track-ban-menu');
+  const trackBanMenuClose = document.getElementById('track-ban-menu-close');
+  const trackBanKeywordField = document.getElementById('track-ban-keyword-field');
+  const trackBanKeyword = document.getElementById('track-ban-keyword');
+  const trackBanStopCurrent = document.getElementById('track-ban-stop-current');
+  const trackBanRemoveQueued = document.getElementById('track-ban-remove-queued');
+  const trackBanSubmit = document.getElementById('track-ban-submit');
+  const trackBanFeedback = document.getElementById('track-ban-feedback');
 
   // Progress timer state
   let progressTimer = null;
@@ -184,6 +210,15 @@
   let mpvInstallPollTimer = null;
   let mpvInstallPollAttempts = 0;
   let skipInProgress = false;
+  let musicbotSafetyLocked = false;
+  let latestRuntime = null;
+  let latestResolver = null;
+  let latestNowPlayingTrack = null;
+  let latestQueueTracks = [];
+  let latestHistoryTracks = [];
+  let trackBanTargetId = null;
+  let trackBanScope = 'track';
+  let trackBanReturnFocus = null;
 
   // Client-side YouTube ID extraction (no server call needed for direct links)
   function extractYouTubeId(url) {
@@ -204,8 +239,12 @@
     return null;
   }
 
+  function isValidYouTubeId(value) {
+    return /^[A-Za-z0-9_-]{6,20}$/.test(String(value || ''));
+  }
+
   function setPreviewVideo(youtubeId) {
-    if (!previewFrame || !youtubeId) return;
+    if (!previewFrame || !isValidYouTubeId(youtubeId)) return;
     const params = new URLSearchParams({
       controls: '0',
       enablejsapi: '1',
@@ -927,6 +966,183 @@
     }
   });
 
+  function findClientTrack(trackId) {
+    const id = String(trackId || '');
+    if (String(latestNowPlayingTrack?.id || '') === id) return latestNowPlayingTrack;
+    return [...latestQueueTracks, ...latestHistoryTracks]
+      .find((track) => String(track?.id || '') === id) || null;
+  }
+
+  function selectTrackBanScope(scope) {
+    trackBanScope = ['track', 'artist', 'channel', 'keyword'].includes(scope) ? scope : 'track';
+    trackBanMenu?.querySelectorAll('[data-track-ban-scope]').forEach((button) => {
+      button.setAttribute('aria-checked', String(button.dataset.trackBanScope === trackBanScope));
+    });
+    if (trackBanKeywordField) trackBanKeywordField.hidden = trackBanScope !== 'keyword';
+    if (trackBanScope === 'keyword') trackBanKeyword?.focus();
+  }
+
+  function openTrackBanMenu(trigger) {
+    const id = String(trigger?.dataset?.trackId || '');
+    if (!id || !findClientTrack(id) || !trackBanMenu) return;
+    document.querySelectorAll('[data-track-ban-trigger][aria-expanded="true"]').forEach((button) => {
+      button.setAttribute('aria-expanded', 'false');
+    });
+    trackBanTargetId = id;
+    trackBanReturnFocus = trigger;
+    trigger.setAttribute('aria-expanded', 'true');
+    trackBanMenu.hidden = false;
+    if (trackBanKeyword) trackBanKeyword.value = '';
+    if (trackBanFeedback) trackBanFeedback.textContent = '';
+    selectTrackBanScope('track');
+    trackBanMenu.querySelector('[data-track-ban-scope="track"]')?.focus();
+  }
+
+  function closeTrackBanMenu() {
+    if (!trackBanMenu || trackBanMenu.hidden) return;
+    trackBanMenu.hidden = true;
+    trackBanReturnFocus?.setAttribute('aria-expanded', 'false');
+    trackBanReturnFocus?.focus();
+    trackBanTargetId = null;
+    trackBanReturnFocus = null;
+  }
+
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-track-ban-trigger]');
+    if (trigger) {
+      event.preventDefault();
+      event.stopPropagation();
+      openTrackBanMenu(trigger);
+      return;
+    }
+    if (!trackBanMenu?.hidden && !event.target.closest('#track-ban-menu')) closeTrackBanMenu();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeTrackBanMenu();
+      return;
+    }
+    if (!trackBanMenu || trackBanMenu.hidden) return;
+    const scopeOptions = Array.from(trackBanMenu.querySelectorAll('[data-track-ban-scope]'));
+    const scopeIndex = scopeOptions.indexOf(document.activeElement);
+    if (scopeIndex >= 0 && ['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft'].includes(event.key)) {
+      event.preventDefault();
+      const direction = ['ArrowDown', 'ArrowRight'].includes(event.key) ? 1 : -1;
+      scopeOptions[(scopeIndex + direction + scopeOptions.length) % scopeOptions.length]?.focus();
+      return;
+    }
+    if (event.key === 'Tab') {
+      const focusable = Array.from(trackBanMenu.querySelectorAll('button:not([disabled]), input:not([disabled])'))
+        .filter((element) => !element.closest('[hidden]'));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  });
+  trackBanMenuClose?.addEventListener('click', closeTrackBanMenu);
+  trackBanMenu?.addEventListener('click', (event) => {
+    const option = event.target.closest('[data-track-ban-scope]');
+    if (option) selectTrackBanScope(option.dataset.trackBanScope);
+  });
+  trackBanSubmit?.addEventListener('click', async () => {
+    if (!trackBanTargetId) return;
+    const keyword = trackBanKeyword?.value?.trim() || '';
+    if (trackBanScope === 'keyword' && !keyword) {
+      if (trackBanFeedback) trackBanFeedback.textContent = 'Bitte einen Titelbegriff eingeben.';
+      return;
+    }
+    setSafetyBusy(trackBanSubmit, true);
+    const result = await post('/bans/from-track', {
+      trackId: trackBanTargetId,
+      scope: trackBanScope,
+      keyword: trackBanScope === 'keyword' ? keyword : undefined,
+      stopCurrent: trackBanStopCurrent?.checked !== false,
+      removeQueued: trackBanRemoveQueued?.checked !== false
+    });
+    setSafetyBusy(trackBanSubmit, false);
+    if (!result?.success) {
+      if (trackBanFeedback) trackBanFeedback.textContent = result?.error || 'Ban fehlgeschlagen.';
+      return;
+    }
+    closeTrackBanMenu();
+    await Promise.all([renderQueueFromServer(), refreshHistory(), refreshBans()]);
+    showToast('success', 'Moderation', `${result.removedQueued || 0} Queue-Treffer entfernt.`);
+  });
+
+  emergencyStopButton?.addEventListener('click', async () => {
+    setSafetyBusy(emergencyStopButton, true);
+    const result = await post('/emergency-stop', {});
+    setSafetyBusy(emergencyStopButton, false);
+    if (result?.success) {
+      renderSafetyState({ safetyLock: true });
+      renderHealth(result.health || { locked: true, state: 'locked' });
+      showSafetyFeedback('Not-Aus ausgeführt. Die Queue bleibt erhalten.');
+      renderNowPlaying(null);
+    } else {
+      showSafetyFeedback(result?.error || 'Not-Aus fehlgeschlagen.', true);
+    }
+  });
+
+  safetyUnlockButton?.addEventListener('click', async () => {
+    setSafetyBusy(safetyUnlockButton, true);
+    const result = await post('/safety-lock', { locked: false });
+    setSafetyBusy(safetyUnlockButton, false);
+    if (result?.success) {
+      renderSafetyState({ safetyLock: false });
+      renderHealth(result.health || { locked: false, state: 'idle' });
+      showSafetyFeedback('Safety-Lock gelöst. Wiedergabe startet erst nach einer separaten Aktion.');
+    } else {
+      showSafetyFeedback(result?.error || 'Entsperren fehlgeschlagen.', true);
+    }
+  });
+
+  playerResetButton?.addEventListener('click', async () => {
+    setSafetyBusy(playerResetButton, true);
+    const result = await post('/player/reset', {});
+    setSafetyBusy(playerResetButton, false);
+    if (result?.success) {
+      renderNowPlaying(null);
+      renderHealth(result.health || {});
+      showSafetyFeedback('Soundbot-Player wurde zurückgesetzt.');
+    } else {
+      showSafetyFeedback(result?.error || 'Player-Reset fehlgeschlagen.', true);
+    }
+  });
+
+  testToneButton?.addEventListener('click', async () => {
+    setSafetyBusy(testToneButton, true);
+    const result = await post('/player/test-tone', {});
+    setSafetyBusy(testToneButton, false);
+    showSafetyFeedback(
+      result?.success ? 'Testton abgeschlossen.' : (result?.error || 'Testton fehlgeschlagen.'),
+      !result?.success
+    );
+  });
+
+  healthRefreshButton?.addEventListener('click', () => refreshDiagnostics());
+  diagnosticsExportButton?.addEventListener('click', async () => {
+    const diagnostics = await get('/diagnostics');
+    if (!diagnostics?.success) {
+      showSafetyFeedback(diagnostics?.error || 'Diagnoseexport fehlgeschlagen.', true);
+      return;
+    }
+    const blob = new Blob([JSON.stringify(diagnostics, null, 2)], { type: 'application/json' });
+    const href = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = href;
+    anchor.download = `musicbot-diagnostics-${Date.now()}.json`;
+    anchor.click();
+    URL.revokeObjectURL(href);
+    showSafetyFeedback('Diagnose wurde exportiert.');
+  });
+
   socket.on('connect', () => {
     socket.emit('musicbot:request-status');
   });
@@ -1011,6 +1227,137 @@
     }
   });
   socket.on('musicbot:song-skipped', () => refreshHistory());
+  socket.on('musicbot:runtime', (runtime) => {
+    latestRuntime = runtime || null;
+    renderSafetyState(runtime || {});
+    renderHealth({ ...runtime, resolver: latestResolver });
+  });
+  socket.on('musicbot:resolver', (resolver) => {
+    latestResolver = resolver || null;
+    renderResolverHealth(resolver || {});
+  });
+  socket.on('musicbot:health', (health) => renderHealth(health || {}));
+  socket.on('musicbot:safety-lock-changed', (safety) => {
+    renderSafetyState({ safetyLock: Boolean(safety?.locked) });
+  });
+
+  function setSafetyBusy(button, busy) {
+    if (!button) return;
+    button.disabled = Boolean(busy);
+    button.setAttribute('aria-busy', String(Boolean(busy)));
+  }
+
+  function showSafetyFeedback(message, isError = false) {
+    if (!safetyFeedback) return;
+    safetyFeedback.textContent = String(message || '');
+    safetyFeedback.classList.toggle('error', Boolean(isError));
+  }
+
+  function renderSafetyState(runtime = {}) {
+    const locked = Boolean(runtime.safetyLock ?? runtime.locked);
+    musicbotSafetyLocked = locked;
+    latestRuntime = { ...(latestRuntime || {}), ...runtime, safetyLock: locked };
+    document.documentElement.toggleAttribute('data-musicbot-locked', locked);
+    safetyPanel?.classList.toggle('is-locked', locked);
+    safetyLockStatus?.classList.toggle('is-locked', locked);
+    safetyLockStatus?.classList.toggle('is-ready', !locked);
+    if (safetyLockStatus) {
+      safetyLockStatus.textContent = locked ? 'Safety-Lock aktiv' : 'Entsperrt – wartet auf Start';
+    }
+    if (safetyUnlockButton) safetyUnlockButton.disabled = !locked;
+    document.querySelectorAll('[data-playback-action]').forEach((control) => {
+      control.disabled = locked;
+      control.setAttribute('aria-disabled', String(locked));
+    });
+  }
+
+  function slotLabel(slot) {
+    if (!slot) return '–';
+    const pid = Number(slot.pid);
+    const state = String(slot.state || slot.transportState || 'aktiv');
+    return Number.isFinite(pid) && pid > 0 ? `${state} (PID ${pid})` : state;
+  }
+
+  function formatBytes(value) {
+    const bytes = Math.max(0, Number(value) || 0);
+    if (bytes < 1024) return `${Math.round(bytes)} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GiB`;
+  }
+
+  function renderResolverHealth(resolver = {}) {
+    latestResolver = resolver;
+    if (!healthResolver) return;
+    const active = Number(resolver.active ?? resolver.runner?.active ?? 0);
+    const queued = Number(resolver.queued ?? resolver.runner?.queued ?? 0);
+    const progress = resolver.progress?.state ? ` · ${resolver.progress.state}` : '';
+    healthResolver.textContent = `${active} aktiv / ${queued} wartend${progress}`;
+    if (searchFeedback && resolver.progress?.state) {
+      const labels = {
+        queued: 'Request wartet …',
+        'searching-youtube': 'Suche auf YouTube …',
+        'searching-soundcloud': 'Suche auf SoundCloud …',
+        validating: 'Treffer werden geprüft …',
+        ready: 'Treffer bereit.',
+        failed: 'Suche fehlgeschlagen.'
+      };
+      searchFeedback.textContent = labels[resolver.progress.state] || resolver.progress.state;
+    }
+  }
+
+  function renderHealth(health = {}) {
+    const runtime = health.runtime || latestRuntime || health;
+    const slots = health.players || runtime?.slots || {};
+    if (healthState) healthState.textContent = String(health.state || runtime?.transportState || (musicbotSafetyLocked ? 'locked' : 'idle'));
+    if (healthPlayers) healthPlayers.textContent = `${slotLabel(slots.A)} / ${slotLabel(slots.B)}`;
+    if (healthMpv) {
+      const mpv = health.mpvAvailable === false ? 'nicht verfügbar' : (health.controllerHealthy === false ? 'IPC gestört' : 'bereit');
+      healthMpv.textContent = mpv;
+    }
+    const slotEntries = Object.entries(slots).filter(([, slot]) => Boolean(slot));
+    if (healthIpcLatency) {
+      const latency = slotEntries
+        .map(([name, slot]) => {
+          const value = Number(slot?.ipc?.lastLatencyMs);
+          return Number.isFinite(value) ? `${name}: ${Math.round(value)} ms` : null;
+        })
+        .filter(Boolean);
+      healthIpcLatency.textContent = latency.join(' / ') || '–';
+    }
+    if (healthMediaTitle) {
+      const titles = slotEntries
+        .map(([name, slot]) => slot?.media?.title ? `${name}: ${slot.media.title}` : null)
+        .filter(Boolean);
+      healthMediaTitle.textContent = titles.join(' / ') || '–';
+    }
+    renderResolverHealth(health.resolver || latestResolver || {});
+    if (healthCache) {
+      const cache = health.cache || {};
+      healthCache.textContent = `${formatBytes(cache.bytes)} / ${Number(cache.files) || 0} Dateien`;
+    }
+    if (healthLastError) healthLastError.textContent = String(health.lastError?.message || health.lastError || 'Keiner');
+    if (healthCheckedAt) {
+      const checkedAt = Number(health.checkedAt || Date.now());
+      healthCheckedAt.textContent = new Date(checkedAt).toLocaleTimeString();
+    }
+    if (typeof health.locked === 'boolean') renderSafetyState({ safetyLock: health.locked });
+  }
+
+  async function refreshDiagnostics() {
+    setSafetyBusy(healthRefreshButton, true);
+    const diagnostics = await get('/diagnostics');
+    setSafetyBusy(healthRefreshButton, false);
+    if (!diagnostics?.success) {
+      showSafetyFeedback(diagnostics?.error || 'Health konnte nicht geladen werden.', true);
+      return null;
+    }
+    latestRuntime = diagnostics.runtime || null;
+    latestResolver = diagnostics.resolver || null;
+    renderSafetyState(diagnostics.runtime || {});
+    renderHealth({ ...diagnostics.health, players: diagnostics.players, resolver: diagnostics.resolver });
+    return diagnostics;
+  }
 
   async function init() {
     const status = await get('/status');
@@ -1035,6 +1382,10 @@
         if (searchInput) searchInput.value = status.nowPlaying.url || '';
       }
       renderOnboarding(status.onboarding || {}, currentSetupIssues);
+      latestRuntime = status.runtime || null;
+      latestResolver = status.resolver || null;
+      renderSafetyState(status.runtime || { safetyLock: status.health?.locked });
+      renderHealth({ ...status.health, players: status.players, resolver: status.resolver });
     }
     const queueData = await get('/queue');
     if (queueData?.queue) {
@@ -1187,6 +1538,7 @@
   }
 
   function renderNowPlaying(track) {
+    latestNowPlayingTrack = track || null;
     if (!skipInProgress) {
       setSkipLoading(false);
     }
@@ -1200,9 +1552,13 @@
     }
     nowPlayingEl.classList.remove('empty');
     const dur = formatDuration(track.duration);
+    const banButton = track.id
+      ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(track.id)}" aria-haspopup="dialog" aria-expanded="false">Sperren</button>`
+      : '';
     nowPlayingEl.innerHTML = `
       <p class="title">🎵 ${escapeHtml(track.title)}</p>
       <p class="meta">${escapeHtml(track.artist || '')} • Angefragt von <strong>${escapeHtml(track.requestedBy || 'Viewer')}</strong>${dur !== '—' ? ' • ' + dur : ''}</p>
+      ${banButton}
     `;
     const actualState = track.state || 'playing';
     updateState(actualState === 'paused' ? 'Paused' : 'Playing');
@@ -1221,6 +1577,7 @@
   }
 
   function renderQueue(queue = [], length = 0) {
+    latestQueueTracks = Array.isArray(queue) ? queue.slice() : [];
     queueLengthEl.textContent = length ?? queue.length;
     if (heroQueueCount) heroQueueCount.textContent = length ?? queue.length;
     if (!queue || queue.length === 0) {
@@ -1237,7 +1594,7 @@
     queueListEl.classList.remove('empty');
     queueListEl.innerHTML = queue
       .map((item, idx) => {
-        const thumb = item.youtubeId
+        const thumb = isValidYouTubeId(item.youtubeId)
           ? `<img src="https://i.ytimg.com/vi/${item.youtubeId}/default.jpg" class="queue-thumb" alt="">`
           : '<span class="queue-thumb-placeholder">🎵</span>';
         const dur = item.duration ? ` • ${formatDuration(item.duration)}` : '';
@@ -1253,10 +1610,11 @@
             <span class="queue-meta">${escapeHtml(item.requestedBy || 'Viewer')}${dur}</span>
           </div>
           <div class="queue-actions">
-            <button class="btn primary small" data-queue-action="play" data-idx="${idx}" data-song-id="${songId}" title="Jetzt spielen">▶</button>
-            <button class="btn ghost small" data-queue-action="move-up" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${previousSongId}" title="Nach oben" ${idx === 0 ? 'disabled' : ''}>↑</button>
-            <button class="btn ghost small" data-queue-action="move-down" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${nextSongId}" title="Nach unten" ${idx === queue.length - 1 ? 'disabled' : ''}>↓</button>
-            <button class="btn danger small" data-queue-action="remove" data-idx="${idx}" title="Entfernen">✕</button>
+            <button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${songId}" aria-haspopup="dialog" aria-expanded="false" title="Sperren" aria-label="Track sperren">!</button>
+            <button class="btn primary small" data-playback-action data-queue-action="play" data-idx="${idx}" data-song-id="${songId}" title="Jetzt spielen" aria-label="Jetzt spielen" ${musicbotSafetyLocked ? 'disabled aria-disabled="true"' : ''}>▶</button>
+            <button class="btn ghost small" data-queue-action="move-up" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${previousSongId}" title="Nach oben" aria-label="Nach oben" ${idx === 0 ? 'disabled' : ''}>↑</button>
+            <button class="btn ghost small" data-queue-action="move-down" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${nextSongId}" title="Nach unten" aria-label="Nach unten" ${idx === queue.length - 1 ? 'disabled' : ''}>↓</button>
+            <button class="btn danger small" data-queue-action="remove" data-idx="${idx}" title="Entfernen" aria-label="Entfernen">✕</button>
           </div>
         </div>`;
       })
@@ -1271,6 +1629,7 @@
   }
 
   queueListEl?.addEventListener('click', async (event) => {
+    if (event.target.closest('[data-track-ban-trigger]')) return;
     const btn = event.target.closest('[data-queue-action]');
     const item = event.target.closest('.queue-item');
     const action = btn?.dataset.queueAction || (item ? 'play' : null);
@@ -1420,23 +1779,23 @@
 
   function buildEmbedUrl(song) {
     if (!song) return '';
-    if (song.youtubeId) {
+    if (isValidYouTubeId(song.youtubeId)) {
       return `https://www.youtube.com/embed/${song.youtubeId}`;
     }
     if (song.url && song.url.includes('youtube.com/watch')) {
       try {
         const url = new URL(song.url);
         const id = url.searchParams.get('v');
-        if (id) return `https://www.youtube.com/embed/${id}`;
+        if (isValidYouTubeId(id)) return `https://www.youtube.com/embed/${id}`;
       } catch (error) {
         return '';
       }
     }
     if (song.url && song.url.includes('youtu.be/')) {
       const id = song.url.split('youtu.be/')[1]?.split('?')[0];
-      if (id) return `https://www.youtube.com/embed/${id}`;
+      if (isValidYouTubeId(id)) return `https://www.youtube.com/embed/${id}`;
     }
-    return song.url || '';
+    return '';
   }
 
   function formatDuration(seconds) {
@@ -1449,6 +1808,7 @@
   }
 
   function renderHistory(history = []) {
+    latestHistoryTracks = Array.isArray(history) ? history.slice() : [];
     if (!history.length) {
       historyListEl.classList.add('empty');
       historyListEl.innerHTML = '<p>Noch keine History.</p>';
@@ -1459,10 +1819,13 @@
       .slice(-10)
       .reverse()
       .map((item) => {
-        const thumb = item.youtubeId
+        const thumb = isValidYouTubeId(item.youtubeId)
           ? `<img src="https://i.ytimg.com/vi/${item.youtubeId}/default.jpg" class="queue-thumb" alt="">`
           : '<span class="queue-thumb-placeholder">🎵</span>';
-        return `<div class="item queue-item">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || 'Viewer')}</span></div>`;
+        const banButton = item.id
+          ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(item.id)}" aria-haspopup="dialog" aria-expanded="false" aria-label="Track sperren">!</button>`
+          : '';
+        return `<div class="item queue-item">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || 'Viewer')}</span>${banButton}</div>`;
       })
       .join('');
   }

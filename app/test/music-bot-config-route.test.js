@@ -80,6 +80,70 @@ function hydratePluginForConfigRoute(plugin) {
 }
 
 describe('music-bot POST /api/plugins/music-bot/config', () => {
+  test('rejects malformed nested sections without mutating or persisting runtime config', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const previousConfig = plugin.config;
+    plugin._registerRoutes();
+    const response = createResponseMock();
+
+    await api.handlers['POST:/api/plugins/music-bot/config']({ body: { queue: null } }, response);
+
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+    expect(plugin.config).toBe(previousConfig);
+    expect(api.setConfig).not.toHaveBeenCalled();
+    expect(plugin.musicResolver.updateConfig).not.toHaveBeenCalled();
+    expect(plugin.autoDJ.updateConfig).not.toHaveBeenCalled();
+  });
+
+  test('persistence failure leaves all runtime consumers on the previous config snapshot', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const previousConfig = plugin.config;
+    api.setConfig.mockRejectedValueOnce(new Error('config database unavailable'));
+    plugin._registerRoutes();
+    const response = createResponseMock();
+
+    await api.handlers['POST:/api/plugins/music-bot/config']({
+      body: { queue: { maxLength: previousConfig.queue.maxLength + 10 } }
+    }, response);
+
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(plugin.config).toBe(previousConfig);
+    expect(plugin.queueManager.config).toBe(previousConfig);
+    expect(plugin.queueManager.queueConfig).toBe(previousConfig.queue);
+    expect(plugin.playbackEngine.setVolume).not.toHaveBeenCalled();
+    expect(api.setConfig).toHaveBeenCalledTimes(1);
+  });
+
+  test('component failure rolls back the persisted and distributed config snapshot', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const previousConfig = plugin.config;
+    plugin.playbackEngine.updateConfig = jest.fn()
+      .mockImplementationOnce(() => { throw new Error('controller rejected config'); })
+      .mockImplementationOnce(() => {});
+    plugin._registerRoutes();
+    const response = createResponseMock();
+
+    await api.handlers['POST:/api/plugins/music-bot/config']({
+      body: { playback: { crossfadeDuration: 4321 } }
+    }, response);
+
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(plugin.config).toBe(previousConfig);
+    expect(plugin.queueManager.config).toBe(previousConfig);
+    expect(plugin.playbackEngine.updateConfig).toHaveBeenCalledTimes(2);
+    expect(api.setConfig).toHaveBeenNthCalledWith(1, 'config', expect.objectContaining({
+      playback: expect.objectContaining({ crossfadeDuration: 4321 })
+    }));
+    expect(api.setConfig).toHaveBeenNthCalledWith(2, 'config', previousConfig);
+  });
+
   test('merges arrays and persists merged config including blocked keywords, aliases and gift catalogs', async () => {
     const api = createApi();
     const plugin = new MusicBotPlugin(api);

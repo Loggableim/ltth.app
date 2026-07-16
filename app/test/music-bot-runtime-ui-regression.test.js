@@ -194,26 +194,34 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin.playbackEngine.play).not.toHaveBeenCalled();
   });
 
-  test('restarts only the stalled player and resumes the active track without advancing the queue', async () => {
+  test('delegates stalled-player recovery to the single controller heartbeat without advancing the queue', async () => {
     const current = { id: 'current', title: 'Current Song', url: 'https://example.test/current.mp3' };
     const { plugin } = createPluginWithQueue([{ id: 'requested', title: 'Requested Song' }]);
+    let syncCallback;
+    const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation((callback) => {
+      syncCallback = callback;
+      return 123;
+    });
     plugin.playbackEngine = {
       getNowPlaying: jest.fn(() => current),
-      restart: jest.fn(async () => current),
-      play: jest.fn(async () => {})
+      heartbeat: jest.fn(async () => ({ action: 'recovered', position: 0 })),
+      getState: jest.fn(() => 'playing')
     };
-    plugin._stopPlaybackSync = jest.fn();
-    plugin._startPlaybackSync = jest.fn();
     plugin._skipCurrent = jest.fn();
     plugin._playNextFromQueue = jest.fn();
 
-    await plugin._recoverStalledPlayback(current, new Error('mpv did not acknowledge command: get_property'));
+    try {
+      plugin._startPlaybackSync();
+      await syncCallback();
 
-    expect(plugin.playbackEngine.restart).toHaveBeenCalledTimes(1);
-    expect(plugin.playbackEngine.play).toHaveBeenCalledWith(current);
-    expect(plugin.queueManager.shiftNext).not.toHaveBeenCalled();
-    expect(plugin._skipCurrent).not.toHaveBeenCalled();
-    expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
+      expect(plugin.playbackEngine.heartbeat).toHaveBeenCalledWith({ timeoutMs: 2000 });
+      expect(plugin.queueManager.shiftNext).not.toHaveBeenCalled();
+      expect(plugin._skipCurrent).not.toHaveBeenCalled();
+      expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
+    } finally {
+      plugin._stopPlaybackSync();
+      setIntervalSpy.mockRestore();
+    }
   });
 
   test('records the selected Auto-DJ track when its initial playback start fails', async () => {
@@ -231,31 +239,43 @@ describe('Music Bot runtime and UI regressions', () => {
     const result = await plugin._maybePlayAutoDJ(true);
 
     expect(result).toBeNull();
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(track, 'start-failed');
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(
+      expect.objectContaining(track),
+      'start-failed'
+    );
     expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledTimes(1);
     expect(plugin.autoDJ.recordFailedTrack.mock.invocationCallOrder[0])
       .toBeLessThan(plugin.autoDJ.markPlaybackFailed.mock.invocationCallOrder[0]);
     expect(plugin.autoDJ.getNextSong).toHaveBeenCalledTimes(1);
   });
 
-  test('keeps an Auto-DJ stream playing when a longer IPC position probe confirms playback', async () => {
+  test('keeps an Auto-DJ stream playing when the controller heartbeat confirms playback', async () => {
     const current = { id: 'auto-dj-current', title: 'Auto-DJ Current', requestedBy: 'AutoDJ' };
-    const { plugin } = createPluginWithQueue([]);
+    const { plugin, api } = createPluginWithQueue([]);
+    let syncCallback;
+    const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation((callback) => {
+      syncCallback = callback;
+      return 124;
+    });
     plugin.playbackEngine = {
       getNowPlaying: jest.fn(() => current),
-      getPosition: jest.fn(async () => 42),
-      restart: jest.fn(async () => current),
-      play: jest.fn(async () => {})
+      heartbeat: jest.fn(async () => ({ action: 'healthy', position: 42 })),
+      getState: jest.fn(() => 'playing')
     };
-    plugin._stopPlaybackSync = jest.fn();
-    plugin._startPlaybackSync = jest.fn();
 
-    await plugin._recoverStalledPlayback(current, new Error('mpv did not acknowledge command: get_property'));
+    try {
+      plugin._startPlaybackSync();
+      await syncCallback();
 
-    expect(plugin.playbackEngine.getPosition).toHaveBeenCalledWith({ timeoutMs: 2000 });
-    expect(plugin.playbackEngine.restart).not.toHaveBeenCalled();
-    expect(plugin.playbackEngine.play).not.toHaveBeenCalled();
-    expect(plugin._startPlaybackSync).toHaveBeenCalledTimes(1);
+      expect(plugin.playbackEngine.heartbeat).toHaveBeenCalledWith({ timeoutMs: 2000 });
+      expect(api.emit).toHaveBeenCalledWith('musicbot:playback-sync', expect.objectContaining({
+        id: current.id,
+        position: 42
+      }));
+    } finally {
+      plugin._stopPlaybackSync();
+      setIntervalSpy.mockRestore();
+    }
   });
 
   test('advances a concurrently failed Auto-DJ track only once', async () => {
@@ -347,7 +367,7 @@ describe('Music Bot runtime and UI regressions', () => {
     });
     plugin._registerPlaybackEvents();
 
-    await plugin._recoverStalledPlayback(failedTrack, new Error('watchdog timed out'));
+    await plugin._handleAutoDJPlaybackFailure(failedTrack, 'ipc-confirmed', new Error('player crashed'));
     expect(playbackEngine.getNowPlaying()).toBe(replacementTrack);
     expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
@@ -500,7 +520,7 @@ describe('Music Bot runtime and UI regressions', () => {
 
     plugin.playbackEngine = {
       getNowPlaying: jest.fn(() => activeTrack),
-      getPosition: jest.fn(() => new Promise((resolve) => { resolvePosition = resolve; })),
+      heartbeat: jest.fn(() => new Promise((resolve) => { resolvePosition = resolve; })),
       getState: jest.fn(() => 'playing')
     };
 
@@ -508,7 +528,7 @@ describe('Music Bot runtime and UI regressions', () => {
       plugin._startPlaybackSync();
       const pendingSync = syncCallback();
       activeTrack = secondTrack;
-      resolvePosition(5);
+      resolvePosition({ action: 'healthy', position: 5 });
       await pendingSync;
 
       expect(api.emit).not.toHaveBeenCalledWith('musicbot:playback-sync', expect.anything());
@@ -532,7 +552,7 @@ describe('Music Bot runtime and UI regressions', () => {
 
     plugin.playbackEngine = {
       getNowPlaying: jest.fn(() => activeTrack),
-      getPosition: jest.fn(() => new Promise((resolve) => { resolvePosition = resolve; })),
+      heartbeat: jest.fn(() => new Promise((resolve) => { resolvePosition = resolve; })),
       getState: jest.fn(() => 'playing')
     };
 
@@ -540,7 +560,7 @@ describe('Music Bot runtime and UI regressions', () => {
       plugin._startPlaybackSync();
       const pendingSync = syncCallback();
       activeTrack = secondTrack;
-      resolvePosition(5);
+      resolvePosition({ action: 'healthy', position: 5 });
       await pendingSync;
 
       expect(api.emit).not.toHaveBeenCalledWith('musicbot:playback-sync', expect.anything());

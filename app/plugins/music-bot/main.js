@@ -19,6 +19,9 @@ try {
   './lib/command-parser',
   './lib/queue-manager',
   './lib/music-resolver',
+  './lib/media-cache',
+  './lib/track-identity',
+  './lib/playback-controller',
   './lib/playback-engine',
   './lib/ban-list',
   './lib/auto-dj'
@@ -28,13 +31,14 @@ try {
 const CommandParser = require('./lib/command-parser');
 const QueueManager = require('./lib/queue-manager');
 const MusicResolver = require('./lib/music-resolver');
-const PlaybackEngine = require('./lib/playback-engine');
+const MediaCache = require('./lib/media-cache');
+const { deriveTrackIdentity } = require('./lib/track-identity');
+const PlaybackController = require('./lib/playback-controller');
 const BanList = require('./lib/ban-list');
 const AutoDJ = require('./lib/auto-dj');
 
 const DEFAULT_PRECACHE_LOOKAHEAD = 2;
 const MAX_PRECACHE_LOOKAHEAD = 5;
-const PRECACHE_KILL_TIMEOUT_MS = 1500;
 const MPV_INSTALL_TIMEOUT_MS = 5 * 60 * 1000;
 
 const DEFAULT_CONFIG = {
@@ -142,7 +146,9 @@ const DEFAULT_CONFIG = {
   },
   resolver: {
     ytdlpPath: process.env.YTDLP_PATH || 'yt-dlp',
-    searchTimeout: 15000,
+    searchTimeout: 45000,
+    textSearchTimeoutMs: 45000,
+    maxConcurrentProcesses: 2,
     maxCacheSizeMB: 2048,
     cacheTTLDays: 30
   },
@@ -159,9 +165,15 @@ const DEFAULT_CONFIG = {
     completed: false,
     completedAt: null
   },
+  safety: {
+    locked: true,
+    lockedAt: null,
+    reason: 'live-safe-migration'
+  },
   preCache: {
     enabled: true,
-    lookahead: 2
+    lookahead: 2,
+    maxConcurrentDownloads: 1
   }
 };
 
@@ -173,17 +185,25 @@ class MusicBotPlugin extends EventEmitter {
     this.db = api.getDatabase();
     this.playbackSyncTimer = null;
     this.crossfadeTimer = null;
-    this._mpvRestartAttempts = 0;
-    this._playbackSyncFailures = 0;
-    this._recoveringPlayback = false;
     this._autoDjRecoveryTracks = new WeakSet();
     this._pendingTrackAdvance = null;
     this._pendingSkipAdvance = null;
+    this._queueAdvanceOperation = null;
+    this._lifecycleGeneration = 1;
+    this._destroyed = false;
+    this._stateTransitions = [];
+    this._lastResolverProgress = null;
 
-    this.config = { ...DEFAULT_CONFIG };
+    // Constructor-only state stays inert for tests and route registration. The
+    // persisted/default live-safe lock is applied atomically by _loadConfig().
+    this.config = {
+      ...DEFAULT_CONFIG,
+      safety: { locked: false, lockedAt: null, reason: null }
+    };
     this.banList = null;
     this.queueManager = null;
     this.musicResolver = null;
+    this.mediaCache = null;
     this.playbackEngine = null;
     this.commandParser = null;
     this.autoDJ = null;
@@ -193,7 +213,7 @@ class MusicBotPlugin extends EventEmitter {
     this.pluginDataDir = null;
     this.cacheDir = null;
     this._precacheTasks = new Map();
-    this._precacheState = new Map();
+    this._pinnedCacheKeys = new Set();
     this._fallbackIndex = 0;
     this._ioEmitOriginal = null;
     this._ttsDuckingHandlers = null;
@@ -213,18 +233,36 @@ class MusicBotPlugin extends EventEmitter {
     this.pluginDataDir = this.api.ensurePluginDataDir();
     this.cacheDir = path.join(this.pluginDataDir, 'cache');
     await fsp.mkdir(this.cacheDir, { recursive: true });
-    await this._pruneCacheDir();
 
     await this._ensureYtDlp();
     await this._ensureMpv();
 
     this.queueManager = new QueueManager(this.config, this.api);
     this.musicResolver = new MusicResolver(
-      { ...this.config.resolver, moderation: this.config.moderation },
-      this.api
+      {
+        ...this.config.resolver,
+        moderation: this.config.moderation,
+        maxDurationSeconds: this.config.queue.maxSongDurationSeconds
+      },
+      this.api,
+      {
+        onProgress: (event) => this._handleResolverProgress(event)
+      }
     );
-    this.playbackEngine = new PlaybackEngine(this.config.playback, this.api);
+    this.mediaCache = new MediaCache({
+      ...this.config.resolver,
+      ...this.config.preCache,
+      cacheDir: this.cacheDir,
+      maxConcurrentDownloads: this.config.preCache.maxConcurrentDownloads
+    }, this.api, { runner: this.musicResolver.runner });
+    await this.mediaCache.prune();
+    this.playbackEngine = new PlaybackController(this.config.playback, this.api);
     await this.playbackEngine.setVolume(this._computeEffectiveVolume());
+    if (this.config.safety.locked) {
+      await this.playbackEngine.emergencyStop();
+    } else {
+      this.playbackEngine.releaseSafetyLock();
+    }
     this.banList = new BanList(this.api);
     this.autoDJ = new AutoDJ(this.config.autoDJ, this.musicResolver, this.db, this.api);
 
@@ -251,8 +289,30 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   async destroy() {
+    if (this._destroyed) return;
+    this._destroyed = true;
+    this._lifecycleGeneration += 1;
+    this._recordTransition('destroyed', 'plugin-destroy');
+    this._stopPlaybackSync();
+    this._clearCrossfadeTimer();
+    this._pendingTrackAdvance = null;
+    this._pendingSkipAdvance = null;
+    this._cleanupDuckingHooks();
+
+    await this._stopPrecacheTasks();
     try {
-      await this.playbackEngine.shutdown();
+      await this.mediaCache?.destroy?.();
+    } catch (error) {
+      this.api.log(`[music-bot] Failed to shutdown media cache: ${error.message}`, 'error');
+    }
+    try {
+      await this.musicResolver?.destroy?.();
+    } catch (error) {
+      this.api.log(`[music-bot] Failed to shutdown resolver: ${error.message}`, 'error');
+    }
+    this.playbackEngine?.removeAllListeners?.();
+    try {
+      await this.playbackEngine?.shutdown?.();
     } catch (error) {
       this.api.log(`[music-bot] Failed to shutdown playback: ${error.message}`, 'error');
     }
@@ -260,14 +320,10 @@ class MusicBotPlugin extends EventEmitter {
     // Keep queued songs across app restarts and plugin reloads. Explicit user
     // actions still use queueManager.clear() through the clear route/command.
     this.queueManager?.persistQueue?.();
-    this._cleanupDuckingHooks();
-    await this._stopPrecacheTasks();
     this._pendingRequests.clear();
     this._requestCredits.clear();
     this._userLikes.clear();
     this.removeAllListeners();
-    this._stopPlaybackSync();
-    this._clearCrossfadeTimer();
     this.api.log('[music-bot] Plugin destroyed', 'info');
   }
 
@@ -282,6 +338,7 @@ class MusicBotPlugin extends EventEmitter {
     this.config.audio = this._mergeDeep(DEFAULT_CONFIG.audio, this.config.audio || {});
     this.config.autoDJ = this._normalizeAutoDJConfig(this.config.autoDJ);
     this.config.onboarding = this._normalizeOnboarding(this.config.onboarding);
+    this.config.safety = this._normalizeSafetyConfig(this.config.safety);
     if (!Array.isArray(this.config.moderation.blockedKeywords)) {
       this.config.moderation.blockedKeywords = [];
     }
@@ -794,6 +851,86 @@ class MusicBotPlugin extends EventEmitter {
     return { valid: true };
   }
 
+  _prepareLiveConfigUpdate(payload) {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      return { valid: false, error: 'config payload must be an object' };
+    }
+    const update = { ...payload };
+    delete update.safety;
+    const objectSections = [
+      'commands', 'commandAliases', 'permissions', 'queue', 'playback', 'voteSkip',
+      'audio', 'autoDJ', 'fallbackPlaylist', 'moderation', 'monetization',
+      'giftIntegration', 'resolver', 'onboarding', 'preCache'
+    ];
+    for (const section of objectSections) {
+      if (!Object.prototype.hasOwnProperty.call(update, section)) continue;
+      const value = update[section];
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return { valid: false, error: `${section} must be an object` };
+      }
+    }
+
+    const config = this._mergeDeep(this.config, update);
+    for (const section of objectSections) {
+      const defaults = DEFAULT_CONFIG[section];
+      if (defaults && typeof defaults === 'object' && !Array.isArray(defaults)) {
+        config[section] = this._mergeDeep(defaults, config[section] || {});
+      }
+    }
+    config.autoDJ = this._normalizeAutoDJConfig(config.autoDJ);
+    config.safety = this._normalizeSafetyConfig(this.config.safety);
+    config.onboarding = this._normalizeOnboarding(config.onboarding);
+    config.moderation.blockedKeywords = Array.isArray(config.moderation.blockedKeywords)
+      ? [...config.moderation.blockedKeywords]
+      : [];
+    config.monetization.payToPlayGiftCatalog = this._normalizeGiftList(config.monetization.payToPlayGiftCatalog);
+    config.monetization.payToSkipGiftCatalog = this._normalizeGiftList(config.monetization.payToSkipGiftCatalog);
+    config.monetization.minLikesPerUser = Math.max(1, Number(config.monetization.minLikesPerUser) || 1);
+    config.monetization.payToPlayMinCoins = Math.max(0, Number(config.monetization.payToPlayMinCoins) || 0);
+    const masterVolume = Number(config.audio.masterVolume);
+    const sourceVolume = Number(config.audio.sourceVolume);
+    config.audio.masterVolume = Math.max(
+      0,
+      Math.min(100, Number.isFinite(masterVolume) ? masterVolume : DEFAULT_CONFIG.audio.masterVolume)
+    );
+    config.audio.sourceVolume = Math.max(
+      0,
+      Math.min(100, Number.isFinite(sourceVolume) ? sourceVolume : DEFAULT_CONFIG.audio.sourceVolume)
+    );
+    config.playback.defaultVolume = Math.round(
+      (config.audio.masterVolume * config.audio.sourceVolume) / 100
+    );
+    const aliasValidation = this._validateCommandAliases(config);
+    if (!aliasValidation.valid) return aliasValidation;
+    return { valid: true, config };
+  }
+
+  _distributeLiveConfig(config) {
+    this.config = config;
+    if (this.queueManager) {
+      this.queueManager.config = config;
+      this.queueManager.queueConfig = config.queue;
+    }
+    if (typeof this.playbackEngine?.updateConfig === 'function') {
+      this.playbackEngine.updateConfig(config.playback);
+    } else if (this.playbackEngine) {
+      this.playbackEngine.config = config.playback;
+    }
+    if (this.commandParser) this.commandParser.config = config;
+    this.musicResolver?.updateConfig?.({
+      ...config.resolver,
+      moderation: config.moderation,
+      maxDurationSeconds: config.queue.maxSongDurationSeconds
+    });
+    this.autoDJ?.updateConfig?.(config.autoDJ);
+    if (this.mediaCache) {
+      const ttlDays = Number(config.resolver.cacheTTLDays);
+      const maxSizeMB = Number(config.resolver.maxCacheSizeMB);
+      if (Number.isFinite(ttlDays) && ttlDays > 0) this.mediaCache.ttlDays = ttlDays;
+      if (Number.isFinite(maxSizeMB) && maxSizeMB > 0) this.mediaCache.maxSizeMB = maxSizeMB;
+    }
+  }
+
   _computeEffectiveVolume() {
     const master = Math.max(0, Math.min(100, Number(this.config.audio?.masterVolume) || 0));
     const source = Math.max(0, Math.min(100, Number(this.config.audio?.sourceVolume) || 0));
@@ -829,6 +966,165 @@ class MusicBotPlugin extends EventEmitter {
       completed,
       completedAt
     };
+  }
+
+  _normalizeSafetyConfig(value) {
+    const source = value && typeof value === 'object' ? value : {};
+    const locked = source.locked === undefined
+      ? DEFAULT_CONFIG.safety.locked
+      : Boolean(source.locked);
+    return {
+      locked,
+      lockedAt: locked && Number.isFinite(Number(source.lockedAt))
+        ? Number(source.lockedAt)
+        : null,
+      reason: locked
+        ? String(source.reason || DEFAULT_CONFIG.safety.reason || 'safety-lock')
+        : null
+    };
+  }
+
+  _recordTransition(to, reason, details = {}) {
+    const snapshot = {
+      at: Date.now(),
+      generation: this._lifecycleGeneration,
+      to: String(to || 'unknown'),
+      reason: String(reason || 'unspecified'),
+      details: this._sanitizeDiagnosticValue(details)
+    };
+    this._stateTransitions.push(snapshot);
+    if (this._stateTransitions.length > 100) {
+      this._stateTransitions.splice(0, this._stateTransitions.length - 100);
+    }
+    return snapshot;
+  }
+
+  _sanitizeDiagnosticValue(value, depth = 0) {
+    if (depth > 4) return '[truncated]';
+    if (Array.isArray(value)) {
+      return value.slice(0, 100).map((entry) => this._sanitizeDiagnosticValue(entry, depth + 1));
+    }
+    if (!value || typeof value !== 'object') {
+      if (typeof value === 'string' && /(?:https?:\/\/|\\\\\.\\pipe\\|[a-z]:\\)/i.test(value)) {
+        return '[redacted]';
+      }
+      return value;
+    }
+    const output = {};
+    Object.entries(value).forEach(([key, entry]) => {
+      if (/url|path|pipe|socket|header|stack/i.test(key)) {
+        output[key] = '[redacted]';
+        return;
+      }
+      output[key] = this._sanitizeDiagnosticValue(entry, depth + 1);
+    });
+    return output;
+  }
+
+  _isSafetyLocked() {
+    return Boolean(
+      this.config?.safety?.locked || this.playbackEngine?.isSafetyLocked?.()
+    );
+  }
+
+  _lockedResult() {
+    return {
+      success: false,
+      locked: true,
+      error: 'Der Soundbot ist durch den Safety-Lock gesperrt.'
+    };
+  }
+
+  async _engageSafetyLock(reason = 'manual') {
+    const lockedAt = Date.now();
+    this.config.safety = {
+      locked: true,
+      lockedAt,
+      reason: String(reason || 'manual')
+    };
+    this._lifecycleGeneration += 1;
+    this._recordTransition('locked', this.config.safety.reason);
+
+    // Persist first, but never let a storage failure block the actual kill path.
+    let persistError = null;
+    try {
+      await this.api.setConfig('config', this.config);
+    } catch (error) {
+      persistError = error;
+      this.api.log(`[music-bot] Failed to persist Safety Lock before stopping audio: ${error.message}`, 'error');
+    }
+    this._stopPlaybackSync();
+    this._clearCrossfadeTimer();
+    this._pendingTrackAdvance = null;
+    this._pendingSkipAdvance = null;
+    await Promise.allSettled([
+      Promise.resolve(this.musicResolver?.cancelAll?.()),
+      Promise.resolve(this._stopPrecacheTasks?.())
+    ]);
+    await this.playbackEngine?.emergencyStop?.(this.config.safety.reason);
+    this.queueManager?.markPlaying?.(null);
+    this._emitPlaybackStopped();
+    this._emitNowPlaying(null);
+    this._emitSafetyState();
+    if (persistError) throw persistError;
+    return this.config.safety;
+  }
+
+  async _releaseSafetyLock() {
+    this.config.safety = {
+      locked: false,
+      lockedAt: null,
+      reason: null
+    };
+    await this.api.setConfig('config', this.config);
+    this.playbackEngine?.releaseSafetyLock?.();
+    this._recordTransition('idle', 'safety-lock-released');
+    this._emitSafetyState();
+    return this.config.safety;
+  }
+
+  async _handleControllerSafetyChange(payload = {}) {
+    const locked = Boolean(payload.locked);
+    const reason = locked ? String(payload.reason || 'controller-safety-lock') : null;
+    if (
+      this.config.safety?.locked === locked
+      && (!locked || this.config.safety.reason === reason)
+    ) {
+      return;
+    }
+    this.config.safety = {
+      locked,
+      lockedAt: locked ? Number(payload.lockedAt || Date.now()) : null,
+      reason
+    };
+    this._lifecycleGeneration += 1;
+    this._recordTransition(locked ? 'locked' : 'idle', reason || 'controller-safety-release');
+    let persistError = null;
+    try {
+      await this.api.setConfig('config', this.config);
+    } catch (error) {
+      persistError = error;
+      this.api.log(`[music-bot] Failed to persist controller Safety Lock: ${error.message}`, 'error');
+    }
+    if (locked) {
+      this._stopPlaybackSync();
+      this._clearCrossfadeTimer();
+      await Promise.allSettled([
+        Promise.resolve(this.musicResolver?.cancelAll?.()),
+        Promise.resolve(this._stopPrecacheTasks?.())
+      ]);
+      this.queueManager?.markPlaying?.(null);
+      this._emitPlaybackStopped();
+      this._emitNowPlaying(null);
+    }
+    this._emitSafetyState();
+    if (persistError) throw persistError;
+  }
+
+  _emitSafetyState() {
+    const safety = { ...this.config.safety };
+    this.api.emit('musicbot:safety-lock-changed', safety);
+    this._emitRuntimeHealth();
   }
 
   _normalizeAutoDJConfig(value) {
@@ -884,7 +1180,21 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   async _restoreState() {
-    this.queueManager.restoreQueue();
+    const restored = this.queueManager.restoreQueue({
+      isAllowed: (song) => !this._checkBans(song, song.requestedBy)
+    });
+    for (const song of this.queueManager.getQueue()) {
+      const cachedPath = song.trackKey ? this.mediaCache?.get?.(song.trackKey) : null;
+      if (cachedPath) {
+        this.queueManager.setTrackLocalPath(song.trackKey, cachedPath);
+      }
+    }
+    if (restored && typeof restored === 'object') {
+      this.api.log(
+        `[music-bot] Queue restore: ${restored.restored} restored, ${restored.deduped} duplicates, ${restored.banned} banned`,
+        'info'
+      );
+    }
     this._emitStatus();
     this._emitQueue();
     this._schedulePreCache();
@@ -892,17 +1202,18 @@ class MusicBotPlugin extends EventEmitter {
 
   _registerPlaybackEvents() {
     this.playbackEngine.on('track-start', (track) => {
+      if (track?.trackKey) this.mediaCache?.pin?.(track.trackKey);
       this.queueManager.markPlaying(track);
       this.queueManager.resetVoteSkips();
       this.autoDJ?.setPlaybackSeed?.(track);
       this._emitNowPlaying(track);
-      this._mpvRestartAttempts = 0;
       this._startPlaybackSync();
       this._scheduleCrossfadeTransition(track);
       this._schedulePreCache();
     });
 
     this.playbackEngine.on('track-end', (info) => {
+      if (info.track?.trackKey) this.mediaCache?.unpin?.(info.track.trackKey);
       const activeTrack = this.playbackEngine.getNowPlaying?.();
       if (info.reason === 'error' && !info.track && !activeTrack) {
         return;
@@ -968,6 +1279,7 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.playbackEngine.on('crashed', async () => {
+      if (this._destroyed || this._isSafetyLocked()) return;
       const current = this.playbackEngine.getNowPlaying();
       if (current?.requestedBy === 'AutoDJ') {
         const crashError = new Error(`mpv crashed while playing "${current.title || current.id}"`);
@@ -977,21 +1289,27 @@ class MusicBotPlugin extends EventEmitter {
           });
         return;
       }
-      this._mpvRestartAttempts += 1;
-      if (this._mpvRestartAttempts > 3 || !current) {
-        this.api.log('[music-bot] mpv crashed and could not be restarted', 'error');
-        this.playbackEngine.clearNowPlaying();
-        this._emitPlaybackStopped();
-        return;
-      }
-      this.api.log('[music-bot] mpv crashed, attempting automatic restart', 'warn');
-      setTimeout(async () => {
-        try {
-          await this.playbackEngine.play(current);
-        } catch (error) {
-          this.api.log(`[music-bot] mpv restart failed: ${error.message}`, 'error');
-        }
-      }, 2000);
+      this.api.log('[music-bot] mpv crashed; playback remains stopped until a controlled start/reset', 'error');
+      this.playbackEngine.clearNowPlaying();
+      this.queueManager?.markPlaying?.(null);
+      this._emitPlaybackStopped();
+      this._emitNowPlaying(null);
+    });
+
+    this.playbackEngine.on('transition', (transition) => {
+      if (this._destroyed || !transition) return;
+      this._recordTransition(
+        transition.state || transition.kind || 'playback',
+        transition.reason || transition.action || 'controller-transition',
+        transition
+      );
+      this._emitRuntimeHealth();
+    });
+
+    this.playbackEngine.on('safety-lock-changed', (payload) => {
+      Promise.resolve(this._handleControllerSafetyChange(payload)).catch((error) => {
+        this.api.log(`[music-bot] Failed to persist controller safety state: ${error.message}`, 'error');
+      });
     });
   }
 
@@ -1018,6 +1336,82 @@ class MusicBotPlugin extends EventEmitter {
 
     this.api.registerRoute('get', '/api/plugins/music-bot/status', async (req, res) => {
       res.json(this._buildStatusPayload());
+    });
+
+    this.api.registerRoute('get', '/api/plugins/music-bot/diagnostics', async (req, res) => {
+      res.json(this._buildDiagnosticsPayload());
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/emergency-stop', async (req, res) => {
+      try {
+        const safety = await this._engageSafetyLock('emergency-stop');
+        res.json({ success: true, locked: true, safety, health: this._buildHealthPayload() });
+      } catch (error) {
+        this.api.log(`[music-bot] Emergency stop failed: ${error.message}`, 'error');
+        res.status(500).json({ success: false, locked: true, error: error.message });
+      }
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/safety-lock', async (req, res) => {
+      const requested = req.body?.locked;
+      if (typeof requested !== 'boolean') {
+        res.status(400).json({ success: false, error: 'locked must be a boolean' });
+        return;
+      }
+      try {
+        const safety = requested
+          ? await this._engageSafetyLock('manual')
+          : await this._releaseSafetyLock();
+        res.json({ success: true, locked: safety.locked, safety, health: this._buildHealthPayload() });
+      } catch (error) {
+        this.api.log(`[music-bot] Safety lock update failed: ${error.message}`, 'error');
+        res.status(500).json({ success: false, locked: this._isSafetyLocked(), error: error.message });
+      }
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/player/reset', async (req, res) => {
+      try {
+        const remainLocked = this._isSafetyLocked();
+        this._stopPlaybackSync();
+        this._clearCrossfadeTimer();
+        await this.playbackEngine.resetPlayer({ remainLocked });
+        this._recordTransition(remainLocked ? 'locked' : 'idle', 'player-reset');
+        this._emitPlaybackStopped();
+        this._emitNowPlaying(null);
+        this._emitSafetyState();
+        res.json({
+          success: true,
+          locked: remainLocked,
+          queueLength: this.queueManager.getQueue().length,
+          health: this._buildHealthPayload()
+        });
+      } catch (error) {
+        this.api.log(`[music-bot] Player reset failed: ${error.message}`, 'error');
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/player/test-tone', async (req, res) => {
+      if (this._isSafetyLocked()) {
+        res.status(423).json(this._lockedResult());
+        return;
+      }
+      if (this.playbackEngine.getNowPlaying?.() || this.playbackEngine.isPlaying?.()) {
+        res.status(409).json({ success: false, error: 'Der Testton ist nur bei inaktivem Player verfügbar.' });
+        return;
+      }
+      if (typeof this.playbackEngine.testTone !== 'function') {
+        res.status(501).json({ success: false, error: 'Testton wird von diesem Player nicht unterstützt.' });
+        return;
+      }
+      try {
+        const result = await this.playbackEngine.testTone();
+        this._recordTransition('idle', 'test-tone');
+        res.json({ success: true, ...(result || {}) });
+      } catch (error) {
+        this.api.log(`[music-bot] Test tone failed: ${error.message}`, 'error');
+        res.status(500).json({ success: false, error: error.message });
+      }
     });
 
     this.api.registerRoute('get', '/api/plugins/music-bot/setup-status', (req, res) => {
@@ -1065,8 +1459,9 @@ class MusicBotPlugin extends EventEmitter {
         res.status(400).json({ success: false, error: 'Missing query' });
         return;
       }
+      const requestAbort = this._createRequestAbort(req);
       try {
-        const resolved = await this.musicResolver.resolve(query);
+        const resolved = await this.musicResolver.resolve(query, { signal: requestAbort.signal });
         if (!resolved?.success) {
           res.status(400).json(resolved);
           return;
@@ -1082,6 +1477,8 @@ class MusicBotPlugin extends EventEmitter {
       } catch (error) {
         this.api.log(`[music-bot] Resolve failed: ${error.message}`, 'error');
         res.status(500).json({ success: false, error: error.message });
+      } finally {
+        requestAbort.cleanup();
       }
     });
 
@@ -1098,11 +1495,22 @@ class MusicBotPlugin extends EventEmitter {
         res.status(400).json({ success: false, error: 'Missing query' });
         return;
       }
-      const result = await this._handleDashboardRequest(query, username, requesterAvatar);
+      const requestAbort = this._createRequestAbort(req);
+      const result = await this._handleDashboardRequest(
+        query,
+        username,
+        requesterAvatar,
+        { signal: requestAbort.signal }
+      );
+      requestAbort.cleanup();
       res.status(result.success ? 200 : 400).json(result);
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/skip', async (req, res) => {
+      if (this._isSafetyLocked()) {
+        res.status(423).json(this._lockedResult());
+        return;
+      }
       const current = this.playbackEngine.getNowPlaying();
       if (!current) {
         const next = await this._playNextFromQueue();
@@ -1154,6 +1562,10 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/resume', async (req, res) => {
+      if (this._isSafetyLocked()) {
+        res.status(423).json(this._lockedResult());
+        return;
+      }
       const current = this.playbackEngine.getNowPlaying();
       if (current) {
         if (this.playbackEngine.getState() === 'paused') {
@@ -1195,51 +1607,46 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/config', async (req, res) => {
-      const update = req.body || {};
-      const previousMpvPath = this.config?.playback?.mpvPath;
-      const previousYtDlpPath = this.config?.resolver?.ytdlpPath;
-      const merged = this._mergeDeep(this.config, update);
-      const aliasValidation = this._validateCommandAliases(merged);
-      if (!aliasValidation.valid) {
-        res.status(400).json({ success: false, error: aliasValidation.error });
+      const prepared = this._prepareLiveConfigUpdate(req.body || {});
+      if (!prepared.valid) {
+        res.status(400).json({ success: false, error: prepared.error });
         return;
       }
-      this.config = merged;
-      this.config.moderation = this._mergeDeep(DEFAULT_CONFIG.moderation, this.config.moderation || {});
-      this.config.monetization = this._mergeDeep(DEFAULT_CONFIG.monetization, this.config.monetization || {});
-      this.config.audio = this._mergeDeep(DEFAULT_CONFIG.audio, this.config.audio || {});
-      this.config.autoDJ = this._normalizeAutoDJConfig(this.config.autoDJ);
-      if (!Array.isArray(this.config.moderation.blockedKeywords)) {
-        this.config.moderation.blockedKeywords = [];
+      const previousConfig = this.config;
+      const nextConfig = prepared.config;
+      const mpvPathChanged = previousConfig?.playback?.mpvPath !== nextConfig.playback.mpvPath;
+      const ytDlpPathChanged = previousConfig?.resolver?.ytdlpPath !== nextConfig.resolver.ytdlpPath;
+      let persistedNext = false;
+      try {
+        // Persistence is the commit point; runtime consumers only see the new
+        // immutable snapshot after durable storage accepted it.
+        await this.api.setConfig('config', nextConfig);
+        persistedNext = true;
+        this._distributeLiveConfig(nextConfig);
+        if (this.mediaCache) {
+          await this.mediaCache.prune({ protectedKeys: [...this._pinnedCacheKeys] });
+        }
+        if (ytDlpPathChanged) await this._ensureYtDlp();
+        if (mpvPathChanged) await this._ensureMpv();
+        await this._applyAudioVolume();
+        if (mpvPathChanged || ytDlpPathChanged) this._emitSetupStatus();
+        res.json({ success: true, config: this.config });
+      } catch (error) {
+        try {
+          this._distributeLiveConfig(previousConfig);
+        } catch (rollbackError) {
+          this.api.log(`[music-bot] Live config runtime rollback failed: ${rollbackError.message}`, 'error');
+        }
+        if (persistedNext) {
+          try {
+            await this.api.setConfig('config', previousConfig);
+          } catch (rollbackError) {
+            this.api.log(`[music-bot] Live config persistence rollback failed: ${rollbackError.message}`, 'error');
+          }
+        }
+        this.api.log(`[music-bot] Live config update rejected: ${error.message}`, 'error');
+        res.status(500).json({ success: false, error: error.message });
       }
-      this.config.monetization.payToPlayGiftCatalog = this._normalizeGiftList(this.config.monetization.payToPlayGiftCatalog);
-      this.config.monetization.payToSkipGiftCatalog = this._normalizeGiftList(this.config.monetization.payToSkipGiftCatalog);
-      this.config.monetization.minLikesPerUser = Math.max(1, Number(this.config.monetization.minLikesPerUser) || 1);
-      this.config.monetization.payToPlayMinCoins = Math.max(0, Number(this.config.monetization.payToPlayMinCoins) || 0);
-      const requestedMasterVolume = Number(this.config.audio.masterVolume);
-      const requestedSourceVolume = Number(this.config.audio.sourceVolume);
-      this.config.audio.masterVolume = Math.max(0, Math.min(100, Number.isFinite(requestedMasterVolume) ? requestedMasterVolume : DEFAULT_CONFIG.audio.masterVolume));
-      this.config.audio.sourceVolume = Math.max(0, Math.min(100, Number.isFinite(requestedSourceVolume) ? requestedSourceVolume : DEFAULT_CONFIG.audio.sourceVolume));
-      this.config.onboarding = this._normalizeOnboarding(this.config.onboarding);
-      this.queueManager.config = this.config;
-      this.queueManager.queueConfig = this.config.queue;
-      this.playbackEngine.config = this.config.playback;
-      this.musicResolver.updateConfig({ ...this.config.resolver, moderation: this.config.moderation });
-      this.autoDJ?.updateConfig(this.config.autoDJ);
-      const mpvPathChanged = previousMpvPath !== this.config?.playback?.mpvPath;
-      const ytDlpPathChanged = previousYtDlpPath !== this.config?.resolver?.ytdlpPath;
-      if (ytDlpPathChanged) {
-        await this._ensureYtDlp();
-      }
-      if (mpvPathChanged) {
-        await this._ensureMpv();
-      }
-      await this._applyAudioVolume();
-      await this.api.setConfig('config', this.config);
-      if (mpvPathChanged || ytDlpPathChanged) {
-        this._emitSetupStatus();
-      }
-      res.json({ success: true, config: this.config });
     });
 
     this.api.registerRoute('get', '/api/plugins/music-bot/history', async (req, res) => {
@@ -1293,6 +1700,10 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/queue/:index/play', async (req, res) => {
+      if (this._isSafetyLocked()) {
+        res.status(423).json(this._lockedResult());
+        return;
+      }
       const index = Number(req.params.index);
       if (!Number.isInteger(index) || index < 0) {
         res.status(400).json({ success: false, error: 'Invalid queue position' });
@@ -1342,7 +1753,7 @@ class MusicBotPlugin extends EventEmitter {
 
     this.api.registerRoute('post', '/api/plugins/music-bot/bans', async (req, res) => {
       const { type, value, reason } = req.body || {};
-      const validTypes = ['url', 'keyword', 'channel', 'user'];
+      const validTypes = ['url', 'keyword', 'channel', 'user', 'artist', 'track'];
       if (!validTypes.includes(type) || !value || !String(value).trim()) {
         res.status(400).json({ success: false, error: 'type and value are required' });
         return;
@@ -1352,6 +1763,62 @@ class MusicBotPlugin extends EventEmitter {
         res.json({ success: true, ban });
       } catch (error) {
         this.api.log(`[music-bot] Failed to add ban: ${error.message}`, 'error');
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/bans/from-track', async (req, res) => {
+      const {
+        trackId,
+        scope = 'track',
+        keyword,
+        stopCurrent = true,
+        removeQueued = true
+      } = req.body || {};
+      const track = this._findTrackForBan(trackId);
+      if (!track) {
+        res.status(404).json({ success: false, error: 'Track wurde nicht gefunden.' });
+        return;
+      }
+      const selection = this._resolveTrackBanSelection(track, scope, keyword);
+      if (!selection.success) {
+        res.status(400).json(selection);
+        return;
+      }
+      try {
+        const ban = this.banList.addBan(
+          selection.type,
+          selection.value,
+          `Admin-Ban: ${track.title || track.id}`,
+          'dashboard'
+        );
+        let removedQueued = 0;
+        if (removeQueued) {
+          const queue = this.queueManager.getQueue();
+          for (let index = queue.length - 1; index >= 0; index -= 1) {
+            if (!this._trackMatchesBanSelection(queue[index], selection)) continue;
+            if (this.queueManager.removeSong(index).success) removedQueued += 1;
+          }
+        }
+
+        const current = this.playbackEngine.getNowPlaying?.();
+        const stoppedCurrent = Boolean(
+          stopCurrent && current && this._trackMatchesBanSelection(current, selection)
+        );
+        if (stoppedCurrent) {
+          await this.playbackEngine.stop();
+          this.playbackEngine.clearNowPlaying?.();
+          this.queueManager.markPlaying?.(null);
+          this._emitPlaybackStopped();
+          this._emitNowPlaying(null);
+        }
+        this._emitQueue();
+        if (stoppedCurrent && !this._isSafetyLocked()) {
+          await this._playNextFromQueue();
+        }
+        res.json({ success: true, ban, stoppedCurrent, removedQueued });
+      } catch (error) {
+        this.api.log(`[music-bot] Failed to ban track: ${error.message}`, 'error');
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -1383,6 +1850,7 @@ class MusicBotPlugin extends EventEmitter {
       let track = null;
       if (
         this.config.autoDJ.enabled &&
+        !this._isSafetyLocked() &&
         !this.playbackEngine?.isPlaying?.() &&
         this.queueManager?.getQueue?.().length === 0
       ) {
@@ -1392,6 +1860,10 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/auto-dj/skip', async (req, res) => {
+      if (this._isSafetyLocked()) {
+        res.status(423).json(this._lockedResult());
+        return;
+      }
       const next = await this._maybePlayAutoDJ(true);
       res.json({ success: Boolean(next), track: next || null, status: this.autoDJ?.getStatus() });
     });
@@ -1410,9 +1882,16 @@ class MusicBotPlugin extends EventEmitter {
         masterVolume: this.config.audio.masterVolume,
         sourceVolume: this.config.audio.sourceVolume
       });
+      socket.emit('musicbot:runtime', this._buildRuntimeSnapshot());
+      socket.emit('musicbot:resolver', this._buildResolverSnapshot());
+      socket.emit('musicbot:health', this._buildHealthPayload());
     });
 
-    this.api.registerSocket('musicbot:dashboard-skip', async () => {
+    this.api.registerSocket('musicbot:dashboard-skip', async (socket) => {
+      if (this._isSafetyLocked()) {
+        socket?.emit?.('musicbot:error', { message: this._lockedResult().error, locked: true });
+        return;
+      }
       await this._skipCurrent('dashboard-socket');
     });
 
@@ -1436,12 +1915,20 @@ class MusicBotPlugin extends EventEmitter {
       }
     });
 
-    this.api.registerSocket('musicbot:dashboard-pause', async () => {
+    this.api.registerSocket('musicbot:dashboard-pause', async (socket) => {
+      if (this._isSafetyLocked()) {
+        socket?.emit?.('musicbot:error', { message: this._lockedResult().error, locked: true });
+        return;
+      }
       await this.playbackEngine.pause();
       this._emitPaused();
     });
 
-    this.api.registerSocket('musicbot:dashboard-resume', async () => {
+    this.api.registerSocket('musicbot:dashboard-resume', async (socket) => {
+      if (this._isSafetyLocked()) {
+        socket?.emit?.('musicbot:error', { message: this._lockedResult().error, locked: true });
+        return;
+      }
       await this.playbackEngine.resume();
       this._emitResumed();
     });
@@ -1558,6 +2045,10 @@ class MusicBotPlugin extends EventEmitter {
         this._emitPaused();
         return;
       case 'resume':
+        if (this._isSafetyLocked()) {
+          this._emitChatResponse(this._lockedResult().error, username);
+          return;
+        }
         await this.playbackEngine.resume();
         this._emitResumed();
         return;
@@ -1659,9 +2150,19 @@ class MusicBotPlugin extends EventEmitter {
     return false;
   }
 
-  async _handleDashboardRequest(query, username, requesterAvatar = null) {
+  _createRequestAbort(req) {
+    const controller = new AbortController();
+    const onAborted = () => controller.abort();
+    req?.once?.('aborted', onAborted);
+    return {
+      signal: controller.signal,
+      cleanup: () => req?.removeListener?.('aborted', onAborted)
+    };
+  }
+
+  async _handleDashboardRequest(query, username, requesterAvatar = null, options = {}) {
     try {
-      const resolved = await this.musicResolver.resolve(query);
+      const resolved = await this.musicResolver.resolve(query, { signal: options.signal });
       if (!resolved?.success) {
         this._emitToast('error', 'API-Fehler', resolved?.message || 'Song konnte nicht geladen werden.');
         return { success: false, error: resolved?.message || 'Song konnte nicht geladen werden.' };
@@ -1827,6 +2328,16 @@ class MusicBotPlugin extends EventEmitter {
       return 'Dieser Song ist gesperrt.';
     }
 
+    const trackBan = this.banList?.isTrackBanned?.(song.trackKey);
+    if (trackBan?.banned) {
+      return 'Dieser Song ist gesperrt.';
+    }
+
+    const artistBan = this.banList?.isArtistBanned?.(song.artist);
+    if (artistBan?.banned) {
+      return 'Dieser Künstler ist gesperrt.';
+    }
+
     const keywordBanTitle = this.banList?.isKeywordBanned(song.title || '');
     const keywordBanChannel = this.banList?.isKeywordBanned(song.channelName || '');
     const keywordBan = keywordBanTitle?.banned ? keywordBanTitle : keywordBanChannel;
@@ -1840,6 +2351,96 @@ class MusicBotPlugin extends EventEmitter {
     }
 
     return null;
+  }
+
+  _findTrackForBan(trackId) {
+    const id = String(trackId || '').trim();
+    if (!id) return null;
+    const current = this.playbackEngine?.getNowPlaying?.();
+    if (String(current?.id || '') === id) return this._decorateTrackIdentity(current);
+    const queued = this.queueManager?.getQueue?.().find((track) => String(track?.id || '') === id);
+    if (queued) return this._decorateTrackIdentity(queued);
+    const history = this.queueManager?.getHistory?.().find((track) => String(track?.id || '') === id);
+    if (history) return this._decorateTrackIdentity(history);
+    try {
+      const stored = this.db
+        .prepare('SELECT * FROM plugin_music_bot_history WHERE id = ? LIMIT 1')
+        .get(id) || null;
+      return stored ? this._decorateTrackIdentity(stored) : null;
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  _decorateTrackIdentity(track) {
+    if (!track || typeof track !== 'object') return track;
+    if (track.trackKey) {
+      const separator = String(track.trackKey).indexOf(':');
+      if (separator > 0) {
+        const provider = track.provider || String(track.trackKey).slice(0, separator);
+        const providerId = track.providerId || String(track.trackKey).slice(separator + 1);
+        if (providerId) {
+          return {
+            ...track,
+            provider,
+            providerId,
+            trackKey: `${provider}:${providerId}`,
+            youtubeId: track.youtubeId || (provider === 'youtube' ? providerId : null)
+          };
+        }
+      }
+    }
+    const providerHint = track.provider || track.source;
+    const providerId = track.providerId
+      || (/youtube/i.test(String(providerHint || '')) ? track.youtubeId : null);
+    const identity = deriveTrackIdentity({
+      provider: providerHint,
+      providerId,
+      youtubeId: track.youtubeId,
+      url: track.url
+    }, track.url || '');
+    return { ...track, ...identity };
+  }
+
+  _resolveTrackBanSelection(track, requestedScope, keyword) {
+    const scope = requestedScope === 'song' ? 'track' : String(requestedScope || 'track');
+    const selections = {
+      track: { type: 'track', value: track.trackKey },
+      artist: { type: 'artist', value: track.artist },
+      channel: { type: 'channel', value: track.channelId || track.channelName },
+      keyword: { type: 'keyword', value: String(keyword || '').trim() }
+    };
+    const selection = selections[scope];
+    if (!selection || !String(selection.value || '').trim()) {
+      return { success: false, error: 'Für diesen Ban-Typ fehlen Track-Metadaten.' };
+    }
+    return {
+      success: true,
+      scope,
+      type: selection.type,
+      value: String(selection.value).trim()
+    };
+  }
+
+  _trackMatchesBanSelection(track, selection) {
+    if (!track || !selection) return false;
+    const rawValue = String(selection.value || '').trim();
+    if (!rawValue) return false;
+    if (selection.type === 'track') {
+      return String(track.trackKey || '').trim() === rawValue;
+    }
+    const value = rawValue.toLowerCase();
+    if (selection.type === 'artist') {
+      return String(track.artist || '').trim().replace(/\s+/g, ' ').toLowerCase() === value.replace(/\s+/g, ' ');
+    }
+    if (selection.type === 'channel') {
+      return [track.channelId, track.channelName]
+        .some((entry) => String(entry || '').trim().toLowerCase() === value);
+    }
+    if (selection.type === 'keyword') {
+      return String(track.title || '').toLowerCase().includes(value);
+    }
+    return false;
   }
 
   async _skipCurrent(reasonUser) {
@@ -1891,6 +2492,22 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   async _playNextFromQueue(retries = 0) {
+    if (this._queueAdvanceOperation) return this._queueAdvanceOperation;
+    const operation = this._playNextFromQueueInternal(retries);
+    this._queueAdvanceOperation = operation;
+    try {
+      return await operation;
+    } finally {
+      if (this._queueAdvanceOperation === operation) {
+        this._queueAdvanceOperation = null;
+      }
+    }
+  }
+
+  async _playNextFromQueueInternal(retries = 0) {
+    if (this._isSafetyLocked() || this._destroyed) {
+      return this._lockedResult();
+    }
     if (this._mpvAvailable === false) {
       return this._handlePlaybackUnavailable();
     }
@@ -1918,6 +2535,16 @@ class MusicBotPlugin extends EventEmitter {
       return { success: true, song: autoDJTrack };
     }
     try {
+      if (this._isSafetyLocked() || this._destroyed) {
+        this.queueManager.returnToFront?.(next);
+        return this._lockedResult();
+      }
+      const banMessage = this._checkBans(next, next.requestedBy);
+      if (banMessage) {
+        this.api.log(`[music-bot] Removed blocked queued track "${next.title || next.id}": ${banMessage}`, 'warn');
+        this._emitQueue();
+        return this._playNextFromQueueInternal(retries + 1);
+      }
       await this.playbackEngine.play(next);
       this._emitQueue();
       this._schedulePreCache();
@@ -1938,7 +2565,10 @@ class MusicBotPlugin extends EventEmitter {
   _schedulePreCache() {
     try {
       const cfg = this.config.preCache || {};
-      if (!cfg.enabled) return;
+      if (!cfg.enabled) {
+        this._refreshCachePins([]);
+        return;
+      }
       const requestedLookahead = Number(cfg.lookahead);
       const lookahead = Math.max(
         0,
@@ -1947,8 +2577,12 @@ class MusicBotPlugin extends EventEmitter {
           MAX_PRECACHE_LOOKAHEAD
         )
       );
-      if (!lookahead) return;
+      if (!lookahead) {
+        this._refreshCachePins([]);
+        return;
+      }
       const upcoming = this.queueManager.getQueue().slice(0, lookahead);
+      this._refreshCachePins(upcoming);
       upcoming.forEach((song) => this._startPreCache(song));
     } catch (error) {
       this.api.log(`[music-bot] Failed to schedule pre-cache: ${error.message}`, 'warn');
@@ -1956,136 +2590,69 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   _startPreCache(song) {
-    if (!song?.id || !song?.url) return;
+    if (!song?.trackKey || !song?.url || !this.mediaCache || this._destroyed) return;
     if (song.localPath && fs.existsSync(song.localPath)) return;
-    if (this._precacheTasks.has(song.id)) return;
+    if (this._precacheTasks.has(song.trackKey)) return;
 
-    const cacheState = this._precacheState.get(song.id);
-    if (cacheState?.path && fs.existsSync(cacheState.path)) {
-      if (!this.queueManager.setSongLocalPath(song.id, cacheState.path)) {
-        this._precacheState.delete(song.id);
-      }
+    const cachedPath = this.mediaCache.get(song.trackKey);
+    if (cachedPath) {
+      this.queueManager.setTrackLocalPath(song.trackKey, cachedPath);
       return;
     }
 
     const isHttpUrl = /^https?:\/\//i.test(song.url);
     if (!isHttpUrl) {
       if (fs.existsSync(song.url)) {
-        if (!this.queueManager.setSongLocalPath(song.id, song.url)) {
-          this._precacheState.delete(song.id);
-        }
+        this.queueManager.setTrackLocalPath(song.trackKey, song.url);
       }
       return;
     }
 
-    const cacheKey = this._safeCacheKey(song.id);
-    const outputTemplate = path.join(this.cacheDir, `${cacheKey}-%(id)s.%(ext)s`);
-    const args = [
-      '--no-warnings',
-      '--ignore-errors',
-      '--no-playlist',
-      '--format',
-      'bestaudio',
-      '--output',
-      outputTemplate,
-      '--print',
-      'after_move:filepath',
-      song.url
-    ];
-
-    const ytdlpPath = this._getYtDlpPath();
-    const proc = spawn(ytdlpPath, args, {
-      stdio: ['ignore', 'pipe', 'pipe']
-    });
-    this._precacheTasks.set(song.id, proc);
-
-    let stdout = '';
-    let stderr = '';
-    proc.stdout.on('data', (chunk) => {
-      stdout += chunk.toString();
-    });
-    proc.stderr.on('data', (chunk) => {
-      stderr += chunk.toString();
-    });
-    proc.on('error', (error) => {
-      this._precacheTasks.delete(song.id);
-      if (error?.code === 'ENOENT') {
-        this._ytdlpAvailable = false;
-        this._emitSetupStatus();
-        this.api.log('[music-bot] Pre-cache: yt-dlp not found, disabling pre-cache', 'warn');
-      } else {
-        this.api.log(`[music-bot] Pre-cache process failed: ${error.message}`, 'warn');
+    const controller = new AbortController();
+    const promise = this.mediaCache.getOrDownload(song, {
+      signal: controller.signal,
+      ytdlpPath: this._getYtDlpPath(),
+      priority: -10
+    }).then((localPath) => {
+      if (!this._destroyed && localPath) {
+        this.queueManager.setTrackLocalPath(song.trackKey, localPath);
       }
-    });
-    proc.on('close', () => {
-      this._precacheTasks.delete(song.id);
-      const cachedPath = stdout.trim().split('\n').filter(Boolean).pop();
-      if (cachedPath && fs.existsSync(cachedPath)) {
-        this._precacheState.set(song.id, { path: cachedPath, cachedAt: Date.now() });
-        if (!this.queueManager.setSongLocalPath(song.id, cachedPath)) {
-          this._precacheState.delete(song.id);
-        }
-        this._pruneCacheDir().catch((error) => {
-          this.api.log(`[music-bot] Cache prune failed: ${error.message}`, 'debug');
-        });
-      } else if (stderr) {
-        this.api.log(`[music-bot] Pre-cache skipped for "${song.title}": ${stderr.trim()}`, 'debug');
+      return localPath;
+    }).catch((error) => {
+      if (!controller.signal.aborted) {
+        this.api.log(`[music-bot] Pre-cache skipped for "${song.title}": ${error.message}`, 'debug');
       }
+      return null;
+    }).finally(() => {
+      const current = this._precacheTasks.get(song.trackKey);
+      if (current?.promise === promise) this._precacheTasks.delete(song.trackKey);
     });
+    this._precacheTasks.set(song.trackKey, { controller, promise });
+  }
+
+  _refreshCachePins(upcoming = []) {
+    if (!this.mediaCache) return;
+    const next = new Set(
+      upcoming.map((song) => song?.trackKey).filter(Boolean)
+    );
+    const currentKey = this.playbackEngine?.getNowPlaying?.()?.trackKey;
+    if (currentKey) next.add(currentKey);
+    for (const key of this._pinnedCacheKeys) {
+      if (!next.has(key)) this.mediaCache.unpin(key);
+    }
+    for (const key of next) this.mediaCache.pin(key);
+    this._pinnedCacheKeys = next;
   }
 
   async _stopPrecacheTasks() {
     const tasks = Array.from(this._precacheTasks.values());
     this._precacheTasks.clear();
-    await Promise.all(tasks.map((proc) => new Promise((resolve) => {
-      if (!proc || proc.exitCode !== null) {
-        resolve();
-        return;
-      }
-      proc.once('close', () => resolve());
-      proc.kill('SIGTERM');
-      setTimeout(() => {
-        if (proc.exitCode === null) {
-          proc.kill('SIGKILL');
-        }
-      }, PRECACHE_KILL_TIMEOUT_MS);
-    })));
+    tasks.forEach((task) => task?.controller?.abort?.());
+    await Promise.allSettled(tasks.map((task) => task?.promise).filter(Boolean));
   }
 
   _getYtDlpPath() {
     return this.musicResolver?.config?.ytdlpPath || this.config.resolver.ytdlpPath || 'yt-dlp';
-  }
-
-  _safeCacheKey(value) {
-    const raw = String(value || '').trim();
-    if (!raw) return 'track';
-    return createHash('sha1').update(raw).digest('hex').slice(0, 16);
-  }
-
-  async _pruneCacheDir() {
-    const maxCacheFiles = 200;
-    const entries = await fsp.readdir(this.cacheDir, { withFileTypes: true });
-    const files = [];
-    for (const entry of entries) {
-      if (!entry.isFile()) continue;
-      const fullPath = path.join(this.cacheDir, entry.name);
-      try {
-        const stat = await fsp.stat(fullPath);
-        files.push({ fullPath, mtimeMs: stat.mtimeMs });
-      } catch (_) {
-        // ignore stale entries
-      }
-    }
-    if (files.length <= maxCacheFiles) return;
-    files.sort((a, b) => a.mtimeMs - b.mtimeMs);
-    const removeCount = files.length - maxCacheFiles;
-    await Promise.all(files.slice(0, removeCount).map(async (file) => {
-      try {
-        await fsp.unlink(file.fullPath);
-      } catch (_) {
-        // ignore deletion errors
-      }
-    }));
   }
 
   async _playFallbackTrack() {
@@ -2097,6 +2664,7 @@ class MusicBotPlugin extends EventEmitter {
       const idx = (this._fallbackIndex + offset) % tracks.length;
       const fallback = await this._resolveFallbackTrack(tracks[idx], idx + 1);
       if (!fallback) continue;
+      if (this._isSafetyLocked() || this.queueManager?.getQueue?.().length > 0) return null;
       try {
         await this.playbackEngine.play(fallback);
         this.queueManager.markPlaying(fallback);
@@ -2177,6 +2745,20 @@ class MusicBotPlugin extends EventEmitter {
 
   // ---------- Emitters ----------
 
+  _handleResolverProgress(event) {
+    if (this._destroyed || !event) return;
+    this._lastResolverProgress = this._sanitizeDiagnosticValue(event);
+    this.api.emit('musicbot:resolver', this._buildResolverSnapshot());
+    this._emitRuntimeHealth();
+  }
+
+  _emitRuntimeHealth() {
+    const runtime = this._buildRuntimeSnapshot();
+    const resolver = this._buildResolverSnapshot();
+    this.api.emit('musicbot:runtime', runtime);
+    this.api.emit('musicbot:health', this._buildHealthPayload(runtime, resolver));
+  }
+
   _emitStatus() {
     this.api.emit('musicbot:now-playing', this.playbackEngine.getNowPlaying());
     this._emitQueue();
@@ -2235,7 +2817,7 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   _emitNowPlaying(track) {
-    const payload = track || this.playbackEngine.getNowPlaying();
+    const payload = arguments.length > 0 ? track : this.playbackEngine.getNowPlaying();
     this.api.emit('musicbot:now-playing', payload);
   }
 
@@ -2342,14 +2924,39 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   async _maybePlayAutoDJ(force = false) {
-    if (!this.autoDJ || !this.config.autoDJ?.enabled) {
+    if (this._isSafetyLocked() || !this.autoDJ || !this.config.autoDJ?.enabled) {
       return null;
     }
+    if (this.queueManager?.getQueue?.().length > 0) return null;
+    const activeBeforeResolve = this.playbackEngine?.getNowPlaying?.();
+    if (force && activeBeforeResolve && activeBeforeResolve.requestedBy !== 'AutoDJ') return null;
 
-    const result = force ? await this.autoDJ.getNextSong(true) : await this.autoDJ.onQueueEmpty();
-    if (!result) return null;
+    let result = null;
+    let track = null;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      result = force ? await this.autoDJ.getNextSong(true) : await this.autoDJ.onQueueEmpty();
+      if (!result) return null;
+      if (
+        this._isSafetyLocked()
+        || this.queueManager?.getQueue?.().length > 0
+        || (!force && this.playbackEngine?.isPlaying?.())
+        || (force && this.playbackEngine?.isPlaying?.()
+          && this.playbackEngine?.getNowPlaying?.()?.requestedBy !== 'AutoDJ')
+      ) {
+        return null;
+      }
+      track = this._decorateTrackIdentity(result.song || result);
+      const banMessage = this._checkBans(track, 'AutoDJ');
+      if (!banMessage) break;
+      this.autoDJ.recordFailedTrack?.(track, 'blocked-by-ban-list');
+      this.api.log(
+        `[music-bot] AutoDJ rejected blocked track "${track.title || track.id}": ${banMessage}`,
+        'warn'
+      );
+      track = null;
+    }
+    if (!track) return null;
 
-    const track = result.song || result;
     try {
       await this.playbackEngine.play(track);
       this.autoDJ.markTrackStarted(track);
@@ -2391,6 +2998,9 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   _buildStatusPayload() {
+    const runtime = this._buildRuntimeSnapshot();
+    const resolver = this._buildResolverSnapshot();
+    const health = this._buildHealthPayload(runtime, resolver);
     return {
       success: true,
       nowPlaying: this.playbackEngine.getNowPlaying(),
@@ -2402,7 +3012,92 @@ class MusicBotPlugin extends EventEmitter {
       playbackState: this.playbackEngine.getState(),
       autoDJ: this.autoDJ?.getStatus(),
       ytdlpAvailable: this._ytdlpAvailable || false,
-      mpvAvailable: this._mpvAvailable || false
+      mpvAvailable: this._mpvAvailable || false,
+      runtime,
+      players: runtime.slots || { A: null, B: null },
+      resolver,
+      health
+    };
+  }
+
+  _buildRuntimeSnapshot() {
+    const fallback = {
+      lifecycle: this._destroyed ? 'destroyed' : 'active',
+      safetyLock: this._isSafetyLocked(),
+      transportState: this.playbackEngine?.getState?.() || 'idle',
+      transitionGeneration: this._lifecycleGeneration,
+      activePlaybackId: this.playbackEngine?.getNowPlaying?.()?.id || null,
+      activeSlot: null,
+      slots: { A: null, B: null },
+      healthy: !this._destroyed,
+      lastTransition: this._stateTransitions.at(-1) || null,
+      lastError: null
+    };
+    const snapshot = this.playbackEngine?.getSnapshot?.() || fallback;
+    const safe = this._sanitizeDiagnosticValue({ ...fallback, ...snapshot });
+    safe.safetyLock = this._isSafetyLocked();
+    safe.slots = safe.slots || { A: null, B: null };
+    return safe;
+  }
+
+  _buildResolverSnapshot() {
+    const source = this.musicResolver?.getSnapshot?.()
+      || this.musicResolver?.getResolverStatus?.()
+      || {};
+    const runner = source.runner || {};
+    const snapshot = {
+      ...source,
+      active: Number(source.active ?? runner.active ?? 0),
+      queued: Number(source.queued ?? runner.queued ?? 0),
+      jobs: Array.isArray(source.jobs) ? source.jobs : [],
+      progress: this._lastResolverProgress
+    };
+    return this._sanitizeDiagnosticValue(snapshot);
+  }
+
+  _buildHealthPayload(runtime = this._buildRuntimeSnapshot(), resolver = this._buildResolverSnapshot()) {
+    const locked = this._isSafetyLocked();
+    const activePlayers = Object.values(runtime.slots || {}).filter(Boolean).length;
+    const cleanLockedController = locked
+      && runtime.lifecycle === 'active'
+      && activePlayers === 0
+      && !runtime.lastError;
+    const controllerHealthy = runtime.healthy !== false || cleanLockedController;
+    const runtimeState = locked ? 'locked' : (runtime.transportState || 'idle');
+    const stateConsistent = !(['idle', 'locked'].includes(runtimeState) && activePlayers > 0);
+    const cache = this.mediaCache?.getStats?.() || { files: 0, bytes: 0, inflight: 0 };
+    return {
+      state: runtimeState,
+      locked,
+      healthy: controllerHealthy && stateConsistent,
+      controllerHealthy,
+      stateConsistent,
+      mpvAvailable: Boolean(this._mpvAvailable),
+      ytdlpAvailable: Boolean(this._ytdlpAvailable),
+      activePlayers,
+      resolverActive: Number(resolver.active || 0),
+      resolverQueued: Number(resolver.queued || 0),
+      cache: {
+        files: Number(cache.files || 0),
+        bytes: Number(cache.bytes || 0),
+        inflight: Number(cache.inflight || 0),
+        pinned: Number(cache.pinned || 0)
+      },
+      lastError: runtime.lastError || null,
+      checkedAt: Date.now()
+    };
+  }
+
+  _buildDiagnosticsPayload() {
+    const runtime = this._buildRuntimeSnapshot();
+    const resolver = this._buildResolverSnapshot();
+    return {
+      success: true,
+      runtime,
+      players: runtime.slots || { A: null, B: null },
+      resolver,
+      health: this._buildHealthPayload(runtime, resolver),
+      transitions: this._sanitizeDiagnosticValue(this._stateTransitions.slice(-100))
     };
   }
 
@@ -2423,16 +3118,15 @@ class MusicBotPlugin extends EventEmitter {
       if (!nowPlaying) return;
       let position = 0;
       try {
-        position = await this.playbackEngine.getPosition();
-        this._playbackSyncFailures = 0;
+        const heartbeat = await this.playbackEngine.heartbeat({ timeoutMs: 2000 });
+        position = Number(heartbeat?.position) || 0;
+        this._emitRuntimeHealth();
       } catch (error) {
-        position = nowPlaying.startedAt ? Math.max(0, Math.floor((Date.now() - nowPlaying.startedAt) / 1000)) : 0;
-        this._playbackSyncFailures += 1;
-        if (this._playbackSyncFailures >= 2) {
-          Promise.resolve(this._recoverStalledPlayback(nowPlaying, error)).catch((recoveryError) => {
-            this.api.log(`[music-bot] MPV recovery failed: ${recoveryError.message}`, 'error');
-          });
-        }
+        if (error?.code === 'MPV_HEARTBEAT_SAFETY_LOCK' || this._isSafetyLocked()) return;
+        this.api.log(`[music-bot] MPV heartbeat failed: ${error.message}`, 'warn');
+        position = nowPlaying.startedAt
+          ? Math.max(0, Math.floor((Date.now() - nowPlaying.startedAt) / 1000))
+          : 0;
       }
       const latestTrack = this.playbackEngine.getNowPlaying();
       if (latestTrack !== nowPlaying) return;
@@ -2449,40 +3143,6 @@ class MusicBotPlugin extends EventEmitter {
         state: this.playbackEngine.getState()
       });
     }, 5000);
-  }
-
-  async _recoverStalledPlayback(track, error) {
-    if (this._recoveringPlayback || !track || !this.playbackEngine) return;
-    const current = this.playbackEngine.getNowPlaying?.();
-    if (!current || current.id !== track.id) return;
-
-    if (track.requestedBy === 'AutoDJ') {
-      try {
-        await this.playbackEngine.getPosition({ timeoutMs: 2000 });
-        this._playbackSyncFailures = 0;
-        this.api.log(`[music-bot] autodj-recovery-confirmed-playing: "${track.title}"`, 'warn');
-        this._startPlaybackSync();
-      } catch (positionError) {
-        await this._handleAutoDJPlaybackFailure(track, 'ipc-confirmed', positionError);
-      }
-      return;
-    }
-
-    this._recoveringPlayback = true;
-    this._playbackSyncFailures = 0;
-    this._stopPlaybackSync();
-    this.api.log(`[music-bot] MPV IPC stalled while playing "${track.title}"; restarting the player`, 'warn');
-    try {
-      await this.playbackEngine.restart();
-      const retainedTrack = this.playbackEngine.getNowPlaying?.();
-      if (!retainedTrack || retainedTrack.id !== track.id) return;
-      await this.playbackEngine.play(track);
-    } catch (restartError) {
-      this._emitError(`MPV-Wiedergabe konnte nicht wiederhergestellt werden: ${restartError.message}`);
-      throw restartError;
-    } finally {
-      this._recoveringPlayback = false;
-    }
   }
 
   _stopPlaybackSync() {

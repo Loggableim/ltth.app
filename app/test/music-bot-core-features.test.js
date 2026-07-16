@@ -556,7 +556,8 @@ describe('Music Bot core features', () => {
     }, {}, createAutoDjDb({
       historyCandidates: [{
         youtubeId: 'history-only', title: 'History only', artist: 'History Artist',
-        url: 'https://www.youtube.com/watch?v=history-only', plays: 2
+        url: 'https://www.youtube.com/watch?v=history-only', plays: 2,
+        channelId: 'channel-1', channelName: 'History Channel'
       }]
     }), { log: jest.fn() });
     const originalRandom = Math.random;
@@ -566,6 +567,10 @@ describe('Music Bot core features', () => {
       const result = await autoDJ.getNextSong();
 
       expect(result.song.youtubeId).toBe('history-only');
+      expect(result.song).toMatchObject({
+        channelId: 'channel-1',
+        channelName: 'History Channel'
+      });
       expect(autoDJ.getStatus().selectionSource).toBe('history');
     } finally {
       Math.random = originalRandom;

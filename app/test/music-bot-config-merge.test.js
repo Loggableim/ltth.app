@@ -45,7 +45,7 @@ describe('music-bot config merge behavior', () => {
     };
 
     const originalSavedConfig = JSON.parse(JSON.stringify(savedConfig));
-    const { plugin } = createPluginWithSavedConfig(savedConfig);
+    const { plugin, api } = createPluginWithSavedConfig(savedConfig);
 
     plugin._loadConfig();
 
@@ -54,6 +54,11 @@ describe('music-bot config merge behavior', () => {
     expect(plugin.config.monetization.payToSkipGiftCatalog).toEqual(['SkipGift']);
     expect(plugin.config.commandAliases.request).toEqual(['rq', 'song']);
     expect(plugin.config.commandAliases.skip).toEqual(['skipme']);
+    expect(plugin.config.safety).toMatchObject({
+      locked: true,
+      reason: 'live-safe-migration'
+    });
+    expect(api.setConfig).toHaveBeenCalledWith('config', plugin.config);
 
     plugin.config.moderation.blockedKeywords.push('second');
     plugin.config.monetization.payToPlayGiftCatalog.push('Moon');
