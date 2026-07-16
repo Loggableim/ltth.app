@@ -390,6 +390,53 @@ describe('music-bot queue manager', () => {
     db.close();
   });
 
+  it('keeps the oldest canonical track when guarded requests duplicate persisted rows', () => {
+    const { db, manager } = createRealManager();
+    const persisted = manager.addSong({
+      title: 'Persisted original',
+      url: 'https://youtu.be/AbC123xYz_-',
+      requestedBy: 'old-viewer'
+    }).song;
+    manager.queue = [];
+    manager.userLastRequest.clear();
+
+    const realDatabase = manager.db;
+    let failRestoreRead = true;
+    manager.db = {
+      prepare: (sql) => {
+        if (failRestoreRead && String(sql).startsWith('SELECT * FROM plugin_music_bot_queue')) {
+          throw new Error('queue read unavailable');
+        }
+        return realDatabase.prepare(sql);
+      },
+      transaction: realDatabase.transaction.bind(realDatabase)
+    };
+
+    expect(manager.restoreQueue()).toMatchObject({
+      error: 'restore-read-failed',
+      persistenceBlocked: true
+    });
+    const duplicate = manager.addSong({
+      title: 'Guarded duplicate',
+      url: 'https://www.youtube.com/watch?v=AbC123xYz_-',
+      requestedBy: 'new-viewer'
+    });
+    expect(duplicate.success).toBe(true);
+
+    failRestoreRead = false;
+    expect(manager.restoreQueue()).toMatchObject({ restored: 1, deduped: 1, banned: 0 });
+    expect(manager.getQueue()).toEqual([
+      expect.objectContaining({
+        id: persisted.id,
+        title: 'Persisted original',
+        trackKey: 'youtube:AbC123xYz_-'
+      })
+    ]);
+    expect(db.prepare('SELECT id FROM plugin_music_bot_queue ORDER BY position').all())
+      .toEqual([{ id: persisted.id }]);
+    db.close();
+  });
+
   it('blocks persistence when a persisted row cannot be decoded', () => {
     const { db, manager } = createRealManager();
     const persisted = manager.addSong({

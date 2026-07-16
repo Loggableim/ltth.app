@@ -585,8 +585,13 @@ class QueueManager {
       }
 
       this.queue = wasPersistenceBlocked
-        ? this._mergeQueueEntries(restored, pendingEntries)
+        ? this._mergeQueueEntries(restored, pendingEntries, {
+          dedupeTrackKeys: !duplicatesDisabled
+        })
         : restored;
+      if (wasPersistenceBlocked) {
+        deduped += restored.length + pendingEntries.length - this.queue.length;
+      }
       this._rebuildRequesterState();
       this._clearPersistenceGuard();
       this.persistQueue();
@@ -759,13 +764,16 @@ class QueueManager {
     });
   }
 
-  _mergeQueueEntries(primary, secondary) {
+  _mergeQueueEntries(primary, secondary, { dedupeTrackKeys = false } = {}) {
     const merged = [...primary];
     const ids = new Set(merged.map((entry) => entry.id).filter(Boolean));
+    const trackKeys = new Set(merged.map((entry) => entry.trackKey).filter(Boolean));
     secondary.forEach((entry) => {
       if (entry.id && ids.has(entry.id)) return;
+      if (dedupeTrackKeys && entry.trackKey && trackKeys.has(entry.trackKey)) return;
       merged.push(entry);
       if (entry.id) ids.add(entry.id);
+      if (entry.trackKey) trackKeys.add(entry.trackKey);
     });
     return merged;
   }
