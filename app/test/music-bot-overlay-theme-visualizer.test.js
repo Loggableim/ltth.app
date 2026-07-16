@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-describe('Music Bot overlay theme engine and visualizer', () => {
+describe('Music Bot overlay theme engine', () => {
   let overlayHtml;
 
   beforeAll(() => {
@@ -22,18 +22,21 @@ describe('Music Bot overlay theme engine and visualizer', () => {
     expect(overlayHtml).toContain("sunset: 'cyberpunk'");
   });
 
-  test('initializes visualizer colors only after their state variables exist', () => {
-    const initialRefresh = overlayHtml.indexOf('refreshVisualizerThemeColors();');
-    const accentState = overlayHtml.indexOf("let visualizerAccentColor = '#38bdf8';");
-
-    expect(initialRefresh).toBeGreaterThan(accentState);
+  test('does not ship the inert MPV-incompatible visualizer', () => {
+    expect(overlayHtml).not.toContain('visualizer-canvas');
+    expect(overlayHtml).not.toContain('AudioContext');
+    expect(overlayHtml).not.toContain('createAnalyser()');
+    expect(overlayHtml).not.toContain('getByteFrequencyData');
+    expect(overlayHtml).not.toContain('musicBotVisualizerAudio');
+    expect(overlayHtml).not.toContain('requestAnimationFrame(draw)');
   });
 
-  test('contains visualizer canvas and analyser wiring', () => {
-    expect(overlayHtml).toContain('id="visualizer-canvas"');
-    expect(overlayHtml).toContain('createAnalyser()');
-    expect(overlayHtml).toContain('requestAnimationFrame(draw)');
-    expect(overlayHtml).toContain('getByteFrequencyData');
+  test('renders viewer-provided queue labels as text instead of HTML', () => {
+    expect(overlayHtml).toContain('function renderTrackList(container, songs, itemClass)');
+    expect(overlayHtml).toContain('item.textContent = `${i + 1}. ${label}`;');
+    expect(overlayHtml).toContain('container.replaceChildren(fragment);');
+    expect(overlayHtml).not.toContain('upNextItems.innerHTML');
+    expect(overlayHtml).not.toContain('r.queueItems.innerHTML');
   });
 
   test('shows an initial idle message so a newly added OBS source is visible', () => {
