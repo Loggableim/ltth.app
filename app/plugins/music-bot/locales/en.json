@@ -26,6 +26,35 @@
         "failed": "Could not save settings.",
         "noData": "No data available.",
         "confirm": "Are you sure?"
+      },
+      "safety": {
+        "kicker": "Live safety",
+        "title": "Soundbot control",
+        "description": "Emergency stop terminates Soundbot processes only. LTTH and the queue remain active.",
+        "emergencyStop": "Emergency stop",
+        "unlock": "Release Safety Lock",
+        "reset": "Reset player",
+        "testTone": "Test tone"
+      },
+      "health": {
+        "refresh": "Refresh health",
+        "export": "Export diagnostics",
+        "state": "State",
+        "players": "Players A/B",
+        "mpv": "MPV / IPC",
+        "ipcLatency": "IPC latency",
+        "mediaTitle": "Actual MPV title",
+        "resolver": "Resolver",
+        "cache": "Cache",
+        "lastError": "Last error",
+        "checkedAt": "Checked at"
+      },
+      "banMenu": {
+        "title": "Ban track",
+        "track": "Ban this song",
+        "artist": "Ban artist",
+        "channel": "Ban channel",
+        "keyword": "Ban title keyword"
       }
     }
   },

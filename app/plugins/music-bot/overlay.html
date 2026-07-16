@@ -15,8 +15,6 @@
       --accent: #38bdf8;
       --accent-strong: #60a5fa;
       --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      --visualizer-opacity: 0.7;
-      --visualizer-bg: rgba(0, 0, 0, 0.16);
       --shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
     }
 
@@ -507,8 +505,6 @@
       --accent: #38bdf8;
       --accent-strong: #60a5fa;
       --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      --visualizer-opacity: 0.7;
-      --visualizer-bg: rgba(5, 12, 28, 0.3);
       --shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
     }
     .theme-cyberpunk {
@@ -519,8 +515,6 @@
       --accent: #ff00ff;
       --accent-strong: #00f5ff;
       --font-family: 'Orbitron', 'Rajdhani', 'Inter', sans-serif;
-      --visualizer-opacity: 0.88;
-      --visualizer-bg: rgba(10, 2, 26, 0.5);
       --shadow: 0 0 36px rgba(255, 0, 255, 0.35);
     }
     .theme-minimal {
@@ -531,8 +525,6 @@
       --accent: #f8fafc;
       --accent-strong: #dbeafe;
       --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      --visualizer-opacity: 0.45;
-      --visualizer-bg: rgba(255, 255, 255, 0.05);
       --shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
     }
     .theme-neon {
@@ -543,8 +535,6 @@
       --accent: #7c3aed;
       --accent-strong: #5eead4;
       --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      --visualizer-opacity: 0.82;
-      --visualizer-bg: rgba(21, 4, 42, 0.35);
       --shadow: 0 14px 48px rgba(124, 58, 237, 0.35);
     }
     .theme-cyberpunk .title,
@@ -557,24 +547,6 @@
     .theme-minimal #widget-fullwidth,
     .theme-minimal #widget-minimal {
       backdrop-filter: none;
-    }
-
-    .visualizer-canvas {
-      position: fixed;
-      left: 16px;
-      right: 16px;
-      bottom: 16px;
-      width: calc(100vw - 32px);
-      height: 80px;
-      border-radius: 10px;
-      pointer-events: none;
-      background: var(--visualizer-bg);
-      opacity: 0;
-      transition: opacity 180ms ease;
-      z-index: 60;
-    }
-    .visualizer-canvas.active {
-      opacity: var(--visualizer-opacity);
     }
 
     /* ===== Vote-Skip Progress Bar ===== */
@@ -747,8 +719,6 @@
 
   </div>
 
-  <canvas id="visualizer-canvas" class="visualizer-canvas" width="1024" height="80" aria-hidden="true"></canvas>
-
   <div class="vote-skip-bar" id="vote-skip-bar">
     <div class="fill" id="vote-skip-fill"></div>
   </div>
@@ -838,24 +808,6 @@
       let pausedProgress = 0;
       let currentQueue = [];
       let idleHideTimer = null;
-      const visualizerCanvas = document.getElementById('visualizer-canvas');
-      let visualizerCtx = null;
-      let visualizerAudioContext = null;
-      let visualizerAnalyser = null;
-      let visualizerSource = null;
-      let visualizerData = null;
-      let visualizerAnimationFrame = null;
-      let visualizerMediaElement = null;
-      let visualizerAccentColor = '#38bdf8';
-      let visualizerAccentStrongColor = '#60a5fa';
-      refreshVisualizerThemeColors();
-      // Balance between responsive beat reaction and smooth bar movement in OBS.
-      const VISUALIZER_SMOOTHING_CONSTANT = 0.78;
-      // Good readability/performance balance for 1080p overlays.
-      const VISUALIZER_BAR_COUNT = 48;
-      const VISUALIZER_BAR_GAP = 3;
-      // Emphasizes stronger frequencies without losing quieter movement.
-      const VISUALIZER_EASING_EXPONENT = 1.25;
       const UP_NEXT_LIMIT = 3;
       const upNextWidget = document.getElementById('up-next-widget');
       const upNextItems = document.getElementById('up-next-items');
@@ -980,8 +932,6 @@
         state = currentTrack.state || 'playing';
         document.body.classList.toggle('overlay-paused', state === 'paused');
         pausedProgress = 0;
-        tryConnectVisualizer();
-
         // Hide idle message when a track starts
         const idleMsg = document.getElementById('idle-message');
         if (idleMsg) {
@@ -1024,7 +974,6 @@
           }
         }
 
-        setVisualizerActive(state === 'playing');
       }
 
       function renderTrack() {
@@ -1093,15 +1042,10 @@
         if (upNextWidget && upNextItems) {
           if (upNextSongs.length > 0) {
             upNextWidget.classList.add('visible');
-            upNextItems.innerHTML = upNextSongs
-              .map((s, i) => {
-                const label = s.artist ? `${s.title} – ${s.artist}` : s.title;
-                return `<div class="up-next-item">${i + 1}. ${label}</div>`;
-              })
-              .join('');
+            renderTrackList(upNextItems, upNextSongs, 'up-next-item');
           } else {
             upNextWidget.classList.remove('visible');
-            upNextItems.innerHTML = '';
+            upNextItems.replaceChildren();
           }
         }
 
@@ -1113,16 +1057,24 @@
           const cardPreviewSongs = currentQueue.slice(0, UP_NEXT_LIMIT);
           if (cardPreviewSongs.length > 0) {
             r.queuePreview.style.display = '';
-            r.queueItems.innerHTML = cardPreviewSongs
-              .map((s, i) => {
-                const label = s.artist ? `${s.title} – ${s.artist}` : s.title;
-                return `<div class="queue-preview-item">${i + 1}. ${label}</div>`;
-              })
-              .join('');
+            renderTrackList(r.queueItems, cardPreviewSongs, 'queue-preview-item');
           } else {
             r.queuePreview.style.display = 'none';
+            r.queueItems.replaceChildren();
           }
         }
+      }
+
+      function renderTrackList(container, songs, itemClass) {
+        const fragment = document.createDocumentFragment();
+        songs.forEach((song, i) => {
+          const label = song.artist ? `${song.title} – ${song.artist}` : song.title;
+          const item = document.createElement('div');
+          item.className = itemClass;
+          item.textContent = `${i + 1}. ${label}`;
+          fragment.appendChild(item);
+        });
+        container.replaceChildren(fragment);
       }
 
       function setState(nextState) {
@@ -1131,7 +1083,6 @@
         if (state === 'paused') {
           pausedProgress = computeElapsed();
           updateProgress(true);
-          setVisualizerActive(false);
         }
         if (state === 'playing' && currentTrack) {
           if (pausedProgress && currentTrack.duration) {
@@ -1139,7 +1090,6 @@
           }
           startProgressLoop();
           pausedProgress = 0;
-          setVisualizerActive(true);
         }
       }
 
@@ -1162,7 +1112,6 @@
           r.text.textContent = '🎵 Waiting for music...';
           r.text.classList.remove('scrolling');
         }
-        setVisualizerActive(false);
       }
 
       function startProgressLoop() {
@@ -1198,133 +1147,6 @@
         return Math.max(0, (Date.now() - currentTrack.startedAt) / 1000);
       }
 
-      function refreshVisualizerThemeColors() {
-        const styles = getComputedStyle(document.body);
-        visualizerAccentColor = styles.getPropertyValue('--accent').trim() || '#38bdf8';
-        visualizerAccentStrongColor = styles.getPropertyValue('--accent-strong').trim() || '#60a5fa';
-      }
-
-      function initVisualizer() {
-        if (
-          !visualizerCanvas
-          || (typeof window.AudioContext !== 'function' && typeof window.webkitAudioContext !== 'function')
-        ) {
-          return;
-        }
-        tryConnectVisualizer();
-        const attachObserver = () => {
-          const root = document.body || document.documentElement;
-          if (!root) {
-            if (document.readyState === 'loading') {
-              document.addEventListener('DOMContentLoaded', attachObserver, { once: true });
-            }
-            return;
-          }
-
-          const observer = new MutationObserver(() => {
-            if (!visualizerSource) {
-              tryConnectVisualizer();
-            }
-          });
-          observer.observe(root, { childList: true, subtree: true });
-        };
-
-        attachObserver();
-      }
-
-      function tryConnectVisualizer() {
-        if (visualizerSource) return true;
-        const media = findVisualizerMediaElement();
-        if (!media) {
-          setVisualizerActive(false);
-          return false;
-        }
-        visualizerMediaElement = media;
-        // Optional visualizer path: this can fail on restricted/unsupported media elements.
-        // In that case we keep the overlay functional and simply hide the visualizer.
-        try {
-          if (!visualizerAudioContext) {
-            const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
-            visualizerAudioContext = new AudioContextConstructor();
-          }
-          if (visualizerAudioContext.state === 'suspended') {
-            visualizerAudioContext.resume().catch(() => {
-              // Visualizer is optional; keep overlay functional if autoplay policy blocks resume.
-            });
-          }
-          visualizerAnalyser = visualizerAudioContext.createAnalyser();
-          visualizerAnalyser.fftSize = 256;
-          visualizerAnalyser.smoothingTimeConstant = VISUALIZER_SMOOTHING_CONSTANT;
-          visualizerSource = visualizerAudioContext.createMediaElementSource(media);
-          visualizerSource.connect(visualizerAnalyser);
-          visualizerAnalyser.connect(visualizerAudioContext.destination);
-          visualizerData = new Uint8Array(visualizerAnalyser.frequencyBinCount);
-          visualizerCtx = visualizerCanvas.getContext('2d');
-          if (visualizerCtx) {
-            startVisualizerLoop();
-            setVisualizerActive(state === 'playing');
-            return true;
-          }
-        } catch (_err) {
-          visualizerSource = null;
-          visualizerAnalyser = null;
-          visualizerData = null;
-          setVisualizerActive(false);
-        }
-        return false;
-      }
-
-      function findVisualizerMediaElement() {
-        // Optional extension point: external scripts may set window.musicBotVisualizerAudio
-        // to a HTMLMediaElement that carries the overlay audio source.
-        if (window.musicBotVisualizerAudio && window.musicBotVisualizerAudio instanceof HTMLMediaElement) {
-          return window.musicBotVisualizerAudio;
-        }
-        return document.querySelector('audio[data-musicbot-visualizer], video[data-musicbot-visualizer], audio, video');
-      }
-
-      function startVisualizerLoop() {
-        if (visualizerAnimationFrame) cancelAnimationFrame(visualizerAnimationFrame);
-        const draw = () => {
-          visualizerAnimationFrame = requestAnimationFrame(draw);
-          if (!visualizerCtx || !visualizerAnalyser || !visualizerData) return;
-          const width = visualizerCanvas.clientWidth || visualizerCanvas.width;
-          const height = visualizerCanvas.clientHeight || visualizerCanvas.height;
-          if (visualizerCanvas.width !== width || visualizerCanvas.height !== height) {
-            visualizerCanvas.width = width;
-            visualizerCanvas.height = height;
-          }
-
-          visualizerAnalyser.getByteFrequencyData(visualizerData);
-          visualizerCtx.clearRect(0, 0, width, height);
-          const barCount = VISUALIZER_BAR_COUNT;
-          const gap = VISUALIZER_BAR_GAP;
-          const barWidth = Math.max(2, (width - (barCount - 1) * gap) / barCount);
-          const active = state === 'playing' && visualizerCanvas.classList.contains('active');
-
-          for (let i = 0; i < barCount; i += 1) {
-            const idx = Math.floor((i / barCount) * visualizerData.length);
-            const value = visualizerData[idx] / 255;
-            const eased = Math.pow(value, VISUALIZER_EASING_EXPONENT);
-            const minHeight = active ? 2 : 1;
-            const barHeight = active ? Math.max(minHeight, eased * (height - 6)) : minHeight;
-            const x = i * (barWidth + gap);
-            const y = height - barHeight;
-            const gradient = visualizerCtx.createLinearGradient(0, y, 0, height);
-            gradient.addColorStop(0, visualizerAccentColor);
-            gradient.addColorStop(1, visualizerAccentStrongColor);
-            visualizerCtx.fillStyle = gradient;
-            visualizerCtx.fillRect(x, y, barWidth, barHeight);
-          }
-        };
-        draw();
-      }
-
-      function setVisualizerActive(isActive) {
-        if (!visualizerCanvas) return;
-        visualizerCanvas.classList.toggle('active', Boolean(isActive && visualizerAnalyser));
-      }
-
       function formatTime(seconds) {
         if (!Number.isFinite(seconds)) return '--:--';
         const total = Math.max(0, Math.floor(seconds));
@@ -1349,7 +1171,6 @@
         hide: clearTrack
       };
 
-      initVisualizer();
       connect();
     })();
   </script>

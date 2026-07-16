@@ -1,4 +1,9 @@
-const VALID_TYPES = ['url', 'keyword', 'channel', 'user'];
+const { normalizeUrl } = require('./track-identity');
+
+const VALID_TYPES = ['url', 'keyword', 'channel', 'user', 'artist', 'track'];
+const MAX_VALUE_LENGTH = 500;
+const MAX_ARTIST_LENGTH = 200;
+const MAX_TRACK_LENGTH = 2048;
 
 class BanList {
   constructor(api) {
@@ -45,16 +50,54 @@ class BanList {
     }
   }
 
-  _validateValue(value) {
+  _normalizeValue(value) {
+    return String(value || '').normalize('NFKC').trim().replace(/\s+/g, ' ');
+  }
+
+  _normalizeExact(value) {
+    return this._normalizeValue(value).toLowerCase();
+  }
+
+  _normalizeTrackKey(value) {
+    const raw = String(value || '').normalize('NFKC').trim();
+    if (/^https?:\/\//i.test(raw)) return `url:${normalizeUrl(raw)}`;
+    const separator = raw.indexOf(':');
+    if (separator <= 0) throw new Error('Invalid track key');
+    const provider = raw.slice(0, separator).trim().toLowerCase();
+    let providerId = raw.slice(separator + 1).trim();
+    if (!provider || !providerId) throw new Error('Invalid track key');
+    if (provider === 'url') providerId = normalizeUrl(providerId);
+    if (provider === 'soundcloud') providerId = providerId.toLowerCase().replace(/\/+$/, '');
+    return `${provider}:${providerId}`;
+  }
+
+  _normalizeComparable(type, value) {
+    return type === 'track' ? this._normalizeTrackKey(value) : this._normalizeExact(value);
+  }
+
+  _validateValue(value, type) {
     if (!value || !String(value).trim()) {
       throw new Error('Value is required');
+    }
+    const maxLength = type === 'artist'
+      ? MAX_ARTIST_LENGTH
+      : (type === 'track' ? MAX_TRACK_LENGTH : MAX_VALUE_LENGTH);
+    if (this._normalizeValue(value).length > maxLength) {
+      throw new Error(`Ban value is too long (maximum ${maxLength} characters)`);
     }
   }
 
   addBan(type, value, reason, bannedBy) {
     this._validateType(type);
-    this._validateValue(value);
-    const sanitizedValue = String(value).trim();
+    this._validateValue(value, type);
+    const sanitizedValue = type === 'track'
+      ? this._normalizeTrackKey(value)
+      : this._normalizeValue(value);
+    const normalizedValue = this._normalizeComparable(type, sanitizedValue);
+    const existing = this.getBansByType(type).find(
+      (ban) => this._normalizeComparable(type, ban.value) === normalizedValue
+    );
+    if (existing) return existing;
     const createdAt = Date.now();
     const stmt = this.db.prepare(
       'INSERT INTO plugin_music_bot_bans (type, value, reason, banned_by, created_at) VALUES (?, ?, ?, ?, ?)'
@@ -146,6 +189,29 @@ class BanList {
       }
     }
     return { banned: false, ban: null };
+  }
+
+  isArtistBanned(artist) {
+    if (!artist) return { banned: false, ban: null };
+    const normalizedArtist = this._normalizeExact(artist);
+    const ban = this.getBansByType('artist').find(
+      (entry) => this._normalizeExact(entry.value) === normalizedArtist
+    );
+    return ban ? { banned: true, ban } : { banned: false, ban: null };
+  }
+
+  isTrackBanned(trackKey) {
+    if (!trackKey) return { banned: false, ban: null };
+    let normalizedTrackKey;
+    try {
+      normalizedTrackKey = this._normalizeTrackKey(trackKey);
+    } catch (_error) {
+      return { banned: false, ban: null };
+    }
+    const ban = this.getBansByType('track').find(
+      (entry) => this._normalizeTrackKey(entry.value) === normalizedTrackKey
+    );
+    return ban ? { banned: true, ban } : { banned: false, ban: null };
   }
 }
 

@@ -387,6 +387,129 @@ h3 {
   background: rgba(0, 0, 0, 0.32);
 }
 
+.safety-panel {
+  margin-bottom: 18px;
+  border-color: color-mix(in srgb, var(--musicbot-danger) 44%, var(--musicbot-border));
+  background:
+    linear-gradient(110deg, rgba(239, 68, 68, 0.12), transparent 42%),
+    var(--musicbot-surface);
+}
+
+.safety-panel.is-locked {
+  border-width: 2px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--musicbot-danger) 16%, transparent);
+}
+
+.safety-status.is-locked {
+  color: var(--musicbot-danger);
+  border-color: color-mix(in srgb, var(--musicbot-danger) 60%, var(--musicbot-border));
+}
+
+.safety-status.is-ready {
+  color: var(--musicbot-success);
+  border-color: color-mix(in srgb, var(--musicbot-success) 55%, var(--musicbot-border));
+}
+
+.safety-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.health-grid > div {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--musicbot-border);
+  border-radius: 8px;
+  background: var(--musicbot-surface-2);
+}
+
+.health-grid span,
+.health-grid strong {
+  display: block;
+}
+
+.health-grid span {
+  margin-bottom: 4px;
+  color: var(--musicbot-muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.health-grid strong {
+  overflow-wrap: anywhere;
+}
+
+html[data-musicbot-locked] [data-playback-action] {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.track-ban-menu {
+  position: fixed;
+  z-index: 1200;
+  right: 22px;
+  bottom: 22px;
+  width: min(360px, calc(100vw - 28px));
+  max-height: calc(100vh - 44px);
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--musicbot-danger) 55%, var(--musicbot-border));
+  border-radius: 10px;
+  background: var(--musicbot-surface);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.track-ban-menu[hidden] {
+  display: none;
+}
+
+.track-ban-menu-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.track-ban-scope-options > [data-track-ban-scope] {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--musicbot-border);
+  background: var(--musicbot-surface-2);
+  color: var(--musicbot-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.track-ban-scope-options > [data-track-ban-scope] + [data-track-ban-scope] {
+  margin-top: 6px;
+}
+
+.track-ban-scope-options > [data-track-ban-scope][aria-checked="true"] {
+  border-color: var(--musicbot-danger);
+  box-shadow: inset 3px 0 0 var(--musicbot-danger);
+}
+
+.track-ban-trigger {
+  margin-left: auto;
+}
+
+@media (max-width: 760px) {
+  .health-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .setup-issue-actions {
   display: flex;
   gap: 10px;

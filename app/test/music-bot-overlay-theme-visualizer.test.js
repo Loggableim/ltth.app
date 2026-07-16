@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-describe('Music Bot overlay theme engine and visualizer', () => {
+describe('Music Bot overlay theme and layout engine', () => {
   let overlayHtml;
 
   beforeAll(() => {
@@ -22,18 +22,18 @@ describe('Music Bot overlay theme engine and visualizer', () => {
     expect(overlayHtml).toContain("sunset: 'cyberpunk'");
   });
 
-  test('initializes visualizer colors only after their state variables exist', () => {
-    const initialRefresh = overlayHtml.indexOf('refreshVisualizerThemeColors();');
-    const accentState = overlayHtml.indexOf("let visualizerAccentColor = '#38bdf8';");
-
-    expect(initialRefresh).toBeGreaterThan(accentState);
+  test('supports all configured overlay layouts', () => {
+    expect(overlayHtml).toContain("const allowedDesigns = new Set(['compact', 'fullwidth', 'minimal', 'card'])");
+    expect(overlayHtml).toContain('id="widget-compact"');
+    expect(overlayHtml).toContain('id="widget-fullwidth"');
+    expect(overlayHtml).toContain('id="widget-minimal"');
+    expect(overlayHtml).toContain('id="widget-card"');
   });
 
-  test('contains visualizer canvas and analyser wiring', () => {
-    expect(overlayHtml).toContain('id="visualizer-canvas"');
-    expect(overlayHtml).toContain('createAnalyser()');
-    expect(overlayHtml).toContain('requestAnimationFrame(draw)');
-    expect(overlayHtml).toContain('getByteFrequencyData');
+  test('renders queued song labels through textContent instead of HTML injection', () => {
+    expect(overlayHtml).toContain("const item = document.createElement('div');");
+    expect(overlayHtml).toContain('item.textContent = `${i + 1}. ${label}`;');
+    expect(overlayHtml).toContain('container.replaceChildren(fragment);');
   });
 
   test('shows an initial idle message so a newly added OBS source is visible', () => {
