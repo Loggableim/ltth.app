@@ -171,6 +171,21 @@ describe('WebGPU finale backend contract', () => {
       .toBe('classic-crescendo');
   });
 
+  test('generates unique IDs for same-millisecond finales that reuse an explicit seed', () => {
+    const now = jest.spyOn(Date, 'now').mockReturnValue(1720000000000);
+    try {
+      const { plugin } = createPlugin();
+      const first = plugin.triggerFinale({ style: 'classic-crescendo', seed: 99 });
+      const second = plugin.triggerFinale({ style: 'classic-crescendo', seed: 99 });
+
+      expect(first.id).not.toBe(second.id);
+      expect(first.showPlan.id).toBe(first.id);
+      expect(second.showPlan.id).toBe(second.id);
+    } finally {
+      now.mockRestore();
+    }
+  });
+
   test('uses global values for object calls with inherit and for omitted legacy duration', () => {
     const { plugin } = createPlugin({
       goalFinaleStyle: 'thunder-finale',

@@ -66,6 +66,7 @@ class FireworksPlugin {
         this.spawnPlanner = new SpawnPlanner();
         this.finaleShowPlanner = new FinaleShowPlanner();
         this.finaleAutoIndex = 0;
+        this.finaleIdCounter = 0;
     }
 
     async init() {
@@ -1517,7 +1518,7 @@ class FireworksPlugin {
         const resolvedStyle = finale.style === 'auto'
             ? FINALE_STYLES[this.finaleAutoIndex++ % FINALE_STYLES.length]
             : finale.style;
-        const id = finale.id || `finale-${Date.now()}-${finale.seed}`;
+        const id = finale.id || `finale-${Date.now()}-${finale.seed}-${this.finaleIdCounter++}`;
         const showPlan = this.finaleShowPlanner.plan({
             id,
             style: resolvedStyle,
