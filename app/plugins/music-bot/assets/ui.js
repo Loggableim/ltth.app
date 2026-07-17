@@ -495,7 +495,7 @@
   document.getElementById('pause-btn').addEventListener('click', async () => {
     const result = await post('/pause');
     if (result?.success) {
-      updateState('Paused');
+      updateState('Pausiert');
       stopProgressTimer();
     } else {
       showToast('warn', 'Pause', result?.error || 'Aktuell läuft kein Titel.');
@@ -518,12 +518,12 @@
     const result = await post('/skip');
     if (result?.success && result.next) {
       renderNowPlaying(result.next);
-      showToast('success', 'Skip', `Spielt jetzt: ${result.next.title || 'nächster Titel'}`);
+      showToast('success', 'Überspringen', `Spielt jetzt: ${result.next.title || 'nächster Titel'}`);
     } else if (result?.success && result.nextError) {
       showToast('warn', 'Auto-DJ', result.nextError);
     }
     if (!result?.success) {
-      showToast('warn', 'Skip', result?.error || 'Aktuell läuft kein Titel.');
+      showToast('warn', 'Überspringen', result?.error || 'Aktuell läuft kein Titel.');
     }
     } finally {
       skipInProgress = false;
@@ -1210,11 +1210,11 @@
   });
 
   socket.on('musicbot:paused', () => {
-    updateState('Paused');
+    updateState('Pausiert');
     stopProgressTimer();
   });
   socket.on('musicbot:resumed', () => {
-    updateState('Playing');
+    updateState('Wiedergabe');
     startProgressTimer();
   });
   socket.on('musicbot:playback-stopped', () => {
@@ -1568,7 +1568,7 @@
       ${banButton}
     `;
     const actualState = track.state || 'playing';
-    updateState(actualState === 'paused' ? 'Paused' : 'Playing');
+    updateState(actualState === 'paused' ? 'Pausiert' : 'Wiedergabe');
 
     if (npProgressWrapper && track.duration) {
       npProgressWrapper.style.display = 'block';
@@ -1845,7 +1845,7 @@
     if (skipButton) {
       skipButton.disabled = Boolean(active);
       skipButton.setAttribute('aria-busy', String(Boolean(active)));
-      skipButton.textContent = active ? 'Lädt …' : 'Skip';
+      skipButton.textContent = active ? 'Lädt …' : 'Überspringen';
     }
     if (active) {
       updateState(message || 'Lädt den nächsten Titel …');
