@@ -10,6 +10,7 @@ const { FINALE_STYLES, FINALE_LENGTHS } = require('./finale-show-planner');
 
 const ALLOWED_FINALE_STYLES = Object.freeze(['auto', ...FINALE_STYLES]);
 const ALLOWED_FINALE_LENGTHS = Object.freeze([...FINALE_LENGTHS]);
+const SUPERFAN_FINALE_COOLDOWN_HOURS = Object.freeze([6, 12, 24, 72, 168]);
 const FINALE_DURATION_BY_LENGTH = Object.freeze({
   short: 10000,
   medium: 18000,
@@ -61,6 +62,9 @@ const DEFAULT_FIREWORKS_CONFIG = {
   goalFinaleStyle: 'auto',
   goalFinaleLength: 'medium',
   goalFinaleDuration: 18000,
+  superfanFinaleEnabled: true,
+  superfanFinaleCooldownHours: 24,
+  superfanFinaleIntensity: 3,
   followerFireworksEnabled: false,
   followerRocketCount: 3,
   followerShowAnimation: true,
@@ -288,6 +292,11 @@ function normalizeConfig(config = {}) {
     goalFinaleStyle: normalizeFinaleStyle(source.goalFinaleStyle, defaults.goalFinaleStyle),
     goalFinaleLength: normalizeFinaleLength(source.goalFinaleLength, defaults.goalFinaleLength),
     goalFinaleDuration: clampInteger(source.goalFinaleDuration, 250, 30000, defaults.goalFinaleDuration),
+    superfanFinaleEnabled: normalizeBoolean(source.superfanFinaleEnabled, defaults.superfanFinaleEnabled),
+    superfanFinaleCooldownHours: SUPERFAN_FINALE_COOLDOWN_HOURS.includes(Number(source.superfanFinaleCooldownHours))
+      ? Number(source.superfanFinaleCooldownHours)
+      : defaults.superfanFinaleCooldownHours,
+    superfanFinaleIntensity: clampNumber(source.superfanFinaleIntensity, 1, 10, defaults.superfanFinaleIntensity),
     followerFireworksEnabled: normalizeBoolean(source.followerFireworksEnabled, defaults.followerFireworksEnabled),
     followerRocketCount: clampInteger(source.followerRocketCount, 1, 10, defaults.followerRocketCount),
     followerShowAnimation: normalizeBoolean(source.followerShowAnimation, defaults.followerShowAnimation),
@@ -434,6 +443,7 @@ module.exports = {
   ALLOWED_VISUAL_STYLES,
   DEFAULT_FIREWORKS_CONFIG,
   FINALE_DURATION_BY_LENGTH,
+  SUPERFAN_FINALE_COOLDOWN_HOURS,
   clampInteger,
   clampNumber,
   finaleLengthFromDuration,

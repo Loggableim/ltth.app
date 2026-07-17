@@ -496,6 +496,9 @@ class FireworksPlugin {
             goalFinaleStyle: 'auto',
             goalFinaleLength: 'medium',
             goalFinaleDuration: 18000, // Compatibility only
+            superfanFinaleEnabled: true,
+            superfanFinaleCooldownHours: 24,
+            superfanFinaleIntensity: 3,
 
             // Follower fireworks
             followerFireworksEnabled: false, // Enable fireworks for new followers
